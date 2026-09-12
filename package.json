@@ -33,7 +33,9 @@
 		"check-types:tests": "tsc --noEmit -p tests/tsconfig.json",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"test": "vscode-test"
+		"test": "vscode-test",
+		"format": "prettier . --write",
+		"format:check": "prettier . --check"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

@@ -5,12 +5,7 @@ import globals from "globals";
 import typescriptEslint from "typescript-eslint";
 
 export default defineConfig([
-	globalIgnores([
-		".vscode-test/**",
-		"coverage/**",
-		"dist/**",
-		"out/**",
-	]),
+	globalIgnores([".vscode-test/**", "coverage/**", "dist/**", "out/**"]),
 
 	js.configs.recommended,
 
@@ -115,7 +110,8 @@ export default defineConfig([
 				"error",
 				{
 					selector: "TSEnumDeclaration",
-					message: "Use union types or const objects instead of enum.",
+					message:
+						"Use union types or const objects instead of enum.",
 				},
 				{
 					selector: "ExportDefaultDeclaration",
@@ -124,7 +120,8 @@ export default defineConfig([
 				{
 					selector:
 						'CallExpression[callee.property.name="forEach"] > ArrowFunctionExpression[async=true]',
-					message: "Use for...of or Promise.all instead of async forEach callbacks.",
+					message:
+						"Use for...of or Promise.all instead of async forEach callbacks.",
 				},
 			],
 		},
