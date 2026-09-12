@@ -26,11 +26,13 @@
 		"watch:esbuild": "node esbuild.js --watch",
 		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
 		"package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-		"compile-tests": "tsc -p . --outDir out",
-		"watch-tests": "tsc -p . -w --outDir out",
+		"compile-tests": "tsc -p tests/tsconfig.json",
+		"watch-tests": "tsc -p tests/tsconfig.json -w",
 		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
 		"check-types": "tsc --noEmit",
-		"lint": "eslint src",
+		"check-types:tests": "tsc --noEmit -p tests/tsconfig.json",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
 		"test": "vscode-test"
 	},
 	"devDependencies": {

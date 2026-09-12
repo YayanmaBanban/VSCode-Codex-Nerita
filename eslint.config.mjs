@@ -1,33 +1,134 @@
+import js from "@eslint/js";
+import prettier from "eslint-config-prettier";
+import { defineConfig, globalIgnores } from "eslint/config";
+import globals from "globals";
 import typescriptEslint from "typescript-eslint";
 
-export default [
+export default defineConfig([
+	globalIgnores([
+		".vscode-test/**",
+		"coverage/**",
+		"dist/**",
+		"out/**",
+	]),
+
+	js.configs.recommended,
+
+	{
+		files: ["**/*.{js,mjs,cjs,ts}"],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+		linterOptions: {
+			reportUnusedDisableDirectives: "error",
+		},
+		rules: {
+			curly: ["error", "all"],
+			eqeqeq: ["error", "always"],
+			"no-duplicate-imports": "error",
+			"object-shorthand": ["error", "always"],
+			"prefer-template": "error",
+		},
+	},
+
+	{
+		files: ["tests/**/*.ts"],
+		languageOptions: {
+			globals: {
+				...globals.mocha,
+			},
+		},
+	},
+
 	{
 		files: ["**/*.ts"],
-	},
-	{
-		plugins: {
-			"@typescript-eslint": typescriptEslint.plugin,
-		},
-
+		extends: [typescriptEslint.configs.recommendedTypeChecked],
 		languageOptions: {
-			parser: typescriptEslint.parser,
-			ecmaVersion: 2022,
-			sourceType: "module",
+			parserOptions: {
+				projectService: true,
+				tsconfigRootDir: import.meta.dirname,
+			},
 		},
-
 		rules: {
-			"@typescript-eslint/naming-convention": [
-				"warn",
+			"@typescript-eslint/consistent-type-assertions": [
+				"error",
 				{
-					selector: "import",
-					format: ["camelCase", "PascalCase"],
+					assertionStyle: "as",
+					arrayLiteralTypeAssertions: "never",
+					objectLiteralTypeAssertions: "never",
 				},
 			],
-
-			curly: "warn",
-			eqeqeq: "warn",
-			"no-throw-literal": "warn",
-			semi: "warn",
+			"@typescript-eslint/consistent-type-definitions": ["error", "type"],
+			"@typescript-eslint/consistent-type-exports": [
+				"error",
+				{
+					fixMixedExportsWithInlineTypeSpecifier: true,
+				},
+			],
+			"@typescript-eslint/consistent-type-imports": [
+				"error",
+				{
+					prefer: "type-imports",
+					fixStyle: "inline-type-imports",
+				},
+			],
+			"@typescript-eslint/naming-convention": [
+				"error",
+				{
+					selector: "variable",
+					format: ["camelCase", "PascalCase", "UPPER_CASE"],
+					leadingUnderscore: "allow",
+				},
+				{
+					selector: "function",
+					format: ["camelCase", "PascalCase"],
+				},
+				{
+					selector: "parameter",
+					format: ["camelCase"],
+					leadingUnderscore: "allow",
+				},
+				{
+					selector: "typeLike",
+					format: ["PascalCase"],
+				},
+				{
+					selector: "property",
+					format: null,
+				},
+				{
+					selector: "import",
+					format: null,
+				},
+			],
+			"@typescript-eslint/no-unnecessary-type-assertion": "error",
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{
+					argsIgnorePattern: "^_",
+					varsIgnorePattern: "^_",
+				},
+			],
+			"no-restricted-syntax": [
+				"error",
+				{
+					selector: "TSEnumDeclaration",
+					message: "Use union types or const objects instead of enum.",
+				},
+				{
+					selector: "ExportDefaultDeclaration",
+					message: "Use named exports instead of default exports.",
+				},
+				{
+					selector:
+						'CallExpression[callee.property.name="forEach"] > ArrowFunctionExpression[async=true]',
+					message: "Use for...of or Promise.all instead of async forEach callbacks.",
+				},
+			],
 		},
 	},
-];
+
+	prettier,
+]);
