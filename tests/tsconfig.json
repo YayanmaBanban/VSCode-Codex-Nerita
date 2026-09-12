@@ -1,0 +1,18 @@
+{
+	// 本体と同じ型安全性・module 設定を継承し、テストだけ別基準にならないようにする。
+	"extends": "../tsconfig.json",
+	"compilerOptions": {
+		// tests から src も参照するため、両方を含む共通ルートを指定する。
+		"rootDir": "..",
+
+		// VS Code Test CLI が読み込めるよう、テスト用 JavaScript を out 配下へ出力する。
+		"outDir": "../out",
+
+		// テストでは Node.js に加えて Mocha の suite / test などのグローバル型を利用する。
+		"types": ["node", "mocha"]
+	},
+
+	// typed lint の Project Service と tsc の双方から、本体とテストを同じテストProjectとして見せる。
+	"include": ["../src/**/*.ts", "./**/*.ts"],
+	"exclude": ["../node_modules"]
+}
