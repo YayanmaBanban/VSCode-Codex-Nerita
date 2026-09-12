@@ -1,16 +1,48 @@
 {
 	"compilerOptions": {
+		// VS Code Extension は Node.js 上で動作するため、Node.js のモジュール解決規則に合わせる。
 		"module": "Node16",
+		"moduleResolution": "Node16",
 		"target": "ES2022",
 		"lib": ["ES2022"],
 		"types": ["node"],
-		"sourceMap": true,
+
+		// 本体コードのソース位置とデバッグ用 Source Map を明示する。
 		"rootDir": "src",
-		"strict": true /* enable all strict type-checking options */
-		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
+		"sourceMap": true,
+
+		// TypeScript 標準の厳格な型チェックをまとめて有効化する。
+		"strict": true,
+
+		// 配列や Record などの添字アクセスは、値が存在しない可能性を undefined として扱う。
+		// AI が array[index] や map[key] の存在を暗黙に仮定することを防ぐ。
+		"noUncheckedIndexedAccess": true,
+
+		// foo?: string の「未指定」と foo: undefined を区別する。
+		// ACP の request / response のような optional property を曖昧に扱わせない。
+		"exactOptionalPropertyTypes": true,
+
+		// 戻り値を返す関数で、一部の分岐だけ return が抜ける実装を禁止する。
+		"noImplicitReturns": true,
+
+		// switch 文で意図しない case の fallthrough を禁止する。
+		"noFallthroughCasesInSwitch": true,
+
+		// 基底クラスのメソッドを上書きするときは override を必須にし、偶発的な上書きを防ぐ。
+		"noImplicitOverride": true,
+
+		// import "./module" のような副作用 import でも、解決できないモジュールをエラーにする。
+		"noUncheckedSideEffectImports": true,
+
+		// esbuild が各ファイルを個別に変換しても成立する TypeScript に制限する。
+		"isolatedModules": true,
+
+		// import / export がないファイルも module として扱い、意図しない global 宣言を防ぐ。
+		"moduleDetection": "force"
+
+		// noUnusedLocals / noUnusedParameters は ESLint の @typescript-eslint/no-unused-vars に任せる。
+		// 同じ問題を TypeScript と ESLint の両方から二重に報告しない。
+		// verbatimModuleSyntax は module / package.json の ESM・CJS 方針を整理した段階で導入する。
 	},
 	"include": ["src/**/*.ts"],
 	"exclude": ["tests", "node_modules"]
