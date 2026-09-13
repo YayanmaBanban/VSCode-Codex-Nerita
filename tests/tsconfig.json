@@ -2,6 +2,8 @@
 	// 本体と同じ型安全性・module 設定を継承し、テストだけ別基準にならないようにする。
 	"extends": "../tsconfig.json",
 	"compilerOptions": {
+		// Vitest 依存宣言の DOM 型参照を Host の実行環境へ持ち込まない。
+		"skipLibCheck": true,
 		// tests から src も参照するため、両方を含む共通ルートを指定する。
 		"rootDir": "..",
 
@@ -13,6 +15,10 @@
 	},
 
 	// typed lint の Project Service と tsc の双方から、本体とテストを同じテストProjectとして見せる。
-	"include": ["../src/**/*.ts", "./**/*.ts"],
-	"exclude": ["../node_modules"]
+	"include": [
+		"../src/extension/**/*.ts",
+		"../src/shared/**/*.ts",
+		"./**/*.ts"
+	],
+	"exclude": ["../node_modules", "e2e"]
 }

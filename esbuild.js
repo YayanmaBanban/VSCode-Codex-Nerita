@@ -1,56 +1,46 @@
+﻿// Extension Host とブラウザを個別にバンドルし、実行依存を同梱する。
 const esbuild = require("esbuild");
-
+const { packageRuntime } = require("./config/package-runtime.cjs");
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
-
-/**
- * @type {import('esbuild').Plugin}
- */
-const esbuildProblemMatcherPlugin = {
-	name: "esbuild-problem-matcher",
-
-	setup(build) {
-		build.onStart(() => {
-			console.log("[watch] build started");
-		});
-		build.onEnd((result) => {
-			result.errors.forEach(({ text, location }) => {
-				console.error(`✘ [ERROR] ${text}`);
-				console.error(
-					`    ${location.file}:${location.line}:${location.column}:`,
-				);
-			});
-			console.log("[watch] build finished");
-		});
-	},
-};
-
+/** 両方の出力を生成し、監視時も同じ構成を利用する。 */
 async function main() {
-	const ctx = await esbuild.context({
-		entryPoints: ["src/extension.ts"],
+	const common = {
 		bundle: true,
-		format: "cjs",
 		minify: production,
 		sourcemap: !production,
 		sourcesContent: false,
+		logLevel: "info",
+	};
+	const host = await esbuild.context({
+		...common,
+		entryPoints: ["src/extension/extension.ts"],
+		format: "cjs",
 		platform: "node",
+		target: "node22",
 		outfile: "dist/extension.js",
 		external: ["vscode"],
-		logLevel: "silent",
-		plugins: [
-			/* add to the end of plugins array */
-			esbuildProblemMatcherPlugin,
-		],
 	});
+	const webview = await esbuild.context({
+		...common,
+		entryPoints: ["src/webview/index.tsx"],
+		format: "iife",
+		platform: "browser",
+		target: "es2022",
+		outfile: "dist/webview/index.js",
+	});
+	await packageRuntime();
 	if (watch) {
-		await ctx.watch();
+		await Promise.all([host.watch(), webview.watch()]);
 	} else {
-		await ctx.rebuild();
-		await ctx.dispose();
+		try {
+			await Promise.all([host.rebuild(), webview.rebuild()]);
+		} finally {
+			await Promise.all([host.dispose(), webview.dispose()]);
+		}
 	}
 }
-
-main().catch((e) => {
-	console.error(e);
-	process.exit(1);
+main().catch((error) => {
+	console.error(error);
+	process.exitCode = 1;
 });

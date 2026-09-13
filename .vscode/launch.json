@@ -1,7 +1,4 @@
-// A launch configuration that compiles the extension and then opens it inside a new window
-// Use IntelliSense to learn about possible attributes.
-// Hover to view descriptions of existing attributes.
-// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+// F5で必要な資産をビルドし、同じワークスペースを開いた開発用Hostを起動する。
 {
 	"version": "0.2.0",
 	"configurations": [
@@ -9,9 +6,15 @@
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
-			"args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
-			"preLaunchTask": "${defaultBuildTask}"
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--new-window",
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/.vscode/development.code-workspace"
+			],
+			"outFiles": ["${workspaceFolder}/dist/extension.js"],
+			"sourceMaps": true,
+			"preLaunchTask": "build: extension"
 		}
 	]
 }

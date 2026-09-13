@@ -1,8 +1,8 @@
 {
 	"compilerOptions": {
 		// VS Code Extension は Node.js 上で動作するため、Node.js のモジュール解決規則に合わせる。
-		"module": "Node16",
-		"moduleResolution": "Node16",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 		"target": "ES2022",
 		"lib": ["ES2022"],
 		"types": ["node"],
@@ -44,6 +44,6 @@
 		// 同じ問題を TypeScript と ESLint の両方から二重に報告しない。
 		// verbatimModuleSyntax は module / package.json の ESM・CJS 方針を整理した段階で導入する。
 	},
-	"include": ["src/**/*.ts"],
+	"include": ["src/extension/**/*.ts", "src/shared/**/*.ts"],
 	"exclude": ["tests", "node_modules"]
 }

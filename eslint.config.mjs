@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from "eslint-plugin-storybook";
+
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
 import { defineConfig, globalIgnores } from "eslint/config";
@@ -6,11 +9,9 @@ import typescriptEslint from "typescript-eslint";
 
 export default defineConfig([
 	globalIgnores([".vscode-test/**", "coverage/**", "dist/**", "out/**"]),
-
 	js.configs.recommended,
-
 	{
-		files: ["**/*.{js,mjs,cjs,ts}"],
+		files: ["**/*.{js,mjs,cjs,ts,tsx}"],
 		languageOptions: {
 			globals: {
 				...globals.node,
@@ -27,7 +28,6 @@ export default defineConfig([
 			"prefer-template": "error",
 		},
 	},
-
 	{
 		files: ["tests/**/*.ts"],
 		languageOptions: {
@@ -36,9 +36,8 @@ export default defineConfig([
 			},
 		},
 	},
-
 	{
-		files: ["**/*.ts"],
+		files: ["**/*.{ts,tsx}"],
 		extends: [typescriptEslint.configs.recommendedTypeChecked],
 		languageOptions: {
 			parserOptions: {
@@ -126,6 +125,19 @@ export default defineConfig([
 			],
 		},
 	},
-
+	{
+		// ツールが要求する default export を設定ファイルで許可する。
+		files: [
+			"config/**/*.{ts,tsx}",
+			"tests/e2e/config/*.ts",
+			"**/*.stories.tsx",
+		],
+		rules: { "no-restricted-syntax": "off" },
+	},
+	{
+		files: ["src/webview/**/*.{ts,tsx}"],
+		languageOptions: { globals: globals.browser },
+	},
 	prettier,
+	...storybook.configs["flat/recommended"],
 ]);

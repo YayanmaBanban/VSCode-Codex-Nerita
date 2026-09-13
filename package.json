@@ -1,12 +1,13 @@
 {
 	"name": "codex-acp",
 	"displayName": "Codex ACP",
-	"description": "codexのエージェントクライアントプロトコルを利用した、vsocdeの拡張機能",
+	"description": "VS CodeからCodexと会話するACPクライアント",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.137.0"
 	},
 	"categories": [
+		"AI",
 		"Other"
 	],
 	"activationEvents": [],
@@ -14,10 +15,43 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "codex-acp.helloWorld",
-				"title": "Hello World"
+				"command": "codex-acp.openChat",
+				"title": "Codex ACP: チャットを開く"
+			},
+			{
+				"command": "codex-acp.newSession",
+				"title": "Codex ACP: 新規会話"
 			}
-		]
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "codex-acp",
+					"title": "Codex ACP",
+					"icon": "media/codex.svg"
+				}
+			]
+		},
+		"views": {
+			"codex-acp": [
+				{
+					"id": "codex-acp.chat",
+					"name": "Codex",
+					"type": "webview"
+				}
+			]
+		},
+		"configuration": {
+			"title": "Codex ACP",
+			"properties": {
+				"codex-acp.nodePath": {
+					"type": "string",
+					"default": "node",
+					"scope": "machine",
+					"description": "Node.js 22以降の実行ファイルのパス。空白を含む場合も引用符を付けずに指定します。"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "pnpm run package",
@@ -29,29 +63,57 @@
 		"compile-tests": "tsc -p tests/tsconfig.json",
 		"watch-tests": "tsc -p tests/tsconfig.json -w",
 		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
-		"check-types": "tsc --noEmit",
+		"check-types": "tsc --noEmit && tsc -p src/webview/tsconfig.json",
 		"check-types:tests": "tsc --noEmit -p tests/tsconfig.json",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"test": "vscode-test",
+		"test": "vscode-test --config tests/.vscode-test.mjs",
 		"format": "prettier . --write",
-		"format:check": "prettier . --check"
+		"format:check": "prettier . --check",
+		"storybook": "storybook dev -p 6006 --config-dir config/storybook",
+		"build-storybook": "storybook build --config-dir config/storybook --output-dir dist/storybook",
+		"test:storybook": "vitest run --config config/vitest.config.ts",
+		"ui-review": "playwright test --config tests/e2e/config/ui-review.config.ts",
+		"ui-review:report": "playwright show-report dist/ui-review/report",
+		"check-types:tools": "tsc -p config/tsconfig.json && tsc -p tests/e2e/tsconfig.json",
+		"test:unit": "vitest run --config config/vitest.host.config.ts",
+		"test:acp": "node tests/acp-smoke.mjs",
+		"ui-review:chat": "pnpm ui-review chat",
+		"watch:webview": "tsc -p src/webview/tsconfig.json --watch",
+		"package:vsix": "vsce package --no-dependencies --target win32-x64 --out dist/codex-acp.vsix"
 	},
 	"devDependencies": {
+		"@chromatic-com/storybook": "latest",
 		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.63.0",
+		"@storybook/addon-mcp": "^10.6.0",
+		"@storybook/addon-vitest": "^10.6.0",
+		"@storybook/react-vite": "^10.6.0",
+		"@tailwindcss/vite": "^4.3.3",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "24.x",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
 		"@types/vscode": "^1.137.0",
+		"@vitejs/plugin-react": "^6.1.1",
+		"@vitest/browser-playwright": "latest",
+		"@vitest/coverage-v8": "latest",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.0.0",
+		"@vscode/vsce": "^3.9.2",
 		"esbuild": "^0.28.1",
 		"eslint": "^10.5.0",
 		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-storybook": "^10.6.0",
 		"globals": "^17.12.0",
 		"npm-run-all": "^4.1.5",
+		"playwright": "latest",
 		"prettier": "^3.9.6",
+		"storybook": "^10.6.0",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.61.1"
+		"typescript-eslint": "^8.61.1",
+		"vite": "^8.3.0",
+		"vitest": "latest"
 	},
 	"overrides": {
 		"diff": "^8.0.4",
@@ -59,6 +121,19 @@
 	},
 	"dependencies": {
 		"@agentclientprotocol/codex-acp": "1.11.0",
-		"@agentclientprotocol/sdk": "^1.4.0"
+		"@agentclientprotocol/sdk": "^1.4.0",
+		"react": "^19.3.0",
+		"react-dom": "^19.3.0"
+	},
+	"publisher": "codex-acp-local",
+	"extensionKind": [
+		"ui"
+	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": false,
+			"description": "Codexは信頼済みワークスペース内でファイル・コマンド操作を実行します。"
+		},
+		"virtualWorkspaces": false
 	}
 }

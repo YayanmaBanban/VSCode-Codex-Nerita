@@ -1,15 +1,27 @@
-import * as assert from "assert";
-
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
+﻿// 実際の Extension Host で拡張機能の起動・コマンド・UI 資産を確認する。
+import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
-// import * as myExtension from '../../extension';
+import { access } from "node:fs/promises";
 
-suite("Extension Test Suite", () => {
-	vscode.window.showInformationMessage("Start all tests.");
-
-	test("Sample test", () => {
-		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
+suite("Codex ACP Extension", () => {
+	test("チャット用コマンドを登録し、Webview の資産を同梱する", async () => {
+		const extension = vscode.extensions.getExtension(
+			"codex-acp-local.codex-acp",
+		);
+		assert.ok(extension);
+		await extension.activate();
+		const commands = await vscode.commands.getCommands(true);
+		assert.ok(commands.includes("codex-acp.openChat"));
+		assert.ok(commands.includes("codex-acp.newSession"));
+		for (const asset of [
+			"dist/webview/index.js",
+			"dist/webview/index.css",
+			"dist/runtime/adapter.mjs",
+		]) {
+			await access(
+				vscode.Uri.joinPath(extension.extensionUri, asset).fsPath,
+			);
+		}
+		await vscode.commands.executeCommand("codex-acp.openChat");
 	});
 });

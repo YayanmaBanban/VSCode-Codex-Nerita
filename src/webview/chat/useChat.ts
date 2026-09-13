@@ -1,0 +1,50 @@
+// Host の順序番号を確認し、会話の復元と差分購読を React に接続する。
+import { useEffect, useState } from "react";
+import { initialState, type UiMessage } from "../../shared/messages";
+import type { Bridge } from "../vscodeBridge";
+/** 接続ごとに状態を初期化し、差分欠落時はスナップショットを要求する。 */
+export function useChat(bridge: Bridge) {
+	const [state, setState] = useState(initialState);
+	const [requestError, setRequestError] = useState<string | null>(null);
+	useEffect(() => {
+		let current = initialState();
+		let ready = false;
+		setState(current);
+		setRequestError(null);
+		const unsubscribe = bridge.subscribe((message) => {
+			if (message.type === "request/failed") {
+				setRequestError(message.error);
+				return;
+			}
+			if (message.type === "state/snapshot") {
+				if (ready && message.state.revision < current.revision) {
+					return;
+				}
+				current = message.state;
+				ready = true;
+			} else {
+				if (message.revision <= current.revision) {
+					return;
+				}
+				if (!ready || message.revision !== current.revision + 1) {
+					bridge.postMessage({ type: "ui/ready" });
+					return;
+				}
+				current = {
+					...current,
+					...message.patch,
+					revision: message.revision,
+				};
+			}
+			setState(current);
+		});
+		bridge.postMessage({ type: "ui/ready" });
+		return unsubscribe;
+	}, [bridge]);
+	/** 操作直前に個別要求の古いエラーを消す。 */
+	const send = (message: UiMessage) => {
+		setRequestError(null);
+		bridge.postMessage(message);
+	};
+	return { state, requestError, send };
+}

@@ -1,0 +1,23 @@
+sandbox_mode = "workspace-write"
+
+[mcp_servers.playwright]
+command = "pnpm"
+args = ["dlx", "@playwright/mcp@latest", "--output-dir", "dist/ui-review/playwright-mcp"]
+default_tools_approval_mode = "approve"
+
+[mcp_servers.remotion_storybook]
+url = "http://localhost:6006/mcp"
+default_tools_approval_mode = "approve"
+
+[mcp_servers.code-review-graph]
+command = "code-review-graph"
+args = ["serve"]
+cwd = "."
+default_tools_approval_mode = "approve"
+
+[feature]
+multi_agent = true
+
+[agents]
+max_depth = 1
+max_concurrent_threads_per_session = 10

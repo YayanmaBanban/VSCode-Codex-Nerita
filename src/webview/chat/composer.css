@@ -1,0 +1,37 @@
+/* 入力欄と送信・停止ボタンの配置と操作状態。 */
+.composer {
+	margin: 8px 14px 14px;
+	border: 1px solid var(--vscode-input-border, #46515c);
+	background: var(--vscode-input-background, #22272e);
+	border-radius: 10px;
+	padding: 12px;
+}
+textarea {
+	resize: vertical;
+	width: 100%;
+	min-height: 65px;
+	max-height: 240px;
+	border: 0;
+	background: transparent;
+	color: var(--vscode-input-foreground, #e1e7ec);
+	line-height: 1.7;
+}
+textarea::placeholder {
+	color: var(--vscode-input-placeholderForeground, #a0a9b3);
+}
+.composer-footer {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	justify-content: space-between;
+	margin-top: 12px;
+}
+.composer-footer > span {
+	font-size: 9px;
+	color: var(--vscode-descriptionForeground, #a6afb8);
+}
+.primary {
+	background: var(--vscode-button-background, #b1d7cb);
+	color: var(--vscode-button-foreground, #162c26);
+	border-color: transparent;
+}

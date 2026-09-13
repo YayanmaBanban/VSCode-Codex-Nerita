@@ -1,0 +1,12 @@
+**
+!package.json
+!README.md
+!LICENSE
+!CHANGELOG.md
+!docs/Implementation-Plan.md
+!docs/Implementation-Status.md
+!media/**
+!dist/extension.js
+!dist/webview/index.js
+!dist/webview/index.css
+!dist/runtime/**

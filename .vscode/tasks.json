@@ -1,8 +1,18 @@
-// See https://go.microsoft.com/fwlink/?LinkId=733558
-// for the documentation about the tasks.json format
+// F5用の完了するビルドと、手動で利用する監視タスクを定義する。
 {
 	"version": "2.0.0",
 	"tasks": [
+		{
+			"label": "build: extension",
+			"type": "shell",
+			"command": "pnpm",
+			"windows": { "command": "pnpm.cmd" },
+			"args": ["run", "compile"],
+			"options": { "cwd": "${workspaceFolder}" },
+			"problemMatcher": "$tsc",
+			"group": { "kind": "build", "isDefault": true },
+			"presentation": { "reveal": "silent" }
+		},
 		{
 			"label": "watch",
 			"dependsOn": ["npm: watch:tsc", "npm: watch:esbuild"],
@@ -11,7 +21,7 @@
 			},
 			"group": {
 				"kind": "build",
-				"isDefault": true
+				"isDefault": false
 			}
 		},
 		{

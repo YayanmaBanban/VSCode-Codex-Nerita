@@ -1,0 +1,13 @@
+{
+	// Playwright の設定とテストを、Mocha のコンパイル対象から分離して検査する。
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"noEmit": true,
+		"types": ["node"],
+		"lib": ["ES2022", "DOM"],
+		"exactOptionalPropertyTypes": false
+	},
+	"include": ["**/*.ts"],
+	"exclude": ["../../node_modules"]
+}

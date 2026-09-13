@@ -1,0 +1,19 @@
+/* ブラウザの明暗設定だけで VS Code のテーマ変数を再現する。 */
+@media (prefers-color-scheme: light) {
+	:root {
+		--vscode-textCodeBlock-background: #e6ecee;
+	}
+	:root {
+		--vscode-foreground: #242e36;
+		--vscode-sideBar-background: #f7f9f9;
+		--vscode-descriptionForeground: #626f79;
+		--vscode-panel-border: #d8dfe3;
+		--vscode-editor-background: #eaf0f1;
+		--vscode-input-background: #fff;
+		--vscode-input-foreground: #242e36;
+		--vscode-input-border: #adbcc5;
+		--vscode-inputValidation-warningBackground: #fff7e9;
+		--vscode-button-secondaryBackground: #e7edef;
+		--vscode-textLink-foreground: #267065;
+	}
+}
