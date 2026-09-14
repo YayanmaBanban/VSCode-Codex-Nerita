@@ -22,6 +22,10 @@ export type ToolSummary = {
 	title: string;
 	status: "pending" | "in_progress" | "completed" | "failed";
 	paths: string[];
+	kind?: string;
+	content?: unknown[];
+	rawInput?: unknown;
+	rawOutput?: unknown;
 };
 /** エージェントが提示した承認選択肢。 */
 export type PermissionOption = {

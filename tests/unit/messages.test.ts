@@ -28,6 +28,58 @@ describe("通信境界", () => {
 			}),
 		).toBe(true);
 	});
+	it("Guardian の完了通知で入力を保持し、出力を更新する", () => {
+		const state = {
+			...initialState(),
+			sessionId: "s",
+			runId: "r",
+			run: "running" as const,
+		};
+		Object.assign(
+			state,
+			updateState(state, {
+				sessionId: "s",
+				update: {
+					sessionUpdate: "tool_call",
+					toolCallId: "guardian",
+					title: "Guardian Review",
+					rawInput: { action: { command: "pnpm --version" } },
+				},
+			}),
+		);
+		Object.assign(
+			state,
+			updateState(state, {
+				sessionId: "s",
+				update: {
+					sessionUpdate: "tool_call_update",
+					toolCallId: "guardian",
+					status: "completed",
+					rawOutput: { review: { status: "approved" } },
+				},
+			}),
+		);
+		expect(state.tools[0]).toMatchObject({
+			title: "Guardian Review",
+			status: "completed",
+			rawInput: { action: { command: "pnpm --version" } },
+			rawOutput: { review: { status: "approved" } },
+		});
+		expect(isHostMessage({ type: "state/snapshot", state })).toBe(true);
+		const patch = updateState(state, {
+			sessionId: "s",
+			update: {
+				sessionUpdate: "tool_call_update",
+				toolCallId: "guardian",
+				content: [],
+				rawOutput: null,
+			},
+		});
+		expect(patch.tools?.[0]).toMatchObject({
+			content: [],
+			rawOutput: null,
+		});
+	});
 	it("壊れたスナップショットと差分を拒否する", () => {
 		expect(
 			isHostMessage({ type: "state/snapshot", state: initialState() }),
@@ -91,6 +143,9 @@ describe("通信境界", () => {
 			title: "変更",
 			status: "completed",
 			paths: ["a.ts"],
+			content: [
+				{ type: "diff", path: "a.ts", oldText: "", newText: "new" },
+			],
 		});
 	});
 });

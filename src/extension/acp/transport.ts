@@ -1,4 +1,4 @@
-// ACP の子プロセスと SDK 接続を管理する。生の診断出力に秘密情報を残さない。
+// ACP の子プロセスと SDK 接続を管理する。
 import { spawn } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import {
@@ -60,9 +60,8 @@ export function createTransport(
 			callbacks.disconnected();
 		}
 	};
-	child.stderr.on("data", () => {
-		/* 生ログは認証情報を含み得るため保存しない。 */
-	});
+	// 診断内容は記録せずに読み捨て、パイプの詰まりを防ぐ。
+	child.stderr.resume();
 	child.on("error", disconnected);
 	child.on("exit", disconnected);
 	child.stdin.on("error", disconnected);

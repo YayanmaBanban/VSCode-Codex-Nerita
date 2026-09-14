@@ -1,10 +1,11 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
 import { useEffect, useRef, useState } from "react";
+import { SendHorizontal, SquareStop } from "lucide-react";
 import type { Bridge } from "../vscodeBridge";
 import { useChat } from "./useChat";
 import { ConnectionHeader } from "./ConnectionHeader";
 import { Activity } from "./Activity";
-import { MessageText } from "./MessageText";
+import { Messages } from "./Messages";
 import "./chat.css";
 import "./composer.css";
 
@@ -12,7 +13,7 @@ const runLabels = {
 	idle: "",
 	running: "応答中",
 	cancelling: "停止しています…",
-	completed: "完了",
+	completed: "",
 	cancelled: "停止しました",
 	failed: "実行に失敗しました",
 };
@@ -76,22 +77,10 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					aria-live="polite"
 					aria-relevant="additions text"
 				>
-					{state.messages.map((message) => (
-						<article
-							className={`message ${message.role}`}
-							key={message.id}
-						>
-							<div className="message-author">
-								{message.role === "user" ? "あなた" : "Codex"}
-							</div>
-							<div className="message-text">
-								<MessageText text={message.text} />
-							</div>
-						</article>
-					))}
+					<Messages messages={state.messages} busy={busy} />
 				</div>
 				<Activity state={state} send={send} />
-				{state.run !== "idle" && (
+				{runLabels[state.run] && (
 					<p className="run-status" role="status">
 						{runLabels[state.run]}
 					</p>
@@ -144,6 +133,9 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					{busy ? (
 						<button
 							type="button"
+							className="icon-button stop-button"
+							aria-label="停止"
+							title="停止"
 							disabled={state.run === "cancelling"}
 							onClick={() => {
 								if (state.sessionId && state.runId) {
@@ -156,15 +148,17 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 								}
 							}}
 						>
-							■ 停止
+							<SquareStop size={18} aria-hidden="true" />
 						</button>
 					) : (
 						<button
 							type="submit"
-							className="primary"
+							className="icon-button send-button"
+							aria-label="送信"
+							title="送信"
 							disabled={!available || !draft.trim()}
 						>
-							送信 ↑
+							<SendHorizontal size={18} aria-hidden="true" />
 						</button>
 					)}
 				</div>

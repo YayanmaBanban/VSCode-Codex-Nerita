@@ -34,7 +34,7 @@ export const SendMessage: Story = {
 			canvas.getByRole("textbox"),
 			"設定を確認してください",
 		);
-		await userEvent.click(canvas.getByRole("button", { name: "送信 ↑" }));
+		await userEvent.click(canvas.getByRole("button", { name: "送信" }));
 		await expect(canvas.getByText("設定を確認してください")).toBeVisible();
 		await expect(
 			await canvas.findByText(/作業が完了しました/),

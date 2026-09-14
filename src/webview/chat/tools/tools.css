@@ -1,0 +1,85 @@
+/* ツールカードを狭いサイドバーと VS Code の明暗テーマに合わせる。 */
+.tool-card {
+	border: 1px solid var(--vscode-panel-border, #39424a);
+	border-radius: 6px;
+	margin-block: 8px;
+	overflow: hidden;
+}
+.tool-card .tool-heading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 10px;
+	border: 0;
+	border-radius: 0;
+	text-align: left;
+	background: transparent;
+}
+.tool-heading svg {
+	flex-shrink: 0;
+}
+.tool-title {
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.tool-status {
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground, #a6afb8);
+	white-space: nowrap;
+}
+.tool-heading[aria-expanded="false"] .tool-chevron {
+	transform: rotate(-90deg);
+}
+.tool-heading:focus-visible {
+	outline-offset: -3px;
+}
+.tool-body {
+	border-top: 1px solid var(--vscode-panel-border, #39424a);
+	padding: 12px;
+}
+.tool-body pre {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	margin: 6px 0;
+	font: 11px/1.6 var(--vscode-editor-font-family, monospace);
+}
+.tool-body h3,
+.tool-path {
+	font-size: 11px;
+	overflow-wrap: anywhere;
+	margin: 8px 0;
+}
+.tool-body section + section {
+	margin-top: 14px;
+}
+.tool-caption {
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground, #a6afb8);
+}
+.tool-before,
+.tool-after {
+	padding: 1px 8px;
+	border-left: 2px solid;
+	margin: 4px 0 10px;
+}
+.tool-before {
+	border-color: var(
+		--vscode-gitDecoration-deletedResourceForeground,
+		#e28d8d
+	);
+}
+.tool-after {
+	border-color: var(--vscode-gitDecoration-addedResourceForeground, #85c78e);
+}
+.guardian-fields {
+	margin: 0;
+}
+.guardian-fields dt {
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground, #a6afb8);
+}
+.guardian-fields dd {
+	margin: 0 0 10px;
+}

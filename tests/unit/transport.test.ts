@@ -44,7 +44,8 @@ it("空白のある作業パスで通信し、終了時に孫プロセスと保�
 		expect(await pending).toBe("closed");
 		await vi.waitFor(() => expect(pids.some(running)).toBe(false));
 		expect(disconnected).not.toHaveBeenCalled();
-		expect(JSON.stringify(log.mock.calls)).not.toContain("private");
+		// 正常な通信や adapter の診断内容はログへ出力しない。
+		expect(log).not.toHaveBeenCalled();
 	} finally {
 		await transport.dispose();
 	}

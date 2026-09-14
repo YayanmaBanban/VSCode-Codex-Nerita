@@ -152,12 +152,6 @@ h2 {
 	margin-bottom: 24px;
 	min-width: 0;
 }
-.message-author {
-	font-size: 11px;
-	font-weight: 600;
-	margin-bottom: 10px;
-	color: var(--vscode-descriptionForeground, #a6afb8);
-}
 .message-text {
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
@@ -177,9 +171,6 @@ h2 {
 	padding: 14px;
 	border: 1px solid var(--vscode-panel-border, #30363d);
 	border-radius: 9px;
-}
-.message.assistant .message-author {
-	color: var(--vscode-textLink-foreground, #94cbbb);
 }
 .error-banner,
 .auth-card {

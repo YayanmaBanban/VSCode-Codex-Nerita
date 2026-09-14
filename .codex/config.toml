@@ -1,8 +1,17 @@
 sandbox_mode = "workspace-write"
 
+[mcp_servers.motion]
+type = "http"
+url = "https://mcp.motion.dev"
+
 [mcp_servers.playwright]
 command = "pnpm"
-args = ["dlx", "@playwright/mcp@latest", "--output-dir", "dist/ui-review/playwright-mcp"]
+args = [
+  "dlx",
+  "@playwright/mcp@latest",
+  "--output-dir",
+  "dist/ui-review/playwright-mcp"
+]
 default_tools_approval_mode = "approve"
 
 [mcp_servers.remotion_storybook]
@@ -11,7 +20,7 @@ default_tools_approval_mode = "approve"
 
 [mcp_servers.code-review-graph]
 command = "code-review-graph"
-args = ["serve"]
+args = [ "serve" ]
 cwd = "."
 default_tools_approval_mode = "approve"
 

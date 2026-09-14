@@ -23,8 +23,8 @@ test.afterEach(async ({ page }, info) => {
 test("送信・逐次応答・完了・新規会話", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
 	await page.getByRole("textbox").fill("設定を確認してください");
-	await page.getByRole("button", { name: "送信 ↑" }).click();
-	await expect(page.getByRole("button", { name: "■ 停止" })).toBeVisible();
+	await page.getByRole("button", { name: "送信" }).click();
+	await expect(page.getByRole("button", { name: "停止" })).toBeVisible();
 	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
 	await info.attach("completed", {
 		body: await page.screenshot(),
@@ -54,7 +54,7 @@ for (const choice of ["今回のみ許可", "拒否"]) {
 }
 test("停止・再接続・エラー復帰", async ({ page }) => {
 	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
-	await page.getByRole("button", { name: "■ 停止" }).click();
+	await page.getByRole("button", { name: "停止" }).click();
 	await expect(page.getByText("停止しました", { exact: true })).toBeVisible();
 	await page.getByRole("button", { name: "接続する" }).click();
 	await expect(page.getByText("接続済み", { exact: true })).toBeVisible();
@@ -80,12 +80,79 @@ test("IME確定・改行・キーボード送信", async ({ page }) => {
 	await input.press("Enter");
 	await expect(page.getByRole("log")).toContainText("日本語の入力");
 });
+test("回答コピー・対応する送信文と返信末尾へ移動", async ({
+	page,
+	context,
+}) => {
+	await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await page.goto("/iframe.html?id=chat-app--completed&viewMode=story");
+	await page.getByRole("button", { name: "回答をコピー" }).click();
+	await expect(page.locator(".message").getByRole("status")).toHaveText(
+		"コピーしました",
+	);
+	expect(
+		(await page.evaluate(() => navigator.clipboard.readText())).replace(
+			/\r\n/g,
+			"\n",
+		),
+	).toBe(
+		await page.locator(".text-type .sr-only").getAttribute("aria-label"),
+	);
+	await page.getByRole("button", { name: "送信メッセージへ移動" }).click();
+	await expect(page.locator(".message.user")).toBeFocused();
+	await expect(page.locator(".message.user")).toBeInViewport();
+	await page.getByRole("button", { name: "回答の末尾へ移動" }).click();
+	await expect(
+		page.locator(".message.assistant .message-actions"),
+	).toBeFocused();
+	await expect(
+		page.locator(".message.assistant .message-actions"),
+	).toBeInViewport();
+	await expect(page.locator(".message-author, .run-status")).toHaveCount(0);
+});
+test("TextTypeの開始・途中・終了とカーソル休止", async ({ page }, info) => {
+	await page.clock.install();
+	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
+	const content = page.locator(".text-type > div");
+	await expect(page.locator(".text-type")).toHaveAttribute(
+		"data-typing",
+		"true",
+	);
+	await info.attach("typing-start", {
+		body: await page.screenshot(),
+		contentType: "image/png",
+	});
+	await page.clock.runFor(400);
+	await expect(content).toContainText("設定を確認");
+	await info.attach("typing-middle", {
+		body: await page.screenshot(),
+		contentType: "image/png",
+	});
+	await page.clock.runFor(2000);
+	await expect(page.locator(".text-type")).toHaveAttribute(
+		"data-typing",
+		"false",
+	);
+	await info.attach("typing-end", {
+		body: await page.screenshot(),
+		contentType: "image/png",
+	});
+	await page.getByRole("button", { name: "停止", exact: true }).click();
+	await page.clock.runFor(4300);
+	await expect(page.locator(".text-type-cursor")).toHaveCount(0);
+});
 for (const colorScheme of ["dark", "light"] as const) {
 	test(`狭い幅・長文・コード: ${colorScheme}`, async ({ page }, info) => {
 		await page.setViewportSize({ width: 320, height: 760 });
-		await page.emulateMedia({ colorScheme });
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.goto("/iframe.html?id=chat-app--completed&viewMode=story");
 		await expect(page.getByText(/const config/)).toBeVisible();
+		await expect(page.locator(".text-type")).toHaveAttribute(
+			"data-typing",
+			"false",
+			{ timeout: 20000 },
+		);
 		await page.evaluate(() => document.fonts.ready);
 		expect(
 			await page.evaluate(

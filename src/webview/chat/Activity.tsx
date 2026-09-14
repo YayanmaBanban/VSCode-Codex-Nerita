@@ -1,11 +1,6 @@
-// ツール概要とエージェント由来の承認選択肢を安全なテキストで表示する。
+// ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
 import type { ChatState, UiMessage } from "../../shared/messages";
-const toolLabels = {
-	pending: "待機中",
-	in_progress: "実行中",
-	completed: "完了",
-	failed: "失敗",
-};
+import { ToolCard } from "./tools/ToolCard";
 /** 現在の実行の作業状況と承認操作を表示する。 */
 export function Activity({
 	state,
@@ -20,17 +15,7 @@ export function Activity({
 				<section className="activity" aria-label="作業状況">
 					<h2>作業状況</h2>
 					{state.tools.map((tool) => (
-						<div className="tool" key={tool.id}>
-							<div>
-								<span>{tool.title}</span>
-								<span className="muted">
-									{toolLabels[tool.status]}
-								</span>
-							</div>
-							{tool.paths.map((path) => (
-								<code key={path}>{path}</code>
-							))}
-						</div>
+						<ToolCard key={tool.id} tool={tool} />
 					))}
 				</section>
 			)}

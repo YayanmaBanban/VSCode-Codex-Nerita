@@ -95,6 +95,10 @@ function validField(key: string, value: unknown): boolean {
 				(item) =>
 					isId(item.id) &&
 					typeof item.title === "string" &&
+					(item.kind === undefined ||
+						typeof item.kind === "string") &&
+					(item.content === undefined ||
+						Array.isArray(item.content)) &&
 					["pending", "in_progress", "completed", "failed"].includes(
 						String(item.status),
 					) &&

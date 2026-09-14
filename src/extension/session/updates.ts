@@ -43,7 +43,21 @@ export function updateState(
 			content.type === "diff" ? [content.path] : [],
 		);
 		const tool = {
+			...existing,
 			id: update.toolCallId,
+			// 省略されたフィールドは保持し、明示された空配列・null は更新として扱う。
+			...(update.kind !== undefined && update.kind !== null
+				? { kind: update.kind }
+				: {}),
+			...(update.content !== undefined && update.content !== null
+				? { content: update.content }
+				: {}),
+			...(update.rawInput !== undefined
+				? { rawInput: update.rawInput }
+				: {}),
+			...(update.rawOutput !== undefined
+				? { rawOutput: update.rawOutput }
+				: {}),
 			title: update.title ?? existing?.title ?? "ツール実行",
 			status: update.status ?? existing?.status ?? "pending",
 			paths:
