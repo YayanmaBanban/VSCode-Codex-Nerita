@@ -50,7 +50,16 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		const edit = page.getByRole("button", { name: "Editing files 実行中" });
 		await expect(guardian).toHaveAttribute("aria-expanded", "true");
-		await expect(page.getByText("変更前", { exact: true })).toBeVisible();
+		await expect(page.locator(".file-diff-removed")).toHaveText(
+			"-echo hello\n",
+		);
+		await expect(page.locator(".file-diff-added")).toHaveText([
+			"+echo hello world\n",
+			"+pause\n",
+		]);
+		await expect(page.locator(".file-diff-lines")).toContainText(
+			" @echo off",
+		);
 		await expect(
 			page.getByText("実行結果を待っています。", { exact: true }),
 		).toBeVisible();

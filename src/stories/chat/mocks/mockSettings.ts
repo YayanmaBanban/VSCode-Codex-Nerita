@@ -1,5 +1,5 @@
 // Story 内で設定・添付操作の Host 応答を再現する。
-import type { ChatState, UiMessage } from "../../shared/messages";
+import type { ChatState, UiMessage } from "../../../shared/messages";
 
 /** 設定に依存する選択肢と添付の変更を状態差分として返す。 */
 export function mockSettings(

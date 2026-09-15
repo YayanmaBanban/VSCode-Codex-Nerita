@@ -18,16 +18,22 @@ export function Activity({
 						const task = state.asyncTasks.find(
 							(item) => item.toolCallId === tool.id,
 						);
+						const cancelTurn =
+							!task &&
+							tool.runId === state.runId &&
+							state.run === "running";
 						return (
 							<ToolCard
 								key={`${tool.runId ?? ""}:${tool.id}`}
 								tool={tool}
 								task={task}
+								cancelTurn={cancelTurn}
 								onStop={
-									task &&
-									taskActive(task) &&
-									task.canStop &&
-									!task.stopPending &&
+									(cancelTurn ||
+										(task &&
+											taskActive(task) &&
+											task.canStop &&
+											!task.stopPending)) &&
 									state.sessionId &&
 									(tool.runId || state.runId) &&
 									state.connection === "ready"
@@ -50,20 +56,24 @@ export function Activity({
 			)}
 			{state.permissions.map((permission) => (
 				<section
-					className="permission-card"
+					className="permission-card my-[16px] rounded-[8px] border border-solid border-alert-border p-[16px]"
 					aria-label="承認要求"
 					key={permission.id}
 				>
-					<span className="eyebrow">確認が必要です</span>
-					<h2>{permission.title}</h2>
-					<div className="permission-actions">
+					<span className="eyebrow text-[9px] tracking-[0.13em] text-muted">
+						確認が必要です
+					</span>
+					<h2 className="leading-[1.7] [overflow-wrap:anywhere]">
+						{permission.title}
+					</h2>
+					<div className="permission-actions flex flex-wrap gap-[8px]">
 						{permission.options.map((option) => (
 							<button
 								key={option.id}
 								className={
 									option.kind.startsWith("allow")
-										? "primary"
-										: "quiet"
+										? "primary border-transparent bg-primary text-primary-text"
+										: "quiet bg-transparent"
 								}
 								onClick={() => {
 									if (state.sessionId && state.runId) {

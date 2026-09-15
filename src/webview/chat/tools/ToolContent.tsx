@@ -1,17 +1,19 @@
 // ACP の本文・差分・任意の入出力を、実行せずテキストとして表示する。
 import type { ToolSummary } from "../../../shared/messages";
 import { isRecord } from "../../../shared/validation";
+import { FileDiff } from "./FileDiff";
+import { toolLabelClass, toolOutputClass } from "./toolStyles";
 
 /** 構造が未知の値も欠落させずに表示する。 */
 export function Value({ value }: { value: unknown }) {
 	return (
-		<pre>
+		<pre className={toolOutputClass}>
 			{typeof value === "string" ? value : JSON.stringify(value, null, 2)}
 		</pre>
 	);
 }
 
-/** 編集前後を縦に並べ、狭いサイドバーでも比較可能にする。 */
+/** ACP の差分と本文を、それぞれ専用の表示に振り分ける。 */
 function Content({ value }: { value: unknown }) {
 	if (!isRecord(value)) {
 		return <Value value={value} />;
@@ -23,17 +25,11 @@ function Content({ value }: { value: unknown }) {
 		typeof value.newText === "string"
 	) {
 		return (
-			<section className="tool-diff">
-				<h3>{value.path}</h3>
-				<span className="tool-caption">変更前</span>
-				<div className="tool-before">
-					<Value value={value.oldText ?? "（新規ファイル）"} />
-				</div>
-				<span className="tool-caption">変更後</span>
-				<div className="tool-after">
-					<Value value={value.newText || "（空）"} />
-				</div>
-			</section>
+			<FileDiff
+				path={value.path}
+				oldText={value.oldText}
+				newText={value.newText}
+			/>
 		);
 	}
 	if (
@@ -56,7 +52,7 @@ export function GenericTool({ tool }: { tool: ToolSummary }) {
 	return (
 		<>
 			{tool.paths.map((path) => (
-				<div className="tool-path" key={path}>
+				<div className={`tool-path ${toolLabelClass}`} key={path}>
 					{path}
 				</div>
 			))}
@@ -65,17 +61,21 @@ export function GenericTool({ tool }: { tool: ToolSummary }) {
 			))}
 			{tool.rawInput !== undefined && (
 				<section>
-					<h3>入力</h3>
+					<h3 className={toolLabelClass}>入力</h3>
 					<Value value={tool.rawInput} />
 				</section>
 			)}
 			{tool.rawOutput !== undefined && (
 				<section>
-					<h3>出力</h3>
+					<h3 className={toolLabelClass}>出力</h3>
 					<Value value={tool.rawOutput} />
 				</section>
 			)}
-			{!hasDetails && <p className="muted">詳細はまだありません。</p>}
+			{!hasDetails && (
+				<p className="muted text-[11px] text-muted">
+					詳細はまだありません。
+				</p>
+			)}
 		</>
 	);
 }

@@ -1,5 +1,9 @@
 // 接続状態・認証・再接続の操作をまとめて表示する。
 import type { ChatState, UiMessage } from "../../shared/messages";
+
+/** 認証案内とエラー通知に共通する枠・色・余白。 */
+const noticeClass =
+	"mx-[14px] mt-[12px] mb-0 rounded-[6px] border border-solid border-alert-border bg-alert p-[12px] leading-[1.7]";
 const connectionLabels = {
 	disconnected: "未接続",
 	connecting: "接続中",
@@ -27,15 +31,17 @@ export function ConnectionHeader({
 	return (
 		<>
 			{" "}
-			<header className="chat-header">
+			<header className="chat-header flex items-center justify-between gap-[12px] px-[20px] pt-[22px] pb-[17px] [@media(max-width:360px)]:px-[14px]">
 				<div>
-					<span className="eyebrow">WORKSPACE ASSISTANT</span>
+					<span className="eyebrow text-[9px] tracking-[0.13em] text-muted">
+						WORKSPACE ASSISTANT
+					</span>
 					<h1>
 						Codex <span>ACP</span>
 					</h1>
 				</div>
 				<button
-					className="quiet"
+					className="quiet bg-transparent"
 					disabled={!available}
 					onClick={() =>
 						send({
@@ -47,12 +53,14 @@ export function ConnectionHeader({
 					＋ 新規会話
 				</button>
 			</header>
-			<div className="connection-bar">
-				<span className={`status-dot ${state.connection}`} />
+			<div className="connection-bar flex min-h-[38px] items-center gap-[7px] border-0 border-y border-solid border-message-border px-[20px] py-[8px] text-[11px] text-muted">
+				<span
+					className={`status-dot ${state.connection} size-[6px] rounded-full ${state.connection === "ready" ? "bg-[#75bba0]" : state.connection === "error" || state.connection === "auth-required" ? "bg-[#deb86d]" : "bg-[#8a929c]"}`}
+				/>
 				<span role="status">{connectionLabels[state.connection]}</span>
 				{reconnectable && (
 					<button
-						className="link-button"
+						className="link-button ml-auto border-0 bg-transparent p-[2px] text-link"
 						onClick={() =>
 							send({
 								type: "connection/retry",
@@ -67,12 +75,15 @@ export function ConnectionHeader({
 				)}
 			</div>
 			{(state.error || requestError) && (
-				<div role="alert" className="error-banner">
+				<div role="alert" className={`error-banner ${noticeClass}`}>
 					{requestError || state.error}
 				</div>
 			)}
 			{state.connection === "auth-required" && (
-				<section className="auth-card" aria-label="認証">
+				<section
+					className={`auth-card ${noticeClass}`}
+					aria-label="認証"
+				>
 					<p>
 						ChatGPTにログインするか、VS
 						Codeの起動環境に設定したAPIキーを使用します。
@@ -80,6 +91,7 @@ export function ConnectionHeader({
 					{state.authMethods.map((method) => (
 						<button
 							key={method.id}
+							className="m-[3px]"
 							onClick={() =>
 								send({
 									type: "auth/start",
@@ -96,7 +108,7 @@ export function ConnectionHeader({
 				</section>
 			)}
 			{state.connection === "authenticating" && (
-				<p className="auth-card">
+				<p className={`auth-card ${noticeClass}`}>
 					ブラウザでログインを完了してください。最大3分間待機します。
 				</p>
 			)}

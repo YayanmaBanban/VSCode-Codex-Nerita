@@ -57,12 +57,25 @@ for (const choice of ["今回のみ許可", "拒否"]) {
 		);
 	});
 }
-test("停止・再接続・エラー復帰", async ({ page }) => {
+test("停止後も同じ会話で再送・エラー復帰", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
 	await page.getByRole("button", { name: "停止" }).click();
 	await expect(page.getByText("停止しました", { exact: true })).toBeVisible();
-	await page.getByRole("button", { name: "接続する" }).click();
 	await expect(page.getByText("接続済み", { exact: true })).toBeVisible();
+	await page
+		.getByRole("textbox", { name: "Codexへのメッセージ" })
+		.fill("続けてください");
+	await page.getByRole("button", { name: "送信", exact: true }).click();
+	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
+	await expect(
+		page.getByText("設定ファイルの変更点を教えてください。", {
+			exact: true,
+		}),
+	).toBeVisible();
+	await page.screenshot({
+		path: info.outputPath("cancel-continue.png"),
+		fullPage: true,
+	});
 	await page.goto("/iframe.html?id=chat-app--error&viewMode=story");
 	await expect(page.getByRole("alert")).toBeVisible();
 	await page.getByRole("button", { name: "再接続" }).click();

@@ -6,7 +6,10 @@ export function MessageText({ text }: { text: string }) {
 		<>
 			{blocks.map((block, index) =>
 				index % 2 === 1 ? (
-					<pre key={index}>
+					<pre
+						key={index}
+						className="my-[12px] overflow-x-auto rounded-[6px] bg-message-code p-[12px] text-[12px] whitespace-pre"
+					>
 						<code>{block}</code>
 					</pre>
 				) : (

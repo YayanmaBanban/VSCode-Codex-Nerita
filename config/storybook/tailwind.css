@@ -1,0 +1,3 @@
+/* 本体のテーマを共有し、Story 専用のクラスは Storybook でのみ収集する。 */
+@import "../../src/webview/chat/tailwind.css";
+@source "../../src/stories";

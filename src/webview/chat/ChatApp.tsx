@@ -8,8 +8,8 @@ import { Activity } from "./Activity";
 import { Messages } from "./Messages";
 import { CubeLoader } from "./CubeLoader";
 import { ComposerSettings } from "./ComposerSettings";
+import { iconButtonClass } from "./messageStyles";
 import "./chat.css";
-import "./composer.css";
 
 const runLabels = {
 	idle: "",
@@ -54,26 +54,34 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		setDraft("");
 	};
 	return (
-		<main className="chat-app">
+		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1000px] flex-col">
 			<ConnectionHeader
 				state={state}
 				requestError={requestError}
 				available={available}
 				send={send}
 			/>
-			<section className="conversation" aria-label="会話">
+			<section
+				className="conversation min-h-0 flex-1 overflow-y-auto px-[20px] py-[22px] [scrollbar-width:thin]"
+				aria-label="会話"
+			>
 				{state.messages.length === 0 && (
-					<div className="empty-state">
-						<div className="empty-mark" aria-hidden="true">
+					<div className="empty-state px-0 pt-[10vh] pb-[30px] text-center">
+						<div
+							className="empty-mark mb-[12px] inline-grid size-[42px] place-items-center rounded-[12px] border border-solid border-empty-border text-[24px] text-[#94cbbb]"
+							aria-hidden="true"
+						>
 							⌘
 						</div>
-						<h2>ここから、一緒に。</h2>
-						<p>
+						<h2 className="text-[20px] tracking-[0.02em]">
+							ここから、一緒に。
+						</h2>
+						<p className="leading-[1.9] text-muted">
 							コードについて質問したり、
 							<br />
 							取り組みたい変更を伝えてください。
 						</p>
-						<span className="empty-hint">
+						<span className="empty-hint mt-[26px] inline-block text-[10px] text-muted">
 							このワークスペースで作業します
 						</span>
 					</div>
@@ -104,19 +112,17 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 				<Activity state={{ ...state, tools: [] }} send={send} />
 				{state.run === "running" && <CubeLoader />}
 				{runLabels[state.run] && (
-					<p className="run-status" role="status">
+					<p
+						className="run-status text-[11px] text-muted"
+						role="status"
+					>
 						{runLabels[state.run]}
-					</p>
-				)}
-				{state.run === "cancelled" && (
-					<p className="muted">
-						再接続すると新しい会話を開始できます。
 					</p>
 				)}
 				<div ref={bottom} />
 			</section>
 			<form
-				className="composer"
+				className="composer mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px]"
 				onSubmit={(event) => {
 					event.preventDefault();
 					submit();
@@ -126,6 +132,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					Codexへのメッセージ
 				</label>
 				<textarea
+					className="w-full min-h-[65px] max-h-[240px] resize-y border-0 bg-transparent text-input-text leading-[1.7] placeholder:text-input-placeholder"
 					id="prompt"
 					value={draft}
 					placeholder="Codexに依頼する…"
@@ -151,12 +158,14 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 						}
 					}}
 				/>
-				<div className="composer-footer">
-					<span>Enter で送信 · Shift+Enter で改行</span>
+				<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
+					<span className="text-[9px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]">
+						Enter で送信 · Shift+Enter で改行
+					</span>
 					{busy ? (
 						<button
 							type="button"
-							className="icon-button stop-button"
+							className={`${iconButtonClass} stop-button bg-[#bd3948]`}
 							aria-label="停止"
 							title="停止"
 							disabled={state.run === "cancelling"}
@@ -176,7 +185,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					) : (
 						<button
 							type="submit"
-							className="icon-button send-button"
+							className={`${iconButtonClass} send-button bg-[#2563b8]`}
 							aria-label="送信"
 							title="送信"
 							disabled={!available || !draft.trim()}

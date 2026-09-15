@@ -1,8 +1,8 @@
 // 設定・使用量の非同期更新と添付の送信内容を実際のチャットで再現する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "./ChatApp";
-import { createMockBridge } from "./mockBridge";
+import { ChatApp } from "../../webview/chat/ChatApp";
+import { createMockBridge } from "./mocks/mockBridge";
 import type { UiMessage } from "../../shared/messages";
 
 /** テスト操作で通知を注入し、送信された要求も表示する。 */

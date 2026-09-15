@@ -137,7 +137,7 @@ export default defineConfig([
 		rules: { "no-restricted-syntax": "off" },
 	},
 	{
-		files: ["src/webview/**/*.{ts,tsx}"],
+		files: ["src/webview/**/*.{ts,tsx}", "src/stories/**/*.{ts,tsx}"],
 		languageOptions: { globals: globals.browser },
 	},
 ]);

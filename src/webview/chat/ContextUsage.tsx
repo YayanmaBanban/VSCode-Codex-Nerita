@@ -41,7 +41,7 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 			}
 		>
 			<span
-				className="context-usage"
+				className="context-usage inline-flex flex-[0_0_24px] text-muted data-[warning=true]:text-warning [&_circle]:fill-none [&_circle]:stroke-current [&_circle]:stroke-2"
 				role="progressbar"
 				aria-label="コンテキスト使用量"
 				aria-valuemin={0}
@@ -59,9 +59,14 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 					height={24}
 					aria-hidden="true"
 				>
-					<circle className="context-track" cx={12} cy={12} r={8} />
+					<circle
+						className="context-track opacity-20"
+						cx={12}
+						cy={12}
+						r={8}
+					/>
 					<motion.circle
-						className="context-fill"
+						className="context-fill origin-center [transform:rotate(-90deg)] [stroke-linecap:round]"
 						cx={12}
 						cy={12}
 						r={8}

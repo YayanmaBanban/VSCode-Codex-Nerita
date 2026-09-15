@@ -2,6 +2,7 @@
 import type { ToolSummary } from "../../../shared/messages";
 import { isRecord } from "../../../shared/validation";
 import { GenericTool, Value } from "./ToolContent";
+import { toolLabelClass } from "./toolStyles";
 
 /** 完了時の審査結果を優先し、実行中は入力側の審査情報を表示する。 */
 export function GuardianReview({ tool }: { tool: ToolSummary }) {
@@ -20,13 +21,17 @@ export function GuardianReview({ tool }: { tool: ToolSummary }) {
 	];
 	return (
 		<>
-			<dl className="guardian-fields">
+			<dl className="guardian-fields m-0">
 				{fields
-					.filter(([, value]) => value !== null && value !== undefined)
+					.filter(
+						([, value]) => value !== null && value !== undefined,
+					)
 					.map(([label, value]) => (
 						<div key={String(label)}>
-							<dt>{String(label)}</dt>
-							<dd>
+							<dt className="text-[11px] text-muted">
+								{String(label)}
+							</dt>
+							<dd className="m-0 mb-[10px]">
 								<Value value={value} />
 							</dd>
 						</div>
@@ -34,7 +39,7 @@ export function GuardianReview({ tool }: { tool: ToolSummary }) {
 			</dl>
 			{action !== undefined && (
 				<section>
-					<h3>対象操作</h3>
+					<h3 className={toolLabelClass}>対象操作</h3>
 					<Value value={action} />
 				</section>
 			)}

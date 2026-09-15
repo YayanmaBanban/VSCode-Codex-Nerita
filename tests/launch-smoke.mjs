@@ -2,6 +2,7 @@
 import { _electron as electron } from "playwright";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { checkLaunchWebview } from "./launch-webview-checks.mjs";
 const executablePath = process.env.VSCODE_EXECUTABLE;
 if (!executablePath) {
 	throw new Error("VSCODE_EXECUTABLE is required");
@@ -66,6 +67,7 @@ try {
 		.getByText("接続済み", { exact: true })
 		.waitFor({ timeout: 60000 });
 	await child.screenshot({ path: path.join(output, "connected.png") });
+	await checkLaunchWebview(chat, child, output);
 	console.log("F5 launch: workspace opened and ACP connection ready");
 } catch (error) {
 	for (const [index, page] of app.windows().entries()) {

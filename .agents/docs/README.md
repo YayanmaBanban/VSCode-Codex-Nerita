@@ -11,7 +11,7 @@
 | `.agents/skills/` | 明確な用途を持つ再利用可能な作業手順と補助資産 |
 | アプリやテストのREADME | 利用者向けの説明、集約したガイドへの入口 |
 
-既存のガイドは [配置](Directory-Structure.md)、[コード調査](Code-Review-Graph.md)、[UIレビュー](UI-Review-Guide.md) に分けています。
+既存のガイドは [配置](Directory-Structure.md)、[コード調査](Code-Review-Graph.md)、[UI実装](UI-Implementation.md)、[UIレビュー](UI-Review-Guide.md) に分けています。
 
 UIレビューの詳細もこのディレクトリ内にまとめています。
 

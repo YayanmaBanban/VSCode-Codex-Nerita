@@ -17,6 +17,7 @@ ReactのWebviewは `src/webview/`、Extension Hostの処理は `src/extension/`�
 | -------------------------------------------------------- | ----------------------------------------------------------- |
 | `src/webview/` のファイル追加・分割・移動・フォルダ整理  | [ディレクトリ構成](.agents/docs/Directory-Structure.md)     |
 | 複数ファイルの依存調査・構造変更・コードレビュー         | [コード調査・依存グラフ](.agents/docs/Code-Review-Graph.md) |
+| Webview UIの作成                                         | [UI実装](.agents/docs/UI-Implementation.md)                |
 | Webview UIの表示・操作・アニメーションの変更、UIレビュー | [UIレビュー](.agents/docs/UI-Review-Guide.md)               |
 
 対象が明確な局所修正や文書のみの変更では、無関係なガイドや全体の依存グラフを読み込む必要はありません。

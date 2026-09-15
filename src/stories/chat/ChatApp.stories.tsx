@@ -2,8 +2,8 @@
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
-import { ChatApp } from "./ChatApp";
-import { createMockBridge, type Scenario } from "./mockBridge";
+import { ChatApp } from "../../webview/chat/ChatApp";
+import { createMockBridge, type Scenario } from "./mocks/mockBridge";
 
 /** 各マウントで独立する Bridge を Story へ注入する。 */
 function ChatStory({ scenario }: { scenario: Scenario }) {

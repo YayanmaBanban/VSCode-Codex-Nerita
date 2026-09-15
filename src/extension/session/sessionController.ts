@@ -99,8 +99,27 @@ export class SessionController extends SessionRun {
 					item.canStop &&
 					taskActive(item),
 			);
-			if (!tool || !task || task.stopPending || !this.transport) {
+			if (!tool || !this.transport) {
 				throw new Error("Stale execution");
+			}
+			if (!task) {
+				// 個別停止できない場合に限り、このターン全体を停止する。
+				const known = this.state.asyncTasks.some(
+					(item) => item.toolCallId === tool.id,
+				);
+				if (
+					known ||
+					tool.runId !== this.state.runId ||
+					this.state.run !== "running" ||
+					!["pending", "in_progress"].includes(tool.status)
+				) {
+					throw new Error("Stale execution");
+				}
+				this.cancel();
+				return;
+			}
+			if (task.stopPending) {
+				throw new Error("Stop pending");
 			}
 			const transport = this.transport;
 			const epoch = this.epoch;

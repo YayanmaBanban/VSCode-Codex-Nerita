@@ -6,7 +6,7 @@ Webview UIの表示・操作・アニメーションを変更する場合、ま�
 
 ## 現在の構成
 
-- Story：`src/webview/**/*.stories.tsx`。対象Componentの隣で、実コンポーネントの観察開始状態を作る。
+- Story：`src/stories/**/*.stories.tsx`。実機側に対応する機能別の構成で、実コンポーネントの観察開始状態を作る。
 - シナリオ：`tests/e2e/ui-review/*.spec.ts`。対象固有の操作・状態待ち・assertionを記述する。
 - 撮影・エラー収集：対象spec内でPlaywrightのAPIを使用する。
 - 実行設定：`tests/e2e/config/ui-review.config.ts`。実行ブラウザやviewportは設定と対象specを確認する。

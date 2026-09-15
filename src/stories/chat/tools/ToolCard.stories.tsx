@@ -7,8 +7,8 @@ import {
 	type UiMessage,
 } from "../../../shared/messages";
 import type { AsyncTask } from "../../../shared/asyncTask";
-import { Activity } from "../Activity";
-import "../chat.css";
+import { Activity } from "../../../webview/chat/Activity";
+import "../../../webview/chat/chat.css";
 
 const initialTools: ToolSummary[] = [
 	{

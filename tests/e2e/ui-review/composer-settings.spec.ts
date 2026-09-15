@@ -28,7 +28,7 @@ for (const theme of ["dark", "light"] as const) {
 			await page
 				.locator(".settings-toolbar > *")
 				.evaluateAll((elements: Element[]) =>
-					elements.map((el) => el.getAttribute("class")),
+					elements.map((el) => el.classList.item(0)),
 				),
 		).toEqual([
 			"attach-button",

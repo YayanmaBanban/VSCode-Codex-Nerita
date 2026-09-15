@@ -4,7 +4,7 @@ import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { ChatMessage, ToolSummary } from "../../shared/messages";
 import { MessageText } from "./MessageText";
 import { TextType } from "./TextType";
-import "./messages.css";
+import { iconButtonClass, messageFocusClass } from "./messageStyles";
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
 export function Messages({
@@ -82,7 +82,7 @@ export function Messages({
 		const replyPending = user && nextUser === -1 && busy;
 		return (
 			<article
-				className={`message ${message.role}`}
+				className={`message ${message.role} mb-[24px] min-w-0 rounded-[9px] border border-solid p-[14px] ${messageFocusClass} ${user ? "bg-message-user border-message-border" : "bg-message-assistant border-message-assistant-border"}`}
 				key={message.id}
 				tabIndex={-1}
 				ref={(element) => {
@@ -93,7 +93,7 @@ export function Messages({
 					}
 				}}
 			>
-				<div className="message-text">
+				<div className="message-text whitespace-pre-wrap leading-[1.85] [overflow-wrap:anywhere]">
 					{user ? (
 						<MessageText text={message.text} />
 					) : (
@@ -104,7 +104,7 @@ export function Messages({
 					)}
 				</div>
 				<div
-					className="message-actions"
+					className={`message-actions mt-[10px] flex justify-end gap-[6px] ${messageFocusClass}`}
 					tabIndex={-1}
 					ref={(element) => {
 						if (element) {
@@ -117,7 +117,7 @@ export function Messages({
 					{!user && (
 						<button
 							type="button"
-							className="icon-button"
+							className={`${iconButtonClass} bg-[#416482]`}
 							aria-label="回答をコピー"
 							title="回答をコピー"
 							onClick={() => void copy(message)}
@@ -127,7 +127,7 @@ export function Messages({
 					)}
 					<button
 						type="button"
-						className="icon-button"
+						className={`${iconButtonClass} bg-[#416482]`}
 						aria-label={
 							user ? "回答の末尾へ移動" : "送信メッセージへ移動"
 						}
@@ -149,7 +149,10 @@ export function Messages({
 					</button>
 				</div>
 				{copyStatus?.id === message.id && (
-					<span role="status" className="muted">
+					<span
+						role="status"
+						className="muted text-[11px] text-muted"
+					>
 						{copyStatus.text}
 					</span>
 				)}

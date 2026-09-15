@@ -1,5 +1,6 @@
 ﻿// Extension Host とブラウザを個別にバンドルし、実行依存を同梱する。
 const esbuild = require("esbuild");
+const { tailwindPlugin } = require("./config/tailwind-esbuild.cjs");
 const { packageRuntime } = require("./config/package-runtime.cjs");
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
@@ -24,6 +25,7 @@ async function main() {
 	const webview = await esbuild.context({
 		...common,
 		entryPoints: ["src/webview/index.tsx"],
+		plugins: [tailwindPlugin()],
 		format: "iife",
 		platform: "browser",
 		target: "es2022",

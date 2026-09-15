@@ -16,7 +16,6 @@ import { isRecord } from "../../../shared/validation";
 import { taskActive, type AsyncTask } from "../../../shared/asyncTask";
 import { GuardianReview } from "./GuardianReview";
 import { EditingFiles, ExecuteTool, GenericTool } from "./ToolContent";
-import "./tools.css";
 import "../loaders.css";
 
 // 専用表示を追加するときは、ここへタイトルとアイコン・本文を登録する。
@@ -32,10 +31,12 @@ const renderers = [
 export function ToolCard({
 	tool,
 	task,
+	cancelTurn = false,
 	onStop,
 }: {
 	tool: ToolSummary;
 	task?: AsyncTask | undefined;
+	cancelTurn?: boolean;
 	onStop?: (() => void) | undefined;
 }) {
 	const bodyId = useId();
@@ -81,21 +82,28 @@ export function ToolCard({
 						titles.includes(tool.title.trim().toLowerCase()),
 					) ?? { Icon: Wrench, Body: GenericTool });
 	return (
-		<div className="tool-card" data-status={status} data-kind={tool.kind}>
+		<div
+			className="tool-card my-[8px] overflow-hidden rounded-[6px] border border-solid border-panel-border"
+			data-status={status}
+			data-kind={tool.kind}
+		>
 			{cwd && (
-				<div className="tool-cwd" title={cwd}>
+				<div
+					className="tool-cwd px-[10px] pt-[8px] text-[10px] text-muted [overflow-wrap:anywhere]"
+					title={cwd}
+				>
 					{cwd}
 				</div>
 			)}
-			<div className="tool-header">
+			<div className="tool-header relative flex items-center">
 				<button
-					className="tool-heading"
+					className="tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent p-[10px] text-left focus-visible:outline-offset-[-3px] [&_svg]:shrink-0"
 					aria-expanded={state.open}
 					aria-controls={bodyId}
 					onClick={() => setState({ status, open: !state.open })}
 				>
 					<Icon size={16} aria-hidden="true" />
-					<span className="tool-title">
+					<span className="tool-title min-w-0 flex-1 [overflow-wrap:anywhere]">
 						{executing ? command : tool.title}
 					</span>
 					{executing && active && (
@@ -107,29 +115,35 @@ export function ToolCard({
 						/>
 					)}
 					{!executing && active && (
-						<span className="tool-status">
+						<span className="tool-status text-[11px] whitespace-nowrap text-muted">
 							{tool.status === "pending" ? "待機中" : "実行中"}
 						</span>
 					)}
 					<ChevronDown
 						size={14}
-						className="tool-chevron"
+						className={`tool-chevron group-aria-[expanded=false]:-rotate-90 ${status === "failed" || (executing && active) ? "ml-[26px]" : ""}`}
 						aria-hidden="true"
 					/>
 				</button>
 				{status === "failed" && (
-					<span className="tool-result" role="img" aria-label="失敗">
+					<span
+						className="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
+						role="img"
+						aria-label="失敗"
+					>
 						<X size={16} aria-hidden="true" />
 					</span>
 				)}
 				{executing && active && (
 					<button
 						type="button"
-						className="tool-stop"
+						className="tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 p-0 text-tool-error enabled:hover:bg-tool-error/12"
 						aria-label={`${tool.title} を停止`}
 						title={
 							onStop
-								? "コマンドを停止"
+								? cancelTurn
+									? "現在のAI処理全体を停止"
+									: "コマンドを停止"
 								: task?.stopPending
 									? "停止を待っています"
 									: "個別停止できるバックグラウンドタスクはありません"
@@ -145,7 +159,11 @@ export function ToolCard({
 					</button>
 				)}
 			</div>
-			<div id={bodyId} className="tool-body" hidden={!state.open}>
+			<div
+				id={bodyId}
+				className="tool-body border-0 border-t border-solid border-panel-border p-[12px] [&_section+section]:mt-[14px]"
+				hidden={!state.open}
+			>
 				{state.open && <Body tool={tool} />}
 			</div>
 		</div>

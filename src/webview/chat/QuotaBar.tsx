@@ -27,7 +27,7 @@ export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
 			}
 		>
 			<span
-				className="quota-bar"
+				className="quota-bar inline-flex h-[24px] w-[76px] items-center rounded-[4px] hover:brightness-[1.12] focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-quota-focus focus-visible:outline-offset-2"
 				role="progressbar"
 				aria-label="利用枠の残量"
 				aria-valuemin={0}
@@ -36,9 +36,12 @@ export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
 				aria-valuetext={`残り ${remaining}%`}
 				tabIndex={0}
 			>
-				<span className="quota-track" aria-hidden="true">
+				<span
+					className="quota-track h-[9px] w-full overflow-hidden rounded-[5px] bg-quota-track"
+					aria-hidden="true"
+				>
 					<span
-						className="quota-fill"
+						className="quota-fill relative block h-full overflow-hidden rounded-[inherit] bg-[#58bafa]"
 						style={{ width: `${remaining}%` }}
 					>
 						<svg

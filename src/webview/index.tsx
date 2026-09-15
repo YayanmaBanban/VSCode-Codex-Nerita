@@ -2,6 +2,7 @@
 import { createRoot } from "react-dom/client";
 import { createVsCodeBridge } from "./vscodeBridge";
 import { ChatApp } from "./chat/ChatApp";
+import "./chat/tailwind.css";
 const root = document.getElementById("root");
 if (root) {
 	createRoot(root).render(<ChatApp bridge={createVsCodeBridge()} />);

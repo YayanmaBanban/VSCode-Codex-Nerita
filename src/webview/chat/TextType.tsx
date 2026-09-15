@@ -89,7 +89,7 @@ export function TextType({
 			<div aria-hidden="true">
 				<MessageText text={visible} />
 				{showCursor && !reducedMotion && (
-					<span ref={cursor} className="text-type-cursor">
+					<span ref={cursor} className="text-type-cursor ml-[2px]">
 						|
 					</span>
 				)}

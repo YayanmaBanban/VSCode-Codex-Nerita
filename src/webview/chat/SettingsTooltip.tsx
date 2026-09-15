@@ -1,7 +1,6 @@
 // 設定項目と使用量に共通の、画面端を避けるツールチップを表示する。
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useRef, type ReactElement, type ReactNode } from "react";
-import "./settingsPopup.css";
 
 /** ホバーとフォーカスで説明を表示し、既存要素の操作と役割を維持する。 */
 export function SettingsTooltip({
@@ -38,9 +37,12 @@ export function SettingsTooltip({
 					side="top"
 					sideOffset={8}
 					collisionPadding={12}
-					className="settings-tooltip-positioner"
+					className="settings-tooltip-positioner z-30"
 				>
-					<Tooltip.Popup className="settings-tooltip" role="tooltip">
+					<Tooltip.Popup
+						className="settings-tooltip max-w-[min(280px,calc(100vw-24px))] rounded-[6px] border border-solid border-tooltip-border bg-tooltip px-[12px] py-[9px] text-[12px] leading-[1.5] text-tooltip-text [overflow-wrap:anywhere] shadow-[0_4px_16px_#0003] [&_hr]:mx-0 [&_hr]:my-[6px] [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-solid [&_hr]:border-tooltip-divider"
+						role="tooltip"
+					>
 						{content}
 					</Tooltip.Popup>
 				</Tooltip.Positioner>

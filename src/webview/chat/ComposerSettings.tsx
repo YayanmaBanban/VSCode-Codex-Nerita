@@ -6,7 +6,6 @@ import { ContextUsage } from "./ContextUsage";
 import { QuotaBar } from "./QuotaBar";
 import { ConfigControl, FastModeSwitch } from "./ConfigControl";
 import { Attachments } from "./Attachments";
-import "./settings.css";
 
 const order = [
 	"mode",
@@ -59,7 +58,7 @@ export function ComposerSettings({
 		}
 	};
 	return (
-		<div className="composer-settings">
+		<div className="composer-settings mt-[10px] border-0 border-t border-solid border-panel-border pt-[8px]">
 			<Attachments
 				files={state.attachments}
 				disabled={!connected}
@@ -80,10 +79,13 @@ export function ComposerSettings({
 					})
 				}
 			/>
-			<div className="settings-toolbar" aria-label="モデル設定">
+			<div
+				className="settings-toolbar flex flex-wrap items-center gap-x-[6px] gap-y-[4px]"
+				aria-label="モデル設定"
+			>
 				<button
 					type="button"
-					className="attach-button"
+					className="attach-button flex border-0 bg-transparent p-[5px]"
 					aria-label="ファイルを添付"
 					title="ファイルを添付"
 					disabled={!connected || state.attachmentPending}
@@ -103,7 +105,10 @@ export function ComposerSettings({
 				/>
 				{options.map((option) =>
 					option.id === "fast-mode" ? (
-						<span className="fast-mode-quota" key={option.id}>
+						<span
+							className="fast-mode-quota inline-flex items-center gap-[8px]"
+							key={option.id}
+						>
 							<FastModeSwitch
 								option={option}
 								disabled={disabled}

@@ -70,25 +70,33 @@ export function Attachments({
 		return null;
 	}
 	return (
-		<div className="attachments" aria-label="添付ファイル">
+		<div
+			className="attachments mb-[8px] flex flex-wrap gap-[6px]"
+			aria-label="添付ファイル"
+		>
 			{files.map((file) => {
 				const Icon = fileIcon(file.name);
 				return (
-					<span className="attachment" key={file.id}>
+					<span
+						className="attachment inline-flex max-w-full rounded-[5px] border border-solid border-panel-border [&_svg]:shrink-0"
+						key={file.id}
+					>
 						<button
 							type="button"
 							disabled={disabled}
 							title={file.uri}
 							aria-label={`${file.name} を開く`}
+							className="inline-flex min-w-0 flex-1 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[11px]"
 							onClick={() => onOpen(file.id)}
 						>
 							<Icon size={14} aria-hidden="true" />
-							<span>{file.name}</span>
+							<span className="truncate">{file.name}</span>
 						</button>
 						<button
 							type="button"
 							disabled={disabled}
 							aria-label={`${file.name} を取り外す`}
+							className="inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[11px]"
 							onClick={() => onRemove(file.id)}
 						>
 							<X size={12} aria-hidden="true" />

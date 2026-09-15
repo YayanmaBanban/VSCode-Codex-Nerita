@@ -14,7 +14,7 @@ test("受信順のカードを次の送信後も保持する", async ({ page }, 
 	const entries = page.locator(".message, .tool-card");
 	await expect(entries).toHaveCount(4);
 	await expect(entries.nth(1)).toContainText("テストを実行します。");
-	await expect(entries.nth(2)).toHaveClass("tool-card");
+	await expect(entries.nth(2)).toHaveClass(/(^|\s)tool-card(\s|$)/);
 	await expect(entries.nth(3)).toContainText("テストが成功しました。");
 	await page
 		.getByRole("button", { name: "pnpm.cmd test", exact: true })
@@ -27,7 +27,7 @@ test("受信順のカードを次の送信後も保持する", async ({ page }, 
 		.fill("続けてください");
 	await page.getByRole("button", { name: "送信", exact: true }).click();
 	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
-	await expect(entries.nth(2)).toHaveClass("tool-card");
+	await expect(entries.nth(2)).toHaveClass(/(^|\s)tool-card(\s|$)/);
 	await expect(entries.nth(4)).toContainText("続けてください");
 	await expect(page.locator(".tool-body")).toBeVisible();
 	await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 320);

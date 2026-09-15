@@ -1,0 +1,9 @@
+{
+	// Story 専用コードと共有フィクスチャを、本体から独立して型検査する。
+	"extends": "../webview/tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "../.."
+	},
+	"include": ["**/*.ts", "**/*.tsx", "../../tests/fixtures/**/*.ts"],
+	"exclude": []
+}

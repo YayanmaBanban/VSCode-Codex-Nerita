@@ -51,16 +51,11 @@ export class SessionRun extends SessionOptions {
 			const cancelled =
 				this.state.run === "cancelling" ||
 				result.stopReason === "cancelled";
-			this.patch({ run: cancelled ? "cancelled" : "completed" });
-			// ACP通知には実行IDがないため、停止後は接続を破棄して遅延通知の混入を防ぐ。
-			if (cancelled) {
-				this.disconnect();
-				this.patch({
-					connection: "disconnected",
-					sessionId: null,
-					permissions: [],
-				});
-			}
+			// 停止完了はターンの終了。接続・セッション・履歴は次の送信にも使用する。
+			this.patch({
+				run: cancelled ? "cancelled" : "completed",
+				permissions: [],
+			});
 		} catch (error) {
 			if (epoch === this.epoch) {
 				if (this.state.run === "cancelling") {

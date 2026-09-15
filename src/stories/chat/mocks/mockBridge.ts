@@ -4,9 +4,9 @@ import {
 	type ChatState,
 	type HostMessage,
 	type UiMessage,
-} from "../../shared/messages";
-import type { Bridge } from "../vscodeBridge";
-import { settingsFixture } from "./settingsFixture";
+} from "../../../shared/messages";
+import type { Bridge } from "../../../webview/vscodeBridge";
+import { settingsFixture } from "../../../../tests/fixtures/settingsFixture";
 import { mockSettings } from "./mockSettings";
 
 /** Story の開始状態。 */
@@ -86,8 +86,6 @@ function scenarioState(scenario: Scenario): ChatState {
 	}
 	if (scenario === "cancelled") {
 		state.run = "cancelled";
-		state.connection = "disconnected";
-		state.sessionId = null;
 	}
 	return state;
 }
@@ -213,8 +211,6 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 					clear();
 					patch({
 						run: "cancelled",
-						connection: "disconnected",
-						sessionId: null,
 						permissions: [],
 					});
 					break;

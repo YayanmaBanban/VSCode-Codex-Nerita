@@ -4,7 +4,7 @@
 
 ## 配置の判断
 
-同じ機能に属し、同じ理由で変更されるComponent・Hook・API・型・CSS・Storyを近くに置きます。既存の機能に属するコードはその配下へ追加してください。
+同じ機能に属する実機用のComponent・Hook・API・型・CSSを近くに置きます。Storybook専用コードは `src/stories/` に分離し、実機側に対応する機能別の構成にします。
 
 | 役割 | 配置 |
 | --- | --- |
@@ -32,6 +32,10 @@ Webview側から `src/extension/` やVS Code API・Node.js専用モジュール�
 
 ## Story・テストと移動時の確認
 
-Story・Component単位のテスト・固有のCSSは対象Componentの近くに配置できます。既存の結合テスト・E2Eはルートの `tests/` の運用に合わせます。
+Storyは `src/stories/chat/`、ツールカードのStoryは `src/stories/chat/tools/` に置きます。Story専用のBridge・応答モックは `src/stories/chat/mocks/`、Storyと単体テストで共有するサンプルデータは `tests/fixtures/` に置きます。
+
+実際のUIコンポーネントは `src/webview/` に置き、Story側からimportします。実機用コードからStory・モック・テストフィクスチャをimportしません。結合テスト・E2Eは引き続きルートの `tests/` に置きます。
+
+Storyの型検査は `src/stories/tsconfig.json`、Story専用のTailwindクラスの収集は `config/storybook/tailwind.css` が担当します。本体のTailwind走査対象へStoryを追加しません。
 
 移動時はimport・再export・CSSだけでなく、拡張機能URIを基準にした資産パス、esbuild・Storybook・テストの検出設定、スクリプト・文書の旧パスも更新してください。変更の影響に応じて型チェック・ビルド・関連テストで参照切れを確認します。

@@ -1,5 +1,5 @@
 // Story と回帰テスト用に、接続応答と同じ構造の設定例を定義する。
-import type { ConfigOption } from "../../shared/composer";
+import type { ConfigOption } from "../../src/shared/composer";
 
 /** 表示名と送信値が異なる設定候補を作る。 */
 export function settingsFixture(): ConfigOption[] {

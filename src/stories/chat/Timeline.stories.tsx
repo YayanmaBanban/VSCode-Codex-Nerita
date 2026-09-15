@@ -1,8 +1,8 @@
 // ツールを挟む会話と次の送信後の履歴を実画面で確認する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "./ChatApp";
-import { createMockBridge } from "./mockBridge";
+import { ChatApp } from "../../webview/chat/ChatApp";
+import { createMockBridge } from "./mocks/mockBridge";
 
 /** 受信順を持つ完了済み会話を作る。 */
 function TimelineStory() {

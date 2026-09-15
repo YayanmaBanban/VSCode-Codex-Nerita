@@ -1,0 +1,95 @@
+/* Preflight は読み込まず、既存のリセットと VS Code テーマを維持する。 */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "../";
+
+/* 実行時に変わる VS Code の色変数を各ユーティリティから参照する。 */
+@theme inline {
+	--color-muted: var(--vscode-descriptionForeground, #a6afb8);
+	--color-input: var(--vscode-input-background, #22272e);
+	--color-input-text: var(--vscode-input-foreground, #e1e7ec);
+	--color-input-border: var(--vscode-input-border, #46515c);
+	--color-input-placeholder: var(
+		--vscode-input-placeholderForeground,
+		#a0a9b3
+	);
+	--color-panel-border: var(--vscode-panel-border, #39424a);
+	--color-tool-error: var(--vscode-errorForeground, #e28d8d);
+	--color-diff-added: var(
+		--vscode-diffEditor-insertedLineBackground,
+		#3fb95026
+	);
+	--color-diff-removed: var(
+		--vscode-diffEditor-removedLineBackground,
+		#f8514926
+	);
+	--color-diff-hunk: var(--vscode-textCodeBlock-background, #80808018);
+	--font-editor: var(--vscode-editor-font-family, monospace);
+	--color-foreground: var(--vscode-foreground, #dfe4e9);
+	--color-warning: var(--vscode-editorWarning-foreground, #c99e39);
+	--color-switch-off: var(--vscode-panel-border, #46515c);
+	--color-switch-on: var(--vscode-button-background, #527e70);
+	--color-settings-focus: var(--vscode-focusBorder, #8cbeb0);
+	--color-focus: var(--vscode-focusBorder, #6dadc9);
+	--color-settings-hover: color-mix(
+		in srgb,
+		var(--vscode-input-background, light-dark(#fff, #22272e)) 88%,
+		white
+	);
+	--color-menu-border: var(
+		--vscode-widget-border,
+		light-dark(#cbd3da, #46515c)
+	);
+	--color-menu: var(
+		--vscode-dropdown-background,
+		light-dark(#f1f4f6, #242a31)
+	);
+	--color-menu-text: var(
+		--vscode-dropdown-foreground,
+		light-dark(#263340, #dfe4e9)
+	);
+	--color-menu-hover: color-mix(
+		in srgb,
+		var(--vscode-dropdown-background, light-dark(#f1f4f6, #242a31)) 86%,
+		white
+	);
+	--color-menu-check: var(--vscode-testing-iconPassed, #48a976);
+	--color-tooltip: var(
+		--vscode-editorHoverWidget-background,
+		light-dark(#ffffff, #303740)
+	);
+	--color-tooltip-text: var(
+		--vscode-editorHoverWidget-foreground,
+		light-dark(#263340, #dfe4e9)
+	);
+	--color-tooltip-border: var(
+		--vscode-editorHoverWidget-border,
+		light-dark(#cbd3da, #46515c)
+	);
+	--color-tooltip-divider: var(
+		--vscode-panel-border,
+		light-dark(#cbd3da, #59616b)
+	);
+	--color-message-user: var(--vscode-editor-background, #20252b);
+	--color-message-border: var(--vscode-panel-border, #30363d);
+	--color-message-assistant: color-mix(
+		in srgb,
+		#75b9ef 18%,
+		var(--vscode-editor-background, #20252b)
+	);
+	--color-message-assistant-border: color-mix(
+		in srgb,
+		#75b9ef 32%,
+		var(--vscode-panel-border, #30363d)
+	);
+	--color-message-code: var(--vscode-textCodeBlock-background, #292f35);
+	--color-alert-border: var(--vscode-inputValidation-warningBorder, #8f7544);
+	--color-alert: var(--vscode-inputValidation-warningBackground, #302a20);
+	--color-primary: var(--vscode-button-background, #b1d7cb);
+	--color-primary-text: var(--vscode-button-foreground, #162c26);
+	--color-link: var(--vscode-textLink-foreground, #93c9df);
+	--color-empty-border: var(--vscode-panel-border, #38434a);
+	--color-quota-track: light-dark(#d9eaf4, #243d50);
+	--color-quota-focus: var(--vscode-focusBorder, #58bafa);
+}

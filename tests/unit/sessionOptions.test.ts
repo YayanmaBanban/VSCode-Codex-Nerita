@@ -1,7 +1,7 @@
 // 設定の初期値・更新・世代境界と、添付の送信経路を検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { fixture, deferred } from "./fakeTransport";
-import { settingsFixture } from "../../src/webview/chat/settingsFixture";
+import { settingsFixture } from "../fixtures/settingsFixture";
 import type { SetSessionConfigOptionResponse } from "@agentclientprotocol/sdk";
 
 const fixtures: ReturnType<typeof fixture>[] = [];

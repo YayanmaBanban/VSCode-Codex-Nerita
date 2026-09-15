@@ -19,7 +19,7 @@ export function ConfigControl({
 		(choice) => choice.value === option.currentValue,
 	);
 	return (
-		<div className="config-control">
+		<div className="config-control relative inline-flex min-w-0 max-w-full text-muted">
 			{/* Webview の CSP に合わせ、スタイルは同梱 CSS から適用する。 */}
 			<CSPProvider disableStyleElements>
 				<Select.Root
@@ -35,10 +35,12 @@ export function ConfigControl({
 						content={current?.description ?? option.description}
 					>
 						<Select.Trigger
-							className="config-trigger"
+							className="config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] border-0 bg-transparent px-[5px] py-[6px] text-[11px] text-ellipsis text-inherit enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-settings-focus focus-visible:outline-offset-1 [&_svg]:shrink-0"
 							aria-label={option.name}
 						>
-							<span>{current?.name ?? option.name}</span>
+							<span className="truncate">
+								{current?.name ?? option.name}
+							</span>
 							<ChevronDown size={12} aria-hidden="true" />
 						</Select.Trigger>
 					</SettingsTooltip>
@@ -49,13 +51,13 @@ export function ConfigControl({
 							sideOffset={6}
 							alignItemWithTrigger={false}
 							collisionPadding={12}
-							className="config-positioner"
+							className="config-positioner z-20"
 						>
 							<Select.Popup
-								className="config-popup"
+								className="config-popup w-[min(280px,calc(100vw-24px))] max-h-[min(340px,var(--available-height))] overflow-hidden rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003]"
 								aria-label={option.name}
 							>
-								<Select.List className="config-list">
+								<Select.List className="config-list max-h-[inherit] scroll-p-[5px] overflow-y-auto p-[5px]">
 									{option.options.map((choice) => (
 										<SettingsTooltip
 											key={choice.value}
@@ -65,12 +67,12 @@ export function ConfigControl({
 											<Select.Item
 												value={choice.value}
 												label={choice.name}
-												className="config-item"
+												className="config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px] px-[10px] py-[8px] text-[12px] leading-[1.5] [overflow-wrap:anywhere] [outline:none] hover:bg-menu-hover data-highlighted:bg-menu-hover"
 											>
 												<Select.ItemText>
 													{choice.name}
 												</Select.ItemText>
-												<Select.ItemIndicator className="config-check">
+												<Select.ItemIndicator className="config-check inline-flex flex-[0_0_15px] text-menu-check">
 													<Check
 														size={15}
 														aria-hidden="true"
@@ -105,11 +107,12 @@ export function FastModeSwitch({
 	);
 	return (
 		<SettingsTooltip content={current?.description ?? option.description}>
-			<label className="fast-mode">
+			<label className="fast-mode inline-flex items-center gap-[5px] px-[5px] text-[11px] text-muted">
 				<span>{option.name}</span>
 				<button
 					type="button"
 					role="switch"
+					className="group h-[15px] w-[26px] rounded-[12px] border-0 bg-switch-off p-[2px] aria-checked:bg-switch-on"
 					aria-label={option.name}
 					aria-checked={checked}
 					disabled={
@@ -122,9 +125,11 @@ export function FastModeSwitch({
 					}
 					onClick={() => onChange(checked ? "off" : "on")}
 				>
-					<span />
+					<span className="block size-[11px] rounded-full bg-foreground group-aria-checked:translate-x-[11px]" />
 				</button>
-				<span className="fast-value">{current?.name ?? "—"}</span>
+				<span className="fast-value min-w-[18px] text-[10px]">
+					{current?.name ?? "—"}
+				</span>
 			</label>
 		</SettingsTooltip>
 	);
