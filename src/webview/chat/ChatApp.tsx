@@ -10,6 +10,8 @@ import { CubeLoader } from "./CubeLoader";
 import { ComposerSettings } from "./ComposerSettings";
 import { iconButtonClass } from "./messageStyles";
 import "./chat.css";
+import { SessionPanel } from "./sessions/SessionPanel";
+import { useSessionPanel } from "./sessions/useSessionPanel";
 
 const runLabels = {
 	idle: "",
@@ -23,6 +25,7 @@ const runLabels = {
 export function ChatApp({ bridge }: { bridge: Bridge }) {
 	const { state, requestError, send } = useChat(bridge);
 	const [draft, setDraft] = useState("");
+	const sessionPanel = useSessionPanel(send);
 	const [submitted, setSubmitted] = useState(false);
 	const composing = useRef(false);
 	const bottom = useRef<HTMLDivElement>(null);
@@ -31,6 +34,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		state.connection === "ready" &&
 		!busy &&
 		!submitted &&
+		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending;
 	useEffect(() => {
@@ -54,148 +58,171 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		setDraft("");
 	};
 	return (
-		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1000px] flex-col">
+		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
 			<ConnectionHeader
 				state={state}
 				requestError={requestError}
 				available={available}
 				send={send}
+				sessionsOpen={sessionPanel.open}
+				onToggleSessions={sessionPanel.toggle}
 			/>
-			<section
-				className="conversation min-h-0 flex-1 overflow-y-auto px-[20px] py-[22px] [scrollbar-width:thin]"
-				aria-label="会話"
-			>
-				{state.messages.length === 0 && (
-					<div className="empty-state px-0 pt-[10vh] pb-[30px] text-center">
-						<div
-							className="empty-mark mb-[12px] inline-grid size-[42px] place-items-center rounded-[12px] border border-solid border-empty-border text-[24px] text-[#94cbbb]"
-							aria-hidden="true"
-						>
-							⌘
-						</div>
-						<h2 className="text-[20px] tracking-[0.02em]">
-							ここから、一緒に。
-						</h2>
-						<p className="leading-[1.9] text-muted">
-							コードについて質問したり、
-							<br />
-							取り組みたい変更を伝えてください。
-						</p>
-						<span className="empty-hint mt-[26px] inline-block text-[10px] text-muted">
-							このワークスペースで作業します
-						</span>
-					</div>
-				)}
+			<div className="relative flex min-h-0 flex-1">
 				<div
-					role="log"
-					aria-label="メッセージ"
-					aria-live="polite"
-					aria-relevant="additions text"
+					className="flex min-w-0 flex-1 flex-col"
+					inert={sessionPanel.open && sessionPanel.compact}
 				>
-					<Messages
-						messages={state.messages}
-						busy={busy}
-						tools={state.tools}
-						renderTool={(tool) => (
-							<Activity
-								key={String(tool.runId) + tool.id}
-								state={{
-									...state,
-									tools: [tool],
-									permissions: [],
-								}}
-								send={send}
-							/>
-						)}
-					/>
-				</div>
-				<Activity state={{ ...state, tools: [] }} send={send} />
-				{state.run === "running" && <CubeLoader />}
-				{runLabels[state.run] && (
-					<p
-						className="run-status text-[11px] text-muted"
-						role="status"
+					<section
+						className="conversation min-h-0 flex-1 overflow-y-auto px-[20px] py-[22px] [scrollbar-width:thin]"
+						aria-label="会話"
 					>
-						{runLabels[state.run]}
-					</p>
-				)}
-				<div ref={bottom} />
-			</section>
-			<form
-				className="composer mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px]"
-				onSubmit={(event) => {
-					event.preventDefault();
-					submit();
-				}}
-			>
-				<label className="sr-only" htmlFor="prompt">
-					Codexへのメッセージ
-				</label>
-				<textarea
-					className="w-full min-h-[65px] max-h-[240px] resize-y border-0 bg-transparent text-input-text leading-[1.7] placeholder:text-input-placeholder"
-					id="prompt"
-					value={draft}
-					placeholder="Codexに依頼する…"
-					maxLength={100_000}
-					rows={3}
-					onChange={(event) => setDraft(event.target.value)}
-					onCompositionStart={() => {
-						composing.current = true;
-					}}
-					onCompositionEnd={() => {
-						composing.current = false;
-					}}
-					onKeyDown={(event) => {
-						if (
-							event.key === "Enter" &&
-							!event.shiftKey &&
-							!event.nativeEvent.isComposing &&
-							!composing.current &&
-							event.keyCode !== 229
-						) {
+						{state.messages.length === 0 && (
+							<div className="empty-state px-0 pt-[10vh] pb-[30px] text-center">
+								<div
+									className="empty-mark mb-[12px] inline-grid size-[42px] place-items-center rounded-[12px] border border-solid border-empty-border text-[24px] text-[#94cbbb]"
+									aria-hidden="true"
+								>
+									⌘
+								</div>
+								<h2 className="text-[20px] tracking-[0.02em]">
+									ここから、一緒に。
+								</h2>
+								<p className="leading-[1.9] text-muted">
+									コードについて質問したり、
+									<br />
+									取り組みたい変更を伝えてください。
+								</p>
+								<span className="empty-hint mt-[26px] inline-block text-[10px] text-muted">
+									このワークスペースで作業します
+								</span>
+							</div>
+						)}
+						<div
+							role="log"
+							aria-label="メッセージ"
+							aria-live="polite"
+							aria-relevant="additions text"
+						>
+							<Messages
+								messages={state.messages}
+								busy={busy}
+								tools={state.tools}
+								renderTool={(tool) => (
+									<Activity
+										key={String(tool.runId) + tool.id}
+										state={{
+											...state,
+											tools: [tool],
+											permissions: [],
+										}}
+										send={send}
+									/>
+								)}
+							/>
+						</div>
+						<Activity state={{ ...state, tools: [] }} send={send} />
+						{state.run === "running" && <CubeLoader />}
+						{runLabels[state.run] && (
+							<p
+								className="run-status text-[11px] text-muted"
+								role="status"
+							>
+								{runLabels[state.run]}
+							</p>
+						)}
+						<div ref={bottom} />
+					</section>
+					<form
+						className="composer mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px]"
+						onSubmit={(event) => {
 							event.preventDefault();
 							submit();
-						}
-					}}
-				/>
-				<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
-					<span className="text-[9px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]">
-						Enter で送信 · Shift+Enter で改行
-					</span>
-					{busy ? (
-						<button
-							type="button"
-							className={`${iconButtonClass} stop-button bg-[#bd3948]`}
-							aria-label="停止"
-							title="停止"
-							disabled={state.run === "cancelling"}
-							onClick={() => {
-								if (state.sessionId && state.runId) {
-									send({
-										type: "prompt/cancel",
-										requestId: crypto.randomUUID(),
-										sessionId: state.sessionId,
-										runId: state.runId,
-									});
+						}}
+					>
+						<label className="sr-only" htmlFor="prompt">
+							Codexへのメッセージ
+						</label>
+						<textarea
+							className="w-full min-h-[65px] max-h-[240px] resize-y border-0 bg-transparent text-input-text leading-[1.7] placeholder:text-input-placeholder"
+							id="prompt"
+							value={draft}
+							placeholder="Codexに依頼する…"
+							maxLength={100_000}
+							rows={3}
+							onChange={(event) => setDraft(event.target.value)}
+							onCompositionStart={() => {
+								composing.current = true;
+							}}
+							onCompositionEnd={() => {
+								composing.current = false;
+							}}
+							onKeyDown={(event) => {
+								if (
+									event.key === "Enter" &&
+									!event.shiftKey &&
+									!event.nativeEvent.isComposing &&
+									!composing.current &&
+									event.keyCode !== 229
+								) {
+									event.preventDefault();
+									submit();
 								}
 							}}
-						>
-							<SquareStop size={18} aria-hidden="true" />
-						</button>
-					) : (
-						<button
-							type="submit"
-							className={`${iconButtonClass} send-button bg-[#2563b8]`}
-							aria-label="送信"
-							title="送信"
-							disabled={!available || !draft.trim()}
-						>
-							<SendHorizontal size={18} aria-hidden="true" />
-						</button>
-					)}
+						/>
+						<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
+							<span className="text-[9px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]">
+								Enter で送信 · Shift+Enter で改行
+							</span>
+							{busy ? (
+								<button
+									type="button"
+									className={`${iconButtonClass} stop-button bg-[#bd3948]`}
+									aria-label="停止"
+									title="停止"
+									disabled={state.run === "cancelling"}
+									onClick={() => {
+										if (state.sessionId && state.runId) {
+											send({
+												type: "prompt/cancel",
+												requestId: crypto.randomUUID(),
+												sessionId: state.sessionId,
+												runId: state.runId,
+											});
+										}
+									}}
+								>
+									<SquareStop size={18} aria-hidden="true" />
+								</button>
+							) : (
+								<button
+									type="submit"
+									className={`${iconButtonClass} send-button bg-[#2563b8]`}
+									aria-label="送信"
+									title="送信"
+									disabled={
+										!available ||
+										!state.sessionId ||
+										!draft.trim()
+									}
+								>
+									<SendHorizontal
+										size={18}
+										aria-hidden="true"
+									/>
+								</button>
+							)}
+						</div>
+						<ComposerSettings state={state} send={send} />
+					</form>
 				</div>
-				<ComposerSettings state={state} send={send} />
-			</form>
+				{sessionPanel.open && (
+					<SessionPanel
+						state={state}
+						send={send}
+						onClose={sessionPanel.close}
+					/>
+				)}
+			</div>
 		</main>
 	);
 }

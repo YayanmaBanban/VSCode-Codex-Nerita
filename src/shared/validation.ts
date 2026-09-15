@@ -24,7 +24,12 @@ export function isUiMessage(value: unknown): value is UiMessage {
 	switch (value.type) {
 		case "connection/retry":
 		case "session/new":
+		case "session/list":
 			return true;
+		case "session/load":
+		case "session/fork":
+		case "session/delete":
+			return isId(value.sessionId);
 		case "auth/start":
 			return isId(value.methodId);
 		case "config/set":
@@ -75,6 +80,30 @@ function every(
 /** 状態プロパティを項目ごとに検証する。 */
 function validField(key: string, value: unknown): boolean {
 	switch (key) {
+		case "cwd":
+		case "sessionsError":
+			return value === null || typeof value === "string";
+		case "sessionsLoading":
+		case "sessionPending":
+			return typeof value === "boolean";
+		case "sessionCapabilities":
+			return (
+				isRecord(value) &&
+				["list", "load", "fork", "delete"].every(
+					(key) => typeof value[key] === "boolean",
+				)
+			);
+		case "sessions":
+			return every(
+				value,
+				(item) =>
+					isId(item.sessionId) &&
+					typeof item.cwd === "string" &&
+					(item.title === undefined ||
+						typeof item.title === "string") &&
+					(item.updatedAt === undefined ||
+						typeof item.updatedAt === "string"),
+			);
 		case "asyncTasks":
 			return Array.isArray(value) && value.every(isAsyncTask);
 		case "connection":
@@ -180,6 +209,12 @@ function isState(value: unknown): value is ChatState {
 			"quota",
 			"attachments",
 			"attachmentPending",
+			"cwd",
+			"sessions",
+			"sessionCapabilities",
+			"sessionsLoading",
+			"sessionsError",
+			"sessionPending",
 		].every((key) => validField(key, value[key]))
 	);
 }

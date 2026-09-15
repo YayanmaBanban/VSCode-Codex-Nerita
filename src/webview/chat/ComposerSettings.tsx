@@ -30,7 +30,10 @@ export function ComposerSettings({
 	state: ChatState;
 	send: (message: UiMessage) => void;
 }) {
-	const connected = state.connection === "ready" && !!state.sessionId;
+	const connected =
+		state.connection === "ready" &&
+		!!state.sessionId &&
+		!state.sessionPending;
 	const disabled = !connected || state.configPending;
 	const options = order.map(
 		(id, index) =>

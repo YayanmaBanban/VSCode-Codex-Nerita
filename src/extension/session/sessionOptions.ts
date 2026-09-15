@@ -1,6 +1,7 @@
 // 設定変更と添付ファイル操作を会話の実行制御から分離する。
 import type { Attachment, ComposerMessage } from "../../shared/composer";
-import { SessionLifecycle, type TransportFactory } from "./sessionLifecycle";
+import type { TransportFactory } from "./sessionLifecycle";
+import { SessionHistory } from "./sessionHistory";
 import { configOptions } from "./configuration";
 
 /** VS Code の操作をテスト用サービスへ差し替える境界。 */
@@ -10,7 +11,7 @@ export type AttachmentService = {
 };
 
 /** 接続が有効な間だけ設定とファイルの操作を受け付ける。 */
-export class SessionOptions extends SessionLifecycle {
+export class SessionOptions extends SessionHistory {
 	/** ファイル操作の実装は Extension Host の起動時に注入する。 */
 	constructor(
 		factory: TransportFactory,

@@ -7,6 +7,11 @@ import type {
 	QuotaWindow,
 } from "./composer";
 import type { AsyncTask } from "./asyncTask";
+import type {
+	SessionSummary,
+	SessionCapabilities,
+	SessionHistoryMessage,
+} from "./sessionHistory";
 /** 接続の表示状態。 */
 export type ConnectionStatus =
 	| "disconnected"
@@ -71,10 +76,17 @@ export type ChatState = {
 	quota: QuotaWindow[] | null;
 	attachments: Attachment[];
 	attachmentPending: boolean;
+	cwd: string | null;
+	sessions: SessionSummary[];
+	sessionCapabilities: SessionCapabilities;
+	sessionsLoading: boolean;
+	sessionsError: string | null;
+	sessionPending: boolean;
 };
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
 	| ComposerMessage
+	| SessionHistoryMessage
 	| { type: "ui/ready" }
 	| { type: "connection/retry"; requestId: string }
 	| { type: "session/new"; requestId: string }
@@ -135,5 +147,16 @@ export function initialState(): ChatState {
 		quota: null,
 		attachments: [],
 		attachmentPending: false,
+		cwd: null,
+		sessions: [],
+		sessionCapabilities: {
+			list: false,
+			load: false,
+			fork: false,
+			delete: false,
+		},
+		sessionsLoading: false,
+		sessionsError: null,
+		sessionPending: false,
 	};
 }

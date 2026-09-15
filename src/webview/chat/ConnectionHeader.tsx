@@ -1,5 +1,6 @@
 // 接続状態・認証・再接続の操作をまとめて表示する。
 import type { ChatState, UiMessage } from "../../shared/messages";
+import { List } from "lucide-react";
 
 /** 認証案内とエラー通知に共通する枠・色・余白。 */
 const noticeClass =
@@ -19,11 +20,15 @@ export function ConnectionHeader({
 	requestError,
 	available,
 	send,
+	sessionsOpen,
+	onToggleSessions,
 }: {
 	state: ChatState;
 	requestError: string | null;
 	available: boolean;
 	send: (message: UiMessage) => void;
+	sessionsOpen: boolean;
+	onToggleSessions: () => void;
 }) {
 	const reconnectable = ["disconnected", "error", "auth-required"].includes(
 		state.connection,
@@ -40,18 +45,32 @@ export function ConnectionHeader({
 						Codex <span>ACP</span>
 					</h1>
 				</div>
-				<button
-					className="quiet bg-transparent"
-					disabled={!available}
-					onClick={() =>
-						send({
-							type: "session/new",
-							requestId: crypto.randomUUID(),
-						})
-					}
-				>
-					＋ 新規会話
-				</button>
+				<div className="flex shrink-0 items-center gap-[6px]">
+					<button
+						type="button"
+						id="session-list-toggle"
+						className="inline-flex size-[32px] items-center justify-center border-0 bg-transparent p-0"
+						aria-label="セッション一覧"
+						title="セッション一覧"
+						aria-expanded={sessionsOpen}
+						aria-controls="session-panel"
+						onClick={onToggleSessions}
+					>
+						<List size={18} aria-hidden="true" />
+					</button>
+					<button
+						className="quiet bg-transparent"
+						disabled={!available}
+						onClick={() =>
+							send({
+								type: "session/new",
+								requestId: crypto.randomUUID(),
+							})
+						}
+					>
+						＋ 新規会話
+					</button>
+				</div>
 			</header>
 			<div className="connection-bar flex min-h-[38px] items-center gap-[7px] border-0 border-y border-solid border-message-border px-[20px] py-[8px] text-[11px] text-muted">
 				<span

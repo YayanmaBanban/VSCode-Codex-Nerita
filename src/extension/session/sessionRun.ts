@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { isRecord } from "../../shared/validation";
 import { SessionOptions } from "./sessionOptions";
+import { nextTimelineOrder } from "./timelineOrder";
 
 /** 一つの実行の寿命を接続世代に限定する。 */
 export class SessionRun extends SessionOptions {
@@ -31,7 +32,7 @@ export class SessionRun extends SessionOptions {
 					id: randomUUID(),
 					role: "user",
 					text,
-					order: this.state.revision + 1,
+					order: nextTimelineOrder(this.state),
 				},
 			],
 		});

@@ -3,6 +3,7 @@ import type {
 	PromptResponse,
 	RequestPermissionRequest,
 	NewSessionResponse,
+	AgentCapabilities,
 } from "@agentclientprotocol/sdk";
 import { vi } from "vitest";
 import type {
@@ -23,7 +24,11 @@ export function deferred<T>() {
 }
 /** 生成された接続を記録するセッション管理のテスト環境。 */
 export function fixture(
-	options: { session?: NewSessionResponse; files?: AttachmentService } = {},
+	options: {
+		session?: NewSessionResponse;
+		files?: AttachmentService;
+		capabilities?: AgentCapabilities;
+	} = {},
 ) {
 	const connections: {
 		callbacks: AcpCallbacks;
@@ -33,9 +38,17 @@ export function fixture(
 	const controller = new SessionController((callbacks) => {
 		const result = deferred<PromptResponse>();
 		const transport: AcpTransport = {
+			cwd: process.cwd(),
+			listSessions: vi.fn(() => Promise.resolve({ sessions: [] })),
+			loadSession: vi.fn(() => Promise.resolve({})),
+			forkSession: vi.fn(() => Promise.resolve({ sessionId: "forked" })),
+			deleteSession: vi.fn(() => Promise.resolve({})),
 			initialize: vi.fn(() =>
 				Promise.resolve({
 					protocolVersion: 1,
+					...(options.capabilities
+						? { agentCapabilities: options.capabilities }
+						: {}),
 					authMethods: [{ id: "chat-gpt", name: "ChatGPT" }],
 				}),
 			),

@@ -1,5 +1,8 @@
 ﻿// ACPの起動・認証・接続世代とプロセス終了を管理する。
-import { PROTOCOL_VERSION } from "@agentclientprotocol/sdk";
+import {
+	PROTOCOL_VERSION,
+	type SessionNotification,
+} from "@agentclientprotocol/sdk";
 import { isRecord } from "../../shared/validation";
 import type { AcpCallbacks, AcpTransport } from "../acp/transport";
 import { SessionState } from "./sessionState";
@@ -7,6 +10,7 @@ import { updateState } from "./updates";
 import { WorkspaceError } from "../workspace";
 import { initialConfig } from "./configuration";
 import { updateAsyncTasks } from "./asyncTasks";
+import type { TaskUpdate } from "../acp/airTasks";
 /** 起動条件をHostで検査して接続を作るファクトリ。 */
 export type TransportFactory = (callbacks: AcpCallbacks) => AcpTransport;
 /** 接続の寿命を会話の実行制御から分離する。 */
@@ -25,6 +29,8 @@ export class SessionLifecycle extends SessionState {
 			configPending: false,
 			attachmentPending: false,
 			quota: null,
+			sessionPending: false,
+			sessionsLoading: false,
 		});
 		clearTimeout(this.cancelTimer);
 		this.permissions.cancelAll();
@@ -50,6 +56,15 @@ export class SessionLifecycle extends SessionState {
 			error: null,
 			authMethods: [],
 			usage: null,
+			cwd: null,
+			sessions: [],
+			sessionsError: null,
+			sessionCapabilities: {
+				list: false,
+				load: false,
+				fork: false,
+				delete: false,
+			},
 		});
 		// 終了前の旧プロセスと新プロセスが同時に作業しないよう待つ。
 		await Promise.allSettled(this.closing);
@@ -59,6 +74,7 @@ export class SessionLifecycle extends SessionState {
 		try {
 			const transport = this.factory(this.callbacks(epoch));
 			this.transport = transport;
+			this.patch({ cwd: transport.cwd });
 			const response = await transport.initialize();
 			if (epoch !== this.epoch) {
 				return;
@@ -67,6 +83,15 @@ export class SessionLifecycle extends SessionState {
 				throw new Error("Unsupported protocol");
 			}
 			this.patch({
+				sessionCapabilities: {
+					list: !!response.agentCapabilities?.sessionCapabilities
+						?.list,
+					load: response.agentCapabilities?.loadSession === true,
+					fork: !!response.agentCapabilities?.sessionCapabilities
+						?.fork,
+					delete: !!response.agentCapabilities?.sessionCapabilities
+						?.delete,
+				},
 				authMethods: (response.authMethods ?? [])
 					.filter((m) => ["chat-gpt", "api-key"].includes(m.id))
 					.map((m) => ({ id: m.id, name: m.name })),
@@ -85,19 +110,13 @@ export class SessionLifecycle extends SessionState {
 				if (epoch !== this.epoch) {
 					return;
 				}
-				const patch = updateAsyncTasks(this.state, update);
-				if (Object.keys(patch).length) {
-					this.patch(patch);
-				}
+				this.handleAsyncTask(update);
 			},
 			update: (notification) => {
 				if (epoch !== this.epoch) {
 					return;
 				}
-				const patch = updateState(this.state, notification);
-				if (Object.keys(patch).length) {
-					this.patch(patch);
-				}
+				this.handleUpdate(notification);
 			},
 			permission: (request) => {
 				if (
@@ -119,6 +138,20 @@ export class SessionLifecycle extends SessionState {
 				}
 			},
 		};
+	}
+	/** 通常通知を適用し、履歴読み込み側に再生の差し替え口を提供する。 */
+	protected handleUpdate(notification: SessionNotification): void {
+		const patch = updateState(this.state, notification);
+		if (Object.keys(patch).length) {
+			this.patch(patch);
+		}
+	}
+	/** 履歴読み込み側でもタスク通知を復元できるようにする。 */
+	protected handleAsyncTask(update: TaskUpdate): void {
+		const patch = updateAsyncTasks(this.state, update);
+		if (Object.keys(patch).length) {
+			this.patch(patch);
+		}
 	}
 	/** 認証方法は初期化時に提示されたIDだけを受理する。 */
 	protected async authenticate(methodId: string): Promise<void> {
@@ -144,7 +177,7 @@ export class SessionLifecycle extends SessionState {
 		}
 	}
 	/** 会話作成が成功してから表示中の履歴を切り替える。 */
-	private async openSession(
+	protected async openSession(
 		transport: AcpTransport,
 		epoch: number,
 	): Promise<void> {
@@ -170,11 +203,12 @@ export class SessionLifecycle extends SessionState {
 	/** 接続の世代を照合し、古い取得結果で新しい会話を上書きしない。 */
 	protected async refreshQuota(): Promise<void> {
 		const epoch = this.epoch;
+		const sessionId = this.state.sessionId;
 		if (!this.transport || !this.state.sessionId || this.busy()) {
 			return;
 		}
 		const quota = await this.transport.readStatus(this.state.sessionId);
-		if (epoch === this.epoch) {
+		if (epoch === this.epoch && sessionId === this.state.sessionId) {
 			this.patch({ quota });
 		}
 	}
@@ -208,6 +242,9 @@ export class SessionLifecycle extends SessionState {
 		this.disconnect();
 		this.patch({
 			connection: "disconnected",
+			cwd: null,
+			sessions: [],
+			sessionsError: null,
 			sessionId: null,
 			run: this.busy() ? "cancelled" : this.state.run,
 			permissions: [],

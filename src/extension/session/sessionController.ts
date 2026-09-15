@@ -42,6 +42,28 @@ export class SessionController extends SessionRun {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
+		if (message.type === "session/list") {
+			await this.refreshSessions();
+			return;
+		}
+		if (this.state.sessionPending) {
+			throw new Error("Session pending");
+		}
+		if (
+			message.type === "session/load" ||
+			message.type === "session/fork" ||
+			message.type === "session/delete"
+		) {
+			await this.manageSession(
+				message.type === "session/load"
+					? "load"
+					: message.type === "session/fork"
+						? "fork"
+						: "delete",
+				message.sessionId,
+			);
+			return;
+		}
 		if (message.type === "connection/retry") {
 			if (
 				["connecting", "authenticating"].includes(

@@ -82,8 +82,9 @@ export function createTransport(
 		ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout)),
 		(params) =>
 			consumeTaskUpdate(params, (update) => {
-				if (!disposed && asyncTasksEnabled)
-					{callbacks.asyncTask?.(update);}
+				if (!disposed && asyncTasksEnabled) {
+					callbacks.asyncTask?.(update);
+				}
 			}),
 	);
 	const connection = client()
@@ -155,6 +156,7 @@ export function createTransport(
 				new Promise<never>((_, reject) => {
 					timer = setTimeout(() => {
 						reject(new Error("ACP timeout"));
+						disconnected();
 						void dispose();
 					}, milliseconds);
 				}),
@@ -164,6 +166,32 @@ export function createTransport(
 		}
 	}
 	return {
+		cwd,
+		listSessions: (cursor?: string) =>
+			bounded(
+				connection.agent.request("session/list", {
+					cwd,
+					...(cursor ? { cursor } : {}),
+				}),
+			),
+		loadSession: (sessionId: string) =>
+			bounded(
+				connection.agent.request("session/load", {
+					sessionId,
+					cwd,
+					mcpServers: [],
+				}),
+			),
+		forkSession: (sessionId: string) =>
+			bounded(
+				connection.agent.request("session/fork", {
+					sessionId,
+					cwd,
+					mcpServers: [],
+				}),
+			),
+		deleteSession: (sessionId: string) =>
+			bounded(connection.agent.request("session/delete", { sessionId })),
 		initialize: async () => {
 			const response = await bounded(
 				connection.agent.request("initialize", {
@@ -245,13 +273,16 @@ export function createTransport(
 			return connection.agent.notify("session/cancel", { sessionId });
 		},
 		stopAsyncTask: async (sessionId: string, asyncTaskId: string) => {
-			if (!asyncTasksEnabled) {throw new Error("Async tasks unsupported");}
+			if (!asyncTasksEnabled) {
+				throw new Error("Async tasks unsupported");
+			}
 			const response = await connection.agent.request(
 				"_session/async_task/stop",
 				{ sessionId, asyncTaskId },
 			);
-			if (!isRecord(response) || response.stopped !== true)
-				{throw new Error("Task not stopped");}
+			if (!isRecord(response) || response.stopped !== true) {
+				throw new Error("Task not stopped");
+			}
 		},
 		dispose,
 	};
