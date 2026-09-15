@@ -18,12 +18,13 @@ it("空白のある作業パスで通信し、終了時に孫プロセスと保�
 	await mkdir(cwd, { recursive: true });
 	const log = vi.fn();
 	const disconnected = vi.fn();
+	const update = vi.fn();
 	const transport = createTransport(
 		process.execPath,
 		path.resolve("tests/fixtures/acp-agent.mjs"),
 		cwd,
 		{
-			update: vi.fn(),
+			update,
 			permission: () =>
 				Promise.resolve({ outcome: { outcome: "cancelled" } }),
 			disconnected,
@@ -32,14 +33,73 @@ it("空白のある作業パスで通信し、終了時に孫プロセスと保�
 	);
 	try {
 		expect((await transport.initialize()).protocolVersion).toBe(1);
-		expect((await transport.newSession()).sessionId).toBe("fixture");
+		expect(await transport.newSession()).toMatchObject({
+			sessionId: "fixture",
+			models: { currentModelId: "model-a[high]" },
+		});
+		expect(await transport.readStatus("fixture")).toEqual([
+			{
+				label: "codex 5h limit",
+				remaining: 60,
+				detail: "(resets 18:00)",
+			},
+		]);
+		expect(update).not.toHaveBeenCalled();
+		// 内部取得中に停止した通常送信は、キュー解放後にも発行しない。
+		const status = transport.readStatus("fixture");
+		const cancelled = transport
+			.prompt("fixture", "must not send")
+			.catch(() => "cancelled");
+		await transport.cancel("fixture");
+		await status;
+		expect(await cancelled).toBe("cancelled");
+		await expect(
+			readFile(path.join(cwd, "prompt.json"), "utf8"),
+		).rejects.toThrow();
+		expect(
+			await transport.setConfig("fixture", "model", "model-a"),
+		).toMatchObject({ configOptions: [{ currentValue: "model-a" }] });
+		expect(
+			JSON.parse(await readFile(path.join(cwd, "config.json"), "utf8")),
+		).toMatchObject({
+			method: "session/set_config_option",
+			params: {
+				sessionId: "fixture",
+				configId: "model",
+				value: "model-a",
+			},
+		});
 		const pids = JSON.parse(
 			await readFile(path.join(cwd, "pids.json"), "utf8"),
 		) as number[];
 		expect(pids.every(running)).toBe(true);
 		const pending = transport
-			.prompt("fixture", "hello")
+			.prompt("fixture", "hello", [
+				{
+					type: "resource_link",
+					name: "test.ts",
+					uri: "file:///test.ts",
+				},
+			])
 			.catch(() => "closed");
+		await vi.waitFor(async () => {
+			expect(
+				JSON.parse(
+					await readFile(path.join(cwd, "prompt.json"), "utf8"),
+				),
+			).toMatchObject({
+				params: {
+					prompt: [
+						{ type: "text", text: "hello" },
+						{
+							type: "resource_link",
+							uri: "file:///test.ts",
+							name: "test.ts",
+						},
+					],
+				},
+			});
+		});
 		await transport.dispose();
 		expect(await pending).toBe("closed");
 		await vi.waitFor(() => expect(pids.some(running)).toBe(false));

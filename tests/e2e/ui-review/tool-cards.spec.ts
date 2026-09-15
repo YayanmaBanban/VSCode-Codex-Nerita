@@ -6,7 +6,9 @@ for (const theme of ["dark", "light"] as const) {
 		const errors: string[] = [];
 		page.on("pageerror", (error) => errors.push(error.message));
 		page.on("console", (message) => {
-			if (message.type() === "error") errors.push(message.text());
+			if (message.type() === "error") {
+				errors.push(message.text());
+			}
 		});
 		await page.emulateMedia({ colorScheme: theme });
 		await page.setViewportSize({ width: 320, height: 900 });
@@ -14,7 +16,7 @@ for (const theme of ["dark", "light"] as const) {
 			"/iframe.html?id=chat-tool-cards--running&viewMode=story",
 		);
 		const guardian = page.getByRole("button", {
-			name: "Guardian Review 実行中",
+			name: "コマンドの安全性を確認 実行中",
 		});
 		const edit = page.getByRole("button", { name: "Editing files 実行中" });
 		await expect(guardian).toHaveAttribute("aria-expanded", "true");
@@ -29,20 +31,30 @@ for (const theme of ["dark", "light"] as const) {
 		await page.keyboard.press("Enter");
 		await expect(edit).toHaveAttribute("aria-expanded", "true");
 		await info.attach("running", {
-			body: await page.screenshot({ fullPage: true }),
+			body: await page.screenshot({
+				fullPage: true,
+				path: info.outputPath("running.png"),
+			}),
 			contentType: "image/png",
 		});
 		await page.getByRole("button", { name: "完了通知を受信" }).click();
 		const completed = page.getByRole("button", {
-			name: "Guardian Review 完了",
+			name: "コマンドの安全性を確認",
+			exact: true,
 		});
 		await expect(completed).toHaveAttribute("aria-expanded", "false");
 		await expect(
-			page.getByRole("button", { name: "Editing files 完了" }),
+			page.getByRole("button", { name: "Editing files", exact: true }),
 		).toHaveAttribute("aria-expanded", "false");
 		await expect(
-			page.getByRole("button", { name: "Guardian Review 失敗" }),
+			page.getByRole("button", { name: "Guardian Review", exact: true }),
 		).toHaveAttribute("aria-expanded", "true");
+		await expect(page.locator(".tool-progress")).toHaveCount(0);
+		await expect(page.locator(".tool-stop")).toHaveCount(0);
+		await expect(page.getByRole("img", { name: "失敗" })).toHaveCount(1);
+		await expect(
+			page.locator(".tool-header").getByText(/完了|失敗/),
+		).toHaveCount(0);
 		await completed.click();
 		await expect(
 			page.getByText("バージョン確認のため承認しました。", {
@@ -59,3 +71,52 @@ for (const theme of ["dark", "light"] as const) {
 		expect(errors).toEqual([]);
 	});
 }
+
+test("execute の停止要求と失敗アイコン、think の種別判定", async ({
+	page,
+}, info) => {
+	await page.goto("/iframe.html?id=chat-tool-cards--running&viewMode=story");
+	const execute = page.locator('.tool-card[data-kind="execute"]').first();
+	await expect(execute.locator(".tool-progress")).toBeVisible();
+	const spinner = execute.locator(".tool-progress");
+	for (const time of [0, 300, 600]) {
+		await spinner.evaluate((element, time) => {
+			const animation = element.getAnimations()[0]!;
+			animation.pause();
+			animation.currentTime = time;
+		}, time);
+		await execute.screenshot({
+			path: info.outputPath(`spinner-${time}.png`),
+		});
+	}
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await expect(spinner).toHaveCSS("animation-name", "none");
+	await expect(
+		page.locator('.tool-card[data-kind="think"] .lucide-sprout'),
+	).toHaveCount(1);
+	await expect(
+		page
+			.getByRole("button", { name: "Guardian Review", exact: true })
+			.locator(".lucide-shield-check"),
+	).toBeVisible();
+	await expect(
+		page.getByRole("button", { name: "端末を準備 を停止" }),
+	).toBeDisabled();
+	await execute.getByRole("button", { name: "pnpm.cmd test を停止" }).click();
+	await expect(page.getByLabel("送信した要求")).toContainText(
+		'"type":"terminal/kill"',
+	);
+	await expect(page.getByLabel("送信した要求")).toContainText(
+		'"runId":"run-test"',
+	);
+	await expect(execute.locator(".tool-progress, .tool-stop")).toHaveCount(0);
+	await expect(execute.getByRole("img", { name: "失敗" })).toBeVisible();
+	await expect(execute.getByRole("button")).toHaveAttribute(
+		"aria-expanded",
+		"true",
+	);
+	await info.attach("execute-stopped", {
+		body: await page.screenshot({ fullPage: true }),
+		contentType: "image/png",
+	});
+});

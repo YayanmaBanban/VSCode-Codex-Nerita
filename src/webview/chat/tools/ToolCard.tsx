@@ -1,29 +1,40 @@
-// ツールごとの開閉状態を管理し、タイトルに対応した本文を表示する。
+// ツールの種別に応じた本文・状態アイコン・停止操作と開閉を表示する。
 import { useId, useState } from "react";
-import { ChevronDown, FilePenLine, ShieldCheck, Wrench } from "lucide-react";
+import {
+	ChevronDown,
+	FilePenLine,
+	Sprout,
+	ShieldCheck,
+	Wrench,
+	Terminal,
+	LoaderCircle,
+	Square,
+	X,
+} from "lucide-react";
 import type { ToolSummary } from "../../../shared/messages";
+import { isRecord } from "../../../shared/validation";
 import { GuardianReview } from "./GuardianReview";
-import { EditingFiles, GenericTool } from "./ToolContent";
+import { EditingFiles, ExecuteTool, GenericTool } from "./ToolContent";
 import "./tools.css";
+import "../loaders.css";
 
 // 専用表示を追加するときは、ここへタイトルとアイコン・本文を登録する。
 const renderers = [
-	{ titles: ["guardian review"], Icon: ShieldCheck, Body: GuardianReview },
 	{
 		titles: ["editing files", "editing file", "editng file"],
 		Icon: FilePenLine,
 		Body: EditingFiles,
 	},
 ];
-const labels = {
-	pending: "待機中",
-	in_progress: "実行中",
-	completed: "完了",
-	failed: "失敗",
-};
 
 /** 完了への遷移で一度だけ閉じ、完了後の手動展開も許可する。 */
-export function ToolCard({ tool }: { tool: ToolSummary }) {
+export function ToolCard({
+	tool,
+	onStop,
+}: {
+	tool: ToolSummary;
+	onStop?: (() => void) | undefined;
+}) {
 	const bodyId = useId();
 	const [state, setState] = useState({
 		status: tool.status,
@@ -35,28 +46,101 @@ export function ToolCard({ tool }: { tool: ToolSummary }) {
 			open: tool.status === "completed" ? false : state.open,
 		});
 	}
-	const { Icon, Body } = renderers.find(({ titles }) =>
-		titles.includes(tool.title.trim().toLowerCase()),
-	) ?? { Icon: Wrench, Body: GenericTool };
+	const executing = tool.kind === "execute";
+	const input = isRecord(tool.rawInput) ? tool.rawInput : {};
+	const action = isRecord(input.action) ? input.action : input;
+	const cwd =
+		tool.terminal?.cwd ??
+		(typeof action.cwd === "string" ? action.cwd : tool.cwd);
+	const command =
+		typeof input.command === "string"
+			? input.command
+			: Array.isArray(input.command)
+				? input.command.join(" ")
+				: tool.title;
+	const active = tool.terminal
+		? tool.terminal.canStop
+		: tool.status === "pending" || tool.status === "in_progress";
+	// Guardian Review は think の場合も専用の盾アイコンを維持する。
+	const guardian = tool.title.trim().toLowerCase() === "guardian review";
+	const { Icon, Body } = guardian
+		? { Icon: ShieldCheck, Body: GuardianReview }
+		: tool.kind === "think"
+			? { Icon: Sprout, Body: GuardianReview }
+			: executing
+				? { Icon: Terminal, Body: ExecuteTool }
+				: (renderers.find(({ titles }) =>
+						titles.includes(tool.title.trim().toLowerCase()),
+					) ?? { Icon: Wrench, Body: GenericTool });
 	return (
-		<div className="tool-card" data-status={tool.status}>
-			<button
-				className="tool-heading"
-				aria-expanded={state.open}
-				aria-controls={bodyId}
-				onClick={() =>
-					setState({ status: tool.status, open: !state.open })
-				}
-			>
-				<Icon size={16} aria-hidden="true" />
-				<span className="tool-title">{tool.title}</span>
-				<span className="tool-status">{labels[tool.status]}</span>
-				<ChevronDown
-					size={14}
-					className="tool-chevron"
-					aria-hidden="true"
-				/>
-			</button>
+		<div
+			className="tool-card"
+			data-status={tool.status}
+			data-kind={tool.kind}
+		>
+			{cwd && (
+				<div className="tool-cwd" title={cwd}>
+					{cwd}
+				</div>
+			)}
+			<div className="tool-header">
+				<button
+					className="tool-heading"
+					aria-expanded={state.open}
+					aria-controls={bodyId}
+					onClick={() =>
+						setState({ status: tool.status, open: !state.open })
+					}
+				>
+					<Icon size={16} aria-hidden="true" />
+					<span className="tool-title">
+						{executing ? command : tool.title}
+					</span>
+					{executing && active && (
+						<LoaderCircle
+							size={16}
+							className="tool-progress"
+							role="img"
+							aria-label="実行中"
+						/>
+					)}
+					{!executing && active && (
+						<span className="tool-status">
+							{tool.status === "pending" ? "待機中" : "実行中"}
+						</span>
+					)}
+					<ChevronDown
+						size={14}
+						className="tool-chevron"
+						aria-hidden="true"
+					/>
+				</button>
+				{tool.status === "failed" && (
+					<span className="tool-result" role="img" aria-label="失敗">
+						<X size={16} aria-hidden="true" />
+					</span>
+				)}
+				{executing && active && (
+					<button
+						type="button"
+						className="tool-stop"
+						aria-label={`${tool.title} を停止`}
+						title={
+							onStop
+								? "コマンドを停止"
+								: "拡張機能が管理する端末ではないため個別停止できません"
+						}
+						disabled={!onStop}
+						onClick={onStop}
+					>
+						<Square
+							size={13}
+							fill="currentColor"
+							aria-hidden="true"
+						/>
+					</button>
+				)}
+			</div>
 			<div id={bodyId} className="tool-body" hidden={!state.open}>
 				{state.open && <Body tool={tool} />}
 			</div>

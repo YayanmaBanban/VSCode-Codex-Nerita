@@ -1,0 +1,56 @@
+/* 淡い波は transform のみで流し、動きを減らす設定では停止する。 */
+.fast-mode-quota {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+.quota-bar {
+	display: inline-flex;
+	align-items: center;
+	width: 76px;
+	height: 24px;
+	border-radius: 4px;
+}
+.quota-track {
+	width: 100%;
+	height: 9px;
+	overflow: hidden;
+	border-radius: 5px;
+	background: light-dark(#d9eaf4, #243d50);
+}
+.quota-fill {
+	display: block;
+	position: relative;
+	height: 100%;
+	overflow: hidden;
+	border-radius: inherit;
+	background: #58bafa;
+}
+.quota-wave {
+	position: absolute;
+	inset: 0;
+	width: 200%;
+	height: 100%;
+	fill: #ffffff50;
+	animation: quota-wave-flow 4s linear infinite;
+}
+.quota-bar:hover {
+	filter: brightness(1.12);
+}
+.quota-bar:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder, #58bafa);
+	outline-offset: 2px;
+}
+@keyframes quota-wave-flow {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.quota-wave {
+		animation: none;
+	}
+}

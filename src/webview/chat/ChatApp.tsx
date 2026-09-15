@@ -6,12 +6,14 @@ import { useChat } from "./useChat";
 import { ConnectionHeader } from "./ConnectionHeader";
 import { Activity } from "./Activity";
 import { Messages } from "./Messages";
+import { CubeLoader } from "./CubeLoader";
+import { ComposerSettings } from "./ComposerSettings";
 import "./chat.css";
 import "./composer.css";
 
 const runLabels = {
 	idle: "",
-	running: "応答中",
+	running: "",
 	cancelling: "停止しています…",
 	completed: "",
 	cancelled: "停止しました",
@@ -25,7 +27,12 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 	const composing = useRef(false);
 	const bottom = useRef<HTMLDivElement>(null);
 	const busy = state.run === "running" || state.run === "cancelling";
-	const available = state.connection === "ready" && !busy && !submitted;
+	const available =
+		state.connection === "ready" &&
+		!busy &&
+		!submitted &&
+		!state.configPending &&
+		!state.attachmentPending;
 	useEffect(() => {
 		setSubmitted(false);
 	}, [state.revision, requestError]);
@@ -77,9 +84,25 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					aria-live="polite"
 					aria-relevant="additions text"
 				>
-					<Messages messages={state.messages} busy={busy} />
+					<Messages
+						messages={state.messages}
+						busy={busy}
+						tools={state.tools}
+						renderTool={(tool) => (
+							<Activity
+								key={String(tool.runId) + tool.id}
+								state={{
+									...state,
+									tools: [tool],
+									permissions: [],
+								}}
+								send={send}
+							/>
+						)}
+					/>
 				</div>
-				<Activity state={state} send={send} />
+				<Activity state={{ ...state, tools: [] }} send={send} />
+				{state.run === "running" && <CubeLoader />}
 				{runLabels[state.run] && (
 					<p className="run-status" role="status">
 						{runLabels[state.run]}
@@ -162,6 +185,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 						</button>
 					)}
 				</div>
+				<ComposerSettings state={state} send={send} />
 			</form>
 		</main>
 	);

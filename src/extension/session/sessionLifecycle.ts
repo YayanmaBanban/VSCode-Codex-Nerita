@@ -5,6 +5,8 @@ import type { AcpCallbacks, AcpTransport } from "../acp/transport";
 import { SessionState } from "./sessionState";
 import { updateState } from "./updates";
 import { WorkspaceError } from "../workspace";
+import { initialConfig } from "./configuration";
+import { toolTerminalId } from "../../shared/toolTerminal";
 /** 起動条件をHostで検査して接続を作るファクトリ。 */
 export type TransportFactory = (callbacks: AcpCallbacks) => AcpTransport;
 /** 接続の寿命を会話の実行制御から分離する。 */
@@ -19,6 +21,11 @@ export class SessionLifecycle extends SessionState {
 	/** 旧接続の通知を無効化し、保留中の処理を解消する。 */
 	protected disconnect(): void {
 		this.epoch++;
+		this.patch({
+			configPending: false,
+			attachmentPending: false,
+			quota: null,
+		});
 		clearTimeout(this.cancelTimer);
 		this.permissions.cancelAll();
 		if (this.transport) {
@@ -42,6 +49,7 @@ export class SessionLifecycle extends SessionState {
 			permissions: [],
 			error: null,
 			authMethods: [],
+			usage: null,
 		});
 		// 終了前の旧プロセスと新プロセスが同時に作業しないよう待つ。
 		await Promise.allSettled(this.closing);
@@ -73,11 +81,39 @@ export class SessionLifecycle extends SessionState {
 	/** 接続世代とセッションを確認して通知を受け付ける。 */
 	private callbacks(epoch: number): AcpCallbacks {
 		return {
+			terminal: (sessionId, terminalId, terminal) => {
+				if (
+					epoch !== this.epoch ||
+					sessionId !== this.state.sessionId
+				) {
+					return;
+				}
+				this.patch({
+					tools: this.state.tools.map((tool) =>
+						toolTerminalId(tool) === terminalId
+							? { ...tool, terminal }
+							: tool,
+					),
+				});
+			},
 			update: (notification) => {
 				if (epoch !== this.epoch) {
 					return;
 				}
 				const patch = updateState(this.state, notification);
+				// createがtool_callより先に届くため、関連付け時にも現在の出力を復元する。
+				if (patch.tools) {
+					patch.tools = patch.tools.map((tool) => {
+						const id = toolTerminalId(tool);
+						const terminal = id
+							? this.transport?.terminalSnapshot(
+									notification.sessionId,
+									id,
+								)
+							: undefined;
+						return terminal ? { ...tool, terminal } : tool;
+					});
+				}
 				if (Object.keys(patch).length) {
 					this.patch(patch);
 				}
@@ -142,7 +178,22 @@ export class SessionLifecycle extends SessionState {
 				tools: [],
 				permissions: [],
 				error: null,
+				configOptions: initialConfig(session),
+				attachments: [],
+				usage: null,
 			});
+			void this.refreshQuota();
+		}
+	}
+	/** 接続の世代を照合し、古い取得結果で新しい会話を上書きしない。 */
+	protected async refreshQuota(): Promise<void> {
+		const epoch = this.epoch;
+		if (!this.transport || !this.state.sessionId || this.busy()) {
+			return;
+		}
+		const quota = await this.transport.readStatus(this.state.sessionId);
+		if (epoch === this.epoch) {
+			this.patch({ quota });
 		}
 	}
 	/** 認証不足を通常の接続失敗から区別する。 */

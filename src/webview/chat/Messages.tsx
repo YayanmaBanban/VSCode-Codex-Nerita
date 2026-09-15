@@ -1,7 +1,7 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
-import type { ChatMessage } from "../../shared/messages";
+import type { ChatMessage, ToolSummary } from "../../shared/messages";
 import { MessageText } from "./MessageText";
 import { TextType } from "./TextType";
 import "./messages.css";
@@ -10,9 +10,13 @@ import "./messages.css";
 export function Messages({
 	messages,
 	busy,
+	tools = [],
+	renderTool,
 }: {
 	messages: ChatMessage[];
 	busy: boolean;
+	tools?: ToolSummary[];
+	renderTool?: (tool: ToolSummary) => ReactNode;
 }) {
 	const elements = useRef(new Map<string, HTMLElement>());
 	const [copyStatus, setCopyStatus] = useState<{
@@ -40,7 +44,26 @@ export function Messages({
 			});
 		}
 	};
-	return messages.map((message, index) => {
+	const entries = [
+		...messages.map((message, index) => ({
+			order: message.order ?? index,
+			message,
+			tool: undefined,
+		})),
+		...tools.map((tool, index) => ({
+			order: tool.order ?? messages.length + index,
+			message: undefined,
+			tool,
+		})),
+	].sort((a, b) => a.order - b.order);
+	return entries.map(({ message, tool }) => {
+		if (tool) {
+			return renderTool?.(tool);
+		}
+		if (!message) {
+			return null;
+		}
+		const index = messages.indexOf(message);
 		const user = message.role === "user";
 		const previousUser = messages
 			.slice(0, index)
@@ -63,8 +86,11 @@ export function Messages({
 				key={message.id}
 				tabIndex={-1}
 				ref={(element) => {
-					if (element) elements.current.set(message.id, element);
-					else elements.current.delete(message.id);
+					if (element) {
+						elements.current.set(message.id, element);
+					} else {
+						elements.current.delete(message.id);
+					}
 				}}
 			>
 				<div className="message-text">
@@ -81,9 +107,11 @@ export function Messages({
 					className="message-actions"
 					tabIndex={-1}
 					ref={(element) => {
-						if (element)
+						if (element) {
 							elements.current.set(`${message.id}:end`, element);
-						else elements.current.delete(`${message.id}:end`);
+						} else {
+							elements.current.delete(`${message.id}:end`);
+						}
 					}}
 				>
 					{!user && (
@@ -108,7 +136,9 @@ export function Messages({
 						}
 						disabled={!target || replyPending}
 						onClick={() => {
-							if (target) jump(target.id, user);
+							if (target) {
+								jump(target.id, user);
+							}
 						}}
 					>
 						{user ? (

@@ -9,7 +9,9 @@ export function GuardianReview({ tool }: { tool: ToolSummary }) {
 	const output = isRecord(tool.rawOutput) ? tool.rawOutput : {};
 	const review = isRecord(output.review) ? output.review : input.review;
 	const action = isRecord(output.action) ? output.action : input.action;
-	if (!isRecord(review)) return <GenericTool tool={tool} />;
+	if (!isRecord(review)) {
+		return <GenericTool tool={tool} />;
+	}
 	const fields = [
 		["判断", review.status],
 		["リスク", review.riskLevel],

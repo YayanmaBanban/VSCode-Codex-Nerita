@@ -15,6 +15,55 @@
 	border-radius: 0;
 	text-align: left;
 	background: transparent;
+	min-width: 0;
+}
+.tool-header {
+	display: flex;
+	align-items: center;
+	position: relative;
+}
+/* 結果と停止を同じ位置に置き、開閉ボタンへの入れ子を避ける。 */
+.tool-header:has(.tool-stop, .tool-result) .tool-chevron {
+	margin-left: 26px;
+}
+.tool-stop,
+.tool-result {
+	position: absolute;
+	right: 30px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	color: var(--vscode-errorForeground, #e28d8d);
+}
+.tool-card .tool-stop {
+	padding: 0;
+	border: 1px solid
+		color-mix(
+			in srgb,
+			var(--vscode-errorForeground, #e28d8d) 30%,
+			transparent
+		);
+	border-radius: 5px;
+	background: color-mix(
+		in srgb,
+		var(--vscode-errorForeground, #e28d8d) 14%,
+		transparent
+	);
+}
+.tool-cwd {
+	padding: 8px 10px 0;
+	font-size: 10px;
+	color: var(--vscode-descriptionForeground, #a6afb8);
+	overflow-wrap: anywhere;
+}
+.tool-stop:not(:disabled):hover {
+	background: color-mix(
+		in srgb,
+		var(--vscode-errorForeground, #e28d8d) 12%,
+		transparent
+	);
 }
 .tool-heading svg {
 	flex-shrink: 0;

@@ -13,7 +13,9 @@ export function Value({ value }: { value: unknown }) {
 
 /** 編集前後を縦に並べ、狭いサイドバーでも比較可能にする。 */
 function Content({ value }: { value: unknown }) {
-	if (!isRecord(value)) return <Value value={value} />;
+	if (!isRecord(value)) {
+		return <Value value={value} />;
+	}
 	if (
 		value.type === "diff" &&
 		typeof value.path === "string" &&
@@ -89,6 +91,37 @@ export function EditingFiles({ tool }: { tool: ToolSummary }) {
 				)
 					? []
 					: tool.paths,
+			}}
+		/>
+	);
+}
+
+/** 実行カードは停止用の端末参照を隠し、コマンドの入出力を表示する。 */
+export function ExecuteTool({ tool }: { tool: ToolSummary }) {
+	if (tool.terminal) {
+		return (
+			<>
+				{tool.terminal.truncated && (
+					<p className="muted">出力の先頭を省略しました。</p>
+				)}
+				<Value value={tool.terminal.output} />
+			</>
+		);
+	}
+	const output = isRecord(tool.rawOutput)
+		? tool.rawOutput.formatted_output
+		: undefined;
+	if (typeof output === "string") {
+		return <Value value={output} />;
+	}
+	return (
+		<GenericTool
+			tool={{
+				...tool,
+				rawInput: undefined,
+				content: (tool.content ?? []).filter(
+					(value) => !isRecord(value) || value.type !== "terminal",
+				),
 			}}
 		/>
 	);

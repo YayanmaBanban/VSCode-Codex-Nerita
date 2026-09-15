@@ -1,4 +1,12 @@
 // Host とブラウザの通信契約。VS Code・Node.js・ACP に依存しない。
+import type {
+	Attachment,
+	ComposerMessage,
+	ConfigOption,
+	ContextUsage,
+	QuotaWindow,
+} from "./composer";
+import type { TerminalSnapshot } from "./toolTerminal";
 /** 接続の表示状態。 */
 export type ConnectionStatus =
 	| "disconnected"
@@ -13,12 +21,17 @@ export type RunStatus =
 /** 会話に表示するテキスト。 */
 export type ChatMessage = {
 	id: string;
+	order?: number;
 	role: "user" | "assistant";
 	text: string;
 };
 /** ツール実行・変更ファイルの概要。 */
 export type ToolSummary = {
 	id: string;
+	terminal?: TerminalSnapshot;
+	cwd?: string;
+	order?: number;
+	runId?: string;
 	title: string;
 	status: "pending" | "in_progress" | "completed" | "failed";
 	paths: string[];
@@ -51,9 +64,16 @@ export type ChatState = {
 	permissions: Permission[];
 	error: string | null;
 	authMethods: { id: string; name: string }[];
+	configOptions: ConfigOption[];
+	configPending: boolean;
+	usage: ContextUsage | null;
+	quota: QuotaWindow[] | null;
+	attachments: Attachment[];
+	attachmentPending: boolean;
 };
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| ComposerMessage
 	| { type: "ui/ready" }
 	| { type: "connection/retry"; requestId: string }
 	| { type: "session/new"; requestId: string }
@@ -69,6 +89,14 @@ export type UiMessage =
 			requestId: string;
 			sessionId: string;
 			runId: string;
+	  }
+	| {
+			type: "terminal/kill";
+			requestId: string;
+			sessionId: string;
+			runId: string;
+			toolId: string;
+			terminalId: string;
 	  }
 	| {
 			type: "permission/respond";
@@ -100,5 +128,11 @@ export function initialState(): ChatState {
 		permissions: [],
 		error: null,
 		authMethods: [],
+		configOptions: [],
+		configPending: false,
+		usage: null,
+		quota: null,
+		attachments: [],
+		attachmentPending: false,
 	};
 }

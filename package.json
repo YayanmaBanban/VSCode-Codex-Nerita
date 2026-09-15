@@ -80,7 +80,9 @@
 		"test:acp": "node tests/acp-smoke.mjs",
 		"ui-review:chat": "pnpm ui-review chat",
 		"watch:webview": "tsc -p src/webview/tsconfig.json --watch",
-		"package:vsix": "vsce package --no-dependencies --target win32-x64 --out dist/codex-acp.vsix"
+		"package:vsix": "vsce package --no-dependencies --target win32-x64 --out dist/codex-acp.vsix",
+		"check": "pnpm lint && pnpm check-types && pnpm check-types:tests",
+		"verify": "pnpm check && pnpm test"
 	},
 	"devDependencies": {
 		"@chromatic-com/storybook": "latest",

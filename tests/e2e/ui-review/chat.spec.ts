@@ -48,8 +48,13 @@ for (const choice of ["今回のみ許可", "拒否"]) {
 			page.getByRole("region", { name: "承認要求" }),
 		).toHaveCount(0);
 		await expect(
-			page.getByRole("region", { name: "作業状況" }),
-		).toContainText(choice === "拒否" ? "失敗" : "完了");
+			page.locator(
+				`.tool-card[data-status="${choice === "拒否" ? "failed" : "completed"}"]`,
+			),
+		).toBeVisible();
+		await expect(page.getByRole("img", { name: "失敗" })).toHaveCount(
+			choice === "拒否" ? 1 : 0,
+		);
 	});
 }
 test("停止・再接続・エラー復帰", async ({ page }) => {

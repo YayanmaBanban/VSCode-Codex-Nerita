@@ -1,5 +1,6 @@
 // postMessage の両端で型と値を検証し、不正な操作と壊れた状態を排除する。
 import type { ChatState, HostMessage, UiMessage } from "./messages";
+import { validComposerField } from "./composerValidation";
 /** 配列・null を除いたオブジェクトを判定する。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -25,6 +26,17 @@ export function isUiMessage(value: unknown): value is UiMessage {
 			return true;
 		case "auth/start":
 			return isId(value.methodId);
+		case "config/set":
+			return (
+				isId(value.sessionId) &&
+				isId(value.configId) &&
+				isId(value.value)
+			);
+		case "attachment/add":
+			return isId(value.sessionId);
+		case "attachment/open":
+		case "attachment/remove":
+			return isId(value.sessionId) && isId(value.attachmentId);
 		case "prompt/send":
 			return (
 				isId(value.sessionId) &&
@@ -40,6 +52,13 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				isId(value.runId) &&
 				isId(value.permissionId) &&
 				isId(value.optionId)
+			);
+		case "terminal/kill":
+			return (
+				isId(value.sessionId) &&
+				isId(value.runId) &&
+				isId(value.toolId) &&
+				isId(value.terminalId)
 			);
 		default:
 			return false;
@@ -130,7 +149,7 @@ function validField(key: string, value: unknown): boolean {
 				(item) => isId(item.id) && typeof item.name === "string",
 			);
 		default:
-			return false;
+			return validComposerField(key, value);
 	}
 }
 /** 安全な単調増加番号を判定する。 */
@@ -154,6 +173,12 @@ function isState(value: unknown): value is ChatState {
 			"tools",
 			"permissions",
 			"authMethods",
+			"configOptions",
+			"configPending",
+			"usage",
+			"quota",
+			"attachments",
+			"attachmentPending",
 		].every((key) => validField(key, value[key]))
 	);
 }

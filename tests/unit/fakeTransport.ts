@@ -2,6 +2,7 @@
 import type {
 	PromptResponse,
 	RequestPermissionRequest,
+	NewSessionResponse,
 } from "@agentclientprotocol/sdk";
 import { vi } from "vitest";
 import type {
@@ -9,6 +10,7 @@ import type {
 	AcpTransport,
 } from "../../src/extension/acp/transport";
 import { SessionController } from "../../src/extension/session/sessionController";
+import type { AttachmentService } from "../../src/extension/session/sessionOptions";
 /** テストから完了・失敗のタイミングを制御する Promise。 */
 export function deferred<T>() {
 	let resolve!: (value: T) => void;
@@ -20,7 +22,9 @@ export function deferred<T>() {
 	return { promise, resolve, reject };
 }
 /** 生成された接続を記録するセッション管理のテスト環境。 */
-export function fixture() {
+export function fixture(
+	options: { session?: NewSessionResponse; files?: AttachmentService } = {},
+) {
 	const connections: {
 		callbacks: AcpCallbacks;
 		transport: AcpTransport;
@@ -36,11 +40,18 @@ export function fixture() {
 				}),
 			),
 			newSession: vi.fn(() =>
-				Promise.resolve({ sessionId: `session-${connections.length}` }),
+				Promise.resolve({
+					sessionId: `session-${connections.length}`,
+					...options.session,
+				}),
 			),
 			authenticate: vi.fn(() => Promise.resolve({})),
 			prompt: vi.fn(() => result.promise),
+			readStatus: vi.fn(() => Promise.resolve(null)),
 			cancel: vi.fn(() => Promise.resolve()),
+			killTerminal: vi.fn(() => Promise.resolve({})),
+			terminalSnapshot: vi.fn(() => undefined),
+			setConfig: vi.fn(() => Promise.resolve({ configOptions: [] })),
 			dispose: vi.fn(async () => {
 				result.reject(new Error("closed"));
 				await result.promise.catch(() => undefined);
@@ -48,7 +59,7 @@ export function fixture() {
 		};
 		connections.push({ callbacks, transport, result });
 		return transport;
-	});
+	}, options.files);
 	return { controller, connections };
 }
 /** 承認・拒否が選べる ACP 要求を作る。 */

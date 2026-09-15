@@ -1,10 +1,10 @@
 ﻿// UI要求を会話へ振り分け、送信・停止・承認の排他制御を行う。
-import { randomUUID } from "node:crypto";
 import type { UiMessage } from "../../shared/messages";
-import { isRecord, isUiMessage } from "../../shared/validation";
-import { SessionLifecycle } from "./sessionLifecycle";
+import { isUiMessage } from "../../shared/validation";
+import { SessionRun } from "./sessionRun";
+import { toolTerminalId } from "../../shared/toolTerminal";
 /** 一つの会話に一つの実行だけを許可する。 */
-export class SessionController extends SessionLifecycle {
+export class SessionController extends SessionRun {
 	private seen = new Set<string>();
 	/** Webview入力を検証し、要求IDを一度だけ処理する。 */
 	async receive(value: unknown): Promise<void> {
@@ -31,7 +31,10 @@ export class SessionController extends SessionLifecycle {
 			this.emit({
 				type: "request/failed",
 				requestId: value.requestId,
-				error: "現在の状態では操作できません。接続状態を確認してください。",
+				error:
+					value.type === "terminal/kill"
+						? "コマンドを停止できませんでした。実行状態を確認して再試行してください。"
+						: "現在の状態では操作できません。接続状態を確認してください。",
 			});
 		}
 	}
@@ -72,6 +75,42 @@ export class SessionController extends SessionLifecycle {
 			await this.prompt(message.text);
 			return;
 		}
+		if (message.type === "config/set") {
+			await this.setConfig(message.configId, message.value);
+			return;
+		}
+		if (
+			message.type === "attachment/add" ||
+			message.type === "attachment/open" ||
+			message.type === "attachment/remove"
+		) {
+			await this.attachment(message);
+			return;
+		}
+		if (message.type === "terminal/kill") {
+			const tool = this.state.tools.find(
+				(item) =>
+					item.id === message.toolId && item.runId === message.runId,
+			);
+			// 現在実行中のカードが参照する端末以外への停止要求を拒否する。
+			if (
+				!this.transport ||
+				!tool ||
+				tool.kind !== "execute" ||
+				!this.transport.terminalSnapshot(
+					message.sessionId,
+					message.terminalId,
+				)?.canStop ||
+				toolTerminalId(tool) !== message.terminalId
+			) {
+				throw new Error("Stale terminal");
+			}
+			await this.transport.killTerminal(
+				message.sessionId,
+				message.terminalId,
+			);
+			return;
+		}
 		if (message.runId !== this.state.runId || !this.busy()) {
 			throw new Error("Stale run");
 		}
@@ -86,86 +125,5 @@ export class SessionController extends SessionLifecycle {
 			throw new Error("Stale permission");
 		}
 		this.patch({ permissions: this.permissions.list() });
-	}
-	/** 実行の完了と失敗を開始した接続にだけ反映する。 */
-	private async prompt(text: string): Promise<void> {
-		if (this.busy() || !this.transport || !this.state.sessionId) {
-			throw new Error("Busy");
-		}
-		const transport = this.transport;
-		const epoch = this.epoch;
-		const runId = randomUUID();
-		this.patch({
-			run: "running",
-			runId,
-			error: null,
-			tools: [],
-			messages: [
-				...this.state.messages,
-				{ id: randomUUID(), role: "user", text },
-			],
-		});
-		try {
-			const result = await transport.prompt(this.state.sessionId, text);
-			if (epoch !== this.epoch) {
-				return;
-			}
-			const cancelled =
-				this.state.run === "cancelling" ||
-				result.stopReason === "cancelled";
-			this.patch({ run: cancelled ? "cancelled" : "completed" });
-			// ACP通知には実行IDがないため、停止後は接続を破棄して遅延通知の混入を防ぐ。
-			if (cancelled) {
-				this.disconnect();
-				this.patch({
-					connection: "disconnected",
-					sessionId: null,
-					permissions: [],
-				});
-			}
-		} catch (error) {
-			if (epoch === this.epoch) {
-				if (this.state.run === "cancelling") {
-					this.invalidate();
-				} else {
-					this.patch({
-						run: "failed",
-						error: "実行に失敗しました。入力内容を確認して再送するか、再接続してください。",
-					});
-					if (isRecord(error) && error.code === -32000) {
-						this.connectionError(error);
-					}
-				}
-			}
-		} finally {
-			if (epoch === this.epoch) {
-				clearTimeout(this.cancelTimer);
-				this.permissions.cancelAll();
-				this.patch({ permissions: [] });
-			}
-		}
-	}
-	/** 停止待ち中は再送を防ぎ、応答しないプロセスも期限後に終了する。 */
-	private cancel(): void {
-		if (
-			this.state.run !== "running" ||
-			!this.transport ||
-			!this.state.sessionId
-		) {
-			return;
-		}
-		this.permissions.cancelAll();
-		this.patch({ run: "cancelling", permissions: [] });
-		const epoch = this.epoch;
-		void this.transport.cancel(this.state.sessionId).catch(() => {
-			if (epoch === this.epoch) {
-				this.failConnection();
-			}
-		});
-		this.cancelTimer = setTimeout(() => {
-			if (epoch === this.epoch) {
-				this.invalidate();
-			}
-		}, 5000);
 	}
 }

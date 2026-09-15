@@ -140,6 +140,8 @@ describe("通信境界", () => {
 		});
 		expect(patch.tools?.[0]).toEqual({
 			id: "t",
+			runId: "r",
+			order: 1,
 			title: "変更",
 			status: "completed",
 			paths: ["a.ts"],

@@ -10,6 +10,8 @@ import typescriptEslint from "typescript-eslint";
 export default defineConfig([
 	globalIgnores([".vscode-test/**", "coverage/**", "dist/**", "out/**"]),
 	js.configs.recommended,
+	prettier,
+	...storybook.configs["flat/recommended"],
 	{
 		files: ["**/*.{js,mjs,cjs,ts,tsx}"],
 		languageOptions: {
@@ -138,6 +140,4 @@ export default defineConfig([
 		files: ["src/webview/**/*.{ts,tsx}"],
 		languageOptions: { globals: globals.browser },
 	},
-	prettier,
-	...storybook.configs["flat/recommended"],
 ]);

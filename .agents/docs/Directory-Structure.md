@@ -1,45 +1,37 @@
-# プロジェクトのディレクトリ構成
+# Webviewのディレクトリ構成
 
-ソース・設定・テストの追加や移動時に参照します。以下のパスはリポジトリルート基準です。
+`src/webview/` のファイル追加・分割・移動時に参照します。以下のパスはこのディレクトリからの相対パスです。Extension Host用の `src/extension/` にはこの構成を機械的に適用しません。
 
-## 現在の配置
+## 配置の判断
+
+同じ機能に属し、同じ理由で変更されるComponent・Hook・API・型・CSS・Storyを近くに置きます。既存の機能に属するコードはその配下へ追加してください。
 
 | 役割 | 配置 |
 | --- | --- |
-| Extension Host の実装 | `src/extension/extension.ts` |
-| 拡張機能の宣言・コマンド・依存関係 | `package.json` |
-| バンドル・型設定 | `esbuild.js`・`tsconfig.json` |
-| Storybook 設定 | `config/storybook/main.ts`・`config/storybook/preview.tsx` |
-| Story のブラウザテスト設定 | `config/vitest.config.ts`・`config/vitest.shims.d.ts` |
-| 開発ツールの型設定 | `config/tsconfig.json` |
-| 拡張機能テスト・型設定 | `tests/extension.test.ts`・`tests/tsconfig.json` |
-| VS Code Test CLI 設定 | `tests/.vscode-test.mjs` |
-| UIレビュー設定 | `tests/e2e/config/ui-review.config.ts` |
-| UIレビューシナリオ・型設定 | `tests/e2e/ui-review/`・`tests/e2e/tsconfig.json` |
-| 外部サイト向け初期サンプル（UIレビュー対象外） | `tests/e2e/specs/example.spec.ts` |
-| デバッグ・タスク設定 | `.vscode/launch.json`・`.vscode/tasks.json` |
+| Reactの起動 | `index.tsx` |
+| 画面の組み立て・全体の状態・機能間の連携 | `chat/ChatApp.tsx`・`chat/useChat.ts` |
+| 共通テーマ | `chat/chat.css` |
+| 機能固有のUI・処理・型 | `chat/`・`chat/tools/` |
+| WebviewとHostの通信 | `vscodeBridge.ts` |
+| Hostと共有する通信型・検証処理 | `../shared/` |
 
-生成物は `dist/extension.js`、`dist/storybook/`、`dist/ui-review/`、`dist/vitest/coverage/` に出力する設定です。拡張機能テストのコンパイル先は `out/` です。設定やテスト本体を生成物のディレクトリへ置かないでください。
+既存の配置は `src/webview/` で確認できます。追加説明はルートの `README.md` にありますが、配置の判断基準はこのガイド内で完結しています。
 
-## 実装時に修正した参照
+## 分割と共通化
 
-- `esbuild.js` は `src/extension/extension.ts` と `src/webview/index.tsx` を個別にバンドルします。
-- `test` は `tests/.vscode-test.mjs` を明示し、設定内のパスはリポジトリルートへ解決します。
-- チャット Story は `src/webview/chat/ChatApp.stories.tsx`、UIレビューは `tests/e2e/ui-review/chat.spec.ts` です。
-- Webview 型設定は `src/webview/tsconfig.json`、共有型は `src/shared/`、Host 単体テストは `tests/unit/`、実行資産の梱包処理は `config/package-runtime.cjs` です。
+- 小さい機能は同じフォルダにファイルを並べる構成から始め、責務やファイル数が増えたら `components/`・`hooks/` などへ分ける。空の分類フォルダは作らない。
+- 大きいComponentは、その機能内でComponent・Hookへ分割する。行数の目安だけを理由に、意味のない階層や再exportファイルを増やさない。
+- 複数箇所で使うツールカード専用ボタンは `chat/tools/` に置く。機能固有のデータや操作を知らずに使えるボタンは共通化の候補になる。
+- 共通化は利用回数や見た目だけで判断せず、役割と変更理由が共通かを確認する。迷ったらまず機能側に置く。
+- 別機能に同名の `Header.tsx` があってもよい。ファイル名はパスと合わせて判断する。
+- 画面固有の処理はその近くに置き、複数画面にまたがる処理は役割と変更理由に応じてまとめる。
 
-VSIX は `dist/codex-acp.vsix`、実行資産は `dist/runtime/`、Webview 資産は `dist/webview/` に出力します。
+## WebviewとExtension Hostの境界
 
-## 追加・分割の判断
+Webview側から `src/extension/` やVS Code API・Node.js専用モジュールをimportしません。Hostとの通信は `vscodeBridge.ts` のメッセージ経由で行い、両側に必要な型・検証処理はNode.jsに依存しない `src/shared/` へ置きます。Webview用とHost用のexportを同じ公開ファイルにまとめないでください。
 
-- Extension Host の機能は `src/extension/` 内で役割ごとにまとめます。コマンド登録と処理本体は必要に応じて分割します。
-- ブラウザ側の入口・UI・通信境界は `src/webview/` に配置します。通信は `vscodeBridge.ts` を経由します。
-- Component・Hook・型・CSS・Story は同じ機能の近くに置きます。空の分類フォルダや不要な再exportファイルを増やしません。
-- 共通化は役割と変更理由が共通かで判断し、迷ったら機能側に置きます。
-- Node.js・VS Code API に依存する処理をブラウザ用の公開ファイルから再exportしません。共有する型は実行環境に依存しない形にします。
+## Story・テストと移動時の確認
 
-## 移動時の確認
+Story・Component単位のテスト・固有のCSSは対象Componentの近くに配置できます。既存の結合テスト・E2Eはルートの `tests/` の運用に合わせます。
 
-import・CSS・素材の参照に加え、バンドルの入口、`package.json` の main・scripts、型設定の include/exclude、Storybook の glob、テスト検出、デバッグ設定、文書を確認します。
-
-Extension Host、ブラウザ、Mocha、Playwright の型環境を混在させないでください。変更の影響に応じて型チェック・ビルド・関連テストを実行し、生成物だけが残った状態を成功と判断しないでください。
+移動時はimport・再export・CSSだけでなく、拡張機能URIを基準にした資産パス、esbuild・Storybook・テストの検出設定、スクリプト・文書の旧パスも更新してください。変更の影響に応じて型チェック・ビルド・関連テストで参照切れを確認します。

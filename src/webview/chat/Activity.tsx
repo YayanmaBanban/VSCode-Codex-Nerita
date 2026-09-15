@@ -1,6 +1,7 @@
 // ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
 import type { ChatState, UiMessage } from "../../shared/messages";
 import { ToolCard } from "./tools/ToolCard";
+import { toolTerminalId } from "../../shared/toolTerminal";
 /** 現在の実行の作業状況と承認操作を表示する。 */
 export function Activity({
 	state,
@@ -12,11 +13,34 @@ export function Activity({
 	return (
 		<>
 			{state.tools.length > 0 && (
-				<section className="activity" aria-label="作業状況">
-					<h2>作業状況</h2>
-					{state.tools.map((tool) => (
-						<ToolCard key={tool.id} tool={tool} />
-					))}
+				<section aria-label="ツール実行">
+					{state.tools.map((tool) => {
+						const terminalId = toolTerminalId(tool);
+						return (
+							<ToolCard
+								key={`${tool.runId ?? ""}:${tool.id}`}
+								tool={tool}
+								onStop={
+									terminalId &&
+									tool.terminal?.canStop &&
+									state.sessionId &&
+									tool.runId &&
+									state.connection === "ready"
+										? () =>
+												send({
+													type: "terminal/kill",
+													terminalId,
+													toolId: tool.id,
+													requestId:
+														crypto.randomUUID(),
+													sessionId: state.sessionId!,
+													runId: tool.runId!,
+												})
+										: undefined
+								}
+							/>
+						);
+					})}
 				</section>
 			)}
 			{state.permissions.map((permission) => (

@@ -5,6 +5,7 @@ import { createTransport } from "./acp/transport";
 import { SessionController } from "./session/sessionController";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { requireLocalWorkspace } from "./workspace";
+import { attachmentService } from "./webview/attachments";
 
 let controller: SessionController | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
@@ -28,7 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		return createTransport(nodePath, adapter, cwd, callbacks, (message) =>
 			output.appendLine(message),
 		);
-	});
+	}, attachmentService);
 	controller = session;
 	const provider = new ChatViewProvider(context.extensionUri, session);
 	context.subscriptions.push(

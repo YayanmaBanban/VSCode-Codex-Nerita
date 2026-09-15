@@ -1,45 +1,53 @@
 # UIレビューの実装・実行
 
-シナリオや実行環境を追加・変更する場合に参照します。確認方針は [UIレビュー](UI-Review-Guide.md) にまとめています。以下のパスはリポジトリルート基準です。
+シナリオや実行環境を追加・変更する場合に参照します。確認方針は [UIレビュー](UI-Review-Guide.md) にまとめています。
 
-## 実装と設定
-
-| 役割 | ファイル |
-| --- | --- |
-| Story の検出・アドオン | `config/storybook/main.ts` |
-| プレビューの共通設定 | `config/storybook/preview.tsx` |
-| Story のブラウザテスト | `config/vitest.config.ts` |
-| UIレビューの起動・保存先・ブラウザ | `tests/e2e/config/ui-review.config.ts` |
-| チャットの操作・撮影 | `tests/e2e/ui-review/chat.spec.ts` |
-| Playwright の型設定 | `tests/e2e/tsconfig.json` |
-
-`tests/e2e/specs/example.spec.ts` は外部サイト向け初期サンプルで、UIレビュー対象外です。`test:storybook` はStoryのブラウザテスト、`ui-review` はStorybookを外から操作・撮影するPlaywright Testとして分けます。VS Code APIとの結合確認は拡張機能テスト側で扱います。
-
-## シナリオの追加
-
-1. 実コンポーネントと観察開始状態を表すStoryを `src/` 配下に追加し、Storybookの検出対象に含める。
-2. 起動したStorybookの `/index.json` でStory IDを確認する。現在のチャットは `chat-app--*` を使用する。
-3. `tests/e2e/ui-review/` に `*.spec.ts` を作り、`@playwright/test` から `test`・`expect` をimportする。
-4. `page.goto()` で `/iframe.html?id=<Story ID>&viewMode=story` を開き、意味のある状態をassertionで待つ。
-5. 必要なフォント・画像のロードを待ち、`page.screenshot()` の画像を `testInfo.attach()` で名前付き添付する。
-6. console/page errorを収集し、シナリオ終了時に検証する。UIに合わせて操作と撮影を追加する。
-
-共通fixtureはありません。現在のspecは処理を直接記述しています。複数シナリオで同じ処理が必要になった場合に共通化を検討してください。JSON保存やアニメーションの時間別撮影も未実装です。
-
-## 起動と成果物
+以下は本プロジェクトの実装例です。他プロジェクトではコマンド・パス・Story ID・fixture・CI設定を実装に合わせて調整してください。文書だけでは実行基盤は導入されません。「役割」内のパスは `tests/e2e/` 基準で、コード例は `tests/e2e/ui-review/` に置くspecを想定しています。
 
 ```sh
 pnpm ui-review
-pnpm ui-review:chat
-pnpm ui-review:report
+pnpm ui-review chat
+pnpm ui-review tool-cards
+pnpm exec playwright show-report dist/ui-review/report
 ```
 
-設定の `webServer` はリポジトリルートからStorybookを起動し、`http://127.0.0.1:6006/index.json` を待ちます。対象Storyの存在や描画完了はspecで別途確認します。
+Storybookを自動起動し、Chromiumで対象Storyを操作・撮影します。ローカルでは6006番ポートに起動済みなら再利用するので、このプロジェクトのStorybookを使用してください。
 
-Chromium・420×820を基準に実行します。狭い幅はspecで320×760を指定します。画像・動画・traceは成功時も保存し、出力先は `dist/ui-review/test-results/` と `dist/ui-review/report/` です。添付画像はHTMLレポートから確認します。再実行前に比較用成果物を保全してください。
+## 役割
 
-型検査は `pnpm exec tsc -p tests/e2e/tsconfig.json`、対象Lintは `pnpm exec eslint tests/e2e/config tests/e2e/ui-review` で実行できます。テスト検出だけを確認する `pnpm ui-review --list` は、操作・描画の検証とは区別します。
+- Story：観察開始状態。実際のコンポーネントを使い、Hostとの通信はモックBridgeに置き換えます。
+- `ui-review/*.spec.ts`：対象固有の操作、状態待ち、必要なassertion。
+- `config/ui-review.config.ts`：共通viewport（420×820）、Storybook起動、Chromium、動画・trace・レポート。
 
-## CIを追加する場合
+## 対象の追加
 
-現在、UIレビュー用のGitHub Actionsワークフローはありません。追加する場合は依存関係とChromiumを準備し、対象Storyが存在することを確認してUIレビューを実行します。失敗時も成果物を取得できるようにし、保持期間や並列実行の扱いはワークフローで明示してください。ローカルの成功だけでCIの動作確認済みとは扱いません。
+Storyを追加し、そのIDを使ってspecを作ります。
+
+```ts
+import { test, expect } from "@playwright/test";
+
+test("対象のシナリオ", async ({ page }, info) => {
+	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	const button = page.getByRole("button", { name: "＋ 新規会話" });
+	await expect(button).toBeVisible();
+	await info.attach("initial", {
+		body: await page.screenshot(),
+		contentType: "image/png",
+	});
+	await button.hover();
+	await info.attach("hover", {
+		body: await page.screenshot(),
+		contentType: "image/png",
+	});
+});
+```
+
+添付名は撮影状態が分かる名前にします。画像を明示的に保存する場合は `info.outputPath()` を使い、同名で上書きしないようにします。対象固有の非同期処理はspec側で待ちます。撮影だけでネットワークやアプリの処理完了を判断しません。
+
+## 成果物
+
+`dist/ui-review/test-results` の各シナリオフォルダに画像・動画・traceを保存します。状態ごとの画像は `info.attach()` でレポートへ添付します。console/page errorの収集・検証は対象specに記述し、必要なエラー情報をレポートへ添付します。
+
+HTMLレポートは `dist/ui-review/report` に保存します。成功時も画像・動画・traceを残します。再実行すると前回の成果物は置き換わるため、変更前後を比較する場合は実行前に別の場所へ保存してください。
+
+対象シナリオは `tests/e2e/ui-review/*.spec.ts` を確認してください。画像の合否は人間またはAIが判断します。静止画撮影時のアニメーション設定はspecごとに確認し、動画と静止画で動きの扱いが異なる場合は区別します。

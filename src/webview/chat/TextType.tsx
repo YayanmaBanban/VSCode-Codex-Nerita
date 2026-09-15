@@ -42,7 +42,9 @@ export function TextType({
 			? displayed
 			: "";
 	useEffect(() => {
-		if (reducedMotion || visible === text) return;
+		if (reducedMotion || visible === text) {
+			return;
+		}
 		const timer = setTimeout(() => {
 			const length = Array.from(
 				new Intl.Segmenter(undefined, {
@@ -55,13 +57,17 @@ export function TextType({
 	}, [text, visible, segments, typingSpeed, reducedMotion]);
 	useEffect(() => {
 		setShowCursor(true);
-		if (streaming || visible !== text) return;
+		if (streaming || visible !== text) {
+			return;
+		}
 		// 回答を消去・ループせず、指定の休止時間後にカーソルだけを隠す。
 		const timer = setTimeout(() => setShowCursor(false), pauseDuration);
 		return () => clearTimeout(timer);
 	}, [streaming, visible, text, pauseDuration]);
 	useEffect(() => {
-		if (!cursor.current || reducedMotion || !showCursor) return;
+		if (!cursor.current || reducedMotion || !showCursor) {
+			return;
+		}
 		const tween = gsap.fromTo(
 			cursor.current,
 			{ opacity: 1 },

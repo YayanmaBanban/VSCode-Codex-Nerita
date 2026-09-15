@@ -6,6 +6,8 @@ import {
 	type UiMessage,
 } from "../../shared/messages";
 import type { Bridge } from "../vscodeBridge";
+import { settingsFixture } from "./settingsFixture";
+import { mockSettings } from "./mockSettings";
 
 /** Story の開始状態。 */
 export type Scenario =
@@ -23,6 +25,7 @@ function scenarioState(scenario: Scenario): ChatState {
 		...initialState(),
 		connection: "ready",
 		sessionId: "story-session",
+		configOptions: settingsFixture(),
 	};
 	if (scenario === "connecting") {
 		state.connection = "connecting";
@@ -89,9 +92,11 @@ function scenarioState(scenario: Scenario): ChatState {
 	return state;
 }
 /** 送信記録・購読・段階的な返信を持つ代替実装を作る。 */
-export function createMockBridge(
-	scenario: Scenario = "empty",
-): Bridge & { sent: UiMessage[]; emit: (event: HostMessage) => void } {
+export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
+	sent: UiMessage[];
+	emit: (event: HostMessage) => void;
+	patchState: (changes: Partial<ChatState>) => void;
+} {
 	let state = scenarioState(scenario);
 	const listeners = new Set<(event: HostMessage) => void>();
 	const sent: UiMessage[] = [];
@@ -107,9 +112,18 @@ export function createMockBridge(
 		timers.forEach(clearTimeout);
 		timers.clear();
 	};
+	/** 固定シナリオと追加送信に共通の次の表示順を採番する。 */
+	const nextOrder = () =>
+		Math.max(
+			0,
+			...[...state.messages, ...state.tools].map(
+				(item, index) => item.order ?? index,
+			),
+		) + 1;
 	return {
 		sent,
 		emit,
+		patchState: patch,
 		subscribe(listener) {
 			listeners.add(listener);
 			return () => {
@@ -121,6 +135,11 @@ export function createMockBridge(
 		},
 		postMessage(message) {
 			sent.push(message);
+			const settings = mockSettings(state, message);
+			if (settings) {
+				patch(settings);
+				return;
+			}
 			switch (message.type) {
 				case "ui/ready":
 					emit({
@@ -140,12 +159,14 @@ export function createMockBridge(
 					break;
 				case "prompt/send": {
 					patch({
+						attachments: [],
 						run: "running",
 						runId: "interactive-run",
 						messages: [
 							...state.messages,
 							{
 								id: crypto.randomUUID(),
+								order: nextOrder(),
 								role: "user",
 								text: message.text,
 							},
@@ -160,6 +181,7 @@ export function createMockBridge(
 										...state.messages,
 										{
 											id: assistantId,
+											order: nextOrder(),
 											role: "assistant",
 											text: "依頼を確認しました。",
 										},
