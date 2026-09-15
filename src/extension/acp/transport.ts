@@ -2,12 +2,15 @@
 import { spawn } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import { StatusReader } from "./statusReader";
-import { Terminals } from "./terminals";
+import {
+	consumeTaskUpdate,
+	supportsAsyncTasks,
+	type TaskUpdate,
+} from "./airTasks";
+import { isRecord } from "../../shared/validation";
 import { orderedUpdates } from "./orderedUpdates";
-import type { TerminalSnapshot } from "../../shared/toolTerminal";
 import {
 	client,
-	methods,
 	ndJsonStream,
 	PROTOCOL_VERSION,
 	type RequestPermissionRequest,
@@ -18,11 +21,7 @@ import {
 
 /** UI から独立した ACP の通知受付。 */
 export type AcpCallbacks = {
-	terminal?: (
-		sessionId: string,
-		terminalId: string,
-		snapshot: TerminalSnapshot,
-	) => void;
+	asyncTask?: (update: TaskUpdate) => void;
 	update: (notification: SessionNotification) => void;
 	permission: (
 		request: RequestPermissionRequest,
@@ -63,11 +62,7 @@ export function createTransport(
 	});
 	let disposed = false;
 	const status = new StatusReader();
-	const terminals = new Terminals(cwd, (sessionId, terminalId, snapshot) => {
-		if (!disposed) {
-			callbacks.terminal?.(sessionId, terminalId, snapshot);
-		}
-	});
+	let asyncTasksEnabled = false;
 	let cancelGeneration = 0;
 	let reported = false;
 	/** 異常終了を一度だけ上位へ通知する。 */
@@ -85,23 +80,13 @@ export function createTransport(
 	child.stdin.on("error", disconnected);
 	const ordered = orderedUpdates(
 		ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout)),
+		(params) =>
+			consumeTaskUpdate(params, (update) => {
+				if (!disposed && asyncTasksEnabled)
+					{callbacks.asyncTask?.(update);}
+			}),
 	);
 	const connection = client()
-		.onRequest(methods.client.terminal.create, ({ params }) =>
-			terminals.create(params),
-		)
-		.onRequest(methods.client.terminal.output, ({ params }) =>
-			terminals.output(params),
-		)
-		.onRequest(methods.client.terminal.waitForExit, ({ params }) =>
-			terminals.waitForExit(params),
-		)
-		.onRequest(methods.client.terminal.kill, ({ params }) =>
-			terminals.kill(params),
-		)
-		.onRequest(methods.client.terminal.release, ({ params }) =>
-			terminals.release(params),
-		)
 		.onNotification("session/update", ({ params }) => {
 			try {
 				if (!disposed && !status.consume(params)) {
@@ -150,7 +135,7 @@ export function createTransport(
 			}
 		});
 		connection.close();
-		return Promise.all([killed, terminals.dispose()])
+		return Promise.all([killed])
 			.then(() => undefined)
 			.finally(() => {
 				child.stdin.destroy();
@@ -179,19 +164,27 @@ export function createTransport(
 		}
 	}
 	return {
-		initialize: () =>
-			bounded(
+		initialize: async () => {
+			const response = await bounded(
 				connection.agent.request("initialize", {
 					protocolVersion: PROTOCOL_VERSION,
 					clientCapabilities: {
-						terminal: true,
 						_meta: {
 							terminal_output: true,
+							jetbrains: {
+								air: {
+									version: 1,
+									capabilities: ["asyncTasks"],
+								},
+							},
 						},
 					},
 					clientInfo: { name: "vscode-codex-acp", version: "0.0.1" },
 				}),
-			),
+			);
+			asyncTasksEnabled = supportsAsyncTasks(response._meta);
+			return response;
+		},
 		newSession: async () => {
 			const session = await bounded(
 				connection.agent.request("session/new", {
@@ -199,7 +192,6 @@ export function createTransport(
 					mcpServers: [],
 				}),
 			);
-			terminals.allowSession(session.sessionId);
 			return session;
 		},
 		authenticate: (methodId: string) =>
@@ -252,10 +244,15 @@ export function createTransport(
 			cancelGeneration++;
 			return connection.agent.notify("session/cancel", { sessionId });
 		},
-		killTerminal: (sessionId: string, terminalId: string) =>
-			terminals.kill({ sessionId, terminalId }),
-		terminalSnapshot: (sessionId: string, terminalId: string) =>
-			terminals.snapshot({ sessionId, terminalId }),
+		stopAsyncTask: async (sessionId: string, asyncTaskId: string) => {
+			if (!asyncTasksEnabled) {throw new Error("Async tasks unsupported");}
+			const response = await connection.agent.request(
+				"_session/async_task/stop",
+				{ sessionId, asyncTaskId },
+			);
+			if (!isRecord(response) || response.stopped !== true)
+				{throw new Error("Task not stopped");}
+		},
 		dispose,
 	};
 }

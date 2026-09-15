@@ -2,7 +2,10 @@
 import type { Stream, AnyMessage } from "@agentclientprotocol/sdk";
 
 /** 先行するsession/updateのハンドラー完了まで、RPC応答の配送を待つ。 */
-export function orderedUpdates(stream: Stream) {
+export function orderedUpdates(
+	stream: Stream,
+	consumeExtension: (params: unknown) => boolean = () => false,
+) {
 	const pending: (() => void)[] = [];
 	let drained = Promise.resolve();
 	const readable = stream.readable.pipeThrough(
@@ -13,6 +16,11 @@ export function orderedUpdates(stream: Stream) {
 					message.method === "session/update" &&
 					!("id" in message)
 				) {
+					// 拡張通知も先行する標準通知の後に処理し、未知の型をSDKへ渡さない。
+					await drained;
+					if (consumeExtension(message.params)) {
+						return;
+					}
 					const finished = new Promise<void>((resolve) => {
 						pending.push(resolve);
 					});

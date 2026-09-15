@@ -1,6 +1,36 @@
 // 専用・汎用カードの内容、完了時の自動折り畳みと再展開を検証する。
 import { test, expect } from "@playwright/test";
 
+test("ターン完了後のAIRタスクを既存カードから停止する", async ({
+	page,
+}, info) => {
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	await page.goto(
+		"/iframe.html?id=chat-tool-cards--background&viewMode=story",
+	);
+	const card = page.locator(".tool-card");
+	await expect(card).toHaveCount(1);
+	await expect(card.locator(".tool-progress")).toBeVisible();
+	await expect(
+		card.getByRole("button", { name: "pnpm.cmd test を停止" }),
+	).toBeEnabled();
+	await card.getByRole("button", { name: "pnpm.cmd test を停止" }).click();
+	await expect(card.locator(".tool-progress, .tool-stop")).toHaveCount(0);
+	await card
+		.getByRole("button", { name: "pnpm.cmd test", exact: true })
+		.click();
+	await expect(card.locator(".tool-body")).toContainText("configuration");
+	await expect(page.getByLabel("送信した要求")).toContainText(
+		'"type":"execution/stop"',
+	);
+	await page.screenshot({
+		path: info.outputPath("background-stopped.png"),
+		fullPage: true,
+	});
+	expect(errors).toEqual([]);
+});
+
 for (const theme of ["dark", "light"] as const) {
 	test(`ツールカードの開閉と表示: ${theme}`, async ({ page }, info) => {
 		const errors: string[] = [];
@@ -104,7 +134,7 @@ test("execute の停止要求と失敗アイコン、think の種別判定", asy
 	).toBeDisabled();
 	await execute.getByRole("button", { name: "pnpm.cmd test を停止" }).click();
 	await expect(page.getByLabel("送信した要求")).toContainText(
-		'"type":"terminal/kill"',
+		'"type":"execution/stop"',
 	);
 	await expect(page.getByLabel("送信した要求")).toContainText(
 		'"runId":"run-test"',

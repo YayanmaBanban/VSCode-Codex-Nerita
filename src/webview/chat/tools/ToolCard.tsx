@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ToolSummary } from "../../../shared/messages";
 import { isRecord } from "../../../shared/validation";
+import { taskActive, type AsyncTask } from "../../../shared/asyncTask";
 import { GuardianReview } from "./GuardianReview";
 import { EditingFiles, ExecuteTool, GenericTool } from "./ToolContent";
 import "./tools.css";
@@ -30,37 +31,44 @@ const renderers = [
 /** 完了への遷移で一度だけ閉じ、完了後の手動展開も許可する。 */
 export function ToolCard({
 	tool,
+	task,
 	onStop,
 }: {
 	tool: ToolSummary;
+	task?: AsyncTask | undefined;
 	onStop?: (() => void) | undefined;
 }) {
 	const bodyId = useId();
+	const status = task
+		? taskActive(task)
+			? "in_progress"
+			: task.state === "failed"
+				? "failed"
+				: "completed"
+		: tool.backgrounded
+			? "in_progress"
+			: tool.status;
 	const [state, setState] = useState({
-		status: tool.status,
-		open: tool.status !== "completed",
+		status,
+		open: status !== "completed",
 	});
-	if (state.status !== tool.status) {
+	if (state.status !== status) {
 		setState({
-			status: tool.status,
-			open: tool.status === "completed" ? false : state.open,
+			status,
+			open: status === "completed" ? false : state.open,
 		});
 	}
 	const executing = tool.kind === "execute";
 	const input = isRecord(tool.rawInput) ? tool.rawInput : {};
 	const action = isRecord(input.action) ? input.action : input;
-	const cwd =
-		tool.terminal?.cwd ??
-		(typeof action.cwd === "string" ? action.cwd : tool.cwd);
+	const cwd = typeof action.cwd === "string" ? action.cwd : tool.cwd;
 	const command =
 		typeof input.command === "string"
 			? input.command
 			: Array.isArray(input.command)
 				? input.command.join(" ")
 				: tool.title;
-	const active = tool.terminal
-		? tool.terminal.canStop
-		: tool.status === "pending" || tool.status === "in_progress";
+	const active = status === "pending" || status === "in_progress";
 	// Guardian Review は think の場合も専用の盾アイコンを維持する。
 	const guardian = tool.title.trim().toLowerCase() === "guardian review";
 	const { Icon, Body } = guardian
@@ -73,11 +81,7 @@ export function ToolCard({
 						titles.includes(tool.title.trim().toLowerCase()),
 					) ?? { Icon: Wrench, Body: GenericTool });
 	return (
-		<div
-			className="tool-card"
-			data-status={tool.status}
-			data-kind={tool.kind}
-		>
+		<div className="tool-card" data-status={status} data-kind={tool.kind}>
 			{cwd && (
 				<div className="tool-cwd" title={cwd}>
 					{cwd}
@@ -88,9 +92,7 @@ export function ToolCard({
 					className="tool-heading"
 					aria-expanded={state.open}
 					aria-controls={bodyId}
-					onClick={() =>
-						setState({ status: tool.status, open: !state.open })
-					}
+					onClick={() => setState({ status, open: !state.open })}
 				>
 					<Icon size={16} aria-hidden="true" />
 					<span className="tool-title">
@@ -115,7 +117,7 @@ export function ToolCard({
 						aria-hidden="true"
 					/>
 				</button>
-				{tool.status === "failed" && (
+				{status === "failed" && (
 					<span className="tool-result" role="img" aria-label="失敗">
 						<X size={16} aria-hidden="true" />
 					</span>
@@ -128,7 +130,9 @@ export function ToolCard({
 						title={
 							onStop
 								? "コマンドを停止"
-								: "拡張機能が管理する端末ではないため個別停止できません"
+								: task?.stopPending
+									? "停止を待っています"
+									: "個別停止できるバックグラウンドタスクはありません"
 						}
 						disabled={!onStop}
 						onClick={onStop}

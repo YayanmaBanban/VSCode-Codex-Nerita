@@ -1,7 +1,7 @@
 // ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
 import type { ChatState, UiMessage } from "../../shared/messages";
 import { ToolCard } from "./tools/ToolCard";
-import { toolTerminalId } from "../../shared/toolTerminal";
+import { taskActive } from "../../shared/asyncTask";
 /** 現在の実行の作業状況と承認操作を表示する。 */
 export function Activity({
 	state,
@@ -15,26 +15,31 @@ export function Activity({
 			{state.tools.length > 0 && (
 				<section aria-label="ツール実行">
 					{state.tools.map((tool) => {
-						const terminalId = toolTerminalId(tool);
+						const task = state.asyncTasks.find(
+							(item) => item.toolCallId === tool.id,
+						);
 						return (
 							<ToolCard
 								key={`${tool.runId ?? ""}:${tool.id}`}
 								tool={tool}
+								task={task}
 								onStop={
-									terminalId &&
-									tool.terminal?.canStop &&
+									task &&
+									taskActive(task) &&
+									task.canStop &&
+									!task.stopPending &&
 									state.sessionId &&
-									tool.runId &&
+									(tool.runId || state.runId) &&
 									state.connection === "ready"
 										? () =>
 												send({
-													type: "terminal/kill",
-													terminalId,
+													type: "execution/stop",
 													toolId: tool.id,
 													requestId:
 														crypto.randomUUID(),
 													sessionId: state.sessionId!,
-													runId: tool.runId!,
+													runId: (tool.runId ??
+														state.runId)!,
 												})
 										: undefined
 								}

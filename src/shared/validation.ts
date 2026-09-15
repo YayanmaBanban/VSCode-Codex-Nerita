@@ -1,6 +1,7 @@
 // postMessage の両端で型と値を検証し、不正な操作と壊れた状態を排除する。
 import type { ChatState, HostMessage, UiMessage } from "./messages";
 import { validComposerField } from "./composerValidation";
+import { isAsyncTask } from "./asyncTask";
 /** 配列・null を除いたオブジェクトを判定する。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -53,12 +54,9 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				isId(value.permissionId) &&
 				isId(value.optionId)
 			);
-		case "terminal/kill":
+		case "execution/stop":
 			return (
-				isId(value.sessionId) &&
-				isId(value.runId) &&
-				isId(value.toolId) &&
-				isId(value.terminalId)
+				isId(value.sessionId) && isId(value.runId) && isId(value.toolId)
 			);
 		default:
 			return false;
@@ -77,6 +75,8 @@ function every(
 /** 状態プロパティを項目ごとに検証する。 */
 function validField(key: string, value: unknown): boolean {
 	switch (key) {
+		case "asyncTasks":
+			return Array.isArray(value) && value.every(isAsyncTask);
 		case "connection":
 			return [
 				"disconnected",
@@ -171,6 +171,7 @@ function isState(value: unknown): value is ChatState {
 			"error",
 			"messages",
 			"tools",
+			"asyncTasks",
 			"permissions",
 			"authMethods",
 			"configOptions",

@@ -2,7 +2,7 @@
 import type { UiMessage } from "../../shared/messages";
 import { isUiMessage } from "../../shared/validation";
 import { SessionRun } from "./sessionRun";
-import { toolTerminalId } from "../../shared/toolTerminal";
+import { taskActive } from "../../shared/asyncTask";
 /** 一つの会話に一つの実行だけを許可する。 */
 export class SessionController extends SessionRun {
 	private seen = new Set<string>();
@@ -32,7 +32,7 @@ export class SessionController extends SessionRun {
 				type: "request/failed",
 				requestId: value.requestId,
 				error:
-					value.type === "terminal/kill"
+					value.type === "execution/stop"
 						? "コマンドを停止できませんでした。実行状態を確認して再試行してください。"
 						: "現在の状態では操作できません。接続状態を確認してください。",
 			});
@@ -87,28 +87,45 @@ export class SessionController extends SessionRun {
 			await this.attachment(message);
 			return;
 		}
-		if (message.type === "terminal/kill") {
+		if (message.type === "execution/stop") {
 			const tool = this.state.tools.find(
 				(item) =>
 					item.id === message.toolId && item.runId === message.runId,
 			);
 			// 現在実行中のカードが参照する端末以外への停止要求を拒否する。
-			if (
-				!this.transport ||
-				!tool ||
-				tool.kind !== "execute" ||
-				!this.transport.terminalSnapshot(
-					message.sessionId,
-					message.terminalId,
-				)?.canStop ||
-				toolTerminalId(tool) !== message.terminalId
-			) {
-				throw new Error("Stale terminal");
-			}
-			await this.transport.killTerminal(
-				message.sessionId,
-				message.terminalId,
+			const task = this.state.asyncTasks.find(
+				(item) =>
+					item.toolCallId === tool?.id &&
+					item.canStop &&
+					taskActive(item),
 			);
+			if (!tool || !task || task.stopPending || !this.transport) {
+				throw new Error("Stale execution");
+			}
+			const transport = this.transport;
+			const epoch = this.epoch;
+			this.patch({
+				asyncTasks: this.state.asyncTasks.map((item) =>
+					item === task ? { ...item, stopPending: true } : item,
+				),
+			});
+			try {
+				await transport.stopAsyncTask(
+					message.sessionId,
+					task.asyncTaskId,
+				);
+			} catch (error) {
+				if (epoch === this.epoch) {
+					this.patch({
+						asyncTasks: this.state.asyncTasks.map((item) =>
+							item.asyncTaskId === task.asyncTaskId
+								? { ...item, stopPending: false }
+								: item,
+						),
+					});
+				}
+				throw error;
+			}
 			return;
 		}
 		if (message.runId !== this.state.runId || !this.busy()) {

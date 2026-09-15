@@ -6,6 +6,7 @@ import {
 	type ToolSummary,
 	type UiMessage,
 } from "../../../shared/messages";
+import type { AsyncTask } from "../../../shared/asyncTask";
 import { Activity } from "../Activity";
 import "../chat.css";
 
@@ -70,12 +71,6 @@ const initialTools: ToolSummary[] = [
 	{
 		id: "execute",
 		runId: "run-test",
-		terminal: {
-			cwd: "D:/workspace/project",
-			canStop: true,
-			output: "Running tests…\n✓ configuration\n✓ session",
-			truncated: false,
-		},
 		title: "pnpm.cmd test",
 		kind: "execute",
 		status: "in_progress",
@@ -97,13 +92,34 @@ const initialTools: ToolSummary[] = [
 ];
 
 /** 同一 ID の完了通知を再現し、開閉状態の独立性を確認する。 */
-function ToolCardsStory() {
-	const [tools, setTools] = useState(initialTools);
+function ToolCardsStory({ background = false }: { background?: boolean }) {
+	const [tools, setTools] = useState(() =>
+		background
+			? initialTools
+					.filter((tool) => tool.id === "execute")
+					.map((tool) => ({ ...tool, status: "completed" as const }))
+			: initialTools,
+	);
+	const [asyncTasks, setTasks] = useState<AsyncTask[]>([
+		{
+			asyncTaskId: "different-task-id",
+			toolCallId: "execute",
+			state: "running",
+			canStop: true,
+		},
+	]);
 	const [request, setRequest] = useState<UiMessage>();
 	return (
 		<main style={{ padding: 16 }}>
 			<button
-				onClick={() =>
+				onClick={() => {
+					setTasks((tasks) =>
+						tasks.map((task) => ({
+							...task,
+							state: "completed",
+							canStop: false,
+						})),
+					);
 					setTools((current) =>
 						current.map((tool) =>
 							tool.status === "failed"
@@ -111,14 +127,6 @@ function ToolCardsStory() {
 								: {
 										...tool,
 										status: "completed",
-										...(tool.terminal
-											? {
-													terminal: {
-														...tool.terminal,
-														canStop: false,
-													},
-												}
-											: {}),
 										...(tool.id === "guardian"
 											? {
 													rawOutput: {
@@ -135,8 +143,8 @@ function ToolCardsStory() {
 											: {}),
 									},
 						),
-					)
-				}
+					);
+				}}
 			>
 				完了通知を受信
 			</button>
@@ -146,26 +154,26 @@ function ToolCardsStory() {
 					connection: "ready",
 					sessionId: "session-test",
 					runId: "run-test",
-					run: "running",
+					run: background ? "completed" : "running",
 					tools,
+					asyncTasks,
 				}}
 				send={(message) => {
 					setRequest(message);
-					if (message.type === "terminal/kill") {
+					if (message.type === "execution/stop") {
+						setTasks((tasks) =>
+							tasks.map((task) => ({
+								...task,
+								state: background ? "stopped" : "failed",
+								canStop: false,
+							})),
+						);
 						setTools((current) =>
 							current.map((tool) =>
 								tool.id === message.toolId
 									? {
 											...tool,
 											status: "failed",
-											...(tool.terminal
-												? {
-														terminal: {
-															...tool.terminal,
-															canStop: false,
-														},
-													}
-												: {}),
 										}
 									: tool,
 							),
@@ -188,3 +196,4 @@ export default meta;
 /** 全種類のツールカードを表示する Story。 */
 type Story = StoryObj<typeof meta>;
 export const Running: Story = {};
+export const Background: Story = { args: { background: true } };

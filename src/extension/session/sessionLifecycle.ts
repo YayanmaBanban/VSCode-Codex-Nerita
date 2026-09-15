@@ -6,7 +6,7 @@ import { SessionState } from "./sessionState";
 import { updateState } from "./updates";
 import { WorkspaceError } from "../workspace";
 import { initialConfig } from "./configuration";
-import { toolTerminalId } from "../../shared/toolTerminal";
+import { updateAsyncTasks } from "./asyncTasks";
 /** 起動条件をHostで検査して接続を作るファクトリ。 */
 export type TransportFactory = (callbacks: AcpCallbacks) => AcpTransport;
 /** 接続の寿命を会話の実行制御から分離する。 */
@@ -81,39 +81,20 @@ export class SessionLifecycle extends SessionState {
 	/** 接続世代とセッションを確認して通知を受け付ける。 */
 	private callbacks(epoch: number): AcpCallbacks {
 		return {
-			terminal: (sessionId, terminalId, terminal) => {
-				if (
-					epoch !== this.epoch ||
-					sessionId !== this.state.sessionId
-				) {
+			asyncTask: (update) => {
+				if (epoch !== this.epoch) {
 					return;
 				}
-				this.patch({
-					tools: this.state.tools.map((tool) =>
-						toolTerminalId(tool) === terminalId
-							? { ...tool, terminal }
-							: tool,
-					),
-				});
+				const patch = updateAsyncTasks(this.state, update);
+				if (Object.keys(patch).length) {
+					this.patch(patch);
+				}
 			},
 			update: (notification) => {
 				if (epoch !== this.epoch) {
 					return;
 				}
 				const patch = updateState(this.state, notification);
-				// createがtool_callより先に届くため、関連付け時にも現在の出力を復元する。
-				if (patch.tools) {
-					patch.tools = patch.tools.map((tool) => {
-						const id = toolTerminalId(tool);
-						const terminal = id
-							? this.transport?.terminalSnapshot(
-									notification.sessionId,
-									id,
-								)
-							: undefined;
-						return terminal ? { ...tool, terminal } : tool;
-					});
-				}
 				if (Object.keys(patch).length) {
 					this.patch(patch);
 				}
@@ -176,6 +157,7 @@ export class SessionLifecycle extends SessionState {
 				runId: null,
 				messages: [],
 				tools: [],
+				asyncTasks: [],
 				permissions: [],
 				error: null,
 				configOptions: initialConfig(session),

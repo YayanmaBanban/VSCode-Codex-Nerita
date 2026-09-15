@@ -42,13 +42,7 @@ createInterface({ input: process.stdin }).on("line", (line) => {
 			],
 		};
 	}
-	if (request.method === "terminal/kill") {
-		writeFileSync(
-			join(process.cwd(), "terminal-kill.json"),
-			JSON.stringify(request),
-		);
-		result = {};
-	}
+
 	if (request.method === "session/prompt") {
 		if (request.params.prompt[0].text === "/status") {
 			for (const text of [

@@ -6,7 +6,7 @@ import type {
 	ContextUsage,
 	QuotaWindow,
 } from "./composer";
-import type { TerminalSnapshot } from "./toolTerminal";
+import type { AsyncTask } from "./asyncTask";
 /** 接続の表示状態。 */
 export type ConnectionStatus =
 	| "disconnected"
@@ -28,8 +28,8 @@ export type ChatMessage = {
 /** ツール実行・変更ファイルの概要。 */
 export type ToolSummary = {
 	id: string;
-	terminal?: TerminalSnapshot;
 	cwd?: string;
+	backgrounded?: boolean;
 	order?: number;
 	runId?: string;
 	title: string;
@@ -61,6 +61,7 @@ export type ChatState = {
 	run: RunStatus;
 	messages: ChatMessage[];
 	tools: ToolSummary[];
+	asyncTasks: AsyncTask[];
 	permissions: Permission[];
 	error: string | null;
 	authMethods: { id: string; name: string }[];
@@ -91,12 +92,11 @@ export type UiMessage =
 			runId: string;
 	  }
 	| {
-			type: "terminal/kill";
+			type: "execution/stop";
 			requestId: string;
 			sessionId: string;
 			runId: string;
 			toolId: string;
-			terminalId: string;
 	  }
 	| {
 			type: "permission/respond";
@@ -125,6 +125,7 @@ export function initialState(): ChatState {
 		run: "idle",
 		messages: [],
 		tools: [],
+		asyncTasks: [],
 		permissions: [],
 		error: null,
 		authMethods: [],

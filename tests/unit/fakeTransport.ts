@@ -49,8 +49,7 @@ export function fixture(
 			prompt: vi.fn(() => result.promise),
 			readStatus: vi.fn(() => Promise.resolve(null)),
 			cancel: vi.fn(() => Promise.resolve()),
-			killTerminal: vi.fn(() => Promise.resolve({})),
-			terminalSnapshot: vi.fn(() => undefined),
+			stopAsyncTask: vi.fn(() => Promise.resolve()),
 			setConfig: vi.fn(() => Promise.resolve({ configOptions: [] })),
 			dispose: vi.fn(async () => {
 				result.reject(new Error("closed"));

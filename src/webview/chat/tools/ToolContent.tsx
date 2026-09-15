@@ -98,16 +98,6 @@ export function EditingFiles({ tool }: { tool: ToolSummary }) {
 
 /** 実行カードは停止用の端末参照を隠し、コマンドの入出力を表示する。 */
 export function ExecuteTool({ tool }: { tool: ToolSummary }) {
-	if (tool.terminal) {
-		return (
-			<>
-				{tool.terminal.truncated && (
-					<p className="muted">出力の先頭を省略しました。</p>
-				)}
-				<Value value={tool.terminal.output} />
-			</>
-		);
-	}
 	const output = isRecord(tool.rawOutput)
 		? tool.rawOutput.formatted_output
 		: undefined;

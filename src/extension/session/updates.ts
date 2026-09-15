@@ -34,7 +34,11 @@ export function updateState(
 		};
 	}
 	if (
-		state.run !== "running" ||
+		(state.run !== "running" &&
+			!(
+				update.sessionUpdate === "tool_call_update" &&
+				state.tools.some((tool) => tool.id === update.toolCallId)
+			)) ||
 		state.sessionId !== notification.sessionId ||
 		!state.runId
 	) {
@@ -72,10 +76,17 @@ export function updateState(
 		update.sessionUpdate === "tool_call" ||
 		update.sessionUpdate === "tool_call_update"
 	) {
-		const existing = state.tools.find(
-			(tool) =>
-				tool.id === update.toolCallId && tool.runId === state.runId,
-		);
+		const existing = [...state.tools]
+			.reverse()
+			.find(
+				(tool) =>
+					tool.id === update.toolCallId &&
+					(update.sessionUpdate === "tool_call_update" ||
+						tool.runId === state.runId),
+			);
+		const jetbrains = update._meta?.jetbrains;
+		const air = isRecord(jetbrains) ? jetbrains.air : undefined;
+		const tasks = isRecord(air) ? air.asyncTasks : undefined;
 		const paths = update.locations?.map((location) => location.path);
 		const diffs = update.content?.flatMap((content) =>
 			content.type === "diff" ? [content.path] : [],
@@ -83,7 +94,10 @@ export function updateState(
 		const tool = {
 			...existing,
 			id: update.toolCallId,
-			runId: state.runId,
+			runId: existing?.runId ?? state.runId,
+			...(isRecord(tasks) && typeof tasks.backgrounded === "boolean"
+				? { backgrounded: tasks.backgrounded }
+				: {}),
 			order: existing?.order ?? state.revision + 1,
 			...(isRecord(update._meta?.terminal_info) &&
 			typeof update._meta.terminal_info.cwd === "string"
