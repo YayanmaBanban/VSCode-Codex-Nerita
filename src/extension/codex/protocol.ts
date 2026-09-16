@@ -15,6 +15,7 @@ import {
 import {
 	parseStartedThread,
 	parseStartedTurn,
+	parseSteeredTurn,
 	parseInterrupt,
 	parseAccount,
 } from "./turnProtocol";
@@ -37,6 +38,7 @@ export type AppServerResponses = {
 	"account/rateLimits/read": ReturnType<typeof parseQuotaResponse>;
 	"thread/start": ReturnType<typeof parseStartedThread>;
 	"turn/start": ReturnType<typeof parseStartedTurn>;
+	"turn/steer": ReturnType<typeof parseSteeredTurn>;
 	"turn/interrupt": ReturnType<typeof parseInterrupt>;
 	"account/read": ReturnType<typeof parseAccount>;
 	initialize: InitializeResponse;
@@ -102,6 +104,7 @@ export const responseParsers: {
 	"account/rateLimits/read": parseQuotaResponse,
 	"thread/start": parseStartedThread,
 	"turn/start": parseStartedTurn,
+	"turn/steer": parseSteeredTurn,
 	"turn/interrupt": parseInterrupt,
 	"account/read": parseAccount,
 	initialize: initializeResponse,

@@ -64,6 +64,13 @@ export function parseStartedTurn(value: unknown): { turn: TurnInfo } {
 	}
 	return { turn: parseTurn(value.turn) };
 }
+/** 追加指示が受け付けられたターンの識別子を検証する。 */
+export function parseSteeredTurn(value: unknown): { turnId: string } {
+	if (!isRecord(value) || typeof value.turnId !== "string" || !value.turnId) {
+		throw new Error("Invalid steer response");
+	}
+	return { turnId: value.turnId };
+}
 /** interrupt の成功は空オブジェクトとして受け取る。 */
 export function parseInterrupt(value: unknown): TurnInterruptResponse {
 	if (!isRecord(value) || Object.keys(value).length) {

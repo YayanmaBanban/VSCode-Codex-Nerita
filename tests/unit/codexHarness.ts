@@ -108,6 +108,9 @@ export function codexHarness() {
 		interruptTurn: vi.fn((_thread: string, _turn: string) =>
 			Promise.resolve({}),
 		),
+		steerTurn: vi.fn<CodexConnection["steerTurn"]>((params) =>
+			Promise.resolve({ turnId: params.expectedTurnId }),
+		),
 		readAccount: vi.fn(() =>
 			Promise.resolve({ authenticated: true, requiresOpenaiAuth: true }),
 		),

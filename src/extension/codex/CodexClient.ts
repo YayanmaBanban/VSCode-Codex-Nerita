@@ -4,6 +4,7 @@ import type { InitializeResponse } from "../../codex-app-server/InitializeRespon
 import type { ThreadLoadedListParams } from "../../codex-app-server/v2/ThreadLoadedListParams";
 import type { ThreadStartParams } from "../../codex-app-server/v2/ThreadStartParams";
 import type { TurnStartParams } from "../../codex-app-server/v2/TurnStartParams";
+import type { TurnSteerParams } from "../../codex-app-server/v2/TurnSteerParams";
 import type { LoginAccountParams } from "../../codex-app-server/v2/LoginAccountParams";
 import type { ThreadListParams } from "../../codex-app-server/v2/ThreadListParams";
 import {
@@ -153,6 +154,10 @@ export class CodexClient {
 	/** 一つのターンを開始し、開始受付の応答を返す。 */
 	startTurn(params: TurnStartParams) {
 		return this.transport.request("turn/start", params);
+	}
+	/** 実行中のターンへ追加指示を送り、受付を確認する。 */
+	steerTurn(params: TurnSteerParams) {
+		return this.transport.request("turn/steer", params);
 	}
 	/** 指定した会話の実行中ターンへ停止を要求する。 */
 	interruptTurn(threadId: string, turnId: string) {

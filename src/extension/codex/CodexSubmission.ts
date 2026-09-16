@@ -1,0 +1,116 @@
+// 追加指示の待機・送信を管理し、受付が確定するまで二重送信を防ぐ。
+import { randomUUID } from "node:crypto";
+import { CodexHistory } from "./CodexHistory";
+import { attachmentInput } from "./attachmentInput";
+import { nextTimelineOrder } from "../session/timelineOrder";
+
+/** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
+export abstract class CodexSubmission extends CodexHistory {
+	protected submissionPending = false;
+
+	/** 待機中の完了を反映し、接続や会話が変わった要求は送らない。 */
+	protected async submitPrompt(
+		text: string,
+		sessionId: string,
+	): Promise<"start" | "steer"> {
+		if (this.submissionPending) {
+			throw new Error("Submission pending");
+		}
+		this.submissionPending = true;
+		const epoch = this.epoch;
+		const waitingRun = this.active;
+		/** 明示的な停止や失敗の後に、待機中の指示で実行を再開しない。 */
+		const checkWaitingRun = () => {
+			if (
+				waitingRun?.abort.signal.aborted &&
+				this.state.run !== "completed"
+			) {
+				throw new Error("Pending submission cancelled");
+			}
+		};
+		try {
+			if (this.state.run === "running") {
+				await new Promise<void>((resolve) => setTimeout(resolve, 500));
+			}
+			this.checkSubmission(epoch, sessionId);
+			checkWaitingRun();
+			if (!this.busy()) {
+				await this.prompt(text);
+				this.checkSubmission(epoch, sessionId);
+				return "start";
+			}
+			const run = this.active;
+			const client = this.client!;
+			if (this.state.run !== "running" || !run?.turnId || !run.started) {
+				throw new Error("Turn not ready");
+			}
+			const files = [...this.state.attachments];
+			const model =
+				this.turnOptions.model ??
+				this.state.configOptions.find((item) => item.id === "model")
+					?.currentValue;
+			const attachments = files.length
+				? await attachmentInput(
+						files,
+						this.models
+							.find((item) => item.model === model)
+							?.inputModalities.includes("image") ?? false,
+					)
+				: [];
+			this.checkSubmission(epoch, sessionId);
+			checkWaitingRun();
+			// 添付の読み込み中に完了した場合も通常送信へ切り替える。
+			if (!this.busy()) {
+				await this.prompt(text);
+				this.checkSubmission(epoch, sessionId);
+				return "start";
+			}
+			if (this.active !== run || run.abort.signal.aborted) {
+				throw new Error("Turn changed");
+			}
+			const id = randomUUID();
+			const order = nextTimelineOrder(this.state);
+			// 受付不明のエラーでは自動再送しない。重複した指示の実行を避ける。
+			const result = await client.steerTurn({
+				threadId: sessionId,
+				expectedTurnId: run.turnId,
+				clientUserMessageId: id,
+				input: [
+					{ type: "text", text, text_elements: [] },
+					...attachments,
+				],
+			});
+			this.checkSubmission(epoch, sessionId);
+			if (result.turnId !== run.turnId) {
+				throw new Error("Unexpected turn");
+			}
+			this.patch({
+				messages: [
+					...this.state.messages,
+					{ id, role: "user", text, order },
+				],
+				attachments: this.state.attachments.filter(
+					(item) => !files.some((file) => file.id === item.id),
+				),
+			});
+			return "steer";
+		} finally {
+			this.submissionPending = false;
+		}
+	}
+
+	/** 待機や読み込みをまたいでも送信先と接続世代を固定する。 */
+	private checkSubmission(epoch: number, sessionId: string): void {
+		if (
+			this.epoch !== epoch ||
+			this.state.sessionId !== sessionId ||
+			!this.client ||
+			this.state.connection !== "ready" ||
+			this.state.sessionPending ||
+			this.state.configPending ||
+			this.state.attachmentPending
+		) {
+			throw new Error("Submission unavailable");
+		}
+	}
+}

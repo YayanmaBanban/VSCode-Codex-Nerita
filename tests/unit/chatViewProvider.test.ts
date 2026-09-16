@@ -90,6 +90,34 @@ function harness() {
 beforeEach(() => {
 	vi.clearAllMocks();
 });
+it("貼り付けの配置を表示先へ復元し、通常の下書き保存で配置を解除する", async () => {
+	const h = harness();
+	const draftParts = [
+		{ id: "before", type: "text", text: "前" },
+		{ id: "block", type: "pasted", text: "コード" },
+		{ id: "after", type: "text", text: "後" },
+	];
+	await h.sidebar.send({
+		type: "ui/saveDraft",
+		requestId: "draft",
+		draft: "前コード後",
+		draftParts,
+	});
+	await h.sidebar.send({ type: "ui/openEditor", requestId: "open" });
+	await h.panel.send({ type: "ui/ready" });
+	expect(h.panel.webview.postMessage).toHaveBeenLastCalledWith(
+		expect.objectContaining({ draft: "前コード後", draftParts }),
+	);
+	await h.panel.send({ type: "ui/saveDraft", requestId: "clear", draft: "" });
+	expect(h.sidebar.webview.postMessage).toHaveBeenLastCalledWith({
+		type: "ui/viewState",
+		editor: false,
+		draft: "",
+		scrollTop: 0,
+		restoreScroll: false,
+	});
+	h.provider.dispose();
+});
 it("エディタの作成・再表示と復元は現在の会話と下書きを引き継ぐ", async () => {
 	const h = harness();
 	await h.sidebar.send({

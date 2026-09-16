@@ -2,6 +2,7 @@
 import type { ChatState, HostMessage, UiMessage } from "./messages";
 import { validComposerField } from "./composerValidation";
 import { isAsyncTask } from "./asyncTask";
+import { validDraftParts } from "./composerContent";
 /** 配列・null を除いたオブジェクトを判定する。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -27,7 +28,9 @@ export function isUiMessage(value: unknown): value is UiMessage {
 			return true;
 		case "ui/saveDraft":
 			return (
-				typeof value.draft === "string" && value.draft.length <= 100_000
+				typeof value.draft === "string" &&
+				value.draft.length <= 100_000 &&
+				validDraftParts(value.draft, value.draftParts)
 			);
 		case "ui/saveScroll":
 			return (
@@ -267,12 +270,19 @@ export function isHostMessage(value: unknown): value is HostMessage {
 	if (!isRecord(value)) {
 		return false;
 	}
+	if (value.type === "prompt/accepted") {
+		return (
+			isId(value.requestId) &&
+			(value.mode === "start" || value.mode === "steer")
+		);
+	}
 	if (value.type === "ui/viewState") {
 		return (
 			typeof value.restoreScroll === "boolean" &&
 			typeof value.editor === "boolean" &&
 			typeof value.draft === "string" &&
 			value.draft.length <= 100_000 &&
+			validDraftParts(value.draft, value.draftParts) &&
 			typeof value.scrollTop === "number" &&
 			Number.isFinite(value.scrollTop) &&
 			value.scrollTop >= 0

@@ -1,6 +1,5 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
-import { useEffect, useRef, useState } from "react";
-import { SendHorizontal, SquareStop } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { Bridge } from "../vscodeBridge";
 import { useChat } from "./useChat";
 import { useChatView } from "./useChatView";
@@ -8,8 +7,9 @@ import { ConnectionHeader } from "./ConnectionHeader";
 import { Activity } from "./Activity";
 import { Messages } from "./Messages";
 import { CubeLoader } from "./CubeLoader";
-import { ComposerSettings } from "./ComposerSettings";
-import { iconButtonClass } from "./messageStyles";
+import { Composer } from "./Composer";
+import { NotificationCard } from "./NotificationCard";
+import { usePromptSubmission } from "./usePromptSubmission";
 import "./chat.css";
 import { SessionPanel } from "./sessions/SessionPanel";
 import { useSessionPanel } from "./sessions/useSessionPanel";
@@ -24,41 +24,29 @@ const runLabels = {
 };
 /** 差し替え可能な Bridge を使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: { bridge: Bridge }) {
-	const { draft, setDraft, editor, toggleEditor, conversation } =
+	const { draft, draftParts, setDraft, editor, toggleEditor, conversation } =
 		useChatView(bridge);
 	const { state, requestError, send } = useChat(bridge);
 	const sessionPanel = useSessionPanel(send);
-	const [submitted, setSubmitted] = useState(false);
-	const composing = useRef(false);
+	const submission = usePromptSubmission(
+		bridge,
+		state,
+		draft,
+		() => setDraft(""),
+		send,
+	);
 	const bottom = useRef<HTMLDivElement>(null);
 	const busy = state.run === "running" || state.run === "cancelling";
 	const available =
 		state.connection === "ready" &&
 		!busy &&
-		!submitted &&
+		!submission.locked &&
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending;
 	useEffect(() => {
-		setSubmitted(false);
-	}, [state.revision, requestError]);
-	useEffect(() => {
 		bottom.current?.scrollIntoView({ block: "end" });
 	}, [state.messages, state.permissions]);
-	/** IME 確定と二重送信を防ぎ、テキストだけを Host に渡す。 */
-	const submit = () => {
-		if (!available || !draft.trim() || !state.sessionId) {
-			return;
-		}
-		setSubmitted(true);
-		send({
-			type: "prompt/send",
-			requestId: crypto.randomUUID(),
-			sessionId: state.sessionId,
-			text: draft.trim(),
-		});
-		setDraft("");
-	};
 	return (
 		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
 			<ConnectionHeader
@@ -126,88 +114,25 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 						)}
 						<div ref={bottom} />
 					</section>
-					<form
-						className="composer mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px]"
-						onSubmit={(event) => {
-							event.preventDefault();
-							submit();
-						}}
-					>
-						<label className="sr-only" htmlFor="prompt">
-							Codexへのメッセージ
-						</label>
-						<textarea
-							className="w-full min-h-[65px] max-h-[240px] resize-y border-0 bg-transparent text-input-text leading-[1.7] placeholder:text-input-placeholder"
-							id="prompt"
-							value={draft}
-							placeholder="Codexに依頼する…"
-							maxLength={100_000}
-							rows={3}
-							onChange={(event) => setDraft(event.target.value)}
-							onCompositionStart={() => {
-								composing.current = true;
-							}}
-							onCompositionEnd={() => {
-								composing.current = false;
-							}}
-							onKeyDown={(event) => {
-								if (
-									event.key === "Enter" &&
-									!event.shiftKey &&
-									!event.nativeEvent.isComposing &&
-									!composing.current &&
-									event.keyCode !== 229
-								) {
-									event.preventDefault();
-									submit();
-								}
-							}}
-						/>
-						<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
-							<span className="text-[12px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]">
-								Enter で送信 · Shift+Enter で改行
-							</span>
-							{busy ? (
-								<button
-									type="button"
-									className={`${iconButtonClass} stop-button bg-[#bd3948]`}
-									aria-label="停止"
-									title="停止"
-									disabled={state.run === "cancelling"}
-									onClick={() => {
-										if (state.sessionId && state.runId) {
-											send({
-												type: "prompt/cancel",
-												requestId: crypto.randomUUID(),
-												sessionId: state.sessionId,
-												runId: state.runId,
-											});
-										}
-									}}
-								>
-									<SquareStop size={18} aria-hidden="true" />
-								</button>
-							) : (
-								<button
-									type="submit"
-									className={`${iconButtonClass} send-button bg-[#2563b8]`}
-									aria-label="送信"
-									title="送信"
-									disabled={
-										!available ||
-										!state.sessionId ||
-										!draft.trim()
-									}
-								>
-									<SendHorizontal
-										size={18}
-										aria-hidden="true"
-									/>
-								</button>
-							)}
-						</div>
-						<ComposerSettings state={state} send={send} />
-					</form>
+					{submission.notice && (
+						<NotificationCard
+							key={submission.notice.id}
+							onClose={submission.dismissNotice}
+							backgroundColor="var(--vscode-inputValidation-errorBackground, light-dark(#fbe9e7, #482b2e))"
+						>
+							{submission.notice.text}
+						</NotificationCard>
+					)}
+					<Composer
+						parts={draftParts}
+						setDraft={setDraft}
+						submit={submission.submit}
+						locked={submission.locked}
+						busy={busy}
+						available={submission.available}
+						state={state}
+						send={send}
+					/>
 				</div>
 				{sessionPanel.open && (
 					<SessionPanel

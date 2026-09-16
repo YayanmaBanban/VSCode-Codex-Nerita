@@ -69,7 +69,7 @@ test("表示先操作で下書きとスクロールを保持する", async ({ pa
 	await expect(
 		page.getByRole("button", { name: "サイドバーへ戻る" }),
 	).toBeVisible();
-	await expect(page.getByRole("textbox")).toHaveValue(
+	await expect(page.getByRole("textbox")).toHaveText(
 		"まだ送信していない下書き",
 	);
 	await expect
@@ -81,7 +81,7 @@ test("表示先操作で下書きとスクロールを保持する", async ({ pa
 	await expect(
 		page.getByRole("button", { name: "エディタグループへ移動" }),
 	).toBeVisible();
-	await expect(page.getByRole("textbox")).toHaveValue(
+	await expect(page.getByRole("textbox")).toHaveText(
 		"まだ送信していない下書き",
 	);
 	await info.attach("view-return", {

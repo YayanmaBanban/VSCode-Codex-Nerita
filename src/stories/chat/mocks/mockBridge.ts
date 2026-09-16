@@ -157,6 +157,7 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 					}
 					break;
 				case "prompt/send": {
+					const mode = state.run === "running" ? "steer" : "start";
 					patch({
 						attachments: [],
 						run: "running",
@@ -170,6 +171,11 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 								text: message.text,
 							},
 						],
+					});
+					emit({
+						type: "prompt/accepted",
+						requestId: message.requestId,
+						mode,
 					});
 					const assistantId = crypto.randomUUID();
 					timers.add(

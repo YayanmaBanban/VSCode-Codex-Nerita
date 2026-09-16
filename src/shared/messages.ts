@@ -1,4 +1,5 @@
 // Host とブラウザの通信契約。VS Code・Node.js・サーバープロトコルに依存しない。
+import type { ComposerPart } from "./composerContent";
 import type {
 	Attachment,
 	ComposerMessage,
@@ -93,7 +94,12 @@ export type UiMessage =
 	| SessionHistoryMessage
 	| { type: "ui/ready" }
 	| { type: "ui/openEditor" | "ui/openSidebar"; requestId: string }
-	| { type: "ui/saveDraft"; requestId: string; draft: string }
+	| {
+			type: "ui/saveDraft";
+			requestId: string;
+			draft: string;
+			draftParts?: ComposerPart[];
+	  }
 	| { type: "ui/saveScroll"; requestId: string; scrollTop: number }
 	| { type: "connection/retry"; requestId: string }
 	| { type: "session/new"; requestId: string }
@@ -127,10 +133,12 @@ export type UiMessage =
 	  };
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "prompt/accepted"; requestId: string; mode: "start" | "steer" }
 	| {
 			type: "ui/viewState";
 			editor: boolean;
 			draft: string;
+			draftParts?: ComposerPart[];
 			scrollTop: number;
 			restoreScroll: boolean;
 	  }

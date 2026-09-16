@@ -57,11 +57,11 @@ export abstract class CodexRun extends CodexRequests {
 					)
 				: [];
 			if (this.active !== run) {
-				return;
+				throw new Error("Run changed before submission");
 			}
 			if (run.abort.signal.aborted) {
 				this.finish("cancelled");
-				return;
+				throw new Error("Submission cancelled");
 			}
 			prepared = true;
 			const result = await this.client.startTurn({
@@ -89,7 +89,7 @@ export abstract class CodexRun extends CodexRequests {
 			if (this.active === run && this.state.run === "cancelling") {
 				this.interrupt();
 			}
-		} catch {
+		} catch (error) {
 			if (this.active === run) {
 				this.finish("failed");
 				if (!prepared) {
@@ -98,6 +98,12 @@ export abstract class CodexRun extends CodexRequests {
 					});
 				}
 			}
+			this.patch({
+				messages: this.state.messages.filter(
+					(item) => item.id !== userId,
+				),
+			});
+			throw error;
 		}
 	}
 	/** 開始応答前の Stop も保持し、ターン ID が判明したら一度だけ送信する。 */

@@ -1,10 +1,10 @@
 // 検証済みの Webview 操作を、現在の thread とローカル実行 ID に限定する。
 import type { UiMessage } from "../../shared/messages";
 import { isUiMessage } from "../../shared/validation";
-import { CodexHistory } from "./CodexHistory";
+import { CodexSubmission } from "./CodexSubmission";
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
-export class CodexSessionController extends CodexHistory {
+export class CodexSessionController extends CodexSubmission {
 	private seen = new Set<string>();
 	/** 二重要求と古い UI の操作を排除して、失敗は要求元へ通知する。 */
 	async receive(value: unknown): Promise<void> {
@@ -28,7 +28,10 @@ export class CodexSessionController extends CodexHistory {
 			this.emit({
 				type: "request/failed",
 				requestId: value.requestId,
-				error: "現在の状態では操作できません。接続状態を確認してください。",
+				error:
+					value.type === "prompt/send"
+						? "送信できませんでした。接続を確認して再試行してください。"
+						: "現在の状態では操作できません。接続状態を確認してください。",
 			});
 		}
 	}
@@ -36,6 +39,17 @@ export class CodexSessionController extends CodexHistory {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
+		if (
+			this.submissionPending &&
+			![
+				"prompt/send",
+				"prompt/cancel",
+				"execution/stop",
+				"permission/respond",
+			].includes(message.type)
+		) {
+			throw new Error("Submission pending");
+		}
 		if (this.state.sessionPending) {
 			throw new Error("Session pending");
 		}
@@ -85,7 +99,15 @@ export class CodexSessionController extends CodexHistory {
 			throw new Error("Stale thread");
 		}
 		if (message.type === "prompt/send") {
-			await this.prompt(message.text);
+			const mode = await this.submitPrompt(
+				message.text,
+				message.sessionId,
+			);
+			this.emit({
+				type: "prompt/accepted",
+				requestId: message.requestId,
+				mode,
+			});
 			return;
 		}
 		if (message.type === "config/set") {

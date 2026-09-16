@@ -96,7 +96,7 @@ test("IME確定・改行・キーボード送信", async ({ page }) => {
 	await expect(page.getByRole("log")).toBeEmpty();
 	await input.dispatchEvent("compositionend");
 	await input.press("Shift+Enter");
-	await expect(input).toHaveValue("日本語の入力\n");
+	await expect(input).toHaveText("日本語の入力\n");
 	await input.press("Enter");
 	await expect(page.getByRole("log")).toContainText("日本語の入力");
 });

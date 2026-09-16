@@ -1,4 +1,5 @@
 // サイドバーの Webview を生成し、通信と購読の寿命を管理する。
+import type { ComposerPart } from "../../shared/composerContent";
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import type { ChatState, HostMessage } from "../../shared/messages";
@@ -39,6 +40,7 @@ export class ChatViewProvider
 	private sidebar: vscode.WebviewView | undefined;
 	private panel: vscode.WebviewPanel | undefined;
 	private draft = "";
+	private draftParts: ComposerPart[] | undefined;
 	private scrollTop = 0;
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
@@ -93,6 +95,7 @@ export class ChatViewProvider
 			type: "ui/viewState",
 			editor: this.views.get(webview)?.editor ?? false,
 			draft: this.draft,
+			...(this.draftParts ? { draftParts: this.draftParts } : {}),
 			scrollTop: this.scrollTop,
 			restoreScroll,
 		} satisfies HostMessage);
@@ -108,6 +111,7 @@ export class ChatViewProvider
 		try {
 			if (value.type === "ui/saveDraft") {
 				this.draft = value.draft;
+				this.draftParts = value.draftParts;
 				for (const target of this.views.keys()) {
 					if (target !== webview) {
 						this.viewState(target, false);
