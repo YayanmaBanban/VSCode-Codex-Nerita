@@ -61,7 +61,17 @@ test("App Server の利用可能な操作と送信", async ({ page }, info) => {
 	});
 	await page.goto("/iframe.html?id=chat-app--app-server&viewMode=story");
 	await expect(
-		page.getByRole("heading", { name: "Codex", exact: true }),
+		page.getByRole("combobox", { name: "Service tier" }),
+	).toHaveCount(0);
+	const fast = page.getByRole("switch", { name: "Fast mode" });
+	await expect(fast).toHaveCount(1);
+	await expect(fast).not.toBeChecked();
+	await fast.click();
+	await expect(fast).toBeChecked();
+	await fast.click();
+	await expect(fast).not.toBeChecked();
+	await expect(
+		page.getByRole("heading", { name: "新規チャット", exact: true }),
 	).toBeVisible();
 	await expect(
 		page.getByRole("button", { name: "ファイルを添付" }),

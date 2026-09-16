@@ -151,7 +151,7 @@ export function Messages({
 				{copyStatus?.id === message.id && (
 					<span
 						role="status"
-						className="muted text-[11px] text-muted"
+						className="muted text-[12px] text-muted"
 					>
 						{copyStatus.text}
 					</span>

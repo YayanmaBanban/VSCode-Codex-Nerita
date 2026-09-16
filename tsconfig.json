@@ -1,5 +1,8 @@
 {
 	"compilerOptions": {
+		"paths": {
+			"@/*": ["./src/*"]
+		},
 		// VS Code Extension は Node.js 上で動作するため、Node.js のモジュール解決規則に合わせる。
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",

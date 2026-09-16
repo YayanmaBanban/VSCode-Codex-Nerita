@@ -27,6 +27,25 @@ export class SessionState {
 	}
 	/** 正本を更新して番号付きの差分を配信する。 */
 	protected patch(patch: Partial<Omit<ChatState, "revision">>): void {
+		// 一覧の絞り込みや再取得で現在のタイトルを失わないよう、正本に保持する。
+		const sessionId =
+			patch.sessionId === undefined
+				? this.state.sessionId
+				: patch.sessionId;
+		const row = patch.sessions?.find(
+			(item) => item.sessionId === sessionId,
+		);
+		patch = {
+			...patch,
+			sessionTitle:
+				patch.sessionTitle !== undefined
+					? patch.sessionTitle
+					: row
+						? row.title?.trim() || null
+						: sessionId !== this.state.sessionId
+							? null
+							: this.state.sessionTitle,
+		};
 		this.state = {
 			...this.state,
 			...patch,

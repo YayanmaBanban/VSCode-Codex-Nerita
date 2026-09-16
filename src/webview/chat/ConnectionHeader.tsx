@@ -1,20 +1,22 @@
-// 接続状態・認証・再接続の操作をまとめて表示する。
+// セッションタイトル・表示先・接続操作と、認証やエラーの案内を表示する。
 import type { ChatState, UiMessage } from "../../shared/messages";
-import { List } from "lucide-react";
+import {
+	List,
+	MessageSquareText,
+	Maximize2,
+	Minimize2,
+	Ellipsis,
+} from "lucide-react";
+import { ConnectionButton } from "./ConnectionButton";
+import { SettingsTooltip } from "./SettingsTooltip";
 
 /** 認証案内とエラー通知に共通する枠・色・余白。 */
 const noticeClass =
 	"mx-[14px] mt-[12px] mb-0 rounded-[6px] border border-solid border-alert-border bg-alert p-[12px] leading-[1.7]";
-const connectionLabels = {
-	disconnected: "未接続",
-	connecting: "接続中",
-	ready: "接続済み",
-	"auth-required": "認証が必要",
-	authenticating: "ログイン待ち",
-	error: "接続エラー",
-};
+const iconClass =
+	"inline-flex size-[28px] shrink-0 items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover";
 
-/** 接続と認証の状態に応じた操作だけを提示する。 */
+/** 狭い表示でも操作を残し、長いセッションタイトルだけを省略する。 */
 export function ConnectionHeader({
 	state,
 	requestError,
@@ -22,6 +24,8 @@ export function ConnectionHeader({
 	send,
 	sessionsOpen,
 	onToggleSessions,
+	editor,
+	onToggleEditor,
 }: {
 	state: ChatState;
 	requestError: string | null;
@@ -29,74 +33,83 @@ export function ConnectionHeader({
 	send: (message: UiMessage) => void;
 	sessionsOpen: boolean;
 	onToggleSessions: () => void;
+	editor: boolean;
+	onToggleEditor: () => void;
 }) {
-	const reconnectable = [
-		"disconnected",
-		"error",
-		"auth-required",
-		"authenticating",
-	].includes(state.connection);
+	const title =
+		state.sessionTitle?.trim() ||
+		state.sessions
+			.find((session) => session.sessionId === state.sessionId)
+			?.title?.trim() ||
+		"新規チャット";
+	const viewLabel = editor ? "サイドバーへ戻る" : "エディタグループへ移動";
 	return (
 		<>
-			{" "}
-			<header className="chat-header flex items-center justify-between gap-[12px] px-[20px] pt-[22px] pb-[17px] [@media(max-width:360px)]:px-[14px]">
-				<div>
-					<span className="eyebrow text-[9px] tracking-[0.13em] text-muted">
-						WORKSPACE ASSISTANT
-					</span>
-					<h1>Codex</h1>
-				</div>
-				<div className="flex shrink-0 items-center gap-[6px]">
-					<button
-						type="button"
-						id="session-list-toggle"
-						className="inline-flex size-[32px] items-center justify-center border-0 bg-transparent p-0"
-						aria-label="セッション一覧"
-						disabled={!state.sessionCapabilities.list}
-						title="セッション一覧"
-						aria-expanded={sessionsOpen}
-						aria-controls="session-panel"
-						onClick={onToggleSessions}
-					>
-						<List size={18} aria-hidden="true" />
-					</button>
-					<button
-						className="quiet bg-transparent"
-						disabled={!available}
-						onClick={() =>
-							send({
-								type: "session/new",
-								requestId: crypto.randomUUID(),
-							})
-						}
-					>
-						＋ 新規会話
-					</button>
+			<header className="chat-header flex min-w-0 items-center gap-[6px] border-0 border-b border-solid border-message-border px-[12px] py-[10px]">
+				<h1
+					className="m-0 min-w-0 flex-1 truncate text-[12px] font-medium tracking-normal"
+					title={title}
+				>
+					{title}
+				</h1>
+				<ConnectionButton state={state} send={send} />
+				<div className="flex shrink-0 items-center gap-[2px]">
+					<SettingsTooltip content="新しいチャット">
+						<button
+							type="button"
+							className={iconClass}
+							aria-label="新しいチャット"
+							disabled={!available}
+							onClick={() =>
+								send({
+									type: "session/new",
+									requestId: crypto.randomUUID(),
+								})
+							}
+						>
+							<MessageSquareText size={16} aria-hidden="true" />
+						</button>
+					</SettingsTooltip>
+					<SettingsTooltip content="セッション一覧">
+						<button
+							type="button"
+							id="session-list-toggle"
+							className={iconClass}
+							aria-label="セッション一覧"
+							disabled={!state.sessionCapabilities.list}
+							aria-expanded={sessionsOpen}
+							aria-controls="session-panel"
+							onClick={onToggleSessions}
+						>
+							<List size={16} aria-hidden="true" />
+						</button>
+					</SettingsTooltip>
+					<SettingsTooltip content={viewLabel}>
+						<button
+							type="button"
+							className={iconClass}
+							aria-label={viewLabel}
+							onClick={onToggleEditor}
+						>
+							{editor ? (
+								<Minimize2 size={16} aria-hidden="true" />
+							) : (
+								<Maximize2 size={16} aria-hidden="true" />
+							)}
+						</button>
+					</SettingsTooltip>
+					<SettingsTooltip content="オプション（準備中）">
+						<button
+							type="button"
+							className={iconClass}
+							aria-label="オプション（準備中）"
+							disabled
+						>
+							<Ellipsis size={16} aria-hidden="true" />
+						</button>
+					</SettingsTooltip>
 				</div>
 			</header>
-			<div className="connection-bar flex min-h-[38px] items-center gap-[7px] border-0 border-y border-solid border-message-border px-[20px] py-[8px] text-[11px] text-muted">
-				<span
-					className={`status-dot ${state.connection} size-[6px] rounded-full ${state.connection === "ready" ? "bg-[#75bba0]" : state.connection === "error" || state.connection === "auth-required" ? "bg-[#deb86d]" : "bg-[#8a929c]"}`}
-				/>
-				<span role="status">{connectionLabels[state.connection]}</span>
-				{reconnectable && (
-					<button
-						className="link-button ml-auto border-0 bg-transparent p-[2px] text-link"
-						onClick={() =>
-							send({
-								type: "connection/retry",
-								requestId: crypto.randomUUID(),
-							})
-						}
-					>
-						{state.connection === "disconnected"
-							? "接続する"
-							: state.connection === "authenticating"
-								? "ログインを中止して再接続"
-								: "再接続"}
-					</button>
-				)}
-			</div>
 			{(state.error || requestError) && (
 				<div role="alert" className={`error-banner ${noticeClass}`}>
 					{requestError || state.error}
@@ -123,9 +136,7 @@ export function ConnectionHeader({
 								})
 							}
 						>
-							{method.id === "chat-gpt"
-								? "ChatGPTでログイン"
-								: "環境変数のAPIキーを使用"}
+							{method.name}
 						</button>
 					))}
 				</section>

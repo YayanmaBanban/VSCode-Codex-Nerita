@@ -29,6 +29,7 @@ export type AppServerResponses = {
 	"thread/items/list": ReturnType<typeof parseItems>;
 	"thread/name/set": Record<string, never>;
 	"thread/archive": Record<string, never>;
+	"thread/delete": Record<string, never>;
 	"thread/unarchive": ReturnType<typeof parseReadThread>;
 	"model/list": ReturnType<typeof parseModels>;
 	"account/login/start": ReturnType<typeof parseLogin>;
@@ -88,6 +89,7 @@ export const responseParsers: {
 	"thread/items/list": parseItems,
 	"thread/name/set": parseInterrupt,
 	"thread/archive": parseInterrupt,
+	"thread/delete": parseInterrupt,
 	"thread/unarchive": parseReadThread,
 	"model/list": parseModels,
 	"account/login/start": parseLogin,

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { SendHorizontal, SquareStop } from "lucide-react";
 import type { Bridge } from "../vscodeBridge";
 import { useChat } from "./useChat";
+import { useChatView } from "./useChatView";
 import { ConnectionHeader } from "./ConnectionHeader";
 import { Activity } from "./Activity";
 import { Messages } from "./Messages";
@@ -23,8 +24,9 @@ const runLabels = {
 };
 /** 差し替え可能な Bridge を使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: { bridge: Bridge }) {
+	const { draft, setDraft, editor, toggleEditor, conversation } =
+		useChatView(bridge);
 	const { state, requestError, send } = useChat(bridge);
-	const [draft, setDraft] = useState("");
 	const sessionPanel = useSessionPanel(send);
 	const [submitted, setSubmitted] = useState(false);
 	const composing = useRef(false);
@@ -61,6 +63,8 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
 			<ConnectionHeader
 				state={state}
+				editor={editor}
+				onToggleEditor={toggleEditor}
 				requestError={requestError}
 				available={available}
 				send={send}
@@ -73,28 +77,18 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					inert={sessionPanel.open && sessionPanel.compact}
 				>
 					<section
+						ref={conversation}
 						className="conversation min-h-0 flex-1 overflow-y-auto px-[20px] py-[22px] [scrollbar-width:thin]"
 						aria-label="会話"
 					>
 						{state.messages.length === 0 && (
 							<div className="empty-state px-0 pt-[10vh] pb-[30px] text-center">
-								<div
-									className="empty-mark mb-[12px] inline-grid size-[42px] place-items-center rounded-[12px] border border-solid border-empty-border text-[24px] text-[#94cbbb]"
-									aria-hidden="true"
-								>
-									⌘
-								</div>
-								<h2 className="text-[20px] tracking-[0.02em]">
-									ここから、一緒に。
-								</h2>
-								<p className="leading-[1.9] text-muted">
-									コードについて質問したり、
-									<br />
-									取り組みたい変更を伝えてください。
-								</p>
-								<span className="empty-hint mt-[26px] inline-block text-[10px] text-muted">
+								<p className="text-[12px] text-muted">
 									このワークスペースで作業します
-								</span>
+								</p>
+								<p className="text-[12px] leading-[1.7] text-muted [overflow-wrap:anywhere]">
+									{state.cwd}
+								</p>
 							</div>
 						)}
 						<div
@@ -124,7 +118,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 						{state.run === "running" && <CubeLoader />}
 						{runLabels[state.run] && (
 							<p
-								className="run-status text-[11px] text-muted"
+								className="run-status text-[12px] text-muted"
 								role="status"
 							>
 								{runLabels[state.run]}
@@ -170,7 +164,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 							}}
 						/>
 						<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
-							<span className="text-[9px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]">
+							<span className="text-[12px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]">
 								Enter で送信 · Shift+Enter で改行
 							</span>
 							{busy ? (

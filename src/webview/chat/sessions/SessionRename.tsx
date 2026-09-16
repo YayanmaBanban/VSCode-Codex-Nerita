@@ -51,12 +51,12 @@ export function SessionRename({
 			/>
 			<button
 				type="submit"
-				className="text-[11px]"
+				className="text-[12px]"
 				disabled={disabled || !name.trim()}
 			>
 				保存
 			</button>
-			<button type="button" className="text-[11px]" onClick={close}>
+			<button type="button" className="text-[12px]" onClick={close}>
 				キャンセル
 			</button>
 		</form>

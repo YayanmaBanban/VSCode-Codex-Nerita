@@ -24,7 +24,7 @@
 			}
 		],
 		"viewsContainers": {
-			"activitybar": [
+			"secondarySidebar": [
 				{
 					"id": "codex-acp",
 					"title": "Codex ACP",
@@ -120,12 +120,17 @@
 	"dependencies": {
 		"@base-ui/react": "^1.8.0",
 		"@openai/codex": "0.154.0",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
 		"diff": "8.0.4",
+		"framer-motion": "^13.3.0",
 		"gsap": "^3.15.0",
+		"lightswind": "^3.2.5",
 		"lucide-react": "^1.45.0",
 		"motion": "^13.2.0",
 		"react": "^19.3.0",
-		"react-dom": "^19.3.0"
+		"react-dom": "^19.3.0",
+		"tailwind-merge": "^3.7.0"
 	},
 	"publisher": "codex-acp-local",
 	"extensionKind": [

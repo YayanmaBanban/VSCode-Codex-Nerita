@@ -67,6 +67,9 @@ export function codexHarness() {
 		renameThread: vi.fn<CodexConnection["renameThread"]>(() =>
 			Promise.resolve({}),
 		),
+		deleteThread: vi.fn<CodexConnection["deleteThread"]>(() =>
+			Promise.resolve({}),
+		),
 		archiveThread: vi.fn<CodexConnection["archiveThread"]>(() =>
 			Promise.resolve({}),
 		),

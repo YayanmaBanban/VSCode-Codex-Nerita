@@ -42,6 +42,11 @@ export function ComposerSettings({
 	const options = order.map(
 		(id, index) =>
 			state.configOptions.find((option) => option.id === id) ??
+			(id === "fast-mode"
+				? state.configOptions.find((option) =>
+						["service_tier", "server_tier"].includes(option.id),
+					)
+				: undefined) ??
 			({
 				id,
 				name: names[index]!,
@@ -50,7 +55,11 @@ export function ComposerSettings({
 			} satisfies ConfigOption),
 	);
 	options.push(
-		...state.configOptions.filter((option) => !order.includes(option.id)),
+		...state.configOptions.filter(
+			(option) =>
+				!order.includes(option.id) &&
+				!["service_tier", "server_tier"].includes(option.id),
+		),
 	);
 	/** 操作は現在の会話 ID と一意な要求 ID を添えて送る。 */
 	const change = (configId: string, value: string) => {
@@ -115,7 +124,9 @@ export function ComposerSettings({
 					usage={state.usage}
 				/>
 				{options.map((option) =>
-					option.id === "fast-mode" ? (
+					["fast-mode", "service_tier", "server_tier"].includes(
+						option.id,
+					) ? (
 						<span
 							className="fast-mode-quota inline-flex items-center gap-[8px]"
 							key={option.id}

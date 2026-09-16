@@ -10,6 +10,12 @@
 		"noEmit": true,
 		"skipLibCheck": true
 	},
-	"include": ["**/*.ts", "**/*.tsx", "../shared/**/*.ts"],
+	"include": [
+		"**/*.ts",
+		"**/*.tsx",
+		"../shared/**/*.ts",
+		"../hooks/**/*.tsx",
+		"../lib/**/*.ts"
+	],
 	"exclude": []
 }

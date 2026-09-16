@@ -1,6 +1,7 @@
 // 一つのセッションの概要と独立した操作ボタンを表示する。
 import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
 import { useState } from "react";
+import { SessionDelete } from "./SessionDelete";
 import { SessionRename } from "./SessionRename";
 import type { UiMessage } from "../../../shared/messages";
 import type {
@@ -52,7 +53,7 @@ export function SessionItem({
 				<span className="block truncate text-[13px] leading-[1.6]">
 					{title}
 				</span>
-				<span className="mt-[4px] block text-[11px] text-muted">
+				<span className="mt-[4px] block text-[12px] text-muted">
 					{relativeTime(session.updatedAt, now)}
 				</span>
 			</button>
@@ -66,6 +67,11 @@ export function SessionItem({
 				/>
 			)}
 			<div className="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
+				<SessionDelete
+					session={session}
+					disabled={disabled || !capabilities.delete}
+					send={send}
+				/>
 				<button
 					type="button"
 					className={sessionActionClass}
@@ -85,7 +91,7 @@ export function SessionItem({
 						disabled ||
 						!(session.archived
 							? capabilities.unarchive
-							: capabilities.delete)
+							: capabilities.archive)
 					}
 					aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
 					title={
@@ -95,7 +101,7 @@ export function SessionItem({
 						send({
 							type: session.archived
 								? "session/unarchive"
-								: "session/delete",
+								: "session/archive",
 							requestId: crypto.randomUUID(),
 							sessionId: session.sessionId,
 						})

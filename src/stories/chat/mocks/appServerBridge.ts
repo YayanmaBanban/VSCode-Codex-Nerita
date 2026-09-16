@@ -57,6 +57,7 @@ export function createAppServerBridge(scenario: Scenario): Bridge {
 			load: true,
 			fork: true,
 			delete: true,
+			archive: true,
 			rename: true,
 			unarchive: true,
 		},

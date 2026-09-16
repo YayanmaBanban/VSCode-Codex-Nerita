@@ -13,6 +13,7 @@ export type SessionCapabilities = {
 	load: boolean;
 	fork: boolean;
 	delete: boolean;
+	archive?: boolean;
 	rename?: boolean;
 	unarchive?: boolean;
 };
@@ -32,9 +33,15 @@ export type SessionHistoryMessage =
 	  }
 	| { type: "session/unarchive"; requestId: string; sessionId: string }
 	| {
-			[Type in "session/load" | "session/fork" | "session/delete"]: {
+			[
+				Type in
+					| "session/load"
+					| "session/fork"
+					| "session/delete"
+					| "session/archive"
+			]: {
 				type: Type;
 				requestId: string;
 				sessionId: string;
 			};
-	  }["session/load" | "session/fork" | "session/delete"];
+	  }["session/load" | "session/fork" | "session/delete" | "session/archive"];

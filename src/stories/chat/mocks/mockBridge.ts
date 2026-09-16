@@ -24,6 +24,7 @@ function scenarioState(scenario: Scenario): ChatState {
 	const state: ChatState = {
 		...initialState(),
 		connection: "ready",
+		cwd: "D:/workspace/project",
 		sessionId: "story-session",
 		configOptions: settingsFixture(),
 	};

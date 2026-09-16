@@ -80,7 +80,7 @@ export function GenericTool({ tool }: { tool: ToolSummary }) {
 				</section>
 			)}
 			{!hasDetails && (
-				<p className="muted text-[11px] text-muted">
+				<p className="muted text-[12px] text-muted">
 					詳細はまだありません。
 				</p>
 			)}

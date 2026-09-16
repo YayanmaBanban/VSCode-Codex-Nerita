@@ -34,6 +34,39 @@ const action = (
 		sessionId: "saved",
 		...extra,
 	});
+
+for (const archived of [false, true]) {
+	it(`永久削除はアーカイブAPIを呼ばず一覧を更新する: archived=${archived}`, async () => {
+		const h = await connected();
+		if (archived) {
+			await action(h, "session/list", { archived: true });
+		} else {
+			await action(h, "session/load");
+		}
+		h.client.listThreads.mockResolvedValue({ data: [], nextCursor: null });
+		await action(h, "session/delete");
+		expect(h.client.deleteThread).toHaveBeenCalledWith("saved");
+		expect(h.client.archiveThread).not.toHaveBeenCalled();
+		expect(h.session.snapshot().sessions).toEqual([]);
+		if (!archived) {
+			expect(h.session.snapshot()).toMatchObject({
+				sessionId: null,
+				messages: [],
+				configOptions: [],
+			});
+		}
+	});
+}
+
+it("削除失敗では現在の会話を保持しエラーを表示する", async () => {
+	const h = await connected();
+	await action(h, "session/load");
+	h.client.deleteThread.mockRejectedValueOnce(new Error("delete failed"));
+	await action(h, "session/delete");
+	expect(h.session.snapshot().sessionId).toBe("saved");
+	expect(h.session.snapshot().sessionsError).toBeTruthy();
+	expect(h.session.snapshot().sessionPending).toBe(false);
+});
 /** メッセージとコマンドの順序を確認する保存ターン。 */
 function savedTurn(id = "old-turn"): HistoryTurn {
 	return {
@@ -197,7 +230,7 @@ it("名前変更・アーカイブ・解除はサーバーの結果を再取得�
 	await action(h, "session/rename", { name: " 新しい名前 " });
 	expect(h.client.renameThread).toHaveBeenCalledWith("saved", "新しい名前");
 	await action(h, "session/load");
-	await action(h, "session/delete");
+	await action(h, "session/archive");
 	expect(h.client.archiveThread).toHaveBeenCalledWith("saved");
 	expect(h.session.snapshot()).toMatchObject({
 		sessionId: null,
@@ -224,14 +257,14 @@ it("Forkは新しいIDを使い元の履歴を変更しない", async () => {
 
 it("未知のID・別cwd・実行中の履歴は変更しない", async () => {
 	const h = await connected();
-	await action(h, "session/delete", { sessionId: "unknown" });
+	await action(h, "session/archive", { sessionId: "unknown" });
 	expect(h.client.readThread).not.toHaveBeenCalled();
 	for (const thread of [
 		{ ...historyThread(), active: true },
 		{ ...historyThread(), cwd: "D:/elsewhere" },
 	]) {
 		h.client.readThread.mockResolvedValueOnce({ thread });
-		await action(h, "session/delete");
+		await action(h, "session/archive");
 	}
 	expect(h.client.archiveThread).not.toHaveBeenCalled();
 	await h.send();
@@ -291,7 +324,7 @@ it("一覧に未反映のForkをフィルター切替とアーカイブ解除で
 	expect(
 		h.session.snapshot().sessions.some((s) => s.sessionId === "forked"),
 	).toBe(true);
-	await action(h, "session/delete", { sessionId: "forked" });
+	await action(h, "session/archive", { sessionId: "forked" });
 	await action(h, "session/list", { archived: true });
 	expect(
 		h.session.snapshot().sessions.find((s) => s.sessionId === "forked")
@@ -321,7 +354,7 @@ it("復元中の二重操作と外部ターン開始を拒否する", async () =
 	const before = h.session.snapshot().sessionId;
 	const loading = action(h, "session/load");
 	await Promise.resolve();
-	await action(h, "session/delete");
+	await action(h, "session/archive");
 	expect(h.client.archiveThread).not.toHaveBeenCalled();
 	h.notify("turn/started", {
 		threadId: "saved",

@@ -35,6 +35,7 @@ export function createSessionBridge(scenario: SessionScenario) {
 		load: true,
 		fork: true,
 		delete: true,
+		archive: true,
 		rename: true,
 		unarchive: true,
 	};
@@ -110,6 +111,7 @@ export function createSessionBridge(scenario: SessionScenario) {
 			}
 			if (
 				message.type === "session/delete" ||
+				message.type === "session/archive" ||
 				message.type === "session/rename" ||
 				message.type === "session/unarchive" ||
 				message.type === "session/fork" ||
@@ -123,6 +125,8 @@ export function createSessionBridge(scenario: SessionScenario) {
 					return;
 				}
 				if (message.type === "session/delete") {
+					sessions.splice(sessions.indexOf(item), 1);
+				} else if (message.type === "session/archive") {
 					item.archived = true;
 				} else if (message.type === "session/unarchive") {
 					item.archived = false;

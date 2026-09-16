@@ -65,11 +65,12 @@ export class CodexSessionController extends CodexHistory {
 			message.type === "session/load" ||
 			message.type === "session/fork" ||
 			message.type === "session/delete" ||
+			message.type === "session/archive" ||
 			message.type === "session/rename" ||
 			message.type === "session/unarchive"
 		) {
 			const action = message.type.slice("session/".length) as
-				"load" | "fork" | "delete" | "rename" | "unarchive";
+				"load" | "fork" | "delete" | "archive" | "rename" | "unarchive";
 			await this.manageHistory(
 				action,
 				message.sessionId,

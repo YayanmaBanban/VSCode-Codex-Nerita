@@ -16,6 +16,66 @@ test.afterEach(({ page }) => {
 	errors.delete(page);
 });
 
+for (const theme of ["dark", "light"] as const) {
+	test(`削除確認・取消・履歴とアーカイブからの削除: ${theme}`, async ({
+		page,
+	}, info) => {
+		await page.setViewportSize({ width: 320, height: 820 });
+		await page.emulateMedia({ colorScheme: theme });
+		await page.goto(
+			"/iframe.html?id=chat-sessions--history&viewMode=story",
+		);
+		await page
+			.getByRole("button", { name: "セッション一覧", exact: true })
+			.click();
+		const panel = page.getByRole("complementary", {
+			name: "セッション一覧",
+		});
+		await expect(panel.getByRole("listitem")).toHaveCount(3);
+		const trigger = panel.getByRole("button", { name: /を削除$/ }).first();
+		await trigger.click();
+		const dialog = page.getByRole("alertdialog");
+		await expect(dialog).toContainText("この操作は取り消せません。");
+		await expect(
+			dialog.getByRole("button", { name: "キャンセル" }),
+		).toBeFocused();
+		await info.attach(`delete-confirm-${theme}`, {
+			body: await page.screenshot({
+				path: info.outputPath("delete-confirm.png"),
+			}),
+			contentType: "image/png",
+		});
+		await dialog.getByRole("button", { name: "キャンセル" }).click();
+		await expect(trigger).toBeFocused();
+		await expect(panel.getByRole("listitem")).toHaveCount(3);
+		await trigger.click();
+		await dialog.press("Escape");
+		await expect(dialog).toHaveCount(0);
+		await expect(panel).toBeVisible();
+		await trigger.click();
+		await dialog
+			.getByRole("button", { name: "セッションを削除", exact: true })
+			.click();
+		await expect(panel.getByRole("listitem")).toHaveCount(2);
+		await panel
+			.getByRole("button", { name: /をアーカイブ$/ })
+			.first()
+			.click();
+		await expect(panel.getByRole("listitem")).toHaveCount(1);
+		await panel
+			.getByRole("button", { name: "アーカイブ", exact: true })
+			.click();
+		await expect(
+			panel.getByRole("button", { name: /をアーカイブから戻す$/ }),
+		).toBeVisible();
+		await panel.getByRole("button", { name: /を削除$/ }).click();
+		await dialog
+			.getByRole("button", { name: "セッションを削除", exact: true })
+			.click();
+		await expect(panel.getByRole("listitem")).toHaveCount(0);
+	});
+}
+
 test("次ページの取得と名前変更の取消", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-sessions--paginated&viewMode=story");
 	await page
@@ -113,7 +173,7 @@ test("取得・再取得・選択・名前ボタン・フォーク・アーカ�
 	await page.clock.runFor(800);
 	await expect(panel.getByRole("listitem")).toHaveCount(3);
 	await panel
-		.getByRole("button", { name: "アーカイブ済み", exact: true })
+		.getByRole("button", { name: "アーカイブ", exact: true })
 		.click();
 	await page.clock.runFor(800);
 	await expect(panel.getByRole("listitem")).toHaveCount(1);
@@ -122,12 +182,10 @@ test("取得・再取得・選択・名前ボタン・フォーク・アーカ�
 	await panel.getByRole("button", { name: /をアーカイブから戻す$/ }).click();
 	await page.clock.runFor(800);
 	await expect(panel.getByRole("listitem")).toHaveCount(0);
-	await panel
-		.getByRole("button", { name: "通常の履歴", exact: true })
-		.click();
+	await panel.getByRole("button", { name: "履歴", exact: true }).click();
 	await page.clock.runFor(800);
 	await expect(panel.getByRole("listitem")).toHaveCount(4);
-	await page.getByRole("button", { name: "＋ 新規会話" }).click();
+	await page.getByRole("button", { name: "新しいチャット" }).click();
 	await expect(panel.getByRole("progressbar")).toBeVisible();
 	await page.clock.runFor(800);
 	await expect(

@@ -62,6 +62,7 @@ export type ChatState = {
 	revision: number;
 	connection: ConnectionStatus;
 	sessionId: string | null;
+	sessionTitle: string | null;
 	runId: string | null;
 	run: RunStatus;
 	messages: ChatMessage[];
@@ -91,6 +92,9 @@ export type UiMessage =
 	| ComposerMessage
 	| SessionHistoryMessage
 	| { type: "ui/ready" }
+	| { type: "ui/openEditor" | "ui/openSidebar"; requestId: string }
+	| { type: "ui/saveDraft"; requestId: string; draft: string }
+	| { type: "ui/saveScroll"; requestId: string; scrollTop: number }
 	| { type: "connection/retry"; requestId: string }
 	| { type: "session/new"; requestId: string }
 	| { type: "auth/start"; requestId: string; methodId: string }
@@ -123,6 +127,13 @@ export type UiMessage =
 	  };
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| {
+			type: "ui/viewState";
+			editor: boolean;
+			draft: string;
+			scrollTop: number;
+			restoreScroll: boolean;
+	  }
 	| { type: "state/snapshot"; state: ChatState }
 	| {
 			type: "state/patch";
@@ -136,6 +147,7 @@ export function initialState(): ChatState {
 		revision: 0,
 		connection: "disconnected",
 		sessionId: null,
+		sessionTitle: null,
 		runId: null,
 		run: "idle",
 		messages: [],

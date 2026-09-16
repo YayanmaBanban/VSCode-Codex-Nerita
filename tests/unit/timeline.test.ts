@@ -58,13 +58,11 @@ it("Webview再表示にスナップショットを返し、購読解除と正本
 		unsubscribe();
 		await h.session.receive({ type: "ui/ready" });
 		expect(events).toHaveLength(1);
-		h.session
-			.snapshot()
-			.messages.push({
-				id: "external",
-				role: "user",
-				text: "must not persist",
-			});
+		h.session.snapshot().messages.push({
+			id: "external",
+			role: "user",
+			text: "must not persist",
+		});
 		expect(h.session.snapshot().messages).toEqual([]);
 	} finally {
 		await h.session.dispose();

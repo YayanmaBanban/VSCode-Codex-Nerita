@@ -28,6 +28,7 @@ export type CodexConnection = Pick<
 	| "listItems"
 	| "renameThread"
 	| "archiveThread"
+	| "deleteThread"
 	| "unarchiveThread"
 >;
 /** 起動前のワークスペース検証と、取消可能な接続を提供する。 */

@@ -1,6 +1,6 @@
 // 右ペインに作業フォルダとセッション履歴を表示する。
 import { useEffect, useRef, useState } from "react";
-import { LoaderCircle, X } from "lucide-react";
+import { Archive, List, LoaderCircle, X } from "lucide-react";
 import type { ChatState, UiMessage } from "../../../shared/messages";
 import { taskActive } from "../../../shared/asyncTask";
 import { SessionItem, sessionActionClass as actionClass } from "./SessionItem";
@@ -61,7 +61,7 @@ export function SessionPanel({
 				</div>
 				<div className="mt-[8px] flex items-start gap-[8px]">
 					<span
-						className="min-w-0 flex-1 break-all font-editor text-[11px] leading-[1.6] text-muted"
+						className="min-w-0 flex-1 break-all font-editor text-[12px] leading-[1.6] text-muted"
 						title={state.cwd ?? undefined}
 					>
 						{state.cwd ?? "ワークスペース未接続"}
@@ -91,7 +91,7 @@ export function SessionPanel({
 						<button
 							key={String(archived)}
 							type="button"
-							className="text-[12px] aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4"
+							className="inline-flex items-center gap-[6px] text-[12px] aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4"
 							aria-pressed={state.sessionsArchived === archived}
 							disabled={
 								state.sessionPending ||
@@ -105,7 +105,12 @@ export function SessionPanel({
 								})
 							}
 						>
-							{archived ? "アーカイブ済み" : "通常の履歴"}
+							{archived ? (
+								<Archive size={14} aria-hidden="true" />
+							) : (
+								<List size={14} aria-hidden="true" />
+							)}
+							{archived ? "アーカイブ" : "履歴"}
 						</button>
 					))}
 				</div>
@@ -120,7 +125,7 @@ export function SessionPanel({
 						{capabilities.list && (
 							<button
 								type="button"
-								className="mt-[8px] block text-[11px]"
+								className="mt-[8px] block text-[12px]"
 								disabled={
 									state.sessionsLoading ||
 									state.sessionPending
@@ -140,7 +145,7 @@ export function SessionPanel({
 				{state.sessionPending && (
 					<p
 						role="status"
-						className="mx-[8px] text-[11px] text-muted"
+						className="mx-[8px] text-[12px] text-muted"
 					>
 						セッションを更新しています…
 					</p>

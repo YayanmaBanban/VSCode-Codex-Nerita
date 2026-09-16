@@ -5,7 +5,7 @@ import { hydrateHistory, replayHistory } from "./restoreHistory";
 import type { AppServerNotification } from "./rpcMessage";
 import { isRecord } from "../../shared/validation";
 
-/** アーカイブは可逆操作として扱い、恒久削除APIを公開しない。 */
+/** アーカイブと恒久削除を区別し、成功後に一覧と現在の会話を更新する。 */
 export abstract class CodexHistory extends CodexCatalog {
 	private restoring: { id: string; changed: boolean } | undefined;
 	/** 復元中に別クライアントが会話を進めた場合は、不完全な本文を公開しない。 */
@@ -24,7 +24,7 @@ export abstract class CodexHistory extends CodexCatalog {
 	}
 	/** 表示済みの同一フォルダーの履歴だけを、実行していない間に操作する。 */
 	protected async manageHistory(
-		action: "load" | "fork" | "delete" | "rename" | "unarchive",
+		action: "load" | "fork" | "delete" | "archive" | "rename" | "unarchive",
 		threadId: string,
 		name?: string,
 	): Promise<void> {
@@ -46,7 +46,11 @@ export abstract class CodexHistory extends CodexCatalog {
 		) {
 			throw new Error("History unavailable");
 		}
-		if (row.archived ? action !== "unarchive" : action === "unarchive") {
+		if (
+			row.archived
+				? !["unarchive", "delete"].includes(action)
+				: action === "unarchive"
+		) {
 			throw new Error("Invalid archive action");
 		}
 		if (
@@ -81,6 +85,9 @@ export abstract class CodexHistory extends CodexCatalog {
 					this.pendingThreads.update(epoch, threadId, {
 						title: name!.trim(),
 					});
+					if (this.state.sessionId === threadId) {
+						this.patch({ sessionTitle: name!.trim() });
+					}
 				}
 			} else if (action === "unarchive") {
 				await client.unarchiveThread(threadId);
@@ -89,12 +96,18 @@ export abstract class CodexHistory extends CodexCatalog {
 						archived: false,
 					});
 				}
-			} else if (action === "delete") {
-				await client.archiveThread(threadId);
+			} else if (action === "delete" || action === "archive") {
+				if (action === "delete") {
+					await client.deleteThread(threadId);
+				} else {
+					await client.archiveThread(threadId);
+				}
 				if (current()) {
-					this.pendingThreads.update(epoch, threadId, {
-						archived: true,
-					});
+					this.pendingThreads.update(
+						epoch,
+						threadId,
+						action === "delete" ? null : { archived: true },
+					);
 				}
 				if (current() && this.state.sessionId === threadId) {
 					this.resetRun();
@@ -155,6 +168,10 @@ export abstract class CodexHistory extends CodexCatalog {
 				this.patch({
 					...restored,
 					sessionId: result.thread.id,
+					sessionTitle:
+						result.thread.name?.trim() ||
+						result.thread.preview ||
+						null,
 					runId: null,
 					run: "idle",
 					permissions: [],

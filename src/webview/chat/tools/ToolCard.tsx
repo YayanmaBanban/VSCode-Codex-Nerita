@@ -91,7 +91,7 @@ export function ToolCard({
 		>
 			{cwd && (
 				<div
-					className="tool-cwd px-[10px] pt-[8px] text-[10px] text-muted [overflow-wrap:anywhere]"
+					className="tool-cwd px-[10px] pt-[8px] text-[12px] text-muted [overflow-wrap:anywhere]"
 					title={cwd}
 				>
 					{cwd}
@@ -117,7 +117,7 @@ export function ToolCard({
 						/>
 					)}
 					{!executing && active && (
-						<span className="tool-status text-[11px] whitespace-nowrap text-muted">
+						<span className="tool-status text-[12px] whitespace-nowrap text-muted">
 							{tool.status === "pending" ? "待機中" : "実行中"}
 						</span>
 					)}

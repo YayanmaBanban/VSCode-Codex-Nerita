@@ -116,7 +116,11 @@ export class CodexClient {
 	renameThread(threadId: string, name: string) {
 		return this.transport.request("thread/name/set", { threadId, name });
 	}
-	/** 永久削除を使わず、会話をアーカイブする。 */
+	/** 会話を完全に削除する。 */
+	deleteThread(threadId: string) {
+		return this.transport.request("thread/delete", { threadId });
+	}
+	/** 会話をアーカイブする。 */
 	archiveThread(threadId: string) {
 		return this.transport.request("thread/archive", { threadId });
 	}

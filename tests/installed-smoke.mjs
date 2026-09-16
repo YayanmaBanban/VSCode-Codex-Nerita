@@ -156,8 +156,8 @@ try {
 	).toHaveCount(0);
 	await expect(chat.locator(".message.user")).toHaveCount(3);
 	await page.screenshot({ path: path.join(root, "continued.png") });
-	await chat.getByRole("button", { name: "＋ 新規会話" }).click();
-	await chat.getByText("ここから、一緒に。", { exact: true }).waitFor();
+	await chat.getByRole("button", { name: "新しいチャット" }).click();
+	await chat.getByText("このワークスペースで作業します", { exact: true }).waitFor();
 	await chat
 		.getByRole("button", { name: "セッション一覧", exact: true })
 		.click();

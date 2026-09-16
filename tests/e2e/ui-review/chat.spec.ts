@@ -30,8 +30,10 @@ test("送信・逐次応答・完了・新規会話", async ({ page }, info) => 
 		body: await page.screenshot(),
 		contentType: "image/png",
 	});
-	await page.getByRole("button", { name: "＋ 新規会話" }).click();
-	await expect(page.getByText("ここから、一緒に。")).toBeVisible();
+	await page.getByRole("button", { name: "新しいチャット" }).click();
+	await expect(
+		page.getByText("このワークスペースで作業します"),
+	).toBeVisible();
 });
 for (const choice of ["今回のみ許可", "拒否"]) {
 	test(`承認要求: ${choice}`, async ({ page }, info) => {
@@ -161,6 +163,53 @@ test("TextTypeの開始・途中・終了とカーソル休止", async ({ page }
 	await expect(page.locator(".text-type-cursor")).toHaveCount(0);
 });
 for (const colorScheme of ["dark", "light"] as const) {
+	test(`空の会話・520px・補助文字: ${colorScheme}`, async ({
+		page,
+	}, info) => {
+		await page.setViewportSize({ width: 520, height: 820 });
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+		const empty = page.locator(".empty-state");
+		await expect(empty).toHaveText(
+			"このワークスペースで作業しますD:/workspace/project",
+		);
+		await page.evaluate(() => {
+			document.documentElement.style.setProperty(
+				"--vscode-font-size",
+				"10px",
+			);
+			document.documentElement.style.setProperty(
+				"--vscode-descriptionForeground",
+				"rgb(120, 130, 140)",
+			);
+		});
+		await expect(empty.locator("p").last()).toHaveCSS(
+			"color",
+			"rgb(120, 130, 140)",
+		);
+		expect(
+			await page
+				.locator("main *")
+				.evaluateAll((nodes) =>
+					nodes
+						.filter(
+							(node) =>
+								Array.from(node.childNodes).some(
+									(child) =>
+										child.nodeType === Node.TEXT_NODE &&
+										child.textContent?.trim(),
+								) &&
+								parseFloat(getComputedStyle(node).fontSize) <
+									12,
+						)
+						.map((node) => node.tagName),
+				),
+		).toEqual([]);
+		await info.attach(`empty-${colorScheme}`, {
+			body: await page.screenshot(),
+			contentType: "image/png",
+		});
+	});
 	test(`狭い幅・長文・コード: ${colorScheme}`, async ({ page }, info) => {
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });

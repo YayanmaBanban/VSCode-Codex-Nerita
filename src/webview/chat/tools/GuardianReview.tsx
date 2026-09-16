@@ -28,7 +28,7 @@ export function GuardianReview({ tool }: { tool: ToolSummary }) {
 					)
 					.map(([label, value]) => (
 						<div key={String(label)}>
-							<dt className="text-[11px] text-muted">
+							<dt className="text-[12px] text-muted">
 								{String(label)}
 							</dt>
 							<dd className="m-0 mb-[10px]">

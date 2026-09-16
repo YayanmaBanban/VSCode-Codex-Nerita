@@ -86,7 +86,7 @@ export function Attachments({
 							disabled={disabled}
 							title={file.uri}
 							aria-label={`${file.name} を開く`}
-							className="inline-flex min-w-0 flex-1 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[11px]"
+							className="inline-flex min-w-0 flex-1 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[12px]"
 							onClick={() => onOpen(file.id)}
 						>
 							<Icon size={14} aria-hidden="true" />
@@ -96,7 +96,7 @@ export function Attachments({
 							type="button"
 							disabled={disabled}
 							aria-label={`${file.name} を取り外す`}
-							className="inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[11px]"
+							className="inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[12px]"
 							onClick={() => onRemove(file.id)}
 						>
 							<X size={12} aria-hidden="true" />

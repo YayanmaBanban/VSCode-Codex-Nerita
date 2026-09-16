@@ -35,7 +35,7 @@ export function ConfigControl({
 						content={current?.description ?? option.description}
 					>
 						<Select.Trigger
-							className="config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] border-0 bg-transparent px-[5px] py-[6px] text-[11px] text-ellipsis text-inherit enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-settings-focus focus-visible:outline-offset-1 [&_svg]:shrink-0"
+							className="config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] border-0 bg-transparent px-[5px] py-[6px] text-[12px] text-ellipsis text-inherit enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-settings-focus focus-visible:outline-offset-1 [&_svg]:shrink-0"
 							aria-label={option.name}
 						>
 							<span className="truncate">
@@ -91,7 +91,7 @@ export function ConfigControl({
 	);
 }
 
-/** fast-mode の on/off 値を小さなスイッチで切り替える。 */
+/** 速度設定の候補値を維持し、小さなスイッチで切り替える。 */
 export function FastModeSwitch({
 	option,
 	disabled,
@@ -101,35 +101,43 @@ export function FastModeSwitch({
 	disabled: boolean;
 	onChange: (value: string) => void;
 }) {
-	const checked = option.currentValue === "on";
+	const tier = option.id !== "fast-mode";
+	const on = tier
+		? option.options.find((choice) =>
+				["priority", "fast"].includes(choice.value),
+			)?.value
+		: "on";
+	const off = tier ? "default" : "off";
+	const checked = option.currentValue === on;
 	const current = option.options.find(
 		(choice) => choice.value === option.currentValue,
 	);
 	return (
 		<SettingsTooltip content={current?.description ?? option.description}>
-			<label className="fast-mode inline-flex items-center gap-[5px] px-[5px] text-[11px] text-muted">
-				<span>{option.name}</span>
+			<label className="fast-mode inline-flex items-center gap-[5px] px-[5px] text-[12px] text-muted">
+				<span>{tier ? "Fast mode" : option.name}</span>
 				<button
 					type="button"
 					role="switch"
 					className="group h-[15px] w-[26px] rounded-[12px] border-0 bg-switch-off p-[2px] aria-checked:bg-switch-on"
-					aria-label={option.name}
+					aria-label={tier ? "Fast mode" : option.name}
 					aria-checked={checked}
 					disabled={
 						disabled ||
-						!["on", "off"].every((value) =>
+						![on, off].every((value) =>
 							option.options.some(
 								(choice) => choice.value === value,
 							),
 						)
 					}
-					onClick={() => onChange(checked ? "off" : "on")}
+					onClick={() => {
+						if (on) {
+							onChange(checked ? off : on);
+						}
+					}}
 				>
 					<span className="block size-[11px] rounded-full bg-foreground group-aria-checked:translate-x-[11px]" />
 				</button>
-				<span className="fast-value min-w-[18px] text-[10px]">
-					{current?.name ?? "—"}
-				</span>
 			</label>
 		</SettingsTooltip>
 	);

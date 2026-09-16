@@ -30,6 +30,7 @@ export abstract class CodexCatalog extends CodexRun {
 				load: true,
 				fork: true,
 				delete: true,
+				archive: true,
 				rename: true,
 				unarchive: true,
 			},
@@ -155,6 +156,11 @@ export abstract class CodexCatalog extends CodexRun {
 				this.pendingThreads.update(this.epoch, id, {
 					title: message.params.threadName,
 				});
+				if (id === this.state.sessionId) {
+					this.patch({
+						sessionTitle: message.params.threadName.trim() || null,
+					});
+				}
 			}
 		}
 		if (

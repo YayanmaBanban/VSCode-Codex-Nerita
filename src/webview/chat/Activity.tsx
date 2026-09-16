@@ -60,7 +60,7 @@ export function Activity({
 					aria-label="承認要求"
 					key={permission.id}
 				>
-					<span className="eyebrow text-[9px] tracking-[0.13em] text-muted">
+					<span className="eyebrow text-[12px] tracking-[0.13em] text-muted">
 						確認が必要です
 					</span>
 					<h2 className="whitespace-pre-wrap leading-[1.7] [overflow-wrap:anywhere]">

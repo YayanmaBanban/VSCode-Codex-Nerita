@@ -12,6 +12,9 @@ export function useChat(bridge: Bridge) {
 		setState(current);
 		setRequestError(null);
 		const unsubscribe = bridge.subscribe((message) => {
+			if (message.type === "ui/viewState") {
+				return;
+			}
 			if (message.type === "request/failed") {
 				setRequestError(message.error);
 				return;

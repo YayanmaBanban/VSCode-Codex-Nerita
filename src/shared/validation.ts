@@ -22,6 +22,19 @@ export function isUiMessage(value: unknown): value is UiMessage {
 		return false;
 	}
 	switch (value.type) {
+		case "ui/openEditor":
+		case "ui/openSidebar":
+			return true;
+		case "ui/saveDraft":
+			return (
+				typeof value.draft === "string" && value.draft.length <= 100_000
+			);
+		case "ui/saveScroll":
+			return (
+				typeof value.scrollTop === "number" &&
+				Number.isFinite(value.scrollTop) &&
+				value.scrollTop >= 0
+			);
 		case "connection/retry":
 		case "session/new":
 			return true;
@@ -42,6 +55,7 @@ export function isUiMessage(value: unknown): value is UiMessage {
 			return isId(value.sessionId);
 		case "session/load":
 		case "session/fork":
+		case "session/archive":
 		case "session/delete":
 			return isId(value.sessionId);
 		case "auth/start":
@@ -94,6 +108,7 @@ function every(
 /** 状態プロパティを項目ごとに検証する。 */
 function validField(key: string, value: unknown): boolean {
 	switch (key) {
+		case "sessionTitle":
 		case "cwd":
 		case "sessionsError":
 		case "sessionsNextCursor":
@@ -108,7 +123,7 @@ function validField(key: string, value: unknown): boolean {
 				["list", "load", "fork", "delete"].every(
 					(key) => typeof value[key] === "boolean",
 				) &&
-				["rename", "unarchive"].every(
+				["rename", "unarchive", "archive"].every(
 					(key) =>
 						value[key] === undefined ||
 						typeof value[key] === "boolean",
@@ -221,6 +236,7 @@ function isState(value: unknown): value is ChatState {
 			"connection",
 			"run",
 			"sessionId",
+			"sessionTitle",
 			"runId",
 			"error",
 			"messages",
@@ -250,6 +266,17 @@ function isState(value: unknown): value is ChatState {
 export function isHostMessage(value: unknown): value is HostMessage {
 	if (!isRecord(value)) {
 		return false;
+	}
+	if (value.type === "ui/viewState") {
+		return (
+			typeof value.restoreScroll === "boolean" &&
+			typeof value.editor === "boolean" &&
+			typeof value.draft === "string" &&
+			value.draft.length <= 100_000 &&
+			typeof value.scrollTop === "number" &&
+			Number.isFinite(value.scrollTop) &&
+			value.scrollTop >= 0
+		);
 	}
 	if (value.type === "state/snapshot") {
 		return isState(value.state);

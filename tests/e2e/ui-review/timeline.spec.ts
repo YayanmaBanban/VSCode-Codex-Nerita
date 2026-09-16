@@ -20,7 +20,7 @@ test("受信順のカードを次の送信後も保持する", async ({ page }, 
 		.getByRole("button", { name: "pnpm.cmd test", exact: true })
 		.click();
 	await expect(page.locator(".tool-body")).toHaveText("✓ All tests passed");
-	await expect(page.locator(".tool-cwd")).toHaveCSS("font-size", "10px");
+	await expect(page.locator(".tool-cwd")).toHaveCSS("font-size", "12px");
 	await expect(page.locator(".activity .tool-card")).toHaveCount(0);
 	await page
 		.getByRole("textbox", { name: "Codexへのメッセージ" })

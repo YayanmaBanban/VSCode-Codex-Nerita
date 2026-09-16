@@ -152,10 +152,18 @@ export abstract class CodexOptions extends CodexAttachments {
 		}
 		if (id === "model") {
 			const model = this.models.find((item) => item.model === value)!;
+			const previousEffort = this.state.configOptions.find(
+				(item) => item.id === "reasoning_effort",
+			)?.currentValue;
+			// 対応する推論量は引き継ぎ、非対応の値だけ切替先の既定値へ戻す。
+			const effort =
+				model.supportedReasoningEfforts.find(
+					(item) => item.reasoningEffort === previousEffort,
+				)?.reasoningEffort ?? model.defaultReasoningEffort;
 			this.turnOptions.model = value;
-			this.turnOptions.effort = model.defaultReasoningEffort;
+			this.turnOptions.effort = effort;
 			delete this.turnOptions.serviceTierForTurn;
-			this.updateOptions(value, model.defaultReasoningEffort, "inherit");
+			this.updateOptions(value, effort, "inherit");
 			return;
 		}
 		if (id === "reasoning_effort") {

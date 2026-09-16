@@ -39,7 +39,7 @@ export function FileDiff({ path, oldText, newText }: FileDiffProps) {
 			</h3>
 			{!patch ? (
 				<>
-					<p className="muted text-[11px] text-muted">
+					<p className="muted text-[12px] text-muted">
 						差分の計算時間を超えたため、本文を表示します。
 					</p>
 					<h3 className={toolLabelClass}>変更前</h3>
@@ -48,7 +48,7 @@ export function FileDiff({ path, oldText, newText }: FileDiffProps) {
 					<pre className={toolOutputClass}>{newText}</pre>
 				</>
 			) : patch.hunks.length === 0 ? (
-				<p className="muted text-[11px] text-muted">
+				<p className="muted text-[12px] text-muted">
 					{oldText === null
 						? "空のファイルを作成"
 						: "変更はありません。"}

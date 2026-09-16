@@ -1,0 +1,98 @@
+/* ボタン中央から下向きに飛ばし、ヘッダー上端で紙吹雪が切れないようにする。 */
+.confetti-piece {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 4px;
+	height: 7px;
+	background: var(--vscode-testing-iconPassed, #48a976);
+	animation: connection-confetti 900ms ease-out both;
+}
+.confetti-piece:nth-child(3n) {
+	background: var(--vscode-editorWarning-foreground, #deb86d);
+}
+.confetti-piece:nth-child(3n + 1) {
+	background: var(--vscode-focusBorder, #6dadc9);
+}
+.confetti-0 {
+	--x: -42px;
+	--y: 24px;
+	--r: -160deg;
+}
+.confetti-1 {
+	--x: -34px;
+	--y: 46px;
+	--r: 220deg;
+}
+.confetti-2 {
+	--x: -24px;
+	--y: 62px;
+	--r: -240deg;
+}
+.confetti-3 {
+	--x: -12px;
+	--y: 42px;
+	--r: 180deg;
+}
+.confetti-4 {
+	--x: -4px;
+	--y: 72px;
+	--r: -120deg;
+}
+.confetti-5 {
+	--x: 8px;
+	--y: 54px;
+	--r: 260deg;
+}
+.confetti-6 {
+	--x: 18px;
+	--y: 70px;
+	--r: -220deg;
+}
+.confetti-7 {
+	--x: 28px;
+	--y: 42px;
+	--r: 180deg;
+}
+.confetti-8 {
+	--x: 38px;
+	--y: 28px;
+	--r: -160deg;
+}
+.confetti-9 {
+	--x: 44px;
+	--y: 52px;
+	--r: 240deg;
+}
+.confetti-10 {
+	--x: -46px;
+	--y: 64px;
+	--r: 200deg;
+}
+.confetti-11 {
+	--x: 2px;
+	--y: 34px;
+	--r: -260deg;
+}
+@keyframes connection-confetti {
+	0% {
+		transform: translate(0, 0) rotate(0);
+		opacity: 0;
+	}
+	10% {
+		opacity: 1;
+	}
+	75% {
+		opacity: 1;
+	}
+	100% {
+		transform: translate(var(--x), var(--y)) rotate(var(--r));
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.connection-confetti,
+	.connection-beam {
+		display: none;
+	}
+}
