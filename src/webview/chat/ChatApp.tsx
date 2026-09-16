@@ -24,8 +24,16 @@ const runLabels = {
 };
 /** 差し替え可能な Bridge を使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: { bridge: Bridge }) {
-	const { draft, draftParts, setDraft, editor, toggleEditor, conversation } =
-		useChatView(bridge);
+	const {
+		draft,
+		draftParts,
+		setDraft,
+		editor,
+		toggleEditor,
+		conversation,
+		sidebarLocation,
+		selectSidebar,
+	} = useChatView(bridge);
 	const { state, requestError, send } = useChat(bridge);
 	const sessionPanel = useSessionPanel(send);
 	const submission = usePromptSubmission(
@@ -50,6 +58,8 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 	return (
 		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
 			<ConnectionHeader
+				sidebarLocation={sidebarLocation}
+				onSelectSidebar={selectSidebar}
 				state={state}
 				editor={editor}
 				onToggleEditor={toggleEditor}

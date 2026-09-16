@@ -1,14 +1,10 @@
 // セッションタイトル・表示先・接続操作と、認証やエラーの案内を表示する。
 import type { ChatState, UiMessage } from "../../shared/messages";
-import {
-	List,
-	MessageSquareText,
-	Maximize2,
-	Minimize2,
-	Ellipsis,
-} from "lucide-react";
+import { List, MessageSquareText, Maximize2, Minimize2 } from "lucide-react";
 import { ConnectionButton } from "./ConnectionButton";
 import { SettingsTooltip } from "./SettingsTooltip";
+import { PersonalityOptions } from "./personality/PersonalityOptions";
+import type { SidebarLocation } from "../../shared/sidebar";
 
 /** 認証案内とエラー通知に共通する枠・色・余白。 */
 const noticeClass =
@@ -26,6 +22,8 @@ export function ConnectionHeader({
 	onToggleSessions,
 	editor,
 	onToggleEditor,
+	sidebarLocation,
+	onSelectSidebar,
 }: {
 	state: ChatState;
 	requestError: string | null;
@@ -35,6 +33,8 @@ export function ConnectionHeader({
 	onToggleSessions: () => void;
 	editor: boolean;
 	onToggleEditor: () => void;
+	sidebarLocation?: SidebarLocation;
+	onSelectSidebar?: (location: SidebarLocation) => void;
 }) {
 	const title =
 		state.sessionTitle?.trim() ||
@@ -98,16 +98,13 @@ export function ConnectionHeader({
 							)}
 						</button>
 					</SettingsTooltip>
-					<SettingsTooltip content="オプション（準備中）">
-						<button
-							type="button"
-							className={iconClass}
-							aria-label="オプション（準備中）"
-							disabled
-						>
-							<Ellipsis size={16} aria-hidden="true" />
-						</button>
-					</SettingsTooltip>
+					<PersonalityOptions
+						sidebarLocation={sidebarLocation}
+						onSelectSidebar={onSelectSidebar}
+						state={state}
+						send={send}
+						error={requestError}
+					/>
 				</div>
 			</header>
 			{(state.error || requestError) && (

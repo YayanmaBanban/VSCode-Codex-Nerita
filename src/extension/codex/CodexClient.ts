@@ -13,6 +13,11 @@ import {
 } from "./AppServerTransport";
 import { startAppServerProcess } from "./AppServerProcess";
 import { resolveCodexExecutable } from "./runtime";
+import { PersonalityStore } from "./PersonalityStore";
+import {
+	composeDeveloperInstructions,
+	type PersonalityMessage,
+} from "../../shared/personality";
 
 /** Extension Host が確定したローカル起動条件。 */
 export type CodexClientOptions = {
@@ -30,6 +35,7 @@ export class CodexClient {
 		private readonly transport: AppServerTransport,
 		readonly serverInfo: InitializeResponse,
 		private readonly detachAbort: () => void,
+		private readonly personality: PersonalityStore,
 	) {}
 
 	/** initialize の成功後に initialized を送り、失敗時は起動したプロセスを回収する。 */
@@ -57,7 +63,12 @@ export class CodexClient {
 			});
 			transport.notify({ method: "initialized" });
 			options.signal?.throwIfAborted();
-			return new CodexClient(transport, response, detachAbort);
+			return new CodexClient(
+				transport,
+				response,
+				detachAbort,
+				new PersonalityStore(options.cwd),
+			);
 		} catch (error) {
 			detachAbort();
 			await transport.dispose();
@@ -79,16 +90,22 @@ export class CodexClient {
 			includeTurns: false,
 		});
 	}
-	/** 保存済み設定を維持して会話を再開する。 */
-	resumeThread(threadId: string, excludeTurns = false) {
+	/** 最新の性格設定を適用し、その他の保存済み設定を維持して再開する。 */
+	async resumeThread(threadId: string, excludeTurns = false) {
 		return this.transport.request("thread/resume", {
+			developerInstructions: composeDeveloperInstructions(
+				await this.personality.read(),
+			),
 			threadId,
 			excludeTurns,
 		});
 	}
 	/** 元の会話を変更せず、新しいthreadへ分岐する。 */
-	forkThread(threadId: string, excludeTurns = false) {
+	async forkThread(threadId: string, excludeTurns = false) {
 		return this.transport.request("thread/fork", {
+			developerInstructions: composeDeveloperInstructions(
+				await this.personality.read(),
+			),
 			threadId,
 			excludeTurns,
 		});
@@ -148,8 +165,23 @@ export class CodexClient {
 		return this.transport.request("account/login/cancel", { loginId });
 	}
 	/** ワークスペースと Codex の既存設定を使って会話を開始する。 */
-	startThread(params: ThreadStartParams) {
-		return this.transport.request("thread/start", params);
+	async startThread(params: ThreadStartParams) {
+		return this.transport.request("thread/start", {
+			...params,
+			developerInstructions: composeDeveloperInstructions(
+				await this.personality.read(),
+			),
+		});
+	}
+	/** UI表示用に設定を取得する。 */
+	readPersonality() {
+		return this.personality.read();
+	}
+	/** プリセットの選択・保存をHost側の固定パスへ反映する。 */
+	changePersonality(
+		message: Exclude<PersonalityMessage, { type: "personality/read" }>,
+	) {
+		return this.personality.change(message);
 	}
 	/** 一つのターンを開始し、開始受付の応答を返す。 */
 	startTurn(params: TurnStartParams) {

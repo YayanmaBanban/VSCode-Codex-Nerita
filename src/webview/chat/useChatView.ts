@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Bridge } from "../vscodeBridge";
 import type { ComposerPart } from "../../shared/composerContent";
+import type { SidebarLocation } from "../../shared/sidebar";
 
 /** 空の入力にも編集可能な通常文を一つ用意する。 */
 const textPart = (text: string): ComposerPart => ({
@@ -17,11 +18,17 @@ export function useChatView(bridge: Bridge) {
 	]);
 	const draft = draftParts.map((part) => part.text).join("");
 	const [editor, setEditor] = useState(false);
+	const [sidebarLocation, setSidebarLocation] =
+		useState<SidebarLocation>("secondary");
 	const [restore, setRestore] = useState<{ scrollTop: number } | null>(null);
 	const conversation = useRef<HTMLElement>(null);
 	useEffect(
 		() =>
 			bridge.subscribe((message) => {
+				if (message.type === "ui/sidebarState") {
+					setSidebarLocation(message.location);
+					return;
+				}
 				if (message.type !== "ui/viewState") {
 					return;
 				}
@@ -68,5 +75,30 @@ export function useChatView(bridge: Bridge) {
 			requestId: crypto.randomUUID(),
 		});
 	};
-	return { draft, draftParts, setDraft, editor, toggleEditor, conversation };
+	/** 配置変更にも移動直前のスクロール位置を引き継ぐ。 */
+	const selectSidebar = (location: SidebarLocation) => {
+		if (location === sidebarLocation) {
+			return;
+		}
+		bridge.postMessage({
+			type: "ui/saveScroll",
+			requestId: crypto.randomUUID(),
+			scrollTop: conversation.current?.scrollTop ?? 0,
+		});
+		bridge.postMessage({
+			type: "ui/setSidebar",
+			requestId: crypto.randomUUID(),
+			location,
+		});
+	};
+	return {
+		draft,
+		draftParts,
+		setDraft,
+		editor,
+		toggleEditor,
+		conversation,
+		sidebarLocation,
+		selectSidebar,
+	};
 }

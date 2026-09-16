@@ -10,10 +10,12 @@ export function ConfigControl({
 	option,
 	disabled,
 	onChange,
+	inDialog = false,
 }: {
 	option: ConfigOption;
 	disabled: boolean;
 	onChange: (value: string) => void;
+	inDialog?: boolean;
 }) {
 	const current = option.options.find(
 		(choice) => choice.value === option.currentValue,
@@ -51,7 +53,11 @@ export function ConfigControl({
 							sideOffset={6}
 							alignItemWithTrigger={false}
 							collisionPadding={12}
-							className="config-positioner z-20"
+							className={
+								inDialog
+									? "config-positioner z-[60]"
+									: "config-positioner z-20"
+							}
 						>
 							<Select.Popup
 								className="config-popup w-[min(280px,calc(100vw-24px))] max-h-[min(340px,var(--available-height))] overflow-hidden rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003]"

@@ -29,6 +29,20 @@ function HeaderStory({
 		const result: Bridge = {
 			subscribe: mock.subscribe,
 			postMessage(message) {
+				if (message.type === "ui/setSidebar") {
+					mock.emit({
+						type: "ui/sidebarState",
+						location: message.location,
+					});
+					mock.emit({
+						type: "ui/viewState",
+						editor: false,
+						draft,
+						scrollTop,
+						restoreScroll: true,
+					});
+					return;
+				}
 				if (message.type === "ui/saveDraft") {
 					draft = message.draft;
 					return;

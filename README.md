@@ -19,6 +19,28 @@ VS Code のサイドバーから Codex App Server に接続します。テキス
 
 ファイル・コマンド操作は Codex が実行します。承認要求には「今回のみ許可」「拒否」「ターンを中止」で回答します。モデル・推論量・実行権限・速度は次のターンに適用します。Collaboration modeの変更は未対応です。
 
+## 性格設定
+
+接続後、上部の「オプション」→「性格設定」から、グローバルとワークスペースの指示を編集できます。プリセット名を変えると新規保存、本文だけを変えると更新します。「なし」を選ぶとその保存先のプリセットを適用しません。
+
+プリセットと選択状態は、グローバルが `~/.codex/vscode-codex-acp/preset.toml`、ワークスペースが `<ルート>/.codex/vscode-codex-acp/preset.toml` に保存されます。複数プリセットにはTOMLの配列テーブル `[[presets]]` を使います。
+
+```toml
+selected = "簡潔"
+
+[[presets]]
+name = "簡潔"
+text = "日本語で簡潔に回答する。"
+
+[[presets]]
+name = "技術説明"
+text = "技術的な判断理由を具体的に説明する。"
+```
+
+グローバルとワークスペースの有効な指示をこの順で結合し、`thread/start`・`thread/fork`・`thread/resume` の `developerInstructions` に渡します。進行中の会話への即時反映は行いません。
+
+`$CODEX_HOME/config.toml`（未指定時は `~/.codex/config.toml`）または `<ルート>/.codex/config.toml` に `developer_instructions` がある場合、対応するペインに内容を表示し、選択・編集・保存を禁止します。コマンドなどのプロジェクト固有の開発手順は `AGENTS.md` に記載してください。
+
 ## 開発・配布
 
 ```sh

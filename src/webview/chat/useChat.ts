@@ -17,7 +17,10 @@ export function useChat(bridge: Bridge) {
 				promptRequests.current.delete(message.requestId);
 				return;
 			}
-			if (message.type === "ui/viewState") {
+			if (
+				message.type === "ui/viewState" ||
+				message.type === "ui/sidebarState"
+			) {
 				return;
 			}
 			if (message.type === "request/failed") {

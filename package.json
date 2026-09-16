@@ -13,6 +13,25 @@
 	"activationEvents": [],
 	"main": "./dist/extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "VSCode Codex ACP",
+			"properties": {
+				"codex-acp.sidebarLocation": {
+					"type": "string",
+					"enum": [
+						"primary",
+						"secondary"
+					],
+					"enumDescriptions": [
+						"プライマリ サイドバー",
+						"セカンダリ サイドバー"
+					],
+					"default": "secondary",
+					"scope": "application",
+					"description": "Codexチャットを表示するサイドバー。"
+				}
+			}
+		},
 		"commands": [
 			{
 				"command": "codex-acp.openChat",
@@ -24,6 +43,13 @@
 			}
 		],
 		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "codex-acp-primary",
+					"title": "Codex ACP",
+					"icon": "media/codex.svg"
+				}
+			],
 			"secondarySidebar": [
 				{
 					"id": "codex-acp",
@@ -33,6 +59,7 @@
 			]
 		},
 		"views": {
+			"codex-acp-primary": [],
 			"codex-acp": [
 				{
 					"id": "codex-acp.chat",
@@ -132,6 +159,7 @@
 		"motion": "^13.2.0",
 		"react": "^19.3.0",
 		"react-dom": "^19.3.0",
+		"smol-toml": "^1.8.0",
 		"tailwind-merge": "^3.7.0"
 	},
 	"publisher": "codex-acp-local",

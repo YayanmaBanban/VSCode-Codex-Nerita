@@ -1,5 +1,7 @@
 // postMessage の両端で型と値を検証し、不正な操作と壊れた状態を排除する。
 import type { ChatState, HostMessage, UiMessage } from "./messages";
+import { isSidebarLocation } from "./sidebar";
+import { isPersonalityPreset, isPersonalitySettings } from "./personality";
 import { validComposerField } from "./composerValidation";
 import { isAsyncTask } from "./asyncTask";
 import { validDraftParts } from "./composerContent";
@@ -23,6 +25,23 @@ export function isUiMessage(value: unknown): value is UiMessage {
 		return false;
 	}
 	switch (value.type) {
+		case "ui/setSidebar":
+			return isSidebarLocation(value.location);
+		case "personality/read":
+			return true;
+		case "personality/select":
+			return (
+				(value.scope === "global" || value.scope === "workspace") &&
+				typeof value.name === "string" &&
+				value.name.length <= 200
+			);
+		case "personality/save":
+			return (
+				(value.scope === "global" || value.scope === "workspace") &&
+				typeof value.originalName === "string" &&
+				value.originalName.length <= 200 &&
+				isPersonalityPreset(value)
+			);
 		case "ui/openEditor":
 		case "ui/openSidebar":
 			return true;
@@ -111,6 +130,8 @@ function every(
 /** 状態プロパティを項目ごとに検証する。 */
 function validField(key: string, value: unknown): boolean {
 	switch (key) {
+		case "personality":
+			return value === null || isPersonalitySettings(value);
 		case "sessionTitle":
 		case "cwd":
 		case "sessionsError":
@@ -236,6 +257,7 @@ function isState(value: unknown): value is ChatState {
 		isRecord(value) &&
 		isRevision(value.revision) &&
 		[
+			"personality",
 			"connection",
 			"run",
 			"sessionId",
@@ -275,6 +297,9 @@ export function isHostMessage(value: unknown): value is HostMessage {
 			isId(value.requestId) &&
 			(value.mode === "start" || value.mode === "steer")
 		);
+	}
+	if (value.type === "ui/sidebarState") {
+		return isSidebarLocation(value.location);
 	}
 	if (value.type === "ui/viewState") {
 		return (

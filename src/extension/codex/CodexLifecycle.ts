@@ -31,7 +31,8 @@ export type CodexConnection = Pick<
 	| "archiveThread"
 	| "deleteThread"
 	| "unarchiveThread"
->;
+> &
+	Partial<Pick<CodexClient, "readPersonality" | "changePersonality">>;
 /** 起動前のワークスペース検証と、取消可能な接続を提供する。 */
 export type CodexFactory = (
 	callbacks: AppServerCallbacks,
@@ -281,6 +282,7 @@ export abstract class CodexLifecycle extends SessionState {
 			sessionsNextCursor: null,
 			sessionId: null,
 			cwd: null,
+			personality: null,
 			sessionPending: false,
 			run: cancelled ? "cancelled" : this.state.run,
 			permissions: [],

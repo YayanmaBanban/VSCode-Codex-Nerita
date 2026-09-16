@@ -3,8 +3,46 @@ import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
 import { access, readdir, readFile } from "node:fs/promises";
 import { CodexClient } from "../src/extension/codex/CodexClient";
+import {
+	moveSidebar,
+	saveSidebar,
+} from "../src/extension/webview/sidebarLocation";
 
 suite("Codex ACP Extension", () => {
+	test("サイドバーの両コンテナへ移動しユーザー設定を保存する", async () => {
+		await vscode.extensions
+			.getExtension("codex-acp-local.codex-acp")!
+			.activate();
+		const config = vscode.workspace.getConfiguration("codex-acp");
+		const previous = config.inspect<string>("sidebarLocation")?.globalValue;
+		const commands = await vscode.commands.getCommands(true);
+		assert.ok(commands.includes("vscode.moveViews"));
+		for (const id of ["codex-acp-primary", "codex-acp"]) {
+			assert.ok(
+				commands.includes(
+					`workbench.view.extension.${id}.resetViewContainerLocation`,
+				),
+			);
+		}
+		try {
+			for (const location of ["primary", "secondary"] as const) {
+				await saveSidebar(location);
+				assert.equal(
+					vscode.workspace
+						.getConfiguration("codex-acp")
+						.inspect("sidebarLocation")?.globalValue,
+					location,
+				);
+				await moveSidebar(location);
+			}
+		} finally {
+			await config.update(
+				"sidebarLocation",
+				previous,
+				vscode.ConfigurationTarget.Global,
+			);
+		}
+	});
 	test("同梱 App Server を Extension Host から初期化して終了する", async () => {
 		const extension = vscode.extensions.getExtension(
 			"codex-acp-local.codex-acp",

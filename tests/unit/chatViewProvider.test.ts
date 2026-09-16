@@ -5,8 +5,16 @@ import { initialState, type HostMessage } from "../../src/shared/messages";
 const api = vi.hoisted(() => ({
 	createWebviewPanel: vi.fn(),
 	executeCommand: vi.fn().mockResolvedValue(undefined),
+	get: vi.fn().mockReturnValue("secondary"),
+	update: vi.fn().mockResolvedValue(undefined),
+	onDidChangeConfiguration: vi.fn().mockReturnValue({ dispose: vi.fn() }),
 }));
 vi.mock("vscode", () => ({
+	workspace: {
+		getConfiguration: () => ({ get: api.get, update: api.update }),
+		onDidChangeConfiguration: api.onDidChangeConfiguration,
+	},
+	ConfigurationTarget: { Global: 1 },
 	window: { createWebviewPanel: api.createWebviewPanel },
 	commands: { executeCommand: api.executeCommand },
 	ViewColumn: { Active: -1 },
@@ -19,6 +27,7 @@ vi.mock("vscode", () => ({
 }));
 import * as vscode from "vscode";
 import { ChatViewProvider } from "../../src/extension/webview/chatViewProvider";
+import { isHostMessage, isUiMessage } from "../../src/shared/validation";
 
 /** イベント解除と送信先を追跡できる最小の表示先を用意する。 */
 function view() {
@@ -54,8 +63,9 @@ function view() {
 		dispose: () => onDispose?.(),
 		send: async (message: unknown) => {
 			receive?.(message);
-			await Promise.resolve();
-			await Promise.resolve();
+			for (let i = 0; i < 30; i++) {
+				await Promise.resolve();
+			}
 		},
 	};
 }
@@ -89,6 +99,75 @@ function harness() {
 }
 beforeEach(() => {
 	vi.clearAllMocks();
+	api.get.mockReturnValue("secondary");
+	api.update.mockImplementation((_key: string, value: string) => {
+		api.get.mockReturnValue(value);
+		return Promise.resolve();
+	});
+});
+it("配置をユーザー設定へ保存し、エディタの下書きをサイドバーへ復元する", async () => {
+	const h = harness();
+	await h.sidebar.send({ type: "ui/openEditor", requestId: "open" });
+	await h.panel.send({
+		type: "ui/saveDraft",
+		requestId: "draft",
+		draft: "入力中",
+	});
+	await h.panel.send({
+		type: "ui/setSidebar",
+		requestId: "move",
+		location: "primary",
+	});
+	expect(api.update).toHaveBeenCalledWith("sidebarLocation", "primary", 1);
+	expect(api.executeCommand).toHaveBeenCalledWith("vscode.moveViews", {
+		viewIds: ["codex-acp.chat"],
+		destinationId: "workbench.view.extension.codex-acp-primary",
+	});
+	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith({
+		type: "ui/sidebarState",
+		location: "primary",
+	});
+	expect(h.sidebar.webview.postMessage).toHaveBeenLastCalledWith(
+		expect.objectContaining({ draft: "入力中", restoreScroll: true }),
+	);
+	expect(h.listeners.size).toBe(1);
+	h.provider.dispose();
+});
+it("保存済みプライマリを初回表示で復元し、保存失敗時は移動しない", async () => {
+	api.get.mockReturnValue("primary");
+	const h = harness();
+	await h.sidebar.send({ type: "ui/ready" });
+	expect(api.executeCommand).toHaveBeenCalledWith(
+		"vscode.moveViews",
+		expect.objectContaining({
+			destinationId: "workbench.view.extension.codex-acp-primary",
+		}),
+	);
+	api.executeCommand.mockClear();
+	api.update.mockRejectedValueOnce(new Error("read only"));
+	await h.sidebar.send({
+		type: "ui/setSidebar",
+		requestId: "failed",
+		location: "secondary",
+	});
+	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(h.sidebar.webview.postMessage).toHaveBeenLastCalledWith(
+		expect.objectContaining({
+			type: "request/failed",
+			requestId: "failed",
+		}),
+	);
+	h.provider.dispose();
+});
+it("配置の不正値を通信の両端で拒否する", () => {
+	for (const location of [null, "left", 0, {}]) {
+		expect(
+			isUiMessage({ type: "ui/setSidebar", requestId: "x", location }),
+		).toBe(false);
+		expect(isHostMessage({ type: "ui/sidebarState", location })).toBe(
+			false,
+		);
+	}
 });
 it("貼り付けの配置を表示先へ復元し、通常の下書き保存で配置を解除する", async () => {
 	const h = harness();

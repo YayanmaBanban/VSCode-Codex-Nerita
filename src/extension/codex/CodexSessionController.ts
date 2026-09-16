@@ -24,14 +24,17 @@ export class CodexSessionController extends CodexSubmission {
 		}
 		try {
 			await this.dispatch(value);
-		} catch {
+		} catch (error) {
 			this.emit({
 				type: "request/failed",
 				requestId: value.requestId,
 				error:
-					value.type === "prompt/send"
-						? "送信できませんでした。接続を確認して再試行してください。"
-						: "現在の状態では操作できません。接続状態を確認してください。",
+					value.type.startsWith("personality/") &&
+					error instanceof Error
+						? `性格設定を読み込み・保存できませんでした: ${error.message}`
+						: value.type === "prompt/send"
+							? "送信できませんでした。接続を確認して再試行してください。"
+							: "現在の状態では操作できません。接続状態を確認してください。",
 			});
 		}
 	}
@@ -39,6 +42,25 @@ export class CodexSessionController extends CodexSubmission {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
+		if (
+			message.type === "personality/read" ||
+			message.type === "personality/save" ||
+			message.type === "personality/select"
+		) {
+			const client = this.client;
+			const epoch = this.epoch;
+			if (!client?.readPersonality || !client.changePersonality) {
+				throw new Error("接続後に設定を開いてください。");
+			}
+			const personality =
+				message.type === "personality/read"
+					? await client.readPersonality()
+					: await client.changePersonality(message);
+			if (epoch === this.epoch) {
+				this.patch({ personality });
+			}
+			return;
+		}
 		if (
 			this.submissionPending &&
 			![

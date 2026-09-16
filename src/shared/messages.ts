@@ -1,5 +1,7 @@
 // Host とブラウザの通信契約。VS Code・Node.js・サーバープロトコルに依存しない。
 import type { ComposerPart } from "./composerContent";
+import type { SidebarLocation } from "./sidebar";
+import type { PersonalityMessage, PersonalitySettings } from "./personality";
 import type {
 	Attachment,
 	ComposerMessage,
@@ -60,6 +62,7 @@ export type Permission = {
 };
 /** Host が保持する現在の会話の正本。 */
 export type ChatState = {
+	personality: PersonalitySettings | null;
 	revision: number;
 	connection: ConnectionStatus;
 	sessionId: string | null;
@@ -90,6 +93,8 @@ export type ChatState = {
 };
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| { type: "ui/setSidebar"; requestId: string; location: SidebarLocation }
+	| PersonalityMessage
 	| ComposerMessage
 	| SessionHistoryMessage
 	| { type: "ui/ready" }
@@ -133,6 +138,7 @@ export type UiMessage =
 	  };
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "ui/sidebarState"; location: SidebarLocation }
 	| { type: "prompt/accepted"; requestId: string; mode: "start" | "steer" }
 	| {
 			type: "ui/viewState";
@@ -152,6 +158,7 @@ export type HostMessage =
 /** 新しい Host と代替 Bridge に共通の初期状態を作る。 */
 export function initialState(): ChatState {
 	return {
+		personality: null,
 		revision: 0,
 		connection: "disconnected",
 		sessionId: null,

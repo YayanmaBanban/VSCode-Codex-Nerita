@@ -4,6 +4,11 @@ import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import type { ChatState, HostMessage } from "../../shared/messages";
 import { isUiMessage } from "../../shared/validation";
+import {
+	SidebarPlacement,
+	saveSidebar,
+	sidebarLocation,
+} from "./sidebarLocation";
 
 /** Webview が必要とする通信だけを公開し、接続プロトコルから独立させる。 */
 type ChatSession = {
@@ -42,11 +47,21 @@ export class ChatViewProvider
 	private draft = "";
 	private draftParts: ComposerPart[] | undefined;
 	private scrollTop = 0;
+	private placement: SidebarPlacement;
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
 		private extensionUri: vscode.Uri,
 		private session: ChatSession,
-	) {}
+	) {
+		this.placement = new SidebarPlacement((location) => {
+			for (const target of this.views.keys()) {
+				void target.postMessage({
+					type: "ui/sidebarState",
+					location,
+				} satisfies HostMessage);
+			}
+		});
+	}
 	/** Webview のロードと検証済みメッセージ通信を接続する。 */
 	resolveWebviewView(view: vscode.WebviewView): void {
 		this.sidebar = view;
@@ -74,7 +89,7 @@ export class ChatViewProvider
 			this.views.get(webview)?.dispose();
 			if (editor) {
 				this.panel = undefined;
-			} else {
+			} else if (this.sidebar === view) {
 				this.sidebar = undefined;
 			}
 		});
@@ -109,6 +124,16 @@ export class ChatViewProvider
 			return;
 		}
 		try {
+			if (value.type === "ui/setSidebar") {
+				await saveSidebar(value.location);
+				await this.placement.sync();
+				this.sidebar?.show(false);
+				if (this.sidebar) {
+					this.viewState(this.sidebar.webview);
+				}
+				this.panel?.dispose();
+				return;
+			}
 			if (value.type === "ui/saveDraft") {
 				this.draft = value.draft;
 				this.draftParts = value.draftParts;
@@ -148,12 +173,23 @@ export class ChatViewProvider
 				return;
 			}
 			if (value.type === "ui/ready") {
+				void webview.postMessage({
+					type: "ui/sidebarState",
+					location: sidebarLocation(),
+				} satisfies HostMessage);
 				// 復元要求は要求元だけに返し、もう一方のスクロールを動かさない。
 				void webview.postMessage({
 					type: "state/snapshot",
 					state: this.session.snapshot(),
 				} satisfies HostMessage);
 				this.viewState(webview);
+				// 保存した配置は最初のサイドバー表示時に復元する。
+				if (
+					!this.views.get(webview)?.editor &&
+					!this.placement.initialized
+				) {
+					await this.placement.sync();
+				}
 				return;
 			}
 			await this.session.receive(value);
@@ -169,6 +205,7 @@ export class ChatViewProvider
 	}
 	/** Webview に属する購読だけを破棄する。 */
 	dispose(): void {
+		this.placement.dispose();
 		for (const view of [...this.views.values()]) {
 			view.dispose();
 		}

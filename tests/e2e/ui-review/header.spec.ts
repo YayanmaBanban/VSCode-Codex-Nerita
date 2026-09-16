@@ -31,8 +31,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		).toBe(true);
 		await expect(page.locator(".connection-bar, .eyebrow")).toHaveCount(0);
 		await expect(
-			page.getByRole("button", { name: "オプション（準備中）" }),
-		).toBeDisabled();
+			page.getByRole("button", { name: "オプション" }),
+		).toBeEnabled();
 		const button = page.getByRole("button", { name: "新しいチャット" });
 		const newChatBox = await button.boundingBox();
 		const sessionsBox = await page

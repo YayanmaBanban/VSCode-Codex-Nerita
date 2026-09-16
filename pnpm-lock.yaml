@@ -49,6 +49,9 @@ importers:
             react-dom:
                 specifier: ^19.3.0
                 version: 19.3.0(react@19.3.0)
+            smol-toml:
+                specifier: ^1.8.0
+                version: 1.8.0
             tailwind-merge:
                 specifier: ^3.7.0
                 version: 3.7.0
@@ -6275,6 +6278,13 @@ packages:
             }
         engines: { node: ">=10" }
 
+    smol-toml@1.8.0:
+        resolution:
+            {
+                integrity: sha512-kCZr2V3ch9i00x8zXRhjUNVcjG9ijES5dDudkXvUVCT5QlJNQWElSJdZqyPemffHoLNUYwOcou0Fy+ojN0uHSQ==,
+            }
+        engines: { node: ">= 18" }
+
     source-map-js@1.2.1:
         resolution:
             {
@@ -11031,6 +11041,8 @@ snapshots:
             ansi-styles: 4.3.0
             astral-regex: 2.0.0
             is-fullwidth-code-point: 3.0.0
+
+    smol-toml@1.8.0: {}
 
     source-map-js@1.2.1: {}
 
