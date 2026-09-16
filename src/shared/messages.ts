@@ -1,4 +1,4 @@
-// Host とブラウザの通信契約。VS Code・Node.js・ACP に依存しない。
+// Host とブラウザの通信契約。VS Code・Node.js・サーバープロトコルに依存しない。
 import type {
 	Attachment,
 	ComposerMessage,
@@ -76,10 +76,13 @@ export type ChatState = {
 	quota: QuotaWindow[] | null;
 	attachments: Attachment[];
 	attachmentPending: boolean;
+	attachmentsSupported: boolean;
 	cwd: string | null;
 	sessions: SessionSummary[];
 	sessionCapabilities: SessionCapabilities;
 	sessionsLoading: boolean;
+	sessionsArchived: boolean;
+	sessionsNextCursor: string | null;
 	sessionsError: string | null;
 	sessionPending: boolean;
 };
@@ -147,6 +150,7 @@ export function initialState(): ChatState {
 		quota: null,
 		attachments: [],
 		attachmentPending: false,
+		attachmentsSupported: true,
 		cwd: null,
 		sessions: [],
 		sessionCapabilities: {
@@ -156,6 +160,8 @@ export function initialState(): ChatState {
 			delete: false,
 		},
 		sessionsLoading: false,
+		sessionsArchived: false,
+		sessionsNextCursor: null,
 		sessionsError: null,
 		sessionPending: false,
 	};

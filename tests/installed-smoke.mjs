@@ -1,8 +1,11 @@
 // 隔離した VS Code にインストールした VSIX から実際の会話を検証する。
 import { _electron as electron } from "playwright";
+import { expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-const root = path.resolve("dist/installed-smoke");
+const root = path.resolve(
+	process.env.CODEX_SMOKE_ROOT ?? "dist/installed-smoke",
+);
 const executablePath = process.env.VSCODE_EXECUTABLE;
 if (!executablePath) {
 	throw new Error("VSCODE_EXECUTABLE is required");
@@ -78,14 +81,25 @@ try {
 	await chat
 		.getByRole("textbox")
 		.fill(
-			"Reply with exactly ACP_INSTALLED_OK. Do not use tools or modify files.",
+			"Reply with exactly APP_SERVER_INSTALLED_OK. Do not use tools or modify files.",
 		);
-	await chat.getByRole("button", { name: "送信 ↑" }).click();
+	await chat.getByRole("button", { name: "送信", exact: true }).click();
 	await chat
 		.locator(".message.assistant")
-		.getByText("ACP_INSTALLED_OK", { exact: true })
+		.getByText("APP_SERVER_INSTALLED_OK", { exact: true })
 		.waitFor({ timeout: 90000 });
-	await chat.getByText("完了", { exact: true }).waitFor();
+	await expect(
+		chat.getByRole("button", { name: "停止", exact: true }),
+	).toHaveCount(0);
+	await expect(
+		chat.getByRole("button", { name: "ファイルを添付" }),
+	).toBeEnabled();
+	await expect(
+		chat.getByRole("combobox", { name: "Model", exact: true }),
+	).toBeEnabled();
+	await expect(
+		chat.getByRole("button", { name: "セッション一覧" }),
+	).toBeEnabled();
 	await page.screenshot({ path: path.join(root, "conversation.png") });
 	await page.keyboard.press("F1");
 	await page
@@ -115,24 +129,84 @@ try {
 	}
 	await chat
 		.locator(".message.assistant")
-		.getByText("ACP_INSTALLED_OK", { exact: true })
+		.getByText("APP_SERVER_INSTALLED_OK", { exact: true })
 		.waitFor();
 	await chat
 		.getByRole("textbox")
 		.fill("Count from 1 to 10000. Do not use tools or modify files.");
-	await chat.getByRole("button", { name: "送信 ↑" }).click();
-	await chat.getByRole("button", { name: "■ 停止" }).click();
+	await chat.getByRole("button", { name: "送信", exact: true }).click();
+	await chat.getByRole("button", { name: "停止", exact: true }).click();
 	await chat
 		.getByText("停止しました", { exact: true })
 		.waitFor({ timeout: 15000 });
 	await page.screenshot({ path: path.join(root, "cancelled.png") });
-	await chat.getByRole("button", { name: "接続する" }).click();
+	await expect(chat.getByText("接続済み", { exact: true })).toBeVisible();
 	await chat
-		.getByText("接続済み", { exact: true })
-		.waitFor({ timeout: 60000 });
+		.getByRole("textbox")
+		.fill(
+			"Reply with exactly APP_SERVER_CONTINUED_OK. Do not use tools or modify files.",
+		);
+	await chat.getByRole("button", { name: "送信", exact: true }).click();
+	await expect(chat.locator(".message.assistant").last()).toContainText(
+		"APP_SERVER_CONTINUED_OK",
+		{ timeout: 90000 },
+	);
+	await expect(
+		chat.getByRole("button", { name: "停止", exact: true }),
+	).toHaveCount(0);
+	await expect(chat.locator(".message.user")).toHaveCount(3);
+	await page.screenshot({ path: path.join(root, "continued.png") });
+	await chat.getByRole("button", { name: "＋ 新規会話" }).click();
 	await chat.getByText("ここから、一緒に。", { exact: true }).waitFor();
+	await chat
+		.getByRole("button", { name: "セッション一覧", exact: true })
+		.click();
+	const panel = chat.getByRole("complementary", { name: "セッション一覧" });
+	await expect(panel.getByRole("listitem")).toHaveCount(1, {
+		timeout: 15000,
+	});
+	await panel.getByRole("button", { name: /名前を変更/ }).click();
+	await panel
+		.getByRole("textbox", { name: "新しいセッション名" })
+		.fill("インストール済み履歴テスト");
+	await panel.getByRole("button", { name: "保存", exact: true }).click();
+	await panel
+		.getByRole("button", { name: "インストール済み履歴テストを開く" })
+		.click();
+	await expect(chat.locator(".message.assistant").last()).toContainText(
+		"APP_SERVER_CONTINUED_OK",
+	);
+	await page.screenshot({ path: path.join(root, "history-resumed.png") });
+	await panel
+		.getByRole("button", {
+			name: "インストール済み履歴テストをアーカイブ",
+			exact: true,
+		})
+		.click();
+	await expect(panel.getByRole("listitem")).toHaveCount(0);
+	await panel
+		.getByRole("button", { name: "アーカイブ済み", exact: true })
+		.click();
+	await expect(panel.getByRole("listitem")).toHaveCount(1);
+	await page.screenshot({ path: path.join(root, "history-archived.png") });
+	await panel
+		.getByRole("button", {
+			name: "インストール済み履歴テストをアーカイブから戻す",
+		})
+		.click();
+	await expect(panel.getByRole("listitem")).toHaveCount(0);
+	await panel
+		.getByRole("button", { name: "通常の履歴", exact: true })
+		.click();
+	await panel
+		.getByRole("button", { name: "インストール済み履歴テストを開く" })
+		.click();
+	await expect(chat.locator(".message.assistant").last()).toContainText(
+		"APP_SERVER_CONTINUED_OK",
+	);
+	await page.screenshot({ path: path.join(root, "history-unarchived.png") });
 	console.log(
-		"Installed VSIX: reply, restored conversation, cancellation and reconnection verified",
+		"Installed VSIX: reply, interrupt, continue, new thread, history resume, rename, archive and unarchive verified",
 	);
 } catch (error) {
 	const page = await app.firstWindow();

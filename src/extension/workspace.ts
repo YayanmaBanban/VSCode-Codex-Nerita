@@ -1,10 +1,21 @@
 // 接続前のワークスペース条件を検証し、利用者が解決できる原因を区別する。
+import path from "node:path";
+
+/** Windowsの大小文字・区切り・末尾スラッシュの差を吸収する。 */
+export function sameCwd(left: string, right: string): boolean {
+	const normalize = (value: string) =>
+		path
+			.resolve(value)
+			.replace(/[\\/]+$/, "")
+			.toLowerCase();
+	return normalize(left) === normalize(right);
+}
 /** VS Codeに依存せず検査できるフォルダー情報。 */
 type WorkspaceFolder = { uri: { scheme: string; fsPath: string } };
 /** Hostで確定した、秘密情報を含まない起動条件のエラー。 */
 export class WorkspaceError extends Error {}
 
-/** 単一の信頼済みローカルフォルダーだけをACPの作業場所にする。 */
+/** 単一の信頼済みローカルフォルダーだけをCodexの作業場所にする。 */
 export function requireLocalWorkspace(
 	folders: readonly WorkspaceFolder[] | undefined,
 	trusted: boolean,

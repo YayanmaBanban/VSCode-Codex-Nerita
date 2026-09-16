@@ -1,7 +1,13 @@
 // サイドバーの Webview を生成し、通信と購読の寿命を管理する。
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
-import type { SessionController } from "../session/sessionController";
+import type { HostMessage } from "../../shared/messages";
+
+/** Webview が必要とする通信だけを公開し、接続プロトコルから独立させる。 */
+type ChatSession = {
+	subscribe(listener: (event: HostMessage) => void): () => void;
+	receive(value: unknown): Promise<void>;
+};
 
 /** スクリプトと CSS を拡張機能内だけから読む HTML を生成する。 */
 export function webviewHtml(
@@ -17,7 +23,7 @@ export function webviewHtml(
 	);
 	return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-    <link rel="stylesheet" href="${style.toString()}"><title>Codex ACP</title></head>
+    <link rel="stylesheet" href="${style.toString()}"><title>Codex</title></head>
     <body><div id="root"></div><script nonce="${nonce}" src="${script.toString()}"></script></body></html>`;
 }
 /** UI を閉じても会話を保持し、再表示時の ready で状態を復元する。 */
@@ -28,7 +34,7 @@ export class ChatViewProvider
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
 		private extensionUri: vscode.Uri,
-		private session: SessionController,
+		private session: ChatSession,
 	) {}
 	/** Webview のロードと検証済みメッセージ通信を接続する。 */
 	resolveWebviewView(view: vscode.WebviewView): void {

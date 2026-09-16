@@ -1,4 +1,4 @@
-// Story ごとに独立する、ACP や認証を必要としない双方向 Bridge。
+// Story ごとに独立する、App Server や認証を必要としない双方向 Bridge。
 import {
 	initialState,
 	type ChatState,

@@ -22,6 +22,7 @@ export default meta;
 /** 履歴ペインの Story 定義。 */
 type Story = StoryObj<typeof meta>;
 export const History: Story = {};
+export const Paginated: Story = { args: { scenario: "paginated" } };
 export const Empty: Story = { args: { scenario: "empty" } };
 export const Error: Story = { args: { scenario: "error" } };
 export const Unsupported: Story = { args: { scenario: "unsupported" } };

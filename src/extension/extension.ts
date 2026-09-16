@@ -1,39 +1,43 @@
 ﻿// 拡張機能のサービスを組み立て、VS Code の起動条件と終了処理を管理する。
 import * as vscode from "vscode";
 import { randomUUID } from "node:crypto";
-import { createTransport } from "./acp/transport";
-import { SessionController } from "./session/sessionController";
+import { CodexClient } from "./codex/CodexClient";
+import { CodexSessionController } from "./codex/CodexSessionController";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { requireLocalWorkspace } from "./workspace";
 import { attachmentService } from "./webview/attachments";
+import { authService, interactionService } from "./codex/vscodeServices";
 
-let controller: SessionController | undefined;
+let controller: CodexSessionController | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
 export function activate(context: vscode.ExtensionContext): void {
-	const output = vscode.window.createOutputChannel("Codex ACP");
-	const session = new SessionController((callbacks) => {
-		const cwd = requireLocalWorkspace(
-			vscode.workspace.workspaceFolders,
-			vscode.workspace.isTrusted,
-			vscode.env.remoteName,
-		);
-		const nodePath = vscode.workspace
-			.getConfiguration("codex-acp")
-			.get<string>("nodePath", "node");
-		const adapter = vscode.Uri.joinPath(
-			context.extensionUri,
-			"dist",
-			"runtime",
-			"adapter.mjs",
-		).fsPath;
-		return createTransport(nodePath, adapter, cwd, callbacks, (message) =>
-			output.appendLine(message),
-		);
-	}, attachmentService);
+	const session = new CodexSessionController(
+		async (callbacks, signal) => {
+			const cwd = requireLocalWorkspace(
+				vscode.workspace.workspaceFolders,
+				vscode.workspace.isTrusted,
+				vscode.env.remoteName,
+			);
+			const client = await CodexClient.connect({
+				extensionPath: context.extensionUri.fsPath,
+				cwd,
+				callbacks,
+				signal,
+				clientInfo: {
+					name: "vscode_codex",
+					title: "VS Code Codex",
+					version: "0.0.1",
+				},
+			});
+			return { client, cwd };
+		},
+		attachmentService,
+		authService,
+		interactionService,
+	);
 	controller = session;
 	const provider = new ChatViewProvider(context.extensionUri, session);
 	context.subscriptions.push(
-		output,
 		provider,
 		vscode.window.registerWebviewViewProvider("codex-acp.chat", provider),
 		vscode.commands.registerCommand("codex-acp.openChat", () =>
@@ -47,7 +51,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		}),
 	);
 }
-/** Extension Host の終了までに ACP のプロセスツリーを終了する。 */
+/** Extension Host の終了までに App Server のプロセスツリーを終了する。 */
 export async function deactivate(): Promise<void> {
 	await controller?.dispose();
 	controller = undefined;

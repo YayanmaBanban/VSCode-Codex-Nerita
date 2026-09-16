@@ -44,6 +44,10 @@
 		// 同じ問題を TypeScript と ESLint の両方から二重に報告しない。
 		// verbatimModuleSyntax は module / package.json の ESM・CJS 方針を整理した段階で導入する。
 	},
-	"include": ["src/extension/**/*.ts", "src/shared/**/*.ts"],
+	"include": [
+		"src/extension/**/*.ts",
+		"src/shared/**/*.ts",
+		"src/codex-app-server/**/*.ts"
+	],
 	"exclude": ["tests", "node_modules"]
 }

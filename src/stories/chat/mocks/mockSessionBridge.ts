@@ -3,13 +3,14 @@ import type { SessionSummary } from "../../../shared/sessionHistory";
 import { createMockBridge } from "./mockBridge";
 
 /** 履歴ペインの観察開始状態。 */
-export type SessionScenario = "history" | "empty" | "error" | "unsupported";
+export type SessionScenario =
+	"history" | "empty" | "error" | "unsupported" | "paginated";
 /** 作業フォルダのセッション管理に対応する代替 Bridge を作る。 */
 export function createSessionBridge(scenario: SessionScenario) {
 	const bridge = createMockBridge();
 	const cwd =
 		"D:\\Developments\\workspace\\vscode-codex-acp\\とても長いフォルダ名のプロジェクト";
-	let sessions: SessionSummary[] =
+	const sessions: SessionSummary[] =
 		scenario === "empty"
 			? []
 			: [
@@ -34,7 +35,11 @@ export function createSessionBridge(scenario: SessionScenario) {
 		load: true,
 		fork: true,
 		delete: true,
+		rename: true,
+		unarchive: true,
 	};
+	let archived = false;
+	let limit = scenario === "paginated" ? 2 : 50;
 	bridge.patchState({ cwd, sessionCapabilities: capabilities });
 	const timers = new Set<ReturnType<typeof setTimeout>>();
 	/** 取得が完了した状態を遅らせて配信する。 */
@@ -45,7 +50,16 @@ export function createSessionBridge(scenario: SessionScenario) {
 				() =>
 					bridge.patchState({
 						sessionsLoading: false,
-						sessions: [...sessions],
+						sessions: sessions
+							.filter((item) => !!item.archived === archived)
+							.slice(0, limit),
+						sessionsArchived: archived,
+						sessionsNextCursor:
+							sessions.filter(
+								(item) => !!item.archived === archived,
+							).length > limit
+								? "next"
+								: null,
 						sessionsError:
 							scenario === "error"
 								? "セッション一覧を取得できませんでした。再試行してください。"
@@ -70,6 +84,10 @@ export function createSessionBridge(scenario: SessionScenario) {
 		postMessage(message: Parameters<typeof bridge.postMessage>[0]) {
 			if (message.type === "session/list") {
 				bridge.sent.push(message);
+				archived = message.archived ?? archived;
+				if (message.more) {
+					limit += 2;
+				}
 				refresh();
 				return;
 			}
@@ -92,6 +110,8 @@ export function createSessionBridge(scenario: SessionScenario) {
 			}
 			if (
 				message.type === "session/delete" ||
+				message.type === "session/rename" ||
+				message.type === "session/unarchive" ||
 				message.type === "session/fork" ||
 				message.type === "session/load"
 			) {
@@ -103,7 +123,11 @@ export function createSessionBridge(scenario: SessionScenario) {
 					return;
 				}
 				if (message.type === "session/delete") {
-					sessions = sessions.filter((session) => session !== item);
+					item.archived = true;
+				} else if (message.type === "session/unarchive") {
+					item.archived = false;
+				} else if (message.type === "session/rename") {
+					item.title = message.name;
 				} else {
 					const target =
 						message.type === "session/fork"

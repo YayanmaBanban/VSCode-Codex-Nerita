@@ -68,7 +68,7 @@ try {
 		.waitFor({ timeout: 60000 });
 	await child.screenshot({ path: path.join(output, "connected.png") });
 	await checkLaunchWebview(chat, child, output);
-	console.log("F5 launch: workspace opened and ACP connection ready");
+	console.log("F5 launch: workspace opened and App Server connection ready");
 } catch (error) {
 	for (const [index, page] of app.windows().entries()) {
 		await page

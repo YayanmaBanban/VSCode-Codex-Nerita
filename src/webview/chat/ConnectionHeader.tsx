@@ -30,9 +30,12 @@ export function ConnectionHeader({
 	sessionsOpen: boolean;
 	onToggleSessions: () => void;
 }) {
-	const reconnectable = ["disconnected", "error", "auth-required"].includes(
-		state.connection,
-	);
+	const reconnectable = [
+		"disconnected",
+		"error",
+		"auth-required",
+		"authenticating",
+	].includes(state.connection);
 	return (
 		<>
 			{" "}
@@ -41,9 +44,7 @@ export function ConnectionHeader({
 					<span className="eyebrow text-[9px] tracking-[0.13em] text-muted">
 						WORKSPACE ASSISTANT
 					</span>
-					<h1>
-						Codex <span>ACP</span>
-					</h1>
+					<h1>Codex</h1>
 				</div>
 				<div className="flex shrink-0 items-center gap-[6px]">
 					<button
@@ -51,6 +52,7 @@ export function ConnectionHeader({
 						id="session-list-toggle"
 						className="inline-flex size-[32px] items-center justify-center border-0 bg-transparent p-0"
 						aria-label="セッション一覧"
+						disabled={!state.sessionCapabilities.list}
 						title="セッション一覧"
 						aria-expanded={sessionsOpen}
 						aria-controls="session-panel"
@@ -89,7 +91,9 @@ export function ConnectionHeader({
 					>
 						{state.connection === "disconnected"
 							? "接続する"
-							: "再接続"}
+							: state.connection === "authenticating"
+								? "ログインを中止して再接続"
+								: "再接続"}
 					</button>
 				)}
 			</div>

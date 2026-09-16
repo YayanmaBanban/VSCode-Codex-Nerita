@@ -63,7 +63,7 @@ export function Activity({
 					<span className="eyebrow text-[9px] tracking-[0.13em] text-muted">
 						確認が必要です
 					</span>
-					<h2 className="leading-[1.7] [overflow-wrap:anywhere]">
+					<h2 className="whitespace-pre-wrap leading-[1.7] [overflow-wrap:anywhere]">
 						{permission.title}
 					</h2>
 					<div className="permission-actions flex flex-wrap gap-[8px]">

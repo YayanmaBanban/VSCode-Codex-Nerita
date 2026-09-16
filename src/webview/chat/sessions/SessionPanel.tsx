@@ -81,6 +81,35 @@ export function SessionPanel({
 					)}
 				</div>
 			</header>
+			{capabilities.unarchive && (
+				<div
+					className="flex gap-[8px] px-[12px] py-[8px]"
+					role="group"
+					aria-label="履歴の表示範囲"
+				>
+					{[false, true].map((archived) => (
+						<button
+							key={String(archived)}
+							type="button"
+							className="text-[12px] aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4"
+							aria-pressed={state.sessionsArchived === archived}
+							disabled={
+								state.sessionPending ||
+								state.connection !== "ready"
+							}
+							onClick={() =>
+								send({
+									type: "session/list",
+									archived,
+									requestId: crypto.randomUUID(),
+								})
+							}
+						>
+							{archived ? "アーカイブ済み" : "通常の履歴"}
+						</button>
+					))}
+				</div>
+			)}
 			<div className="min-h-0 flex-1 overflow-y-auto p-[8px] [scrollbar-width:thin]">
 				{state.sessionsError && (
 					<div
@@ -136,6 +165,22 @@ export function SessionPanel({
 						/>
 					))}
 				</ul>
+				{state.sessionsNextCursor !== null && (
+					<button
+						type="button"
+						className="mx-[12px] my-[8px] text-[12px]"
+						disabled={state.sessionsLoading || state.sessionPending}
+						onClick={() =>
+							send({
+								type: "session/list",
+								more: true,
+								requestId: crypto.randomUUID(),
+							})
+						}
+					>
+						さらに読み込む
+					</button>
+				)}
 			</div>
 		</aside>
 	);

@@ -34,7 +34,11 @@ export function ComposerSettings({
 		state.connection === "ready" &&
 		!!state.sessionId &&
 		!state.sessionPending;
-	const disabled = !connected || state.configPending;
+	const disabled =
+		!connected ||
+		state.configPending ||
+		state.run === "running" ||
+		state.run === "cancelling";
 	const options = order.map(
 		(id, index) =>
 			state.configOptions.find((option) => option.id === id) ??
@@ -64,7 +68,7 @@ export function ComposerSettings({
 		<div className="composer-settings mt-[10px] border-0 border-t border-solid border-panel-border pt-[8px]">
 			<Attachments
 				files={state.attachments}
-				disabled={!connected}
+				disabled={disabled}
 				onOpen={(attachmentId) =>
 					send({
 						type: "attachment/open",
@@ -91,7 +95,11 @@ export function ComposerSettings({
 					className="attach-button flex border-0 bg-transparent p-[5px]"
 					aria-label="ファイルを添付"
 					title="ファイルを添付"
-					disabled={!connected || state.attachmentPending}
+					disabled={
+						disabled ||
+						state.attachmentPending ||
+						!state.attachmentsSupported
+					}
 					onClick={() =>
 						send({
 							type: "attachment/add",

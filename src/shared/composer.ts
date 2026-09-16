@@ -5,7 +5,7 @@ export type ConfigChoice = {
 	name: string;
 	description?: string;
 };
-/** ACP の select 設定を UI 用に正規化した情報。 */
+/** サーバーが提供する選択設定を UI 用に正規化した情報。 */
 export type ConfigOption = {
 	id: string;
 	name: string;

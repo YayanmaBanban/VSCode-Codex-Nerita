@@ -78,9 +78,11 @@ export function ToolCard({
 			? { Icon: Sprout, Body: GuardianReview }
 			: executing
 				? { Icon: Terminal, Body: ExecuteTool }
-				: (renderers.find(({ titles }) =>
-						titles.includes(tool.title.trim().toLowerCase()),
-					) ?? { Icon: Wrench, Body: GenericTool });
+				: tool.kind === "edit"
+					? { Icon: FilePenLine, Body: EditingFiles }
+					: (renderers.find(({ titles }) =>
+							titles.includes(tool.title.trim().toLowerCase()),
+						) ?? { Icon: Wrench, Body: GenericTool });
 	return (
 		<div
 			className="tool-card my-[8px] overflow-hidden rounded-[6px] border border-solid border-panel-border"

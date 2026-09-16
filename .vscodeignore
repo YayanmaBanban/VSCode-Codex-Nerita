@@ -5,6 +5,7 @@
 !CHANGELOG.md
 !docs/Implementation-Plan.md
 !docs/Implementation-Status.md
+!docs/App-Server-Migration.md
 !media/**
 !dist/extension.js
 !dist/webview/index.js

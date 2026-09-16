@@ -4,13 +4,10 @@ import {
 	type ChatState,
 	type HostMessage,
 } from "../../shared/messages";
-import { Permissions } from "./permissions";
 /** 接続と実行が共有する状態・承認管理。 */
 export class SessionState {
 	protected state = initialState();
 	private listeners = new Set<(event: HostMessage) => void>();
-	protected permissions = new Permissions();
-	protected cancelTimer: NodeJS.Timeout | undefined;
 	/** 外部から正本を変更できないスナップショットを返す。 */
 	snapshot(): ChatState {
 		return structuredClone(this.state);

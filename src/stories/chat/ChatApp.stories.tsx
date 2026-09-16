@@ -4,10 +4,23 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 import { ChatApp } from "../../webview/chat/ChatApp";
 import { createMockBridge, type Scenario } from "./mocks/mockBridge";
+import { createAppServerBridge } from "./mocks/appServerBridge";
 
 /** 各マウントで独立する Bridge を Story へ注入する。 */
-function ChatStory({ scenario }: { scenario: Scenario }) {
-	const bridge = useMemo(() => createMockBridge(scenario), [scenario]);
+function ChatStory({
+	scenario,
+	appServer = false,
+}: {
+	scenario: Scenario;
+	appServer?: boolean;
+}) {
+	const bridge = useMemo(
+		() =>
+			appServer
+				? createAppServerBridge(scenario)
+				: createMockBridge(scenario),
+		[scenario, appServer],
+	);
 	return <ChatApp bridge={bridge} />;
 }
 const meta = {
@@ -20,6 +33,13 @@ export default meta;
 /** チャット画面の Story 定義。 */
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const AppServer: Story = { args: { appServer: true } };
+export const AppServerStreaming: Story = {
+	args: { scenario: "streaming", appServer: true },
+};
+export const AppServerPermission: Story = {
+	args: { scenario: "permission", appServer: true },
+};
 export const Connecting: Story = { args: { scenario: "connecting" } };
 export const Authentication: Story = { args: { scenario: "auth" } };
 export const Streaming: Story = { args: { scenario: "streaming" } };

@@ -1,5 +1,7 @@
 // 一つのセッションの概要と独立した操作ボタンを表示する。
-import { Archive, GitFork, Pencil } from "lucide-react";
+import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
+import { useState } from "react";
+import { SessionRename } from "./SessionRename";
 import type { UiMessage } from "../../../shared/messages";
 import type {
 	SessionSummary,
@@ -26,6 +28,7 @@ export function SessionItem({
 	send: (message: UiMessage) => void;
 }) {
 	const title = session.title?.trim() || "無題のセッション";
+	const [renaming, setRenaming] = useState(false);
 	return (
 		<li
 			key={session.sessionId}
@@ -34,7 +37,7 @@ export function SessionItem({
 			<button
 				type="button"
 				className="block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px] pb-[5px] text-left focus-visible:outline-offset-[-2px]"
-				disabled={disabled || !capabilities.load}
+				disabled={disabled || !capabilities.load || session.archived}
 				aria-current={selected ? "true" : undefined}
 				aria-label={`${title}を開く`}
 				title={title}
@@ -53,36 +56,65 @@ export function SessionItem({
 					{relativeTime(session.updatedAt, now)}
 				</span>
 			</button>
+			{renaming && (
+				<SessionRename
+					sessionId={session.sessionId}
+					title={title}
+					disabled={disabled}
+					send={send}
+					close={() => setRenaming(false)}
+				/>
+			)}
 			<div className="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
 				<button
 					type="button"
 					className={sessionActionClass}
 					aria-label={`${title}の名前を変更`}
 					title="名前を変更"
+					disabled={
+						disabled || !capabilities.rename || session.archived
+					}
+					onClick={() => setRenaming(true)}
 				>
 					<Pencil size={14} aria-hidden="true" />
 				</button>
 				<button
 					type="button"
 					className={sessionActionClass}
-					disabled={disabled || !capabilities.delete}
-					aria-label={`${title}をアーカイブ`}
-					title="アーカイブ"
+					disabled={
+						disabled ||
+						!(session.archived
+							? capabilities.unarchive
+							: capabilities.delete)
+					}
+					aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
+					title={
+						session.archived ? "アーカイブから戻す" : "アーカイブ"
+					}
 					onClick={() =>
 						send({
-							type: "session/delete",
+							type: session.archived
+								? "session/unarchive"
+								: "session/delete",
 							requestId: crypto.randomUUID(),
 							sessionId: session.sessionId,
 						})
 					}
 				>
-					<Archive size={14} aria-hidden="true" />
+					{session.archived ? (
+						<ArchiveRestore size={14} aria-hidden="true" />
+					) : (
+						<Archive size={14} aria-hidden="true" />
+					)}
 				</button>
 				<button
 					type="button"
 					className={sessionActionClass}
 					disabled={
-						disabled || !capabilities.fork || !capabilities.load
+						disabled ||
+						!capabilities.fork ||
+						!capabilities.load ||
+						session.archived
 					}
 					aria-label={`${title}をフォーク`}
 					title="フォーク"

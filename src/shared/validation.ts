@@ -24,8 +24,22 @@ export function isUiMessage(value: unknown): value is UiMessage {
 	switch (value.type) {
 		case "connection/retry":
 		case "session/new":
-		case "session/list":
 			return true;
+		case "session/list":
+			return (
+				(value.archived === undefined ||
+					typeof value.archived === "boolean") &&
+				(value.more === undefined || typeof value.more === "boolean")
+			);
+		case "session/rename":
+			return (
+				isId(value.sessionId) &&
+				typeof value.name === "string" &&
+				value.name.trim().length > 0 &&
+				value.name.length <= 200
+			);
+		case "session/unarchive":
+			return isId(value.sessionId);
 		case "session/load":
 		case "session/fork":
 		case "session/delete":
@@ -82,8 +96,10 @@ function validField(key: string, value: unknown): boolean {
 	switch (key) {
 		case "cwd":
 		case "sessionsError":
+		case "sessionsNextCursor":
 			return value === null || typeof value === "string";
 		case "sessionsLoading":
+		case "sessionsArchived":
 		case "sessionPending":
 			return typeof value === "boolean";
 		case "sessionCapabilities":
@@ -91,6 +107,11 @@ function validField(key: string, value: unknown): boolean {
 				isRecord(value) &&
 				["list", "load", "fork", "delete"].every(
 					(key) => typeof value[key] === "boolean",
+				) &&
+				["rename", "unarchive"].every(
+					(key) =>
+						value[key] === undefined ||
+						typeof value[key] === "boolean",
 				)
 			);
 		case "sessions":
@@ -98,6 +119,8 @@ function validField(key: string, value: unknown): boolean {
 				value,
 				(item) =>
 					isId(item.sessionId) &&
+					(item.archived === undefined ||
+						typeof item.archived === "boolean") &&
 					typeof item.cwd === "string" &&
 					(item.title === undefined ||
 						typeof item.title === "string") &&
@@ -177,6 +200,8 @@ function validField(key: string, value: unknown): boolean {
 				value,
 				(item) => isId(item.id) && typeof item.name === "string",
 			);
+		case "attachmentsSupported":
+			return typeof value === "boolean";
 		default:
 			return validComposerField(key, value);
 	}
@@ -209,10 +234,13 @@ function isState(value: unknown): value is ChatState {
 			"quota",
 			"attachments",
 			"attachmentPending",
+			"attachmentsSupported",
 			"cwd",
 			"sessions",
 			"sessionCapabilities",
 			"sessionsLoading",
+			"sessionsArchived",
+			"sessionsNextCursor",
 			"sessionsError",
 			"sessionPending",
 		].every((key) => validField(key, value[key]))

@@ -1,4 +1,4 @@
-// ACP の変更前後の本文を、文脈付きの unified diff として表示する。
+// 変更前後の本文を、文脈付きの unified diff として表示する。
 import { useMemo } from "react";
 import { structuredPatch } from "diff";
 import {
@@ -8,7 +8,7 @@ import {
 	toolOutputClass,
 } from "./toolStyles";
 
-/** ACP が渡すファイル単位の本文を受け取る。 */
+/** ファイル単位の比較用本文を受け取る。 */
 type FileDiffProps = {
 	path: string;
 	oldText: string | null;

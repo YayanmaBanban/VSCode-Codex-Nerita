@@ -1,5 +1,7 @@
 # 実装状況と検証結果
 
+この文書は旧ACP実装の履歴です。記載された旧テスト・設定・配布構成は現在使用しません。App Server移行後の現行仕様と検証は [移行結果](App-Server-Migration.md) を参照してください。
+
 2026-09-13 に `Implementation-Plan.md` の MVP を実装。Windows x64 / VS Code 1.137.0 / Node.js 24.18.1 で検証した。
 
 ## 実装した内容

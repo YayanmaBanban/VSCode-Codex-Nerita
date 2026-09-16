@@ -2,10 +2,10 @@
 import * as vscode from "vscode";
 import { basename } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AttachmentService } from "../session/sessionOptions";
+import type { CodexFiles } from "../codex/CodexAttachments";
 
-/** 選択されたローカルファイルを ACP のリソース参照として扱う。 */
-export const attachmentService: AttachmentService = {
+/** 選択されたローカルファイルをHost内で検証するための参照として扱う。 */
+export const attachmentService: CodexFiles = {
 	async pick() {
 		const uris = await vscode.window.showOpenDialog({
 			canSelectMany: true,

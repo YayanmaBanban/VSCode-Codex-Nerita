@@ -1,7 +1,8 @@
-// ACP の本文・差分・任意の入出力を、実行せずテキストとして表示する。
+// ツールの本文・差分・任意の入出力を、実行せずテキストとして表示する。
 import type { ToolSummary } from "../../../shared/messages";
 import { isRecord } from "../../../shared/validation";
 import { FileDiff } from "./FileDiff";
+import { UnifiedDiff } from "./UnifiedDiff";
 import { toolLabelClass, toolOutputClass } from "./toolStyles";
 
 /** 構造が未知の値も欠落させずに表示する。 */
@@ -13,10 +14,17 @@ export function Value({ value }: { value: unknown }) {
 	);
 }
 
-/** ACP の差分と本文を、それぞれ専用の表示に振り分ける。 */
+/** ツールの差分と本文を、それぞれ専用の表示に振り分ける。 */
 function Content({ value }: { value: unknown }) {
 	if (!isRecord(value)) {
 		return <Value value={value} />;
+	}
+	if (
+		value.type === "unifiedDiff" &&
+		typeof value.path === "string" &&
+		typeof value.diff === "string"
+	) {
+		return <UnifiedDiff path={value.path} diff={value.diff} />;
 	}
 	if (
 		value.type === "diff" &&
@@ -87,7 +95,9 @@ export function EditingFiles({ tool }: { tool: ToolSummary }) {
 			tool={{
 				...tool,
 				paths: tool.content?.some(
-					(value) => isRecord(value) && value.type === "diff",
+					(value) =>
+						isRecord(value) &&
+						(value.type === "diff" || value.type === "unifiedDiff"),
 				)
 					? []
 					: tool.paths,

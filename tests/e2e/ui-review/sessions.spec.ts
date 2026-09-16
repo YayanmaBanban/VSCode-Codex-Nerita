@@ -16,6 +16,33 @@ test.afterEach(({ page }) => {
 	errors.delete(page);
 });
 
+test("次ページの取得と名前変更の取消", async ({ page }, info) => {
+	await page.goto("/iframe.html?id=chat-sessions--paginated&viewMode=story");
+	await page
+		.getByRole("button", { name: "セッション一覧", exact: true })
+		.click();
+	const panel = page.getByRole("complementary", { name: "セッション一覧" });
+	await expect(panel.getByRole("listitem")).toHaveCount(2);
+	await panel.getByRole("button", { name: "さらに読み込む" }).click();
+	await expect(panel.getByRole("listitem")).toHaveCount(3);
+	await expect(
+		panel.getByRole("button", { name: "さらに読み込む" }),
+	).toHaveCount(0);
+	await panel
+		.getByRole("button", { name: /名前を変更/ })
+		.first()
+		.click();
+	const input = panel.getByRole("textbox", { name: "新しいセッション名" });
+	await input.fill(" ");
+	await expect(
+		panel.getByRole("button", { name: "保存", exact: true }),
+	).toBeDisabled();
+	await input.press("Escape");
+	await expect(input).toHaveCount(0);
+	await expect(panel).toBeVisible();
+	await page.screenshot({ path: info.outputPath("pagination.png") });
+});
+
 test("取得・再取得・選択・名前ボタン・フォーク・アーカイブ", async ({
 	page,
 }, info) => {
@@ -58,6 +85,15 @@ test("取得・再取得・選択・名前ボタン・フォーク・アーカ�
 	await expect(row).toHaveCSS("filter", "brightness(1.1)");
 	await page.screenshot({ path: info.outputPath("hover.png") });
 	await row.getByRole("button", { name: /名前を変更/ }).click();
+	await row
+		.getByRole("textbox", { name: "新しいセッション名" })
+		.fill("名前を変更した会話");
+	await page.screenshot({ path: info.outputPath("rename.png") });
+	await row.getByRole("button", { name: "保存", exact: true }).click();
+	await page.clock.runFor(800);
+	await expect(
+		row.getByRole("button", { name: "名前を変更した会話を開く" }),
+	).toBeVisible();
 	await expect(page.getByRole("log")).toBeEmpty();
 	await row.getByRole("button", { name: /を開く$/ }).click();
 	await expect(page.getByRole("log")).toContainText(
@@ -76,6 +112,21 @@ test("取得・再取得・選択・名前ボタン・フォーク・アーカ�
 		.click();
 	await page.clock.runFor(800);
 	await expect(panel.getByRole("listitem")).toHaveCount(3);
+	await panel
+		.getByRole("button", { name: "アーカイブ済み", exact: true })
+		.click();
+	await page.clock.runFor(800);
+	await expect(panel.getByRole("listitem")).toHaveCount(1);
+	await expect(panel.getByRole("button", { name: /を開く$/ })).toBeDisabled();
+	await page.screenshot({ path: info.outputPath("archived.png") });
+	await panel.getByRole("button", { name: /をアーカイブから戻す$/ }).click();
+	await page.clock.runFor(800);
+	await expect(panel.getByRole("listitem")).toHaveCount(0);
+	await panel
+		.getByRole("button", { name: "通常の履歴", exact: true })
+		.click();
+	await page.clock.runFor(800);
+	await expect(panel.getByRole("listitem")).toHaveCount(4);
 	await page.getByRole("button", { name: "＋ 新規会話" }).click();
 	await expect(panel.getByRole("progressbar")).toBeVisible();
 	await page.clock.runFor(800);
@@ -131,6 +182,16 @@ for (const scenario of ["empty", "error", "unsupported"]) {
 		await page.goto(
 			`/iframe.html?id=chat-sessions--${scenario}&viewMode=story`,
 		);
+		if (scenario === "unsupported") {
+			await expect(
+				page.getByRole("button", {
+					name: "セッション一覧",
+					exact: true,
+				}),
+			).toBeDisabled();
+			await page.screenshot({ path: info.outputPath("unsupported.png") });
+			return;
+		}
 		await page
 			.getByRole("button", { name: "セッション一覧", exact: true })
 			.click();

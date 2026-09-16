@@ -8,7 +8,13 @@ import globals from "globals";
 import typescriptEslint from "typescript-eslint";
 
 export default defineConfig([
-	globalIgnores([".vscode-test/**", "coverage/**", "dist/**", "out/**"]),
+	globalIgnores([
+		".vscode-test/**",
+		"coverage/**",
+		"dist/**",
+		"out/**",
+		"src/codex-app-server/**",
+	]),
 	js.configs.recommended,
 	prettier,
 	...storybook.configs["flat/recommended"],

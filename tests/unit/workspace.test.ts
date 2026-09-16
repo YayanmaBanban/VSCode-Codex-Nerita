@@ -1,10 +1,14 @@
 // ワークスペース不備の原因とUIに届く案内が一致することを検証する。
 import { describe, expect, it } from "vitest";
-import { requireLocalWorkspace } from "../../src/extension/workspace";
-import { SessionController } from "../../src/extension/session/sessionController";
+import { requireLocalWorkspace, sameCwd } from "../../src/extension/workspace";
+import { CodexSessionController } from "../../src/extension/codex/CodexSessionController";
 
 const folder = { uri: { scheme: "file", fsPath: "D:\\workspace with spaces" } };
 describe("ワークスペースの起動条件", () => {
+	it("Windowsのパス表記の差を吸収し別フォルダーを混ぜない", () => {
+		expect(sameCwd("D:/Workspace/", "d:\\workspace")).toBe(true);
+		expect(sameCwd("D:/workspace", "D:/workspace-other")).toBe(false);
+	});
 	it("空白を含むローカルパスをそのまま渡す", () => {
 		expect(requireLocalWorkspace([folder], true, undefined)).toBe(
 			folder.uri.fsPath,
@@ -35,7 +39,7 @@ describe("ワークスペースの起動条件", () => {
 		).toThrow("仮想ワークスペース");
 	});
 	it("フォルダー未選択の具体的な案内をHostからUIに伝える", async () => {
-		const controller = new SessionController(() => {
+		const controller = new CodexSessionController(() => {
 			requireLocalWorkspace(undefined, true, undefined);
 			throw new Error("unreachable");
 		});
@@ -50,7 +54,7 @@ describe("ワークスペースの起動条件", () => {
 		await controller.dispose();
 	});
 	it("通常の例外の内部情報はUIに表示しない", async () => {
-		const controller = new SessionController(() => {
+		const controller = new CodexSessionController(() => {
 			throw new Error("secret diagnostic");
 		});
 		await controller.connect();
