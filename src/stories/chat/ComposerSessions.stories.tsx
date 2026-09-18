@@ -11,6 +11,7 @@ function SessionStory() {
 	const [view, setView] = useState(false);
 	const [sent, setSent] = useState("");
 	const [opened, setOpened] = useState("");
+	const [changes, setChanges] = useState("");
 	const fail = useRef(false);
 	const bridge = useMemo(() => {
 		const mock = createMockBridge("empty");
@@ -20,6 +21,10 @@ function SessionStory() {
 		return {
 			subscribe: mock.subscribe,
 			postMessage(message) {
+				if (message.type === "changes/open") {
+					setChanges(message.scope);
+					return;
+				}
 				if (message.type === "session/openReference") {
 					setOpened(message.referencedSessionId);
 					return;
@@ -79,6 +84,9 @@ function SessionStory() {
 			</output>
 			<output hidden aria-label="表示したセッション">
 				{opened}
+			</output>
+			<output hidden aria-label="表示した差分">
+				{changes}
 			</output>
 		</>
 	);

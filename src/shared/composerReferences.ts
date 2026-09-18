@@ -6,6 +6,9 @@ export type ComposerReference = { offset: number; path: ComposerTarget };
 
 /** 空白を含むパスを引用符で囲み、送信・コピー時の本文を統一する。 */
 export function pathText(path: ComposerTarget): string {
+	if (path.kind === "changes") {
+		return `[Changes: ${path.name}]`;
+	}
 	if (path.kind === "session") {
 		return `[Session: ${path.name}; ID: ${path.sessionId}]`;
 	}

@@ -1,5 +1,5 @@
 // 入力文中のパスを添付風に表示し、参照だけをUndo可能に取り外す。
-import { Braces, Folder, MessageSquare, X } from "lucide-react";
+import { Braces, Folder, MessageSquare, GitCompare, X } from "lucide-react";
 import { pathText } from "../../../shared/composerReferences";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalEditable } from "@lexical/react/useLexicalEditable";
@@ -19,24 +19,26 @@ export function PathReferenceChip({
 	const [editor] = useLexicalComposerContext();
 	const editable = useLexicalEditable();
 	const Icon =
-		path.kind === "session"
-			? MessageSquare
-			: path.symbol
-				? Braces
-				: path.kind === "directory"
-					? Folder
-					: fileIcon(path.name);
+		path.kind === "changes"
+			? GitCompare
+			: path.kind === "session"
+				? MessageSquare
+				: path.symbol
+					? Braces
+					: path.kind === "directory"
+						? Folder
+						: fileIcon(path.name);
 	return (
 		<span
 			title={pathText(path)}
-			aria-label={`${path.kind === "session" ? "セッション" : path.symbol ? "シンボル" : path.kind === "directory" ? "フォルダ" : "ファイル"}: ${pathText(path)}`}
+			aria-label={`${path.kind === "changes" ? "Changes" : path.kind === "session" ? "セッション" : path.symbol ? "シンボル" : path.kind === "directory" ? "フォルダ" : "ファイル"}: ${pathText(path)}`}
 			className="inline-flex max-w-full items-center rounded-[5px] border border-solid border-panel-border bg-input text-[12px] leading-normal align-middle [&_svg]:shrink-0"
 		>
 			<button
 				type="button"
 				disabled={!editable}
 				aria-label={
-					path.kind === "session"
+					path.kind === "session" || path.kind === "changes"
 						? `${path.name} の内容を表示`
 						: path.kind === "directory"
 							? `${path.name} をExplorerで表示`

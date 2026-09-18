@@ -73,6 +73,16 @@ export function usePromptSubmission(
 			return;
 		}
 		const requestId = crypto.randomUUID();
+		const changeScopes = [
+			...new Set(
+				parts.flatMap(
+					(part) =>
+						part.references?.flatMap(({ path }) =>
+							path.kind === "changes" ? [path.scope] : [],
+						) ?? [],
+				),
+			),
+		];
 		const referencedSessionIds = [
 			...new Set(
 				parts.flatMap(
@@ -99,6 +109,7 @@ export function usePromptSubmission(
 			sessionId: state.sessionId,
 			text: draft.trim(),
 			...(referencedSessionIds.length ? { referencedSessionIds } : {}),
+			...(changeScopes.length ? { changeScopes } : {}),
 		});
 	};
 	return {

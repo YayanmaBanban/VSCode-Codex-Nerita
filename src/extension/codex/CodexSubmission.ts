@@ -5,6 +5,8 @@ import { attachmentInput } from "./attachmentInput";
 import { skillInput } from "./skillInput";
 import { nextTimelineOrder } from "../session/timelineOrder";
 import { sessionContext } from "./sessionContext";
+import { changeContext } from "./changeContext";
+import type { ChangeScope } from "../../shared/changeReferences";
 
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
 export abstract class CodexSubmission extends CodexHistory {
@@ -15,6 +17,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		text: string,
 		sessionId: string,
 		referencedSessionIds: string[] = [],
+		changeScopes: ChangeScope[] = [],
 	): Promise<"start" | "steer"> {
 		if (this.submissionPending) {
 			throw new Error("Submission pending");
@@ -33,7 +36,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		};
 		try {
 			this.checkSubmission(epoch, sessionId);
-			const context = referencedSessionIds.length
+			let context = referencedSessionIds.length
 				? await sessionContext(
 						this.client!,
 						referencedSessionIds,
@@ -48,6 +51,12 @@ export abstract class CodexSubmission extends CodexHistory {
 							),
 					)
 				: undefined;
+			if (changeScopes.length) {
+				context = {
+					...context,
+					...(await changeContext(this.state.cwd!, changeScopes)),
+				};
+			}
 			if (this.state.run === "running") {
 				await new Promise<void>((resolve) => setTimeout(resolve, 500));
 			}

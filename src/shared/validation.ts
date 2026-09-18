@@ -9,6 +9,7 @@ import { isPathString, isWorkspacePath } from "./workspacePaths";
 import { isSourceRange } from "./symbolLocation";
 import { isSymbolQuery } from "./workspaceSymbols";
 import { isSessionReference, validSessionIds } from "./sessionReferences";
+import { isChangeScope, validChangeScopes } from "./changeReferences";
 /** 配列・null を除いたオブジェクトを判定する。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -29,6 +30,8 @@ export function isUiMessage(value: unknown): value is UiMessage {
 		return false;
 	}
 	switch (value.type) {
+		case "changes/open":
+			return isChangeScope(value.scope);
 		case "session/searchReferences":
 			return (
 				isSymbolQuery(value.query) &&
@@ -119,7 +122,8 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				typeof value.text === "string" &&
 				value.text.trim().length > 0 &&
 				value.text.length <= 100_000 &&
-				validSessionIds(value.referencedSessionIds)
+				validSessionIds(value.referencedSessionIds) &&
+				validChangeScopes(value.changeScopes)
 			);
 		case "prompt/cancel":
 			return isId(value.sessionId) && isId(value.runId);

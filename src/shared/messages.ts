@@ -1,5 +1,6 @@
 // Host とブラウザの通信契約。VS Code・Node.js・サーバープロトコルに依存しない。
 import type { ComposerPart } from "./composerContent";
+import type { ChangeScope } from "./changeReferences";
 import type {
 	SessionReferencesRequest,
 	SessionReferencesResult,
@@ -137,6 +138,11 @@ export type UiMessage =
 	| { type: "ui/saveScroll"; requestId: string; scrollTop: number }
 	| { type: "connection/retry"; requestId: string }
 	| { type: "session/new"; requestId: string }
+	| {
+			type: "changes/open";
+			requestId: string;
+			scope: ChangeScope;
+	  }
 	| { type: "auth/start"; requestId: string; methodId: string }
 	| {
 			type: "prompt/send";
@@ -144,6 +150,7 @@ export type UiMessage =
 			sessionId: string;
 			text: string;
 			referencedSessionIds?: string[];
+			changeScopes?: ChangeScope[];
 	  }
 	| {
 			type: "prompt/cancel";
