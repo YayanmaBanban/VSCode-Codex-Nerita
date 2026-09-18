@@ -29,13 +29,18 @@ test("候補のキーボード選択・検索・送信とTabの2スペース", a
 		.getByRole("combobox", { name: "添付ファイルを検索" })
 		.press("Tab");
 	await expect(input).toHaveText("前文日本語 sample.md 後文");
+	await expect(input.locator(".inline-path-reference")).toHaveCount(1);
+	await expect(
+		input.getByTitle("file:///D:/workspace/sample.md"),
+	).toBeVisible();
+	await page.screenshot({ path: info.outputPath("attachment-chip.png") });
 	await input.press("Tab");
 	expect(await input.textContent()).toBe("前文日本語 sample.md   後文");
 	await input.press("Shift+Tab");
 	expect(await input.textContent()).toBe("前文日本語 sample.md 後文");
 	await input.press("Enter");
 	await expect(page.locator(".message.user")).toContainText(
-		"前文日本語 sample.md 後文",
+		"前文file:///D:/workspace/sample.md 後文",
 	);
 	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
 	await input.fill("@");
@@ -69,7 +74,9 @@ test("行頭の判定・クリック挿入・Esc後の再表示・IME確定", as
 	await expect(input).toContainText("@review");
 	await input.fill("#");
 	await input.press("Escape");
-	await input.fill("");
+	await input.press("Control+a");
+	await input.press("Backspace");
+	await expect(input).toHaveText("");
 	await input.press("#");
 	await expect(
 		page.getByRole("listbox", { name: "コンテキスト" }),
@@ -91,6 +98,34 @@ test("行頭の判定・クリック挿入・Esc後の再表示・IME確定", as
 });
 
 for (const colorScheme of ["dark", "light"] as const) {
+	test(`添付参照の取り外しとUndo: ${colorScheme}`, async ({ page }, info) => {
+		await page.setViewportSize({ width: 320, height: 820 });
+		await page.emulateMedia({ colorScheme });
+		await page.goto(
+			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+		);
+		const input = page.getByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		await input.fill("#");
+		await input.press("Enter");
+		await page.getByRole("option", { name: /日本語 sample.md/ }).click();
+		await expect(input.locator(".inline-path-reference")).toHaveCount(1);
+		await page.screenshot({
+			path: info.outputPath(`attachment-chip-${colorScheme}.png`),
+		});
+		await input
+			.getByRole("button", { name: "日本語 sample.md の参照を取り外す" })
+			.click();
+		await expect(input.locator(".inline-path-reference")).toHaveCount(0);
+		await expect(
+			page
+				.locator(".attachments")
+				.getByRole("button", { name: "日本語 sample.md を開く" }),
+		).toBeVisible();
+		await input.press("Control+z");
+		await expect(input.locator(".inline-path-reference")).toHaveCount(1);
+	});
 	test(`コンテキスト入口と選択解除: ${colorScheme}`, async ({
 		page,
 	}, info) => {
@@ -110,7 +145,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			})
 			.click();
 		await expect(
-			page.getByText("このコンテキストは今後対応予定です。"),
+			page.getByRole("option", { name: /project\// }),
 		).toBeVisible();
 		await page.screenshot({
 			path: info.outputPath(`entry-${colorScheme}.png`),

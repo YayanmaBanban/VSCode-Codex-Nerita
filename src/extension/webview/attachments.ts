@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { basename } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { CodexFiles } from "../codex/CodexAttachments";
+import { openResource } from "./openResource";
 
 /** 選択されたローカルファイルをHost内で検証するための参照として扱う。 */
 export const attachmentService: CodexFiles = {
@@ -23,9 +24,6 @@ export const attachmentService: CodexFiles = {
 			}));
 	},
 	async open(file) {
-		await vscode.commands.executeCommand(
-			"vscode.open",
-			vscode.Uri.parse(file.uri),
-		);
+		await openResource(file.uri);
 	},
 };

@@ -4,11 +4,20 @@ import {
 	$isRangeSelection,
 	$getNodeByKey,
 	$isElementNode,
+	$createTextNode,
+	$addUpdateTag,
+	HISTORY_PUSH_TAG,
 } from "lexical";
 import type { Attachment } from "../../../shared/composer";
 import type { SkillSummary } from "../../../shared/skills";
+import type { WorkspacePath } from "../../../shared/workspacePaths";
+import type { ComposerTarget } from "../../../shared/composerTargets";
+import type { SessionReference } from "../../../shared/sessionReferences";
+import { symbolKindName } from "../../../shared/workspaceSymbols";
+import { pathText } from "../../../shared/composerReferences";
 import { $pointOffset, $selectOffset } from "./content";
 import { PastedBlockNode } from "./PastedBlockNode";
+import { $createPathReferenceNode } from "./PathReferenceNode";
 
 /** トリガー文字を含む置換範囲と候補検索の状態。 */
 export type Completion = {
@@ -25,7 +34,46 @@ export type CompletionItem = {
 	description?: string;
 	text?: string;
 	category?: string;
+	directory?: WorkspacePath;
+	reference?: ComposerTarget;
+	more?: boolean;
 };
+
+/** サーバーの並びを維持してセッション候補を参照チップに変換する。 */
+export function sessionCompletionItems(
+	entries: SessionReference[],
+): CompletionItem[] {
+	return entries.map((entry) => ({
+		id: entry.sessionId,
+		label: entry.name,
+		description: `${entry.cwd} · ${entry.sessionId}`,
+		text: `${pathText(entry)} `,
+		reference: entry,
+	}));
+}
+
+/** シンボル名と定義位置を候補・チップ挿入用データへ変換する。 */
+export function symbolCompletionItems(
+	entries: WorkspacePath[],
+): CompletionItem[] {
+	return entries.flatMap((entry) =>
+		entry.symbol
+			? [
+					{
+						id: JSON.stringify([
+							entry.uri,
+							entry.name,
+							entry.symbol,
+						]),
+						label: entry.name,
+						description: `${symbolKindName(entry.symbol.kind)} · ${entry.symbol.range.start.line + 1}行 · ${entry.path}`,
+						text: `${pathText(entry)} `,
+						reference: entry,
+					},
+				]
+			: [],
+	);
+}
 
 /** 行頭の/・@、任意位置の#をカーソル直前から検出する。 */
 export function $completion(): Completion | null {
@@ -55,7 +103,11 @@ export function $completion(): Completion | null {
 }
 
 /** トリガーと検索文字だけを置き換え、カーソル後方の本文を残す。 */
-export function $insertCompletion(match: Completion, text: string): void {
+export function $insertCompletion(
+	match: Completion,
+	text: string,
+	reference?: ComposerTarget,
+): void {
 	const block = $getNodeByKey(match.key);
 	if (!$isElementNode(block)) {
 		return;
@@ -76,7 +128,14 @@ export function $insertCompletion(match: Completion, text: string): void {
 		return;
 	}
 	range.focus.set(point.key, point.offset, point.type);
-	range.insertText(text);
+	if (reference) {
+		$addUpdateTag(HISTORY_PUSH_TAG);
+		const space = $createTextNode(" ");
+		range.insertNodes([$createPathReferenceNode(reference), space]);
+		space.selectEnd();
+	} else {
+		range.insertText(text);
+	}
 }
 
 /** スラッシュ・スキル・コンテキストの候補を検索語で絞る。 */
@@ -116,7 +175,13 @@ export function completionItems(
 			id: file.id,
 			label: file.name,
 			description: file.uri,
-			text: `${file.name} `,
+			text: `${file.uri} `,
+			reference: {
+				uri: file.uri,
+				name: file.name,
+				path: file.uri,
+				kind: "file",
+			},
 		}));
 	} else {
 		items = [];

@@ -11,12 +11,18 @@ import {
 	type CompletionItem,
 } from "./completions";
 import { CompletionMenu } from "./CompletionMenu";
+import type { Bridge } from "../../vscodeBridge";
+import { useWorkspacePaths } from "./useWorkspacePaths";
+import { useWorkspaceSymbols } from "./useWorkspaceSymbols";
+import { useSessionReferences } from "./useSessionReferences";
 
 /** 候補選択とTabの字下げを、本文のUndo履歴へ反映する。 */
 export function CompletionPlugin({
+	bridge,
 	attachments,
 	skills,
 }: {
+	bridge?: Bridge | undefined;
 	attachments: Attachment[];
 	skills: SkillSummary[];
 }) {
@@ -29,25 +35,54 @@ export function CompletionPlugin({
 	const container = useRef<HTMLDivElement>(null);
 	const id = useId();
 	const query = search ?? match?.query ?? "";
-	const items = completionItems(
-		match?.marker ?? "",
-		category,
-		query,
-		attachments,
-		skills,
-	);
+	const browsing =
+		match?.marker === "#" && category === "ファイルとディレクトリ";
+	const paths = useWorkspacePaths(bridge, browsing, query);
+	const searchingSymbols = match?.marker === "#" && category === "シンボル";
+	const symbols = useWorkspaceSymbols(bridge, searchingSymbols, query);
+	const searchingSessions =
+		match?.marker === "#" && category === "セッション";
+	const sessions = useSessionReferences(bridge, searchingSessions, query);
+	const items = browsing
+		? paths.items
+		: searchingSymbols
+			? symbols.items
+			: searchingSessions
+				? sessions.items
+				: completionItems(
+						match?.marker ?? "",
+						category,
+						query,
+						attachments,
+						skills,
+					);
 	const index = Math.min(selected, Math.max(0, items.length - 1));
 	const close = () => {
 		dismissed.current = JSON.stringify(match);
 		setMatch(null);
 	};
 	const back = () => {
-		setCategory("");
+		if (browsing && paths.hasParent) {
+			paths.back();
+		} else {
+			setCategory("");
+		}
 		setSearch("");
 		setSelected(0);
 	};
 	const pick = (item: CompletionItem) => {
+		if (item.more) {
+			sessions.more();
+			return;
+		}
+		if (item.directory) {
+			paths.open(item.directory);
+			setSearch("");
+			setSelected(0);
+			return;
+		}
 		if (item.category) {
+			paths.reset();
 			setCategory(item.category);
 			setSearch("");
 			setSelected(0);
@@ -56,7 +91,9 @@ export function CompletionPlugin({
 		if (!match || item.text === undefined) {
 			return;
 		}
-		editor.update(() => $insertCompletion(match, item.text!));
+		editor.update(() =>
+			$insertCompletion(match, item.text!, item.reference),
+		);
 		setMatch(null);
 		editor.focus();
 	};
@@ -99,7 +136,8 @@ export function CompletionPlugin({
 		if (
 			(event.key === "Enter" ||
 				event.key === "Tab" ||
-				(event.key === "ArrowRight" && items[index]?.category)) &&
+				(event.key === "ArrowRight" &&
+					(items[index]?.category || items[index]?.directory))) &&
 			!event.shiftKey
 		) {
 			event.preventDefault();
@@ -147,12 +185,27 @@ export function CompletionPlugin({
 				query={query}
 				items={items}
 				selected={index}
+				location={browsing ? paths.path : undefined}
+				notice={
+					searchingSymbols
+						? symbols.notice
+						: searchingSessions
+							? sessions.notice
+							: undefined
+				}
 				empty={
-					category && category !== "添付ファイル"
-						? "このコンテキストは今後対応予定です。"
-						: category === "添付ファイル" && !attachments.length
-							? "添付ファイルはありません。"
-							: "候補がありません。"
+					browsing
+						? paths.empty
+						: searchingSymbols
+							? symbols.empty
+							: searchingSessions
+								? sessions.empty
+								: category && category !== "添付ファイル"
+									? "このコンテキストは今後対応予定です。"
+									: category === "添付ファイル" &&
+										  !attachments.length
+										? "添付ファイルはありません。"
+										: "候補がありません。"
 				}
 				onQuery={(value) => {
 					setSearch(value);
@@ -165,6 +218,11 @@ export function CompletionPlugin({
 				}}
 				onPick={pick}
 				onBack={category ? back : undefined}
+				backLabel={
+					browsing && paths.hasParent
+						? "上の階層へ戻る"
+						: "カテゴリへ戻る"
+				}
 			/>
 		</div>
 	);

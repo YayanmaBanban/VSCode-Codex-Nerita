@@ -5,6 +5,10 @@ import { isPersonalityPreset, isPersonalitySettings } from "./personality";
 import { validComposerField } from "./composerValidation";
 import { isAsyncTask } from "./asyncTask";
 import { validDraftParts } from "./composerContent";
+import { isPathString, isWorkspacePath } from "./workspacePaths";
+import { isSourceRange } from "./symbolLocation";
+import { isSymbolQuery } from "./workspaceSymbols";
+import { isSessionReference, validSessionIds } from "./sessionReferences";
 /** 配列・null を除いたオブジェクトを判定する。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -25,6 +29,22 @@ export function isUiMessage(value: unknown): value is UiMessage {
 		return false;
 	}
 	switch (value.type) {
+		case "session/searchReferences":
+			return (
+				isSymbolQuery(value.query) &&
+				(value.cursor === undefined || isPathString(value.cursor))
+			);
+		case "session/openReference":
+			return isId(value.referencedSessionId);
+		case "reference/open":
+			return (
+				isPathString(value.uri) &&
+				(value.range === undefined || isSourceRange(value.range))
+			);
+		case "workspace/searchSymbols":
+			return isSymbolQuery(value.query);
+		case "workspace/listPaths":
+			return value.uri === null || isPathString(value.uri);
 		case "ui/setSidebar":
 			return isSidebarLocation(value.location);
 		case "personality/read":
@@ -98,7 +118,8 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				isId(value.sessionId) &&
 				typeof value.text === "string" &&
 				value.text.trim().length > 0 &&
-				value.text.length <= 100_000
+				value.text.length <= 100_000 &&
+				validSessionIds(value.referencedSessionIds)
 			);
 		case "prompt/cancel":
 			return isId(value.sessionId) && isId(value.runId);
@@ -294,6 +315,37 @@ function isState(value: unknown): value is ChatState {
 export function isHostMessage(value: unknown): value is HostMessage {
 	if (!isRecord(value)) {
 		return false;
+	}
+	if (value.type === "session/references") {
+		return (
+			isId(value.requestId) &&
+			Array.isArray(value.entries) &&
+			value.entries.length <= 50 &&
+			value.entries.every(isSessionReference) &&
+			(value.nextCursor === null || isPathString(value.nextCursor)) &&
+			(value.error === undefined || typeof value.error === "string")
+		);
+	}
+	if (value.type === "workspace/symbols") {
+		return (
+			isId(value.requestId) &&
+			Array.isArray(value.entries) &&
+			value.entries.length <= 100 &&
+			value.entries.every(
+				(entry: unknown) =>
+					isWorkspacePath(entry) && entry.symbol !== undefined,
+			) &&
+			typeof value.truncated === "boolean" &&
+			(value.error === undefined || typeof value.error === "string")
+		);
+	}
+	if (value.type === "workspace/paths") {
+		return (
+			isId(value.requestId) &&
+			Array.isArray(value.entries) &&
+			value.entries.every(isWorkspacePath) &&
+			(value.error === undefined || typeof value.error === "string")
+		);
 	}
 	if (value.type === "prompt/accepted") {
 		return (

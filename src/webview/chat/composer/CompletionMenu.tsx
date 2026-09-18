@@ -20,6 +20,9 @@ export function CompletionMenu({
 	onKeyDown,
 	onPick,
 	onBack,
+	location,
+	notice,
+	backLabel = "カテゴリへ戻る",
 }: {
 	id: string;
 	title: string;
@@ -31,6 +34,9 @@ export function CompletionMenu({
 	onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
 	onPick: (item: CompletionItem) => void;
 	onBack?: (() => void) | undefined;
+	location?: string | undefined;
+	notice?: string | undefined;
+	backLabel?: string;
 }) {
 	const list = useRef<HTMLDivElement>(null);
 	const panel = useRef<HTMLDivElement>(null);
@@ -64,7 +70,7 @@ export function CompletionMenu({
 				{onBack && (
 					<button
 						type="button"
-						aria-label="カテゴリへ戻る"
+						aria-label={backLabel}
 						onMouseDown={(event) => event.preventDefault()}
 						onClick={onBack}
 					>
@@ -82,10 +88,20 @@ export function CompletionMenu({
 					value={query}
 					onChange={(event) => onQuery(event.target.value)}
 					onKeyDown={onKeyDown}
-					placeholder={`${title}を検索`}
+					placeholder={location ? "この階層を検索" : `${title}を検索`}
 					className="min-w-0 w-full rounded border border-input-border bg-input p-2 text-input-text focus:outline-2 focus:outline-focus"
 				/>
 			</div>
+			{location && (
+				<p className="mb-2 break-all text-[12px] text-muted">
+					{location}
+				</p>
+			)}
+			{notice && (
+				<p role="status" className="mb-2 text-[12px] text-muted">
+					{notice}
+				</p>
+			)}
 			<div
 				ref={list}
 				id={id}
@@ -98,6 +114,11 @@ export function CompletionMenu({
 						key={item.id}
 						id={`${id}-${index}`}
 						role="option"
+						title={
+							item.description
+								? `${item.label}\n${item.description}`
+								: item.label
+						}
 						aria-selected={index === selected}
 						onMouseDown={(event) => event.preventDefault()}
 						onClick={() => onPick(item)}

@@ -9,13 +9,17 @@ import { parseTurnEvent, type TurnEvent } from "./turnEvents";
 import { itemPatch, messagePatch } from "./chatItems";
 import { ActiveTurn } from "./ActiveTurn";
 import { activityPatch } from "./activityEvents";
+import type { AdditionalContext } from "./additionalContext";
 
 /** 同じ thread で停止後も会話を続けられる実行管理。 */
 export abstract class CodexRun extends CodexRequests {
 	private cancelTimer: NodeJS.Timeout | undefined;
 
 	/** 表示用の実行 ID を先に確保し、完了は通知だけで確定する。 */
-	protected async prompt(text: string): Promise<void> {
+	protected async prompt(
+		text: string,
+		context?: AdditionalContext,
+	): Promise<void> {
 		if (
 			this.busy() ||
 			!this.client ||
@@ -66,6 +70,7 @@ export abstract class CodexRun extends CodexRequests {
 			}
 			prepared = true;
 			const result = await this.client.startTurn({
+				...(context ? { additionalContext: context } : {}),
 				...this.turnOptions,
 				threadId: run.threadId,
 				clientUserMessageId: userId,

@@ -8,14 +8,18 @@ import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import type { ComposerPart } from "../../shared/composerContent";
 import { PastedBlockNode } from "./composer/PastedBlockNode";
+import { PathReferenceNode } from "./composer/PathReferenceNode";
+import { ReferenceActionsPlugin } from "./composer/ReferenceActionsPlugin";
 import { ComposerPlugin } from "./composer/ComposerPlugin";
 import { $writeParts } from "./composer/content";
 import { CompletionPlugin } from "./composer/CompletionPlugin";
 import type { Attachment } from "../../shared/composer";
 import type { SkillSummary } from "../../shared/skills";
+import type { Bridge } from "../vscodeBridge";
 
 /** 全体のスクロールを一本にまとめ、コード領域だけ内部スクロールを許可する。 */
 export function ComposerInput({
+	bridge,
 	parts,
 	onChange,
 	onSubmit,
@@ -23,7 +27,9 @@ export function ComposerInput({
 	followUp = false,
 	attachments = [],
 	skills = [],
+	completionScope = "",
 }: {
+	bridge?: Bridge | undefined;
 	parts: ComposerPart[];
 	onChange: (parts: ComposerPart[]) => void;
 	onSubmit: () => void;
@@ -31,6 +37,7 @@ export function ComposerInput({
 	followUp?: boolean;
 	attachments?: Attachment[];
 	skills?: SkillSummary[];
+	completionScope?: string;
 }) {
 	const [error, setError] = useState("");
 	const [expanded, setExpanded] = useState(false);
@@ -39,7 +46,7 @@ export function ComposerInput({
 		<LexicalComposer
 			initialConfig={{
 				namespace: "codex-composer",
-				nodes: [PastedBlockNode],
+				nodes: [PastedBlockNode, PathReferenceNode],
 				theme: {
 					paragraph:
 						"m-0 min-h-[1.7em] whitespace-pre-wrap [overflow-wrap:anywhere]",
@@ -53,6 +60,8 @@ export function ComposerInput({
 			<div className="flex items-start gap-2">
 				<div className="relative min-w-0 flex-1">
 					<CompletionPlugin
+						key={completionScope}
+						bridge={bridge}
 						attachments={attachments}
 						skills={skills}
 					/>
@@ -103,6 +112,7 @@ export function ComposerInput({
 				</button>
 			</div>
 			<HistoryPlugin />
+			<ReferenceActionsPlugin bridge={bridge} />
 			<ComposerPlugin
 				locked={locked}
 				parts={parts}

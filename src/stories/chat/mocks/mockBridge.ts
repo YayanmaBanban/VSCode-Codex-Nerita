@@ -8,6 +8,9 @@ import {
 import type { Bridge } from "../../../webview/vscodeBridge";
 import { settingsFixture } from "../../../../tests/fixtures/settingsFixture";
 import { mockSettings } from "./mockSettings";
+import { mockWorkspacePaths } from "./mockWorkspacePaths";
+import { mockWorkspaceSymbols } from "./mockWorkspaceSymbols";
+import { mockSessionReferences } from "./mockSessionReferences";
 
 /** Story の開始状態。 */
 export type Scenario =
@@ -153,6 +156,15 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 				return;
 			}
 			switch (message.type) {
+				case "session/searchReferences":
+					queueMicrotask(() => emit(mockSessionReferences(message)));
+					break;
+				case "workspace/searchSymbols":
+					queueMicrotask(() => emit(mockWorkspaceSymbols(message)));
+					break;
+				case "workspace/listPaths":
+					queueMicrotask(() => emit(mockWorkspacePaths(message)));
+					break;
 				case "ui/ready":
 					emit({
 						type: "state/snapshot",

@@ -5,6 +5,7 @@ import { CodexRun } from "./CodexRun";
 import type { StartedThread } from "./turnProtocol";
 import type { AppServerNotification } from "./rpcMessage";
 import { PendingThreads, historySummary } from "./PendingThreads";
+import { threadSources } from "./threadSources";
 
 /** 新規会話と履歴復元で同じ一覧機能を公開する。 */
 export abstract class CodexCatalog extends CodexRun {
@@ -82,7 +83,7 @@ export abstract class CodexCatalog extends CodexRun {
 				sortKey: "updated_at",
 				sortDirection: "desc",
 				modelProviders: [],
-				sourceKinds: ["cli", "vscode", "appServer", "exec", "unknown"],
+				sourceKinds: threadSources,
 				...(cursor !== undefined ? { cursor } : {}),
 			});
 			if (!current()) {

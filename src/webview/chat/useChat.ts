@@ -19,6 +19,9 @@ export function useChat(bridge: Bridge) {
 			}
 			if (
 				message.type === "ui/viewState" ||
+				message.type === "workspace/paths" ||
+				message.type === "workspace/symbols" ||
+				message.type === "session/references" ||
 				message.type === "ui/sidebarState"
 			) {
 				return;

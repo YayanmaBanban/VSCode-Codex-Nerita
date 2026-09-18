@@ -18,6 +18,11 @@ import {
 import { $createPastedBlockNode, PastedBlockNode } from "./PastedBlockNode";
 import { $pointOffset, $readParts } from "./content";
 import { $moveAcrossBlock } from "./navigation";
+import { $appendInlineContent, $readReferences } from "./inlineReferences";
+import {
+	$pasteReferences,
+	registerReferenceClipboard,
+} from "./referenceClipboard";
 
 /** 選択を置換して前後の通常文を保ち、貼り付けを一度でUndoできるようにする。 */
 function $paste(
@@ -45,6 +50,13 @@ function $paste(
 	const inBlock =
 		selection.anchor.getNode().getTopLevelElement() instanceof
 		PastedBlockNode;
+	if (
+		!inBlock &&
+		!editor.isComposing() &&
+		$pasteReferences(event.clipboardData, text)
+	) {
+		return true;
+	}
 	if (text.length < 1_000 || inBlock || editor.isComposing()) {
 		selection.insertRawText(text);
 		return true;
@@ -65,15 +77,13 @@ function $paste(
 	}
 	const offset = $pointOffset(active.anchor, before);
 	const original = before.getTextContent();
+	const references = $readReferences(before);
 	const block = $createPastedBlockNode().append(
 		...$generateNodesFromRawText(text),
 	);
-	const after = $createParagraphNode().append(
-		...$generateNodesFromRawText(original.slice(offset)),
-	);
-	before
-		.clear()
-		.append(...$generateNodesFromRawText(original.slice(0, offset)));
+	const after = $createParagraphNode();
+	$appendInlineContent(after, original, references, offset);
+	$appendInlineContent(before.clear(), original, references, 0, offset);
 	before.insertAfter(block);
 	block.insertAfter(after);
 	after.selectStart();
@@ -87,6 +97,7 @@ export function registerComposerCommands(
 	onError: (message: string) => void,
 ): () => void {
 	return mergeRegister(
+		registerReferenceClipboard(editor),
 		editor.registerCommand(
 			PASTE_COMMAND,
 			(event) =>

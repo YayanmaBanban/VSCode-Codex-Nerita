@@ -24,6 +24,49 @@ vi.mock("../../src/extension/codex/PersonalityStore", () => ({
 	},
 }));
 import { CodexClient } from "../../src/extension/codex/CodexClient";
+it("試験的APIを有効にし追加コンテキストを開始とフォローアップへ渡す", async () => {
+	const client = await CodexClient.connect({
+		extensionPath: ".",
+		cwd: "workspace",
+		clientInfo: { name: "test", title: null, version: "1" },
+	});
+	expect(fake.request).toHaveBeenCalledWith(
+		"initialize",
+		expect.objectContaining({
+			capabilities: { experimentalApi: true, requestAttestation: false },
+		}),
+	);
+	const additionalContext = {
+		saved: { kind: "untrusted" as const, value: "参考資料" },
+	};
+	await client.startTurn({
+		threadId: "current",
+		input: [],
+		additionalContext,
+	});
+	expect(fake.request).toHaveBeenLastCalledWith("turn/start", {
+		threadId: "current",
+		input: [],
+		additionalContext,
+	});
+	await client.steerTurn({
+		threadId: "current",
+		expectedTurnId: "turn",
+		input: [],
+		additionalContext,
+	});
+	expect(fake.request).toHaveBeenLastCalledWith("turn/steer", {
+		threadId: "current",
+		expectedTurnId: "turn",
+		input: [],
+		additionalContext,
+	});
+	await client.readThread("saved", true);
+	expect(fake.request).toHaveBeenLastCalledWith("thread/read", {
+		threadId: "saved",
+		includeTurns: true,
+	});
+});
 it("3種類のRPCへグローバル+ワークスペースを毎回読み直して渡す", async () => {
 	const settings: PersonalitySettings = {
 		global: {

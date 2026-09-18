@@ -1,5 +1,19 @@
 // Host とブラウザの通信契約。VS Code・Node.js・サーバープロトコルに依存しない。
 import type { ComposerPart } from "./composerContent";
+import type {
+	SessionReferencesRequest,
+	SessionReferencesResult,
+	SessionReferenceOpen,
+} from "./sessionReferences";
+import type { SourceRange } from "./symbolLocation";
+import type {
+	WorkspaceSymbolsRequest,
+	WorkspaceSymbolsResult,
+} from "./workspaceSymbols";
+import type {
+	WorkspacePathsRequest,
+	WorkspacePathsResult,
+} from "./workspacePaths";
 import type { SkillSummary } from "./skills";
 import type { SidebarLocation } from "./sidebar";
 import type { PersonalityMessage, PersonalitySettings } from "./personality";
@@ -98,6 +112,16 @@ export type ChatState = {
 };
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| SessionReferencesRequest
+	| SessionReferenceOpen
+	| {
+			type: "reference/open";
+			requestId: string;
+			uri: string;
+			range?: SourceRange;
+	  }
+	| WorkspaceSymbolsRequest
+	| WorkspacePathsRequest
 	| { type: "ui/setSidebar"; requestId: string; location: SidebarLocation }
 	| PersonalityMessage
 	| ComposerMessage
@@ -119,6 +143,7 @@ export type UiMessage =
 			requestId: string;
 			sessionId: string;
 			text: string;
+			referencedSessionIds?: string[];
 	  }
 	| {
 			type: "prompt/cancel";
@@ -143,6 +168,9 @@ export type UiMessage =
 	  };
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| SessionReferencesResult
+	| WorkspaceSymbolsResult
+	| WorkspacePathsResult
 	| { type: "ui/sidebarState"; location: SidebarLocation }
 	| { type: "prompt/accepted"; requestId: string; mode: "start" | "steer" }
 	| {

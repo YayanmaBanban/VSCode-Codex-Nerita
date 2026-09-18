@@ -37,7 +37,7 @@ async function pages<T>(
 }
 /** 新旧形式を共通の時系列に揃え、要約項目は本文まで読み込む。 */
 export async function hydrateHistory(
-	client: CodexConnection,
+	client: Pick<CodexConnection, "listTurns" | "listItems">,
 	thread: HistoryThread,
 	current: () => boolean,
 ): Promise<HistoryTurn[]> {

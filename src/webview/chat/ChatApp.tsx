@@ -43,6 +43,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		draft,
 		() => setDraft(""),
 		send,
+		draftParts,
 	);
 	const bottom = useRef<HTMLDivElement>(null);
 	const busy = state.run === "running" || state.run === "cancelling";
@@ -142,6 +143,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 						</NotificationCard>
 					)}
 					<Composer
+						bridge={bridge}
 						parts={draftParts}
 						setDraft={setDraft}
 						submit={submission.submit}

@@ -2,6 +2,38 @@
 import { describe, it, expect } from "vitest";
 import { isHostMessage, isUiMessage } from "../../src/shared/validation";
 import type { ComposerPart } from "../../src/shared/composerContent";
+import { validReferences } from "../../src/shared/composerReferences";
+
+it("チップの参照位置・種別・本文との対応を検証する", () => {
+	const path = {
+		uri: "file:///D:/src",
+		name: "src",
+		path: "D:\\src",
+		kind: "directory",
+	};
+	const references = [{ offset: 1, path }];
+	expect(validReferences("前D:\\src 後", references)).toBe(true);
+	for (const invalid of [
+		null,
+		[{ offset: -1, path }],
+		[{ offset: 0, path }],
+		[...references, ...references],
+		[{ offset: 1.5, path }],
+		[{ offset: 1, path: { ...path, kind: "unknown" } }],
+	]) {
+		expect(validReferences("前D:\\src 後", invalid)).toBe(false);
+	}
+	expect(
+		isUiMessage({
+			type: "ui/saveDraft",
+			requestId: "reference",
+			draft: "前D:\\src 後",
+			draftParts: [
+				{ id: "text", type: "text", text: "前D:\\src 後", references },
+			],
+		}),
+	).toBe(true);
+});
 
 describe("貼り付けブロックの下書き通信", () => {
 	const draftParts: ComposerPart[] = [
