@@ -38,6 +38,9 @@ export function codexHarness() {
 	let turn = 0;
 	const models: ModelInfo[] = [];
 	const client = {
+		listMcpServerStatus: vi.fn<CodexConnection["listMcpServerStatus"]>(() =>
+			Promise.resolve({ data: [], nextCursor: null }),
+		),
 		listThreads: vi.fn<CodexConnection["listThreads"]>(() =>
 			Promise.resolve({ data: [], nextCursor: null }),
 		),

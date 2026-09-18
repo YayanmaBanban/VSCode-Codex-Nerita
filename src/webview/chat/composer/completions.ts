@@ -160,6 +160,12 @@ export function completionItems(
 				description: "新しい会話を開始",
 				text: "/new ",
 			},
+			{
+				id: "mcp",
+				label: "/mcp",
+				description: "MCPサーバーの接続状態を表示",
+				text: "/mcp ",
+			},
 		];
 	} else if (marker === "@") {
 		items = skills.map((skill) => ({

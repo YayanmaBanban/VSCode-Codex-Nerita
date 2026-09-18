@@ -18,6 +18,7 @@ export type CodexConnection = Pick<
 	| "readAccount"
 	| "dispose"
 	| "listModels"
+	| "listMcpServerStatus"
 	| "readRateLimits"
 	| "login"
 	| "cancelLogin"

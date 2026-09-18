@@ -1,5 +1,5 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import type { Bridge } from "../vscodeBridge";
 import { useChat } from "./useChat";
 import { useChatView } from "./useChatView";
@@ -14,6 +14,8 @@ import { usePromptSubmission } from "./usePromptSubmission";
 import "./chat.css";
 import { SessionPanel } from "./sessions/SessionPanel";
 import { useSessionPanel } from "./sessions/useSessionPanel";
+import { ChatSearchBar } from "./search/ChatSearchBar";
+import { useChatSearch } from "./search/useChatSearch";
 
 const runLabels = {
 	idle: "",
@@ -36,6 +38,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		selectSidebar,
 	} = useChatView(bridge);
 	const { state, requestError, send } = useChat(bridge);
+	const search = useChatSearch(conversation);
 	const sessionPanel = useSessionPanel(send);
 	const submission = usePromptSubmission(
 		bridge,
@@ -54,8 +57,13 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending;
+	const followConversation = useEffectEvent(() => {
+		if (!search.open) {
+			bottom.current?.scrollIntoView({ block: "end" });
+		}
+	});
 	useEffect(() => {
-		bottom.current?.scrollIntoView({ block: "end" });
+		followConversation();
 	}, [state.messages, state.permissions]);
 	return (
 		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
@@ -76,6 +84,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					className="flex min-w-0 flex-1 flex-col"
 					inert={sessionPanel.open && sessionPanel.compact}
 				>
+					<ChatSearchBar search={search} />
 					<section
 						ref={conversation}
 						className="conversation min-h-0 flex-1 overflow-y-auto px-[20px] py-[22px] [scrollbar-width:thin]"

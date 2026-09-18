@@ -24,6 +24,24 @@ vi.mock("../../src/extension/codex/PersonalityStore", () => ({
 	},
 }));
 import { CodexClient } from "../../src/extension/codex/CodexClient";
+it("MCP一覧は指定したthreadと詳細度で要求する", async () => {
+	const client = await CodexClient.connect({
+		extensionPath: ".",
+		cwd: "workspace",
+		clientInfo: { name: "test", title: null, version: "1" },
+	});
+	await client.listMcpServerStatus("current");
+	expect(fake.request).toHaveBeenLastCalledWith("mcpServerStatus/list", {
+		detail: "toolsAndAuthOnly",
+		threadId: "current",
+	});
+	await client.listMcpServerStatus("current", "next");
+	expect(fake.request).toHaveBeenLastCalledWith("mcpServerStatus/list", {
+		detail: "toolsAndAuthOnly",
+		threadId: "current",
+		cursor: "next",
+	});
+});
 it("試験的APIを有効にし追加コンテキストを開始とフォローアップへ渡す", async () => {
 	const client = await CodexClient.connect({
 		extensionPath: ".",

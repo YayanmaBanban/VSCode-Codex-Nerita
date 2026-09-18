@@ -174,6 +174,15 @@ export class CodexSessionController extends CodexSubmission {
 			throw new Error("Stale thread");
 		}
 		if (message.type === "prompt/send") {
+			if (message.text.trim() === "/mcp") {
+				await this.showMcpStatus(message.sessionId);
+				this.emit({
+					type: "prompt/accepted",
+					requestId: message.requestId,
+					mode: "start",
+				});
+				return;
+			}
 			if (message.text.trim() === "/new") {
 				if (this.submissionPending) {
 					throw new Error("Submission pending");

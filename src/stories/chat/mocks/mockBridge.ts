@@ -11,6 +11,7 @@ import { mockSettings } from "./mockSettings";
 import { mockWorkspacePaths } from "./mockWorkspacePaths";
 import { mockWorkspaceSymbols } from "./mockWorkspaceSymbols";
 import { mockSessionReferences } from "./mockSessionReferences";
+import { mockMcpCommand } from "./mockMcpCommand";
 
 /** Story の開始状態。 */
 export type Scenario =
@@ -182,6 +183,18 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 					}
 					break;
 				case "prompt/send": {
+					if (message.text.trim() === "/mcp") {
+						timers.add(
+							mockMcpCommand(
+								state,
+								message.requestId,
+								nextOrder(),
+								patch,
+								emit,
+							),
+						);
+						break;
+					}
 					if (message.text.trim() === "/new") {
 						clear();
 						const { revision: _revision, ...reset } =

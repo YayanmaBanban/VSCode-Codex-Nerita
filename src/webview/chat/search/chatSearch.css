@@ -1,0 +1,15 @@
+/* 検索の選択状態と、DOMを変更しない一致ハイライトにテーマ色を適用する。 */
+.chat-search-button[aria-pressed="true"] {
+	background: var(--vscode-inputOption-activeBackground, #397a9c55);
+	border-color: var(--vscode-inputOption-activeBorder, #6dadc9);
+}
+::highlight(chat-find-matches) {
+	background-color: var(
+		--vscode-editor-findMatchHighlightBackground,
+		#cfa84066
+	);
+}
+::highlight(chat-find-current) {
+	background-color: var(--vscode-editor-findMatchBackground, #d18616);
+	color: var(--vscode-editor-findMatchForeground, #101010);
+}
