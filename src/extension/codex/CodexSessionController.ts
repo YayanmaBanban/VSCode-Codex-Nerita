@@ -7,6 +7,8 @@ import {
 	openSessionReference,
 } from "./sessionReferenceActions";
 import { SessionContextError } from "./sessionContext";
+import { ChangeContextError } from "./changeContext";
+import { openChanges } from "./openChanges";
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
 export class CodexSessionController extends CodexSubmission {
@@ -34,7 +36,8 @@ export class CodexSessionController extends CodexSubmission {
 				type: "request/failed",
 				requestId: value.requestId,
 				error:
-					error instanceof SessionContextError
+					error instanceof SessionContextError ||
+					error instanceof ChangeContextError
 						? error.message
 						: value.type.startsWith("personality/") &&
 							  error instanceof Error
@@ -49,6 +52,20 @@ export class CodexSessionController extends CodexSubmission {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
+		if (message.type === "changes/open") {
+			const { cwd, sessionId } = this.state;
+			const epoch = this.epoch;
+			if (!cwd || !sessionId || this.state.connection !== "ready") {
+				throw new Error("Disconnected");
+			}
+			await openChanges(
+				cwd,
+				message.scope,
+				() =>
+					epoch === this.epoch && sessionId === this.state.sessionId,
+			);
+			return;
+		}
 		if (
 			message.type === "session/searchReferences" ||
 			message.type === "session/openReference"
@@ -173,6 +190,7 @@ export class CodexSessionController extends CodexSubmission {
 				message.text,
 				message.sessionId,
 				message.referencedSessionIds,
+				message.changeScopes,
 			);
 			this.emit({
 				type: "prompt/accepted",

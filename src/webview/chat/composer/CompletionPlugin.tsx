@@ -200,12 +200,11 @@ export function CompletionPlugin({
 							? symbols.empty
 							: searchingSessions
 								? sessions.empty
-								: category && category !== "添付ファイル"
-									? "このコンテキストは今後対応予定です。"
-									: category === "添付ファイル" &&
-										  !attachments.length
-										? "添付ファイルはありません。"
-										: "候補がありません。"
+								: category &&
+									  category === "添付ファイル" &&
+									  !attachments.length
+									? "添付ファイルはありません。"
+									: "候補がありません。"
 				}
 				onQuery={(value) => {
 					setSearch(value);

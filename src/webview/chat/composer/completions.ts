@@ -15,6 +15,11 @@ import type { ComposerTarget } from "../../../shared/composerTargets";
 import type { SessionReference } from "../../../shared/sessionReferences";
 import { symbolKindName } from "../../../shared/workspaceSymbols";
 import { pathText } from "../../../shared/composerReferences";
+import {
+	changeScopes,
+	type ChangeScope,
+	type ChangeReference,
+} from "../../../shared/changeReferences";
 import { $pointOffset, $selectOffset } from "./content";
 import { PastedBlockNode } from "./PastedBlockNode";
 import { $createPathReferenceNode } from "./PathReferenceNode";
@@ -169,7 +174,20 @@ export function completionItems(
 			"ファイルとディレクトリ",
 			"シンボル",
 			"セッション",
+			"Changes",
 		].map((label) => ({ id: label, label, category: label }));
+	} else if (category === "Changes") {
+		items = (Object.keys(changeScopes) as ChangeScope[]).map((scope) => {
+			const { name, description } = changeScopes[scope];
+			const reference: ChangeReference = { kind: "changes", scope, name };
+			return {
+				id: scope,
+				label: name,
+				description,
+				reference,
+				text: `${pathText(reference)} `,
+			};
+		});
 	} else if (category === "添付ファイル") {
 		items = attachments.map((file) => ({
 			id: file.id,

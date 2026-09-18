@@ -24,6 +24,14 @@ export function ReferenceActionsPlugin({
 					if (!bridge) {
 						return false;
 					}
+					if (path.kind === "changes") {
+						bridge.postMessage({
+							type: "changes/open",
+							requestId: crypto.randomUUID(),
+							scope: path.scope,
+						});
+						return true;
+					}
 					if (path.kind === "session") {
 						bridge.postMessage({
 							type: "session/openReference",

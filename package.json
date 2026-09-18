@@ -16,6 +16,25 @@
 		"configuration": {
 			"title": "VSCode Codex ACP",
 			"properties": {
+				"codex-acp.changes.exclude": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"minLength": 1
+					},
+					"default": [
+						"**/*.lock",
+						"**/package-lock.json",
+						"**/pnpm-lock.yaml",
+						"**/yarn.lock",
+						"**/dist/**",
+						"**/build/**",
+						"**/generated/**",
+						"**/*.generated.*"
+					],
+					"scope": "resource",
+					"markdownDescription": "Changesのプレビュー・送信から除外するGit globパターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダー単位で設定でき、次回の差分取得から反映されます。"
+				},
 				"codex-acp.sidebarLocation": {
 					"type": "string",
 					"enum": [
