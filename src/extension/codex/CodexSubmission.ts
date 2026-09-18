@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { CodexHistory } from "./CodexHistory";
 import { attachmentInput } from "./attachmentInput";
+import { skillInput } from "./skillInput";
 import { nextTimelineOrder } from "../session/timelineOrder";
 
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
@@ -78,6 +79,7 @@ export abstract class CodexSubmission extends CodexHistory {
 				input: [
 					{ type: "text", text, text_elements: [] },
 					...attachments,
+					...skillInput(text, this.state.skills),
 				],
 			});
 			this.checkSubmission(epoch, sessionId);

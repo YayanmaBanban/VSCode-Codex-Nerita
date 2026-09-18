@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { nextTimelineOrder } from "../session/timelineOrder";
 import { CodexRequests } from "./CodexRequests";
 import { attachmentInput } from "./attachmentInput";
+import { skillInput } from "./skillInput";
 import type { AppServerNotification } from "./rpcMessage";
 import { parseTurnEvent, type TurnEvent } from "./turnEvents";
 import { itemPatch, messagePatch } from "./chatItems";
@@ -71,6 +72,7 @@ export abstract class CodexRun extends CodexRequests {
 				input: [
 					{ type: "text", text, text_elements: [] },
 					...attachments,
+					...skillInput(text, this.state.skills),
 				],
 			});
 			if (this.active !== run) {

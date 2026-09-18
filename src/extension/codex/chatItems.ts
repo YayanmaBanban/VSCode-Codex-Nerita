@@ -10,6 +10,7 @@ export function messagePatch(
 	itemId: string,
 	text: string,
 	append: boolean,
+	streaming = append,
 ): Partial<ChatState> {
 	const id = `${state.runId ?? ""}:${itemId}`;
 	const existing = state.messages.find((item) => item.id === id);
@@ -17,7 +18,11 @@ export function messagePatch(
 		return {
 			messages: state.messages.map((item) =>
 				item.id === id
-					? { ...item, text: append ? item.text + text : text }
+					? {
+							...item,
+							text: append ? item.text + text : text,
+							streaming,
+						}
 					: item,
 			),
 		};
@@ -25,7 +30,13 @@ export function messagePatch(
 	return {
 		messages: [
 			...state.messages,
-			{ id, role: "assistant", text, order: nextTimelineOrder(state) },
+			{
+				id,
+				role: "assistant",
+				text,
+				streaming,
+				order: nextTimelineOrder(state),
+			},
 		],
 	};
 }
@@ -42,7 +53,7 @@ export function itemPatch(
 		if (typeof value.text !== "string") {
 			throw new Error("Invalid agent message");
 		}
-		return messagePatch(state, value.id, value.text, false);
+		return messagePatch(state, value.id, value.text, false, !completed);
 	}
 	const activity = activityItem(value);
 	if (
@@ -57,6 +68,7 @@ export function itemPatch(
 	);
 	const tool: ToolSummary = {
 		id: value.id,
+		rawItem: value,
 		runId: state.runId!,
 		title: "ファイル変更",
 		kind: "edit",

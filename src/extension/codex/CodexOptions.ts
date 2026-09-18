@@ -54,6 +54,16 @@ export abstract class CodexOptions extends CodexAttachments {
 		);
 		this.patch({ attachmentsSupported: this.supportsAttachments });
 		try {
+			const response = await client.listSkills?.(thread.cwd);
+			if (epoch === this.epoch) {
+				this.patch({ skills: response ?? [] });
+			}
+		} catch {
+			if (epoch === this.epoch) {
+				this.patch({ skills: [] });
+			}
+		}
+		try {
 			const quota = await client.readRateLimits();
 			if (epoch === this.epoch) {
 				this.patch({ quota });

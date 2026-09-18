@@ -1,0 +1,99 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="48"
+  height="48"
+  viewBox="0 0 48 48"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  role="img"
+  aria-label="白いメガネをかけ、机でペンを動かして書きものをする猫"
+  class="cat-writing-glasses-48"
+>
+  <!-- 1行を書く周期と細かな筆運びは、CSSカスタムプロパティで調整可能。 -->
+  <style>
+    .cat-writing-glasses-48 .cwg48-travel {
+      animation: cwg48-travel var(--cwg48-cycle, 3.6s) linear infinite;
+    }
+    .cat-writing-glasses-48 .cwg48-stroke {
+      transform-box: view-box;
+      transform-origin: 18px 33px;
+      animation: cwg48-stroke var(--cwg48-scribble, .18s) ease-in-out infinite alternate;
+    }
+    .cat-writing-glasses-48 .cwg48-head {
+      transform-box: view-box;
+      transform-origin: 24px 23px;
+      animation: cwg48-head var(--cwg48-cycle, 3.6s) ease-in-out infinite;
+    }
+    .cat-writing-glasses-48 .cwg48-ink {
+      stroke-dasharray: 1;
+      animation: cwg48-ink var(--cwg48-cycle, 3.6s) linear infinite;
+    }
+    @keyframes cwg48-travel {
+      0%, 8% { transform: translate(0, 0); }
+      72% { transform: translate(4px, 0); }
+      79% { transform: translate(4px, -.8px); }
+      94% { transform: translate(0, -.8px); }
+      100% { transform: translate(0, 0); }
+    }
+    @keyframes cwg48-stroke {
+      from { transform: rotate(-2deg) translateY(-.15px); }
+      to { transform: rotate(2deg) translateY(.15px); }
+    }
+    @keyframes cwg48-head {
+      0%, 100% { transform: rotate(-1deg); }
+      40% { transform: rotate(1deg); }
+      72% { transform: rotate(1.5deg); }
+      86% { transform: rotate(-1deg); }
+    }
+    @keyframes cwg48-ink {
+      0%, 8% { stroke-dashoffset: 1; opacity: 1; }
+      72%, 79% { stroke-dashoffset: 0; opacity: 1; }
+      94%, 100% { stroke-dashoffset: 0; opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cat-writing-glasses-48 .cwg48-travel,
+      .cat-writing-glasses-48 .cwg48-stroke,
+      .cat-writing-glasses-48 .cwg48-head,
+      .cat-writing-glasses-48 .cwg48-ink {
+        animation: none;
+      }
+    }
+  </style>
+
+  <!-- 香箱座り版と同じ顔。位置だけ変え、メガネも頭と一緒に動かす。 -->
+  <g class="cwg48-head">
+    <g transform="translate(8 -9)">
+      <!-- 三角の耳と、丸い頬。 -->
+      <path d="M5.5 23V12q0-1.5 1.2-.6L12 16q4-1.5 7.5 0l5.3-4.6q1.2-.9 1.2.6v11c0 6.4-3.7 10-10.2 10S5.5 29.4 5.5 23Z" />
+      <!-- レンズだけ白固定。頭と体には背景色を塗らない。 -->
+      <g fill="#fff" stroke-width="1.8">
+        <rect x="6.5" y="20" width="8" height="5.8" rx="1.8" />
+        <rect x="17.5" y="20" width="8" height="5.8" rx="1.8" />
+      </g>
+      <path d="M14.5 22h3" stroke-width="1.8" />
+      <path d="m14.2 28.7 1.5 1.2 1.5-1.2" stroke-width="1.5" />
+      <path d="M3 27h3m19 0h3" stroke-width="1.5" />
+    </g>
+  </g>
+
+  <!-- 机に添えた前足。肩やお腹の補助線を省いて重なりを避ける。 -->
+  <path d="M32 21.5l2 4.5c2.5 1 4.5 3 4.5 5 0 1.3-1.2 2-3 2h-4.8c-1.5 0-2.3-1-1.8-2.2.4-1.3 1.8-2.1 3.6-2.1" />
+
+  <!-- 紙は下辺だけ、筆跡は短い1本の線で示す。 -->
+  <path d="M17 36h12" stroke-width="1.6" />
+  <path class="cwg48-ink" d="M18 33h4" pathLength="1" stroke-width="1.5" />
+
+  <!-- ペンと握る前足をまとめて動かす。左から右に書き、持ち上げて戻す。 -->
+  <g class="cwg48-travel">
+    <g class="cwg48-stroke">
+      <path d="m8 22.4 3 2.9m5.5 6.1L18 33" />
+      <path d="M12 26c-4-1-6 4-2 6s8 0 7-3c-.5-1.5-2.5-2.5-5-3Z" />
+    </g>
+  </g>
+
+  <!-- ペンギン版と同じ机。天板1本と脚2本だけに省略する。 -->
+  <path d="M4 40h40M8 40v5m32-5v5" />
+</svg>

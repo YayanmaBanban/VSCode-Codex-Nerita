@@ -14,6 +14,11 @@ export function Value({ value }: { value: unknown }) {
 	);
 }
 
+/** 専用カードがない項目は、元の構造を省略せずJSONとして表示する。 */
+export function RawTool({ tool }: { tool: ToolSummary }) {
+	return <Value value={tool.rawItem ?? tool} />;
+}
+
 /** ツールの差分と本文を、それぞれ専用の表示に振り分ける。 */
 function Content({ value }: { value: unknown }) {
 	if (!isRecord(value)) {
@@ -79,11 +84,7 @@ export function GenericTool({ tool }: { tool: ToolSummary }) {
 					<Value value={tool.rawOutput} />
 				</section>
 			)}
-			{!hasDetails && (
-				<p className="muted text-[12px] text-muted">
-					詳細はまだありません。
-				</p>
-			)}
+			{!hasDetails && <RawTool tool={tool} />}
 		</>
 	);
 }

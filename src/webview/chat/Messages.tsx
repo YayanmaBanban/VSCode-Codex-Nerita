@@ -4,7 +4,7 @@ import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { ChatMessage, ToolSummary } from "../../shared/messages";
 import { MessageText } from "./MessageText";
 import { TextType } from "./TextType";
-import { iconButtonClass, messageFocusClass } from "./messageStyles";
+import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
 export function Messages({
@@ -82,7 +82,7 @@ export function Messages({
 		const replyPending = user && nextUser === -1 && busy;
 		return (
 			<article
-				className={`message ${message.role} mb-[24px] min-w-0 rounded-[9px] border border-solid p-[14px] ${messageFocusClass} ${user ? "bg-message-user border-message-border" : "bg-message-assistant border-message-assistant-border"}`}
+				className={`message ${message.role} mb-[24px] min-w-0 rounded-[9px] border border-solid p-[14px] ${messageFocusClass} ${user ? "bg-message-user border-message-border" : "bg-transparent border-transparent"}`}
 				key={message.id}
 				tabIndex={-1}
 				ref={(element) => {
@@ -93,14 +93,14 @@ export function Messages({
 					}
 				}}
 			>
-				<div className="message-text whitespace-pre-wrap leading-[1.85] [overflow-wrap:anywhere]">
-					{user ? (
+				<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
+					{user ||
+					!busy ||
+					message.streaming === false ||
+					index !== messages.length - 1 ? (
 						<MessageText text={message.text} />
 					) : (
-						<TextType
-							text={message.text}
-							streaming={busy && index === messages.length - 1}
-						/>
+						<TextType text={message.text} />
 					)}
 				</div>
 				<div
@@ -117,17 +117,17 @@ export function Messages({
 					{!user && (
 						<button
 							type="button"
-							className={`${iconButtonClass} bg-[#416482]`}
+							className={`${messageIconButtonClass} bg-[#416482]`}
 							aria-label="回答をコピー"
 							title="回答をコピー"
 							onClick={() => void copy(message)}
 						>
-							<Copy size={16} aria-hidden="true" />
+							<Copy size={12} aria-hidden="true" />
 						</button>
 					)}
 					<button
 						type="button"
-						className={`${iconButtonClass} bg-[#416482]`}
+						className={`${messageIconButtonClass} bg-[#416482]`}
 						aria-label={
 							user ? "回答の末尾へ移動" : "送信メッセージへ移動"
 						}
@@ -142,9 +142,9 @@ export function Messages({
 						}}
 					>
 						{user ? (
-							<ArrowDownToLine size={16} aria-hidden="true" />
+							<ArrowDownToLine size={12} aria-hidden="true" />
 						) : (
-							<ArrowUpToLine size={16} aria-hidden="true" />
+							<ArrowUpToLine size={12} aria-hidden="true" />
 						)}
 					</button>
 				</div>

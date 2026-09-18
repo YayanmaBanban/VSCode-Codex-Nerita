@@ -10,6 +10,9 @@ import type { ComposerPart } from "../../shared/composerContent";
 import { PastedBlockNode } from "./composer/PastedBlockNode";
 import { ComposerPlugin } from "./composer/ComposerPlugin";
 import { $writeParts } from "./composer/content";
+import { CompletionPlugin } from "./composer/CompletionPlugin";
+import type { Attachment } from "../../shared/composer";
+import type { SkillSummary } from "../../shared/skills";
 
 /** 全体のスクロールを一本にまとめ、コード領域だけ内部スクロールを許可する。 */
 export function ComposerInput({
@@ -18,12 +21,16 @@ export function ComposerInput({
 	onSubmit,
 	locked = false,
 	followUp = false,
+	attachments = [],
+	skills = [],
 }: {
 	parts: ComposerPart[];
 	onChange: (parts: ComposerPart[]) => void;
 	onSubmit: () => void;
 	locked?: boolean;
 	followUp?: boolean;
+	attachments?: Attachment[];
+	skills?: SkillSummary[];
 }) {
 	const [error, setError] = useState("");
 	const [expanded, setExpanded] = useState(false);
@@ -45,6 +52,10 @@ export function ComposerInput({
 		>
 			<div className="flex items-start gap-2">
 				<div className="relative min-w-0 flex-1">
+					<CompletionPlugin
+						attachments={attachments}
+						skills={skills}
+					/>
 					<PlainTextPlugin
 						contentEditable={
 							<ContentEditable

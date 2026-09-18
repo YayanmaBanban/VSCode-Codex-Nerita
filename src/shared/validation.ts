@@ -197,6 +197,8 @@ function validField(key: string, value: unknown): boolean {
 				(item) =>
 					isId(item.id) &&
 					["user", "assistant"].includes(String(item.role)) &&
+					(item.streaming === undefined ||
+						typeof item.streaming === "boolean") &&
 					typeof item.text === "string",
 			);
 		case "tools":
@@ -258,6 +260,7 @@ function isState(value: unknown): value is ChatState {
 		isRevision(value.revision) &&
 		[
 			"personality",
+			"skills",
 			"connection",
 			"run",
 			"sessionId",

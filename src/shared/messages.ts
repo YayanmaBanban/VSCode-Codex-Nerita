@@ -1,5 +1,6 @@
 // Host とブラウザの通信契約。VS Code・Node.js・サーバープロトコルに依存しない。
 import type { ComposerPart } from "./composerContent";
+import type { SkillSummary } from "./skills";
 import type { SidebarLocation } from "./sidebar";
 import type { PersonalityMessage, PersonalitySettings } from "./personality";
 import type {
@@ -32,6 +33,7 @@ export type ChatMessage = {
 	order?: number;
 	role: "user" | "assistant";
 	text: string;
+	streaming?: boolean;
 };
 /** ツール実行・変更ファイルの概要。 */
 export type ToolSummary = {
@@ -47,6 +49,8 @@ export type ToolSummary = {
 	content?: unknown[];
 	rawInput?: unknown;
 	rawOutput?: unknown;
+	/** 正規化で省略されるフィールドも調査できるよう、受信項目を保持する。 */
+	rawItem?: unknown;
 };
 /** エージェントが提示した承認選択肢。 */
 export type PermissionOption = {
@@ -62,6 +66,7 @@ export type Permission = {
 };
 /** Host が保持する現在の会話の正本。 */
 export type ChatState = {
+	skills: SkillSummary[];
 	personality: PersonalitySettings | null;
 	revision: number;
 	connection: ConnectionStatus;
@@ -158,6 +163,7 @@ export type HostMessage =
 /** 新しい Host と代替 Bridge に共通の初期状態を作る。 */
 export function initialState(): ChatState {
 	return {
+		skills: [],
 		personality: null,
 		revision: 0,
 		connection: "disconnected",

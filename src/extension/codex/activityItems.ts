@@ -15,6 +15,8 @@ export function activityItem(
 	if (
 		type === "userMessage" ||
 		type === "agentMessage" ||
+		type === "commandExecution" ||
+		type === "fileChange" ||
 		type === "hookPrompt"
 	) {
 		return null;
@@ -101,7 +103,8 @@ export function activityItem(
 			rawOutput: value,
 		};
 	}
-	return null;
+	// 新しい項目種別も捨てず、受信した構造をカードで確認できるようにする。
+	return { ...base, rawOutput: value };
 }
 /** 不正な本文を文字列化して表示せず、接続側で検出する。 */
 function string(value: unknown): string {
