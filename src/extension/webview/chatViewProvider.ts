@@ -4,6 +4,9 @@ import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import type { ChatState, HostMessage } from "../../shared/messages";
 import { isUiMessage } from "../../shared/validation";
+import { listWorkspacePaths } from "./workspacePaths";
+import { openResource } from "./openResource";
+import { searchWorkspaceSymbols } from "./workspaceSymbols";
 import {
 	SidebarPlacement,
 	saveSidebar,
@@ -124,6 +127,18 @@ export class ChatViewProvider
 			return;
 		}
 		try {
+			if (value.type === "reference/open") {
+				await openResource(value.uri, value.range);
+				return;
+			}
+			if (value.type === "workspace/listPaths") {
+				await webview.postMessage(await listWorkspacePaths(value));
+				return;
+			}
+			if (value.type === "workspace/searchSymbols") {
+				await webview.postMessage(await searchWorkspaceSymbols(value));
+				return;
+			}
 			if (value.type === "ui/setSidebar") {
 				await saveSidebar(value.location);
 				await this.placement.sync();
@@ -198,7 +213,10 @@ export class ChatViewProvider
 				void webview.postMessage({
 					type: "request/failed",
 					requestId: value.requestId,
-					error: "表示先を切り替えられませんでした。再試行してください。",
+					error:
+						value.type === "reference/open"
+							? "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。"
+							: "表示先を切り替えられませんでした。再試行してください。",
 				} satisfies HostMessage);
 			}
 		}

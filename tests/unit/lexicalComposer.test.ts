@@ -8,6 +8,8 @@ import {
 	createEditor,
 } from "lexical";
 import { PastedBlockNode } from "../../src/webview/chat/composer/PastedBlockNode";
+import { PathReferenceNode } from "../../src/webview/chat/composer/PathReferenceNode";
+import { pathText } from "../../src/shared/composerReferences";
 import {
 	$readParts,
 	$writeParts,
@@ -19,6 +21,56 @@ import {
 } from "../../src/shared/composerContent";
 
 describe("Lexical下書きの変換", () => {
+	it("文中のファイルとフォルダをチップとして往復し、送信本文は完全なパスを保持する", () => {
+		const path = {
+			uri: "file:///D:/日本語%20sample.md",
+			name: "日本語 sample.md",
+			path: "D:\\日本語 sample.md",
+			kind: "file" as const,
+		};
+		const folder = {
+			uri: "file:///D:/src",
+			name: "src",
+			path: "D:\\src",
+			kind: "directory" as const,
+		};
+		const text = `前文${pathText(path)} 後文\n${pathText(folder)}`;
+		const parts: ComposerPart[] = [
+			{
+				id: "before",
+				type: "text",
+				text,
+				references: [
+					{ offset: 2, path },
+					{ offset: text.indexOf(pathText(folder)), path: folder },
+				],
+			},
+			{ id: "block", type: "pasted", text: "コード" },
+			{ id: "after", type: "text", text: "末尾" },
+		];
+		const editor = createEditor({
+			nodes: [PastedBlockNode, PathReferenceNode],
+			onError: (error) => {
+				throw error;
+			},
+		});
+		editor.update(() => $writeParts(parts), { discrete: true });
+		expect(contentKey(editor.getEditorState().read($readParts))).toBe(
+			contentKey(parts),
+		);
+		expect(
+			validDraftParts(
+				`${text}コード末尾`,
+				editor.getEditorState().read($readParts),
+			),
+		).toBe(true);
+		editor.setEditorState(
+			editor.parseEditorState(JSON.stringify(editor.getEditorState())),
+		);
+		expect(contentKey(editor.getEditorState().read($readParts))).toBe(
+			contentKey(parts),
+		);
+	});
 	it("空の前後・複数ブロック・改行・タブを保存と復元で保持する", () => {
 		const editor = createEditor({
 			namespace: "composer-test",

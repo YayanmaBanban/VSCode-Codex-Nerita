@@ -2,6 +2,11 @@
 import type { UiMessage } from "../../shared/messages";
 import { isUiMessage } from "../../shared/validation";
 import { CodexSubmission } from "./CodexSubmission";
+import {
+	searchSessionReferences,
+	openSessionReference,
+} from "./sessionReferenceActions";
+import { SessionContextError } from "./sessionContext";
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
 export class CodexSessionController extends CodexSubmission {
@@ -29,12 +34,14 @@ export class CodexSessionController extends CodexSubmission {
 				type: "request/failed",
 				requestId: value.requestId,
 				error:
-					value.type.startsWith("personality/") &&
-					error instanceof Error
-						? `性格設定を読み込み・保存できませんでした: ${error.message}`
-						: value.type === "prompt/send"
-							? "送信できませんでした。接続を確認して再試行してください。"
-							: "現在の状態では操作できません。接続状態を確認してください。",
+					error instanceof SessionContextError
+						? error.message
+						: value.type.startsWith("personality/") &&
+							  error instanceof Error
+							? `性格設定を読み込み・保存できませんでした: ${error.message}`
+							: value.type === "prompt/send"
+								? "送信できませんでした。接続を確認して再試行してください。"
+								: "現在の状態では操作できません。接続状態を確認してください。",
 			});
 		}
 	}
@@ -42,6 +49,35 @@ export class CodexSessionController extends CodexSubmission {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
+		if (
+			message.type === "session/searchReferences" ||
+			message.type === "session/openReference"
+		) {
+			const client = this.client;
+			const cwd = this.state.cwd;
+			const id = this.state.sessionId;
+			const epoch = this.epoch;
+			if (!client || !cwd || !id || this.state.connection !== "ready") {
+				throw new Error("Disconnected");
+			}
+			const current = () =>
+				epoch === this.epoch && id === this.state.sessionId;
+			if (message.type === "session/searchReferences") {
+				const result = await searchSessionReferences(
+					client,
+					cwd,
+					id,
+					message,
+					current,
+				);
+				if (current()) {
+					this.emit(result);
+				}
+			} else {
+				await openSessionReference(client, cwd, message, current);
+			}
+			return;
+		}
 		if (
 			message.type === "personality/read" ||
 			message.type === "personality/save" ||
@@ -136,6 +172,7 @@ export class CodexSessionController extends CodexSubmission {
 			const mode = await this.submitPrompt(
 				message.text,
 				message.sessionId,
+				message.referencedSessionIds,
 			);
 			this.emit({
 				type: "prompt/accepted",

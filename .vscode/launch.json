@@ -10,7 +10,13 @@
 			"args": [
 				"--new-window",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"${workspaceFolder}/.vscode/development.code-workspace"
+				"${workspaceFolder}/.vscode/development.code-workspace",
+				"--disable-extension",
+				"jgclark.vscode-todo-highlight",
+				"--disable-extension",
+				"bradlc.vscode-tailwindcss",
+				"--disable-extension",
+				"GitHub.vscode-pull-request-github"
 			],
 			"outFiles": ["${workspaceFolder}/dist/extension.js"],
 			"sourceMaps": true,

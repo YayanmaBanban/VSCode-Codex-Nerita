@@ -3,8 +3,10 @@ import type { ClientInfo } from "../../codex-app-server/ClientInfo";
 import type { InitializeResponse } from "../../codex-app-server/InitializeResponse";
 import type { ThreadLoadedListParams } from "../../codex-app-server/v2/ThreadLoadedListParams";
 import type { ThreadStartParams } from "../../codex-app-server/v2/ThreadStartParams";
-import type { TurnStartParams } from "../../codex-app-server/v2/TurnStartParams";
-import type { TurnSteerParams } from "../../codex-app-server/v2/TurnSteerParams";
+import type {
+	ContextTurnStartParams,
+	ContextTurnSteerParams,
+} from "./additionalContext";
 import type { LoginAccountParams } from "../../codex-app-server/v2/LoginAccountParams";
 import type { ThreadListParams } from "../../codex-app-server/v2/ThreadListParams";
 import {
@@ -57,7 +59,8 @@ export class CodexClient {
 			const response = await transport.request("initialize", {
 				clientInfo: options.clientInfo,
 				capabilities: {
-					experimentalApi: false,
+					// セッション参照のadditionalContextに必要な機能を明示的に有効化する。
+					experimentalApi: true,
 					requestAttestation: false,
 				},
 			});
@@ -83,11 +86,11 @@ export class CodexClient {
 	listThreads(params: ThreadListParams) {
 		return this.transport.request("thread/list", params);
 	}
-	/** 本文をロードせずに対象の作業フォルダーと実行状態を確認する。 */
-	readThread(threadId: string) {
+	/** 通常はメタデータだけを読み、参照の取得時だけ本文も要求する。 */
+	readThread(threadId: string, includeTurns = false) {
 		return this.transport.request("thread/read", {
 			threadId,
-			includeTurns: false,
+			includeTurns,
 		});
 	}
 	/** 最新の性格設定を適用し、その他の保存済み設定を維持して再開する。 */
@@ -188,11 +191,11 @@ export class CodexClient {
 		return this.personality.change(message);
 	}
 	/** 一つのターンを開始し、開始受付の応答を返す。 */
-	startTurn(params: TurnStartParams) {
+	startTurn(params: ContextTurnStartParams) {
 		return this.transport.request("turn/start", params);
 	}
 	/** 実行中のターンへ追加指示を送り、受付を確認する。 */
-	steerTurn(params: TurnSteerParams) {
+	steerTurn(params: ContextTurnSteerParams) {
 		return this.transport.request("turn/steer", params);
 	}
 	/** 指定した会話の実行中ターンへ停止を要求する。 */

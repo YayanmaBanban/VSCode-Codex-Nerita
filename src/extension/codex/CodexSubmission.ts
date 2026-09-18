@@ -4,6 +4,7 @@ import { CodexHistory } from "./CodexHistory";
 import { attachmentInput } from "./attachmentInput";
 import { skillInput } from "./skillInput";
 import { nextTimelineOrder } from "../session/timelineOrder";
+import { sessionContext } from "./sessionContext";
 
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
 export abstract class CodexSubmission extends CodexHistory {
@@ -13,6 +14,7 @@ export abstract class CodexSubmission extends CodexHistory {
 	protected async submitPrompt(
 		text: string,
 		sessionId: string,
+		referencedSessionIds: string[] = [],
 	): Promise<"start" | "steer"> {
 		if (this.submissionPending) {
 			throw new Error("Submission pending");
@@ -30,13 +32,29 @@ export abstract class CodexSubmission extends CodexHistory {
 			}
 		};
 		try {
+			this.checkSubmission(epoch, sessionId);
+			const context = referencedSessionIds.length
+				? await sessionContext(
+						this.client!,
+						referencedSessionIds,
+						sessionId,
+						this.state.cwd!,
+						() =>
+							epoch === this.epoch &&
+							sessionId === this.state.sessionId &&
+							!(
+								waitingRun?.abort.signal.aborted &&
+								this.state.run !== "completed"
+							),
+					)
+				: undefined;
 			if (this.state.run === "running") {
 				await new Promise<void>((resolve) => setTimeout(resolve, 500));
 			}
 			this.checkSubmission(epoch, sessionId);
 			checkWaitingRun();
 			if (!this.busy()) {
-				await this.prompt(text);
+				await this.prompt(text, context);
 				this.checkSubmission(epoch, sessionId);
 				return "start";
 			}
@@ -62,7 +80,7 @@ export abstract class CodexSubmission extends CodexHistory {
 			checkWaitingRun();
 			// 添付の読み込み中に完了した場合も通常送信へ切り替える。
 			if (!this.busy()) {
-				await this.prompt(text);
+				await this.prompt(text, context);
 				this.checkSubmission(epoch, sessionId);
 				return "start";
 			}
@@ -73,6 +91,7 @@ export abstract class CodexSubmission extends CodexHistory {
 			const order = nextTimelineOrder(this.state);
 			// 受付不明のエラーでは自動再送しない。重複した指示の実行を避ける。
 			const result = await client.steerTurn({
+				...(context ? { additionalContext: context } : {}),
 				threadId: sessionId,
 				expectedTurnId: run.turnId,
 				clientUserMessageId: id,

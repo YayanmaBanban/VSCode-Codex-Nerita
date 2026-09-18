@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChatState, UiMessage } from "../../shared/messages";
 import type { Bridge } from "../vscodeBridge";
+import type { ComposerPart } from "../../shared/composerContent";
 
 /** 個別要求の結果と短時間の通知を入力欄へ接続する。 */
 export function usePromptSubmission(
@@ -10,6 +11,7 @@ export function usePromptSubmission(
 	draft: string,
 	clearDraft: () => void,
 	send: (message: UiMessage) => void,
+	parts: ComposerPart[] = [],
 ) {
 	const pending = useRef<string | null>(null);
 	const [locked, setLocked] = useState(false);
@@ -71,6 +73,23 @@ export function usePromptSubmission(
 			return;
 		}
 		const requestId = crypto.randomUUID();
+		const referencedSessionIds = [
+			...new Set(
+				parts.flatMap(
+					(part) =>
+						part.references?.flatMap(({ path }) =>
+							path.kind === "session" ? [path.sessionId] : [],
+						) ?? [],
+				),
+			),
+		];
+		if (referencedSessionIds.length > 5) {
+			setNotice({
+				id: requestId,
+				text: "参照するセッションは5件までにしてください。",
+			});
+			return;
+		}
 		pending.current = requestId;
 		setLocked(true);
 		setNotice(null);
@@ -79,6 +98,7 @@ export function usePromptSubmission(
 			requestId,
 			sessionId: state.sessionId,
 			text: draft.trim(),
+			...(referencedSessionIds.length ? { referencedSessionIds } : {}),
 		});
 	};
 	return {

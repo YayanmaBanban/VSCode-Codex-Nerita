@@ -4,6 +4,8 @@
 	"compilerOptions": {
 		// Vitest 依存宣言の DOM 型参照を Host の実行環境へ持ち込まない。
 		"skipLibCheck": true,
+		// Lexicalの参照ノードが描画するReact部品も単体テストから検査する。
+		"jsx": "react-jsx",
 		// tests から src も参照するため、両方を含む共通ルートを指定する。
 		"rootDir": "..",
 

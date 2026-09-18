@@ -1,7 +1,6 @@
 // Lexicalの編集状態と、Hostへ保存する下書き断片を相互変換する。
 import {
 	$createParagraphNode,
-	$generateNodesFromRawText,
 	$getRoot,
 	$isElementNode,
 	$isTextNode,
@@ -10,10 +9,17 @@ import {
 } from "lexical";
 import type { ComposerPart } from "../../../shared/composerContent";
 import { $createPastedBlockNode, PastedBlockNode } from "./PastedBlockNode";
+import { $appendInlineContent, $readReferences } from "./inlineReferences";
 
 /** エディタ内部のキーに依存せず、本文とブロック配置の一致を確認する。 */
 export function contentKey(parts: ComposerPart[]): string {
-	return JSON.stringify(parts.map(({ type, text }) => [type, text]));
+	return JSON.stringify(
+		parts.map(({ type, text, references }) => [
+			type,
+			text,
+			references ?? [],
+		]),
+	);
 }
 
 /** ブロック境界に余分な改行を加えず、既存の交互配置へ正規化する。 */
@@ -36,7 +42,17 @@ export function $readParts(): ComposerPart[] {
 		} else {
 			const last = parts[parts.length - 1];
 			if (last) {
-				last.text += (previousText ? "\n" : "") + node.getTextContent();
+				last.text += previousText ? "\n" : "";
+				if ($isElementNode(node)) {
+					const references = $readReferences(node, last.text.length);
+					if (references.length) {
+						last.references = [
+							...(last.references ?? []),
+							...references,
+						];
+					}
+				}
+				last.text += node.getTextContent();
 			}
 			previousText = true;
 		}
@@ -52,7 +68,7 @@ export function $writeParts(parts: ComposerPart[]): void {
 			part.type === "pasted"
 				? $createPastedBlockNode()
 				: $createParagraphNode();
-		node.append(...$generateNodesFromRawText(part.text));
+		$appendInlineContent(node, part.text, part.references);
 		root.append(node);
 	}
 	if (root.isEmpty()) {

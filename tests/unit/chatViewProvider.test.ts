@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { initialState, type HostMessage } from "../../src/shared/messages";
 
 const api = vi.hoisted(() => ({
+	stat: vi.fn().mockResolvedValue({ type: 1 }),
 	createWebviewPanel: vi.fn(),
 	executeCommand: vi.fn().mockResolvedValue(undefined),
 	get: vi.fn().mockReturnValue("secondary"),
@@ -11,15 +12,22 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("vscode", () => ({
 	workspace: {
+		fs: { stat: api.stat },
 		getConfiguration: () => ({ get: api.get, update: api.update }),
 		onDidChangeConfiguration: api.onDidChangeConfiguration,
 	},
 	ConfigurationTarget: { Global: 1 },
+	FileType: { File: 1, Directory: 2 },
 	window: { createWebviewPanel: api.createWebviewPanel },
 	commands: { executeCommand: api.executeCommand },
 	ViewColumn: { Active: -1 },
 	Uri: {
-		parse: (uri: string) => ({ toString: () => uri }),
+		parse: (uri: string) => ({
+			scheme: new URL(uri).protocol.slice(0, -1),
+			query: new URL(uri).search,
+			fragment: new URL(uri).hash,
+			toString: () => uri,
+		}),
 		joinPath: (_uri: unknown, ...parts: string[]) => ({
 			toString: () => parts.join("/"),
 		}),
@@ -306,5 +314,47 @@ it("パネル作成失敗を要求元へ通知し、再試行を許可する", a
 	);
 	await h.sidebar.send({ type: "ui/openEditor", requestId: "retry" });
 	expect(h.listeners.size).toBe(2);
+	h.provider.dispose();
+});
+it("パス一覧は要求元のWebviewだけに返し、会話サービスへ転送しない", async () => {
+	const h = harness();
+	await h.sidebar.send({ type: "ui/openEditor", requestId: "open" });
+	await h.panel.send({
+		type: "workspace/listPaths",
+		requestId: "paths",
+		uri: null,
+	});
+	expect(h.panel.webview.postMessage).toHaveBeenCalledWith({
+		type: "workspace/paths",
+		requestId: "paths",
+		entries: [],
+	});
+	expect(h.sidebar.webview.postMessage).not.toHaveBeenCalled();
+	expect(h.session.receive).not.toHaveBeenCalled();
+	h.provider.dispose();
+});
+it("参照をHostで開き、失敗はクリック元の要求へ返す", async () => {
+	const h = harness();
+	await h.sidebar.send({
+		type: "reference/open",
+		requestId: "open-ref",
+		uri: "file:///D:/project/a.ts",
+	});
+	expect(api.executeCommand).toHaveBeenCalledWith(
+		"vscode.open",
+		expect.anything(),
+		expect.objectContaining({ preview: false }),
+	);
+	expect(h.session.receive).not.toHaveBeenCalled();
+	await h.sidebar.send({
+		type: "reference/open",
+		requestId: "bad-ref",
+		uri: "command:unsafe",
+	});
+	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith({
+		type: "request/failed",
+		requestId: "bad-ref",
+		error: "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。",
+	});
 	h.provider.dispose();
 });

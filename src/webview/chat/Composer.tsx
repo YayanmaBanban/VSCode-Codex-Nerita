@@ -5,8 +5,10 @@ import type { ComposerPart } from "../../shared/composerContent";
 import { ComposerInput } from "./ComposerInput";
 import { ComposerSettings } from "./ComposerSettings";
 import { iconButtonClass } from "./messageStyles";
+import type { Bridge } from "../vscodeBridge";
 /** 下書きの編集と既存の送信・停止操作を接続する。 */
 export function Composer({
+	bridge,
 	parts,
 	setDraft,
 	submit,
@@ -16,6 +18,7 @@ export function Composer({
 	state,
 	send,
 }: {
+	bridge?: Bridge;
 	parts: ComposerPart[];
 	setDraft: (parts: ComposerPart[]) => void;
 	submit: () => void;
@@ -35,6 +38,8 @@ export function Composer({
 		>
 			<div inert={locked} aria-busy={locked}>
 				<ComposerInput
+					completionScope={`${state.connection}:${state.cwd}:${state.sessionId}`}
+					bridge={bridge}
 					locked={locked}
 					attachments={state.attachments}
 					skills={state.skills}
