@@ -1,4 +1,6 @@
 // ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
+import { useReducedMotion } from "motion/react";
+import { BorderBeam } from "../../components/lightswind/border-beam";
 import type { ChatState, UiMessage } from "../../shared/messages";
 import { ToolCard } from "./tools/ToolCard";
 import { taskActive } from "../../shared/asyncTask";
@@ -10,6 +12,7 @@ export function Activity({
 	state: ChatState;
 	send: (message: UiMessage) => void;
 }) {
+	const reduced = useReducedMotion();
 	return (
 		<>
 			{state.tools.length > 0 && (
@@ -56,10 +59,24 @@ export function Activity({
 			)}
 			{state.permissions.map((permission) => (
 				<section
-					className="permission-card my-[16px] rounded-[8px] border border-solid border-alert-border p-[16px]"
+					className="permission-card relative my-[16px] rounded-[8px] border border-solid border-alert-border p-[16px]"
 					aria-label="承認要求"
 					key={permission.id}
 				>
+					{!reduced && (
+						<span
+							aria-hidden="true"
+							className="pointer-events-none absolute inset-0 rounded-[inherit]"
+						>
+							<BorderBeam
+								size={80}
+								duration={6}
+								colorFrom="var(--vscode-focusBorder, #6dadc9)"
+								colorTo="var(--vscode-editorWarning-foreground, #deb86d)"
+								beamBorderRadius={8}
+							/>
+						</span>
+					)}
 					<span className="eyebrow text-[12px] tracking-[0.13em] text-muted">
 						確認が必要です
 					</span>

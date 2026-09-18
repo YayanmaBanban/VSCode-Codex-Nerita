@@ -4,6 +4,7 @@ import type { InitializeResponse } from "../../codex-app-server/InitializeRespon
 import type { ThreadLoadedListResponse } from "../../codex-app-server/v2/ThreadLoadedListResponse";
 import { isRecord } from "../../shared/validation";
 import { parseSkills } from "./skillsProtocol";
+import { parseMcpStatus } from "./mcpStatus";
 import { parseModels, parseLogin } from "./accountProtocol";
 import { parseQuotaResponse } from "./usageProtocol";
 import {
@@ -23,6 +24,7 @@ import {
 
 /** 対応済みメソッドだけを公開し、応答の生成型を固定する。 */
 export type AppServerResponses = {
+	"mcpServerStatus/list": ReturnType<typeof parseMcpStatus>;
 	"skills/list": ReturnType<typeof parseSkills>;
 	"thread/list": ReturnType<typeof parseThreads>;
 	"thread/read": ReturnType<typeof parseReadThread>;
@@ -85,6 +87,7 @@ function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
 export const responseParsers: {
 	[M in keyof AppServerResponses]: (value: unknown) => AppServerResponses[M];
 } = {
+	"mcpServerStatus/list": parseMcpStatus,
 	"skills/list": parseSkills,
 	"thread/list": parseThreads,
 	"thread/read": parseReadThread,

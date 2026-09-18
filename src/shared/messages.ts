@@ -1,5 +1,6 @@
 // Host とブラウザの通信契約。VS Code・Node.js・サーバープロトコルに依存しない。
 import type { ComposerPart } from "./composerContent";
+import type { McpMessageContent } from "./mcp";
 import type { ChangeScope } from "./changeReferences";
 import type {
 	SessionReferencesRequest,
@@ -49,6 +50,7 @@ export type ChatMessage = {
 	role: "user" | "assistant";
 	text: string;
 	streaming?: boolean;
+	mcp?: McpMessageContent;
 };
 /** ツール実行・変更ファイルの概要。 */
 export type ToolSummary = {

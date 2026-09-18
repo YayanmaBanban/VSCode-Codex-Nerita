@@ -7,10 +7,76 @@ import { nextTimelineOrder } from "../session/timelineOrder";
 import { sessionContext } from "./sessionContext";
 import { changeContext } from "./changeContext";
 import type { ChangeScope } from "../../shared/changeReferences";
+import { listMcpServers } from "./mcpStatus";
+import { mcpSummaryText } from "../../shared/mcp";
 
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
 export abstract class CodexSubmission extends CodexHistory {
 	protected submissionPending = false;
+
+	/** モデルのターンを開始せず、現在の会話へMCP一覧を追記する。 */
+	protected async showMcpStatus(sessionId: string): Promise<void> {
+		if (this.submissionPending) {
+			throw new Error("Submission pending");
+		}
+		const epoch = this.epoch;
+		const id = randomUUID();
+		this.submissionPending = true;
+		try {
+			const check = () => this.checkSubmission(epoch, sessionId);
+			check();
+			const order = nextTimelineOrder(this.state);
+			this.patch({
+				messages: [
+					...this.state.messages,
+					{ id: randomUUID(), role: "user", text: "/mcp", order },
+					{
+						id,
+						role: "assistant",
+						text: "取得中…",
+						streaming: false,
+						mcp: { status: "loading" },
+						order: order + 1,
+					},
+				],
+			});
+			const servers = await listMcpServers(
+				this.client!,
+				sessionId,
+				check,
+			);
+			check();
+			this.patch({
+				messages: this.state.messages.map((message) =>
+					message.id === id
+						? {
+								...message,
+								text: mcpSummaryText(servers),
+								mcp: { status: "ready", servers },
+							}
+						: message,
+				),
+			});
+		} catch (error) {
+			// 接続変更後も同じ待機メッセージが残る場合だけ、取得中表示を終了する。
+			if (this.state.messages.some((message) => message.id === id)) {
+				this.patch({
+					messages: this.state.messages.map((message) =>
+						message.id === id
+							? {
+									...message,
+									text: "MCPサーバーの状態を取得できませんでした。再試行してください。",
+									mcp: { status: "error" },
+								}
+							: message,
+					),
+				});
+			}
+			throw error;
+		} finally {
+			this.submissionPending = false;
+		}
+	}
 
 	/** 待機中の完了を反映し、接続や会話が変わった要求は送らない。 */
 	protected async submitPrompt(

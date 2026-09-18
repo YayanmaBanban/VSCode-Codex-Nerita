@@ -153,6 +153,14 @@ export class CodexClient {
 	listSkills(cwd: string) {
 		return this.transport.request("skills/list", { cwds: [cwd] });
 	}
+	/** 現在のthreadのツールと認証状態に限定してMCP一覧を取得する。 */
+	listMcpServerStatus(threadId: string, cursor?: string) {
+		return this.transport.request("mcpServerStatus/list", {
+			detail: "toolsAndAuthOnly",
+			threadId,
+			...(cursor === undefined ? {} : { cursor }),
+		});
+	}
 	/** 利用可能モデルのページを取得する。 */
 	listModels(cursor?: string) {
 		return this.transport.request("model/list", {

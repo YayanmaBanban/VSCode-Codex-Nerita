@@ -4,6 +4,7 @@ import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { ChatMessage, ToolSummary } from "../../shared/messages";
 import { MessageText } from "./MessageText";
 import { TextType } from "./TextType";
+import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
@@ -94,10 +95,12 @@ export function Messages({
 				}}
 			>
 				<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
-					{user ||
-					!busy ||
-					message.streaming === false ||
-					index !== messages.length - 1 ? (
+					{message.mcp ? (
+						<McpMessage content={message.mcp} text={message.text} />
+					) : user ||
+					  !busy ||
+					  message.streaming === false ||
+					  index !== messages.length - 1 ? (
 						<MessageText text={message.text} />
 					) : (
 						<TextType text={message.text} />
@@ -114,7 +117,7 @@ export function Messages({
 						}
 					}}
 				>
-					{!user && (
+					{!user && message.mcp?.status !== "loading" && (
 						<button
 							type="button"
 							className={`${messageIconButtonClass} bg-[#416482]`}

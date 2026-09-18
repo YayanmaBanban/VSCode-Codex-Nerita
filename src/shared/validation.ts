@@ -1,5 +1,6 @@
 // postMessage の両端で型と値を検証し、不正な操作と壊れた状態を排除する。
 import type { ChatState, HostMessage, UiMessage } from "./messages";
+import { isMcpMessageContent } from "./mcp";
 import { isSidebarLocation } from "./sidebar";
 import { isPersonalityPreset, isPersonalitySettings } from "./personality";
 import { validComposerField } from "./composerValidation";
@@ -224,6 +225,7 @@ function validField(key: string, value: unknown): boolean {
 					["user", "assistant"].includes(String(item.role)) &&
 					(item.streaming === undefined ||
 						typeof item.streaming === "boolean") &&
+					(item.mcp === undefined || isMcpMessageContent(item.mcp)) &&
 					typeof item.text === "string",
 			);
 		case "tools":
