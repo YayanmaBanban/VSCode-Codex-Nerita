@@ -25,6 +25,7 @@ async function main() {
 	const webview = await esbuild.context({
 		...common,
 		entryPoints: ["src/webview/index.tsx"],
+		loader: { ".svg": "text" },
 		plugins: [tailwindPlugin()],
 		format: "iife",
 		platform: "browser",

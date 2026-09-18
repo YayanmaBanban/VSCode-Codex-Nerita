@@ -146,6 +146,10 @@ export class CodexClient {
 	unarchiveThread(threadId: string) {
 		return this.transport.request("thread/unarchive", { threadId });
 	}
+	/** 作業フォルダーで利用可能なスキルを取得する。 */
+	listSkills(cwd: string) {
+		return this.transport.request("skills/list", { cwds: [cwd] });
+	}
 	/** 利用可能モデルのページを取得する。 */
 	listModels(cursor?: string) {
 		return this.transport.request("model/list", {

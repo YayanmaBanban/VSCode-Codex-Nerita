@@ -60,9 +60,22 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(page.locator(".file-diff-lines")).toContainText(
 			" @echo off",
 		);
-		await expect(
-			page.getByText("実行結果を待っています。", { exact: true }),
-		).toBeVisible();
+		const raw = page
+			.locator(".tool-card")
+			.filter({
+				has: page.getByRole("button", { name: "Run command 実行中" }),
+			})
+			.locator("pre");
+		expect(JSON.parse((await raw.textContent())!)).toMatchObject({
+			id: "generic",
+			rawInput: { command: "pnpm.cmd --version" },
+			content: [
+				{
+					type: "content",
+					content: { type: "text", text: "実行結果を待っています。" },
+				},
+			],
+		});
 		await edit.click();
 		await expect(edit).toHaveAttribute("aria-expanded", "false");
 		await expect(guardian).toHaveAttribute("aria-expanded", "true");

@@ -36,6 +36,8 @@ export function Composer({
 			<div inert={locked} aria-busy={locked}>
 				<ComposerInput
 					locked={locked}
+					attachments={state.attachments}
+					skills={state.skills}
 					followUp={
 						state.run === "running" && state.connection === "ready"
 					}

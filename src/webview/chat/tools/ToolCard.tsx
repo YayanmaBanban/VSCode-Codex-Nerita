@@ -15,7 +15,7 @@ import type { ToolSummary } from "../../../shared/messages";
 import { isRecord } from "../../../shared/validation";
 import { taskActive, type AsyncTask } from "../../../shared/asyncTask";
 import { GuardianReview } from "./GuardianReview";
-import { EditingFiles, ExecuteTool, GenericTool } from "./ToolContent";
+import { EditingFiles, ExecuteTool, RawTool } from "./ToolContent";
 import "../loaders.css";
 
 // 専用表示を追加するときは、ここへタイトルとアイコン・本文を登録する。
@@ -82,7 +82,7 @@ export function ToolCard({
 					? { Icon: FilePenLine, Body: EditingFiles }
 					: (renderers.find(({ titles }) =>
 							titles.includes(tool.title.trim().toLowerCase()),
-						) ?? { Icon: Wrench, Body: GenericTool });
+						) ?? { Icon: Wrench, Body: RawTool });
 	return (
 		<div
 			className="tool-card my-[8px] overflow-hidden rounded-[6px] border border-solid border-panel-border"

@@ -111,17 +111,27 @@ test("回答コピー・対応する送信文と返信末尾へ移動", async ({
 	await expect(page.locator(".message").getByRole("status")).toHaveText(
 		"コピーしました",
 	);
-	expect(
-		(await page.evaluate(() => navigator.clipboard.readText())).replace(
-			/\r\n/g,
-			"\n",
-		),
-	).toBe(
-		await page.locator(".text-type .sr-only").getAttribute("aria-label"),
+	const copied = await page.evaluate(() => navigator.clipboard.readText());
+	expect(copied).toContain("設定ファイルの変更点を整理しました。");
+	expect(copied).toContain("```ts");
+	expect(copied).toContain(
+		"長いパスやコードも画面の幅に合わせて折り返します。".repeat(12),
 	);
+	await expect(page.locator(".text-type")).toHaveCount(0);
+	await expect(page.locator(".message.assistant")).toHaveCSS(
+		"background-color",
+		"rgba(0, 0, 0, 0)",
+	);
+	await expect(
+		page.getByRole("button", { name: "回答をコピー" }).locator("svg"),
+	).toHaveAttribute("width", "12");
 	await page.getByRole("button", { name: "送信メッセージへ移動" }).click();
 	await expect(page.locator(".message.user")).toBeFocused();
 	await expect(page.locator(".message.user")).toBeInViewport();
+	await expect(page.locator(".message.user")).toHaveCSS(
+		"outline-style",
+		"none",
+	);
 	await page.getByRole("button", { name: "回答の末尾へ移動" }).click();
 	await expect(
 		page.locator(".message.assistant .message-actions"),
@@ -129,12 +139,22 @@ test("回答コピー・対応する送信文と返信末尾へ移動", async ({
 	await expect(
 		page.locator(".message.assistant .message-actions"),
 	).toBeInViewport();
+	await expect(page.locator(".message.assistant .message-actions")).toHaveCSS(
+		"outline-style",
+		"none",
+	);
+	await page.locator(".message.assistant .message-text").click();
+	await expect(page.locator(".message.assistant")).toHaveCSS(
+		"outline-style",
+		"none",
+	);
 	await expect(page.locator(".message-author, .run-status")).toHaveCount(0);
 });
-test("TextTypeの開始・途中・終了とカーソル休止", async ({ page }, info) => {
+test("TextTypeの開始・途中・全文表示と停止", async ({ page }, info) => {
 	await page.clock.install();
 	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
 	const content = page.locator(".text-type > div");
+	await expect(page.locator(".text-type-cursor")).toHaveCount(0);
 	await expect(page.locator(".text-type")).toHaveAttribute(
 		"data-typing",
 		"true",
@@ -159,7 +179,7 @@ test("TextTypeの開始・途中・終了とカーソル休止", async ({ page }
 		contentType: "image/png",
 	});
 	await page.getByRole("button", { name: "停止", exact: true }).click();
-	await page.clock.runFor(4300);
+	await expect(page.locator(".text-type")).toHaveCount(0);
 	await expect(page.locator(".text-type-cursor")).toHaveCount(0);
 });
 for (const colorScheme of ["dark", "light"] as const) {
@@ -215,11 +235,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.goto("/iframe.html?id=chat-app--completed&viewMode=story");
 		await expect(page.getByText(/const config/)).toBeVisible();
-		await expect(page.locator(".text-type")).toHaveAttribute(
-			"data-typing",
-			"false",
-			{ timeout: 20000 },
-		);
+		await expect(page.locator(".text-type")).toHaveCount(0);
 		await page.evaluate(() => document.fonts.ready);
 		expect(
 			await page.evaluate(

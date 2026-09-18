@@ -18,6 +18,8 @@ export type Scenario =
 	| "completed"
 	| "permission"
 	| "cancelled"
+	| "cancelling"
+	| "failed"
 	| "error";
 /** 固定状態と操作シナリオのための初期スナップショットを生成する。 */
 function scenarioState(scenario: Scenario): ChatState {
@@ -44,7 +46,14 @@ function scenarioState(scenario: Scenario): ChatState {
 			"Codexとの接続が切れました。再接続してやり直してください。";
 	}
 	if (
-		["streaming", "completed", "permission", "cancelled"].includes(scenario)
+		[
+			"streaming",
+			"completed",
+			"permission",
+			"cancelled",
+			"cancelling",
+			"failed",
+		].includes(scenario)
 	) {
 		state.runId = "story-run";
 		state.messages = [
@@ -85,8 +94,12 @@ function scenarioState(scenario: Scenario): ChatState {
 			},
 		];
 	}
-	if (scenario === "cancelled") {
-		state.run = "cancelled";
+	if (
+		scenario === "cancelled" ||
+		scenario === "cancelling" ||
+		scenario === "failed"
+	) {
+		state.run = scenario;
 	}
 	return state;
 }
@@ -157,6 +170,18 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 					}
 					break;
 				case "prompt/send": {
+					if (message.text.trim() === "/new") {
+						clear();
+						const { revision: _revision, ...reset } =
+							scenarioState("empty");
+						patch(reset);
+						emit({
+							type: "prompt/accepted",
+							requestId: message.requestId,
+							mode: "start",
+						});
+						break;
+					}
 					const mode = state.run === "running" ? "steer" : "start";
 					patch({
 						attachments: [],

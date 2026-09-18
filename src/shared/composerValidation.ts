@@ -1,8 +1,12 @@
 // 追加の設定・使用量・ファイル参照を通信境界で検証する。
 import { isRecord } from "./validation";
+import { validSkills } from "./skills";
 
 /** 入力欄専用の状態フィールドを検証する。 */
 export function validComposerField(key: string, value: unknown): boolean {
+	if (key === "skills") {
+		return validSkills(value);
+	}
 	if (key === "quota") {
 		return (
 			value === null ||

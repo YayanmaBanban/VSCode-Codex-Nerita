@@ -6,7 +6,8 @@ import { useChatView } from "./useChatView";
 import { ConnectionHeader } from "./ConnectionHeader";
 import { Activity } from "./Activity";
 import { Messages } from "./Messages";
-import { CubeLoader } from "./CubeLoader";
+import { ThinkingIndicator } from "./ThinkingIndicator";
+import { RunStatusIcon } from "./RunStatusIcon";
 import { Composer } from "./Composer";
 import { NotificationCard } from "./NotificationCard";
 import { usePromptSubmission } from "./usePromptSubmission";
@@ -113,13 +114,20 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 							/>
 						</div>
 						<Activity state={{ ...state, tools: [] }} send={send} />
-						{state.run === "running" && <CubeLoader />}
+						{state.run === "running" && <ThinkingIndicator />}
 						{runLabels[state.run] && (
 							<p
-								className="run-status text-[12px] text-muted"
+								className="run-status my-2 flex items-center gap-1 text-[12px] text-muted"
 								role="status"
 							>
 								{runLabels[state.run]}
+								<RunStatusIcon
+									kind={
+										state.run === "failed"
+											? "startled"
+											: "loaf"
+									}
+								/>
 							</p>
 						)}
 						<div ref={bottom} />

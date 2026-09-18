@@ -1,61 +1,4 @@
-/* 小さな transform アニメーションで待機を示し、動きの抑制設定にも従う。 */
-.cube-loader {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 20px;
-	height: 20px;
-	margin-block: 10px;
-	color: var(--vscode-descriptionForeground, #a6afb8);
-	perspective: 80px;
-}
-.cube-loader-shape {
-	position: relative;
-	width: 9px;
-	height: 9px;
-	transform-style: preserve-3d;
-	transform: rotateX(-24deg) rotateY(35deg);
-	animation: cube-flip 2.8s ease-in-out infinite;
-}
-.cube-face {
-	position: absolute;
-	inset: 0;
-	border: 1px solid currentColor;
-	background: color-mix(in srgb, currentColor 16%, transparent);
-	backface-visibility: hidden;
-}
-.cube-front {
-	transform: translateZ(4.5px);
-}
-.cube-back {
-	transform: rotateY(180deg) translateZ(4.5px);
-}
-.cube-left {
-	transform: rotateY(-90deg) translateZ(4.5px);
-}
-.cube-right {
-	transform: rotateY(90deg) translateZ(4.5px);
-}
-.cube-top {
-	transform: rotateX(90deg) translateZ(4.5px);
-}
-.cube-bottom {
-	transform: rotateX(-90deg) translateZ(4.5px);
-}
-@keyframes cube-flip {
-	0%,
-	15% {
-		transform: rotateX(-24deg) rotateY(35deg);
-	}
-	45%,
-	60% {
-		transform: rotateX(156deg) rotateY(35deg);
-	}
-	90%,
-	100% {
-		transform: rotateX(156deg) rotateY(215deg);
-	}
-}
+/* ツール実行中の回転表示を定義する。 */
 .tool-progress {
 	color: var(--vscode-descriptionForeground, #a6afb8);
 	animation: tool-spin 1.2s linear infinite;
@@ -66,7 +9,6 @@
 	}
 }
 @media (prefers-reduced-motion: reduce) {
-	.cube-loader-shape,
 	.tool-progress {
 		animation: none;
 	}

@@ -1,0 +1,26 @@
+/* cat-loaf-glasses-48.svgの動きを外部CSSで適用する。 */
+
+.cat-loaf-glasses-48 .clg48-tail {
+	transform-box: view-box;
+	transform-origin: 35.5px 34px;
+	animation: clg48-tail-sway 2.8s ease-in-out infinite;
+}
+@keyframes clg48-tail-sway {
+	0%,
+	16%,
+	100% {
+		transform: rotate(0deg);
+	}
+	46%,
+	56% {
+		transform: rotate(-62deg);
+	}
+	86% {
+		transform: rotate(0deg);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.cat-loaf-glasses-48 .clg48-tail {
+		animation: none;
+	}
+}

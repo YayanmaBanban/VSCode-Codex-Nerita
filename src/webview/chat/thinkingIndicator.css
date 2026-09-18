@@ -1,0 +1,86 @@
+/* cat-writing-glasses-48.svgの動きを外部CSSで適用する。 */
+
+.cat-writing-glasses-48 .cwg48-travel {
+	animation: cwg48-travel var(--cwg48-cycle, 3.6s) linear infinite;
+}
+.cat-writing-glasses-48 .cwg48-stroke {
+	transform-box: view-box;
+	transform-origin: 18px 33px;
+	animation: cwg48-stroke var(--cwg48-scribble, 0.18s) ease-in-out infinite
+		alternate;
+}
+.cat-writing-glasses-48 .cwg48-head {
+	transform-box: view-box;
+	transform-origin: 24px 23px;
+	animation: cwg48-head var(--cwg48-cycle, 3.6s) ease-in-out infinite;
+}
+.cat-writing-glasses-48 .cwg48-ink {
+	stroke-dasharray: 1;
+	animation: cwg48-ink var(--cwg48-cycle, 3.6s) linear infinite;
+}
+@keyframes cwg48-travel {
+	0%,
+	8% {
+		transform: translate(0, 0);
+	}
+	72% {
+		transform: translate(4px, 0);
+	}
+	79% {
+		transform: translate(4px, -0.8px);
+	}
+	94% {
+		transform: translate(0, -0.8px);
+	}
+	100% {
+		transform: translate(0, 0);
+	}
+}
+@keyframes cwg48-stroke {
+	from {
+		transform: rotate(-2deg) translateY(-0.15px);
+	}
+	to {
+		transform: rotate(2deg) translateY(0.15px);
+	}
+}
+@keyframes cwg48-head {
+	0%,
+	100% {
+		transform: rotate(-1deg);
+	}
+	40% {
+		transform: rotate(1deg);
+	}
+	72% {
+		transform: rotate(1.5deg);
+	}
+	86% {
+		transform: rotate(-1deg);
+	}
+}
+@keyframes cwg48-ink {
+	0%,
+	8% {
+		stroke-dashoffset: 1;
+		opacity: 1;
+	}
+	72%,
+	79% {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	94%,
+	100% {
+		stroke-dashoffset: 0;
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.cat-writing-glasses-48 .cwg48-travel,
+	.cat-writing-glasses-48 .cwg48-stroke,
+	.cat-writing-glasses-48 .cwg48-head,
+	.cat-writing-glasses-48 .cwg48-ink {
+		animation: none;
+	}
+}

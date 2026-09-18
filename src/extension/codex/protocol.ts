@@ -3,6 +3,7 @@ import type { ClientRequest } from "../../codex-app-server/ClientRequest";
 import type { InitializeResponse } from "../../codex-app-server/InitializeResponse";
 import type { ThreadLoadedListResponse } from "../../codex-app-server/v2/ThreadLoadedListResponse";
 import { isRecord } from "../../shared/validation";
+import { parseSkills } from "./skillsProtocol";
 import { parseModels, parseLogin } from "./accountProtocol";
 import { parseQuotaResponse } from "./usageProtocol";
 import {
@@ -22,6 +23,7 @@ import {
 
 /** 対応済みメソッドだけを公開し、応答の生成型を固定する。 */
 export type AppServerResponses = {
+	"skills/list": ReturnType<typeof parseSkills>;
 	"thread/list": ReturnType<typeof parseThreads>;
 	"thread/read": ReturnType<typeof parseReadThread>;
 	"thread/resume": ReturnType<typeof parseResumedThread>;
@@ -83,6 +85,7 @@ function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
 export const responseParsers: {
 	[M in keyof AppServerResponses]: (value: unknown) => AppServerResponses[M];
 } = {
+	"skills/list": parseSkills,
 	"thread/list": parseThreads,
 	"thread/read": parseReadThread,
 	"thread/resume": parseResumedThread,

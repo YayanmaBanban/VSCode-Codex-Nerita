@@ -32,7 +32,12 @@ export type CodexConnection = Pick<
 	| "deleteThread"
 	| "unarchiveThread"
 > &
-	Partial<Pick<CodexClient, "readPersonality" | "changePersonality">>;
+	Partial<
+		Pick<
+			CodexClient,
+			"readPersonality" | "changePersonality" | "listSkills"
+		>
+	>;
 /** 起動前のワークスペース検証と、取消可能な接続を提供する。 */
 export type CodexFactory = (
 	callbacks: AppServerCallbacks,

@@ -121,6 +121,18 @@ export class CodexSessionController extends CodexSubmission {
 			throw new Error("Stale thread");
 		}
 		if (message.type === "prompt/send") {
+			if (message.text.trim() === "/new") {
+				if (this.submissionPending) {
+					throw new Error("Submission pending");
+				}
+				await this.newThread();
+				this.emit({
+					type: "prompt/accepted",
+					requestId: message.requestId,
+					mode: "start",
+				});
+				return;
+			}
 			const mode = await this.submitPrompt(
 				message.text,
 				message.sessionId,
