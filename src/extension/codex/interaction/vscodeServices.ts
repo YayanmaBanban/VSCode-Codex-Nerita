@@ -1,7 +1,7 @@
 // 認証URLと質問入力をVS Codeの標準UIへ接続し、取消でダイアログを閉じる。
 import * as vscode from "vscode";
 import type { AuthService } from "./AuthFlow";
-import type { InteractionService } from "./interactionRequests";
+import type { InteractionService } from "./interactionService";
 
 /** AbortSignalをVS Codeの取消トークンへ変換する。 */
 async function cancellable<T>(

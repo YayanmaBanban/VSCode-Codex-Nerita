@@ -81,7 +81,10 @@ Escape での閉じ操作も確認します。画像と寸法・配色の記録�
 Storyも `src/stories/chat/` 内で対応する機能別の配置にします。
 `src/extension/codex/` は制御クラスを直下に残し、
 応答・通知の検証を `protocol/`、表示項目・イベントの変換を `items/`、
-エージェント管理を `agents/`、プロセス起動・通信を `runtime/` にまとめています。
+エージェント管理を `agents/`、プロセス起動・通信・接続契約を `runtime/` にまとめています。
+添付・差分・会話参照は `context/`、履歴の復元と一覧の補助処理は `history/`、
+モデル・権限・性格設定は `settings/`、承認・認証・入力UIとの連携は `interaction/` に置きます。
+`src/extension/webview/` では表示先の制御、通信購読の寿命、CSP付きHTMLの生成を分離しています。
 
 ### Webview のスタイル
 

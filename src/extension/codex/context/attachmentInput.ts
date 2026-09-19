@@ -2,8 +2,8 @@
 import { fileURLToPath } from "node:url";
 import { extname } from "node:path";
 import { open } from "node:fs/promises";
-import type { Attachment } from "../../shared/composer";
-import type { UserInput } from "../../codex-app-server/v2/UserInput";
+import type { Attachment } from "../../../shared/composer";
+import type { UserInput } from "../../../codex-app-server/v2/UserInput";
 
 /** テキストは合計2MBまで読み込み、画像はローカル参照を渡す。 */
 export async function attachmentInput(

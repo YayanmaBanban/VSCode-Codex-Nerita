@@ -1,79 +1,9 @@
-// サーバーからの質問・MCPフォームを、取消可能なHostの入力UIへ接続する。
-import { isRecord } from "../../shared/validation";
-import { AppServerRpcError, type AppServerRequest } from "./protocol/rpcMessage";
+// MCPのURL誘導と基本フォームを検証し、承諾した入力だけを返す。
+import { isRecord } from "../../../shared/validation";
+import { text, type InteractionService } from "./interactionService";
 
-/** 秘密入力や選択をWebviewの永続状態に残さないための境界。 */
-export type InteractionService = {
-	input: (
-		title: string,
-		secret: boolean,
-		signal: AbortSignal,
-		validate?: (value: string) => string | undefined,
-	) => Promise<string | undefined>;
-	choose: (
-		title: string,
-		choices: string[],
-		signal: AbortSignal,
-	) => Promise<string | undefined>;
-	open: (url: string) => Promise<void>;
-};
-/** 入力要求の必須文字列を検証する。 */
-function text(value: unknown): string {
-	if (typeof value !== "string") {
-		throw new AppServerRpcError(-32602, "Invalid request");
-	}
-	return value;
-}
-/** 質問の選択肢と自由入力を順に収集し、取消時に回答を送信しない。 */
-async function userInput(
-	p: Record<string, unknown>,
-	ui: InteractionService,
-	signal: AbortSignal,
-) {
-	if (!Array.isArray(p.questions)) {
-		throw new AppServerRpcError(-32602, "Invalid questions");
-	}
-	const answers = Object.create(null) as Record<
-		string,
-		{ answers: string[] }
-	>;
-	for (const question of p.questions as unknown[]) {
-		if (!isRecord(question)) {
-			throw new AppServerRpcError(-32602, "Invalid question");
-		}
-		const id = text(question.id),
-			title = text(question.question);
-		let answer: string | undefined;
-		if (
-			Array.isArray(question.options) &&
-			question.options.length &&
-			!question.isSecret
-		) {
-			const labels = question.options.map((option: unknown) => {
-				if (!isRecord(option)) {
-					throw new AppServerRpcError(-32602, "Invalid option");
-				}
-				return text(option.label);
-			});
-			if (question.isOther) {
-				labels.push("自由に入力する");
-			}
-			answer = await ui.choose(title, labels, signal);
-			if (question.isOther && answer === "自由に入力する") {
-				answer = await ui.input(title, false, signal);
-			}
-		} else {
-			answer = await ui.input(title, question.isSecret === true, signal);
-		}
-		if (signal.aborted || answer === undefined) {
-			return { answers: {} };
-		}
-		answers[id] = { answers: [answer] };
-	}
-	return { answers };
-}
 /** MCPの基本フォームを型と制約で検証し、未対応形式は承諾しない。 */
-async function elicitation(
+export async function elicitation(
 	p: Record<string, unknown>,
 	ui: InteractionService,
 	signal: AbortSignal,
@@ -206,21 +136,4 @@ async function elicitation(
 		return empty;
 	}
 	return { action: "accept", content, _meta: null };
-}
-/** クライアントが提供していない動的ツールや認証更新要求を実行しない。 */
-export async function interactionRequest(
-	request: AppServerRequest,
-	ui: InteractionService,
-	signal: AbortSignal,
-): Promise<unknown> {
-	if (!isRecord(request.params)) {
-		throw new AppServerRpcError(-32602, "Invalid request");
-	}
-	if (request.method === "item/tool/requestUserInput") {
-		return userInput(request.params, ui, signal);
-	}
-	if (request.method === "mcpServer/elicitation/request") {
-		return elicitation(request.params, ui, signal);
-	}
-	throw new AppServerRpcError(-32601, "Method not supported by this client");
 }

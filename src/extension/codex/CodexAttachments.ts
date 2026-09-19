@@ -1,9 +1,10 @@
 // 添付ファイルの選択と寿命を、接続やモデル設定から分離する。
 import type { Attachment, ComposerMessage } from "../../shared/composer";
 import type { DroppedAttachment } from "../../shared/attachmentDrop";
-import type { AuthService } from "./AuthFlow";
-import type { InteractionService } from "./interactionRequests";
-import { CodexLifecycle, type CodexFactory } from "./CodexLifecycle";
+import type { AuthService } from "./interaction/AuthFlow";
+import type { InteractionService } from "./interaction/interactionService";
+import { CodexLifecycle } from "./CodexLifecycle";
+import type { CodexFactory } from "./runtime/connection";
 /** 選択・ドロップされたファイルをHostで検証して扱うサービス境界。 */
 export type CodexFiles = {
 	pick: () => Promise<Attachment[]>;

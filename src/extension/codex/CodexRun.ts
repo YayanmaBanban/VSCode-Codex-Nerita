@@ -2,15 +2,13 @@
 import { randomUUID } from "node:crypto";
 import { nextTimelineOrder } from "../session/timelineOrder";
 import { CodexAgents } from "./CodexAgents";
-import { attachmentInput } from "./attachmentInput";
-import { skillInput } from "./skillInput";
+import { attachmentInput } from "./context/attachmentInput";
+import { skillInput } from "./context/skillInput";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { parseTurnEvent, type TurnEvent } from "./items/turnEvents";
-import { itemPatch, messagePatch } from "./items/chatItems";
+import { applyTurnEvent } from "./items/applyTurnEvent";
 import { ActiveTurn } from "./ActiveTurn";
-import { activityPatch } from "./items/activityEvents";
-import type { AdditionalContext } from "./additionalContext";
-import { isRecord } from "../../shared/validation";
+import type { AdditionalContext } from "./context/additionalContext";
 
 /** 同じ thread で停止後も会話を続けられる実行管理。 */
 export abstract class CodexRun extends CodexAgents {
@@ -30,6 +28,7 @@ export abstract class CodexRun extends CodexAgents {
 		) {
 			throw new Error("Busy");
 		}
+
 		const run = new ActiveTurn(this.state.sessionId);
 		this.active = run;
 		const userId = randomUUID();
@@ -47,6 +46,7 @@ export abstract class CodexRun extends CodexAgents {
 				},
 			],
 		});
+
 		let prepared = false;
 		try {
 			const files = [...this.state.attachments];
@@ -62,6 +62,7 @@ export abstract class CodexRun extends CodexAgents {
 							?.inputModalities.includes("image") ?? false,
 					)
 				: [];
+
 			if (this.active !== run) {
 				throw new Error("Run changed before submission");
 			}
@@ -69,6 +70,7 @@ export abstract class CodexRun extends CodexAgents {
 				this.finish("cancelled");
 				throw new Error("Submission cancelled");
 			}
+
 			prepared = true;
 			const result = await this.client.startTurn({
 				...(context ? { additionalContext: context } : {}),
@@ -84,6 +86,7 @@ export abstract class CodexRun extends CodexAgents {
 			if (this.active !== run) {
 				return;
 			}
+
 			run.turnId = result.turn.id;
 			this.patch({
 				attachments: this.state.attachments.filter(
@@ -172,85 +175,14 @@ export abstract class CodexRun extends CodexAgents {
 		) {
 			return;
 		}
-		if (event.kind === "delta" && !run.completedItems.has(event.itemId)) {
-			this.patch(
-				messagePatch(this.state, event.itemId, event.delta, true),
-			);
-		}
-		if (event.kind === "activity") {
-			this.patch(
-				activityPatch(
-					this.state,
-					event.method,
-					event.params,
-					run.streams,
-					run.completedItems,
-				),
-			);
-		}
-		if (event.kind === "item") {
-			const id = String(event.item.id);
-			if (
-				["subAgentActivity", "collabAgentToolCall"].includes(
-					String(event.item.type),
-				)
-			) {
-				this.agentNotification({
-					method: event.completed ? "item/completed" : "item/started",
-					params: {
-						threadId: event.threadId,
-						turnId: event.turnId,
-						item: event.item,
-					},
-				});
-			}
-			if (
-				!run.completedItems.has(id) &&
-				!["subAgentActivity", "collabAgentToolCall"].includes(
-					String(event.item.type),
-				)
-			) {
-				this.patch(itemPatch(this.state, event.item, event.completed));
-			}
-			if (event.completed) {
-				run.completedItems.add(id);
-			}
-		}
-		// 開始受付の応答だけでは、サーバー内部のターンがまだ実行中になっていない。
-		if (event.kind === "turn" && !event.completed) {
-			run.started = true;
-			if (this.state.run === "cancelling") {
-				this.interrupt();
-			}
-		}
-		if (event.kind === "turn" && event.completed) {
-			for (const item of event.items) {
-				if (
-					isRecord(item) &&
-					["subAgentActivity", "collabAgentToolCall"].includes(
-						String(item.type),
-					)
-				) {
-					this.agentNotification({
-						method: "item/completed",
-						params: {
-							threadId: event.threadId,
-							turnId: event.turnId,
-							item,
-						},
-					});
-					continue;
-				}
-				this.patch(itemPatch(this.state, item, true));
-			}
-			this.finish(
-				event.turn.status === "interrupted"
-					? "cancelled"
-					: event.turn.status === "failed"
-						? "failed"
-						: "completed",
-			);
-		}
+
+		applyTurnEvent(run, event, {
+			snapshot: () => this.state,
+			patch: (change) => this.patch(change),
+			agentNotification: (message) => this.agentNotification(message),
+			interrupt: () => this.interrupt(),
+			finish: (status) => this.finish(status),
+		});
 	}
 	/** 終了時に未完了カードと承認を解消し、会話は保持する。 */
 	private finish(status: "completed" | "cancelled" | "failed"): void {

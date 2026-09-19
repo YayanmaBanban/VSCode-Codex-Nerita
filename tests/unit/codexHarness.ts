@@ -5,7 +5,7 @@ import type { TurnStartParams } from "../../src/codex-app-server/v2/TurnStartPar
 import type { ThreadStartParams } from "../../src/codex-app-server/v2/ThreadStartParams";
 import type { AppServerCallbacks } from "../../src/extension/codex/runtime/AppServerTransport";
 import { CodexSessionController } from "../../src/extension/codex/CodexSessionController";
-import type { CodexConnection } from "../../src/extension/codex/CodexLifecycle";
+import type { CodexConnection } from "../../src/extension/codex/runtime/connection";
 import type { HistoryThread } from "../../src/extension/codex/protocol/history";
 
 /** 各テストで保存形式や本文を上書きできる履歴を用意する。 */

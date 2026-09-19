@@ -1,10 +1,10 @@
 // 保存形式ごとの履歴を取得し、表示中の会話を変更せずに復元データを組み立てる。
-import { initialState } from "../../shared/chatState";
-import { isRecord } from "../../shared/validation";
-import { nextTimelineOrder } from "../session/timelineOrder";
-import type { CodexConnection } from "./CodexLifecycle";
-import type { HistoryThread, HistoryTurn } from "./protocol/history";
-import { itemPatch } from "./items/chatItems";
+import { initialState } from "../../../shared/chatState";
+import { isRecord } from "../../../shared/validation";
+import { nextTimelineOrder } from "../../session/timelineOrder";
+import type { CodexConnection } from "../runtime/connection";
+import type { HistoryThread, HistoryTurn } from "../protocol/history";
+import { itemPatch } from "../items/chatItems";
 
 /** 接続世代とカーソルの循環を確認しながら全ページを取得する。 */
 async function pages<T>(

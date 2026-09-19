@@ -9,7 +9,7 @@ import {
 	type DroppedAttachment,
 } from "../../shared/attachmentDrop";
 import type { Attachment } from "../../shared/composer";
-import { attachmentInput } from "../codex/attachmentInput";
+import { attachmentInput } from "../codex/context/attachmentInput";
 
 let directory: Promise<string> | undefined;
 /** URIは実ファイルを確認し、内容転送は同じ名前・内容を同じ参照にする。 */

@@ -1,8 +1,8 @@
 // サイドバーの Webview を生成し、通信と購読の寿命を管理する。
 import type { ComposerPart } from "../../shared/composerContent";
 import * as vscode from "vscode";
-import { randomBytes } from "node:crypto";
-import type { ChatState } from "../../shared/chatState";
+import { webviewHtml } from "./webviewHtml";
+import { bindWebview, type ChatSession } from "./webviewBinding";
 import type { HostMessage } from "../../shared/messages";
 import { isHostMessage } from "../../shared/hostMessageValidation";
 import { isRecord } from "../../shared/validation";
@@ -16,30 +16,6 @@ import {
 	sidebarLocation,
 } from "./sidebarLocation";
 
-/** Webview が必要とする通信だけを公開し、接続プロトコルから独立させる。 */
-type ChatSession = {
-	snapshot(): ChatState;
-	subscribe(listener: (event: HostMessage) => void): () => void;
-	receive(value: unknown): Promise<void>;
-};
-
-/** スクリプトと CSS を拡張機能内だけから読む HTML を生成する。 */
-export function webviewHtml(
-	webview: vscode.Webview,
-	extensionUri: vscode.Uri,
-): string {
-	const nonce = randomBytes(24).toString("base64");
-	const script = webview.asWebviewUri(
-		vscode.Uri.joinPath(extensionUri, "dist", "webview", "index.js"),
-	);
-	const style = webview.asWebviewUri(
-		vscode.Uri.joinPath(extensionUri, "dist", "webview", "index.css"),
-	);
-	return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-    <link rel="stylesheet" href="${style.toString()}"><title>Codex</title></head>
-    <body><div id="root"></div><script nonce="${nonce}" src="${script.toString()}"></script></body></html>`;
-}
 /** UI を閉じても会話を保持し、再表示時の ready で状態を復元する。 */
 export class ChatViewProvider
 	implements vscode.WebviewViewProvider, vscode.Disposable
@@ -95,32 +71,24 @@ export class ChatViewProvider
 		editor: boolean,
 	): void {
 		const webview = view.webview;
-		webview.options = {
-			enableScripts: true,
-			localResourceRoots: [
-				vscode.Uri.joinPath(this.extensionUri, "dist", "webview"),
-			],
-		};
-		const unsubscribe = this.session.subscribe((event) => {
-			void webview.postMessage(event);
-		});
-		const receive = webview.onDidReceiveMessage((message: unknown) => {
-			void this.receive(webview, message);
-		});
-		const disposed = view.onDidDispose(() => {
-			this.views.get(webview)?.dispose();
-			if (editor) {
-				this.panel = undefined;
-			} else if (this.sidebar === view) {
-				this.sidebar = undefined;
-			}
-		});
+		const dispose = bindWebview(
+			view,
+			this.extensionUri,
+			this.session,
+			(message) => this.receive(webview, message),
+			() => {
+				this.views.get(webview)?.dispose();
+				if (editor) {
+					this.panel = undefined;
+				} else if (this.sidebar === view) {
+					this.sidebar = undefined;
+				}
+			},
+		);
 		this.views.set(webview, {
 			editor,
 			dispose: () => {
-				unsubscribe();
-				receive.dispose();
-				disposed.dispose();
+				dispose();
 				this.views.delete(webview);
 			},
 		});

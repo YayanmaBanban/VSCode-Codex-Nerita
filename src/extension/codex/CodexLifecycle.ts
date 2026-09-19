@@ -2,48 +2,13 @@
 import { initialState } from "../../shared/chatState";
 import { SessionState } from "../session/sessionState";
 import { WorkspaceError } from "../workspace";
-import type { CodexClient } from "./CodexClient";
-import type { AppServerCallbacks } from "./runtime/AppServerTransport";
-import type { AppServerNotification, AppServerRequest } from "./protocol/rpcMessage";
-import { AuthFlow, type AuthService } from "./AuthFlow";
+import type { CodexConnection, CodexFactory } from "./runtime/connection";
+import type {
+	AppServerNotification,
+	AppServerRequest,
+} from "./protocol/rpcMessage";
+import { AuthFlow, type AuthService } from "./interaction/AuthFlow";
 import type { StartedThread } from "./protocol/turn";
-
-/** 状態管理に必要な App Server 操作だけを注入する境界。 */
-export type CodexConnection = Pick<
-	CodexClient,
-	| "startThread"
-	| "startTurn"
-	| "steerTurn"
-	| "interruptTurn"
-	| "readAccount"
-	| "dispose"
-	| "listModels"
-	| "listMcpServerStatus"
-	| "readRateLimits"
-	| "login"
-	| "cancelLogin"
-	| "listThreads"
-	| "readThread"
-	| "resumeThread"
-	| "forkThread"
-	| "listTurns"
-	| "listItems"
-	| "renameThread"
-	| "archiveThread"
-	| "deleteThread"
-	| "unarchiveThread"
-> &
-	Partial<
-		Pick<
-			CodexClient,
-			"readPersonality" | "changePersonality" | "listSkills"
-		>
-	>;
-/** 起動前のワークスペース検証と、取消可能な接続を提供する。 */
-export type CodexFactory = (
-	callbacks: AppServerCallbacks,
-	signal: AbortSignal,
-) => Promise<{ client: CodexConnection; cwd: string }>;
 
 /** 接続世代で古い通知を排除し、起動中のプロセスも終了まで追跡する。 */
 export abstract class CodexLifecycle extends SessionState {
@@ -122,10 +87,12 @@ export abstract class CodexLifecycle extends SessionState {
 			connection: "connecting",
 			attachmentsSupported: false,
 		});
+
 		await Promise.allSettled(this.closing);
 		if (epoch !== this.epoch) {
 			return;
 		}
+
 		this.abort = new AbortController();
 		try {
 			const opening = this.factory(
@@ -160,6 +127,7 @@ export abstract class CodexLifecycle extends SessionState {
 			if (epoch !== this.epoch) {
 				return;
 			}
+
 			this.client = client;
 			this.patch({ cwd });
 			const account = await client.readAccount();
@@ -210,6 +178,7 @@ export abstract class CodexLifecycle extends SessionState {
 			if (epoch !== this.epoch) {
 				return;
 			}
+
 			this.resetRun();
 			this.patch({
 				connection: "ready",

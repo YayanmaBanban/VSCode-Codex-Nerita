@@ -1,11 +1,11 @@
 // 追加指示の待機・送信を管理し、受付が確定するまで二重送信を防ぐ。
 import { randomUUID } from "node:crypto";
 import { CodexHistory } from "./CodexHistory";
-import { attachmentInput } from "./attachmentInput";
-import { skillInput } from "./skillInput";
+import { attachmentInput } from "./context/attachmentInput";
+import { skillInput } from "./context/skillInput";
 import { nextTimelineOrder } from "../session/timelineOrder";
-import { sessionContext } from "./sessionContext";
-import { changeContext } from "./changeContext";
+import { sessionContext } from "./context/sessionContext";
+import { changeContext } from "./context/changeContext";
 import type { ChangeScope } from "../../shared/changeReferences";
 import { listMcpServers } from "./mcpStatus";
 import { mcpSummaryText } from "../../shared/mcp";

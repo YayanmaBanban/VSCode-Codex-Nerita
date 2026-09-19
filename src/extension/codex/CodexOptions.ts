@@ -1,5 +1,5 @@
 // モデル候補・会話単位の設定・添付を、実行の開始前に確定する。
-import type { ConfigOption } from "../../shared/composer";
+import { modelOptions } from "./settings/modelOptions";
 import type { TurnStartParams } from "../../codex-app-server/v2/TurnStartParams";
 import type { ModelInfo } from "./protocol/account";
 import type { StartedThread } from "./protocol/turn";
@@ -24,6 +24,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		this.turnOptions = {};
 		this.initialSandbox = thread.sandbox;
 		this.initialTier = thread.serviceTier ?? null;
+
 		try {
 			let cursor: string | undefined;
 			const seen = new Set<string>();
@@ -47,12 +48,14 @@ export abstract class CodexOptions extends CodexAttachments {
 			}
 			this.models = [];
 		}
+
 		this.updateOptions(
 			thread.model,
 			thread.reasoningEffort ?? "",
 			thread.serviceTier ?? "inherit",
 		);
 		this.patch({ attachmentsSupported: this.supportsAttachments });
+
 		try {
 			const response = await client.listSkills?.(thread.cwd);
 			if (epoch === this.epoch) {
@@ -74,81 +77,17 @@ export abstract class CodexOptions extends CodexAttachments {
 	}
 	/** 選択モデルに合わせて推論量と速度の候補を組み直す。 */
 	private updateOptions(model: string, effort: string, tier: string): void {
-		const selected = this.models.find((item) => item.model === model);
-		const options: ConfigOption[] = [
-			{
-				id: "model",
-				name: "Model",
-				currentValue: model,
-				options: this.models.map((item) => ({
-					value: item.model,
-					name: item.displayName,
-				})),
-			},
-			{
-				id: "reasoning_effort",
-				name: "Reasoning effort",
-				currentValue: effort,
-				options:
-					selected?.supportedReasoningEfforts.map((item) => ({
-						value: item.reasoningEffort,
-						name: item.reasoningEffort,
-						description: item.description,
-					})) ?? [],
-			},
-			{
-				id: "service_tier",
-				name: "Service tier",
-				currentValue: tier,
-				options: [
-					{ value: "inherit", name: "設定を引き継ぐ" },
-					{ value: "default", name: "Standard" },
-					...(selected?.serviceTiers.map((item) => ({
-						value: item.id,
-						name: item.name,
-						description: item.description,
-					})) ?? []),
-				],
-			},
-			{
-				id: "mode",
-				name: "Mode",
-				currentValue:
-					this.state.configOptions.find((item) => item.id === "mode")
-						?.currentValue ?? "inherit",
-				options: [
-					{ value: "inherit", name: "設定を引き継ぐ" },
-					{ value: "read-only", name: "読み取り専用" },
-					{
-						value: "workspace-write",
-						name: "ワークスペース内に書き込み",
-					},
-					{ value: "danger-full-access", name: "フルアクセス" },
-				],
-			},
-		];
-		if (selected?.serviceTiers.some((item) => item.id === "priority")) {
-			options.push({
-				id: "fast-mode",
-				name: "Fast mode",
-				currentValue:
-					(tier === "inherit" ? this.initialTier : tier) ===
-					"priority"
-						? "on"
-						: "off",
-				options: [
-					{
-						value: "on",
-						name: "On",
-						description: selected.serviceTiers.find(
-							(item) => item.id === "priority",
-						)!.description,
-					},
-					{ value: "off", name: "Off" },
-				],
-			});
-		}
-		this.patch({ configOptions: options });
+		this.patch({
+			configOptions: modelOptions(
+				this.models,
+				model,
+				effort,
+				tier,
+				this.initialTier,
+				this.state.configOptions.find((item) => item.id === "mode")
+					?.currentValue ?? "inherit",
+			),
+		});
 	}
 	/** 提示した候補だけを次のturnへ渡し、実行中の変更を禁止する。 */
 	protected setConfig(id: string, value: string): void {

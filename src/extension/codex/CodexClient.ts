@@ -6,7 +6,7 @@ import type { ThreadStartParams } from "../../codex-app-server/v2/ThreadStartPar
 import type {
 	ContextTurnStartParams,
 	ContextTurnSteerParams,
-} from "./additionalContext";
+} from "./context/additionalContext";
 import type { LoginAccountParams } from "../../codex-app-server/v2/LoginAccountParams";
 import type { ThreadListParams } from "../../codex-app-server/v2/ThreadListParams";
 import {
@@ -15,7 +15,7 @@ import {
 } from "./runtime/AppServerTransport";
 import { startAppServerProcess } from "./runtime/AppServerProcess";
 import { resolveCodexExecutable } from "./runtime/executable";
-import { PersonalityStore } from "./PersonalityStore";
+import { PersonalityStore } from "./settings/PersonalityStore";
 import {
 	composeDeveloperInstructions,
 	type PersonalityMessage,

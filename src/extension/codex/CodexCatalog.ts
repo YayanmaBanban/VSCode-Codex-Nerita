@@ -4,8 +4,8 @@ import { sameCwd } from "../workspace";
 import { CodexRun } from "./CodexRun";
 import type { StartedThread } from "./protocol/turn";
 import type { AppServerNotification } from "./protocol/rpcMessage";
-import { PendingThreads, historySummary } from "./PendingThreads";
-import { threadSources } from "./threadSources";
+import { PendingThreads, historySummary } from "./history/PendingThreads";
+import { threadSources } from "./history/threadSources";
 
 /** 新規会話と履歴復元で同じ一覧機能を公開する。 */
 export abstract class CodexCatalog extends CodexRun {

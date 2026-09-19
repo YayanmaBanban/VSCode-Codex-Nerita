@@ -4,8 +4,11 @@ import { createInterface, type Interface } from "node:readline";
 import type { RequestId } from "../../../codex-app-server/RequestId";
 import type { ClientNotification } from "../../../codex-app-server/ClientNotification";
 import { stopAppServerProcess } from "./AppServerProcess";
-import { parseRpcMessage, type AppServerNotification } from "../protocol/rpcMessage";
-import { ServerRequests, type ServerRequestHandler } from "../ServerRequests";
+import {
+	parseRpcMessage,
+	type AppServerNotification,
+} from "../protocol/rpcMessage";
+import { ServerRequests, type ServerRequestHandler } from "./ServerRequests";
 import {
 	responseParsers,
 	type AppServerParams,

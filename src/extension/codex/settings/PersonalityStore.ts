@@ -9,7 +9,7 @@ import {
 	type PersonalitySettings,
 	type PersonalityScope,
 	type PersonalityMessage,
-} from "../../shared/personality";
+} from "../../../shared/personality";
 
 /** 存在しないファイルだけを空設定として扱い、破損や権限エラーは通知する。 */
 async function readToml(path: string) {

@@ -1,6 +1,6 @@
 // チップから差分をプレビューし、取得中に切り替わった会話には表示しない。
 import * as vscode from "vscode";
-import type { ChangeScope } from "../../shared/changeReferences";
+import type { ChangeScope } from "../../../shared/changeReferences";
 import { readChangeContext } from "./changeContext";
 
 /** 送信と同じ内容を未保存の読み取り用資料として開く。 */
