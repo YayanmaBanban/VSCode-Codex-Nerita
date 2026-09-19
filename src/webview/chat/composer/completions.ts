@@ -180,9 +180,9 @@ export function completionItems(
 			"ファイルとディレクトリ",
 			"シンボル",
 			"セッション",
-			"Changes",
+			"変更点",
 		].map((label) => ({ id: label, label, category: label }));
-	} else if (category === "Changes") {
+	} else if (category === "変更点") {
 		items = (Object.keys(changeScopes) as ChangeScope[]).map((scope) => {
 			const { name, description } = changeScopes[scope];
 			const reference: ChangeReference = { kind: "changes", scope, name };

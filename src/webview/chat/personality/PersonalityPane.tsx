@@ -37,15 +37,23 @@ export function PersonalityPane({
 				<span>{title}</span>
 				{expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
 			</button>
-			<div id={`personality-${scope}`} hidden={!expanded}>
-				<PaneEditor
-					key={JSON.stringify(settings)}
-					scope={scope}
-					settings={settings}
-					pending={pending}
-					send={send}
-					title={title}
-				/>
+			{/* 編集状態を保持したまま高さを変え、閉じた内容への操作を防ぐ。 */}
+			<div
+				id={`personality-${scope}`}
+				inert={!expanded}
+				aria-hidden={!expanded}
+				className={`grid transition-[grid-template-rows] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+			>
+				<div className="min-h-0 overflow-hidden">
+					<PaneEditor
+						key={JSON.stringify(settings)}
+						scope={scope}
+						settings={settings}
+						pending={pending}
+						send={send}
+						title={title}
+					/>
+				</div>
 			</div>
 		</section>
 	);
