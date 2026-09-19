@@ -1,12 +1,13 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
+import { clsx } from "clsx";
 import { type ReactNode, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
-import type { ChatMessage, ToolSummary } from "../../shared/messages";
+import type { ChatMessage, ToolSummary } from "../../../shared/chatState";
 import { MessageText } from "./MessageText";
 import { TextType } from "./TextType";
 import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
-import type { SubAgentSummary } from "../../shared/subAgents";
+import type { SubAgentSummary } from "../../../shared/subAgents";
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
 export function Messages({
@@ -99,7 +100,16 @@ export function Messages({
 		const replyPending = user && nextUser === -1 && busy;
 		return (
 			<article
-				className={`message ${message.role} mb-[24px] min-w-0 rounded-[9px] border border-solid p-[14px] ${messageFocusClass} ${user ? "bg-message-user border-message-border" : "bg-transparent border-transparent"}`}
+				className={clsx(
+					"message",
+					message.role,
+					"mb-[24px] min-w-0 p-[14px]",
+					"rounded-[9px] border border-solid",
+					messageFocusClass,
+					user
+						? "bg-message-user border-message-border"
+						: "bg-transparent border-transparent",
+				)}
 				key={message.id}
 				tabIndex={-1}
 				ref={(element) => {

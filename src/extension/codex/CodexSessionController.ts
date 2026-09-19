@@ -1,6 +1,6 @@
 // 検証済みの Webview 操作を、現在の thread とローカル実行 ID に限定する。
 import type { UiMessage } from "../../shared/messages";
-import { isUiMessage } from "../../shared/validation";
+import { isUiMessage } from "../../shared/uiMessageValidation";
 import { CodexSubmission } from "./CodexSubmission";
 import {
 	searchSessionReferences,

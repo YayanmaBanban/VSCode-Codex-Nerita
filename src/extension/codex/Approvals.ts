@@ -1,7 +1,7 @@
 // App Server のコマンド・ファイル承認を既存 UI の選択肢へ変換する。
 import { randomUUID } from "node:crypto";
 import type { CommandExecutionRequestApprovalResponse } from "../../codex-app-server/v2/CommandExecutionRequestApprovalResponse";
-import type { Permission } from "../../shared/messages";
+import type { Permission } from "../../shared/chatState";
 import { isRecord } from "../../shared/validation";
 import { AppServerRpcError, type AppServerRequest } from "./protocol/rpcMessage";
 

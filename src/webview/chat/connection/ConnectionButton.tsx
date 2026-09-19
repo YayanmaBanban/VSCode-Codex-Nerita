@@ -1,9 +1,10 @@
 // 接続状態を操作可能なボタンで示し、再接続の誘導と成功演出を表示する。
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
-import type { ChatState, UiMessage } from "../../shared/messages";
-import { BorderBeam } from "../ui/BorderBeam";
-import { SettingsTooltip } from "./SettingsTooltip";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
+import { BorderBeam } from "../../ui/BorderBeam";
+import { SettingsTooltip } from "../SettingsTooltip";
 import "./connectionButton.css";
 
 const labels = {

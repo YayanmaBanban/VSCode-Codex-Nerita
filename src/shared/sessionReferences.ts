@@ -8,6 +8,7 @@ export type SessionReference = {
 	name: string;
 	cwd: string;
 };
+
 /** IDを本文やURLから推測せず、明示された参照として検証する。 */
 export function isSessionReference(value: unknown): value is SessionReference {
 	if (!value || typeof value !== "object") {
@@ -23,6 +24,7 @@ export function isSessionReference(value: unknown): value is SessionReference {
 		isPathString(entry.cwd)
 	);
 }
+
 /** セッション参照の一ページ検索。検索語はタイトルに適用する。 */
 export type SessionReferencesRequest = {
 	type: "session/searchReferences";
@@ -30,6 +32,7 @@ export type SessionReferencesRequest = {
 	query: string;
 	cursor?: string;
 };
+
 /** 履歴パネルの状態とは独立した候補ページ。 */
 export type SessionReferencesResult = {
 	type: "session/references";
@@ -38,12 +41,14 @@ export type SessionReferencesResult = {
 	nextCursor: string | null;
 	error?: string;
 };
+
 /** セッション本文をVS Codeで表示する要求。 */
 export type SessionReferenceOpen = {
 	type: "session/openReference";
 	requestId: string;
 	referencedSessionId: string;
 };
+
 /** 一送信で参照できるセッション数を制限する。 */
 export function validSessionIds(value: unknown): value is string[] | undefined {
 	return (

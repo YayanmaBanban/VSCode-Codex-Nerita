@@ -3,6 +3,7 @@ import { isRecord } from "./validation";
 
 /** MCPサーバーの表示に必要な名前と接続状態。 */
 export type McpServerSummary = { name: string; runtimeStatus: string | null };
+
 /** 一つのMCPメッセージの取得状態。 */
 export type McpMessageContent =
 	| { status: "loading" }

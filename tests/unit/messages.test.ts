@@ -1,7 +1,8 @@
 // 通信境界の要求とスナップショットの実行時検証を確認する。
 import { describe, expect, it } from "vitest";
-import { initialState } from "../../src/shared/messages";
-import { isHostMessage, isUiMessage } from "../../src/shared/validation";
+import { initialState } from "../../src/shared/chatState";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
 describe("通信境界", () => {
 	it("実行可能な要求だけ受理する", () => {
 		for (const value of [

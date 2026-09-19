@@ -1,6 +1,7 @@
 // Host の順序番号を確認し、会話の復元と差分購読を React に接続する。
 import { useEffect, useRef, useState } from "react";
-import { initialState, type UiMessage } from "../../shared/messages";
+import { initialState } from "../../shared/chatState";
+import { type UiMessage } from "../../shared/messages";
 import type { Bridge } from "../vscodeBridge";
 /** 接続ごとに状態を初期化し、差分欠落時はスナップショットを要求する。 */
 export function useChat(bridge: Bridge) {

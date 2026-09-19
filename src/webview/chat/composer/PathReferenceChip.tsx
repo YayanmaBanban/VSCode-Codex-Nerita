@@ -5,7 +5,7 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { useLexicalEditable } from "@lexical/react/useLexicalEditable";
 import { $getNodeByKey, HISTORY_PUSH_TAG, type NodeKey } from "lexical";
 import type { ComposerTarget } from "../../../shared/composerTargets";
-import { fileIcon } from "../fileIcon";
+import { fileIcon } from "./fileIcon";
 import { OPEN_REFERENCE_COMMAND } from "./ReferenceActionsPlugin";
 
 /** 省略した名前の全文とパスはホバーでも確認できる。 */

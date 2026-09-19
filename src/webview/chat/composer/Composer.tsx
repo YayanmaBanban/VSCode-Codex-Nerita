@@ -1,12 +1,14 @@
 // 入力領域と送信・停止・設定操作をまとめる。
 import { SendHorizontal, SquareStop } from "lucide-react";
-import type { ChatState, UiMessage } from "../../shared/messages";
-import type { ComposerPart } from "../../shared/composerContent";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
+import type { ComposerPart } from "../../../shared/composerContent";
 import { ComposerInput } from "./ComposerInput";
 import { ComposerSettings } from "./ComposerSettings";
-import { iconButtonClass } from "./messageStyles";
-import type { Bridge } from "../vscodeBridge";
+import { iconButtonClass } from "../messages/messageStyles";
+import type { Bridge } from "../../vscodeBridge";
 import { useAttachmentDrop } from "./useAttachmentDrop";
+
 /** 下書きの編集と既存の送信・停止操作を接続する。 */
 export function Composer({
 	bridge,

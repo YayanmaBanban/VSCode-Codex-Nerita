@@ -1,9 +1,9 @@
 // 通常メッセージのMarkdownと、ツールのJSON表示を同じ画面で確認する。
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Messages } from "../../webview/chat/Messages";
-import { ToolCard } from "../../webview/chat/tools/ToolCard";
-import "../../webview/chat/chat.css";
+import { Messages } from "../../../webview/chat/messages/Messages";
+import { ToolCard } from "../../../webview/chat/tools/ToolCard";
+import "../../../webview/chat/chat.css";
 
 const markdown = [
 	"## 変更内容",

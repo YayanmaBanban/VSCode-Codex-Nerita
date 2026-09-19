@@ -10,7 +10,7 @@ import {
 	readChangeContext,
 	ChangeContextError,
 } from "../../src/extension/codex/changeContext";
-import { isUiMessage } from "../../src/shared/validation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { isChangeReference } from "../../src/shared/changeReferences";
 
 const exec = promisify(execFile);

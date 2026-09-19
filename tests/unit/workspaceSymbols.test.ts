@@ -9,7 +9,8 @@ vi.mock("vscode", () => ({
 	workspace: { getWorkspaceFolder: api.getWorkspaceFolder },
 }));
 import { searchWorkspaceSymbols } from "../../src/extension/webview/workspaceSymbols";
-import { isHostMessage, isUiMessage } from "../../src/shared/validation";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { pathText, validReferences } from "../../src/shared/composerReferences";
 import { isSourceRange } from "../../src/shared/symbolLocation";
 const request = {

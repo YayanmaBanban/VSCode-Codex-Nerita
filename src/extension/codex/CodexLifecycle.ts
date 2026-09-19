@@ -1,5 +1,5 @@
 // App Server 接続と新規 thread の寿命を、既存の UI 状態ストアへ接続する。
-import { initialState } from "../../shared/messages";
+import { initialState } from "../../shared/chatState";
 import { SessionState } from "../session/sessionState";
 import { WorkspaceError } from "../workspace";
 import type { CodexClient } from "./CodexClient";

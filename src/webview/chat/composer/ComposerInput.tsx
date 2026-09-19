@@ -1,4 +1,5 @@
 // 通常文と編集可能な貼り付けブロックを、一つのLexicalフィールドとして表示する。
+import { clsx } from "clsx";
 import { useId, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
@@ -6,17 +7,17 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import type { ComposerPart } from "../../shared/composerContent";
-import { PastedBlockNode } from "./composer/PastedBlockNode";
-import { PathReferenceNode } from "./composer/PathReferenceNode";
-import { ReferenceActionsPlugin } from "./composer/ReferenceActionsPlugin";
-import { ComposerPlugin } from "./composer/ComposerPlugin";
-import { CodeBlockMenuPlugin } from "./composer/CodeBlockMenuPlugin";
-import { $writeParts } from "./composer/content";
-import { CompletionPlugin } from "./composer/CompletionPlugin";
-import type { Attachment } from "../../shared/composer";
-import type { SkillSummary } from "../../shared/skills";
-import type { Bridge } from "../vscodeBridge";
+import type { ComposerPart } from "../../../shared/composerContent";
+import { PastedBlockNode } from "./PastedBlockNode";
+import { PathReferenceNode } from "./PathReferenceNode";
+import { ReferenceActionsPlugin } from "./ReferenceActionsPlugin";
+import { ComposerPlugin } from "./ComposerPlugin";
+import { CodeBlockMenuPlugin } from "./CodeBlockMenuPlugin";
+import { $writeParts } from "./content";
+import { CompletionPlugin } from "./CompletionPlugin";
+import type { Attachment } from "../../../shared/composer";
+import type { SkillSummary } from "../../../shared/skills";
+import type { Bridge } from "../../vscodeBridge";
 
 /** 全体のスクロールを一本にまとめ、コード領域だけ内部スクロールを許可する。 */
 export function ComposerInput({
@@ -74,7 +75,14 @@ export function ComposerInput({
 								aria-describedby="composer-help"
 								aria-disabled={locked}
 								spellCheck={false}
-								className={`composer-content min-h-[65px] overflow-y-auto overscroll-y-contain p-1 text-input-text leading-[1.7] [scrollbar-width:thin] focus-visible:outline-2 focus-visible:outline-focus ${expanded ? "h-[min(65dvh,calc(100dvh-300px))]" : "max-h-[min(360px,45vh)]"}`}
+								className={clsx(
+									"composer-content min-h-[65px] overflow-y-auto overscroll-y-contain p-1",
+									"text-input-text leading-[1.7] [scrollbar-width:thin]",
+									"focus-visible:outline-2 focus-visible:outline-focus",
+									expanded
+										? "h-[min(65dvh,calc(100dvh-300px))]"
+										: "max-h-[min(360px,45vh)]",
+								)}
 							/>
 						}
 						placeholder={

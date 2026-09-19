@@ -15,6 +15,7 @@ const labels: Record<AgentStatus, string> = {
 	systemError: "エラー",
 	notFound: "見つかりません",
 };
+
 /** 読み取り待ちでもパス末尾の名前を表示する。 */
 export function agentName(agent: SubAgentSummary): string {
 	return (
@@ -23,6 +24,7 @@ export function agentName(agent: SubAgentSummary): string {
 		agent.threadId
 	);
 }
+
 /** 同梱アイコンだけをキーで解決し、サーバー由来のHTMLを挿入しない。 */
 export function AgentIcon({
 	iconKey,
@@ -39,6 +41,7 @@ export function AgentIcon({
 		/>
 	);
 }
+
 /** 実行中だけ回転させ、カード全体をキーボードで開けるようにする。 */
 export function AgentCard({
 	agent,

@@ -5,7 +5,7 @@ import {
 	isSymbolQuery,
 	type WorkspaceSymbolsResult,
 } from "../../../shared/workspaceSymbols";
-import { symbolCompletionItems } from "./completions";
+import { symbolCompletionItems } from "./completionItems";
 
 /** 入力から250ms待って検索し、応答待ちにも上限を設ける。 */
 export function useWorkspaceSymbols(

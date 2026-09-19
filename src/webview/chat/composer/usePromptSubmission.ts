@@ -1,8 +1,9 @@
 // 送信受付だけで入力ロックを解除し、失敗した下書きは編集可能なまま残す。
 import { useEffect, useRef, useState } from "react";
-import type { ChatState, UiMessage } from "../../shared/messages";
-import type { Bridge } from "../vscodeBridge";
-import type { ComposerPart } from "../../shared/composerContent";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
+import type { Bridge } from "../../vscodeBridge";
+import type { ComposerPart } from "../../../shared/composerContent";
 
 /** 個別要求の結果と短時間の通知を入力欄へ接続する。 */
 export function usePromptSubmission(

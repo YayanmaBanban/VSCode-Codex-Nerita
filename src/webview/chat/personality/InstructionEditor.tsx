@@ -17,6 +17,7 @@ function EditablePlugin({ disabled }: { disabled: boolean }) {
 	}, [editor, disabled]);
 	return null;
 }
+
 /** 外部のプリセット切替は親のkeyで再初期化し、入力中の選択範囲を保つ。 */
 export function InstructionEditor({
 	text,

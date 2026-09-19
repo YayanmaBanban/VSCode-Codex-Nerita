@@ -1,6 +1,6 @@
 // 添付の種別・ファイル名と、エディターで開く・取り外す操作を表示する。
 import { X } from "lucide-react";
-import type { Attachment } from "../../shared/composer";
+import type { Attachment } from "../../../shared/composer";
 import { fileIcon } from "./fileIcon";
 
 /** 添付済みファイルの ID だけを渡し、任意 URI の実行を許可しない。 */

@@ -4,11 +4,12 @@ import { Menu } from "@base-ui/react/menu";
 import { Dialog } from "@base-ui/react/dialog";
 import { CSPProvider } from "@base-ui/react/csp-provider";
 import { Ellipsis, FileUser, X } from "lucide-react";
-import type { ChatState, UiMessage } from "../../../shared/messages";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
 import type { PersonalityMessage } from "../../../shared/personality";
 import { PersonalityPane } from "./PersonalityPane";
 import { SettingsTooltip } from "../SettingsTooltip";
-import { SidebarMenu } from "../SidebarMenu";
+import { SidebarMenu } from "../connection/SidebarMenu";
 import type { SidebarLocation } from "../../../shared/sidebar";
 
 /** メニューとダイアログのフォーカス管理をBase UIに任せる。 */

@@ -1,10 +1,11 @@
 // セッションタイトル・表示先・接続操作と、認証やエラーの案内を表示する。
-import type { ChatState, UiMessage } from "../../shared/messages";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
 import { List, MessageSquareText, Maximize2, Minimize2 } from "lucide-react";
 import { ConnectionButton } from "./ConnectionButton";
-import { SettingsTooltip } from "./SettingsTooltip";
-import { PersonalityOptions } from "./personality/PersonalityOptions";
-import type { SidebarLocation } from "../../shared/sidebar";
+import { SettingsTooltip } from "../SettingsTooltip";
+import { PersonalityOptions } from "../personality/PersonalityOptions";
+import type { SidebarLocation } from "../../../shared/sidebar";
 
 /** 認証案内とエラー通知に共通する枠・色・余白。 */
 const noticeClass =

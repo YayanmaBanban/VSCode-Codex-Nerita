@@ -5,7 +5,7 @@ import type {
 	WorkspacePath,
 	WorkspacePathsResult,
 } from "../../../shared/workspacePaths";
-import type { CompletionItem } from "./completions";
+import type { CompletionItem } from "./completionItems";
 import { pathText } from "../../../shared/composerReferences";
 
 /** 開いている階層だけを読み、閉じたメニューや旧要求への応答を捨てる。 */

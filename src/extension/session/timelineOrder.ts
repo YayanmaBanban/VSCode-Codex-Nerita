@@ -1,5 +1,5 @@
 // 履歴再生で受け取った多数の項目より後ろへ、新しい表示項目を採番する。
-import type { ChatState } from "../../shared/messages";
+import type { ChatState } from "../../shared/chatState";
 /** 通知番号と既存項目の表示順の両方より大きい値を返す。 */
 export function nextTimelineOrder(state: ChatState): number {
 	let order = state.revision;

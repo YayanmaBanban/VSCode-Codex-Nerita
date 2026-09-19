@@ -1,6 +1,6 @@
 ﻿// VS Code API を呼ぶ唯一のブラウザ境界。Storybook では同じ契約を差し替える。
 import type { HostMessage, UiMessage } from "../shared/messages";
-import { isHostMessage } from "../shared/validation";
+import { isHostMessage } from "../shared/hostMessageValidation";
 /** UI から利用できる双方向通信の契約。 */
 export type Bridge = {
 	postMessage: (message: UiMessage) => void;

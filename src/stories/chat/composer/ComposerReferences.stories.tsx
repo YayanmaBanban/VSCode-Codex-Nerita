@@ -1,11 +1,11 @@
 // 保存済みのパスチップを復元し、表示先移動・長い名前・削除を確認する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import type { Bridge } from "../../webview/vscodeBridge";
-import type { ComposerPart } from "../../shared/composerContent";
-import { pathText } from "../../shared/composerReferences";
-import { createMockBridge } from "./mocks/mockBridge";
+import { ChatApp } from "../../../webview/chat/ChatApp";
+import type { Bridge } from "../../../webview/vscodeBridge";
+import type { ComposerPart } from "../../../shared/composerContent";
+import { pathText } from "../../../shared/composerReferences";
+import { createMockBridge } from "../mocks/mockBridge";
 
 /** Hostの下書き復元と表示先ごとの再マウントを再現する。 */
 function ReferenceStory() {

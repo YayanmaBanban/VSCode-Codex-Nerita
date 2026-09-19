@@ -1,5 +1,5 @@
 // 保存形式ごとの履歴を取得し、表示中の会話を変更せずに復元データを組み立てる。
-import { initialState } from "../../shared/messages";
+import { initialState } from "../../shared/chatState";
 import { isRecord } from "../../shared/validation";
 import { nextTimelineOrder } from "../session/timelineOrder";
 import type { CodexConnection } from "./CodexLifecycle";

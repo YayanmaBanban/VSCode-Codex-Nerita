@@ -1,10 +1,10 @@
 // シンボル候補の非同期応答と、チップから開く位置を確認する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { Bridge } from "../../webview/vscodeBridge";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import { createMockBridge } from "./mocks/mockBridge";
-import { mockWorkspaceSymbols } from "./mocks/mockWorkspaceSymbols";
+import type { Bridge } from "../../../webview/vscodeBridge";
+import { ChatApp } from "../../../webview/chat/ChatApp";
+import { createMockBridge } from "../mocks/mockBridge";
+import { mockWorkspaceSymbols } from "../mocks/mockWorkspaceSymbols";
 
 /** 遅い検索が新しい検索を上書きしない状態を再現する。 */
 function SymbolStory() {

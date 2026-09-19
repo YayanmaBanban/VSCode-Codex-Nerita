@@ -1,6 +1,7 @@
 // 下書きの共有時に不正な断片や本文との不一致を拒否する。
 import { describe, it, expect } from "vitest";
-import { isHostMessage, isUiMessage } from "../../src/shared/validation";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import type { ComposerPart } from "../../src/shared/composerContent";
 import { validReferences } from "../../src/shared/composerReferences";
 

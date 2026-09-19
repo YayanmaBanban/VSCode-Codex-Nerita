@@ -1,5 +1,6 @@
 // MCP取得の待機から完了までを、Storybook内の遅延応答で再現する。
-import type { ChatState, HostMessage } from "../../../shared/messages";
+import type { ChatState } from "../../../shared/chatState";
+import type { HostMessage } from "../../../shared/messages";
 import { mcpSummaryText } from "../../../shared/mcp";
 import { mcpServersFixture } from "../../../../tests/fixtures/mcpStatusFixture";
 

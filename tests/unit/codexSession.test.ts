@@ -1,6 +1,6 @@
 // App Server の開始受付・完了通知・停止・再接続を実行世代ごとに検証する。
 import { afterEach, expect, it, vi } from "vitest";
-import { isHostMessage } from "../../src/shared/validation";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import { codexHarness, deferred } from "./codexHarness";
 import type { CodexSessionController } from "../../src/extension/codex/CodexSessionController";
 

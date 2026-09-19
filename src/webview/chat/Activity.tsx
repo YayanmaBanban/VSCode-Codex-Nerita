@@ -1,9 +1,11 @@
 // ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
 import { useReducedMotion } from "motion/react";
 import { BorderBeam } from "../ui/BorderBeam";
-import type { ChatState, UiMessage } from "../../shared/messages";
+import type { ChatState } from "../../shared/chatState";
+import type { UiMessage } from "../../shared/messages";
 import { ToolCard } from "./tools/ToolCard";
 import { taskActive } from "../../shared/asyncTask";
+
 /** 現在の実行の作業状況と承認操作を表示する。 */
 export function Activity({
 	state,

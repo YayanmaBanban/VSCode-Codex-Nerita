@@ -1,7 +1,8 @@
 // 入力欄の下に添付・使用量・接続中の設定を指定順で配置する。
 import { Plus } from "lucide-react";
-import type { ChatState, UiMessage } from "../../shared/messages";
-import type { ConfigOption } from "../../shared/composer";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
+import type { ConfigOption } from "../../../shared/composer";
 import { ContextUsage } from "./ContextUsage";
 import { QuotaBar } from "./QuotaBar";
 import { ConfigControl, FastModeSwitch } from "./ConfigControl";

@@ -1,5 +1,5 @@
 // App Server のメッセージと基本ツール項目を、既存 UI の表示データへ変換する。
-import type { ChatState, ToolSummary } from "../../../shared/messages";
+import type { ChatState, ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { activityItem, fileChanges } from "./activityItems";
