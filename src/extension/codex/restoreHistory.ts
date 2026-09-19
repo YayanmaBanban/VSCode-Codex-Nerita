@@ -40,6 +40,7 @@ export async function hydrateHistory(
 	client: Pick<CodexConnection, "listTurns" | "listItems">,
 	thread: HistoryThread,
 	current: () => boolean,
+	readonly = false,
 ): Promise<HistoryTurn[]> {
 	const turns =
 		thread.historyMode === "paginated"
@@ -50,7 +51,7 @@ export async function hydrateHistory(
 			: thread.turns;
 	const result = new Map<string, HistoryTurn>();
 	for (const turn of turns) {
-		if (turn.status === "inProgress") {
+		if (turn.status === "inProgress" && !readonly) {
 			throw new Error("Active history");
 		}
 		let items = turn.items;
@@ -92,8 +93,9 @@ function userText(content: unknown): string {
 		.join("\n\n");
 }
 /** 全項目の変換成功後にだけ公開できる表示スナップショットを作る。 */
-export function replayHistory(turns: HistoryTurn[]) {
+export function replayHistory(turns: HistoryTurn[], threadId = "history") {
 	const state = initialState();
+	state.sessionId = threadId;
 	for (const turn of turns) {
 		state.runId = `history:${turn.id}`;
 		const items = new Map(turn.items.map((item) => [item.id, item]));
@@ -106,9 +108,18 @@ export function replayHistory(turns: HistoryTurn[]) {
 					order: nextTimelineOrder(state),
 				});
 			} else {
-				Object.assign(state, itemPatch(state, item, true));
+				const completed =
+					turn.status !== "inProgress" ||
+					!["inProgress", "running", "pending"].includes(
+						String(item.status),
+					);
+				Object.assign(state, itemPatch(state, item, completed));
 			}
 		}
 	}
-	return { messages: state.messages, tools: state.tools };
+	return {
+		messages: state.messages,
+		tools: state.tools,
+		agents: state.agents,
+	};
 }

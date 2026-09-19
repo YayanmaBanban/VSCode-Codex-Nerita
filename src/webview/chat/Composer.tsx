@@ -6,6 +6,7 @@ import { ComposerInput } from "./ComposerInput";
 import { ComposerSettings } from "./ComposerSettings";
 import { iconButtonClass } from "./messageStyles";
 import type { Bridge } from "../vscodeBridge";
+import { useAttachmentDrop } from "./useAttachmentDrop";
 /** 下書きの編集と既存の送信・停止操作を接続する。 */
 export function Composer({
 	bridge,
@@ -28,19 +29,39 @@ export function Composer({
 	state: ChatState;
 	send: (message: UiMessage) => void;
 }) {
+	const drop = useAttachmentDrop(state, locked, send);
 	return (
 		<form
-			className="composer mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px]"
+			{...drop.handlers}
+			className={`composer relative mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px] ${drop.active ? "outline-2 outline-focus" : ""}`}
 			onSubmit={(event) => {
 				event.preventDefault();
-				submit();
+				if (!drop.reading) {
+					submit();
+				}
 			}}
 		>
-			<div inert={locked} aria-busy={locked}>
+			{drop.active && (
+				<div
+					className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[10px] bg-input p-3 text-center text-input-text"
+					role="status"
+				>
+					ドロップしてファイルを添付
+				</div>
+			)}
+			{drop.error && (
+				<p role="alert" className="text-[12px] text-tool-error">
+					{drop.error}
+				</p>
+			)}
+			<div
+				inert={locked || drop.reading}
+				aria-busy={locked || drop.reading}
+			>
 				<ComposerInput
 					completionScope={`${state.connection}:${state.cwd}:${state.sessionId}`}
 					bridge={bridge}
-					locked={locked}
+					locked={locked || drop.reading}
 					attachments={state.attachments}
 					skills={state.skills}
 					followUp={
@@ -86,6 +107,7 @@ export function Composer({
 						aria-label={busy ? "フォローアップを送信" : "送信"}
 						title={busy ? "フォローアップを送信" : "送信"}
 						disabled={
+							drop.reading ||
 							!available ||
 							!state.sessionId ||
 							!parts.some((part) => part.text.trim())
@@ -95,7 +117,7 @@ export function Composer({
 					</button>
 				</div>
 			</div>
-			<div inert={locked}>
+			<div inert={locked || drop.reading}>
 				<ComposerSettings state={state} send={send} />
 			</div>
 		</form>

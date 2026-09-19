@@ -3,7 +3,7 @@ import type { ChatState } from "../../shared/messages";
 /** 通知番号と既存項目の表示順の両方より大きい値を返す。 */
 export function nextTimelineOrder(state: ChatState): number {
 	let order = state.revision;
-	for (const item of [...state.messages, ...state.tools]) {
+	for (const item of [...state.messages, ...state.tools, ...state.agents]) {
 		order = Math.max(order, item.order ?? 0);
 	}
 	return order + 1;

@@ -6,6 +6,7 @@ import { CodexSessionController } from "./codex/CodexSessionController";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { requireLocalWorkspace } from "./workspace";
 import { attachmentService } from "./webview/attachments";
+import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 import { authService, interactionService } from "./codex/vscodeServices";
 
 let controller: CodexSessionController | undefined;
@@ -55,4 +56,5 @@ export function activate(context: vscode.ExtensionContext): void {
 export async function deactivate(): Promise<void> {
 	await controller?.dispose();
 	controller = undefined;
+	await disposeDroppedAttachments();
 }

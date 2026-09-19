@@ -19,6 +19,7 @@ export function useChat(bridge: Bridge) {
 			}
 			if (
 				message.type === "ui/viewState" ||
+				message.type === "agent/view" ||
 				message.type === "workspace/paths" ||
 				message.type === "workspace/symbols" ||
 				message.type === "session/references" ||

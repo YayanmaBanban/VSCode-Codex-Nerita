@@ -17,7 +17,9 @@ export function activityItem(
 		type === "agentMessage" ||
 		type === "commandExecution" ||
 		type === "fileChange" ||
-		type === "hookPrompt"
+		type === "hookPrompt" ||
+		type === "subAgentActivity" ||
+		type === "collabAgentToolCall"
 	) {
 		return null;
 	}
@@ -54,14 +56,6 @@ export function activityItem(
 			rawOutput: value.contentItems ?? "実行中",
 		};
 	}
-	if (type === "collabAgentToolCall") {
-		return {
-			...base,
-			title: `エージェント: ${title}`,
-			rawInput: value.prompt,
-			rawOutput: value.agentsStates,
-		};
-	}
 	if (type === "webSearch") {
 		return {
 			title: "Web検索",
@@ -96,10 +90,10 @@ export function activityItem(
 	if (type === "functionCallOutput") {
 		return { ...base, title: String(value.name), rawOutput: value.output };
 	}
-	if (type === "subAgentActivity" || type === "sleep") {
+	if (type === "sleep") {
 		return {
 			...base,
-			title: type === "sleep" ? "待機" : "エージェントの作業",
+			title: "待機",
 			rawOutput: value,
 		};
 	}

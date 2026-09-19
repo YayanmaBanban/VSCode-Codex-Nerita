@@ -157,7 +157,7 @@ export abstract class CodexHistory extends CodexCatalog {
 					result.thread,
 					() => current() && !restoring.changed,
 				);
-				const restored = replayHistory(turns);
+				const restored = replayHistory(turns, result.thread.id);
 				if (!current()) {
 					return;
 				}
@@ -182,6 +182,7 @@ export abstract class CodexHistory extends CodexCatalog {
 					error: null,
 				});
 				await this.restoreThreadOptions(result);
+				this.synchronizeAgents();
 			}
 		} catch {
 			error =

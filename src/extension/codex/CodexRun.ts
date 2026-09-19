@@ -1,7 +1,7 @@
 // 開始受付とターン完了を分け、早い停止・遅い通知・承認を一つの実行に限定する。
 import { randomUUID } from "node:crypto";
 import { nextTimelineOrder } from "../session/timelineOrder";
-import { CodexRequests } from "./CodexRequests";
+import { CodexAgents } from "./CodexAgents";
 import { attachmentInput } from "./attachmentInput";
 import { skillInput } from "./skillInput";
 import type { AppServerNotification } from "./rpcMessage";
@@ -10,9 +10,10 @@ import { itemPatch, messagePatch } from "./chatItems";
 import { ActiveTurn } from "./ActiveTurn";
 import { activityPatch } from "./activityEvents";
 import type { AdditionalContext } from "./additionalContext";
+import { isRecord } from "../../shared/validation";
 
 /** 同じ thread で停止後も会話を続けられる実行管理。 */
-export abstract class CodexRun extends CodexRequests {
+export abstract class CodexRun extends CodexAgents {
 	private cancelTimer: NodeJS.Timeout | undefined;
 
 	/** 表示用の実行 ID を先に確保し、完了は通知だけで確定する。 */
@@ -189,7 +190,26 @@ export abstract class CodexRun extends CodexRequests {
 		}
 		if (event.kind === "item") {
 			const id = String(event.item.id);
-			if (!run.completedItems.has(id)) {
+			if (
+				["subAgentActivity", "collabAgentToolCall"].includes(
+					String(event.item.type),
+				)
+			) {
+				this.agentNotification({
+					method: event.completed ? "item/completed" : "item/started",
+					params: {
+						threadId: event.threadId,
+						turnId: event.turnId,
+						item: event.item,
+					},
+				});
+			}
+			if (
+				!run.completedItems.has(id) &&
+				!["subAgentActivity", "collabAgentToolCall"].includes(
+					String(event.item.type),
+				)
+			) {
 				this.patch(itemPatch(this.state, event.item, event.completed));
 			}
 			if (event.completed) {
@@ -205,6 +225,22 @@ export abstract class CodexRun extends CodexRequests {
 		}
 		if (event.kind === "turn" && event.completed) {
 			for (const item of event.items) {
+				if (
+					isRecord(item) &&
+					["subAgentActivity", "collabAgentToolCall"].includes(
+						String(item.type),
+					)
+				) {
+					this.agentNotification({
+						method: "item/completed",
+						params: {
+							threadId: event.threadId,
+							turnId: event.turnId,
+							item,
+						},
+					});
+					continue;
+				}
 				this.patch(itemPatch(this.state, item, true));
 			}
 			this.finish(

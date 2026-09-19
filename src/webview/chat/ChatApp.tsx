@@ -17,6 +17,9 @@ import { SessionPanel } from "./sessions/SessionPanel";
 import { useSessionPanel } from "./sessions/useSessionPanel";
 import { ChatSearchBar } from "./search/ChatSearchBar";
 import { useChatSearch } from "./search/useChatSearch";
+import { AgentCard } from "./agents/AgentCard";
+import { AgentViewer } from "./agents/AgentViewer";
+import { useAgentViewer } from "./agents/useAgentViewer";
 
 const runLabels = {
 	idle: "",
@@ -39,6 +42,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		selectSidebar,
 	} = useChatView(bridge);
 	const { state, requestError, send } = useChat(bridge);
+	const agentViewer = useAgentViewer(bridge, state.sessionId);
 	const search = useChatSearch(conversation);
 	const sessionPanel = useSessionPanel(send);
 	const submission = usePromptSubmission(
@@ -59,7 +63,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		!state.configPending &&
 		!state.attachmentPending;
 	const followConversation = useEffectEvent(() => {
-		if (!search.open) {
+		if (!search.open && !agentViewer.agent) {
 			bottom.current?.scrollIntoView({ block: "end" });
 		}
 	});
@@ -81,8 +85,15 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 				onToggleSessions={sessionPanel.toggle}
 			/>
 			<div className="relative flex min-h-0 flex-1 overflow-x-clip">
+				{agentViewer.agent && (
+					<AgentViewer viewer={agentViewer} state={state} />
+				)}
 				<div
-					className="flex min-w-0 flex-1 flex-col"
+					className={
+						agentViewer.agent
+							? "hidden"
+							: "flex min-w-0 flex-1 flex-col"
+					}
 					inert={sessionPanel.open && sessionPanel.compact}
 				>
 					<ChatSearchBar search={search} />
@@ -111,6 +122,18 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 								messages={state.messages}
 								busy={busy}
 								tools={state.tools}
+								agents={state.agents.filter(
+									(agent) =>
+										agent.parentThreadId ===
+										state.sessionId,
+								)}
+								renderAgent={(agent) => (
+									<AgentCard
+										key={agent.threadId}
+										agent={agent}
+										onOpen={agentViewer.open}
+									/>
+								)}
 								renderTool={(tool) => (
 									<Activity
 										key={String(tool.runId) + tool.id}

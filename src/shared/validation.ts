@@ -4,6 +4,7 @@ import { isMcpMessageContent } from "./mcp";
 import { isSidebarLocation } from "./sidebar";
 import { isPersonalityPreset, isPersonalitySettings } from "./personality";
 import { validComposerField } from "./composerValidation";
+import { validDroppedAttachments } from "./attachmentDrop";
 import { isAsyncTask } from "./asyncTask";
 import { validDraftParts } from "./composerContent";
 import { isPathString, isWorkspacePath } from "./workspacePaths";
@@ -11,6 +12,7 @@ import { isSourceRange } from "./symbolLocation";
 import { isSymbolQuery } from "./workspaceSymbols";
 import { isSessionReference, validSessionIds } from "./sessionReferences";
 import { isChangeScope, validChangeScopes } from "./changeReferences";
+import { isSubAgent } from "./subAgents";
 /** 配列・null を除いたオブジェクトを判定する。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -31,6 +33,8 @@ export function isUiMessage(value: unknown): value is UiMessage {
 		return false;
 	}
 	switch (value.type) {
+		case "agent/read":
+			return isId(value.sessionId) && isId(value.threadId);
 		case "changes/open":
 			return isChangeScope(value.scope);
 		case "session/searchReferences":
@@ -113,7 +117,11 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				isId(value.value)
 			);
 		case "attachment/add":
-			return isId(value.sessionId);
+			return (
+				isId(value.sessionId) &&
+				(value.files === undefined ||
+					validDroppedAttachments(value.files))
+			);
 		case "attachment/open":
 		case "attachment/remove":
 			return isId(value.sessionId) && isId(value.attachmentId);
@@ -156,6 +164,8 @@ function every(
 /** 状態プロパティを項目ごとに検証する。 */
 function validField(key: string, value: unknown): boolean {
 	switch (key) {
+		case "agents":
+			return Array.isArray(value) && value.every(isSubAgent);
 		case "personality":
 			return value === null || isPersonalitySettings(value);
 		case "sessionTitle":
@@ -296,6 +306,7 @@ function isState(value: unknown): value is ChatState {
 			"error",
 			"messages",
 			"tools",
+			"agents",
 			"asyncTasks",
 			"permissions",
 			"authMethods",
@@ -321,6 +332,18 @@ function isState(value: unknown): value is ChatState {
 export function isHostMessage(value: unknown): value is HostMessage {
 	if (!isRecord(value)) {
 		return false;
+	}
+	if (value.type === "agent/view") {
+		const view = value.view;
+		return (
+			isId(value.requestId) &&
+			isRecord(view) &&
+			isId(view.threadId) &&
+			(view.parentThreadId === null || isId(view.parentThreadId)) &&
+			["messages", "tools", "agents"].every((key) =>
+				validField(key, view[key]),
+			)
+		);
 	}
 	if (value.type === "session/references") {
 		return (

@@ -29,6 +29,23 @@ export function mockSettings(
 		};
 	}
 	if (message.type === "attachment/add") {
+		if (message.files) {
+			const attachments = new Map(
+				state.attachments.map((file) => [file.uri, file]),
+			);
+			for (const file of message.files) {
+				const uri =
+					"uri" in file
+						? file.uri
+						: `file:///dropped/${encodeURIComponent(file.name)}`;
+				attachments.set(uri, {
+					id: uri,
+					name: decodeURIComponent(uri.split("/").at(-1)!),
+					uri,
+				});
+			}
+			return { attachments: [...attachments.values()] };
+		}
 		return {
 			attachments: [
 				{

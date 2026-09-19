@@ -36,6 +36,7 @@ export class SessionState {
 			(item) => item.sessionId === sessionId,
 		);
 		patch = {
+			...(sessionId !== this.state.sessionId ? { agents: [] } : {}),
 			...patch,
 			sessionTitle:
 				patch.sessionTitle !== undefined
