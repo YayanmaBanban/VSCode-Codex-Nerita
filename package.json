@@ -53,6 +53,10 @@
 		},
 		"commands": [
 			{
+				"command": "codex-acp.codeBlock",
+				"title": "コードブロック化"
+			},
+			{
 				"command": "codex-acp.openChat",
 				"title": "Codex ACP: チャットを開く"
 			},
@@ -61,6 +65,21 @@
 				"title": "Codex ACP: 新規会話"
 			}
 		],
+		"menus": {
+			"webview/context": [
+				{
+					"command": "codex-acp.codeBlock",
+					"when": "(webviewId == 'codex-acp.chat' || webviewId == 'codex-acp.editor') && webviewSection == 'composer' && composerCanCodeBlock",
+					"group": "edit@10"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "codex-acp.codeBlock",
+					"when": "false"
+				}
+			]
+		},
 		"viewsContainers": {
 			"activitybar": [
 				{

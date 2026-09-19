@@ -3,7 +3,7 @@ import type { ComposerPart } from "../../shared/composerContent";
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import type { ChatState, HostMessage } from "../../shared/messages";
-import { isUiMessage } from "../../shared/validation";
+import { isHostMessage, isRecord, isUiMessage } from "../../shared/validation";
 import { listWorkspacePaths } from "./workspacePaths";
 import { openResource } from "./openResource";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";
@@ -69,6 +69,22 @@ export class ChatViewProvider
 	resolveWebviewView(view: vscode.WebviewView): void {
 		this.sidebar = view;
 		this.bind(view, false);
+	}
+	/** メニューを開いた入力欄だけが照合できる識別子で変換を通知する。 */
+	convertSelectionToCodeBlock(context: unknown): void {
+		if (!isRecord(context)) {
+			return;
+		}
+		const message = {
+			type: "ui/codeBlock",
+			requestId: context.composerSelectionId,
+		};
+		if (!isHostMessage(message)) {
+			return;
+		}
+		for (const webview of this.views.keys()) {
+			void webview.postMessage(message);
+		}
 	}
 	/** 各表示先の購読を独立させ、一方を閉じても接続を維持する。 */
 	private bind(
