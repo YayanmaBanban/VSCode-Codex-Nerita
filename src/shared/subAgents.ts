@@ -2,6 +2,34 @@
 import type { ChatMessage, ToolSummary } from "./messages";
 import { isRecord } from "./validation";
 
+/** HostとWebviewで共有する同梱アイコンの表示キー。 */
+export const agentIconKeys = [
+	"cheetah",
+	"alien",
+	"anubis",
+	"cabbage",
+	"chochin_obake",
+	"daikon",
+	"duck",
+	"ghost",
+	"golden_retriever",
+	"kitsune",
+	"mendako",
+	"penguin",
+	"seal",
+	"turtle",
+] as const;
+/** 同梱アイコンだけを指定できるキー。 */
+export type AgentIconKey = (typeof agentIconKeys)[number];
+/** 履歴の読み直しや通知順序に左右されないアイコンをThread IDから選ぶ。 */
+export function agentIconKey(threadId: string): AgentIconKey {
+	let hash = 0;
+	for (const char of threadId) {
+		hash = (Math.imul(hash, 31) + char.codePointAt(0)!) >>> 0;
+	}
+	return agentIconKeys[hash % agentIconKeys.length]!;
+}
+
 /** ツール呼び出しの完了とは独立したエージェントの状態。 */
 export type AgentStatus =
 	| "pendingInit"
@@ -26,7 +54,7 @@ export type SubAgentSummary = {
 	model?: string;
 	reasoningEffort?: string;
 	lastAction?: string;
-	iconKey: "cheetah";
+	iconKey: AgentIconKey;
 	order: number;
 };
 /** 親の実行状態とは別に取得する会話のスナップショット。 */
@@ -72,7 +100,7 @@ export function isSubAgent(value: unknown): value is SubAgentSummary {
 			(key) => value[key] === undefined || typeof value[key] === "string",
 		) &&
 		isAgentStatus(value.status) &&
-		value.iconKey === "cheetah" &&
+		agentIconKeys.some((key) => key === value.iconKey) &&
 		Number.isSafeInteger(value.order)
 	);
 }

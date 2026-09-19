@@ -1,7 +1,7 @@
 // Agentの状態一覧と、親の下書きを保持する子・孫Thread閲覧を再現する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { SubAgentSummary } from "../../shared/subAgents";
+import { agentIconKeys, type SubAgentSummary } from "../../shared/subAgents";
 import { ChatApp } from "../../webview/chat/ChatApp";
 import { AgentCard } from "../../webview/chat/agents/AgentCard";
 import { createMockBridge } from "./mocks/mockBridge";
@@ -134,3 +134,21 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Viewer: Story = {};
 export const States: Story = { render: () => <StatesStory /> };
+export const Icons: Story = {
+	render: () => (
+		<main className="grid grid-cols-2 gap-3 p-5">
+			{agentIconKeys.map((iconKey) => (
+				<AgentCard
+					key={iconKey}
+					agent={{
+						...child,
+						iconKey,
+						nickname: iconKey,
+						status: "idle",
+					}}
+					onOpen={() => {}}
+				/>
+			))}
+		</main>
+	),
+};
