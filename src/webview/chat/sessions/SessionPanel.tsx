@@ -1,5 +1,6 @@
 // 右ペインに作業フォルダとセッション履歴を表示する。
 import { useEffect, useRef, useState } from "react";
+import { motion, useIsPresent, useReducedMotion } from "motion/react";
 import { Archive, List, LoaderCircle, X } from "lucide-react";
 import type { ChatState, UiMessage } from "../../../shared/messages";
 import { taskActive } from "../../../shared/asyncTask";
@@ -10,11 +11,20 @@ export function SessionPanel({
 	state,
 	send,
 	onClose,
+	compact,
 }: {
 	state: ChatState;
 	send: (message: UiMessage) => void;
 	onClose: () => void;
+	compact: boolean;
 }) {
+	const present = useIsPresent();
+	const reduceMotion = useReducedMotion();
+	// 広い画面では会話欄の幅も追従させ、狭い画面では重ねたままスライドする。
+	const collapsed = {
+		transform: "translateX(100%)",
+		marginRight: compact ? 0 : -350,
+	};
 	const [now, setNow] = useState(Date.now);
 	const close = useRef<HTMLButtonElement>(null);
 	useEffect(() => {
@@ -32,7 +42,16 @@ export function SessionPanel({
 		state.asyncTasks.some(taskActive);
 	const capabilities = state.sessionCapabilities;
 	return (
-		<aside
+		<motion.aside
+			initial={collapsed}
+			animate={{ transform: "translateX(0%)", marginRight: 0 }}
+			exit={collapsed}
+			transition={{
+				duration: reduceMotion ? 0 : 0.22,
+				ease: [0.22, 1, 0.36, 1],
+			}}
+			inert={!present}
+			aria-hidden={!present}
 			id="session-panel"
 			aria-label="セッション一覧"
 			className="absolute inset-y-0 right-0 z-20 flex w-[350px] max-w-full shrink-0 flex-col border-0 border-l border-solid border-panel-border bg-menu text-menu-text shadow-[-8px_0_24px_#0002] [@media(min-width:760px)]:static [@media(min-width:760px)]:shadow-none"
@@ -187,6 +206,6 @@ export function SessionPanel({
 					</button>
 				)}
 			</div>
-		</aside>
+		</motion.aside>
 	);
 }

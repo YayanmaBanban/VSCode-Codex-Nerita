@@ -1,5 +1,6 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
 import { useEffect, useEffectEvent, useRef } from "react";
+import { AnimatePresence } from "motion/react";
 import type { Bridge } from "../vscodeBridge";
 import { useChat } from "./useChat";
 import { useChatView } from "./useChatView";
@@ -79,7 +80,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 				sessionsOpen={sessionPanel.open}
 				onToggleSessions={sessionPanel.toggle}
 			/>
-			<div className="relative flex min-h-0 flex-1">
+			<div className="relative flex min-h-0 flex-1 overflow-x-clip">
 				<div
 					className="flex min-w-0 flex-1 flex-col"
 					inert={sessionPanel.open && sessionPanel.compact}
@@ -163,13 +164,17 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 						send={send}
 					/>
 				</div>
-				{sessionPanel.open && (
-					<SessionPanel
-						state={state}
-						send={send}
-						onClose={sessionPanel.close}
-					/>
-				)}
+				<AnimatePresence initial={false}>
+					{sessionPanel.open && (
+						<SessionPanel
+							key="sessions"
+							compact={sessionPanel.compact}
+							state={state}
+							send={send}
+							onClose={sessionPanel.close}
+						/>
+					)}
+				</AnimatePresence>
 			</div>
 		</main>
 	);
