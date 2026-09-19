@@ -15,7 +15,7 @@ ReactのWebviewは `src/webview/`、Extension Hostの処理は `src/extension/`�
 
 | 作業                                                     | 参照先                                                      |
 | -------------------------------------------------------- | ----------------------------------------------------------- |
-| `src/webview/` のファイル追加・分割・移動・フォルダ整理  | [ディレクトリ構成](.agents/docs/Directory-Structure.md)     |
+| `src/webview/`・`src/extension/`・`src/shared/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
 | 複数ファイルの依存調査・構造変更・コードレビュー         | [コード調査・依存グラフ](.agents/docs/Code-Review-Graph.md) |
 | Webview UIの作成                                         | [UI実装](.agents/docs/UI-Implementation.md)                 |
 | Webview UIの表示・操作・アニメーションの変更、UIレビュー | [UIレビュー](.agents/docs/UI-Review-Guide.md)               |
@@ -24,9 +24,9 @@ ReactのWebviewは `src/webview/`、Extension Hostの処理は `src/extension/`�
 
 ## Webview UIとExtension Hostの境界
 
-UIライブラリやWeb向けアニメーションはWebviewに使用します。VS Code API・Node.js・ACPプロセスの処理はExtension Hostに置き、Webviewとは検証済みメッセージで通信してください。
+UIライブラリやWeb向けアニメーションはWebviewに使用します。VS Code API・Node.js・Codex App Serverプロセスの処理はExtension Hostに置き、Webviewとは検証済みメッセージで通信してください。共有する通信型・検証処理は `src/shared/` に置き、React・DOM・VS Code API・Node.js専用APIに依存させません。
 
-実行・配布はWindows x64のローカルVS CodeとNode.js 22以降を前提とします。StorybookはUIの確認用で、Extension Hostや実際のACP接続の検証とは分けます。
+実行・配布はWindows x64のローカルVS Code、開発用Node.jsは22以降を前提とします。Extension HostはVS Code内のNode.jsで動作します。StorybookはUIの確認用で、Extension Hostや実際のCodex App Server接続の検証とは分けます。
 
 ## 実行コマンド
 

@@ -28,7 +28,7 @@ import { test, expect } from "@playwright/test";
 
 test("対象のシナリオ", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
-	const button = page.getByRole("button", { name: "＋ 新規会話" });
+	const button = page.getByRole("button", { name: "新しいチャット" });
 	await expect(button).toBeVisible();
 	await info.attach("initial", {
 		body: await page.screenshot(),
