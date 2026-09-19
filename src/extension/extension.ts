@@ -47,6 +47,10 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand("codex-acp.newSession", () =>
 			session.receive({ type: "session/new", requestId: randomUUID() }),
 		),
+		vscode.commands.registerCommand(
+			"codex-acp.codeBlock",
+			(context: unknown) => provider.convertSelectionToCodeBlock(context),
+		),
 		vscode.workspace.onDidChangeWorkspaceFolders(() => {
 			session.invalidate();
 		}),

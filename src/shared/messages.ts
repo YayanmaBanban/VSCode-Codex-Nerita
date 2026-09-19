@@ -185,6 +185,7 @@ export type UiMessage =
 	  };
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "ui/codeBlock"; requestId: string }
 	| { type: "agent/view"; requestId: string; view: AgentThreadView }
 	| SessionReferencesResult
 	| WorkspaceSymbolsResult

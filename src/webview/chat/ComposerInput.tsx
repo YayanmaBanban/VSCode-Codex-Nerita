@@ -11,6 +11,7 @@ import { PastedBlockNode } from "./composer/PastedBlockNode";
 import { PathReferenceNode } from "./composer/PathReferenceNode";
 import { ReferenceActionsPlugin } from "./composer/ReferenceActionsPlugin";
 import { ComposerPlugin } from "./composer/ComposerPlugin";
+import { CodeBlockMenuPlugin } from "./composer/CodeBlockMenuPlugin";
 import { $writeParts } from "./composer/content";
 import { CompletionPlugin } from "./composer/CompletionPlugin";
 import type { Attachment } from "../../shared/composer";
@@ -112,6 +113,7 @@ export function ComposerInput({
 				</button>
 			</div>
 			<HistoryPlugin />
+			<CodeBlockMenuPlugin bridge={bridge} />
 			<ReferenceActionsPlugin bridge={bridge} />
 			<ComposerPlugin
 				locked={locked}

@@ -1,9 +1,6 @@
 // 貼り付け・改行・送信をLexicalの更新単位で処理し、履歴と選択範囲を保つ。
 import {
 	$addUpdateTag,
-	$createParagraphNode,
-	$generateNodesFromRawText,
-	$getRoot,
 	$getSelection,
 	$isRangeSelection,
 	COMMAND_PRIORITY_HIGH,
@@ -15,14 +12,33 @@ import {
 	mergeRegister,
 	type LexicalEditor,
 } from "lexical";
-import { $createPastedBlockNode, PastedBlockNode } from "./PastedBlockNode";
-import { $pointOffset, $readParts } from "./content";
+import { PastedBlockNode } from "./PastedBlockNode";
+import { $readParts } from "./content";
 import { $moveAcrossBlock } from "./navigation";
-import { $appendInlineContent, $readReferences } from "./inlineReferences";
+import { $insertPastedBlock } from "./insertPastedBlock";
 import {
 	$pasteReferences,
 	registerReferenceClipboard,
 } from "./referenceClipboard";
+
+/** 代表的なコード構文、または5行以上の本文を貼り付けブロックとして扱う。 */
+function shouldPasteAsBlock(text: string): boolean {
+	// 末尾の改行は行数に含めない。判定用に整形しても貼り付ける本文は保持する。
+	if (text.trimEnd().split("\n").length >= 5) {
+		return true;
+	}
+	// 正規表現では言語を確定できないため、単なる記号や単語では判定しない。
+	return [
+		/^\s*```[^\n]*\n[\s\S]*\n\s*```\s*$/,
+		/^\s*(?:export\s+)?(?:const|let|var)\s+[\w$]+\s*(?::[^=\n]+)?=/m,
+		/^\s*(?:export\s+)?(?:async\s+)?(?:function|def|fn)\s+[\w$]+\s*\(/m,
+		/^\s*(?:import\s+.+\s+from\s+["']|from\s+[\w.]+\s+import\s+)/m,
+		/^\s*(?:if|for|while)\s*\([^\n]*\)\s*\{/m,
+		/^\s*[\w$]+(?:\.[\w$]+)*\([^\n]*\);?\s*$/m,
+		/^\s*<([A-Za-z][\w:-]*)\b[^>]*>[\s\S]*<\/\1>\s*$/,
+		/^\s*\{\s*"[^"\n]+"\s*:[\s\S]*\}\s*$/,
+	].some((pattern) => pattern.test(text));
+}
 
 /** 選択を置換して前後の通常文を保ち、貼り付けを一度でUndoできるようにする。 */
 function $paste(
@@ -57,7 +73,7 @@ function $paste(
 	) {
 		return true;
 	}
-	if (text.length < 1_000 || inBlock || editor.isComposing()) {
+	if (inBlock || editor.isComposing() || !shouldPasteAsBlock(text)) {
 		selection.insertRawText(text);
 		return true;
 	}
@@ -65,28 +81,7 @@ function $paste(
 		onError("貼り付けブロックは100個までです。");
 		return true;
 	}
-	selection.removeText();
-	const active = $getSelection();
-	if (!$isRangeSelection(active)) {
-		return true;
-	}
-	const before =
-		active.anchor.getNode().getTopLevelElement() ?? $createParagraphNode();
-	if (!before.isAttached()) {
-		$getRoot().append(before);
-	}
-	const offset = $pointOffset(active.anchor, before);
-	const original = before.getTextContent();
-	const references = $readReferences(before);
-	const block = $createPastedBlockNode().append(
-		...$generateNodesFromRawText(text),
-	);
-	const after = $createParagraphNode();
-	$appendInlineContent(after, original, references, offset);
-	$appendInlineContent(before.clear(), original, references, 0, offset);
-	before.insertAfter(block);
-	block.insertAfter(after);
-	after.selectStart();
+	$insertPastedBlock(text);
 	return true;
 }
 

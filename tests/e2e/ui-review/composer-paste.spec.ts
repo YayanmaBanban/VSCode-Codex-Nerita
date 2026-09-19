@@ -108,7 +108,7 @@ test("短文ペースト・Undo/Redo・複数ブロック・全選択削除", as
 	await paste(input, "短文");
 	await expect(input).toHaveText("前短文後");
 	await select(input, 3);
-	await paste(input, "a".repeat(1000));
+	await paste(input, "const a = 1;");
 	await expect(input.locator("pre")).toHaveCount(1);
 	await input.press("Control+z");
 	await expect(input.locator("pre")).toHaveCount(0);
@@ -116,14 +116,14 @@ test("短文ペースト・Undo/Redo・複数ブロック・全選択削除", as
 	await input.press("Control+Shift+z");
 	await expect(input.locator("pre")).toHaveCount(1);
 	await select(input.locator("p").last(), 0);
-	await paste(input, "b".repeat(1000));
+	await paste(input, "const b = 2;");
 	await expect(input.locator("pre")).toHaveCount(2);
 	// ブロック内への再ペーストは入れ子を作らず、コードの本文として挿入する。
 	await select(input.locator("pre").last(), 0);
-	await paste(input, "c".repeat(1000));
+	await paste(input, "const c = 3;");
 	await expect(input.locator("pre")).toHaveCount(2);
 	await expect(input.locator("pre").last()).toHaveText(
-		"c".repeat(1000) + "b".repeat(1000),
+		"const c = 3;const b = 2;",
 	);
 	await input.press("Control+a");
 	await input.press("Backspace");
@@ -140,10 +140,57 @@ test("全体の文字数制限", async ({ page }) => {
 	await expect(page.getByRole("alert")).toContainText("100,000文字");
 	await expect(input).toHaveText("前後");
 	await paste(input, "a".repeat(99_998));
-	await expect(input.locator("pre")).toHaveCount(1);
+	await expect(input.locator("pre")).toHaveCount(0);
 	await page.keyboard.insertText("超過");
 	await expect(page.getByRole("alert")).toContainText("100,000文字");
 	await expect
 		.poll(async () => (await input.textContent())?.length)
 		.toBe(100_000);
+});
+
+test("コード判定と通常テキストの5行境界", async ({ page }, info) => {
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	page.on("console", (message) => {
+		if (message.type() === "error") {
+			errors.push(message.text());
+		}
+	});
+	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	const input = page.getByRole("textbox");
+	const samples: [string, boolean][] = [
+		["通常の文章です。".repeat(200), false],
+		["一行目\n二行目\n三行目\n四行目\n", false],
+		["URL: https://example.com/path?q=1", false],
+		["説明（補足）: {名前} を指定してください。", false],
+		["const value = 1;", true],
+		['console.log("hello");', true],
+		['print("hello")', true],
+		["def greet():\n    return 'hello'", true],
+		['import { value } from "./module";', true],
+		['{"enabled": true}', true],
+		["<div>hello</div>", true],
+		["```\nhello\n```", true],
+		["一行目\r\n二行目\r\n三行目\r\n四行目\r\n五行目", true],
+	];
+	for (const [text, block] of samples) {
+		await input.fill("");
+		await paste(input, text);
+		await expect(input.locator("pre"), text).toHaveCount(block ? 1 : 0);
+		if (block) {
+			await expect(input.locator("pre")).toHaveText(
+				text.replace(/\r\n/g, "\n"),
+				{
+					useInnerText: true,
+				},
+			);
+		}
+	}
+	await info.attach("five-line-text-block", {
+		body: await page.screenshot({
+			path: info.outputPath("five-line-text.png"),
+		}),
+		contentType: "image/png",
+	});
+	expect(errors).toEqual([]);
 });

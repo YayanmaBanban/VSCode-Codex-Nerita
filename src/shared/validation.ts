@@ -333,6 +333,9 @@ export function isHostMessage(value: unknown): value is HostMessage {
 	if (!isRecord(value)) {
 		return false;
 	}
+	if (value.type === "ui/codeBlock") {
+		return isId(value.requestId);
+	}
 	if (value.type === "agent/view") {
 		const view = value.view;
 		return (

@@ -18,6 +18,7 @@ export function useChat(bridge: Bridge) {
 				return;
 			}
 			if (
+				message.type === "ui/codeBlock" ||
 				message.type === "ui/viewState" ||
 				message.type === "agent/view" ||
 				message.type === "workspace/paths" ||

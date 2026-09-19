@@ -113,6 +113,26 @@ beforeEach(() => {
 		return Promise.resolve();
 	});
 });
+it("メニューの選択識別子を検証し、本文を含めずWebviewへ通知する", () => {
+	const h = harness();
+	for (const context of [
+		undefined,
+		{},
+		{ composerSelectionId: "" },
+		{ composerSelectionId: 1 },
+	]) {
+		h.provider.convertSelectionToCodeBlock(context);
+	}
+	expect(h.sidebar.webview.postMessage).not.toHaveBeenCalled();
+	h.provider.convertSelectionToCodeBlock({
+		composerSelectionId: "selection-1",
+	});
+	const message = { type: "ui/codeBlock", requestId: "selection-1" };
+	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith(message);
+	expect(isHostMessage(message)).toBe(true);
+	expect(isHostMessage({ type: "ui/codeBlock" })).toBe(false);
+	h.provider.dispose();
+});
 it("配置をユーザー設定へ保存し、エディタの下書きをサイドバーへ復元する", async () => {
 	const h = harness();
 	await h.sidebar.send({ type: "ui/openEditor", requestId: "open" });
