@@ -1,6 +1,6 @@
 // 利用枠とコンテキストの通知を、アカウント情報を含まない表示値へ変換する。
-import type { ContextUsage, QuotaWindow } from "../../shared/composer";
-import { isRecord } from "../../shared/validation";
+import type { ContextUsage, QuotaWindow } from "../../../shared/composer";
+import { isRecord } from "../../../shared/validation";
 
 /** 利用枠の一つのバケットを検証する。 */
 export function parseQuota(value: unknown): QuotaWindow[] {

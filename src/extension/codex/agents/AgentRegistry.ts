@@ -1,13 +1,13 @@
 // 親ターンのフィルターより先に、子Threadの状態と活動の重複を管理する。
-import type { ChatState } from "../../shared/messages";
-import type { AgentStatus, SubAgentSummary } from "../../shared/subAgents";
-import { isRecord } from "../../shared/validation";
+import type { ChatState } from "../../../shared/messages";
+import type { AgentStatus, SubAgentSummary } from "../../../shared/subAgents";
+import { isRecord } from "../../../shared/validation";
 import {
 	agentItemPatch,
 	threadAgentStatus,
 	withThreadStatus,
-} from "./agentItems";
-import type { AppServerNotification } from "./rpcMessage";
+} from "../items/agentItems";
+import type { AppServerNotification } from "../protocol/rpcMessage";
 
 /** 接続・会話ごとに隔離するエージェント通知の集約。 */
 export class AgentRegistry {

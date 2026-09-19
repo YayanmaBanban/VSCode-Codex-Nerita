@@ -1,6 +1,6 @@
 // JSONL の外側の形式を検証し、応答・通知・サーバー要求を区別する。
-import type { RequestId } from "../../codex-app-server/RequestId";
-import { isRecord } from "../../shared/validation";
+import type { RequestId } from "../../../codex-app-server/RequestId";
+import { isRecord } from "../../../shared/validation";
 
 /** パラメーターの型検証前の通知を Host 内だけで受け渡す。 */
 export type AppServerNotification = { method: string; params?: unknown };

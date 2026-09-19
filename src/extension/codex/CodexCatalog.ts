@@ -2,8 +2,8 @@
 import { isRecord } from "../../shared/validation";
 import { sameCwd } from "../workspace";
 import { CodexRun } from "./CodexRun";
-import type { StartedThread } from "./turnProtocol";
-import type { AppServerNotification } from "./rpcMessage";
+import type { StartedThread } from "./protocol/turn";
+import type { AppServerNotification } from "./protocol/rpcMessage";
 import { PendingThreads, historySummary } from "./PendingThreads";
 import { threadSources } from "./threadSources";
 

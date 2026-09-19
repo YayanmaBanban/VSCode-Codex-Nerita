@@ -1,10 +1,10 @@
 // 親の実行セッションを変更せず、子Threadの通知・メタデータ・閲覧を提供する。
 import type { UiMessage } from "../../shared/messages";
 import { CodexRequests } from "./CodexRequests";
-import { AgentRegistry, agentMetadata } from "./AgentRegistry";
-import { threadAgentStatus, withThreadStatus } from "./agentItems";
+import { AgentRegistry, agentMetadata } from "./agents/AgentRegistry";
+import { threadAgentStatus, withThreadStatus } from "./items/agentItems";
 import { hydrateHistory, replayHistory } from "./restoreHistory";
-import type { AppServerNotification } from "./rpcMessage";
+import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "../../shared/validation";
 
 /** Agent用の読み取りを接続世代と親セッションに限定する。 */

@@ -1,7 +1,7 @@
 // セッション参照の取得境界と、実際の送信先・追加コンテキストを検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
-import type { HistoryTurn } from "../../src/extension/codex/historyProtocol";
+import type { HistoryTurn } from "../../src/extension/codex/protocol/history";
 import type { HostMessage } from "../../src/shared/messages";
 import { readSessionContext } from "../../src/extension/codex/sessionContext";
 import { isHostMessage, isUiMessage } from "../../src/shared/validation";

@@ -4,11 +4,11 @@ import { nextTimelineOrder } from "../session/timelineOrder";
 import { CodexAgents } from "./CodexAgents";
 import { attachmentInput } from "./attachmentInput";
 import { skillInput } from "./skillInput";
-import type { AppServerNotification } from "./rpcMessage";
-import { parseTurnEvent, type TurnEvent } from "./turnEvents";
-import { itemPatch, messagePatch } from "./chatItems";
+import type { AppServerNotification } from "./protocol/rpcMessage";
+import { parseTurnEvent, type TurnEvent } from "./items/turnEvents";
+import { itemPatch, messagePatch } from "./items/chatItems";
 import { ActiveTurn } from "./ActiveTurn";
-import { activityPatch } from "./activityEvents";
+import { activityPatch } from "./items/activityEvents";
 import type { AdditionalContext } from "./additionalContext";
 import { isRecord } from "../../shared/validation";
 

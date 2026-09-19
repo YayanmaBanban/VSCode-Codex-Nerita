@@ -1,7 +1,7 @@
 // 項目完了と未知のツールデータを、表示への変換で失わないことを確認する。
 import { expect, it } from "vitest";
 import { initialState } from "../../src/shared/messages";
-import { itemPatch, messagePatch } from "../../src/extension/codex/chatItems";
+import { itemPatch, messagePatch } from "../../src/extension/codex/items/chatItems";
 
 it("本文の完了はTurnの実行中にも反映される", () => {
 	const state = { ...initialState(), runId: "turn", run: "running" as const };

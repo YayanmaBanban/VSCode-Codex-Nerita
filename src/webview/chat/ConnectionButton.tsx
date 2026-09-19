@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { ChatState, UiMessage } from "../../shared/messages";
-import { BorderBeam } from "../../components/lightswind/border-beam";
+import { BorderBeam } from "../ui/BorderBeam";
 import { SettingsTooltip } from "./SettingsTooltip";
 import "./connectionButton.css";
 

@@ -4,8 +4,8 @@ import { mkdir, readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { expect, it, vi } from "vitest";
-import { AppServerTransport } from "../../src/extension/codex/AppServerTransport";
-import { startAppServerProcess } from "../../src/extension/codex/AppServerProcess";
+import { AppServerTransport } from "../../src/extension/codex/runtime/AppServerTransport";
+import { startAppServerProcess } from "../../src/extension/codex/runtime/AppServerProcess";
 
 const initializeParams = {
 	clientInfo: { name: "test", title: null, version: "0.0.1" },

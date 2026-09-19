@@ -1,12 +1,12 @@
 // 活動イベントと協調ツールのスナップショットを、Thread単位のカードへ正規化する。
-import type { ChatState } from "../../shared/messages";
+import type { ChatState } from "../../../shared/messages";
 import {
 	isAgentStatus,
 	type AgentStatus,
 	type SubAgentSummary,
-} from "../../shared/subAgents";
-import { isRecord } from "../../shared/validation";
-import { nextTimelineOrder } from "../session/timelineOrder";
+} from "../../../shared/subAgents";
+import { isRecord } from "../../../shared/validation";
+import { nextTimelineOrder } from "../../session/timelineOrder";
 
 /** App ServerのThread状態を表示状態へ変換する。 */
 export function threadAgentStatus(value: unknown): AgentStatus | undefined {

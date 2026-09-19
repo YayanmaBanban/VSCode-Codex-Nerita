@@ -3,10 +3,10 @@ import { initialState } from "../../shared/messages";
 import { SessionState } from "../session/sessionState";
 import { WorkspaceError } from "../workspace";
 import type { CodexClient } from "./CodexClient";
-import type { AppServerCallbacks } from "./AppServerTransport";
-import type { AppServerNotification, AppServerRequest } from "./rpcMessage";
+import type { AppServerCallbacks } from "./runtime/AppServerTransport";
+import type { AppServerNotification, AppServerRequest } from "./protocol/rpcMessage";
 import { AuthFlow, type AuthService } from "./AuthFlow";
-import type { StartedThread } from "./turnProtocol";
+import type { StartedThread } from "./protocol/turn";
 
 /** 状態管理に必要な App Server 操作だけを注入する境界。 */
 export type CodexConnection = Pick<

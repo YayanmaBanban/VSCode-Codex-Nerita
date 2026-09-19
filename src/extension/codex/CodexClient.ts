@@ -12,9 +12,9 @@ import type { ThreadListParams } from "../../codex-app-server/v2/ThreadListParam
 import {
 	AppServerTransport,
 	type AppServerCallbacks,
-} from "./AppServerTransport";
-import { startAppServerProcess } from "./AppServerProcess";
-import { resolveCodexExecutable } from "./runtime";
+} from "./runtime/AppServerTransport";
+import { startAppServerProcess } from "./runtime/AppServerProcess";
+import { resolveCodexExecutable } from "./runtime/executable";
 import { PersonalityStore } from "./PersonalityStore";
 import {
 	composeDeveloperInstructions,

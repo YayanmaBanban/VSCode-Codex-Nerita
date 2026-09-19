@@ -1,7 +1,7 @@
 // 項目ごとの逐次出力を蓄積し、ターンIDを照合済みの通知だけを表示へ反映する。
-import type { ChatState, ToolSummary } from "../../shared/messages";
-import { isRecord } from "../../shared/validation";
-import { nextTimelineOrder } from "../session/timelineOrder";
+import type { ChatState, ToolSummary } from "../../../shared/messages";
+import { isRecord } from "../../../shared/validation";
+import { nextTimelineOrder } from "../../session/timelineOrder";
 import { fileChanges, textContent } from "./activityItems";
 
 /** 分割された推論の各セクションを独立して蓄積する。 */

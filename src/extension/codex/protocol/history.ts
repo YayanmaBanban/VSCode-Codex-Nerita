@@ -1,11 +1,11 @@
 // 履歴RPCの応答から、一覧と復元に必要な検証済みフィールドだけを公開する。
-import { isRecord } from "../../shared/validation";
+import { isRecord } from "../../../shared/validation";
 import {
 	parseStartedThread,
 	parseTurn,
 	type StartedThread,
 	type TurnInfo,
-} from "./turnProtocol";
+} from "./turn";
 
 /** 保存済みターンの本文と読み込み状態。 */
 export type HistoryTurn = TurnInfo & {

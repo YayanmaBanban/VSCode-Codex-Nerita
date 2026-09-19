@@ -75,6 +75,10 @@ Escape での閉じ操作も確認します。画像と寸法・配色の記録�
 
 ## 開発ツールの配置
 
+共通UI部品は `src/webview/ui/` に置きます。`src/extension/codex/` は制御クラスを直下に残し、
+応答・通知の検証を `protocol/`、表示項目・イベントの変換を `items/`、
+エージェント管理を `agents/`、プロセス起動・通信を `runtime/` にまとめています。
+
 ### Webview のスタイル
 
 Tailwind CSS の入口は `src/webview/chat/tailwind.css` です。本体では

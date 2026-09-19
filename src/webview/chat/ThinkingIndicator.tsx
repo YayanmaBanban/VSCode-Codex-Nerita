@@ -1,6 +1,6 @@
 // 思考中の光沢付き文言と、筆記する猫を横並びに表示する。
 import { useReducedMotion } from "motion/react";
-import { ShinyText } from "../../components/shinytext";
+import { ShinyText } from "../ui/ShinyText";
 import { RunStatusIcon } from "./RunStatusIcon";
 
 /** 状態名を読み上げ、装飾の動きはOSの設定に合わせる。 */

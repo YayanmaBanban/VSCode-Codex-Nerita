@@ -1,7 +1,7 @@
 // ページ境界・復元失敗・接続切替を含め、履歴操作が別の会話へ漏れないことを確認する。
 import { afterEach, expect, it } from "vitest";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
-import type { HistoryTurn } from "../../src/extension/codex/historyProtocol";
+import type { HistoryTurn } from "../../src/extension/codex/protocol/history";
 import { isHostMessage, isUiMessage } from "../../src/shared/validation";
 
 const harnesses: ReturnType<typeof codexHarness>[] = [];

@@ -3,8 +3,8 @@ import { afterEach, expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({ workspace: {}, window: {} }));
 import { initialState, type HostMessage } from "../../src/shared/messages";
 import { isHostMessage, isUiMessage } from "../../src/shared/validation";
-import { itemPatch } from "../../src/extension/codex/chatItems";
-import { AgentRegistry } from "../../src/extension/codex/AgentRegistry";
+import { itemPatch } from "../../src/extension/codex/items/chatItems";
+import { AgentRegistry } from "../../src/extension/codex/agents/AgentRegistry";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
 
 const started = {

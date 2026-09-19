@@ -1,7 +1,7 @@
 // 同梱された Windows x64 用 Codex のバージョンと起動パスを検証する。
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "../../shared/validation";
+import { isRecord } from "../../../shared/validation";
 
 /** 外部の PATH やグローバル CLI に依存せず、VSIX 内の実行ファイルを返す。 */
 export async function resolveCodexExecutable(
