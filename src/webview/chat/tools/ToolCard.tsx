@@ -11,7 +11,7 @@ import {
 	Square,
 	X,
 } from "lucide-react";
-import type { ToolSummary } from "../../../shared/messages";
+import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { taskActive, type AsyncTask } from "../../../shared/asyncTask";
 import { GuardianReview } from "./GuardianReview";

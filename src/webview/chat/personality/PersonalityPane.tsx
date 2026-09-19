@@ -5,7 +5,7 @@ import type {
 	PersonalityScope,
 	PersonalityMessage,
 } from "../../../shared/personality";
-import { ConfigControl } from "../ConfigControl";
+import { ConfigControl } from "../composer/ConfigControl";
 import { InstructionEditor } from "./InstructionEditor";
 
 /** 名前を変えた保存は複製、本文だけの変更は既存プリセットの更新として扱う。 */

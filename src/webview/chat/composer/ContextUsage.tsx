@@ -7,8 +7,8 @@ import {
 	useReducedMotion,
 	useTransform,
 } from "motion/react";
-import type { ContextUsage as Usage } from "../../shared/composer";
-import { SettingsTooltip } from "./SettingsTooltip";
+import type { ContextUsage as Usage } from "../../../shared/composer";
+import { SettingsTooltip } from "../SettingsTooltip";
 
 /** 更新中の通知でもゼロに戻さず、表示途中の値から新しい値へ進める。 */
 export function ContextUsage({ usage }: { usage: Usage | null }) {

@@ -1,8 +1,10 @@
 // 活動の完了とAgentの完了、通知順序、閲覧の副作用を回帰検証する。
 import { afterEach, expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({ workspace: {}, window: {} }));
-import { initialState, type HostMessage } from "../../src/shared/messages";
-import { isHostMessage, isUiMessage } from "../../src/shared/validation";
+import { initialState } from "../../src/shared/chatState";
+import { type HostMessage } from "../../src/shared/messages";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { itemPatch } from "../../src/extension/codex/items/chatItems";
 import { AgentRegistry } from "../../src/extension/codex/agents/AgentRegistry";
 import { codexHarness, deferred, historyThread } from "./codexHarness";

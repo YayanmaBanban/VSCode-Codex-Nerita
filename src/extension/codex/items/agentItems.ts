@@ -1,5 +1,5 @@
 // 活動イベントと協調ツールのスナップショットを、Thread単位のカードへ正規化する。
-import type { ChatState } from "../../../shared/messages";
+import type { ChatState } from "../../../shared/chatState";
 import {
 	agentIconKey,
 	isAgentStatus,

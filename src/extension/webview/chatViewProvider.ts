@@ -2,8 +2,11 @@
 import type { ComposerPart } from "../../shared/composerContent";
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
-import type { ChatState, HostMessage } from "../../shared/messages";
-import { isHostMessage, isRecord, isUiMessage } from "../../shared/validation";
+import type { ChatState } from "../../shared/chatState";
+import type { HostMessage } from "../../shared/messages";
+import { isHostMessage } from "../../shared/hostMessageValidation";
+import { isRecord } from "../../shared/validation";
+import { isUiMessage } from "../../shared/uiMessageValidation";
 import { listWorkspacePaths } from "./workspacePaths";
 import { openResource } from "./openResource";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";

@@ -1,9 +1,6 @@
 ﻿// 会話の正本とUI購読を保持し、単調増加番号付き差分を配信する。
-import {
-	initialState,
-	type ChatState,
-	type HostMessage,
-} from "../../shared/messages";
+import { initialState, type ChatState } from "../../shared/chatState";
+import { type HostMessage } from "../../shared/messages";
 /** 接続と実行が共有する状態・承認管理。 */
 export class SessionState {
 	protected state = initialState();

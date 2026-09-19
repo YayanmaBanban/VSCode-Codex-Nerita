@@ -1,11 +1,8 @@
 // 入力欄へのファイルドロップを読み込み、会話を固定した添付要求へ変換する。
 import { useRef, useState, type DragEvent } from "react";
-import type { ChatState, UiMessage } from "../../shared/messages";
-import {
-	MAX_DROP_BYTES,
-	isLocalFileUri,
-	type DroppedAttachment,
-} from "../../shared/attachmentDrop";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
+import { readDroppedAttachments } from "./readDroppedAttachments";
 
 /** 文字列だけの通常ドラッグを、添付操作から区別する。 */
 function hasFiles(transfer: DataTransfer): boolean {
@@ -13,20 +10,7 @@ function hasFiles(transfer: DataTransfer): boolean {
 		["files", "text/uri-list", "codefiles"].includes(type.toLowerCase()),
 	);
 }
-/** ファイル内容をJSONで送れるBase64へ変換する。 */
-function readFile(file: File): Promise<DroppedAttachment> {
-	return new Promise((resolve, reject) => {
-		const reader = new FileReader();
-		reader.onerror = () =>
-			reject(new Error("ファイルを読み込めませんでした。"));
-		reader.onload = () =>
-			resolve({
-				name: file.name,
-				data: (reader.result as string).split(",")[1] ?? "",
-			});
-		reader.readAsDataURL(file);
-	});
-}
+
 /** 添付ボタンと同じ利用条件を適用し、非同期読み込み中の会話切り替えを排除する。 */
 export function useAttachmentDrop(
 	state: ChatState,
@@ -51,6 +35,7 @@ export function useAttachmentDrop(
 	const scope = `${state.connection}:${state.cwd}:${state.sessionId}`;
 	const current = useRef({ scope, enabled });
 	current.current = { scope, enabled };
+
 	/** 子要素のLexicalやブラウザーがファイルを挿入・表示する前に処理する。 */
 	const stop = (event: DragEvent) => {
 		event.preventDefault();
@@ -97,67 +82,16 @@ export function useAttachmentDrop(
 				if (!enabled || pending.current) {
 					return;
 				}
+
 				pending.current = true;
 				setReading(true);
 				setError("");
 				try {
-					if (
-						Array.from(event.dataTransfer.items).some(
-							(item) => item.webkitGetAsEntry?.()?.isDirectory,
-						)
-					) {
-						throw new Error("フォルダーは添付できません。");
-					}
-					let uris = event.dataTransfer
-						.getData("text/uri-list")
-						.split(/\r?\n/)
-						.map((uri) => uri.trim())
-						.filter(isLocalFileUri);
-					// VS Codeのエクスプローラーが渡すローカル絶対パスも参照として扱う。
-					const codeFiles = event.dataTransfer.getData("CodeFiles");
-					if (!uris.length && codeFiles) {
-						const paths: unknown = JSON.parse(codeFiles);
-						if (Array.isArray(paths)) {
-							uris = paths
-								.filter(
-									(path): path is string =>
-										typeof path === "string",
-								)
-								.filter((path) =>
-									/^(?:[a-z]:[\\/]|\/|\\\\)/i.test(path),
-								)
-								.map((path) => {
-									const normalized = path.replaceAll(
-										"\\",
-										"/",
-									);
-									return `file:${normalized.startsWith("//") ? "" : normalized.startsWith("/") ? "//" : "///"}${normalized
-										.split("/")
-										.map(encodeURIComponent)
-										.join("/")
-										.replace(/^([a-z])%3A/i, "$1:")}`;
-								})
-								.filter(isLocalFileUri);
-						}
-					}
-					const files = Array.from(event.dataTransfer.files);
-					if (
-						Math.max(uris.length, files.length) > 20 ||
-						files.reduce((sum, file) => sum + file.size, 0) >
-							MAX_DROP_BYTES
-					) {
-						throw new Error(
-							"一度に添付できるのは20ファイル、内容の転送は合計20MBまでです。",
-						);
-					}
-					const dropped = uris.length
-						? uris.map((uri) => ({ uri }))
-						: await Promise.all(files.map(readFile));
-					if (!dropped.length) {
-						throw new Error(
-							"ローカルファイルをドロップしてください。",
-						);
-					}
+					const dropped = await readDroppedAttachments(
+						event.dataTransfer,
+					);
+
+					// 読み取り中に会話や接続が変わった場合は、別の会話へ添付しない。
 					if (
 						current.current.scope === scope &&
 						current.current.enabled

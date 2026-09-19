@@ -1,9 +1,9 @@
 // 実際のチャット上でタイトル・接続遷移・表示先メッセージを再現する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import { createMockBridge } from "./mocks/mockBridge";
-import type { Bridge } from "../../webview/vscodeBridge";
+import { ChatApp } from "../../../webview/chat/ChatApp";
+import { createMockBridge } from "../mocks/mockBridge";
+import type { Bridge } from "../../../webview/vscodeBridge";
 
 /** Host専用操作を再現するBridgeで、下書きの復元も確認可能にする。 */
 function HeaderStory({

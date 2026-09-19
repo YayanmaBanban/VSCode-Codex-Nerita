@@ -1,7 +1,7 @@
 // タイトルを履歴一覧の表示条件から独立して保持することを確認する。
 import { expect, it } from "vitest";
 import { SessionState } from "../../src/extension/session/sessionState";
-import type { ChatState } from "../../src/shared/messages";
+import type { ChatState } from "../../src/shared/chatState";
 /** 通知を再現するため、正本の更新だけをテストへ公開する。 */
 class TitleState extends SessionState {
 	update(patch: Partial<ChatState>) {

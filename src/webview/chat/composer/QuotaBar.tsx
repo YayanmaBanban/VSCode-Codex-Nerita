@@ -1,6 +1,6 @@
 // 利用枠の最小残率と、枠ごとの詳細を入力欄に表示する。
-import type { QuotaWindow } from "../../shared/composer";
-import { SettingsTooltip } from "./SettingsTooltip";
+import type { QuotaWindow } from "../../../shared/composer";
+import { SettingsTooltip } from "../SettingsTooltip";
 import "./quotaBar.css";
 
 /** 枠が取得できた場合だけ、控えめな波付きバーを表示する。 */

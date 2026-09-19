@@ -5,7 +5,7 @@ import { responseParsers } from "../../src/extension/codex/protocol/responses";
 import { codexHarness, deferred } from "./codexHarness";
 import { mcpStatusFixture } from "../fixtures/mcpStatusFixture";
 import type { McpServerSummary } from "../../src/shared/mcp";
-import { isHostMessage } from "../../src/shared/validation";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
 
 it("名前と接続状態だけを検証・抽出する", () => {
 	const page = { data: [mcpStatusFixture], nextCursor: null };

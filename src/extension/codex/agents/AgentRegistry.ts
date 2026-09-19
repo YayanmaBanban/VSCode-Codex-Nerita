@@ -1,5 +1,5 @@
 // 親ターンのフィルターより先に、子Threadの状態と活動の重複を管理する。
-import type { ChatState } from "../../../shared/messages";
+import type { ChatState } from "../../../shared/chatState";
 import type { AgentStatus, SubAgentSummary } from "../../../shared/subAgents";
 import { isRecord } from "../../../shared/validation";
 import {

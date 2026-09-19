@@ -75,7 +75,11 @@ Escape での閉じ操作も確認します。画像と寸法・配色の記録�
 
 ## 開発ツールの配置
 
-共通UI部品は `src/webview/ui/` に置きます。`src/extension/codex/` は制御クラスを直下に残し、
+共通UI部品は `src/webview/ui/` に置きます。`src/webview/chat/` は画面の組み立てと共有状態を直下に残し、
+入力・補完・添付を `composer/`、発言の表示を `messages/`、接続ヘッダーを `connection/` にまとめています。
+履歴・検索・性格設定・エージェント・ツール表示は、それぞれ既存の機能別フォルダに置きます。
+Storyも `src/stories/chat/` 内で対応する機能別の配置にします。
+`src/extension/codex/` は制御クラスを直下に残し、
 応答・通知の検証を `protocol/`、表示項目・イベントの変換を `items/`、
 エージェント管理を `agents/`、プロセス起動・通信を `runtime/` にまとめています。
 
@@ -90,8 +94,8 @@ Story専用のクラスは `config/storybook/tailwind.css` から追加で収集
 
 画面配置・設定メニュー・添付・メッセージ・承認カード・ツールカード・ファイル差分の通常スタイルを移行済みです。
 ツール本文の共通クラスは `src/webview/chat/tools/toolStyles.ts`、発言操作の共通クラスは
-`src/webview/chat/messageStyles.ts` にまとめています。残す CSS は、基本スタイルの `chat.css`、
-Tailwind のテーマ定義 `tailwind.css`、専用アニメーションの `loaders.css` と `quotaBar.css` です。Preflight は使わず、
+`src/webview/chat/messages/messageStyles.ts` にまとめています。残す CSS は、基本スタイルの `chat.css`、
+Tailwind のテーマ定義 `tailwind.css`、専用アニメーションの `loaders.css` と `composer/quotaBar.css` などです。Preflight は使わず、
 既存の基本スタイルを維持します。色は `text-muted`・`bg-input` などの用途別トークンを
 通じて VS Code のテーマ変数を参照します。既存の寸法を保つ箇所には px の任意値を使います。
 専用 CSS と併用する場合、レイヤー外の既存 CSS がユーティリティより優先されるため、

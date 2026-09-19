@@ -5,7 +5,7 @@ import type {
 	SessionReference,
 	SessionReferencesResult,
 } from "../../../shared/sessionReferences";
-import { sessionCompletionItems } from "./completions";
+import { sessionCompletionItems } from "./completionItems";
 
 /** 古い検索・閉じたメニューへの応答を捨て、同名の会話はIDで区別する。 */
 export function useSessionReferences(

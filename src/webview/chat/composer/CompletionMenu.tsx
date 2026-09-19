@@ -6,7 +6,7 @@ import {
 	useState,
 	type KeyboardEvent,
 } from "react";
-import type { CompletionItem } from "./completions";
+import type { CompletionItem } from "./completionItems";
 
 /** 検索中も本文の選択範囲を保持し、キーボードとクリックを共通化する。 */
 export function CompletionMenu({

@@ -1,8 +1,8 @@
 // 添付とスキルを持つチャットで、候補選択と送信する本文を確認する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import { createMockBridge } from "./mocks/mockBridge";
+import { ChatApp } from "../../../webview/chat/ChatApp";
+import { createMockBridge } from "../mocks/mockBridge";
 
 /** 実接続を使わず、Hostが渡す一覧を再現する。 */
 function ComposerMenuStory() {

@@ -27,6 +27,7 @@ export function validReferences(text: string, value: unknown): boolean {
 	if (!Array.isArray(value) || value.length > text.length) {
 		return false;
 	}
+
 	let end = 0;
 	return value.every((item: unknown) => {
 		if (!item || typeof item !== "object") {
@@ -41,6 +42,7 @@ export function validReferences(text: string, value: unknown): boolean {
 		) {
 			return false;
 		}
+
 		const expected = pathText(reference.path);
 		end = reference.offset + expected.length;
 		return text.slice(reference.offset, end) === expected;

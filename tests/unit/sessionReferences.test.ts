@@ -4,7 +4,8 @@ import { codexHarness, deferred, historyThread } from "./codexHarness";
 import type { HistoryTurn } from "../../src/extension/codex/protocol/history";
 import type { HostMessage } from "../../src/shared/messages";
 import { readSessionContext } from "../../src/extension/codex/sessionContext";
-import { isHostMessage, isUiMessage } from "../../src/shared/validation";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { pathText, validReferences } from "../../src/shared/composerReferences";
 import type { ContextTurnStartParams } from "../../src/extension/codex/additionalContext";
 

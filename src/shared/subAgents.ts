@@ -1,5 +1,5 @@
 // エージェントの寿命と読み取り専用ビューの通信データを定義する。
-import type { ChatMessage, ToolSummary } from "./messages";
+import type { ChatMessage, ToolSummary } from "./chatState";
 import { isRecord } from "./validation";
 
 /** HostとWebviewで共有する同梱アイコンの表示キー。 */
@@ -19,8 +19,10 @@ export const agentIconKeys = [
 	"seal",
 	"turtle",
 ] as const;
+
 /** 同梱アイコンだけを指定できるキー。 */
 export type AgentIconKey = (typeof agentIconKeys)[number];
+
 /** 履歴の読み直しや通知順序に左右されないアイコンをThread IDから選ぶ。 */
 export function agentIconKey(threadId: string): AgentIconKey {
 	let hash = 0;
@@ -41,6 +43,7 @@ export type AgentStatus =
 	| "errored"
 	| "systemError"
 	| "notFound";
+
 /** Thread IDを識別子とするタイムラインカード。 */
 export type SubAgentSummary = {
 	threadId: string;
@@ -57,6 +60,7 @@ export type SubAgentSummary = {
 	iconKey: AgentIconKey;
 	order: number;
 };
+
 /** 親の実行状態とは別に取得する会話のスナップショット。 */
 export type AgentThreadView = {
 	threadId: string;
@@ -65,6 +69,7 @@ export type AgentThreadView = {
 	tools: ToolSummary[];
 	agents: SubAgentSummary[];
 };
+
 /** 未知の状態値を表示層へ流さない。 */
 export function isAgentStatus(value: unknown): value is AgentStatus {
 	return (
@@ -82,6 +87,7 @@ export function isAgentStatus(value: unknown): value is AgentStatus {
 		].includes(value)
 	);
 }
+
 /** Hostから渡されるカードの全フィールドを検証する。 */
 export function isSubAgent(value: unknown): value is SubAgentSummary {
 	return (

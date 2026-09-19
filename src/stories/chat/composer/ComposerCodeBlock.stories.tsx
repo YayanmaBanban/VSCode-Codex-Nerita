@@ -1,11 +1,11 @@
 // Hostのメニュー通知を代替し、実入力欄の選択保持と変換を観察する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ComposerPart } from "../../shared/composerContent";
-import { isRecord } from "../../shared/validation";
-import { ComposerInput } from "../../webview/chat/ComposerInput";
-import { createMockBridge } from "./mocks/mockBridge";
-import "../../webview/chat/chat.css";
+import type { ComposerPart } from "../../../shared/composerContent";
+import { isRecord } from "../../../shared/validation";
+import { ComposerInput } from "../../../webview/chat/composer/ComposerInput";
+import { createMockBridge } from "../mocks/mockBridge";
+import "../../../webview/chat/chat.css";
 
 /** 標準メニューの代わりに通知ボタンを置き、フォーカス移動も再現する。 */
 function CodeBlockStory() {

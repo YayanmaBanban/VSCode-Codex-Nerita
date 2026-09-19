@@ -1,5 +1,5 @@
 // Guardian の構造化された審査結果を表示し、未知の形式は汎用表示へ戻す。
-import type { ToolSummary } from "../../../shared/messages";
+import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { GenericTool, Value } from "./ToolContent";
 import { toolLabelClass } from "./toolStyles";

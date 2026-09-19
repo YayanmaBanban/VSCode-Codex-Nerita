@@ -3,13 +3,10 @@ import { useId, useRef, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { Attachment } from "../../../shared/composer";
 import type { SkillSummary } from "../../../shared/skills";
+import { handleCompletionKey } from "./completionKeyboard";
 import { useCompletionEditor } from "./useCompletionEditor";
-import {
-	$insertCompletion,
-	completionItems,
-	type Completion,
-	type CompletionItem,
-} from "./completions";
+import { $insertCompletion, type Completion } from "./completions";
+import { completionItems, type CompletionItem } from "./completionItems";
 import { CompletionMenu } from "./CompletionMenu";
 import type { Bridge } from "../../vscodeBridge";
 import { useWorkspacePaths } from "./useWorkspacePaths";
@@ -97,57 +94,23 @@ export function CompletionPlugin({
 		setMatch(null);
 		editor.focus();
 	};
-	/** IME確定と修飾キーは候補選択に使わず、未確定の本文を送信しない。 */
-	const handleKey = (event: KeyboardEvent, inSearch = false) => {
-		if (
-			event.isComposing ||
-			event.keyCode === 229 ||
-			editor.isComposing()
-		) {
-			return false;
-		}
-		if (!match || event.ctrlKey || event.metaKey || event.altKey) {
-			return false;
-		}
-		if (event.key === "Escape") {
-			event.preventDefault();
-			close();
-			editor.focus();
-			return true;
-		}
-		if (event.key === "ArrowLeft" && category && !inSearch) {
-			event.preventDefault();
-			back();
-			return true;
-		}
-		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-			event.preventDefault();
-			setSelected(
-				items.length
-					? (index +
-							(event.key === "ArrowDown"
-								? 1
-								: items.length - 1)) %
-							items.length
-					: 0,
-			);
-			return true;
-		}
-		if (
-			(event.key === "Enter" ||
-				event.key === "Tab" ||
-				(event.key === "ArrowRight" &&
-					(items[index]?.category || items[index]?.directory))) &&
-			!event.shiftKey
-		) {
-			event.preventDefault();
-			if (items[index]) {
-				pick(items[index]);
-			}
-			return true;
-		}
-		return false;
-	};
+	const handleKey = (event: KeyboardEvent, inSearch = false) =>
+		handleCompletionKey(
+			event,
+			{
+				editor,
+				match,
+				category,
+				items,
+				index,
+				close,
+				back,
+				pick,
+				setSelected,
+			},
+			inSearch,
+		);
+
 	useCompletionEditor(editor, {
 		match,
 		dismissed,

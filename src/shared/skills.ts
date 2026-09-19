@@ -1,4 +1,5 @@
 // スキル候補を実行環境に依存しない表示用の型で共有する。
+
 /** 接続先が有効として公開したスキル。 */
 export type SkillSummary = { name: string; description: string; path: string };
 

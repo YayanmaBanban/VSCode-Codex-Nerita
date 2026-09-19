@@ -1,4 +1,5 @@
 // セッション一覧の表示情報と利用可能な操作を Host・Webview で共有する。
+
 /** 会話本文を含まない履歴の概要。 */
 export type SessionSummary = {
 	sessionId: string;
@@ -7,6 +8,7 @@ export type SessionSummary = {
 	updatedAt?: string;
 	archived?: boolean;
 };
+
 /** 接続先が公開する履歴操作の対応状況。 */
 export type SessionCapabilities = {
 	list: boolean;
@@ -17,6 +19,7 @@ export type SessionCapabilities = {
 	rename?: boolean;
 	unarchive?: boolean;
 };
+
 /** 現在の会話とは独立した履歴操作。 */
 export type SessionHistoryMessage =
 	| {

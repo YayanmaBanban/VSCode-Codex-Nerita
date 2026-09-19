@@ -1,8 +1,8 @@
 // 長文の逐次表示、項目完了、後続の追記を独立して再現する。
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Messages } from "../../webview/chat/Messages";
-import "../../webview/chat/chat.css";
+import { Messages } from "../../../webview/chat/messages/Messages";
+import "../../../webview/chat/chat.css";
 
 const text = "長い回答を確認します。".repeat(30);
 

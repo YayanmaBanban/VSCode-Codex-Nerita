@@ -1,5 +1,5 @@
 // ツールの本文・差分・任意の入出力を、実行せずテキストとして表示する。
-import type { ToolSummary } from "../../../shared/messages";
+import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { FileDiff } from "./FileDiff";
 import { UnifiedDiff } from "./UnifiedDiff";

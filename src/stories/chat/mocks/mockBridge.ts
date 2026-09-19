@@ -1,10 +1,6 @@
 // Story ごとに独立する、App Server や認証を必要としない双方向 Bridge。
-import {
-	initialState,
-	type ChatState,
-	type HostMessage,
-	type UiMessage,
-} from "../../../shared/messages";
+import { initialState, type ChatState } from "../../../shared/chatState";
+import { type HostMessage, type UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
 import { settingsFixture } from "../../../../tests/fixtures/settingsFixture";
 import { mockSettings } from "./mockSettings";

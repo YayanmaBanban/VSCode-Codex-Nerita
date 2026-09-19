@@ -2,7 +2,8 @@
 import { afterEach, expect, it } from "vitest";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
 import type { HistoryTurn } from "../../src/extension/codex/protocol/history";
-import { isHostMessage, isUiMessage } from "../../src/shared/validation";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
 
 const harnesses: ReturnType<typeof codexHarness>[] = [];
 afterEach(async () => {

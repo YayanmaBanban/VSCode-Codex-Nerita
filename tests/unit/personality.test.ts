@@ -6,7 +6,8 @@ import { expect, it } from "vitest";
 import { parse, stringify } from "smol-toml";
 import { PersonalityStore } from "../../src/extension/codex/PersonalityStore";
 import { composeDeveloperInstructions } from "../../src/shared/personality";
-import { isUiMessage, isHostMessage } from "../../src/shared/validation";
+import { isUiMessage } from "../../src/shared/uiMessageValidation";
+import { isHostMessage } from "../../src/shared/hostMessageValidation";
 /** 実ユーザーの設定に触れない保存先を用意する。 */
 async function fixture() {
 	const root = resolve("dist/personality-tests", randomUUID());

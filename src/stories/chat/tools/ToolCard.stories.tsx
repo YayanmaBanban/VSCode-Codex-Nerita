@@ -1,11 +1,8 @@
 // ツールの専用表示と完了時の開閉を、実コンポーネントで再現する。
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-	initialState,
-	type ToolSummary,
-	type UiMessage,
-} from "../../../shared/messages";
+import { initialState, type ToolSummary } from "../../../shared/chatState";
+import { type UiMessage } from "../../../shared/messages";
 import type { AsyncTask } from "../../../shared/asyncTask";
 import { Activity } from "../../../webview/chat/Activity";
 import "../../../webview/chat/chat.css";

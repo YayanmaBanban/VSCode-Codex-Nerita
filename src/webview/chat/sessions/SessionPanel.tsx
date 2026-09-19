@@ -1,10 +1,13 @@
 // 右ペインに作業フォルダとセッション履歴を表示する。
+import { clsx } from "clsx";
 import { useEffect, useRef, useState } from "react";
 import { motion, useIsPresent, useReducedMotion } from "motion/react";
-import { Archive, List, LoaderCircle, X } from "lucide-react";
-import type { ChatState, UiMessage } from "../../../shared/messages";
+import { Archive, List } from "lucide-react";
+import type { ChatState } from "../../../shared/chatState";
+import type { UiMessage } from "../../../shared/messages";
 import { taskActive } from "../../../shared/asyncTask";
-import { SessionItem, sessionActionClass as actionClass } from "./SessionItem";
+import { SessionPanelHeader } from "./SessionPanelHeader";
+import { SessionItem } from "./SessionItem";
 
 /** 一覧を開いた時だけ相対時刻を更新し、閉じる操作へフォーカスする。 */
 export function SessionPanel({
@@ -54,7 +57,11 @@ export function SessionPanel({
 			aria-hidden={!present}
 			id="session-panel"
 			aria-label="セッション一覧"
-			className="absolute inset-y-0 right-0 z-20 flex w-[350px] max-w-full shrink-0 flex-col border-0 border-l border-solid border-panel-border bg-menu text-menu-text shadow-[-8px_0_24px_#0002] [@media(min-width:760px)]:static [@media(min-width:760px)]:shadow-none"
+			className={clsx(
+				"absolute inset-y-0 right-0 z-20 flex w-[350px] max-w-full shrink-0 flex-col",
+				"border-0 border-l border-solid border-panel-border bg-menu text-menu-text shadow-[-8px_0_24px_#0002]",
+				"[@media(min-width:760px)]:static [@media(min-width:760px)]:shadow-none",
+			)}
 			onKeyDown={(event) => {
 				if (event.key === "Escape") {
 					event.stopPropagation();
@@ -62,44 +69,7 @@ export function SessionPanel({
 				}
 			}}
 		>
-			<header className="border-0 border-b border-solid border-panel-border px-[16px] py-[14px]">
-				<div className="flex items-center justify-between gap-[8px]">
-					<h2 className="m-0 text-[13px] font-semibold">
-						セッション一覧
-					</h2>
-					<button
-						ref={close}
-						type="button"
-						className={actionClass}
-						aria-label="セッション一覧を閉じる"
-						title="閉じる"
-						onClick={onClose}
-					>
-						<X size={16} aria-hidden="true" />
-					</button>
-				</div>
-				<div className="mt-[8px] flex items-start gap-[8px]">
-					<span
-						className="min-w-0 flex-1 break-all font-editor text-[12px] leading-[1.6] text-muted"
-						title={state.cwd ?? undefined}
-					>
-						{state.cwd ?? "ワークスペース未接続"}
-					</span>
-					{state.sessionsLoading && (
-						<span
-							role="progressbar"
-							aria-label="セッション一覧を取得中"
-							className="mt-[1px] inline-flex shrink-0 text-link"
-						>
-							<LoaderCircle
-								size={15}
-								className="motion-safe:animate-spin"
-								aria-hidden="true"
-							/>
-						</span>
-					)}
-				</div>
-			</header>
+			<SessionPanelHeader state={state} close={close} onClose={onClose} />
 			{capabilities.unarchive && (
 				<div
 					className="flex gap-[8px] px-[12px] py-[8px]"
@@ -110,7 +80,12 @@ export function SessionPanel({
 						<button
 							key={String(archived)}
 							type="button"
-							className="inline-flex items-center gap-[6px] text-[12px] aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4"
+							className={clsx(
+								"inline-flex items-center",
+								"gap-[6px]",
+								"text-[12px]",
+								"aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4",
+							)}
 							aria-pressed={state.sessionsArchived === archived}
 							disabled={
 								state.sessionPending ||

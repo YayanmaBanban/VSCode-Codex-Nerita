@@ -1,7 +1,7 @@
 // オプションの先頭からサイドバーの保存済み配置を選択する。
 import { Menu } from "@base-ui/react/menu";
 import { Check, ChevronRight, Columns2 } from "lucide-react";
-import type { SidebarLocation } from "../../shared/sidebar";
+import type { SidebarLocation } from "../../../shared/sidebar";
 
 /** ホバー待機とキーボード操作を同じサブメニューで扱う。 */
 export function SidebarMenu({

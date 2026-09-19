@@ -1,5 +1,6 @@
 // 下書き内の通常文と貼り付けブロックを、表示先をまたいで保持する。
 import { validReferences, type ComposerReference } from "./composerReferences";
+
 /** 入力順と安定した識別子を持つ下書きの断片。 */
 export type ComposerPart = {
 	id: string;
@@ -21,6 +22,7 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 	) {
 		return false;
 	}
+
 	const ids = new Set<string>();
 	return (
 		(parts as unknown[]).every((value, index) => {
@@ -42,6 +44,7 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 			) {
 				return false;
 			}
+
 			ids.add(part.id);
 			return true;
 		}) &&

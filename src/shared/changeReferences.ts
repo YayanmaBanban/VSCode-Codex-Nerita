@@ -15,18 +15,22 @@ export const changeScopes = {
 		description: "mainとの分岐点から現在のブランチまでの変更",
 	},
 } as const;
+
 /** ユーザーが選べる差分の範囲。 */
 export type ChangeScope = keyof typeof changeScopes;
+
 /** 差分そのものは保存せず、送信時に最新内容を読み込む参照。 */
 export type ChangeReference = {
 	kind: "changes";
 	scope: ChangeScope;
 	name: string;
 };
+
 /** コマンド引数には既知の範囲だけを許可する。 */
 export function isChangeScope(value: unknown): value is ChangeScope {
 	return typeof value === "string" && Object.hasOwn(changeScopes, value);
 }
+
 /** 保存データやクリップボード由来のチップを検証する。 */
 export function isChangeReference(value: unknown): value is ChangeReference {
 	if (!value || typeof value !== "object") {
@@ -39,6 +43,7 @@ export function isChangeReference(value: unknown): value is ChangeReference {
 		entry.name === changeScopes[entry.scope].name
 	);
 }
+
 /** 送信範囲の数と値をHost境界で検証する。 */
 export function validChangeScopes(
 	value: unknown,

@@ -1,10 +1,10 @@
 // セッションチップの保存・復元・送信失敗を実際のチャットUIで確認する。
 import { useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import type { Bridge } from "../../webview/vscodeBridge";
-import type { ComposerPart } from "../../shared/composerContent";
-import { createMockBridge } from "./mocks/mockBridge";
+import { ChatApp } from "../../../webview/chat/ChatApp";
+import type { Bridge } from "../../../webview/vscodeBridge";
+import type { ComposerPart } from "../../../shared/composerContent";
+import { createMockBridge } from "../mocks/mockBridge";
 
 /** 参照元の会話をロードせず、送信される参照IDだけを観測する。 */
 function SessionStory() {

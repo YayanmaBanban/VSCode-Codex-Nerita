@@ -2,33 +2,21 @@
 import { useEffect, useEffectEvent, useRef } from "react";
 import { AnimatePresence } from "motion/react";
 import type { Bridge } from "../vscodeBridge";
+import { ChatConversation } from "./ChatConversation";
 import { useChat } from "./useChat";
 import { useChatView } from "./useChatView";
-import { ConnectionHeader } from "./ConnectionHeader";
-import { Activity } from "./Activity";
-import { Messages } from "./Messages";
-import { ThinkingIndicator } from "./ThinkingIndicator";
-import { RunStatusIcon } from "./RunStatusIcon";
-import { Composer } from "./Composer";
+import { ConnectionHeader } from "./connection/ConnectionHeader";
+import { Composer } from "./composer/Composer";
 import { NotificationCard } from "./NotificationCard";
-import { usePromptSubmission } from "./usePromptSubmission";
+import { usePromptSubmission } from "./composer/usePromptSubmission";
 import "./chat.css";
 import { SessionPanel } from "./sessions/SessionPanel";
 import { useSessionPanel } from "./sessions/useSessionPanel";
 import { ChatSearchBar } from "./search/ChatSearchBar";
 import { useChatSearch } from "./search/useChatSearch";
-import { AgentCard } from "./agents/AgentCard";
 import { AgentViewer } from "./agents/AgentViewer";
 import { useAgentViewer } from "./agents/useAgentViewer";
 
-const runLabels = {
-	idle: "",
-	running: "",
-	cancelling: "停止しています…",
-	completed: "",
-	cancelled: "停止しました",
-	failed: "実行に失敗しました",
-};
 /** 差し替え可能な Bridge を使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: { bridge: Bridge }) {
 	const {
@@ -97,75 +85,14 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					inert={sessionPanel.open && sessionPanel.compact}
 				>
 					<ChatSearchBar search={search} />
-					<section
-						ref={conversation}
-						className="conversation min-h-0 flex-1 overflow-y-auto px-[20px] py-[22px] [scrollbar-width:thin]"
-						aria-label="会話"
-					>
-						{state.messages.length === 0 && (
-							<div className="empty-state px-0 pt-[10vh] pb-[30px] text-center">
-								<p className="text-[12px] text-muted">
-									このワークスペースで作業します
-								</p>
-								<p className="text-[12px] leading-[1.7] text-muted [overflow-wrap:anywhere]">
-									{state.cwd}
-								</p>
-							</div>
-						)}
-						<div
-							role="log"
-							aria-label="メッセージ"
-							aria-live="polite"
-							aria-relevant="additions text"
-						>
-							<Messages
-								messages={state.messages}
-								busy={busy}
-								tools={state.tools}
-								agents={state.agents.filter(
-									(agent) =>
-										agent.parentThreadId ===
-										state.sessionId,
-								)}
-								renderAgent={(agent) => (
-									<AgentCard
-										key={agent.threadId}
-										agent={agent}
-										onOpen={agentViewer.open}
-									/>
-								)}
-								renderTool={(tool) => (
-									<Activity
-										key={String(tool.runId) + tool.id}
-										state={{
-											...state,
-											tools: [tool],
-											permissions: [],
-										}}
-										send={send}
-									/>
-								)}
-							/>
-						</div>
-						<Activity state={{ ...state, tools: [] }} send={send} />
-						{state.run === "running" && <ThinkingIndicator />}
-						{runLabels[state.run] && (
-							<p
-								className="run-status my-2 flex items-center gap-1 text-[12px] text-muted"
-								role="status"
-							>
-								{runLabels[state.run]}
-								<RunStatusIcon
-									kind={
-										state.run === "failed"
-											? "startled"
-											: "loaf"
-									}
-								/>
-							</p>
-						)}
-						<div ref={bottom} />
-					</section>
+					<ChatConversation
+						state={state}
+						busy={busy}
+						send={send}
+						conversation={conversation}
+						bottom={bottom}
+						onOpenAgent={agentViewer.open}
+					/>
 					{submission.notice && (
 						<NotificationCard
 							key={submission.notice.id}

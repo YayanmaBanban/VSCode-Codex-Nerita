@@ -1,7 +1,7 @@
 // 読み取り専用の子Threadビューと、ネストを一段戻るヘッダーを表示する。
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import type { ChatState } from "../../../shared/messages";
-import { Messages } from "../Messages";
+import type { ChatState } from "../../../shared/chatState";
+import { Messages } from "../messages/Messages";
 import { ToolCard } from "../tools/ToolCard";
 import { AgentCard, AgentIcon, agentName } from "./AgentCard";
 import type { useAgentViewer } from "./useAgentViewer";
