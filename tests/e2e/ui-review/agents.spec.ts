@@ -2,6 +2,36 @@
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
+	test(`Agentの全アイコンを表示する: ${colorScheme}`, async ({
+		page,
+	}, info) => {
+		const errors: string[] = [];
+		page.on("pageerror", (error) => errors.push(error.message));
+		page.on("console", (message) => {
+			if (message.type() === "error") {
+				errors.push(message.text());
+			}
+		});
+		await page.setViewportSize({ width: 720, height: 720 });
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/iframe.html?id=chat-agents--icons&viewMode=story");
+		const icons = page.locator(".agent-card span[aria-hidden] > svg");
+		await expect(icons).toHaveCount(14);
+		for (const icon of await icons.all()) {
+			await expect(icon).toBeVisible();
+			const bounds = await icon.boundingBox();
+			expect(bounds!.width).toBeGreaterThan(0);
+			expect(bounds!.width).toBe(bounds!.height);
+		}
+		await info.attach(`icons-${colorScheme}`, {
+			body: await page.screenshot({
+				path: info.outputPath(`icons-${colorScheme}.png`),
+				fullPage: true,
+			}),
+			contentType: "image/png",
+		});
+		expect(errors).toEqual([]);
+	});
 	test(`Agentの全状態を狭い幅で表示する: ${colorScheme}`, async ({
 		page,
 	}, info) => {

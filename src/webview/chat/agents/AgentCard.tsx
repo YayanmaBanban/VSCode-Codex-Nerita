@@ -1,10 +1,9 @@
 // エージェントの状態・アイコン・名前を独立したタイムラインカードで表示する。
 import { Check, Circle, LoaderCircle, Square, X } from "lucide-react";
 import type { AgentStatus, SubAgentSummary } from "../../../shared/subAgents";
-import cheetah from "../../../../media/icons/cheetah_32.svg?raw";
+import { icons } from "./AgentIcons";
 import "../loaders.css";
 
-const icons = { cheetah };
 const labels: Record<AgentStatus, string> = {
 	pendingInit: "準備中",
 	running: "実行中",
@@ -34,7 +33,9 @@ export function AgentIcon({
 		<span
 			aria-hidden="true"
 			className="block size-8 shrink-0 overflow-hidden rounded-[6px] [&>svg]:size-full"
-			dangerouslySetInnerHTML={{ __html: icons[iconKey] }}
+			dangerouslySetInnerHTML={{
+				__html: icons[iconKey] ?? icons.cheetah,
+			}}
 		/>
 	);
 }

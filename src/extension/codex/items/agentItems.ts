@@ -1,6 +1,7 @@
 // 活動イベントと協調ツールのスナップショットを、Thread単位のカードへ正規化する。
 import type { ChatState } from "../../../shared/messages";
 import {
+	agentIconKey,
 	isAgentStatus,
 	type AgentStatus,
 	type SubAgentSummary,
@@ -75,7 +76,7 @@ export function agentItemPatch(
 			activityItemId: item.id,
 			agentPath: item.agentPath,
 			status,
-			iconKey: previous?.iconKey ?? "cheetah",
+			iconKey: previous?.iconKey ?? agentIconKey(item.agentThreadId),
 			order: previous?.order ?? nextTimelineOrder(state),
 		});
 	} else if (item.type === "collabAgentToolCall") {
