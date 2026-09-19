@@ -1,7 +1,7 @@
 // MCPの取得中表示と、接続状態の色付きリストをメッセージ内に描画する。
 import { useReducedMotion } from "motion/react";
 import type { McpMessageContent } from "../../shared/mcp";
-import { ShinyText } from "../../components/shinytext";
+import { ShinyText } from "../ui/ShinyText";
 import { RunStatusIcon } from "./RunStatusIcon";
 
 /** 取得中は光沢文字と猫を表示し、完了後は状態付きの一覧へ置き換える。 */

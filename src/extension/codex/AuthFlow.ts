@@ -1,6 +1,6 @@
 // ブラウザ認証の通知と応答の順序を吸収し、秘密情報をUIへ渡さない。
 import type { CodexClient } from "./CodexClient";
-import type { AppServerNotification } from "./rpcMessage";
+import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "../../shared/validation";
 
 /** VS Code のブラウザ起動と環境変数取得を差し替える境界。 */

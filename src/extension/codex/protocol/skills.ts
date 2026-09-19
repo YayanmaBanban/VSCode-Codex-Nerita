@@ -1,6 +1,6 @@
 // スキル一覧の必須フィールドを検証し、有効な候補だけを公開する。
-import { isRecord } from "../../shared/validation";
-import { validSkills, type SkillSummary } from "../../shared/skills";
+import { isRecord } from "../../../shared/validation";
+import { validSkills, type SkillSummary } from "../../../shared/skills";
 
 /** App Serverの一覧を表示と送信に共通の候補へ正規化する。 */
 export function parseSkills(value: unknown): SkillSummary[] {

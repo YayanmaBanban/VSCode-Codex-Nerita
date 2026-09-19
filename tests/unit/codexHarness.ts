@@ -1,12 +1,12 @@
 // App Server の応答順序と通知を任意に制御する、状態管理テスト用の接続。
-import type { ModelInfo } from "../../src/extension/codex/accountProtocol";
+import type { ModelInfo } from "../../src/extension/codex/protocol/account";
 import { vi } from "vitest";
 import type { TurnStartParams } from "../../src/codex-app-server/v2/TurnStartParams";
 import type { ThreadStartParams } from "../../src/codex-app-server/v2/ThreadStartParams";
-import type { AppServerCallbacks } from "../../src/extension/codex/AppServerTransport";
+import type { AppServerCallbacks } from "../../src/extension/codex/runtime/AppServerTransport";
 import { CodexSessionController } from "../../src/extension/codex/CodexSessionController";
 import type { CodexConnection } from "../../src/extension/codex/CodexLifecycle";
-import type { HistoryThread } from "../../src/extension/codex/historyProtocol";
+import type { HistoryThread } from "../../src/extension/codex/protocol/history";
 
 /** 各テストで保存形式や本文を上書きできる履歴を用意する。 */
 export function historyThread(id = "saved"): HistoryThread {

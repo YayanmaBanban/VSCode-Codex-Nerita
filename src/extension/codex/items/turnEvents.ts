@@ -1,7 +1,7 @@
 // Phase 1 が使う通知を検証し、会話・ターン・項目の識別子を正規化する。
-import { isRecord } from "../../shared/validation";
-import type { AppServerNotification } from "./rpcMessage";
-import { parseTurn, type TurnInfo } from "./turnProtocol";
+import { isRecord } from "../../../shared/validation";
+import type { AppServerNotification } from "../protocol/rpcMessage";
+import { parseTurn, type TurnInfo } from "../protocol/turn";
 
 /** 対象ターンへ適用できる通知だけを表す。 */
 export type TurnEvent =

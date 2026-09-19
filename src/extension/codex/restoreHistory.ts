@@ -3,8 +3,8 @@ import { initialState } from "../../shared/messages";
 import { isRecord } from "../../shared/validation";
 import { nextTimelineOrder } from "../session/timelineOrder";
 import type { CodexConnection } from "./CodexLifecycle";
-import type { HistoryThread, HistoryTurn } from "./historyProtocol";
-import { itemPatch } from "./chatItems";
+import type { HistoryThread, HistoryTurn } from "./protocol/history";
+import { itemPatch } from "./items/chatItems";
 
 /** 接続世代とカーソルの循環を確認しながら全ページを取得する。 */
 async function pages<T>(

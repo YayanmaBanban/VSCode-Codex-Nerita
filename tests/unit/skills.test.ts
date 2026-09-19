@@ -1,6 +1,6 @@
 // スキル一覧の検証と、通常送信・追加送信に渡すコンテキストを確認する。
 import { expect, it, vi } from "vitest";
-import { parseSkills } from "../../src/extension/codex/skillsProtocol";
+import { parseSkills } from "../../src/extension/codex/protocol/skills";
 import { skillInput } from "../../src/extension/codex/skillInput";
 import { codexHarness } from "./codexHarness";
 

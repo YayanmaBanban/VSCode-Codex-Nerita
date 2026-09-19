@@ -2,7 +2,7 @@
 import { CodexOptions } from "./CodexOptions";
 import type { ActiveTurn } from "./ActiveTurn";
 import { Approvals, parseApproval } from "./Approvals";
-import type { AppServerRequest } from "./rpcMessage";
+import type { AppServerRequest } from "./protocol/rpcMessage";
 import { isRecord } from "../../shared/validation";
 import { interactionRequest } from "./interactionRequests";
 import { permissionProfile } from "./permissionProfile";

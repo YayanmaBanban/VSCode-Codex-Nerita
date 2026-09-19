@@ -1,6 +1,6 @@
 // 推論・計画・MCPなどの完了項目を、共通ツールカードへ正規化する。
-import type { ToolSummary } from "../../shared/messages";
-import { isRecord } from "../../shared/validation";
+import type { ToolSummary } from "../../../shared/messages";
+import { isRecord } from "../../../shared/validation";
 
 /** テキストを実行しない表示用コンテンツで包む。 */
 export const textContent = (text: string) => ({

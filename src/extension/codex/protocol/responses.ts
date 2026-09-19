@@ -1,26 +1,26 @@
 // 利用する RPC の生成型と、受信データの実行時検証を結び付ける。
-import type { ClientRequest } from "../../codex-app-server/ClientRequest";
-import type { InitializeResponse } from "../../codex-app-server/InitializeResponse";
-import type { ThreadLoadedListResponse } from "../../codex-app-server/v2/ThreadLoadedListResponse";
-import { isRecord } from "../../shared/validation";
-import { parseSkills } from "./skillsProtocol";
-import { parseMcpStatus } from "./mcpStatus";
-import { parseModels, parseLogin } from "./accountProtocol";
-import { parseQuotaResponse } from "./usageProtocol";
+import type { ClientRequest } from "../../../codex-app-server/ClientRequest";
+import type { InitializeResponse } from "../../../codex-app-server/InitializeResponse";
+import type { ThreadLoadedListResponse } from "../../../codex-app-server/v2/ThreadLoadedListResponse";
+import { isRecord } from "../../../shared/validation";
+import { parseSkills } from "./skills";
+import { parseMcpStatus } from "../mcpStatus";
+import { parseModels, parseLogin } from "./account";
+import { parseQuotaResponse } from "./usage";
 import {
 	parseThreads,
 	parseTurns,
 	parseItems,
 	parseReadThread,
 	parseResumedThread,
-} from "./historyProtocol";
+} from "./history";
 import {
 	parseStartedThread,
 	parseStartedTurn,
 	parseSteeredTurn,
 	parseInterrupt,
 	parseAccount,
-} from "./turnProtocol";
+} from "./turn";
 
 /** 対応済みメソッドだけを公開し、応答の生成型を固定する。 */
 export type AppServerResponses = {

@@ -2,8 +2,8 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness } from "./codexHarness";
 import { isHostMessage } from "../../src/shared/validation";
-import { parseModels } from "../../src/extension/codex/accountProtocol";
-import { parseQuotaResponse } from "../../src/extension/codex/usageProtocol";
+import { parseModels } from "../../src/extension/codex/protocol/account";
+import { parseQuotaResponse } from "../../src/extension/codex/protocol/usage";
 
 const sessions: ReturnType<typeof codexHarness>["session"][] = [];
 afterEach(async () => {

@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
 import type { HostMessage } from "../../src/shared/messages";
 import { isHostMessage } from "../../src/shared/validation";
-import { parseSteeredTurn } from "../../src/extension/codex/turnProtocol";
+import { parseSteeredTurn } from "../../src/extension/codex/protocol/turn";
 
 const harnesses: ReturnType<typeof codexHarness>[] = [];
 afterEach(async () => {

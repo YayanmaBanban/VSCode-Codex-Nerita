@@ -6,13 +6,13 @@ const fake = vi.hoisted(() => ({
 	read: vi.fn(),
 	notify: vi.fn(),
 }));
-vi.mock("../../src/extension/codex/runtime", () => ({
+vi.mock("../../src/extension/codex/runtime/executable", () => ({
 	resolveCodexExecutable: () => Promise.resolve("codex.exe"),
 }));
-vi.mock("../../src/extension/codex/AppServerProcess", () => ({
+vi.mock("../../src/extension/codex/runtime/AppServerProcess", () => ({
 	startAppServerProcess: vi.fn(),
 }));
-vi.mock("../../src/extension/codex/AppServerTransport", () => ({
+vi.mock("../../src/extension/codex/runtime/AppServerTransport", () => ({
 	AppServerTransport: class {
 		request = fake.request;
 		notify = fake.notify;

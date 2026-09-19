@@ -1,12 +1,12 @@
 // モデル候補・会話単位の設定・添付を、実行の開始前に確定する。
 import type { ConfigOption } from "../../shared/composer";
 import type { TurnStartParams } from "../../codex-app-server/v2/TurnStartParams";
-import type { ModelInfo } from "./accountProtocol";
-import type { StartedThread } from "./turnProtocol";
+import type { ModelInfo } from "./protocol/account";
+import type { StartedThread } from "./protocol/turn";
 import { CodexAttachments } from "./CodexAttachments";
 import { isRecord } from "../../shared/validation";
-import { parseQuota, parseUsage } from "./usageProtocol";
-import type { AppServerNotification } from "./rpcMessage";
+import { parseQuota, parseUsage } from "./protocol/usage";
+import type { AppServerNotification } from "./protocol/rpcMessage";
 
 /** 設定は次のturnに適用し、CLIのユーザー設定ファイルを書き換えない。 */
 export abstract class CodexOptions extends CodexAttachments {

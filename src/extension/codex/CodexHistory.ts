@@ -2,7 +2,7 @@
 import { sameCwd } from "../workspace";
 import { CodexCatalog } from "./CodexCatalog";
 import { hydrateHistory, replayHistory } from "./restoreHistory";
-import type { AppServerNotification } from "./rpcMessage";
+import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "../../shared/validation";
 
 /** アーカイブと恒久削除を区別し、成功後に一覧と現在の会話を更新する。 */

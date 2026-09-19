@@ -1,5 +1,5 @@
 // 開始応答より早い通知・承認と、サーバーの実行開始を一つのターンに束ねる。
-import type { TurnEvent } from "./turnEvents";
+import type { TurnEvent } from "./items/turnEvents";
 
 /** UI の実行寿命に対応する、応答待ちと取消可能なターン状態。 */
 export class ActiveTurn {

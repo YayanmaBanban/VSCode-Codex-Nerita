@@ -1,6 +1,6 @@
 // サーバーからの質問・MCPフォームを、取消可能なHostの入力UIへ接続する。
 import { isRecord } from "../../shared/validation";
-import { AppServerRpcError, type AppServerRequest } from "./rpcMessage";
+import { AppServerRpcError, type AppServerRequest } from "./protocol/rpcMessage";
 
 /** 秘密入力や選択をWebviewの永続状態に残さないための境界。 */
 export type InteractionService = {
