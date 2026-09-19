@@ -1,13 +1,13 @@
 // 履歴パネルを変更せず、コンポーザー用の候補検索と内容表示を行う。
-import type { CodexConnection } from "./CodexLifecycle";
+import type { CodexConnection } from "../runtime/connection";
 import {
 	type SessionReferenceOpen,
 	type SessionReferencesRequest,
 	type SessionReferencesResult,
 	isSessionReference,
-} from "../../shared/sessionReferences";
-import { sameCwd } from "../workspace";
-import { threadSources } from "./threadSources";
+} from "../../../shared/sessionReferences";
+import { sameCwd } from "../../workspace";
+import { threadSources } from "../history/threadSources";
 import { readSessionContext } from "./sessionContext";
 
 /** 同じcwdの通常履歴を更新日時順で一ページ返す。 */

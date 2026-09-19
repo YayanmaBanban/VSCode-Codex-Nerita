@@ -3,11 +3,11 @@ import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
 import type { HistoryTurn } from "../../src/extension/codex/protocol/history";
 import type { HostMessage } from "../../src/shared/messages";
-import { readSessionContext } from "../../src/extension/codex/sessionContext";
+import { readSessionContext } from "../../src/extension/codex/context/sessionContext";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { pathText, validReferences } from "../../src/shared/composerReferences";
-import type { ContextTurnStartParams } from "../../src/extension/codex/additionalContext";
+import type { ContextTurnStartParams } from "../../src/extension/codex/context/additionalContext";
 
 const preview = vi.hoisted(() => ({
 	open: vi.fn().mockResolvedValue({}),

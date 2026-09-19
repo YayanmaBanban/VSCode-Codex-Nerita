@@ -31,4 +31,12 @@ UIライブラリやWeb向けアニメーションはWebviewに使用します�
 
 ## 実行コマンド
 
+### powershell
+
+実行ポリシーは、`-ExecutionPolicy RemoteSigned`
+
+文字化けを回避するため、`-Encoding utf8`をつける
+
+### pnpm
+
 ルートで `pnpm watch`、`pnpm check`（Lint・型チェック）、`pnpm test`（拡張機能の結合テスト）、`pnpm compile`（開発ビルド）・`pnpm package`（本番ビルド）を実行できます。検証は変更の影響に合わせて選び、UIの検証は該当ガイドに従います。WindowsでPowerShellの実行ポリシーにより起動できない場合は `pnpm.cmd` を使ってください。

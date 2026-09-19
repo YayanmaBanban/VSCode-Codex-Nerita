@@ -18,7 +18,7 @@ vi.mock("../../src/extension/codex/runtime/AppServerTransport", () => ({
 		notify = fake.notify;
 	},
 }));
-vi.mock("../../src/extension/codex/PersonalityStore", () => ({
+vi.mock("../../src/extension/codex/settings/PersonalityStore", () => ({
 	PersonalityStore: class {
 		read = fake.read;
 	},

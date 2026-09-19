@@ -1,7 +1,10 @@
 // サーバー発の要求を通常 RPC と分け、取消・二重回答・切断後の送信を防ぐ。
-import type { RequestId } from "../../codex-app-server/RequestId";
-import { isRecord } from "../../shared/validation";
-import { AppServerRpcError, type AppServerRequest } from "./protocol/rpcMessage";
+import type { RequestId } from "../../../codex-app-server/RequestId";
+import { isRecord } from "../../../shared/validation";
+import {
+	AppServerRpcError,
+	type AppServerRequest,
+} from "../protocol/rpcMessage";
 
 /** 承認などの要求に対し、生成型に沿った応答を作る Host ハンドラー。 */
 export type ServerRequestHandler = (

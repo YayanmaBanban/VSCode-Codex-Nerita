@@ -1,8 +1,8 @@
 // 他の会話を再開・変更せず、本文だけを上限付きの参照資料として読み込む。
-import type { CodexConnection } from "./CodexLifecycle";
-import type { HistoryThread } from "./protocol/history";
-import { sameCwd } from "../workspace";
-import { hydrateHistory, replayHistory } from "./restoreHistory";
+import type { CodexConnection } from "../runtime/connection";
+import type { HistoryThread } from "../protocol/history";
+import { sameCwd } from "../../workspace";
+import { hydrateHistory, replayHistory } from "../history/restoreHistory";
 import type { AdditionalContext } from "./additionalContext";
 
 /** ユーザーに再試行・参照解除を案内できる読み込み失敗。 */

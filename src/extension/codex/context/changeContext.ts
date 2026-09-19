@@ -2,7 +2,10 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
-import { changeScopes, type ChangeScope } from "../../shared/changeReferences";
+import {
+	changeScopes,
+	type ChangeScope,
+} from "../../../shared/changeReferences";
 import type { AdditionalContext } from "./additionalContext";
 
 const exec = promisify(execFile);

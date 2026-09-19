@@ -1,16 +1,19 @@
 // 差分資料が通常送信・追加指示へ届き、取得失敗や接続変更では送信しないことを確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
-import type { AdditionalContext } from "../../src/extension/codex/additionalContext";
+import type { AdditionalContext } from "../../src/extension/codex/context/additionalContext";
 import type { HostMessage } from "../../src/shared/messages";
-import { ChangeContextError } from "../../src/extension/codex/changeContext";
-import type * as ChangeContextModule from "../../src/extension/codex/changeContext";
+import { ChangeContextError } from "../../src/extension/codex/context/changeContext";
+import type * as ChangeContextModule from "../../src/extension/codex/context/changeContext";
 
 const context = vi.hoisted(() => ({ read: vi.fn() }));
-vi.mock("../../src/extension/codex/changeContext", async (original) => ({
-	...(await original<typeof ChangeContextModule>()),
-	changeContext: context.read,
-}));
+vi.mock(
+	"../../src/extension/codex/context/changeContext",
+	async (original) => ({
+		...(await original<typeof ChangeContextModule>()),
+		changeContext: context.read,
+	}),
+);
 vi.mock("vscode", () => ({ workspace: {}, window: {} }));
 const harnesses: ReturnType<typeof codexHarness>[] = [];
 afterEach(async () => {

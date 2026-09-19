@@ -7,7 +7,10 @@ import { ChatViewProvider } from "./webview/chatViewProvider";
 import { requireLocalWorkspace } from "./workspace";
 import { attachmentService } from "./webview/attachments";
 import { disposeDroppedAttachments } from "./webview/droppedAttachments";
-import { authService, interactionService } from "./codex/vscodeServices";
+import {
+	authService,
+	interactionService,
+} from "./codex/interaction/vscodeServices";
 
 let controller: CodexSessionController | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */

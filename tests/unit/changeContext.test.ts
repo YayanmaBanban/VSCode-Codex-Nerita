@@ -9,7 +9,7 @@ import { join } from "node:path";
 import {
 	readChangeContext,
 	ChangeContextError,
-} from "../../src/extension/codex/changeContext";
+} from "../../src/extension/codex/context/changeContext";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { isChangeReference } from "../../src/shared/changeReferences";
 

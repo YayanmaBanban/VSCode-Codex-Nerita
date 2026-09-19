@@ -1,7 +1,7 @@
 // 履歴操作はCodexを正とし、復元の成功まで現在の会話を保持する。
 import { sameCwd } from "../workspace";
 import { CodexCatalog } from "./CodexCatalog";
-import { hydrateHistory, replayHistory } from "./restoreHistory";
+import { hydrateHistory, replayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "../../shared/validation";
 

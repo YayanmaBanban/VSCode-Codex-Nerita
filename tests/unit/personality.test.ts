@@ -4,7 +4,7 @@ import { resolve, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { expect, it } from "vitest";
 import { parse, stringify } from "smol-toml";
-import { PersonalityStore } from "../../src/extension/codex/PersonalityStore";
+import { PersonalityStore } from "../../src/extension/codex/settings/PersonalityStore";
 import { composeDeveloperInstructions } from "../../src/shared/personality";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";

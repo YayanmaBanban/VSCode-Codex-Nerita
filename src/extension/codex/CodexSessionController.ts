@@ -5,10 +5,10 @@ import { CodexSubmission } from "./CodexSubmission";
 import {
 	searchSessionReferences,
 	openSessionReference,
-} from "./sessionReferenceActions";
-import { SessionContextError } from "./sessionContext";
-import { ChangeContextError } from "./changeContext";
-import { openChanges } from "./openChanges";
+} from "./context/sessionReferenceActions";
+import { SessionContextError } from "./context/sessionContext";
+import { ChangeContextError } from "./context/changeContext";
+import { openChanges } from "./context/openChanges";
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
 export class CodexSessionController extends CodexSubmission {

@@ -4,13 +4,11 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { AuthFlow } from "../../src/extension/codex/AuthFlow";
-import { attachmentInput } from "../../src/extension/codex/attachmentInput";
-import {
-	interactionRequest,
-	type InteractionService,
-} from "../../src/extension/codex/interactionRequests";
-import { permissionProfile } from "../../src/extension/codex/permissionProfile";
+import { AuthFlow } from "../../src/extension/codex/interaction/AuthFlow";
+import { attachmentInput } from "../../src/extension/codex/context/attachmentInput";
+import { interactionRequest } from "../../src/extension/codex/interaction/interactionRequests";
+import type { InteractionService } from "../../src/extension/codex/interaction/interactionService";
+import { permissionProfile } from "../../src/extension/codex/settings/permissionProfile";
 import { deferred } from "./codexHarness";
 
 it("ログイン開始応答より早い完了通知を保持する", async () => {

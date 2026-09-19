@@ -1,11 +1,11 @@
 // 実行中の承認と追加質問を、同じturnの寿命に限定する。
 import { CodexOptions } from "./CodexOptions";
 import type { ActiveTurn } from "./ActiveTurn";
-import { Approvals, parseApproval } from "./Approvals";
+import { Approvals, parseApproval } from "./interaction/Approvals";
 import type { AppServerRequest } from "./protocol/rpcMessage";
 import { isRecord } from "../../shared/validation";
-import { interactionRequest } from "./interactionRequests";
-import { permissionProfile } from "./permissionProfile";
+import { interactionRequest } from "./interaction/interactionRequests";
+import { permissionProfile } from "./settings/permissionProfile";
 /** 承認と入力要求を停止・切断・サーバー側取消へ追従させる。 */
 export abstract class CodexRequests extends CodexOptions {
 	private interactionTail: Promise<unknown> = Promise.resolve();

@@ -3,7 +3,7 @@ import type { UiMessage } from "../../shared/messages";
 import { CodexRequests } from "./CodexRequests";
 import { AgentRegistry, agentMetadata } from "./agents/AgentRegistry";
 import { threadAgentStatus, withThreadStatus } from "./items/agentItems";
-import { hydrateHistory, replayHistory } from "./restoreHistory";
+import { hydrateHistory, replayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "../../shared/validation";
 
