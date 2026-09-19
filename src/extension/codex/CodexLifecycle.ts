@@ -218,6 +218,7 @@ export abstract class CodexLifecycle extends SessionState {
 				run: "idle",
 				messages: [],
 				tools: [],
+				agents: [],
 				permissions: [],
 				authMethods: [],
 				usage: null,

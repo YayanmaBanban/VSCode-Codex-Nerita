@@ -20,6 +20,12 @@ export type HistoryThread = {
 	preview: string;
 	updatedAt: number;
 	active: boolean;
+	parentThreadId?: string;
+	agentNickname?: string;
+	agentRole?: string;
+	model?: string;
+	reasoningEffort?: string;
+	status?: string;
 	historyMode: "legacy" | "paginated";
 	turns: HistoryTurn[];
 };
@@ -75,6 +81,21 @@ export function parseHistoryThread(value: unknown): HistoryThread {
 	}
 	return {
 		id: text(value.id),
+		...Object.fromEntries(
+			[
+				"parentThreadId",
+				"agentNickname",
+				"agentRole",
+				"model",
+				"reasoningEffort",
+			].flatMap((key) => {
+				if (value[key] === undefined || value[key] === null) {
+					return [];
+				}
+				return [[key, text(value[key])]];
+			}),
+		),
+		status: String(value.status.type),
 		cwd: text(value.cwd),
 		name: value.name,
 		preview: text(value.preview),

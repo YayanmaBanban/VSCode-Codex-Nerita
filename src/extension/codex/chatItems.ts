@@ -3,6 +3,7 @@ import type { ChatState, ToolSummary } from "../../shared/messages";
 import { isRecord } from "../../shared/validation";
 import { nextTimelineOrder } from "../session/timelineOrder";
 import { activityItem, fileChanges } from "./activityItems";
+import { agentItemPatch } from "./agentItems";
 
 /** 項目 ID ごとに本文を追加・確定し、完了本文を重複追加しない。 */
 export function messagePatch(
@@ -48,6 +49,12 @@ export function itemPatch(
 ): Partial<ChatState> {
 	if (!isRecord(value) || typeof value.id !== "string") {
 		throw new Error("Invalid item");
+	}
+	if (
+		value.type === "subAgentActivity" ||
+		value.type === "collabAgentToolCall"
+	) {
+		return agentItemPatch(state, value);
 	}
 	if (value.type === "agentMessage") {
 		if (typeof value.text !== "string") {

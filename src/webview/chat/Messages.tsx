@@ -6,6 +6,7 @@ import { MessageText } from "./MessageText";
 import { TextType } from "./TextType";
 import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
+import type { SubAgentSummary } from "../../shared/subAgents";
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
 export function Messages({
@@ -13,11 +14,15 @@ export function Messages({
 	busy,
 	tools = [],
 	renderTool,
+	agents = [],
+	renderAgent,
 }: {
 	messages: ChatMessage[];
 	busy: boolean;
 	tools?: ToolSummary[];
 	renderTool?: (tool: ToolSummary) => ReactNode;
+	agents?: SubAgentSummary[];
+	renderAgent?: (agent: SubAgentSummary) => ReactNode;
 }) {
 	const elements = useRef(new Map<string, HTMLElement>());
 	const [copyStatus, setCopyStatus] = useState<{
@@ -50,14 +55,25 @@ export function Messages({
 			order: message.order ?? index,
 			message,
 			tool: undefined,
+			agent: undefined,
 		})),
 		...tools.map((tool, index) => ({
 			order: tool.order ?? messages.length + index,
 			message: undefined,
 			tool,
+			agent: undefined,
+		})),
+		...agents.map((agent) => ({
+			order: agent.order,
+			agent,
+			message: undefined,
+			tool: undefined,
 		})),
 	].sort((a, b) => a.order - b.order);
-	return entries.map(({ message, tool }) => {
+	return entries.map(({ message, tool, agent }) => {
+		if (agent) {
+			return renderAgent?.(agent);
+		}
 		if (tool) {
 			return renderTool?.(tool);
 		}

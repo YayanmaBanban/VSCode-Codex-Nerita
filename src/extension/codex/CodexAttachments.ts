@@ -1,11 +1,13 @@
 // 添付ファイルの選択と寿命を、接続やモデル設定から分離する。
 import type { Attachment, ComposerMessage } from "../../shared/composer";
+import type { DroppedAttachment } from "../../shared/attachmentDrop";
 import type { AuthService } from "./AuthFlow";
 import type { InteractionService } from "./interactionRequests";
 import { CodexLifecycle, type CodexFactory } from "./CodexLifecycle";
-/** Hostが選択したファイルだけを扱うサービス境界。 */
+/** 選択・ドロップされたファイルをHostで検証して扱うサービス境界。 */
 export type CodexFiles = {
 	pick: () => Promise<Attachment[]>;
+	drop?: (files: DroppedAttachment[]) => Promise<Attachment[]>;
 	open: (file: Attachment) => Promise<void>;
 };
 
@@ -21,7 +23,7 @@ export abstract class CodexAttachments extends CodexLifecycle {
 		super(factory, auth);
 	}
 
-	/** 添付は会話と接続世代を照合し、ピッカーを開いている間の切り替えを排除する。 */
+	/** 選択や読み込みの前後で会話と接続世代を照合する。 */
 	protected async attachment(
 		message: Exclude<ComposerMessage, { type: "config/set" }>,
 	): Promise<void> {
@@ -53,7 +55,12 @@ export abstract class CodexAttachments extends CodexLifecycle {
 			threadId = this.state.sessionId;
 		this.patch({ attachmentPending: true });
 		try {
-			const selected = await this.files.pick();
+			if (message.files && !this.files.drop) {
+				throw new Error("File drop unavailable");
+			}
+			const selected = message.files
+				? await this.files.drop!(message.files)
+				: await this.files.pick();
 			if (epoch !== this.epoch || threadId !== this.state.sessionId) {
 				return;
 			}

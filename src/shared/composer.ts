@@ -1,4 +1,5 @@
 // 入力欄で使う設定・使用量・添付の通信型を実行環境から独立させる。
+import type { DroppedAttachment } from "./attachmentDrop";
 /** サーバーが提供する選択肢の表示名と送信値。 */
 export type ConfigChoice = {
 	value: string;
@@ -17,7 +18,7 @@ export type ConfigOption = {
 export type ContextUsage = { used: number; size: number };
 /** /status が返す利用枠の残率と表示用のリセット情報。 */
 export type QuotaWindow = { label: string; remaining: number; detail: string };
-/** Host のファイル選択で取得した添付参照。 */
+/** Hostで選択またはドロップから取得した添付参照。 */
 export type Attachment = { id: string; name: string; uri: string };
 /** 入力欄から Host へ送る、セッションに限定した操作。 */
 export type ComposerMessage =
@@ -28,7 +29,12 @@ export type ComposerMessage =
 			configId: string;
 			value: string;
 	  }
-	| { type: "attachment/add"; requestId: string; sessionId: string }
+	| {
+			type: "attachment/add";
+			requestId: string;
+			sessionId: string;
+			files?: DroppedAttachment[];
+	  }
 	| {
 			type: "attachment/open";
 			requestId: string;

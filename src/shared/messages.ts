@@ -27,6 +27,7 @@ import type {
 	QuotaWindow,
 } from "./composer";
 import type { AsyncTask } from "./asyncTask";
+import type { SubAgentSummary, AgentThreadView } from "./subAgents";
 import type {
 	SessionSummary,
 	SessionCapabilities,
@@ -93,6 +94,7 @@ export type ChatState = {
 	run: RunStatus;
 	messages: ChatMessage[];
 	tools: ToolSummary[];
+	agents: SubAgentSummary[];
 	asyncTasks: AsyncTask[];
 	permissions: Permission[];
 	error: string | null;
@@ -115,6 +117,12 @@ export type ChatState = {
 };
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| {
+			type: "agent/read";
+			requestId: string;
+			sessionId: string;
+			threadId: string;
+	  }
 	| SessionReferencesRequest
 	| SessionReferenceOpen
 	| {
@@ -177,6 +185,7 @@ export type UiMessage =
 	  };
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "agent/view"; requestId: string; view: AgentThreadView }
 	| SessionReferencesResult
 	| WorkspaceSymbolsResult
 	| WorkspacePathsResult
@@ -210,6 +219,7 @@ export function initialState(): ChatState {
 		run: "idle",
 		messages: [],
 		tools: [],
+		agents: [],
 		asyncTasks: [],
 		permissions: [],
 		error: null,

@@ -52,6 +52,10 @@ export class CodexSessionController extends CodexSubmission {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
+		if (message.type === "agent/read") {
+			await this.readAgent(message);
+			return;
+		}
 		if (message.type === "changes/open") {
 			const { cwd, sessionId } = this.state;
 			const epoch = this.epoch;
