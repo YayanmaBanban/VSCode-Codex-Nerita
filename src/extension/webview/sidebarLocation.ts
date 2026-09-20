@@ -44,7 +44,9 @@ export class SidebarPlacement implements vscode.Disposable {
 	constructor(private notify: (location: SidebarLocation) => void) {
 		this.configuration = vscode.workspace.onDidChangeConfiguration(
 			(event) => {
-				if (event.affectsConfiguration("nerita.sidebarLocation")) {
+				if (
+					event.affectsConfiguration("nerita.codex.sidebarLocation")
+				) {
 					void this.sync().catch(() => {
 						void vscode.window.showErrorMessage(
 							"サイドバーの配置を変更できませんでした。",
