@@ -30,7 +30,7 @@ export async function droppedAttachments(
 				.update(file.name)
 				.update(data)
 				.digest("hex");
-			directory ??= mkdtemp(join(tmpdir(), "nerita-codex-atachments-"));
+			directory ??= mkdtemp(join(tmpdir(), "nerita-codex-attachments-"));
 			const folder = join(await directory, digest);
 			await mkdir(folder, { recursive: true });
 			path = join(folder, file.name);

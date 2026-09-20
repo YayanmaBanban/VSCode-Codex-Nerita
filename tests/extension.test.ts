@@ -13,7 +13,7 @@ suite("Nerita for Codex Extension", () => {
 		await vscode.extensions
 			.getExtension("nerita-local.nerita-codex")!
 			.activate();
-		const config = vscode.workspace.getConfiguration("nerita");
+		const config = vscode.workspace.getConfiguration("nerita.codex");
 		const previous = config.inspect<string>("sidebarLocation")?.globalValue;
 		const commands = await vscode.commands.getCommands(true);
 		assert.ok(commands.includes("vscode.moveViews"));
@@ -29,7 +29,7 @@ suite("Nerita for Codex Extension", () => {
 				await saveSidebar(location);
 				assert.equal(
 					vscode.workspace
-						.getConfiguration("nerita")
+						.getConfiguration("nerita.codex")
 						.inspect("sidebarLocation")?.globalValue,
 					location,
 				);
