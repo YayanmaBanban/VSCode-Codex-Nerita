@@ -8,6 +8,7 @@ import { isHostMessage } from "../../shared/hostMessageValidation";
 import { isRecord } from "../../shared/validation";
 import { isUiMessage } from "../../shared/uiMessageValidation";
 import { listWorkspacePaths } from "./workspacePaths";
+import { resolvePath } from "./resolvePath";
 import { openResource } from "./openResource";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";
 import {
@@ -114,6 +115,10 @@ export class ChatViewProvider
 			return;
 		}
 		try {
+			if (value.type === "workspace/resolvePath") {
+				await webview.postMessage(await resolvePath(value));
+				return;
+			}
 			if (value.type === "reference/open") {
 				await openResource(value.uri, value.range);
 				return;
@@ -153,7 +158,7 @@ export class ChatViewProvider
 			if (value.type === "ui/openEditor") {
 				if (!this.panel) {
 					this.panel = vscode.window.createWebviewPanel(
-						"codex-acp.editor",
+						"nerita.codex.editor",
 						"Codex",
 						vscode.ViewColumn.Active,
 						{ enableScripts: true, retainContextWhenHidden: true },
@@ -166,7 +171,7 @@ export class ChatViewProvider
 				return;
 			}
 			if (value.type === "ui/openSidebar") {
-				await vscode.commands.executeCommand("codex-acp.chat.focus");
+				await vscode.commands.executeCommand("nerita.codex.chat.focus");
 				this.sidebar?.show(false);
 				if (this.sidebar) {
 					this.viewState(this.sidebar.webview);

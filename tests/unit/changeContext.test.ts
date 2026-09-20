@@ -28,7 +28,7 @@ beforeEach(() => {
 	configuration.resolve.mockReturnValue({ get: configuration.get });
 	configuration.get.mockReturnValue(
 		manifest.contributes.configuration.properties[
-			"codex-acp.changes.exclude"
+			"nerita.codex.changes.exclude"
 		]!.default,
 	);
 });
@@ -131,7 +131,7 @@ it("作業フォルダーの設定を毎回読み、独自パターンと空配�
 	const custom = await readChangeContext(cwd, "staged");
 	expect(custom).toContain("+lock-content");
 	expect(custom).not.toContain("coverage-content");
-	expect(configuration.resolve).toHaveBeenLastCalledWith("codex-acp", {
+	expect(configuration.resolve).toHaveBeenLastCalledWith("nerita", {
 		fsPath: cwd,
 	});
 	expect(configuration.get).toHaveBeenLastCalledWith("changes.exclude", []);

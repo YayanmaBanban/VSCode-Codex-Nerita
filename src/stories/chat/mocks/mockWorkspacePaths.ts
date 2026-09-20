@@ -3,6 +3,8 @@ import type {
 	WorkspacePath,
 	WorkspacePathsRequest,
 	WorkspacePathsResult,
+	ResolvePathRequest,
+	ResolvePathResult,
 } from "../../../shared/workspacePaths";
 
 /** ローカルWindowsパスを持つ候補を作る。 */
@@ -28,6 +30,25 @@ const directories: Record<string, WorkspacePath[]> = {
 	[source.uri]: [entry("project/src/ComposerInput.tsx", "file")],
 	[empty.uri]: [],
 };
+
+/** 貼り付けでも一覧と同じ参照を返し、未存在はnullにする。 */
+export function mockResolvePath(
+	message: ResolvePathRequest,
+): ResolvePathResult {
+	return {
+		type: "workspace/resolvedPath",
+		requestId: message.requestId,
+		entry:
+			[project, ...Object.values(directories).flat()].find(
+				(item) =>
+					item.path.toLowerCase() ===
+					message.path
+						.replaceAll("/", "\\")
+						.replace(/[\\]+$/, "")
+						.toLowerCase(),
+			) ?? null,
+	};
+}
 /** 非同期応答の内容を、実ファイルへアクセスせず生成する。 */
 export function mockWorkspacePaths(
 	message: WorkspacePathsRequest,

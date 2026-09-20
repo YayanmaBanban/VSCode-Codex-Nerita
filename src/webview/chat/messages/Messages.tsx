@@ -4,7 +4,7 @@ import { type ReactNode, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { ChatMessage, ToolSummary } from "../../../shared/chatState";
 import { MessageText } from "./MessageText";
-import { TextType } from "./TextType";
+//import { TextType } from "./TextType";
 import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 import type { SubAgentSummary } from "../../../shared/subAgents";
@@ -129,7 +129,8 @@ export function Messages({
 					  index !== messages.length - 1 ? (
 						<MessageText text={message.text} />
 					) : (
-						<TextType text={message.text} />
+						<MessageText text={message.text} />
+						//<TextType text={message.text} />
 					)}
 				</div>
 				<div

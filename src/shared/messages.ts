@@ -15,6 +15,8 @@ import type {
 import type {
 	WorkspacePathsRequest,
 	WorkspacePathsResult,
+	ResolvePathRequest,
+	ResolvePathResult,
 } from "./workspacePaths";
 import type { SidebarLocation } from "./sidebar";
 import type { PersonalityMessage } from "./personality";
@@ -40,6 +42,7 @@ export type UiMessage =
 	  }
 	| WorkspaceSymbolsRequest
 	| WorkspacePathsRequest
+	| ResolvePathRequest
 	| { type: "ui/setSidebar"; requestId: string; location: SidebarLocation }
 	| PersonalityMessage
 	| ComposerMessage
@@ -98,6 +101,7 @@ export type HostMessage =
 	| SessionReferencesResult
 	| WorkspaceSymbolsResult
 	| WorkspacePathsResult
+	| ResolvePathResult
 	| { type: "ui/sidebarState"; location: SidebarLocation }
 	| { type: "prompt/accepted"; requestId: string; mode: "start" | "steer" }
 	| {

@@ -17,6 +17,30 @@ export type WorkspacePathsRequest = {
 	uri: string | null;
 };
 
+/** 貼り付けられた絶対パスの実体だけを確認する。 */
+export type ResolvePathRequest = {
+	type: "workspace/resolvePath";
+	requestId: string;
+	path: string;
+};
+
+/** 存在しないパスは文字列のまま残すため、nullで返す。 */
+export type ResolvePathResult = {
+	type: "workspace/resolvedPath";
+	requestId: string;
+	entry: WorkspacePath | null;
+};
+
+/** Windowsのドライブ絶対パスとUNCを受け付け、改行や相対パスを除外する。 */
+export function isAbsoluteLocalPath(value: unknown): value is string {
+	return (
+		isPathString(value) &&
+		![...value].some((character) => character.charCodeAt(0) < 32) &&
+		!/["<>|?*]/.test(value) &&
+		(/^[a-z]:[\\/]/i.test(value) || /^\\\\[^\\/]+[\\/][^\\/]+/.test(value))
+	);
+}
+
 /** 要求元のメニューだけに返す一覧または読み込みエラー。 */
 export type WorkspacePathsResult = {
 	type: "workspace/paths";

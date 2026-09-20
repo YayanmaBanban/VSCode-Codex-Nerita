@@ -23,6 +23,7 @@ export function useChat(bridge: Bridge) {
 				message.type === "ui/viewState" ||
 				message.type === "agent/view" ||
 				message.type === "workspace/paths" ||
+				message.type === "workspace/resolvedPath" ||
 				message.type === "workspace/symbols" ||
 				message.type === "session/references" ||
 				message.type === "ui/sidebarState"

@@ -34,10 +34,10 @@ try {
 	await window.keyboard.press("F1");
 	await window
 		.locator(".quick-input-widget input")
-		.fill(">Codex ACP: チャットを開く");
+		.fill(">Nerita for Codex: チャットを開く");
 	await window
 		.locator(".quick-input-list")
-		.getByText("Codex ACP: チャットを開く", { exact: true })
+		.getByText("Nerita for Codex: チャットを開く", { exact: true })
 		.click({ timeout: 3000 })
 		.catch(() => undefined);
 	// 前回のサイドバー復元がパレットを閉じた場合も、実際の入力欄で起動を判定する。

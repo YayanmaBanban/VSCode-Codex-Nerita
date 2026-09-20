@@ -33,9 +33,7 @@ UIライブラリやWeb向けアニメーションはWebviewに使用します�
 
 ### powershell
 
-実行ポリシーは、`-ExecutionPolicy RemoteSigned`
-
-文字化けを回避するため、`-Encoding utf8`をつける
+`pwsh`を使用する
 
 ### pnpm
 

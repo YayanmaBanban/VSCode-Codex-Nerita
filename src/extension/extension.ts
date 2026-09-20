@@ -28,8 +28,8 @@ export function activate(context: vscode.ExtensionContext): void {
 				callbacks,
 				signal,
 				clientInfo: {
-					name: "vscode_codex",
-					title: "VS Code Codex",
+					name: "vscode_nerita_codex",
+					title: "VSCode Nerita Codex",
 					version: "0.0.1",
 				},
 			});
@@ -43,21 +43,26 @@ export function activate(context: vscode.ExtensionContext): void {
 	const provider = new ChatViewProvider(context.extensionUri, session);
 	context.subscriptions.push(
 		provider,
-		vscode.window.registerWebviewViewProvider("codex-acp.chat", provider),
-		vscode.commands.registerCommand("codex-acp.openChat", () =>
-			vscode.commands.executeCommand("codex-acp.chat.focus"),
+		vscode.window.registerWebviewViewProvider(
+			"nerita.codex.chat",
+			provider,
 		),
-		vscode.commands.registerCommand("codex-acp.newSession", () =>
+		vscode.commands.registerCommand("nerita.codex.openChat", () =>
+			vscode.commands.executeCommand("nerita.codex.chat.focus"),
+		),
+		vscode.commands.registerCommand("nerita.codex.newSession", () =>
 			session.receive({ type: "session/new", requestId: randomUUID() }),
 		),
 		vscode.commands.registerCommand(
-			"codex-acp.codeBlock",
+			"nerita.codex.codeBlock",
 			(context: unknown) => provider.convertSelectionToCodeBlock(context),
 		),
 		vscode.workspace.onDidChangeWorkspaceFolders(() => {
 			session.invalidate();
 		}),
 	);
+	// 表示の再生成では再接続せず、拡張機能の起動につき一度だけ試す。
+	void session.receive({ type: "connection/retry", requestId: randomUUID() });
 }
 /** Extension Host の終了までに App Server のプロセスツリーを終了する。 */
 export async function deactivate(): Promise<void> {

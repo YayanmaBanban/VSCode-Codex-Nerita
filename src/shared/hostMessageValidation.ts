@@ -59,6 +59,12 @@ export function isHostMessage(value: unknown): value is HostMessage {
 			(value.error === undefined || typeof value.error === "string")
 		);
 	}
+	if (value.type === "workspace/resolvedPath") {
+		return (
+			isId(value.requestId) &&
+			(value.entry === null || isWorkspacePath(value.entry))
+		);
+	}
 	if (value.type === "prompt/accepted") {
 		return (
 			isId(value.requestId) &&

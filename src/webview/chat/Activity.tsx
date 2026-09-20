@@ -31,6 +31,8 @@ export function Activity({
 							<ToolCard
 								key={`${tool.runId ?? ""}:${tool.id}`}
 								tool={tool}
+								send={send}
+								cwd={state.cwd}
 								task={task}
 								cancelTurn={cancelTurn}
 								onStop={

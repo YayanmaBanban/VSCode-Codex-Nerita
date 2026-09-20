@@ -76,7 +76,7 @@ it("複数プリセットの保存・更新・選択を再起動後も保持し�
 		'引用: "text"',
 	);
 	const serialized = await readFile(
-		join(home, ".codex/vscode-codex-acp/preset.toml"),
+		join(home, ".codex/nerita/preset.toml"),
 		"utf8",
 	);
 	expect(serialized).toContain("[[presets]]");
@@ -129,7 +129,7 @@ it("破損したTOMLや同名への新規保存を拒否して既存内容を残
 		}),
 	).rejects.toThrow("同名");
 	expect((await store.read()).global.presets[0]?.text).toBe("保持");
-	const path = join(home, ".codex/vscode-codex-acp/preset.toml");
+	const path = join(home, ".codex/nerita/preset.toml");
 	await writeFile(path, "[presets]\nname='a'\n[ pres ets");
 	await expect(store.read()).rejects.toThrow();
 	await expect(

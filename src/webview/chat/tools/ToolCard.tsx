@@ -10,6 +10,10 @@ import {
 	LoaderCircle,
 	Square,
 	X,
+	Image,
+	Signal,
+	PlugZap,
+	ShelvingUnit,
 } from "lucide-react";
 import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
@@ -17,6 +21,12 @@ import { taskActive, type AsyncTask } from "../../../shared/asyncTask";
 import { GuardianReview } from "./GuardianReview";
 import { EditingFiles, ExecuteTool, RawTool } from "./ToolContent";
 import "../loaders.css";
+import {
+	ImageViewTool,
+	ThinkTool,
+	WebSearchTool,
+	type ActivityToolProps,
+} from "./ActivityToolContent";
 
 // 専用表示を追加するときは、ここへタイトルとアイコン・本文を登録する。
 const renderers = [
@@ -33,12 +43,14 @@ export function ToolCard({
 	task,
 	cancelTurn = false,
 	onStop,
+	send,
+	cwd: workspaceCwd,
 }: {
 	tool: ToolSummary;
 	task?: AsyncTask | undefined;
 	cancelTurn?: boolean;
 	onStop?: (() => void) | undefined;
-}) {
+} & Pick<ActivityToolProps, "send" | "cwd">) {
 	const bodyId = useId();
 	const status = task
 		? taskActive(task)
@@ -72,17 +84,35 @@ export function ToolCard({
 	const active = status === "pending" || status === "in_progress";
 	// Guardian Review は think の場合も専用の盾アイコンを維持する。
 	const guardian = tool.title.trim().toLowerCase() === "guardian review";
+	const type =
+		isRecord(tool.rawItem) && typeof tool.rawItem.type === "string"
+			? tool.rawItem.type
+			: tool.kind;
+	const special =
+		type === "imageView"
+			? { Icon: Image, Body: ImageViewTool }
+			: type === "webSearch"
+				? { Icon: Signal, Body: WebSearchTool }
+				: type === "mcpToolCall"
+					? { Icon: PlugZap, Body: null }
+					: type === "contextCompaction"
+						? { Icon: ShelvingUnit, Body: null }
+						: null;
 	const { Icon, Body } = guardian
 		? { Icon: ShieldCheck, Body: GuardianReview }
-		: tool.kind === "think"
-			? { Icon: Sprout, Body: GuardianReview }
-			: executing
-				? { Icon: Terminal, Body: ExecuteTool }
-				: tool.kind === "edit"
-					? { Icon: FilePenLine, Body: EditingFiles }
-					: (renderers.find(({ titles }) =>
-							titles.includes(tool.title.trim().toLowerCase()),
-						) ?? { Icon: Wrench, Body: RawTool });
+		: (special ??
+			(tool.kind === "think"
+				? { Icon: Sprout, Body: ThinkTool }
+				: executing
+					? { Icon: Terminal, Body: ExecuteTool }
+					: tool.kind === "edit"
+						? { Icon: FilePenLine, Body: EditingFiles }
+						: (renderers.find(({ titles }) =>
+								titles.includes(
+									tool.title.trim().toLowerCase(),
+								),
+							) ?? { Icon: Wrench, Body: RawTool })));
+	const Heading = Body ? "button" : "div";
 	return (
 		<div
 			className="tool-card my-[8px] overflow-hidden rounded-[6px] border border-solid border-panel-border"
@@ -98,11 +128,15 @@ export function ToolCard({
 				</div>
 			)}
 			<div className="tool-header relative flex items-center">
-				<button
+				<Heading
 					className="tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent p-[10px] text-left focus-visible:outline-offset-[-3px] [&_svg]:shrink-0"
-					aria-expanded={state.open}
-					aria-controls={bodyId}
-					onClick={() => setState({ status, open: !state.open })}
+					aria-expanded={Body ? state.open : undefined}
+					aria-controls={Body ? bodyId : undefined}
+					onClick={
+						Body
+							? () => setState({ status, open: !state.open })
+							: undefined
+					}
 				>
 					<Icon size={16} aria-hidden="true" />
 					<span className="tool-title min-w-0 flex-1 [overflow-wrap:anywhere]">
@@ -121,12 +155,14 @@ export function ToolCard({
 							{tool.status === "pending" ? "待機中" : "実行中"}
 						</span>
 					)}
-					<ChevronDown
-						size={14}
-						className={`tool-chevron group-aria-[expanded=false]:-rotate-90 ${status === "failed" || (executing && active) ? "ml-[26px]" : ""}`}
-						aria-hidden="true"
-					/>
-				</button>
+					{Body && (
+						<ChevronDown
+							size={14}
+							className={`tool-chevron group-aria-[expanded=false]:-rotate-90 ${status === "failed" || (executing && active) ? "ml-[26px]" : ""}`}
+							aria-hidden="true"
+						/>
+					)}
+				</Heading>
 				{status === "failed" && (
 					<span
 						className="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
@@ -161,13 +197,17 @@ export function ToolCard({
 					</button>
 				)}
 			</div>
-			<div
-				id={bodyId}
-				className="tool-body border-0 border-t border-solid border-panel-border p-[12px] [&_section+section]:mt-[14px]"
-				hidden={!state.open}
-			>
-				{state.open && <Body tool={tool} />}
-			</div>
+			{Body && (
+				<div
+					id={bodyId}
+					className="tool-body border-0 border-t border-solid border-panel-border p-[12px] [&_section+section]:mt-[14px]"
+					hidden={!state.open}
+				>
+					{state.open && (
+						<Body tool={tool} send={send} cwd={workspaceCwd} />
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

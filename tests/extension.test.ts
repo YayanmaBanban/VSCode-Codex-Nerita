@@ -8,16 +8,16 @@ import {
 	saveSidebar,
 } from "../src/extension/webview/sidebarLocation";
 
-suite("Codex ACP Extension", () => {
+suite("Nerita for Codex Extension", () => {
 	test("サイドバーの両コンテナへ移動しユーザー設定を保存する", async () => {
 		await vscode.extensions
-			.getExtension("codex-acp-local.codex-acp")!
+			.getExtension("nerita-local.nerita-codex")!
 			.activate();
-		const config = vscode.workspace.getConfiguration("codex-acp");
+		const config = vscode.workspace.getConfiguration("nerita");
 		const previous = config.inspect<string>("sidebarLocation")?.globalValue;
 		const commands = await vscode.commands.getCommands(true);
 		assert.ok(commands.includes("vscode.moveViews"));
-		for (const id of ["codex-acp-primary", "codex-acp"]) {
+		for (const id of ["nerita-primary", "nerita"]) {
 			assert.ok(
 				commands.includes(
 					`workbench.view.extension.${id}.resetViewContainerLocation`,
@@ -29,7 +29,7 @@ suite("Codex ACP Extension", () => {
 				await saveSidebar(location);
 				assert.equal(
 					vscode.workspace
-						.getConfiguration("codex-acp")
+						.getConfiguration("nerita")
 						.inspect("sidebarLocation")?.globalValue,
 					location,
 				);
@@ -45,7 +45,7 @@ suite("Codex ACP Extension", () => {
 	});
 	test("同梱 App Server を Extension Host から初期化して終了する", async () => {
 		const extension = vscode.extensions.getExtension(
-			"codex-acp-local.codex-acp",
+			"nerita-local.nerita-codex",
 		);
 		assert.ok(extension);
 		const client = await CodexClient.connect({
@@ -69,13 +69,13 @@ suite("Codex ACP Extension", () => {
 	});
 	test("チャット用コマンドを登録し、Webview の資産を同梱する", async () => {
 		const extension = vscode.extensions.getExtension(
-			"codex-acp-local.codex-acp",
+			"nerita-local.nerita-codex",
 		);
 		assert.ok(extension);
 		await extension.activate();
 		const commands = await vscode.commands.getCommands(true);
-		assert.ok(commands.includes("codex-acp.openChat"));
-		assert.ok(commands.includes("codex-acp.newSession"));
+		assert.ok(commands.includes("nerita.codex.openChat"));
+		assert.ok(commands.includes("nerita.codex.newSession"));
 		for (const asset of [
 			"dist/webview/index.js",
 			"dist/webview/index.css",
@@ -87,11 +87,11 @@ suite("Codex ACP Extension", () => {
 				vscode.Uri.joinPath(extension.extensionUri, asset).fsPath,
 			);
 		}
-		await vscode.commands.executeCommand("codex-acp.openChat");
+		await vscode.commands.executeCommand("nerita.codex.openChat");
 	});
 	test("配布runtimeにApp Server用のCodexだけが含まれる", async () => {
 		const extension = vscode.extensions.getExtension(
-			"codex-acp-local.codex-acp",
+			"nerita-local.nerita-codex",
 		);
 		assert.ok(extension);
 		const runtime = vscode.Uri.joinPath(

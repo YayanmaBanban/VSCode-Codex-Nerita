@@ -16,7 +16,7 @@ export class ChangeContextError extends Error {
 	/** 対象範囲と復旧方法を表示する。 */
 	constructor(scope: ChangeScope) {
 		super(
-			`${changeScopes[scope].name}を読み込めませんでした。Gitリポジトリ・コミット${scope === "branch" ? "・mainブランチ" : ""}・codex-acp.changes.exclude設定を確認するか、参照を外して再送してください。`,
+			`${changeScopes[scope].name}を読み込めませんでした。Gitリポジトリ・コミット${scope === "branch" ? "・mainブランチ" : ""}・nerita.codex.changes.exclude設定を確認するか、参照を外して再送してください。`,
 		);
 	}
 }
@@ -41,7 +41,7 @@ export async function readChangeContext(
 	try {
 		// cwdを指定してフォルダー設定も解決し、取得のたびに最新値を使う。
 		const excluded = vscode.workspace
-			.getConfiguration("codex-acp", vscode.Uri.file(cwd))
+			.getConfiguration("nerita.codex", vscode.Uri.file(cwd))
 			.get<unknown>("changes.exclude", []);
 		if (
 			!Array.isArray(excluded) ||

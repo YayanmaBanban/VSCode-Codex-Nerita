@@ -5,7 +5,7 @@ import { isSidebarLocation } from "./sidebar";
 import { isPersonalityPreset } from "./personality";
 import { validDroppedAttachments } from "./attachmentDrop";
 import { validDraftParts } from "./composerContent";
-import { isPathString } from "./workspacePaths";
+import { isPathString, isAbsoluteLocalPath } from "./workspacePaths";
 import { isSourceRange } from "./symbolLocation";
 import { isSymbolQuery } from "./workspaceSymbols";
 import { validSessionIds } from "./sessionReferences";
@@ -44,6 +44,8 @@ export function isUiMessage(value: unknown): value is UiMessage {
 			return isSymbolQuery(value.query);
 		case "workspace/listPaths":
 			return value.uri === null || isPathString(value.uri);
+		case "workspace/resolvePath":
+			return isAbsoluteLocalPath(value.path);
 		case "ui/setSidebar":
 			return isSidebarLocation(value.location);
 		case "personality/read":

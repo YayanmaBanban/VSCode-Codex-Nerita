@@ -34,7 +34,7 @@ try {
 	await page.keyboard.press("F1");
 	await page
 		.locator(".quick-input-widget input")
-		.fill(">Codex ACP: チャットを開く");
+		.fill(">Nerita for Codex: チャットを開く");
 	await page.keyboard.press("Enter");
 	let chat;
 	// Webview の準備は新規 frame のロードで非同期に進む。
@@ -109,7 +109,7 @@ try {
 	await page.keyboard.press("F1");
 	await page
 		.locator(".quick-input-widget input")
-		.fill(">Codex ACP: チャットを開く");
+		.fill(">Nerita for Codex: チャットを開く");
 	await page.keyboard.press("Enter");
 	for (let attempt = 0; attempt < 100; attempt++) {
 		const candidates = page.frames();
@@ -157,7 +157,9 @@ try {
 	await expect(chat.locator(".message.user")).toHaveCount(3);
 	await page.screenshot({ path: path.join(root, "continued.png") });
 	await chat.getByRole("button", { name: "新しいチャット" }).click();
-	await chat.getByText("このワークスペースで作業します", { exact: true }).waitFor();
+	await chat
+		.getByText("このワークスペースで作業します", { exact: true })
+		.waitFor();
 	await chat
 		.getByRole("button", { name: "セッション一覧", exact: true })
 		.click();

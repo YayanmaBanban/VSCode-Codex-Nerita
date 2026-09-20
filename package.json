@@ -1,7 +1,7 @@
 {
-	"name": "codex-acp",
-	"displayName": "Codex ACP",
-	"description": "VS CodeからCodex App Serverに接続するチャットクライアント",
+	"name": "nerita-codex",
+	"displayName": "Nerita for Codex",
+	"description": "A VS Code client for Codex powered by Codex App Server",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.137.0"
@@ -14,9 +14,9 @@
 	"main": "./dist/extension.js",
 	"contributes": {
 		"configuration": {
-			"title": "VSCode Codex ACP",
+			"title": "Nerita for Codex",
 			"properties": {
-				"codex-acp.changes.exclude": {
+				"nerita.codex.changes.exclude": {
 					"type": "array",
 					"items": {
 						"type": "string",
@@ -33,9 +33,9 @@
 						"**/*.generated.*"
 					],
 					"scope": "resource",
-					"markdownDescription": "Changesのプレビュー・送信から除外するGit globパターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダー単位で設定でき、次回の差分取得から反映されます。"
+					"markdownDescription": "変更点のプレビュー・送信から除外するGit globパターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダー単位で設定でき、次回の差分取得から反映されます。"
 				},
-				"codex-acp.sidebarLocation": {
+				"nerita.codex.sidebarLocation": {
 					"type": "string",
 					"enum": [
 						"primary",
@@ -53,29 +53,29 @@
 		},
 		"commands": [
 			{
-				"command": "codex-acp.codeBlock",
+				"command": "nerita.codex.codeBlock",
 				"title": "コードブロック化"
 			},
 			{
-				"command": "codex-acp.openChat",
-				"title": "Codex ACP: チャットを開く"
+				"command": "nerita.codex.openChat",
+				"title": "Nerita for Codex: チャットを開く"
 			},
 			{
-				"command": "codex-acp.newSession",
-				"title": "Codex ACP: 新規会話"
+				"command": "nerita.codex.newSession",
+				"title": "Nerita for Codex: 新規会話"
 			}
 		],
 		"menus": {
 			"webview/context": [
 				{
-					"command": "codex-acp.codeBlock",
-					"when": "(webviewId == 'codex-acp.chat' || webviewId == 'codex-acp.editor') && webviewSection == 'composer' && composerCanCodeBlock",
+					"command": "nerita.codex.codeBlock",
+					"when": "(webviewId == 'nerita.codex.chat' || webviewId == 'nerita.codex.editor') && webviewSection == 'composer' && composerCanCodeBlock",
 					"group": "edit@10"
 				}
 			],
 			"commandPalette": [
 				{
-					"command": "codex-acp.codeBlock",
+					"command": "nerita.codex.codeBlock",
 					"when": "false"
 				}
 			]
@@ -83,24 +83,24 @@
 		"viewsContainers": {
 			"activitybar": [
 				{
-					"id": "codex-acp-primary",
-					"title": "Codex ACP",
+					"id": "nerita-primary",
+					"title": "Nerita for Codex",
 					"icon": "media/codex.svg"
 				}
 			],
 			"secondarySidebar": [
 				{
-					"id": "codex-acp",
-					"title": "Codex ACP",
+					"id": "nerita",
+					"title": "Nerita for Codex",
 					"icon": "media/codex.svg"
 				}
 			]
 		},
 		"views": {
-			"codex-acp-primary": [],
-			"codex-acp": [
+			"nerita-primary": [],
+			"nerita": [
 				{
-					"id": "codex-acp.chat",
+					"id": "nerita.codex.chat",
 					"name": "Codex",
 					"type": "webview"
 				}
@@ -138,7 +138,7 @@
 		"test:codex:history": "node tests/codex-history-smoke.mjs",
 		"ui-review:chat": "pnpm ui-review chat",
 		"watch:webview": "tsc -p src/webview/tsconfig.json --watch",
-		"package:vsix": "vsce package --no-dependencies --target win32-x64 --out dist/codex-acp.vsix",
+		"package:vsix": "vsce package --no-dependencies --target win32-x64 --out dist/nerita.vsix",
 		"check": "pnpm lint && pnpm check-types && pnpm check-types:tests",
 		"verify": "pnpm check && pnpm test"
 	},
@@ -203,7 +203,7 @@
 		"smol-toml": "^1.8.0",
 		"tailwind-merge": "^3.7.0"
 	},
-	"publisher": "codex-acp-local",
+	"publisher": "nerita-local",
 	"extensionKind": [
 		"ui"
 	],
