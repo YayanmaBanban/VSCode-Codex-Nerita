@@ -38,7 +38,7 @@ test("候補のキーボード選択・検索・送信とTabの2スペース", a
 	expect(await input.textContent()).toBe("前文日本語 sample.md   後文");
 	await input.press("Shift+Tab");
 	expect(await input.textContent()).toBe("前文日本語 sample.md 後文");
-	await input.press("Enter");
+	await input.press("Control+Enter");
 	await expect(page.locator(".message.user")).toContainText(
 		"前文file:///D:/workspace/sample.md 後文",
 	);
@@ -54,7 +54,7 @@ test("候補のキーボード選択・検索・送信とTabの2スペース", a
 	await expect(page.getByRole("option", { name: /new/ })).toBeVisible();
 	await input.press("Enter");
 	await expect(input).toHaveText("/new");
-	await input.press("Enter");
+	await input.press("Control+Enter");
 	await expect(page.locator(".message")).toHaveCount(0);
 	expect(errors).toEqual([]);
 });

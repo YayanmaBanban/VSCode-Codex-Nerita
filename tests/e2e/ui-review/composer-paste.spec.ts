@@ -92,7 +92,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			),
 		).toBe("後文");
 		const expected = `前文${await code.innerText()}後文`;
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await expect(page.locator(".message.user")).toHaveText(expected);
 		await expect(input).toHaveText("");
 		await expect(input).toBeFocused();

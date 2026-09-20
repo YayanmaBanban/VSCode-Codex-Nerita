@@ -117,7 +117,7 @@ test("参照を復元し、全文コピー・取り外し・Undo・送信でき�
 	await expect(input.locator("pre")).toHaveCount(0);
 	await expect(chips).toHaveCount(2);
 	await input.press("Control+End");
-	await input.press("Enter");
+	await input.press("Control+Enter");
 	await expect(page.locator(".message.user")).toContainText(copied);
 	expect(errors).toEqual([]);
 });

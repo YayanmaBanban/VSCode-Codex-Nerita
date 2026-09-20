@@ -150,6 +150,10 @@ export class CodexSessionController extends CodexSubmission {
 			await this.newThread();
 			return;
 		}
+		if (message.type === "auth/logout") {
+			await this.logout();
+			return;
+		}
 		if (message.type === "session/list") {
 			await this.refreshSessions(message.archived, message.more);
 			return;
@@ -178,6 +182,18 @@ export class CodexSessionController extends CodexSubmission {
 			throw new Error("Stale thread");
 		}
 		if (message.type === "prompt/send") {
+			if (message.text.trim() === "/logout") {
+				if (this.submissionPending) {
+					throw new Error("Submission pending");
+				}
+				await this.logout();
+				this.emit({
+					type: "prompt/accepted",
+					requestId: message.requestId,
+					mode: "start",
+				});
+				return;
+			}
 			if (message.text.trim() === "/mcp") {
 				await this.showMcpStatus(message.sessionId);
 				this.emit({

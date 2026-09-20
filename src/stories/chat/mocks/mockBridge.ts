@@ -124,6 +124,17 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 		timers.forEach(clearTimeout);
 		timers.clear();
 	};
+	/** 認証解除後は会話を残さず、再ログイン可能な状態を再現する。 */
+	const logout = () => {
+		const { revision: _revision, ...reset } = scenarioState("auth");
+		patch({
+			...reset,
+			sessionId: null,
+			messages: [],
+			tools: [],
+			attachments: [],
+		});
+	};
 	/** 固定シナリオと追加送信に共通の次の表示順を採番する。 */
 	const nextOrder = () =>
 		Math.max(
@@ -182,7 +193,21 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 						patch(reset);
 					}
 					break;
+				case "auth/logout":
+					clear();
+					logout();
+					break;
 				case "prompt/send": {
+					if (message.text.trim() === "/logout") {
+						clear();
+						logout();
+						emit({
+							type: "prompt/accepted",
+							requestId: message.requestId,
+							mode: "start",
+						});
+						break;
+					}
 					if (message.text.trim() === "/mcp") {
 						timers.add(
 							mockMcpCommand(

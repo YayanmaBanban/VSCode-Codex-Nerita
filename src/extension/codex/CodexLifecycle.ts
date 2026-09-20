@@ -75,6 +75,35 @@ export abstract class CodexLifecycle extends SessionState {
 		}
 	}
 
+	/** 解除の成功後に旧アカウントの表示と接続を破棄し、認証状態を読み直す。 */
+	protected async logout(): Promise<void> {
+		const client = this.client;
+		if (
+			!client ||
+			this.state.connection !== "ready" ||
+			this.busy() ||
+			this.state.sessionPending
+		) {
+			throw new Error("Logout unavailable");
+		}
+		const epoch = this.epoch;
+		this.patch({ sessionPending: true, error: null });
+		try {
+			await client.logout();
+			if (epoch !== this.epoch) {
+				return;
+			}
+			this.disconnect();
+			const { revision: _revision, ...empty } = initialState();
+			this.patch(empty);
+			await this.connect();
+		} finally {
+			if (epoch === this.epoch) {
+				this.patch({ sessionPending: false });
+			}
+		}
+	}
+
 	/** 旧接続の終了後に、初期化・認証確認・新規 thread 作成を行う。 */
 	async connect(): Promise<void> {
 		this.disconnect();

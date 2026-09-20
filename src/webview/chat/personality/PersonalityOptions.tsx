@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { Dialog } from "@base-ui/react/dialog";
 import { CSPProvider } from "@base-ui/react/csp-provider";
-import { Ellipsis, FileUser, X } from "lucide-react";
+import { Ellipsis, FileUser, LogOut, X } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import type { PersonalityMessage } from "../../../shared/personality";
@@ -86,6 +86,24 @@ export function PersonalityOptions({
 							>
 								<FileUser size={16} aria-hidden="true" />
 								性格設定
+							</Menu.Item>
+							<Menu.Item
+								disabled={
+									state.connection !== "ready" ||
+									state.sessionPending ||
+									state.run === "running" ||
+									state.run === "cancelling"
+								}
+								onClick={() =>
+									send({
+										type: "auth/logout",
+										requestId: crypto.randomUUID(),
+									})
+								}
+								className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50"
+							>
+								<LogOut size={16} aria-hidden="true" />
+								ログアウト
 							</Menu.Item>
 						</Menu.Popup>
 					</Menu.Positioner>

@@ -95,9 +95,15 @@ test("IME確定・改行・キーボード送信", async ({ page }) => {
 	});
 	await expect(page.getByRole("log")).toBeEmpty();
 	await input.dispatchEvent("compositionend");
-	await input.press("Shift+Enter");
-	await expect(input).toHaveText("日本語の入力\n");
 	await input.press("Enter");
+	await page.keyboard.insertText("2行目");
+	await expect(page.getByRole("log")).toBeEmpty();
+	await input.press("Shift+Enter");
+	await page.keyboard.insertText("3行目");
+	await expect(input).toHaveText("日本語の入力\n2行目\n3行目", {
+		useInnerText: true,
+	});
+	await input.press("Control+Enter");
 	await expect(page.getByRole("log")).toContainText("日本語の入力");
 });
 test("回答コピー・対応する送信文と返信末尾へ移動", async ({

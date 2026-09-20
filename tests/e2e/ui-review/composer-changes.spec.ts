@@ -79,7 +79,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			path: info.outputPath(`changes-chip-${colorScheme}.png`),
 		});
 		await input.press("End");
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await expect(page.getByLabel("送信した参照")).toContainText(
 			'"changeScopes":["staged"]',
 		);

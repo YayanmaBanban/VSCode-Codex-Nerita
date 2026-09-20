@@ -64,6 +64,7 @@ export type UiMessage =
 			scope: ChangeScope;
 	  }
 	| { type: "auth/start"; requestId: string; methodId: string }
+	| { type: "auth/logout"; requestId: string }
 	| {
 			type: "prompt/send";
 			requestId: string;

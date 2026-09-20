@@ -79,6 +79,7 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				value.scrollTop >= 0
 			);
 		case "connection/retry":
+		case "auth/logout":
 		case "session/new":
 			return true;
 		case "session/list":
