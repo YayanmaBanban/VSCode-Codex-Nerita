@@ -1,7 +1,7 @@
 {
 	"name": "nerita-codex",
 	"displayName": "Nerita for Codex",
-	"description": "codex-app-serverを利用した、VSCodeの拡張機能",
+	"description": "codex-app-serverを利用した、Codex用のVSCode拡張機能",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.137.0"
@@ -11,6 +11,18 @@
 		"Other"
 	],
 	"activationEvents": [],
+	"publisher": "nerita-local",
+	"icon": "media/nerita_store_icon.png",
+	"extensionKind": [
+		"ui"
+	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": false,
+			"description": "Codexは信頼済みワークスペース内でファイル・コマンド操作を実行します。"
+		},
+		"virtualWorkspaces": false
+	},
 	"main": "./dist/extension.js",
 	"contributes": {
 		"configuration": {
@@ -85,14 +97,14 @@
 				{
 					"id": "nerita-primary",
 					"title": "Nerita for Codex",
-					"icon": "media/codex.svg"
+					"icon": "media/nerita.svg"
 				}
 			],
 			"secondarySidebar": [
 				{
 					"id": "nerita",
 					"title": "Nerita for Codex",
-					"icon": "media/codex.svg"
+					"icon": "media/nerita.svg"
 				}
 			]
 		},
@@ -101,8 +113,9 @@
 			"nerita": [
 				{
 					"id": "nerita.codex.chat",
-					"name": "Codex",
-					"type": "webview"
+					"name": "Nerita for Codex",
+					"type": "webview",
+					"icon": "media/nerita.svg"
 				}
 			]
 		}
@@ -202,16 +215,5 @@
 		"remark-gfm": "^4.0.1",
 		"smol-toml": "^1.8.0",
 		"tailwind-merge": "^3.7.0"
-	},
-	"publisher": "nerita-local",
-	"extensionKind": [
-		"ui"
-	],
-	"capabilities": {
-		"untrustedWorkspaces": {
-			"supported": false,
-			"description": "Codexは信頼済みワークスペース内でファイル・コマンド操作を実行します。"
-		},
-		"virtualWorkspaces": false
 	}
 }
