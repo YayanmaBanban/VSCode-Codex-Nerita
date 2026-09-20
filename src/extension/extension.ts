@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
 				signal,
 				clientInfo: {
 					name: "vscode_nerita_codex",
-					title: "VSCode Nerita Codex",
+					title: "Nerita for Code",
 					version: "0.0.1",
 				},
 			});

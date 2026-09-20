@@ -30,7 +30,7 @@ export async function moveSidebar(location: SidebarLocation): Promise<void> {
 /** ワークスペースに依存しない配置をsettings.jsonへ保存する。 */
 export async function saveSidebar(location: SidebarLocation): Promise<void> {
 	await vscode.workspace
-		.getConfiguration("nerita")
+		.getConfiguration("nerita.codex")
 		.update("sidebarLocation", location, vscode.ConfigurationTarget.Global);
 }
 

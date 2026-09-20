@@ -131,7 +131,7 @@ it("作業フォルダーの設定を毎回読み、独自パターンと空配�
 	const custom = await readChangeContext(cwd, "staged");
 	expect(custom).toContain("+lock-content");
 	expect(custom).not.toContain("coverage-content");
-	expect(configuration.resolve).toHaveBeenLastCalledWith("nerita", {
+	expect(configuration.resolve).toHaveBeenLastCalledWith("nerita.codex", {
 		fsPath: cwd,
 	});
 	expect(configuration.get).toHaveBeenLastCalledWith("changes.exclude", []);
