@@ -44,7 +44,7 @@ try {
 	await child.keyboard.press("F1");
 	await child
 		.locator(".quick-input-widget input")
-		.fill(">Codex ACP: チャットを開く");
+		.fill(">Nerita for Codex: チャットを開く");
 	await child.keyboard.press("Enter");
 	let chat;
 	for (let attempt = 0; attempt < 100; attempt++) {

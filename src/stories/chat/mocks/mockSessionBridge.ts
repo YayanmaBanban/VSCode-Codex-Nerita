@@ -9,7 +9,7 @@ export type SessionScenario =
 export function createSessionBridge(scenario: SessionScenario) {
 	const bridge = createMockBridge();
 	const cwd =
-		"D:\\Developments\\workspace\\vscode-codex-acp\\とても長いフォルダ名のプロジェクト";
+		"D:\\Developments\\workspace\\nerita\\とても長いフォルダ名のプロジェクト";
 	const sessions: SessionSummary[] =
 		scenario === "empty"
 			? []

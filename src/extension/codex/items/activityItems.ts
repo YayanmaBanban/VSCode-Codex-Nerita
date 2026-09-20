@@ -28,6 +28,9 @@ export function activityItem(
 	if (type === "reasoning") {
 		const summary = strings(value.summary),
 			content = strings(value.content);
+		if (summary.length === 0 && content.length === 0) {
+			return null;
+		}
 		return {
 			title: "推論",
 			kind: "think",

@@ -150,8 +150,8 @@ it("配置をユーザー設定へ保存し、エディタの下書きをサイ�
 	});
 	expect(api.update).toHaveBeenCalledWith("sidebarLocation", "primary", 1);
 	expect(api.executeCommand).toHaveBeenCalledWith("vscode.moveViews", {
-		viewIds: ["codex-acp.chat"],
-		destinationId: "workbench.view.extension.codex-acp-primary",
+		viewIds: ["nerita.codex.chat"],
+		destinationId: "workbench.view.extension.nerita-primary",
 	});
 	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith({
 		type: "ui/sidebarState",
@@ -170,7 +170,7 @@ it("保存済みプライマリを初回表示で復元し、保存失敗時は�
 	expect(api.executeCommand).toHaveBeenCalledWith(
 		"vscode.moveViews",
 		expect.objectContaining({
-			destinationId: "workbench.view.extension.codex-acp-primary",
+			destinationId: "workbench.view.extension.nerita-primary",
 		}),
 	);
 	api.executeCommand.mockClear();
@@ -286,7 +286,7 @@ it("パネルからの下書き変更と会話差分は共有し、閉じても�
 	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith(event);
 	expect(h.panel.webview.postMessage).toHaveBeenCalledWith(event);
 	await h.panel.send({ type: "ui/openSidebar", requestId: "back" });
-	expect(api.executeCommand).toHaveBeenCalledWith("codex-acp.chat.focus");
+	expect(api.executeCommand).toHaveBeenCalledWith("nerita.codex.chat.focus");
 	expect(h.sidebar.show).toHaveBeenCalledWith(false);
 	expect(h.listeners.size).toBe(1);
 	await h.sidebar.send({ type: "ui/openEditor", requestId: "reopen" });

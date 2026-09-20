@@ -4,7 +4,7 @@ import { type HostMessage, type UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
 import { settingsFixture } from "../../../../tests/fixtures/settingsFixture";
 import { mockSettings } from "./mockSettings";
-import { mockWorkspacePaths } from "./mockWorkspacePaths";
+import { mockWorkspacePaths, mockResolvePath } from "./mockWorkspacePaths";
 import { mockWorkspaceSymbols } from "./mockWorkspaceSymbols";
 import { mockSessionReferences } from "./mockSessionReferences";
 import { mockMcpCommand } from "./mockMcpCommand";
@@ -153,6 +153,10 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 				return;
 			}
 			switch (message.type) {
+				case "workspace/resolvePath":
+					// Hostの応答は貼り付けの編集確定より後のタスクで届く。
+					setTimeout(() => emit(mockResolvePath(message)), 0);
+					break;
 				case "session/searchReferences":
 					queueMicrotask(() => emit(mockSessionReferences(message)));
 					break;

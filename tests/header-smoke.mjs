@@ -12,7 +12,7 @@ const output = path.resolve("dist/header-smoke");
 await mkdir(output, { recursive: true });
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 const command = manifest.contributes.commands.find(
-	(item) => item.command === "codex-acp.openChat",
+	(item) => item.command === "nerita.codex.openChat",
 ).title;
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;

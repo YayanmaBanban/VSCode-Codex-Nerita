@@ -12,6 +12,7 @@ import type { Bridge } from "../../vscodeBridge";
 import { useWorkspacePaths } from "./useWorkspacePaths";
 import { useWorkspaceSymbols } from "./useWorkspaceSymbols";
 import { useSessionReferences } from "./useSessionReferences";
+import { usePastedPath } from "./usePastedPath";
 
 /** 候補選択とTabの字下げを、本文のUndo履歴へ反映する。 */
 export function CompletionPlugin({
@@ -24,6 +25,7 @@ export function CompletionPlugin({
 	skills: SkillSummary[];
 }) {
 	const [editor] = useLexicalComposerContext();
+	usePastedPath(editor, bridge);
 	const [match, setMatch] = useState<Completion | null>(null);
 	const [category, setCategory] = useState("");
 	const [search, setSearch] = useState<string | null>(null);

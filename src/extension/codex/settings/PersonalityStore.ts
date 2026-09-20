@@ -38,7 +38,7 @@ export class PersonalityStore {
 		return join(
 			scope === "global" ? this.home : this.cwd,
 			".codex",
-			"vscode-codex-acp",
+			"nerita",
 			"preset.toml",
 		);
 	}

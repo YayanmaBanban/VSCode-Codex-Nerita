@@ -1,5 +1,6 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useRef } from "react";
+import { useFollowConversation } from "./messages/useFollowConversation";
 import { AnimatePresence } from "motion/react";
 import type { Bridge } from "../vscodeBridge";
 import { ChatConversation } from "./ChatConversation";
@@ -50,14 +51,11 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending;
-	const followConversation = useEffectEvent(() => {
-		if (!search.open && !agentViewer.agent) {
-			bottom.current?.scrollIntoView({ block: "end" });
-		}
-	});
-	useEffect(() => {
-		followConversation();
-	}, [state.messages, state.permissions]);
+	useFollowConversation(
+		conversation,
+		state.sessionId,
+		search.open || !!agentViewer.agent,
+	);
 	return (
 		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
 			<ConnectionHeader

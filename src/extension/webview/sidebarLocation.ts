@@ -5,7 +5,7 @@ import { isSidebarLocation, type SidebarLocation } from "../../shared/sidebar";
 /** 不正な手編集値には既定のセカンダリを使用する。 */
 export function sidebarLocation(): SidebarLocation {
 	const value = vscode.workspace
-		.getConfiguration("codex-acp")
+		.getConfiguration("nerita.codex")
 		.get("sidebarLocation");
 	return isSidebarLocation(value) ? value : "secondary";
 }
@@ -14,23 +14,23 @@ export function sidebarLocation(): SidebarLocation {
 export async function moveSidebar(location: SidebarLocation): Promise<void> {
 	const destinationId =
 		location === "primary"
-			? "workbench.view.extension.codex-acp-primary"
-			: "workbench.view.extension.codex-acp";
+			? "workbench.view.extension.nerita-primary"
+			: "workbench.view.extension.nerita";
 	// コンテナ自体をドラッグしていた場合も、選択したサイドバーへ戻す。
 	await vscode.commands.executeCommand(
 		`${destinationId}.resetViewContainerLocation`,
 	);
 	await vscode.commands.executeCommand("vscode.moveViews", {
-		viewIds: ["codex-acp.chat"],
+		viewIds: ["nerita.codex.chat"],
 		destinationId,
 	});
-	await vscode.commands.executeCommand("codex-acp.chat.focus");
+	await vscode.commands.executeCommand("nerita.codex.chat.focus");
 }
 
 /** ワークスペースに依存しない配置をsettings.jsonへ保存する。 */
 export async function saveSidebar(location: SidebarLocation): Promise<void> {
 	await vscode.workspace
-		.getConfiguration("codex-acp")
+		.getConfiguration("nerita")
 		.update("sidebarLocation", location, vscode.ConfigurationTarget.Global);
 }
 
@@ -44,7 +44,7 @@ export class SidebarPlacement implements vscode.Disposable {
 	constructor(private notify: (location: SidebarLocation) => void) {
 		this.configuration = vscode.workspace.onDidChangeConfiguration(
 			(event) => {
-				if (event.affectsConfiguration("codex-acp.sidebarLocation")) {
+				if (event.affectsConfiguration("nerita.sidebarLocation")) {
 					void this.sync().catch(() => {
 						void vscode.window.showErrorMessage(
 							"サイドバーの配置を変更できませんでした。",

@@ -1,4 +1,4 @@
-# Codex ACP
+# Nerita for Codex
 
 Codex App Server への移行を完了しました。実装内容と検証手順は、同梱の `docs/App-Server-Migration.md` を参照してください。
 
@@ -7,8 +7,8 @@ VS Code のサイドバーから Codex App Server に接続します。テキス
 ## インストールと使い方
 
 1. Windows x64、VS Code 1.137 以降、Node.js 22 以降を用意します。
-2. 拡張機能メニューの「VSIX からのインストール」で `dist/codex-acp.vsix` を選びます。
-3. 信頼済みのローカルフォルダーを一つ開き、「Codex ACP: チャットを開く」を実行します。
+2. 拡張機能メニューの「VSIX からのインストール」で `dist/nerita.vsix` を選びます。
+3. 信頼済みのローカルフォルダーを一つ開き、「Nerita for Codex: チャットを開く」を実行します。
 4. 「接続する」を押し、メッセージを入力します。Enter で送信、Shift+Enter で改行します。
 
 同梱のネイティブ Codex を直接起動します。Codex CLIの別途インストールや実行パスの指定は不要です。
@@ -23,7 +23,7 @@ VS Code のサイドバーから Codex App Server に接続します。テキス
 
 接続後、上部の「オプション」→「性格設定」から、グローバルとワークスペースの指示を編集できます。プリセット名を変えると新規保存、本文だけを変えると更新します。「なし」を選ぶとその保存先のプリセットを適用しません。
 
-プリセットと選択状態は、グローバルが `~/.codex/vscode-codex-acp/preset.toml`、ワークスペースが `<ルート>/.codex/vscode-codex-acp/preset.toml` に保存されます。複数プリセットにはTOMLの配列テーブル `[[presets]]` を使います。
+プリセットと選択状態は、グローバルが `~/.codex/nerita/preset.toml`、ワークスペースが `<ルート>/.codex/nerita/preset.toml` に保存されます。複数プリセットにはTOMLの配列テーブル `[[presets]]` を使います。
 
 ```toml
 selected = "簡潔"
@@ -51,7 +51,7 @@ pnpm test
 pnpm package:vsix
 ```
 
-Windows の PowerShell で実行ポリシーにより起動できない場合は `pnpm.cmd` を使います。「実行とデバッグ」で `Run Extension` を選択して F5 を押すと、型検査・Lint・Host / Webview のビルド・Codex実行資産の準備後に、同じフォルダーを開いた Extension Development Host が起動します。開いたウィンドウで「Codex ACP: チャットを開く」を実行し、「接続する」を押してください。コード変更後はデバッグを再起動すると再ビルドされます。
+Windows の PowerShell で実行ポリシーにより起動できない場合は `pnpm.cmd` を使います。「実行とデバッグ」で `Run Extension` を選択して F5 を押すと、型検査・Lint・Host / Webview のビルド・Codex実行資産の準備後に、同じフォルダーを開いた Extension Development Host が起動します。開いたウィンドウで「Nerita for Codex: チャットを開く」を実行し、「接続する」を押してください。コード変更後はデバッグを再起動すると再ビルドされます。
 
 `pnpm package` は本番バンドル、`pnpm package:vsix` は Windows x64 用 VSIX を生成します。Windows x64 上で作成してください。VSIX は Codex 0.154.0 の Windows x64 実行資産だけを `dist/runtime/node_modules/@openai/` に同梱し、開発ツリーの `node_modules` を必要としません。旧ACPアダプター・SDK・旧Codexは削除済みです。署名・Marketplace 公開は行いません。
 
