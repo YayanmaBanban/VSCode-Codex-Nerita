@@ -43,18 +43,22 @@ for (const colorScheme of ["dark", "light"] as const) {
 		);
 		await expect(page.getByRole("alert")).toHaveCount(0);
 		await info.attach("failure", {
-			body: await page.screenshot({ path: info.outputPath("failure.png") }),
+			body: await page.screenshot({
+				path: info.outputPath("failure.png"),
+			}),
 			contentType: "image/png",
 		});
 		await page.getByRole("button", { name: "通知を閉じる" }).click();
 		await expect(page.locator(".notification-card")).toHaveCount(0);
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await page.clock.runFor(500);
 		await expect(input).toBeEmpty();
 		await expect(input).toHaveAttribute("contenteditable", "true");
 		await expect(page.locator(".notification-card")).toHaveCount(0);
 		await info.attach("accepted", {
-			body: await page.screenshot({ path: info.outputPath("accepted.png") }),
+			body: await page.screenshot({
+				path: info.outputPath("accepted.png"),
+			}),
 			contentType: "image/png",
 		});
 		await page.clock.runFor(2000);
@@ -73,7 +77,7 @@ test("通常送信も失敗時は下書きを保持する", async ({ page }) => 
 	);
 	const input = page.getByRole("textbox");
 	await input.fill("通常の送信も保持");
-	await input.press("Enter");
+	await input.press("Control+Enter");
 	await expect(page.locator(".notification-card")).toContainText(
 		"送信できませんでした",
 	);

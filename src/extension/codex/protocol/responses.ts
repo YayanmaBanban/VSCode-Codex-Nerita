@@ -39,6 +39,7 @@ export type AppServerResponses = {
 	"model/list": ReturnType<typeof parseModels>;
 	"account/login/start": ReturnType<typeof parseLogin>;
 	"account/login/cancel": { status: string };
+	"account/logout": Record<string, never>;
 	"account/rateLimits/read": ReturnType<typeof parseQuotaResponse>;
 	"thread/start": ReturnType<typeof parseStartedThread>;
 	"turn/start": ReturnType<typeof parseStartedTurn>;
@@ -101,6 +102,7 @@ export const responseParsers: {
 	"thread/unarchive": parseReadThread,
 	"model/list": parseModels,
 	"account/login/start": parseLogin,
+	"account/logout": parseInterrupt,
 	"account/login/cancel": (value) => {
 		if (!isRecord(value) || typeof value.status !== "string") {
 			throw new Error("Invalid login cancellation");

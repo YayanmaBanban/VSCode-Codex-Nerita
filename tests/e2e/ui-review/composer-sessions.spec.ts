@@ -62,7 +62,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			contentType: "image/png",
 		});
 		await input.press("End");
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await expect(page.getByLabel("送信した参照")).toContainText(
 			'"referencedSessionIds":["saved-input"]',
 		);
@@ -98,7 +98,7 @@ test("検索・失敗・再送・取り外しを行い参照解除後はIDを送
 	await expect(input).toHaveText("この方針で UI設計");
 	await page.getByRole("button", { name: "次の送信を失敗" }).click();
 	await input.press("End");
-	await input.press("Enter");
+	await input.press("Control+Enter");
 	await expect(
 		page.getByText(
 			"参照セッションを読み込めませんでした。参照を外して再送してください。",
@@ -111,7 +111,7 @@ test("検索・失敗・再送・取り外しを行い参照解除後はIDを送
 	await input
 		.getByRole("button", { name: "UI設計 の参照を取り外す" })
 		.click();
-	await input.press("Enter");
+	await input.press("Control+Enter");
 	await expect(page.getByLabel("送信した参照")).not.toContainText(
 		"referencedSessionIds",
 	);

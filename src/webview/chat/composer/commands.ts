@@ -120,9 +120,10 @@ export function registerComposerCommands(
 				}
 				event.preventDefault();
 				if (
+					!event.ctrlKey ||
 					event.shiftKey ||
-					selection.anchor.getNode().getTopLevelElement() instanceof
-						PastedBlockNode
+					event.altKey ||
+					event.metaKey
 				) {
 					selection.insertLineBreak();
 				} else {

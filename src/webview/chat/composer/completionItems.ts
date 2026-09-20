@@ -83,6 +83,12 @@ export function completionItems(
 				description: "MCPサーバーの接続状態を表示",
 				text: "/mcp ",
 			},
+			{
+				id: "logout",
+				label: "/logout",
+				description: "Codexからログアウト",
+				text: "/logout ",
+			},
 		];
 	} else if (marker === "@") {
 		items = skills.map((skill) => ({

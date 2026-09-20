@@ -59,7 +59,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await paste(input, "D:/workspace/project/empty/");
 		await expect(input.locator(".inline-path-reference")).toHaveCount(2);
 		await page.screenshot({ path: info.outputPath("pasted-paths.png") });
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await expect(page.locator(".message.user")).toContainText(
 			"D:\\workspace\\project\\empty",
 		);

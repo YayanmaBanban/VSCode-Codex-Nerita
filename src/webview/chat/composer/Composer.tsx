@@ -79,8 +79,8 @@ export function Composer({
 					id="composer-help"
 					className="text-[12px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]"
 				>
-					Enter で送信 · Shift+Enter で改行（コード内は Enter
-					で改行）・Shift + ドロップでファイル添付にも対応
+					Ctrl+Enter で送信 · Enter / Shift+Enter で改行・Shift +
+					ドロップでファイル添付にも対応
 				</span>
 				<div className="flex shrink-0 items-center gap-2">
 					{busy && (

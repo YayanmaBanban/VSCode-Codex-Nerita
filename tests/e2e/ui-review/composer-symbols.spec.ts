@@ -60,7 +60,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			path: info.outputPath(`symbol-chip-${colorScheme}.png`),
 		});
 		await input.press("End");
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await expect(page.locator(".message.user")).toContainText(
 			"D:\\workspace\\project\\src\\tests\\UserService.ts:9:1 (UserService)",
 		);

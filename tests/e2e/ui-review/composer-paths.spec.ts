@@ -77,7 +77,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(input).toHaveText("ComposerInput.tsx empty");
 		await page.screenshot({ path: info.outputPath("inserted.png") });
 		await expect(input.locator(".inline-path-reference")).toHaveCount(2);
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await expect(page.locator(".message.user")).toContainText(
 			"D:\\workspace\\project\\empty",
 		);

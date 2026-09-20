@@ -179,6 +179,10 @@ export class CodexClient {
 	cancelLogin(loginId: string) {
 		return this.transport.request("account/login/cancel", { loginId });
 	}
+	/** 保存済みの認証をApp Server経由で解除する。 */
+	logout() {
+		return this.transport.request("account/logout", undefined);
+	}
 	/** ワークスペースと Codex の既存設定を使って会話を開始する。 */
 	async startThread(params: ThreadStartParams) {
 		return this.transport.request("thread/start", {

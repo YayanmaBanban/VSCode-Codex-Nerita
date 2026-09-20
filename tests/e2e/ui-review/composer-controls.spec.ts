@@ -46,7 +46,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(code).toHaveCount(0);
 		await expect(input).toHaveText("前文後文");
 		await expect(page.getByRole("log")).toBeEmpty();
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		await expect(page.locator(".message.user")).toHaveText("前文後文");
 		expect(errors).toEqual([]);
 	});

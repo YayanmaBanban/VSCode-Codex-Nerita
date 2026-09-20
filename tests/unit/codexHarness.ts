@@ -88,6 +88,7 @@ export function codexHarness() {
 		readRateLimits: vi.fn(() => Promise.resolve([])),
 		login: vi.fn(() => Promise.resolve({ type: "apiKey" as const })),
 		cancelLogin: vi.fn(() => Promise.resolve({ status: "cancelled" })),
+		logout: vi.fn(() => Promise.resolve({})),
 		startThread: vi.fn((_params: ThreadStartParams) =>
 			Promise.resolve({
 				thread: { id: `thread-${++thread}` },

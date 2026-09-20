@@ -16,6 +16,7 @@ export type CodexConnection = Pick<
 	| "readRateLimits"
 	| "login"
 	| "cancelLogin"
+	| "logout"
 	| "listThreads"
 	| "readThread"
 	| "resumeThread"

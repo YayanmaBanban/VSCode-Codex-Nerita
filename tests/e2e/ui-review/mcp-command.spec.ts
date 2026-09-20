@@ -26,7 +26,7 @@ for (const variant of ["dark", "light", "reduced"] as const) {
 		await input.press("Enter");
 		await expect(input).toHaveText("/mcp");
 		await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
-		await input.press("Enter");
+		await input.press("Control+Enter");
 		const result = page.locator(".message.assistant");
 		const loading = result.getByRole("status", { name: "取得中…" });
 		await expect(loading).toBeVisible();

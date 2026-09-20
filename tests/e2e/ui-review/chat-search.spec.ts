@@ -127,7 +127,7 @@ test("検索中の追加メッセージと再表示・F3での一致移動", asy
 	const count = page.getByLabel("検索結果");
 	await input.fill("追加した検索語");
 	await expect(count).toHaveText("0/0");
-	await composer.press("Enter");
+	await composer.press("Control+Enter");
 	await expect(count).toHaveText("1/1");
 	await input.press("F3");
 	await expect(page.locator(".message.user").last()).toBeInViewport();
