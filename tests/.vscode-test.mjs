@@ -5,7 +5,9 @@ export default defineConfig({
 	files: fileURLToPath(
 		new URL("../out/tests/extension.test.js", import.meta.url),
 	),
-	extensionDevelopmentPath: fileURLToPath(new URL("..", import.meta.url)),
+	extensionDevelopmentPath:
+		process.env.NERITA_TEST_EXTENSION_PATH ??
+		fileURLToPath(new URL("..", import.meta.url)),
 	useInstallation: process.env.VSCODE_EXECUTABLE
 		? { fromPath: process.env.VSCODE_EXECUTABLE }
 		: undefined,

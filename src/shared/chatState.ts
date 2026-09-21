@@ -43,7 +43,7 @@ export type ToolSummary = {
 	order?: number;
 	runId?: string;
 	title: string;
-	status: "pending" | "in_progress" | "completed" | "failed";
+	status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
 	paths: string[];
 	kind?: string;
 	content?: unknown[];

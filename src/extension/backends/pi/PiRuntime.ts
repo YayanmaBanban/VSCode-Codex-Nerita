@@ -1,4 +1,4 @@
-// 配布済みESM SDKを遅延読込し、Piの認証・設定で単一セッションを生成する。
+// ビルドが用意したESM入口を遅延読込し、Piの認証・設定で単一セッションを生成する。
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type {
@@ -6,6 +6,7 @@ import type {
 	AgentSessionEvent,
 } from "@earendil-works/pi-coding-agent";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
+import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
 
 /** Controllerが必要とするSDKの操作だけを公開する。 */
 export type PiSession = Pick<
@@ -17,6 +18,7 @@ export type { AgentSessionEvent as PiEvent };
 /** 実SDKとテスト接続を同じ寿命管理で扱う。 */
 export type PiFactory = (
 	signal: AbortSignal,
+	authorize: PiAuthorize,
 ) => Promise<{ session: PiSession; cwd: string }>;
 
 /** 通常実行と隔離した疎通テストで使う起動条件。 */
@@ -27,17 +29,15 @@ export type PiRuntimeOptions = {
 	provider?: string;
 	model?: string;
 	signal: AbortSignal;
+	authorize?: PiAuthorize;
 };
 
-/** 履歴はメモリ内、ツールと自動ロードは最小疎通の範囲に固定する。 */
+/** 履歴はメモリ内とし、副作用ツールには必ずHostの承認を挟む。 */
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
 ): Promise<PiSession> {
 	const sdkUrl = pathToFileURL(
-		join(
-			options.extensionPath,
-			"dist/runtime/node_modules/@earendil-works/pi-coding-agent/dist/bundle/index.js",
-		),
+		join(options.extensionPath, "dist/runtime/pi.mjs"),
 	).href;
 	const sdk = (await import(sdkUrl)) as typeof PiSdk;
 	options.signal.throwIfAborted();
@@ -94,7 +94,22 @@ export async function createPiRuntime(
 		modelRuntime,
 		...(model ? { model } : {}),
 		sessionManager: sdk.SessionManager.inMemory(options.cwd),
-		tools: ["read", "ls"],
+		tools: ["read", "ls", "write", "edit", "powershell"],
+		customTools: [
+			sdk.createWriteToolDefinition(options.cwd),
+			sdk.createEditToolDefinition(options.cwd),
+			sdk.createPowerShellToolDefinition(options.cwd),
+		].map((tool) =>
+			approvePiTool(
+				tool,
+				options.cwd,
+				options.authorize ??
+					(() =>
+						Promise.reject(
+							new Error("Piの実行承認が接続されていません。"),
+						)),
+			),
+		),
 	});
 	if (options.signal.aborted || !session.model) {
 		session.dispose();

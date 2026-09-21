@@ -1,8 +1,9 @@
-// PiのAssistant本文を既存のChatMessageへ変換し、思考・ツール通知は分離する。
+// PiのAssistant本文とツール通知を、既存の会話タイムラインへ変換する。
 import { randomUUID } from "node:crypto";
 import type { ChatState } from "../../../shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
+import { mapPiTool } from "./PiToolMapper";
 
 /** 1回の送信中に複数のAssistantメッセージが生成される場合も区別する。 */
 export class PiEventMapper {
@@ -12,6 +13,10 @@ export class PiEventMapper {
 
 	/** 差分通知の累積本文を使い、確定通知との重複を避ける。 */
 	apply(event: PiEvent, state: ChatState): Partial<ChatState> | undefined {
+		const tools = mapPiTool(event, state);
+		if (tools) {
+			return tools;
+		}
 		if (
 			!["message_start", "message_update", "message_end"].includes(
 				event.type,

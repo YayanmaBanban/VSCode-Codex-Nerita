@@ -1,13 +1,16 @@
 // 実Pi SDKとローカルOpenAI互換サーバーで、通信・read・Stopを外部認証なしで検証する。
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { mkdtemp, mkdir, writeFile, cp, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import { build } from "esbuild";
 
 const projectRoot = process.cwd();
+// 展開したVSIXも同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
+const extensionPath = path.resolve(process.argv[2] ?? projectRoot);
 const fixture = await mkdtemp(path.join(tmpdir(), "nerita-pi-smoke-"));
 const cwd = path.join(fixture, "workspace");
 const agentDir = path.join(fixture, "agent");
@@ -43,20 +46,61 @@ const server = createServer((request, response) => {
 						.map((part) => part.text)
 						.join("");
 		send({ role: "assistant" });
+		const mutation = {
+			write: {
+				name: "write",
+				args: { path: "approved.txt", content: "approved" },
+			},
+			edit: {
+				name: "edit",
+				args: {
+					path: "approved.txt",
+					edits: [{ oldText: "approved", newText: "edited" }],
+				},
+			},
+			powershell: {
+				name: "powershell",
+				args: {
+					command:
+						"Set-Content -LiteralPath command.txt -Value executed; Write-Output 'command complete'",
+				},
+			},
+			commandStop: {
+				name: "powershell",
+				args: {
+					command:
+						"Write-Output 'command started'; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad",
+				},
+			},
+		}[prompt];
 		if (prompt === "stop") {
 			send({ content: "停止待ち" });
 			return;
 		}
-		if (prompt === "tool" && input.messages.at(-1)?.role !== "tool") {
+		if (
+			(["tool", "list", "missing"].includes(prompt) || mutation) &&
+			input.messages.at(-1)?.role !== "tool"
+		) {
 			send({
 				tool_calls: [
 					{
 						index: 0,
-						id: "read-smoke",
+						id: prompt === "list" ? "ls-smoke" : "read-smoke",
 						type: "function",
 						function: {
-							name: "read",
-							arguments: JSON.stringify({ path: "hello.txt" }),
+							name:
+								mutation?.name ??
+								(prompt === "list" ? "ls" : "read"),
+							arguments: JSON.stringify(
+								mutation?.args ?? {
+									path:
+										prompt === "list"
+											? "."
+											: prompt === "missing"
+												? "missing.txt"
+												: "hello.txt",
+								},
+							),
 						},
 					},
 				],
@@ -103,12 +147,32 @@ try {
 	);
 	// リポジトリ外に同梱資産を置き、開発用node_modulesによる依存の補完を防ぐ。
 	await cp(
-		path.join(projectRoot, "dist/runtime"),
+		path.join(extensionPath, "dist/runtime"),
 		path.join(fixture, "dist/runtime"),
 		{
 			recursive: true,
 			filter: (source) => path.basename(source) !== "@openai",
 		},
+	);
+	// ESMの公開入口と、遅延ロードされる画像変換用WASMも配布物だけで動かす。
+	const sdk = await import(
+		pathToFileURL(path.join(fixture, "dist/runtime/pi.mjs")).href
+	);
+	assert.equal(
+		sdk.getPackageDir(),
+		path.join(
+			fixture,
+			"dist/runtime/node_modules/@earendil-works/pi-coding-agent",
+		),
+	);
+	const png = await sdk.convertToPng(
+		"R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+		"image/gif",
+	);
+	assert.ok(png, "配布した画像変換用WASMを読み込めませんでした。");
+	assert.deepEqual(
+		Buffer.from(png.data, "base64").subarray(0, 8),
+		Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
 	);
 	await build({
 		stdin: {
@@ -126,13 +190,14 @@ try {
 		createRequire(import.meta.url)(
 			path.join(projectRoot, "dist/pi-smoke/host.cjs"),
 		);
-	controller = new PiSessionController(async (signal) => ({
+	controller = new PiSessionController(async (signal, authorize) => ({
 		cwd,
 		session: await createPiRuntime({
 			extensionPath: fixture,
 			cwd,
 			agentDir,
 			signal,
+			authorize,
 			provider: "local",
 			model: "smoke",
 		}),
@@ -197,10 +262,137 @@ try {
 	assert.ok(
 		requests.every((request) =>
 			request.tools.every((tool) =>
-				["read", "ls"].includes(tool.function.name),
+				["read", "ls", "write", "edit", "powershell"].includes(
+					tool.function.name,
+				),
 			),
 		),
 	);
+	assert.equal(controller.snapshot().tools.at(-1).status, "completed");
+	assert.equal(controller.snapshot().tools.at(-1).kind, "read");
+	assert.ok(
+		JSON.stringify(controller.snapshot().tools.at(-1).content).includes(
+			"Pi read tool works",
+		),
+	);
+	assert.ok(
+		events.some(
+			(event) =>
+				event.type === "state/patch" &&
+				event.patch.tools?.some(
+					(tool) =>
+						tool.kind === "read" && tool.status === "in_progress",
+				),
+		),
+	);
+	await send("list");
+	await until(() => controller.snapshot().run !== "running");
+	assert.equal(controller.snapshot().tools.at(-1).status, "completed");
+	assert.equal(controller.snapshot().tools.at(-1).kind, "list");
+	assert.ok(
+		JSON.stringify(controller.snapshot().tools.at(-1).content).includes(
+			"hello.txt",
+		),
+	);
+	await send("missing");
+	await until(() => controller.snapshot().run !== "running");
+	assert.equal(controller.snapshot().tools.at(-1).status, "failed");
+	assert.ok(
+		JSON.stringify(controller.snapshot().tools.at(-1).content).includes(
+			"ENOENT",
+		),
+	);
+	assert.equal(controller.snapshot().tools.length, 3);
+	// 拒否・承認待ちStopではSDKの副作用へ到達しない。
+	const respond = (optionId) =>
+		controller.receive({
+			type: "permission/respond",
+			requestId: `approval-${++sequence}`,
+			sessionId: controller.snapshot().sessionId,
+			runId: controller.snapshot().runId,
+			permissionId: controller.snapshot().permissions[0].id,
+			optionId,
+		});
+	for (const decision of ["decline", "cancel"]) {
+		await send("write");
+		await until(() => controller.snapshot().permissions.length === 1);
+		await assert.rejects(readFile(path.join(cwd, "approved.txt")), {
+			code: "ENOENT",
+		});
+		await respond(decision);
+		await until(() =>
+			["completed", "cancelled"].includes(controller.snapshot().run),
+		);
+		await assert.rejects(readFile(path.join(cwd, "approved.txt")), {
+			code: "ENOENT",
+		});
+		assert.equal(controller.snapshot().permissions.length, 0);
+	}
+	for (const tool of ["write", "edit", "powershell"]) {
+		const target = path.join(
+			cwd,
+			tool === "powershell" ? "command.txt" : "approved.txt",
+		);
+		const before = await readFile(target, "utf8").catch((error) => {
+			assert.equal(error.code, "ENOENT");
+			return null;
+		});
+		await send(tool);
+		await until(() => controller.snapshot().permissions.length === 1);
+		await respond("decline");
+		await until(() => controller.snapshot().run !== "running");
+		assert.equal(controller.snapshot().tools.at(-1).status, "failed");
+		if (before === null) {
+			await assert.rejects(readFile(target), { code: "ENOENT" });
+		} else {
+			assert.equal(await readFile(target, "utf8"), before);
+		}
+		await send(tool);
+		await until(() => controller.snapshot().permissions.length === 1);
+		assert.ok(controller.snapshot().permissions[0].title.includes(tool));
+		await respond("accept");
+		await until(() => controller.snapshot().run !== "running");
+		assert.equal(
+			controller.snapshot().tools.at(-1).status,
+			"completed",
+			JSON.stringify(controller.snapshot().tools.at(-1)),
+		);
+		assert.equal(
+			(
+				await readFile(
+					path.join(
+						cwd,
+						tool === "powershell" ? "command.txt" : "approved.txt",
+					),
+					"utf8",
+				)
+			).trim(),
+			tool === "write"
+				? "approved"
+				: tool === "edit"
+					? "edited"
+					: "executed",
+		);
+	}
+	await send("commandStop");
+	await until(() => controller.snapshot().permissions.length === 1);
+	await respond("accept");
+	await until(() =>
+		JSON.stringify(controller.snapshot().tools.at(-1).content).includes(
+			"command started",
+		),
+	);
+	await controller.receive({
+		type: "prompt/cancel",
+		requestId: "command-stop",
+		sessionId: controller.snapshot().sessionId,
+		runId: controller.snapshot().runId,
+	});
+	await until(() => controller.snapshot().run === "cancelled");
+	assert.equal(controller.snapshot().tools.at(-1).status, "cancelled");
+	await assert.rejects(readFile(path.join(cwd, "unexpected.txt")), {
+		code: "ENOENT",
+	});
 	await send("stop");
 	await until(
 		() => controller.snapshot().messages.at(-1)?.text === "停止待ち",
@@ -221,7 +413,7 @@ try {
 	);
 	assert.deepEqual(errors, []);
 	console.log(
-		"PASS: packaged Pi SDK → prompt → stream → read tool → complete → stop → resume",
+		"PASS: packaged Pi SDK + WASM → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → resume",
 	);
 } finally {
 	await controller?.dispose();

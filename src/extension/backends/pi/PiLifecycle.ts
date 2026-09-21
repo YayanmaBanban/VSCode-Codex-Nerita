@@ -2,6 +2,7 @@
 import { initialState } from "../../../shared/chatState";
 import { SessionState } from "../../session/sessionState";
 import type { PiFactory, PiSession } from "./PiRuntime";
+import type { PiAuthorize } from "./PiApprovedTools";
 
 /** Piの接続と単一メモリセッションの寿命を管理する。 */
 export abstract class PiLifecycle extends SessionState {
@@ -19,6 +20,8 @@ export abstract class PiLifecycle extends SessionState {
 
 	/** 古い実行の購読・送信待機を無効化する。 */
 	protected abstract resetRun(): void;
+	/** 現在の実行に属する承認だけを受け付ける。 */
+	protected abstract authorize: PiAuthorize;
 
 	/** 終了まで待つ操作の拒否を処理し、追跡から除外する。 */
 	protected track(operation: Promise<unknown>): void {
@@ -50,18 +53,21 @@ export abstract class PiLifecycle extends SessionState {
 			return;
 		}
 		try {
-			const operation = this.factory(opening.signal).then(
-				async (result) => {
-					if (epoch !== this.epoch) {
-						try {
-							await result.session.abort();
-						} finally {
-							result.session.dispose();
-						}
+			const operation = this.factory(opening.signal, (title, signal) => {
+				if (epoch !== this.epoch) {
+					return Promise.reject(new Error("古いPi接続の操作です。"));
+				}
+				return this.authorize(title, signal);
+			}).then(async (result) => {
+				if (epoch !== this.epoch) {
+					try {
+						await result.session.abort();
+					} finally {
+						result.session.dispose();
 					}
-					return result;
-				},
-			);
+				}
+				return result;
+			});
 			this.track(operation);
 			const { session, cwd } = await operation;
 			if (epoch !== this.epoch) {

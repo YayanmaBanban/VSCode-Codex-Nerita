@@ -6,25 +6,32 @@ import { ChatApp } from "../../webview/chat/ChatApp";
 import { createMockBridge, type Scenario } from "./mocks/mockBridge";
 import { createAppServerBridge } from "./mocks/appServerBridge";
 import { createPiBridge } from "./mocks/piBridge";
+import { createPiApprovalBridge } from "./mocks/piApprovalBridge";
 
 /** 各マウントで独立する Bridge を Story へ注入する。 */
 function ChatStory({
 	scenario,
 	appServer = false,
 	pi = false,
+	piTools = false,
+	piApprovals = false,
 }: {
 	scenario: Scenario;
 	appServer?: boolean;
 	pi?: boolean;
+	piTools?: boolean;
+	piApprovals?: boolean;
 }) {
 	const bridge = useMemo(
 		() =>
-			pi
-				? createPiBridge()
-				: appServer
-					? createAppServerBridge(scenario)
-					: createMockBridge(scenario),
-		[scenario, appServer, pi],
+			piApprovals
+				? createPiApprovalBridge()
+				: pi || piTools
+					? createPiBridge(piTools)
+					: appServer
+						? createAppServerBridge(scenario)
+						: createMockBridge(scenario),
+		[scenario, appServer, pi, piTools, piApprovals],
 	);
 	return <ChatApp bridge={bridge} />;
 }
@@ -39,6 +46,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 export const Pi: Story = { args: { pi: true } };
+export const PiTools: Story = { args: { piTools: true } };
+export const PiApprovals: Story = { args: { piApprovals: true } };
 export const AppServer: Story = { args: { appServer: true } };
 export const AppServerStreaming: Story = {
 	args: { scenario: "streaming", appServer: true },

@@ -4,6 +4,7 @@ import { PiSessionController } from "../../src/extension/backends/pi/PiSessionCo
 import type {
 	PiEvent,
 	PiSession,
+	PiFactory,
 } from "../../src/extension/backends/pi/PiRuntime";
 import type { HostMessage } from "../../src/shared/messages";
 
@@ -74,7 +75,7 @@ export function piHarness() {
 		}),
 		dispose: vi.fn(),
 	};
-	const factory = vi.fn(() =>
+	const factory = vi.fn<PiFactory>(() =>
 		Promise.resolve({ session: runtime, cwd: "D:\\workspace" }),
 	);
 	const controller = new PiSessionController(factory);

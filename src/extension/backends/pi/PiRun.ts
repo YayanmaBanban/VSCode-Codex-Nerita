@@ -4,6 +4,9 @@ import type { UiMessage } from "../../../shared/messages";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { PiLifecycle } from "./PiLifecycle";
 import { PiEventMapper } from "./PiEventMapper";
+import { finishPiTools } from "./PiToolMapper";
+import { Approvals } from "../../session/Approvals";
+import type { PiAuthorize } from "./PiApprovedTools";
 
 /** SDK送信の受付状態とイベント購読を保持する。 */
 type Submission = {
@@ -11,11 +14,38 @@ type Submission = {
 	cancelled: boolean;
 	accepted: boolean;
 	unsubscribe: () => void;
+	abort: AbortController;
 };
 
 /** 最小版では同時送信を拒否し、Stop後に同じセッションを継続できる。 */
 export abstract class PiRun extends PiLifecycle {
 	private submission: Submission | undefined;
+	protected readonly approvals = new Approvals(() =>
+		this.patch({ permissions: this.approvals.list() }),
+	);
+
+	/** 拒否はツールエラーとして返し、中止はターン全体を停止する。 */
+	protected authorize: PiAuthorize = async (title, signal) => {
+		const submission = this.submission;
+		if (!submission || submission.cancelled) {
+			throw new Error("実行中のPi会話がありません。");
+		}
+		const { decision } = await this.approvals.ask(title, [
+			submission.abort.signal,
+			...(signal ? [signal] : []),
+		]);
+		if (decision === "cancel" && this.submission === submission) {
+			this.cancel();
+		}
+		submission.abort.signal.throwIfAborted();
+		signal?.throwIfAborted();
+		if (decision !== "accept") {
+			throw new Error(
+				"ユーザーが実行を拒否しました。操作は実行されていません。",
+			);
+		}
+		return submission.abort.signal;
+	};
 
 	/** SDKの事前検証が終わった時点でComposerの下書きを解放する。 */
 	protected submit(
@@ -41,6 +71,7 @@ export abstract class PiRun extends PiLifecycle {
 			cancelled: false,
 			accepted: false,
 			unsubscribe: () => {},
+			abort: new AbortController(),
 		};
 		this.submission = submission;
 		const current = () =>
@@ -119,9 +150,11 @@ export abstract class PiRun extends PiLifecycle {
 	): void {
 		const cancelled = submission.cancelled || aborted;
 		this.submission = undefined;
+		submission.abort.abort();
 		this.patch({
 			run: cancelled ? "cancelled" : error ? "failed" : "completed",
 			error: cancelled ? null : (error ?? null),
+			tools: finishPiTools(this.state, cancelled, error),
 			messages: this.state.messages.map((message) => ({
 				...message,
 				streaming: false,
@@ -137,6 +170,7 @@ export abstract class PiRun extends PiLifecycle {
 			return;
 		}
 		submission.cancelled = true;
+		submission.abort.abort();
 		this.patch({ run: "cancelling" });
 		this.track(
 			runtime.abort().catch(() => {
@@ -155,6 +189,7 @@ export abstract class PiRun extends PiLifecycle {
 	protected override resetRun(): void {
 		if (this.submission) {
 			this.submission.cancelled = true;
+			this.submission.abort.abort();
 			this.submission.unsubscribe();
 			this.submission = undefined;
 		}
