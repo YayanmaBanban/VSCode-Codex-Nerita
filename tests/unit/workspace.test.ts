@@ -1,7 +1,7 @@
 // ワークスペース不備の原因とUIに届く案内が一致することを検証する。
 import { describe, expect, it } from "vitest";
 import { requireLocalWorkspace, sameCwd } from "../../src/extension/workspace";
-import { CodexSessionController } from "../../src/extension/codex/CodexSessionController";
+import { CodexSessionController } from "../../src/extension/backends/codex/CodexSessionController";
 
 const folder = { uri: { scheme: "file", fsPath: "D:\\workspace with spaces" } };
 describe("ワークスペースの起動条件", () => {

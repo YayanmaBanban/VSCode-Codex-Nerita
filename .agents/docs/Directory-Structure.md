@@ -12,7 +12,8 @@
 | 共通UI部品・テーマ | `src/webview/ui/`・`src/webview/chat/chat.css` |
 | Webview側のHost通信 | `src/webview/vscodeBridge.ts` |
 | 拡張機能の起動・VS Code連携 | `src/extension/extension.ts`・`src/extension/webview/` |
-| Codex App Server連携・会話状態 | `src/extension/codex/`・`src/extension/session/` |
+| backend固有のエージェント連携 | `src/extension/backends/codex/`・`src/extension/backends/pi/` |
+| Host共通のセッション・添付処理 | `src/extension/session/` |
 | 両側で共有する通信型・検証処理 | `src/shared/` |
 
 既存の配置は各領域で確認できます。追加説明はルートの `README.md` にありますが、配置の判断基準はこのガイド内で完結しています。

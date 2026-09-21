@@ -5,21 +5,26 @@ import { expect, userEvent, within } from "storybook/test";
 import { ChatApp } from "../../webview/chat/ChatApp";
 import { createMockBridge, type Scenario } from "./mocks/mockBridge";
 import { createAppServerBridge } from "./mocks/appServerBridge";
+import { createPiBridge } from "./mocks/piBridge";
 
 /** 各マウントで独立する Bridge を Story へ注入する。 */
 function ChatStory({
 	scenario,
 	appServer = false,
+	pi = false,
 }: {
 	scenario: Scenario;
 	appServer?: boolean;
+	pi?: boolean;
 }) {
 	const bridge = useMemo(
 		() =>
-			appServer
-				? createAppServerBridge(scenario)
-				: createMockBridge(scenario),
-		[scenario, appServer],
+			pi
+				? createPiBridge()
+				: appServer
+					? createAppServerBridge(scenario)
+					: createMockBridge(scenario),
+		[scenario, appServer, pi],
 	);
 	return <ChatApp bridge={bridge} />;
 }
@@ -33,6 +38,7 @@ export default meta;
 /** チャット画面の Story 定義。 */
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const Pi: Story = { args: { pi: true } };
 export const AppServer: Story = { args: { appServer: true } };
 export const AppServerStreaming: Story = {
 	args: { scenario: "streaming", appServer: true },

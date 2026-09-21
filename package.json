@@ -28,6 +28,28 @@
 		"configuration": {
 			"title": "Nerita for Codex",
 			"properties": {
+				"nerita.backend": {
+					"type": "string",
+					"enum": [
+						"codex",
+						"pi"
+					],
+					"default": "codex",
+					"scope": "window",
+					"description": "チャットに使用するエージェント。変更後はウィンドウを再読み込みしてください。Piは読み取り系ツールを使う最小版です。"
+				},
+				"nerita.pi.provider": {
+					"type": "string",
+					"default": "",
+					"scope": "window",
+					"description": "Piのprovider ID。modelとセットで指定します。空ならPiの設定を使用します。変更後は再接続してください。"
+				},
+				"nerita.pi.model": {
+					"type": "string",
+					"default": "",
+					"scope": "window",
+					"description": "Piのmodel ID。providerとセットで指定します。空ならPiの設定を使用します。変更後は再接続してください。"
+				},
 				"nerita.codex.changes.exclude": {
 					"type": "array",
 					"items": {
@@ -147,6 +169,7 @@
 		"codex:generate": "node config/generate-codex.cjs",
 		"test:codex": "node tests/codex-app-server-smoke.mjs",
 		"test:codex:chat": "node tests/codex-chat-smoke.mjs",
+		"test:pi:chat": "node tests/pi-chat-smoke.mjs",
 		"test:codex:features": "node tests/codex-features-smoke.mjs",
 		"test:codex:history": "node tests/codex-history-smoke.mjs",
 		"ui-review:chat": "pnpm ui-review chat",
@@ -197,6 +220,7 @@
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.8.0",
+		"@earendil-works/pi-coding-agent": "0.86.1",
 		"@lexical/react": "^0.50.0",
 		"@openai/codex": "0.154.0",
 		"class-variance-authority": "^0.7.1",

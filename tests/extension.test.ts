@@ -2,13 +2,21 @@
 import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
 import { access, readdir, readFile } from "node:fs/promises";
-import { CodexClient } from "../src/extension/codex/CodexClient";
+import { CodexClient } from "../src/extension/backends/codex/CodexClient";
+import { piExtensionSmoke } from "./piExtensionSmoke";
 import {
 	moveSidebar,
 	saveSidebar,
 } from "../src/extension/webview/sidebarLocation";
 
 suite("Nerita for Codex Extension", () => {
+	test("同梱Pi SDKで本文を受信し、Extension Hostから停止する", async () => {
+		const extension = vscode.extensions.getExtension(
+			"nerita-local.nerita-codex",
+		);
+		assert.ok(extension);
+		await piExtensionSmoke(extension.extensionUri.fsPath);
+	});
 	test("サイドバーの両コンテナへ移動しユーザー設定を保存する", async () => {
 		await vscode.extensions
 			.getExtension("nerita-local.nerita-codex")!
@@ -89,7 +97,7 @@ suite("Nerita for Codex Extension", () => {
 		}
 		await vscode.commands.executeCommand("nerita.codex.openChat");
 	});
-	test("配布runtimeにApp Server用のCodexだけが含まれる", async () => {
+	test("配布runtimeにCodexとPiの実行資産が含まれる", async () => {
 		const extension = vscode.extensions.getExtension(
 			"nerita-local.nerita-codex",
 		);
@@ -99,6 +107,18 @@ suite("Nerita for Codex Extension", () => {
 			"dist/runtime",
 		);
 		assert.deepEqual(await readdir(runtime.fsPath), ["node_modules"]);
+		await access(
+			vscode.Uri.joinPath(
+				runtime,
+				"node_modules/@earendil-works/pi-coding-agent/dist/bundle/index.js",
+			).fsPath,
+		);
+		await access(
+			vscode.Uri.joinPath(
+				runtime,
+				"node_modules/@earendil-works/chord/dist/context/index.js",
+			).fsPath,
+		);
 		assert.deepEqual(
 			(
 				await readdir(

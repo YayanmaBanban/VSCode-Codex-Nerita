@@ -15,7 +15,7 @@ await mkdir(cwd, { recursive: true });
 await build({
 	stdin: {
 		contents:
-			'export { CodexClient } from "./src/extension/codex/CodexClient"; export { resolveCodexExecutable } from "./src/extension/codex/runtime";',
+			'export { CodexClient } from "./src/extension/backends/codex/CodexClient"; export { resolveCodexExecutable } from "./src/extension/backends/codex/runtime/executable";',
 		resolveDir: process.cwd(),
 		loader: "ts",
 	},

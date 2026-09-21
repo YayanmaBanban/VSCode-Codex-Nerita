@@ -1,0 +1,145 @@
+// VS Code内のNode.jsで同梱Pi SDKを動かし、外部通信なしで本文とStopを確認する。
+import * as assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, basename, join } from "node:path";
+import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
+import { createPiRuntime } from "../src/extension/backends/pi/PiRuntime";
+
+/** Extension Host上でもESMの動的ロードとストリーム中断が成立することを確認する。 */
+export async function piExtensionSmoke(extensionPath: string): Promise<void> {
+	const fixture = await mkdtemp(join(tmpdir(), "nerita-pi-host-"));
+	const agentDir = join(fixture, "agent");
+	const server = createServer((request, response) => {
+		let body = "";
+		request.setEncoding("utf8");
+		request.on("data", (chunk: string) => {
+			body += chunk;
+		});
+		request.on("end", () => {
+			response.writeHead(200, { "content-type": "text/event-stream" });
+			response.write(
+				`data: ${JSON.stringify({
+					id: "host-smoke",
+					object: "chat.completion.chunk",
+					created: 1,
+					model: "smoke",
+					choices: [
+						{
+							index: 0,
+							delta: { role: "assistant", content: "Pi Host OK" },
+							finish_reason: null,
+						},
+					],
+				})}\n\n`,
+			);
+			if (!body.includes('"stop"')) {
+				response.end(
+					`data: ${JSON.stringify({
+						id: "host-smoke",
+						object: "chat.completion.chunk",
+						created: 1,
+						model: "smoke",
+						choices: [
+							{ index: 0, delta: {}, finish_reason: "stop" },
+						],
+					})}\n\ndata: [DONE]\n\n`,
+				);
+			}
+		});
+	});
+	let controller: PiSessionController | undefined;
+	try {
+		await new Promise<void>((resolve) =>
+			server.listen(0, "127.0.0.1", resolve),
+		);
+		const address = server.address();
+		assert.ok(address && typeof address === "object");
+		await mkdir(agentDir);
+		await writeFile(
+			join(agentDir, "models.json"),
+			JSON.stringify({
+				providers: {
+					local: {
+						baseUrl: `http://127.0.0.1:${address.port}/v1`,
+						api: "openai-completions",
+						apiKey: "local-test-only",
+						models: [
+							{
+								id: "smoke",
+								reasoning: false,
+								input: ["text"],
+								contextWindow: 8192,
+								maxTokens: 128,
+							},
+						],
+					},
+				},
+			}),
+		);
+		controller = new PiSessionController(async (signal) => ({
+			cwd: fixture,
+			session: await createPiRuntime({
+				extensionPath,
+				cwd: fixture,
+				agentDir,
+				signal,
+				provider: "local",
+				model: "smoke",
+			}),
+		}));
+		const session = controller;
+		await session.connect();
+		assert.equal(
+			session.snapshot().connection,
+			"ready",
+			session.snapshot().error ?? undefined,
+		);
+		await session.receive({
+			type: "prompt/send",
+			requestId: "hello",
+			sessionId: session.snapshot().sessionId,
+			text: "hello",
+		});
+		await until(() => session.snapshot().run !== "running");
+		assert.equal(
+			session.snapshot().run,
+			"completed",
+			session.snapshot().error ?? undefined,
+		);
+		assert.equal(session.snapshot().messages.at(-1)?.text, "Pi Host OK");
+		await session.receive({
+			type: "prompt/send",
+			requestId: "stop-send",
+			sessionId: session.snapshot().sessionId,
+			text: "stop",
+		});
+		await until(
+			() => session.snapshot().messages.at(-1)?.streaming === true,
+		);
+		await session.receive({
+			type: "prompt/cancel",
+			requestId: "stop",
+			sessionId: session.snapshot().sessionId,
+			runId: session.snapshot().runId,
+		});
+		await until(() => session.snapshot().run === "cancelled");
+	} finally {
+		await controller?.dispose();
+		server.closeAllConnections();
+		await new Promise<void>((resolve) => server.close(() => resolve()));
+		assert.equal(dirname(fixture), tmpdir());
+		assert.ok(basename(fixture).startsWith("nerita-pi-host-"));
+		await rm(fixture, { recursive: true, force: true });
+	}
+}
+
+/** 通知処理が完了するまで、期限付きで状態を待つ。 */
+async function until(check: () => boolean): Promise<void> {
+	const deadline = Date.now() + 10000;
+	while (!check()) {
+		assert.ok(Date.now() < deadline, "Pi Extension Host timeout");
+		await new Promise((resolve) => setTimeout(resolve, 20));
+	}
+}

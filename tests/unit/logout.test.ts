@@ -2,7 +2,7 @@
 import { expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import { responseParsers } from "../../src/extension/codex/protocol/responses";
+import { responseParsers } from "../../src/extension/backends/codex/protocol/responses";
 
 it("ログアウト要求とRPC応答を境界で検証する", () => {
 	expect(isUiMessage({ type: "auth/logout", requestId: "logout" })).toBe(

@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import { codexHarness, deferred } from "./codexHarness";
-import type { CodexSessionController } from "../../src/extension/codex/CodexSessionController";
+import type { CodexSessionController } from "../../src/extension/backends/codex/CodexSessionController";
 
 const sessions: CodexSessionController[] = [];
 afterEach(async () => {

@@ -5,8 +5,8 @@ import { initialState } from "../../src/shared/chatState";
 import { type HostMessage } from "../../src/shared/messages";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import { itemPatch } from "../../src/extension/codex/items/chatItems";
-import { AgentRegistry } from "../../src/extension/codex/agents/AgentRegistry";
+import { itemPatch } from "../../src/extension/backends/codex/items/chatItems";
+import { AgentRegistry } from "../../src/extension/backends/codex/agents/AgentRegistry";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
 
 const started = {

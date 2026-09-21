@@ -1,14 +1,6 @@
 // Webviewごとの通信購読をまとめ、表示先の破棄と同時に解放する。
 import * as vscode from "vscode";
-import type { ChatState } from "../../shared/chatState";
-import type { HostMessage } from "../../shared/messages";
-
-/** Webview が必要とする通信だけを公開し、接続プロトコルから独立させる。 */
-export type ChatSession = {
-	snapshot(): ChatState;
-	subscribe(listener: (event: HostMessage) => void): () => void;
-	receive(value: unknown): Promise<void>;
-};
+import type { ChatSession } from "../session/chatSession";
 
 /** ready通知を取りこぼさないよう、HTMLの設定より先に購読を完了する。 */
 export function bindWebview(

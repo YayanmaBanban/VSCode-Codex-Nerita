@@ -9,6 +9,8 @@
 		"target": "ES2022",
 		"lib": ["ES2022"],
 		"types": ["node"],
+		// Pi SDKの公開.d.tsにNodeNext非対応のJSON importがあるため、依存宣言内部だけを除外する。
+		"skipLibCheck": true,
 
 		// 本体コードのソース位置とデバッグ用 Source Map を明示する。
 		"rootDir": "src",
