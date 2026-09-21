@@ -52,7 +52,7 @@ export abstract class PiRun extends PiLifecycle {
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): void {
 		const runtime = this.runtime;
-		if (!runtime || this.busy()) {
+		if (!runtime || this.busy() || this.state.sessionPending) {
 			throw new Error(
 				"Piの実行が終わってから送信してください。追加指示は後続対応です。",
 			);

@@ -3,14 +3,21 @@ import { initialState } from "../../../shared/chatState";
 import { SessionState } from "../../session/sessionState";
 import type { PiFactory, PiSession } from "./PiRuntime";
 import type { PiAuthorize } from "./PiApprovedTools";
+import type { PiResumeTarget } from "./PiSessionStore";
+import { restorePiHistory } from "./PiHistoryMapper";
 
-/** Piの接続と単一メモリセッションの寿命を管理する。 */
+/** Piの接続と保存セッションの寿命を管理する。 */
 export abstract class PiLifecycle extends SessionState {
 	protected runtime: PiSession | undefined;
+	private runtimeEpoch: number | undefined;
 	protected epoch = 0;
 	protected disposed = false;
 	private opening: AbortController | undefined;
 	private closing = new Set<Promise<unknown>>();
+	/** 履歴取得にも接続終了の取消を伝える。 */
+	protected get connectionSignal(): AbortSignal {
+		return this.opening!.signal;
+	}
 
 	/** SDK生成を注入し、実接続とテストで同じ状態遷移を使う。 */
 	constructor(private readonly factory: PiFactory) {
@@ -31,21 +38,30 @@ export abstract class PiLifecycle extends SessionState {
 	}
 
 	/** 旧セッション終了後に新しいSDKセッションを公開する。 */
-	async connect(): Promise<void> {
+	async connect(resume?: PiResumeTarget): Promise<void> {
 		if (
 			this.disposed ||
 			this.busy() ||
+			this.state.sessionPending ||
 			this.state.connection === "connecting"
 		) {
 			throw new Error("Piの処理が終わってから再接続してください。");
 		}
-		this.disconnect();
+		const previous = resume ? this.runtime : undefined;
+		if (previous) {
+			this.epoch++;
+			this.opening?.abort();
+		} else {
+			this.disconnect();
+		}
 		const epoch = this.epoch;
 		const opening = new AbortController();
 		this.opening = opening;
 		this.patch({
-			connection: "connecting",
+			connection: previous ? "ready" : "connecting",
 			sessionPending: true,
+			sessionsLoading: false,
+			sessionsError: null,
 			error: null,
 		});
 		await Promise.allSettled(this.closing);
@@ -53,12 +69,18 @@ export abstract class PiLifecycle extends SessionState {
 			return;
 		}
 		try {
-			const operation = this.factory(opening.signal, (title, signal) => {
-				if (epoch !== this.epoch) {
-					return Promise.reject(new Error("古いPi接続の操作です。"));
-				}
-				return this.authorize(title, signal);
-			}).then(async (result) => {
+			const operation = this.factory(
+				opening.signal,
+				(title, signal) => {
+					if (epoch !== this.epoch && epoch !== this.runtimeEpoch) {
+						return Promise.reject(
+							new Error("古いPi接続の操作です。"),
+						);
+					}
+					return this.authorize(title, signal);
+				},
+				resume,
+			).then(async (result) => {
 				if (epoch !== this.epoch) {
 					try {
 						await result.session.abort();
@@ -73,14 +95,36 @@ export abstract class PiLifecycle extends SessionState {
 			if (epoch !== this.epoch) {
 				return;
 			}
+			let restored: ReturnType<typeof restorePiHistory>;
+			try {
+				restored = restorePiHistory(
+					session.history?.entries ?? [],
+					cwd,
+				);
+			} catch (error) {
+				this.track(session.abort().finally(() => session.dispose()));
+				throw error;
+			}
 			this.runtime = session;
+			this.runtimeEpoch = epoch;
+			if (previous) {
+				this.track(previous.abort().finally(() => previous.dispose()));
+			}
+			this.resetRun();
 			const { revision: _revision, ...empty } = initialState();
 			this.patch({
 				...empty,
+				...restored,
 				connection: "ready",
 				cwd,
 				sessionId: session.sessionId,
-				sessionTitle: "Pi",
+				sessions: resume ? this.state.sessions : [],
+				sessionCapabilities: {
+					list: !!session.history,
+					load: !!session.history,
+					fork: false,
+					delete: false,
+				},
 				attachmentsSupported: false,
 				configOptions: session.model
 					? [
@@ -96,12 +140,20 @@ export abstract class PiLifecycle extends SessionState {
 		} catch (error) {
 			if (epoch === this.epoch) {
 				this.patch({
-					connection: "error",
+					connection: previous ? "ready" : "error",
 					sessionPending: false,
 					error:
 						error instanceof Error
 							? error.message
 							: "Piに接続できませんでした。",
+					...(previous
+						? {
+								sessionsError:
+									error instanceof Error
+										? error.message
+										: "Piの履歴を開けませんでした。",
+							}
+						: {}),
 				});
 			}
 		}
@@ -115,6 +167,7 @@ export abstract class PiLifecycle extends SessionState {
 		this.resetRun();
 		const runtime = this.runtime;
 		this.runtime = undefined;
+		this.runtimeEpoch = undefined;
 		if (runtime) {
 			this.track(runtime.abort().finally(() => runtime.dispose()));
 		}

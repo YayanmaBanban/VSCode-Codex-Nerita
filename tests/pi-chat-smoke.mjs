@@ -7,6 +7,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import { build } from "esbuild";
+import { piPersistenceSmoke } from "./pi-persistence-smoke.mjs";
 
 const projectRoot = process.cwd();
 // 展開したVSIXも同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
@@ -190,7 +191,7 @@ try {
 		createRequire(import.meta.url)(
 			path.join(projectRoot, "dist/pi-smoke/host.cjs"),
 		);
-	controller = new PiSessionController(async (signal, authorize) => ({
+	controller = new PiSessionController(async (signal, authorize, resume) => ({
 		cwd,
 		session: await createPiRuntime({
 			extensionPath: fixture,
@@ -198,6 +199,7 @@ try {
 			agentDir,
 			signal,
 			authorize,
+			resume,
 			provider: "local",
 			model: "smoke",
 		}),
@@ -412,6 +414,17 @@ try {
 		controller.snapshot().error,
 	);
 	assert.deepEqual(errors, []);
+	await controller.dispose();
+	controller = undefined;
+	await piPersistenceSmoke({
+		PiSessionController,
+		createPiRuntime,
+		sdk,
+		extensionPath: fixture,
+		cwd,
+		agentDir,
+		requests,
+	});
 	console.log(
 		"PASS: packaged Pi SDK + WASM → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → resume",
 	);

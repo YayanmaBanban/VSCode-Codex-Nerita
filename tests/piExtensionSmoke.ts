@@ -111,18 +111,22 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 				},
 			}),
 		);
-		controller = new PiSessionController(async (signal, authorize) => ({
-			cwd: fixture,
-			session: await createPiRuntime({
-				extensionPath,
+		controller = new PiSessionController(
+			async (signal, authorize, resume) => ({
 				cwd: fixture,
-				agentDir,
-				signal,
-				authorize,
-				provider: "local",
-				model: "smoke",
+				session: await createPiRuntime({
+					extensionPath,
+					cwd: fixture,
+					agentDir,
+					signal,
+					authorize,
+					storage: "workspace",
+					...(resume ? { resume } : {}),
+					provider: "local",
+					model: "smoke",
+				}),
 			}),
-		}));
+		);
 		const session = controller;
 		await session.connect();
 		assert.equal(
@@ -167,6 +171,30 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 			await readFile(join(fixture, "approved.txt"), "utf8"),
 			"Host approved",
 		);
+		const savedId = session.snapshot().sessionId;
+		assert.equal(
+			await readFile(join(fixture, ".sessions", ".gitignore"), "utf8"),
+			"*\n",
+		);
+		await session.connect();
+		await session.receive({
+			type: "session/list",
+			requestId: "history-list",
+		});
+		assert.ok(
+			session
+				.snapshot()
+				.sessions.some((row) => row.sessionId === savedId),
+		);
+		await session.receive({
+			type: "session/load",
+			requestId: "history-load",
+			sessionId: savedId,
+		});
+		assert.equal(session.snapshot().sessionId, savedId);
+		assert.equal(session.snapshot().tools.at(-1)?.status, "completed");
+		assert.equal(session.snapshot().tools.at(-1)?.kind, "edit");
+		assert.equal(session.snapshot().permissions.length, 0);
 		await session.connect();
 		await session.receive({
 			type: "prompt/send",
