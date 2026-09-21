@@ -38,7 +38,10 @@ export abstract class PiLifecycle extends SessionState {
 	}
 
 	/** 旧セッション終了後に新しいSDKセッションを公開する。 */
-	async connect(resume?: PiResumeTarget): Promise<void> {
+	async connect(
+		resume?: PiResumeTarget,
+		preserveCurrent = false,
+	): Promise<void> {
 		if (
 			this.disposed ||
 			this.busy() ||
@@ -47,7 +50,8 @@ export abstract class PiLifecycle extends SessionState {
 		) {
 			throw new Error("Piの処理が終わってから再接続してください。");
 		}
-		const previous = resume ? this.runtime : undefined;
+		// 初回送信前の保存先変更も、失敗時は元の接続と下書きを維持する。
+		const previous = resume || preserveCurrent ? this.runtime : undefined;
 		if (previous) {
 			this.epoch++;
 			this.opening?.abort();
@@ -122,8 +126,11 @@ export abstract class PiLifecycle extends SessionState {
 				sessionCapabilities: {
 					list: !!session.history,
 					load: !!session.history,
-					fork: false,
+					fork: !!session.history,
 					delete: false,
+					rename: false,
+					archive: false,
+					unarchive: false,
 				},
 				attachmentsSupported: false,
 				configOptions: session.model

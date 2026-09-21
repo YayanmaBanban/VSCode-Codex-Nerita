@@ -40,9 +40,10 @@ export function createBackend(
 				signal,
 				authorize,
 				authService: createPiAuthService(context.extensionUri),
-				storage:
-					config.get<string>("sessionStorage", "global") ===
-					"workspace"
+				getStorage: () =>
+					vscode.workspace
+						.getConfiguration("nerita.pi")
+						.get<string>("sessionStorage", "global") === "workspace"
 						? "workspace"
 						: "global",
 				...(resume ? { resume } : {}),
