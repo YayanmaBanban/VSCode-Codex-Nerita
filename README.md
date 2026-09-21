@@ -7,6 +7,7 @@ VS Code のサイドバーから Codex App Server に接続します。テキス
 ## Pi backend
 
 設定で `"nerita.backend": "pi"` を指定し、VS Codeのウィンドウを再読み込みするとPiを使用します。既定値は `codex` です。
+画面上部の「オプション → バックエンド」からもCodex / Piを選べます。選択すると設定を保存し、自動でウィンドウを再読み込みします。ワークスペースに `nerita.backend` の指定がある場合はその設定を更新し、未指定ならユーザー設定へ保存します。メニューのチェックは保存済みの設定値を示します。
 Pi SDK `@earendil-works/pi-coding-agent@0.86.1` を同梱します。SDKの要件はNode.js 22.19以降で、実行にはExtension HostのNode.jsを使います。
 SDKは公開エントリーから読み込みます。ビルド時に `dist/runtime/pi.mjs` を生成し、実行依存・相対参照資産をリンクなしで同梱します。HostはSDK内部のディレクトリ構成に依存しません。
 

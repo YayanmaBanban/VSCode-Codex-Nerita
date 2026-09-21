@@ -26,7 +26,8 @@ export function useChat(bridge: Bridge) {
 				message.type === "workspace/resolvedPath" ||
 				message.type === "workspace/symbols" ||
 				message.type === "session/references" ||
-				message.type === "ui/sidebarState"
+				message.type === "ui/sidebarState" ||
+				message.type === "ui/backendState"
 			) {
 				return;
 			}

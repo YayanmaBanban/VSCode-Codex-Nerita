@@ -4,18 +4,22 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../../webview/chat/ChatApp";
 import { createMockBridge } from "../mocks/mockBridge";
 import type { Bridge } from "../../../webview/vscodeBridge";
+import type { BackendId } from "../../../shared/backend";
 
 /** Host専用操作を再現するBridgeで、下書きの復元も確認可能にする。 */
 function HeaderStory({
 	title = "",
 	error = false,
+	backend = "codex",
 }: {
 	title?: string;
 	error?: boolean;
+	backend?: BackendId;
 }) {
 	const bridge = useMemo(() => {
 		const mock = createMockBridge(error ? "error" : "completed");
 		mock.patchState({
+			piAccount: backend === "pi" ? "local: 認証未設定" : null,
 			sessionTitle: title,
 			sessionCapabilities: {
 				list: true,
@@ -29,6 +33,16 @@ function HeaderStory({
 		const result: Bridge = {
 			subscribe: mock.subscribe,
 			postMessage(message) {
+				if (message.type === "ui/ready") {
+					mock.emit({ type: "ui/backendState", backend });
+				}
+				if (message.type === "ui/setBackend") {
+					mock.emit({
+						type: "ui/backendState",
+						backend: message.backend,
+					});
+					return;
+				}
 				if (message.type === "ui/setSidebar") {
 					mock.emit({
 						type: "ui/sidebarState",
@@ -68,7 +82,7 @@ function HeaderStory({
 			},
 		};
 		return result;
-	}, [title, error]);
+	}, [title, error, backend]);
 	return <ChatApp bridge={bridge} />;
 }
 const meta = {
@@ -87,4 +101,7 @@ export const LongTitle: Story = {
 };
 export const Reconnect: Story = {
 	args: { error: true, title: "接続の復旧を確認する" },
+};
+export const PiBackend: Story = {
+	args: { backend: "pi" },
 };

@@ -1,5 +1,6 @@
 // Webviewから届く操作要求を、副作用を実行する前に検証する。
 import type { UiMessage } from "./messages";
+import { isBackendId } from "./backend";
 import { isId, isRecord } from "./validation";
 import { isSidebarLocation } from "./sidebar";
 import { isPersonalityPreset } from "./personality";
@@ -24,6 +25,8 @@ export function isUiMessage(value: unknown): value is UiMessage {
 	}
 
 	switch (value.type) {
+		case "ui/setBackend":
+			return isBackendId(value.backend);
 		case "agent/read":
 			return isId(value.sessionId) && isId(value.threadId);
 		case "changes/open":
