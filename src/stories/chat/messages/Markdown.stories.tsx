@@ -14,6 +14,10 @@ const markdown = [
 	"- [x] 完了\n- [ ] 未完了",
 	"| 項目 | 状態 |\n| --- | --- |\n| Markdown | 対応済み |",
 	"[ドキュメント](https://example.com/docs)",
+	"[Code-Implementation.md](D:/User/Desktop/vscode-codex-acp/.agents/docs/Code-Implementation.md)",
+	"[AGENTS.md](file:///D:/User/Desktop/vscode-codex-acp/AGENTS.md)",
+	"[日本語](<D:/workspace/日本語 sample.md>)",
+	"[コマンド](command:workbench.action.closeWindow)",
 	'```ts\nconst message = "<strong>文字列</strong>";\nconst longPath = "D:/workspace/project/very/long/path/to/source/file.ts";\n```',
 	'<b>HTMLは文字列</b>\n<script>alert("実行しない")</script>',
 	"[無効なリンク](javascript:alert%281%29)",
@@ -22,11 +26,18 @@ const markdown = [
 /** 書き込み中の未完コードフェンスと、完了済みの本文を切り替える。 */
 function MarkdownStory() {
 	const [streaming, setStreaming] = useState(false);
+	const [opened, setOpened] = useState("");
 	return (
 		<main className="p-[14px]">
 			<button onClick={() => setStreaming(true)}>途中の本文</button>
 			<button onClick={() => setStreaming(false)}>本文完了</button>
+			<output hidden aria-label="開いたファイル">{opened}</output>
 			<Messages
+				send={(message) => {
+					if (message.type === "reference/open") {
+						setOpened(message.uri);
+					}
+				}}
 				busy={streaming}
 				messages={[
 					{

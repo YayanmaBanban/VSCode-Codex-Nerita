@@ -1,5 +1,6 @@
 // 読み取り専用の子Threadビューと、ネストを一段戻るヘッダーを表示する。
 import { ArrowLeft, RefreshCw } from "lucide-react";
+import type { UiMessage } from "../../../shared/messages";
 import type { ChatState } from "../../../shared/chatState";
 import { Messages } from "../messages/Messages";
 import { ToolCard } from "../tools/ToolCard";
@@ -10,9 +11,11 @@ import type { useAgentViewer } from "./useAgentViewer";
 export function AgentViewer({
 	viewer,
 	state,
+	send,
 }: {
 	viewer: ReturnType<typeof useAgentViewer>;
 	state: ChatState;
+	send?: ((message: UiMessage) => void) | undefined;
 }) {
 	const { agent, view } = viewer;
 	if (!agent) {
@@ -74,6 +77,7 @@ export function AgentViewer({
 				)}
 				{view && (
 					<Messages
+						send={send}
 						busy={false}
 						messages={view.messages}
 						tools={view.tools}

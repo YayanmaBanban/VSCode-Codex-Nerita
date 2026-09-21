@@ -1,21 +1,25 @@
 // 通常メッセージのMarkdownをReact要素へ変換し、テーマに沿って表示する。
-import Markdown, { type Components } from "react-markdown";
+import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
+import type { UiMessage } from "../../../shared/messages";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 
-/** Webview内の横幅とリンク操作に合わせた要素の表示を定義する。 */
+/** 絶対パスだけをfile URIへ変換し、その他のURLには既定の安全性検証を適用する。 */
+function markdownUrl(url: string): string {
+	if (/^[a-z]:[\\/]/i.test(url)) {
+		return `file:///${url.replaceAll("\\", "/")}`;
+	}
+	if (/^\/(?!\/)/.test(url)) {
+		return `file://${url}`;
+	}
+	if (/^file:\/\//i.test(url)) {
+		return url;
+	}
+	return defaultUrlTransform(url);
+}
+
+/** Webview内の横幅に合わせた要素の表示を定義する。 */
 const components: Components = {
-	a: ({ href, children, title }) => (
-		<a
-			href={href}
-			title={title}
-			target="_blank"
-			rel="noreferrer noopener"
-			className="text-[var(--vscode-textLink-foreground,#6dadc9)] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
-		>
-			{children}
-		</a>
-	),
 	pre: ({ children }) => (
 		<pre className="my-[12px] overflow-x-auto rounded-[6px] bg-message-code p-[12px] text-[12px] whitespace-pre">
 			{children}
@@ -33,7 +37,13 @@ const components: Components = {
 };
 
 /** 生のHTMLは実行せず、表・リスト・改行を含むMarkdownを表示する。 */
-export function MessageText({ text }: { text: string }) {
+export function MessageText({
+	text,
+	send,
+}: {
+	text: string;
+	send?: ((message: UiMessage) => void) | undefined;
+}) {
 	return (
 		<div
 			className={[
@@ -49,7 +59,34 @@ export function MessageText({ text }: { text: string }) {
 		>
 			<Markdown
 				remarkPlugins={[remarkGfm, remarkBreaks]}
-				components={components}
+				urlTransform={markdownUrl}
+				components={{
+					...components,
+					a: ({ href, children, title }) => {
+						const local = /^file:\/\//i.test(href ?? "");
+						return (
+							<a
+								href={href || undefined}
+								title={title}
+								target={local ? undefined : "_blank"}
+								rel="noreferrer noopener"
+								className="text-[var(--vscode-textLink-foreground,#6dadc9)] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
+								onClick={(event) => {
+									if (local && href) {
+										event.preventDefault();
+										send?.({
+											type: "reference/open",
+											requestId: crypto.randomUUID(),
+											uri: href,
+										});
+									}
+								}}
+							>
+								{children}
+							</a>
+						);
+					},
+				}}
 			>
 				{text}
 			</Markdown>
