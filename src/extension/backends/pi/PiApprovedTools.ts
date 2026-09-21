@@ -24,7 +24,11 @@ export function approvePiTool(
 			);
 			approvalSignal.throwIfAborted();
 			signal?.throwIfAborted();
-			return tool.execute(id, params, signal, update, context);
+			// SDK側のsignalが省略されても、HostのStop・切断を実処理へ伝える。
+			const executionSignal = signal
+				? AbortSignal.any([approvalSignal, signal])
+				: approvalSignal;
+			return tool.execute(id, params, executionSignal, update, context);
 		},
 	};
 }

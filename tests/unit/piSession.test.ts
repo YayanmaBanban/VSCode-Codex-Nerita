@@ -65,12 +65,13 @@ it("受付を通知し、複数Assistantの本文を確定してSDK送信の終�
 	]);
 });
 
-it("重複・同時送信・古いStopを拒否し、停止後も再送できる", async () => {
+it("重複送信・古いStopを拒否し、追加指示・停止後の再送ができる", async () => {
 	const h = await connected();
 	await h.send("first", "once");
 	await h.send("first", "once");
 	await h.send("busy");
 	expect(h.runtime.prompt).toHaveBeenCalledTimes(1);
+	expect(h.runtime.steer).toHaveBeenCalledExactlyOnceWith("busy");
 	await h.controller.receive({
 		type: "prompt/cancel",
 		requestId: "stale",
