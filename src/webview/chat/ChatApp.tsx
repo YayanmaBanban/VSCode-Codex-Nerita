@@ -72,7 +72,11 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 			/>
 			<div className="relative flex min-h-0 flex-1 overflow-x-clip">
 				{agentViewer.agent && (
-					<AgentViewer viewer={agentViewer} state={state} />
+					<AgentViewer
+						viewer={agentViewer}
+						state={state}
+						send={send}
+					/>
 				)}
 				<div
 					className={

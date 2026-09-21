@@ -2,6 +2,7 @@
 import { clsx } from "clsx";
 import { type ReactNode, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
+import type { UiMessage } from "../../../shared/messages";
 import type { ChatMessage, ToolSummary } from "../../../shared/chatState";
 import { MessageText } from "./MessageText";
 //import { TextType } from "./TextType";
@@ -13,6 +14,7 @@ import type { SubAgentSummary } from "../../../shared/subAgents";
 export function Messages({
 	messages,
 	busy,
+	send,
 	tools = [],
 	renderTool,
 	agents = [],
@@ -20,6 +22,7 @@ export function Messages({
 }: {
 	messages: ChatMessage[];
 	busy: boolean;
+	send?: ((message: UiMessage) => void) | undefined;
 	tools?: ToolSummary[];
 	renderTool?: (tool: ToolSummary) => ReactNode;
 	agents?: SubAgentSummary[];
@@ -127,9 +130,9 @@ export function Messages({
 					  !busy ||
 					  message.streaming === false ||
 					  index !== messages.length - 1 ? (
-						<MessageText text={message.text} />
+						<MessageText text={message.text} send={send} />
 					) : (
-						<MessageText text={message.text} />
+						<MessageText text={message.text} send={send} />
 						//<TextType text={message.text} />
 					)}
 				</div>

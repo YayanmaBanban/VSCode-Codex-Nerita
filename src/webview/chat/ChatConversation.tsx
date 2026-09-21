@@ -57,6 +57,7 @@ export function ChatConversation({
 				aria-relevant="additions text"
 			>
 				<Messages
+					send={send}
 					messages={state.messages}
 					busy={busy}
 					tools={state.tools}
