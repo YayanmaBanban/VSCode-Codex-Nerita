@@ -20,7 +20,15 @@ import {
 /** Controllerが必要とするSDKの操作だけを公開する。 */
 export type PiSession = Pick<
 	AgentSession,
-	"sessionId" | "model" | "subscribe" | "prompt" | "abort" | "dispose"
+	| "sessionId"
+	| "model"
+	| "subscribe"
+	| "prompt"
+	| "steer"
+	| "isStreaming"
+	| "clearQueue"
+	| "abort"
+	| "dispose"
 > & { history?: PiHistoryAccess; account?: PiAccount; skills?: SkillSummary[] };
 export type { AgentSessionEvent as PiEvent };
 

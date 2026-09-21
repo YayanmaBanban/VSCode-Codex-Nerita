@@ -18,6 +18,7 @@ const cwd = path.join(fixture, "workspace");
 const agentDir = path.join(fixture, "agent");
 const requests = [];
 const errors = [];
+let finishSteerResponse;
 const server = createServer((request, response) => {
 	void (async () => {
 		let body = "";
@@ -48,6 +49,14 @@ const server = createServer((request, response) => {
 						.map((part) => part.text)
 						.join("");
 		send({ role: "assistant" });
+		if (prompt === "steer-start") {
+			send({ content: "追加指示待ち" });
+			finishSteerResponse = () => {
+				send({}, "stop");
+				response.end("data: [DONE]\n\n");
+			};
+			return;
+		}
 		const mutation = {
 			write: {
 				name: "write",
@@ -244,6 +253,42 @@ try {
 				),
 		),
 	);
+	// モデル応答を保持し、同じ実行中の追加指示が次のLLM呼出しへ入ることを確認する。
+	await send("steer-start");
+	await until(
+		() => controller.snapshot().messages.at(-1)?.text === "追加指示待ち",
+	);
+	const steerRun = controller.snapshot().runId;
+	await send("steer-next");
+	await until(() =>
+		events.some(
+			(event) =>
+				event.type === "prompt/accepted" &&
+				event.requestId === `smoke-${sequence}` &&
+				event.mode === "steer",
+		),
+	);
+	assert.equal(controller.snapshot().runId, steerRun);
+	assert.equal(controller.snapshot().run, "running");
+	finishSteerResponse();
+	await until(() => controller.snapshot().run === "completed");
+	assert.ok(
+		requests.some((request) =>
+			JSON.stringify(request.messages.at(-1)?.content).includes(
+				"steer-next",
+			),
+		),
+	);
+	assert.equal(
+		controller
+			.snapshot()
+			.messages.filter(
+				(message) =>
+					message.role === "user" && message.text === "steer-next",
+			).length,
+		1,
+	);
+
 	await send("tool");
 	await until(() => controller.snapshot().run !== "running");
 	assert.equal(
@@ -400,6 +445,15 @@ try {
 	await until(
 		() => controller.snapshot().messages.at(-1)?.text === "停止待ち",
 	);
+	await send("cancelled-steer");
+	await until(() =>
+		events.some(
+			(event) =>
+				event.type === "prompt/accepted" &&
+				event.requestId === `smoke-${sequence}` &&
+				event.mode === "steer",
+		),
+	);
 	await controller.receive({
 		type: "prompt/cancel",
 		requestId: "cancel",
@@ -407,12 +461,23 @@ try {
 		runId: controller.snapshot().runId,
 	});
 	await until(() => controller.snapshot().run === "cancelled");
+	const requestCountBeforeResume = requests.length;
 	await send("resume");
 	await until(() => controller.snapshot().run !== "running");
 	assert.equal(
 		controller.snapshot().run,
 		"completed",
 		controller.snapshot().error,
+	);
+	assert.ok(
+		requests
+			.slice(requestCountBeforeResume)
+			.every(
+				(request) =>
+					!JSON.stringify(request.messages).includes(
+						"cancelled-steer",
+					),
+			),
 	);
 	assert.deepEqual(errors, []);
 	await controller.dispose();
@@ -436,7 +501,7 @@ try {
 		requests,
 	});
 	console.log(
-		"PASS: packaged Pi SDK + WASM → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → resume",
+		"PASS: packaged Pi SDK + WASM → same-run steer → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → queued steer cancellation → resume",
 	);
 } finally {
 	await controller?.dispose();

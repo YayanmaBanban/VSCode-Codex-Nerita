@@ -58,6 +58,9 @@ export function piHarness() {
 	const runtime: PiSession = {
 		sessionId: "pi-1",
 		model: undefined,
+		isStreaming: true,
+		steer: vi.fn<PiSession["steer"]>().mockResolvedValue(undefined),
+		clearQueue: vi.fn(() => ({ steering: [], followUp: [] })),
 		subscribe: (listener) => {
 			listeners.add(listener);
 			return () => {

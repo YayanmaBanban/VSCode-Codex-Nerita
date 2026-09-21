@@ -5,7 +5,7 @@ import { nextTimelineOrder } from "../../session/timelineOrder";
 import { PiLifecycle } from "./PiLifecycle";
 import { PiEventMapper } from "./PiEventMapper";
 import { finishPiTools } from "./PiToolMapper";
-import { Approvals } from "../../session/Approvals";
+import { PiPermissions } from "./PiPermissions";
 import type { PiAuthorize } from "./PiApprovedTools";
 
 /** SDK送信の受付状態とイベント購読を保持する。 */
@@ -15,12 +15,14 @@ type Submission = {
 	accepted: boolean;
 	unsubscribe: () => void;
 	abort: AbortController;
+	ended: boolean;
+	steering?: Promise<void>;
 };
 
-/** 最小版では同時送信を拒否し、Stop後に同じセッションを継続できる。 */
+/** 通常送信と追加指示を同じ実行に結び付け、停止・完了との競合を遮断する。 */
 export abstract class PiRun extends PiLifecycle {
 	private submission: Submission | undefined;
-	protected readonly approvals = new Approvals(() =>
+	protected readonly approvals = new PiPermissions(() =>
 		this.patch({ permissions: this.approvals.list() }),
 	);
 
@@ -30,21 +32,18 @@ export abstract class PiRun extends PiLifecycle {
 		if (!submission || submission.cancelled) {
 			throw new Error("実行中のPi会話がありません。");
 		}
-		const { decision } = await this.approvals.ask(title, [
-			submission.abort.signal,
-			...(signal ? [signal] : []),
-		]);
-		if (decision === "cancel" && this.submission === submission) {
-			this.cancel();
-		}
-		submission.abort.signal.throwIfAborted();
-		signal?.throwIfAborted();
-		if (decision !== "accept") {
-			throw new Error(
-				"ユーザーが実行を拒否しました。操作は実行されていません。",
-			);
-		}
-		return submission.abort.signal;
+		return this.approvals.authorize(
+			title,
+			{
+				signal: submission.abort.signal,
+				cancel: () => {
+					if (this.submission === submission) {
+						this.cancel();
+					}
+				},
+			},
+			signal,
+		);
 	};
 
 	/** SDKの事前検証が終わった時点でComposerの下書きを解放する。 */
@@ -52,10 +51,8 @@ export abstract class PiRun extends PiLifecycle {
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): void {
 		const runtime = this.runtime;
-		if (!runtime || this.busy() || this.state.sessionPending) {
-			throw new Error(
-				"Piの実行が終わってから送信してください。追加指示は後続対応です。",
-			);
+		if (!runtime || this.state.sessionPending) {
+			throw new Error("Piへ接続してから送信してください。");
 		}
 		if (
 			message.referencedSessionIds?.length ||
@@ -65,6 +62,10 @@ export abstract class PiRun extends PiLifecycle {
 				"Piの最小版では会話参照・変更点の添付には対応していません。",
 			);
 		}
+		if (this.submission) {
+			this.steer(message, this.submission);
+			return;
+		}
 		const epoch = this.epoch;
 		const submission: Submission = {
 			id: randomUUID(),
@@ -72,6 +73,7 @@ export abstract class PiRun extends PiLifecycle {
 			accepted: false,
 			unsubscribe: () => {},
 			abort: new AbortController(),
+			ended: false,
 		};
 		this.submission = submission;
 		const current = () =>
@@ -116,12 +118,20 @@ export abstract class PiRun extends PiLifecycle {
 				},
 			})
 			.then(
-				() => {
+				async () => {
+					submission.ended = true;
+					if (submission.steering) {
+						await submission.steering;
+					}
 					if (current()) {
 						this.finish(submission, mapper.error, mapper.aborted);
 					}
 				},
-				(error: unknown) => {
+				async (error: unknown) => {
+					submission.ended = true;
+					if (submission.steering) {
+						await submission.steering;
+					}
 					if (current()) {
 						const detail =
 							error instanceof Error
@@ -142,6 +152,89 @@ export abstract class PiRun extends PiLifecycle {
 		this.track(operation);
 	}
 
+	/** SDKの非同期入力処理中は次の送信を拒否し、遅れて積まれたキューを回収する。 */
+	private steer(
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+		submission: Submission,
+	): void {
+		const runtime = this.runtime!;
+		if (
+			!submission.accepted ||
+			submission.cancelled ||
+			submission.ended ||
+			submission.steering ||
+			!runtime.isStreaming
+		) {
+			throw new Error(
+				"Piの送信・停止処理が終わってから再送してください。",
+			);
+		}
+		const epoch = this.epoch;
+		const operation = Promise.resolve().then(async () => {
+			try {
+				if (
+					submission.cancelled ||
+					submission.ended ||
+					this.epoch !== epoch
+				) {
+					throw new Error(
+						"追加指示の対象の実行は終了しました。再送してください。",
+					);
+				}
+				await runtime.steer(message.text);
+				if (
+					submission.cancelled ||
+					submission.ended ||
+					this.epoch !== epoch ||
+					!runtime.isStreaming
+				) {
+					runtime.clearQueue();
+					throw new Error(
+						"追加指示の対象の実行は終了しました。再送してください。",
+					);
+				}
+				this.patch({
+					messages: [
+						...this.state.messages,
+						{
+							id: randomUUID(),
+							role: "user",
+							text: message.text,
+							order: nextTimelineOrder(this.state),
+						},
+					],
+				});
+				this.emit({
+					type: "prompt/accepted",
+					requestId: message.requestId,
+					mode: "steer",
+				});
+			} catch (error) {
+				if (
+					submission.cancelled ||
+					submission.ended ||
+					this.epoch !== epoch
+				) {
+					runtime.clearQueue();
+				}
+				if (this.epoch === epoch) {
+					this.emit({
+						type: "request/failed",
+						requestId: message.requestId,
+						error:
+							error instanceof Error
+								? error.message
+								: "Piへの追加指示に失敗しました。",
+					});
+				}
+			} finally {
+				delete submission.steering;
+			}
+		});
+		submission.steering = operation;
+		this.track(operation);
+	}
+
 	/** SDKのpromptが終了するまでrunningを維持し、tool間のturn_endでは完了しない。 */
 	private finish(
 		submission: Submission,
@@ -150,6 +243,7 @@ export abstract class PiRun extends PiLifecycle {
 	): void {
 		const cancelled = submission.cancelled || aborted;
 		this.submission = undefined;
+		this.runtime?.clearQueue();
 		submission.abort.abort();
 		this.patch({
 			run: cancelled ? "cancelled" : error ? "failed" : "completed",
@@ -170,6 +264,7 @@ export abstract class PiRun extends PiLifecycle {
 			return;
 		}
 		submission.cancelled = true;
+		runtime.clearQueue();
 		submission.abort.abort();
 		this.patch({ run: "cancelling" });
 		this.track(
@@ -188,6 +283,7 @@ export abstract class PiRun extends PiLifecycle {
 	/** 遅れて完了する事前検証も、古い会話へ送信できない状態にする。 */
 	protected override resetRun(): void {
 		if (this.submission) {
+			this.runtime?.clearQueue();
 			this.submission.cancelled = true;
 			this.submission.abort.abort();
 			this.submission.unsubscribe();
