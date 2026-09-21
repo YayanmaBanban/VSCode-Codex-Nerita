@@ -25,6 +25,7 @@ export async function piPersistenceSmoke({
 				cwd: workspace,
 				agentDir,
 				storage,
+				getStorage: () => storage,
 				signal,
 				authorize,
 				resume,
@@ -108,6 +109,45 @@ export async function piPersistenceSmoke({
 		);
 		const original = await readFile(standardFile, "utf8");
 		assert.ok(original.includes("resume saved context"));
+		// 現在の履歴を分岐し、モデル文脈を引き継いでも元ファイルは変えない。
+		await receive({ type: "session/fork", sessionId: savedId });
+		const forkId = controller.snapshot().sessionId;
+		assert.notEqual(forkId, savedId);
+		assert.ok(
+			controller
+				.snapshot()
+				.sessions.some((row) => row.sessionId === forkId),
+		);
+		assert.ok(
+			controller
+				.snapshot()
+				.messages.some((m) => m.text === "resume saved context"),
+		);
+		await send("fork only context");
+		assert.ok(
+			requests
+				.at(-1)
+				.messages.some((m) =>
+					JSON.stringify(m.content).includes("resume saved context"),
+				),
+		);
+		assert.equal(await readFile(standardFile, "utf8"), original);
+		await controller.dispose();
+		controller = create();
+		await controller.connect();
+		await list();
+		await load(forkId);
+		assert.ok(
+			controller
+				.snapshot()
+				.messages.some((m) => m.text === "fork only context"),
+		);
+		await load(savedId);
+		assert.ok(
+			!controller
+				.snapshot()
+				.messages.some((m) => m.text === "fork only context"),
+		);
 		// 設定変更だけで開いている履歴を移動せず、新規会話から切り替える。
 		storage = "workspace";
 		await receive({ type: "session/new" });
@@ -207,8 +247,71 @@ export async function piPersistenceSmoke({
 		assert.ok(controller.snapshot().sessionsError);
 		assert.equal(await readFile(incomplete.getSessionFile(), "utf8"), "");
 		await send("continue after failed restore");
+		// 自動接続後・初回送信前の設定変更を、独立したworkspaceで再現する。
+		await controller.dispose();
+		workspace = path.join(
+			path.dirname(cwd),
+			"storage change before first prompt",
+		);
+		await mkdir(workspace);
+		storage = "global";
+		controller = create();
+		await controller.connect();
+		storage = "workspace";
+		await send("first prompt after storage change");
+		const switchedId = controller.snapshot().sessionId;
+		const switchedDir = path.join(workspace, ".sessions");
+		const switchedFile = path.join(
+			switchedDir,
+			(await readdir(switchedDir)).find((file) =>
+				file.endsWith(".jsonl"),
+			),
+		);
+		assert.ok(
+			(await readFile(switchedFile, "utf8")).includes(
+				"first prompt after storage change",
+			),
+		);
+		const globalDir = path.join(
+			agentDir,
+			"sessions",
+			`--${path
+				.resolve(workspace)
+				.replace(/^[/\\]/, "")
+				.replace(/[/\\:]/g, "-")}--`,
+		);
+		assert.equal(
+			(await readdir(globalDir)).filter((file) => file.endsWith(".jsonl"))
+				.length,
+			0,
+		);
+		// 送信済みの会話は途中で設定を変えても同じファイルへ追記する。
+		storage = "global";
+		await send("continue in workspace storage");
+		assert.equal(controller.snapshot().sessionId, switchedId);
+		assert.ok(
+			(await readFile(switchedFile, "utf8")).includes(
+				"continue in workspace storage",
+			),
+		);
+		// 逆方向も未送信の新規会話にだけ適用する。
+		storage = "workspace";
+		await receive({ type: "session/new" });
+		storage = "global";
+		await send("first prompt in global storage");
+		assert.equal(
+			(await readdir(switchedDir)).filter((file) =>
+				file.endsWith(".jsonl"),
+			).length,
+			1,
+		);
+		assert.equal(
+			(await readdir(globalDir)).filter((file) => file.endsWith(".jsonl"))
+				.length,
+			1,
+		);
 		console.log(
-			"PASS: Pi global/workspace persistence → ignore preservation → restart/context/tools → relocated workspace → incomplete tools → failed restore retains conversation",
+			"PASS: Pi global/workspace persistence → fork isolation/restart/context → ignore preservation → restart/context/tools → relocated workspace → incomplete tools → failed restore retains conversation → first-prompt storage changes in both directions",
 		);
 	} finally {
 		await controller?.dispose();

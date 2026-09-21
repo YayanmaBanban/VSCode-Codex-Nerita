@@ -29,7 +29,13 @@ export type PiSession = Pick<
 	| "clearQueue"
 	| "abort"
 	| "dispose"
-> & { history?: PiHistoryAccess; account?: PiAccount; skills?: SkillSummary[] };
+> & {
+	history?: PiHistoryAccess;
+	account?: PiAccount;
+	skills?: SkillSummary[];
+	/** 未送信の新規会話だけ、送信前に保存先設定を読み直す。 */
+	storageChanged?: () => boolean;
+};
 export type { AgentSessionEvent as PiEvent };
 
 /** 実SDKとテスト接続を同じ寿命管理で扱う。 */
@@ -49,6 +55,7 @@ export type PiRuntimeOptions = {
 	signal: AbortSignal;
 	authorize?: PiAuthorize;
 	storage?: PiSessionStorage;
+	getStorage?: () => PiSessionStorage;
 	resume?: PiResumeTarget;
 	authService?: PiAuthService;
 };
@@ -112,11 +119,12 @@ export async function createPiRuntime(
 		throw new Error(`Piのモデルが見つかりません: ${provider}/${modelId}`);
 	}
 	options.signal.throwIfAborted();
+	const storage = options.getStorage?.() ?? options.storage ?? "global";
 	const { manager, history } = await openPiSessionStore(
 		sdk,
 		options.cwd,
 		agentDir,
-		options.storage ?? "global",
+		storage,
 		options.signal,
 		options.resume,
 	);
@@ -160,6 +168,11 @@ export async function createPiRuntime(
 	}
 	return Object.assign(session, {
 		history,
+		storageChanged: () =>
+			!options.resume &&
+			session.messages.length === 0 &&
+			!!options.getStorage &&
+			options.getStorage() !== storage,
 		account: new PiAccount(modelRuntime, session, options.authService),
 		skills: resourceLoader.getSkills().skills.map((skill) => ({
 			name: skill.name,

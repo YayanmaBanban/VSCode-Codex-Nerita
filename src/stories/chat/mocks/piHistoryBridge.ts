@@ -5,7 +5,7 @@ import { createMockBridge } from "./mockBridge";
 export function createPiHistoryBridge() {
 	const bridge = createMockBridge();
 	const cwd = "D:/workspace/会話履歴を保存するプロジェクト";
-	const capabilities = { list: true, load: true, fork: false, delete: false };
+	const capabilities = { list: true, load: true, fork: true, delete: false };
 	const sessions = [
 		{
 			sessionId: "pi-saved",
@@ -36,7 +36,10 @@ export function createPiHistoryBridge() {
 					sessionsLoading: false,
 					sessionsError: null,
 				});
-			} else if (message.type === "session/load") {
+			} else if (
+				message.type === "session/load" ||
+				message.type === "session/fork"
+			) {
 				if (message.sessionId === "pi-missing") {
 					bridge.patchState({
 						sessionsError:
@@ -44,9 +47,24 @@ export function createPiHistoryBridge() {
 					});
 					return;
 				}
+				const fork = message.type === "session/fork";
+				const sessionId = fork ? "pi-forked" : message.sessionId;
+				if (
+					fork &&
+					!sessions.some((row) => row.sessionId === sessionId)
+				) {
+					sessions.push({
+						...sessions[0]!,
+						sessionId,
+						title: "Piの会話のフォーク",
+					});
+				}
 				bridge.patchState({
-					sessionId: "pi-saved",
-					sessionTitle: sessions[0]!.title,
+					sessionId,
+					sessions: [...sessions],
+					sessionTitle: sessions.find(
+						(row) => row.sessionId === sessionId,
+					)!.title,
 					run: "idle",
 					runId: null,
 					permissions: [],

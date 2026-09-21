@@ -162,3 +162,61 @@ it("無効化後の送信結果とイベントを捨て、新規会話は初期�
 	expect(h.controller.snapshot().attachmentsSupported).toBe(false);
 	expect(h.controller.snapshot().sessionCapabilities.list).toBe(false);
 });
+
+it("初回送信前の保存先変更はreadyを維持して接続を更新し、元の要求を一度だけ送信する", async () => {
+	const h = await connected();
+	h.runtime.storageChanged = () => true;
+	const opening = pending<Awaited<ReturnType<typeof h.factory>>>();
+	h.factory.mockReturnValueOnce(opening.promise);
+	const sending = h.send("first after change", "storage-send");
+	await vi.waitFor(() => expect(h.factory).toHaveBeenCalledTimes(2));
+	expect(h.controller.snapshot()).toMatchObject({
+		connection: "ready",
+		sessionPending: true,
+	});
+	await h.send("duplicate");
+	expect(h.runtime.prompt).not.toHaveBeenCalled();
+	const prompt = vi.fn<typeof h.runtime.prompt>((_text, options) => {
+		options?.preflightResult?.(true);
+		return Promise.resolve();
+	});
+	opening.resolve({
+		session: {
+			...h.runtime,
+			sessionId: "workspace-session",
+			prompt,
+			storageChanged: () => false,
+		},
+		cwd: "D:\\workspace",
+	});
+	await sending;
+	expect(prompt).toHaveBeenCalledExactlyOnceWith(
+		"first after change",
+		expect.anything(),
+	);
+	expect(h.runtime.prompt).not.toHaveBeenCalled();
+	expect(h.events).toContainEqual({
+		type: "prompt/accepted",
+		requestId: "storage-send",
+		mode: "start",
+	});
+});
+
+it("保存先の更新に失敗した初回送信を古い保存先へ流さず、再送可能にする", async () => {
+	const h = await connected();
+	h.runtime.storageChanged = () => true;
+	h.factory.mockRejectedValueOnce(new Error("storage unavailable"));
+	await h.send("keep draft", "failed-storage");
+	expect(h.runtime.prompt).not.toHaveBeenCalled();
+	expect(h.runtime.dispose).not.toHaveBeenCalled();
+	expect(h.controller.snapshot()).toMatchObject({
+		connection: "ready",
+		sessionPending: false,
+		sessionId: "pi-1",
+	});
+	expect(h.events).toContainEqual({
+		type: "request/failed",
+		requestId: "failed-storage",
+		error: "storage unavailable",
+	});
+});

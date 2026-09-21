@@ -53,6 +53,26 @@ for (const theme of ["dark", "light"] as const) {
 			.click();
 		await expect(panel.getByRole("alert")).toHaveCount(0);
 		await panel
+			.getByRole("button", {
+				name: "Piの設定ファイルを確認した会話をフォーク",
+				exact: true,
+			})
+			.click();
+		await expect(panel.getByRole("listitem")).toHaveCount(3);
+		await expect(
+			panel.getByRole("button", {
+				name: "Piの会話のフォークを開く",
+				exact: true,
+			}),
+		).toHaveAttribute("aria-current", "true");
+		await expect(
+			panel.getByRole("button", { name: /をアーカイブ$/ }).first(),
+		).toBeDisabled();
+		await info.attach("history-fork", {
+			body: await page.screenshot({ path: info.outputPath("fork.png") }),
+			contentType: "image/png",
+		});
+		await panel
 			.getByRole("button", { name: "セッション一覧を閉じる" })
 			.click();
 		await expect(page.locator("#session-panel")).toHaveCount(0);

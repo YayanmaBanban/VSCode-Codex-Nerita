@@ -77,8 +77,14 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			await this.refreshSessions();
 			return;
 		}
-		if (message.type === "session/load") {
-			await this.loadSession(message.sessionId);
+		if (
+			message.type === "session/load" ||
+			message.type === "session/fork"
+		) {
+			await this.loadSession(
+				message.sessionId,
+				message.type === "session/fork",
+			);
 			return;
 		}
 		if (
@@ -88,6 +94,25 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			throw new Error("現在のPi会話では実行できない操作です。");
 		}
 		if (message.type === "prompt/send") {
+			if (
+				!this.busy() &&
+				!this.state.sessionPending &&
+				this.runtime?.storageChanged?.()
+			) {
+				const previous = this.runtime;
+				const nextEpoch = this.epoch + 1;
+				await this.connect(undefined, true);
+				if (
+					this.epoch !== nextEpoch ||
+					this.runtime === previous ||
+					this.state.connection !== "ready"
+				) {
+					throw new Error(
+						this.state.error ||
+							"Piの保存先を更新できませんでした。再送してください。",
+					);
+				}
+			}
 			this.submit(message);
 			return;
 		}

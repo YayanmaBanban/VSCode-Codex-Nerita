@@ -17,6 +17,8 @@ export type PiResumeTarget = {
 	id: string;
 	directory: string;
 	storage: PiSessionStorage;
+	/** 元のファイルを保持し、選択ブランチを別の会話へ複製する。 */
+	fork?: boolean;
 };
 /** SDKから独立した履歴一覧と初期表示の境界。 */
 export type PiHistoryAccess = {
@@ -127,6 +129,14 @@ export async function openPiSessionStore(
 		}
 		signal.throwIfAborted();
 		manager = sdk.SessionManager.open(path, directory, cwd);
+		if (resume.fork) {
+			const leaf = manager.getLeafId();
+			if (!leaf) {
+				throw new Error("空のPi履歴はフォークできません。");
+			}
+			// SDKはこのmanagerだけを新しいID・ファイルへ切り替える。
+			manager.createBranchedSession(leaf);
+		}
 	} else {
 		manager = sdk.SessionManager.create(cwd, directory);
 	}

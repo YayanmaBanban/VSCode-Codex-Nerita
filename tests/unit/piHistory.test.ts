@@ -110,3 +110,91 @@ it("切断後に完了した一覧と復元を新しい画面へ反映しない"
 	expect(h.controller.snapshot().sessions).toEqual([]);
 	await h.controller.dispose();
 });
+
+it("選択した履歴を別IDへフォークし、成功後に一覧を更新する", async () => {
+	const h = await setup();
+	const forked = { ...h.runtime, sessionId: "forked", dispose: vi.fn() };
+	h.factory.mockResolvedValueOnce({ session: forked, cwd: "D:\\workspace" });
+	await h.controller.receive({
+		type: "session/fork",
+		requestId: "fork",
+		sessionId: "saved",
+	});
+	expect(h.factory.mock.calls[1]![2]).toMatchObject({
+		id: "saved",
+		fork: true,
+		storage: "workspace",
+	});
+	expect(h.controller.snapshot()).toMatchObject({
+		sessionId: "forked",
+		runId: null,
+		permissions: [],
+		sessionCapabilities: {
+			fork: true,
+			rename: false,
+			archive: false,
+			delete: false,
+		},
+	});
+	expect(h.runtime.history!.list).toHaveBeenCalledTimes(2);
+	await h.controller.dispose();
+});
+
+it("一覧外・実行中のフォークを拒否し、失敗したフォークでは元の会話を保持する", async () => {
+	const h = await setup();
+	const fork = (sessionId: string) =>
+		h.controller.receive({
+			type: "session/fork",
+			requestId: crypto.randomUUID(),
+			sessionId,
+		});
+	await fork("unknown");
+	expect(h.factory).toHaveBeenCalledTimes(1);
+	h.factory.mockRejectedValueOnce(new Error("fork failed"));
+	await fork("saved");
+	expect(h.controller.snapshot()).toMatchObject({
+		sessionId: "pi-1",
+		connection: "ready",
+		sessionsError: "fork failed",
+	});
+	expect(h.runtime.dispose).not.toHaveBeenCalled();
+	await h.send();
+	await fork("saved");
+	expect(h.factory).toHaveBeenCalledTimes(2);
+	await h.controller.dispose();
+});
+
+it("フォーク待機中の二重操作を拒否し、切断後の生成結果を破棄する", async () => {
+	const h = await setup();
+	const deferred = pending<Awaited<ReturnType<typeof h.factory>>>();
+	h.factory.mockReturnValueOnce(deferred.promise);
+	const fork = () =>
+		h.controller.receive({
+			type: "session/fork",
+			requestId: crypto.randomUUID(),
+			sessionId: "saved",
+		});
+	const opening = fork();
+	await vi.waitFor(() => expect(h.factory).toHaveBeenCalledTimes(2));
+	await fork();
+	await h.controller.receive({
+		type: "session/new",
+		requestId: "new-during-fork",
+	});
+	await h.send();
+	expect(h.factory).toHaveBeenCalledTimes(2);
+	expect(h.runtime.prompt).not.toHaveBeenCalled();
+	h.controller.invalidate();
+	const forked = {
+		...h.runtime,
+		sessionId: "stale-fork",
+		abort: vi.fn(async () => {}),
+		dispose: vi.fn(),
+	};
+	deferred.resolve({ session: forked, cwd: "D:\\workspace" });
+	await opening;
+	expect(h.controller.snapshot().sessionId).toBeNull();
+	expect(forked.dispose).toHaveBeenCalledOnce();
+	expect(h.runtime.history!.list).toHaveBeenCalledTimes(1);
+	await h.controller.dispose();
+});

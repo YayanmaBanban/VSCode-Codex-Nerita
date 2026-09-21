@@ -44,7 +44,7 @@ export abstract class PiHistory extends PiRun {
 	}
 
 	/** 選択済みのIDからHost内で復元先を決め、ファイルパスをUIへ渡さない。 */
-	protected async loadSession(id: string): Promise<void> {
+	protected async loadSession(id: string, fork = false): Promise<void> {
 		const history = this.runtime?.history;
 		if (
 			!history ||
@@ -56,9 +56,21 @@ export abstract class PiHistory extends PiRun {
 				"Piの処理が終わってから、一覧にある履歴を選択してください。",
 			);
 		}
-		if (id === this.state.sessionId) {
+		if (!fork && id === this.state.sessionId) {
 			return;
 		}
-		await this.connect(history.target(id));
+		const nextEpoch = this.epoch + 1;
+		await this.connect({
+			...history.target(id),
+			...(fork ? { fork } : {}),
+		});
+		if (
+			fork &&
+			this.epoch === nextEpoch &&
+			this.runtime?.history &&
+			!this.state.sessionsError
+		) {
+			await this.refreshSessions();
+		}
 	}
 }
