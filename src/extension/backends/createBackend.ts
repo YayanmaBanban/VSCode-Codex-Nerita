@@ -11,6 +11,7 @@ import {
 } from "./codex/interaction/vscodeServices";
 import { PiSessionController } from "./pi/PiSessionController";
 import { createPiRuntime } from "./pi/PiRuntime";
+import { createPiAuthService } from "./pi/PiAuthService";
 
 /** 両backendで同じローカル・信頼済みworkspace条件を適用する。 */
 function workspaceDirectory(): string {
@@ -38,6 +39,7 @@ export function createBackend(
 				cwd,
 				signal,
 				authorize,
+				authService: createPiAuthService(context.extensionUri),
 				storage:
 					config.get<string>("sessionStorage", "global") ===
 					"workspace"

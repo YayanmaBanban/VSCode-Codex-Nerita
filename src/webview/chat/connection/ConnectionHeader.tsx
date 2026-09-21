@@ -119,8 +119,9 @@ export function ConnectionHeader({
 					aria-label="認証"
 				>
 					<p>
-						ChatGPTにログインするか、VS
-						Codeの起動環境に設定したAPIキーを使用します。
+						{state.piAccount !== null
+							? "Piの認証情報を設定してください。利用可能なモデルは入力欄で選択できます。"
+							: "ChatGPTにログインするか、VS Codeの起動環境に設定したAPIキーを使用します。"}
 					</p>
 					{state.authMethods.map((method) => (
 						<button
@@ -141,7 +142,24 @@ export function ConnectionHeader({
 			)}
 			{state.connection === "authenticating" && (
 				<p className={`auth-card ${noticeClass}`}>
-					ブラウザでログインを完了してください。最大3分間待機します。
+					{state.piAccount !== null
+						? "エディターの「Pi 認証情報」で設定してください。画面を閉じるとチャットへ戻れます。"
+						: "ブラウザでログインを完了してください。最大3分間待機します。"}
+					{state.piAccount !== null && (
+						<button
+							type="button"
+							className="ml-[6px]"
+							onClick={() =>
+								send({
+									type: "auth/start",
+									requestId: crypto.randomUUID(),
+									methodId: "pi-cancel",
+								})
+							}
+						>
+							認証をキャンセル
+						</button>
+					)}
 				</p>
 			)}
 		</>

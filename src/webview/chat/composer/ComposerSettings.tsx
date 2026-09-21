@@ -32,7 +32,9 @@ export function ComposerSettings({
 	send: (message: UiMessage) => void;
 }) {
 	const connected =
-		state.connection === "ready" &&
+		(state.connection === "ready" ||
+			(state.piAccount !== null &&
+				state.connection === "auth-required")) &&
 		!!state.sessionId &&
 		!state.sessionPending;
 	const disabled =

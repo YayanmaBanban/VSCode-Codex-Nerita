@@ -4,12 +4,46 @@ import * as vscode from "vscode";
 import { access, readdir, readFile } from "node:fs/promises";
 import { CodexClient } from "../src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
+import { createPiAuthService } from "../src/extension/backends/pi/PiAuthService";
 import {
 	moveSidebar,
 	saveSidebar,
 } from "../src/extension/webview/sidebarLocation";
 
 suite("Nerita for Codex Extension", () => {
+	test("Pi認証管理をエディターグループに開き、取消で閉じる", async () => {
+		const extension = vscode.extensions.getExtension(
+			"nerita-local.nerita-codex",
+		)!;
+		const abort = new AbortController();
+		const service = createPiAuthService(extension.extensionUri);
+		const done = service.manage(
+			() => Promise.resolve([]),
+			() => Promise.resolve(),
+			abort.signal,
+		);
+		try {
+			const deadline = Date.now() + 5000;
+			while (
+				!vscode.window.tabGroups.all.some((group) =>
+					group.tabs.some((tab) => tab.label === "Pi 認証情報"),
+				)
+			) {
+				assert.ok(
+					Date.now() < deadline,
+					"認証エディターが開かれていません",
+				);
+				await new Promise((resolve) => setTimeout(resolve, 20));
+			}
+			const tab = vscode.window.tabGroups.all
+				.flatMap((group) => group.tabs)
+				.find((tab) => tab.label === "Pi 認証情報")!;
+			assert.ok(tab.input instanceof vscode.TabInputWebview);
+		} finally {
+			abort.abort();
+			await done;
+		}
+	});
 	test("同梱Pi SDKで本文・ツール結果を受信し、Extension Hostから停止する", async () => {
 		const extension = vscode.extensions.getExtension(
 			"nerita-local.nerita-codex",

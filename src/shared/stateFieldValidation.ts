@@ -14,6 +14,7 @@ export function validStateField(key: string, value: unknown): boolean {
 		case "personality":
 			return value === null || isPersonalitySettings(value);
 		case "sessionTitle":
+		case "piAccount":
 		case "cwd":
 		case "sessionsError":
 		case "sessionsNextCursor":

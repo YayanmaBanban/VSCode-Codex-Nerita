@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import { build } from "esbuild";
 import { piPersistenceSmoke } from "./pi-persistence-smoke.mjs";
+import { piPackagesSmoke } from "./pi-packages-smoke.mjs";
 
 const projectRoot = process.cwd();
 // 展開したVSIXも同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
@@ -417,6 +418,15 @@ try {
 	await controller.dispose();
 	controller = undefined;
 	await piPersistenceSmoke({
+		PiSessionController,
+		createPiRuntime,
+		sdk,
+		extensionPath: fixture,
+		cwd,
+		agentDir,
+		requests,
+	});
+	await piPackagesSmoke({
 		PiSessionController,
 		createPiRuntime,
 		sdk,
