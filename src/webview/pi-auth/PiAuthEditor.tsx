@@ -57,9 +57,16 @@ function AuthInput({
 					className="min-w-0 rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
 				/>
 			)}
-			<div>
+			<div className="flex flex-wrap items-baseline gap-[8px] mb-[16px]">
 				<button type="submit" disabled={!value}>
 					送信
+				</button>
+				<button
+					type="button"
+					onClick={() => send({ type: "cancel" })}
+					className="border-alert-border bg-alert"
+				>
+					キャンセル
 				</button>
 			</div>
 		</form>
@@ -197,27 +204,13 @@ export function PiAuthEditor({
 													</button>
 												))}
 										</div>
-										{!item.methods.length && (
-											<p className="text-muted">
-												環境変数またはPiの設定ファイルで認証情報を設定してください。
-											</p>
-										)}
 										{active && state.prompt && (
-											<div className="flex flex-wrap items-baseline gap-[8px] mb-[16px]">
+											<div>
 												<AuthInput
 													key={state.prompt.id}
 													prompt={state.prompt}
 													send={send}
 												/>
-												<button
-													type="button"
-													className="inline-flex items-center justify-center px-6 py-3"
-													onClick={() =>
-														send({ type: "cancel" })
-													}
-												>
-													認証をキャンセル
-												</button>
 											</div>
 										)}
 									</div>
