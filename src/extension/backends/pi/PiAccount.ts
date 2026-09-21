@@ -72,15 +72,16 @@ export class PiAccount {
 	}
 
 	/** 保存認証だけを変更し、環境変数やmodels.jsonは保持する。 */
-	async authenticate(logout: boolean, signal: AbortSignal): Promise<void> {
+	async authenticate(_logout: boolean, signal: AbortSignal): Promise<void> {
 		if (!this.service) {
 			throw new Error("Piの認証画面が接続されていません。");
 		}
+		let authenticatedProvider: string | undefined;
 		if (this.service.manage) {
 			await this.service.manage(
-				() => this.items(logout, signal),
+				() => this.items(signal),
 				async (id, operationSignal) => {
-					const items = await this.items(logout, operationSignal);
+					const items = await this.items(operationSignal);
 					if (
 						!items.some((item) =>
 							item.methods.some((method) => method.id === id),
@@ -102,27 +103,52 @@ export class PiAccount {
 							type,
 							this.service!.interaction(operationSignal),
 						);
+						authenticatedProvider = provider;
 					}
 					operationSignal.throwIfAborted();
-					const available = await this.models.getAvailable(
-						undefined,
-						{ signal: operationSignal },
+					await this.reconcileModel(
+						operationSignal,
+						authenticatedProvider,
 					);
-					if (!this.session.model && available[0]) {
-						await this.session.setModel(available[0]);
-					}
 				},
 				signal,
 			);
+			// 認証の保存直後に画面が閉じられても、操作の取消とは別に接続状態を確定する。
+			if (!signal.aborted) {
+				await this.reconcileModel(signal, authenticatedProvider);
+			}
 			return;
 		}
 	}
 
-	/** provider単位の設定状態と、実行できる認証方式を表示する。 */
-	private async items(
-		logout: boolean,
+	/** 認証切れの旧モデルを保持せず、利用可能なモデルへ復帰する。 */
+	private async reconcileModel(
 		signal: AbortSignal,
-	): Promise<PiAuthItem[]> {
+		provider?: string,
+	): Promise<void> {
+		const available = await this.models.getAvailable(undefined, { signal });
+		signal.throwIfAborted();
+		const current = this.session.model;
+		if (
+			current &&
+			available.some(
+				(model) =>
+					model.provider === current.provider &&
+					model.id === current.id,
+			)
+		) {
+			return;
+		}
+		const model =
+			available.find((model) => model.provider === provider) ??
+			available[0];
+		if (model) {
+			await this.session.setModel(model);
+		}
+	}
+
+	/** provider単位の設定状態と、実行できる認証方式を表示する。 */
+	private async items(signal: AbortSignal): Promise<PiAuthItem[]> {
 		const credentials = await this.models.listCredentials({ signal });
 		return this.models.getProviders().map((provider) => ({
 			id: provider.id,
@@ -130,7 +156,7 @@ export class PiAccount {
 			configured: this.models.getProviderAuthStatus(provider.id)
 				.configured,
 			methods: [
-				...(!logout && provider.auth.apiKey?.login
+				...(provider.auth.apiKey?.login
 					? [
 							{
 								id: JSON.stringify([provider.id, "api_key"]),
@@ -138,7 +164,7 @@ export class PiAccount {
 							},
 						]
 					: []),
-				...(!logout && provider.auth.oauth
+				...(provider.auth.oauth
 					? [
 							{
 								id: JSON.stringify([provider.id, "oauth"]),

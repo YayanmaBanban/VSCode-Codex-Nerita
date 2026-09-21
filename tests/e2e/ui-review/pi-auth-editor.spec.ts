@@ -37,8 +37,18 @@ for (const theme of ["dark", "light"] as const) {
 				.click();
 			await page.getByRole("button", { name: "APIキーを設定" }).click();
 			await expect(
-				page.getByLabel("APIキーを入力してください"),
+				page.getByPlaceholder("APIキーを入力してください"),
 			).toHaveAttribute("type", "password");
+			await expect
+				.poll(() =>
+					page
+						.locator("#provider-openai")
+						.evaluate(
+							(element) =>
+								element.getAnimations({ subtree: true }).length,
+						),
+				)
+				.toBe(0);
 			await info.attach("key-input", {
 				body: await page.screenshot({
 					path: info.outputPath("input.png"),
@@ -46,15 +56,25 @@ for (const theme of ["dark", "light"] as const) {
 				contentType: "image/png",
 			});
 			await page
-				.getByLabel("APIキーを入力してください")
+				.getByPlaceholder("APIキーを入力してください")
 				.fill("test-only-key");
 			await page
 				.getByRole("button", { name: "送信", exact: true })
 				.click();
 			await expect(
-				page.getByLabel("APIキーを入力してください"),
+				page.getByPlaceholder("APIキーを入力してください"),
 			).toHaveCount(0);
 			await expect(page.getByLabel("設定済み")).toHaveCount(1);
+			await expect
+				.poll(() =>
+					page
+						.locator("#provider-openai")
+						.evaluate(
+							(element) =>
+								element.getAnimations({ subtree: true }).length,
+						),
+				)
+				.toBe(0);
 			const originalButtonY = (await page
 				.getByRole("button", { name: "OAuthでログイン" })
 				.boundingBox())!.y;
@@ -63,16 +83,16 @@ for (const theme of ["dark", "light"] as const) {
 			).toHaveText("認証情報を更新しました。");
 			await page.getByRole("button", { name: "OAuthでログイン" }).click();
 			await expect(
-				page.getByLabel("確認コードを入力してください"),
+				page.getByPlaceholder("確認コードを入力してください"),
 			).toBeVisible();
 			await page
-				.getByRole("button", { name: "認証をキャンセル" })
+				.getByRole("button", { name: "キャンセル", exact: true })
 				.click();
 			await expect(page.getByRole("alert")).toHaveText(
 				"認証をキャンセルしました。",
 			);
 			await expect(
-				page.getByLabel("確認コードを入力してください"),
+				page.getByPlaceholder("確認コードを入力してください"),
 			).toHaveCount(0);
 			await expect
 				.poll(
