@@ -21,6 +21,7 @@ import { useAgentViewer } from "./agents/useAgentViewer";
 /** 差し替え可能な Bridge を使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: { bridge: Bridge }) {
 	const {
+		backend,
 		draft,
 		draftParts,
 		setDraft,
@@ -59,6 +60,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 	return (
 		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
 			<ConnectionHeader
+				backend={backend}
 				sidebarLocation={sidebarLocation}
 				onSelectSidebar={selectSidebar}
 				state={state}

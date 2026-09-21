@@ -1,5 +1,6 @@
 // セッションタイトル・表示先・接続操作と、認証やエラーの案内を表示する。
 import type { ChatState } from "../../../shared/chatState";
+import type { BackendId } from "../../../shared/backend";
 import type { UiMessage } from "../../../shared/messages";
 import { List, MessageSquareText, Maximize2, Minimize2 } from "lucide-react";
 import { ConnectionButton } from "./ConnectionButton";
@@ -15,6 +16,7 @@ const iconClass =
 
 /** 狭い表示でも操作を残し、長いセッションタイトルだけを省略する。 */
 export function ConnectionHeader({
+	backend,
 	state,
 	requestError,
 	available,
@@ -26,6 +28,7 @@ export function ConnectionHeader({
 	sidebarLocation,
 	onSelectSidebar,
 }: {
+	backend?: BackendId | undefined;
 	state: ChatState;
 	requestError: string | null;
 	available: boolean;
@@ -100,6 +103,7 @@ export function ConnectionHeader({
 						</button>
 					</SettingsTooltip>
 					<PersonalityOptions
+						backend={backend}
 						sidebarLocation={sidebarLocation}
 						onSelectSidebar={onSelectSidebar}
 						state={state}

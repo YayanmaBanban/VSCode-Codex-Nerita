@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Bridge } from "../vscodeBridge";
 import type { ComposerPart } from "../../shared/composerContent";
 import type { SidebarLocation } from "../../shared/sidebar";
+import type { BackendId } from "../../shared/backend";
 
 /** 空の入力にも編集可能な通常文を一つ用意する。 */
 const textPart = (text: string): ComposerPart => ({
@@ -13,6 +14,7 @@ const textPart = (text: string): ComposerPart => ({
 
 /** 表示先ごとのDOMと、全表示先で共有する下書きを接続する。 */
 export function useChatView(bridge: Bridge) {
+	const [backend, setBackend] = useState<BackendId | undefined>();
 	const [draftParts, updateDraft] = useState<ComposerPart[]>(() => [
 		textPart(""),
 	]);
@@ -25,6 +27,10 @@ export function useChatView(bridge: Bridge) {
 	useEffect(
 		() =>
 			bridge.subscribe((message) => {
+				if (message.type === "ui/backendState") {
+					setBackend(message.backend);
+					return;
+				}
 				if (message.type === "ui/sidebarState") {
 					setSidebarLocation(message.location);
 					return;
@@ -92,6 +98,7 @@ export function useChatView(bridge: Bridge) {
 		});
 	};
 	return {
+		backend,
 		draft,
 		draftParts,
 		setDraft,

@@ -9,15 +9,20 @@ const api = vi.hoisted(() => ({
 	executeCommand: vi.fn().mockResolvedValue(undefined),
 	get: vi.fn().mockReturnValue("secondary"),
 	update: vi.fn().mockResolvedValue(undefined),
+	inspect: vi.fn(),
 	onDidChangeConfiguration: vi.fn().mockReturnValue({ dispose: vi.fn() }),
 }));
 vi.mock("vscode", () => ({
 	workspace: {
 		fs: { stat: api.stat },
-		getConfiguration: () => ({ get: api.get, update: api.update }),
+		getConfiguration: () => ({
+			get: api.get,
+			update: api.update,
+			inspect: api.inspect,
+		}),
 		onDidChangeConfiguration: api.onDidChangeConfiguration,
 	},
-	ConfigurationTarget: { Global: 1 },
+	ConfigurationTarget: { Global: 1, Workspace: 2 },
 	FileType: { File: 1, Directory: 2 },
 	window: { createWebviewPanel: api.createWebviewPanel },
 	commands: { executeCommand: api.executeCommand },
@@ -110,6 +115,7 @@ function harness() {
 beforeEach(() => {
 	vi.clearAllMocks();
 	api.get.mockReturnValue("secondary");
+	api.inspect.mockReturnValue(undefined);
 	api.update.mockImplementation((_key: string, value: string) => {
 		api.get.mockReturnValue(value);
 		return Promise.resolve();
@@ -198,6 +204,135 @@ it("配置の不正値を通信の両端で拒否する", () => {
 			false,
 		);
 	}
+});
+it.each([
+	[undefined, 1],
+	[{ globalValue: "codex" }, 1],
+	[{ globalValue: "pi", workspaceValue: "codex" }, 2],
+])(
+	"バックエンドを既存の設定スコープへ保存してから再読み込みする: %j",
+	async (inspection, target) => {
+		api.inspect.mockReturnValue(inspection);
+		const h = harness();
+		await h.sidebar.send({ type: "ui/openEditor", requestId: "open" });
+		await h.sidebar.send({
+			type: "ui/setBackend",
+			requestId: "backend",
+			backend: "pi",
+		});
+		expect(api.update).toHaveBeenCalledWith("backend", "pi", target);
+		expect(api.executeCommand).toHaveBeenCalledWith(
+			"workbench.action.reloadWindow",
+		);
+		expect(api.update.mock.invocationCallOrder[0]).toBeLessThan(
+			api.executeCommand.mock.invocationCallOrder[0]!,
+		);
+		for (const view of [h.sidebar, h.panel]) {
+			expect(view.webview.postMessage).toHaveBeenCalledWith({
+				type: "ui/backendState",
+				backend: "pi",
+			});
+		}
+		expect(h.session.receive).not.toHaveBeenCalled();
+		h.provider.dispose();
+	},
+);
+it("保存失敗では再読み込みせず、設定とチェックを元に保つ", async () => {
+	const h = harness();
+	api.update.mockRejectedValueOnce(new Error("read only"));
+	await h.sidebar.send({
+		type: "ui/setBackend",
+		requestId: "backend",
+		backend: "pi",
+	});
+	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith(
+		expect.objectContaining({
+			type: "request/failed",
+			requestId: "backend",
+		}),
+	);
+	expect(h.sidebar.webview.postMessage).not.toHaveBeenCalledWith({
+		type: "ui/backendState",
+		backend: "pi",
+	});
+	h.provider.dispose();
+});
+it("保存完了まで再読み込みせず、連続した切替要求を重ねない", async () => {
+	const h = harness();
+	let finish!: () => void;
+	api.update.mockImplementationOnce(
+		() =>
+			new Promise<void>((resolve) => {
+				finish = resolve;
+			}),
+	);
+	await h.sidebar.send({
+		type: "ui/setBackend",
+		requestId: "first",
+		backend: "pi",
+	});
+	await h.sidebar.send({
+		type: "ui/setBackend",
+		requestId: "second",
+		backend: "pi",
+	});
+	expect(api.update).toHaveBeenCalledTimes(1);
+	expect(api.executeCommand).not.toHaveBeenCalled();
+	finish();
+	await vi.waitFor(() =>
+		expect(api.executeCommand).toHaveBeenCalledWith(
+			"workbench.action.reloadWindow",
+		),
+	);
+	h.provider.dispose();
+});
+it("同じバックエンドの選択では書き込みや再読み込みをしない", async () => {
+	const h = harness();
+	await h.sidebar.send({
+		type: "ui/setBackend",
+		requestId: "same",
+		backend: "codex",
+	});
+	expect(api.update).not.toHaveBeenCalled();
+	expect(api.executeCommand).not.toHaveBeenCalled();
+	h.provider.dispose();
+});
+it("PiからCodexへ戻すときもworkspaceの指定を更新する", async () => {
+	api.get.mockReturnValue("pi");
+	api.inspect.mockReturnValue({ workspaceValue: "pi" });
+	const h = harness();
+	await h.sidebar.send({
+		type: "ui/setBackend",
+		requestId: "codex",
+		backend: "codex",
+	});
+	expect(api.update).toHaveBeenCalledWith("backend", "codex", 2);
+	expect(api.executeCommand).toHaveBeenCalledWith(
+		"workbench.action.reloadWindow",
+	);
+	h.provider.dispose();
+});
+it("保存済みバックエンドを復元し、不正な選択値は両端で拒否する", async () => {
+	const h = harness();
+	await h.sidebar.send({ type: "ui/ready" });
+	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith({
+		type: "ui/backendState",
+		backend: "codex",
+	});
+	for (const backend of [null, "other", 0, {}, undefined]) {
+		expect(
+			isUiMessage({ type: "ui/setBackend", requestId: "x", backend }),
+		).toBe(false);
+		expect(isHostMessage({ type: "ui/backendState", backend })).toBe(false);
+	}
+	for (const backend of ["codex", "pi"]) {
+		expect(
+			isUiMessage({ type: "ui/setBackend", requestId: "x", backend }),
+		).toBe(true);
+		expect(isHostMessage({ type: "ui/backendState", backend })).toBe(true);
+	}
+	h.provider.dispose();
 });
 it("貼り付けの配置を表示先へ復元し、通常の下書き保存で配置を解除する", async () => {
 	const h = harness();

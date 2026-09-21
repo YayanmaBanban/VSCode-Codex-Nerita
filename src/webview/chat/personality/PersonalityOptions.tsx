@@ -5,6 +5,8 @@ import { Dialog } from "@base-ui/react/dialog";
 import { CSPProvider } from "@base-ui/react/csp-provider";
 import { Ellipsis, FileUser, KeyRound, LogOut, X } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
+import type { BackendId } from "../../../shared/backend";
+import { BackendMenu } from "../connection/BackendMenu";
 import type { UiMessage } from "../../../shared/messages";
 import type { PersonalityMessage } from "../../../shared/personality";
 import { PersonalityPane } from "./PersonalityPane";
@@ -14,12 +16,14 @@ import type { SidebarLocation } from "../../../shared/sidebar";
 
 /** メニューとダイアログのフォーカス管理をBase UIに任せる。 */
 export function PersonalityOptions({
+	backend,
 	state,
 	send,
 	error,
 	sidebarLocation = "secondary",
 	onSelectSidebar,
 }: {
+	backend?: BackendId | undefined;
 	state: ChatState;
 	send: (message: UiMessage) => void;
 	error: string | null;
@@ -72,6 +76,16 @@ export function PersonalityOptions({
 											requestId: crypto.randomUUID(),
 											location,
 										}))
+								}
+							/>
+							<BackendMenu
+								backend={backend}
+								onSelect={(backend) =>
+									send({
+										type: "ui/setBackend",
+										requestId: crypto.randomUUID(),
+										backend,
+									})
 								}
 							/>
 							{state.piAccount !== null && (

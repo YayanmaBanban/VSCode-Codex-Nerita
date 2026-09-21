@@ -1,5 +1,6 @@
 // Hostから届く通知を、Webviewの状態や描画に反映する前に検証する。
 import type { HostMessage } from "./messages";
+import { isBackendId } from "./backend";
 import { isId, isRecord, isRevision } from "./validation";
 import { isState } from "./stateValidation";
 import { validStateField } from "./stateFieldValidation";
@@ -15,6 +16,9 @@ export function isHostMessage(value: unknown): value is HostMessage {
 	}
 	if (value.type === "ui/codeBlock") {
 		return isId(value.requestId);
+	}
+	if (value.type === "ui/backendState") {
+		return isBackendId(value.backend);
 	}
 	if (value.type === "agent/view") {
 		const view = value.view;

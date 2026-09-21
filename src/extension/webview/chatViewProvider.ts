@@ -12,6 +12,7 @@ import { listWorkspacePaths } from "./workspacePaths";
 import { resolvePath } from "./resolvePath";
 import { openResource } from "./openResource";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";
+import { configuredBackend, saveBackend } from "./backendSettings";
 import {
 	SidebarPlacement,
 	saveSidebar,
@@ -32,11 +33,20 @@ export class ChatViewProvider
 	private draftParts: ComposerPart[] | undefined;
 	private scrollTop = 0;
 	private placement: SidebarPlacement;
+	private backendSubscription: vscode.Disposable;
+	private backendPending = false;
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
 		private extensionUri: vscode.Uri,
 		private session: ChatSession,
 	) {
+		this.backendSubscription = vscode.workspace.onDidChangeConfiguration(
+			(event) => {
+				if (event.affectsConfiguration("nerita.backend")) {
+					this.broadcastBackend();
+				}
+			},
+		);
 		this.placement = new SidebarPlacement((location) => {
 			for (const target of this.views.keys()) {
 				void target.postMessage({
@@ -45,6 +55,15 @@ export class ChatViewProvider
 				} satisfies HostMessage);
 			}
 		});
+	}
+	/** 設定ファイルの変更をすべての表示先へ反映する。 */
+	private broadcastBackend(): void {
+		for (const webview of this.views.keys()) {
+			void webview.postMessage({
+				type: "ui/backendState",
+				backend: configuredBackend(),
+			} satisfies HostMessage);
+		}
 	}
 	/** Webview のロードと検証済みメッセージ通信を接続する。 */
 	resolveWebviewView(view: vscode.WebviewView): void {
@@ -116,6 +135,24 @@ export class ChatViewProvider
 			return;
 		}
 		try {
+			if (value.type === "ui/setBackend") {
+				if (this.backendPending) {
+					return;
+				}
+				this.backendPending = true;
+				try {
+					const changed = await saveBackend(value.backend);
+					this.broadcastBackend();
+					if (changed) {
+						await vscode.commands.executeCommand(
+							"workbench.action.reloadWindow",
+						);
+					}
+				} finally {
+					this.backendPending = false;
+				}
+				return;
+			}
 			if (value.type === "workspace/resolvePath") {
 				await webview.postMessage(await resolvePath(value));
 				return;
@@ -194,6 +231,10 @@ export class ChatViewProvider
 			}
 			if (value.type === "ui/ready") {
 				void webview.postMessage({
+					type: "ui/backendState",
+					backend: configuredBackend(),
+				} satisfies HostMessage);
+				void webview.postMessage({
 					type: "ui/sidebarState",
 					location: sidebarLocation(),
 				} satisfies HostMessage);
@@ -219,15 +260,18 @@ export class ChatViewProvider
 					type: "request/failed",
 					requestId: value.requestId,
 					error:
-						value.type === "reference/open"
-							? "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。"
-							: "表示先を切り替えられませんでした。再試行してください。",
+						value.type === "ui/setBackend"
+							? "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、ウィンドウを再読み込みしてください。"
+							: value.type === "reference/open"
+								? "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。"
+								: "表示先を切り替えられませんでした。再試行してください。",
 				} satisfies HostMessage);
 			}
 		}
 	}
 	/** Webview に属する購読だけを破棄する。 */
 	dispose(): void {
+		this.backendSubscription.dispose();
 		this.placement.dispose();
 		for (const view of [...this.views.values()]) {
 			view.dispose();

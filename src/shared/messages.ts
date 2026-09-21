@@ -1,5 +1,6 @@
 // HostとWebviewの要求・通知の通信契約を定義し、実行環境のAPIに依存させない。
 import type { ChatState } from "./chatState";
+import type { BackendId } from "./backend";
 import type { ComposerPart } from "./composerContent";
 import type { ChangeScope } from "./changeReferences";
 import type {
@@ -26,6 +27,7 @@ import type { SessionHistoryMessage } from "./sessionHistory";
 
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| { type: "ui/setBackend"; requestId: string; backend: BackendId }
 	| {
 			type: "agent/read";
 			requestId: string;
@@ -97,6 +99,7 @@ export type UiMessage =
 
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "ui/backendState"; backend: BackendId }
 	| { type: "ui/codeBlock"; requestId: string }
 	| { type: "agent/view"; requestId: string; view: AgentThreadView }
 	| SessionReferencesResult
