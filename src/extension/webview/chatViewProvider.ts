@@ -2,7 +2,8 @@
 import type { ComposerPart } from "../../shared/composerContent";
 import * as vscode from "vscode";
 import { webviewHtml } from "./webviewHtml";
-import { bindWebview, type ChatSession } from "./webviewBinding";
+import { bindWebview } from "./webviewBinding";
+import type { ChatSession } from "../session/chatSession";
 import type { HostMessage } from "../../shared/messages";
 import { isHostMessage } from "../../shared/hostMessageValidation";
 import { isRecord } from "../../shared/validation";

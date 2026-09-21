@@ -1,8 +1,8 @@
 // 承認回答・取消・サーバー側解決を、同じ request ID とターンに限定して検証する。
 import { afterEach, expect, it, vi } from "vitest";
-import { ServerRequests } from "../../src/extension/codex/runtime/ServerRequests";
+import { ServerRequests } from "../../src/extension/backends/codex/runtime/ServerRequests";
 import { codexHarness } from "./codexHarness";
-import type { CodexSessionController } from "../../src/extension/codex/CodexSessionController";
+import type { CodexSessionController } from "../../src/extension/backends/codex/CodexSessionController";
 
 const sessions: CodexSessionController[] = [];
 afterEach(async () => {

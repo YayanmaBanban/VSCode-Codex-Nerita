@@ -12,7 +12,7 @@ const outfile = path.resolve("dist/codex-smoke/history.mjs");
 await build({
 	stdin: {
 		contents:
-			'export { CodexClient } from "./src/extension/codex/CodexClient"; export { CodexSessionController } from "./src/extension/codex/CodexSessionController";',
+			'export { CodexClient } from "./src/extension/backends/codex/CodexClient"; export { CodexSessionController } from "./src/extension/backends/codex/CodexSessionController";',
 		resolveDir: process.cwd(),
 		loader: "ts",
 	},

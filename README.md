@@ -4,6 +4,21 @@ Codex App Server への移行を完了しました。実装内容と検証手順
 
 VS Code のサイドバーから Codex App Server に接続します。テキスト送信、逐次応答、停止後の続行、新規会話、ツール・差分表示、承認、モデル設定、認証、使用量、添付に加え、履歴の復元・名前変更・Fork・アーカイブと解除に対応します。
 
+## Pi backend（最小疎通）
+
+設定で `"nerita.backend": "pi"` を指定し、VS Codeのウィンドウを再読み込みするとPiを使用します。既定値は `codex` です。
+Pi SDK `@earendil-works/pi-coding-agent@0.86.1` を同梱します。SDKの要件はNode.js 22.19以降で、実行にはExtension HostのNode.jsを使います。
+
+認証はPi側の `~/.pi/agent/auth.json`、providerのAPIキー環境変数、`models.json` を利用します（`PI_CODING_AGENT_DIR` を指定している場合はそのディレクトリ）。Codexの認証は共有しません。
+Pi CLIでログインするか、対応providerのAPIキーをVS Code起動時の環境に設定してください。キーはNeritaの設定に保存しません。
+モデルはPiの設定に従います。明示する場合は `nerita.pi.provider` と `nerita.pi.model` を両方指定し、再接続してください。
+
+現段階はテキスト送信・ストリーミング・Stop・停止後の再送・新規会話に対応します。会話はメモリ内のみで、ウィンドウ再読み込み時に消えます。
+ツールは `read` / `ls` に固定しています。書き込み・shell実行・承認カード・Tool Card・追加指示・履歴・添付・Pi拡張の自動ロードは後続工程です。未対応の操作は送信元へエラーを返します。
+
+`pnpm compile` 後の `pnpm test:pi:chat` で、配布SDKをリポジトリ外にコピーし、ローカルのOpenAI互換サーバーに対して本文・read・停止・再送を検証できます。外部モデルへの通信・課金は発生しません。
+画面の確認は `pnpm ui-review pi.spec.ts` です。Storyの通信モックによる表示確認と、実SDKの疎通検証は別に実行します。
+
 ## インストールと使い方
 
 1. Windows x64、VS Code 1.137 以降、Node.js 22 以降を用意します。
@@ -79,11 +94,13 @@ Escape での閉じ操作も確認します。画像と寸法・配色の記録�
 入力・補完・添付を `composer/`、発言の表示を `messages/`、接続ヘッダーを `connection/` にまとめています。
 履歴・検索・性格設定・エージェント・ツール表示は、それぞれ既存の機能別フォルダに置きます。
 Storyも `src/stories/chat/` 内で対応する機能別の配置にします。
-`src/extension/codex/` は制御クラスを直下に残し、
+`src/extension/backends/codex/` は制御クラスを直下に残し、
 応答・通知の検証を `protocol/`、表示項目・イベントの変換を `items/`、
 エージェント管理を `agents/`、プロセス起動・通信・接続契約を `runtime/` にまとめています。
 添付・差分・会話参照は `context/`、履歴の復元と一覧の補助処理は `history/`、
 モデル・権限・性格設定は `settings/`、承認・認証・入力UIとの連携は `interaction/` に置きます。
+Piは `src/extension/backends/pi/`、backendの生成は `backends/createBackend.ts` に置きます。
+`src/extension/session/` は共通の通信・寿命管理契約、状態ストア、添付サービスと入力検証を持ちます。
 `src/extension/webview/` では表示先の制御、通信購読の寿命、CSP付きHTMLの生成を分離しています。
 
 ### Webview のスタイル

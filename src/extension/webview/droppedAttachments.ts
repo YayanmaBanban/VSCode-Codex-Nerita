@@ -9,7 +9,7 @@ import {
 	type DroppedAttachment,
 } from "../../shared/attachmentDrop";
 import type { Attachment } from "../../shared/composer";
-import { attachmentInput } from "../codex/context/attachmentInput";
+import { readAttachments } from "../session/readAttachments";
 
 let directory: Promise<string> | undefined;
 /** URIは実ファイルを確認し、内容転送は同じ名前・内容を同じ参照にする。 */
@@ -46,7 +46,7 @@ export async function droppedAttachments(
 		});
 	}
 	// バイナリーや大きすぎるテキストを、一覧へ追加する前に拒否する。
-	await attachmentInput(selected, true);
+	await readAttachments(selected, true);
 	return selected;
 }
 /** 送信済み画像の参照を保ち、拡張機能終了時に専用領域だけを削除する。 */

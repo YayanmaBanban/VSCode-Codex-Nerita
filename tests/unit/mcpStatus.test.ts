@@ -1,7 +1,7 @@
 // MCPコマンドの検証・ページ取得と、接続変更時の古い応答の破棄を確認する。
 import { expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({ workspace: {}, window: {} }));
-import { responseParsers } from "../../src/extension/codex/protocol/responses";
+import { responseParsers } from "../../src/extension/backends/codex/protocol/responses";
 import { codexHarness, deferred } from "./codexHarness";
 import { mcpStatusFixture } from "../fixtures/mcpStatusFixture";
 import type { McpServerSummary } from "../../src/shared/mcp";
@@ -85,7 +85,7 @@ it("取得失敗を通知してロックを解除し、空の一覧も表示で�
 		);
 		await h.send("/mcp");
 		expect(h.session.snapshot().messages[3]?.text).toBe(
-			"設定済みMCPサーバー:\nMCPサーバーはありません。",
+			"利用可能なMCPサーバーはありません。",
 		);
 	} finally {
 		await h.session.dispose();
