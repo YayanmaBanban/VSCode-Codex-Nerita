@@ -2,10 +2,10 @@
 import type { BackendSession } from "../../session/chatSession";
 import { isUiMessage } from "../../../shared/uiMessageValidation";
 import type { UiMessage } from "../../../shared/messages";
-import { PiRun } from "./PiRun";
+import { PiHistory } from "./PiHistory";
 
 /** Codexと同じ通信境界で送信・停止・再接続・新規会話を公開する。 */
-export class PiSessionController extends PiRun implements BackendSession {
+export class PiSessionController extends PiHistory implements BackendSession {
 	private seen = new Set<string>();
 
 	/** 重複・不正要求を無視し、未対応操作は要求元に明示する。 */
@@ -51,6 +51,17 @@ export class PiSessionController extends PiRun implements BackendSession {
 		}
 		if (message.type === "session/new") {
 			await this.connect();
+			return;
+		}
+		if (message.type === "session/list") {
+			if (message.archived || message.more) {
+				throw new Error("Piのアーカイブ・追加ページは未対応です。");
+			}
+			await this.refreshSessions();
+			return;
+		}
+		if (message.type === "session/load") {
+			await this.loadSession(message.sessionId);
 			return;
 		}
 		if (

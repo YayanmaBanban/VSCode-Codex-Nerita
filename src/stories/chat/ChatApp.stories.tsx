@@ -7,6 +7,7 @@ import { createMockBridge, type Scenario } from "./mocks/mockBridge";
 import { createAppServerBridge } from "./mocks/appServerBridge";
 import { createPiBridge } from "./mocks/piBridge";
 import { createPiApprovalBridge } from "./mocks/piApprovalBridge";
+import { createPiHistoryBridge } from "./mocks/piHistoryBridge";
 
 /** 各マウントで独立する Bridge を Story へ注入する。 */
 function ChatStory({
@@ -15,23 +16,27 @@ function ChatStory({
 	pi = false,
 	piTools = false,
 	piApprovals = false,
+	piHistory = false,
 }: {
 	scenario: Scenario;
 	appServer?: boolean;
 	pi?: boolean;
 	piTools?: boolean;
 	piApprovals?: boolean;
+	piHistory?: boolean;
 }) {
 	const bridge = useMemo(
 		() =>
-			piApprovals
-				? createPiApprovalBridge()
-				: pi || piTools
-					? createPiBridge(piTools)
-					: appServer
-						? createAppServerBridge(scenario)
-						: createMockBridge(scenario),
-		[scenario, appServer, pi, piTools, piApprovals],
+			piHistory
+				? createPiHistoryBridge()
+				: piApprovals
+					? createPiApprovalBridge()
+					: pi || piTools
+						? createPiBridge(piTools)
+						: appServer
+							? createAppServerBridge(scenario)
+							: createMockBridge(scenario),
+		[scenario, appServer, pi, piTools, piApprovals, piHistory],
 	);
 	return <ChatApp bridge={bridge} />;
 }
@@ -48,6 +53,7 @@ export const Empty: Story = {};
 export const Pi: Story = { args: { pi: true } };
 export const PiTools: Story = { args: { piTools: true } };
 export const PiApprovals: Story = { args: { piApprovals: true } };
+export const PiHistory: Story = { args: { piHistory: true } };
 export const AppServer: Story = { args: { appServer: true } };
 export const AppServerStreaming: Story = {
 	args: { scenario: "streaming", appServer: true },

@@ -7,18 +7,25 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
+import {
+	openPiSessionStore,
+	type PiHistoryAccess,
+	type PiResumeTarget,
+	type PiSessionStorage,
+} from "./PiSessionStore";
 
 /** Controllerが必要とするSDKの操作だけを公開する。 */
 export type PiSession = Pick<
 	AgentSession,
 	"sessionId" | "model" | "subscribe" | "prompt" | "abort" | "dispose"
->;
+> & { history?: PiHistoryAccess };
 export type { AgentSessionEvent as PiEvent };
 
 /** 実SDKとテスト接続を同じ寿命管理で扱う。 */
 export type PiFactory = (
 	signal: AbortSignal,
 	authorize: PiAuthorize,
+	resume?: PiResumeTarget,
 ) => Promise<{ session: PiSession; cwd: string }>;
 
 /** 通常実行と隔離した疎通テストで使う起動条件。 */
@@ -30,9 +37,11 @@ export type PiRuntimeOptions = {
 	model?: string;
 	signal: AbortSignal;
 	authorize?: PiAuthorize;
+	storage?: PiSessionStorage;
+	resume?: PiResumeTarget;
 };
 
-/** 履歴はメモリ内とし、副作用ツールには必ずHostの承認を挟む。 */
+/** Pi標準形式で履歴を保存し、副作用ツールには必ずHostの承認を挟む。 */
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
 ): Promise<PiSession> {
@@ -86,6 +95,14 @@ export async function createPiRuntime(
 		throw new Error(`Piのモデルが見つかりません: ${provider}/${modelId}`);
 	}
 	options.signal.throwIfAborted();
+	const { manager, history } = await openPiSessionStore(
+		sdk,
+		options.cwd,
+		agentDir,
+		options.storage ?? "global",
+		options.signal,
+		options.resume,
+	);
 	const { session } = await sdk.createAgentSession({
 		cwd: options.cwd,
 		agentDir,
@@ -93,7 +110,7 @@ export async function createPiRuntime(
 		resourceLoader,
 		modelRuntime,
 		...(model ? { model } : {}),
-		sessionManager: sdk.SessionManager.inMemory(options.cwd),
+		sessionManager: manager,
 		tools: ["read", "ls", "write", "edit", "powershell"],
 		customTools: [
 			sdk.createWriteToolDefinition(options.cwd),
@@ -118,5 +135,5 @@ export async function createPiRuntime(
 			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
 		);
 	}
-	return session;
+	return Object.assign(session, { history });
 }

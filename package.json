@@ -44,6 +44,20 @@
 					"scope": "window",
 					"description": "Piのprovider ID。modelとセットで指定します。空ならPiの設定を使用します。変更後は再接続してください。"
 				},
+				"nerita.pi.sessionStorage": {
+					"type": "string",
+					"enum": [
+						"global",
+						"workspace"
+					],
+					"default": "global",
+					"scope": "window",
+					"enumDescriptions": [
+						"Pi標準の ~/.pi/agent/sessions/ に保存",
+						"ワークスペースの .sessions/ に保存"
+					],
+					"markdownDescription": "Piの新規会話の保存先。変更は新規会話・再接続から適用され、既存履歴は移動しません。workspaceでは `.sessions/.gitignore` を内容 `*` で初回生成します。既存ファイルは上書きしません。"
+				},
 				"nerita.pi.model": {
 					"type": "string",
 					"default": "",
