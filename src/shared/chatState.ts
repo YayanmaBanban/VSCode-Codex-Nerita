@@ -84,6 +84,7 @@ export type ChatState = {
 	permissions: Permission[];
 	error: string | null;
 	authMethods: { id: string; name: string }[];
+	piAccount: string | null;
 	configOptions: ConfigOption[];
 	configPending: boolean;
 	usage: ContextUsage | null;
@@ -119,6 +120,7 @@ export function initialState(): ChatState {
 		permissions: [],
 		error: null,
 		authMethods: [],
+		piAccount: null,
 		configOptions: [],
 		configPending: false,
 		usage: null,

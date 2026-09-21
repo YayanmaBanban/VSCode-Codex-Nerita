@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 export function webviewHtml(
 	webview: vscode.Webview,
 	extensionUri: vscode.Uri,
+	page: "chat" | "pi-auth" = "chat",
 ): string {
 	const nonce = randomBytes(24).toString("base64");
 	const script = webview.asWebviewUri(
@@ -17,5 +18,5 @@ export function webviewHtml(
 	return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
     <link rel="stylesheet" href="${style.toString()}"><title>Codex</title></head>
-    <body><div id="root"></div><script nonce="${nonce}" src="${script.toString()}"></script></body></html>`;
+    <body><div id="root" data-page="${page}"></div><script nonce="${nonce}" src="${script.toString()}"></script></body></html>`;
 }

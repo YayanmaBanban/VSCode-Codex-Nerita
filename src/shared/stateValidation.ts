@@ -23,6 +23,7 @@ export function isState(value: unknown): value is ChatState {
 			"asyncTasks",
 			"permissions",
 			"authMethods",
+			"piAccount",
 			"configOptions",
 			"configPending",
 			"usage",

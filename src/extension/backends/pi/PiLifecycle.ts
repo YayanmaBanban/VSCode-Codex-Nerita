@@ -136,6 +136,8 @@ export abstract class PiLifecycle extends SessionState {
 							},
 						]
 					: [],
+				...session.account?.snapshot(),
+				skills: session.skills ?? [],
 			});
 		} catch (error) {
 			if (epoch === this.epoch) {
