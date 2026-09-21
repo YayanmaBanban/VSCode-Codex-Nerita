@@ -1,7 +1,7 @@
 // VS Code内のNode.jsで同梱Pi SDKを動かし、外部通信なしで本文とStopを確認する。
 import * as assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, basename, join } from "node:path";
 import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
@@ -18,6 +18,11 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 			body += chunk;
 		});
 		request.on("end", () => {
+			const tool =
+				body.includes('"tool"') && !body.includes('"role":"tool"');
+			const write =
+				body.includes('"host-write"') &&
+				!body.includes('"role":"tool"');
 			response.writeHead(200, { "content-type": "text/event-stream" });
 			response.write(
 				`data: ${JSON.stringify({
@@ -28,7 +33,30 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 					choices: [
 						{
 							index: 0,
-							delta: { role: "assistant", content: "Pi Host OK" },
+							delta:
+								tool || write
+									? {
+											role: "assistant",
+											tool_calls: [
+												{
+													index: 0,
+													id: "host-ls",
+													type: "function",
+													function: {
+														name: write
+															? "write"
+															: "ls",
+														arguments: write
+															? '{"path":"approved.txt","content":"Host approved"}'
+															: '{"path":"."}',
+													},
+												},
+											],
+										}
+									: {
+											role: "assistant",
+											content: "Pi Host OK",
+										},
 							finish_reason: null,
 						},
 					],
@@ -42,7 +70,12 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 						created: 1,
 						model: "smoke",
 						choices: [
-							{ index: 0, delta: {}, finish_reason: "stop" },
+							{
+								index: 0,
+								delta: {},
+								finish_reason:
+									tool || write ? "tool_calls" : "stop",
+							},
 						],
 					})}\n\ndata: [DONE]\n\n`,
 				);
@@ -78,13 +111,14 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 				},
 			}),
 		);
-		controller = new PiSessionController(async (signal) => ({
+		controller = new PiSessionController(async (signal, authorize) => ({
 			cwd: fixture,
 			session: await createPiRuntime({
 				extensionPath,
 				cwd: fixture,
 				agentDir,
 				signal,
+				authorize,
 				provider: "local",
 				model: "smoke",
 			}),
@@ -109,6 +143,50 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 			session.snapshot().error ?? undefined,
 		);
 		assert.equal(session.snapshot().messages.at(-1)?.text, "Pi Host OK");
+		// 新規会話で書き込み要求を発行し、Hostでも許可前の副作用がないことを確認する。
+		await session.receive({
+			type: "prompt/send",
+			requestId: "write-send",
+			sessionId: session.snapshot().sessionId,
+			text: "host-write",
+		});
+		await until(() => session.snapshot().permissions.length === 1);
+		await assert.rejects(readFile(join(fixture, "approved.txt")), {
+			code: "ENOENT",
+		});
+		await session.receive({
+			type: "permission/respond",
+			requestId: "write-approve",
+			sessionId: session.snapshot().sessionId,
+			runId: session.snapshot().runId,
+			permissionId: session.snapshot().permissions[0]!.id,
+			optionId: "accept",
+		});
+		await until(() => session.snapshot().run !== "running");
+		assert.equal(
+			await readFile(join(fixture, "approved.txt"), "utf8"),
+			"Host approved",
+		);
+		await session.connect();
+		await session.receive({
+			type: "prompt/send",
+			requestId: "tool-send",
+			sessionId: session.snapshot().sessionId,
+			text: "tool",
+		});
+		await until(() => session.snapshot().run !== "running");
+		assert.equal(
+			session.snapshot().run,
+			"completed",
+			session.snapshot().error ?? undefined,
+		);
+		assert.equal(session.snapshot().tools.at(-1)?.kind, "list");
+		assert.equal(session.snapshot().tools.at(-1)?.status, "completed");
+		assert.ok(
+			JSON.stringify(session.snapshot().tools.at(-1)?.content).includes(
+				"agent/",
+			),
+		);
 		await session.receive({
 			type: "prompt/send",
 			requestId: "stop-send",

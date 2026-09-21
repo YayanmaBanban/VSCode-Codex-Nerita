@@ -14,12 +14,15 @@ import {
 	Signal,
 	PlugZap,
 	ShelvingUnit,
+	FileText,
+	FolderOpen,
 } from "lucide-react";
 import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { taskActive, type AsyncTask } from "../../../shared/asyncTask";
 import { GuardianReview } from "./GuardianReview";
 import { EditingFiles, ExecuteTool, RawTool } from "./ToolContent";
+import { ReadTool } from "./ReadTool";
 import "../loaders.css";
 import {
 	ImageViewTool,
@@ -101,17 +104,22 @@ export function ToolCard({
 	const { Icon, Body } = guardian
 		? { Icon: ShieldCheck, Body: GuardianReview }
 		: (special ??
-			(tool.kind === "think"
-				? { Icon: Sprout, Body: ThinkTool }
-				: executing
-					? { Icon: Terminal, Body: ExecuteTool }
-					: tool.kind === "edit"
-						? { Icon: FilePenLine, Body: EditingFiles }
-						: (renderers.find(({ titles }) =>
-								titles.includes(
-									tool.title.trim().toLowerCase(),
-								),
-							) ?? { Icon: Wrench, Body: RawTool })));
+			(tool.kind === "read" || tool.kind === "list"
+				? {
+						Icon: tool.kind === "read" ? FileText : FolderOpen,
+						Body: ReadTool,
+					}
+				: tool.kind === "think"
+					? { Icon: Sprout, Body: ThinkTool }
+					: executing
+						? { Icon: Terminal, Body: ExecuteTool }
+						: tool.kind === "edit"
+							? { Icon: FilePenLine, Body: EditingFiles }
+							: (renderers.find(({ titles }) =>
+									titles.includes(
+										tool.title.trim().toLowerCase(),
+									),
+								) ?? { Icon: Wrench, Body: RawTool })));
 	const Heading = Body ? "button" : "div";
 	return (
 		<div
@@ -153,6 +161,11 @@ export function ToolCard({
 					{!executing && active && (
 						<span className="tool-status text-[12px] whitespace-nowrap text-muted">
 							{tool.status === "pending" ? "待機中" : "実行中"}
+						</span>
+					)}
+					{status === "cancelled" && (
+						<span className="tool-status text-[12px] whitespace-nowrap text-muted">
+							停止
 						</span>
 					)}
 					{Body && (

@@ -64,6 +64,14 @@ export class PiSessionController extends PiRun implements BackendSession {
 			return;
 		}
 		if (
+			message.type === "permission/respond" &&
+			message.runId === this.state.runId &&
+			this.state.run === "running" &&
+			this.approvals.respond(message.permissionId, message.optionId)
+		) {
+			return;
+		}
+		if (
 			message.type === "prompt/cancel" &&
 			message.runId === this.state.runId &&
 			this.busy()

@@ -1,4 +1,7 @@
 // 開発元と別のワークスペースとして、同じ作業フォルダーを開発用Hostで開く。
 {
 	"folders": [{ "path": ".." }],
+	"settings": {
+		"nerita.backend": "pi",
+	},
 }

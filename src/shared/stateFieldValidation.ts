@@ -93,9 +93,13 @@ export function validStateField(key: string, value: unknown): boolean {
 						typeof item.kind === "string") &&
 					(item.content === undefined ||
 						Array.isArray(item.content)) &&
-					["pending", "in_progress", "completed", "failed"].includes(
-						String(item.status),
-					) &&
+					[
+						"pending",
+						"in_progress",
+						"completed",
+						"failed",
+						"cancelled",
+					].includes(String(item.status)) &&
 					Array.isArray(item.paths) &&
 					item.paths.every((p: unknown) => typeof p === "string"),
 			);

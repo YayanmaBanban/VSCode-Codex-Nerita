@@ -8,16 +8,19 @@ VS Code のサイドバーから Codex App Server に接続します。テキス
 
 設定で `"nerita.backend": "pi"` を指定し、VS Codeのウィンドウを再読み込みするとPiを使用します。既定値は `codex` です。
 Pi SDK `@earendil-works/pi-coding-agent@0.86.1` を同梱します。SDKの要件はNode.js 22.19以降で、実行にはExtension HostのNode.jsを使います。
+SDKは公開エントリーから読み込みます。ビルド時に `dist/runtime/pi.mjs` を生成し、実行依存・相対参照資産をリンクなしで同梱します。HostはSDK内部のディレクトリ構成に依存しません。
 
 認証はPi側の `~/.pi/agent/auth.json`、providerのAPIキー環境変数、`models.json` を利用します（`PI_CODING_AGENT_DIR` を指定している場合はそのディレクトリ）。Codexの認証は共有しません。
 Pi CLIでログインするか、対応providerのAPIキーをVS Code起動時の環境に設定してください。キーはNeritaの設定に保存しません。
 モデルはPiの設定に従います。明示する場合は `nerita.pi.provider` と `nerita.pi.model` を両方指定し、再接続してください。
 
 現段階はテキスト送信・ストリーミング・Stop・停止後の再送・新規会話に対応します。会話はメモリ内のみで、ウィンドウ再読み込み時に消えます。
-ツールは `read` / `ls` に固定しています。書き込み・shell実行・承認カード・Tool Card・追加指示・履歴・添付・Pi拡張の自動ロードは後続工程です。未対応の操作は送信元へエラーを返します。
+ツールは `read` / `ls` と、毎回の承認が必要な `write` / `edit` / `powershell` に対応します。承認カードに作業フォルダーと入力（変更内容・コマンド）を表示し、「今回のみ許可」「拒否」「ターンを中止」を選べます。拒否はその操作を実行せずモデルへ返し、中止・Stop・切断では承認待ちを解除します。Tool Cardに対象パス・実行中・成功・失敗・停止と結果を表示し、継続会話でも過去の結果を保持します。
+Piの承認は操作ごとの確認です。OSのサンドボックスやワークスペース内だけの書き込み制限はなく、許可した操作はExtension Hostのユーザー権限で動作します。Stopは実行済みの変更を元に戻しません。追加指示・履歴・添付・Pi拡張の自動ロードは後続工程です。未対応の操作は送信元へエラーを返します。
 
 `pnpm compile` 後の `pnpm test:pi:chat` で、配布SDKをリポジトリ外にコピーし、ローカルのOpenAI互換サーバーに対して本文・read・停止・再送を検証できます。外部モデルへの通信・課金は発生しません。
-画面の確認は `pnpm ui-review pi.spec.ts` です。Storyの通信モックによる表示確認と、実SDKの疎通検証は別に実行します。
+`pnpm test:runtime` は梱包処理の依存解決・バージョン分離を検証します。展開したVSIXは `pnpm test:pi:chat <展開先のextensionフォルダー>` で検証できます。`NERITA_TEST_EXTENSION_PATH` に同じフォルダーを指定すると、`pnpm test` も配布物をExtension Hostで検証します。
+画面の確認は `pnpm ui-review pi.spec.ts pi-tools.spec.ts pi-approvals.spec.ts --workers=1` です。Storyの通信モックによる表示確認と、実SDKの疎通検証は別に実行します。
 
 ## インストールと使い方
 
@@ -68,7 +71,7 @@ pnpm package:vsix
 
 Windows の PowerShell で実行ポリシーにより起動できない場合は `pnpm.cmd` を使います。「実行とデバッグ」で `Run Extension` を選択して F5 を押すと、型検査・Lint・Host / Webview のビルド・Codex実行資産の準備後に、同じフォルダーを開いた Extension Development Host が起動します。開いたウィンドウで「Nerita for Codex: チャットを開く」を実行し、「接続する」を押してください。コード変更後はデバッグを再起動すると再ビルドされます。
 
-`pnpm package` は本番バンドル、`pnpm package:vsix` は Windows x64 用 VSIX を生成します。Windows x64 上で作成してください。VSIX は Codex 0.154.0 の Windows x64 実行資産だけを `dist/runtime/node_modules/@openai/` に同梱し、開発ツリーの `node_modules` を必要としません。旧ACPアダプター・SDK・旧Codexは削除済みです。署名・Marketplace 公開は行いません。
+`pnpm package` は本番バンドル、`pnpm package:vsix` は Windows x64 用 VSIX を生成します。Windows x64 上で作成してください。VSIX は Codex 0.154.0 の Windows x64 実行資産を `dist/runtime/node_modules/@openai/` に、Pi SDKとその実行依存を同じ `node_modules` 以下に同梱し、開発ツリーの `node_modules` を必要としません。旧ACPアダプター・SDK・旧Codexは削除済みです。署名・Marketplace 公開は行いません。
 
 `pnpm check-types` は Host / Webview / Story、`pnpm check-types:tests` は Host テスト、`pnpm check-types:tools` は Storybook / Vitest / Playwright 設定を検査します。`pnpm test:codex` は同梱App Serverの初期化を、`pnpm test:codex:chat` は認証済みの実モデルで返信・停止・同じthreadでの続行を確認します。後者はモデル使用量が発生します。
 

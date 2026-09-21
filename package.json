@@ -36,7 +36,7 @@
 					],
 					"default": "codex",
 					"scope": "window",
-					"description": "チャットに使用するエージェント。変更後はウィンドウを再読み込みしてください。Piは読み取り系ツールを使う最小版です。"
+					"description": "チャットに使用するエージェント。変更後はウィンドウを再読み込みしてください。Piの書き込み・PowerShell実行には毎回の承認が必要です。"
 				},
 				"nerita.pi.provider": {
 					"type": "string",
@@ -170,6 +170,7 @@
 		"test:codex": "node tests/codex-app-server-smoke.mjs",
 		"test:codex:chat": "node tests/codex-chat-smoke.mjs",
 		"test:pi:chat": "node tests/pi-chat-smoke.mjs",
+		"test:runtime": "node --test tests/runtime-packaging.test.mjs",
 		"test:codex:features": "node tests/codex-features-smoke.mjs",
 		"test:codex:history": "node tests/codex-history-smoke.mjs",
 		"ui-review:chat": "pnpm ui-review chat",

@@ -30,13 +30,14 @@ export function createBackend(
 			.getConfiguration("nerita")
 			.get<string>("backend", "codex") === "pi"
 	) {
-		return new PiSessionController(async (signal) => {
+		return new PiSessionController(async (signal, authorize) => {
 			const cwd = workspaceDirectory();
 			const config = vscode.workspace.getConfiguration("nerita.pi");
 			const session = await createPiRuntime({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
 				signal,
+				authorize,
 				provider: config.get<string>("provider", ""),
 				model: config.get<string>("model", ""),
 			});

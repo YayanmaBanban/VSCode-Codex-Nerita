@@ -4,7 +4,7 @@ import type { HostMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
 
 /** 未対応機能を持たないPiで、逐次応答・Stop・再送を観察する。 */
-export function createPiBridge(): Bridge {
+export function createPiBridge(showTools = false): Bridge {
 	let state = {
 		...initialState(),
 		connection: "ready" as const,
@@ -54,19 +54,73 @@ export function createPiBridge(): Bridge {
 					});
 					return;
 				}
+				const runId = crypto.randomUUID();
+				const order = Math.max(
+					state.revision,
+					...[...state.messages, ...state.tools].map(
+						(item) => item.order ?? 0,
+					),
+				);
+				const missing = message.text.includes("missing");
+				const file = missing
+					? "missing.txt"
+					: "src/長いディレクトリ名の折り返しを確認するためのフォルダー/README.md";
 				patch({
 					run: "running",
-					runId: crypto.randomUUID(),
+					runId,
+					...(showTools
+						? {
+								tools: [
+									...state.tools,
+									{
+										id: crypto.randomUUID(),
+										runId,
+										order: order + 2,
+										title: "フォルダーを確認: src",
+										kind: "list",
+										status: "completed",
+										paths: ["src"],
+										rawInput: { path: "src", limit: 100 },
+										content: [
+											{
+												type: "content",
+												content: {
+													type: "text",
+													text: "extension/\nshared/\nwebview/",
+												},
+											},
+										],
+									},
+									{
+										id: crypto.randomUUID(),
+										runId,
+										order: order + 3,
+										title: `ファイルを読む: ${file}`,
+										kind: "read",
+										status: "in_progress",
+										paths: [file],
+										rawInput: {
+											path: file,
+											offset: 1,
+											limit: 20,
+										},
+										content: [],
+									},
+								],
+							}
+						: {}),
 					messages: [
 						...state.messages,
 						{
 							id: crypto.randomUUID(),
 							role: "user",
+							order: order + 1,
 							text: message.text,
 						},
 						{
 							id: crypto.randomUUID(),
 							role: "assistant",
+							order: order + 4,
 							text: "",
 							streaming: true,
 						},
@@ -85,6 +139,32 @@ export function createPiBridge(): Bridge {
 					const done = length >= text.length;
 					patch({
 						run: done ? "completed" : "running",
+						...(showTools && done
+							? {
+									tools: state.tools.map((tool) =>
+										tool.runId === runId &&
+										tool.status === "in_progress"
+											? {
+													...tool,
+													status: missing
+														? "failed"
+														: "completed",
+													content: [
+														{
+															type: "content",
+															content: {
+																type: "text",
+																text: missing
+																	? "ENOENT: ファイルが見つかりません: missing.txt"
+																	: "# Piツール表示\n本文の表示を確認しました。\n<script>これはファイルの内容です</script>",
+															},
+														},
+													],
+												}
+											: tool,
+									),
+								}
+							: {}),
 						messages: state.messages.map((item, index) =>
 							index === state.messages.length - 1
 								? {
@@ -103,6 +183,12 @@ export function createPiBridge(): Bridge {
 				clearInterval(timer);
 				patch({
 					run: "cancelled",
+					tools: state.tools.map((tool) =>
+						tool.runId === state.runId &&
+						tool.status === "in_progress"
+							? { ...tool, status: "cancelled" }
+							: tool,
+					),
 					messages: state.messages.map((item) => ({
 						...item,
 						streaming: false,
@@ -115,6 +201,7 @@ export function createPiBridge(): Bridge {
 					run: "idle",
 					runId: null,
 					messages: [],
+					tools: [],
 				});
 			}
 		},

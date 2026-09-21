@@ -10,7 +10,7 @@ import {
 } from "../src/extension/webview/sidebarLocation";
 
 suite("Nerita for Codex Extension", () => {
-	test("同梱Pi SDKで本文を受信し、Extension Hostから停止する", async () => {
+	test("同梱Pi SDKで本文・ツール結果を受信し、Extension Hostから停止する", async () => {
 		const extension = vscode.extensions.getExtension(
 			"nerita-local.nerita-codex",
 		);
@@ -106,13 +106,11 @@ suite("Nerita for Codex Extension", () => {
 			extension.extensionUri,
 			"dist/runtime",
 		);
-		assert.deepEqual(await readdir(runtime.fsPath), ["node_modules"]);
-		await access(
-			vscode.Uri.joinPath(
-				runtime,
-				"node_modules/@earendil-works/pi-coding-agent/dist/bundle/index.js",
-			).fsPath,
-		);
+		assert.deepEqual((await readdir(runtime.fsPath)).sort(), [
+			"node_modules",
+			"pi.mjs",
+		]);
+		await access(vscode.Uri.joinPath(runtime, "pi.mjs").fsPath);
 		await access(
 			vscode.Uri.joinPath(
 				runtime,
