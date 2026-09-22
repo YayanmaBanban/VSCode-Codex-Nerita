@@ -94,6 +94,7 @@ describe("Pi quota", () => {
 				canRetainForModel: () => keep,
 			} as unknown as PiQuotaService;
 			h.runtime.account = {
+				refreshCatalog: () => Promise.resolve(),
 				snapshot: () => ({
 					connection: "ready",
 					configOptions: [

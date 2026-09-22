@@ -11,21 +11,36 @@ import { initialState, type ChatState } from "../../shared/chatState";
 import type { UiMessage } from "../../shared/messages";
 import { ComposerSettings } from "../../webview/chat/composer/ComposerSettings";
 import "../../webview/chat/chat.css";
+import { piLiveCatalog } from "../../../tests/fixtures/piLiveCatalog";
 
 /** 認証やネットワークを使用せず、SDKのモデル切替・clampだけを模す。 */
-function createAccount() {
+function createAccount(hidden: boolean) {
 	const models = [
 		{
 			provider: "openai-codex",
 			id: "max-model",
 			name: "Codex Max Model",
 			api: "openai-codex-responses",
-			levels: ["low", "high", "max"],
+			levels: ["off", "minimal", "low", "high", "max"],
 		},
 		{
 			provider: "openai-codex",
 			id: "small",
 			name: "Codex Small",
+			api: "openai-codex-responses",
+			levels: ["off", "minimal", "low", "high"],
+		},
+		{
+			provider: "openai-codex",
+			id: "spark",
+			name: "Spark",
+			api: "openai-codex-responses",
+			levels: ["low", "high"],
+		},
+		{
+			provider: "openai-codex",
+			id: "hidden",
+			name: "Static hidden",
 			api: "openai-codex-responses",
 			levels: ["low", "high"],
 		},
@@ -52,7 +67,9 @@ function createAccount() {
 		},
 	];
 	const session = {
-		model: models[0]!,
+		model: hidden
+			? models.find((model) => model.id === "hidden")!
+			: models[0]!,
 		thinkingLevel: "high",
 		getAvailableThinkingLevels: () => session.model.levels,
 		setThinkingLevel: (value: string) => {
@@ -66,7 +83,7 @@ function createAccount() {
 			return Promise.resolve();
 		},
 	};
-	return new PiAccount(
+	const account = new PiAccount(
 		{
 			getAvailable: () => Promise.resolve(models),
 			getAvailableSnapshot: () => models,
@@ -75,11 +92,16 @@ function createAccount() {
 		} as unknown as ModelRuntime,
 		session as unknown as AgentSession,
 	);
+	// metadataだけを固定し、候補のintersection・設定操作は本物のHostへ委譲する。
+	account.catalog.snapshot = (provider) =>
+		provider === "openai-codex" ? piLiveCatalog : undefined;
+	account.catalog.refresh = () => Promise.resolve();
+	return account;
 }
 
 /** provider判定はStoryのHost役だけが行い、本体Rendererは宣言を描画する。 */
-function ProviderControlsStory() {
-	const [account] = useState(createAccount);
+function ProviderControlsStory({ hidden = false }: { hidden?: boolean }) {
+	const [account] = useState(() => createAccount(hidden));
 	const [registry] = useState(createBuiltinUiRegistry);
 	const [state, setState] = useState<ChatState>(() => ({
 		...initialState(),
@@ -186,3 +208,4 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Connected: Story = {};
+export const HiddenHistory: Story = { args: { hidden: true } };

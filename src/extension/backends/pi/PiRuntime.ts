@@ -11,6 +11,7 @@ import { PiAccount, type PiAuthService } from "./PiAccount";
 import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
 import { PiQuotaService } from "./PiQuotaService";
+import { PiModelCatalogService } from "./PiModelCatalogService";
 import type { SkillSummary } from "../../../shared/skills";
 import {
 	openPiSessionStore,
@@ -61,6 +62,8 @@ export type PiRuntimeOptions = {
 	getStorage?: () => PiSessionStorage;
 	resume?: PiResumeTarget;
 	authService?: PiAuthService;
+	/** 固定endpointへのHost通信だけを疎通テストで差し替える。 */
+	request?: typeof fetch;
 };
 
 /** Pi標準形式で履歴を保存し、副作用ツールには必ずHostの承認を挟む。 */
@@ -184,8 +187,9 @@ export async function createPiRuntime(
 			session,
 			options.authService,
 			controls,
+			new PiModelCatalogService(modelRuntime, session, options.request),
 		),
-		quota: new PiQuotaService(modelRuntime, session),
+		quota: new PiQuotaService(modelRuntime, session, options.request),
 		skills: resourceLoader.getSkills().skills.map((skill) => ({
 			name: skill.name,
 			description: skill.description,

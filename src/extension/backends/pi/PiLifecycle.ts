@@ -157,6 +157,14 @@ export abstract class PiLifecycle extends SessionState {
 			if (previous) {
 				this.track(previous.abort().finally(() => previous.dispose()));
 			}
+			if (session.account) {
+				const refresh = session.account.refreshCatalog(opening.signal);
+				this.track(refresh);
+				await refresh;
+				if (epoch !== this.epoch) {
+					return;
+				}
+			}
 			this.resetRun();
 			const { revision: _revision, ...empty } = initialState();
 			this.patch({

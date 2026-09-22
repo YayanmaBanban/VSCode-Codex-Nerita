@@ -1,0 +1,93 @@
+// 固定HTTPS宛先からOAuthモデル一覧を取得し、同一accountの成功結果だけ再利用する。
+import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
+import type { PiCatalogModel, PiModelCatalogReader } from "../PiModelCatalog";
+import { codexOAuth } from "./CodexOAuth";
+import { normalizeCodexModels } from "./CodexModelCatalog";
+import codexVersion from "../../../../codex-app-server/version.json";
+
+/** 生HTTP本文・token・account IDを返却値や例外へ含めない。 */
+export class CodexModelCatalogService implements PiModelCatalogReader {
+	private account: string | undefined;
+	private cached: readonly PiCatalogModel[] | null = null;
+	constructor(
+		private models: ModelRuntime,
+		private request: typeof fetch = fetch,
+	) {}
+
+	/** 認証更新を含め5秒で打ち切り、別accountのcacheは必ず破棄する。 */
+	async read(caller: AbortSignal): Promise<readonly PiCatalogModel[] | null> {
+		const signal = AbortSignal.any([caller, AbortSignal.timeout(5_000)]);
+		let verified = false;
+		try {
+			const auth = await codexOAuth(this.models, signal);
+			signal.throwIfAborted();
+			if (this.account !== auth?.account) {
+				this.account = auth?.account;
+				this.cached = null;
+			}
+			if (!auth) {
+				return null;
+			}
+			verified = true;
+			const response = await this.request(
+				`https://chatgpt.com/backend-api/codex/models?client_version=${encodeURIComponent(codexVersion.version)}`,
+				{
+					signal,
+					redirect: "error",
+					headers: auth.headers,
+				},
+			);
+			if (!response.ok) {
+				await response.body?.cancel();
+				return this.cached;
+			}
+			const payload = await readCatalogBody(response, signal);
+			signal.throwIfAborted();
+			const catalog = normalizeCodexModels(payload);
+			if (catalog) {
+				this.cached = catalog;
+			}
+			return this.cached;
+		} catch {
+			return !verified || caller.aborted ? null : this.cached;
+		}
+	}
+}
+
+/** Content-Lengthに依存せず、展開後の受信本文も上限内で読み取る。 */
+async function readCatalogBody(
+	response: Response,
+	signal: AbortSignal,
+): Promise<unknown> {
+	const limit = 2 * 1024 * 1024;
+	const reader = response.body?.getReader();
+	if (!reader) {
+		return null;
+	}
+	const chunks: Uint8Array[] = [];
+	let size = 0;
+	try {
+		while (true) {
+			signal.throwIfAborted();
+			const { done, value } = (await reader.read()) as {
+				done: boolean;
+				value?: Uint8Array;
+			};
+			if (done) {
+				break;
+			}
+			if (!value) {
+				return null;
+			}
+			size += value.byteLength;
+			if (size > limit) {
+				return null;
+			}
+			chunks.push(value);
+		}
+		return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+	} finally {
+		await reader.cancel();
+		reader.releaseLock();
+	}
+}

@@ -9,10 +9,12 @@ import type {
 	QuotaWindow,
 } from "../../../shared/composer";
 import type { PiProviderControls } from "../../../shared/piProviderControls";
+import type { PiCatalogSnapshot, PiModelCatalogReader } from "./PiModelCatalog";
 
 /** Provider固有の設定・候補・要求変換をひとまとまりで扱う。 */
 export type PiModelControls = {
 	bind: (session: AgentSession) => void;
+	setCatalog?: (catalog: PiCatalogSnapshot) => void;
 	reset: () => void;
 	snapshot: () => PiProviderControls;
 	readonly reasoningOptions: ConfigChoice[];
@@ -29,6 +31,11 @@ export type PiQuotaReader = {
 
 /** Sessionごとに設定を生成し、利用枠サービスは必要なproviderだけ登録する。 */
 export type PiProvider = {
+	usesCatalog?: (models: ModelRuntime) => boolean;
+	createCatalog?: (
+		models: ModelRuntime,
+		request: typeof fetch,
+	) => PiModelCatalogReader;
 	/** 同じ文字列を返すモデル間では利用枠表示を維持する。未定義はモデル単位。 */
 	quotaGroup?: (modelId: string) => string;
 	createControls?: () => PiModelControls;

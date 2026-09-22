@@ -14,6 +14,8 @@ export type ConfigOption = {
 	name: string;
 	description?: string;
 	currentValue: string;
+	/** 候補から隠された現在値も、選択肢へ戻さず名前を表示する。 */
+	currentLabel?: string;
 	options: ConfigChoice[];
 };
 

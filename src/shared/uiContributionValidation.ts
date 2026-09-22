@@ -33,6 +33,7 @@ function control(value: unknown): boolean {
 			isId(option.id) &&
 			typeof option.name === "string" &&
 			typeof option.currentValue === "string" &&
+			description(option.currentLabel) &&
 			description(option.description) &&
 			Array.isArray(option.options) &&
 			option.options.every(

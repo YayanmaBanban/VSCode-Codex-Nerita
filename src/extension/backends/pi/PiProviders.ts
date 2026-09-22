@@ -3,9 +3,13 @@ import type { PiProviders } from "./PiProvider";
 import { CodexProviderControls } from "./codex/CodexProviderControls";
 import { CodexQuotaService } from "./codex/CodexQuotaService";
 import { codexQuotaGroup } from "./codex/CodexQuotaGroup";
+import { CodexModelCatalogService } from "./codex/CodexModelCatalogService";
 
 export const piProviders: PiProviders = {
 	"openai-codex": {
+		usesCatalog: (models) => models.isUsingOAuth("openai-codex"),
+		createCatalog: (models, request) =>
+			new CodexModelCatalogService(models, request),
 		quotaGroup: codexQuotaGroup,
 		createControls: () => new CodexProviderControls(),
 		createQuota: (models, session, request) =>

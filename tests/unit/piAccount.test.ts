@@ -14,6 +14,7 @@ describe("Piの認証・モデル", () => {
 			const h = piHarness();
 			let signal: AbortSignal | undefined;
 			h.runtime.account = {
+				refreshCatalog: () => Promise.resolve(),
 				snapshot: () => ({ connection: "ready", piAccount: "test" }),
 				authenticate: (_logout: boolean, incoming: AbortSignal) => {
 					signal = incoming;
@@ -150,6 +151,7 @@ describe("Piの認証・モデル", () => {
 		const wait = pending<void>();
 		const authenticate = vi.fn(() => wait.promise);
 		h.runtime.account = {
+			refreshCatalog: () => Promise.resolve(),
 			snapshot: () => ({
 				connection: "ready",
 				piAccount: "local: 設定済み",
@@ -186,6 +188,7 @@ describe("Piの認証・モデル", () => {
 		const selectModel = vi.fn();
 		const authenticate = vi.fn();
 		h.runtime.account = {
+			refreshCatalog: () => Promise.resolve(),
 			snapshot: () => ({}),
 			selectModel,
 			authenticate,
