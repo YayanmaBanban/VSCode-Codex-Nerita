@@ -75,6 +75,11 @@ describe("Piの認証・モデル", () => {
 					currentValue: "off",
 					options: [{ value: "off" }],
 				},
+				{
+					id: "provider",
+					currentValue: "local",
+					options: [{ value: "local" }],
+				},
 			],
 		});
 		await expect(

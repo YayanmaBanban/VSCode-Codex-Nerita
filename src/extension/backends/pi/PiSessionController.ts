@@ -158,7 +158,9 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (
 			message.type === "config/set" &&
 			(message.sessionId !== this.state.sessionId ||
-				!["model", "reasoning_effort"].includes(message.configId))
+				!this.state.configOptions.some(
+					(option) => option.id === message.configId,
+				))
 		) {
 			throw new Error("現在のPiモデル・推論レベル設定ではありません。");
 		}
@@ -179,17 +181,11 @@ export class PiSessionController extends PiHistory implements BackendSession {
 				? { connection: "authenticating" as const }
 				: {}),
 		});
+		this.cancelQuota();
 		try {
 			const operation =
 				message.type === "config/set"
-					? message.configId === "model"
-						? account.selectModel(message.value, signal)
-						: Promise.resolve(
-								account.selectThinkingLevel(
-									message.value,
-									signal,
-								),
-							)
+					? account.configure(message.configId, message.value, signal)
 					: account.authenticate(
 							message.type === "auth/logout",
 							signal,
@@ -211,6 +207,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 					configPending: false,
 					sessionPending: false,
 				});
+				this.refreshQuota();
 			}
 		}
 	}

@@ -2,6 +2,7 @@
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
 import { neritaExtensionFactories } from "./PiBuiltinExtensions";
+import type { PiProviderControls } from "./PiProviderControls";
 
 /** CLIで導入したリソースを新規会話・再接続時に読み込む。 */
 export async function loadPiResources(
@@ -11,12 +12,13 @@ export async function loadPiResources(
 	settingsManager: PiSdk.SettingsManager,
 	authorize: PiAuthorize,
 	signal: AbortSignal,
+	controls?: PiProviderControls,
 ): Promise<PiSdk.DefaultResourceLoader> {
 	const loader = new sdk.DefaultResourceLoader({
 		cwd,
 		agentDir,
 		settingsManager,
-		extensionFactories: neritaExtensionFactories(),
+		extensionFactories: neritaExtensionFactories(controls),
 		// ターミナル用のテーマはVS Code Webviewには適用しない。
 		noThemes: true,
 		extensionsOverride(result) {

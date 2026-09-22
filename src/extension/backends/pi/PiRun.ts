@@ -245,6 +245,8 @@ export abstract class PiRun extends PiLifecycle {
 		this.submission = undefined;
 		this.runtime?.clearQueue();
 		submission.abort.abort();
+		// SDK内部でモデルが変わっていても、旧providerの利用枠を再公開しない。
+		this.cancelQuota();
 		this.patch({
 			run: cancelled ? "cancelled" : error ? "failed" : "completed",
 			error: cancelled ? null : (error ?? null),
@@ -253,7 +255,9 @@ export abstract class PiRun extends PiLifecycle {
 				...message,
 				streaming: false,
 			})),
+			...this.runtime?.account?.snapshot(),
 		});
+		this.refreshQuota();
 	}
 
 	/** 実行前ならpreflightで遮断し、実行中ならSDKのabortへ渡す。 */

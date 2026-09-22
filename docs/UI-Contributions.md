@@ -20,7 +20,7 @@ this.uiRegistry.registerUiContribution("nerita.example", (state) => [
 
 `when` はbackend・provider・capabilityのAND条件。未指定は制限なし、未知のprovider・capabilityは不一致。条件はHostで解決して除去し、Webviewへは `ChatState.uiContributions` のsurfaceとitemsのみを渡す。順序はorder、同値ならID順。重複登録名・重複表示ID・不正な宣言は拒否する。
 
-Codexの文脈はbackend=`codex`、provider=`openai-codex`。Piはbackend=`pi`、providerは実SDKの現在の `session.model.provider`。初期capabilityはHostが公開している設定ID。Phase 8のquota等の能力は、その実装と一緒に文脈へ追加する。
+Codexの文脈はbackend=`codex`、provider=`openai-codex`。Piはbackend=`pi`、providerは実SDKの現在の `session.model.provider`。capabilityはHostが公開している設定ID。利用枠は対応providerの取得結果がある場合にだけHostで登録する。
 
 ## controlとslot
 
@@ -28,13 +28,13 @@ Codexの文脈はbackend=`codex`、provider=`openai-codex`。Piはbackend=`pi`�
 
 `model.header` はモデル設定の上、`composer.toolbar` は添付・使用量の後、`settings.main` / `settings.advanced` はbackend別Surface内、`status` は設定の後に配置する。各slotは汎用Rendererだけを使い、provider名で分岐しない。認証は既存Headerで扱う。
 
-`builtinContributions.ts` がConfigOptionを宣言へ変換する。CodexのFast modeとservice tierの別名はHostで一つのtoggleにまとめる。Piは公開済みの設定だけを表示する。Codexの既存QuotaBarはCodex Surfaceで維持し、QuotaのContribution化はPhase 8で扱う。`uiContributions: null` のBridgeは `LegacyConfigControls` による既存表示を利用できる。実Hostは初回snapshot・差分・リセット後も解決済み定義を公開する。
+`builtinContributions.ts` がConfigOptionを宣言へ変換する。CodexのFast modeとservice tierの別名はHostで一つのtoggleにまとめる。Piは公開済みの設定だけを表示する。Phase 8で両backendのQuotaをquota controlとしてstatusへ統合し、既存のQuotaBarで描画する。バーは最小残率、ツールチップは全時間枠の詳細を表示する。`uiContributions: null` のBridgeは `LegacyConfigControls` とQuotaBarによる既存表示を利用できる。実Hostは初回snapshot・差分・リセット後も解決済み定義を公開する。
 
 ## Pi組み込みExtension
 
 `PiBuiltinExtensions.ts` の `neritaExtensionFactories()` を `DefaultResourceLoader.extensionFactories` に渡す。名前は `nerita-provider-controls`。ユーザーの `.pi/extensions` やパッケージ探索、登録ツールの承認処理は維持する。workspaceへ組み込みExtensionのファイルを生成しない。
 
-`before_provider_request` はPhase 8用の入口だけを登録し、現在は `undefined` を返して要求を変更しない。Ultra・Fast Modeの書換え、PiのQuota取得、外部拡張向け公開API、button/badge/text、任意React injectionは今回追加しない。
+Phase 8ではセッションごとの `PiProviderControls` を注入し、`before_provider_request` でUltra・Fast Modeを適用する。詳細と検証範囲は [Pi Provider Controls](Pi-Provider-Controls.md) を参照。外部拡張向け公開API、button/badge/text、任意React injectionは未対応。
 
 ## 確認
 
