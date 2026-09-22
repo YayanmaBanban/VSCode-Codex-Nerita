@@ -1,29 +1,23 @@
 // 入力欄で使う設定・使用量・添付の通信型を実行環境から独立させる。
+import type { z } from "zod";
+import type {
+	ConfigChoiceSchema,
+	ConfigOptionSchema,
+	QuotaWindowSchema,
+} from "./composerSchemas";
 import type { DroppedAttachment } from "./attachmentDrop";
 
 /** サーバーが提供する選択肢の表示名と送信値。 */
-export type ConfigChoice = {
-	value: string;
-	name: string;
-	description?: string;
-};
+export type ConfigChoice = z.infer<typeof ConfigChoiceSchema>;
 
 /** サーバーが提供する選択設定を UI 用に正規化した情報。 */
-export type ConfigOption = {
-	id: string;
-	name: string;
-	description?: string;
-	currentValue: string;
-	/** 候補から隠された現在値も、選択肢へ戻さず名前を表示する。 */
-	currentLabel?: string;
-	options: ConfigChoice[];
-};
+export type ConfigOption = z.infer<typeof ConfigOptionSchema>;
 
 /** セッション全体のコンテキスト使用量。 */
 export type ContextUsage = { used: number; size: number };
 
 /** /status が返す利用枠の残率と表示用のリセット情報。 */
-export type QuotaWindow = { label: string; remaining: number; detail: string };
+export type QuotaWindow = z.infer<typeof QuotaWindowSchema>;
 
 /** Hostで選択またはドロップから取得した添付参照。 */
 export type Attachment = { id: string; name: string; uri: string };
