@@ -58,12 +58,24 @@ describe("Piの認証・モデル", () => {
 			isUsingOAuth: () => true,
 		} as unknown as ModelRuntime;
 		const setModel = vi.fn();
-		const session = { model, setModel } as unknown as AgentSession;
+		const session = {
+			model,
+			setModel,
+			thinkingLevel: "off",
+			getAvailableThinkingLevels: () => ["off"],
+		} as unknown as AgentSession;
 		const account = new PiAccount(models, session);
 		expect(account.snapshot()).toMatchObject({
 			connection: "ready",
 			piAccount: "local: OAuth設定済み",
-			configOptions: [{ options: [{ value: "local/test" }] }],
+			configOptions: [
+				{ options: [{ value: "local/test" }] },
+				{
+					id: "reasoning_effort",
+					currentValue: "off",
+					options: [{ value: "off" }],
+				},
+			],
 		});
 		await expect(
 			account.selectModel("unknown/model", new AbortController().signal),
@@ -71,6 +83,62 @@ describe("Piの認証・モデル", () => {
 		expect(setModel).not.toHaveBeenCalled();
 		await account.selectModel("local/test", new AbortController().signal);
 		expect(setModel).toHaveBeenCalledWith(model);
+	});
+	it("推論レベルを会話へ反映し、未対応値・旧会話・取消を拒否する", async () => {
+		const h = piHarness();
+		const session = {
+			thinkingLevel: "low",
+			getAvailableThinkingLevels: () => ["off", "low", "high"] as const,
+			setThinkingLevel: vi.fn((level: string) => {
+				session.thinkingLevel = level;
+			}),
+		};
+		const account = new PiAccount(
+			{ getAvailableSnapshot: () => [] } as unknown as ModelRuntime,
+			session as unknown as AgentSession,
+		);
+		h.runtime.account = account;
+		await h.controller.connect();
+		await h.controller.receive({
+			type: "config/set",
+			requestId: "effort",
+			sessionId: "pi-1",
+			configId: "reasoning_effort",
+			value: "high",
+		});
+		expect(session.setThinkingLevel).toHaveBeenCalledExactlyOnceWith(
+			"high",
+		);
+		expect(h.controller.snapshot().configOptions[1]).toMatchObject({
+			currentValue: "high",
+			options: [{ value: "off" }, { value: "low" }, { value: "high" }],
+		});
+		await h.controller.receive({
+			type: "config/set",
+			requestId: "old-effort",
+			sessionId: "old",
+			configId: "reasoning_effort",
+			value: "low",
+		});
+		await h.controller.receive({
+			type: "config/set",
+			requestId: "invalid-effort",
+			sessionId: "pi-1",
+			configId: "reasoning_effort",
+			value: "xhigh",
+		});
+		expect(() =>
+			account.selectThinkingLevel("low", AbortSignal.abort()),
+		).toThrow();
+		expect(session.setThinkingLevel).toHaveBeenCalledTimes(1);
+		expect(h.controller.snapshot()).toMatchObject({
+			configPending: false,
+			sessionPending: false,
+		});
+		expect(
+			h.events.filter((event) => event.type === "request/failed"),
+		).toHaveLength(2);
+		await h.controller.dispose();
 	});
 	it("認証中の再接続・送信を拒否し、取消後も会話を維持する", async () => {
 		const h = piHarness();
