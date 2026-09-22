@@ -1,5 +1,6 @@
 // Hostが保持しWebviewへ同期する会話状態と、両側で使う初期値を定義する。
 import type { McpMessageContent } from "./mcp";
+import type { UiContributions } from "./uiContributions";
 import type { SkillSummary } from "./skills";
 import type { PersonalitySettings } from "./personality";
 import type {
@@ -69,6 +70,8 @@ export type Permission = {
 
 /** Host が保持する現在の会話の正本。 */
 export type ChatState = {
+	/** nullは旧ConfigOption表示との互換用。実Hostは必ず解決済み定義を公開する。 */
+	uiContributions: UiContributions | null;
 	skills: SkillSummary[];
 	personality: PersonalitySettings | null;
 	revision: number;
@@ -105,6 +108,7 @@ export type ChatState = {
 /** 新しい Host と代替 Bridge に共通の初期状態を作る。 */
 export function initialState(): ChatState {
 	return {
+		uiContributions: null,
 		skills: [],
 		personality: null,
 		revision: 0,

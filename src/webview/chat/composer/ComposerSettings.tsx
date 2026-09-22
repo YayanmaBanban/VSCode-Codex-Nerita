@@ -2,28 +2,13 @@
 import { Plus } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
-import type { ConfigOption } from "../../../shared/composer";
 import { ContextUsage } from "./ContextUsage";
-import { QuotaBar } from "./QuotaBar";
-import { ConfigControl, FastModeSwitch } from "./ConfigControl";
+import { LegacyConfigControls } from "./LegacyConfigControls";
 import { Attachments } from "./Attachments";
+import { ContributionSlot } from "../../contributions/ContributionSlot";
+import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurface";
 
-const order = [
-	"mode",
-	"collaboration_mode",
-	"model",
-	"reasoning_effort",
-	"fast-mode",
-];
-const names = [
-	"Mode",
-	"Collaboration mode",
-	"Model",
-	"Reasoning effort",
-	"Fast mode",
-];
-
-/** 未取得時も枠を残すが、候補と選択値は接続時の応答だけから構成する。 */
+/** 接続中の設定はHostの宣言で描画し、操作は既存の検証済み通信へ戻す。 */
 export function ComposerSettings({
 	state,
 	send,
@@ -42,31 +27,9 @@ export function ComposerSettings({
 		state.configPending ||
 		state.run === "running" ||
 		state.run === "cancelling";
-	const options = order.map(
-		(id, index) =>
-			state.configOptions.find((option) => option.id === id) ??
-			(id === "fast-mode"
-				? state.configOptions.find((option) =>
-						["service_tier", "server_tier"].includes(option.id),
-					)
-				: undefined) ??
-			({
-				id,
-				name: names[index]!,
-				currentValue: "",
-				options: [],
-			} satisfies ConfigOption),
-	);
-	options.push(
-		...state.configOptions.filter(
-			(option) =>
-				!order.includes(option.id) &&
-				!["service_tier", "server_tier"].includes(option.id),
-		),
-	);
 	/** 操作は現在の会話 ID と一意な要求 ID を添えて送る。 */
 	const change = (configId: string, value: string) => {
-		if (state.sessionId && connected) {
+		if (state.sessionId && !disabled) {
 			send({
 				type: "config/set",
 				requestId: crypto.randomUUID(),
@@ -78,6 +41,16 @@ export function ComposerSettings({
 	};
 	return (
 		<div className="composer-settings mt-[10px] border-0 border-t border-solid border-panel-border pt-[8px]">
+			{state.uiContributions && (
+				<div className="flex flex-wrap items-center gap-[6px]">
+					<ContributionSlot
+						name="model.header"
+						contributions={state.uiContributions}
+						disabled={disabled}
+						onChange={change}
+					/>
+				</div>
+			)}
 			<Attachments
 				files={state.attachments}
 				disabled={disabled}
@@ -126,31 +99,34 @@ export function ComposerSettings({
 					key={state.sessionId ?? "disconnected"}
 					usage={state.usage}
 				/>
-				{options.map((option) =>
-					["fast-mode", "service_tier", "server_tier"].includes(
-						option.id,
-					) ? (
-						<span
-							className="fast-mode-quota inline-flex items-center gap-[8px]"
-							key={option.id}
-						>
-							<FastModeSwitch
-								option={option}
-								disabled={disabled}
-								onChange={(value) => change(option.id, value)}
-							/>
-							<QuotaBar
-								windows={connected ? state.quota : null}
-							/>
-						</span>
-					) : (
-						<ConfigControl
-							key={option.id}
-							option={option}
+				{state.uiContributions ? (
+					<>
+						<ContributionSlot
+							name="composer.toolbar"
+							contributions={state.uiContributions}
 							disabled={disabled}
-							onChange={(value) => change(option.id, value)}
+							onChange={change}
 						/>
-					),
+						<BackendSettingsSurface
+							quota={connected ? state.quota : null}
+							contributions={state.uiContributions}
+							disabled={disabled}
+							onChange={change}
+						/>
+						<ContributionSlot
+							name="status"
+							contributions={state.uiContributions}
+							disabled={disabled}
+							onChange={change}
+						/>
+					</>
+				) : (
+					<LegacyConfigControls
+						state={state}
+						connected={connected}
+						disabled={disabled}
+						onChange={change}
+					/>
 				)}
 			</div>
 		</div>

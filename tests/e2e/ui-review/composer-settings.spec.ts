@@ -33,11 +33,7 @@ for (const theme of ["dark", "light"] as const) {
 		).toEqual([
 			"attach-button",
 			"context-usage",
-			"config-control",
-			"config-control",
-			"config-control",
-			"config-control",
-			"fast-mode-quota",
+			"contents",
 		]);
 		await expect(
 			page.locator(".config-control .lucide-chevron-down"),
