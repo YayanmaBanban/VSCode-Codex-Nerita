@@ -25,18 +25,18 @@ export abstract class PiLifecycle extends SessionState {
 	private closing = new Set<Promise<unknown>>();
 	private quotaAbort: AbortController | undefined;
 
-	/** 設定切替中の旧アカウントの取得結果を破棄する。 */
-	protected cancelQuota(): void {
+	/** 旧要求を取り消し、取得元が変わる場合だけ表示値も破棄する。 */
+	protected cancelQuota(clear = true): void {
 		this.quotaAbort?.abort();
 		this.quotaAbort = undefined;
-		if (this.state.quota !== null) {
+		if (clear && this.state.quota !== null) {
 			this.patch({ quota: null });
 		}
 	}
 
 	/** 利用枠の取得は送信・設定の受付を待たせない。 */
 	protected refreshQuota(): void {
-		this.cancelQuota();
+		this.cancelQuota(false);
 		const runtime = this.runtime;
 		if (
 			!runtime?.quota ||

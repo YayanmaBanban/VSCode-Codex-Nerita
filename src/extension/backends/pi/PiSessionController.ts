@@ -181,7 +181,12 @@ export class PiSessionController extends PiHistory implements BackendSession {
 				? { connection: "authenticating" as const }
 				: {}),
 		});
-		this.cancelQuota();
+		this.cancelQuota(
+			message.type !== "config/set" ||
+				message.configId === "provider" ||
+				(message.configId === "model" &&
+					!this.runtime?.quota?.canRetainForModel?.(message.value)),
+		);
 		try {
 			const operation =
 				message.type === "config/set"

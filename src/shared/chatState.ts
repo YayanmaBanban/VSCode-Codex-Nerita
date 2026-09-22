@@ -71,7 +71,7 @@ export type Permission = {
 
 /** Host が保持する現在の会話の正本。 */
 export type ChatState = {
-	/** nullは旧ConfigOption表示との互換用。実Hostは必ず解決済み定義を公開する。 */
+	/** nullはHostから定義を受信する前。両backendとも解決済み定義を公開する。 */
 	uiContributions: UiContributions | null;
 	skills: SkillSummary[];
 	personality: PersonalitySettings | null;

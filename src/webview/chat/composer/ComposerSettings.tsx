@@ -3,7 +3,6 @@ import { Plus } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import { ContextUsage } from "./ContextUsage";
-import { LegacyConfigControls } from "./LegacyConfigControls";
 import { Attachments } from "./Attachments";
 import { ContributionSlot } from "../../contributions/ContributionSlot";
 import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurface";
@@ -99,7 +98,7 @@ export function ComposerSettings({
 					key={state.sessionId ?? "disconnected"}
 					usage={state.usage}
 				/>
-				{state.uiContributions ? (
+				{state.uiContributions && (
 					<>
 						<ContributionSlot
 							name="composer.toolbar"
@@ -119,13 +118,6 @@ export function ComposerSettings({
 							onChange={change}
 						/>
 					</>
-				) : (
-					<LegacyConfigControls
-						state={state}
-						connected={connected}
-						disabled={disabled}
-						onChange={change}
-					/>
 				)}
 			</div>
 		</div>

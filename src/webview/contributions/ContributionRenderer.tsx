@@ -1,4 +1,5 @@
 // providerを判定せず、検証済みcontrolの種別だけで描画する。
+import { ToggleSwitch } from "./ToggleSwitch";
 import type { NeritaUiControl } from "../../shared/uiContributions";
 import { ConfigControl } from "../chat/composer/ConfigControl";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
@@ -28,29 +29,11 @@ export function ContributionRenderer({
 	}
 	if (control.type === "toggle") {
 		return (
-			<SettingsTooltip content={control.description}>
-				<label className="inline-flex items-center gap-[5px] px-[5px] text-[12px] text-muted">
-					<span>{control.label}</span>
-					<button
-						type="button"
-						role="switch"
-						aria-label={control.label}
-						aria-checked={control.checked}
-						className="group h-[15px] w-[26px] shrink-0 rounded-[12px] border-0 bg-switch-off p-[2px] aria-checked:bg-switch-on"
-						disabled={disabled || !!control.disabled}
-						onClick={() =>
-							onChange(
-								control.configId,
-								control.checked
-									? control.offValue
-									: control.onValue,
-							)
-						}
-					>
-						<span className="block size-[11px] rounded-full bg-foreground group-aria-checked:translate-x-[11px]" />
-					</button>
-				</label>
-			</SettingsTooltip>
+			<ToggleSwitch
+				control={control}
+				disabled={disabled}
+				onChange={(value) => onChange(control.configId, value)}
+			/>
 		);
 	}
 	return (

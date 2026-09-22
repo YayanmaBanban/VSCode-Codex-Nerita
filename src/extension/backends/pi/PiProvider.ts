@@ -29,6 +29,8 @@ export type PiQuotaReader = {
 
 /** Sessionごとに設定を生成し、利用枠サービスは必要なproviderだけ登録する。 */
 export type PiProvider = {
+	/** 同じ文字列を返すモデル間では利用枠表示を維持する。未定義はモデル単位。 */
+	quotaGroup?: (modelId: string) => string;
 	createControls?: () => PiModelControls;
 	createQuota?: (
 		models: ModelRuntime,

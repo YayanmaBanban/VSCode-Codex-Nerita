@@ -16,6 +16,22 @@ export class PiQuotaService implements PiQuotaReader {
 		private providers: PiProviders = piProviders,
 	) {}
 
+	/** providerをまたぐ保持は禁止し、モデル間の共有関係だけ登録先に委譲する。 */
+	canRetainForModel(value: string): boolean {
+		const current = this.session.model;
+		if (!current || !value.startsWith(`${current.provider}/`)) {
+			return false;
+		}
+		const nextId = value.slice(current.provider.length + 1);
+		if (!nextId) {
+			return false;
+		}
+		const group = this.providers[current.provider]?.quotaGroup;
+		return group
+			? group(current.id) === group(nextId)
+			: current.id === nextId;
+	}
+
 	/** 対応サービスがないproviderでは通信せず、利用枠なしを返す。 */
 	async read(signal: AbortSignal): Promise<QuotaWindow[] | null> {
 		try {
