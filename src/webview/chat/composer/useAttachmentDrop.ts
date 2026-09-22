@@ -1,5 +1,5 @@
-// 入力欄へのファイルドロップを読み込み、会話を固定した添付要求へ変換する。
-import { useRef, useState, type DragEvent } from "react";
+// ファイルドロップと画像ペーストを、会話を固定した添付要求へ変換する。
+import { useRef, useState, type ClipboardEvent, type DragEvent } from "react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import { readDroppedAttachments } from "./readDroppedAttachments";
@@ -37,15 +37,66 @@ export function useAttachmentDrop(
 	current.current = { scope, enabled };
 
 	/** 子要素のLexicalやブラウザーがファイルを挿入・表示する前に処理する。 */
-	const stop = (event: DragEvent) => {
+	const stop = (event: DragEvent | ClipboardEvent) => {
 		event.preventDefault();
 		event.stopPropagation();
 	};
+
+	/** ドロップとペーストの読み込み・会話確認を共通化する。 */
+	const attach = async (transfer: DataTransfer) => {
+		if (!enabled || pending.current) {
+			return;
+		}
+
+		pending.current = true;
+		setReading(true);
+		setError("");
+		try {
+			const dropped = await readDroppedAttachments(transfer);
+
+			// 読み取り中に会話や接続が変わった場合は、別の会話へ添付しない。
+			if (current.current.scope === scope && current.current.enabled) {
+				send({
+					type: "attachment/add",
+					requestId: crypto.randomUUID(),
+					sessionId: state.sessionId!,
+					files: dropped,
+				});
+			}
+		} catch (cause) {
+			if (current.current.scope === scope) {
+				setError(
+					cause instanceof Error
+						? cause.message
+						: "添付できませんでした。",
+				);
+			}
+		} finally {
+			pending.current = false;
+			setReading(false);
+		}
+	};
+
 	return {
 		active: active && enabled,
 		reading,
 		error,
 		handlers: {
+			onPasteCapture(event: ClipboardEvent) {
+				const images = Array.from(event.clipboardData.files).filter(
+					(file) => file.type.startsWith("image/"),
+				);
+				if (!images.length) {
+					return;
+				}
+				stop(event);
+				// コピー元のURLやHTMLではなく、クリップボード内の画像実体を添付する。
+				const transfer = new DataTransfer();
+				for (const file of images) {
+					transfer.items.add(file);
+				}
+				void attach(transfer);
+			},
 			onDragEnterCapture(event: DragEvent) {
 				if (!hasFiles(event.dataTransfer)) {
 					return;
@@ -79,42 +130,7 @@ export function useAttachmentDrop(
 				stop(event);
 				depth.current = 0;
 				setActive(false);
-				if (!enabled || pending.current) {
-					return;
-				}
-
-				pending.current = true;
-				setReading(true);
-				setError("");
-				try {
-					const dropped = await readDroppedAttachments(
-						event.dataTransfer,
-					);
-
-					// 読み取り中に会話や接続が変わった場合は、別の会話へ添付しない。
-					if (
-						current.current.scope === scope &&
-						current.current.enabled
-					) {
-						send({
-							type: "attachment/add",
-							requestId: crypto.randomUUID(),
-							sessionId: state.sessionId!,
-							files: dropped,
-						});
-					}
-				} catch (cause) {
-					if (current.current.scope === scope) {
-						setError(
-							cause instanceof Error
-								? cause.message
-								: "添付できませんでした。",
-						);
-					}
-				} finally {
-					pending.current = false;
-					setReading(false);
-				}
+				await attach(event.dataTransfer);
 			},
 		},
 	};
