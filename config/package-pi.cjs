@@ -1,31 +1,131 @@
-// Piの公開ESMエントリーと実行依存・相対参照資産をVSIXへ同梱する。
+// Piを専用ESM entryと遅延chunkへbundleし、ファイル参照する資産だけを同梱する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { copyRuntimePackage } = require("./copy-runtime-package.cjs");
+const { build } = require("esbuild");
+const { piBundlePlugin } = require("./pi-bundle-plugin.cjs");
+const { copyBundleLicenses } = require("./pi-bundle-licenses.cjs");
+const { verifyPiSources } = require("./pi-sdk-contract.cjs");
+
+const SUPPORTED_PI_VERSION = "0.86.1";
+
+/** WASM実行に必要なファイルだけを保持する。 */
+async function copyPhoton(sdkRoot, target) {
+	const source = await fs.realpath(
+		path.join(sdkRoot, "../../@silvia-odwyer/photon-node"),
+	);
+	const destination = path.join(
+		target,
+		"node_modules/@silvia-odwyer/photon-node",
+	);
+	await fs.mkdir(destination, { recursive: true });
+	for (const name of ["package.json", "photon_rs.js", "photon_rs_bg.wasm"]) {
+		await fs.copyFile(
+			path.join(source, name),
+			path.join(destination, name),
+		);
+	}
+	return source;
+}
+
+/** SDKの相対資産探索をbundle専用package境界内で解決する。 */
+async function copyAssets(source, destination, manifest) {
+	await fs.writeFile(
+		path.join(destination, "package.json"),
+		JSON.stringify({
+			name: manifest.name,
+			version: manifest.version,
+			type: "module",
+			piConfig: manifest.piConfig,
+		}),
+	);
+	for (const name of [
+		"dist/modes/interactive/theme",
+		"dist/modes/interactive/assets",
+		"dist/core/export-html/template.html",
+		"dist/core/export-html/template.css",
+		"dist/core/export-html/template.js",
+		"dist/core/export-html/vendor",
+		"docs",
+		"README.md",
+		"CHANGELOG.md",
+	]) {
+		await fs.cp(path.join(source, name), path.join(destination, name), {
+			recursive: true,
+			filter: (file) => !file.endsWith(".map") && !file.endsWith(".d.ts"),
+		});
+	}
+	await fs.copyFile(
+		path.join(__dirname, "licenses", `pi-${manifest.version}`, "LICENSE"),
+		path.join(destination, "LICENSE"),
+	);
+}
 
 /** SDK内部のファイル配置をHostに公開せず、ESM境界をビルド側で用意する。 */
-async function copyPi(projectRoot, target) {
+async function bundlePi(projectRoot, target) {
 	const source = await fs.realpath(
 		path.join(projectRoot, "node_modules/@earendil-works/pi-coding-agent"),
 	);
 	const manifest = JSON.parse(
 		await fs.readFile(path.join(source, "package.json"), "utf8"),
 	);
+	const aiRoot = await fs.realpath(path.join(source, "../pi-ai"));
+	const aiManifest = JSON.parse(
+		await fs.readFile(path.join(aiRoot, "package.json"), "utf8"),
+	);
 	if (
+		manifest.version !== SUPPORTED_PI_VERSION ||
+		aiManifest.version !== SUPPORTED_PI_VERSION ||
 		require("../package.json").dependencies[manifest.name] !==
-		manifest.version
+			manifest.version
 	) {
 		throw new Error("Pi SDKのバージョンを完全固定してください。");
 	}
-	await copyRuntimePackage(source, target);
-	const destination = path.join(target, "node_modules", manifest.name);
-	await fs.copyFile(
-		path.join(__dirname, "licenses", `pi-${manifest.version}`, "LICENSE"),
-		path.join(destination, "LICENSE"),
+	await verifyPiSources({ sdk: source, ai: aiRoot });
+	const destination = path.join(target, "pi");
+	const result = await build({
+		absWorkingDir: projectRoot,
+		entryPoints: {
+			core: path.join(__dirname, "runtime/pi-entry.mjs"),
+			"image-resize-worker": path.join(
+				source,
+				"dist/utils/image-resize-worker.js",
+			),
+		},
+		outdir: destination,
+		outExtension: { ".js": ".mjs" },
+		chunkNames: "[name]-[hash]",
+		bundle: true,
+		splitting: true,
+		format: "esm",
+		platform: "node",
+		target: "node22",
+		minify: true,
+		metafile: true,
+		legalComments: "linked",
+		define: { PI_BUNDLED_NODE: "true" },
+		// CJS依存のNode組込requireを各chunkで利用できるようにする。
+		banner: {
+			js: 'import { createRequire as __neritaCreateRequire } from "node:module"; const require = __neritaCreateRequire(import.meta.url);',
+		},
+		external: ["@silvia-odwyer/photon-node"],
+		plugins: [piBundlePlugin(source, aiRoot)],
+	});
+	await copyAssets(source, destination, manifest);
+	const photonRoot = await copyPhoton(source, target);
+	await copyBundleLicenses(
+		projectRoot,
+		destination,
+		result.metafile,
+		photonRoot,
 	);
 	await fs.writeFile(
 		path.join(target, "pi.mjs"),
-		'// 公開エントリーのimport条件をNode.jsのESMローダーで解決する。\nexport * from "@earendil-works/pi-coding-agent";\n',
+		'export * from "./pi/core.mjs";\n',
 	);
+	await fs.writeFile(
+		path.join(destination, "bundle-meta.json"),
+		JSON.stringify(result.metafile),
+	);
+	return result.metafile;
 }
-module.exports = { copyPi };
+module.exports = { bundlePi, SUPPORTED_PI_VERSION };

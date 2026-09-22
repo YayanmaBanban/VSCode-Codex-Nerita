@@ -6,6 +6,7 @@
 !docs/Implementation-Plan.md
 !docs/Implementation-Status.md
 !docs/App-Server-Migration.md
+!docs/Pi-Runtime-Packaging.md
 !media/**
 !dist/extension.js
 !dist/webview/index.js

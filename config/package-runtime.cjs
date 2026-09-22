@@ -2,7 +2,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createRequire } = require("node:module");
-const { copyPi } = require("./package-pi.cjs");
+const { bundlePi } = require("./package-pi.cjs");
 
 /** 指定した Codex とネイティブ資産を、pnpm のリンクから独立して同梱する。 */
 async function copyCodex(codexJson, target) {
@@ -86,7 +86,7 @@ async function packageRuntime() {
 	const projectRoot = await fs.realpath(path.resolve(__dirname, ".."));
 	const target = await resetRuntime(projectRoot);
 	await copyCodex(codexJson, target);
-	await copyPi(projectRoot, target);
+	await bundlePi(projectRoot, target);
 	// npm配布に含まれない上流のライセンス表記を、固定バージョンの資産と一緒に残す。
 	for (const name of ["LICENSE", "NOTICE"]) {
 		await fs.copyFile(

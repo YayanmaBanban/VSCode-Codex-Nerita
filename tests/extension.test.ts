@@ -142,14 +142,28 @@ suite("Nerita for Codex Extension", () => {
 		);
 		assert.deepEqual((await readdir(runtime.fsPath)).sort(), [
 			"node_modules",
+			"pi",
 			"pi.mjs",
 		]);
 		await access(vscode.Uri.joinPath(runtime, "pi.mjs").fsPath);
+		await access(vscode.Uri.joinPath(runtime, "pi/core.mjs").fsPath);
+		await access(
+			vscode.Uri.joinPath(runtime, "pi/image-resize-worker.mjs").fsPath,
+		);
 		await access(
 			vscode.Uri.joinPath(
 				runtime,
-				"node_modules/@earendil-works/chord/dist/context/index.js",
+				"node_modules/@silvia-odwyer/photon-node/photon_rs_bg.wasm",
 			).fsPath,
+		);
+		await assert.rejects(
+			access(
+				vscode.Uri.joinPath(
+					runtime,
+					"node_modules/@earendil-works/pi-coding-agent",
+				).fsPath,
+			),
+			{ code: "ENOENT" },
 		);
 		assert.deepEqual(
 			(
