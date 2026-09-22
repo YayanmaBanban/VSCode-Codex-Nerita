@@ -2,6 +2,7 @@
 import type { ChatState } from "./chatState";
 import type { BackendId } from "./backend";
 import type { ComposerPart } from "./composerContent";
+import type { ComposerReference } from "./composerReferences";
 import type { ChangeScope } from "./changeReferences";
 import type {
 	SessionReferencesRequest,
@@ -75,6 +76,7 @@ export type UiMessage =
 			sessionId: string;
 			text: string;
 			referencedSessionIds?: string[];
+			references?: ComposerReference[];
 			changeScopes?: ChangeScope[];
 			codeReferences?: CodeReference[];
 	  }

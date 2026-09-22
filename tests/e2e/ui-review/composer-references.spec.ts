@@ -121,7 +121,15 @@ test("参照を復元し、全文コピー・取り外し・Undo・送信でき�
 	await expect(chips).toHaveCount(2);
 	await input.press("Control+End");
 	await input.press("Control+Enter");
-	await expect(page.locator(".message.user")).toContainText(copied);
+	const sent = page.locator(".message.user");
+	await expect(sent.locator(".message-reference")).toHaveCount(2);
+	await expect(sent).toContainText("前文日本語 sample.md と src 後文");
+	await expect(sent.getByRole("button", { name: /取り外す/ })).toHaveCount(0);
+	await sent.getByRole("button", { name: "日本語 sample.md を開く" }).click();
+	await expect(page.getByLabel("開いた参照")).toHaveText(
+		"file:///D:/workspace/日本語%20sample.md",
+	);
+	await page.screenshot({ path: info.outputPath("sent-references.png") });
 	expect(errors).toEqual([]);
 });
 

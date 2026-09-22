@@ -3,6 +3,9 @@ import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
 import type { UiMessage } from "../../../shared/messages";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import type { ComposerReference } from "../../../shared/composerReferences";
+import { messageReferences } from "./messageReferences";
+import { MessageReferenceChip } from "./MessageReferenceChip";
 
 /** 絶対パスだけをfile URIへ変換し、その他のURLには既定の安全性検証を適用する。 */
 function markdownUrl(url: string): string {
@@ -40,10 +43,13 @@ const components: Components = {
 export function MessageText({
 	text,
 	send,
+	references = [],
 }: {
 	text: string;
+	references?: ComposerReference[] | undefined;
 	send?: ((message: UiMessage) => void) | undefined;
 }) {
+	const content = messageReferences(text, references);
 	return (
 		<div
 			className={[
@@ -59,9 +65,22 @@ export function MessageText({
 		>
 			<Markdown
 				remarkPlugins={[remarkGfm, remarkBreaks]}
+				rehypePlugins={content.targets.size ? [content.plugin] : []}
 				urlTransform={markdownUrl}
 				components={{
 					...components,
+					span: ({ children, title }) => {
+						const reference = content.targets.get(title ?? "");
+						if (reference) {
+							return (
+								<MessageReferenceChip
+									path={reference}
+									send={send}
+								/>
+							);
+						}
+						return <span title={title}>{children}</span>;
+					},
 					a: ({ href, children, title }) => {
 						const local = /^file:\/\//i.test(href ?? "");
 						return (
@@ -88,7 +107,7 @@ export function MessageText({
 					},
 				}}
 			>
-				{text}
+				{content.text}
 			</Markdown>
 		</div>
 	);

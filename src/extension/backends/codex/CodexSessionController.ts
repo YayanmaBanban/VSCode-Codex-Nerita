@@ -213,6 +213,7 @@ export class CodexSessionController extends CodexSubmission {
 				message.referencedSessionIds,
 				message.changeScopes,
 				message.codeReferences,
+				message.references,
 			);
 			this.emit({
 				type: "prompt/accepted",

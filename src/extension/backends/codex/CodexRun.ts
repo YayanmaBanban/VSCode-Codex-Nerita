@@ -1,5 +1,6 @@
 // 開始受付とターン完了を分け、早い停止・遅い通知・承認を一つの実行に限定する。
 import { randomUUID } from "node:crypto";
+import type { ComposerReference } from "../../../shared/composerReferences";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { CodexAgents } from "./CodexAgents";
 import { attachmentInput } from "./context/attachmentInput";
@@ -18,6 +19,7 @@ export abstract class CodexRun extends CodexAgents {
 	protected async prompt(
 		text: string,
 		context?: AdditionalContext,
+		references: ComposerReference[] = [],
 	): Promise<void> {
 		if (
 			this.busy() ||
@@ -40,6 +42,7 @@ export abstract class CodexRun extends CodexAgents {
 				...this.state.messages,
 				{
 					id: userId,
+					references,
 					role: "user",
 					text,
 					order: nextTimelineOrder(this.state),

@@ -29,9 +29,21 @@ function MessageContent({
 	if (message.mcp) {
 		return <McpMessage content={message.mcp} text={message.text} />;
 	}
-	return <MessageText text={message.text} send={send} />;
+	return (
+		<MessageText
+			text={message.text}
+			send={send}
+			references={user ? message.references : undefined}
+		/>
+	);
 	if (user || !busy || message.streaming === false || index !== length - 1) {
-		return <MessageText text={message.text} send={send} />;
+		return (
+			<MessageText
+				text={message.text}
+				send={send}
+				references={user ? message.references : undefined}
+			/>
+		);
 	}
 	return <TextType text={message.text} />;
 }

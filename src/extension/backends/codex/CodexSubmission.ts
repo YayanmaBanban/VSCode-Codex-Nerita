@@ -1,5 +1,6 @@
 // 追加指示の待機・送信を管理し、受付が確定するまで二重送信を防ぐ。
 import { randomUUID } from "node:crypto";
+import type { ComposerReference } from "../../../shared/composerReferences";
 import { CodexHistory } from "./CodexHistory";
 import { attachmentInput } from "./context/attachmentInput";
 import { skillInput } from "./context/skillInput";
@@ -87,6 +88,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		referencedSessionIds: string[] = [],
 		changeScopes: ChangeScope[] = [],
 		codeReferences: CodeReference[] = [],
+		references: ComposerReference[] = [],
 	): Promise<"start" | "steer"> {
 		if (this.submissionPending) {
 			throw new Error("Submission pending");
@@ -145,7 +147,7 @@ export abstract class CodexSubmission extends CodexHistory {
 			this.checkSubmission(epoch, sessionId);
 			checkWaitingRun();
 			if (!this.busy()) {
-				await this.prompt(text, context);
+				await this.prompt(text, context, references);
 				this.checkSubmission(epoch, sessionId);
 				return "start";
 			}
@@ -171,7 +173,7 @@ export abstract class CodexSubmission extends CodexHistory {
 			checkWaitingRun();
 			// 添付の読み込み中に完了した場合も通常送信へ切り替える。
 			if (!this.busy()) {
-				await this.prompt(text, context);
+				await this.prompt(text, context, references);
 				this.checkSubmission(epoch, sessionId);
 				return "start";
 			}
@@ -199,7 +201,7 @@ export abstract class CodexSubmission extends CodexHistory {
 			this.patch({
 				messages: [
 					...this.state.messages,
-					{ id, role: "user", text, order },
+					{ id, role: "user", text, order, references },
 				],
 				attachments: this.state.attachments.filter(
 					(item) => !files.some((file) => file.id === item.id),

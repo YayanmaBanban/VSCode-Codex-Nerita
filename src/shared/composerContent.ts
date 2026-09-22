@@ -9,6 +9,26 @@ export type ComposerPart = {
 	references?: ComposerReference[];
 };
 
+/** 送信時の前後空白除去に合わせ、各断片の参照を本文全体の位置へ変換する。 */
+export function promptReferences(
+	draft: string,
+	parts: ComposerPart[],
+): ComposerReference[] {
+	if (!validDraftParts(draft, parts)) {
+		return [];
+	}
+	let offset = -(draft.length - draft.trimStart().length);
+	const references = parts.flatMap((part) => {
+		const result = (part.references ?? []).map((reference) => ({
+			...reference,
+			offset: reference.offset + offset,
+		}));
+		offset += part.text.length;
+		return result;
+	});
+	return validReferences(draft.trim(), references) ? references : [];
+}
+
 /** 旧形式を許容しつつ、本文との一致と交互配置を両側で検証する。 */
 export function validDraftParts(draft: string, parts: unknown): boolean {
 	if (parts === undefined) {

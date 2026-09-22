@@ -6,6 +6,7 @@ import { isSidebarLocation } from "./sidebar";
 import { isPersonalityPreset } from "./personality";
 import { validDroppedAttachments } from "./attachmentDrop";
 import { validDraftParts } from "./composerContent";
+import { validReferences } from "./composerReferences";
 import { isPathString, isAbsoluteLocalPath } from "./workspacePaths";
 import { isSourceRange } from "./symbolLocation";
 import { isSymbolQuery } from "./workspaceSymbols";
@@ -139,6 +140,7 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				value.text.trim().length > 0 &&
 				value.text.length <= 100_000 &&
 				validSessionIds(value.referencedSessionIds) &&
+				validReferences(value.text, value.references) &&
 				validChangeScopes(value.changeScopes) &&
 				validCodeReferences(value.codeReferences)
 			);

@@ -260,6 +260,7 @@ export function createMockBridge(
 								order: nextOrder(),
 								role: "user",
 								text: message.text,
+								references: message.references ?? [],
 							},
 						],
 					});
