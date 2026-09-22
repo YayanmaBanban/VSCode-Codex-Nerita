@@ -44,6 +44,8 @@ function fixture(manage: PiAuthService["manage"], validCurrent = false) {
 		isUsingOAuth: () => false,
 	} as unknown as ModelRuntime;
 	const session = {
+		thinkingLevel: "off",
+		getAvailableThinkingLevels: () => ["off"],
 		model: old,
 		setModel: vi.fn((next: typeof model) => {
 			session.model = next;

@@ -158,9 +158,9 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (
 			message.type === "config/set" &&
 			(message.sessionId !== this.state.sessionId ||
-				message.configId !== "model")
+				!["model", "reasoning_effort"].includes(message.configId))
 		) {
-			throw new Error("現在のPiモデル設定ではありません。");
+			throw new Error("現在のPiモデル・推論レベル設定ではありません。");
 		}
 		const epoch = this.epoch;
 		const abort = new AbortController();
@@ -182,7 +182,14 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		try {
 			const operation =
 				message.type === "config/set"
-					? account.selectModel(message.value, signal)
+					? message.configId === "model"
+						? account.selectModel(message.value, signal)
+						: Promise.resolve(
+								account.selectThinkingLevel(
+									message.value,
+									signal,
+								),
+							)
 					: account.authenticate(
 							message.type === "auth/logout",
 							signal,
@@ -192,7 +199,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		} catch {
 			// providerの例外に認証値が含まれる可能性があるため、そのまま表示しない。
 			throw new Error(
-				"Piの認証・モデル設定を完了できませんでした。取消または設定内容を確認してください。",
+				"Piの認証・モデル・推論レベル設定を完了できませんでした。取消または設定内容を確認してください。",
 			);
 		} finally {
 			if (this.authAbort === abort) {

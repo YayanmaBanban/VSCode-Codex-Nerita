@@ -55,6 +55,17 @@ export class PiAccount {
 						name: `${item.name} (${item.provider})`,
 					})),
 				},
+				{
+					id: "reasoning_effort",
+					name: "Reasoning effort",
+					currentValue: this.session.thinkingLevel,
+					options: this.session
+						.getAvailableThinkingLevels()
+						.map((level) => ({
+							value: level,
+							name: level,
+						})),
+				},
 			],
 		};
 	}
@@ -69,6 +80,18 @@ export class PiAccount {
 		}
 		signal.throwIfAborted();
 		await this.session.setModel(model);
+	}
+
+	/** 現在のモデルが対応する推論レベルだけをSDKへ渡す。 */
+	selectThinkingLevel(value: string, signal: AbortSignal): void {
+		signal.throwIfAborted();
+		const level = this.session
+			.getAvailableThinkingLevels()
+			.find((item) => item === value);
+		if (!level) {
+			throw new Error("利用可能なPi推論レベルを選択してください。");
+		}
+		this.session.setThinkingLevel(level);
 	}
 
 	/** 保存認証だけを変更し、環境変数やmodels.jsonは保持する。 */
