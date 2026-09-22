@@ -28,7 +28,7 @@ Codexの文脈はbackend=`codex`、provider=`openai-codex`。Piはbackend=`pi`�
 
 `model.header` はモデル設定の上、`composer.toolbar` は添付・使用量の後、`settings.main` / `settings.advanced` はbackend別Surface内、`status` は設定の後に配置する。各slotは汎用Rendererだけを使い、provider名で分岐しない。認証は既存Headerで扱う。
 
-`builtinContributions.ts` がConfigOptionを宣言へ変換する。CodexのFast modeとservice tierの別名はHostで一つのtoggleにまとめる。Piは公開済みの設定だけを表示する。Phase 8で両backendのQuotaをquota controlとしてstatusへ統合し、既存のQuotaBarで描画する。バーは最小残率、ツールチップは全時間枠の詳細を表示する。`uiContributions: null` のBridgeは `LegacyConfigControls` とQuotaBarによる既存表示を利用できる。実Hostは初回snapshot・差分・リセット後も解決済み定義を公開する。
+`builtinContributions.ts` がConfigOptionを宣言へ変換する。CodexのFast modeとservice tierの別名はHostで一つのtoggleにまとめる。Piは公開済みの設定だけを表示する。Phase 8で両backendのQuotaをquota controlとしてstatusへ統合し、既存のQuotaBarで描画する。バーは最小残率、ツールチップは全時間枠の詳細を表示する。Codex・PiともContribution経由に統一し、toggleは汎用のToggleSwitchで描画する。`uiContributions: null` はHostの定義を受信する前を表し、設定項目は描画しない。実Hostは初回snapshot・差分・リセット後も解決済み定義を公開し、StoryのBridgeも同じRegistryで宣言を生成する。
 
 ## Pi組み込みExtension
 

@@ -7,6 +7,7 @@ import type { Bridge } from "../../../webview/vscodeBridge";
 export function createPiApprovalBridge(): Bridge {
 	let state: ChatState = {
 		...initialState(),
+		uiContributions: { surface: "pi", items: [] },
 		connection: "ready",
 		sessionId: "pi-approval",
 		sessionTitle: "Pi",

@@ -7,7 +7,7 @@ import { createMockBridge } from "./mocks/mockBridge";
 /** ネイティブ認証画面の結果だけをモックする。 */
 function PiAccountStory() {
 	const bridge = useMemo(() => {
-		const mock = createMockBridge();
+		const mock = createMockBridge("empty", "pi");
 		const options = [
 			{ value: "local/first", name: "First (local)" },
 			{ value: "local/second", name: "Second (local)" },

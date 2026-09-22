@@ -3,7 +3,7 @@ import { createMockBridge } from "./mockBridge";
 
 /** 復元成功・失敗・未完了ツールと継続送信を再現する。 */
 export function createPiHistoryBridge() {
-	const bridge = createMockBridge();
+	const bridge = createMockBridge("empty", "pi");
 	const cwd = "D:/workspace/会話履歴を保存するプロジェクト";
 	const capabilities = { list: true, load: true, fork: true, delete: false };
 	const sessions = [

@@ -1,5 +1,6 @@
 // Story ごとに独立する、App Server や認証を必要としない双方向 Bridge。
 import { initialState, type ChatState } from "../../../shared/chatState";
+import type { BackendId } from "../../../shared/backend";
 import { type HostMessage, type UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
 import { settingsFixture } from "../../../../tests/fixtures/settingsFixture";
@@ -107,7 +108,7 @@ function scenarioState(scenario: Scenario): ChatState {
 /** 送信記録・購読・段階的な返信を持つ代替実装を作る。 */
 export function createMockBridge(
 	scenario: Scenario = "empty",
-	contributions = false,
+	backend: BackendId = "codex",
 ): Bridge & {
 	sent: UiMessage[];
 	emit: (event: HostMessage) => void;
@@ -115,16 +116,14 @@ export function createMockBridge(
 } {
 	let state = scenarioState(scenario);
 	const registry = createBuiltinUiRegistry();
-	/** 移行確認用Storyでは実Hostと同じ宣言を生成する。 */
+	/** 全Storyで選択したbackendのHostと同じ宣言を生成する。 */
 	const ui = () =>
 		registry.resolve(state, {
-			backend: "codex",
-			provider: "openai-codex",
+			backend,
+			provider: backend === "codex" ? "openai-codex" : "local",
 			capabilities: state.configOptions.map((option) => option.id),
 		});
-	if (contributions) {
-		state.uiContributions = ui();
-	}
+	state.uiContributions = ui();
 	const listeners = new Set<(event: HostMessage) => void>();
 	const sent: UiMessage[] = [];
 	const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -133,10 +132,8 @@ export function createMockBridge(
 	};
 	const patch = (changes: Partial<ChatState>) => {
 		state = { ...state, ...changes, revision: state.revision + 1 };
-		if (contributions) {
-			state.uiContributions = ui();
-			changes = { ...changes, uiContributions: state.uiContributions };
-		}
+		state.uiContributions = ui();
+		changes = { ...changes, uiContributions: state.uiContributions };
 		emit({ type: "state/patch", revision: state.revision, patch: changes });
 	};
 	const clear = () => {

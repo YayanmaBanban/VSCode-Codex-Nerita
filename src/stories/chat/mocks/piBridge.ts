@@ -2,6 +2,7 @@
 import { initialState } from "../../../shared/chatState";
 import type { HostMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
+import { createBuiltinUiRegistry } from "../../../extension/ui-contributions/builtinContributions";
 
 /** 未対応機能を持たないPiで、逐次応答・Stop・再送を観察する。 */
 export function createPiBridge(showTools = false): Bridge {
@@ -21,6 +22,11 @@ export function createPiBridge(showTools = false): Bridge {
 			},
 		],
 	};
+	state.uiContributions = createBuiltinUiRegistry().resolve(state, {
+		backend: "pi",
+		provider: "local",
+		capabilities: ["model"],
+	});
 	const listeners = new Set<(event: HostMessage) => void>();
 	let timer: ReturnType<typeof setInterval> | undefined;
 	const emit = (event: HostMessage) => {

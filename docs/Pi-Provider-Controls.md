@@ -42,6 +42,8 @@ pi/
 
 ## 検証の境界
 
+モデル変更時の表示保持は `PiProvider.quotaGroup(modelId)` でカスタマイズする。同じprovider・同じグループなら取得済み利用枠を維持して再取得し、異なるグループ・provider変更・認証操作ではクリアする。未定義ならモデルID単位で扱う。Codexは `CodexQuotaGroup.ts` でSparkを別グループ、Luna〜Astraを含む通常モデルを共通グループとする。これは表示保持の方針であり、実サービスの利用枠共有関係を検証したものではない。
+
 単体テストは設定の独立性・候補・clamp・通信検証・旧会話拒否・取得失敗・旧応答破棄を確認する。`pnpm test:pi:chat` は同梱した実SDKと隔離した模擬モデルで、metadataからの候補生成、Ultra / Fast Modeの要求フック、project-local拡張との共存を確認する。`pi-provider-controls` と既存のContribution / Composer / QuotaのUIレビューで320px・明暗テーマ・操作・無効状態を確認する。
 
 実VS Code Webview、実OAuthアカウントのusage endpoint、外部Codex / Anthropic / Googleへの送信はこの検証に含まれない。特にultraの外部サーバー受理とpriorityの実際の処理速度は未検証。

@@ -7,7 +7,7 @@ import type { UiMessage } from "../../../shared/messages";
 
 /** テスト操作で通知を注入し、送信された要求も表示する。 */
 function SettingsStory() {
-	const mock = useMemo(() => createMockBridge("empty", true), []);
+	const mock = useMemo(() => createMockBridge("empty"), []);
 	const [last, setLast] = useState<UiMessage>();
 	const bridge = useMemo(
 		() => ({

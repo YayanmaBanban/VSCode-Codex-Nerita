@@ -7,6 +7,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
 import { piHarness, pending } from "./piHarness";
+import type { PiAccount } from "../../src/extension/backends/pi/PiAccount";
 
 const payload = {
 	rate_limit: {
@@ -44,6 +45,107 @@ function fixture() {
 }
 
 describe("Pi quota", () => {
+	it.each([
+		["gpt-5.6-luna", "openai-codex/gpt-6-astra", true],
+		["gpt-6-astra", "openai-codex/gpt-5.6-luna", true],
+		["gpt-6-astra", "openai-codex/gpt-5.3-codex-spark", false],
+		["gpt-5.3-codex-spark", "openai-codex/gpt-6-astra", false],
+		["gpt-6-astra", "google/gpt-6-astra", false],
+	])("%sから%sへの利用枠保持は%s", (id, next, retain) => {
+		const session = { model: { provider: "openai-codex", id } };
+		const service = new PiQuotaService(
+			{} as unknown as ModelRuntime,
+			session as unknown as AgentSession,
+		);
+		expect(service.canRetainForModel(next)).toBe(retain);
+	});
+	it("独自providerは利用枠グループを指定でき、未指定ならモデル変更時に破棄する", () => {
+		const session = { model: { provider: "custom", id: "team/a" } };
+		const models = {} as unknown as ModelRuntime;
+		const sdk = session as unknown as AgentSession;
+		const custom = new PiQuotaService(models, sdk, fetch, {
+			custom: { quotaGroup: (id) => id.split("/")[0]! },
+		});
+		expect(custom.canRetainForModel("custom/team/b")).toBe(true);
+		expect(custom.canRetainForModel("custom/other/c")).toBe(false);
+		const fallback = new PiQuotaService(models, sdk, fetch, {});
+		expect(fallback.canRetainForModel("custom/team/b")).toBe(false);
+		expect(fallback.canRetainForModel("custom/team/a")).toBe(true);
+	});
+	it.each([
+		["fast-mode", true],
+		["reasoning_effort", true],
+		["model", false],
+		["model", true],
+		["provider", false],
+	] as const)(
+		"%s変更中と再取得待ちの利用枠を取得元に応じて保持する",
+		async (configId, keep) => {
+			const h = piHarness();
+			const quota = normalizeCodexQuota(payload);
+			const update = pending<void>();
+			const refresh = pending<typeof quota>();
+			const read = vi
+				.fn()
+				.mockResolvedValueOnce(quota)
+				.mockImplementationOnce(() => refresh.promise);
+			h.runtime.quota = {
+				read,
+				canRetainForModel: () => keep,
+			} as unknown as PiQuotaService;
+			h.runtime.account = {
+				snapshot: () => ({
+					connection: "ready",
+					configOptions: [
+						{
+							id: configId,
+							name: configId,
+							currentValue: "off",
+							options: [
+								{ value: "off", name: "Off" },
+								{ value: "on", name: "On" },
+							],
+						},
+					],
+				}),
+				configure: () => update.promise,
+			} as unknown as PiAccount;
+			await h.controller.connect();
+			await Promise.resolve();
+			expect(h.controller.snapshot().quota).toEqual(quota);
+			h.events.length = 0;
+			const operation = h.controller.receive({
+				type: "config/set",
+				requestId: "toggle",
+				sessionId: "pi-1",
+				configId,
+				value: "on",
+			});
+			expect(h.controller.snapshot().quota).toEqual(keep ? quota : null);
+			update.resolve();
+			await operation;
+			expect(read).toHaveBeenCalledTimes(2);
+			expect(h.controller.snapshot().quota).toEqual(keep ? quota : null);
+			if (keep) {
+				for (const event of h.events) {
+					if (event.type === "state/patch") {
+						expect(event.patch.quota).not.toBeNull();
+						if (event.patch.uiContributions) {
+							expect(
+								event.patch.uiContributions.items.some(
+									(item) => item.control.type === "quota",
+								),
+							).toBe(true);
+						}
+					}
+				}
+			}
+			refresh.resolve([{ label: "5h", remaining: 60, detail: "" }]);
+			await Promise.resolve();
+			expect(h.controller.snapshot().quota?.[0]?.remaining).toBe(60);
+			await h.controller.dispose();
+		},
+	);
 	it("SDK内部でproviderが変わった場合も古い応答を採用しない", async () => {
 		const h = fixture();
 		h.request.mockImplementation(() => {

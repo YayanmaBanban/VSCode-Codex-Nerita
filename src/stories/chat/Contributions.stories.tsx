@@ -48,12 +48,12 @@ function ContributionStory({
 				},
 			},
 			{
-				id: "quota-example",
+				id: "progress-example",
 				slot: "status",
 				when: { provider: "openai-codex", capability: "preview" },
 				control: {
 					type: "progress",
-					label: "利用枠の表示例",
+					label: "タスク進捗の表示例",
 					value: 68,
 					description: "Story専用のサンプル値",
 				},

@@ -43,7 +43,7 @@ for (const theme of ["dark", "light"] as const) {
 				page.getByRole("switch", { name: "拡張設定の例" }),
 			).toHaveCount(story === "pi-codex" ? 1 : 0);
 			await expect(
-				page.getByRole("progressbar", { name: "利用枠の表示例" }),
+				page.getByRole("progressbar", { name: "タスク進捗の表示例" }),
 			).toHaveCount(story.includes("codex") ? 1 : 0);
 			await info.attach(story, {
 				body: await page.screenshot({
@@ -77,7 +77,7 @@ for (const theme of ["dark", "light"] as const) {
 			.click();
 		await expect(page.getByRole("switch")).toHaveCount(0);
 		await expect(
-			page.getByRole("progressbar", { name: "利用枠の表示例" }),
+			page.getByRole("progressbar", { name: "タスク進捗の表示例" }),
 		).toHaveCount(0);
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"anthropic/demo"',
