@@ -1,11 +1,15 @@
 // 入力文中のパスを添付風に表示し、参照だけをUndo可能に取り外す。
-import { Braces, Folder, MessageSquare, GitCompare, X } from "lucide-react";
+import { X } from "lucide-react";
 import { pathText } from "../../../shared/composerReferences";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalEditable } from "@lexical/react/useLexicalEditable";
 import { $getNodeByKey, HISTORY_PUSH_TAG, type NodeKey } from "lexical";
 import type { ComposerTarget } from "../../../shared/composerTargets";
-import { fileIcon } from "./fileIcon";
+import {
+	referenceIcon,
+	referenceKindLabel,
+	referenceActionLabel,
+} from "./referencePresentation";
 import { OPEN_REFERENCE_COMMAND } from "./ReferenceActionsPlugin";
 
 /** 省略した名前の全文とパスはホバーでも確認できる。 */
@@ -75,49 +79,4 @@ export function PathReferenceChip({
 			</button>
 		</span>
 	);
-}
-
-/** 参照種別を優先し、シンボルやファイルのアイコンを選ぶ。 */
-function referenceIcon(path: ComposerTarget) {
-	if (path.kind === "changes") {
-		return GitCompare;
-	}
-	if (path.kind === "session") {
-		return MessageSquare;
-	}
-	if (path.symbol) {
-		return Braces;
-	}
-	if (path.kind === "directory") {
-		return Folder;
-	}
-	return fileIcon(path.name);
-}
-
-/** 参照の種類を読み上げ用の名前へ変換する。 */
-function referenceKindLabel(path: ComposerTarget) {
-	if (path.kind === "changes") {
-		return "Changes";
-	}
-	if (path.kind === "session") {
-		return "セッション";
-	}
-	if (path.symbol) {
-		return "シンボル";
-	}
-	if (path.kind === "directory") {
-		return "フォルダ";
-	}
-	return "ファイル";
-}
-
-/** 参照を開く操作に対応する読み上げ文言を返す。 */
-function referenceActionLabel(path: ComposerTarget) {
-	if (path.kind === "session" || path.kind === "changes") {
-		return `${path.name} の内容を表示`;
-	}
-	if (path.kind === "directory") {
-		return `${path.name} をExplorerで表示`;
-	}
-	return `${path.name} を開く`;
 }

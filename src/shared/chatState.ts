@@ -1,5 +1,6 @@
 // Hostが保持しWebviewへ同期する会話状態と、両側で使う初期値を定義する。
 import type { McpMessageContent } from "./mcp";
+import type { ComposerReference } from "./composerReferences";
 import type { PiProviderControls } from "./piProviderControls";
 import type { UiContributions } from "./uiContributions";
 import type { SkillSummary } from "./skills";
@@ -33,6 +34,7 @@ export type ChatMessage = {
 	order?: number;
 	role: "user" | "assistant";
 	text: string;
+	references?: ComposerReference[];
 	streaming?: boolean;
 	mcp?: McpMessageContent;
 };

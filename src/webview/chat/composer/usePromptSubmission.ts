@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../vscodeBridge";
-import type { ComposerPart } from "../../../shared/composerContent";
+import {
+	promptReferences,
+	type ComposerPart,
+} from "../../../shared/composerContent";
 
 /** 個別要求の結果と短時間の通知を入力欄へ接続する。 */
 export function usePromptSubmission(
@@ -130,6 +133,7 @@ export function usePromptSubmission(
 			requestId,
 			sessionId: state.sessionId,
 			text: draft.trim(),
+			references: promptReferences(draft, parts),
 			...(referencedSessionIds.length ? { referencedSessionIds } : {}),
 			...(changeScopes.length ? { changeScopes } : {}),
 			...(codeReferences.length ? { codeReferences } : {}),
