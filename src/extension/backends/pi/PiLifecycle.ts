@@ -23,6 +23,40 @@ export abstract class PiLifecycle extends SessionState {
 	protected disposed = false;
 	private opening: AbortController | undefined;
 	private closing = new Set<Promise<unknown>>();
+	private quotaAbort: AbortController | undefined;
+
+	/** 設定切替中の旧アカウントの取得結果を破棄する。 */
+	protected cancelQuota(): void {
+		this.quotaAbort?.abort();
+		this.quotaAbort = undefined;
+		if (this.state.quota !== null) {
+			this.patch({ quota: null });
+		}
+	}
+
+	/** 利用枠の取得は送信・設定の受付を待たせない。 */
+	protected refreshQuota(): void {
+		this.cancelQuota();
+		const runtime = this.runtime;
+		if (
+			!runtime?.quota ||
+			!this.opening ||
+			this.state.connection !== "ready"
+		) {
+			return;
+		}
+		const abort = new AbortController();
+		this.quotaAbort = abort;
+		const signal = AbortSignal.any([abort.signal, this.opening.signal]);
+		this.track(
+			runtime.quota.read(signal).then((quota) => {
+				if (!signal.aborted && this.runtime === runtime) {
+					this.patch({ quota });
+				}
+			}),
+		);
+	}
+
 	/** 履歴取得にも接続終了の取消を伝える。 */
 	protected get connectionSignal(): AbortSignal {
 		return this.opening!.signal;
@@ -155,6 +189,7 @@ export abstract class PiLifecycle extends SessionState {
 				...session.account?.snapshot(),
 				skills: session.skills ?? [],
 			});
+			this.refreshQuota();
 		} catch (error) {
 			if (epoch === this.epoch) {
 				this.patch({
@@ -179,6 +214,7 @@ export abstract class PiLifecycle extends SessionState {
 
 	/** 通知を無効化してからSDKの終了を待つ。 */
 	private disconnect(): void {
+		this.cancelQuota();
 		this.epoch++;
 		this.opening?.abort();
 		this.opening = undefined;

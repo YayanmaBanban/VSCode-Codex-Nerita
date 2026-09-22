@@ -2,6 +2,7 @@
 import type { NeritaUiControl } from "../../shared/uiContributions";
 import { ConfigControl } from "../chat/composer/ConfigControl";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
+import { QuotaBar } from "../chat/composer/QuotaBar";
 
 /** select / toggleの操作値はHostが渡した候補に限定する。 */
 export function ContributionRenderer({
@@ -13,6 +14,9 @@ export function ContributionRenderer({
 	disabled: boolean;
 	onChange: (configId: string, value: string) => void;
 }) {
+	if (control.type === "quota") {
+		return <QuotaBar windows={control.windows} />;
+	}
 	if (control.type === "select") {
 		return (
 			<ConfigControl

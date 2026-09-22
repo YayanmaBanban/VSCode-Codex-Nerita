@@ -9,6 +9,8 @@ import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
 import { PiAccount, type PiAuthService } from "./PiAccount";
 import { loadPiResources } from "./PiResources";
+import { PiProviderControls } from "./PiProviderControls";
+import { PiQuotaService } from "./PiQuotaService";
 import type { SkillSummary } from "../../../shared/skills";
 import {
 	openPiSessionStore,
@@ -32,6 +34,7 @@ export type PiSession = Pick<
 > & {
 	history?: PiHistoryAccess;
 	account?: PiAccount;
+	quota?: PiQuotaService;
 	skills?: SkillSummary[];
 	/** 未送信の新規会話だけ、送信前に保存先設定を読み直す。 */
 	storageChanged?: () => boolean;
@@ -80,6 +83,7 @@ export async function createPiRuntime(
 	const authorize: PiAuthorize =
 		options.authorize ??
 		(() => Promise.reject(new Error("Piの実行承認が接続されていません。")));
+	const controls = new PiProviderControls();
 	const resourceLoader = await loadPiResources(
 		sdk,
 		options.cwd,
@@ -87,6 +91,7 @@ export async function createPiRuntime(
 		settingsManager,
 		authorize,
 		options.signal,
+		controls,
 	);
 	options.signal.throwIfAborted();
 	const modelRuntime = await sdk.ModelRuntime.create({
@@ -152,6 +157,7 @@ export async function createPiRuntime(
 			sdk.createPowerShellToolDefinition(options.cwd),
 		].map((tool) => approvePiTool(tool, options.cwd, authorize)),
 	});
+	controls.bind(session);
 	try {
 		await session.bindExtensions({ mode: "print" });
 		options.signal.throwIfAborted();
@@ -173,7 +179,13 @@ export async function createPiRuntime(
 			session.messages.length === 0 &&
 			!!options.getStorage &&
 			options.getStorage() !== storage,
-		account: new PiAccount(modelRuntime, session, options.authService),
+		account: new PiAccount(
+			modelRuntime,
+			session,
+			options.authService,
+			controls,
+		),
+		quota: new PiQuotaService(modelRuntime, session),
 		skills: resourceLoader.getSkills().skills.map((skill) => ({
 			name: skill.name,
 			description: skill.description,

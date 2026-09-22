@@ -25,6 +25,7 @@ export function isState(value: unknown): value is ChatState {
 			"permissions",
 			"authMethods",
 			"piAccount",
+			"piProviderControls",
 			"configOptions",
 			"configPending",
 			"usage",

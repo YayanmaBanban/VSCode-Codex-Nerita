@@ -5,6 +5,8 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { ChatState } from "../../../shared/chatState";
 import type { PiAuthItem } from "../../../shared/piAuth";
+import { PiProviderControls } from "./PiProviderControls";
+import { piModelOptions } from "./PiModelOptions";
 
 /** SDKの認証対話をVS Codeとテストで差し替える。 */
 export type PiAuthService = {
@@ -22,16 +24,21 @@ export class PiAccount {
 		private models: ModelRuntime,
 		private session: AgentSession,
 		private service?: PiAuthService,
-	) {}
+		readonly controls = new PiProviderControls(),
+	) {
+		controls.bind(session);
+	}
 
 	/** キー、トークン、SDKの認証結果そのものは公開しない。 */
 	snapshot(): Partial<ChatState> {
 		const model = this.session.model;
+		const controls = this.controls.snapshot();
 		const available = this.models.getAvailableSnapshot();
 		const status = model
 			? this.models.getProviderAuthStatus(model.provider)
 			: undefined;
 		return {
+			piProviderControls: controls,
 			connection:
 				model &&
 				available.some(
@@ -45,28 +52,11 @@ export class PiAccount {
 			piAccount: model
 				? `${model.provider}: ${status?.configured ? (this.models.isUsingOAuth(model.provider) ? "OAuth設定済み" : "APIキー・環境設定あり") : "認証未設定"}`
 				: "Pi: モデル・認証未設定",
-			configOptions: [
-				{
-					id: "model",
-					name: "Pi Model",
-					currentValue: model ? `${model.provider}/${model.id}` : "",
-					options: available.map((item) => ({
-						value: `${item.provider}/${item.id}`,
-						name: `${item.name} (${item.provider})`,
-					})),
-				},
-				{
-					id: "reasoning_effort",
-					name: "Reasoning effort",
-					currentValue: this.session.thinkingLevel,
-					options: this.session
-						.getAvailableThinkingLevels()
-						.map((level) => ({
-							value: level,
-							name: level,
-						})),
-				},
-			],
+			configOptions: piModelOptions(
+				this.session,
+				this.controls,
+				available,
+			),
 		};
 	}
 
@@ -80,18 +70,44 @@ export class PiAccount {
 		}
 		signal.throwIfAborted();
 		await this.session.setModel(model);
+		this.controls.snapshot();
+	}
+
+	/** Provider変更では利用可能な先頭モデルを選び、SDKのclampを使う。 */
+	async selectProvider(value: string, signal: AbortSignal): Promise<void> {
+		const available = await this.models.getAvailable(undefined, { signal });
+		signal.throwIfAborted();
+		const model = available.find((item) => item.provider === value);
+		if (!model) {
+			throw new Error("利用可能なPi providerを選択してください。");
+		}
+		if (this.session.model?.provider === value) {
+			return;
+		}
+		await this.session.setModel(model);
+		this.controls.snapshot();
 	}
 
 	/** 現在のモデルが対応する推論レベルだけをSDKへ渡す。 */
 	selectThinkingLevel(value: string, signal: AbortSignal): void {
-		signal.throwIfAborted();
-		const level = this.session
-			.getAvailableThinkingLevels()
-			.find((item) => item === value);
-		if (!level) {
-			throw new Error("利用可能なPi推論レベルを選択してください。");
+		this.controls.selectReasoning(value, signal);
+	}
+
+	/** 宣言型UIの設定IDをHostの操作に限定する。 */
+	async configure(
+		id: string,
+		value: string,
+		signal: AbortSignal,
+	): Promise<void> {
+		if (id === "provider") {
+			await this.selectProvider(value, signal);
+		} else if (id === "model") {
+			await this.selectModel(value, signal);
+		} else if (id === "reasoning_effort") {
+			this.selectThinkingLevel(value, signal);
+		} else {
+			this.controls.configure(id, value, signal);
 		}
-		this.session.setThinkingLevel(level);
 	}
 
 	/** 保存認証だけを変更し、環境変数やmodels.jsonは保持する。 */

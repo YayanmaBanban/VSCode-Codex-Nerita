@@ -3,24 +3,13 @@ import {
 	ContributionSlot,
 	type ContributionSlotProps,
 } from "./ContributionSlot";
-import type { QuotaWindow } from "../../shared/composer";
-import { QuotaBar } from "../chat/composer/QuotaBar";
-
-/** 既存Codex利用枠の表示はPhase 8のContribution化までSurfaceで維持する。 */
-type BackendSettingsSurfaceProps = ContributionSlotProps & {
-	quota: QuotaWindow[] | null;
-};
 
 /** Codex App Serverの設定面。認証操作は既存Headerで管理する。 */
-export function CodexSettingsSurface({
-	quota,
-	...props
-}: BackendSettingsSurfaceProps) {
+export function CodexSettingsSurface(props: ContributionSlotProps) {
 	return (
 		<div className="contents" data-settings-surface="codex">
 			<ContributionSlot name="settings.main" {...props} />
 			<ContributionSlot name="settings.advanced" {...props} />
-			<QuotaBar windows={quota} />
 		</div>
 	);
 }
@@ -38,7 +27,7 @@ export function PiSettingsSurface(props: ContributionSlotProps) {
 const surfaces = { codex: CodexSettingsSurface, pi: PiSettingsSurface };
 
 /** provider差分はHostが解決済み。ここでは大枠のSurfaceだけを選ぶ。 */
-export function BackendSettingsSurface(props: BackendSettingsSurfaceProps) {
+export function BackendSettingsSurface(props: ContributionSlotProps) {
 	const Surface = surfaces[props.contributions.surface];
 	return <Surface {...props} />;
 }

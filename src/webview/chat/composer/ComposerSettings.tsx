@@ -108,7 +108,6 @@ export function ComposerSettings({
 							onChange={change}
 						/>
 						<BackendSettingsSurface
-							quota={connected ? state.quota : null}
 							contributions={state.uiContributions}
 							disabled={disabled}
 							onChange={change}

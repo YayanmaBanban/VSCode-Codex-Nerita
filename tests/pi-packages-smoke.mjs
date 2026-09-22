@@ -95,9 +95,7 @@ export default function(pi) {
 			1,
 		);
 		assert.ok(
-			extensions.some((extension) =>
-				extension.path.endsWith("local.ts"),
-			),
+			extensions.some((extension) => extension.path.endsWith("local.ts")),
 		);
 		assert.ok(
 			session.sessionManager
@@ -169,6 +167,83 @@ export default function(pi) {
 		await session.account.selectModel("local/smoke", abort.signal);
 		assert.equal(session.sessionId, originalId);
 		assert.equal(session.account.snapshot().connection, "ready");
+		// 実SDKのmetadataによる候補生成と、ユーザー拡張を含む要求フックの合成を検証する。
+		// 外部providerには送信せず、隔離した認証・モデルとSDKの公開Runnerを使う。
+		session.modelRuntime.registerProvider("openai-codex", {
+			api: "openai-codex-responses",
+			apiKey: "isolated-controls-key",
+			baseUrl: "https://example.invalid",
+			models: [
+				{
+					id: "controls-test",
+					name: "Controls test",
+					reasoning: true,
+					input: ["text"],
+					contextWindow: 32000,
+					maxTokens: 1000,
+					cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+					thinkingLevelMap: {
+						off: null,
+						minimal: null,
+						low: "low",
+						medium: null,
+						high: "high",
+						xhigh: null,
+						max: "max",
+					},
+				},
+			],
+		});
+		await session.account.selectModel(
+			"openai-codex/controls-test",
+			abort.signal,
+		);
+		assert.deepEqual(session.getAvailableThinkingLevels(), [
+			"low",
+			"high",
+			"max",
+		]);
+		await session.account.configure(
+			"reasoning_effort",
+			"ultra",
+			abort.signal,
+		);
+		await session.account.configure("fast-mode", "on", abort.signal);
+		assert.equal(session.thinkingLevel, "max");
+		assert.equal(
+			session.account.snapshot().piProviderControls.effectiveReasoning,
+			"ultra",
+		);
+		const rewritten =
+			await session.extensionRunner.emitBeforeProviderRequest({
+				reasoning: { effort: "max", summary: "auto" },
+				input: [],
+			});
+		assert.equal(rewritten.reasoning.effort, "ultra");
+		assert.equal(rewritten.reasoning.summary, "auto");
+		assert.equal(rewritten.service_tier, "priority");
+		assert.equal(rewritten.neritaLocalSmoke, true);
+		await session.account.configure("fast-mode", "off", abort.signal);
+		assert.equal(
+			session.account.snapshot().piProviderControls.effectiveReasoning,
+			"ultra",
+		);
+		await session.account.selectModel("local/smoke", abort.signal);
+		assert.equal(
+			session.account.snapshot().piProviderControls.reasoningOverride,
+			null,
+		);
+		assert.equal(
+			session.account.snapshot().piProviderControls.fastMode,
+			false,
+		);
+		const localPayload =
+			await session.extensionRunner.emitBeforeProviderRequest({
+				messages: [],
+			});
+		assert.equal(localPayload.service_tier, undefined);
+		assert.equal(localPayload.reasoning, undefined);
+		assert.equal(localPayload.neritaLocalSmoke, true);
 	} finally {
 		session.dispose();
 	}

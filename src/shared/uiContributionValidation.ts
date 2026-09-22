@@ -2,6 +2,7 @@
 import { isBackendId } from "./backend";
 import { isId, isRecord } from "./validation";
 import type { UiContributions } from "./uiContributions";
+import { validComposerField } from "./composerValidation";
 
 /** 説明文は省略可能なプレーンテキストに限定する。 */
 function description(value: unknown): boolean {
@@ -18,6 +19,12 @@ function control(value: unknown): boolean {
 	}
 	if (!description(value.description)) {
 		return false;
+	}
+	if (value.type === "quota") {
+		return (
+			Array.isArray(value.windows) &&
+			validComposerField("quota", value.windows)
+		);
 	}
 	if (value.type === "select") {
 		const option = value.option;

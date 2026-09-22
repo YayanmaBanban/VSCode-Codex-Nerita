@@ -1,5 +1,6 @@
 // Hostが保持しWebviewへ同期する会話状態と、両側で使う初期値を定義する。
 import type { McpMessageContent } from "./mcp";
+import type { PiProviderControls } from "./piProviderControls";
 import type { UiContributions } from "./uiContributions";
 import type { SkillSummary } from "./skills";
 import type { PersonalitySettings } from "./personality";
@@ -88,6 +89,7 @@ export type ChatState = {
 	error: string | null;
 	authMethods: { id: string; name: string }[];
 	piAccount: string | null;
+	piProviderControls: PiProviderControls | null;
 	configOptions: ConfigOption[];
 	configPending: boolean;
 	usage: ContextUsage | null;
@@ -125,6 +127,7 @@ export function initialState(): ChatState {
 		error: null,
 		authMethods: [],
 		piAccount: null,
+		piProviderControls: null,
 		configOptions: [],
 		configPending: false,
 		usage: null,

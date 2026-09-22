@@ -1,4 +1,4 @@
-// 利用枠の表示・非表示と、波の各位相を明暗テーマで撮影する。
+// status Contributionの時間枠別残率・詳細・非表示を明暗テーマで撮影する。
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -18,15 +18,16 @@ for (const theme of ["dark", "light"] as const) {
 		await page.goto(
 			"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
 		);
-		const bar = page.getByRole("progressbar", { name: "利用枠の残量" });
+		const bar = page.getByRole("progressbar", {
+			name: "利用枠の残量",
+			exact: true,
+		});
 		await expect(bar).toHaveCount(0);
 		await page
 			.getByRole("button", { name: "利用枠取得", exact: true })
 			.click();
 		await expect(bar).toHaveAttribute("aria-valuenow", "60");
-		await expect(
-			page.locator('[data-settings-surface="codex"] .quota-bar'),
-		).toBeVisible();
+		await expect(bar).toHaveClass(/quota-bar/);
 		await bar.hover();
 		await expect(page.getByRole("tooltip")).toContainText(
 			"codex 5h limit: 60%",
@@ -34,31 +35,13 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(page.getByRole("tooltip")).toContainText(
 			"codex Weekly limit: 85%",
 		);
-		// CSS Animationの再生時刻を固定し、1周期の位相を再現可能にする。
-		for (const [name, time] of [
-			["initial", 0],
-			["early", 400],
-			["middle", 2000],
-			["late", 3600],
-			["completed", 4000],
-		] as const) {
-			await page.locator(".quota-wave").evaluate((element, time) => {
-				const animation = element.getAnimations()[0]!;
-				animation.pause();
-				animation.currentTime = time;
-			}, time);
-			await info.attach(name, {
-				body: await page.screenshot({
-					path: info.outputPath(`${name}.png`),
-				}),
-				contentType: "image/png",
-			});
-		}
-		await page.emulateMedia({ reducedMotion: "reduce" });
-		await expect(page.locator(".quota-wave")).toHaveCSS(
-			"animation-name",
-			"none",
-		);
+		await expect(page.getByRole("tooltip")).toContainText("resets 18:00");
+		await info.attach("quota-status", {
+			body: await page.screenshot({
+				path: info.outputPath("quota-status.png"),
+			}),
+			contentType: "image/png",
+		});
 		await page.getByRole("button", { name: "利用枠取得失敗" }).click();
 		await expect(bar).toHaveCount(0);
 		await page

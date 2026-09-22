@@ -6,10 +6,13 @@ import { validComposerField } from "./composerValidation";
 import { isAsyncTask } from "./asyncTask";
 import { isSubAgent } from "./subAgents";
 import { isUiContributions } from "./uiContributionValidation";
+import { isPiProviderControls } from "./piProviderControls";
 
 /** 差分通知に未知のフィールドが混入した場合も拒否する。 */
 export function validStateField(key: string, value: unknown): boolean {
 	switch (key) {
+		case "piProviderControls":
+			return value === null || isPiProviderControls(value);
 		case "uiContributions":
 			return value === null || isUiContributions(value);
 		case "agents":

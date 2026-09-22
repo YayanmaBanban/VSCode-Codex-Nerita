@@ -1,6 +1,6 @@
 // Hostが解決した宣言型UIだけをWebviewへ渡す。実行コードや任意のCSSは含めない。
 import type { BackendId } from "./backend";
-import type { ConfigOption } from "./composer";
+import type { ConfigOption, QuotaWindow } from "./composer";
 
 /** 初期版で配置できる表示領域。 */
 export type NeritaUiSlot =
@@ -19,6 +19,7 @@ export type ContributionCondition = {
 
 /** 操作は既存の検証済みconfig/setへ接続する。 */
 export type NeritaUiControl =
+	| { type: "quota"; windows: QuotaWindow[] }
 	| { type: "select"; option: ConfigOption; disabled?: boolean }
 	| {
 			type: "toggle";

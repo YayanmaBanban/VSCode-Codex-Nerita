@@ -12,6 +12,7 @@ import {
 const defaults = [
 	["mode", "Mode"],
 	["collaboration_mode", "Collaboration mode"],
+	["provider", "Provider"],
 	["model", "Model"],
 	["reasoning_effort", "Reasoning effort"],
 	["fast-mode", "Fast mode"],
@@ -57,7 +58,7 @@ const configContributions: UiContributionSource = (state, context) => {
 				: undefined);
 		return option
 			? [option]
-			: context.backend === "codex"
+			: context.backend === "codex" && id !== "provider"
 				? [{ id, name, currentValue: "", options: [] }]
 				: [];
 	});
@@ -81,5 +82,20 @@ const configContributions: UiContributionSource = (state, context) => {
 export function createBuiltinUiRegistry(): UiContributionRegistry {
 	const registry = new UiContributionRegistry();
 	registry.registerUiContribution("nerita.config", configContributions);
+	registry.registerUiContribution("nerita.quota", (state) =>
+		state.connection === "ready" && state.quota?.length
+			? [
+					{
+						id: "quota",
+						slot: "status",
+						order: 0,
+						control: {
+							type: "quota",
+							windows: state.quota,
+						},
+					},
+				]
+			: [],
+	);
 	return registry;
 }
