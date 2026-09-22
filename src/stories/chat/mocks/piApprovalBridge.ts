@@ -114,12 +114,7 @@ export function createPiApprovalBridge(): Bridge {
 					message.type === "prompt/cancel"
 						? "cancel"
 						: message.optionId;
-				const text =
-					choice === "accept"
-						? "操作が完了しました。"
-						: choice === "decline"
-							? "ユーザーが実行を拒否しました。操作は実行されていません。"
-							: "処理を停止しました。";
+				const text = approvalResultText(choice);
 				patch({
 					permissions: [],
 					run: choice === "cancel" ? "cancelled" : "completed",
@@ -128,12 +123,7 @@ export function createPiApprovalBridge(): Bridge {
 							? tool
 							: {
 									...tool,
-									status:
-										choice === "accept"
-											? "completed"
-											: choice === "decline"
-												? "failed"
-												: "cancelled",
+									status: approvalToolStatus(choice),
 									content: [
 										{
 											type: "content",
@@ -146,4 +136,28 @@ export function createPiApprovalBridge(): Bridge {
 			}
 		},
 	};
+}
+
+/** 承諾・拒否・停止の結果をモックの本文へ反映する。 */
+function approvalResultText(choice: string) {
+	if (choice === "accept") {
+		return "操作が完了しました。";
+	}
+	if (choice === "decline") {
+		return "ユーザーが実行を拒否しました。操作は実行されていません。";
+	}
+	return "処理を停止しました。";
+}
+
+/** 承認の選択結果をモックのツール状態へ変換する。 */
+function approvalToolStatus(
+	choice: string,
+): "completed" | "failed" | "cancelled" {
+	if (choice === "accept") {
+		return "completed";
+	}
+	if (choice === "decline") {
+		return "failed";
+	}
+	return "cancelled";
 }

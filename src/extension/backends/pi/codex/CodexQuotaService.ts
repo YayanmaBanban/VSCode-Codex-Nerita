@@ -38,12 +38,7 @@ export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 				? getIsoDate(window.reset_at)
 				: null;
 		windows.push({
-			label:
-				seconds === 18000
-					? "5h"
-					: seconds === 604800
-						? "Weekly"
-						: `${Math.round(seconds / 3600)}h`,
+			label: quotaWindowLabel(seconds),
 			remaining: Math.max(0, Math.min(100, 100 - window.used_percent)),
 			detail:
 				reset && Number.isFinite(reset.getTime())
@@ -106,4 +101,15 @@ export class CodexQuotaService {
 			return null;
 		}
 	}
+}
+
+/** 既知の利用枠には固定名を使い、その他は時間単位で表示する。 */
+function quotaWindowLabel(seconds: number) {
+	if (seconds === 18000) {
+		return "5h";
+	}
+	if (seconds === 604800) {
+		return "Weekly";
+	}
+	return `${Math.round(seconds / 3600)}h`;
 }

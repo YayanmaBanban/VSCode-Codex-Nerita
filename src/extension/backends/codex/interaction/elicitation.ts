@@ -71,11 +71,7 @@ export async function elicitation(
 		const required =
 			Array.isArray(schema.required) && schema.required.includes(key);
 		const prompt = `${title}\n${typeof field.title === "string" ? field.title : key}${required ? "（必須）" : "（省略可）"}${typeof field.description === "string" ? `\n${field.description}` : ""}`;
-		const choices = Array.isArray(field.enum)
-			? field.enum.map(text)
-			: field.type === "boolean"
-				? ["true", "false"]
-				: undefined;
+		const choices = fieldChoices(field);
 		const validate = (value: string): string | undefined => {
 			if (!value) {
 				return required ? "入力してください。" : undefined;
@@ -122,12 +118,7 @@ export async function elicitation(
 		if (validate(value) || (choices && !choices.includes(value))) {
 			return empty;
 		}
-		content[key] =
-			field.type === "boolean"
-				? value === "true"
-				: field.type === "string"
-					? value
-					: Number(value);
+		content[key] = fieldValue(field.type, value);
 	}
 	if (
 		(await ui.choose(title, ["送信", "中止"], signal)) !== "送信" ||
@@ -136,4 +127,26 @@ export async function elicitation(
 		return empty;
 	}
 	return { action: "accept", content, _meta: null };
+}
+
+/** 列挙値を優先し、真偽値の入力には固定の選択肢を用意する。 */
+function fieldChoices(field: Record<string, unknown>) {
+	if (Array.isArray(field.enum)) {
+		return field.enum.map(text);
+	}
+	if (field.type === "boolean") {
+		return ["true", "false"];
+	}
+	return undefined;
+}
+
+/** 検証済みの入力文字列をフォームの宣言型へ変換する。 */
+function fieldValue(type: unknown, value: string) {
+	if (type === "boolean") {
+		return value === "true";
+	}
+	if (type === "string") {
+		return value;
+	}
+	return Number(value);
 }

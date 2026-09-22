@@ -7,6 +7,7 @@ import { PiEventMapper } from "./PiEventMapper";
 import { finishPiTools } from "./PiToolMapper";
 import { PiPermissions } from "./PiPermissions";
 import type { PiAuthorize } from "./PiApprovedTools";
+import { readCodeReferenceContext } from "../../session/codeReferenceContext";
 
 /** SDK送信の受付状態とイベント購読を保持する。 */
 type Submission = {
@@ -89,8 +90,8 @@ export abstract class PiRun extends PiLifecycle {
 			}
 		});
 		this.patch({ run: "running", runId: submission.id, error: null });
-		const operation = runtime
-			.prompt(message.text, {
+		const start = (text: string) =>
+			runtime.prompt(text, {
 				expandPromptTemplates: false,
 				preflightResult: (accepted) => {
 					if (!current() || submission.cancelled) {
@@ -116,7 +117,21 @@ export abstract class PiRun extends PiLifecycle {
 						});
 					}
 				},
-			})
+			});
+		const check = () => {
+			if (!current() || submission.cancelled) {
+				throw new Error("送信を停止しました。");
+			}
+		};
+		const input = message.codeReferences?.length
+			? readCodeReferenceContext(message.codeReferences, check).then(
+					(context) => {
+						check();
+						return start(`${message.text}\n\n${context}`);
+					},
+				)
+			: start(message.text);
+		const operation = input
 			.then(
 				async () => {
 					submission.ended = true;
@@ -181,7 +196,25 @@ export abstract class PiRun extends PiLifecycle {
 						"追加指示の対象の実行は終了しました。再送してください。",
 					);
 				}
-				await runtime.steer(message.text);
+				const context = message.codeReferences?.length
+					? await readCodeReferenceContext(
+							message.codeReferences,
+							() => {
+								if (
+									submission.cancelled ||
+									submission.ended ||
+									this.epoch !== epoch
+								) {
+									throw new Error(
+										"追加指示の対象の実行は終了しました。再送してください。",
+									);
+								}
+							},
+						)
+					: "";
+				await runtime.steer(
+					context ? `${message.text}\n\n${context}` : message.text,
+				);
 				if (
 					submission.cancelled ||
 					submission.ended ||
@@ -248,7 +281,7 @@ export abstract class PiRun extends PiLifecycle {
 		// SDK内部でモデルが変わっていても、旧providerの利用枠を再公開しない。
 		this.cancelQuota();
 		this.patch({
-			run: cancelled ? "cancelled" : error ? "failed" : "completed",
+			run: finishedRunStatus(cancelled, error),
 			error: cancelled ? null : (error ?? null),
 			tools: finishPiTools(this.state, cancelled, error),
 			messages: this.state.messages.map((message) => ({
@@ -294,4 +327,18 @@ export abstract class PiRun extends PiLifecycle {
 			this.submission = undefined;
 		}
 	}
+}
+
+/** 停止を優先して送信処理の最終状態を確定する。 */
+function finishedRunStatus(
+	cancelled: boolean,
+	error: string | undefined,
+): "cancelled" | "failed" | "completed" {
+	if (cancelled) {
+		return "cancelled";
+	}
+	if (error) {
+		return "failed";
+	}
+	return "completed";
 }

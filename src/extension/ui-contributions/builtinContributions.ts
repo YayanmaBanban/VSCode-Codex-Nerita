@@ -32,11 +32,13 @@ const configContributions: UiContributionSource = (state, context) => {
 			(id === "fast-mode"
 				? state.configOptions.find((item) => tiers.includes(item.id))
 				: undefined);
-		return option
-			? [option]
-			: context.backend === "codex" && id !== "provider"
-				? [{ id, name, currentValue: "", options: [] }]
-				: [];
+		if (option) {
+			return [option];
+		}
+		if (context.backend === "codex" && id !== "provider") {
+			return [{ id, name, currentValue: "", options: [] }];
+		}
+		return [];
 	});
 	options.push(
 		...state.configOptions.filter(

@@ -79,18 +79,7 @@ export function $writeParts(parts: ComposerPart[]): void {
 /** カーソルを含む最上位要素内の文字位置を求める。 */
 export function $pointOffset(point: PointType, block: ElementNode): number {
 	const target = point.getNode();
-	let offset =
-		point.type === "text"
-			? point.offset
-			: $isElementNode(target)
-				? target
-						.getChildren()
-						.slice(0, point.offset)
-						.reduce(
-							(sum, child) => sum + child.getTextContentSize(),
-							0,
-						)
-				: 0;
+	let offset = $offsetWithinNode(point, target);
 	let current = target;
 	while (current !== block) {
 		for (const sibling of current.getPreviousSiblings()) {
@@ -120,4 +109,21 @@ export function $selectOffset(block: ElementNode, offset: number): void {
 		offset -= size;
 	}
 	block.selectEnd();
+}
+
+/** テキスト位置または要素内の子ノード位置を文字数へ換算する。 */
+function $offsetWithinNode(
+	point: PointType,
+	target: ReturnType<PointType["getNode"]>,
+) {
+	if (point.type === "text") {
+		return point.offset;
+	}
+	if ($isElementNode(target)) {
+		return target
+			.getChildren()
+			.slice(0, point.offset)
+			.reduce((sum, child) => sum + child.getTextContentSize(), 0);
+	}
+	return 0;
 }

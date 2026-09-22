@@ -71,18 +71,33 @@ export function useWorkspaceSymbols(
 	const items = symbolCompletionItems(data?.entries ?? []);
 	return {
 		items,
-		empty: !bridge
-			? "シンボル検索を利用できません。"
-			: !term
-				? "シンボル名を入力してください。"
-				: !isSymbolQuery(term)
-					? "検索語は256文字以内で入力してください。"
-					: !data
-						? "検索中…"
-						: data.error ||
-							"候補がありません。検索語や言語拡張の対応を確認してください。",
+		empty: emptySymbolMessage(bridge, term, data),
 		notice: data?.truncated
 			? "先頭100件を表示しています。検索語を絞り込んでください。"
 			: undefined,
 	};
+}
+
+/** 接続・検索語・取得状態の順にシンボル候補がない理由を返す。 */
+function emptySymbolMessage(
+	bridge: Bridge | undefined,
+	term: string,
+	data: WorkspaceSymbolsResult | null,
+) {
+	if (!bridge) {
+		return "シンボル検索を利用できません。";
+	}
+	if (!term) {
+		return "シンボル名を入力してください。";
+	}
+	if (!isSymbolQuery(term)) {
+		return "検索語は256文字以内で入力してください。";
+	}
+	if (!data) {
+		return "検索中…";
+	}
+	return (
+		data.error ||
+		"候補がありません。検索語や言語拡張の対応を確認してください。"
+	);
 }

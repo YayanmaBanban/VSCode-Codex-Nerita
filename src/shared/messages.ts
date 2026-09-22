@@ -9,6 +9,7 @@ import type {
 	SessionReferenceOpen,
 } from "./sessionReferences";
 import type { SourceRange } from "./symbolLocation";
+import type { CodeReference } from "./codeReferences";
 import type {
 	WorkspaceSymbolsRequest,
 	WorkspaceSymbolsResult,
@@ -45,6 +46,7 @@ export type UiMessage =
 	| WorkspaceSymbolsRequest
 	| WorkspacePathsRequest
 	| ResolvePathRequest
+	| { type: "workspace/resolveCode"; requestId: string; text: string }
 	| { type: "ui/setSidebar"; requestId: string; location: SidebarLocation }
 	| PersonalityMessage
 	| ComposerMessage
@@ -74,6 +76,7 @@ export type UiMessage =
 			text: string;
 			referencedSessionIds?: string[];
 			changeScopes?: ChangeScope[];
+			codeReferences?: CodeReference[];
 	  }
 	| {
 			type: "prompt/cancel";

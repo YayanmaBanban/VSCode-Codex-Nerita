@@ -25,19 +25,21 @@ function ChatStory({
 	piApprovals?: boolean;
 	piHistory?: boolean;
 }) {
-	const bridge = useMemo(
-		() =>
-			piHistory
-				? createPiHistoryBridge()
-				: piApprovals
-					? createPiApprovalBridge()
-					: pi || piTools
-						? createPiBridge(piTools)
-						: appServer
-							? createAppServerBridge(scenario)
-							: createMockBridge(scenario),
-		[scenario, appServer, pi, piTools, piApprovals, piHistory],
-	);
+	const bridge = useMemo(() => {
+		if (piHistory) {
+			return createPiHistoryBridge();
+		}
+		if (piApprovals) {
+			return createPiApprovalBridge();
+		}
+		if (pi || piTools) {
+			return createPiBridge(piTools);
+		}
+		if (appServer) {
+			return createAppServerBridge(scenario);
+		}
+		return createMockBridge(scenario);
+	}, [scenario, appServer, pi, piTools, piApprovals, piHistory]);
 	return <ChatApp bridge={bridge} />;
 }
 const meta = {

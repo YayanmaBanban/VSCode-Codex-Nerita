@@ -13,7 +13,7 @@ export function UnifiedDiff({ path, diff }: { path: string; diff: string }) {
 				{diff.split("\n").map((line, index) => (
 					<span
 						key={index}
-						className={`${diffLineClass} ${line.startsWith("@@") ? "file-diff-hunk text-muted bg-diff-hunk" : line.startsWith("+") && !line.startsWith("+++") ? "file-diff-added bg-diff-added" : line.startsWith("-") && !line.startsWith("---") ? "file-diff-removed bg-diff-removed" : ""}`}
+						className={`${diffLineClass} ${diffLineColor(line)}`}
 					>
 						{line}
 						{"\n"}
@@ -22,4 +22,18 @@ export function UnifiedDiff({ path, diff }: { path: string; diff: string }) {
 			</pre>
 		</section>
 	);
+}
+
+/** ファイルヘッダーを除外し、差分の区切り・追加・削除を色分けする。 */
+function diffLineColor(line: string) {
+	if (line.startsWith("@@")) {
+		return "file-diff-hunk text-muted bg-diff-hunk";
+	}
+	if (line.startsWith("+") && !line.startsWith("+++")) {
+		return "file-diff-added bg-diff-added";
+	}
+	if (line.startsWith("-") && !line.startsWith("---")) {
+		return "file-diff-removed bg-diff-removed";
+	}
+	return "";
 }

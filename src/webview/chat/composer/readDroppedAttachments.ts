@@ -47,7 +47,7 @@ export async function readDroppedAttachments(
 				.filter((path) => /^(?:[a-z]:[\\/]|\/|\\\\)/i.test(path))
 				.map((path) => {
 					const normalized = path.replaceAll("\\", "/");
-					return `file:${normalized.startsWith("//") ? "" : normalized.startsWith("/") ? "//" : "///"}${normalized
+					return `file:${fileUriSlashes(normalized)}${normalized
 						.split("/")
 						.map(encodeURIComponent)
 						.join("/")
@@ -75,4 +75,15 @@ export async function readDroppedAttachments(
 	}
 
 	return dropped;
+}
+
+/** UNC・絶対パス・ドライブパスに対応するURIの区切りを返す。 */
+function fileUriSlashes(normalized: string) {
+	if (normalized.startsWith("//")) {
+		return "";
+	}
+	if (normalized.startsWith("/")) {
+		return "//";
+	}
+	return "///";
 }

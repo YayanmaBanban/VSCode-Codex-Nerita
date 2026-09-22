@@ -74,6 +74,27 @@ export function usePromptSubmission(
 			return;
 		}
 		const requestId = crypto.randomUUID();
+		const codeReferences = [
+			...new Map(
+				parts
+					.flatMap(
+						(part) =>
+							part.references?.flatMap(({ path }) =>
+								path.kind === "file" && path.range
+									? [{ uri: path.uri, range: path.range }]
+									: [],
+							) ?? [],
+					)
+					.map((reference) => [JSON.stringify(reference), reference]),
+			).values(),
+		];
+		if (codeReferences.length > 20) {
+			setNotice({
+				id: requestId,
+				text: "コード参照は20件までにしてください。",
+			});
+			return;
+		}
 		const changeScopes = [
 			...new Set(
 				parts.flatMap(
@@ -111,6 +132,7 @@ export function usePromptSubmission(
 			text: draft.trim(),
 			...(referencedSessionIds.length ? { referencedSessionIds } : {}),
 			...(changeScopes.length ? { changeScopes } : {}),
+			...(codeReferences.length ? { codeReferences } : {}),
 		});
 	};
 	return {

@@ -32,6 +32,7 @@ export default defineConfig([
 			curly: ["error", "all"],
 			eqeqeq: ["error", "always"],
 			"no-duplicate-imports": "error",
+			"no-nested-ternary": "error",
 			"object-shorthand": ["error", "always"],
 			"prefer-template": "error",
 		},

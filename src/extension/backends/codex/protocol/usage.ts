@@ -31,14 +31,7 @@ export function parseQuota(value: unknown): QuotaWindow[] {
 			throw new Error("Invalid rate limit window");
 		}
 		const minutes = window.windowDurationMins;
-		const label =
-			minutes === null
-				? key
-				: minutes % 1440 === 0
-					? `${minutes / 1440}日`
-					: minutes % 60 === 0
-						? `${minutes / 60}時間`
-						: `${minutes}分`;
+		const label = quotaWindowLabel(minutes, key);
 		const reset =
 			window.resetsAt === null ? null : new Date(window.resetsAt * 1000);
 		windows.push({
@@ -81,4 +74,18 @@ export function parseUsage(value: unknown): ContextUsage | null {
 		throw new Error("Invalid context window");
 	}
 	return { used: value.last.totalTokens, size: value.modelContextWindow };
+}
+
+/** 利用枠の期間を割り切れる最大の日・時間・分単位で表示する。 */
+function quotaWindowLabel(minutes: number | null, key: string) {
+	if (minutes === null) {
+		return key;
+	}
+	if (minutes % 1440 === 0) {
+		return `${minutes / 1440}日`;
+	}
+	if (minutes % 60 === 0) {
+		return `${minutes / 60}時間`;
+	}
+	return `${minutes}分`;
 }

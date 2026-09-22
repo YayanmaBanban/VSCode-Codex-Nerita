@@ -9,6 +9,7 @@ import {
 import { SessionContextError } from "./context/sessionContext";
 import { ChangeContextError } from "./context/changeContext";
 import { openChanges } from "./context/openChanges";
+import { CodeReferenceError } from "../../session/codeReferenceContext";
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
 export class CodexSessionController extends CodexSubmission {
@@ -35,16 +36,7 @@ export class CodexSessionController extends CodexSubmission {
 			this.emit({
 				type: "request/failed",
 				requestId: value.requestId,
-				error:
-					error instanceof SessionContextError ||
-					error instanceof ChangeContextError
-						? error.message
-						: value.type.startsWith("personality/") &&
-							  error instanceof Error
-							? `性格設定を読み込み・保存できませんでした: ${error.message}`
-							: value.type === "prompt/send"
-								? "送信できませんでした。接続を確認して再試行してください。"
-								: "現在の状態では操作できません。接続状態を確認してください。",
+				error: requestError(value.type, error),
 			});
 		}
 	}
@@ -220,6 +212,7 @@ export class CodexSessionController extends CodexSubmission {
 				message.sessionId,
 				message.referencedSessionIds,
 				message.changeScopes,
+				message.codeReferences,
 			);
 			this.emit({
 				type: "prompt/accepted",
@@ -277,4 +270,22 @@ export class CodexSessionController extends CodexSubmission {
 		}
 		throw new Error("Unsupported action");
 	}
+}
+
+/** 参照の詳細エラーを優先し、操作に応じた復旧方法を返す。 */
+function requestError(type: UiMessage["type"], error: unknown) {
+	if (
+		error instanceof SessionContextError ||
+		error instanceof ChangeContextError ||
+		error instanceof CodeReferenceError
+	) {
+		return error.message;
+	}
+	if (type.startsWith("personality/") && error instanceof Error) {
+		return `性格設定を読み込み・保存できませんでした: ${error.message}`;
+	}
+	if (type === "prompt/send") {
+		return "送信できませんでした。接続を確認して再試行してください。";
+	}
+	return "現在の状態では操作できません。接続状態を確認してください。";
 }

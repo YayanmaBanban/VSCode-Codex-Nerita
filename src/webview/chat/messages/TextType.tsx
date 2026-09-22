@@ -25,12 +25,7 @@ export function TextType({ text, typingSpeed = 20 }: TextTypeProps) {
 			),
 		[text],
 	);
-	const visible =
-		reducedMotion || revealAll
-			? text
-			: text.startsWith(displayed)
-				? displayed
-				: "";
+	const visible = visibleText(text, displayed, revealAll, reducedMotion);
 	useEffect(() => {
 		if (reducedMotion || revealAll || visible === text) {
 			return;
@@ -58,4 +53,20 @@ export function TextType({ text, typingSpeed = 20 }: TextTypeProps) {
 			</div>
 		</div>
 	);
+}
+
+/** 全文表示の設定を優先し、本文が置き換わった場合は古い表示を消す。 */
+function visibleText(
+	text: string,
+	displayed: string,
+	revealAll: boolean,
+	reducedMotion: boolean | null,
+) {
+	if (reducedMotion || revealAll) {
+		return text;
+	}
+	if (text.startsWith(displayed)) {
+		return displayed;
+	}
+	return "";
 }

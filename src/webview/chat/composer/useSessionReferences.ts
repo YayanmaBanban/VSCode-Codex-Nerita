@@ -136,13 +136,7 @@ export function useSessionReferences(
 	}
 	return {
 		items,
-		empty: !bridge
-			? "セッション検索を利用できません。"
-			: term.length > 256
-				? "検索語は256文字以内で入力してください。"
-				: loading || !data
-					? "読み込み中…"
-					: data.error || "参照できるセッションがありません。",
+		empty: emptySessionMessage(bridge, term, loading, data),
 		notice:
 			data?.error ||
 			(loading && data?.entries.length
@@ -154,4 +148,23 @@ export function useSessionReferences(
 			}
 		},
 	};
+}
+
+/** 接続・検索語・取得状態の順にセッション候補がない理由を返す。 */
+function emptySessionMessage(
+	bridge: Bridge | undefined,
+	term: string,
+	loading: boolean,
+	data: { error?: string } | null,
+) {
+	if (!bridge) {
+		return "セッション検索を利用できません。";
+	}
+	if (term.length > 256) {
+		return "検索語は256文字以内で入力してください。";
+	}
+	if (loading || !data) {
+		return "読み込み中…";
+	}
+	return data.error || "参照できるセッションがありません。";
 }

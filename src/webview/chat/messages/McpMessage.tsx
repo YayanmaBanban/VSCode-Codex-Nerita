@@ -56,7 +56,7 @@ export function McpMessage({
 								role="img"
 								aria-label={server.runtimeStatus ?? "不明"}
 								title={server.runtimeStatus ?? "不明"}
-								className={`mt-[0.6em] size-2 shrink-0 rounded-full ${server.runtimeStatus === "connected" ? "bg-menu-check" : server.runtimeStatus === "disabled" ? "bg-tool-error" : "bg-muted"}`}
+								className={`mt-[0.6em] size-2 shrink-0 rounded-full ${serverStatusColor(server.runtimeStatus)}`}
 							/>
 							<span className="min-w-0 [overflow-wrap:anywhere]">
 								{server.name}
@@ -67,4 +67,15 @@ export function McpMessage({
 			)}
 		</div>
 	);
+}
+
+/** MCPの接続状態を表示色へ変換し、未知の状態は中立色にする。 */
+function serverStatusColor(status: string | null) {
+	if (status === "connected") {
+		return "bg-menu-check";
+	}
+	if (status === "disabled") {
+		return "bg-tool-error";
+	}
+	return "bg-muted";
 }

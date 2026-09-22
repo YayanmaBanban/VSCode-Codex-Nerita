@@ -35,7 +35,7 @@ const directories: Record<string, WorkspacePath[]> = {
 export function mockResolvePath(
 	message: ResolvePathRequest,
 ): ResolvePathResult {
-	return {
+	const result: ResolvePathResult = {
 		type: "workspace/resolvedPath",
 		requestId: message.requestId,
 		entry:
@@ -48,6 +48,13 @@ export function mockResolvePath(
 						.toLowerCase(),
 			) ?? null,
 	};
+	if (result.entry && message.range) {
+		result.entry =
+			result.entry.kind === "file"
+				? { ...result.entry, range: message.range }
+				: null;
+	}
+	return result;
 }
 /** 非同期応答の内容を、実ファイルへアクセスせず生成する。 */
 export function mockWorkspacePaths(

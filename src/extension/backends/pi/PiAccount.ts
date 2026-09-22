@@ -69,7 +69,7 @@ export class PiAccount {
 					: "auth-required",
 			authMethods: [{ id: "pi", name: "Piの認証情報を管理" }],
 			piAccount: model
-				? `${model.provider}: ${status?.configured ? (this.models.isUsingOAuth(model.provider) ? "OAuth設定済み" : "APIキー・環境設定あり") : "認証未設定"}`
+				? `${model.provider}: ${authStatusLabel(this.models, model.provider, status?.configured)}`
 				: "Pi: モデル・認証未設定",
 			configOptions: piModelOptions(
 				this.session,
@@ -257,4 +257,19 @@ export class PiAccount {
 			],
 		}));
 	}
+}
+
+/** 認証済みの場合だけ方式を調べ、秘密値を含まない状態名を返す。 */
+function authStatusLabel(
+	models: ModelRuntime,
+	provider: string,
+	configured: boolean | undefined,
+) {
+	if (configured) {
+		if (models.isUsingOAuth(provider)) {
+			return "OAuth設定済み";
+		}
+		return "APIキー・環境設定あり";
+	}
+	return "認証未設定";
 }

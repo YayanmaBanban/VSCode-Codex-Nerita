@@ -12,13 +12,16 @@ import { nextTimelineOrder } from "../../../session/timelineOrder";
 /** App ServerのThread状態を表示状態へ変換する。 */
 export function threadAgentStatus(value: unknown): AgentStatus | undefined {
 	const type = isRecord(value) ? value.type : value;
-	return type === "active"
-		? "running"
-		: type === "idle"
-			? "idle"
-			: type === "systemError"
-				? "systemError"
-				: undefined;
+	if (type === "active") {
+		return "running";
+	}
+	if (type === "idle") {
+		return "idle";
+	}
+	if (type === "systemError") {
+		return "systemError";
+	}
+	return undefined;
 }
 /** idleは明示的な完了・停止を取り消さない。activeは次の実行として扱う。 */
 export function withThreadStatus(
@@ -63,12 +66,7 @@ export function agentItemPatch(
 		if (previous?.activityItemId === item.id) {
 			return {};
 		}
-		const status =
-			item.kind === "completed"
-				? "completed"
-				: item.kind === "interrupted"
-					? "interrupted"
-					: "running";
+		const status = activityStatus(item.kind);
 		agents.set(item.agentThreadId, {
 			...previous,
 			threadId: item.agentThreadId,
@@ -117,4 +115,15 @@ export function agentItemPatch(
 		return {};
 	}
 	return { agents: [...agents.values()] };
+}
+
+/** 活動の完了・中断通知をエージェントの表示状態へ変換する。 */
+function activityStatus(kind: unknown): AgentStatus {
+	if (kind === "completed") {
+		return "completed";
+	}
+	if (kind === "interrupted") {
+		return "interrupted";
+	}
+	return "running";
 }

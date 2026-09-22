@@ -139,36 +139,26 @@ export abstract class CodexOptions extends CodexAttachments {
 				}
 				this.turnOptions.sandboxPolicy = this.initialSandbox;
 			} else {
-				this.turnOptions.sandboxPolicy =
-					value === "read-only"
-						? { type: "readOnly", networkAccess: false }
-						: value === "workspace-write"
-							? {
-									type: "workspaceWrite",
-									writableRoots: [],
-									networkAccess: false,
-									excludeTmpdirEnvVar: false,
-									excludeSlashTmp: false,
-								}
-							: { type: "dangerFullAccess" };
+				this.turnOptions.sandboxPolicy = sandboxPolicy(value);
 			}
 		}
 		this.patch({
-			configOptions: this.state.configOptions.map((item) =>
-				item.id === id
-					? { ...item, currentValue: value }
-					: item.id === "fast-mode" && id === "service_tier"
-						? {
-								...item,
-								currentValue:
-									(value === "inherit"
-										? this.initialTier
-										: value) === "priority"
-										? "on"
-										: "off",
-							}
-						: item,
-			),
+			configOptions: this.state.configOptions.map((item) => {
+				if (item.id === id) {
+					return { ...item, currentValue: value };
+				}
+				if (item.id === "fast-mode" && id === "service_tier") {
+					return {
+						...item,
+						currentValue:
+							(value === "inherit" ? this.initialTier : value) ===
+							"priority"
+								? "on"
+								: "off",
+					};
+				}
+				return item;
+			}),
 		});
 	}
 	/** 会話単位の使用量とアカウント単位の利用枠を分ける。 */
@@ -187,4 +177,23 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.patch({ usage: parseUsage(p.tokenUsage) });
 		}
 	}
+}
+
+/** 権限モードから次のターンのサンドボックス設定を作る。 */
+function sandboxPolicy(
+	value: string,
+): NonNullable<TurnStartParams["sandboxPolicy"]> {
+	if (value === "read-only") {
+		return { type: "readOnly", networkAccess: false };
+	}
+	if (value === "workspace-write") {
+		return {
+			type: "workspaceWrite",
+			writableRoots: [],
+			networkAccess: false,
+			excludeTmpdirEnvVar: false,
+			excludeSlashTmp: false,
+		};
+	}
+	return { type: "dangerFullAccess" };
 }

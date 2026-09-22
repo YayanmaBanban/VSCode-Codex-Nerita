@@ -201,19 +201,19 @@ export function createPiAuthService(extensionUri: vscode.Uri): PiAuthService {
 					if (signal.aborted) {
 						return;
 					}
-					const url =
-						event.type === "auth_url"
-							? event.url
-							: event.type === "device_code"
-								? event.verificationUri
-								: undefined;
-					state.notice =
-						event.type === "device_code"
-							? `認証コード: ${event.userCode}`
-							: event.type === "auth_url"
-								? (event.instructions ??
-									"ブラウザで認証を完了してください。")
-								: event.message;
+					let url: string | undefined;
+					if (event.type === "auth_url") {
+						url = event.url;
+						state.notice =
+							event.instructions ??
+							"ブラウザで認証を完了してください。";
+					} else if (event.type === "device_code") {
+						url = event.verificationUri;
+						state.notice = `認証コード: ${event.userCode}`;
+					} else {
+						state.notice = event.message;
+					}
+
 					if (url) {
 						try {
 							if (new URL(url).protocol === "https:") {

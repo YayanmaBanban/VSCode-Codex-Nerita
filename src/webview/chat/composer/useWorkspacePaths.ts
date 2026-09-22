@@ -63,18 +63,31 @@ export function useWorkspacePaths(
 	return {
 		items: filtered,
 		path: current?.path ?? "ワークスペース",
-		empty: !bridge
-			? "ファイル選択を利用できません。"
-			: !data
-				? "読み込み中…"
-				: data.error ||
-					(uri || data.entries.length
-						? "候補がありません。"
-						: "開いているワークスペースがありません。"),
+		empty: emptyPathMessage(bridge, data, uri),
 		open: (entry: WorkspacePath) =>
 			setStack((previous) => [...previous, entry]),
 		back: () => setStack((previous) => previous.slice(0, -1)),
 		reset: () => setStack([]),
 		hasParent: stack.length > 0,
 	};
+}
+
+/** 接続・取得状態とフォルダーの有無から候補がない理由を返す。 */
+function emptyPathMessage(
+	bridge: Bridge | undefined,
+	data: WorkspacePathsResult | null,
+	uri: string | null,
+) {
+	if (!bridge) {
+		return "ファイル選択を利用できません。";
+	}
+	if (!data) {
+		return "読み込み中…";
+	}
+	return (
+		data.error ||
+		(uri || data.entries.length
+			? "候補がありません。"
+			: "開いているワークスペースがありません。")
+	);
 }

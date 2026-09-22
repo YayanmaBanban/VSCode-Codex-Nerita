@@ -10,6 +10,7 @@ import { isRecord } from "../../shared/validation";
 import { isUiMessage } from "../../shared/uiMessageValidation";
 import { listWorkspacePaths } from "./workspacePaths";
 import { resolvePath } from "./resolvePath";
+import { CopiedCode } from "./copiedCode";
 import { openResource } from "./openResource";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";
 import { configuredBackend, saveBackend } from "./backendSettings";
@@ -35,6 +36,7 @@ export class ChatViewProvider
 	private placement: SidebarPlacement;
 	private backendSubscription: vscode.Disposable;
 	private backendPending = false;
+	private copiedCode = new CopiedCode();
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
 		private extensionUri: vscode.Uri,
@@ -157,6 +159,14 @@ export class ChatViewProvider
 				await webview.postMessage(await resolvePath(value));
 				return;
 			}
+			if (value.type === "workspace/resolveCode") {
+				await webview.postMessage({
+					type: "workspace/resolvedPath",
+					requestId: value.requestId,
+					entry: await this.copiedCode.resolve(value.text),
+				} satisfies HostMessage);
+				return;
+			}
 			if (value.type === "reference/open") {
 				await openResource(value.uri, value.range);
 				return;
@@ -259,18 +269,14 @@ export class ChatViewProvider
 				void webview.postMessage({
 					type: "request/failed",
 					requestId: value.requestId,
-					error:
-						value.type === "ui/setBackend"
-							? "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、ウィンドウを再読み込みしてください。"
-							: value.type === "reference/open"
-								? "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。"
-								: "表示先を切り替えられませんでした。再試行してください。",
+					error: viewRequestError(value.type),
 				} satisfies HostMessage);
 			}
 		}
 	}
 	/** Webview に属する購読だけを破棄する。 */
 	dispose(): void {
+		this.copiedCode.dispose();
 		this.backendSubscription.dispose();
 		this.placement.dispose();
 		for (const view of [...this.views.values()]) {
@@ -280,4 +286,15 @@ export class ChatViewProvider
 		this.panel = undefined;
 		this.sidebar = undefined;
 	}
+}
+
+/** 表示操作の失敗に対応した復旧方法を返す。 */
+function viewRequestError(type: string) {
+	if (type === "ui/setBackend") {
+		return "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、ウィンドウを再読み込みしてください。";
+	}
+	if (type === "reference/open") {
+		return "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。";
+	}
+	return "表示先を切り替えられませんでした。再試行してください。";
 }

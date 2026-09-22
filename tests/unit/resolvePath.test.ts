@@ -17,6 +17,31 @@ import { resolvePath } from "../../src/extension/webview/resolvePath";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 beforeEach(() => vi.clearAllMocks());
+it("ファイルの範囲を保持し、フォルダや不正な範囲は拒否する", async () => {
+	const range = {
+		start: { line: 0, character: 2 },
+		end: { line: 100, character: 5 },
+	};
+	const request = {
+		type: "workspace/resolvePath" as const,
+		requestId: "range",
+		path: "D:/test.ts",
+		range,
+	};
+	api.stat.mockResolvedValue({ type: 1 });
+	expect(isUiMessage(request)).toBe(true);
+	const result = await resolvePath(request);
+	expect(result.entry?.range).toEqual(range);
+	expect(isHostMessage(result)).toBe(true);
+	api.stat.mockResolvedValue({ type: 2 });
+	expect((await resolvePath(request)).entry).toBeNull();
+	expect(
+		isUiMessage({
+			...request,
+			range: { ...range, start: { line: -1, character: 0 } },
+		}),
+	).toBe(false);
+});
 it.each([
 	[1, "file"],
 	[2, "directory"],
