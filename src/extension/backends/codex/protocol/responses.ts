@@ -1,7 +1,7 @@
 // 利用する RPC の生成型と、受信データの実行時検証を結び付ける。
-import type { ClientRequest } from "../../../../codex-app-server/ClientRequest";
-import type { InitializeResponse } from "../../../../codex-app-server/InitializeResponse";
-import type { ThreadLoadedListResponse } from "../../../../codex-app-server/v2/ThreadLoadedListResponse";
+import type { ClientRequest } from "../codex-app-server/ClientRequest";
+import type { InitializeResponse } from "../codex-app-server/InitializeResponse";
+import type { ThreadLoadedListResponse } from "../codex-app-server/v2/ThreadLoadedListResponse";
 import { isRecord } from "../../../../shared/validation";
 import { parseSkills } from "./skills";
 import { parseMcpStatus } from "../mcpStatus";

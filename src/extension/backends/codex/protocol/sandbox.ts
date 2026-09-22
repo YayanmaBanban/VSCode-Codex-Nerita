@@ -1,5 +1,5 @@
 // 会話開始時のsandboxを検証し、元の権限へ戻すために保持する。
-import type { SandboxPolicy } from "../../../../codex-app-server/v2/SandboxPolicy";
+import type { SandboxPolicy } from "../codex-app-server/v2/SandboxPolicy";
 import { isRecord } from "../../../../shared/validation";
 /** 利用する全フィールドを検証してsandboxを返す。 */
 export function parseSandbox(value: unknown): SandboxPolicy {

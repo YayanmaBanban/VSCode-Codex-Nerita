@@ -11,7 +11,7 @@ if (require("../package.json").dependencies["@openai/codex"] !== version) {
 		"直接依存の Codex を完全固定し、pnpm install を実行してください。",
 	);
 }
-const out = path.join(root, "src/codex-app-server");
+const out = path.join(root, "src/extension/backends/codex/codex-app-server");
 const result = spawnSync(
 	process.execPath,
 	[

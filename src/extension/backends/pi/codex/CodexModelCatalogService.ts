@@ -3,7 +3,7 @@ import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { PiCatalogModel, PiModelCatalogReader } from "../PiModelCatalog";
 import { codexOAuth } from "./CodexOAuth";
 import { normalizeCodexModels } from "./CodexModelCatalog";
-import codexVersion from "../../../../codex-app-server/version.json";
+import codexVersion from "../../codex/codex-app-server/version.json";
 
 /** 生HTTP本文・token・account IDを返却値や例外へ含めない。 */
 export class CodexModelCatalogService implements PiModelCatalogReader {

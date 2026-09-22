@@ -15,7 +15,7 @@
 
 ## Live model catalog
 
-`PiModelCatalogService` はprovider registryの `createCatalog` へ取得を委譲する。Codex OAuthだけが固定HTTPS `/backend-api/codex/models` を利用する。`client_version` は同梱Codexの `src/codex-app-server/version.json` から生成する。認証はQuotaと共通の `CodexOAuth` を通してPi SDKの `getAuth()` / `checkAuth()` へ委譲し、認証ファイルを直接読まない。
+`PiModelCatalogService` はprovider registryの `createCatalog` へ取得を委譲する。Codex OAuthだけが固定HTTPS `/backend-api/codex/models` を利用する。`client_version` は同梱Codexの `src/extension/backends/codex/codex-app-server/version.json` から生成する。認証はQuotaと共通の `CodexOAuth` を通してPi SDKの `getAuth()` / `checkAuth()` へ委譲し、認証ファイルを直接読まない。
 
 認証を含む5秒timeout、redirect禁止、展開後2MiBの本文上限を設ける。未知schema・不正JSON・HTTP失敗は同一accountで最後に成功したcatalogへ戻す。初回失敗では現在モデルを維持し、未確認のPi staticモデルへ候補を広げない。live未確認のReasoning選択・Ultra・Fastは公開しないが、現在モデルでのチャットを妨げない。
 

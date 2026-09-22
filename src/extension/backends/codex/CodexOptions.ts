@@ -1,6 +1,6 @@
 // モデル候補・会話単位の設定・添付を、実行の開始前に確定する。
 import { modelOptions } from "./settings/modelOptions";
-import type { TurnStartParams } from "../../../codex-app-server/v2/TurnStartParams";
+import type { TurnStartParams } from "./codex-app-server/v2/TurnStartParams";
 import type { ModelInfo } from "./protocol/account";
 import type { StartedThread } from "./protocol/turn";
 import { CodexAttachments } from "./CodexAttachments";

@@ -13,7 +13,7 @@ export default defineConfig([
 		"coverage/**",
 		"dist/**",
 		"out/**",
-		"src/codex-app-server/**",
+		"src/extension/backends/codex/codex-app-server/**",
 	]),
 	js.configs.recommended,
 	prettier,

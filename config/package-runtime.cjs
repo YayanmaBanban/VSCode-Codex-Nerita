@@ -67,7 +67,7 @@ async function packageRuntime() {
 	}
 	const codexJson = require.resolve("@openai/codex/package.json");
 	const { version } = require(codexJson);
-	const generated = require("../src/codex-app-server/version.json");
+	const generated = require("../src/extension/backends/codex/codex-app-server/version.json");
 	if (
 		require("../package.json").dependencies["@openai/codex"] !== version ||
 		generated.version !== version ||

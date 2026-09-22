@@ -34,7 +34,10 @@ const { stdout } = await promisify(execFile)(executable, ["--version"], {
 	timeout: 10000,
 });
 const expected = JSON.parse(
-	await readFile("src/codex-app-server/version.json", "utf8"),
+	await readFile(
+		"src/extension/backends/codex/codex-app-server/version.json",
+		"utf8",
+	),
 );
 assert.equal(stdout.trim(), `codex-cli ${expected.version}`);
 let disconnected = false;

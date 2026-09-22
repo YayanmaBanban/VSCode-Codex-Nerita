@@ -52,7 +52,7 @@
 	"include": [
 		"src/extension/**/*.ts",
 		"src/shared/**/*.ts",
-		"src/codex-app-server/**/*.ts"
+		"src/extension/backends/codex/codex-app-server/**/*.ts"
 	],
 	"exclude": ["tests", "node_modules"]
 }
