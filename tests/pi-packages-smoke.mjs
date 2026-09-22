@@ -1,6 +1,6 @@
 // 同梱SDKにCLI形式のパッケージ設定を渡し、承認と登録リソースを検証する。
 import assert from "node:assert/strict";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 /** ユーザーの設定には触れず、隔離したglobal/projectパッケージを読み込む。 */
@@ -54,6 +54,16 @@ export default function(pi) {
 		JSON.stringify({ packages: [packageDir] }),
 	);
 	await mkdir(path.join(cwd, ".pi"), { recursive: true });
+	const localExtensions = path.join(cwd, ".pi/extensions");
+	await mkdir(localExtensions, { recursive: true });
+	const localExtensionSource = `export default function(pi) {
+  pi.on("session_start", () => { pi.appendEntry("local-started", { loaded: true }); });
+  pi.on("before_provider_request", (event) => ({ ...event.payload, neritaLocalSmoke: true }));
+}`;
+	await writeFile(
+		path.join(localExtensions, "local.ts"),
+		localExtensionSource,
+	);
 	await writeFile(
 		path.join(cwd, ".pi/settings.json"),
 		JSON.stringify({ packages: [packageDir] }),
@@ -76,6 +86,33 @@ export default function(pi) {
 		},
 	});
 	try {
+		const extensions = session.resourceLoader.getExtensions().extensions;
+		assert.equal(
+			extensions.filter(
+				(extension) =>
+					extension.path === "<inline:nerita-provider-controls>",
+			).length,
+			1,
+		);
+		assert.ok(
+			extensions.some((extension) =>
+				extension.path.endsWith("local.ts"),
+			),
+		);
+		assert.ok(
+			session.sessionManager
+				.getEntries()
+				.some(
+					(entry) =>
+						entry.type === "custom" &&
+						entry.customType === "local-started",
+				),
+		);
+		assert.deepEqual(await readdir(localExtensions), ["local.ts"]);
+		assert.equal(
+			await readFile(path.join(localExtensions, "local.ts"), "utf8"),
+			localExtensionSource,
+		);
 		assert.equal(
 			session.skills.filter((skill) => skill.name === "package-skill")
 				.length,
@@ -116,6 +153,7 @@ export default function(pi) {
 				.prompts.some((prompt) => prompt.name === "package-prompt"),
 		);
 		await session.prompt("/package-prompt expanded");
+		assert.equal(requests.at(-1).neritaLocalSmoke, true);
 		assert.ok(
 			JSON.stringify(requests.at(-1).messages).includes(
 				"Package prompt expanded",

@@ -1,13 +1,30 @@
 ﻿// 会話の正本とUI購読を保持し、単調増加番号付き差分を配信する。
 import { initialState, type ChatState } from "../../shared/chatState";
 import { type HostMessage } from "../../shared/messages";
+import { createBuiltinUiRegistry } from "../ui-contributions/builtinContributions";
+import type { ContributionContext } from "../ui-contributions/contributionConditions";
 /** 接続と実行が共有する状態・承認管理。 */
 export class SessionState {
 	protected state = initialState();
+	protected readonly uiRegistry = createBuiltinUiRegistry();
+	/** Piは実SDKの現在のproviderで上書きする。 */
+	protected contributionContext(): ContributionContext {
+		return {
+			backend: "codex",
+			provider: "openai-codex",
+			capabilities: this.state.configOptions.map((item) => item.id),
+		};
+	}
 	private listeners = new Set<(event: HostMessage) => void>();
 	/** 外部から正本を変更できないスナップショットを返す。 */
 	snapshot(): ChatState {
-		return structuredClone(this.state);
+		return structuredClone({
+			...this.state,
+			uiContributions: this.uiRegistry.resolve(
+				this.state,
+				this.contributionContext(),
+			),
+		});
 	}
 	/** UI通知の購読と解除を提供する。 */
 	subscribe(listener: (event: HostMessage) => void): () => void {
@@ -49,6 +66,17 @@ export class SessionState {
 			...patch,
 			revision: this.state.revision + 1,
 		};
+		const contributions = this.uiRegistry.resolve(
+			this.state,
+			this.contributionContext(),
+		);
+		if (
+			JSON.stringify(contributions) !==
+			JSON.stringify(this.state.uiContributions)
+		) {
+			this.state.uiContributions = contributions;
+			patch.uiContributions = contributions;
+		}
 		this.emit({
 			type: "state/patch",
 			revision: this.state.revision,

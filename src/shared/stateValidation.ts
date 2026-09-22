@@ -9,6 +9,7 @@ export function isState(value: unknown): value is ChatState {
 		isRecord(value) &&
 		isRevision(value.revision) &&
 		[
+			"uiContributions",
 			"personality",
 			"skills",
 			"connection",

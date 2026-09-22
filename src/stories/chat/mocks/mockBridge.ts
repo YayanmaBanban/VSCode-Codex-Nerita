@@ -8,6 +8,7 @@ import { mockWorkspacePaths, mockResolvePath } from "./mockWorkspacePaths";
 import { mockWorkspaceSymbols } from "./mockWorkspaceSymbols";
 import { mockSessionReferences } from "./mockSessionReferences";
 import { mockMcpCommand } from "./mockMcpCommand";
+import { createBuiltinUiRegistry } from "../../../extension/ui-contributions/builtinContributions";
 
 /** Story の開始状態。 */
 export type Scenario =
@@ -104,12 +105,26 @@ function scenarioState(scenario: Scenario): ChatState {
 	return state;
 }
 /** 送信記録・購読・段階的な返信を持つ代替実装を作る。 */
-export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
+export function createMockBridge(
+	scenario: Scenario = "empty",
+	contributions = false,
+): Bridge & {
 	sent: UiMessage[];
 	emit: (event: HostMessage) => void;
 	patchState: (changes: Partial<ChatState>) => void;
 } {
 	let state = scenarioState(scenario);
+	const registry = createBuiltinUiRegistry();
+	/** 移行確認用Storyでは実Hostと同じ宣言を生成する。 */
+	const ui = () =>
+		registry.resolve(state, {
+			backend: "codex",
+			provider: "openai-codex",
+			capabilities: state.configOptions.map((option) => option.id),
+		});
+	if (contributions) {
+		state.uiContributions = ui();
+	}
 	const listeners = new Set<(event: HostMessage) => void>();
 	const sent: UiMessage[] = [];
 	const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -118,6 +133,10 @@ export function createMockBridge(scenario: Scenario = "empty"): Bridge & {
 	};
 	const patch = (changes: Partial<ChatState>) => {
 		state = { ...state, ...changes, revision: state.revision + 1 };
+		if (contributions) {
+			state.uiContributions = ui();
+			changes = { ...changes, uiContributions: state.uiContributions };
+		}
 		emit({ type: "state/patch", revision: state.revision, patch: changes });
 	};
 	const clear = () => {

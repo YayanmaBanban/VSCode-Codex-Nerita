@@ -5,10 +5,13 @@ import { isPersonalitySettings } from "./personality";
 import { validComposerField } from "./composerValidation";
 import { isAsyncTask } from "./asyncTask";
 import { isSubAgent } from "./subAgents";
+import { isUiContributions } from "./uiContributionValidation";
 
 /** 差分通知に未知のフィールドが混入した場合も拒否する。 */
 export function validStateField(key: string, value: unknown): boolean {
 	switch (key) {
+		case "uiContributions":
+			return value === null || isUiContributions(value);
 		case "agents":
 			return Array.isArray(value) && value.every(isSubAgent);
 		case "personality":

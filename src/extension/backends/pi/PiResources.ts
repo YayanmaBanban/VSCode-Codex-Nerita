@@ -1,6 +1,7 @@
 // Pi標準のパッケージ解決を利用し、登録ツールをHostの承認へ接続する。
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
+import { neritaExtensionFactories } from "./PiBuiltinExtensions";
 
 /** CLIで導入したリソースを新規会話・再接続時に読み込む。 */
 export async function loadPiResources(
@@ -15,6 +16,7 @@ export async function loadPiResources(
 		cwd,
 		agentDir,
 		settingsManager,
+		extensionFactories: neritaExtensionFactories(),
 		// ターミナル用のテーマはVS Code Webviewには適用しない。
 		noThemes: true,
 		extensionsOverride(result) {

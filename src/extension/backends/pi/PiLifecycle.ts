@@ -5,9 +5,18 @@ import type { PiFactory, PiSession } from "./PiRuntime";
 import type { PiAuthorize } from "./PiApprovedTools";
 import type { PiResumeTarget } from "./PiSessionStore";
 import { restorePiHistory } from "./PiHistoryMapper";
+import type { ContributionContext } from "../../ui-contributions/contributionConditions";
 
 /** Piの接続と保存セッションの寿命を管理する。 */
 export abstract class PiLifecycle extends SessionState {
+	/** 選択モデルのproviderはbackendとは別にHostで解決する。 */
+	protected override contributionContext(): ContributionContext {
+		return {
+			backend: "pi",
+			provider: this.runtime?.model?.provider ?? null,
+			capabilities: this.state.configOptions.map((item) => item.id),
+		};
+	}
 	protected runtime: PiSession | undefined;
 	private runtimeEpoch: number | undefined;
 	protected epoch = 0;
