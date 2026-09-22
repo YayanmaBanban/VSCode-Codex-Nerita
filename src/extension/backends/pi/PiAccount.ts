@@ -7,6 +7,7 @@ import type { ChatState } from "../../../shared/chatState";
 import type { PiAuthItem } from "../../../shared/piAuth";
 import { PiProviderControls } from "./PiProviderControls";
 import { piModelOptions } from "./PiModelOptions";
+import { PiModelCatalogService } from "./PiModelCatalogService";
 
 /** SDKの認証対話をVS Codeとテストで差し替える。 */
 export type PiAuthService = {
@@ -25,8 +26,26 @@ export class PiAccount {
 		private session: AgentSession,
 		private service?: PiAuthService,
 		readonly controls = new PiProviderControls(),
+		readonly catalog = new PiModelCatalogService(models, session),
 	) {
 		controls.bind(session);
+		controls.bindCatalog((provider) => catalog.snapshot(provider));
+	}
+
+	/** 接続・履歴復元時はlive metadataを取得してから同じ補正経路を通す。 */
+	async refreshCatalog(signal: AbortSignal): Promise<void> {
+		const provider = this.session.model?.provider;
+		if (!provider || this.catalog.snapshot(provider) === undefined) {
+			return;
+		}
+		await this.catalog.refresh(provider, signal);
+		signal.throwIfAborted();
+		try {
+			await this.reconcileModel(signal);
+		} catch {
+			signal.throwIfAborted();
+		}
+		this.controls.snapshot();
 	}
 
 	/** キー、トークン、SDKの認証結果そのものは公開しない。 */
@@ -56,15 +75,23 @@ export class PiAccount {
 				this.session,
 				this.controls,
 				available,
+				this.catalog,
 			),
 		};
 	}
 
 	/** 利用可能なカタログに含まれるモデルだけを選ぶ。 */
 	async selectModel(value: string, signal: AbortSignal): Promise<void> {
-		const model = (
-			await this.models.getAvailable(undefined, { signal })
-		).find((item) => `${item.provider}/${item.id}` === value);
+		const available = await this.models.getAvailable(undefined, { signal });
+		const target = available.find(
+			(item) => `${item.provider}/${item.id}` === value,
+		);
+		if (target) {
+			await this.catalog.refresh(target.provider, signal);
+		}
+		const model = this.catalog
+			.available(available)
+			.find((item) => `${item.provider}/${item.id}` === value);
 		if (!model) {
 			throw new Error("利用可能なPiモデルを選択してください。");
 		}
@@ -76,8 +103,11 @@ export class PiAccount {
 	/** Provider変更では利用可能な先頭モデルを選び、SDKのclampを使う。 */
 	async selectProvider(value: string, signal: AbortSignal): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
+		await this.catalog.refresh(value, signal);
 		signal.throwIfAborted();
-		const model = available.find((item) => item.provider === value);
+		const model = this.catalog
+			.available(available)
+			.find((item) => item.provider === value);
 		if (!model) {
 			throw new Error("利用可能なPi providerを選択してください。");
 		}
@@ -132,6 +162,7 @@ export class PiAccount {
 						string,
 						"oauth" | "api_key" | "logout",
 					];
+					this.catalog.invalidate();
 					if (type === "logout") {
 						await this.models.logout(provider, {
 							signal: operationSignal,
@@ -145,6 +176,7 @@ export class PiAccount {
 						authenticatedProvider = provider;
 					}
 					operationSignal.throwIfAborted();
+					await this.catalog.refresh(provider, operationSignal);
 					await this.reconcileModel(
 						operationSignal,
 						authenticatedProvider,
@@ -170,6 +202,7 @@ export class PiAccount {
 		const current = this.session.model;
 		if (
 			current &&
+			this.catalog.canRetain(current) &&
 			available.some(
 				(model) =>
 					model.provider === current.provider &&
@@ -178,9 +211,11 @@ export class PiAccount {
 		) {
 			return;
 		}
+		const candidates = this.catalog.available(available);
 		const model =
-			available.find((model) => model.provider === provider) ??
-			available[0];
+			candidates.find(
+				(model) => model.provider === (provider ?? current?.provider),
+			) ?? candidates[0];
 		if (model) {
 			await this.session.setModel(model);
 		}

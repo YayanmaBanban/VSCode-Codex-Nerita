@@ -10,6 +10,7 @@ import { isPiProviderControls } from "../../src/shared/piProviderControls";
 import { createBuiltinUiRegistry } from "../../src/extension/ui-contributions/builtinContributions";
 import { initialState } from "../../src/shared/chatState";
 import { piHarness } from "./piHarness";
+import { piLiveCatalog } from "../fixtures/piLiveCatalog";
 
 /** SDKのモデル変更時clampを持つセッションを用意する。 */
 function fixture() {
@@ -63,6 +64,9 @@ function fixture() {
 		undefined,
 		controls,
 	);
+	account.catalog.snapshot = (provider) =>
+		provider === "openai-codex" ? piLiveCatalog : undefined;
+	account.catalog.refresh = () => Promise.resolve();
 	return { session, controls, account, signal: new AbortController().signal };
 }
 

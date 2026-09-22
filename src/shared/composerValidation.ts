@@ -60,6 +60,8 @@ export function validComposerField(key: string, value: unknown): boolean {
 					typeof option.id === "string" &&
 					typeof option.name === "string" &&
 					typeof option.currentValue === "string" &&
+					(option.currentLabel === undefined ||
+						typeof option.currentLabel === "string") &&
 					Array.isArray(option.options) &&
 					option.options.every(
 						(choice: unknown) =>

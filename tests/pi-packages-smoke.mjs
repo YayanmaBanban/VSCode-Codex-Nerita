@@ -71,6 +71,7 @@ export default function(pi) {
 	let allowed = false;
 	let approvals = 0;
 	const abort = new AbortController();
+	const catalogRequests = [];
 	const session = await createPiRuntime({
 		extensionPath,
 		cwd,
@@ -78,6 +79,46 @@ export default function(pi) {
 		provider: "local",
 		model: "smoke",
 		signal: abort.signal,
+		request: async (url, options) => {
+			catalogRequests.push(String(url));
+			assert.equal(options.redirect, "error");
+			assert.equal(
+				options.headers["ChatGPT-Account-Id"],
+				"smoke-account",
+			);
+			if (String(url).includes("/wham/usage")) {
+				return new Response(null, { status: 503 });
+			}
+			assert.ok(
+				String(url).startsWith(
+					"https://chatgpt.com/backend-api/codex/models?client_version=",
+				),
+			);
+			return Response.json({
+				models: [
+					{
+						slug: "controls-test",
+						display_name: "Live Controls",
+						priority: 0,
+						visibility: "list",
+						default_reasoning_level: "high",
+						supported_reasoning_levels: [
+							"low",
+							"high",
+							"max",
+							"ultra",
+						].map((effort) => ({ effort })),
+						service_tiers: [
+							{
+								id: "priority",
+								name: "Fast",
+								description: "Smoke priority",
+							},
+						],
+					},
+				],
+			});
+		},
 		authorize: () => {
 			approvals++;
 			return allowed
@@ -194,6 +235,25 @@ export default function(pi) {
 				},
 			],
 		});
+		// OAuthの解決境界だけを模擬し、catalog parser・overlay・SDK操作は実装を通す。
+		const isUsingOAuth = session.modelRuntime.isUsingOAuth.bind(
+			session.modelRuntime,
+		);
+		const getAuth = session.modelRuntime.getAuth.bind(session.modelRuntime);
+		const checkAuth = session.modelRuntime.checkAuth.bind(
+			session.modelRuntime,
+		);
+		const token = `header.${Buffer.from(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "smoke-account" } })).toString("base64url")}.smoke`;
+		session.modelRuntime.isUsingOAuth = (provider) =>
+			provider === "openai-codex" || isUsingOAuth(provider);
+		session.modelRuntime.getAuth = (provider, options) =>
+			provider === "openai-codex"
+				? Promise.resolve({ auth: { apiKey: token } })
+				: getAuth(provider, options);
+		session.modelRuntime.checkAuth = (provider, options) =>
+			provider === "openai-codex"
+				? Promise.resolve({ type: "oauth" })
+				: checkAuth(provider, options);
 		await session.account.selectModel(
 			"openai-codex/controls-test",
 			abort.signal,
@@ -203,6 +263,16 @@ export default function(pi) {
 			"high",
 			"max",
 		]);
+		assert.equal(
+			session.account.snapshot().configOptions[0].options[0].name,
+			"Live Controls",
+		);
+		assert.equal(await session.quota.read(abort.signal), null);
+		assert.equal(
+			session.account.snapshot().configOptions[0].options[0].name,
+			"Live Controls",
+		);
+		assert.equal(catalogRequests.length, 2);
 		await session.account.configure(
 			"reasoning_effort",
 			"ultra",

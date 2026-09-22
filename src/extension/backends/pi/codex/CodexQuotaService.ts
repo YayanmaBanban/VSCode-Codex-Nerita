@@ -5,6 +5,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { QuotaWindow } from "../../../../shared/composer";
 import { isRecord } from "../../../../shared/validation";
+import { codexOAuth } from "./CodexOAuth";
 
 /** 未知の応答項目は捨て、検証できる時間枠と残率だけ公開する。 */
 export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
@@ -69,31 +70,9 @@ export class CodexQuotaService {
 				caller,
 				AbortSignal.timeout(10_000),
 			]);
-			const resolved = await this.models.getAuth(model.provider, {
-				signal,
-			});
+			const auth = await codexOAuth(this.models, signal);
 			signal.throwIfAborted();
-			if (
-				(await this.models.checkAuth(model.provider, { signal }))
-					?.type !== "oauth"
-			) {
-				return null;
-			}
-			const token = resolved?.auth.apiKey;
-			if (!token) {
-				return null;
-			}
-			// PiのCodex adapterと同じclaimを読み、値はHostから出さない。
-			const claims: unknown = JSON.parse(
-				Buffer.from(token.split(".")[1] ?? "", "base64url").toString(
-					"utf8",
-				),
-			);
-			const auth = isRecord(claims)
-				? claims["https://api.openai.com/auth"]
-				: null;
-			const account = isRecord(auth) ? auth.chatgpt_account_id : null;
-			if (typeof account !== "string" || !account) {
+			if (!auth) {
 				return null;
 			}
 			const response = await this.request(
@@ -101,11 +80,7 @@ export class CodexQuotaService {
 				{
 					signal,
 					redirect: "error",
-					headers: {
-						Authorization: `Bearer ${token}`,
-						"ChatGPT-Account-Id": account,
-						Accept: "application/json",
-					},
+					headers: auth.headers,
 				},
 			);
 			if (!response.ok) {

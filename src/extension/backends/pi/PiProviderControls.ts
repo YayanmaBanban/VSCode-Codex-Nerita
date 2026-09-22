@@ -3,12 +3,19 @@ import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiProviderControls as ControlsState } from "../../../shared/piProviderControls";
 import type { PiModelControls, PiProviders } from "./PiProvider";
 import { piProviders } from "./PiProviders";
+import type { PiCatalogSnapshot } from "./PiModelCatalog";
 
 /** 固有機能の状態をセッションに閉じ込め、provider切替で破棄する。 */
 export class PiProviderControls {
 	private session: AgentSession | undefined;
 	private provider: string | undefined;
 	private active: PiModelControls | undefined;
+	private catalog: (provider: string) => PiCatalogSnapshot = () => undefined;
+
+	/** providerごとの最新metadataを設定処理・要求フックの両方で参照する。 */
+	bindCatalog(read: (provider: string) => PiCatalogSnapshot): void {
+		this.catalog = read;
+	}
 
 	constructor(private readonly providers: PiProviders = piProviders) {}
 
@@ -35,6 +42,9 @@ export class PiProviderControls {
 				this.active?.bind(this.session);
 			}
 		}
+		if (provider) {
+			this.active?.setCatalog?.(this.catalog(provider));
+		}
 		return this.active;
 	}
 
@@ -57,7 +67,13 @@ export class PiProviderControls {
 
 	/** 固有候補の意味を共通処理で判断しない。 */
 	get reasoningOptions() {
-		return this.resolve()?.reasoningOptions ?? [];
+		return (
+			this.resolve()?.reasoningOptions ??
+			this.session
+				?.getAvailableThinkingLevels()
+				.map((value) => ({ value, name: value })) ??
+			[]
+		);
 	}
 
 	/** Providerが定義した追加項目をそのままContributionへ渡す。 */

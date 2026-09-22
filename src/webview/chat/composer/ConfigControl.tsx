@@ -41,7 +41,9 @@ export function ConfigControl({
 							aria-label={option.name}
 						>
 							<span className="truncate">
-								{current?.name ?? option.name}
+								{current?.name ??
+									option.currentLabel ??
+									option.name}
 							</span>
 							<ChevronDown size={12} aria-hidden="true" />
 						</Select.Trigger>

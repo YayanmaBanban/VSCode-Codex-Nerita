@@ -27,7 +27,23 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		const fast = page.getByRole("switch", { name: "Fast mode" });
 		await expect(provider).toBeEnabled({ timeout: 30000 });
+		await expect(
+			page.getByRole("combobox", { name: "Pi Model" }),
+		).toHaveText("GPT-6-Astra");
+		await page.getByRole("combobox", { name: "Pi Model" }).click();
+		await expect(page.getByRole("option", { name: /Spark/ })).toHaveCount(
+			0,
+		);
+		await page
+			.getByRole("option", { name: "GPT-6-Astra", exact: true })
+			.click();
 		await reasoning.click();
+		await expect(
+			page.getByRole("option", { name: "off", exact: true }),
+		).toHaveCount(0);
+		await expect(
+			page.getByRole("option", { name: "minimal", exact: true }),
+		).toHaveCount(0);
 		await page.getByRole("option", { name: "Ultra", exact: true }).click();
 		await fast.focus();
 		await page.keyboard.press("Space");
@@ -57,11 +73,25 @@ for (const theme of ["dark", "light"] as const) {
 		await page.getByRole("combobox", { name: "Pi Model" }).click();
 		await page
 			.getByRole("option", {
-				name: "Codex Small (openai-codex)",
+				name: "Codex Small",
 				exact: true,
 			})
 			.click();
+		await expect(fast).toHaveCount(0);
 		await reasoning.click();
+		await expect(
+			page.getByRole("option", { name: "off", exact: true }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("option", { name: "minimal", exact: true }),
+		).toBeVisible();
+		await info.attach("small-reasoning", {
+			body: await page.screenshot({
+				path: info.outputPath("small-reasoning.png"),
+				fullPage: true,
+			}),
+			contentType: "image/png",
+		});
 		await expect(
 			page.getByRole("option", { name: "Ultra", exact: true }),
 		).toHaveCount(0);
@@ -103,6 +133,25 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(provider).toBeEnabled();
 		await page.getByRole("button", { name: "切断", exact: true }).click();
 		await expect(provider).toBeDisabled();
+		await page.goto(
+			"/iframe.html?id=chat-pi-provider-controls--hidden-history&viewMode=story",
+		);
+		const model = page.getByRole("combobox", { name: "Pi Model" });
+		await expect(model).toHaveText("Hidden Codex");
+		await model.click();
+		await expect(
+			page.getByRole("option", { name: "GPT-6-Astra", exact: true }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("option", { name: /Hidden|Spark/ }),
+		).toHaveCount(0);
+		await info.attach("hidden-history", {
+			body: await page.screenshot({
+				path: info.outputPath("hidden-history.png"),
+				fullPage: true,
+			}),
+			contentType: "image/png",
+		});
 		expect(errors).toEqual([]);
 	});
 }
