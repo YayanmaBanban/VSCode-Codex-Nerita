@@ -42,19 +42,36 @@ export function CompletionPlugin({
 	const searchingSessions =
 		match?.marker === "#" && category === "セッション";
 	const sessions = useSessionReferences(bridge, searchingSessions, query);
-	const items = browsing
-		? paths.items
-		: searchingSymbols
-			? symbols.items
-			: searchingSessions
-				? sessions.items
-				: completionItems(
-						match?.marker ?? "",
-						category,
-						query,
-						attachments,
-						skills,
-					);
+	/** 選択中のカテゴリに属する候補と案内をまとめて返す。 */
+	function candidates(): {
+		items: CompletionItem[];
+		empty: string;
+		notice?: string | undefined;
+	} {
+		if (browsing) {
+			return { items: paths.items, empty: paths.empty };
+		}
+		if (searchingSymbols) {
+			return symbols;
+		}
+		if (searchingSessions) {
+			return sessions;
+		}
+		return {
+			items: completionItems(
+				match?.marker ?? "",
+				category,
+				query,
+				attachments,
+				skills,
+			),
+			empty:
+				category === "添付ファイル" && !attachments.length
+					? "添付ファイルはありません。"
+					: "候補がありません。",
+		};
+	}
+	const { items, empty, notice } = candidates();
 	const index = Math.min(selected, Math.max(0, items.length - 1));
 	const close = () => {
 		dismissed.current = JSON.stringify(match);
@@ -136,12 +153,7 @@ export function CompletionPlugin({
 	if (!match) {
 		return null;
 	}
-	const title =
-		match.marker === "/"
-			? "スラッシュコマンド"
-			: match.marker === "@"
-				? "スキル"
-				: category || "コンテキスト";
+	const title = completionTitle(match.marker, category);
 	return (
 		<div ref={container}>
 			<CompletionMenu
@@ -151,26 +163,8 @@ export function CompletionPlugin({
 				items={items}
 				selected={index}
 				location={browsing ? paths.path : undefined}
-				notice={
-					searchingSymbols
-						? symbols.notice
-						: searchingSessions
-							? sessions.notice
-							: undefined
-				}
-				empty={
-					browsing
-						? paths.empty
-						: searchingSymbols
-							? symbols.empty
-							: searchingSessions
-								? sessions.empty
-								: category &&
-									  category === "添付ファイル" &&
-									  !attachments.length
-									? "添付ファイルはありません。"
-									: "候補がありません。"
-				}
+				notice={notice}
+				empty={empty}
 				onQuery={(value) => {
 					setSearch(value);
 					setSelected(0);
@@ -190,4 +184,15 @@ export function CompletionPlugin({
 			/>
 		</div>
 	);
+}
+
+/** 入力マーカーとカテゴリから候補メニューの見出しを決める。 */
+function completionTitle(marker: string, category: string): string {
+	if (marker === "/") {
+		return "スラッシュコマンド";
+	}
+	if (marker === "@") {
+		return "スキル";
+	}
+	return category || "コンテキスト";
 }

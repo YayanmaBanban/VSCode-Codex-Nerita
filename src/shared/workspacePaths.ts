@@ -1,5 +1,10 @@
 // パス選択に必要な項目だけをHostとWebviewで共有する。
-import { isSymbolLocation, type SymbolLocation } from "./symbolLocation";
+import {
+	isSymbolLocation,
+	type SymbolLocation,
+	isSourceRange,
+	type SourceRange,
+} from "./symbolLocation";
 
 /** ディレクトリの展開先と、本文に挿入するパス。 */
 export type WorkspacePath = {
@@ -8,6 +13,7 @@ export type WorkspacePath = {
 	path: string;
 	kind: "file" | "directory";
 	symbol?: SymbolLocation;
+	range?: SourceRange;
 };
 
 /** 一階層だけを取得する要求。nullはワークスペース一覧を表す。 */
@@ -22,6 +28,7 @@ export type ResolvePathRequest = {
 	type: "workspace/resolvePath";
 	requestId: string;
 	path: string;
+	range?: SourceRange;
 };
 
 /** 存在しないパスは文字列のまま残すため、nullで返す。 */
@@ -67,6 +74,8 @@ export function isWorkspacePath(value: unknown): value is WorkspacePath {
 		isPathString(entry.name) &&
 		isPathString(entry.path) &&
 		(entry.kind === "file" || entry.kind === "directory") &&
+		(entry.range === undefined ||
+			(entry.kind === "file" && isSourceRange(entry.range))) &&
 		(entry.symbol === undefined ||
 			(entry.kind === "file" && isSymbolLocation(entry.symbol)))
 	);

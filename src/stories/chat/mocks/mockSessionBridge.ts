@@ -61,12 +61,7 @@ export function createSessionBridge(scenario: SessionScenario) {
 							).length > limit
 								? "next"
 								: null,
-						sessionsError:
-							scenario === "error"
-								? "セッション一覧を取得できませんでした。再試行してください。"
-								: scenario === "unsupported"
-									? "この接続先はセッション一覧に対応していません。"
-									: null,
+						sessionsError: sessionListError(scenario),
 					}),
 				700,
 			),
@@ -167,4 +162,15 @@ export function createSessionBridge(scenario: SessionScenario) {
 			bridge.postMessage(message);
 		},
 	};
+}
+
+/** 履歴一覧の失敗シナリオに対応する表示文言を返す。 */
+function sessionListError(scenario: string) {
+	if (scenario === "error") {
+		return "セッション一覧を取得できませんでした。再試行してください。";
+	}
+	if (scenario === "unsupported") {
+		return "この接続先はセッション一覧に対応していません。";
+	}
+	return null;
 }

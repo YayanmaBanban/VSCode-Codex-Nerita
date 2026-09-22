@@ -11,6 +11,7 @@ import { isSourceRange } from "./symbolLocation";
 import { isSymbolQuery } from "./workspaceSymbols";
 import { validSessionIds } from "./sessionReferences";
 import { isChangeScope, validChangeScopes } from "./changeReferences";
+import { validCodeReferences } from "./codeReferences";
 
 /** UI からの要求を実行前に検証する。 */
 export function isUiMessage(value: unknown): value is UiMessage {
@@ -48,7 +49,16 @@ export function isUiMessage(value: unknown): value is UiMessage {
 		case "workspace/listPaths":
 			return value.uri === null || isPathString(value.uri);
 		case "workspace/resolvePath":
-			return isAbsoluteLocalPath(value.path);
+			return (
+				isAbsoluteLocalPath(value.path) &&
+				(value.range === undefined || isSourceRange(value.range))
+			);
+		case "workspace/resolveCode":
+			return (
+				typeof value.text === "string" &&
+				value.text.trim().length > 0 &&
+				value.text.length <= 100_000
+			);
 		case "ui/setSidebar":
 			return isSidebarLocation(value.location);
 		case "personality/read":
@@ -129,7 +139,8 @@ export function isUiMessage(value: unknown): value is UiMessage {
 				value.text.trim().length > 0 &&
 				value.text.length <= 100_000 &&
 				validSessionIds(value.referencedSessionIds) &&
-				validChangeScopes(value.changeScopes)
+				validChangeScopes(value.changeScopes) &&
+				validCodeReferences(value.codeReferences)
 			);
 		case "prompt/cancel":
 			return isId(value.sessionId) && isId(value.runId);

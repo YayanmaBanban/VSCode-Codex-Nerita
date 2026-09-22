@@ -9,6 +9,7 @@ test("上下キーでチップのある行から戻り、Shift選択で参照を
 		"/iframe.html?id=chat-composer-references--restored&viewMode=story",
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
+	await input.waitFor({ state: "visible" });
 	await expect(input.locator(".inline-path-reference")).toHaveCount(2);
 	await select(input.locator("p > span[data-lexical-text]").last(), 3);
 	await page.keyboard.press("Shift+Enter");
@@ -40,6 +41,7 @@ for (const direction of ["ArrowRight", "ArrowLeft"] as const) {
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",
 		});
+		await input.waitFor({ state: "visible" });
 		await expect(input.locator(".inline-path-reference")).toHaveCount(2);
 		const texts = input.locator("p > span[data-lexical-text]");
 		await select(
@@ -76,6 +78,7 @@ test("参照を復元し、全文コピー・取り外し・Undo・送信でき�
 		"/iframe.html?id=chat-composer-references--restored&viewMode=story",
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
+	await input.waitFor({ state: "visible" });
 	const chips = input.locator(".inline-path-reference");
 	await expect(chips).toHaveCount(2);
 	await expect(input).toHaveText("前文日本語 sample.md と src 後文");
@@ -127,6 +130,7 @@ test("Backspaceで参照を一つずつ削除しUndoで戻せる", async ({ page
 		"/iframe.html?id=chat-composer-references--restored&viewMode=story",
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
+	await input.waitFor({ state: "visible" });
 	await expect(input.locator(".inline-path-reference")).toHaveCount(2);
 	await select(input.locator("p > span[data-lexical-text]").last(), 3);
 	// 末尾の「 後文」を消した直後のBackspaceはフォルダ参照全体を削除する。

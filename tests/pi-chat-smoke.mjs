@@ -104,12 +104,7 @@ const server = createServer((request, response) => {
 								(prompt === "list" ? "ls" : "read"),
 							arguments: JSON.stringify(
 								mutation?.args ?? {
-									path:
-										prompt === "list"
-											? "."
-											: prompt === "missing"
-												? "missing.txt"
-												: "hello.txt",
+									path: fixturePath(prompt),
 								},
 							),
 						},
@@ -409,11 +404,7 @@ try {
 					"utf8",
 				)
 			).trim(),
-			tool === "write"
-				? "approved"
-				: tool === "edit"
-					? "edited"
-					: "executed",
+			expectedMutationText(tool),
 		);
 	}
 	await send("commandStop");
@@ -516,4 +507,26 @@ async function until(check) {
 		);
 		await new Promise((resolve) => setTimeout(resolve, 20));
 	}
+}
+
+/** 一覧・存在しないファイル・通常読み取りの対象を選ぶ。 */
+function fixturePath(prompt) {
+	if (prompt === "list") {
+		return ".";
+	}
+	if (prompt === "missing") {
+		return "missing.txt";
+	}
+	return "hello.txt";
+}
+
+/** 承認した各操作で保存される検証用の本文を返す。 */
+function expectedMutationText(tool) {
+	if (tool === "write") {
+		return "approved";
+	}
+	if (tool === "edit") {
+		return "edited";
+	}
+	return "executed";
 }

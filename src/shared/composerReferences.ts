@@ -13,6 +13,10 @@ export function pathText(path: ComposerTarget): string {
 		return `[Session: ${path.name}; ID: ${path.sessionId}]`;
 	}
 	const file = /\s/.test(path.path) ? `"${path.path}"` : path.path;
+	if (path.range) {
+		const { start, end } = path.range;
+		return `${file}:${start.line + 1}:${start.character + 1}-${end.line + 1}:${end.character + 1}`;
+	}
 	const start = path.symbol?.range.start;
 	return start
 		? `${file}:${start.line + 1}:${start.character + 1} (${path.name})`

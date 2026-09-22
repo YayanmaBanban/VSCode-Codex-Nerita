@@ -34,13 +34,7 @@ export function parseApproval(request: AppServerRequest): ApprovalRequest {
 	) {
 		throw new AppServerRpcError(-32602, "Invalid approval request");
 	}
-	const title = [
-		request.method === "item/fileChange/requestApproval"
-			? "ファイル変更の承認"
-			: params.kind === "writeStdin"
-				? "端末への入力の承認"
-				: "コマンド実行の承認",
-	];
+	const title = [approvalTitle(request.method, params.kind)];
 	if (isRecord(params.networkApprovalContext)) {
 		const context = params.networkApprovalContext;
 		if (
@@ -71,3 +65,14 @@ export function parseApproval(request: AppServerRequest): ApprovalRequest {
 	};
 }
 export { Approvals } from "../../../session/Approvals";
+
+/** ファイル変更・端末入力・コマンド実行を承認タイトルで区別する。 */
+function approvalTitle(method: string, kind: unknown) {
+	if (method === "item/fileChange/requestApproval") {
+		return "ファイル変更の承認";
+	}
+	if (kind === "writeStdin") {
+		return "端末への入力の承認";
+	}
+	return "コマンド実行の承認";
+}

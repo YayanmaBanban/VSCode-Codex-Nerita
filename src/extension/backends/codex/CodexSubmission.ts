@@ -9,6 +9,8 @@ import { changeContext } from "./context/changeContext";
 import type { ChangeScope } from "../../../shared/changeReferences";
 import { listMcpServers } from "./mcpStatus";
 import { mcpSummaryText } from "../../../shared/mcp";
+import type { CodeReference } from "../../../shared/codeReferences";
+import { readCodeReferenceContext } from "../../session/codeReferenceContext";
 
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
 export abstract class CodexSubmission extends CodexHistory {
@@ -84,6 +86,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		sessionId: string,
 		referencedSessionIds: string[] = [],
 		changeScopes: ChangeScope[] = [],
+		codeReferences: CodeReference[] = [],
 	): Promise<"start" | "steer"> {
 		if (this.submissionPending) {
 			throw new Error("Submission pending");
@@ -125,6 +128,19 @@ export abstract class CodexSubmission extends CodexHistory {
 			}
 			if (this.state.run === "running") {
 				await new Promise<void>((resolve) => setTimeout(resolve, 500));
+			}
+			if (codeReferences.length) {
+				const value = await readCodeReferenceContext(
+					codeReferences,
+					() => {
+						this.checkSubmission(epoch, sessionId);
+						checkWaitingRun();
+					},
+				);
+				context = {
+					...context,
+					code_references: { value, kind: "untrusted" },
+				};
 			}
 			this.checkSubmission(epoch, sessionId);
 			checkWaitingRun();

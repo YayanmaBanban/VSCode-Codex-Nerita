@@ -94,12 +94,7 @@ export function connectBlockScroll(
 			if (!root || !event.cancelable) {
 				return;
 			}
-			const unit =
-				event.deltaMode === WheelEvent.DOM_DELTA_LINE
-					? parseFloat(getComputedStyle(element).lineHeight) || 20
-					: event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-						? element.clientHeight
-						: 1;
+			const unit = wheelUnit(event, element);
 			const delta = event.deltaY * unit;
 			const maximum = Math.max(
 				0,
@@ -117,4 +112,15 @@ export function connectBlockScroll(
 		},
 		{ passive: false },
 	);
+}
+
+/** ホイールの行・ページ単位をピクセルへ換算する。 */
+function wheelUnit(event: WheelEvent, element: HTMLElement) {
+	if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+		return parseFloat(getComputedStyle(element).lineHeight) || 20;
+	}
+	if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+		return element.clientHeight;
+	}
+	return 1;
 }

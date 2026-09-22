@@ -29,12 +29,7 @@ export function ThinkTool({ tool }: ActivityToolProps) {
 					isRecord(value) && isRecord(value.content)
 						? value.content
 						: value;
-				const text =
-					typeof content === "string"
-						? content
-						: isRecord(content) && typeof content.text === "string"
-							? content.text
-							: "";
+				const text = contentText(content);
 				return text ? <MessageText key={index} text={text} /> : null;
 			})}
 		</>
@@ -50,7 +45,7 @@ function fileUri(path: string, cwd?: string | null): string | undefined {
 		}
 		normalized = `${cwd.replaceAll("\\", "/").replace(/\/$/, "")}/${normalized}`;
 	}
-	return `file:${normalized.startsWith("//") ? "" : normalized.startsWith("/") ? "//" : "///"}${normalized
+	return `file:${fileUriSlashes(normalized)}${normalized
 		.split("/")
 		.map(encodeURIComponent)
 		.join("/")
@@ -96,12 +91,7 @@ export function WebSearchTool({ tool }: ActivityToolProps) {
 	const action = isRecord(input.action) ? input.action : input;
 	const query =
 		typeof tool.rawInput === "string" ? tool.rawInput : input.query;
-	const label =
-		typeof query === "string" && query.trim()
-			? query
-			: typeof action.url === "string"
-				? action.url
-				: "";
+	const label = searchLabel(query, action.url);
 	if (!label) {
 		return null;
 	}
@@ -119,4 +109,37 @@ export function WebSearchTool({ tool }: ActivityToolProps) {
 			{label}
 		</a>
 	);
+}
+
+/** 文字列と構造化されたテキストから表示本文だけを取り出す。 */
+function contentText(content: unknown) {
+	if (typeof content === "string") {
+		return content;
+	}
+	if (isRecord(content) && typeof content.text === "string") {
+		return content.text;
+	}
+	return "";
+}
+
+/** UNC・絶対パス・ドライブパスに対応するURIの区切りを返す。 */
+function fileUriSlashes(normalized: string) {
+	if (normalized.startsWith("//")) {
+		return "";
+	}
+	if (normalized.startsWith("/")) {
+		return "//";
+	}
+	return "///";
+}
+
+/** 空でない検索語を優先し、なければ検索先URLを表示する。 */
+function searchLabel(query: unknown, url: unknown) {
+	if (typeof query === "string" && query.trim()) {
+		return query;
+	}
+	if (typeof url === "string") {
+		return url;
+	}
+	return "";
 }

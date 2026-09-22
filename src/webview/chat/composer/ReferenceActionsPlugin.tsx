@@ -40,11 +40,12 @@ export function ReferenceActionsPlugin({
 						});
 						return true;
 					}
+					const range = path.range ?? path.symbol?.range;
 					bridge.postMessage({
 						type: "reference/open",
 						requestId: crypto.randomUUID(),
 						uri: path.uri,
-						...(path.symbol ? { range: path.symbol.range } : {}),
+						...(range ? { range } : {}),
 					});
 					return true;
 				},

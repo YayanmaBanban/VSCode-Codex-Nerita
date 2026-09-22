@@ -30,15 +30,23 @@ export function ReadTool({ tool }: { tool: ToolSummary }) {
 				<Value value={texts.join("\n\n")} />
 			) : (
 				<p className={`${toolLabelClass} text-muted`}>
-					{tool.status === "in_progress" || tool.status === "pending"
-						? "結果を待っています。"
-						: tool.status === "cancelled"
-							? "処理を停止しました。"
-							: tool.status === "failed"
-								? "処理に失敗しました。"
-								: "出力はありません。"}
+					{emptyOutputMessage(tool.status)}
 				</p>
 			)}
 		</>
 	);
+}
+
+/** 出力がない場合に実行中・停止・失敗を区別して案内する。 */
+function emptyOutputMessage(status: ToolSummary["status"]) {
+	if (status === "in_progress" || status === "pending") {
+		return "結果を待っています。";
+	}
+	if (status === "cancelled") {
+		return "処理を停止しました。";
+	}
+	if (status === "failed") {
+		return "処理に失敗しました。";
+	}
+	return "出力はありません。";
 }

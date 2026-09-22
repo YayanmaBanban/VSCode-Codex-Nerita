@@ -5,10 +5,36 @@ import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
 import type { ChatMessage, ToolSummary } from "../../../shared/chatState";
 import { MessageText } from "./MessageText";
-//import { TextType } from "./TextType";
+import { TextType } from "./TextType";
 import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 import type { SubAgentSummary } from "../../../shared/subAgents";
+
+/** メッセージのテキストを表示するコンポーネント */
+function MessageContent({
+	message,
+	user,
+	busy,
+	index,
+	length,
+	send,
+}: {
+	message: ChatMessage;
+	user: boolean;
+	busy: boolean;
+	index: number;
+	length: number;
+	send?: ((message: UiMessage) => void) | undefined;
+}): React.JSX.Element {
+	if (message.mcp) {
+		return <McpMessage content={message.mcp} text={message.text} />;
+	}
+	return <MessageText text={message.text} send={send} />;
+	if (user || !busy || message.streaming === false || index !== length - 1) {
+		return <MessageText text={message.text} send={send} />;
+	}
+	return <TextType text={message.text} />;
+}
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
 export function Messages({
@@ -95,11 +121,7 @@ export function Messages({
 		);
 		const endIndex = nextUser === -1 ? messages.length - 1 : nextUser - 1;
 		const reply = messages[endIndex];
-		const target = user
-			? reply?.role === "assistant"
-				? reply
-				: undefined
-			: previousUser;
+		const target = turnNavigationTarget(user, reply, previousUser);
 		const replyPending = user && nextUser === -1 && busy;
 		return (
 			<article
@@ -124,17 +146,16 @@ export function Messages({
 				}}
 			>
 				<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
-					{message.mcp ? (
-						<McpMessage content={message.mcp} text={message.text} />
-					) : user ||
-					  !busy ||
-					  message.streaming === false ||
-					  index !== messages.length - 1 ? (
-						<MessageText text={message.text} send={send} />
-					) : (
-						<MessageText text={message.text} send={send} />
-						//<TextType text={message.text} />
-					)}
+					{
+						<MessageContent
+							message={message}
+							user={user}
+							busy={busy}
+							index={index}
+							length={messages.length - 1}
+							send={send}
+						/>
+					}
 				</div>
 				<div
 					className={`message-actions mt-[10px] flex justify-end gap-[6px] ${messageFocusClass}`}
@@ -192,4 +213,19 @@ export function Messages({
 			</article>
 		);
 	});
+}
+
+/** ユーザー発言から回答へ、回答から直前のユーザー発言へ移動する。 */
+function turnNavigationTarget(
+	user: boolean,
+	reply: ChatMessage | undefined,
+	previousUser: ChatMessage | undefined,
+) {
+	if (user) {
+		if (reply?.role === "assistant") {
+			return reply;
+		}
+		return undefined;
+	}
+	return previousUser;
 }

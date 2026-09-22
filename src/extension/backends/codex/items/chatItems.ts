@@ -81,12 +81,7 @@ export function itemPatch(
 		kind: "edit",
 		paths: [],
 		order: previous?.order ?? nextTimelineOrder(state),
-		status: completed
-			? ["failed", "declined"].includes(String(value.status)) ||
-				value.success === false
-				? "failed"
-				: "completed"
-			: "in_progress",
+		status: itemStatus(value, completed),
 	};
 	if (activity) {
 		Object.assign(tool, activity);
@@ -112,4 +107,21 @@ export function itemPatch(
 			? state.tools.map((entry) => (entry === previous ? tool : entry))
 			: [...state.tools, tool],
 	};
+}
+
+/** 完了通知でのみ成否を確定し、途中の項目は実行中として扱う。 */
+function itemStatus(
+	value: Record<string, unknown>,
+	completed: boolean,
+): ToolSummary["status"] {
+	if (completed) {
+		if (
+			["failed", "declined"].includes(String(value.status)) ||
+			value.success === false
+		) {
+			return "failed";
+		}
+		return "completed";
+	}
+	return "in_progress";
 }

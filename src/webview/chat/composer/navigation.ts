@@ -76,11 +76,8 @@ export function $moveAcrossBlock(
 	const column = offset - text.slice(0, offset).lastIndexOf("\n") - 1;
 	const target = adjacent.getTextContent();
 	const start = up ? target.lastIndexOf("\n") + 1 : 0;
-	const end = up
-		? target.length
-		: target.indexOf("\n") < 0
-			? target.length
-			: target.indexOf("\n");
+	const firstNewline = target.indexOf("\n");
+	const end = up || firstNewline < 0 ? target.length : firstNewline;
 	$selectOffset(adjacent, Math.min(start + column, end));
 	return true;
 }

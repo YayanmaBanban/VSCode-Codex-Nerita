@@ -27,12 +27,7 @@ export abstract class CodexRequests extends CodexOptions {
 		) {
 			const run = this.active;
 			const p = message.params;
-			const empty =
-				message.method === "item/tool/requestUserInput"
-					? { answers: {} }
-					: message.method === "item/permissions/requestApproval"
-						? { permissions: {}, scope: "turn" }
-						: { action: "cancel", content: null, _meta: null };
+			const empty = cancelledInteraction(message.method);
 			if (!run || !isRecord(p) || p.threadId !== run.threadId) {
 				return empty;
 			}
@@ -101,4 +96,15 @@ export abstract class CodexRequests extends CodexOptions {
 			run.abort.signal,
 		]);
 	}
+}
+
+/** 実行対象がない対話要求へ、種類に合った取消結果を返す。 */
+function cancelledInteraction(method: string) {
+	if (method === "item/tool/requestUserInput") {
+		return { answers: {} };
+	}
+	if (method === "item/permissions/requestApproval") {
+		return { permissions: {}, scope: "turn" };
+	}
+	return { action: "cancel", content: null, _meta: null };
 }

@@ -79,15 +79,7 @@ export class AgentRegistry {
 		) {
 			return {};
 		}
-		const items = ["item/started", "item/completed"].includes(
-			message.method,
-		)
-			? [p.item]
-			: message.method === "turn/completed" &&
-				  isRecord(p.turn) &&
-				  Array.isArray(p.turn.items)
-				? p.turn.items
-				: [];
+		const items = notificationItems(message.method, p);
 		let current = state;
 		for (const item of items) {
 			if (
@@ -99,7 +91,7 @@ export class AgentRegistry {
 				continue;
 			}
 			const turnId = p.turnId ?? (isRecord(p.turn) ? p.turn.id : "");
-			const key = `${p.threadId}:${String(turnId)}:${String(item.id)}:${item.type === "subAgentActivity" ? String(item.kind) : message.method === "item/started" ? "started" : "completed"}`;
+			const key = `${p.threadId}:${String(turnId)}:${String(item.id)}:${activityEventKey(item, message.method)}`;
 			if (this.seen.has(key)) {
 				continue;
 			}
@@ -160,4 +152,33 @@ export function agentMetadata(
 		}
 	}
 	return result;
+}
+
+/** 項目通知とターン完了通知から活動項目を取り出す。 */
+function notificationItems(
+	method: string,
+	p: Record<string, unknown>,
+): unknown[] {
+	if (["item/started", "item/completed"].includes(method)) {
+		return [p.item];
+	}
+	if (
+		method === "turn/completed" &&
+		isRecord(p.turn) &&
+		Array.isArray(p.turn.items)
+	) {
+		return p.turn.items;
+	}
+	return [];
+}
+
+/** 活動の種類と開始・完了を重複検出キーへ反映する。 */
+function activityEventKey(item: Record<string, unknown>, method: string) {
+	if (item.type === "subAgentActivity") {
+		return String(item.kind);
+	}
+	if (method === "item/started") {
+		return "started";
+	}
+	return "completed";
 }

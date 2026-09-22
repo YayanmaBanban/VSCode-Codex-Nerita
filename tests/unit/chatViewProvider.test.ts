@@ -13,6 +13,9 @@ const api = vi.hoisted(() => ({
 	onDidChangeConfiguration: vi.fn().mockReturnValue({ dispose: vi.fn() }),
 }));
 vi.mock("vscode", () => ({
+	languages: {
+		registerDocumentPasteEditProvider: vi.fn(() => ({ dispose: vi.fn() })),
+	},
 	workspace: {
 		fs: { stat: api.stat },
 		getConfiguration: () => ({

@@ -50,18 +50,7 @@ export function AgentCard({
 	agent: SubAgentSummary;
 	onOpen: (agent: SubAgentSummary) => void;
 }) {
-	const Icon =
-		agent.status === "running"
-			? LoaderCircle
-			: agent.status === "completed"
-				? Check
-				: ["interrupted", "shutdown"].includes(agent.status)
-					? Square
-					: ["errored", "systemError", "notFound"].includes(
-								agent.status,
-						  )
-						? X
-						: Circle;
+	const Icon = agentStatusIcon(agent.status);
 	return (
 		<button
 			type="button"
@@ -87,4 +76,21 @@ export function AgentCard({
 			</span>
 		</button>
 	);
+}
+
+/** エージェントの実行・停止・異常状態に対応するアイコンを返す。 */
+function agentStatusIcon(status: AgentStatus) {
+	if (status === "running") {
+		return LoaderCircle;
+	}
+	if (status === "completed") {
+		return Check;
+	}
+	if (["interrupted", "shutdown"].includes(status)) {
+		return Square;
+	}
+	if (["errored", "systemError", "notFound"].includes(status)) {
+		return X;
+	}
+	return Circle;
 }

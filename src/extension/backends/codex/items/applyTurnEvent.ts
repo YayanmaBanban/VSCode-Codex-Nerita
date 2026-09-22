@@ -99,12 +99,19 @@ export function applyTurnEvent(
 			}
 			target.patch(itemPatch(target.snapshot(), item, true));
 		}
-		target.finish(
-			event.turn.status === "interrupted"
-				? "cancelled"
-				: event.turn.status === "failed"
-					? "failed"
-					: "completed",
-		);
+		target.finish(finishedTurnStatus(event.turn.status));
 	}
+}
+
+/** ターンの終了理由を実行状態へ変換する。 */
+function finishedTurnStatus(
+	status: string,
+): "cancelled" | "failed" | "completed" {
+	if (status === "interrupted") {
+		return "cancelled";
+	}
+	if (status === "failed") {
+		return "failed";
+	}
+	return "completed";
 }

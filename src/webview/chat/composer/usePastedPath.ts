@@ -1,4 +1,4 @@
-// #直後のパス貼り付けをHostで照合し、編集位置が変わっていない場合だけ参照にする。
+// #直後のパス・コピーしたコードをHostで照合し、編集位置が変わっていない場合だけ参照にする。
 import { useEffect } from "react";
 import {
 	$addUpdateTag,
@@ -12,7 +12,7 @@ import {
 	type LexicalEditor,
 } from "lexical";
 import type { Bridge } from "../../vscodeBridge";
-import { isAbsoluteLocalPath } from "../../../shared/workspacePaths";
+import { parsePastedPath } from "../../../shared/pastedPath";
 import { $completion, $insertCompletion } from "./completions";
 import { $pointOffset, $readParts } from "./content";
 
@@ -37,16 +37,15 @@ export function usePastedPath(
 				}
 				const match = $completion();
 				const selection = $getSelection();
-				const text = event.clipboardData?.getData("text/plain") ?? "";
-				const path =
-					text.startsWith('"') && text.endsWith('"')
-						? text.slice(1, -1)
-						: text;
+				const text = (
+					event.clipboardData?.getData("text/plain") ?? ""
+				).replace(/\r\n?/g, "\n");
+				const target = parsePastedPath(text);
 				if (
 					match?.marker !== "#" ||
 					match.query !== "" ||
 					!$isRangeSelection(selection) ||
-					!isAbsoluteLocalPath(path)
+					!text.trim()
 				) {
 					return false;
 				}
@@ -104,11 +103,15 @@ export function usePastedPath(
 					unsubscribe();
 					clearTimeout(timer);
 				};
-				bridge.postMessage({
-					type: "workspace/resolvePath",
-					requestId,
-					path,
-				});
+				bridge.postMessage(
+					target
+						? {
+								type: "workspace/resolvePath",
+								requestId,
+								...target,
+							}
+						: { type: "workspace/resolveCode", requestId, text },
+				);
 				return true;
 			},
 			COMMAND_PRIORITY_CRITICAL,

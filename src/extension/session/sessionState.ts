@@ -52,14 +52,7 @@ export class SessionState {
 		patch = {
 			...(sessionId !== this.state.sessionId ? { agents: [] } : {}),
 			...patch,
-			sessionTitle:
-				patch.sessionTitle !== undefined
-					? patch.sessionTitle
-					: row
-						? row.title?.trim() || null
-						: sessionId !== this.state.sessionId
-							? null
-							: this.state.sessionTitle,
+			sessionTitle: sessionTitle(patch, row, sessionId, this.state),
 		};
 		this.state = {
 			...this.state,
@@ -91,4 +84,23 @@ export class SessionState {
 	protected clearListeners(): void {
 		this.listeners.clear();
 	}
+}
+
+/** 明示タイトルと一覧を優先し、同じ会話では既存タイトルを保持する。 */
+function sessionTitle(
+	patch: Partial<ChatState>,
+	row: ChatState["sessions"][number] | undefined,
+	sessionId: ChatState["sessionId"],
+	state: ChatState,
+) {
+	if (patch.sessionTitle !== undefined) {
+		return patch.sessionTitle;
+	}
+	if (row) {
+		return row.title?.trim() || null;
+	}
+	if (sessionId !== state.sessionId) {
+		return null;
+	}
+	return state.sessionTitle;
 }

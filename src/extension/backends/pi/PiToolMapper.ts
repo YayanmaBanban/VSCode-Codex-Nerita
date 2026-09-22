@@ -13,12 +13,7 @@ function resultContent(result: unknown): unknown[] {
 		if (!isRecord(part)) {
 			return [];
 		}
-		const text =
-			part.type === "text" && typeof part.text === "string"
-				? part.text
-				: part.type === "image"
-					? "画像を読み取りました。"
-					: undefined;
+		const text = resultText(part);
 		return text === undefined ? [] : [textContent(text)];
 	});
 }
@@ -52,53 +47,17 @@ export function mapPiTool(
 	}
 	const input: unknown = "args" in event ? event.args : existing?.rawInput;
 	const args = isRecord(input) ? input : {};
-	const file =
-		typeof args.path === "string"
-			? args.path
-			: event.toolName === "ls"
-				? "."
-				: undefined;
-	const label =
-		event.toolName === "read"
-			? "ファイルを読む"
-			: event.toolName === "ls"
-				? "フォルダーを確認"
-				: event.toolName === "write"
-					? "ファイルを書き込む"
-					: event.toolName === "edit"
-						? "ファイルを編集"
-						: event.toolName;
-	const result: unknown =
-		event.type === "tool_execution_end"
-			? event.result
-			: event.type === "tool_execution_update"
-				? event.partialResult
-				: undefined;
+	const file = toolPath(args, event.toolName);
+	const label = toolLabel(event.toolName);
+	const result: unknown = toolResult(event);
 	const tool: ToolSummary = {
 		id: event.toolCallId,
 		...(state.runId ? { runId: state.runId } : {}),
 		...(state.cwd ? { cwd: state.cwd } : {}),
 		order: existing?.order ?? nextTimelineOrder(state),
 		title: existing?.title ?? (file ? `${label}: ${file}` : label),
-		kind:
-			event.toolName === "ls"
-				? "list"
-				: event.toolName === "read"
-					? "read"
-					: event.toolName === "powershell"
-						? "execute"
-						: event.toolName === "write" ||
-							  event.toolName === "edit"
-							? "edit"
-							: "other",
-		status:
-			event.type === "tool_execution_end"
-				? event.isError
-					? state.run === "cancelling"
-						? "cancelled"
-						: "failed"
-					: "completed"
-				: "in_progress",
+		kind: toolKind(event.toolName),
+		status: toolStatus(event, state.run),
 		paths: existing?.paths ?? (file ? [file] : []),
 		rawInput: input,
 		content:
@@ -138,4 +97,88 @@ export function finishPiTools(
 				}
 			: tool,
 	);
+}
+
+/** テキストを取り出し、画像は内容を露出しない説明へ置き換える。 */
+function resultText(part: Record<string, unknown>) {
+	if (part.type === "text" && typeof part.text === "string") {
+		return part.text;
+	}
+	if (part.type === "image") {
+		return "画像を読み取りました。";
+	}
+	return undefined;
+}
+
+/** 明示パスを優先し、一覧ツールだけ現在のフォルダーを補う。 */
+function toolPath(args: Record<string, unknown>, toolName: string) {
+	if (typeof args.path === "string") {
+		return args.path;
+	}
+	if (toolName === "ls") {
+		return ".";
+	}
+	return undefined;
+}
+
+/** 既知のPiツールを日本語の操作名へ変換する。 */
+function toolLabel(toolName: string) {
+	if (toolName === "read") {
+		return "ファイルを読む";
+	}
+	if (toolName === "ls") {
+		return "フォルダーを確認";
+	}
+	if (toolName === "write") {
+		return "ファイルを書き込む";
+	}
+	if (toolName === "edit") {
+		return "ファイルを編集";
+	}
+	return toolName;
+}
+
+/** 完了結果または累積の途中結果を取り出す。 */
+function toolResult(event: PiEvent): unknown {
+	if (event.type === "tool_execution_end") {
+		return event.result;
+	}
+	if (event.type === "tool_execution_update") {
+		return event.partialResult;
+	}
+	return undefined;
+}
+
+/** Piのツール名を共通カードの種別へ変換する。 */
+function toolKind(toolName: string): NonNullable<ToolSummary["kind"]> {
+	if (toolName === "ls") {
+		return "list";
+	}
+	if (toolName === "read") {
+		return "read";
+	}
+	if (toolName === "powershell") {
+		return "execute";
+	}
+	if (toolName === "write" || toolName === "edit") {
+		return "edit";
+	}
+	return "other";
+}
+
+/** 終了通知の成否と停止待ちをカードの状態へ反映する。 */
+function toolStatus(
+	event: PiEvent,
+	run: ChatState["run"],
+): ToolSummary["status"] {
+	if (event.type === "tool_execution_end") {
+		if (event.isError) {
+			if (run === "cancelling") {
+				return "cancelled";
+			}
+			return "failed";
+		}
+		return "completed";
+	}
+	return "in_progress";
 }

@@ -54,14 +54,7 @@ export async function readChangeContext(
 		) {
 			throw new Error("Invalid changes.exclude");
 		}
-		const refs =
-			scope === "staged"
-				? ["--cached"]
-				: scope === "since-last-commit"
-					? ["HEAD"]
-					: scope === "branch"
-						? ["refs/heads/main...HEAD"]
-						: [];
+		const refs = diffRefs(scope);
 		const paths = [
 			"--",
 			":(top)**",
@@ -127,4 +120,18 @@ export async function changeContext(
 		};
 	}
 	return context;
+}
+
+/** 参照範囲に対応する固定のGit比較引数を返す。 */
+function diffRefs(scope: ChangeScope) {
+	if (scope === "staged") {
+		return ["--cached"];
+	}
+	if (scope === "since-last-commit") {
+		return ["HEAD"];
+	}
+	if (scope === "branch") {
+		return ["refs/heads/main...HEAD"];
+	}
+	return [];
 }

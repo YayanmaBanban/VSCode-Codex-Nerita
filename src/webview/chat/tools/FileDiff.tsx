@@ -37,46 +37,73 @@ export function FileDiff({ path, oldText, newText }: FileDiffProps) {
 				{path}
 				{oldText === null && " （新規ファイル）"}
 			</h3>
-			{!patch ? (
-				<>
-					<p className="muted text-[12px] text-muted">
-						差分の計算時間を超えたため、本文を表示します。
-					</p>
-					<h3 className={toolLabelClass}>変更前</h3>
-					<pre className={toolOutputClass}>{oldText ?? ""}</pre>
-					<h3 className={toolLabelClass}>変更後</h3>
-					<pre className={toolOutputClass}>{newText}</pre>
-				</>
-			) : patch.hunks.length === 0 ? (
+			<DiffBody patch={patch} oldText={oldText} newText={newText} />
+		</section>
+	);
+}
+
+/** 構造化差分の追加行と削除行を色で区別する。 */
+function diffLineColor(line: string) {
+	if (line.startsWith("+")) {
+		return "file-diff-added bg-diff-added";
+	}
+	if (line.startsWith("-")) {
+		return "file-diff-removed bg-diff-removed";
+	}
+	return "";
+}
+
+/** 差分の計算結果に応じて本文・変更なし・差分行を描画する。 */
+function DiffBody({
+	patch,
+	oldText,
+	newText,
+}: { patch: ReturnType<typeof structuredPatch> | undefined } & Pick<
+	FileDiffProps,
+	"oldText" | "newText"
+>) {
+	if (!patch) {
+		return (
+			<>
 				<p className="muted text-[12px] text-muted">
-					{oldText === null
-						? "空のファイルを作成"
-						: "変更はありません。"}
+					差分の計算時間を超えたため、本文を表示します。
 				</p>
-			) : (
-				<pre
-					className={`file-diff-lines ${toolCodeClass} whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]`}
-					tabIndex={0}
-					aria-label="差分コード"
-				>
-					{patch.hunks.map((hunk, index) => (
-						<span key={index}>
-							<span
-								className={`${diffLineClass} file-diff-hunk text-muted bg-diff-hunk`}
-							>{`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@\n`}</span>
-							{hunk.lines.map((line, lineIndex) => (
-								<span
-									key={lineIndex}
-									className={`${diffLineClass} ${line.startsWith("+") ? "file-diff-added bg-diff-added" : line.startsWith("-") ? "file-diff-removed bg-diff-removed" : ""}`}
-								>
-									{line}
-									{"\n"}
-								</span>
-							))}
+				<h3 className={toolLabelClass}>変更前</h3>
+				<pre className={toolOutputClass}>{oldText ?? ""}</pre>
+				<h3 className={toolLabelClass}>変更後</h3>
+				<pre className={toolOutputClass}>{newText}</pre>
+			</>
+		);
+	}
+	if (patch.hunks.length === 0) {
+		return (
+			<p className="muted text-[12px] text-muted">
+				{oldText === null ? "空のファイルを作成" : "変更はありません。"}
+			</p>
+		);
+	}
+	return (
+		<pre
+			className={`file-diff-lines ${toolCodeClass} whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]`}
+			tabIndex={0}
+			aria-label="差分コード"
+		>
+			{patch.hunks.map((hunk, index) => (
+				<span key={index}>
+					<span
+						className={`${diffLineClass} file-diff-hunk text-muted bg-diff-hunk`}
+					>{`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@\n`}</span>
+					{hunk.lines.map((line, lineIndex) => (
+						<span
+							key={lineIndex}
+							className={`${diffLineClass} ${diffLineColor(line)}`}
+						>
+							{line}
+							{"\n"}
 						</span>
 					))}
-				</pre>
-			)}
-		</section>
+				</span>
+			))}
+		</pre>
 	);
 }

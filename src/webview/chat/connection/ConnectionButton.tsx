@@ -38,12 +38,7 @@ export function ConnectionButton({
 		state.sessionPending ||
 		state.run === "running" ||
 		state.run === "cancelling";
-	const action =
-		state.connection === "disconnected"
-			? "接続する"
-			: state.connection === "authenticating"
-				? "ログインを中止して再接続"
-				: "再接続";
+	const action = connectionAction(state.connection);
 	useEffect(() => {
 		// 接続済みのスナップショットを初めて表示しただけでは祝福しない。
 		const connected =
@@ -82,7 +77,7 @@ export function ConnectionButton({
 				>
 					<span
 						aria-hidden="true"
-						className={`status-dot size-[5px] rounded-full ${state.connection === "ready" ? "bg-menu-check" : reconnectable ? "bg-warning" : "bg-muted"}`}
+						className={`status-dot size-[5px] rounded-full ${connectionColor(state.connection, reconnectable)}`}
 					/>
 					<span role="status">{labels[state.connection]}</span>
 					{reconnectable && !disabled && !reduced && (
@@ -115,4 +110,29 @@ export function ConnectionButton({
 			)}
 		</div>
 	);
+}
+
+/** 接続状態に応じて再接続操作の文言を返す。 */
+function connectionAction(connection: ChatState["connection"]) {
+	if (connection === "disconnected") {
+		return "接続する";
+	}
+	if (connection === "authenticating") {
+		return "ログインを中止して再接続";
+	}
+	return "再接続";
+}
+
+/** 接続成功・復旧可能・処理中を状態色で区別する。 */
+function connectionColor(
+	connection: ChatState["connection"],
+	reconnectable: boolean,
+) {
+	if (connection === "ready") {
+		return "bg-menu-check";
+	}
+	if (reconnectable) {
+		return "bg-warning";
+	}
+	return "bg-muted";
 }

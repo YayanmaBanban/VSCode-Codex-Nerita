@@ -1,44 +1,12 @@
 // ツールの種別に応じた本文・状態アイコン・停止操作と開閉を表示する。
 import { useId, useState } from "react";
-import {
-	ChevronDown,
-	FilePenLine,
-	Sprout,
-	ShieldCheck,
-	Wrench,
-	Terminal,
-	LoaderCircle,
-	Square,
-	X,
-	Image,
-	Signal,
-	PlugZap,
-	ShelvingUnit,
-	FileText,
-	FolderOpen,
-} from "lucide-react";
+import { ChevronDown, LoaderCircle, Square, X } from "lucide-react";
 import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { taskActive, type AsyncTask } from "../../../shared/asyncTask";
-import { GuardianReview } from "./GuardianReview";
-import { EditingFiles, ExecuteTool, RawTool } from "./ToolContent";
-import { ReadTool } from "./ReadTool";
 import "../loaders.css";
-import {
-	ImageViewTool,
-	ThinkTool,
-	WebSearchTool,
-	type ActivityToolProps,
-} from "./ActivityToolContent";
-
-// 専用表示を追加するときは、ここへタイトルとアイコン・本文を登録する。
-const renderers = [
-	{
-		titles: ["editing files", "editing file", "editng file"],
-		Icon: FilePenLine,
-		Body: EditingFiles,
-	},
-];
+import type { ActivityToolProps } from "./ActivityToolContent";
+import { toolRenderer } from "./toolRenderers";
 
 /** 完了への遷移で一度だけ閉じ、完了後の手動展開も許可する。 */
 export function ToolCard({
@@ -55,15 +23,7 @@ export function ToolCard({
 	onStop?: (() => void) | undefined;
 } & Pick<ActivityToolProps, "send" | "cwd">) {
 	const bodyId = useId();
-	const status = task
-		? taskActive(task)
-			? "in_progress"
-			: task.state === "failed"
-				? "failed"
-				: "completed"
-		: tool.backgrounded
-			? "in_progress"
-			: tool.status;
+	const status = cardStatus(tool, task);
 	const [state, setState] = useState({
 		status,
 		open: status !== "completed",
@@ -78,48 +38,9 @@ export function ToolCard({
 	const input = isRecord(tool.rawInput) ? tool.rawInput : {};
 	const action = isRecord(input.action) ? input.action : input;
 	const cwd = typeof action.cwd === "string" ? action.cwd : tool.cwd;
-	const command =
-		typeof input.command === "string"
-			? input.command
-			: Array.isArray(input.command)
-				? input.command.join(" ")
-				: tool.title;
+	const command = commandLabel(input.command, tool.title);
 	const active = status === "pending" || status === "in_progress";
-	// Guardian Review は think の場合も専用の盾アイコンを維持する。
-	const guardian = tool.title.trim().toLowerCase() === "guardian review";
-	const type =
-		isRecord(tool.rawItem) && typeof tool.rawItem.type === "string"
-			? tool.rawItem.type
-			: tool.kind;
-	const special =
-		type === "imageView"
-			? { Icon: Image, Body: ImageViewTool }
-			: type === "webSearch"
-				? { Icon: Signal, Body: WebSearchTool }
-				: type === "mcpToolCall"
-					? { Icon: PlugZap, Body: null }
-					: type === "contextCompaction"
-						? { Icon: ShelvingUnit, Body: null }
-						: null;
-	const { Icon, Body } = guardian
-		? { Icon: ShieldCheck, Body: GuardianReview }
-		: (special ??
-			(tool.kind === "read" || tool.kind === "list"
-				? {
-						Icon: tool.kind === "read" ? FileText : FolderOpen,
-						Body: ReadTool,
-					}
-				: tool.kind === "think"
-					? { Icon: Sprout, Body: ThinkTool }
-					: executing
-						? { Icon: Terminal, Body: ExecuteTool }
-						: tool.kind === "edit"
-							? { Icon: FilePenLine, Body: EditingFiles }
-							: (renderers.find(({ titles }) =>
-									titles.includes(
-										tool.title.trim().toLowerCase(),
-									),
-								) ?? { Icon: Wrench, Body: RawTool })));
+	const { Icon, Body } = toolRenderer(tool);
 	const Heading = Body ? "button" : "div";
 	return (
 		<div
@@ -190,15 +111,11 @@ export function ToolCard({
 						type="button"
 						className="tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 p-0 text-tool-error enabled:hover:bg-tool-error/12"
 						aria-label={`${tool.title} を停止`}
-						title={
-							onStop
-								? cancelTurn
-									? "現在のAI処理全体を停止"
-									: "コマンドを停止"
-								: task?.stopPending
-									? "停止を待っています"
-									: "個別停止できるバックグラウンドタスクはありません"
-						}
+						title={stopTitle(
+							Boolean(onStop),
+							cancelTurn,
+							task?.stopPending,
+						)}
 						disabled={!onStop}
 						onClick={onStop}
 					>
@@ -223,4 +140,53 @@ export function ToolCard({
 			)}
 		</div>
 	);
+}
+
+/** バックグラウンドタスクを優先してカードの実行状態を求める。 */
+function cardStatus(
+	tool: ToolSummary,
+	task: AsyncTask | undefined,
+): ToolSummary["status"] {
+	if (task) {
+		if (taskActive(task)) {
+			return "in_progress";
+		}
+		if (task.state === "failed") {
+			return "failed";
+		}
+		return "completed";
+	}
+	if (tool.backgrounded) {
+		return "in_progress";
+	}
+	return tool.status;
+}
+
+/** 文字列または引数配列のコマンドを表示用に揃える。 */
+function commandLabel(command: unknown, title: string) {
+	if (typeof command === "string") {
+		return command;
+	}
+	if (Array.isArray(command)) {
+		return command.join(" ");
+	}
+	return title;
+}
+
+/** 停止範囲と停止待ち状態に応じた説明を返す。 */
+function stopTitle(
+	canStop: boolean,
+	cancelTurn: boolean,
+	stopPending: boolean | undefined,
+) {
+	if (canStop) {
+		if (cancelTurn) {
+			return "現在のAI処理全体を停止";
+		}
+		return "コマンドを停止";
+	}
+	if (stopPending) {
+		return "停止を待っています";
+	}
+	return "個別停止できるバックグラウンドタスクはありません";
 }
