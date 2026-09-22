@@ -184,7 +184,7 @@
 		"test:codex": "node tests/codex-app-server-smoke.mjs",
 		"test:codex:chat": "node tests/codex-chat-smoke.mjs",
 		"test:pi:chat": "node tests/pi-chat-smoke.mjs",
-		"test:runtime": "node --test tests/runtime-packaging.test.mjs",
+		"test:runtime": "node --test tests/runtime-packaging.test.mjs tests/pi-runtime-packaging.test.mjs",
 		"test:codex:features": "node tests/codex-features-smoke.mjs",
 		"test:codex:history": "node tests/codex-history-smoke.mjs",
 		"ui-review:chat": "pnpm ui-review chat",

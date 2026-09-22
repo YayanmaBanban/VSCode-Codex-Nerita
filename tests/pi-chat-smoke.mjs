@@ -169,13 +169,7 @@ try {
 	const sdk = await import(
 		pathToFileURL(path.join(fixture, "dist/runtime/pi.mjs")).href
 	);
-	assert.equal(
-		sdk.getPackageDir(),
-		path.join(
-			fixture,
-			"dist/runtime/node_modules/@earendil-works/pi-coding-agent",
-		),
-	);
+	assert.equal(sdk.getPackageDir(), path.join(fixture, "dist/runtime/pi"));
 	const png = await sdk.convertToPng(
 		"R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
 		"image/gif",

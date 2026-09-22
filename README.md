@@ -9,7 +9,9 @@ VS Code のサイドバーから Codex App Server に接続します。テキス
 設定で `"nerita.backend": "pi"` を指定し、VS Codeのウィンドウを再読み込みするとPiを使用します。既定値は `codex` です。
 画面上部の「オプション → バックエンド」からもCodex / Piを選べます。選択すると設定を保存し、自動でウィンドウを再読み込みします。ワークスペースに `nerita.backend` の指定がある場合はその設定を更新し、未指定ならユーザー設定へ保存します。メニューのチェックは保存済みの設定値を示します。
 Pi SDK `@earendil-works/pi-coding-agent@0.86.1` を同梱します。SDKの要件はNode.js 22.19以降で、実行にはExtension HostのNode.jsを使います。
-SDKは公開エントリーから読み込みます。ビルド時に `dist/runtime/pi.mjs` を生成し、実行依存・相対参照資産をリンクなしで同梱します。HostはSDK内部のディレクトリ構成に依存しません。
+SDKは `config/runtime/pi-entry.mjs` の公開APIをesbuildでbundleし、`dist/runtime/pi.mjs` から読み込みます。実装は `dist/runtime/pi/` のESM chunkへ分割し、SDKパッケージの再帰コピーは行いません。HostはSDK内部のディレクトリ構成に依存しません。
+
+組み込みproviderはOpenAI Codex・Anthropic Claude・Google Geminiです。`models.json` とExtensionによるcustom provider登録も維持し、OpenAI互換サーバー向けの `openai-completions` / `openai-responses` adapterを同梱します。その他の組み込みprovider・Radius OAuth・画像生成API・CLI起動APIは含めません。モデルのreasoning・image等のmetadataは保持します。ローカルLLM専用UIは追加しません。
 
 認証はPi側の `~/.pi/agent/auth.json`、providerのAPIキー環境変数、`models.json` を利用します（`PI_CODING_AGENT_DIR` を指定している場合はそのディレクトリ）。Codexの認証は共有しません。
 画面上部の「オプション → 認証情報を管理」でエディターグループに専用画面を開きます。認証先を検索し、行を展開してAPIキー設定・OAuthログイン・保存認証の削除を選べます。設定済みの認証先には緑のチェックを表示します。キー・確認コードは専用画面からHostへ送り、入力後に消去します。保存済みのキーは画面へ返さず、Pi標準の認証ファイルで管理します。Pi CLIのログインや起動環境のAPIキーも利用できます。環境変数・models.jsonの認証は削除しません。管理画面を閉じるまでチャットの送信・再接続を止めます。個々の認証処理は取消操作・画面を閉じる操作・3分の期限で中止できます。
@@ -31,7 +33,7 @@ SDKは公開エントリーから読み込みます。ビルド時に `dist/runt
 Piの承認は操作ごとの確認です。OSのサンドボックスやワークスペース内だけの書き込み制限はなく、許可した操作はExtension Hostのユーザー権限で動作します。Stopは実行済みの変更を元に戻しません。追加指示・履歴の名前変更／Fork／削除／アーカイブ・添付は後続工程です。未対応の操作は送信元へエラーを返します。
 
 `pnpm compile` 後の `pnpm test:pi:chat` で、配布SDKをリポジトリ外にコピーし、ローカルのOpenAI互換サーバーに対して会話・ツール・承認・停止・保存先切替・再起動後とフォルダー移動後の復元を検証できます。外部モデルへの通信・課金は発生しません。
-`pnpm test:runtime` は梱包処理の依存解決・バージョン分離を検証します。展開したVSIXは `pnpm test:pi:chat <展開先のextensionフォルダー>` で検証できます。`NERITA_TEST_EXTENSION_PATH` に同じフォルダーを指定すると、`pnpm test` も配布物をExtension Hostで検証します。
+`pnpm test:runtime` は梱包処理の依存解決に加え、開発ツリー外でPiの公開API・provider/API chunk・OAuth・TypeScript Extension・画像WASM/worker・相対資産を検証します。SDK更新時は `config/pi-sdk-contract.json` の確認済みソースと差分を比較し、bundle互換処理とテストを更新してください。配布設計とサイズ記録は `docs/Pi-Runtime-Packaging.md` にあります。展開したVSIXは `pnpm test:pi:chat <展開先のextensionフォルダー>` で検証できます。`NERITA_TEST_EXTENSION_PATH` に同じフォルダーを指定すると、`pnpm test` も配布物をExtension Hostで検証します。
 画面の確認は `pnpm ui-review pi.spec.ts pi-tools.spec.ts pi-approvals.spec.ts pi-history.spec.ts pi-account.spec.ts --workers=1` です。Storyの通信モックによる表示確認と、実SDKの疎通検証は別に実行します。
 
 ## インストールと使い方
@@ -83,7 +85,7 @@ pnpm package:vsix
 
 Windows の PowerShell で実行ポリシーにより起動できない場合は `pnpm.cmd` を使います。「実行とデバッグ」で `Run Extension` を選択して F5 を押すと、型検査・Lint・Host / Webview のビルド・Codex実行資産の準備後に、同じフォルダーを開いた Extension Development Host が起動します。開いたウィンドウで「Nerita for Codex: チャットを開く」を実行し、「接続する」を押してください。コード変更後はデバッグを再起動すると再ビルドされます。
 
-`pnpm package` は本番バンドル、`pnpm package:vsix` は Windows x64 用 VSIX を生成します。Windows x64 上で作成してください。VSIX は Codex 0.154.0 の Windows x64 実行資産を `dist/runtime/node_modules/@openai/` に、Pi SDKとその実行依存を同じ `node_modules` 以下に同梱し、開発ツリーの `node_modules` を必要としません。旧ACPアダプター・SDK・旧Codexは削除済みです。署名・Marketplace 公開は行いません。
+`pnpm package` は本番バンドル、`pnpm package:vsix` は Windows x64 用 VSIX を生成します。Windows x64 上で作成してください。VSIX は Codex 0.154.0 の Windows x64 実行資産を `dist/runtime/node_modules/@openai/` に、Piのbundleと資産を `dist/runtime/pi/` に同梱します。PhotonのJS/WASMだけは `dist/runtime/node_modules/@silvia-odwyer/photon-node/` に保持します。開発ツリーの `node_modules` は不要です。旧ACPアダプター・SDK・旧Codexは削除済みです。署名・Marketplace 公開は行いません。
 
 `pnpm check-types` は Host / Webview / Story、`pnpm check-types:tests` は Host テスト、`pnpm check-types:tools` は Storybook / Vitest / Playwright 設定を検査します。`pnpm test:codex` は同梱App Serverの初期化を、`pnpm test:codex:chat` は認証済みの実モデルで返信・停止・同じthreadでの続行を確認します。後者はモデル使用量が発生します。
 
