@@ -1,8 +1,8 @@
 // 双方向 JSONL を処理し、保留 RPC・切断・未対応のサーバー要求を管理する。
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface, type Interface } from "node:readline";
-import type { RequestId } from "../../../../codex-app-server/RequestId";
-import type { ClientNotification } from "../../../../codex-app-server/ClientNotification";
+import type { RequestId } from "../codex-app-server/RequestId";
+import type { ClientNotification } from "../codex-app-server/ClientNotification";
 import { stopAppServerProcess } from "./AppServerProcess";
 import {
 	parseRpcMessage,

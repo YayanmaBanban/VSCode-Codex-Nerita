@@ -3,4 +3,4 @@ dist/
 out/
 node_modules/
 coverage/
-src/codex-app-server/
+src/extension/backends/codex/codex-app-server

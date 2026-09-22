@@ -7,6 +7,13 @@ import type { QuotaWindow } from "../../../../shared/composer";
 import { isRecord } from "../../../../shared/validation";
 import { codexOAuth } from "./CodexOAuth";
 
+/** 正規化されたISO時間の取得 */
+function getIsoDate(resetAt: number): Date {
+	let data: Date = new Date(resetAt * 1000);
+	data = new Date(data.getTime() - data.getTimezoneOffset() * 60 * 1000);
+	return data;
+}
+
 /** 未知の応答項目は捨て、検証できる時間枠と残率だけ公開する。 */
 export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 	if (!isRecord(payload) || !isRecord(payload.rate_limit)) {
@@ -28,7 +35,7 @@ export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 		const seconds = window.limit_window_seconds;
 		const reset =
 			typeof window.reset_at === "number"
-				? new Date(window.reset_at * 1000)
+				? getIsoDate(window.reset_at)
 				: null;
 		windows.push({
 			label:
@@ -40,7 +47,7 @@ export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 			remaining: Math.max(0, Math.min(100, 100 - window.used_percent)),
 			detail:
 				reset && Number.isFinite(reset.getTime())
-					? `リセット: ${reset.toISOString()}`
+					? `リセット: ${reset.toISOString().replace("T", " ").slice(0, 19)}`
 					: "",
 		});
 	}

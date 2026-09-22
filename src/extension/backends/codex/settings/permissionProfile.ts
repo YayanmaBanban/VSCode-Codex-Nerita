@@ -1,9 +1,9 @@
 // 追加権限の要求を検証し、ユーザーが確認した今回の権限だけを返す。
-import type { GrantedPermissionProfile } from "../../../../codex-app-server/v2/GrantedPermissionProfile";
+import type { GrantedPermissionProfile } from "../codex-app-server/v2/GrantedPermissionProfile";
 import { isRecord } from "../../../../shared/validation";
 import { AppServerRpcError } from "../protocol/rpcMessage";
-import type { FileSystemSandboxEntry } from "../../../../codex-app-server/v2/FileSystemSandboxEntry";
-import type { FileSystemPath } from "../../../../codex-app-server/v2/FileSystemPath";
+import type { FileSystemSandboxEntry } from "../codex-app-server/v2/FileSystemSandboxEntry";
+import type { FileSystemPath } from "../codex-app-server/v2/FileSystemPath";
 
 /** 権限のパス表現を生成型の既知の形式へ限定する。 */
 function permissionPath(value: unknown): FileSystemPath {

@@ -1,14 +1,14 @@
 // App Server の起動・初期化をまとめ、初期化済み接続だけを呼び出し側へ渡す。
-import type { ClientInfo } from "../../../codex-app-server/ClientInfo";
-import type { InitializeResponse } from "../../../codex-app-server/InitializeResponse";
-import type { ThreadLoadedListParams } from "../../../codex-app-server/v2/ThreadLoadedListParams";
-import type { ThreadStartParams } from "../../../codex-app-server/v2/ThreadStartParams";
+import type { ClientInfo } from "./codex-app-server/ClientInfo";
+import type { InitializeResponse } from "./codex-app-server/InitializeResponse";
+import type { ThreadLoadedListParams } from "./codex-app-server/v2/ThreadLoadedListParams";
+import type { ThreadStartParams } from "./codex-app-server/v2/ThreadStartParams";
 import type {
 	ContextTurnStartParams,
 	ContextTurnSteerParams,
 } from "./context/additionalContext";
-import type { LoginAccountParams } from "../../../codex-app-server/v2/LoginAccountParams";
-import type { ThreadListParams } from "../../../codex-app-server/v2/ThreadListParams";
+import type { LoginAccountParams } from "./codex-app-server/v2/LoginAccountParams";
+import type { ThreadListParams } from "./codex-app-server/v2/ThreadListParams";
 import {
 	AppServerTransport,
 	type AppServerCallbacks,

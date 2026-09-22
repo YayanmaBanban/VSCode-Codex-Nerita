@@ -1,8 +1,8 @@
 // App Server の応答順序と通知を任意に制御する、状態管理テスト用の接続。
 import type { ModelInfo } from "../../src/extension/backends/codex/protocol/account";
 import { vi } from "vitest";
-import type { TurnStartParams } from "../../src/codex-app-server/v2/TurnStartParams";
-import type { ThreadStartParams } from "../../src/codex-app-server/v2/ThreadStartParams";
+import type { TurnStartParams } from "../../src/extension/backends/codex/codex-app-server/v2/TurnStartParams";
+import type { ThreadStartParams } from "../../src/extension/backends/codex/codex-app-server/v2/ThreadStartParams";
 import type { AppServerCallbacks } from "../../src/extension/backends/codex/runtime/AppServerTransport";
 import { CodexSessionController } from "../../src/extension/backends/codex/CodexSessionController";
 import type { CodexConnection } from "../../src/extension/backends/codex/runtime/connection";

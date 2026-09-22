@@ -1,6 +1,6 @@
 // 同梱Codex 0.154.0の試験的スキーマにある追加コンテキストだけを型に補う。
-import type { TurnStartParams } from "../../../../codex-app-server/v2/TurnStartParams";
-import type { TurnSteerParams } from "../../../../codex-app-server/v2/TurnSteerParams";
+import type { TurnStartParams } from "../codex-app-server/v2/TurnStartParams";
+import type { TurnSteerParams } from "../codex-app-server/v2/TurnSteerParams";
 /** 外部会話は指示として昇格させず、信頼しない資料として渡す。 */
 export type AdditionalContext = Record<
 	string,

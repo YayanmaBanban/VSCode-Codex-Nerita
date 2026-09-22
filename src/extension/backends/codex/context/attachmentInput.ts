@@ -1,6 +1,6 @@
 // 検証済み添付をApp Serverの画像・テキスト入力へ変換する。
 import type { Attachment } from "../../../../shared/composer";
-import type { UserInput } from "../../../../codex-app-server/v2/UserInput";
+import type { UserInput } from "../codex-app-server/v2/UserInput";
 import { readAttachments } from "../../../session/readAttachments";
 
 /** 読み込み制限を共通処理に任せ、Codex固有の入力形式だけを組み立てる。 */
