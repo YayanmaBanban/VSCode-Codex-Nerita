@@ -1,6 +1,10 @@
 // 追加の設定・使用量・ファイル参照を通信境界で検証する。
 import { isRecord } from "./validation";
 import { validSkills } from "./skills";
+import {
+	ComposerConfigOptionsSchema,
+	ComposerQuotaSchema,
+} from "./composerSchemas";
 
 /** 入力欄専用の状態フィールドを検証する。 */
 export function validComposerField(key: string, value: unknown): boolean {
@@ -8,22 +12,9 @@ export function validComposerField(key: string, value: unknown): boolean {
 		return validSkills(value);
 	}
 	if (key === "quota") {
-		return (
-			value === null ||
-			(Array.isArray(value) &&
-				value.length > 0 &&
-				value.every(
-					(item: unknown) =>
-						isRecord(item) &&
-						typeof item.label === "string" &&
-						typeof item.detail === "string" &&
-						typeof item.remaining === "number" &&
-						Number.isFinite(item.remaining) &&
-						item.remaining >= 0 &&
-						item.remaining <= 100,
-				))
-		);
+		return ComposerQuotaSchema.safeParse(value).success;
 	}
+
 	if (key === "configPending" || key === "attachmentPending") {
 		return typeof value === "boolean";
 	}
@@ -52,25 +43,8 @@ export function validComposerField(key: string, value: unknown): boolean {
 		);
 	}
 	if (key === "configOptions") {
-		return (
-			Array.isArray(value) &&
-			value.every(
-				(option: unknown) =>
-					isRecord(option) &&
-					typeof option.id === "string" &&
-					typeof option.name === "string" &&
-					typeof option.currentValue === "string" &&
-					(option.currentLabel === undefined ||
-						typeof option.currentLabel === "string") &&
-					Array.isArray(option.options) &&
-					option.options.every(
-						(choice: unknown) =>
-							isRecord(choice) &&
-							typeof choice.value === "string" &&
-							typeof choice.name === "string",
-					),
-			)
-		);
+		return ComposerConfigOptionsSchema.safeParse(value).success;
 	}
+
 	return false;
 }
