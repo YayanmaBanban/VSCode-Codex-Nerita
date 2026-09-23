@@ -1,7 +1,7 @@
 // App Server の応答順序と通知を任意に制御する、状態管理テスト用の接続。
 import type { ModelInfo } from "../../src/extension/backends/codex/protocol/account";
 import { vi } from "vitest";
-import type { TurnStartParams } from "../../src/extension/backends/codex/codex-app-server/v2/TurnStartParams";
+import type { ContextTurnStartParams } from "../../src/extension/backends/codex/context/additionalContext";
 import type { ThreadStartParams } from "../../src/extension/backends/codex/codex-app-server/v2/ThreadStartParams";
 import type { AppServerCallbacks } from "../../src/extension/backends/codex/runtime/AppServerTransport";
 import { CodexSessionController } from "../../src/extension/backends/codex/CodexSessionController";
@@ -38,6 +38,9 @@ export function codexHarness() {
 	let turn = 0;
 	const models: ModelInfo[] = [];
 	const client = {
+		updateCollaborationMode: vi.fn<
+			CodexConnection["updateCollaborationMode"]
+		>(() => Promise.resolve({})),
 		listMcpServerStatus: vi.fn<CodexConnection["listMcpServerStatus"]>(() =>
 			Promise.resolve({ data: [], nextCursor: null }),
 		),
@@ -96,7 +99,7 @@ export function codexHarness() {
 				cwd: "D:/workspace",
 			}),
 		),
-		startTurn: vi.fn((params: TurnStartParams) => {
+		startTurn: vi.fn((params: ContextTurnStartParams) => {
 			const id = `turn-${++turn}`;
 			connections.at(-1)?.callbacks.notification?.({
 				method: "turn/started",

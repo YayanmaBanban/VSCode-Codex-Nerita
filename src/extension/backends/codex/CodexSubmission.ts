@@ -107,6 +107,13 @@ export abstract class CodexSubmission extends CodexHistory {
 		};
 		try {
 			this.checkSubmission(epoch, sessionId);
+			// Goal はAPIのモードではなく、送信する指示の接頭辞として扱う。
+			if (
+				this.collaborationMode === "goal" &&
+				!/^\s*\/goal(?:\s|$)/u.test(text)
+			) {
+				text = `/goal ${text}`;
+			}
 			let context = referencedSessionIds.length
 				? await sessionContext(
 						this.client!,

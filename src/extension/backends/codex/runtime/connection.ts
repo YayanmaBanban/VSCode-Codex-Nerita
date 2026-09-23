@@ -7,6 +7,7 @@ export type CodexConnection = Pick<
 	CodexClient,
 	| "startThread"
 	| "startTurn"
+	| "updateCollaborationMode"
 	| "steerTurn"
 	| "interruptTurn"
 	| "readAccount"

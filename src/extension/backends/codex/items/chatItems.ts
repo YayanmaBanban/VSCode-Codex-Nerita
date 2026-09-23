@@ -56,7 +56,7 @@ export function itemPatch(
 	) {
 		return agentItemPatch(state, value);
 	}
-	if (value.type === "agentMessage") {
+	if (value.type === "agentMessage" || value.type === "plan") {
 		if (typeof value.text !== "string") {
 			throw new Error("Invalid agent message");
 		}

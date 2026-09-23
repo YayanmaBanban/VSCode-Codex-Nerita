@@ -2,7 +2,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { CodexModelCatalogService } from "../../src/extension/backends/pi/codex/CodexModelCatalogService";
 import { catalogHarness, oauthToken } from "./piCatalogHarness";
-import version from "../../src/extension/backends/codex/codex-app-server/version.json";
 
 describe("Codex OAuth live catalog transport", () => {
 	it("SDK認証を使い、固定URL・version・redirect禁止で取得する", async () => {
@@ -10,7 +9,7 @@ describe("Codex OAuth live catalog transport", () => {
 		await h.account.refreshCatalog(h.signal);
 		expect(h.models.getAuth).toHaveBeenCalled();
 		expect(h.request).toHaveBeenCalledWith(
-			`https://chatgpt.com/backend-api/codex/models?client_version=${version.version}`,
+			`https://chatgpt.com/backend-api/codex/models?client_version=0.0.0`,
 			expect.objectContaining({
 				redirect: "error",
 				headers: {

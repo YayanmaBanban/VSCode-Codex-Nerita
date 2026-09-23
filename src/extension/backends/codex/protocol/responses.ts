@@ -1,5 +1,6 @@
 // 利用する RPC の生成型と、受信データの実行時検証を結び付ける。
 import type { ClientRequest } from "../codex-app-server/ClientRequest";
+import type { CollaborationMode } from "../codex-app-server/CollaborationMode";
 import type { InitializeResponse } from "../codex-app-server/InitializeResponse";
 import type { ThreadLoadedListResponse } from "../codex-app-server/v2/ThreadLoadedListResponse";
 import { isRecord } from "../../../../shared/validation";
@@ -24,6 +25,7 @@ import {
 
 /** 対応済みメソッドだけを公開し、応答の生成型を固定する。 */
 export type AppServerResponses = {
+	"thread/settings/update": Record<string, never>;
 	"mcpServerStatus/list": ReturnType<typeof parseMcpStatus>;
 	"skills/list": ReturnType<typeof parseSkills>;
 	"thread/list": ReturnType<typeof parseThreads>;
@@ -50,10 +52,10 @@ export type AppServerResponses = {
 	"thread/loaded/list": ThreadLoadedListResponse;
 };
 /** メソッド名から生成済みの要求パラメーターを選ぶ。 */
-export type AppServerParams<M extends keyof AppServerResponses> = Extract<
-	ClientRequest,
-	{ method: M }
->["params"];
+export type AppServerParams<M extends keyof AppServerResponses> =
+	M extends "thread/settings/update"
+		? { threadId: string; collaborationMode: CollaborationMode }
+		: Extract<ClientRequest, { method: M }>["params"];
 /** 初期化の応答を必要な全フィールドについて検証する。 */
 function initializeResponse(value: unknown): InitializeResponse {
 	if (
@@ -88,6 +90,7 @@ function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
 export const responseParsers: {
 	[M in keyof AppServerResponses]: (value: unknown) => AppServerResponses[M];
 } = {
+	"thread/settings/update": parseInterrupt,
 	"mcpServerStatus/list": parseMcpStatus,
 	"skills/list": parseSkills,
 	"thread/list": parseThreads,

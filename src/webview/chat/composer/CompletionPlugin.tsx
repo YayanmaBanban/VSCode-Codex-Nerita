@@ -19,10 +19,12 @@ export function CompletionPlugin({
 	bridge,
 	attachments,
 	skills,
+	collaborationModes = false,
 }: {
 	bridge?: Bridge | undefined;
 	attachments: Attachment[];
 	skills: SkillSummary[];
+	collaborationModes?: boolean;
 }) {
 	const [editor] = useLexicalComposerContext();
 	usePastedPath(editor, bridge);
@@ -64,6 +66,7 @@ export function CompletionPlugin({
 				query,
 				attachments,
 				skills,
+				collaborationModes,
 			),
 			empty:
 				category === "添付ファイル" && !attachments.length

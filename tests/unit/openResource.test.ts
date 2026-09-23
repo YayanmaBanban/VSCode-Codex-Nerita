@@ -18,6 +18,11 @@ vi.mock("vscode", () => ({
 				scheme: uri.protocol.slice(0, -1),
 				query: uri.search,
 				fragment: uri.hash,
+				path: decodeURIComponent(uri.pathname),
+				with: ({ path }: { path: string }) => {
+					uri.pathname = path;
+					return { toString: () => uri.href };
+				},
 				toString: () => uri.href,
 			};
 		},
@@ -45,6 +50,50 @@ it("ファイルはアクティブなエディタグループの固定タブで�
 	);
 	expect(api.stat).toHaveBeenCalledTimes(1);
 });
+it.each([
+	[":188", 187, 0, 187, 0],
+	[":11:1", 10, 0, 10, 0],
+	[":11:1-22:2", 10, 0, 21, 1],
+	[":11-22", 10, 0, 21, 0],
+])(
+	"ファイルリンクの位置 %s をファイル名から分離する",
+	async (suffix, line, character, endLine, endCharacter) => {
+		const file = "file:///D:/project/pi-chat-smoke.mjs";
+		api.stat.mockImplementationOnce((uri: { toString(): string }) => {
+			expect(uri.toString()).toBe(file);
+			return Promise.resolve({ type: 1 });
+		});
+		api.executeCommand.mockImplementationOnce(
+			(command: string, uri: { toString(): string }) => {
+				expect(command).toBe("vscode.open");
+				expect(uri.toString()).toBe(file);
+				return Promise.resolve();
+			},
+		);
+		await openResource(`${file}${suffix}`);
+		expect(api.stat).toHaveBeenCalledTimes(1);
+		expect(api.executeCommand).toHaveBeenCalledWith(
+			"vscode.open",
+			expect.anything(),
+			expect.objectContaining({
+				selection: {
+					start: { line, character },
+					end: { line: endLine, character: endCharacter },
+				},
+			}),
+		);
+	},
+);
+it.each([":0", ":1:0", ":22:2-11:1", ":99999999999999999999"])(
+	"不正なファイルリンクの位置 %s は開かない",
+	async (suffix) => {
+		await expect(
+			openResource(`file:///D:/project/main.ts${suffix}`),
+		).rejects.toThrow("Invalid source range");
+		expect(api.stat).not.toHaveBeenCalled();
+		expect(api.executeCommand).not.toHaveBeenCalled();
+	},
+);
 it("フォルダは実際の種別を調べてExplorerへ表示する", async () => {
 	api.stat.mockResolvedValue({ type: 66 });
 	await openResource("file:///D:/project/src");

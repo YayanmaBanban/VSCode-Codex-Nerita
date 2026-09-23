@@ -1,6 +1,10 @@
 // 送信本文の位置補正・境界検証と、両backendの参照情報の保持を確認する。
 import { afterEach, expect, it, vi } from "vitest";
-import { promptReferences } from "../../src/shared/composerContent";
+import {
+	promptContent,
+	promptReferences,
+	type ComposerPart,
+} from "../../src/shared/composerContent";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { codexHarness } from "./codexHarness";
 import { piHarness } from "./piHarness";
@@ -13,6 +17,48 @@ const path = {
 };
 const references = [{ offset: 0, path }];
 const dispose: (() => Promise<void>)[] = [];
+
+it.each([
+	["てすと", "code", "後文", "てすと\ncode\n後文"],
+	["てすと\n", "code\n", "後文", "てすと\ncode\n後文"],
+	["てすと\n\n", "code", "", "てすと\n\ncode"],
+	["", "code", "", "code"],
+])("コードブロックの境界に改行を補う: %j", (before, code, after, expected) => {
+	const parts: ComposerPart[] = [
+		{ id: "before", type: "text", text: before },
+		{ id: "code", type: "pasted", text: code },
+		{ id: "after", type: "text", text: after },
+	];
+	expect(
+		promptContent(parts.map((part) => part.text).join(""), parts),
+	).toEqual({ text: expected, references: [] });
+});
+
+it("連続するブロックを区切り、後続のファイル参照位置を補正する", () => {
+	const parts: ComposerPart[] = [
+		{ id: "a", type: "text", text: "  てすと" },
+		{ id: "b", type: "pasted", text: "code" },
+		{ id: "c", type: "text", text: "" },
+		{ id: "d", type: "pasted", text: "code2" },
+		{ id: "e", type: "text", text: path.path, references },
+	];
+	const result = promptContent(
+		parts.map((part) => part.text).join(""),
+		parts,
+	);
+	expect(result.text).toBe("てすと\ncode\ncode2\nD:/a.ts");
+	expect(result.references).toEqual([
+		{ offset: result.text.indexOf(path.path), path },
+	]);
+	expect(
+		isUiMessage({
+			type: "prompt/send",
+			requestId: "test",
+			sessionId: "test",
+			...result,
+		}),
+	).toBe(true);
+});
 afterEach(async () => {
 	vi.useRealTimers();
 	await Promise.all(dispose.splice(0).map((fn) => fn()));

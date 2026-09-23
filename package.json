@@ -2,6 +2,10 @@
 	"name": "nerita-codex",
 	"displayName": "Nerita for Codex",
 	"description": "codex-app-serverを利用した、Codex用のVSCode拡張機能",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/YayanmaBanban/VSCode-Codex-Nerita"
+	},
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.137.0"
@@ -158,6 +162,8 @@
 	},
 	"scripts": {
 		"codex:generate": "node config/generate-codex.cjs",
+		"pi:generate": "node config/generate-pi.cjs",
+		"pi:verify": "node config/verify-pi.cjs",
 		"compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
 		"compile-tests": "tsc -p tests/tsconfig.json",
 		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
@@ -189,7 +195,7 @@
 		"test:codex": "node tests/codex-app-server-smoke.mjs",
 		"test:codex:chat": "node tests/codex-chat-smoke.mjs",
 		"test:pi:chat": "node tests/pi-chat-smoke.mjs",
-		"test:runtime": "node --test tests/runtime-packaging.test.mjs tests/pi-runtime-packaging.test.mjs",
+		"test:runtime": "node --test tests/runtime-packaging.test.mjs tests/pi-runtime-packaging.test.mjs tests/pi-update.test.cjs tests/license-cleanup.test.cjs",
 		"test:codex:features": "node tests/codex-features-smoke.mjs",
 		"test:codex:history": "node tests/codex-history-smoke.mjs"
 	},
@@ -235,9 +241,9 @@
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.8.0",
-		"@earendil-works/pi-coding-agent": "0.86.1",
+		"@earendil-works/pi-coding-agent": "0.87.1",
 		"@lexical/react": "^0.50.0",
-		"@openai/codex": "0.154.0",
+		"@openai/codex": "0.156.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"diff": "8.0.4",

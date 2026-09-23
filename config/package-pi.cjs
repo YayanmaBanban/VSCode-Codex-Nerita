@@ -6,7 +6,7 @@ const { piBundlePlugin } = require("./pi-bundle-plugin.cjs");
 const { copyBundleLicenses } = require("./pi-bundle-licenses.cjs");
 const { verifyPiSources } = require("./pi-sdk-contract.cjs");
 
-const SUPPORTED_PI_VERSION = "0.86.1";
+const { version: SUPPORTED_PI_VERSION } = require("./pi-version.json");
 
 /** WASM実行に必要なファイルだけを保持する。 */
 async function copyPhoton(sdkRoot, target) {

@@ -4,7 +4,7 @@ import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../vscodeBridge";
 import {
-	promptReferences,
+	promptContent,
 	type ComposerPart,
 } from "../../../shared/composerContent";
 
@@ -132,8 +132,7 @@ export function usePromptSubmission(
 			type: "prompt/send",
 			requestId,
 			sessionId: state.sessionId,
-			text: draft.trim(),
-			references: promptReferences(draft, parts),
+			...promptContent(draft, parts),
 			...(referencedSessionIds.length ? { referencedSessionIds } : {}),
 			...(changeScopes.length ? { changeScopes } : {}),
 			...(codeReferences.length ? { codeReferences } : {}),

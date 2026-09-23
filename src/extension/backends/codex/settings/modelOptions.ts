@@ -2,6 +2,7 @@
 import type { ConfigOption } from "../../../../shared/composer";
 import type { ModelInfo } from "../protocol/account";
 
+/** モデル能力と会話設定から、Codex専用の選択候補を構成する。 */
 export function modelOptions(
 	models: ModelInfo[],
 	model: string,
@@ -9,9 +10,20 @@ export function modelOptions(
 	tier: string,
 	initialTier: string | null,
 	mode: string,
+	collaborationMode = "default",
 ): ConfigOption[] {
 	const selected = models.find((item) => item.model === model);
 	const options: ConfigOption[] = [
+		{
+			id: "collaboration_mode",
+			name: "Collaboration mode",
+			currentValue: collaborationMode,
+			options: [
+				{ value: "default", name: "Default" },
+				{ value: "plan", name: "Plan" },
+				{ value: "goal", name: "Goal" },
+			],
+		},
 		{
 			id: "model",
 			name: "Model",

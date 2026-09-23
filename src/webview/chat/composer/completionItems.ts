@@ -67,6 +67,7 @@ export function completionItems(
 	query: string,
 	attachments: Attachment[],
 	skills: SkillSummary[],
+	collaborationModes = false,
 ): CompletionItem[] {
 	let items: CompletionItem[];
 	if (marker === "/") {
@@ -90,6 +91,22 @@ export function completionItems(
 				text: "/logout ",
 			},
 		];
+		if (collaborationModes) {
+			items.push(
+				{
+					id: "plan",
+					label: "/plan",
+					description: "Plan モードに切り替え",
+					text: "/plan ",
+				},
+				{
+					id: "goal",
+					label: "/goal",
+					description: "Goal モードに切り替え",
+					text: "/goal ",
+				},
+			);
+		}
 	} else if (marker === "@") {
 		items = skills.map((skill) => ({
 			id: skill.path,
