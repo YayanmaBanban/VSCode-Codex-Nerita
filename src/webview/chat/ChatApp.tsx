@@ -17,6 +17,7 @@ import { ChatSearchBar } from "./search/ChatSearchBar";
 import { useChatSearch } from "./search/useChatSearch";
 import { AgentViewer } from "./agents/AgentViewer";
 import { useAgentViewer } from "./agents/useAgentViewer";
+import { type ChatState } from "@/shared/chatState";
 
 /** 差し替え可能な Bridge を使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: { bridge: Bridge }) {
@@ -45,13 +46,7 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 	);
 	const bottom = useRef<HTMLDivElement>(null);
 	const busy = state.run === "running" || state.run === "cancelling";
-	const available =
-		state.connection === "ready" &&
-		!busy &&
-		!submission.locked &&
-		!state.sessionPending &&
-		!state.configPending &&
-		!state.attachmentPending;
+	const available = chatAvailable(state, busy, submission);
 	useFollowConversation(
 		conversation,
 		state.sessionId,
@@ -131,5 +126,27 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 				</AnimatePresence>
 			</div>
 		</main>
+	);
+}
+
+/** 実行と設定の待機中は会話操作を無効にする。 */
+function chatAvailable(
+	state: ChatState,
+	busy: boolean,
+	submission: {
+		locked: boolean;
+		available: boolean;
+		submit: () => void;
+		notice: { id: string; text: string } | null;
+		dismissNotice: () => void;
+	},
+) {
+	return (
+		state.connection === "ready" &&
+		!busy &&
+		!submission.locked &&
+		!state.sessionPending &&
+		!state.configPending &&
+		!state.attachmentPending
 	);
 }

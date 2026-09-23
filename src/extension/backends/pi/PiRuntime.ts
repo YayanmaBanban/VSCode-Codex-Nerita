@@ -107,29 +107,11 @@ export async function createPiRuntime(
 	});
 	const provider = options.provider?.trim();
 	// SDKが初期モデルを選ぶ前に、パッケージ由来providerも候補へ登録する。
-	const registrations = resourceLoader.getExtensions().runtime;
-	for (const registration of registrations.pendingProviderRegistrations) {
-		modelRuntime.registerProvider(registration.name, registration.config);
-	}
-	for (const registration of registrations.pendingNativeProviderRegistrations) {
-		modelRuntime.registerNativeProvider(registration.provider);
-	}
+	registerExtensionProviders(resourceLoader, modelRuntime);
 	await modelRuntime.getAvailable(undefined, { signal: options.signal });
-	const modelId = options.model?.trim();
-	if (!!provider !== !!modelId) {
-		throw new Error(
-			"nerita.pi.provider と nerita.pi.model は両方指定してください。",
-		);
-	}
-	const model =
-		provider && modelId
-			? modelRuntime.getModel(provider, modelId)
-			: undefined;
-	if (provider && !model) {
-		throw new Error(`Piのモデルが見つかりません: ${provider}/${modelId}`);
-	}
+	const model = configuredModel(options, provider, modelRuntime);
 	options.signal.throwIfAborted();
-	const storage = options.getStorage?.() ?? options.storage ?? "global";
+	const storage = sessionStorage(options);
 	const { manager, history } = await openPiSessionStore(
 		sdk,
 		options.cwd,
@@ -198,4 +180,45 @@ export async function createPiRuntime(
 			path: skill.filePath,
 		})),
 	});
+}
+
+/** 最新の保存先設定を明示設定と既定値より優先する。 */
+function sessionStorage(options: PiRuntimeOptions) {
+	return options.getStorage?.() ?? options.storage ?? "global";
+}
+
+/** 拡張由来のproviderを初期モデル選択前に登録する。 */
+function registerExtensionProviders(
+	resourceLoader: PiSdk.DefaultResourceLoader,
+	modelRuntime: PiSdk.ModelRuntime,
+) {
+	const registrations = resourceLoader.getExtensions().runtime;
+	for (const registration of registrations.pendingProviderRegistrations) {
+		modelRuntime.registerProvider(registration.name, registration.config);
+	}
+	for (const registration of registrations.pendingNativeProviderRegistrations) {
+		modelRuntime.registerNativeProvider(registration.provider);
+	}
+}
+
+/** providerとモデルの指定を検証してSDKの候補から解決する。 */
+function configuredModel(
+	options: PiRuntimeOptions,
+	provider: string | undefined,
+	modelRuntime: PiSdk.ModelRuntime,
+) {
+	const modelId = options.model?.trim();
+	if (!!provider !== !!modelId) {
+		throw new Error(
+			"nerita.pi.provider と nerita.pi.model は両方指定してください。",
+		);
+	}
+	const model =
+		provider && modelId
+			? modelRuntime.getModel(provider, modelId)
+			: undefined;
+	if (provider && !model) {
+		throw new Error(`Piのモデルが見つかりません: ${provider}/${modelId}`);
+	}
+	return model;
 }

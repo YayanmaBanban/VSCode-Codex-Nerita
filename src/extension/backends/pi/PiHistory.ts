@@ -64,6 +64,11 @@ export abstract class PiHistory extends PiRun {
 			...history.target(id),
 			...(fork ? { fork } : {}),
 		});
+		await this.refreshForkedHistory(fork, nextEpoch);
+	}
+
+	/** 分岐に成功した同じ接続の履歴一覧を更新する。 */
+	private async refreshForkedHistory(fork: boolean, nextEpoch: number) {
 		if (
 			fork &&
 			this.epoch === nextEpoch &&

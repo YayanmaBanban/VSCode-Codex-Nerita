@@ -29,13 +29,7 @@ export async function searchWorkspaceSymbols(
 		const seen = new Set<string>();
 		for (const symbol of symbols ?? []) {
 			const location = symbol.location;
-			if (
-				!location?.range ||
-				location.uri.scheme !== "file" ||
-				location.uri.query ||
-				location.uri.fragment ||
-				!vscode.workspace.getWorkspaceFolder(location.uri)
-			) {
+			if (unsupportedSymbolLocation(location)) {
 				continue;
 			}
 			const { start, end } = location.range;
@@ -71,4 +65,15 @@ export async function searchWorkspaceSymbols(
 			"シンボルを検索できませんでした。検索語を変更して再試行してください。";
 	}
 	return result;
+}
+
+/** 検索対象のワークスペースに属するローカル位置だけを受け付ける。 */
+function unsupportedSymbolLocation(location: vscode.Location) {
+	return (
+		!location?.range ||
+		location.uri.scheme !== "file" ||
+		location.uri.query ||
+		location.uri.fragment ||
+		!vscode.workspace.getWorkspaceFolder(location.uri)
+	);
 }

@@ -35,14 +35,13 @@ export function CompletionPlugin({
 	const dismissed = useRef("");
 	const container = useRef<HTMLDivElement>(null);
 	const id = useId();
-	const query = search ?? match?.query ?? "";
-	const browsing =
-		match?.marker === "#" && category === "ファイルとディレクトリ";
+	const marker = match?.marker;
+	const query = completionQuery(search, match);
+	const browsing = marker === "#" && category === "ファイルとディレクトリ";
 	const paths = useWorkspacePaths(bridge, browsing, query);
-	const searchingSymbols = match?.marker === "#" && category === "シンボル";
+	const searchingSymbols = marker === "#" && category === "シンボル";
 	const symbols = useWorkspaceSymbols(bridge, searchingSymbols, query);
-	const searchingSessions =
-		match?.marker === "#" && category === "セッション";
+	const searchingSessions = marker === "#" && category === "セッション";
 	const sessions = useSessionReferences(bridge, searchingSessions, query);
 	/** 選択中のカテゴリに属する候補と案内をまとめて返す。 */
 	function candidates(): {
@@ -179,14 +178,15 @@ export function CompletionPlugin({
 				}}
 				onPick={pick}
 				onBack={category ? back : undefined}
-				backLabel={
-					browsing && paths.hasParent
-						? "上の階層へ戻る"
-						: "カテゴリへ戻る"
-				}
+				backLabel={completionBackLabel(browsing, paths.hasParent)}
 			/>
 		</div>
 	);
+}
+
+/** 検索欄の入力を本文から検出した候補文字列より優先する。 */
+function completionQuery(search: string | null, match: Completion | null) {
+	return search ?? match?.query ?? "";
 }
 
 /** 入力マーカーとカテゴリから候補メニューの見出しを決める。 */
@@ -198,4 +198,9 @@ function completionTitle(marker: string, category: string): string {
 		return "スキル";
 	}
 	return category || "コンテキスト";
+}
+
+/** ファイル階層内でのみ親ディレクトリへの移動を案内する。 */
+function completionBackLabel(browsing: boolean, hasParent: boolean): string {
+	return browsing && hasParent ? "上の階層へ戻る" : "カテゴリへ戻る";
 }

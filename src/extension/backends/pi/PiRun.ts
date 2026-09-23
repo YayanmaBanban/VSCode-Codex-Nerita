@@ -9,6 +9,8 @@ import { PiPermissions } from "./PiPermissions";
 import type { PiAuthorize } from "./PiApprovedTools";
 import { readCodeReferenceContext } from "../../session/codeReferenceContext";
 
+import { type PiSession } from "./PiRuntime";
+
 /** SDK送信の受付状態とイベント購読を保持する。 */
 type Submission = {
 	id: string;
@@ -188,11 +190,7 @@ export abstract class PiRun extends PiLifecycle {
 		const epoch = this.epoch;
 		const operation = Promise.resolve().then(async () => {
 			try {
-				if (
-					submission.cancelled ||
-					submission.ended ||
-					this.epoch !== epoch
-				) {
+				if (this.staleSubmission(submission, epoch)) {
 					throw new Error(
 						"追加指示の対象の実行は終了しました。再送してください。",
 					);
@@ -217,9 +215,7 @@ export abstract class PiRun extends PiLifecycle {
 					context ? `${message.text}\n\n${context}` : message.text,
 				);
 				if (
-					submission.cancelled ||
-					submission.ended ||
-					this.epoch !== epoch ||
+					this.staleSubmission(submission, epoch) ||
 					!runtime.isStreaming
 				) {
 					runtime.clearQueue();
@@ -245,29 +241,41 @@ export abstract class PiRun extends PiLifecycle {
 					mode: "steer",
 				});
 			} catch (error) {
-				if (
-					submission.cancelled ||
-					submission.ended ||
-					this.epoch !== epoch
-				) {
-					runtime.clearQueue();
-				}
-				if (this.epoch === epoch) {
-					this.emit({
-						type: "request/failed",
-						requestId: message.requestId,
-						error:
-							error instanceof Error
-								? error.message
-								: "Piへの追加指示に失敗しました。",
-					});
-				}
+				this.rejectSteer(submission, epoch, runtime, message, error);
 			} finally {
 				delete submission.steering;
 			}
 		});
 		submission.steering = operation;
 		this.track(operation);
+	}
+
+	/** 停止・完了または接続変更で追加指示が無効になったか確認する。 */
+	private staleSubmission(submission: Submission, epoch: number) {
+		return submission.cancelled || submission.ended || this.epoch !== epoch;
+	}
+
+	/** 追加指示の失敗時に古いキューを回収して通知する。 */
+	private rejectSteer(
+		submission: Submission,
+		epoch: number,
+		runtime: PiSession,
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+		error: unknown,
+	) {
+		if (submission.cancelled || submission.ended || this.epoch !== epoch) {
+			runtime.clearQueue();
+		}
+		if (this.epoch === epoch) {
+			this.emit({
+				type: "request/failed",
+				requestId: message.requestId,
+				error:
+					error instanceof Error
+						? error.message
+						: "Piへの追加指示に失敗しました。",
+			});
+		}
 	}
 
 	/** SDKのpromptが終了するまでrunningを維持し、tool間のturn_endでは完了しない。 */

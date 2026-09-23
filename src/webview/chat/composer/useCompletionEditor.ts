@@ -14,15 +14,7 @@ import { $completion, $insertCompletion, type Completion } from "./completions";
 
 /** 本文のカーソル直前に2スペースを挿入、または最大2スペースを削除する。 */
 function $indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
-	if (
-		event.key !== "Tab" ||
-		event.isComposing ||
-		event.keyCode === 229 ||
-		editor.isComposing() ||
-		event.ctrlKey ||
-		event.metaKey ||
-		event.altKey
-	) {
+	if (ignoreIndentKey(event, editor)) {
 		return false;
 	}
 	const selection = $getSelection();
@@ -54,6 +46,19 @@ function $indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
 		}
 	}
 	return true;
+}
+
+/** 通常のTab入力だけを字下げ操作として受け付ける。 */
+function ignoreIndentKey(event: KeyboardEvent, editor: LexicalEditor) {
+	return (
+		event.key !== "Tab" ||
+		event.isComposing ||
+		event.keyCode === 229 ||
+		editor.isComposing() ||
+		event.ctrlKey ||
+		event.metaKey ||
+		event.altKey
+	);
 }
 
 /** React側の最新状態を参照し、検索欄への移動でも本文の置換範囲を保つ。 */

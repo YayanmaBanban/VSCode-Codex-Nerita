@@ -1,6 +1,6 @@
 // 一つのセッションの概要と独立した操作ボタンを表示する。
 import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
-import { useState } from "react";
+import { type SetStateAction, type Dispatch, useState } from "react";
 import { SessionDelete } from "./SessionDelete";
 import { SessionRename } from "./SessionRename";
 import type { UiMessage } from "../../../shared/messages";
@@ -66,75 +66,98 @@ export function SessionItem({
 					close={() => setRenaming(false)}
 				/>
 			)}
-			<div className="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
-				<SessionDelete
-					session={session}
-					disabled={disabled || !capabilities.delete}
-					send={send}
-				/>
-				<button
-					type="button"
-					className={sessionActionClass}
-					aria-label={`${title}の名前を変更`}
-					title="名前を変更"
-					disabled={
-						disabled || !capabilities.rename || session.archived
-					}
-					onClick={() => setRenaming(true)}
-				>
-					<Pencil size={14} aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					className={sessionActionClass}
-					disabled={
-						disabled ||
-						!(session.archived
-							? capabilities.unarchive
-							: capabilities.archive)
-					}
-					aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
-					title={
-						session.archived ? "アーカイブから戻す" : "アーカイブ"
-					}
-					onClick={() =>
-						send({
-							type: session.archived
-								? "session/unarchive"
-								: "session/archive",
-							requestId: crypto.randomUUID(),
-							sessionId: session.sessionId,
-						})
-					}
-				>
-					{session.archived ? (
-						<ArchiveRestore size={14} aria-hidden="true" />
-					) : (
-						<Archive size={14} aria-hidden="true" />
-					)}
-				</button>
-				<button
-					type="button"
-					className={sessionActionClass}
-					disabled={
-						disabled ||
-						!capabilities.fork ||
-						!capabilities.load ||
-						session.archived
-					}
-					aria-label={`${title}をフォーク`}
-					title="フォーク"
-					onClick={() =>
-						send({
-							type: "session/fork",
-							requestId: crypto.randomUUID(),
-							sessionId: session.sessionId,
-						})
-					}
-				>
-					<GitFork size={14} aria-hidden="true" />
-				</button>
-			</div>
+			{renderSessionActions(
+				session,
+				disabled,
+				capabilities,
+				send,
+				title,
+				setRenaming,
+			)}
 		</li>
+	);
+}
+
+/** セッションの削除・名前変更・アーカイブ・分岐を表示する。 */
+function renderSessionActions(
+	session: SessionSummary,
+	disabled: boolean,
+	capabilities: SessionCapabilities,
+	send: (message: UiMessage) => void,
+	title: string,
+	setRenaming: Dispatch<SetStateAction<boolean>>,
+) {
+	return (
+		<div className="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
+			<SessionDelete
+				session={session}
+				disabled={disabled || !capabilities.delete}
+				send={send}
+			/>
+			<button
+				type="button"
+				className={sessionActionClass}
+				aria-label={`${title}の名前を変更`}
+				title="名前を変更"
+				disabled={disabled || !capabilities.rename || session.archived}
+				onClick={() => setRenaming(true)}
+			>
+				<Pencil size={14} aria-hidden="true" />
+			</button>
+			<button
+				type="button"
+				className={sessionActionClass}
+				disabled={
+					disabled ||
+					!(session.archived
+						? capabilities.unarchive
+						: capabilities.archive)
+				}
+				aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
+				title={session.archived ? "アーカイブから戻す" : "アーカイブ"}
+				onClick={() =>
+					send({
+						type: session.archived
+							? "session/unarchive"
+							: "session/archive",
+						requestId: crypto.randomUUID(),
+						sessionId: session.sessionId,
+					})
+				}
+			>
+				{session.archived ? (
+					<ArchiveRestore size={14} aria-hidden="true" />
+				) : (
+					<Archive size={14} aria-hidden="true" />
+				)}
+			</button>
+			<button
+				type="button"
+				className={sessionActionClass}
+				disabled={forkDisabled(disabled, capabilities, session)}
+				aria-label={`${title}をフォーク`}
+				title="フォーク"
+				onClick={() =>
+					send({
+						type: "session/fork",
+						requestId: crypto.randomUUID(),
+						sessionId: session.sessionId,
+					})
+				}
+			>
+				<GitFork size={14} aria-hidden="true" />
+			</button>
+		</div>
+	);
+}
+
+/** 読み込みと分岐が可能な履歴だけをフォーク対象にする。 */
+function forkDisabled(
+	disabled: boolean,
+	capabilities: SessionCapabilities,
+	session: SessionSummary,
+): boolean | undefined {
+	return (
+		disabled || !capabilities.fork || !capabilities.load || session.archived
 	);
 }

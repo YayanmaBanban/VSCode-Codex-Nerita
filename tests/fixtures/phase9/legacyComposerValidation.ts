@@ -9,36 +9,13 @@ export function validComposerField(key: string, value: unknown): boolean {
 		return validSkills(value);
 	}
 	if (key === "quota") {
-		return (
-			value === null ||
-			(Array.isArray(value) &&
-				value.length > 0 &&
-				value.every(
-					(item: unknown) =>
-						isRecord(item) &&
-						typeof item.label === "string" &&
-						typeof item.detail === "string" &&
-						typeof item.remaining === "number" &&
-						Number.isFinite(item.remaining) &&
-						item.remaining >= 0 &&
-						item.remaining <= 100,
-				))
-		);
+		return legacyQuota(value);
 	}
 	if (key === "configPending" || key === "attachmentPending") {
 		return typeof value === "boolean";
 	}
 	if (key === "usage") {
-		return (
-			value === null ||
-			(isRecord(value) &&
-				typeof value.used === "number" &&
-				Number.isFinite(value.used) &&
-				value.used >= 0 &&
-				typeof value.size === "number" &&
-				Number.isFinite(value.size) &&
-				value.size > 0)
-		);
+		return legacyUsage(value);
 	}
 	if (key === "attachments") {
 		return (
@@ -74,4 +51,37 @@ export function validComposerField(key: string, value: unknown): boolean {
 		);
 	}
 	return false;
+}
+
+/** 移行前の使用枠フィールド検証を保持する。 */
+function legacyQuota(value: unknown): boolean {
+	return (
+		value === null ||
+		(Array.isArray(value) &&
+			value.length > 0 &&
+			value.every(
+				(item: unknown) =>
+					isRecord(item) &&
+					typeof item.label === "string" &&
+					typeof item.detail === "string" &&
+					typeof item.remaining === "number" &&
+					Number.isFinite(item.remaining) &&
+					item.remaining >= 0 &&
+					item.remaining <= 100,
+			))
+	);
+}
+
+/** 移行前の使用量フィールド検証を保持する。 */
+function legacyUsage(value: unknown): boolean {
+	return (
+		value === null ||
+		(isRecord(value) &&
+			typeof value.used === "number" &&
+			Number.isFinite(value.used) &&
+			value.used >= 0 &&
+			typeof value.size === "number" &&
+			Number.isFinite(value.size) &&
+			value.size > 0)
+	);
 }

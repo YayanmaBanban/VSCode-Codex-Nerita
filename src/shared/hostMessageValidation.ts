@@ -14,94 +14,104 @@ export function isHostMessage(value: unknown): value is HostMessage {
 	if (!isRecord(value)) {
 		return false;
 	}
-	if (value.type === "ui/codeBlock") {
-		return isId(value.requestId);
-	}
-	if (value.type === "ui/backendState") {
-		return isBackendId(value.backend);
-	}
-	if (value.type === "agent/view") {
-		const view = value.view;
-		return (
-			isId(value.requestId) &&
-			isRecord(view) &&
-			isId(view.threadId) &&
-			(view.parentThreadId === null || isId(view.parentThreadId)) &&
-			["messages", "tools", "agents"].every((key) =>
-				validStateField(key, view[key]),
-			)
-		);
-	}
-	if (value.type === "session/references") {
-		return (
-			isId(value.requestId) &&
-			Array.isArray(value.entries) &&
-			value.entries.length <= 50 &&
-			value.entries.every(isSessionReference) &&
-			(value.nextCursor === null || isPathString(value.nextCursor)) &&
-			(value.error === undefined || typeof value.error === "string")
-		);
-	}
-	if (value.type === "workspace/symbols") {
-		return (
-			isId(value.requestId) &&
-			Array.isArray(value.entries) &&
-			value.entries.length <= 100 &&
-			value.entries.every(
-				(entry: unknown) =>
-					isWorkspacePath(entry) && entry.symbol !== undefined,
-			) &&
-			typeof value.truncated === "boolean" &&
-			(value.error === undefined || typeof value.error === "string")
-		);
-	}
-	if (value.type === "workspace/paths") {
-		return (
-			isId(value.requestId) &&
-			Array.isArray(value.entries) &&
-			value.entries.every(isWorkspacePath) &&
-			(value.error === undefined || typeof value.error === "string")
-		);
-	}
-	if (value.type === "workspace/resolvedPath") {
-		return (
-			isId(value.requestId) &&
-			(value.entry === null || isWorkspacePath(value.entry))
-		);
-	}
-	if (value.type === "prompt/accepted") {
-		return (
-			isId(value.requestId) &&
-			(value.mode === "start" || value.mode === "steer")
-		);
-	}
-	if (value.type === "ui/sidebarState") {
-		return isSidebarLocation(value.location);
-	}
-	if (value.type === "ui/viewState") {
-		return (
-			typeof value.restoreScroll === "boolean" &&
-			typeof value.editor === "boolean" &&
-			typeof value.draft === "string" &&
-			value.draft.length <= 100_000 &&
-			validDraftParts(value.draft, value.draftParts) &&
-			typeof value.scrollTop === "number" &&
-			Number.isFinite(value.scrollTop) &&
-			value.scrollTop >= 0
-		);
-	}
-	if (value.type === "state/snapshot") {
-		return isState(value.state);
-	}
-	if (value.type === "request/failed") {
-		return isId(value.requestId) && typeof value.error === "string";
-	}
-	return (
-		value.type === "state/patch" &&
-		isRevision(value.revision) &&
-		isRecord(value.patch) &&
-		Object.entries(value.patch).every(([key, item]) =>
-			validStateField(key, item),
-		)
-	);
+	const validator = hostMessageValidators.get(value.type);
+	return validator ? validator(value) : false;
 }
+
+/** 通知の種類ごとにペイロードを検証し、未知の種類を拒否する。 */
+const hostMessageValidators = new Map<
+	unknown,
+	(value: Record<string, unknown>) => boolean
+>(
+	Object.entries({
+		"ui/codeBlock": (value) => {
+			return isId(value.requestId);
+		},
+		"ui/backendState": (value) => {
+			return isBackendId(value.backend);
+		},
+		"agent/view": (value) => {
+			const view = value.view;
+			return (
+				isId(value.requestId) &&
+				isRecord(view) &&
+				isId(view.threadId) &&
+				(view.parentThreadId === null || isId(view.parentThreadId)) &&
+				["messages", "tools", "agents"].every((key) =>
+					validStateField(key, view[key]),
+				)
+			);
+		},
+		"session/references": (value) => {
+			return (
+				isId(value.requestId) &&
+				Array.isArray(value.entries) &&
+				value.entries.length <= 50 &&
+				value.entries.every(isSessionReference) &&
+				(value.nextCursor === null || isPathString(value.nextCursor)) &&
+				(value.error === undefined || typeof value.error === "string")
+			);
+		},
+		"workspace/symbols": (value) => {
+			return (
+				isId(value.requestId) &&
+				Array.isArray(value.entries) &&
+				value.entries.length <= 100 &&
+				value.entries.every(
+					(entry: unknown) =>
+						isWorkspacePath(entry) && entry.symbol !== undefined,
+				) &&
+				typeof value.truncated === "boolean" &&
+				(value.error === undefined || typeof value.error === "string")
+			);
+		},
+		"workspace/paths": (value) => {
+			return (
+				isId(value.requestId) &&
+				Array.isArray(value.entries) &&
+				value.entries.every(isWorkspacePath) &&
+				(value.error === undefined || typeof value.error === "string")
+			);
+		},
+		"workspace/resolvedPath": (value) => {
+			return (
+				isId(value.requestId) &&
+				(value.entry === null || isWorkspacePath(value.entry))
+			);
+		},
+		"prompt/accepted": (value) => {
+			return (
+				isId(value.requestId) &&
+				(value.mode === "start" || value.mode === "steer")
+			);
+		},
+		"ui/sidebarState": (value) => {
+			return isSidebarLocation(value.location);
+		},
+		"ui/viewState": (value) => {
+			return (
+				typeof value.restoreScroll === "boolean" &&
+				typeof value.editor === "boolean" &&
+				typeof value.draft === "string" &&
+				value.draft.length <= 100_000 &&
+				validDraftParts(value.draft, value.draftParts) &&
+				typeof value.scrollTop === "number" &&
+				Number.isFinite(value.scrollTop) &&
+				value.scrollTop >= 0
+			);
+		},
+		"state/snapshot": (value) => {
+			return isState(value.state);
+		},
+		"request/failed": (value) => {
+			return isId(value.requestId) && typeof value.error === "string";
+		},
+		"state/patch": (value) =>
+			value.type === "state/patch" &&
+			isRevision(value.revision) &&
+			isRecord(value.patch) &&
+			Object.entries(value.patch).every(([key, item]) =>
+				validStateField(key, item),
+			),
+	} satisfies Record<string, (value: Record<string, unknown>) => boolean>),
+);

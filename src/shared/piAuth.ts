@@ -65,31 +65,50 @@ export function isPiAuthState(value: unknown): value is PiAuthState {
 						typeof method.name === "string",
 				),
 		) &&
-		(state.active === null || typeof state.active === "string") &&
+		isNullableString(state.active) &&
 		typeof state.notice === "string" &&
 		(state.error === null || typeof state.error === "string") &&
-		(state.feedback === undefined ||
-			(!!state.feedback &&
-				typeof state.feedback === "object" &&
-				!Array.isArray(state.feedback) &&
-				Object.values(state.feedback).every(
-					(item) =>
-						!!item &&
-						typeof item.notice === "string" &&
-						(item.error === null || typeof item.error === "string"),
-				))) &&
-		(state.prompt === null ||
-			(!!state.prompt &&
-				typeof state.prompt.id === "string" &&
-				typeof state.prompt.message === "string" &&
-				typeof state.prompt.secret === "boolean" &&
-				(state.prompt.options === undefined ||
-					(Array.isArray(state.prompt.options) &&
-						state.prompt.options.every(
-							(option) =>
-								!!option &&
-								typeof option.id === "string" &&
-								typeof option.label === "string",
-						)))))
+		validAuthFeedback(state) &&
+		validAuthPrompt(state)
+	);
+}
+
+/** 未指定を表すnullまたは文字列を受け付ける。 */
+function isNullableString(value: unknown): boolean {
+	return value === null || typeof value === "string";
+}
+
+/** 入力要求と選択肢の構造を検証する。 */
+function validAuthPrompt(state: PiAuthState): boolean {
+	return (
+		state.prompt === null ||
+		(!!state.prompt &&
+			typeof state.prompt.id === "string" &&
+			typeof state.prompt.message === "string" &&
+			typeof state.prompt.secret === "boolean" &&
+			(state.prompt.options === undefined ||
+				(Array.isArray(state.prompt.options) &&
+					state.prompt.options.every(
+						(option) =>
+							!!option &&
+							typeof option.id === "string" &&
+							typeof option.label === "string",
+					))))
+	);
+}
+
+/** 認証結果の通知とエラーを検証する。 */
+function validAuthFeedback(state: PiAuthState) {
+	return (
+		state.feedback === undefined ||
+		(!!state.feedback &&
+			typeof state.feedback === "object" &&
+			!Array.isArray(state.feedback) &&
+			Object.values(state.feedback).every(
+				(item) =>
+					!!item &&
+					typeof item.notice === "string" &&
+					(item.error === null || typeof item.error === "string"),
+			))
 	);
 }

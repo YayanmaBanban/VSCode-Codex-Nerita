@@ -11,6 +11,11 @@ import { ChangeContextError } from "./context/changeContext";
 import { openChanges } from "./context/openChanges";
 import { CodeReferenceError } from "../../session/codeReferenceContext";
 
+import {
+	type SessionReferencesRequest,
+	type SessionReferenceOpen,
+} from "@/shared/sessionReferences";
+
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
 export class CodexSessionController extends CodexSubmission {
 	private seen = new Set<string>();
@@ -49,67 +54,26 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.type === "changes/open") {
-			const { cwd, sessionId } = this.state;
-			const epoch = this.epoch;
-			if (!cwd || !sessionId || this.state.connection !== "ready") {
-				throw new Error("Disconnected");
-			}
-			await openChanges(
-				cwd,
-				message.scope,
-				() =>
-					epoch === this.epoch && sessionId === this.state.sessionId,
-			);
-			return;
+			return await this.openRequestedChanges(message);
 		}
 		if (
 			message.type === "session/searchReferences" ||
 			message.type === "session/openReference"
 		) {
-			const client = this.client;
-			const cwd = this.state.cwd;
-			const id = this.state.sessionId;
-			const epoch = this.epoch;
-			if (!client || !cwd || !id || this.state.connection !== "ready") {
-				throw new Error("Disconnected");
-			}
-			const current = () =>
-				epoch === this.epoch && id === this.state.sessionId;
-			if (message.type === "session/searchReferences") {
-				const result = await searchSessionReferences(
-					client,
-					cwd,
-					id,
-					message,
-					current,
-				);
-				if (current()) {
-					this.emit(result);
-				}
-			} else {
-				await openSessionReference(client, cwd, message, current);
-			}
-			return;
+			return await this.sessionReferenceAction(message);
 		}
 		if (
 			message.type === "personality/read" ||
 			message.type === "personality/save" ||
 			message.type === "personality/select"
 		) {
-			const client = this.client;
-			const epoch = this.epoch;
-			if (!client?.readPersonality || !client.changePersonality) {
-				throw new Error("接続後に設定を開いてください。");
-			}
-			const personality =
-				message.type === "personality/read"
-					? await client.readPersonality()
-					: await client.changePersonality(message);
-			if (epoch === this.epoch) {
-				this.patch({ personality });
-			}
-			return;
+			return await this.personalityAction(message);
 		}
+		await this.dispatchMutableAction(message);
+	}
+
+	/** 更新待ちを排除して認証・接続操作を処理する。 */
+	private async dispatchMutableAction(message: UiMessage): Promise<void> {
 		if (
 			this.submissionPending &&
 			![
@@ -138,6 +102,11 @@ export class CodexSessionController extends CodexSubmission {
 		if (this.state.connection !== "ready") {
 			throw new Error("Disconnected");
 		}
+		await this.dispatchReadyAction(message);
+	}
+
+	/** 接続済みの会話操作と履歴操作を振り分ける。 */
+	private async dispatchReadyAction(message: UiMessage): Promise<void> {
 		if (message.type === "session/new") {
 			await this.newThread();
 			return;
@@ -150,14 +119,7 @@ export class CodexSessionController extends CodexSubmission {
 			await this.refreshSessions(message.archived, message.more);
 			return;
 		}
-		if (
-			message.type === "session/load" ||
-			message.type === "session/fork" ||
-			message.type === "session/delete" ||
-			message.type === "session/archive" ||
-			message.type === "session/rename" ||
-			message.type === "session/unarchive"
-		) {
+		if (isHistoryAction(message)) {
 			const action = message.type.slice("session/".length) as
 				"load" | "fork" | "delete" | "archive" | "rename" | "unarchive";
 			await this.manageHistory(
@@ -167,6 +129,11 @@ export class CodexSessionController extends CodexSubmission {
 			);
 			return;
 		}
+		await this.dispatchThreadAction(message);
+	}
+
+	/** 操作対象が現在の会話であることを確認する。 */
+	private async dispatchThreadAction(message: UiMessage): Promise<void> {
 		if (
 			!("sessionId" in message) ||
 			message.sessionId !== this.state.sessionId
@@ -174,76 +141,7 @@ export class CodexSessionController extends CodexSubmission {
 			throw new Error("Stale thread");
 		}
 		if (message.type === "prompt/send") {
-			const command = /^\/(plan|goal)(?:\s+([\s\S]*))?$/u.exec(
-				message.text.trim(),
-			);
-			if (command) {
-				if (this.submissionPending) {
-					throw new Error("Submission pending");
-				}
-				if (this.collaborationMode !== command[1]) {
-					await this.setConfig("collaboration_mode", command[1]!);
-				}
-				if (!command[2]?.trim()) {
-					this.emit({
-						type: "prompt/accepted",
-						requestId: message.requestId,
-						mode: "start",
-					});
-					return;
-				}
-				// /plan 自体はモデルへの指示にせず、本文だけで計画ターンを開始する。
-				if (command[1] === "plan") {
-					message = { ...message, text: command[2] };
-				}
-			}
-			if (message.text.trim() === "/logout") {
-				if (this.submissionPending) {
-					throw new Error("Submission pending");
-				}
-				await this.logout();
-				this.emit({
-					type: "prompt/accepted",
-					requestId: message.requestId,
-					mode: "start",
-				});
-				return;
-			}
-			if (message.text.trim() === "/mcp") {
-				await this.showMcpStatus(message.sessionId);
-				this.emit({
-					type: "prompt/accepted",
-					requestId: message.requestId,
-					mode: "start",
-				});
-				return;
-			}
-			if (message.text.trim() === "/new") {
-				if (this.submissionPending) {
-					throw new Error("Submission pending");
-				}
-				await this.newThread();
-				this.emit({
-					type: "prompt/accepted",
-					requestId: message.requestId,
-					mode: "start",
-				});
-				return;
-			}
-			const mode = await this.submitPrompt(
-				message.text,
-				message.sessionId,
-				message.referencedSessionIds,
-				message.changeScopes,
-				message.codeReferences,
-				message.references,
-			);
-			this.emit({
-				type: "prompt/accepted",
-				requestId: message.requestId,
-				mode,
-			});
-			return;
+			return this.sendPromptAction(message);
 		}
 		if (message.type === "config/set") {
 			await this.setConfig(message.configId, message.value);
@@ -257,6 +155,162 @@ export class CodexSessionController extends CodexSubmission {
 			await this.attachment(message);
 			return;
 		}
+		this.runningAction(message);
+	}
+
+	/** 接続中の性格設定を読み取りまたは変更する。 */
+	private async personalityAction(
+		message: Extract<
+			UiMessage,
+			{
+				type:
+					| "personality/read"
+					| "personality/select"
+					| "personality/save";
+			}
+		>,
+	) {
+		const client = this.client;
+		const epoch = this.epoch;
+		if (!client?.readPersonality || !client.changePersonality) {
+			throw new Error("接続後に設定を開いてください。");
+		}
+		const personality =
+			message.type === "personality/read"
+				? await client.readPersonality()
+				: await client.changePersonality(message);
+		if (epoch === this.epoch) {
+			this.patch({ personality });
+		}
+		return;
+	}
+
+	/** 参照候補の検索と会話表示を同じ接続世代で実行する。 */
+	private async sessionReferenceAction(
+		message: SessionReferencesRequest | SessionReferenceOpen,
+	) {
+		const client = this.client;
+		const cwd = this.state.cwd;
+		const id = this.state.sessionId;
+		const epoch = this.epoch;
+		if (!client || !cwd || !id || this.state.connection !== "ready") {
+			throw new Error("Disconnected");
+		}
+		const current = () =>
+			epoch === this.epoch && id === this.state.sessionId;
+		if (message.type === "session/searchReferences") {
+			const result = await searchSessionReferences(
+				client,
+				cwd,
+				id,
+				message,
+				current,
+			);
+			if (current()) {
+				this.emit(result);
+			}
+		} else {
+			await openSessionReference(client, cwd, message, current);
+		}
+		return;
+	}
+
+	/** 現在の接続と会話に限定して差分を開く。 */
+	private async openRequestedChanges(
+		message: Extract<UiMessage, { type: "changes/open" }>,
+	) {
+		const { cwd, sessionId } = this.state;
+		const epoch = this.epoch;
+		if (!cwd || !sessionId || this.state.connection !== "ready") {
+			throw new Error("Disconnected");
+		}
+		await openChanges(
+			cwd,
+			message.scope,
+			() => epoch === this.epoch && sessionId === this.state.sessionId,
+		);
+		return;
+	}
+
+	/** 入力欄のコマンドと通常送信を処理する。 */
+	private async sendPromptAction(
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+	): Promise<void> {
+		const command = /^\/(plan|goal)(?:\s+([\s\S]*))?$/u.exec(
+			message.text.trim(),
+		);
+		if (command) {
+			this.assertSubmissionIdle();
+			if (this.collaborationMode !== command[1]) {
+				await this.setConfig("collaboration_mode", command[1]!);
+			}
+			if (!command[2]?.trim()) {
+				this.emit({
+					type: "prompt/accepted",
+					requestId: message.requestId,
+					mode: "start",
+				});
+				return;
+			}
+			// /plan 自体はモデルへの指示にせず、本文だけで計画ターンを開始する。
+			if (command[1] === "plan") {
+				message = { ...message, text: command[2] };
+			}
+		}
+		if (message.text.trim() === "/logout") {
+			this.assertSubmissionIdle();
+			await this.logout();
+			this.emit({
+				type: "prompt/accepted",
+				requestId: message.requestId,
+				mode: "start",
+			});
+			return;
+		}
+		if (message.text.trim() === "/mcp") {
+			await this.showMcpStatus(message.sessionId);
+			this.emit({
+				type: "prompt/accepted",
+				requestId: message.requestId,
+				mode: "start",
+			});
+			return;
+		}
+		if (message.text.trim() === "/new") {
+			this.assertSubmissionIdle();
+			await this.newThread();
+			this.emit({
+				type: "prompt/accepted",
+				requestId: message.requestId,
+				mode: "start",
+			});
+			return;
+		}
+		const mode = await this.submitPrompt(
+			message.text,
+			message.sessionId,
+			message.referencedSessionIds,
+			message.changeScopes,
+			message.codeReferences,
+			message.references,
+		);
+		this.emit({
+			type: "prompt/accepted",
+			requestId: message.requestId,
+			mode,
+		});
+		return;
+	}
+
+	/** 送信準備中の会話切り替えを禁止する。 */
+	private assertSubmissionIdle() {
+		if (this.submissionPending) {
+			throw new Error("Submission pending");
+		}
+	}
+
+	/** 現在の実行に対する停止と承認操作を処理する。 */
+	private runningAction(message: UiMessage): void {
 		if (
 			!("runId" in message) ||
 			message.runId !== this.state.runId ||
@@ -269,16 +323,7 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.type === "execution/stop") {
-			if (
-				!this.state.tools.some(
-					(tool) =>
-						tool.id === message.toolId &&
-						tool.runId === message.runId &&
-						["pending", "in_progress"].includes(tool.status),
-				)
-			) {
-				throw new Error("Stale tool");
-			}
+			this.assertCurrentTool(message);
 			this.cancel();
 			return;
 		}
@@ -293,6 +338,22 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		throw new Error("Unsupported action");
+	}
+
+	/** 停止要求のツールが現在の実行に含まれるか照合する。 */
+	private assertCurrentTool(
+		message: Extract<UiMessage, { type: "execution/stop" }>,
+	) {
+		if (
+			!this.state.tools.some(
+				(tool) =>
+					tool.id === message.toolId &&
+					tool.runId === message.runId &&
+					["pending", "in_progress"].includes(tool.status),
+			)
+		) {
+			throw new Error("Stale tool");
+		}
 	}
 }
 
@@ -312,4 +373,27 @@ function requestError(type: UiMessage["type"], error: unknown) {
 		return "送信できませんでした。接続を確認して再試行してください。";
 	}
 	return "現在の状態では操作できません。接続状態を確認してください。";
+}
+
+/** 会話IDを指定して保存履歴を変更する操作を識別する。 */
+function isHistoryAction(message: UiMessage): message is Extract<
+	UiMessage,
+	{
+		type:
+			| "session/load"
+			| "session/fork"
+			| "session/delete"
+			| "session/archive"
+			| "session/rename"
+			| "session/unarchive";
+	}
+> {
+	return [
+		"session/load",
+		"session/fork",
+		"session/delete",
+		"session/archive",
+		"session/rename",
+		"session/unarchive",
+	].includes(message.type);
 }

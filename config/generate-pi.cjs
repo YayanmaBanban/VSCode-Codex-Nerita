@@ -12,15 +12,7 @@ async function readJson(file) {
 
 /** 全入力を確認してから、バージョン・ライセンス・指紋を書き出す。 */
 async function main() {
-	const args = process.argv.slice(2);
-	const requested = args[0];
-	if (
-		args.length > 1 ||
-		(requested !== undefined &&
-			!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(requested))
-	) {
-		throw new Error("使い方: pnpm pi:generate [バージョン（例: 0.86.1）]");
-	}
+	const requested = readRequestedVersion();
 	const root = path.resolve(__dirname, "..");
 	if (requested !== undefined) {
 		runPnpm([
@@ -46,22 +38,7 @@ async function main() {
 		);
 	}
 	const contractPath = path.join(__dirname, "pi-sdk-contract.json");
-	const previous = await readJson(contractPath);
-	const contract = {};
-	const roots = { sdk, ai };
-	for (const [name, files] of Object.entries(previous)) {
-		contract[name] = {};
-		for (const [file, expected] of Object.entries(files)) {
-			const content = await fs.readFile(path.join(roots[name], file));
-			const actual = createHash("sha256").update(content).digest("hex");
-			contract[name][file] = actual;
-			if (actual !== expected) {
-				console.log(
-					`互換性確認対象: ${name}/${file} (${expected} -> ${actual})`,
-				);
-			}
-		}
-	}
+	const contract = await readSdkContract(contractPath, sdk, ai);
 	const url = `https://raw.githubusercontent.com/earendil-works/pi/v${version}/LICENSE`;
 	const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
 	if (!response.ok) {
@@ -94,3 +71,38 @@ main().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;
 });
+
+/** 生成コマンドのバージョン引数を検証する。 */
+function readRequestedVersion() {
+	const args = process.argv.slice(2);
+	const requested = args[0];
+	if (
+		args.length > 1 ||
+		(requested !== undefined &&
+			!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(requested))
+	) {
+		throw new Error("使い方: pnpm pi:generate [バージョン（例: 0.86.1）]");
+	}
+	return requested;
+}
+
+/** SDKの互換性確認対象ファイルの指紋を生成する。 */
+async function readSdkContract(contractPath, sdk, ai) {
+	const previous = await readJson(contractPath);
+	const contract = {};
+	const roots = { sdk, ai };
+	for (const [name, files] of Object.entries(previous)) {
+		contract[name] = {};
+		for (const [file, expected] of Object.entries(files)) {
+			const content = await fs.readFile(path.join(roots[name], file));
+			const actual = createHash("sha256").update(content).digest("hex");
+			contract[name][file] = actual;
+			if (actual !== expected) {
+				console.log(
+					`互換性確認対象: ${name}/${file} (${expected} -> ${actual})`,
+				);
+			}
+		}
+	}
+	return contract;
+}

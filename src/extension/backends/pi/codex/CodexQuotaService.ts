@@ -24,8 +24,7 @@ export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 		const window = payload.rate_limit[key];
 		if (
 			!isRecord(window) ||
-			typeof window.used_percent !== "number" ||
-			!Number.isFinite(window.used_percent) ||
+			!isFiniteNumber(window.used_percent) ||
 			typeof window.limit_window_seconds !== "number" ||
 			!Number.isFinite(window.limit_window_seconds) ||
 			window.limit_window_seconds <= 0
@@ -33,17 +32,11 @@ export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 			continue;
 		}
 		const seconds = window.limit_window_seconds;
-		const reset =
-			typeof window.reset_at === "number"
-				? getIsoDate(window.reset_at)
-				: null;
+		const reset = quotaReset(window);
 		windows.push({
 			label: quotaWindowLabel(seconds),
 			remaining: Math.max(0, Math.min(100, 100 - window.used_percent)),
-			detail:
-				reset && Number.isFinite(reset.getTime())
-					? `リセット: ${reset.toISOString().replace("T", " ").slice(0, 19)}`
-					: "",
+			detail: quotaResetDetail(reset),
 		});
 	}
 	return windows.length ? windows : null;
@@ -90,10 +83,7 @@ export class CodexQuotaService {
 			}
 			const payload: unknown = await response.json();
 			signal.throwIfAborted();
-			if (
-				this.session.model?.provider !== model.provider ||
-				this.session.model?.id !== model.id
-			) {
+			if (this.modelChanged(model)) {
 				return null;
 			}
 			return normalizeCodexQuota(payload);
@@ -101,6 +91,28 @@ export class CodexQuotaService {
 			return null;
 		}
 	}
+
+	/** 取得開始時と現在のモデルが一致するか照合する。 */
+	private modelChanged(model: NonNullable<AgentSession["model"]>): boolean {
+		return (
+			this.session.model?.provider !== model.provider ||
+			this.session.model?.id !== model.id
+		);
+	}
+}
+
+/** 有効なリセット時刻だけを表示用文字列へ整形する。 */
+function quotaResetDetail(reset: Date | null): string {
+	return reset && Number.isFinite(reset.getTime())
+		? `リセット: ${reset.toISOString().replace("T", " ").slice(0, 19)}`
+		: "";
+}
+
+/** 利用枠のリセット時刻を表示用へ変換する。 */
+function quotaReset(window: Record<string, unknown>) {
+	return typeof window.reset_at === "number"
+		? getIsoDate(window.reset_at)
+		: null;
 }
 
 /** 既知の利用枠には固定名を使い、その他は時間単位で表示する。 */
@@ -112,4 +124,9 @@ function quotaWindowLabel(seconds: number) {
 		return "Weekly";
 	}
 	return `${Math.round(seconds / 3600)}h`;
+}
+
+/** 利用率に有限の数値だけを受け付ける。 */
+function isFiniteNumber(value: unknown): value is number {
+	return typeof value === "number" && Number.isFinite(value);
 }

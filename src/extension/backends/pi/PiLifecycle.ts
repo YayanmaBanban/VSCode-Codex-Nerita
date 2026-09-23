@@ -1,5 +1,5 @@
 // 接続世代で古いSDKの結果を排除し、起動・終了中のセッションも回収する。
-import { initialState } from "../../../shared/chatState";
+import { type ChatState, initialState } from "../../../shared/chatState";
 import { SessionState } from "../../session/sessionState";
 import type { PiFactory, PiSession } from "./PiRuntime";
 import type { PiAuthorize } from "./PiApprovedTools";
@@ -85,22 +85,9 @@ export abstract class PiLifecycle extends SessionState {
 		resume?: PiResumeTarget,
 		preserveCurrent = false,
 	): Promise<void> {
-		if (
-			this.disposed ||
-			this.busy() ||
-			this.state.sessionPending ||
-			this.state.connection === "connecting"
-		) {
-			throw new Error("Piの処理が終わってから再接続してください。");
-		}
+		this.assertCanConnect();
 		// 初回送信前の保存先変更も、失敗時は元の接続と下書きを維持する。
-		const previous = resume || preserveCurrent ? this.runtime : undefined;
-		if (previous) {
-			this.epoch++;
-			this.opening?.abort();
-		} else {
-			this.disconnect();
-		}
+		const previous = this.prepareConnection(resume, preserveCurrent);
 		const epoch = this.epoch;
 		const opening = new AbortController();
 		this.opening = opening;
@@ -142,16 +129,8 @@ export abstract class PiLifecycle extends SessionState {
 			if (epoch !== this.epoch) {
 				return;
 			}
-			let restored: ReturnType<typeof restorePiHistory>;
-			try {
-				restored = restorePiHistory(
-					session.history?.entries ?? [],
-					cwd,
-				);
-			} catch (error) {
-				this.track(session.abort().finally(() => session.dispose()));
-				throw error;
-			}
+			const restored: ReturnType<typeof restorePiHistory> =
+				this.restoreSessionHistory(session, cwd);
 			this.runtime = session;
 			this.runtimeEpoch = epoch;
 			if (previous) {
@@ -165,58 +144,116 @@ export abstract class PiLifecycle extends SessionState {
 					return;
 				}
 			}
-			this.resetRun();
-			const { revision: _revision, ...empty } = initialState();
-			this.patch({
-				...empty,
-				...restored,
-				connection: "ready",
-				cwd,
-				sessionId: session.sessionId,
-				sessions: resume ? this.state.sessions : [],
-				sessionCapabilities: {
-					list: !!session.history,
-					load: !!session.history,
-					fork: !!session.history,
-					delete: false,
-					rename: false,
-					archive: false,
-					unarchive: false,
-				},
-				attachmentsSupported: false,
-				configOptions: session.model
-					? [
-							{
-								id: "model",
-								name: "Pi Model",
-								currentValue: `${session.model.provider}/${session.model.id}`,
-								options: [],
-							},
-						]
-					: [],
-				...session.account?.snapshot(),
-				skills: session.skills ?? [],
-			});
-			this.refreshQuota();
+			this.publishConnectedSession(restored, cwd, session, resume);
 		} catch (error) {
-			if (epoch === this.epoch) {
-				this.patch({
-					connection: previous ? "ready" : "error",
-					sessionPending: false,
-					error:
-						error instanceof Error
-							? error.message
-							: "Piに接続できませんでした。",
-					...(previous
-						? {
-								sessionsError:
-									error instanceof Error
-										? error.message
-										: "Piの履歴を開けませんでした。",
-							}
-						: {}),
-				});
-			}
+			this.reportConnectionFailure(epoch, previous, error);
+		}
+	}
+
+	/** 必要な場合は元のセッションを保持して接続世代を進める。 */
+	private prepareConnection(
+		resume: PiResumeTarget | undefined,
+		preserveCurrent: boolean,
+	) {
+		const previous = resume || preserveCurrent ? this.runtime : undefined;
+		if (previous) {
+			this.epoch++;
+			this.opening?.abort();
+		} else {
+			this.disconnect();
+		}
+		return previous;
+	}
+
+	/** 元の接続を保持しながら再接続失敗を表示する。 */
+	private reportConnectionFailure(
+		epoch: number,
+		previous: PiSession | undefined,
+		error: unknown,
+	) {
+		if (epoch === this.epoch) {
+			this.patch({
+				connection: previous ? "ready" : "error",
+				sessionPending: false,
+				error:
+					error instanceof Error
+						? error.message
+						: "Piに接続できませんでした。",
+				...(previous
+					? {
+							sessionsError:
+								error instanceof Error
+									? error.message
+									: "Piの履歴を開けませんでした。",
+						}
+					: {}),
+			});
+		}
+	}
+
+	/** 復元済みのSDKセッションとモデル情報をUIへ公開する。 */
+	private publishConnectedSession(
+		restored: Pick<ChatState, "messages" | "tools" | "sessionTitle">,
+		cwd: string,
+		session: PiSession,
+		resume: PiResumeTarget | undefined,
+	) {
+		this.resetRun();
+		const { revision: _revision, ...empty } = initialState();
+		this.patch({
+			...empty,
+			...restored,
+			connection: "ready",
+			cwd,
+			sessionId: session.sessionId,
+			sessions: resume ? this.state.sessions : [],
+			sessionCapabilities: {
+				list: !!session.history,
+				load: !!session.history,
+				fork: !!session.history,
+				delete: false,
+				rename: false,
+				archive: false,
+				unarchive: false,
+			},
+			attachmentsSupported: false,
+			configOptions: session.model
+				? [
+						{
+							id: "model",
+							name: "Pi Model",
+							currentValue: `${session.model.provider}/${session.model.id}`,
+							options: [],
+						},
+					]
+				: [],
+			...session.account?.snapshot(),
+			skills: session.skills ?? [],
+		});
+		this.refreshQuota();
+	}
+
+	/** 保存履歴が壊れている場合は新しいSDKセッションを回収する。 */
+	private restoreSessionHistory(session: PiSession, cwd: string) {
+		let restored: ReturnType<typeof restorePiHistory>;
+		try {
+			restored = restorePiHistory(session.history?.entries ?? [], cwd);
+		} catch (error) {
+			this.track(session.abort().finally(() => session.dispose()));
+			throw error;
+		}
+		return restored;
+	}
+
+	/** 処理中や破棄済みのセッションの再接続を拒否する。 */
+	private assertCanConnect() {
+		if (
+			this.disposed ||
+			this.busy() ||
+			this.state.sessionPending ||
+			this.state.connection === "connecting"
+		) {
+			throw new Error("Piの処理が終わってから再接続してください。");
 		}
 	}
 

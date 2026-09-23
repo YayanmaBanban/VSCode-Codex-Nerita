@@ -122,12 +122,7 @@ export function PersonalityOptions({
 								性格設定
 							</Menu.Item>
 							<Menu.Item
-								disabled={
-									state.connection !== "ready" ||
-									state.sessionPending ||
-									state.run === "running" ||
-									state.run === "cancelling"
-								}
+								disabled={logoutDisabled(state)}
 								onClick={() =>
 									send({
 										type: "auth/logout",
@@ -192,5 +187,15 @@ export function PersonalityOptions({
 				</Dialog.Portal>
 			</Dialog.Root>
 		</CSPProvider>
+	);
+}
+
+/** 実行中と未接続時のログアウトを抑制する。 */
+function logoutDisabled(state: ChatState): boolean | undefined {
+	return (
+		state.connection !== "ready" ||
+		state.sessionPending ||
+		state.run === "running" ||
+		state.run === "cancelling"
 	);
 }

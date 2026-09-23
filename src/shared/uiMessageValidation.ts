@@ -26,138 +26,100 @@ export function isUiMessage(value: unknown): value is UiMessage {
 		return false;
 	}
 
-	switch (value.type) {
-		case "ui/setBackend":
-			return isBackendId(value.backend);
-		case "agent/read":
-			return isId(value.sessionId) && isId(value.threadId);
-		case "changes/open":
-			return isChangeScope(value.scope);
-		case "session/searchReferences":
-			return (
-				isSymbolQuery(value.query) &&
-				(value.cursor === undefined || isPathString(value.cursor))
-			);
-		case "session/openReference":
-			return isId(value.referencedSessionId);
-		case "reference/open":
-			return (
-				isPathString(value.uri) &&
-				(value.range === undefined || isSourceRange(value.range))
-			);
-		case "workspace/searchSymbols":
-			return isSymbolQuery(value.query);
-		case "workspace/listPaths":
-			return value.uri === null || isPathString(value.uri);
-		case "workspace/resolvePath":
-			return (
-				isAbsoluteLocalPath(value.path) &&
-				(value.range === undefined || isSourceRange(value.range))
-			);
-		case "workspace/resolveCode":
-			return (
-				typeof value.text === "string" &&
-				value.text.trim().length > 0 &&
-				value.text.length <= 100_000
-			);
-		case "ui/setSidebar":
-			return isSidebarLocation(value.location);
-		case "personality/read":
-			return true;
-		case "personality/select":
-			return (
-				(value.scope === "global" || value.scope === "workspace") &&
-				typeof value.name === "string" &&
-				value.name.length <= 200
-			);
-		case "personality/save":
-			return (
-				(value.scope === "global" || value.scope === "workspace") &&
-				typeof value.originalName === "string" &&
-				value.originalName.length <= 200 &&
-				isPersonalityPreset(value)
-			);
-		case "ui/openEditor":
-		case "ui/openSidebar":
-			return true;
-		case "ui/saveDraft":
-			return (
-				typeof value.draft === "string" &&
-				value.draft.length <= 100_000 &&
-				validDraftParts(value.draft, value.draftParts)
-			);
-		case "ui/saveScroll":
-			return (
-				typeof value.scrollTop === "number" &&
-				Number.isFinite(value.scrollTop) &&
-				value.scrollTop >= 0
-			);
-		case "connection/retry":
-		case "auth/logout":
-		case "session/new":
-			return true;
-		case "session/list":
-			return (
-				(value.archived === undefined ||
-					typeof value.archived === "boolean") &&
-				(value.more === undefined || typeof value.more === "boolean")
-			);
-		case "session/rename":
-			return (
-				isId(value.sessionId) &&
-				typeof value.name === "string" &&
-				value.name.trim().length > 0 &&
-				value.name.length <= 200
-			);
-		case "session/unarchive":
-			return isId(value.sessionId);
-		case "session/load":
-		case "session/fork":
-		case "session/archive":
-		case "session/delete":
-			return isId(value.sessionId);
-		case "auth/start":
-			return isId(value.methodId);
-		case "config/set":
-			return (
-				isId(value.sessionId) &&
-				isId(value.configId) &&
-				isId(value.value)
-			);
-		case "attachment/add":
-			return (
-				isId(value.sessionId) &&
-				(value.files === undefined ||
-					validDroppedAttachments(value.files))
-			);
-		case "attachment/open":
-		case "attachment/remove":
-			return isId(value.sessionId) && isId(value.attachmentId);
-		case "prompt/send":
-			return (
-				isId(value.sessionId) &&
-				typeof value.text === "string" &&
-				value.text.trim().length > 0 &&
-				value.text.length <= 100_000 &&
-				validSessionIds(value.referencedSessionIds) &&
-				validReferences(value.text, value.references) &&
-				validChangeScopes(value.changeScopes) &&
-				validCodeReferences(value.codeReferences)
-			);
-		case "prompt/cancel":
-			return isId(value.sessionId) && isId(value.runId);
-		case "permission/respond":
-			return (
-				isId(value.sessionId) &&
-				isId(value.runId) &&
-				isId(value.permissionId) &&
-				isId(value.optionId)
-			);
-		case "execution/stop":
-			return (
-				isId(value.sessionId) && isId(value.runId) && isId(value.toolId)
-			);
-		default:
-			return false;
-	}
+	const validator = uiMessageValidators.get(value.type);
+	return validator ? validator(value) : false;
 }
+
+/** 各フィールドの検証を独立させ、未知のキーは受け付けない。 */
+const uiMessageValidators = new Map<
+	unknown,
+	(value: Record<string, unknown>) => boolean
+>(
+	Object.entries({
+		"ui/setBackend": (value) => isBackendId(value.backend),
+		"agent/read": (value) => isId(value.sessionId) && isId(value.threadId),
+		"changes/open": (value) => isChangeScope(value.scope),
+		"session/searchReferences": (value) =>
+			isSymbolQuery(value.query) &&
+			(value.cursor === undefined || isPathString(value.cursor)),
+		"session/openReference": (value) => isId(value.referencedSessionId),
+		"reference/open": (value) =>
+			isPathString(value.uri) &&
+			(value.range === undefined || isSourceRange(value.range)),
+		"workspace/searchSymbols": (value) => isSymbolQuery(value.query),
+		"workspace/listPaths": (value) =>
+			value.uri === null || isPathString(value.uri),
+		"workspace/resolvePath": (value) =>
+			isAbsoluteLocalPath(value.path) &&
+			(value.range === undefined || isSourceRange(value.range)),
+		"workspace/resolveCode": (value) =>
+			typeof value.text === "string" &&
+			value.text.trim().length > 0 &&
+			value.text.length <= 100_000,
+		"ui/setSidebar": (value) => isSidebarLocation(value.location),
+		"personality/read": () => true,
+		"personality/select": (value) =>
+			(value.scope === "global" || value.scope === "workspace") &&
+			typeof value.name === "string" &&
+			value.name.length <= 200,
+		"personality/save": (value) =>
+			(value.scope === "global" || value.scope === "workspace") &&
+			typeof value.originalName === "string" &&
+			value.originalName.length <= 200 &&
+			isPersonalityPreset(value),
+		"ui/openEditor": () => true,
+		"ui/openSidebar": () => true,
+		"ui/saveDraft": (value) =>
+			typeof value.draft === "string" &&
+			value.draft.length <= 100_000 &&
+			validDraftParts(value.draft, value.draftParts),
+		"ui/saveScroll": (value) =>
+			typeof value.scrollTop === "number" &&
+			Number.isFinite(value.scrollTop) &&
+			value.scrollTop >= 0,
+		"connection/retry": () => true,
+		"auth/logout": () => true,
+		"session/new": () => true,
+		"session/list": (value) =>
+			(value.archived === undefined ||
+				typeof value.archived === "boolean") &&
+			(value.more === undefined || typeof value.more === "boolean"),
+		"session/rename": (value) =>
+			isId(value.sessionId) &&
+			typeof value.name === "string" &&
+			value.name.trim().length > 0 &&
+			value.name.length <= 200,
+		"session/unarchive": (value) => isId(value.sessionId),
+		"session/load": (value) => isId(value.sessionId),
+		"session/fork": (value) => isId(value.sessionId),
+		"session/archive": (value) => isId(value.sessionId),
+		"session/delete": (value) => isId(value.sessionId),
+		"auth/start": (value) => isId(value.methodId),
+		"config/set": (value) =>
+			isId(value.sessionId) && isId(value.configId) && isId(value.value),
+		"attachment/add": (value) =>
+			isId(value.sessionId) &&
+			(value.files === undefined || validDroppedAttachments(value.files)),
+		"attachment/open": (value) =>
+			isId(value.sessionId) && isId(value.attachmentId),
+		"attachment/remove": (value) =>
+			isId(value.sessionId) && isId(value.attachmentId),
+		"prompt/send": (value) =>
+			isId(value.sessionId) &&
+			typeof value.text === "string" &&
+			value.text.trim().length > 0 &&
+			value.text.length <= 100_000 &&
+			validSessionIds(value.referencedSessionIds) &&
+			validReferences(value.text, value.references) &&
+			validChangeScopes(value.changeScopes) &&
+			validCodeReferences(value.codeReferences),
+		"prompt/cancel": (value) => isId(value.sessionId) && isId(value.runId),
+		"permission/respond": (value) =>
+			isId(value.sessionId) &&
+			isId(value.runId) &&
+			isId(value.permissionId) &&
+			isId(value.optionId),
+		"execution/stop": (value) =>
+			isId(value.sessionId) && isId(value.runId) && isId(value.toolId),
+	} satisfies Record<string, (value: Record<string, unknown>) => boolean>),
+);

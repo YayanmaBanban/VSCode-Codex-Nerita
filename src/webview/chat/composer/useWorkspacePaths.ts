@@ -39,6 +39,25 @@ export function useWorkspacePaths(
 		return unsubscribe;
 	}, [active, bridge, uri]);
 	const data = result?.uri === uri ? result.data : null;
+	const filtered = workspaceCompletionItems(data, query, current);
+	return {
+		items: filtered,
+		path: current?.path ?? "ワークスペース",
+		empty: emptyPathMessage(bridge, data, uri),
+		open: (entry: WorkspacePath) =>
+			setStack((previous) => [...previous, entry]),
+		back: () => setStack((previous) => previous.slice(0, -1)),
+		reset: () => setStack([]),
+		hasParent: stack.length > 0,
+	};
+}
+
+/** 取得した階層から検索語に一致する候補を作る。 */
+function workspaceCompletionItems(
+	data: WorkspacePathsResult | null,
+	query: string,
+	current: WorkspacePath | undefined,
+) {
 	const items: CompletionItem[] =
 		data?.entries.map((entry) => ({
 			id: entry.uri,
@@ -60,16 +79,7 @@ export function useWorkspacePaths(
 			reference: current,
 		});
 	}
-	return {
-		items: filtered,
-		path: current?.path ?? "ワークスペース",
-		empty: emptyPathMessage(bridge, data, uri),
-		open: (entry: WorkspacePath) =>
-			setStack((previous) => [...previous, entry]),
-		back: () => setStack((previous) => previous.slice(0, -1)),
-		reset: () => setStack([]),
-		hasParent: stack.length > 0,
-	};
+	return filtered;
 }
 
 /** 接続・取得状態とフォルダーの有無から候補がない理由を返す。 */

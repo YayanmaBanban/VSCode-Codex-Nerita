@@ -69,7 +69,7 @@ export function readClipboardReferences(
 	text: string,
 ): ComposerReference[] | null {
 	const raw = data.getData(referenceClipboardType);
-	if (!raw || raw.length > 4_000_000 || text.length > 100_000) {
+	if (invalidClipboardSize(raw, text)) {
 		return null;
 	}
 	try {
@@ -91,6 +91,11 @@ export function readClipboardReferences(
 	} catch {
 		return null;
 	}
+}
+
+/** クリップボード付加情報のサイズ制限を確認する。 */
+function invalidClipboardSize(raw: string, text: string) {
+	return !raw || raw.length > 4000000 || text.length > 100000;
 }
 
 /** 既存の文字数検査・Undo境界の内側で、選択範囲をチップ付きの本文へ置換する。 */

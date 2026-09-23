@@ -27,61 +27,115 @@ export function normalizeCodexModels(
 	const models: PiCatalogModel[] = [];
 	const seen = new Set<string>();
 	for (const item of payload.models) {
+		const model = normalizeModel(item, seen);
+		if (!model) {
+			return null;
+		}
+		models.push(model);
+	}
+	return models.sort((left, right) => left.priority - right.priority);
+}
+
+/** 一つのモデルの必須値と推論・サービス候補を検証する。 */
+function normalizeModel(
+	item: unknown,
+	seen: Set<string>,
+): PiCatalogModel | null {
+	if (
+		!isModelIdentity(item) ||
+		seen.has(item.slug) ||
+		!["list", "hide", "none"].includes(String(item.visibility)) ||
+		!Array.isArray(item.supported_reasoning_levels) ||
+		!validModelMetadata(item)
+	) {
+		return null;
+	}
+	const levels = normalizeReasoningLevels(item.supported_reasoning_levels);
+	const tiers = normalizeServiceTiers(item.service_tiers);
+	if (!levels || !tiers) {
+		return null;
+	}
+	seen.add(item.slug);
+	return {
+		slug: item.slug,
+		displayName: item.display_name,
+		priority: item.priority,
+		visibility: item.visibility as PiCatalogModel["visibility"],
+		defaultReasoning: reasoning(item.default_reasoning_level),
+		reasoningLevels: levels,
+		serviceTiers: tiers,
+	};
+}
+
+/** カタログでの識別子・表示名・並び順を検証する。 */
+function isModelIdentity(item: unknown): item is Record<string, unknown> & {
+	slug: string;
+	display_name: string;
+	priority: number;
+} {
+	return (
+		isRecord(item) &&
+		typeof item.slug === "string" &&
+		item.slug.length > 0 &&
+		typeof item.display_name === "string" &&
+		item.display_name.length > 0 &&
+		typeof item.priority === "number" &&
+		Number.isFinite(item.priority)
+	);
+}
+
+/** 任意の推論既定値とサービス候補の外形を検証する。 */
+function validModelMetadata(item: Record<string, unknown>): boolean {
+	return (
+		(item.default_reasoning_level === null ||
+			item.default_reasoning_level === undefined ||
+			typeof item.default_reasoning_level === "string") &&
+		(item.service_tiers === undefined || Array.isArray(item.service_tiers))
+	);
+}
+
+/** 対応する推論レベルを重複なく集める。 */
+function normalizeReasoningLevels(
+	entries: unknown[],
+): PiCatalogModel["reasoningLevels"] | null {
+	const levels: PiCatalogModel["reasoningLevels"] = [];
+	for (const entry of entries) {
+		if (!isRecord(entry) || typeof entry.effort !== "string") {
+			return null;
+		}
+		const level = reasoning(entry.effort);
+		if (level && !levels.includes(level)) {
+			levels.push(level);
+		}
+	}
+	return levels;
+}
+
+/** サービス候補を検証し、未指定は空の一覧として扱う。 */
+function normalizeServiceTiers(
+	value: unknown,
+): PiCatalogModel["serviceTiers"] | null {
+	if (value === undefined) {
+		return [];
+	}
+	if (!Array.isArray(value)) {
+		return null;
+	}
+	const tiers: PiCatalogModel["serviceTiers"] = [];
+	for (const tier of value) {
 		if (
-			!isRecord(item) ||
-			typeof item.slug !== "string" ||
-			!item.slug ||
-			seen.has(item.slug) ||
-			typeof item.display_name !== "string" ||
-			!item.display_name ||
-			typeof item.priority !== "number" ||
-			!Number.isFinite(item.priority) ||
-			!["list", "hide", "none"].includes(String(item.visibility)) ||
-			!Array.isArray(item.supported_reasoning_levels) ||
-			(item.default_reasoning_level !== null &&
-				item.default_reasoning_level !== undefined &&
-				typeof item.default_reasoning_level !== "string") ||
-			(item.service_tiers !== undefined &&
-				!Array.isArray(item.service_tiers))
+			!isRecord(tier) ||
+			typeof tier.id !== "string" ||
+			typeof tier.name !== "string" ||
+			typeof tier.description !== "string"
 		) {
 			return null;
 		}
-		const levels: PiCatalogModel["reasoningLevels"] = [];
-		for (const entry of item.supported_reasoning_levels) {
-			if (!isRecord(entry) || typeof entry.effort !== "string") {
-				return null;
-			}
-			const level = reasoning(entry.effort);
-			if (level && !levels.includes(level)) {
-				levels.push(level);
-			}
-		}
-		const tiers: PiCatalogModel["serviceTiers"] = [];
-		for (const tier of item.service_tiers ?? []) {
-			if (
-				!isRecord(tier) ||
-				typeof tier.id !== "string" ||
-				typeof tier.name !== "string" ||
-				typeof tier.description !== "string"
-			) {
-				return null;
-			}
-			tiers.push({
-				id: tier.id,
-				name: tier.name,
-				description: tier.description,
-			});
-		}
-		seen.add(item.slug);
-		models.push({
-			slug: item.slug,
-			displayName: item.display_name,
-			priority: item.priority,
-			visibility: item.visibility as PiCatalogModel["visibility"],
-			defaultReasoning: reasoning(item.default_reasoning_level),
-			reasoningLevels: levels,
-			serviceTiers: tiers,
+		tiers.push({
+			id: tier.id,
+			name: tier.name,
+			description: tier.description,
 		});
 	}
-	return models.sort((a, b) => a.priority - b.priority);
+	return tiers;
 }

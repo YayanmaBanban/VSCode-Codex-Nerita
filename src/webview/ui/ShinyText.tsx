@@ -5,6 +5,7 @@ import {
 	useMotionValue,
 	useAnimationFrame,
 	useTransform,
+	type MotionValue,
 } from "motion/react";
 
 /** 表示文言と光沢の色・再生条件を指定する。 */
@@ -23,19 +24,17 @@ type ShinyTextProps = {
 };
 
 /** Motionの値で文字のグラデーションを動かす。 */
-export const ShinyText: React.FC<ShinyTextProps> = ({
-	text,
-	disabled = false,
-	speed = 2,
-	className = "",
-	color = "#b5b5b5",
-	shineColor = "#ffffff",
-	spread = 120,
-	yoyo = false,
-	pauseOnHover = false,
-	direction = "left",
-	delay = 0,
-}) => {
+export const ShinyText: React.FC<ShinyTextProps> = (props) => {
+	const {
+		text,
+		disabled = false,
+		speed = 2,
+		className = "",
+		yoyo = false,
+		pauseOnHover = false,
+		direction = "left",
+		delay = 0,
+	} = props;
 	const [isPaused, setIsPaused] = useState(false);
 	const progress = useMotionValue(0);
 	const elapsedRef = useRef(0);
@@ -63,26 +62,13 @@ export const ShinyText: React.FC<ShinyTextProps> = ({
 
 		// 光沢の進行度を0から100で管理する。
 		if (yoyo) {
-			const cycleDuration = animationDuration + delayDuration;
-			const fullCycle = cycleDuration * 2;
-			const cycleTime = elapsedRef.current % fullCycle;
-
-			if (cycleTime < animationDuration) {
-				// 往路は0から100へ進める。
-				const p = (cycleTime / animationDuration) * 100;
-				progress.set(directionRef.current === 1 ? p : 100 - p);
-			} else if (cycleTime < cycleDuration) {
-				// 終点で待機する。
-				progress.set(directionRef.current === 1 ? 100 : 0);
-			} else if (cycleTime < cycleDuration + animationDuration) {
-				// 復路は100から0へ戻す。
-				const reverseTime = cycleTime - cycleDuration;
-				const p = 100 - (reverseTime / animationDuration) * 100;
-				progress.set(directionRef.current === 1 ? p : 100 - p);
-			} else {
-				// 始点で待機する。
-				progress.set(directionRef.current === 1 ? 0 : 100);
-			}
+			updateYoyoProgress(
+				animationDuration,
+				delayDuration,
+				elapsedRef,
+				progress,
+				directionRef,
+			);
 		} else {
 			const cycleDuration = animationDuration + delayDuration;
 			const cycleTime = elapsedRef.current % cycleDuration;
@@ -123,13 +109,7 @@ export const ShinyText: React.FC<ShinyTextProps> = ({
 		}
 	}, [pauseOnHover]);
 
-	const gradientStyle = {
-		backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
-		backgroundSize: "200% auto",
-		WebkitBackgroundClip: "text",
-		backgroundClip: "text",
-		WebkitTextFillColor: "transparent",
-	} satisfies React.CSSProperties;
+	const gradientStyle = shineAppearance(props);
 
 	return (
 		<motion.span
@@ -142,3 +122,50 @@ export const ShinyText: React.FC<ShinyTextProps> = ({
 		</motion.span>
 	);
 };
+
+/** 往復と両端の待機を含む光沢の進行度を更新する。 */
+function updateYoyoProgress(
+	animationDuration: number,
+	delayDuration: number,
+	elapsedRef: React.RefObject<number>,
+	progress: MotionValue<number>,
+	directionRef: React.RefObject<number>,
+) {
+	const cycleDuration = animationDuration + delayDuration;
+	const fullCycle = cycleDuration * 2;
+	const cycleTime = elapsedRef.current % fullCycle;
+
+	if (cycleTime < animationDuration) {
+		// 往路は0から100へ進める。
+		const p = (cycleTime / animationDuration) * 100;
+		progress.set(directionRef.current === 1 ? p : 100 - p);
+	} else if (cycleTime < cycleDuration) {
+		// 終点で待機する。
+		progress.set(directionRef.current === 1 ? 100 : 0);
+	} else if (cycleTime < cycleDuration + animationDuration) {
+		// 復路は100から0へ戻す。
+		const reverseTime = cycleTime - cycleDuration;
+		const p = 100 - (reverseTime / animationDuration) * 100;
+		progress.set(directionRef.current === 1 ? p : 100 - p);
+	} else {
+		// 始点で待機する。
+		progress.set(directionRef.current === 1 ? 0 : 100);
+	}
+}
+
+/** 光沢の色と広がりをグラデーションへ変換する。 */
+function shineAppearance({
+	color = "#b5b5b5",
+	shineColor = "#ffffff",
+	spread = 120,
+}: ShinyTextProps) {
+	const gradientStyle = {
+		backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
+		backgroundSize: "200% auto",
+		WebkitBackgroundClip: "text",
+		backgroundClip: "text",
+		WebkitTextFillColor: "transparent",
+	} satisfies React.CSSProperties;
+
+	return gradientStyle;
+}

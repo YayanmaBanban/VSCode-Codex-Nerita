@@ -35,14 +35,7 @@ export function SessionPanel({
 		const timer = setInterval(() => setNow(Date.now()), 30_000);
 		return () => clearInterval(timer);
 	}, []);
-	const disabled =
-		state.connection !== "ready" ||
-		state.sessionPending ||
-		state.configPending ||
-		state.attachmentPending ||
-		state.run === "running" ||
-		state.run === "cancelling" ||
-		state.asyncTasks.some(taskActive);
+	const disabled = sessionActionsDisabled(state);
 	const capabilities = state.sessionCapabilities;
 	return (
 		<motion.aside
@@ -144,13 +137,11 @@ export function SessionPanel({
 						セッションを更新しています…
 					</p>
 				)}
-				{!state.sessions.length &&
-					!state.sessionsLoading &&
-					!state.sessionsError && (
-						<p className="px-[12px] py-[24px] text-center text-[12px] text-muted">
-							このフォルダのセッションはありません
-						</p>
-					)}
+				{emptySessionList(state) && (
+					<p className="px-[12px] py-[24px] text-center text-[12px] text-muted">
+						このフォルダのセッションはありません
+					</p>
+				)}
 				<ul className="m-0 list-none p-0" aria-label="セッション履歴">
 					{state.sessions.map((session) => (
 						<SessionItem
@@ -168,7 +159,7 @@ export function SessionPanel({
 					<button
 						type="button"
 						className="mx-[12px] my-[8px] text-[12px]"
-						disabled={state.sessionsLoading || state.sessionPending}
+						disabled={sessionListPending(state)}
 						onClick={() =>
 							send({
 								type: "session/list",
@@ -182,5 +173,30 @@ export function SessionPanel({
 				)}
 			</div>
 		</motion.aside>
+	);
+}
+
+/** 一覧またはセッションの更新中か判定する。 */
+function sessionListPending(state: ChatState): boolean | undefined {
+	return state.sessionsLoading || state.sessionPending;
+}
+
+/** 読み込みとエラーがない空の一覧を判定する。 */
+function emptySessionList(state: ChatState) {
+	return (
+		!state.sessions.length && !state.sessionsLoading && !state.sessionsError
+	);
+}
+
+/** 非同期処理がある時は履歴の切り替えを抑制する。 */
+function sessionActionsDisabled(state: ChatState) {
+	return (
+		state.connection !== "ready" ||
+		state.sessionPending ||
+		state.configPending ||
+		state.attachmentPending ||
+		state.run === "running" ||
+		state.run === "cancelling" ||
+		state.asyncTasks.some(taskActive)
 	);
 }

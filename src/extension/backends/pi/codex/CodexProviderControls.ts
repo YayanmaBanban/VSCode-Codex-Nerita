@@ -122,25 +122,35 @@ export class CodexProviderControls implements PiModelControls {
 		const session = this.session;
 		const model = session?.model;
 		const key = model ? `${model.provider}/${model.id}` : "";
-		if (
-			this.override &&
-			this.supportsUltra &&
-			this.basis &&
-			!this.standardLevels.includes(this.basis)
-		) {
-			this.basis = this.ultraBasis;
-			session!.setThinkingLevel(this.basis!);
-		}
-		if (key !== this.modelKey) {
-			this.modelKey = key;
-			if (this.override && this.supportsUltra) {
-				this.basis = this.ultraBasis;
-				session!.setThinkingLevel(this.basis!);
-			}
-		}
+		this.synchronizeUltraBasis(session, key);
 		if (!this.supportsUltra || session?.thinkingLevel !== this.basis) {
 			this.override = null;
 		}
+		this.clampReasoning(session);
+		if (!this.supportsFastMode) {
+			this.fast = false;
+		}
+		return this.controlsState(session, model);
+	}
+
+	/** 標準値と固有の上書きを共有状態へ変換する。 */
+	private controlsState(
+		session: AgentSession | undefined,
+		model: AgentSession["model"],
+	): ControlsState {
+		const thinkingLevel = session?.thinkingLevel ?? "off";
+		return {
+			provider: model?.provider ?? null,
+			modelId: model?.id ?? null,
+			thinkingLevel,
+			reasoningOverride: this.override,
+			effectiveReasoning: this.override ?? thinkingLevel,
+			fastMode: this.fast,
+		};
+	}
+
+	/** 現在の推論値が非対応なら利用可能な既定値へ戻す。 */
+	private clampReasoning(session: AgentSession | undefined) {
 		const levels = this.standardLevels;
 		if (
 			session &&
@@ -166,18 +176,29 @@ export class CodexProviderControls implements PiModelControls {
 				}
 			}
 		}
-		if (!this.supportsFastMode) {
-			this.fast = false;
+	}
+
+	/** モデル切り替えと能力変更に合わせてUltraの基底を更新する。 */
+	private synchronizeUltraBasis(
+		session: AgentSession | undefined,
+		key: string,
+	) {
+		if (
+			this.override &&
+			this.supportsUltra &&
+			this.basis &&
+			!this.standardLevels.includes(this.basis)
+		) {
+			this.basis = this.ultraBasis;
+			session!.setThinkingLevel(this.basis!);
 		}
-		const thinkingLevel = session?.thinkingLevel ?? "off";
-		return {
-			provider: model?.provider ?? null,
-			modelId: model?.id ?? null,
-			thinkingLevel,
-			reasoningOverride: this.override,
-			effectiveReasoning: this.override ?? thinkingLevel,
-			fastMode: this.fast,
-		};
+		if (key !== this.modelKey) {
+			this.modelKey = key;
+			if (this.override && this.supportsUltra) {
+				this.basis = this.ultraBasis;
+				session!.setThinkingLevel(this.basis!);
+			}
+		}
 	}
 
 	/** 通常値はSDKへ渡し、Ultraだけ有効な標準基底と別に保持する。 */
@@ -213,7 +234,7 @@ export class CodexProviderControls implements PiModelControls {
 	rewrite(payload: unknown, model: AgentSession["model"]): unknown {
 		const state = this.snapshot();
 		if (
-			this.session?.model?.api !== "openai-codex-responses" ||
+			this.unsupportedResponsesModel() ||
 			model?.provider !== state.provider ||
 			model?.id !== state.modelId ||
 			!isRecord(payload) ||
@@ -221,19 +242,32 @@ export class CodexProviderControls implements PiModelControls {
 		) {
 			return undefined;
 		}
-		return {
-			...payload,
-			...(state.reasoningOverride
-				? {
-						reasoning: {
-							...(isRecord(payload.reasoning)
-								? payload.reasoning
-								: {}),
-							effort: "ultra",
-						},
-					}
-				: {}),
-			...(state.fastMode ? { service_tier: "priority" } : {}),
-		};
+		return overridePayload(payload, state);
 	}
+
+	/** 現在のモデルがCodex固有の要求形式に対応するか照合する。 */
+	private unsupportedResponsesModel() {
+		return this.session?.model?.api !== "openai-codex-responses";
+	}
+}
+
+/** 既存の要求フィールドを保持してUltraとFastを適用する。 */
+function overridePayload(
+	payload: Record<string, unknown>,
+	state: ControlsState,
+): unknown {
+	return {
+		...payload,
+		...(state.reasoningOverride
+			? {
+					reasoning: {
+						...(isRecord(payload.reasoning)
+							? payload.reasoning
+							: {}),
+						effort: "ultra",
+					},
+				}
+			: {}),
+		...(state.fastMode ? { service_tier: "priority" } : {}),
+	};
 }

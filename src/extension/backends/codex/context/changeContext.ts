@@ -40,20 +40,7 @@ export async function readChangeContext(
 ): Promise<string> {
 	try {
 		// cwdを指定してフォルダー設定も解決し、取得のたびに最新値を使う。
-		const excluded = vscode.workspace
-			.getConfiguration("nerita.codex", vscode.Uri.file(cwd))
-			.get<unknown>("changes.exclude", []);
-		if (
-			!Array.isArray(excluded) ||
-			!excluded.every(
-				(pattern): pattern is string =>
-					typeof pattern === "string" &&
-					pattern.length > 0 &&
-					!pattern.includes("\0"),
-			)
-		) {
-			throw new Error("Invalid changes.exclude");
-		}
+		const excluded = readExcludedPatterns(cwd);
 		const refs = diffRefs(scope);
 		const paths = [
 			"--",
@@ -105,6 +92,25 @@ export async function readChangeContext(
 	} catch {
 		throw new ChangeContextError(scope);
 	}
+}
+
+/** フォルダーごとの差分除外設定を検証する。 */
+function readExcludedPatterns(cwd: string) {
+	const excluded = vscode.workspace
+		.getConfiguration("nerita.codex", vscode.Uri.file(cwd))
+		.get<unknown>("changes.exclude", []);
+	if (
+		!Array.isArray(excluded) ||
+		!excluded.every(
+			(pattern): pattern is string =>
+				typeof pattern === "string" &&
+				pattern.length > 0 &&
+				!pattern.includes("\0"),
+		)
+	) {
+		throw new Error("Invalid changes.exclude");
+	}
+	return excluded;
 }
 
 /** 重複する範囲は一度だけ取得し、差分を信頼しない参照資料として渡す。 */

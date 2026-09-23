@@ -6,6 +6,7 @@ import type {
 	PiAuthState,
 	PiAuthRequest,
 	PiAuthPrompt,
+	PiAuthItem,
 } from "../../shared/piAuth";
 
 /** 入力値は送信時・アンマウント時に破棄し、永続化しない。 */
@@ -155,34 +156,7 @@ export function PiAuthEditor({
 								<div className="min-h-0 overflow-hidden">
 									<div className="pb-[20px] pl-[38px] pr-[8px]">
 										{/* 通知領域の高さを確保し、表示・消去・折り返しで操作位置を動かさない。 */}
-										<div
-											aria-label={`${item.name}の通知`}
-											className="mb-[12px] overflow-y-auto overscroll-contain"
-										>
-											{feedback?.error && (
-												<p
-													role="alert"
-													className="m-0 break-words rounded-[6px] border border-alert-border bg-alert p-[12px] leading-[20px]"
-												>
-													{feedback.error}
-												</p>
-											)}
-											{feedback?.notice && (
-												<p
-													role="status"
-													className="m-0 break-words rounded-[6px] border border-tooltip-border bg-tooltip p-[12px] leading-[20px] gap-[8px]"
-												>
-													{feedback.notice}
-												</p>
-											)}
-											{!feedback?.error &&
-												!feedback?.notice && (
-													<p
-														role="status"
-														className="m-0 break-words rounded-[6px] border border-tooltip-border bg-tooltip p-[12px] leading-[20px] h-[40px]"
-													/>
-												)}
-										</div>
+										{renderProviderFeedback(item, feedback)}
 										<div className="flex flex-wrap gap-[8px]">
 											{!active &&
 												item.methods.map((method) => (
@@ -226,5 +200,41 @@ export function PiAuthEditor({
 				</p>
 			)}
 		</main>
+	);
+}
+
+/** 認証先のエラーと進行状況の通知領域を表示する。 */
+function renderProviderFeedback(
+	item: PiAuthItem,
+	feedback: { notice: string; error: string | null } | undefined,
+) {
+	return (
+		<div
+			aria-label={`${item.name}の通知`}
+			className="mb-[12px] overflow-y-auto overscroll-contain"
+		>
+			{feedback?.error && (
+				<p
+					role="alert"
+					className="m-0 break-words rounded-[6px] border border-alert-border bg-alert p-[12px] leading-[20px]"
+				>
+					{feedback.error}
+				</p>
+			)}
+			{feedback?.notice && (
+				<p
+					role="status"
+					className="m-0 break-words rounded-[6px] border border-tooltip-border bg-tooltip p-[12px] leading-[20px] gap-[8px]"
+				>
+					{feedback.notice}
+				</p>
+			)}
+			{!feedback?.error && !feedback?.notice && (
+				<p
+					role="status"
+					className="m-0 break-words rounded-[6px] border border-tooltip-border bg-tooltip p-[12px] leading-[20px] h-[40px]"
+				/>
+			)}
+		</div>
 	);
 }

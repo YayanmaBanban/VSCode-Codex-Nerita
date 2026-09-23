@@ -66,12 +66,17 @@ export abstract class CodexLifecycle extends SessionState {
 			}
 			await this.newThread();
 		} catch {
-			if (epoch === this.epoch) {
-				this.patch({
-					connection: "auth-required",
-					error: "ログインできませんでした。認証方法と環境変数を確認して再試行してください。",
-				});
-			}
+			this.reportAuthenticationFailure(epoch);
+		}
+	}
+
+	/** 現在の接続で発生したログイン失敗だけを表示する。 */
+	private reportAuthenticationFailure(epoch: number) {
+		if (epoch === this.epoch) {
+			this.patch({
+				connection: "auth-required",
+				error: "ログインできませんでした。認証方法と環境変数を確認して再試行してください。",
+			});
 		}
 	}
 

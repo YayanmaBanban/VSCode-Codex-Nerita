@@ -72,10 +72,7 @@ export function parseTurnEvent(
 		throw new Error("Invalid event params");
 	}
 	const threadId = text(params.threadId);
-	if (
-		message.method === "turn/started" ||
-		message.method === "turn/completed"
-	) {
+	if (["turn/started", "turn/completed"].includes(message.method)) {
 		const turn = parseTurn(params.turn);
 		if (
 			message.method === "turn/completed" &&
@@ -89,10 +86,7 @@ export function parseTurnEvent(
 			turnId: turn.id,
 			turn,
 			completed: message.method === "turn/completed",
-			items:
-				isRecord(params.turn) && Array.isArray(params.turn.items)
-					? params.turn.items
-					: [],
+			items: turnItems(params),
 		};
 	}
 	const turnId = text(params.turnId);
@@ -136,4 +130,11 @@ export function parseTurnEvent(
 		item: params.item,
 		completed: message.method === "item/completed",
 	};
+}
+
+/** 完了通知の項目配列を取得する。 */
+function turnItems(params: Record<string, unknown>): unknown[] {
+	return isRecord(params.turn) && Array.isArray(params.turn.items)
+		? params.turn.items
+		: [];
 }

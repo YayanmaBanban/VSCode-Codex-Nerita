@@ -17,34 +17,59 @@ export function parseQuota(value: unknown): QuotaWindow[] {
 			!isRecord(window) ||
 			typeof window.usedPercent !== "number" ||
 			!Number.isFinite(window.usedPercent) ||
-			!(
-				window.windowDurationMins === null ||
-				(typeof window.windowDurationMins === "number" &&
-					window.windowDurationMins > 0)
-			) ||
-			!(
-				window.resetsAt === null ||
-				(typeof window.resetsAt === "number" &&
-					Number.isFinite(window.resetsAt))
-			)
+			!isWindowDuration(window.windowDurationMins) ||
+			!isResetTime(window.resetsAt)
 		) {
 			throw new Error("Invalid rate limit window");
 		}
-		const minutes = window.windowDurationMins;
-		const label = quotaWindowLabel(minutes, key);
-		const reset =
-			window.resetsAt === null ? null : new Date(window.resetsAt * 1000);
-		windows.push({
-			label,
-			remaining: Math.max(0, Math.min(100, 100 - window.usedPercent)),
-			detail:
-				reset && Number.isFinite(reset.getTime())
-					? `${reset.toLocaleString("ja-JP")} にリセット`
-					: "リセット時刻は未取得",
-		});
+		appendQuotaWindow(
+			{
+				windowDurationMins: window.windowDurationMins,
+				resetsAt: window.resetsAt,
+				usedPercent: window.usedPercent,
+			},
+			key,
+			windows,
+		);
 	}
 	return windows;
 }
+/** 検証済みの利用枠を表示用の残量と期限へ変換する。 */
+function appendQuotaWindow(
+	window: {
+		windowDurationMins: number | null;
+		resetsAt: number | null;
+		usedPercent: number;
+	},
+	key: string,
+	windows: QuotaWindow[],
+) {
+	const minutes = window.windowDurationMins;
+	const label = quotaWindowLabel(minutes, key);
+	const reset =
+		window.resetsAt === null ? null : new Date(window.resetsAt * 1000);
+	windows.push({
+		label,
+		remaining: Math.max(0, Math.min(100, 100 - window.usedPercent)),
+		detail:
+			reset && Number.isFinite(reset.getTime())
+				? `${reset.toLocaleString("ja-JP")} にリセット`
+				: "リセット時刻は未取得",
+	});
+}
+
+/** 利用枠の期間は未指定または正の数を受け付ける。 */
+function isWindowDuration(value: unknown): value is number | null {
+	return value === null || (typeof value === "number" && value > 0);
+}
+
+/** リセット時刻は未指定または有限の数値を受け付ける。 */
+function isResetTime(value: unknown): value is number | null {
+	return (
+		value === null || (typeof value === "number" && Number.isFinite(value))
+	);
+}
+
 /** 読み取り応答の互換バケットを利用する。 */
 export function parseQuotaResponse(value: unknown): QuotaWindow[] {
 	if (!isRecord(value)) {

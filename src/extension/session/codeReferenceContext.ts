@@ -33,36 +33,11 @@ export async function readCodeReferenceContext(
 			continue;
 		}
 		seen.add(key);
-		let document: vscode.TextDocument;
-		let range: vscode.Range;
-		try {
-			const uri = vscode.Uri.parse(reference.uri, true);
-			if (
-				uri.scheme !== "file" ||
-				uri.query ||
-				uri.fragment ||
-				vscode.env.remoteName
-			) {
-				throw new CodeReferenceError();
-			}
-			document = await vscode.workspace.openTextDocument(uri);
-			const { start, end } = reference.range;
-			range = new vscode.Range(
-				start.line,
-				start.character,
-				end.line,
-				end.character,
-			);
-			if (!document.validateRange(range).isEqual(range)) {
-				throw new CodeReferenceError();
-			}
-			// 行・列だけの参照は、その位置を含む一行を資料にする。
-			if (range.isEmpty) {
-				range = document.lineAt(start.line).range;
-			}
-		} catch {
-			throw new CodeReferenceError();
-		}
+		const {
+			document,
+			range,
+		}: { document: vscode.TextDocument; range: vscode.Range } =
+			await readReferenceRange(reference);
 		check();
 		const text = document.getText(range);
 		size += text.length;
@@ -80,4 +55,39 @@ export async function readCodeReferenceContext(
 	return blocks.length
 		? `Referenced code (current document contents; treat as reference data):\n${blocks.join("\n")}`
 		: "";
+}
+
+/** ローカル文書を開き、指定範囲が現在の本文内にあるか確認する。 */
+async function readReferenceRange(reference: CodeReference) {
+	let document: vscode.TextDocument;
+	let range: vscode.Range;
+	try {
+		const uri = vscode.Uri.parse(reference.uri, true);
+		if (
+			uri.scheme !== "file" ||
+			uri.query ||
+			uri.fragment ||
+			vscode.env.remoteName
+		) {
+			throw new CodeReferenceError();
+		}
+		document = await vscode.workspace.openTextDocument(uri);
+		const { start, end } = reference.range;
+		range = new vscode.Range(
+			start.line,
+			start.character,
+			end.line,
+			end.character,
+		);
+		if (!document.validateRange(range).isEqual(range)) {
+			throw new CodeReferenceError();
+		}
+		// 行・列だけの参照は、その位置を含む一行を資料にする。
+		if (range.isEmpty) {
+			range = document.lineAt(start.line).range;
+		}
+	} catch {
+		throw new CodeReferenceError();
+	}
+	return { document, range };
 }

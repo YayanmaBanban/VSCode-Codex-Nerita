@@ -46,75 +46,59 @@ export function agentItemPatch(
 		state.agents.map((agent) => [agent.threadId, agent]),
 	);
 	if (item.type === "subAgentActivity") {
-		if (
-			typeof item.agentThreadId !== "string" ||
-			!item.agentThreadId ||
-			typeof item.agentPath !== "string" ||
-			!item.agentPath ||
-			typeof item.id !== "string" ||
-			!["started", "interacted", "interrupted", "completed"].includes(
-				String(item.kind),
-			)
-		) {
-			throw new Error("Invalid agent activity");
-		}
-		const previous = agents.get(item.agentThreadId);
-		if (!previous && item.kind !== "started") {
-			return {};
-		}
-		// 同じ活動のstarted/completed通知やturn最終一覧による再適用を防ぐ。
-		if (previous?.activityItemId === item.id) {
-			return {};
-		}
-		const status = activityStatus(item.kind);
-		agents.set(item.agentThreadId, {
-			...previous,
-			threadId: item.agentThreadId,
-			parentThreadId,
-			activityItemId: item.id,
-			agentPath: item.agentPath,
-			status,
-			iconKey: previous?.iconKey ?? agentIconKey(item.agentThreadId),
-			order: previous?.order ?? nextTimelineOrder(state),
-		});
+		return activityAgentPatch(state, item, parentThreadId, agents);
 	} else if (item.type === "collabAgentToolCall") {
-		if (!Array.isArray(item.receiverThreadIds)) {
-			throw new Error("Invalid agent receivers");
-		}
-		for (const id of item.receiverThreadIds) {
-			if (typeof id !== "string") {
-				throw new Error("Invalid agent receiver");
-			}
-			const previous = agents.get(id);
-			if (!previous) {
-				continue;
-			}
-			const snapshot = isRecord(item.agentsStates)
-				? item.agentsStates[id]
-				: undefined;
-			const patch: Partial<SubAgentSummary> = {};
-			if (isRecord(snapshot)) {
-				if (isAgentStatus(snapshot.status)) {
-					patch.status = snapshot.status;
-				}
-				if (typeof snapshot.message === "string") {
-					patch.statusMessage = snapshot.message;
-				}
-			}
-			for (const key of ["model", "reasoningEffort"] as const) {
-				if (typeof item[key] === "string") {
-					patch[key] = item[key];
-				}
-			}
-			if (typeof item.tool === "string") {
-				patch.lastAction = item.tool;
-			}
-			agents.set(id, { ...previous, ...patch });
-		}
+		updateCollaboratingAgents(item, agents);
 	} else {
 		return {};
 	}
 	return { agents: [...agents.values()] };
+}
+
+/** 協調ツールの結果を既存エージェントへ反映する。 */
+function updateCollaboratingAgents(
+	item: Record<string, unknown>,
+	agents: Map<string, SubAgentSummary>,
+) {
+	if (!Array.isArray(item.receiverThreadIds)) {
+		throw new Error("Invalid agent receivers");
+	}
+	for (const id of item.receiverThreadIds) {
+		if (typeof id !== "string") {
+			throw new Error("Invalid agent receiver");
+		}
+		const previous = agents.get(id);
+		if (!previous) {
+			continue;
+		}
+		const patch: Partial<SubAgentSummary> = agentSnapshotPatch(item, id);
+		agents.set(id, { ...previous, ...patch });
+	}
+}
+
+/** 協調ツールから状態とモデルの更新を抽出する。 */
+function agentSnapshotPatch(item: Record<string, unknown>, id: string) {
+	const snapshot = isRecord(item.agentsStates)
+		? item.agentsStates[id]
+		: undefined;
+	const patch: Partial<SubAgentSummary> = {};
+	if (isRecord(snapshot)) {
+		if (isAgentStatus(snapshot.status)) {
+			patch.status = snapshot.status;
+		}
+		if (typeof snapshot.message === "string") {
+			patch.statusMessage = snapshot.message;
+		}
+	}
+	for (const key of ["model", "reasoningEffort"] as const) {
+		if (typeof item[key] === "string") {
+			patch[key] = item[key];
+		}
+	}
+	if (typeof item.tool === "string") {
+		patch.lastAction = item.tool;
+	}
+	return patch;
 }
 
 /** 活動の完了・中断通知をエージェントの表示状態へ変換する。 */
@@ -126,4 +110,57 @@ function activityStatus(kind: unknown): AgentStatus {
 		return "interrupted";
 	}
 	return "running";
+}
+
+/** 活動の重複を排除してエージェントの状態を更新する。 */
+function activityAgentPatch(
+	state: ChatState,
+	item: Record<string, unknown>,
+	parentThreadId: string,
+	agents: Map<string, SubAgentSummary>,
+): Partial<ChatState> {
+	if (!isActivityIdentity(item)) {
+		throw new Error("Invalid agent activity");
+	}
+	const previous = agents.get(item.agentThreadId);
+	if (!previous && item.kind !== "started") {
+		return {};
+	}
+	// 同じ活動のstarted/completed通知やturn最終一覧による再適用を防ぐ。
+	if (previous?.activityItemId === item.id) {
+		return {};
+	}
+	const status = activityStatus(item.kind);
+	agents.set(item.agentThreadId, {
+		...previous,
+		threadId: item.agentThreadId,
+		parentThreadId,
+		activityItemId: item.id,
+		agentPath: item.agentPath,
+		status,
+		iconKey: previous?.iconKey ?? agentIconKey(item.agentThreadId),
+		order: previous?.order ?? nextTimelineOrder(state),
+	});
+	return { agents: [...agents.values()] };
+}
+
+/** 活動カードに必要な識別子と通知種別を検証する。 */
+function isActivityIdentity(item: Record<string, unknown>): item is Record<
+	string,
+	unknown
+> & {
+	agentThreadId: string;
+	agentPath: string;
+	id: string;
+} {
+	return (
+		typeof item.agentThreadId === "string" &&
+		item.agentThreadId.length > 0 &&
+		typeof item.agentPath === "string" &&
+		item.agentPath.length > 0 &&
+		typeof item.id === "string" &&
+		["started", "interacted", "interrupted", "completed"].includes(
+			String(item.kind),
+		)
+	);
 }

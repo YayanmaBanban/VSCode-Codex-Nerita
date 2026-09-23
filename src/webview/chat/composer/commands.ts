@@ -73,7 +73,7 @@ function $paste(
 	) {
 		return true;
 	}
-	if (inBlock || editor.isComposing() || !shouldPasteAsBlock(text)) {
+	if (pasteAsText(inBlock, editor, text)) {
 		selection.insertRawText(text);
 		return true;
 	}
@@ -83,6 +83,11 @@ function $paste(
 	}
 	$insertPastedBlock(text);
 	return true;
+}
+
+/** ブロック内とIME中は通常の文字列貼り付けを維持する。 */
+function pasteAsText(inBlock: boolean, editor: LexicalEditor, text: string) {
+	return inBlock || editor.isComposing() || !shouldPasteAsBlock(text);
 }
 
 /** 既存の通常入力・IMEを残し、Composer固有の操作だけを優先処理する。 */

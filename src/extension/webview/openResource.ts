@@ -7,31 +7,14 @@ export async function openResource(
 	value: string,
 	range?: SourceRange,
 ): Promise<void> {
-	if (range !== undefined && !isSourceRange(range)) {
-		throw new Error("Invalid source range");
-	}
+	validateResourceRange(range);
 	let uri = vscode.Uri.parse(value, true);
 	if (uri.scheme !== "file" || uri.query || uri.fragment) {
 		throw new Error("Unsupported resource URI");
 	}
 	const location = /:(\d+)(?::(\d+))?(?:-(\d+)(?::(\d+))?)?$/.exec(uri.path);
 	if (location) {
-		const start = {
-			line: Number(location[1]) - 1,
-			character: Number(location[2] ?? 1) - 1,
-		};
-		const selection = {
-			start,
-			end: location[3]
-				? {
-						line: Number(location[3]) - 1,
-						character: Number(location[4] ?? 1) - 1,
-					}
-				: start,
-		};
-		if (!isSourceRange(selection)) {
-			throw new Error("Invalid source range");
-		}
+		const selection = resourceSelection(location);
 		uri = uri.with({ path: uri.path.slice(0, location.index) });
 		range ??= selection;
 	}
@@ -57,4 +40,32 @@ export async function openResource(
 	} else {
 		throw new Error("Unsupported resource type");
 	}
+}
+
+/** 表示先に渡す選択範囲を検証する。 */
+function validateResourceRange(range: SourceRange | undefined) {
+	if (range !== undefined && !isSourceRange(range)) {
+		throw new Error("Invalid source range");
+	}
+}
+
+/** URI末尾の行・列指定を選択範囲へ変換する。 */
+function resourceSelection(location: RegExpExecArray) {
+	const start = {
+		line: Number(location[1]) - 1,
+		character: Number(location[2] ?? 1) - 1,
+	};
+	const selection = {
+		start,
+		end: location[3]
+			? {
+					line: Number(location[3]) - 1,
+					character: Number(location[4] ?? 1) - 1,
+				}
+			: start,
+	};
+	if (!isSourceRange(selection)) {
+		throw new Error("Invalid source range");
+	}
+	return selection;
 }

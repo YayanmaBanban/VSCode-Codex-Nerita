@@ -19,6 +19,11 @@ export function parseSandbox(value: unknown): SandboxPolicy {
 	if (value.type === "readOnly" && typeof value.networkAccess === "boolean") {
 		return { type: "readOnly", networkAccess: value.networkAccess };
 	}
+	return parseWritableSandbox(value);
+}
+
+/** 書き込み可能なsandboxの全設定を検証する。 */
+function parseWritableSandbox(value: Record<string, unknown>): SandboxPolicy {
 	if (
 		value.type === "workspaceWrite" &&
 		Array.isArray(value.writableRoots) &&

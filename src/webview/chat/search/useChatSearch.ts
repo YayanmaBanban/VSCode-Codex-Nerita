@@ -1,5 +1,7 @@
 // Ctrl+Fの表示制御と、会話の更新に追従する検索・ハイライトを管理する。
 import {
+	type SetStateAction,
+	type Dispatch,
 	useCallback,
 	useEffect,
 	useRef,
@@ -63,37 +65,19 @@ export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 			if (event.isComposing) {
 				return;
 			}
-			if (
-				(event.ctrlKey || event.metaKey) &&
-				!event.altKey &&
-				!event.shiftKey &&
-				event.key.toLowerCase() === "f"
-			) {
+			if (isOpenSearchKey(event)) {
 				event.preventDefault();
 				event.stopPropagation();
-				if (!open) {
-					previousFocus.current =
-						document.activeElement instanceof HTMLElement
-							? document.activeElement
-							: null;
-					const selection = window.getSelection();
-					if (
-						selection?.anchorNode &&
-						conversation.current?.contains(selection.anchorNode) &&
-						selection.toString()
-					) {
-						setQuery(selection.toString());
-					}
-				}
+				initializeSearchQuery(
+					open,
+					previousFocus,
+					conversation,
+					setQuery,
+				);
 				setOpen(true);
 				input.current?.focus();
 				input.current?.select();
-			} else if (
-				open &&
-				(event.key === "F3" ||
-					((event.ctrlKey || event.metaKey) &&
-						event.key.toLowerCase() === "g"))
-			) {
+			} else if (isMoveSearchKey(open, event)) {
 				event.preventDefault();
 				event.stopPropagation();
 				move(event.shiftKey ? -1 : 1);
@@ -191,4 +175,47 @@ export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 		close,
 		move,
 	};
+}
+
+/** 検索中の一致箇所を移動するショートカットを判定する。 */
+function isMoveSearchKey(open: boolean, event: KeyboardEvent) {
+	return (
+		open &&
+		(event.key === "F3" ||
+			((event.ctrlKey || event.metaKey) &&
+				event.key.toLowerCase() === "g"))
+	);
+}
+
+/** 会話内検索を開くショートカットを判定する。 */
+function isOpenSearchKey(event: KeyboardEvent) {
+	return (
+		(event.ctrlKey || event.metaKey) &&
+		!event.altKey &&
+		!event.shiftKey &&
+		event.key.toLowerCase() === "f"
+	);
+}
+
+/** 検索を初めて開く時だけ選択文字列と復帰先を保存する。 */
+function initializeSearchQuery(
+	open: boolean,
+	previousFocus: RefObject<HTMLElement | null>,
+	conversation: RefObject<HTMLElement | null>,
+	setQuery: Dispatch<SetStateAction<string>>,
+) {
+	if (!open) {
+		previousFocus.current =
+			document.activeElement instanceof HTMLElement
+				? document.activeElement
+				: null;
+		const selection = window.getSelection();
+		if (
+			selection?.anchorNode &&
+			conversation.current?.contains(selection.anchorNode) &&
+			selection.toString()
+		) {
+			setQuery(selection.toString());
+		}
+	}
 }

@@ -6,6 +6,8 @@ import { threadAgentStatus, withThreadStatus } from "./items/agentItems";
 import { hydrateHistory, replayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "../../../shared/validation";
+import { type SubAgentSummary } from "@/shared/subAgents";
+import { type HistoryTurn, type HistoryThread } from "./protocol/history";
 
 /** Agent用の読み取りを接続世代と親セッションに限定する。 */
 export abstract class CodexAgents extends CodexRequests {
@@ -113,9 +115,7 @@ export abstract class CodexAgents extends CodexRequests {
 			return;
 		}
 		if (
-			thread.id !== message.threadId ||
-			(thread.parentThreadId &&
-				thread.parentThreadId !== known.parentThreadId)
+			!matchesAgentThread(thread, message.threadId, known.parentThreadId)
 		) {
 			throw new Error("Unexpected agent thread");
 		}
@@ -124,30 +124,55 @@ export abstract class CodexAgents extends CodexRequests {
 		if (!current()) {
 			return;
 		}
+
+		this.publishAgentView(turns, thread, known, message);
+	}
+
+	/** 読み取り中の通知を優先しながらエージェント履歴を公開する。 */
+	private publishAgentView(
+		turns: HistoryTurn[],
+		thread: HistoryThread,
+		known: SubAgentSummary,
+		message: {
+			type: "agent/read";
+			requestId: string;
+			sessionId: string;
+			threadId: string;
+		},
+	) {
 		const view = replayHistory(turns, thread.id);
+
 		const agents = new Map(
 			this.state.agents.map((agent) => [agent.threadId, agent]),
 		);
+
 		// 読み取り中の通知を優先し、履歴から見つかった孫Threadだけを追加する。
 		for (const agent of view.agents) {
 			if (!agents.has(agent.threadId)) {
 				agents.set(agent.threadId, agent);
 			}
 		}
+
 		const latest = agents.get(known.threadId)!;
+
 		const status = threadAgentStatus(thread.status);
+
 		const enriched = {
 			...agents.get(known.threadId)!,
 			...agentMetadata(thread),
 		};
+
 		agents.set(
 			known.threadId,
 			latest === known && status
 				? withThreadStatus(enriched, status)
 				: enriched,
 		);
+
 		this.patch({ agents: [...agents.values()] });
+
 		this.synchronizeAgents();
+
 		this.emit({
 			type: "agent/view",
 			requestId: message.requestId,
@@ -161,4 +186,16 @@ export abstract class CodexAgents extends CodexRequests {
 			},
 		});
 	}
+}
+
+/** 子Threadの識別子と既知の親子関係を照合する。 */
+function matchesAgentThread(
+	thread: { id: string; parentThreadId?: string },
+	threadId: string,
+	parentThreadId: string,
+): boolean {
+	return (
+		thread.id === threadId &&
+		(!thread.parentThreadId || thread.parentThreadId === parentThreadId)
+	);
 }

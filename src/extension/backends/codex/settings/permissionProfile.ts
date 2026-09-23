@@ -17,24 +17,7 @@ function permissionPath(value: unknown): FileSystemPath {
 		return { type: "glob_pattern", pattern: value.pattern };
 	}
 	if (value.type === "special" && isRecord(value.value)) {
-		const p = value.value;
-		if (
-			p.kind === "root" ||
-			p.kind === "minimal" ||
-			p.kind === "tmpdir" ||
-			p.kind === "slash_tmp"
-		) {
-			return { type: "special", value: { kind: p.kind } };
-		}
-		if (
-			p.kind === "project_roots" &&
-			(p.subpath === null || typeof p.subpath === "string")
-		) {
-			return {
-				type: "special",
-				value: { kind: "project_roots", subpath: p.subpath },
-			};
-		}
+		return specialPermissionPath(value.value);
 	}
 	throw new AppServerRpcError(-32602, "Unsupported permission path");
 }
@@ -45,6 +28,75 @@ export function permissionProfile(value: unknown): GrantedPermissionProfile {
 		throw new AppServerRpcError(-32602, "Invalid permissions");
 	}
 	const result: GrantedPermissionProfile = {};
+	readNetworkPermission(value, result);
+	if (value.fileSystem !== null && value.fileSystem !== undefined) {
+		readFilesystemPermission(value, result);
+	}
+	return result;
+}
+
+/** 要求されたファイルシステム権限を検証する。 */
+function readFilesystemPermission(
+	value: Record<string, unknown>,
+	result: GrantedPermissionProfile,
+) {
+	const fs = value.fileSystem;
+	if (
+		!isRecord(fs) ||
+		(fs.entries !== undefined && !Array.isArray(fs.entries)) ||
+		(fs.globScanMaxDepth !== undefined &&
+			(!Number.isSafeInteger(fs.globScanMaxDepth) ||
+				Number(fs.globScanMaxDepth) < 0))
+	) {
+		throw new AppServerRpcError(
+			-32602,
+			"Unsupported filesystem permission",
+		);
+	}
+	const paths = (value: unknown): string[] | null => {
+		if (value === null) {
+			return null;
+		}
+		if (
+			!Array.isArray(value) ||
+			!value.every((path: unknown) => typeof path === "string")
+		) {
+			throw new AppServerRpcError(-32602, "Invalid permission paths");
+		}
+		return value;
+	};
+	result.fileSystem = { read: paths(fs.read), write: paths(fs.write) };
+	if (Array.isArray(fs.entries)) {
+		result.fileSystem.entries = fs.entries.map(
+			(entry: unknown): FileSystemSandboxEntry => {
+				if (
+					!isRecord(entry) ||
+					(entry.access !== "read" &&
+						entry.access !== "write" &&
+						entry.access !== "deny")
+				) {
+					throw new AppServerRpcError(
+						-32602,
+						"Invalid permission entry",
+					);
+				}
+				return {
+					path: permissionPath(entry.path),
+					access: entry.access,
+				};
+			},
+		);
+	}
+	if (typeof fs.globScanMaxDepth === "number") {
+		result.fileSystem.globScanMaxDepth = fs.globScanMaxDepth;
+	}
+}
+
+/** 要求されたネットワーク権限を検証する。 */
+function readNetworkPermission(
+	value: Record<string, unknown>,
+	result: GrantedPermissionProfile,
+) {
 	if (value.network !== null && value.network !== undefined) {
 		if (
 			!isRecord(value.network) ||
@@ -57,57 +109,26 @@ export function permissionProfile(value: unknown): GrantedPermissionProfile {
 		}
 		result.network = { enabled: value.network.enabled };
 	}
-	if (value.fileSystem !== null && value.fileSystem !== undefined) {
-		const fs = value.fileSystem;
-		if (
-			!isRecord(fs) ||
-			(fs.entries !== undefined && !Array.isArray(fs.entries)) ||
-			(fs.globScanMaxDepth !== undefined &&
-				(!Number.isSafeInteger(fs.globScanMaxDepth) ||
-					Number(fs.globScanMaxDepth) < 0))
-		) {
-			throw new AppServerRpcError(
-				-32602,
-				"Unsupported filesystem permission",
-			);
-		}
-		const paths = (value: unknown): string[] | null => {
-			if (value === null) {
-				return null;
-			}
-			if (
-				!Array.isArray(value) ||
-				!value.every((path: unknown) => typeof path === "string")
-			) {
-				throw new AppServerRpcError(-32602, "Invalid permission paths");
-			}
-			return value;
-		};
-		result.fileSystem = { read: paths(fs.read), write: paths(fs.write) };
-		if (Array.isArray(fs.entries)) {
-			result.fileSystem.entries = fs.entries.map(
-				(entry: unknown): FileSystemSandboxEntry => {
-					if (
-						!isRecord(entry) ||
-						(entry.access !== "read" &&
-							entry.access !== "write" &&
-							entry.access !== "deny")
-					) {
-						throw new AppServerRpcError(
-							-32602,
-							"Invalid permission entry",
-						);
-					}
-					return {
-						path: permissionPath(entry.path),
-						access: entry.access,
-					};
-				},
-			);
-		}
-		if (typeof fs.globScanMaxDepth === "number") {
-			result.fileSystem.globScanMaxDepth = fs.globScanMaxDepth;
-		}
+}
+
+/** 特殊パスの種別と相対パスを検証する。 */
+function specialPermissionPath(p: Record<string, unknown>): FileSystemPath {
+	if (
+		p.kind === "root" ||
+		p.kind === "minimal" ||
+		p.kind === "tmpdir" ||
+		p.kind === "slash_tmp"
+	) {
+		return { type: "special", value: { kind: p.kind } };
 	}
-	return result;
+	if (
+		p.kind === "project_roots" &&
+		(p.subpath === null || typeof p.subpath === "string")
+	) {
+		return {
+			type: "special",
+			value: { kind: "project_roots", subpath: p.subpath },
+		};
+	}
+	throw new AppServerRpcError(-32602, "Unsupported permission path");
 }

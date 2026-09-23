@@ -34,6 +34,21 @@ export function parseApproval(request: AppServerRequest): ApprovalRequest {
 	) {
 		throw new AppServerRpcError(-32602, "Invalid approval request");
 	}
+	const title = approvalDetails(request, params);
+	return {
+		threadId: params.threadId,
+		turnId: params.turnId,
+		itemId: params.itemId,
+		title: title.join("\n"),
+	};
+}
+export { Approvals } from "../../../session/Approvals";
+
+/** ネットワーク承認と実行詳細の表示文字列を検証する。 */
+function approvalDetails(
+	request: AppServerRequest,
+	params: Record<string, unknown>,
+) {
 	const title = [approvalTitle(request.method, params.kind)];
 	if (isRecord(params.networkApprovalContext)) {
 		const context = params.networkApprovalContext;
@@ -57,14 +72,8 @@ export function parseApproval(request: AppServerRequest): ApprovalRequest {
 			title.push(params[field]);
 		}
 	}
-	return {
-		threadId: params.threadId,
-		turnId: params.turnId,
-		itemId: params.itemId,
-		title: title.join("\n"),
-	};
+	return title;
 }
-export { Approvals } from "../../../session/Approvals";
 
 /** ファイル変更・端末入力・コマンド実行を承認タイトルで区別する。 */
 function approvalTitle(method: string, kind: unknown) {

@@ -3,12 +3,13 @@ import { readFile, mkdir, writeFile, rename, unlink } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { parse, stringify } from "smol-toml";
+import { parse, stringify, type TomlTable } from "smol-toml";
 import {
 	isPersonalityPreset,
 	type PersonalitySettings,
 	type PersonalityScope,
 	type PersonalityMessage,
+	type PersonalityPreset,
 } from "../../../../shared/personality";
 
 /** 存在しないファイルだけを空設定として扱い、破損や権限エラーは通知する。 */
@@ -75,15 +76,7 @@ export class PersonalityStore {
 				"developer_instructions は文字列で指定してください。",
 			);
 		}
-		const selected = data.selected ?? presets[0]?.name ?? "";
-		if (
-			typeof selected !== "string" ||
-			(selected !== "" && !presets.some((p) => p.name === selected))
-		) {
-			throw new Error(
-				"preset.toml の selected がプリセット名と一致しません。",
-			);
-		}
+		const selected = selectedPreset(data, presets);
 		return {
 			presets,
 			selected,
@@ -160,4 +153,18 @@ export class PersonalityStore {
 		await operation;
 		return this.read();
 	}
+}
+
+/** 選択中のプリセット名を既存一覧に照合する。 */
+function selectedPreset(data: TomlTable, presets: PersonalityPreset[]) {
+	const selected = data.selected ?? presets[0]?.name ?? "";
+	if (
+		typeof selected !== "string" ||
+		(selected !== "" && !presets.some((p) => p.name === selected))
+	) {
+		throw new Error(
+			"preset.toml の selected がプリセット名と一致しません。",
+		);
+	}
+	return selected;
 }

@@ -172,36 +172,7 @@ describe("Phase 9 通信Schema", () => {
 				}),
 			);
 		}
-		for (const field of [
-			"id",
-			"name",
-			"description",
-			"currentValue",
-			"currentLabel",
-			"options",
-		]) {
-			for (const value of [...invalid, ...ids, "text"]) {
-				compareUi(
-					contribution({
-						type: "select",
-						option: { ...option, [field]: value },
-					}),
-				);
-			}
-		}
-		for (const field of ["value", "name", "description"]) {
-			for (const value of [...invalid, ...ids, "text"]) {
-				compareUi(
-					contribution({
-						type: "select",
-						option: {
-							...option,
-							options: [{ ...choice, [field]: value }],
-						},
-					}),
-				);
-			}
-		}
+		compareSelectMutations();
 		for (const field of ["configId", "onValue", "offValue"]) {
 			for (const value of ids) {
 				compareUi(contribution({ ...controls[2], [field]: value }));
@@ -273,3 +244,37 @@ describe("Phase 9 通信Schema", () => {
 		expect(control.option.options[0]!.extra).toBe(extra);
 	});
 });
+
+/** 選択項目と候補の各フィールド変異を旧guardと比較する。 */
+function compareSelectMutations() {
+	for (const field of [
+		"id",
+		"name",
+		"description",
+		"currentValue",
+		"currentLabel",
+		"options",
+	]) {
+		for (const value of [...invalid, ...ids, "text"]) {
+			compareUi(
+				contribution({
+					type: "select",
+					option: { ...option, [field]: value },
+				}),
+			);
+		}
+	}
+	for (const field of ["value", "name", "description"]) {
+		for (const value of [...invalid, ...ids, "text"]) {
+			compareUi(
+				contribution({
+					type: "select",
+					option: {
+						...option,
+						options: [{ ...choice, [field]: value }],
+					},
+				}),
+			);
+		}
+	}
+}

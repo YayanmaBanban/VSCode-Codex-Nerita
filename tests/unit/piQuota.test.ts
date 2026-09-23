@@ -9,6 +9,8 @@ import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
 import { piHarness, pending } from "./piHarness";
 import type { PiAccount } from "../../src/extension/backends/pi/PiAccount";
 
+import { type HostMessage } from "@/shared/messages";
+
 const payload = {
 	rate_limit: {
 		primary_window: {
@@ -128,18 +130,7 @@ describe("Pi quota", () => {
 			expect(read).toHaveBeenCalledTimes(2);
 			expect(h.controller.snapshot().quota).toEqual(keep ? quota : null);
 			if (keep) {
-				for (const event of h.events) {
-					if (event.type === "state/patch") {
-						expect(event.patch.quota).not.toBeNull();
-						if (event.patch.uiContributions) {
-							expect(
-								event.patch.uiContributions.items.some(
-									(item) => item.control.type === "quota",
-								),
-							).toBe(true);
-						}
-					}
-				}
+				expectQuotaPreserved(h);
 			}
 			refresh.resolve([{ label: "5h", remaining: 60, detail: "" }]);
 			await Promise.resolve();
@@ -259,3 +250,19 @@ describe("Pi quota", () => {
 		await h.controller.dispose();
 	});
 });
+
+/** 更新通知でも使用枠が消去されないことを確認する。 */
+function expectQuotaPreserved(h: { events: HostMessage[] }) {
+	for (const event of h.events) {
+		if (event.type === "state/patch") {
+			expect(event.patch.quota).not.toBeNull();
+			if (event.patch.uiContributions) {
+				expect(
+					event.patch.uiContributions.items.some(
+						(item) => item.control.type === "quota",
+					),
+				).toBe(true);
+			}
+		}
+	}
+}

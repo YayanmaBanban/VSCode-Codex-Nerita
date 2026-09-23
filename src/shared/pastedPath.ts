@@ -13,13 +13,34 @@ export function parsePastedPath(
 		: /^(.*?):(\d+)(?::(\d+))?(?:-(\d+)(?::(\d+))?)?(?: \([^\r\n]*\))?$/.exec(
 				value,
 			);
+	const path = unquotePath(lines, location, value);
+	if (!isAbsoluteLocalPath(path)) {
+		return null;
+	}
+	const range: SourceRange | undefined = parsePathRange(lines, location);
+	return range && !isSourceRange(range)
+		? null
+		: { path, ...(range ? { range } : {}) };
+}
+
+/** 引用符で囲まれたパスを正規化する。 */
+function unquotePath(
+	lines: RegExpExecArray | null,
+	location: RegExpExecArray | null,
+	value: string,
+) {
 	let path = lines?.[1] ?? location?.[1] ?? value;
 	if (path.startsWith('"') && path.endsWith('"')) {
 		path = path.slice(1, -1);
 	}
-	if (!isAbsoluteLocalPath(path)) {
-		return null;
-	}
+	return path;
+}
+
+/** 行番号の表記を共通の範囲へ変換する。 */
+function parsePathRange(
+	lines: RegExpExecArray | null,
+	location: RegExpExecArray | null,
+) {
 	let range: SourceRange | undefined;
 	if (lines) {
 		range = {
@@ -41,7 +62,5 @@ export function parsePastedPath(
 				: { ...start },
 		};
 	}
-	return range && !isSourceRange(range)
-		? null
-		: { path, ...(range ? { range } : {}) };
+	return range;
 }

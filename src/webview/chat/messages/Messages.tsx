@@ -1,6 +1,6 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
 import { clsx } from "clsx";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
 import type { ChatMessage, ToolSummary } from "../../../shared/chatState";
@@ -134,7 +134,7 @@ export function Messages({
 		const endIndex = nextUser === -1 ? messages.length - 1 : nextUser - 1;
 		const reply = messages[endIndex];
 		const target = turnNavigationTarget(user, reply, previousUser);
-		const replyPending = user && nextUser === -1 && busy;
+		const replyPending = isReplyPending(user, nextUser, busy);
 		return (
 			<article
 				className={clsx(
@@ -169,51 +169,15 @@ export function Messages({
 						/>
 					}
 				</div>
-				<div
-					className={`message-actions mt-[10px] flex justify-end gap-[6px] ${messageFocusClass}`}
-					tabIndex={-1}
-					ref={(element) => {
-						if (element) {
-							elements.current.set(`${message.id}:end`, element);
-						} else {
-							elements.current.delete(`${message.id}:end`);
-						}
-					}}
-				>
-					{!user && message.mcp?.status !== "loading" && (
-						<button
-							type="button"
-							className={`${messageIconButtonClass} bg-[#416482]`}
-							aria-label="回答をコピー"
-							title="回答をコピー"
-							onClick={() => void copy(message)}
-						>
-							<Copy size={12} aria-hidden="true" />
-						</button>
-					)}
-					<button
-						type="button"
-						className={`${messageIconButtonClass} bg-[#416482]`}
-						aria-label={
-							user ? "回答の末尾へ移動" : "送信メッセージへ移動"
-						}
-						title={
-							user ? "回答の末尾へ移動" : "送信メッセージへ移動"
-						}
-						disabled={!target || replyPending}
-						onClick={() => {
-							if (target) {
-								jump(target.id, user);
-							}
-						}}
-					>
-						{user ? (
-							<ArrowDownToLine size={12} aria-hidden="true" />
-						) : (
-							<ArrowUpToLine size={12} aria-hidden="true" />
-						)}
-					</button>
-				</div>
+				{renderMessageActions(
+					elements,
+					message,
+					user,
+					copy,
+					target,
+					replyPending,
+					jump,
+				)}
 				{copyStatus?.id === message.id && (
 					<span
 						role="status"
@@ -225,6 +189,66 @@ export function Messages({
 			</article>
 		);
 	});
+}
+
+/** 最後のユーザー発言への回答待ちを判定する。 */
+function isReplyPending(user: boolean, nextUser: number, busy: boolean) {
+	return user && nextUser === -1 && busy;
+}
+
+/** コピーと同じターンへの移動ボタンを表示する。 */
+function renderMessageActions(
+	elements: RefObject<Map<string, HTMLElement>>,
+	message: ChatMessage,
+	user: boolean,
+	copy: (message: ChatMessage) => Promise<void>,
+	target: ChatMessage | undefined,
+	replyPending: boolean,
+	jump: (id: string, end: boolean) => void,
+) {
+	return (
+		<div
+			className={`message-actions mt-[10px] flex justify-end gap-[6px] ${messageFocusClass}`}
+			tabIndex={-1}
+			ref={(element) => {
+				if (element) {
+					elements.current.set(`${message.id}:end`, element);
+				} else {
+					elements.current.delete(`${message.id}:end`);
+				}
+			}}
+		>
+			{!user && message.mcp?.status !== "loading" && (
+				<button
+					type="button"
+					className={`${messageIconButtonClass} bg-[#416482]`}
+					aria-label="回答をコピー"
+					title="回答をコピー"
+					onClick={() => void copy(message)}
+				>
+					<Copy size={12} aria-hidden="true" />
+				</button>
+			)}
+			<button
+				type="button"
+				className={`${messageIconButtonClass} bg-[#416482]`}
+				aria-label={user ? "回答の末尾へ移動" : "送信メッセージへ移動"}
+				title={user ? "回答の末尾へ移動" : "送信メッセージへ移動"}
+				disabled={!target || replyPending}
+				onClick={() => {
+					if (target) {
+						jump(target.id, user);
+					}
+				}}
+			>
+				{user ? (
+					<ArrowDownToLine size={12} aria-hidden="true" />
+				) : (
+					<ArrowUpToLine size={12} aria-hidden="true" />
+				)}
+			</button>
+		</div>
+	);
 }
 
 /** ユーザー発言から回答へ、回答から直前のユーザー発言へ移動する。 */

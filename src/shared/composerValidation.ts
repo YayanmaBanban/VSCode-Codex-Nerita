@@ -19,16 +19,7 @@ export function validComposerField(key: string, value: unknown): boolean {
 		return typeof value === "boolean";
 	}
 	if (key === "usage") {
-		return (
-			value === null ||
-			(isRecord(value) &&
-				typeof value.used === "number" &&
-				Number.isFinite(value.used) &&
-				value.used >= 0 &&
-				typeof value.size === "number" &&
-				Number.isFinite(value.size) &&
-				value.size > 0)
-		);
+		return value === null || validUsage(value);
 	}
 	if (key === "attachments") {
 		return (
@@ -47,4 +38,17 @@ export function validComposerField(key: string, value: unknown): boolean {
 	}
 
 	return false;
+}
+
+/** 使用量と上限が有効な有限数であることを確認する。 */
+function validUsage(value: unknown): boolean {
+	return (
+		isRecord(value) &&
+		typeof value.used === "number" &&
+		Number.isFinite(value.used) &&
+		value.used >= 0 &&
+		typeof value.size === "number" &&
+		Number.isFinite(value.size) &&
+		value.size > 0
+	);
 }

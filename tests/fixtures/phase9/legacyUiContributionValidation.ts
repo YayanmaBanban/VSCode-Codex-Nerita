@@ -28,36 +28,16 @@ function control(value: unknown): boolean {
 		);
 	}
 	if (value.type === "select") {
-		const option = value.option;
-		return (
-			isRecord(option) &&
-			isId(option.id) &&
-			typeof option.name === "string" &&
-			typeof option.currentValue === "string" &&
-			description(option.currentLabel) &&
-			description(option.description) &&
-			Array.isArray(option.options) &&
-			option.options.every(
-				(item: unknown) =>
-					isRecord(item) &&
-					isId(item.value) &&
-					typeof item.name === "string" &&
-					description(item.description),
-			) &&
-			new Set(option.options.map((item: { value: string }) => item.value))
-				.size === option.options.length
-		);
+		return legacySelect(value);
 	}
 	if (value.type === "toggle") {
-		return (
-			isId(value.configId) &&
-			typeof value.label === "string" &&
-			typeof value.checked === "boolean" &&
-			isId(value.onValue) &&
-			isId(value.offValue) &&
-			value.onValue !== value.offValue
-		);
+		return legacyToggle(value);
 	}
+	return legacyProgress(value);
+}
+
+/** 移行前の進行度コントロール検証を保持する。 */
+function legacyProgress(value: Record<string, unknown>): boolean {
 	return (
 		value.type === "progress" &&
 		typeof value.label === "string" &&
@@ -65,6 +45,41 @@ function control(value: unknown): boolean {
 		Number.isFinite(value.value) &&
 		value.value >= 0 &&
 		value.value <= 100
+	);
+}
+
+/** 移行前の切り替えコントロール検証を保持する。 */
+function legacyToggle(value: Record<string, unknown>): boolean {
+	return (
+		isId(value.configId) &&
+		typeof value.label === "string" &&
+		typeof value.checked === "boolean" &&
+		isId(value.onValue) &&
+		isId(value.offValue) &&
+		value.onValue !== value.offValue
+	);
+}
+
+/** 移行前の選択コントロール検証を保持する。 */
+function legacySelect(value: Record<string, unknown>) {
+	const option = value.option;
+	return (
+		isRecord(option) &&
+		isId(option.id) &&
+		typeof option.name === "string" &&
+		typeof option.currentValue === "string" &&
+		description(option.currentLabel) &&
+		description(option.description) &&
+		Array.isArray(option.options) &&
+		option.options.every(
+			(item: unknown) =>
+				isRecord(item) &&
+				isId(item.value) &&
+				typeof item.name === "string" &&
+				description(item.description),
+		) &&
+		new Set(option.options.map((item: { value: string }) => item.value))
+			.size === option.options.length
 	);
 }
 

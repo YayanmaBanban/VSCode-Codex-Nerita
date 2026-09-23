@@ -10,39 +10,38 @@ import { isPiProviderControls } from "./piProviderControls";
 
 /** 差分通知に未知のフィールドが混入した場合も拒否する。 */
 export function validStateField(key: string, value: unknown): boolean {
-	switch (key) {
-		case "piProviderControls":
-			return value === null || isPiProviderControls(value);
-		case "uiContributions":
-			return value === null || isUiContributions(value);
-		case "agents":
-			return Array.isArray(value) && value.every(isSubAgent);
-		case "personality":
-			return value === null || isPersonalitySettings(value);
-		case "sessionTitle":
-		case "piAccount":
-		case "cwd":
-		case "sessionsError":
-		case "sessionsNextCursor":
-			return value === null || typeof value === "string";
-		case "sessionsLoading":
-		case "sessionsArchived":
-		case "sessionPending":
-			return typeof value === "boolean";
-		case "sessionCapabilities":
-			return (
-				isRecord(value) &&
-				["list", "load", "fork", "delete"].every(
-					(key) => typeof value[key] === "boolean",
-				) &&
-				["rename", "unarchive", "archive"].every(
-					(key) =>
-						value[key] === undefined ||
-						typeof value[key] === "boolean",
-				)
-			);
-		case "sessions":
-			return everyRecord(
+	const validator = stateFieldValidators.get(key);
+	return validator ? validator(value) : validComposerField(key, value);
+}
+
+/** 各フィールドの検証を独立させ、未知のキーは受け付けない。 */
+const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
+	Object.entries({
+		piProviderControls: (value) =>
+			value === null || isPiProviderControls(value),
+		uiContributions: (value) => value === null || isUiContributions(value),
+		agents: (value) => Array.isArray(value) && value.every(isSubAgent),
+		personality: (value) => value === null || isPersonalitySettings(value),
+		sessionTitle: (value) => value === null || typeof value === "string",
+		piAccount: (value) => value === null || typeof value === "string",
+		cwd: (value) => value === null || typeof value === "string",
+		sessionsError: (value) => value === null || typeof value === "string",
+		sessionsNextCursor: (value) =>
+			value === null || typeof value === "string",
+		sessionsLoading: (value) => typeof value === "boolean",
+		sessionsArchived: (value) => typeof value === "boolean",
+		sessionPending: (value) => typeof value === "boolean",
+		sessionCapabilities: (value) =>
+			isRecord(value) &&
+			["list", "load", "fork", "delete"].every(
+				(key) => typeof value[key] === "boolean",
+			) &&
+			["rename", "unarchive", "archive"].every(
+				(key) =>
+					value[key] === undefined || typeof value[key] === "boolean",
+			),
+		sessions: (value) =>
+			everyRecord(
 				value,
 				(item) =>
 					isId(item.sessionId) &&
@@ -53,34 +52,31 @@ export function validStateField(key: string, value: unknown): boolean {
 						typeof item.title === "string") &&
 					(item.updatedAt === undefined ||
 						typeof item.updatedAt === "string"),
-			);
-		case "asyncTasks":
-			return Array.isArray(value) && value.every(isAsyncTask);
-		case "connection":
-			return [
+			),
+		asyncTasks: (value) => Array.isArray(value) && value.every(isAsyncTask),
+		connection: (value) =>
+			[
 				"disconnected",
 				"connecting",
 				"ready",
 				"auth-required",
 				"authenticating",
 				"error",
-			].includes(String(value));
-		case "run":
-			return [
+			].includes(String(value)),
+		run: (value) =>
+			[
 				"idle",
 				"running",
 				"cancelling",
 				"completed",
 				"cancelled",
 				"failed",
-			].includes(String(value));
-		case "sessionId":
-		case "runId":
-			return value === null || isId(value);
-		case "error":
-			return value === null || typeof value === "string";
-		case "messages":
-			return everyRecord(
+			].includes(String(value)),
+		sessionId: (value) => value === null || isId(value),
+		runId: (value) => value === null || isId(value),
+		error: (value) => value === null || typeof value === "string",
+		messages: (value) =>
+			everyRecord(
 				value,
 				(item) =>
 					isId(item.id) &&
@@ -89,9 +85,9 @@ export function validStateField(key: string, value: unknown): boolean {
 						typeof item.streaming === "boolean") &&
 					(item.mcp === undefined || isMcpMessageContent(item.mcp)) &&
 					typeof item.text === "string",
-			);
-		case "tools":
-			return everyRecord(
+			),
+		tools: (value) =>
+			everyRecord(
 				value,
 				(item) =>
 					isId(item.id) &&
@@ -109,9 +105,9 @@ export function validStateField(key: string, value: unknown): boolean {
 					].includes(String(item.status)) &&
 					Array.isArray(item.paths) &&
 					item.paths.every((p: unknown) => typeof p === "string"),
-			);
-		case "permissions":
-			return everyRecord(
+			),
+		permissions: (value) =>
+			everyRecord(
 				value,
 				(item) =>
 					isId(item.id) &&
@@ -128,15 +124,12 @@ export function validStateField(key: string, value: unknown): boolean {
 								"reject_always",
 							].includes(String(o.kind)),
 					),
-			);
-		case "authMethods":
-			return everyRecord(
+			),
+		authMethods: (value) =>
+			everyRecord(
 				value,
 				(item) => isId(item.id) && typeof item.name === "string",
-			);
-		case "attachmentsSupported":
-			return typeof value === "boolean";
-		default:
-			return validComposerField(key, value);
-	}
-}
+			),
+		attachmentsSupported: (value) => typeof value === "boolean",
+	} satisfies Record<string, (value: unknown) => boolean>),
+);

@@ -8,6 +8,7 @@ import { isRecord } from "../../../shared/validation";
 import { parseQuota, parseUsage } from "./protocol/usage";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
+import { type CodexConnection } from "./runtime/connection";
 
 /** 設定は次のturnに適用し、CLIのユーザー設定ファイルを書き換えない。 */
 export abstract class CodexOptions extends CodexAttachments {
@@ -38,12 +39,7 @@ export abstract class CodexOptions extends CodexAttachments {
 				}
 				this.models.push(...page.data);
 				cursor = page.nextCursor ?? undefined;
-				if (cursor && seen.has(cursor)) {
-					throw new Error("Repeated model cursor");
-				}
-				if (cursor) {
-					seen.add(cursor);
-				}
+				recordModelCursor(cursor, seen);
 			} while (cursor);
 		} catch {
 			if (epoch !== this.epoch) {
@@ -59,6 +55,14 @@ export abstract class CodexOptions extends CodexAttachments {
 		);
 		this.patch({ attachmentsSupported: this.supportsAttachments });
 
+		await this.loadThreadCapabilities(client, thread, epoch);
+	}
+	/** 任意のスキルと利用枠を取得し、失敗しても会話を継続する。 */
+	private async loadThreadCapabilities(
+		client: CodexConnection,
+		thread: StartedThread,
+		epoch: number,
+	) {
 		try {
 			const response = await client.listSkills?.(thread.cwd);
 			if (epoch === this.epoch) {
@@ -78,6 +82,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			/* APIキーや独自プロバイダーには利用枠がない場合がある。 */
 		}
 	}
+
 	/** 選択モデルに合わせて推論量と速度の候補を組み直す。 */
 	private updateOptions(model: string, effort: string, tier: string): void {
 		this.patch({
@@ -95,64 +100,18 @@ export abstract class CodexOptions extends CodexAttachments {
 	}
 	/** 提示した候補だけを次のturnへ渡し、実行中の変更を禁止する。 */
 	protected async setConfig(id: string, value: string): Promise<void> {
-		if (
-			this.busy() ||
-			this.state.configPending ||
-			!this.state.configOptions
-				.find((item) => item.id === id)
-				?.options.some((choice) => choice.value === value)
-		) {
+		if (this.invalidSetting(id, value)) {
 			throw new Error("Invalid setting");
 		}
 		if (id === "model") {
-			const model = this.models.find((item) => item.model === value)!;
-			const previousEffort = this.state.configOptions.find(
-				(item) => item.id === "reasoning_effort",
-			)?.currentValue;
-			// 対応する推論量は引き継ぎ、非対応の値だけ切替先の既定値へ戻す。
-			const effort =
-				model.supportedReasoningEfforts.find(
-					(item) => item.reasoningEffort === previousEffort,
-				)?.reasoningEffort ?? model.defaultReasoningEffort;
-			this.turnOptions.model = value;
-			this.turnOptions.effort = effort;
-			delete this.turnOptions.serviceTierForTurn;
-			this.updateOptions(value, effort, "inherit");
-			return;
+			return this.selectModel(value);
 		}
 		if (id === "reasoning_effort") {
 			this.turnOptions.effort = value;
 		}
 		if (id === "collaboration_mode") {
 			// Goal選択ではRPCを送らず、Defaultへの切替だけ即時にthreadへ反映する。
-			if (value === "default" && this.collaborationMode !== "default") {
-				const epoch = this.epoch;
-				const sessionId = this.state.sessionId;
-				if (!this.client || !sessionId) {
-					throw new Error("Disconnected");
-				}
-				this.patch({ configPending: true });
-				try {
-					await this.client.updateCollaborationMode(
-						sessionId,
-						this.collaborationSettings("default"),
-					);
-					if (
-						epoch !== this.epoch ||
-						sessionId !== this.state.sessionId
-					) {
-						throw new Error("Thread changed");
-					}
-				} finally {
-					if (
-						epoch === this.epoch &&
-						sessionId === this.state.sessionId
-					) {
-						this.patch({ configPending: false });
-					}
-				}
-			}
-			this.collaborationMode = value;
+			await this.setCollaborationMode(value);
 		}
 		if (id === "fast-mode") {
 			await this.setConfig(
@@ -169,14 +128,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			}
 		}
 		if (id === "mode") {
-			if (value === "inherit") {
-				if (!this.initialSandbox) {
-					throw new Error("Initial sandbox unavailable");
-				}
-				this.turnOptions.sandboxPolicy = this.initialSandbox;
-			} else {
-				this.turnOptions.sandboxPolicy = sandboxPolicy(value);
-			}
+			this.setSandboxMode(value);
 		}
 		this.patch({
 			configOptions: this.state.configOptions.map((item) => {
@@ -197,6 +149,79 @@ export abstract class CodexOptions extends CodexAttachments {
 			}),
 		});
 	}
+	/** 提示済みの選択肢と設定変更可能な状態を照合する。 */
+	private invalidSetting(id: string, value: string) {
+		return (
+			this.busy() ||
+			this.state.configPending ||
+			!this.state.configOptions
+				.find((item) => item.id === id)
+				?.options.some((choice) => choice.value === value)
+		);
+	}
+
+	/** 初期sandboxへの復元と明示モードへの変更を処理する。 */
+	private setSandboxMode(value: string) {
+		if (value === "inherit") {
+			if (!this.initialSandbox) {
+				throw new Error("Initial sandbox unavailable");
+			}
+			this.turnOptions.sandboxPolicy = this.initialSandbox;
+		} else {
+			this.turnOptions.sandboxPolicy = sandboxPolicy(value);
+		}
+	}
+
+	/** 必要なモード変更をサーバーへ反映してから状態を更新する。 */
+	private async setCollaborationMode(value: string) {
+		if (value === "default" && this.collaborationMode !== "default") {
+			const epoch = this.epoch;
+			const sessionId = this.state.sessionId;
+			if (!this.client || !sessionId) {
+				throw new Error("Disconnected");
+			}
+			this.patch({ configPending: true });
+			try {
+				await this.client.updateCollaborationMode(
+					sessionId,
+					this.collaborationSettings("default"),
+				);
+				if (
+					epoch !== this.epoch ||
+					sessionId !== this.state.sessionId
+				) {
+					throw new Error("Thread changed");
+				}
+			} finally {
+				if (
+					epoch === this.epoch &&
+					sessionId === this.state.sessionId
+				) {
+					this.patch({ configPending: false });
+				}
+			}
+		}
+		this.collaborationMode = value;
+	}
+
+	/** 対応する推論量を引き継いでモデルを変更する。 */
+	private selectModel(value: string) {
+		const model = this.models.find((item) => item.model === value)!;
+		const previousEffort = this.state.configOptions.find(
+			(item) => item.id === "reasoning_effort",
+		)?.currentValue;
+		// 対応する推論量は引き継ぎ、非対応の値だけ切替先の既定値へ戻す。
+		const effort =
+			model.supportedReasoningEfforts.find(
+				(item) => item.reasoningEffort === previousEffort,
+			)?.reasoningEffort ?? model.defaultReasoningEffort;
+		this.turnOptions.model = value;
+		this.turnOptions.effort = effort;
+		delete this.turnOptions.serviceTierForTurn;
+		this.updateOptions(value, effort, "inherit");
+		return;
+	}
+
 	/** モードによる上書きにも、送信時点のモデルと推論量を使用する。 */
 	protected collaborationSettings(
 		mode = this.collaborationMode,
@@ -234,6 +259,16 @@ export abstract class CodexOptions extends CodexAttachments {
 		) {
 			this.patch({ usage: parseUsage(p.tokenUsage) });
 		}
+	}
+}
+
+/** モデル一覧のカーソル循環を拒否する。 */
+function recordModelCursor(cursor: string | undefined, seen: Set<string>) {
+	if (cursor && seen.has(cursor)) {
+		throw new Error("Repeated model cursor");
+	}
+	if (cursor) {
+		seen.add(cursor);
 	}
 }
 

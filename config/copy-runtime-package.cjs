@@ -52,10 +52,7 @@ async function collectPackages(source, packages) {
 		...Object.keys(manifest.peerDependencies ?? {}),
 	]);
 	for (const name of names) {
-		const optional =
-			Object.hasOwn(manifest.optionalDependencies ?? {}, name) ||
-			(!Object.hasOwn(manifest.dependencies ?? {}, name) &&
-				manifest.peerDependenciesMeta?.[name]?.optional === true);
+		const optional = isOptionalDependency(manifest, name);
 		const dependency = await resolvePackage(name, source);
 		if (!dependency) {
 			if (optional) {
@@ -79,6 +76,15 @@ async function collectPackages(source, packages) {
 		dependencies.set(name, dependency);
 		await collectPackages(dependency, packages);
 	}
+}
+
+/** 通常依存を優先して任意依存かどうか判定する。 */
+function isOptionalDependency(manifest, name) {
+	return (
+		Object.hasOwn(manifest.optionalDependencies ?? {}, name) ||
+		(!Object.hasOwn(manifest.dependencies ?? {}, name) &&
+			manifest.peerDependenciesMeta?.[name]?.optional === true)
+	);
 }
 
 /** 相対資産を保ち、競合するバージョンだけ利用側のnode_modulesへ配置する。 */
