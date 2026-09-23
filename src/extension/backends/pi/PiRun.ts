@@ -90,6 +90,10 @@ export abstract class PiRun extends PiLifecycle {
 			if (patch) {
 				this.patch(patch);
 			}
+			// message_endの通知時点ではSDKの履歴保存が終わっていない。
+			if (event.type === "turn_end" || event.type === "compaction_end") {
+				this.patch({ usage: this.contextUsage() });
+			}
 		});
 		this.patch({ run: "running", runId: submission.id, error: null });
 		const start = (text: string) =>
@@ -299,6 +303,7 @@ export abstract class PiRun extends PiLifecycle {
 				streaming: false,
 			})),
 			...this.runtime?.account?.snapshot(),
+			usage: this.contextUsage(),
 		});
 		this.refreshQuota();
 	}

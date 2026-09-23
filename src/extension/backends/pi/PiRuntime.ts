@@ -24,6 +24,7 @@ import {
 export type PiSession = Pick<
 	AgentSession,
 	| "sessionId"
+	| "getContextUsage"
 	| "model"
 	| "subscribe"
 	| "prompt"
