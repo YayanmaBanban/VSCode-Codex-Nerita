@@ -61,6 +61,9 @@ export function Composer({
 				aria-busy={locked || drop.reading}
 			>
 				<ComposerInput
+					collaborationModes={
+						state.uiContributions?.surface === "codex"
+					}
 					completionScope={`${state.connection}:${state.cwd}:${state.sessionId}`}
 					bridge={bridge}
 					locked={locked || drop.reading}

@@ -97,9 +97,12 @@ export function parseTurnEvent(
 	}
 	const turnId = text(params.turnId);
 	if (
-		!["item/agentMessage/delta", "item/started", "item/completed"].includes(
-			message.method,
-		)
+		![
+			"item/agentMessage/delta",
+			"item/plan/delta",
+			"item/started",
+			"item/completed",
+		].includes(message.method)
 	) {
 		return {
 			kind: "activity",
@@ -109,7 +112,10 @@ export function parseTurnEvent(
 			params,
 		};
 	}
-	if (message.method === "item/agentMessage/delta") {
+	if (
+		message.method === "item/agentMessage/delta" ||
+		message.method === "item/plan/delta"
+	) {
 		return {
 			kind: "delta",
 			threadId,

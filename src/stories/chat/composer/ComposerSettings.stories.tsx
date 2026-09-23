@@ -90,3 +90,24 @@ export default meta;
 /** 操作と通知の競合を再現する Story。 */
 type Story = StoryObj<typeof meta>;
 export const Connected: Story = {};
+
+/** App Serverのplan項目の本文を、通常の返信表示で確認する。 */
+function ProposedPlanStory() {
+	const bridge = useMemo(() => {
+		const mock = createMockBridge("empty");
+		mock.patchState({
+			messages: [
+				{
+					id: "proposed-plan",
+					role: "assistant",
+					streaming: false,
+					text: "## 認証機能の実装計画\n\n1. 既存の認証経路を調査する。\n2. セッション管理とエラー処理を実装する。\n3. 回帰テストを追加して検証する。",
+				},
+			],
+		});
+		return mock;
+	}, []);
+	return <ChatApp bridge={bridge} />;
+}
+
+export const ProposedPlan: Story = { render: () => <ProposedPlanStory /> };

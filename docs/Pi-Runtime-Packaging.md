@@ -52,10 +52,18 @@ bundleに含まれる依存のライセンスは `licenses/`、ソース内表�
 
 ## SDK更新
 
-1. `package.json` のSDK固定版、解決されたpi-ai版、`SUPPORTED_PI_VERSION` を揃える。
-2. `config/pi-sdk-contract.json` に列挙した上流ファイルの変更を確認し、必要なら互換処理を修正する。
-3. 確認後にSHA-256を更新する。hashの自動追従は行わない。
-4. `pnpm test:runtime`、`pnpm test:pi:chat`、本番VSIXの作成と展開先での同じ検証を実行する。
+```powershell
+pnpm pi:generate 0.86.1
+pnpm pi:verify
+```
+
+`pi:generate <バージョン>` は `pnpm add --save-exact @earendil-works/pi-coding-agent@<バージョン>` を実行し、SDKと内部のpi-aiの版が一致することを確認する。引数なしでは現在の固定依存から再生成する。
+
+公式リリース `https://raw.githubusercontent.com/earendil-works/pi/v<バージョン>/LICENSE` から `config/licenses/pi-<バージョン>/LICENSE` を取得し、`config/pi-version.json`（`SUPPORTED_PI_VERSION` の参照元）と `config/pi-sdk-contract.json` のSHA-256を更新する。対象ファイルが欠落した場合やライセンス取得に失敗した場合は、これらの出力を更新せず停止する。先に成功した依存更新は残るため、原因を解消して再実行する。
+
+変更された上流ファイルはログに表示する。指紋の生成は互換性の承認を意味しない。上流差分と `config/pi-bundle-plugin.cjs` の互換処理を確認し、必要な修正後に検証する。依存・lockfile・対応版・ライセンス・指紋は一緒にバージョン管理する。
+
+`pi:verify` はWindows x64で `check` → `test:unit` → `test:runtime` → `package:vsix` → `test:pi:chat` を実行し、続いて今回生成したVSIXを一時ディレクトリへ展開して `test:pi:chat <展開先/extension>` を実行する。失敗した工程で停止し、一時展開先は後片付けする。PowerShell 7（`pwsh`）が必要。クラウド実アカウントでの認証・通信とVS Code画面の手動確認は含まない。
 
 バージョン不一致や確認済みソースの変更はビルドを停止する。
 配布テストは不要providerのcatalog・SDKが入り直した場合、API chunkが統合された場合、外部依存や相対資産の解決漏れも検出する。

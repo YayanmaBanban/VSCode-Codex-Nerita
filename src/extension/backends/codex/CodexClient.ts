@@ -1,6 +1,7 @@
 // App Server の起動・初期化をまとめ、初期化済み接続だけを呼び出し側へ渡す。
 import type { ClientInfo } from "./codex-app-server/ClientInfo";
 import type { InitializeResponse } from "./codex-app-server/InitializeResponse";
+import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import type { ThreadLoadedListParams } from "./codex-app-server/v2/ThreadLoadedListParams";
 import type { ThreadStartParams } from "./codex-app-server/v2/ThreadStartParams";
 import type {
@@ -59,7 +60,7 @@ export class CodexClient {
 			const response = await transport.request("initialize", {
 				clientInfo: options.clientInfo,
 				capabilities: {
-					// セッション参照のadditionalContextに必要な機能を明示的に有効化する。
+					// セッション参照とcollaborationModeに必要な試験的APIを有効化する。
 					experimentalApi: true,
 					requestAttestation: false,
 				},
@@ -205,6 +206,16 @@ export class CodexClient {
 	/** 一つのターンを開始し、開始受付の応答を返す。 */
 	startTurn(params: ContextTurnStartParams) {
 		return this.transport.request("turn/start", params);
+	}
+	/** Planを終了するときは、待機中のthreadにもDefaultを反映する。 */
+	updateCollaborationMode(
+		threadId: string,
+		collaborationMode: CollaborationMode,
+	) {
+		return this.transport.request("thread/settings/update", {
+			threadId,
+			collaborationMode,
+		});
 	}
 	/** 実行中のターンへ追加指示を送り、受付を確認する。 */
 	steerTurn(params: ContextTurnSteerParams) {

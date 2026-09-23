@@ -121,7 +121,7 @@ export class CodexSessionController extends CodexSubmission {
 		) {
 			throw new Error("Submission pending");
 		}
-		if (this.state.sessionPending) {
+		if (this.state.sessionPending || this.state.configPending) {
 			throw new Error("Session pending");
 		}
 		if (message.type === "connection/retry") {
@@ -174,6 +174,29 @@ export class CodexSessionController extends CodexSubmission {
 			throw new Error("Stale thread");
 		}
 		if (message.type === "prompt/send") {
+			const command = /^\/(plan|goal)(?:\s+([\s\S]*))?$/u.exec(
+				message.text.trim(),
+			);
+			if (command) {
+				if (this.submissionPending) {
+					throw new Error("Submission pending");
+				}
+				if (this.collaborationMode !== command[1]) {
+					await this.setConfig("collaboration_mode", command[1]!);
+				}
+				if (!command[2]?.trim()) {
+					this.emit({
+						type: "prompt/accepted",
+						requestId: message.requestId,
+						mode: "start",
+					});
+					return;
+				}
+				// /plan 自体はモデルへの指示にせず、本文だけで計画ターンを開始する。
+				if (command[1] === "plan") {
+					message = { ...message, text: command[2] };
+				}
+			}
 			if (message.text.trim() === "/logout") {
 				if (this.submissionPending) {
 					throw new Error("Submission pending");
@@ -223,7 +246,7 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.type === "config/set") {
-			this.setConfig(message.configId, message.value);
+			await this.setConfig(message.configId, message.value);
 			return;
 		}
 		if (

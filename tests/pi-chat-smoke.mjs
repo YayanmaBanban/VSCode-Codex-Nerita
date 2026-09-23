@@ -185,6 +185,26 @@ try {
 		format: "cjs",
 		target: "node22",
 		outfile: "dist/pi-smoke/host.cjs",
+		plugins: [
+			{
+				name: "vscode-smoke-boundary",
+				/** VS Code外ではAPIを提供せず、未対応のエディター操作は失敗させる。 */
+				setup(builder) {
+					builder.onResolve({ filter: /^vscode$/ }, () => ({
+						path: "vscode",
+						namespace: "vscode-smoke-boundary",
+					}));
+					builder.onLoad(
+						{ filter: /.*/, namespace: "vscode-smoke-boundary" },
+						() => ({
+							contents:
+								"module.exports = { workspace: {}, window: {} };",
+							loader: "js",
+						}),
+					);
+				},
+			},
+		],
 	});
 	const { PiSessionController, createPiRuntime, isHostMessage } =
 		createRequire(import.meta.url)(

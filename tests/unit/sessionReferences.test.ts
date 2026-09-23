@@ -7,7 +7,6 @@ import { readSessionContext } from "../../src/extension/backends/codex/context/s
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import { isUiMessage } from "../../src/shared/uiMessageValidation";
 import { pathText, validReferences } from "../../src/shared/composerReferences";
-import type { ContextTurnStartParams } from "../../src/extension/backends/codex/context/additionalContext";
 
 const preview = vi.hoisted(() => ({
 	open: vi.fn().mockResolvedValue({}),
@@ -106,8 +105,7 @@ it("通常送信では選択した会話だけをuntrustedで渡し、参照元�
 		text: "この方針で",
 		referencedSessionIds: ["saved", "saved"],
 	});
-	const params = h.client.startTurn.mock
-		.calls[0]![0] as ContextTurnStartParams;
+	const params = h.client.startTurn.mock.calls[0]![0];
 	expect(params.threadId).toBe("thread-1");
 	expect(params.input[0]).toMatchObject({ text: "この方針で" });
 	expect(

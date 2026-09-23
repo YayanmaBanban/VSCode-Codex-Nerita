@@ -3,7 +3,10 @@ import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { PiCatalogModel, PiModelCatalogReader } from "../PiModelCatalog";
 import { codexOAuth } from "./CodexOAuth";
 import { normalizeCodexModels } from "./CodexModelCatalog";
-import codexVersion from "../../codex/codex-app-server/version.json";
+
+// 制限なしでモデルカタログを取得する
+// Codex CLIバージョンとは独立した決定
+const MODEL_CATALOG_CLIENT_VERSION = "0.0.0";
 
 /** 生HTTP本文・token・account IDを返却値や例外へ含めない。 */
 export class CodexModelCatalogService implements PiModelCatalogReader {
@@ -30,7 +33,7 @@ export class CodexModelCatalogService implements PiModelCatalogReader {
 			}
 			verified = true;
 			const response = await this.request(
-				`https://chatgpt.com/backend-api/codex/models?client_version=${encodeURIComponent(codexVersion.version)}`,
+				`https://chatgpt.com/backend-api/codex/models?client_version=${MODEL_CATALOG_CLIENT_VERSION}`,
 				{
 					signal,
 					redirect: "error",

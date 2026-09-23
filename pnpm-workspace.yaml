@@ -5,9 +5,10 @@ allowBuilds:
     keytar: false
     protobufjs: false
 minimumReleaseAgeExclude:
-    - "@earendil-works/chord@0.86.1"
-    - "@earendil-works/pi-agent-core@0.86.1"
-    - "@earendil-works/pi-ai@0.86.1"
-    - "@earendil-works/pi-coding-agent@0.86.1"
-    - "@earendil-works/pi-telemetry@0.86.1"
-    - "@earendil-works/pi-tui@0.86.1"
+  - '@earendil-works/chord@0.86.1 || 0.87.1'
+  - '@earendil-works/pi-agent-core@0.86.1 || 0.87.1'
+  - '@earendil-works/pi-ai@0.86.1 || 0.87.1'
+  - '@earendil-works/pi-coding-agent@0.86.1 || 0.87.1'
+  - '@earendil-works/pi-telemetry@0.86.1 || 0.87.1'
+  - '@earendil-works/pi-tui@0.86.1 || 0.87.1'
+  - '@openai/codex@0.156.0-darwin-arm64 || 0.156.0-darwin-x64 || 0.156.0-linux-arm64 || 0.156.0-linux-x64 || 0.156.0-win32-arm64 || 0.156.0-win32-x64 || 0.156.0'

@@ -1,6 +1,7 @@
-// 同梱Codex 0.154.0の試験的スキーマにある追加コンテキストだけを型に補う。
+// 同梱Codexの試験的スキーマにある送信フィールドを安定版の生成型に補う。
 import type { TurnStartParams } from "../codex-app-server/v2/TurnStartParams";
 import type { TurnSteerParams } from "../codex-app-server/v2/TurnSteerParams";
+import type { CollaborationMode } from "../codex-app-server/CollaborationMode";
 /** 外部会話は指示として昇格させず、信頼しない資料として渡す。 */
 export type AdditionalContext = Record<
 	string,
@@ -9,6 +10,7 @@ export type AdditionalContext = Record<
 /** 安定版の生成型を手編集せず、利用する試験的フィールドを追加する。 */
 export type ContextTurnStartParams = TurnStartParams & {
 	additionalContext?: AdditionalContext;
+	collaborationMode?: CollaborationMode;
 };
 /** 実行中の追加指示にも同じ参照資料を添えられる。 */
 export type ContextTurnSteerParams = TurnSteerParams & {

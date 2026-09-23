@@ -16,7 +16,9 @@
 				"--disable-extension",
 				"bradlc.vscode-tailwindcss",
 				"--disable-extension",
-				"GitHub.vscode-pull-request-github"
+				"GitHub.vscode-pull-request-github",
+				"--disable-extension",
+				"vscode.markdown-language-features"
 			],
 			"outFiles": ["${workspaceFolder}/dist/extension.js"],
 			"sourceMaps": true,

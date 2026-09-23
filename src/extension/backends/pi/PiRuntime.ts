@@ -100,7 +100,9 @@ export async function createPiRuntime(
 	const modelRuntime = await sdk.ModelRuntime.create({
 		authPath: join(agentDir, "auth.json"),
 		modelsPath: join(agentDir, "models.json"),
-		modelsStorePath: join(agentDir, "models-cache.json"),
+		modelsStorePath: join(agentDir, "models-store.json"),
+		allowModelNetwork: true,
+		modelRefreshTimeoutMs: 15_000,
 		signal: options.signal,
 	});
 	const provider = options.provider?.trim();

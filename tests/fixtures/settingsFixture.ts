@@ -30,6 +30,7 @@ export function settingsFixture(): ConfigOption[] {
 					name: "Plan",
 					description: "Plan before making changes",
 				},
+				{ value: "goal", name: "Goal" },
 			],
 		},
 		{

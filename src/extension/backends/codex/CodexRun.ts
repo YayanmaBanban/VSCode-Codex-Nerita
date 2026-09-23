@@ -78,6 +78,7 @@ export abstract class CodexRun extends CodexAgents {
 			const result = await this.client.startTurn({
 				...(context ? { additionalContext: context } : {}),
 				...this.turnOptions,
+				collaborationMode: this.collaborationSettings(),
 				threadId: run.threadId,
 				clientUserMessageId: userId,
 				input: [

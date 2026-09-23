@@ -40,7 +40,7 @@ test("候補のキーボード選択・検索・送信とTabの2スペース", a
 	expect(await input.textContent()).toBe("前文日本語 sample.md 後文");
 	await input.press("Control+Enter");
 	await expect(page.locator(".message.user")).toContainText(
-		"前文file:///D:/workspace/sample.md 後文",
+		"前文日本語 sample.md 後文",
 	);
 	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
 	await input.fill("@");
@@ -58,6 +58,47 @@ test("候補のキーボード選択・検索・送信とTabの2スペース", a
 	await expect(page.locator(".message")).toHaveCount(0);
 	expect(errors).toEqual([]);
 });
+
+for (const theme of ["dark", "light"] as const) {
+	test(`PlanとGoalのスラッシュ補完: ${theme}`, async ({ page }, info) => {
+		const errors: string[] = [];
+		page.on("pageerror", (error) => errors.push(error.message));
+		page.on("console", (message) => {
+			if (message.type() === "error") {
+				errors.push(message.text());
+			}
+		});
+		await page.setViewportSize({ width: 320, height: 900 });
+		await page.emulateMedia({ colorScheme: theme });
+		await page.goto(
+			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+		);
+		const input = page.getByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		await expect(input).toBeVisible({ timeout: 30_000 });
+		await input.fill("/");
+		await expect(
+			page.getByRole("option", { name: /\/plan/ }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("option", { name: /\/goal/ }),
+		).toBeVisible();
+		await info.attach("slash-modes", {
+			body: await page.screenshot({
+				path: info.outputPath("slash-modes.png"),
+			}),
+			contentType: "image/png",
+		});
+		await input.fill("/pl");
+		await input.press("Enter");
+		await expect(input).toHaveText("/plan");
+		await input.fill("/go");
+		await page.getByRole("option", { name: /\/goal/ }).click();
+		await expect(input).toHaveText("/goal");
+		expect(errors).toEqual([]);
+	});
+}
 
 test("行頭の判定・クリック挿入・Esc後の再表示・IME確定", async ({ page }) => {
 	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");

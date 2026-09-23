@@ -2,6 +2,33 @@
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
+	test(`計画本文を返信欄へ表示: ${theme}`, async ({ page }, info) => {
+		const errors: string[] = [];
+		page.on("pageerror", (error) => errors.push(error.message));
+		page.on("console", (message) => {
+			if (message.type() === "error") {
+				errors.push(message.text());
+			}
+		});
+		await page.setViewportSize({ width: 320, height: 900 });
+		await page.emulateMedia({ colorScheme: theme });
+		await page.goto(
+			"/iframe.html?id=chat-composer-settings--proposed-plan&viewMode=story",
+		);
+		await expect(
+			page.getByRole("heading", { name: "認証機能の実装計画" }),
+		).toBeVisible({ timeout: 30_000 });
+		await expect(page.locator(".message.assistant")).toContainText(
+			"回帰テストを追加して検証する。",
+		);
+		await info.attach("proposed-plan", {
+			body: await page.screenshot({
+				path: info.outputPath("proposed-plan.png"),
+			}),
+			contentType: "image/png",
+		});
+		expect(errors).toEqual([]);
+	});
 	test(`入力欄の設定と使用量: ${theme}`, async ({ page }, info) => {
 		const errors: string[] = [];
 		page.on("pageerror", (error) => errors.push(error.message));
@@ -19,6 +46,9 @@ for (const theme of ["dark", "light"] as const) {
 			"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
 		);
 		await expect(
+			page.getByRole("combobox", { name: "Collaboration mode" }),
+		).toBeVisible({ timeout: 30_000 });
+		await expect(
 			page.getByRole("combobox", { name: "Mode", exact: true }),
 		).toHaveText("Approve for me");
 		await expect(
@@ -30,20 +60,41 @@ for (const theme of ["dark", "light"] as const) {
 				.evaluateAll((elements: Element[]) =>
 					elements.map((el) => el.classList.item(0)),
 				),
-		).toEqual([
-			"attach-button",
-			"context-usage",
-			"contents",
-		]);
+		).toEqual(["attach-button", "context-usage", "contents"]);
 		await expect(
 			page.locator(".config-control .lucide-chevron-down"),
 		).toHaveCount(4);
 		await page
 			.getByRole("combobox", { name: "Collaboration mode" })
 			.click();
+		await expect(
+			page.getByRole("option", { name: "Goal", exact: true }),
+		).toBeVisible();
+		await info.attach("collaboration-options", {
+			body: await page.screenshot({
+				path: info.outputPath("collaboration-options.png"),
+			}),
+			contentType: "image/png",
+		});
 		await page.getByRole("option", { name: "Plan", exact: true }).click();
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"plan"',
+		);
+		await page
+			.getByRole("combobox", { name: "Collaboration mode" })
+			.click();
+		await page.getByRole("option", { name: "Goal", exact: true }).click();
+		await expect(page.getByLabel("最後の要求")).toContainText(
+			'"value":"goal"',
+		);
+		await page
+			.getByRole("combobox", { name: "Collaboration mode" })
+			.click();
+		await page
+			.getByRole("option", { name: "Default", exact: true })
+			.click();
+		await expect(page.getByLabel("最後の要求")).toContainText(
+			'"value":"default"',
 		);
 		await page
 			.getByRole("combobox", { name: "Model", exact: true })

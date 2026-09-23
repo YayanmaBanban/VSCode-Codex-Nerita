@@ -7,6 +7,7 @@ import { CodexAttachments } from "./CodexAttachments";
 import { isRecord } from "../../../shared/validation";
 import { parseQuota, parseUsage } from "./protocol/usage";
 import type { AppServerNotification } from "./protocol/rpcMessage";
+import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 
 /** 設定は次のturnに適用し、CLIのユーザー設定ファイルを書き換えない。 */
 export abstract class CodexOptions extends CodexAttachments {
@@ -14,6 +15,7 @@ export abstract class CodexOptions extends CodexAttachments {
 	protected turnOptions: Partial<TurnStartParams> = {};
 	private initialSandbox: StartedThread["sandbox"];
 	private initialTier: string | null = null;
+	protected collaborationMode = "default";
 	/** モデルのページを全て取得し、失敗しても基本会話を利用できるようにする。 */
 	protected override async initializedThread(
 		thread: StartedThread,
@@ -22,6 +24,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		const epoch = this.epoch;
 		this.models = [];
 		this.turnOptions = {};
+		this.collaborationMode = "default";
 		this.initialSandbox = thread.sandbox;
 		this.initialTier = thread.serviceTier ?? null;
 
@@ -86,13 +89,15 @@ export abstract class CodexOptions extends CodexAttachments {
 				this.initialTier,
 				this.state.configOptions.find((item) => item.id === "mode")
 					?.currentValue ?? "inherit",
+				this.collaborationMode,
 			),
 		});
 	}
 	/** 提示した候補だけを次のturnへ渡し、実行中の変更を禁止する。 */
-	protected setConfig(id: string, value: string): void {
+	protected async setConfig(id: string, value: string): Promise<void> {
 		if (
 			this.busy() ||
+			this.state.configPending ||
 			!this.state.configOptions
 				.find((item) => item.id === id)
 				?.options.some((choice) => choice.value === value)
@@ -118,8 +123,39 @@ export abstract class CodexOptions extends CodexAttachments {
 		if (id === "reasoning_effort") {
 			this.turnOptions.effort = value;
 		}
+		if (id === "collaboration_mode") {
+			// Goal選択ではRPCを送らず、Defaultへの切替だけ即時にthreadへ反映する。
+			if (value === "default" && this.collaborationMode !== "default") {
+				const epoch = this.epoch;
+				const sessionId = this.state.sessionId;
+				if (!this.client || !sessionId) {
+					throw new Error("Disconnected");
+				}
+				this.patch({ configPending: true });
+				try {
+					await this.client.updateCollaborationMode(
+						sessionId,
+						this.collaborationSettings("default"),
+					);
+					if (
+						epoch !== this.epoch ||
+						sessionId !== this.state.sessionId
+					) {
+						throw new Error("Thread changed");
+					}
+				} finally {
+					if (
+						epoch === this.epoch &&
+						sessionId === this.state.sessionId
+					) {
+						this.patch({ configPending: false });
+					}
+				}
+			}
+			this.collaborationMode = value;
+		}
 		if (id === "fast-mode") {
-			this.setConfig(
+			await this.setConfig(
 				"service_tier",
 				value === "on" ? "priority" : "default",
 			);
@@ -160,6 +196,28 @@ export abstract class CodexOptions extends CodexAttachments {
 				return item;
 			}),
 		});
+	}
+	/** モードによる上書きにも、送信時点のモデルと推論量を使用する。 */
+	protected collaborationSettings(
+		mode = this.collaborationMode,
+	): CollaborationMode {
+		const model = this.state.configOptions.find(
+			(item) => item.id === "model",
+		)?.currentValue;
+		if (!model) {
+			throw new Error("Model unavailable");
+		}
+		return {
+			mode: mode === "plan" ? "plan" : "default",
+			settings: {
+				model,
+				reasoning_effort:
+					this.state.configOptions.find(
+						(item) => item.id === "reasoning_effort",
+					)?.currentValue || null,
+				developer_instructions: null,
+			},
+		};
 	}
 	/** 会話単位の使用量とアカウント単位の利用枠を分ける。 */
 	protected override notification(message: AppServerNotification): void {

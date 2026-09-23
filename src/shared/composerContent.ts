@@ -9,6 +9,40 @@ export type ComposerPart = {
 	references?: ComposerReference[];
 };
 
+/** ブロック境界の改行を補い、送信本文と参照位置をまとめて生成する。 */
+export function promptContent(draft: string, parts: ComposerPart[]) {
+	if (!validDraftParts(draft, parts)) {
+		return { text: draft.trim(), references: [] };
+	}
+	let text = "";
+	const normalized = parts.map((part) => {
+		const separator =
+			text &&
+			part.text &&
+			!text.endsWith("\n") &&
+			!part.text.startsWith("\n")
+				? "\n"
+				: "";
+		text += separator + part.text;
+		return {
+			...part,
+			text: separator + part.text,
+			...(part.references
+				? {
+						references: part.references.map((reference) => ({
+							...reference,
+							offset: reference.offset + separator.length,
+						})),
+					}
+				: {}),
+		};
+	});
+	return {
+		text: text.trim(),
+		references: promptReferences(text, normalized),
+	};
+}
+
 /** 送信時の前後空白除去に合わせ、各断片の参照を本文全体の位置へ変換する。 */
 export function promptReferences(
 	draft: string,

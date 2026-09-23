@@ -10,9 +10,30 @@ export async function openResource(
 	if (range !== undefined && !isSourceRange(range)) {
 		throw new Error("Invalid source range");
 	}
-	const uri = vscode.Uri.parse(value, true);
+	let uri = vscode.Uri.parse(value, true);
 	if (uri.scheme !== "file" || uri.query || uri.fragment) {
 		throw new Error("Unsupported resource URI");
+	}
+	const location = /:(\d+)(?::(\d+))?(?:-(\d+)(?::(\d+))?)?$/.exec(uri.path);
+	if (location) {
+		const start = {
+			line: Number(location[1]) - 1,
+			character: Number(location[2] ?? 1) - 1,
+		};
+		const selection = {
+			start,
+			end: location[3]
+				? {
+						line: Number(location[3]) - 1,
+						character: Number(location[4] ?? 1) - 1,
+					}
+				: start,
+		};
+		if (!isSourceRange(selection)) {
+			throw new Error("Invalid source range");
+		}
+		uri = uri.with({ path: uri.path.slice(0, location.index) });
+		range ??= selection;
 	}
 	const stat = await vscode.workspace.fs.stat(uri);
 	if ((stat.type & vscode.FileType.Directory) !== 0) {
