@@ -35,6 +35,8 @@ export default defineConfig([
 			"no-nested-ternary": "error",
 			"object-shorthand": ["error", "always"],
 			"prefer-template": "error",
+			complexity: ["error", 10],
+			"max-depth": ["error", 3],
 		},
 	},
 	{
