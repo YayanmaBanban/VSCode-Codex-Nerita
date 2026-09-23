@@ -12,6 +12,7 @@ import {
 import { PiSessionController } from "./pi/PiSessionController";
 import { createPiRuntime, type PiModelSelection } from "./pi/PiRuntime";
 import { createPiAuthService } from "./pi/PiAuthService";
+import { codexSelectionStore } from "./codex/settings/modelSelection";
 
 const piModelSelectionKey = "nerita.pi.lastModel";
 
@@ -80,6 +81,7 @@ export function createBackend(
 		attachmentService,
 		authService,
 		interactionService,
+		codexSelectionStore(context.globalState),
 	);
 }
 

@@ -7,6 +7,7 @@ import type { AppServerCallbacks } from "../../src/extension/backends/codex/runt
 import { CodexSessionController } from "../../src/extension/backends/codex/CodexSessionController";
 import type { CodexConnection } from "../../src/extension/backends/codex/runtime/connection";
 import type { HistoryThread } from "../../src/extension/backends/codex/protocol/history";
+import type { CodexSelectionStore } from "../../src/extension/backends/codex/settings/modelSelection";
 
 /** 各テストで保存形式や本文を上書きできる履歴を用意する。 */
 export function historyThread(id = "saved"): HistoryThread {
@@ -33,7 +34,7 @@ export function deferred<T>() {
 	return { promise, resolve, reject };
 }
 /** 接続ごとに独立した client と通知先を記録する。 */
-export function codexHarness() {
+export function codexHarness(selectionStore?: CodexSelectionStore) {
 	let thread = 0;
 	let turn = 0;
 	const models: ModelInfo[] = [];
@@ -92,12 +93,13 @@ export function codexHarness() {
 		login: vi.fn(() => Promise.resolve({ type: "apiKey" as const })),
 		cancelLogin: vi.fn(() => Promise.resolve({ status: "cancelled" })),
 		logout: vi.fn(() => Promise.resolve({})),
-		startThread: vi.fn<CodexConnection["startThread"]>((_params: ThreadStartParams) =>
-			Promise.resolve({
-				thread: { id: `thread-${++thread}` },
-				model: "test-model",
-				cwd: "D:/workspace",
-			}),
+		startThread: vi.fn<CodexConnection["startThread"]>(
+			(_params: ThreadStartParams) =>
+				Promise.resolve({
+					thread: { id: `thread-${++thread}` },
+					model: "test-model",
+					cwd: "D:/workspace",
+				}),
 		),
 		startTurn: vi.fn((params: ContextTurnStartParams) => {
 			const id = `turn-${++turn}`;
@@ -133,7 +135,13 @@ export function codexHarness() {
 			return Promise.resolve({ client, cwd: "D:/workspace" });
 		},
 	);
-	const session = new CodexSessionController(factory);
+	const session = new CodexSessionController(
+		factory,
+		undefined,
+		undefined,
+		undefined,
+		selectionStore,
+	);
 	/** 現在の接続から通知を送る。 */
 	const notify = (method: string, params: unknown) =>
 		connections.at(-1)!.callbacks.notification?.({ method, params });

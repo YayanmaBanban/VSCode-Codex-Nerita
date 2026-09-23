@@ -9,6 +9,7 @@ import { parseQuota, parseUsage } from "./protocol/usage";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import { type CodexConnection } from "./runtime/connection";
+import { resolveCodexSelection } from "./settings/modelSelection";
 
 /** Planから新規会話へ移す、モデルと権限の実効設定。 */
 type PlanSettings = {
@@ -58,6 +59,7 @@ export abstract class CodexOptions extends CodexAttachments {
 	/** モデルのページを全て取得し、失敗しても基本会話を利用できるようにする。 */
 	protected override async initializedThread(
 		thread: StartedThread,
+		restoreSelection = true,
 	): Promise<void> {
 		const client = this.client!;
 		const epoch = this.epoch;
@@ -86,14 +88,50 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.models = [];
 		}
 
-		this.updateOptions(
-			thread.model,
-			thread.reasoningEffort ?? "",
-			thread.serviceTier ?? "inherit",
-		);
+		this.applyInitialSelection(thread, restoreSelection);
 		this.patch({ attachmentsSupported: this.supportsAttachments });
 
 		await this.loadThreadCapabilities(client, thread, epoch);
+	}
+
+	/** 新規会話だけ保存値を復元し、実際の送信設定と表示を同時に更新する。 */
+	private applyInitialSelection(
+		thread: StartedThread,
+		restoreSelection: boolean,
+	): void {
+		const selection = restoreSelection
+			? resolveCodexSelection(
+					this.selectionStore?.read(),
+					this.models,
+					thread.model,
+				)
+			: undefined;
+		if (selection) {
+			this.turnOptions.model = selection.model;
+			this.turnOptions.effort = selection.reasoning;
+		}
+		this.updateOptions(
+			selection?.model ?? thread.model,
+			selection?.reasoning ?? thread.reasoningEffort ?? "",
+			thread.serviceTier ?? "inherit",
+		);
+	}
+
+	/** UIで確定したモデル・推論だけを保存し、履歴復元では上書きしない。 */
+	protected async rememberSelection(id: string): Promise<void> {
+		if (id !== "model" && id !== "reasoning_effort") {
+			return;
+		}
+		const model = this.state.configOptions.find(
+			(item) => item.id === "model",
+		)?.currentValue;
+		const reasoning =
+			this.state.configOptions.find(
+				(item) => item.id === "reasoning_effort",
+			)?.currentValue ?? "";
+		if (model) {
+			await this.selectionStore?.write({ model, reasoning });
+		}
 	}
 	/** 任意のスキルと利用枠を取得し、失敗しても会話を継続する。 */
 	private async loadThreadCapabilities(

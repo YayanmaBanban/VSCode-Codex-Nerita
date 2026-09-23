@@ -5,6 +5,7 @@ import type { AuthService } from "./interaction/AuthFlow";
 import type { InteractionService } from "./interaction/interactionService";
 import { CodexLifecycle } from "./CodexLifecycle";
 import type { CodexFactory } from "./runtime/connection";
+import type { CodexSelectionStore } from "./settings/modelSelection";
 
 /** 接続世代と会話IDが一致する添付操作だけを許可する。 */
 export abstract class CodexAttachments extends CodexLifecycle {
@@ -14,6 +15,7 @@ export abstract class CodexAttachments extends CodexLifecycle {
 		private readonly files?: AttachmentService,
 		auth?: AuthService,
 		protected readonly interactions?: InteractionService,
+		protected readonly selectionStore?: CodexSelectionStore,
 	) {
 		super(factory, auth);
 	}
