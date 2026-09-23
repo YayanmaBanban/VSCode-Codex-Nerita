@@ -45,31 +45,41 @@ export function parseRpcMessage(message: unknown): RpcMessage {
 		throw new Error("Invalid envelope");
 	}
 	if ("method" in message) {
-		if (
-			typeof message.method !== "string" ||
-			"result" in message ||
-			"error" in message
-		) {
-			throw new Error("Invalid method");
-		}
-		if ("id" in message) {
-			if (!isRequestId(message.id)) {
-				throw new Error("Invalid request id");
-			}
-			return {
-				kind: "request",
-				request: {
-					id: message.id,
-					method: message.method,
-					params: message.params,
-				},
-			};
+		return parseMethodMessage(message);
+	}
+	return parseResponse(message);
+}
+
+/** methodを持つサーバー要求と通知を検証する。 */
+function parseMethodMessage(message: Record<string, unknown>): RpcMessage {
+	if (
+		typeof message.method !== "string" ||
+		"result" in message ||
+		"error" in message
+	) {
+		throw new Error("Invalid method");
+	}
+	if ("id" in message) {
+		if (!isRequestId(message.id)) {
+			throw new Error("Invalid request id");
 		}
 		return {
-			kind: "notification",
-			notification: { method: message.method, params: message.params },
+			kind: "request",
+			request: {
+				id: message.id,
+				method: message.method,
+				params: message.params,
+			},
 		};
 	}
+	return {
+		kind: "notification",
+		notification: { method: message.method, params: message.params },
+	};
+}
+
+/** クライアント要求への応答とRPCエラーを検証する。 */
+function parseResponse(message: Record<string, unknown>): RpcMessage {
 	const hasResult = "result" in message;
 	const hasError = "error" in message;
 	if (!isRequestId(message.id) || hasResult === hasError) {

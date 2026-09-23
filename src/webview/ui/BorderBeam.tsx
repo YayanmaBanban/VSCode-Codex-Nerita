@@ -73,29 +73,71 @@ type BorderBeamProps = {
 };
 
 /** マスクで内側を抜き、光の軌道をボタンの外周に限定する。 */
-export const BorderBeam = ({
-	className,
-	size = 50,
-	delay = 0,
-	duration = 6,
-	colorFrom = "#7400ff",
-	colorTo = "#9b41ff",
-	transition,
-	style,
-	reverse = false,
-	initialOffset = 0,
-	borderThickness = 1,
-	opacity = 1,
-	glowIntensity = 0,
-	beamBorderRadius,
-	pauseOnHover = false,
-	speedMultiplier = 1,
-}: BorderBeamProps) => {
+export const BorderBeam = (props: BorderBeamProps) => {
+	const {
+		className,
+		delay = 0,
+		duration = 6,
+		transition,
+		reverse = false,
+		initialOffset = 0,
+		borderThickness = 1,
+		pauseOnHover = false,
+		speedMultiplier = 1,
+	} = props;
 	// 速度倍率から一周の時間を求める。
 	const actualDuration = speedMultiplier
 		? duration / speedMultiplier
 		: duration;
 
+	const beamStyle = beamAppearance(props);
+
+	return (
+		<div
+			className="pointer-events-none absolute inset-0 rounded-[inherit] border border-solid border-transparent [mask-clip:padding-box,border-box] [mask-composite:exclude] [mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]"
+			style={{ borderWidth: `${borderThickness}px` }}
+		>
+			<motion.div
+				className={clsx(
+					"absolute aspect-square",
+					"bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)] to-transparent",
+					pauseOnHover && "group-hover:animation-play-state-paused",
+					className,
+				)}
+				style={beamStyle}
+				initial={{ offsetDistance: `${initialOffset}%` }}
+				animate={{
+					offsetDistance: beamOffsets(reverse, initialOffset),
+				}}
+				transition={{
+					repeat: Infinity,
+					ease: "linear",
+					duration: actualDuration,
+					delay: -delay,
+					...transition,
+				}}
+			/>
+		</div>
+	);
+};
+
+/** 初期位置と進行方向から外周の移動範囲を求める。 */
+function beamOffsets(reverse: boolean, initialOffset: number) {
+	return reverse
+		? [`${100 - initialOffset}%`, `${-initialOffset}%`]
+		: [`${initialOffset}%`, `${100 + initialOffset}%`];
+}
+
+/** 光の外観を描画用スタイルへ変換する。 */
+function beamAppearance({
+	size = 50,
+	colorFrom = "#7400ff",
+	colorTo = "#9b41ff",
+	opacity = 1,
+	glowIntensity = 0,
+	beamBorderRadius,
+	style,
+}: BorderBeamProps) {
 	// 必要な場合だけ発光の影を追加する。
 	const glowEffect =
 		glowIntensity > 0
@@ -115,33 +157,5 @@ export const BorderBeam = ({
 		...style,
 	};
 
-	return (
-		<div
-			className="pointer-events-none absolute inset-0 rounded-[inherit] border border-solid border-transparent [mask-clip:padding-box,border-box] [mask-composite:exclude] [mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]"
-			style={{ borderWidth: `${borderThickness}px` }}
-		>
-			<motion.div
-				className={clsx(
-					"absolute aspect-square",
-					"bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)] to-transparent",
-					pauseOnHover && "group-hover:animation-play-state-paused",
-					className,
-				)}
-				style={beamStyle}
-				initial={{ offsetDistance: `${initialOffset}%` }}
-				animate={{
-					offsetDistance: reverse
-						? [`${100 - initialOffset}%`, `${-initialOffset}%`]
-						: [`${initialOffset}%`, `${100 + initialOffset}%`],
-				}}
-				transition={{
-					repeat: Infinity,
-					ease: "linear",
-					duration: actualDuration,
-					delay: -delay,
-					...transition,
-				}}
-			/>
-		</div>
-	);
-};
+	return beamStyle;
+}

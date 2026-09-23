@@ -32,6 +32,8 @@ export function Composer({
 	send: (message: UiMessage) => void;
 }) {
 	const drop = useAttachmentDrop(state, locked, send);
+	const inputLocked = locked || drop.reading;
+	const sendLabel = busy ? "フォローアップを送信" : "送信";
 	return (
 		<form
 			{...drop.handlers}
@@ -56,17 +58,14 @@ export function Composer({
 					{drop.error}
 				</p>
 			)}
-			<div
-				inert={locked || drop.reading}
-				aria-busy={locked || drop.reading}
-			>
+			<div inert={inputLocked} aria-busy={inputLocked}>
 				<ComposerInput
 					collaborationModes={
 						state.uiContributions?.surface === "codex"
 					}
 					completionScope={`${state.connection}:${state.cwd}:${state.sessionId}`}
 					bridge={bridge}
-					locked={locked || drop.reading}
+					locked={inputLocked}
 					attachments={state.attachments}
 					skills={state.skills}
 					followUp={
@@ -110,22 +109,32 @@ export function Composer({
 					<button
 						type="submit"
 						className={`${iconButtonClass} send-button bg-[#2563b8]`}
-						aria-label={busy ? "フォローアップを送信" : "送信"}
-						title={busy ? "フォローアップを送信" : "送信"}
-						disabled={
-							drop.reading ||
-							!available ||
-							!state.sessionId ||
-							!parts.some((part) => part.text.trim())
-						}
+						aria-label={sendLabel}
+						title={sendLabel}
+						disabled={sendDisabled(drop, available, state, parts)}
 					>
 						<SendHorizontal size={18} aria-hidden="true" />
 					</button>
 				</div>
 			</div>
-			<div inert={locked || drop.reading}>
+			<div inert={inputLocked}>
 				<ComposerSettings state={state} send={send} />
 			</div>
 		</form>
+	);
+}
+
+/** 送信準備と空の下書きを確認して送信を制御する。 */
+function sendDisabled(
+	drop: ReturnType<typeof useAttachmentDrop>,
+	available: boolean,
+	state: ChatState,
+	parts: ComposerPart[],
+) {
+	return (
+		drop.reading ||
+		!available ||
+		!state.sessionId ||
+		!parts.some((part) => part.text.trim())
 	);
 }

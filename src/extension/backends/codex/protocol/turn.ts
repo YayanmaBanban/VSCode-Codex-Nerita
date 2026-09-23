@@ -31,16 +31,20 @@ export function parseStartedThread(value: unknown): StartedThread {
 		...(value.sandbox === undefined
 			? {}
 			: { sandbox: parseSandbox(value.sandbox) }),
-		...(typeof value.reasoningEffort === "string" ||
-		value.reasoningEffort === null
+		...(isOptionalSetting(value.reasoningEffort)
 			? { reasoningEffort: value.reasoningEffort }
 			: {}),
-		...(typeof value.serviceTier === "string" || value.serviceTier === null
+		...(isOptionalSetting(value.serviceTier)
 			? { serviceTier: value.serviceTier }
 			: {}),
 		model: value.model,
 		cwd: value.cwd,
 	};
+}
+
+/** サーバーが返す任意設定は文字列または未指定のnullを保持する。 */
+function isOptionalSetting(value: unknown): value is string | null {
+	return typeof value === "string" || value === null;
 }
 /** 応答・通知で共通のターン状態を検証する。 */
 export function parseTurn(value: unknown): TurnInfo {

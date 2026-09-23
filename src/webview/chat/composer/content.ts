@@ -4,6 +4,7 @@ import {
 	$getRoot,
 	$isElementNode,
 	$isTextNode,
+	type LexicalNode,
 	type ElementNode,
 	type PointType,
 } from "lexical";
@@ -40,24 +41,30 @@ export function $readParts(): ComposerPart[] {
 			);
 			previousText = false;
 		} else {
-			const last = parts[parts.length - 1];
-			if (last) {
-				last.text += previousText ? "\n" : "";
-				if ($isElementNode(node)) {
-					const references = $readReferences(node, last.text.length);
-					if (references.length) {
-						last.references = [
-							...(last.references ?? []),
-							...references,
-						];
-					}
-				}
-				last.text += node.getTextContent();
-			}
+			appendTextPart(parts, previousText, node);
 			previousText = true;
 		}
 	}
 	return parts;
+}
+
+/** 通常文と参照位置を現在の下書き断片へ追加する。 */
+function appendTextPart(
+	parts: ComposerPart[],
+	previousText: boolean,
+	node: LexicalNode,
+) {
+	const last = parts[parts.length - 1];
+	if (last) {
+		last.text += previousText ? "\n" : "";
+		if ($isElementNode(node)) {
+			const references = $readReferences(node, last.text.length);
+			if (references.length) {
+				last.references = [...(last.references ?? []), ...references];
+			}
+		}
+		last.text += node.getTextContent();
+	}
 }
 
 /** 表示先から復元した下書きを、通常文とブロックの並びに戻す。 */

@@ -74,7 +74,7 @@ export function parseHistoryThread(value: unknown): HistoryThread {
 		!Array.isArray(value.turns) ||
 		typeof value.updatedAt !== "number" ||
 		!Number.isFinite(value.updatedAt) ||
-		!(value.name === null || typeof value.name === "string") ||
+		!isThreadName(value.name) ||
 		(value.historyMode !== "legacy" && value.historyMode !== "paginated")
 	) {
 		throw new Error("Invalid history thread");
@@ -104,6 +104,11 @@ export function parseHistoryThread(value: unknown): HistoryThread {
 		historyMode: value.historyMode,
 		turns: value.turns.map(parseHistoryTurn),
 	};
+}
+
+/** 未命名の会話はnullとして受け付ける。 */
+function isThreadName(value: unknown): value is string | null {
+	return value === null || typeof value === "string";
 }
 /** ページ応答の共通外形とカーソルを検証する。 */
 function page<T>(

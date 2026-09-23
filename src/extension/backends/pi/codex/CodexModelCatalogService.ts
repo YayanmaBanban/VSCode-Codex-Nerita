@@ -24,10 +24,7 @@ export class CodexModelCatalogService implements PiModelCatalogReader {
 		try {
 			const auth = await codexOAuth(this.models, signal);
 			signal.throwIfAborted();
-			if (this.account !== auth?.account) {
-				this.account = auth?.account;
-				this.cached = null;
-			}
+			this.updateAccount(auth);
 			if (!auth) {
 				return null;
 			}
@@ -53,6 +50,23 @@ export class CodexModelCatalogService implements PiModelCatalogReader {
 			return this.cached;
 		} catch {
 			return !verified || caller.aborted ? null : this.cached;
+		}
+	}
+
+	/** 認証先が変わった場合だけ古いモデル候補を破棄する。 */
+	private updateAccount(
+		auth: {
+			account: string;
+			headers: {
+				Authorization: string;
+				"ChatGPT-Account-Id": string;
+				Accept: string;
+			};
+		} | null,
+	) {
+		if (this.account !== auth?.account) {
+			this.account = auth?.account;
+			this.cached = null;
 		}
 	}
 }

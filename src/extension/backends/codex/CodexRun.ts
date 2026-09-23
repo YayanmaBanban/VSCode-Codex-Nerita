@@ -10,10 +10,17 @@ import { parseTurnEvent, type TurnEvent } from "./items/turnEvents";
 import { applyTurnEvent } from "./items/applyTurnEvent";
 import { ActiveTurn } from "./ActiveTurn";
 import type { AdditionalContext } from "./context/additionalContext";
+import { type Attachment } from "@/shared/composer";
+import { type TurnInfo } from "./protocol/turn";
 
 /** 同じ thread で停止後も会話を続けられる実行管理。 */
 export abstract class CodexRun extends CodexAgents {
 	private cancelTimer: NodeJS.Timeout | undefined;
+
+	/** 会話と添付の準備中は実行を開始しない。 */
+	private promptPending(): boolean {
+		return this.state.sessionPending || this.state.attachmentPending;
+	}
 
 	/** 表示用の実行 ID を先に確保し、完了は通知だけで確定する。 */
 	protected async prompt(
@@ -25,8 +32,7 @@ export abstract class CodexRun extends CodexAgents {
 			this.busy() ||
 			!this.client ||
 			!this.state.sessionId ||
-			this.state.sessionPending ||
-			this.state.attachmentPending
+			this.promptPending()
 		) {
 			throw new Error("Busy");
 		}
@@ -53,26 +59,11 @@ export abstract class CodexRun extends CodexAgents {
 		let prepared = false;
 		try {
 			const files = [...this.state.attachments];
-			const model =
-				this.turnOptions.model ??
-				this.state.configOptions.find((item) => item.id === "model")
-					?.currentValue;
 			const attachments = files.length
-				? await attachmentInput(
-						files,
-						this.models
-							.find((item) => item.model === model)
-							?.inputModalities.includes("image") ?? false,
-					)
+				? await this.prepareAttachments(files)
 				: [];
 
-			if (this.active !== run) {
-				throw new Error("Run changed before submission");
-			}
-			if (run.abort.signal.aborted) {
-				this.finish("cancelled");
-				throw new Error("Submission cancelled");
-			}
+			this.checkPreparedTurn(run);
 
 			prepared = true;
 			const result = await this.client.startTurn({
@@ -91,36 +82,80 @@ export abstract class CodexRun extends CodexAgents {
 				return;
 			}
 
-			run.turnId = result.turn.id;
-			this.patch({
-				attachments: this.state.attachments.filter(
-					(item) => !files.some((file) => file.id === item.id),
-				),
-			});
-			run.release();
-			for (const event of run.events.splice(0)) {
-				this.applyEvent(event);
-			}
-			if (this.active === run && this.state.run === "cancelling") {
-				this.interrupt();
-			}
+			this.acceptStartedTurn(run, result, files);
 		} catch (error) {
-			if (this.active === run) {
-				this.finish("failed");
-				if (!prepared) {
-					this.patch({
-						error: "添付を読み込めませんでした。UTF-8テキスト（合計2MBまで）または画像対応モデルの画像を選択してください。",
-					});
-				}
-			}
-			this.patch({
-				messages: this.state.messages.filter(
-					(item) => item.id !== userId,
-				),
-			});
+			this.rejectSubmission(run, prepared, userId);
 			throw error;
 		}
 	}
+	/** 添付の読み取り中に停止または会話変更がなかったか確認する。 */
+	private checkPreparedTurn(run: ActiveTurn) {
+		if (this.active !== run) {
+			throw new Error("Run changed before submission");
+		}
+		if (run.abort.signal.aborted) {
+			this.finish("cancelled");
+			throw new Error("Submission cancelled");
+		}
+	}
+
+	/** 開始失敗時の表示と送信メッセージを取り消す。 */
+	private rejectSubmission(
+		run: ActiveTurn,
+		prepared: boolean,
+		userId: string,
+	) {
+		if (this.active === run) {
+			this.finish("failed");
+			if (!prepared) {
+				this.patch({
+					error: "添付を読み込めませんでした。UTF-8テキスト（合計2MBまで）または画像対応モデルの画像を選択してください。",
+				});
+			}
+		}
+		this.patch({
+			messages: this.state.messages.filter((item) => item.id !== userId),
+		});
+	}
+
+	/** 開始済みターンへ先行通知と停止要求を反映する。 */
+	private acceptStartedTurn(
+		run: ActiveTurn,
+		result: { turn: TurnInfo },
+		files: Attachment[],
+	) {
+		run.turnId = result.turn.id;
+		this.patch({
+			attachments: this.state.attachments.filter(
+				(item) => !files.some((file) => file.id === item.id),
+			),
+		});
+		run.release();
+		for (const event of run.events.splice(0)) {
+			this.applyEvent(event);
+		}
+		if (this.active === run && this.state.run === "cancelling") {
+			this.interrupt();
+		}
+	}
+
+	/** モデルの画像対応を確認して添付を読み込む。 */
+	private async prepareAttachments(files: Attachment[]) {
+		const model =
+			this.turnOptions.model ??
+			this.state.configOptions.find((item) => item.id === "model")
+				?.currentValue;
+		const attachments = files.length
+			? await attachmentInput(
+					files,
+					this.models
+						.find((item) => item.model === model)
+						?.inputModalities.includes("image") ?? false,
+				)
+			: [];
+		return attachments;
+	}
+
 	/** 開始応答前の Stop も保持し、ターン ID が判明したら一度だけ送信する。 */
 	protected cancel(): void {
 		if (this.state.run !== "running" || !this.active) {

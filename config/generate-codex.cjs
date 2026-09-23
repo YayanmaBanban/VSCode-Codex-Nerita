@@ -29,45 +29,8 @@ async function downloadLicenses(version) {
 /** 固定バージョンの通信型・ライセンス・生成元情報を更新する。 */
 async function main() {
 	const root = path.resolve(__dirname, "..");
-	const args = process.argv.slice(2);
-	const requestedVersion = args[0];
-	if (
-		args.length > 1 ||
-		(requestedVersion !== undefined &&
-			!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(requestedVersion))
-	) {
-		throw new Error(
-			"使い方: pnpm codex:generate [バージョン（例: 0.156.0）]",
-		);
-	}
-	if (requestedVersion !== undefined) {
-		const pnpmPath = process.env.npm_execpath;
-		if (
-			!pnpmPath ||
-			!process.env.npm_config_user_agent?.startsWith("pnpm/")
-		) {
-			throw new Error(
-				"依存の更新は pnpm codex:generate <バージョン> で実行してください。",
-			);
-		}
-		const standalone = path.extname(pnpmPath).toLowerCase() === ".exe";
-		const install = spawnSync(
-			standalone ? pnpmPath : process.execPath,
-			[
-				...(standalone ? [] : [pnpmPath]),
-				"add",
-				"--save-exact",
-				`@openai/codex@${requestedVersion}`,
-			],
-			{ cwd: root, stdio: "inherit", windowsHide: true },
-		);
-		if (install.error) {
-			throw install.error;
-		}
-		if (install.status !== 0) {
-			process.exit(install.status ?? 1);
-		}
-	}
+	const requestedVersion = readRequestedVersion();
+	installRequestedVersion(requestedVersion, root);
 	const codexJson = require.resolve("@openai/codex/package.json");
 	const { version } = require(codexJson);
 	if (requestedVersion !== undefined && requestedVersion !== version) {
@@ -122,3 +85,51 @@ main().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;
 });
+
+/** 生成コマンドのバージョン引数を検証する。 */
+function readRequestedVersion() {
+	const args = process.argv.slice(2);
+	const requestedVersion = args[0];
+	if (
+		args.length > 1 ||
+		(requestedVersion !== undefined &&
+			!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(requestedVersion))
+	) {
+		throw new Error(
+			"使い方: pnpm codex:generate [バージョン（例: 0.156.0）]",
+		);
+	}
+	return requestedVersion;
+}
+
+/** 指定されたCodexの固定版をpnpmで導入する。 */
+function installRequestedVersion(requestedVersion, root) {
+	if (requestedVersion !== undefined) {
+		const pnpmPath = process.env.npm_execpath;
+		if (
+			!pnpmPath ||
+			!process.env.npm_config_user_agent?.startsWith("pnpm/")
+		) {
+			throw new Error(
+				"依存の更新は pnpm codex:generate <バージョン> で実行してください。",
+			);
+		}
+		const standalone = path.extname(pnpmPath).toLowerCase() === ".exe";
+		const install = spawnSync(
+			standalone ? pnpmPath : process.execPath,
+			[
+				...(standalone ? [] : [pnpmPath]),
+				"add",
+				"--save-exact",
+				`@openai/codex@${requestedVersion}`,
+			],
+			{ cwd: root, stdio: "inherit", windowsHide: true },
+		);
+		if (install.error) {
+			throw install.error;
+		}
+		if (install.status !== 0) {
+			process.exit(install.status ?? 1);
+		}
+	}
+}

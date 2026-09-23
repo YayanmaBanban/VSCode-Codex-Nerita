@@ -6,6 +6,7 @@ import type { AppServerNotification } from "../protocol/rpcMessage";
 import type { TurnEvent } from "./turnEvents";
 import { itemPatch, messagePatch } from "./chatItems";
 import { activityPatch } from "./activityEvents";
+import { type TurnInfo } from "../protocol/turn";
 
 type TurnTarget = {
 	// 同一通知内でも適用済みの項目を次の更新に含めるため、状態は都度取得する。
@@ -41,34 +42,7 @@ export function applyTurnEvent(
 	}
 
 	if (event.kind === "item") {
-		const id = String(event.item.id);
-		if (
-			["subAgentActivity", "collabAgentToolCall"].includes(
-				String(event.item.type),
-			)
-		) {
-			target.agentNotification({
-				method: event.completed ? "item/completed" : "item/started",
-				params: {
-					threadId: event.threadId,
-					turnId: event.turnId,
-					item: event.item,
-				},
-			});
-		}
-		if (
-			!run.completedItems.has(id) &&
-			!["subAgentActivity", "collabAgentToolCall"].includes(
-				String(event.item.type),
-			)
-		) {
-			target.patch(
-				itemPatch(target.snapshot(), event.item, event.completed),
-			);
-		}
-		if (event.completed) {
-			run.completedItems.add(id);
-		}
+		applyItemEvent(event, target, run);
 	}
 
 	// 開始受付の応答だけでは、サーバー内部のターンがまだ実行中になっていない。
@@ -80,26 +54,81 @@ export function applyTurnEvent(
 	}
 
 	if (event.kind === "turn" && event.completed) {
-		for (const item of event.items) {
-			if (
-				isRecord(item) &&
-				["subAgentActivity", "collabAgentToolCall"].includes(
-					String(item.type),
-				)
-			) {
-				target.agentNotification({
-					method: "item/completed",
-					params: {
-						threadId: event.threadId,
-						turnId: event.turnId,
-						item,
-					},
-				});
-				continue;
-			}
-			target.patch(itemPatch(target.snapshot(), item, true));
+		completeTurn(event, target);
+	}
+}
+
+/** ターン完了時の項目を反映して終了状態を確定する。 */
+function completeTurn(
+	event: {
+		kind: "turn";
+		threadId: string;
+		turnId: string;
+		turn: TurnInfo;
+		completed: boolean;
+		items: unknown[];
+	},
+	target: TurnTarget,
+) {
+	for (const item of event.items) {
+		if (
+			isRecord(item) &&
+			["subAgentActivity", "collabAgentToolCall"].includes(
+				String(item.type),
+			)
+		) {
+			target.agentNotification({
+				method: "item/completed",
+				params: {
+					threadId: event.threadId,
+					turnId: event.turnId,
+					item,
+				},
+			});
+			continue;
 		}
-		target.finish(finishedTurnStatus(event.turn.status));
+		target.patch(itemPatch(target.snapshot(), item, true));
+	}
+	target.finish(finishedTurnStatus(event.turn.status));
+}
+
+/** 項目通知を一度だけ適用して完了済みIDを保持する。 */
+function applyItemEvent(
+	event: {
+		kind: "item";
+		threadId: string;
+		turnId: string;
+		item: Record<string, unknown>;
+		completed: boolean;
+	},
+	target: TurnTarget,
+	run: ActiveTurn,
+) {
+	const id = String(event.item.id);
+	if (
+		["subAgentActivity", "collabAgentToolCall"].includes(
+			String(event.item.type),
+		)
+	) {
+		target.agentNotification({
+			method: event.completed ? "item/completed" : "item/started",
+			params: {
+				threadId: event.threadId,
+				turnId: event.turnId,
+				item: event.item,
+			},
+		});
+	}
+	if (
+		!run.completedItems.has(id) &&
+		!["subAgentActivity", "collabAgentToolCall"].includes(
+			String(event.item.type),
+		)
+	) {
+		target.patch(itemPatch(target.snapshot(), event.item, event.completed));
+	}
+	if (event.completed) {
+		run.completedItems.add(id);
 	}
 }
 

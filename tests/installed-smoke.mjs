@@ -46,12 +46,7 @@ try {
 					frame.url().includes("index.html?id=") &&
 					frame.url().includes("vscode-webview"),
 			);
-		for (const frame of page.frames()) {
-			if (await frame.getByRole("button", { name: "接続する" }).count()) {
-				chat = frame;
-				break;
-			}
-		}
+		chat = await findConnectFrame(page, chat);
 		if (
 			chat &&
 			(await chat.getByRole("button", { name: "接続する" }).count())
@@ -112,13 +107,7 @@ try {
 		.fill(">Nerita for Codex: チャットを開く");
 	await page.keyboard.press("Enter");
 	for (let attempt = 0; attempt < 100; attempt++) {
-		const candidates = page.frames();
-		for (const frame of candidates) {
-			if (await frame.locator("textarea#prompt").count()) {
-				chat = frame;
-				break;
-			}
-		}
+		chat = await findPromptFrame(page, chat);
 		if (
 			!chat.isDetached() &&
 			(await chat.locator("textarea#prompt").count())
@@ -216,4 +205,27 @@ try {
 	throw error;
 } finally {
 	await app.close();
+}
+
+/** 再表示後の入力欄を持つWebviewフレームを探す。 */
+async function findPromptFrame(page, chat) {
+	const candidates = page.frames();
+	for (const frame of candidates) {
+		if (await frame.locator("textarea#prompt").count()) {
+			chat = frame;
+			break;
+		}
+	}
+	return chat;
+}
+
+/** 接続ボタンを持つWebviewフレームを探す。 */
+async function findConnectFrame(page, chat) {
+	for (const frame of page.frames()) {
+		if (await frame.getByRole("button", { name: "接続する" }).count()) {
+			chat = frame;
+			break;
+		}
+	}
+	return chat;
 }

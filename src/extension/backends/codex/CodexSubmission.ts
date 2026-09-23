@@ -12,10 +12,36 @@ import { listMcpServers } from "./mcpStatus";
 import { mcpSummaryText } from "../../../shared/mcp";
 import type { CodeReference } from "../../../shared/codeReferences";
 import { readCodeReferenceContext } from "../../session/codeReferenceContext";
+import { type Attachment } from "@/shared/composer";
+import { type ActiveTurn } from "./ActiveTurn";
+import { type UserInput } from "./codex-app-server/v2/UserInput";
+import { type AdditionalContext } from "./context/additionalContext";
+import { type CodexConnection } from "./runtime/connection";
 
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
 export abstract class CodexSubmission extends CodexHistory {
 	protected submissionPending = false;
+
+	/** 参照のない通常送信で、実行ID確保前に非同期待機を追加しない。 */
+	private needsSubmissionContext(
+		sessions: string[],
+		changes: ChangeScope[],
+		code: CodeReference[],
+	): boolean {
+		return (
+			sessions.length > 0 ||
+			changes.length > 0 ||
+			code.length > 0 ||
+			this.state.run === "running"
+		);
+	}
+
+	/** 読み込み後も同じ実行へ追加入力できることを確認する。 */
+	private checkSteerTurn(run: ActiveTurn): void {
+		if (this.active !== run || run.abort.signal.aborted) {
+			throw new Error("Turn changed");
+		}
+	}
 
 	/** モデルのターンを開始せず、現在の会話へMCP一覧を追記する。 */
 	protected async showMcpStatus(sessionId: string): Promise<void> {
@@ -108,49 +134,22 @@ export abstract class CodexSubmission extends CodexHistory {
 		try {
 			this.checkSubmission(epoch, sessionId);
 			// Goal はAPIのモードではなく、送信する指示の接頭辞として扱う。
-			if (
-				this.collaborationMode === "goal" &&
-				!/^\s*\/goal(?:\s|$)/u.test(text)
-			) {
-				text = `/goal ${text}`;
-			}
-			let context = referencedSessionIds.length
-				? await sessionContext(
-						this.client!,
+			text = this.submissionText(text);
+			const context = this.needsSubmissionContext(
+				referencedSessionIds,
+				changeScopes,
+				codeReferences,
+			)
+				? await this.prepareSubmissionContext(
 						referencedSessionIds,
 						sessionId,
-						this.state.cwd!,
-						() =>
-							epoch === this.epoch &&
-							sessionId === this.state.sessionId &&
-							!(
-								waitingRun?.abort.signal.aborted &&
-								this.state.run !== "completed"
-							),
+						epoch,
+						waitingRun,
+						changeScopes,
+						codeReferences,
+						checkWaitingRun,
 					)
 				: undefined;
-			if (changeScopes.length) {
-				context = {
-					...context,
-					...(await changeContext(this.state.cwd!, changeScopes)),
-				};
-			}
-			if (this.state.run === "running") {
-				await new Promise<void>((resolve) => setTimeout(resolve, 500));
-			}
-			if (codeReferences.length) {
-				const value = await readCodeReferenceContext(
-					codeReferences,
-					() => {
-						this.checkSubmission(epoch, sessionId);
-						checkWaitingRun();
-					},
-				);
-				context = {
-					...context,
-					code_references: { value, kind: "untrusted" },
-				};
-			}
 			this.checkSubmission(epoch, sessionId);
 			checkWaitingRun();
 			if (!this.busy()) {
@@ -158,23 +157,10 @@ export abstract class CodexSubmission extends CodexHistory {
 				this.checkSubmission(epoch, sessionId);
 				return "start";
 			}
-			const run = this.active;
-			const client = this.client!;
-			if (this.state.run !== "running" || !run?.turnId || !run.started) {
-				throw new Error("Turn not ready");
-			}
+			const { run, client } = this.requireSteerTurn();
 			const files = [...this.state.attachments];
-			const model =
-				this.turnOptions.model ??
-				this.state.configOptions.find((item) => item.id === "model")
-					?.currentValue;
 			const attachments = files.length
-				? await attachmentInput(
-						files,
-						this.models
-							.find((item) => item.model === model)
-							?.inputModalities.includes("image") ?? false,
-					)
+				? await this.prepareSteerAttachments(files)
 				: [];
 			this.checkSubmission(epoch, sessionId);
 			checkWaitingRun();
@@ -184,40 +170,148 @@ export abstract class CodexSubmission extends CodexHistory {
 				this.checkSubmission(epoch, sessionId);
 				return "start";
 			}
-			if (this.active !== run || run.abort.signal.aborted) {
-				throw new Error("Turn changed");
-			}
-			const id = randomUUID();
-			const order = nextTimelineOrder(this.state);
-			// 受付不明のエラーでは自動再送しない。重複した指示の実行を避ける。
-			const result = await client.steerTurn({
-				...(context ? { additionalContext: context } : {}),
-				threadId: sessionId,
-				expectedTurnId: run.turnId,
-				clientUserMessageId: id,
-				input: [
-					{ type: "text", text, text_elements: [] },
-					...attachments,
-					...skillInput(text, this.state.skills),
-				],
-			});
-			this.checkSubmission(epoch, sessionId);
-			if (result.turnId !== run.turnId) {
-				throw new Error("Unexpected turn");
-			}
-			this.patch({
-				messages: [
-					...this.state.messages,
-					{ id, role: "user", text, order, references },
-				],
-				attachments: this.state.attachments.filter(
-					(item) => !files.some((file) => file.id === item.id),
-				),
-			});
+			this.checkSteerTurn(run);
+			await this.acceptSteeredPrompt(
+				client,
+				context,
+				sessionId,
+				run,
+				text,
+				attachments,
+				epoch,
+				references,
+				files,
+			);
 			return "steer";
 		} finally {
 			this.submissionPending = false;
 		}
+	}
+
+	/** Goalモードの入力に必要な接頭辞だけを補う。 */
+	private submissionText(text: string) {
+		if (
+			this.collaborationMode === "goal" &&
+			!/^\s*\/goal(?:\s|$)/u.test(text)
+		) {
+			text = `/goal ${text}`;
+		}
+		return text;
+	}
+
+	/** 追加入力を受け取れる開始済みターンを確認する。 */
+	private requireSteerTurn() {
+		const run = this.active;
+		const client = this.client!;
+		if (this.state.run !== "running" || !run?.turnId || !run.started) {
+			throw new Error("Turn not ready");
+		}
+		return { run, client };
+	}
+
+	/** 追加指示の受付を確認して表示と添付を更新する。 */
+	private async acceptSteeredPrompt(
+		client: CodexConnection,
+		context: AdditionalContext | undefined,
+		sessionId: string,
+		run: ActiveTurn,
+		text: string,
+		attachments: UserInput[],
+		epoch: number,
+		references: ComposerReference[],
+		files: Attachment[],
+	) {
+		const id = randomUUID();
+		const order = nextTimelineOrder(this.state);
+		// 受付不明のエラーでは自動再送しない。重複した指示の実行を避ける。
+		const result = await client.steerTurn({
+			...(context ? { additionalContext: context } : {}),
+			threadId: sessionId,
+			expectedTurnId: run.turnId!,
+			clientUserMessageId: id,
+			input: [
+				{ type: "text", text, text_elements: [] },
+				...attachments,
+				...skillInput(text, this.state.skills),
+			],
+		});
+		this.checkSubmission(epoch, sessionId);
+		if (result.turnId !== run.turnId) {
+			throw new Error("Unexpected turn");
+		}
+		this.patch({
+			messages: [
+				...this.state.messages,
+				{ id, role: "user", text, order, references },
+			],
+			attachments: this.state.attachments.filter(
+				(item) => !files.some((file) => file.id === item.id),
+			),
+		});
+	}
+
+	/** 会話・変更・コード参照を送信直前の状態で読み込む。 */
+	private async prepareSubmissionContext(
+		referencedSessionIds: string[],
+		sessionId: string,
+		epoch: number,
+		waitingRun: ActiveTurn | undefined,
+		changeScopes: ChangeScope[],
+		codeReferences: CodeReference[],
+		checkWaitingRun: () => void,
+	) {
+		let context = referencedSessionIds.length
+			? await sessionContext(
+					this.client!,
+					referencedSessionIds,
+					sessionId,
+					this.state.cwd!,
+					() =>
+						epoch === this.epoch &&
+						sessionId === this.state.sessionId &&
+						!(
+							waitingRun?.abort.signal.aborted &&
+							this.state.run !== "completed"
+						),
+				)
+			: undefined;
+		if (changeScopes.length) {
+			context = {
+				...context,
+				...(await changeContext(this.state.cwd!, changeScopes)),
+			};
+		}
+		if (this.state.run === "running") {
+			await new Promise<void>((resolve) => setTimeout(resolve, 500));
+		}
+		if (codeReferences.length) {
+			const value = await readCodeReferenceContext(codeReferences, () => {
+				this.checkSubmission(epoch, sessionId);
+				checkWaitingRun();
+			});
+			context = {
+				...context,
+				code_references: { value, kind: "untrusted" },
+			};
+		}
+		return context;
+	}
+
+	/** 追加入力に添えるファイルをモデルの対応形式で読み込む。 */
+	private async prepareSteerAttachments(files: Attachment[]) {
+		const model =
+			this.turnOptions.model ??
+			this.state.configOptions.find((item) => item.id === "model")
+				?.currentValue;
+		const attachments = files.length
+			? await attachmentInput(
+					files,
+					this.models
+						.find((item) => item.model === model)
+						?.inputModalities.includes("image") ?? false,
+				)
+			: [];
+		return attachments;
 	}
 
 	/** 待機や読み込みをまたいでも送信先と接続世代を固定する。 */

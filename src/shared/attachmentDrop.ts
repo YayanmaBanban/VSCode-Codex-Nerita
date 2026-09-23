@@ -37,13 +37,7 @@ export function validDroppedAttachments(
 		}
 		if (
 			!("name" in item) ||
-			typeof item.name !== "string" ||
-			!item.name ||
-			item.name.length > 255 ||
-			/[<>:"/\\|?*]/.test(item.name) ||
-			Array.from(item.name).some((char) => char.charCodeAt(0) < 32) ||
-			/[. ]$/.test(item.name) ||
-			/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(item.name) ||
+			!validAttachmentName(item.name) ||
 			!("data" in item) ||
 			typeof item.data !== "string"
 		) {
@@ -57,4 +51,17 @@ export function validDroppedAttachments(
 			/^[A-Za-z0-9+/]*={0,2}$/.test(item.data)
 		);
 	});
+}
+
+/** Windowsで利用できるファイル名だけを受け付ける。 */
+function validAttachmentName(name: unknown): boolean {
+	return (
+		typeof name === "string" &&
+		name.length > 0 &&
+		name.length <= 255 &&
+		!/[<>:"/\\|?*]/.test(name) &&
+		!Array.from(name).some((char) => char.charCodeAt(0) < 32) &&
+		!/[. ]$/.test(name) &&
+		!/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)
+	);
 }

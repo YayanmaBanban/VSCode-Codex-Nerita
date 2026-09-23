@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import type {
 	PersonalityScope,
 	PersonalityMessage,
+	PersonalityPreset,
 } from "../../../shared/personality";
 import { ConfigControl } from "../composer/ConfigControl";
 import { InstructionEditor } from "./InstructionEditor";
@@ -76,10 +77,11 @@ function PaneEditor({
 	const selected = settings.presets.find(
 		(preset) => preset.name === settings.selected,
 	);
-	const initialText = settings.configuredText ?? selected?.text ?? "";
+	const initialText = initialPresetText(settings, selected);
 	const [name, setName] = useState(selected?.name ?? "");
 	const [text, setText] = useState(initialText);
 	const locked = settings.configuredText !== null;
+	const inputDisabled = locked || pending;
 	const changedName = name.trim() !== selected?.name;
 	const collision =
 		changedName &&
@@ -100,7 +102,7 @@ function PaneEditor({
 						})),
 					],
 				}}
-				disabled={locked || pending}
+				disabled={inputDisabled}
 				onChange={(name) =>
 					send({
 						type: "personality/select",
@@ -116,7 +118,7 @@ function PaneEditor({
 					aria-label={`${title}のプリセット名`}
 					value={name}
 					maxLength={200}
-					disabled={locked || pending}
+					disabled={inputDisabled}
 					onChange={(event) => setName(event.target.value)}
 					className="min-w-0 rounded-[4px] border border-solid border-input-border bg-input px-[8px] py-[7px] text-input-text"
 				/>
@@ -130,7 +132,7 @@ function PaneEditor({
 			<InstructionEditor
 				text={initialText}
 				label={`${title}の指示`}
-				disabled={locked || pending}
+				disabled={inputDisabled}
 				onChange={setText}
 			/>
 			{collision && (
@@ -144,14 +146,15 @@ function PaneEditor({
 			<div className="flex justify-end">
 				<button
 					type="button"
-					disabled={
-						locked ||
-						pending ||
-						!name.trim() ||
-						collision ||
-						text.length > 100_000 ||
-						(!changedName && text === initialText)
-					}
+					disabled={savePresetDisabled(
+						locked,
+						pending,
+						name,
+						collision,
+						text,
+						changedName,
+						initialText,
+					)}
 					onClick={() =>
 						send({
 							type: "personality/save",
@@ -167,5 +170,33 @@ function PaneEditor({
 				</button>
 			</div>
 		</div>
+	);
+}
+
+/** 外部設定を優先して指示文の初期値を選ぶ。 */
+function initialPresetText(
+	settings: PersonalityScope,
+	selected: PersonalityPreset | undefined,
+) {
+	return settings.configuredText ?? selected?.text ?? "";
+}
+
+/** プリセットの保存可否を編集内容とロック状態から判定する。 */
+function savePresetDisabled(
+	locked: boolean,
+	pending: boolean,
+	name: string,
+	collision: boolean,
+	text: string,
+	changedName: boolean,
+	initialText: string,
+): boolean | undefined {
+	return (
+		locked ||
+		pending ||
+		!name.trim() ||
+		collision ||
+		text.length > 100000 ||
+		(!changedName && text === initialText)
 	);
 }

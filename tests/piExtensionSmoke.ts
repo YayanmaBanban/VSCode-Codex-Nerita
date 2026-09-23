@@ -171,30 +171,7 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 			await readFile(join(fixture, "approved.txt"), "utf8"),
 			"Host approved",
 		);
-		const savedId = session.snapshot().sessionId;
-		assert.equal(
-			await readFile(join(fixture, ".sessions", ".gitignore"), "utf8"),
-			"*\n",
-		);
-		await session.connect();
-		await session.receive({
-			type: "session/list",
-			requestId: "history-list",
-		});
-		assert.ok(
-			session
-				.snapshot()
-				.sessions.some((row) => row.sessionId === savedId),
-		);
-		await session.receive({
-			type: "session/load",
-			requestId: "history-load",
-			sessionId: savedId,
-		});
-		assert.equal(session.snapshot().sessionId, savedId);
-		assert.equal(session.snapshot().tools.at(-1)?.status, "completed");
-		assert.equal(session.snapshot().tools.at(-1)?.kind, "edit");
-		assert.equal(session.snapshot().permissions.length, 0);
+		await checkPiHistory(session, fixture);
 		await session.connect();
 		await session.receive({
 			type: "prompt/send",
@@ -239,6 +216,32 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 		assert.ok(basename(fixture).startsWith("nerita-pi-host-"));
 		await rm(fixture, { recursive: true, force: true });
 	}
+}
+
+/** 保存された会話とツール状態が再開後も復元されることを確認する。 */
+async function checkPiHistory(session: PiSessionController, fixture: string) {
+	const savedId = session.snapshot().sessionId;
+	assert.equal(
+		await readFile(join(fixture, ".sessions", ".gitignore"), "utf8"),
+		"*\n",
+	);
+	await session.connect();
+	await session.receive({
+		type: "session/list",
+		requestId: "history-list",
+	});
+	assert.ok(
+		session.snapshot().sessions.some((row) => row.sessionId === savedId),
+	);
+	await session.receive({
+		type: "session/load",
+		requestId: "history-load",
+		sessionId: savedId,
+	});
+	assert.equal(session.snapshot().sessionId, savedId);
+	assert.equal(session.snapshot().tools.at(-1)?.status, "completed");
+	assert.equal(session.snapshot().tools.at(-1)?.kind, "edit");
+	assert.equal(session.snapshot().permissions.length, 0);
 }
 
 /** 通知処理が完了するまで、期限付きで状態を待つ。 */

@@ -1,6 +1,7 @@
 // Piの承認前後だけを再現し、副作用と実SDKの確認はHostテストで行う。
+
 import { initialState, type ChatState } from "../../../shared/chatState";
-import type { HostMessage } from "../../../shared/messages";
+import type { HostMessage, UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
 
 /** 承認・拒否・停止を実際のチャットUIから操作する。 */
@@ -36,75 +37,7 @@ export function createPiApprovalBridge(): Bridge {
 				emit({ type: "state/snapshot", state });
 			}
 			if (message.type === "prompt/send") {
-				const shell = message.text === "powershell";
-				const runId = crypto.randomUUID();
-				const input = shell
-					? {
-							command:
-								"Get-Content -LiteralPath 'src/長いフォルダー名/README.md'",
-							timeout: 30,
-						}
-					: {
-							path: "src/長いフォルダー名/README.md",
-							content: "変更する本文\n次の行",
-						};
-				patch({
-					run: "running",
-					runId,
-					messages: [
-						...state.messages,
-						{
-							id: runId,
-							role: "user",
-							text: message.text,
-							order: state.revision + 1,
-						},
-					],
-					tools: [
-						...state.tools,
-						{
-							id: runId,
-							runId,
-							title: shell
-								? "powershell"
-								: "ファイルを書き込む: src/長いフォルダー名/README.md",
-							kind: shell ? "execute" : "edit",
-							status: "in_progress",
-							paths: shell ? [] : [input.path!],
-							rawInput: input,
-							cwd: state.cwd!,
-							order: state.revision + 2,
-						},
-					],
-					permissions: [
-						{
-							id: crypto.randomUUID(),
-							title: `Pi: ${shell ? "powershell" : "write"} の実行承認\n作業フォルダー: ${state.cwd}\n${JSON.stringify(input, null, 2)}`,
-							options: [
-								{
-									id: "accept",
-									name: "今回のみ許可",
-									kind: "allow_once",
-								},
-								{
-									id: "decline",
-									name: "拒否",
-									kind: "reject_once",
-								},
-								{
-									id: "cancel",
-									name: "ターンを中止",
-									kind: "reject_once",
-								},
-							],
-						},
-					],
-				});
-				emit({
-					type: "prompt/accepted",
-					requestId: message.requestId,
-					mode: "start",
-				});
+				startApprovalPrompt(message, patch, state, emit);
 			}
 			if (
 				message.type === "permission/respond" ||
@@ -136,6 +69,84 @@ export function createPiApprovalBridge(): Bridge {
 			}
 		},
 	};
+}
+
+/** 承認待ちのツール実行をモック上で開始する。 */
+function startApprovalPrompt(
+	message: Extract<UiMessage, { type: "prompt/send" }>,
+	patch: (changes: Partial<ChatState>) => void,
+	state: ChatState,
+	emit: (event: HostMessage) => void,
+) {
+	const shell = message.text === "powershell";
+	const runId = crypto.randomUUID();
+	const input = shell
+		? {
+				command:
+					"Get-Content -LiteralPath 'src/長いフォルダー名/README.md'",
+				timeout: 30,
+			}
+		: {
+				path: "src/長いフォルダー名/README.md",
+				content: "変更する本文\n次の行",
+			};
+	patch({
+		run: "running",
+		runId,
+		messages: [
+			...state.messages,
+			{
+				id: runId,
+				role: "user",
+				text: message.text,
+				order: state.revision + 1,
+			},
+		],
+		tools: [
+			...state.tools,
+			{
+				id: runId,
+				runId,
+				title: shell
+					? "powershell"
+					: "ファイルを書き込む: src/長いフォルダー名/README.md",
+				kind: shell ? "execute" : "edit",
+				status: "in_progress",
+				paths: shell ? [] : [input.path!],
+				rawInput: input,
+				cwd: state.cwd!,
+				order: state.revision + 2,
+			},
+		],
+		permissions: [
+			{
+				id: crypto.randomUUID(),
+				title: `Pi: ${shell ? "powershell" : "write"} の実行承認\n作業フォルダー: ${state.cwd}\n${JSON.stringify(input, null, 2)}`,
+				options: [
+					{
+						id: "accept",
+						name: "今回のみ許可",
+						kind: "allow_once",
+					},
+					{
+						id: "decline",
+						name: "拒否",
+						kind: "reject_once",
+					},
+					{
+						id: "cancel",
+						name: "ターンを中止",
+						kind: "reject_once",
+					},
+				],
+			},
+		],
+	});
+	emit({
+		type: "prompt/accepted",
+		requestId: message.requestId,
+		mode: "start",
+	});
 }
 
 /** 承諾・拒否・停止の結果をモックの本文へ反映する。 */

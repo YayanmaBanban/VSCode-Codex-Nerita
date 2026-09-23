@@ -48,12 +48,7 @@ try {
 	await child.keyboard.press("Enter");
 	let chat;
 	for (let attempt = 0; attempt < 100; attempt++) {
-		for (const frame of child.frames()) {
-			if (await frame.getByRole("button", { name: "接続する" }).count()) {
-				chat = frame;
-				break;
-			}
-		}
+		chat = await findChatFrame(child, chat);
 		if (chat) {
 			break;
 		}
@@ -79,4 +74,15 @@ try {
 	throw error;
 } finally {
 	await app.close();
+}
+
+/** デバッグ先の接続ボタンを持つフレームを探す。 */
+async function findChatFrame(child, chat) {
+	for (const frame of child.frames()) {
+		if (await frame.getByRole("button", { name: "接続する" }).count()) {
+			chat = frame;
+			break;
+		}
+	}
+	return chat;
 }

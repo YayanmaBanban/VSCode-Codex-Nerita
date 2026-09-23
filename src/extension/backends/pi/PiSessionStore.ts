@@ -129,14 +129,7 @@ export async function openPiSessionStore(
 		}
 		signal.throwIfAborted();
 		manager = sdk.SessionManager.open(path, directory, cwd);
-		if (resume.fork) {
-			const leaf = manager.getLeafId();
-			if (!leaf) {
-				throw new Error("空のPi履歴はフォークできません。");
-			}
-			// SDKはこのmanagerだけを新しいID・ファイルへ切り替える。
-			manager.createBranchedSession(leaf);
-		}
+		forkSessionStore(resume, manager);
 	} else {
 		manager = sdk.SessionManager.create(cwd, directory);
 	}
@@ -155,4 +148,19 @@ export async function openPiSessionStore(
 			})),
 	};
 	return { manager, history };
+}
+
+/** 元の履歴を保って選択ブランチを別会話へ複製する。 */
+function forkSessionStore(
+	resume: PiResumeTarget,
+	manager: PiSdk.SessionManager,
+) {
+	if (resume.fork) {
+		const leaf = manager.getLeafId();
+		if (!leaf) {
+			throw new Error("空のPi履歴はフォークできません。");
+		}
+		// SDKはこのmanagerだけを新しいID・ファイルへ切り替える。
+		manager.createBranchedSession(leaf);
+	}
 }

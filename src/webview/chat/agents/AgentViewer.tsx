@@ -6,6 +6,7 @@ import { Messages } from "../messages/Messages";
 import { ToolCard } from "../tools/ToolCard";
 import { AgentCard, AgentIcon, agentName } from "./AgentCard";
 import type { useAgentViewer } from "./useAgentViewer";
+import { type AgentThreadView } from "@/shared/subAgents";
 
 /** 親の送信フォームを使わず、閲覧中のThreadを明示する。 */
 export function AgentViewer({
@@ -97,15 +98,22 @@ export function AgentViewer({
 						)}
 					/>
 				)}
-				{view &&
-					!view.messages.length &&
-					!view.tools.length &&
-					!view.agents.length && (
-						<p className="text-[12px] text-muted">
-							まだ会話はありません。
-						</p>
-					)}
+				{emptyAgentView(view) && (
+					<p className="text-[12px] text-muted">
+						まだ会話はありません。
+					</p>
+				)}
 			</div>
 		</section>
+	);
+}
+
+/** 読み込み済みの会話に表示項目がないか確認する。 */
+function emptyAgentView(view: AgentThreadView | null) {
+	return (
+		view &&
+		!view.messages.length &&
+		!view.tools.length &&
+		!view.agents.length
 	);
 }

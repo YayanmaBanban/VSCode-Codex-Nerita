@@ -38,16 +38,7 @@ const server = createServer((request, response) => {
 					choices: [{ index: 0, delta, finish_reason: finish }],
 				})}\n\n`,
 			);
-		const content = input.messages.findLast(
-			(message) => message.role === "user",
-		)?.content;
-		const prompt =
-			typeof content === "string"
-				? content
-				: content
-						?.filter((part) => part.type === "text")
-						.map((part) => part.text)
-						.join("");
+		const prompt = requestPrompt(input);
 		send({ role: "assistant" });
 		if (prompt === "steer-start") {
 			send({ content: "追加指示待ち" });
@@ -92,26 +83,7 @@ const server = createServer((request, response) => {
 			(["tool", "list", "missing"].includes(prompt) || mutation) &&
 			input.messages.at(-1)?.role !== "tool"
 		) {
-			send({
-				tool_calls: [
-					{
-						index: 0,
-						id: prompt === "list" ? "ls-smoke" : "read-smoke",
-						type: "function",
-						function: {
-							name:
-								mutation?.name ??
-								(prompt === "list" ? "ls" : "read"),
-							arguments: JSON.stringify(
-								mutation?.args ?? {
-									path: fixturePath(prompt),
-								},
-							),
-						},
-					},
-				],
-			});
-			send({}, "tool_calls");
+			sendToolRequest(send, prompt, mutation);
 		} else {
 			send({ content: "こんにちは。" });
 			send({ content: "Pi疎通完了。" });
@@ -515,6 +487,43 @@ try {
 	assert.equal(path.dirname(fixture), tmpdir());
 	assert.ok(path.basename(fixture).startsWith("nerita-pi-smoke-"));
 	await rm(fixture, { recursive: true, force: true });
+}
+
+/** テスト対象ツールのストリーム要求を生成する。 */
+function sendToolRequest(send, prompt, mutation) {
+	send({
+		tool_calls: [
+			{
+				index: 0,
+				id: prompt === "list" ? "ls-smoke" : "read-smoke",
+				type: "function",
+				function: {
+					name: mutation?.name ?? (prompt === "list" ? "ls" : "read"),
+					arguments: JSON.stringify(
+						mutation?.args ?? {
+							path: fixturePath(prompt),
+						},
+					),
+				},
+			},
+		],
+	});
+	send({}, "tool_calls");
+}
+
+/** テストサーバーへの最後のユーザー本文を取得する。 */
+function requestPrompt(input) {
+	const content = input.messages.findLast(
+		(message) => message.role === "user",
+	)?.content;
+	const prompt =
+		typeof content === "string"
+			? content
+			: content
+					?.filter((part) => part.type === "text")
+					.map((part) => part.text)
+					.join("");
+	return prompt;
 }
 
 /** 固定sleepで成功扱いせず、期限内に期待する状態へ到達するまで待つ。 */

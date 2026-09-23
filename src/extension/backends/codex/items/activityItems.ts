@@ -13,13 +13,15 @@ export function activityItem(
 ): Partial<ToolSummary> | null {
 	const type = value.type;
 	if (
-		type === "userMessage" ||
-		type === "agentMessage" ||
-		type === "commandExecution" ||
-		type === "fileChange" ||
-		type === "hookPrompt" ||
-		type === "subAgentActivity" ||
-		type === "collabAgentToolCall"
+		[
+			"userMessage",
+			"agentMessage",
+			"commandExecution",
+			"fileChange",
+			"hookPrompt",
+			"subAgentActivity",
+			"collabAgentToolCall",
+		].some((itemType) => itemType === type)
 	) {
 		return null;
 	}
@@ -44,6 +46,15 @@ export function activityItem(
 			content: [textContent(string(value.text))],
 		};
 	}
+	return externalActivity(value, base);
+}
+
+/** 外部ツールと検索の入出力をカードへ変換する。 */
+function externalActivity(
+	value: Record<string, unknown>,
+	base: Partial<ToolSummary>,
+): Partial<ToolSummary> {
+	const type = value.type;
 	if (type === "mcpToolCall") {
 		return {
 			...base,
@@ -67,6 +78,15 @@ export function activityItem(
 			rawOutput: value.action,
 		};
 	}
+	return otherActivity(value, base);
+}
+
+/** 画像・レビューなどの補助的な活動を表示する。 */
+function otherActivity(
+	value: Record<string, unknown>,
+	base: Partial<ToolSummary>,
+): Partial<ToolSummary> {
+	const type = value.type;
 	if (type === "imageView") {
 		return {
 			title: "画像を確認",

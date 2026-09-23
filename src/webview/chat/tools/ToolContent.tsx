@@ -31,12 +31,7 @@ function Content({ value }: { value: unknown }) {
 	) {
 		return <UnifiedDiff path={value.path} diff={value.diff} />;
 	}
-	if (
-		value.type === "diff" &&
-		typeof value.path === "string" &&
-		(value.oldText === null || typeof value.oldText === "string") &&
-		typeof value.newText === "string"
-	) {
+	if (isFileDiffContent(value)) {
 		return (
 			<FileDiff
 				path={value.path}
@@ -54,6 +49,23 @@ function Content({ value }: { value: unknown }) {
 		return <Value value={value.content.text} />;
 	}
 	return <Value value={value} />;
+}
+
+/** ファイル差分の本文と対象パスを検証する。 */
+function isFileDiffContent(value: Record<string, unknown>): value is Record<
+	string,
+	unknown
+> & {
+	path: string;
+	oldText: string | null;
+	newText: string;
+} {
+	return (
+		value.type === "diff" &&
+		typeof value.path === "string" &&
+		(value.oldText === null || typeof value.oldText === "string") &&
+		typeof value.newText === "string"
+	);
 }
 
 /** 共通表示では本文・対象パス・入出力を表示し、未知の形式も扱う。 */

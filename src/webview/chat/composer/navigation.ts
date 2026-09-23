@@ -3,7 +3,9 @@ import {
 	$getSelection,
 	$isElementNode,
 	$isRangeSelection,
+	type ElementNode,
 	type LexicalEditor,
+	type RangeSelection,
 } from "lexical";
 import { PastedBlockNode } from "./PastedBlockNode";
 import { $pointOffset, $selectOffset } from "./content";
@@ -43,6 +45,16 @@ export function $moveAcrossBlock(
 	) {
 		return false;
 	}
+	return moveSelectedBlock(editor, event, up, selection);
+}
+
+/** 確定済みのキャレットを隣接ブロックへ移動する。 */
+function moveSelectedBlock(
+	editor: LexicalEditor,
+	event: KeyboardEvent,
+	up: boolean,
+	selection: RangeSelection,
+): boolean {
 	const block = selection.anchor.getNode().getTopLevelElement();
 	if (!block) {
 		return false;
@@ -65,19 +77,38 @@ export function $moveAcrossBlock(
 		return false;
 	}
 	const element = editor.getElementByKey(block.getKey());
-	if (
-		!(block instanceof PastedBlockNode) &&
-		element &&
-		!atVisualEdge(element, up)
-	) {
+	if (outsideVisualEdge(block, element, up)) {
 		return false;
 	}
 	event.preventDefault();
+	selectAdjacentColumn(offset, text, adjacent, up);
+	return true;
+}
+
+/** 通常文の表示上の境界以外では移動を抑制する。 */
+function outsideVisualEdge(
+	block: ElementNode,
+	element: HTMLElement | null,
+	up: boolean,
+) {
+	return (
+		!(block instanceof PastedBlockNode) &&
+		element &&
+		!atVisualEdge(element, up)
+	);
+}
+
+/** 隣接ブロックの先頭または末尾行で同じ列へ移動する。 */
+function selectAdjacentColumn(
+	offset: number,
+	text: string,
+	adjacent: ElementNode,
+	up: boolean,
+) {
 	const column = offset - text.slice(0, offset).lastIndexOf("\n") - 1;
 	const target = adjacent.getTextContent();
 	const start = up ? target.lastIndexOf("\n") + 1 : 0;
 	const firstNewline = target.indexOf("\n");
 	const end = up || firstNewline < 0 ? target.length : firstNewline;
 	$selectOffset(adjacent, Math.min(start + column, end));
-	return true;
 }

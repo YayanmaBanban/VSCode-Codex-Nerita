@@ -21,19 +21,9 @@ export function handleCompletionKey(
 	options: CompletionKeyboardOptions,
 	inSearch = false,
 ): boolean {
-	const {
-		editor,
-		match,
-		category,
-		items,
-		index,
-		close,
-		back,
-		pick,
-		setSelected,
-	} = options;
+	const { editor, match, category, close, back } = options;
 
-	if (event.isComposing || event.keyCode === 229 || editor.isComposing()) {
+	if (composingCompletion(event, editor)) {
 		return false;
 	}
 	if (!match || event.ctrlKey || event.metaKey || event.altKey) {
@@ -45,11 +35,34 @@ export function handleCompletionKey(
 		editor.focus();
 		return true;
 	}
-	if (event.key === "ArrowLeft" && category && !inSearch) {
+	if (backFromCategory(event, category, inSearch)) {
 		event.preventDefault();
 		back();
 		return true;
 	}
+	return handleCompletionSelection(event, options);
+}
+
+/** 本文からカテゴリの親へ戻るキーを判定する。 */
+function backFromCategory(
+	event: KeyboardEvent,
+	category: string,
+	inSearch: boolean,
+) {
+	return event.key === "ArrowLeft" && category && !inSearch;
+}
+
+/** IME入力中のキーを候補操作から除外する。 */
+function composingCompletion(event: KeyboardEvent, editor: LexicalEditor) {
+	return event.isComposing || event.keyCode === 229 || editor.isComposing();
+}
+
+/** 候補一覧の上下移動と確定を処理する。 */
+function handleCompletionSelection(
+	event: KeyboardEvent,
+	options: CompletionKeyboardOptions,
+): boolean {
+	const { items, index, pick, setSelected } = options;
 	if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 		event.preventDefault();
 		setSelected(
@@ -60,13 +73,7 @@ export function handleCompletionKey(
 		);
 		return true;
 	}
-	if (
-		(event.key === "Enter" ||
-			event.key === "Tab" ||
-			(event.key === "ArrowRight" &&
-				(items[index]?.category || items[index]?.directory))) &&
-		!event.shiftKey
-	) {
+	if (isCompletionSelectionKey(event, items, index)) {
 		event.preventDefault();
 		if (items[index]) {
 			pick(items[index]);
@@ -74,4 +81,19 @@ export function handleCompletionKey(
 		return true;
 	}
 	return false;
+}
+
+/** 修飾キーを考慮して候補を確定するキーを判定する。 */
+function isCompletionSelectionKey(
+	event: KeyboardEvent,
+	items: CompletionItem[],
+	index: number,
+) {
+	return (
+		(event.key === "Enter" ||
+			event.key === "Tab" ||
+			(event.key === "ArrowRight" &&
+				(items[index]?.category || items[index]?.directory))) &&
+		!event.shiftKey
+	);
 }

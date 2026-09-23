@@ -1,6 +1,9 @@
 // セッション一覧の遅延・失敗と各操作を Storybook 内で再現する。
+
 import type { SessionSummary } from "../../../shared/sessionHistory";
 import { createMockBridge } from "./mockBridge";
+
+import { type UiMessage } from "@/shared/messages";
 
 /** 履歴ペインの観察開始状態。 */
 export type SessionScenario =
@@ -104,14 +107,7 @@ export function createSessionBridge(scenario: SessionScenario) {
 				refresh();
 				return;
 			}
-			if (
-				message.type === "session/delete" ||
-				message.type === "session/archive" ||
-				message.type === "session/rename" ||
-				message.type === "session/unarchive" ||
-				message.type === "session/fork" ||
-				message.type === "session/load"
-			) {
+			if (isSessionMutation(message)) {
 				bridge.sent.push(message);
 				const item = sessions.find(
 					(session) => session.sessionId === message.sessionId,
@@ -119,49 +115,82 @@ export function createSessionBridge(scenario: SessionScenario) {
 				if (!item) {
 					return;
 				}
-				if (message.type === "session/delete") {
-					sessions.splice(sessions.indexOf(item), 1);
-				} else if (message.type === "session/archive") {
-					item.archived = true;
-				} else if (message.type === "session/unarchive") {
-					item.archived = false;
-				} else if (message.type === "session/rename") {
-					item.title = message.name;
-				} else {
-					const target =
-						message.type === "session/fork"
-							? {
-									...item,
-									sessionId: crypto.randomUUID(),
-									title: `${item.title}（フォーク）`,
-									updatedAt: new Date().toISOString(),
-								}
-							: item;
-					if (target !== item) {
-						sessions.unshift(target);
-					}
-					bridge.patchState({
-						sessionId: target.sessionId,
-						messages: [
-							{
-								id: "loaded-user",
-								role: "user",
-								text: target.title ?? "保存済みの会話",
-							},
-							{
-								id: "loaded-agent",
-								role: "assistant",
-								text: "保存された会話を読み込みました。",
-							},
-						],
-					});
-				}
+				applySessionMutation(message, sessions, item, bridge);
 				refresh();
 				return;
 			}
 			bridge.postMessage(message);
 		},
 	};
+}
+
+/** 履歴操作をモックの一覧と現在の会話へ反映する。 */
+function applySessionMutation(
+	message: Extract<
+		UiMessage,
+		{
+			type:
+				| "session/rename"
+				| "session/unarchive"
+				| "session/load"
+				| "session/fork"
+				| "session/delete"
+				| "session/archive";
+		}
+	>,
+	sessions: SessionSummary[],
+	item: SessionSummary,
+	bridge: ReturnType<typeof createMockBridge>,
+) {
+	if (message.type === "session/delete") {
+		sessions.splice(sessions.indexOf(item), 1);
+	} else if (message.type === "session/archive") {
+		item.archived = true;
+	} else if (message.type === "session/unarchive") {
+		item.archived = false;
+	} else if (message.type === "session/rename") {
+		item.title = message.name;
+	} else {
+		const target =
+			message.type === "session/fork"
+				? {
+						...item,
+						sessionId: crypto.randomUUID(),
+						title: `${item.title}（フォーク）`,
+						updatedAt: new Date().toISOString(),
+					}
+				: item;
+		if (target !== item) {
+			sessions.unshift(target);
+		}
+		bridge.patchState({
+			sessionId: target.sessionId,
+			messages: [
+				{
+					id: "loaded-user",
+					role: "user",
+					text: target.title ?? "保存済みの会話",
+				},
+				{
+					id: "loaded-agent",
+					role: "assistant",
+					text: "保存された会話を読み込みました。",
+				},
+			],
+		});
+	}
+}
+
+/** 既存セッションへの操作メッセージを識別する。 */
+function isSessionMutation(message: UiMessage) {
+	return (
+		message.type === "session/delete" ||
+		message.type === "session/archive" ||
+		message.type === "session/rename" ||
+		message.type === "session/unarchive" ||
+		message.type === "session/fork" ||
+		message.type === "session/load"
+	);
 }
 
 /** 履歴一覧の失敗シナリオに対応する表示文言を返す。 */

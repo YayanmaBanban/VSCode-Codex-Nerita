@@ -38,11 +38,7 @@ export function mapPiTool(
 	const existing = state.tools.find(
 		(tool) => tool.id === event.toolCallId && tool.runId === state.runId,
 	);
-	if (
-		existing &&
-		existing.status !== "pending" &&
-		existing.status !== "in_progress"
-	) {
+	if (isFinishedTool(existing)) {
 		return;
 	}
 	const input: unknown = "args" in event ? event.args : existing?.rawInput;
@@ -50,26 +46,81 @@ export function mapPiTool(
 	const file = toolPath(args, event.toolName);
 	const label = toolLabel(event.toolName);
 	const result: unknown = toolResult(event);
-	const tool: ToolSummary = {
+	const tool: ToolSummary = piToolSummary(
+		event,
+		state,
+		existing,
+		file,
+		label,
+		input,
+		result,
+	);
+	return {
+		tools: existing
+			? state.tools.map((item) => (item === existing ? tool : item))
+			: [...state.tools, tool],
+	};
+}
+
+/** 終了済みカードへの遅い通知を排除する。 */
+function isFinishedTool(existing: ToolSummary | undefined) {
+	return (
+		existing &&
+		existing.status !== "pending" &&
+		existing.status !== "in_progress"
+	);
+}
+
+/** ツールの入力と累積結果からカードを組み立てる。 */
+function piToolSummary(
+	event: Extract<
+		PiEvent,
+		{
+			type:
+				| "tool_execution_start"
+				| "tool_execution_update"
+				| "tool_execution_end";
+		}
+	>,
+	state: ChatState,
+	existing: ToolSummary | undefined,
+	file: string | undefined,
+	label: string,
+	input: unknown,
+	result: unknown,
+): ToolSummary {
+	return {
 		id: event.toolCallId,
 		...(state.runId ? { runId: state.runId } : {}),
 		...(state.cwd ? { cwd: state.cwd } : {}),
 		order: existing?.order ?? nextTimelineOrder(state),
-		title: existing?.title ?? (file ? `${label}: ${file}` : label),
+		title: toolTitle(existing, file, label),
 		kind: toolKind(event.toolName),
 		status: toolStatus(event, state.run),
-		paths: existing?.paths ?? (file ? [file] : []),
+		paths: toolPaths(existing, file),
 		rawInput: input,
 		content:
 			result === undefined
 				? (existing?.content ?? [])
 				: resultContent(result),
 	};
-	return {
-		tools: existing
-			? state.tools.map((item) => (item === existing ? tool : item))
-			: [...state.tools, tool],
-	};
+}
+
+/** 既存の対象パスを保持し、新規ツールのパスを補う。 */
+function toolPaths(
+	existing: ToolSummary | undefined,
+	file: string | undefined,
+): string[] {
+	return existing?.paths ?? (file ? [file] : []);
+}
+
+/** 既存タイトルを優先し、パス付きの操作名を補う。 */
+function toolTitle(
+	existing: ToolSummary | undefined,
+	file: string | undefined,
+	label: string,
+): string {
+	return existing?.title ?? (file ? `${label}: ${file}` : label);
 }
 
 /** Stopや通信障害で終了通知が来ない場合も、当該実行のカードを実行中のまま残さない。 */

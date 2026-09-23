@@ -42,6 +42,21 @@ export function activityPatch(
 			};
 	const parts = streams.get(id) ?? new Map<string, string>();
 	streams.set(id, parts);
+	updateActivityTool(method, tool, p, parts);
+	return {
+		tools: previous
+			? state.tools.map((item) => (item === previous ? tool : item))
+			: [...state.tools, tool],
+	};
+}
+
+/** 通知の種別に対応するカードの内容を更新する。 */
+function updateActivityTool(
+	method: string,
+	tool: ToolSummary,
+	p: Record<string, unknown>,
+	parts: Map<string, string>,
+) {
 	if (method === "turn/diff/updated") {
 		tool.title = "ターン全体の差分";
 		tool.kind = "edit";
@@ -75,34 +90,49 @@ export function activityPatch(
 	} else if (method === "item/mcpToolCall/progress") {
 		tool.content = [textContent(text(p.message))];
 	} else if (method.includes("reasoning")) {
-		const index = p.summaryIndex ?? p.contentIndex;
-		if (!Number.isSafeInteger(index) || Number(index) < 0) {
-			throw new Error("Invalid reasoning index");
-		}
-		const key = `${method.includes("summary") ? "summary" : "content"}:${Number(index)}`;
-		if (method.endsWith("summaryPartAdded")) {
-			if (!parts.has(key)) {
-				parts.set(key, "");
-			}
-		} else {
-			parts.set(key, (parts.get(key) ?? "") + text(p.delta));
-		}
-		tool.title = "推論";
-		tool.kind = "think";
-		tool.content = [textContent([...parts.values()].join("\n\n"))];
+		updateReasoning(p, method, parts, tool);
 	} else {
-		parts.set("text", (parts.get("text") ?? "") + text(p.delta));
-		if (method === "item/commandExecution/outputDelta") {
-			tool.kind = "execute";
-			tool.rawOutput = { formatted_output: parts.get("text") };
-		} else {
-			tool.title = method === "item/plan/delta" ? "計画" : "ファイル変更";
-			tool.content = [textContent(parts.get("text")!)];
-		}
+		updateActivityOutput(parts, p, method, tool);
 	}
-	return {
-		tools: previous
-			? state.tools.map((item) => (item === previous ? tool : item))
-			: [...state.tools, tool],
-	};
+}
+
+/** コマンドや計画の逐次出力を蓄積する。 */
+function updateActivityOutput(
+	parts: Map<string, string>,
+	p: Record<string, unknown>,
+	method: string,
+	tool: ToolSummary,
+) {
+	parts.set("text", (parts.get("text") ?? "") + text(p.delta));
+	if (method === "item/commandExecution/outputDelta") {
+		tool.kind = "execute";
+		tool.rawOutput = { formatted_output: parts.get("text") };
+	} else {
+		tool.title = method === "item/plan/delta" ? "計画" : "ファイル変更";
+		tool.content = [textContent(parts.get("text")!)];
+	}
+}
+
+/** 推論のセクションごとに差分を蓄積する。 */
+function updateReasoning(
+	p: Record<string, unknown>,
+	method: string,
+	parts: Map<string, string>,
+	tool: ToolSummary,
+) {
+	const index = p.summaryIndex ?? p.contentIndex;
+	if (!Number.isSafeInteger(index) || Number(index) < 0) {
+		throw new Error("Invalid reasoning index");
+	}
+	const key = `${method.includes("summary") ? "summary" : "content"}:${Number(index)}`;
+	if (method.endsWith("summaryPartAdded")) {
+		if (!parts.has(key)) {
+			parts.set(key, "");
+		}
+	} else {
+		parts.set(key, (parts.get(key) ?? "") + text(p.delta));
+	}
+	tool.title = "推論";
+	tool.kind = "think";
+	tool.content = [textContent([...parts.values()].join("\n\n"))];
 }

@@ -1,6 +1,6 @@
 // PiのAssistant本文とツール通知を、既存の会話タイムラインへ変換する。
 import { randomUUID } from "node:crypto";
-import type { ChatState } from "../../../shared/chatState";
+import type { ChatMessage, ChatState } from "../../../shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
 import { mapPiTool } from "./PiToolMapper";
@@ -41,17 +41,9 @@ export class PiEventMapper {
 			role: "assistant" as const,
 			text,
 			streaming: !finished,
-			order: existing?.order ?? nextTimelineOrder(state),
+			order: messageOrder(existing, state),
 		};
-		if (finished) {
-			if (event.message.stopReason === "error") {
-				this.error =
-					event.message.errorMessage ||
-					"Piの応答取得に失敗しました。";
-			}
-			this.aborted ||= event.message.stopReason === "aborted";
-			this.messageId = undefined;
-		}
+		this.finishMessage(finished, event.message);
 		if (!text && !existing) {
 			return;
 		}
@@ -63,4 +55,27 @@ export class PiEventMapper {
 				: [...state.messages, message],
 		};
 	}
+
+	/** 完了した応答のエラーと停止状態を保持する。 */
+	private finishMessage(
+		finished: boolean,
+		message: Extract<
+			Extract<PiEvent, { type: "message_end" }>["message"],
+			{ role: "assistant" }
+		>,
+	): void {
+		if (finished) {
+			if (message.stopReason === "error") {
+				this.error =
+					message.errorMessage || "Piの応答取得に失敗しました。";
+			}
+			this.aborted ||= message.stopReason === "aborted";
+			this.messageId = undefined;
+		}
+	}
+}
+
+/** 既存メッセージの順序を保持し、新規分だけ採番する。 */
+function messageOrder(existing: ChatMessage | undefined, state: ChatState) {
+	return existing?.order ?? nextTimelineOrder(state);
 }

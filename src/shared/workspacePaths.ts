@@ -74,6 +74,13 @@ export function isWorkspacePath(value: unknown): value is WorkspacePath {
 		isPathString(entry.name) &&
 		isPathString(entry.path) &&
 		(entry.kind === "file" || entry.kind === "directory") &&
+		validPathLocation(entry)
+	);
+}
+
+/** 位置情報はファイルに限って受け付ける。 */
+function validPathLocation(entry: Record<string, unknown>): boolean {
+	return (
 		(entry.range === undefined ||
 			(entry.kind === "file" && isSourceRange(entry.range))) &&
 		(entry.symbol === undefined ||

@@ -62,6 +62,16 @@ export function itemPatch(
 		}
 		return messagePatch(state, value.id, value.text, false, !completed);
 	}
+	return toolPatch(state, value, value.id, completed);
+}
+
+/** 活動項目を既存のツールカードへ統合する。 */
+function toolPatch(
+	state: ChatState,
+	value: Record<string, unknown>,
+	itemId: string,
+	completed: boolean,
+): Partial<ChatState> {
 	const activity = activityItem(value);
 	if (
 		value.type !== "commandExecution" &&
@@ -74,7 +84,7 @@ export function itemPatch(
 		(tool) => tool.id === value.id && tool.runId === state.runId,
 	);
 	const tool: ToolSummary = {
-		id: value.id,
+		id: itemId,
 		rawItem: value,
 		runId: state.runId!,
 		title: "ファイル変更",
@@ -86,6 +96,19 @@ export function itemPatch(
 	if (activity) {
 		Object.assign(tool, activity);
 	}
+	updateCommandOrFiles(value, tool);
+	return {
+		tools: previous
+			? state.tools.map((entry) => (entry === previous ? tool : entry))
+			: [...state.tools, tool],
+	};
+}
+
+/** コマンドとファイル変更の詳細をカードへ反映する。 */
+function updateCommandOrFiles(
+	value: Record<string, unknown>,
+	tool: ToolSummary,
+) {
 	if (value.type === "commandExecution") {
 		if (
 			typeof value.command !== "string" ||
@@ -102,11 +125,6 @@ export function itemPatch(
 	} else if (value.type === "fileChange") {
 		Object.assign(tool, fileChanges(value.changes));
 	}
-	return {
-		tools: previous
-			? state.tools.map((entry) => (entry === previous ? tool : entry))
-			: [...state.tools, tool],
-	};
 }
 
 /** 完了通知でのみ成否を確定し、途中の項目は実行中として扱う。 */

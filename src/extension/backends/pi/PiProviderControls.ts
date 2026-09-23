@@ -32,6 +32,15 @@ export class PiProviderControls {
 	/** Provider固有の実装は登録一覧から選び、非対応providerは標準経路へ戻す。 */
 	private resolve(): PiModelControls | undefined {
 		const provider = this.session?.model?.provider;
+		this.bindProviderControls(provider);
+		if (provider) {
+			this.active?.setCatalog?.(this.catalog(provider));
+		}
+		return this.active;
+	}
+
+	/** provider切り替え時に固有設定を作り直す。 */
+	private bindProviderControls(provider: string | undefined): void {
 		if (provider !== this.provider) {
 			this.active?.reset();
 			this.provider = provider;
@@ -42,10 +51,6 @@ export class PiProviderControls {
 				this.active?.bind(this.session);
 			}
 		}
-		if (provider) {
-			this.active?.setCatalog?.(this.catalog(provider));
-		}
-		return this.active;
 	}
 
 	/** 既存の共有状態形式を保ち、SDK標準モデルも同じUIへ公開する。 */

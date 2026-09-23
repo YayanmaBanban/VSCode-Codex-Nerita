@@ -1,6 +1,6 @@
 // 通常文と編集可能な貼り付けブロックを、一つのLexicalフィールドとして表示する。
 import { clsx } from "clsx";
-import { useId, useState } from "react";
+import { type SetStateAction, type Dispatch, useId, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -98,30 +98,7 @@ export function ComposerInput({
 						ErrorBoundary={LexicalErrorBoundary}
 					/>
 				</div>
-				<button
-					type="button"
-					className="flex h-7 w-7 shrink-0 items-center justify-center border-0 bg-transparent p-1 text-muted hover:text-input-text"
-					aria-label={
-						expanded
-							? "入力エリアを元のサイズに戻す"
-							: "入力エリアを拡張"
-					}
-					title={
-						expanded
-							? "入力エリアを元のサイズに戻す"
-							: "入力エリアを拡張"
-					}
-					aria-expanded={expanded}
-					aria-controls={inputId}
-					onMouseDown={(event) => event.preventDefault()}
-					onClick={() => setExpanded((value) => !value)}
-				>
-					{expanded ? (
-						<Minimize2 size={16} aria-hidden="true" />
-					) : (
-						<Maximize2 size={16} aria-hidden="true" />
-					)}
-				</button>
+				{renderExpandButton(expanded, inputId, setExpanded)}
 			</div>
 			<HistoryPlugin />
 			<CodeBlockMenuPlugin bridge={bridge} />
@@ -139,5 +116,35 @@ export function ComposerInput({
 				</p>
 			)}
 		</LexicalComposer>
+	);
+}
+
+/** 入力欄の拡張状態に対応する操作ボタンを描画する。 */
+function renderExpandButton(
+	expanded: boolean,
+	inputId: string,
+	setExpanded: Dispatch<SetStateAction<boolean>>,
+) {
+	return (
+		<button
+			type="button"
+			className="flex h-7 w-7 shrink-0 items-center justify-center border-0 bg-transparent p-1 text-muted hover:text-input-text"
+			aria-label={
+				expanded ? "入力エリアを元のサイズに戻す" : "入力エリアを拡張"
+			}
+			title={
+				expanded ? "入力エリアを元のサイズに戻す" : "入力エリアを拡張"
+			}
+			aria-expanded={expanded}
+			aria-controls={inputId}
+			onMouseDown={(event) => event.preventDefault()}
+			onClick={() => setExpanded((value) => !value)}
+		>
+			{expanded ? (
+				<Minimize2 size={16} aria-hidden="true" />
+			) : (
+				<Maximize2 size={16} aria-hidden="true" />
+			)}
+		</button>
 	);
 }

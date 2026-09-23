@@ -23,11 +23,7 @@ export function piModelOptions(
 			currentValue: model ? `${model.provider}/${model.id}` : "",
 			...(model
 				? {
-						currentLabel:
-							catalog
-								?.snapshot(model.provider)
-								?.find((entry) => entry.slug === model.id)
-								?.displayName ?? model.name,
+						currentLabel: modelDisplayName(catalog, model),
 					}
 				: {}),
 			options: (catalog?.available(available) ?? available)
@@ -58,4 +54,17 @@ export function piModelOptions(
 		},
 		...controls.configOptions,
 	];
+}
+
+/** カタログの表示名を優先してモデル名を返す。 */
+function modelDisplayName(
+	catalog: PiModelCatalogService | undefined,
+	model: NonNullable<AgentSession["model"]>,
+): string {
+	return (
+		catalog
+			?.snapshot(model.provider)
+			?.find((entry) => entry.slug === model.id)?.displayName ??
+		model.name
+	);
 }

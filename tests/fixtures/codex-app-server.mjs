@@ -65,46 +65,51 @@ createInterface({ input: process.stdin }).on("line", (line) => {
 		initialized = true;
 		send({ method: "fixture/ready", params: { text: "準備完了" } });
 	} else if (message.method === "thread/loaded/list") {
-		if (!initialized) {
-			send({
-				id: message.id,
-				error: { code: -32002, message: "Not initialized" },
-			});
-			return;
-		}
-		if (mode === "timeout" || mode === "tree") {
-			return;
-		}
-		if (mode === "disconnect") {
-			process.exit(0);
-		}
-		if (mode === "malformed") {
-			process.stdout.write("not JSON\n");
-			return;
-		}
-		if (mode === "rpcError") {
-			send({
-				id: message.id,
-				error: {
-					code: -32602,
-					message: "Invalid cursor",
-					data: { field: "cursor" },
-				},
-			});
-			return;
-		}
-		if (mode === "wrongResult") {
-			send({ id: message.id, result: { data: [42], nextCursor: null } });
-			return;
-		}
-		const cursor = message.params.cursor ?? "first";
-		setTimeout(
-			() =>
-				send({
-					id: message.id,
-					result: { data: [cursor], nextCursor: null },
-				}),
-			cursor === "slow" ? 50 : 0,
-		);
+		respondLoadedThreads(message);
 	}
 });
+
+/** 初期化後の一覧要求にモード別の結果を返す。 */
+function respondLoadedThreads(message) {
+	if (!initialized) {
+		send({
+			id: message.id,
+			error: { code: -32002, message: "Not initialized" },
+		});
+		return;
+	}
+	if (mode === "timeout" || mode === "tree") {
+		return;
+	}
+	if (mode === "disconnect") {
+		process.exit(0);
+	}
+	if (mode === "malformed") {
+		process.stdout.write("not JSON\n");
+		return;
+	}
+	if (mode === "rpcError") {
+		send({
+			id: message.id,
+			error: {
+				code: -32602,
+				message: "Invalid cursor",
+				data: { field: "cursor" },
+			},
+		});
+		return;
+	}
+	if (mode === "wrongResult") {
+		send({ id: message.id, result: { data: [42], nextCursor: null } });
+		return;
+	}
+	const cursor = message.params.cursor ?? "first";
+	setTimeout(
+		() =>
+			send({
+				id: message.id,
+				result: { data: [cursor], nextCursor: null },
+			}),
+		cursor === "slow" ? 50 : 0,
+	);
+}

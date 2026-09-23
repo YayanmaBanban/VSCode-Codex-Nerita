@@ -40,12 +40,7 @@ export function ConnectionHeader({
 	sidebarLocation?: SidebarLocation;
 	onSelectSidebar?: (location: SidebarLocation) => void;
 }) {
-	const title =
-		state.sessionTitle?.trim() ||
-		state.sessions
-			.find((session) => session.sessionId === state.sessionId)
-			?.title?.trim() ||
-		"新規チャット";
+	const title = sessionHeaderTitle(state);
 	const viewLabel = editor ? "サイドバーへ戻る" : "エディタグループへ移動";
 	return (
 		<>
@@ -117,33 +112,8 @@ export function ConnectionHeader({
 					{requestError || state.error}
 				</div>
 			)}
-			{state.connection === "auth-required" && (
-				<section
-					className={`auth-card ${noticeClass}`}
-					aria-label="認証"
-				>
-					<p>
-						{state.piAccount !== null
-							? "Piの認証情報を設定してください。利用可能なモデルは入力欄で選択できます。"
-							: "ChatGPTにログインするか、VS Codeの起動環境に設定したAPIキーを使用します。"}
-					</p>
-					{state.authMethods.map((method) => (
-						<button
-							key={method.id}
-							className="m-[3px]"
-							onClick={() =>
-								send({
-									type: "auth/start",
-									requestId: crypto.randomUUID(),
-									methodId: method.id,
-								})
-							}
-						>
-							{method.name}
-						</button>
-					))}
-				</section>
-			)}
+			{state.connection === "auth-required" &&
+				renderAuthenticationNotice(state, send)}
 			{state.connection === "authenticating" && (
 				<p className={`auth-card ${noticeClass}`}>
 					{state.piAccount !== null
@@ -167,5 +137,47 @@ export function ConnectionHeader({
 				</p>
 			)}
 		</>
+	);
+}
+
+/** 未認証時の案内と認証開始ボタンを表示する。 */
+function renderAuthenticationNotice(
+	state: ChatState,
+	send: (message: UiMessage) => void,
+) {
+	return (
+		<section className={`auth-card ${noticeClass}`} aria-label="認証">
+			<p>
+				{state.piAccount !== null
+					? "Piの認証情報を設定してください。利用可能なモデルは入力欄で選択できます。"
+					: "ChatGPTにログインするか、VS Codeの起動環境に設定したAPIキーを使用します。"}
+			</p>
+			{state.authMethods.map((method) => (
+				<button
+					key={method.id}
+					className="m-[3px]"
+					onClick={() =>
+						send({
+							type: "auth/start",
+							requestId: crypto.randomUUID(),
+							methodId: method.id,
+						})
+					}
+				>
+					{method.name}
+				</button>
+			))}
+		</section>
+	);
+}
+
+/** 現在のセッションに表示するタイトルを選ぶ。 */
+function sessionHeaderTitle(state: ChatState) {
+	return (
+		state.sessionTitle?.trim() ||
+		state.sessions
+			.find((session) => session.sessionId === state.sessionId)
+			?.title?.trim() ||
+		"新規チャット"
 	);
 }

@@ -29,8 +29,8 @@ export function isPiProviderControls(
 	return (
 		isRecord(value) &&
 		Object.keys(value).length === 6 &&
-		(value.provider === null || typeof value.provider === "string") &&
-		(value.modelId === null || typeof value.modelId === "string") &&
+		isOptionalModelId(value.provider) &&
+		isOptionalModelId(value.modelId) &&
 		piThinkingLevels.some((level) => level === value.thinkingLevel) &&
 		(value.reasoningOverride === null ||
 			value.reasoningOverride === "ultra") &&
@@ -38,4 +38,9 @@ export function isPiProviderControls(
 			(value.reasoningOverride ?? value.thinkingLevel) &&
 		typeof value.fastMode === "boolean"
 	);
+}
+
+/** 未選択を表すnullまたはモデル・providerの識別子を受け付ける。 */
+function isOptionalModelId(value: unknown): boolean {
+	return value === null || typeof value === "string";
 }

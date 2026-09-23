@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { webviewHtml } from "./webviewHtml";
 import { bindWebview } from "./webviewBinding";
 import type { ChatSession } from "../session/chatSession";
-import type { HostMessage } from "../../shared/messages";
+import type { HostMessage, UiMessage } from "../../shared/messages";
 import { isHostMessage } from "../../shared/hostMessageValidation";
 import { isRecord } from "../../shared/validation";
 import { isUiMessage } from "../../shared/uiMessageValidation";
@@ -19,6 +19,7 @@ import {
 	saveSidebar,
 	sidebarLocation,
 } from "./sidebarLocation";
+import { type SidebarLocation } from "@/shared/sidebar";
 
 /** UI を閉じても会話を保持し、再表示時の ready で状態を復元する。 */
 export class ChatViewProvider
@@ -137,133 +138,7 @@ export class ChatViewProvider
 			return;
 		}
 		try {
-			if (value.type === "ui/setBackend") {
-				if (this.backendPending) {
-					return;
-				}
-				this.backendPending = true;
-				try {
-					const changed = await saveBackend(value.backend);
-					this.broadcastBackend();
-					if (changed) {
-						await vscode.commands.executeCommand(
-							"workbench.action.reloadWindow",
-						);
-					}
-				} finally {
-					this.backendPending = false;
-				}
-				return;
-			}
-			if (value.type === "workspace/resolvePath") {
-				await webview.postMessage(await resolvePath(value));
-				return;
-			}
-			if (value.type === "workspace/resolveCode") {
-				await webview.postMessage({
-					type: "workspace/resolvedPath",
-					requestId: value.requestId,
-					entry: await this.copiedCode.resolve(value.text),
-				} satisfies HostMessage);
-				return;
-			}
-			if (value.type === "reference/open") {
-				await openResource(value.uri, value.range);
-				return;
-			}
-			if (value.type === "workspace/listPaths") {
-				await webview.postMessage(await listWorkspacePaths(value));
-				return;
-			}
-			if (value.type === "workspace/searchSymbols") {
-				await webview.postMessage(await searchWorkspaceSymbols(value));
-				return;
-			}
-			if (value.type === "ui/setSidebar") {
-				await saveSidebar(value.location);
-				await this.placement.sync();
-				this.sidebar?.show(false);
-				if (this.sidebar) {
-					this.viewState(this.sidebar.webview);
-				}
-				this.panel?.dispose();
-				return;
-			}
-			if (value.type === "ui/saveDraft") {
-				this.draft = value.draft;
-				this.draftParts = value.draftParts;
-				for (const target of this.views.keys()) {
-					if (target !== webview) {
-						this.viewState(target, false);
-					}
-				}
-				return;
-			}
-			if (value.type === "ui/saveScroll") {
-				this.scrollTop = value.scrollTop;
-				return;
-			}
-			if (value.type === "ui/openEditor") {
-				if (!this.panel) {
-					this.panel = vscode.window.createWebviewPanel(
-						"nerita.codex.editor",
-						"Nerita for Codex",
-						vscode.ViewColumn.Active,
-						{ enableScripts: true, retainContextWhenHidden: true },
-					);
-					this.panel.iconPath = {
-						light: vscode.Uri.joinPath(
-							this.extensionUri,
-							"media",
-							"nerita-24.svg",
-						),
-						dark: vscode.Uri.joinPath(
-							this.extensionUri,
-							"media",
-							"nerita-24.svg",
-						),
-					};
-					this.bind(this.panel, true);
-				} else {
-					this.panel.reveal(vscode.ViewColumn.Active);
-					this.viewState(this.panel.webview);
-				}
-				return;
-			}
-			if (value.type === "ui/openSidebar") {
-				await vscode.commands.executeCommand("nerita.codex.chat.focus");
-				this.sidebar?.show(false);
-				if (this.sidebar) {
-					this.viewState(this.sidebar.webview);
-				}
-				this.panel?.dispose();
-				return;
-			}
-			if (value.type === "ui/ready") {
-				void webview.postMessage({
-					type: "ui/backendState",
-					backend: configuredBackend(),
-				} satisfies HostMessage);
-				void webview.postMessage({
-					type: "ui/sidebarState",
-					location: sidebarLocation(),
-				} satisfies HostMessage);
-				// 復元要求は要求元だけに返し、もう一方のスクロールを動かさない。
-				void webview.postMessage({
-					type: "state/snapshot",
-					state: this.session.snapshot(),
-				} satisfies HostMessage);
-				this.viewState(webview);
-				// 保存した配置は最初のサイドバー表示時に復元する。
-				if (
-					!this.views.get(webview)?.editor &&
-					!this.placement.initialized
-				) {
-					await this.placement.sync();
-				}
-				return;
-			}
-			await this.session.receive(value);
+			await this.dispatchViewRequest(webview, value);
 		} catch {
 			if ("requestId" in value) {
 				void webview.postMessage({
@@ -285,6 +160,182 @@ export class ChatViewProvider
 		this.panel?.dispose();
 		this.panel = undefined;
 		this.sidebar = undefined;
+	}
+
+	/** 検証済みの参照操作と表示操作を振り分ける。 */
+	private async dispatchViewRequest(
+		webview: vscode.Webview,
+		value: UiMessage,
+	): Promise<void> {
+		if (value.type === "ui/setBackend") {
+			if (this.backendPending) {
+				return;
+			}
+			this.backendPending = true;
+			try {
+				const changed = await saveBackend(value.backend);
+				this.broadcastBackend();
+				if (changed) {
+					await vscode.commands.executeCommand(
+						"workbench.action.reloadWindow",
+					);
+				}
+			} finally {
+				this.backendPending = false;
+			}
+			return;
+		}
+		if (value.type === "workspace/resolvePath") {
+			await webview.postMessage(await resolvePath(value));
+			return;
+		}
+		if (value.type === "workspace/resolveCode") {
+			await webview.postMessage({
+				type: "workspace/resolvedPath",
+				requestId: value.requestId,
+				entry: await this.copiedCode.resolve(value.text),
+			} satisfies HostMessage);
+			return;
+		}
+		if (value.type === "reference/open") {
+			await openResource(value.uri, value.range);
+			return;
+		}
+		if (value.type === "workspace/listPaths") {
+			await webview.postMessage(await listWorkspacePaths(value));
+			return;
+		}
+		if (value.type === "workspace/searchSymbols") {
+			await webview.postMessage(await searchWorkspaceSymbols(value));
+			return;
+		}
+		await this.dispatchDisplayAction(webview, value);
+	}
+
+	/** 下書きと表示位置を同期して会話操作をバックエンドへ渡す。 */
+	private async dispatchDisplayAction(
+		webview: vscode.Webview,
+		value: UiMessage,
+	): Promise<void> {
+		if (value.type === "ui/setSidebar") {
+			await this.setSidebar(value);
+			return;
+		}
+		if (value.type === "ui/saveDraft") {
+			this.saveDraft(value, webview);
+			return;
+		}
+		if (value.type === "ui/saveScroll") {
+			this.scrollTop = value.scrollTop;
+			return;
+		}
+		if (value.type === "ui/openEditor") {
+			this.openEditor();
+			return;
+		}
+		if (value.type === "ui/openSidebar") {
+			await this.openSidebar();
+			return;
+		}
+		if (value.type === "ui/ready") {
+			await this.initializeView(webview);
+			return;
+		}
+		await this.session.receive(value);
+	}
+
+	/** 指定されたサイドバーへ表示を切り替える。 */
+	private async setSidebar(value: {
+		type: "ui/setSidebar";
+		requestId: string;
+		location: SidebarLocation;
+	}) {
+		await saveSidebar(value.location);
+		await this.placement.sync();
+		this.sidebar?.show(false);
+		if (this.sidebar) {
+			this.viewState(this.sidebar.webview);
+		}
+		this.panel?.dispose();
+	}
+
+	/** 要求元のWebviewにだけ接続状態と保存済み表示を復元する。 */
+	private async initializeView(webview: vscode.Webview) {
+		void webview.postMessage({
+			type: "ui/backendState",
+			backend: configuredBackend(),
+		} satisfies HostMessage);
+		void webview.postMessage({
+			type: "ui/sidebarState",
+			location: sidebarLocation(),
+		} satisfies HostMessage);
+		// 復元要求は要求元だけに返し、もう一方のスクロールを動かさない。
+		void webview.postMessage({
+			type: "state/snapshot",
+			state: this.session.snapshot(),
+		} satisfies HostMessage);
+		this.viewState(webview);
+		// 保存した配置は最初のサイドバー表示時に復元する。
+		if (!this.views.get(webview)?.editor && !this.placement.initialized) {
+			await this.placement.sync();
+		}
+	}
+
+	/** サイドバーへ表示と保存済み状態を戻す。 */
+	private async openSidebar() {
+		await vscode.commands.executeCommand("nerita.codex.chat.focus");
+		this.sidebar?.show(false);
+		if (this.sidebar) {
+			this.viewState(this.sidebar.webview);
+		}
+		this.panel?.dispose();
+	}
+
+	/** エディター内のチャット表示を作成または再表示する。 */
+	private openEditor() {
+		if (!this.panel) {
+			this.panel = vscode.window.createWebviewPanel(
+				"nerita.codex.editor",
+				"Nerita for Codex",
+				vscode.ViewColumn.Active,
+				{ enableScripts: true, retainContextWhenHidden: true },
+			);
+			this.panel.iconPath = {
+				light: vscode.Uri.joinPath(
+					this.extensionUri,
+					"media",
+					"nerita-24.svg",
+				),
+				dark: vscode.Uri.joinPath(
+					this.extensionUri,
+					"media",
+					"nerita-24.svg",
+				),
+			};
+			this.bind(this.panel, true);
+		} else {
+			this.panel.reveal(vscode.ViewColumn.Active);
+			this.viewState(this.panel.webview);
+		}
+	}
+
+	/** 下書きの変更を他の表示先へ同期する。 */
+	private saveDraft(
+		value: {
+			type: "ui/saveDraft";
+			requestId: string;
+			draft: string;
+			draftParts?: ComposerPart[];
+		},
+		webview: vscode.Webview,
+	) {
+		this.draft = value.draft;
+		this.draftParts = value.draftParts;
+		for (const target of this.views.keys()) {
+			if (target !== webview) {
+				this.viewState(target, false);
+			}
+		}
 	}
 }
 

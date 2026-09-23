@@ -72,6 +72,14 @@ export class AgentRegistry {
 				),
 			};
 		}
+		return this.activityNotifications(state, message, p);
+	}
+	/** 親会話と既知の子エージェントの活動だけを反映する。 */
+	private activityNotifications(
+		state: ChatState,
+		message: AppServerNotification,
+		p: Record<string, unknown>,
+	): Partial<ChatState> {
 		if (
 			typeof p.threadId !== "string" ||
 			(p.threadId !== state.sessionId &&
@@ -90,19 +98,13 @@ export class AgentRegistry {
 			) {
 				continue;
 			}
-			const turnId = p.turnId ?? (isRecord(p.turn) ? p.turn.id : "");
-			const key = `${p.threadId}:${String(turnId)}:${String(item.id)}:${activityEventKey(item, message.method)}`;
+			const key = notificationKey(p, item, message);
 			if (this.seen.has(key)) {
 				continue;
 			}
 			this.seen.add(key);
-			if (
-				item.type === "subAgentActivity" &&
-				item.kind === "interacted" &&
-				typeof item.agentThreadId === "string"
-			) {
-				this.statuses.delete(item.agentThreadId);
-			}
+
+			this.clearInteractedStatus(item);
 			const patch = agentItemPatch(current, item, p.threadId);
 			if (!patch.agents) {
 				continue;
@@ -127,6 +129,17 @@ export class AgentRegistry {
 		}
 		return current === state ? {} : { agents: current.agents };
 	}
+	/** 再開したエージェントの古い状態キャッシュを消す。 */
+	private clearInteractedStatus(item: Record<string, unknown>) {
+		if (
+			item.type === "subAgentActivity" &&
+			item.kind === "interacted" &&
+			typeof item.agentThreadId === "string"
+		) {
+			this.statuses.delete(item.agentThreadId);
+		}
+	}
+
 	/** 無関係なThread通知によってキャッシュが無制限に増えないようにする。 */
 	private trim(): void {
 		for (const map of [this.statuses, this.metadata]) {
@@ -136,6 +149,17 @@ export class AgentRegistry {
 		}
 	}
 }
+/** 会話・ターン・項目の組から活動通知の重複キーを作る。 */
+function notificationKey(
+	p: Record<string, unknown>,
+	item: Record<string, unknown>,
+	message: AppServerNotification,
+) {
+	const turnId = p.turnId ?? (isRecord(p.turn) ? p.turn.id : "");
+	const key = `${String(p.threadId)}:${String(turnId)}:${String(item.id)}:${activityEventKey(item, message.method)}`;
+	return key;
+}
+
 /** nullableなメタデータは既存の表示を消さずに補完する。 */
 export function agentMetadata(
 	thread: Record<string, unknown>,

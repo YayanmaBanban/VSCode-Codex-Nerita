@@ -159,6 +159,126 @@ export function createMockBridge(
 				(item, index) => item.order ?? index,
 			),
 		) + 1;
+	/** コマンドと段階的な返信をモック上で処理する。 */
+	const sendPrompt = (
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+	) => {
+		if (message.text.trim() === "/logout") {
+			clear();
+			logout();
+			emit({
+				type: "prompt/accepted",
+				requestId: message.requestId,
+				mode: "start",
+			});
+			return;
+		}
+		if (message.text.trim() === "/mcp") {
+			timers.add(
+				mockMcpCommand(
+					state,
+					message.requestId,
+					nextOrder(),
+					patch,
+					emit,
+				),
+			);
+			return;
+		}
+		if (message.text.trim() === "/new") {
+			clear();
+			const { revision: _revision, ...reset } = scenarioState("empty");
+			patch(reset);
+			emit({
+				type: "prompt/accepted",
+				requestId: message.requestId,
+				mode: "start",
+			});
+			return;
+		}
+		const mode = state.run === "running" ? "steer" : "start";
+		patch({
+			attachments: [],
+			run: "running",
+			runId: "interactive-run",
+			messages: [
+				...state.messages,
+				{
+					id: crypto.randomUUID(),
+					order: nextOrder(),
+					role: "user",
+					text: message.text,
+					references: message.references ?? [],
+				},
+			],
+		});
+		emit({
+			type: "prompt/accepted",
+			requestId: message.requestId,
+			mode,
+		});
+		const assistantId = crypto.randomUUID();
+		timers.add(
+			setTimeout(
+				() =>
+					patch({
+						messages: [
+							...state.messages,
+							{
+								id: assistantId,
+								order: nextOrder(),
+								role: "assistant",
+								text: "依頼を確認しました。",
+							},
+						],
+					}),
+				150,
+			),
+		);
+		timers.add(
+			setTimeout(
+				() =>
+					patch({
+						run: "completed",
+						messages: state.messages.map((m) =>
+							m.id === assistantId
+								? {
+										...m,
+										text: `${m.text}\n作業が完了しました。`,
+									}
+								: m,
+						),
+					}),
+				650,
+			),
+		);
+		return;
+	};
+	/** 参照候補と初期状態の取得へモック応答を返す。 */
+	const respondResource = (message: UiMessage): boolean => {
+		switch (message.type) {
+			case "workspace/resolvePath":
+				// Hostの応答は貼り付けの編集確定より後のタスクで届く。
+				setTimeout(() => emit(mockResolvePath(message)), 0);
+				return true;
+			case "session/searchReferences":
+				queueMicrotask(() => emit(mockSessionReferences(message)));
+				return true;
+			case "workspace/searchSymbols":
+				queueMicrotask(() => emit(mockWorkspaceSymbols(message)));
+				return true;
+			case "workspace/listPaths":
+				queueMicrotask(() => emit(mockWorkspacePaths(message)));
+				return true;
+			case "ui/ready":
+				emit({
+					type: "state/snapshot",
+					state: structuredClone(state),
+				});
+				return true;
+		}
+		return false;
+	};
 	return {
 		sent,
 		emit,
@@ -179,26 +299,10 @@ export function createMockBridge(
 				patch(settings);
 				return;
 			}
+			if (respondResource(message)) {
+				return;
+			}
 			switch (message.type) {
-				case "workspace/resolvePath":
-					// Hostの応答は貼り付けの編集確定より後のタスクで届く。
-					setTimeout(() => emit(mockResolvePath(message)), 0);
-					break;
-				case "session/searchReferences":
-					queueMicrotask(() => emit(mockSessionReferences(message)));
-					break;
-				case "workspace/searchSymbols":
-					queueMicrotask(() => emit(mockWorkspaceSymbols(message)));
-					break;
-				case "workspace/listPaths":
-					queueMicrotask(() => emit(mockWorkspacePaths(message)));
-					break;
-				case "ui/ready":
-					emit({
-						type: "state/snapshot",
-						state: structuredClone(state),
-					});
-					break;
 				case "connection/retry":
 				case "session/new":
 				case "auth/start":
@@ -213,99 +317,9 @@ export function createMockBridge(
 					clear();
 					logout();
 					break;
-				case "prompt/send": {
-					if (message.text.trim() === "/logout") {
-						clear();
-						logout();
-						emit({
-							type: "prompt/accepted",
-							requestId: message.requestId,
-							mode: "start",
-						});
-						break;
-					}
-					if (message.text.trim() === "/mcp") {
-						timers.add(
-							mockMcpCommand(
-								state,
-								message.requestId,
-								nextOrder(),
-								patch,
-								emit,
-							),
-						);
-						break;
-					}
-					if (message.text.trim() === "/new") {
-						clear();
-						const { revision: _revision, ...reset } =
-							scenarioState("empty");
-						patch(reset);
-						emit({
-							type: "prompt/accepted",
-							requestId: message.requestId,
-							mode: "start",
-						});
-						break;
-					}
-					const mode = state.run === "running" ? "steer" : "start";
-					patch({
-						attachments: [],
-						run: "running",
-						runId: "interactive-run",
-						messages: [
-							...state.messages,
-							{
-								id: crypto.randomUUID(),
-								order: nextOrder(),
-								role: "user",
-								text: message.text,
-								references: message.references ?? [],
-							},
-						],
-					});
-					emit({
-						type: "prompt/accepted",
-						requestId: message.requestId,
-						mode,
-					});
-					const assistantId = crypto.randomUUID();
-					timers.add(
-						setTimeout(
-							() =>
-								patch({
-									messages: [
-										...state.messages,
-										{
-											id: assistantId,
-											order: nextOrder(),
-											role: "assistant",
-											text: "依頼を確認しました。",
-										},
-									],
-								}),
-							150,
-						),
-					);
-					timers.add(
-						setTimeout(
-							() =>
-								patch({
-									run: "completed",
-									messages: state.messages.map((m) =>
-										m.id === assistantId
-											? {
-													...m,
-													text: `${m.text}\n作業が完了しました。`,
-												}
-											: m,
-									),
-								}),
-							650,
-						),
-					);
+				case "prompt/send":
+					sendPrompt(message);
 					break;
-				}
 				case "prompt/cancel":
 					clear();
 					patch({

@@ -9,6 +9,16 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	private seen = new Set<string>();
 	private authAbort: AbortController | undefined;
 
+	/** 実行や別の設定変更が完了するまで設定操作を拒否する。 */
+	private configurationUnavailable(): boolean {
+		return (
+			this.busy() ||
+			this.state.configPending ||
+			this.state.sessionPending ||
+			!["ready", "auth-required"].includes(this.state.connection)
+		);
+	}
+
 	/** 重複・不正要求を無視し、未対応操作は要求元に明示する。 */
 	async receive(value: unknown): Promise<void> {
 		if (this.disposed || !isUiMessage(value)) {
@@ -66,6 +76,11 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (this.state.connection !== "ready") {
 			throw new Error("Piへ再接続してから操作してください。");
 		}
+		await this.dispatchReadyAction(message);
+	}
+
+	/** 接続後の履歴操作を処理して会話単位の操作へ渡す。 */
+	private async dispatchReadyAction(message: UiMessage): Promise<void> {
 		if (message.type === "session/new") {
 			await this.connect();
 			return;
@@ -87,6 +102,11 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			);
 			return;
 		}
+		await this.dispatchThreadAction(message);
+	}
+
+	/** 現在の会話に対する送信と実行操作を処理する。 */
+	private async dispatchThreadAction(message: UiMessage): Promise<void> {
 		if (
 			!("sessionId" in message) ||
 			message.sessionId !== this.state.sessionId
@@ -99,23 +119,33 @@ export class PiSessionController extends PiHistory implements BackendSession {
 				!this.state.sessionPending &&
 				this.runtime?.storageChanged?.()
 			) {
-				const previous = this.runtime;
-				const nextEpoch = this.epoch + 1;
-				await this.connect(undefined, true);
-				if (
-					this.epoch !== nextEpoch ||
-					this.runtime === previous ||
-					this.state.connection !== "ready"
-				) {
-					throw new Error(
-						this.state.error ||
-							"Piの保存先を更新できませんでした。再送してください。",
-					);
-				}
+				await this.refreshStorage();
 			}
 			this.submit(message);
 			return;
 		}
+		this.dispatchRunAction(message);
+	}
+
+	/** 初回送信前に保存先を更新し、接続が変わった場合は中止する。 */
+	private async refreshStorage() {
+		const previous = this.runtime;
+		const nextEpoch = this.epoch + 1;
+		await this.connect(undefined, true);
+		if (
+			this.epoch !== nextEpoch ||
+			this.runtime === previous ||
+			this.state.connection !== "ready"
+		) {
+			throw new Error(
+				this.state.error ||
+					"Piの保存先を更新できませんでした。再送してください。",
+			);
+		}
+	}
+
+	/** 現在の実行に属する承認と停止だけを受け付ける。 */
+	private dispatchRunAction(message: UiMessage): void {
 		if (
 			message.type === "permission/respond" &&
 			message.runId === this.state.runId &&
@@ -143,27 +173,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		>,
 	): Promise<void> {
 		const account = this.runtime?.account;
-		if (
-			!account ||
-			this.busy() ||
-			this.state.configPending ||
-			this.state.sessionPending ||
-			!["ready", "auth-required"].includes(this.state.connection)
-		) {
+		if (!account || this.configurationUnavailable()) {
 			throw new Error("Piの処理が終わってから設定してください。");
 		}
-		if (message.type === "auth/start" && message.methodId !== "pi") {
-			throw new Error("未対応の認証方法です。");
-		}
-		if (
-			message.type === "config/set" &&
-			(message.sessionId !== this.state.sessionId ||
-				!this.state.configOptions.some(
-					(option) => option.id === message.configId,
-				))
-		) {
-			throw new Error("現在のPiモデル・推論レベル設定ではありません。");
-		}
+		this.validateConfiguration(message);
 		const epoch = this.epoch;
 		const abort = new AbortController();
 		this.authAbort = abort;
@@ -181,12 +194,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 				? { connection: "authenticating" as const }
 				: {}),
 		});
-		this.cancelQuota(
-			message.type !== "config/set" ||
-				message.configId === "provider" ||
-				(message.configId === "model" &&
-					!this.runtime?.quota?.canRetainForModel?.(message.value)),
-		);
+		this.invalidateConfiguredQuota(message);
 		try {
 			const operation =
 				message.type === "config/set"
@@ -214,6 +222,54 @@ export class PiSessionController extends PiHistory implements BackendSession {
 				});
 				this.refreshQuota();
 			}
+		}
+	}
+
+	/** providerやモデルの変更で再利用できない利用枠を破棄する。 */
+	private invalidateConfiguredQuota(
+		message:
+			| {
+					type: "config/set";
+					requestId: string;
+					sessionId: string;
+					configId: string;
+					value: string;
+			  }
+			| { type: "auth/start"; requestId: string; methodId: string }
+			| { type: "auth/logout"; requestId: string },
+	) {
+		this.cancelQuota(
+			message.type !== "config/set" ||
+				message.configId === "provider" ||
+				(message.configId === "model" &&
+					!this.runtime?.quota?.canRetainForModel?.(message.value)),
+		);
+	}
+
+	/** 認証方式と設定対象の会話を検証する。 */
+	private validateConfiguration(
+		message:
+			| {
+					type: "config/set";
+					requestId: string;
+					sessionId: string;
+					configId: string;
+					value: string;
+			  }
+			| { type: "auth/start"; requestId: string; methodId: string }
+			| { type: "auth/logout"; requestId: string },
+	) {
+		if (message.type === "auth/start" && message.methodId !== "pi") {
+			throw new Error("未対応の認証方法です。");
+		}
+		if (
+			message.type === "config/set" &&
+			(message.sessionId !== this.state.sessionId ||
+				!this.state.configOptions.some(
+					(option) => option.id === message.configId,
+				))
+		) {
+			throw new Error("現在のPiモデル・推論レベル設定ではありません。");
 		}
 	}
 }

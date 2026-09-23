@@ -85,16 +85,12 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 			}
 			const part = value as Record<string, unknown>;
 			if (
-				!part ||
-				typeof part !== "object" ||
 				typeof part.id !== "string" ||
 				!part.id ||
 				part.id.length > 256 ||
 				ids.has(part.id) ||
 				part.type !== (index % 2 ? "pasted" : "text") ||
-				typeof part.text !== "string" ||
-				(part.type === "pasted" && part.references !== undefined) ||
-				!validReferences(part.text, part.references)
+				!validPartReferences(part)
 			) {
 				return false;
 			}
@@ -103,5 +99,14 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 			return true;
 		}) &&
 		(parts as ComposerPart[]).map((part) => part.text).join("") === draft
+	);
+}
+
+/** 通常文の参照位置を検証し、貼り付けブロック内の参照を拒否する。 */
+function validPartReferences(part: Record<string, unknown>): boolean {
+	return (
+		typeof part.text === "string" &&
+		!(part.type === "pasted" && part.references !== undefined) &&
+		validReferences(part.text, part.references)
 	);
 }

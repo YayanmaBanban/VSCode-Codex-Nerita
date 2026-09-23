@@ -17,11 +17,7 @@ export async function resolvePath(
 		requestId: request.requestId,
 		entry: null,
 	};
-	if (
-		!isAbsoluteLocalPath(request.path) ||
-		vscode.env.remoteName ||
-		(request.range !== undefined && !isSourceRange(request.range))
-	) {
+	if (invalidPathRequest(request)) {
 		return result;
 	}
 	try {
@@ -41,6 +37,15 @@ export async function resolvePath(
 		// 未存在・アクセス不可は、貼り付け済みの本文を維持する。
 	}
 	return result;
+}
+
+/** ローカルの絶対パスと有効な位置指定だけを受け付ける。 */
+function invalidPathRequest(request: ResolvePathRequest) {
+	return (
+		!isAbsoluteLocalPath(request.path) ||
+		vscode.env.remoteName ||
+		(request.range !== undefined && !isSourceRange(request.range))
+	);
 }
 
 /** ディレクトリを優先してVS Codeのファイル種別を判定する。 */

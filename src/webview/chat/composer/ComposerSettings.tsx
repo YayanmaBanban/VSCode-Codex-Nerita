@@ -15,12 +15,7 @@ export function ComposerSettings({
 	state: ChatState;
 	send: (message: UiMessage) => void;
 }) {
-	const connected =
-		(state.connection === "ready" ||
-			(state.piAccount !== null &&
-				state.connection === "auth-required")) &&
-		!!state.sessionId &&
-		!state.sessionPending;
+	const connected = settingsConnected(state);
 	const disabled =
 		!connected ||
 		state.configPending ||
@@ -121,5 +116,16 @@ export function ComposerSettings({
 				)}
 			</div>
 		</div>
+	);
+}
+
+/** 設定を操作できる接続と会話があるか確認する。 */
+function settingsConnected(state: ChatState) {
+	return (
+		(state.connection === "ready" ||
+			(state.piAccount !== null &&
+				state.connection === "auth-required")) &&
+		!!state.sessionId &&
+		!state.sessionPending
 	);
 }

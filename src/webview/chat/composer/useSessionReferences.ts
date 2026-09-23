@@ -7,6 +7,15 @@ import type {
 } from "../../../shared/sessionReferences";
 import { sessionCompletionItems } from "./completionItems";
 
+/** 検索語ごとの候補と、重複取得を防ぐページ履歴を保持する。 */
+type SessionReferencePage = {
+	query: string;
+	entries: SessionReference[];
+	nextCursor: string | null;
+	seen: string[];
+	error?: string;
+};
+
 /** 古い検索・閉じたメニューへの応答を捨て、同名の会話はIDで区別する。 */
 export function useSessionReferences(
 	bridge: Bridge | undefined,
@@ -17,13 +26,7 @@ export function useSessionReferences(
 	const [page, setPage] = useState<{ query: string; cursor?: string }>({
 		query: "",
 	});
-	const [result, setResult] = useState<{
-		query: string;
-		entries: SessionReference[];
-		nextCursor: string | null;
-		seen: string[];
-		error?: string;
-	} | null>(null);
+	const [result, setResult] = useState<SessionReferencePage | null>(null);
 	const [loading, setLoading] = useState(false);
 	const cursor = page.query === term ? page.cursor : undefined;
 	// 前に検索した語へ戻った場合も、保存済みの次ページから始めない。
@@ -57,21 +60,12 @@ export function useSessionReferences(
 			setResult((previous) => {
 				const old =
 					cursor && previous?.query === term ? previous : null;
-				const repeated =
-					message.nextCursor !== null &&
-					(message.nextCursor === cursor ||
-						old?.seen.includes(message.nextCursor));
+				const repeated = repeatedSessionCursor(message, cursor, old);
 				return {
 					query: term,
-					entries: [
-						...new Map(
-							[...(old?.entries ?? []), ...message.entries].map(
-								(entry) => [entry.sessionId, entry],
-							),
-						).values(),
-					],
+					entries: mergeSessionEntries(old, message),
 					nextCursor: repeated ? null : message.nextCursor,
-					seen: [...(old?.seen ?? []), ...(cursor ? [cursor] : [])],
+					seen: nextSeenCursors(old, cursor),
 					...(message.error || repeated
 						? {
 								error:
@@ -137,17 +131,62 @@ export function useSessionReferences(
 	return {
 		items,
 		empty: emptySessionMessage(bridge, term, loading, data),
-		notice:
-			data?.error ||
-			(loading && data?.entries.length
-				? "読み込み中…"
-				: "同じ作業フォルダーのセッションを参照します。"),
+		notice: sessionReferenceNotice(data, loading),
 		more: () => {
 			if (data?.nextCursor && !loading) {
 				setPage({ query: term, cursor: data.nextCursor });
 			}
 		},
 	};
+}
+
+/** 同じページを再取得する循環カーソルを検出する。 */
+function repeatedSessionCursor(
+	message: SessionReferencesResult,
+	cursor: string | undefined,
+	old: SessionReferencePage | null,
+) {
+	return (
+		message.nextCursor !== null &&
+		(message.nextCursor === cursor ||
+			old?.seen.includes(message.nextCursor))
+	);
+}
+
+/** 取得済みページのカーソルを記録する。 */
+function nextSeenCursors(
+	old: SessionReferencePage | null,
+	cursor: string | undefined,
+): string[] {
+	return [...(old?.seen ?? []), ...(cursor ? [cursor] : [])];
+}
+
+/** ページ間のセッション候補をID単位で統合する。 */
+function mergeSessionEntries(
+	old: SessionReferencePage | null,
+	message: SessionReferencesResult,
+): SessionReference[] {
+	return [
+		...new Map(
+			[...(old?.entries ?? []), ...message.entries].map((entry) => [
+				entry.sessionId,
+				entry,
+			]),
+		).values(),
+	];
+}
+
+/** 検索結果のエラーと読み込み状態を表示文へ変換する。 */
+function sessionReferenceNotice(
+	data: SessionReferencePage | null,
+	loading: boolean,
+) {
+	return (
+		data?.error ||
+		(loading && data?.entries.length
+			? "読み込み中…"
+			: "同じ作業フォルダーのセッションを参照します。")
+	);
 }
 
 /** 接続・検索語・取得状態の順にセッション候補がない理由を返す。 */

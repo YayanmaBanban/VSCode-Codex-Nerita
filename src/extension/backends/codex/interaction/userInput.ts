@@ -22,32 +22,48 @@ export async function userInput(
 		}
 		const id = text(question.id),
 			title = text(question.question);
-		let answer: string | undefined;
-		if (
-			Array.isArray(question.options) &&
-			question.options.length &&
-			!question.isSecret
-		) {
-			const labels = question.options.map((option: unknown) => {
-				if (!isRecord(option)) {
-					throw new AppServerRpcError(-32602, "Invalid option");
-				}
-				return text(option.label);
-			});
-			if (question.isOther) {
-				labels.push("自由に入力する");
-			}
-			answer = await ui.choose(title, labels, signal);
-			if (question.isOther && answer === "自由に入力する") {
-				answer = await ui.input(title, false, signal);
-			}
-		} else {
-			answer = await ui.input(title, question.isSecret === true, signal);
-		}
+		const answer: string | undefined = await questionAnswer(
+			question,
+			ui,
+			title,
+			signal,
+		);
 		if (signal.aborted || answer === undefined) {
 			return { answers: {} };
 		}
 		answers[id] = { answers: [answer] };
 	}
 	return { answers };
+}
+
+/** 質問の選択肢と自由入力を扱う。 */
+async function questionAnswer(
+	question: Record<string, unknown>,
+	ui: InteractionService,
+	title: string,
+	signal: AbortSignal,
+) {
+	let answer: string | undefined;
+	if (
+		Array.isArray(question.options) &&
+		question.options.length &&
+		!question.isSecret
+	) {
+		const labels = question.options.map((option: unknown) => {
+			if (!isRecord(option)) {
+				throw new AppServerRpcError(-32602, "Invalid option");
+			}
+			return text(option.label);
+		});
+		if (question.isOther) {
+			labels.push("自由に入力する");
+		}
+		answer = await ui.choose(title, labels, signal);
+		if (question.isOther && answer === "自由に入力する") {
+			answer = await ui.input(title, false, signal);
+		}
+	} else {
+		answer = await ui.input(title, question.isSecret === true, signal);
+	}
+	return answer;
 }

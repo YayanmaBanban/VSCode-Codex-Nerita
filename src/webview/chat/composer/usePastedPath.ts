@@ -13,7 +13,7 @@ import {
 } from "lexical";
 import type { Bridge } from "../../vscodeBridge";
 import { parsePastedPath } from "../../../shared/pastedPath";
-import { $completion, $insertCompletion } from "./completions";
+import { $completion, $insertCompletion, type Completion } from "./completions";
 import { $pointOffset, $readParts } from "./content";
 
 /** 非同期応答はUndo・削除・カーソル移動後の本文を上書きしない。 */
@@ -37,9 +37,7 @@ export function usePastedPath(
 				}
 				const match = $completion();
 				const selection = $getSelection();
-				const text = (
-					event.clipboardData?.getData("text/plain") ?? ""
-				).replace(/\r\n?/g, "\n");
+				const text = pastedPlainText(event);
 				const target = parsePastedPath(text);
 				if (
 					match?.marker !== "#" ||
@@ -65,7 +63,7 @@ export function usePastedPath(
 				$addUpdateTag(HISTORY_PUSH_TAG);
 				selection.insertRawText(text);
 				const pasted = { ...match, end: match.end + text.length };
-				const expected = $getNodeByKey(match.key)?.getTextContent();
+				const expected = completionBlockText(match);
 				const requestId = crypto.randomUUID();
 				const unsubscribe = bridge.subscribe((message) => {
 					if (
@@ -121,4 +119,17 @@ export function usePastedPath(
 			unregister();
 		};
 	}, [editor, bridge]);
+}
+
+/** 非同期照合に使用する補完対象ブロックの本文を保存する。 */
+function completionBlockText(match: Completion) {
+	return $getNodeByKey(match.key)?.getTextContent();
+}
+
+/** 改行を正規化した貼り付け本文を取り出す。 */
+function pastedPlainText(event: ClipboardEvent) {
+	return (event.clipboardData?.getData("text/plain") ?? "").replace(
+		/\r\n?/g,
+		"\n",
+	);
 }

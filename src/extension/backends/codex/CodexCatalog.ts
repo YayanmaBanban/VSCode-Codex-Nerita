@@ -6,6 +6,7 @@ import type { StartedThread } from "./protocol/turn";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { PendingThreads, historySummary } from "./history/PendingThreads";
 import { threadSources } from "./history/threadSources";
+import { type HistoryThread } from "./protocol/history";
 
 /** 新規会話と履歴復元で同じ一覧機能を公開する。 */
 export abstract class CodexCatalog extends CodexRun {
@@ -53,12 +54,7 @@ export abstract class CodexCatalog extends CodexRun {
 		if (!client || !cwd || this.state.connection !== "ready") {
 			return;
 		}
-		if (
-			more &&
-			(this.state.sessionsLoading ||
-				archived !== this.state.sessionsArchived ||
-				this.state.sessionsNextCursor === null)
-		) {
+		if (this.cannotLoadMore(more, archived)) {
 			return;
 		}
 		const cursor = more ? this.state.sessionsNextCursor! : undefined;
@@ -75,6 +71,36 @@ export abstract class CodexCatalog extends CodexRun {
 			sessionsArchived: archived,
 			...(!more ? { sessions: [], sessionsNextCursor: null } : {}),
 		});
+		await this.loadCatalogPage(
+			client,
+			cwd,
+			archived,
+			cursor,
+			current,
+			more,
+			epoch,
+		);
+	}
+	/** 読み込み中やフィルター変更後の追加ページ取得を抑止する。 */
+	private cannotLoadMore(more: boolean, archived: boolean) {
+		return (
+			more &&
+			(this.state.sessionsLoading ||
+				archived !== this.state.sessionsArchived ||
+				this.state.sessionsNextCursor === null)
+		);
+	}
+
+	/** 一覧の取得失敗と完了を同じ接続世代にだけ反映する。 */
+	private async loadCatalogPage(
+		client: NonNullable<CodexCatalog["client"]>,
+		cwd: string,
+		archived: boolean,
+		cursor: string | undefined,
+		current: () => boolean,
+		more: boolean,
+		epoch: number,
+	): Promise<void> {
 		try {
 			const page = await client.listThreads({
 				cwd,
@@ -89,37 +115,8 @@ export abstract class CodexCatalog extends CodexRun {
 			if (!current()) {
 				return;
 			}
-			if (
-				page.nextCursor !== null &&
-				(page.nextCursor === cursor ||
-					this.cursors.has(page.nextCursor))
-			) {
-				throw new Error("Repeated catalog cursor");
-			}
-			if (cursor !== undefined) {
-				this.cursors.add(cursor);
-			}
-			const rows = new Map(
-				(more ? this.state.sessions : []).map((row) => [
-					row.sessionId,
-					row,
-				]),
-			);
-			for (const thread of page.data) {
-				if (!sameCwd(thread.cwd, cwd)) {
-					continue;
-				}
-				rows.set(thread.id, historySummary(thread, archived));
-			}
-			this.patch({
-				sessions: this.pendingThreads.merge(
-					epoch,
-					archived,
-					[...rows.values()],
-					page.data.map((thread) => thread.id),
-				),
-				sessionsNextCursor: page.nextCursor,
-			});
+
+			this.applyCatalogPage(page, cursor, more, cwd, archived, epoch);
 		} catch {
 			if (current()) {
 				this.patch({
@@ -133,37 +130,56 @@ export abstract class CodexCatalog extends CodexRun {
 			}
 		}
 	}
+	/** カーソルの循環を検出し、同じ作業フォルダーの履歴を統合する。 */
+	private applyCatalogPage(
+		page: { data: HistoryThread[]; nextCursor: string | null },
+		cursor: string | undefined,
+		more: boolean,
+		cwd: string,
+		archived: boolean,
+		epoch: number,
+	) {
+		if (
+			page.nextCursor !== null &&
+			(page.nextCursor === cursor || this.cursors.has(page.nextCursor))
+		) {
+			throw new Error("Repeated catalog cursor");
+		}
+
+		if (cursor !== undefined) {
+			this.cursors.add(cursor);
+		}
+
+		const rows = new Map(
+			(more ? this.state.sessions : []).map((row) => [
+				row.sessionId,
+				row,
+			]),
+		);
+
+		for (const thread of page.data) {
+			if (!sameCwd(thread.cwd, cwd)) {
+				continue;
+			}
+			rows.set(thread.id, historySummary(thread, archived));
+		}
+
+		this.patch({
+			sessions: this.pendingThreads.merge(
+				epoch,
+				archived,
+				[...rows.values()],
+				page.data.map((thread) => thread.id),
+			),
+			sessionsNextCursor: page.nextCursor,
+		});
+	}
+
 	/** 別クライアントによる名前変更や保存完了も次の一覧に反映する。 */
 	protected override notification(message: AppServerNotification): void {
 		super.notification(message);
-		if (
-			isRecord(message.params) &&
-			typeof message.params.threadId === "string"
-		) {
-			const id = message.params.threadId;
-			if (
-				message.method === "thread/archived" ||
-				message.method === "thread/unarchived"
-			) {
-				this.pendingThreads.update(this.epoch, id, {
-					archived: message.method === "thread/archived",
-				});
-			} else if (message.method === "thread/deleted") {
-				this.pendingThreads.update(this.epoch, id, null);
-			} else if (
-				message.method === "thread/name/updated" &&
-				typeof message.params.threadName === "string"
-			) {
-				this.pendingThreads.update(this.epoch, id, {
-					title: message.params.threadName,
-				});
-				if (id === this.state.sessionId) {
-					this.patch({
-						sessionTitle: message.params.threadName.trim() || null,
-					});
-				}
-			}
-		}
+
+		this.updateCatalogNotification(message);
 		if (
 			isRecord(message.params) &&
 			[
@@ -194,6 +210,38 @@ export abstract class CodexCatalog extends CodexRun {
 				});
 			}
 			void this.refreshSessions();
+		}
+	}
+
+	/** 履歴の名前とアーカイブ状態を通知から更新する。 */
+	private updateCatalogNotification(message: AppServerNotification) {
+		if (
+			isRecord(message.params) &&
+			typeof message.params.threadId === "string"
+		) {
+			const id = message.params.threadId;
+			if (
+				message.method === "thread/archived" ||
+				message.method === "thread/unarchived"
+			) {
+				this.pendingThreads.update(this.epoch, id, {
+					archived: message.method === "thread/archived",
+				});
+			} else if (message.method === "thread/deleted") {
+				this.pendingThreads.update(this.epoch, id, null);
+			} else if (
+				message.method === "thread/name/updated" &&
+				typeof message.params.threadName === "string"
+			) {
+				this.pendingThreads.update(this.epoch, id, {
+					title: message.params.threadName,
+				});
+				if (id === this.state.sessionId) {
+					this.patch({
+						sessionTitle: message.params.threadName.trim() || null,
+					});
+				}
+			}
 		}
 	}
 }

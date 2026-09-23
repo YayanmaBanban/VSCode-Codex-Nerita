@@ -43,6 +43,14 @@ export abstract class CodexAttachments extends CodexLifecycle {
 			}
 			return;
 		}
+		await this.addAttachments(message, this.files);
+	}
+
+	/** 添付の選択結果を同じ会話にだけ反映する。 */
+	private async addAttachments(
+		message: Extract<ComposerMessage, { type: "attachment/add" }>,
+		service: AttachmentService,
+	): Promise<void> {
 		if (this.state.attachmentPending) {
 			return;
 		}
@@ -50,12 +58,12 @@ export abstract class CodexAttachments extends CodexLifecycle {
 			threadId = this.state.sessionId;
 		this.patch({ attachmentPending: true });
 		try {
-			if (message.files && !this.files.drop) {
+			if (message.files && !service.drop) {
 				throw new Error("File drop unavailable");
 			}
 			const selected = message.files
-				? await this.files.drop!(message.files)
-				: await this.files.pick();
+				? await service.drop!(message.files)
+				: await service.pick();
 			if (epoch !== this.epoch || threadId !== this.state.sessionId) {
 				return;
 			}
