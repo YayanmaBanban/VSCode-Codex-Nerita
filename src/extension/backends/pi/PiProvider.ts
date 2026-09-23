@@ -31,7 +31,7 @@ export type PiQuotaReader = {
 
 /** Sessionごとに設定を生成し、利用枠サービスは必要なproviderだけ登録する。 */
 export type PiProvider = {
-	usesCatalog?: (models: ModelRuntime) => boolean;
+	/** モデル選択とは独立した補助metadataの取得元。 */
 	createCatalog?: (
 		models: ModelRuntime,
 		request: typeof fetch,

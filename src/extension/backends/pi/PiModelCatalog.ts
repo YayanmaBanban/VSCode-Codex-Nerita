@@ -12,7 +12,7 @@ export type PiCatalogModel = {
 	serviceTiers: { id: string; name: string; description: string }[];
 };
 
-/** undefinedはstatic provider、nullはlive能力未確認を表す。 */
+/** undefinedはmetadata取得元なし、nullはlive能力未確認を表す。 */
 export type PiCatalogSnapshot = readonly PiCatalogModel[] | null | undefined;
 
 /** 認証・キャッシュキーを外へ出さず、正規化済みmetadataだけ返す。 */

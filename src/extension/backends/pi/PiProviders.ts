@@ -7,7 +7,6 @@ import { CodexModelCatalogService } from "./codex/CodexModelCatalogService";
 
 export const piProviders: PiProviders = {
 	"openai-codex": {
-		usesCatalog: (models) => models.isUsingOAuth("openai-codex"),
 		createCatalog: (models, request) =>
 			new CodexModelCatalogService(models, request),
 		quotaGroup: codexQuotaGroup,

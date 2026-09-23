@@ -27,14 +27,13 @@ export class CodexProviderControls implements PiModelControls {
 		);
 	}
 
-	/** 標準値はLive ∩ Pi。live未確認では現状を保ちつつ選択は許可しない。 */
+	/** liveで対応値が確認できたモデルはPi候補を絞り、未取得ならPiへ委譲する。 */
 	private get standardLevels() {
 		const levels = this.session?.getAvailableThinkingLevels() ?? [];
-		return this.catalog === undefined
-			? levels
-			: levels.filter((level) =>
-					this.metadata?.reasoningLevels.includes(level),
-				);
+		const metadata = this.metadata;
+		return metadata
+			? levels.filter((level) => metadata.reasoningLevels.includes(level))
+			: levels;
 	}
 
 	/** Ultraの基底はmax、live default、近い共通標準値の順で決める。 */
@@ -54,7 +53,7 @@ export class CodexProviderControls implements PiModelControls {
 		this.fast = false;
 	}
 
-	/** 標準intersectionとlive Ultraを一つの選択一覧へまとめる。 */
+	/** Pi標準候補とliveが明示したUltraを選択一覧へまとめる。 */
 	get reasoningOptions(): ConfigChoice[] {
 		return [
 			...this.standardLevels.map((value) => ({ value, name: value })),
@@ -126,7 +125,6 @@ export class CodexProviderControls implements PiModelControls {
 		if (!this.supportsUltra || session?.thinkingLevel !== this.basis) {
 			this.override = null;
 		}
-		this.clampReasoning(session);
 		if (!this.supportsFastMode) {
 			this.fast = false;
 		}
@@ -147,35 +145,6 @@ export class CodexProviderControls implements PiModelControls {
 			effectiveReasoning: this.override ?? thinkingLevel,
 			fastMode: this.fast,
 		};
-	}
-
-	/** 現在の推論値が非対応なら利用可能な既定値へ戻す。 */
-	private clampReasoning(session: AgentSession | undefined) {
-		const levels = this.standardLevels;
-		if (
-			session &&
-			this.metadata &&
-			!levels.includes(session.thinkingLevel)
-		) {
-			if (
-				this.metadata.defaultReasoning === "ultra" &&
-				this.supportsUltra
-			) {
-				this.basis = this.ultraBasis;
-				session.setThinkingLevel(this.basis!);
-				this.override = "ultra";
-			} else {
-				const fallback =
-					levels.find(
-						(level) => level === this.metadata?.defaultReasoning,
-					) ??
-					levels.find((level) => level === "medium") ??
-					levels.at(-1);
-				if (fallback) {
-					session.setThinkingLevel(fallback);
-				}
-			}
-		}
 	}
 
 	/** モデル切り替えと能力変更に合わせてUltraの基底を更新する。 */

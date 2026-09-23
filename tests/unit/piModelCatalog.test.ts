@@ -1,4 +1,4 @@
-// live候補とHost側の全選択経路・Reasoning能力・取消競合を検証する。
+// Pi候補と補助metadataの独立性、Reasoning能力、取消競合を検証する。
 import { describe, expect, it } from "vitest";
 import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
 import { catalogHarness, liveModel } from "./piCatalogHarness";
@@ -8,6 +8,28 @@ import { validComposerField } from "../../src/shared/composerValidation";
 import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
 
 describe("Pi live model catalog", () => {
+	it("provider切替前にliveを取得し、Pi先頭の非掲載Sparkを選ばない", async () => {
+		const h = catalogHarness();
+		h.session.model = h.all[4]!;
+		const spark = h.all.splice(1, 1)[0]!;
+		h.all.unshift(spark);
+		await h.account.selectProvider("openai-codex", h.signal);
+		expect(h.session.model.id).toBe("small");
+	});
+
+	it("空のlive catalogは成功として扱い、PiのCodex候補を再公開しない", async () => {
+		const h = catalogHarness();
+		h.payload.models = [];
+		await h.account.refreshCatalog(h.signal);
+		expect(h.session.model.provider).toBe("local");
+		await expect(
+			h.account.selectProvider("openai-codex", h.signal),
+		).rejects.toThrow();
+		await expect(
+			h.account.selectModel("openai-codex/spark", h.signal),
+		).rejects.toThrow();
+	});
+
 	it("catalog失敗後もQuotaと送信は独立して動く", async () => {
 		const h = catalogHarness();
 		h.request.mockRejectedValue(new Error("private catalog failure"));
@@ -38,10 +60,10 @@ describe("Pi live model catalog", () => {
 		await controller.controller.dispose();
 	});
 
-	it("同じモデルのcatalog更新でUltra基底が変わっても有効なoverrideを維持する", async () => {
+	it("liveの通常候補変更に合わせてUltra基底を更新する", async () => {
 		const h = catalogHarness();
 		await h.account.refreshCatalog(h.signal);
-		h.account.selectThinkingLevel("ultra", h.signal);
+		await h.account.selectThinkingLevel("ultra", h.signal);
 		h.payload.models[0]!.supported_reasoning_levels = [
 			{ effort: "high", description: "" },
 			{ effort: "ultra", description: "" },
@@ -52,16 +74,16 @@ describe("Pi live model catalog", () => {
 			effectiveReasoning: "ultra",
 		});
 	});
-	it("非対応の現在値をlive default Ultraへ補正する", async () => {
+	it("live default Ultraだけでは現在の通常Reasoningを変更しない", async () => {
 		const h = catalogHarness();
 		h.payload.models[0]!.default_reasoning_level = "ultra";
 		await h.account.refreshCatalog(h.signal);
 		expect(h.account.snapshot().piProviderControls).toMatchObject({
-			thinkingLevel: "max",
-			effectiveReasoning: "ultra",
+			thinkingLevel: "minimal",
+			effectiveReasoning: "minimal",
 		});
 	});
-	it("再ログインは同一accountでも成功cacheを破棄し、失敗時に候補を復活させない", async () => {
+	it("再ログインは成功metadataを破棄するがPi候補は維持する", async () => {
 		const h = catalogHarness();
 		Object.assign(h.models, {
 			getProviders: () => [
@@ -96,11 +118,15 @@ describe("Pi live model catalog", () => {
 		expect(account.snapshot().configOptions![0]!.options).toHaveLength(2);
 		h.request.mockRejectedValue(new Error("secret"));
 		await account.authenticate(false, h.signal);
+		expect(account.snapshot().configOptions![0]!.options).toHaveLength(4);
+		expect(account.snapshot().configOptions![0]!.options[0]?.name).toBe(
+			"Static astra",
+		);
 		expect(
 			account
 				.snapshot()
-				.configOptions![0]!.options.map((item) => item.value),
-		).toEqual(["openai-codex/astra"]);
+				.configOptions![1]!.options.map((item) => item.value),
+		).not.toContain("ultra");
 		expect(account.snapshot().connection).toBe("ready");
 	});
 
@@ -118,7 +144,7 @@ describe("Pi live model catalog", () => {
 			snapshot.configOptions!.some((item) => item.id === "fast-mode"),
 		).toBe(false);
 	});
-	it("live visibility・priority・表示名を使い、PiにないモデルとSparkを除く", async () => {
+	it("liveに無いSparkとhiddenを除外し、表示名とpriorityを反映する", async () => {
 		const h = catalogHarness();
 		await h.account.refreshCatalog(h.signal);
 		const option = h.account.snapshot().configOptions![0]!;
@@ -126,24 +152,28 @@ describe("Pi live model catalog", () => {
 			{ value: "openai-codex/small", name: "Live small" },
 			{ value: "openai-codex/astra", name: "Live astra" },
 		]);
-		for (const id of ["spark", "hidden", "not-in-pi"]) {
-			await expect(
-				h.account.selectModel(`openai-codex/${id}`, h.signal),
-			).rejects.toThrow();
-		}
+		await expect(
+			h.account.selectModel("openai-codex/spark", h.signal),
+		).rejects.toThrow();
+		await expect(
+			h.account.selectModel("openai-codex/hidden", h.signal),
+		).rejects.toThrow();
+		await expect(
+			h.account.selectModel("openai-codex/not-in-pi", h.signal),
+		).rejects.toThrow();
 		expect(h.session.model.id).toBe("astra");
 		await h.account.selectProvider("local", h.signal);
 		await h.account.selectProvider("openai-codex", h.signal);
 		expect(h.session.model.id).toBe("small");
 	});
 
-	it("hidden履歴は保持し、catalogに存在しない履歴はpriority先頭へ補正する", async () => {
+	it("liveで選択不能な履歴モデルから利用可能モデルへ復帰する", async () => {
 		const h = catalogHarness();
 		h.session.model = h.all[2]!;
 		await h.account.refreshCatalog(h.signal);
-		expect(h.session.model.id).toBe("hidden");
+		expect(h.session.model.id).toBe("small");
 		expect(h.account.snapshot().configOptions![0]!.currentLabel).toBe(
-			"Live hidden",
+			"Live small",
 		);
 		expect(
 			validComposerField(
@@ -159,43 +189,98 @@ describe("Pi live model catalog", () => {
 				},
 			]),
 		).toBe(false);
-		expect(h.session.setModel).not.toHaveBeenCalled();
+		expect(h.session.setModel).toHaveBeenCalledOnce();
 		h.session.model = h.all[1]!;
 		await h.account.refreshCatalog(h.signal);
 		expect(h.session.model.id).toBe("small");
+		expect(h.account.snapshot().configOptions![0]!.currentLabel).toBe(
+			"Live small",
+		);
 	});
 
-	it("初回失敗は現在モデルだけ維持し、取得済みなら同一accountのcacheを使う", async () => {
+	it("新モデルはlive掲載後に選択でき、visibility noneは除外する", async () => {
+		const h = catalogHarness();
+		h.payload.models[1]!.visibility = "none";
+		await h.account.refreshCatalog(h.signal);
+		h.all.push({ ...h.all[0]!, id: "new-pi-model", name: "New Pi Model" });
+		const options = h.account.snapshot().configOptions![0]!.options;
+		expect(options.map((item) => item.value)).not.toContain(
+			"openai-codex/hidden",
+		);
+		expect(options).not.toContainEqual({
+			value: "openai-codex/new-pi-model",
+			name: "New Pi Model",
+		});
+		await expect(
+			h.account.selectModel("openai-codex/new-pi-model", h.signal),
+		).rejects.toThrow();
+		h.payload.models.push(
+			liveModel("new-pi-model", {
+				service_tiers: [],
+				supported_reasoning_levels: [{ effort: "high" }],
+			}),
+		);
+		await h.account.selectModel("openai-codex/new-pi-model", h.signal);
+		expect(
+			h.account
+				.snapshot()
+				.configOptions![1]!.options.map((item) => item.value),
+		).toEqual(["high"]);
+		expect(
+			h.account
+				.snapshot()
+				.configOptions!.some((item) => item.id === "fast-mode"),
+		).toBe(false);
+		expect(
+			h.account
+				.snapshot()
+				.configOptions![1]!.options.map((item) => item.value),
+		).not.toContain("ultra");
+	});
+
+	it("初回失敗でも全Pi候補と通常Reasoningを維持し、成功metadataは再利用する", async () => {
 		const h = catalogHarness();
 		h.request.mockRejectedValueOnce(new Error("private HTTP body"));
 		await h.account.refreshCatalog(h.signal);
-		expect(h.account.snapshot().configOptions![0]!.options).toEqual([
-			{ value: "openai-codex/astra", name: "Static astra" },
-		]);
+		expect(h.account.snapshot().configOptions![0]!.options).toHaveLength(4);
+		expect(h.account.snapshot().configOptions![0]!.options[0]?.name).toBe(
+			"Static astra",
+		);
 		expect(h.account.snapshot().connection).toBe("ready");
-		expect(h.account.snapshot().configOptions![1]!.options).toEqual([]);
+		expect(
+			h.account
+				.snapshot()
+				.configOptions![1]!.options.map((item) => item.value),
+		).toEqual(h.session.model.levels);
 		await h.account.refreshCatalog(h.signal);
 		h.request.mockRejectedValueOnce(new Error("private HTTP body"));
 		await h.account.refreshCatalog(h.signal);
 		expect(h.account.snapshot().configOptions![0]!.options).toHaveLength(2);
+		expect(h.account.snapshot().configOptions![0]!.options[0]?.name).toBe(
+			"Live small",
+		);
 		expect(JSON.stringify(h.account.snapshot())).not.toMatch(
 			/fixture-account|test-secret|private HTTP/,
 		);
 	});
 
-	it("ReasoningはLive ∩ Piだけを表示し、default補正とUltra基底を適用する", async () => {
+	it("liveが非対応のoff・minimalを候補とHostの選択受付から除く", async () => {
 		const h = catalogHarness();
 		await h.account.refreshCatalog(h.signal);
-		expect(h.session.thinkingLevel).toBe("high");
+		expect(h.session.thinkingLevel).toBe("minimal");
 		expect(
 			h.account.snapshot().configOptions![1]!.options.map((o) => o.value),
 		).toEqual(["low", "high", "max", "ultra"]);
-		for (const level of ["off", "minimal", "medium", "persistent"]) {
+		for (const level of ["off", "minimal", "medium"]) {
 			expect(() =>
 				h.account.selectThinkingLevel(level, h.signal),
 			).toThrow();
 		}
-		h.account.selectThinkingLevel("ultra", h.signal);
+		await h.account.selectThinkingLevel("high", h.signal);
+		expect(() =>
+			h.account.selectThinkingLevel("persistent", h.signal),
+		).toThrow();
+		await h.account.selectThinkingLevel("ultra", h.signal);
 		h.account.controls.configure("fast-mode", "on", h.signal);
 		expect(
 			h.account.controls.rewrite(
@@ -209,7 +294,7 @@ describe("Pi live model catalog", () => {
 		});
 		await h.account.selectModel("openai-codex/small", h.signal);
 		expect(h.account.snapshot().piProviderControls).toMatchObject({
-			effectiveReasoning: "low",
+			effectiveReasoning: "max",
 			reasoningOverride: null,
 			fastMode: false,
 		});
@@ -220,7 +305,7 @@ describe("Pi live model catalog", () => {
 		).toBe(false);
 	});
 
-	it("none・minimalはliveとPi双方にあるときだけ表示する", async () => {
+	it("liveが明示したnone・minimalは公開し、Piにない値は追加しない", async () => {
 		const h = catalogHarness();
 		h.payload.models = [
 			liveModel("astra", {
@@ -241,10 +326,10 @@ describe("Pi live model catalog", () => {
 		h.session.thinkingLevel = "high";
 		expect(
 			h.account.snapshot().piProviderControls?.effectiveReasoning,
-		).toBe("off");
+		).toBe("high");
 	});
 
-	it("maxとFastがなくてもlive Ultraを標準default基底で利用する", async () => {
+	it("liveにmaxがなければ対応するhighをUltra基底に使う", async () => {
 		const h = catalogHarness();
 		h.payload.models = [
 			liveModel("astra", {
@@ -256,7 +341,7 @@ describe("Pi live model catalog", () => {
 			}),
 		];
 		await h.account.refreshCatalog(h.signal);
-		h.account.selectThinkingLevel("ultra", h.signal);
+		await h.account.selectThinkingLevel("ultra", h.signal);
 		expect(h.account.snapshot().piProviderControls).toMatchObject({
 			thinkingLevel: "high",
 			effectiveReasoning: "ultra",

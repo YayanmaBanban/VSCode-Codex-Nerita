@@ -8,6 +8,7 @@ import type { PiAuthItem } from "../../../shared/piAuth";
 import { PiProviderControls } from "./PiProviderControls";
 import { piModelOptions } from "./PiModelOptions";
 import { PiModelCatalogService } from "./PiModelCatalogService";
+import type { PiModelSelection } from "./PiRuntime";
 
 /** SDKの認証対話をVS Codeとテストで差し替える。 */
 export type PiAuthService = {
@@ -27,32 +28,61 @@ export class PiAccount {
 		private service?: PiAuthService,
 		readonly controls = new PiProviderControls(),
 		readonly catalog = new PiModelCatalogService(models, session),
+		private saveModel?: (selection: PiModelSelection) => Promise<void>,
+		private initialSelection?: PiModelSelection,
 	) {
 		controls.bind(session);
 		controls.bindCatalog((provider) => catalog.snapshot(provider));
 	}
 
-	/** 接続・履歴復元時はlive metadataを取得してから同じ補正経路を通す。 */
+	/** live更新後は利用可能なモデルへ復帰し、選択不能な履歴モデルを残さない。 */
 	async refreshCatalog(signal: AbortSignal): Promise<void> {
 		const provider = this.session.model?.provider;
-		if (!provider || this.catalog.snapshot(provider) === undefined) {
+		if (provider && this.catalog.snapshot(provider) !== undefined) {
+			await this.catalog.refresh(provider, signal);
+		}
+		signal.throwIfAborted();
+		if (provider) {
+			await this.reconcileModel(signal);
+		}
+		this.restoreReasoning(signal);
+		this.controls.snapshot();
+	}
+
+	/** 新規起動時だけ保存した推論を適用し、非対応値は現在の候補へ戻す。 */
+	private restoreReasoning(signal: AbortSignal): void {
+		const saved = this.initialSelection;
+		this.initialSelection = undefined;
+		if (!saved?.reasoning) {
 			return;
 		}
-		await this.catalog.refresh(provider, signal);
-		signal.throwIfAborted();
-		try {
-			await this.reconcileModel(signal);
-		} catch {
-			signal.throwIfAborted();
+		const options = this.controls.reasoningOptions;
+		const current = this.controls.snapshot();
+		const requested =
+			saved.provider === current.provider &&
+			saved.model === current.modelId
+				? saved.reasoning
+				: current.effectiveReasoning;
+		const value = [
+			requested,
+			current.effectiveReasoning,
+			"medium",
+			...options.map((option) => option.value),
+		].find((candidate) =>
+			options.some((option) => option.value === candidate),
+		);
+		if (value) {
+			this.controls.selectReasoning(value, signal);
 		}
-		this.controls.snapshot();
 	}
 
 	/** キー、トークン、SDKの認証結果そのものは公開しない。 */
 	snapshot(): Partial<ChatState> {
 		const model = this.session.model;
 		const controls = this.controls.snapshot();
-		const available = this.models.getAvailableSnapshot();
+		const available = this.catalog.available(
+			this.models.getAvailableSnapshot(),
+		);
 		const status = model
 			? this.models.getProviderAuthStatus(model.provider)
 			: undefined;
@@ -80,7 +110,7 @@ export class PiAccount {
 		};
 	}
 
-	/** 利用可能なカタログに含まれるモデルだけを選ぶ。 */
+	/** Piと取得済みlive catalogの両方で利用可能なモデルだけを選ぶ。 */
 	async selectModel(value: string, signal: AbortSignal): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
 		const target = available.find(
@@ -97,6 +127,7 @@ export class PiAccount {
 		}
 		signal.throwIfAborted();
 		await this.session.setModel(model);
+		await this.rememberModel(model.provider, model.id);
 		this.controls.snapshot();
 	}
 
@@ -104,23 +135,37 @@ export class PiAccount {
 	async selectProvider(value: string, signal: AbortSignal): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
 		await this.catalog.refresh(value, signal);
-		signal.throwIfAborted();
 		const model = this.catalog
 			.available(available)
 			.find((item) => item.provider === value);
 		if (!model) {
 			throw new Error("利用可能なPi providerを選択してください。");
 		}
-		if (this.session.model?.provider === value) {
+		signal.throwIfAborted();
+		if (
+			this.session.model?.provider === value &&
+			this.catalog
+				.available(available)
+				.some(
+					(item) =>
+						item.provider === value &&
+						item.id === this.session.model?.id,
+				)
+		) {
 			return;
 		}
 		await this.session.setModel(model);
+		await this.rememberModel(model.provider, model.id);
 		this.controls.snapshot();
 	}
 
 	/** 現在のモデルが対応する推論レベルだけをSDKへ渡す。 */
-	selectThinkingLevel(value: string, signal: AbortSignal): void {
+	selectThinkingLevel(value: string, signal: AbortSignal): Promise<void> {
 		this.controls.selectReasoning(value, signal);
+		const model = this.session.model;
+		return model
+			? this.rememberModel(model.provider, model.id)
+			: Promise.resolve();
 	}
 
 	/** 宣言型UIの設定IDをHostの操作に限定する。 */
@@ -134,7 +179,7 @@ export class PiAccount {
 		} else if (id === "model") {
 			await this.selectModel(value, signal);
 		} else if (id === "reasoning_effort") {
-			this.selectThinkingLevel(value, signal);
+			await this.selectThinkingLevel(value, signal);
 		} else {
 			this.controls.configure(id, value, signal);
 		}
@@ -192,18 +237,18 @@ export class PiAccount {
 		}
 	}
 
-	/** 認証切れの旧モデルを保持せず、利用可能なモデルへ復帰する。 */
+	/** 認証切れの旧モデルを保持せず、Piの利用可能候補へ復帰する。 */
 	private async reconcileModel(
 		signal: AbortSignal,
 		provider?: string,
 	): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
 		signal.throwIfAborted();
+		const candidates = this.catalog.available(available);
 		const current = this.session.model;
 		if (
 			current &&
-			this.catalog.canRetain(current) &&
-			available.some(
+			candidates.some(
 				(model) =>
 					model.provider === current.provider &&
 					model.id === current.id,
@@ -211,7 +256,6 @@ export class PiAccount {
 		) {
 			return;
 		}
-		const candidates = this.catalog.available(available);
 		const model =
 			candidates.find(
 				(model) => model.provider === (provider ?? current?.provider),
@@ -219,6 +263,18 @@ export class PiAccount {
 		if (model) {
 			await this.session.setModel(model);
 		}
+	}
+
+	/** 明示的なモデル変更だけを次回起動用に保存する。 */
+	private async rememberModel(
+		provider: string,
+		model: string,
+	): Promise<void> {
+		await this.saveModel?.({
+			provider,
+			model,
+			reasoning: this.controls.snapshot().effectiveReasoning,
+		});
 	}
 
 	/** provider単位の設定状態と、実行できる認証方式を表示する。 */

@@ -76,8 +76,7 @@ export default function(pi) {
 		extensionPath,
 		cwd,
 		agentDir,
-		provider: "local",
-		model: "smoke",
+		preferredModel: { provider: "local", model: "smoke" },
 		signal: abort.signal,
 		request: async (url, options) => {
 			catalogRequests.push(String(url));
@@ -210,29 +209,31 @@ export default function(pi) {
 		assert.equal(session.account.snapshot().connection, "ready");
 		// 実SDKのmetadataによる候補生成と、ユーザー拡張を含む要求フックの合成を検証する。
 		// 外部providerには送信せず、隔離した認証・モデルとSDKの公開Runnerを使う。
+		const controlsModel = {
+			id: "controls-test",
+			name: "Controls test",
+			reasoning: true,
+			input: ["text"],
+			contextWindow: 32000,
+			maxTokens: 1000,
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			thinkingLevelMap: {
+				off: null,
+				minimal: null,
+				low: "low",
+				medium: null,
+				high: "high",
+				xhigh: null,
+				max: "max",
+			},
+		};
 		session.modelRuntime.registerProvider("openai-codex", {
 			api: "openai-codex-responses",
 			apiKey: "isolated-controls-key",
 			baseUrl: "https://example.invalid",
 			models: [
-				{
-					id: "controls-test",
-					name: "Controls test",
-					reasoning: true,
-					input: ["text"],
-					contextWindow: 32000,
-					maxTokens: 1000,
-					cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-					thinkingLevelMap: {
-						off: null,
-						minimal: null,
-						low: "low",
-						medium: null,
-						high: "high",
-						xhigh: null,
-						max: "max",
-					},
-				},
+				controlsModel,
+				{ ...controlsModel, id: "controls-new", name: "New Pi model" },
 			],
 		});
 		// OAuthの解決境界だけを模擬し、catalog parser・overlay・SDK操作は実装を通す。
@@ -267,6 +268,13 @@ export default function(pi) {
 			session.account.snapshot().configOptions[0].options[0].name,
 			"Live Controls",
 		);
+		assert.ok(
+			!session.account
+				.snapshot()
+				.configOptions[0].options.some(
+					(option) => option.value === "openai-codex/controls-new",
+				),
+		);
 		assert.equal(await session.quota.read(abort.signal), null);
 		assert.equal(
 			session.account.snapshot().configOptions[0].options[0].name,
@@ -298,6 +306,13 @@ export default function(pi) {
 			session.account.snapshot().piProviderControls.effectiveReasoning,
 			"ultra",
 		);
+		await assert.rejects(
+			session.account.selectModel(
+				"openai-codex/controls-new",
+				abort.signal,
+			),
+		);
+		assert.equal(session.model.id, "controls-test");
 		await session.account.selectModel("local/smoke", abort.signal);
 		assert.equal(
 			session.account.snapshot().piProviderControls.reasoningOverride,

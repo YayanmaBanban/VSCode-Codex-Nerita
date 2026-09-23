@@ -4,14 +4,11 @@ import { isRecord } from "../../../../shared/validation";
 
 /** tokenの更新・保存はSDKへ委譲し、認証ファイルは直接読まない。 */
 export async function codexOAuth(models: ModelRuntime, signal: AbortSignal) {
-	if (!models.isUsingOAuth("openai-codex")) {
-		return null;
-	}
 	const resolved = await models.getAuth("openai-codex", { signal });
 	signal.throwIfAborted();
-	if (
-		(await models.checkAuth("openai-codex", { signal }))?.type !== "oauth"
-	) {
+	const auth = await models.checkAuth("openai-codex", { signal });
+	signal.throwIfAborted();
+	if (auth?.type !== "oauth") {
 		return null;
 	}
 	const token = resolved?.auth.apiKey;
