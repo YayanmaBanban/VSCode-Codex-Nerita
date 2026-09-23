@@ -217,6 +217,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			if (epoch === this.epoch) {
 				this.patch({
 					...account.snapshot(),
+					usage: this.contextUsage(),
 					configPending: false,
 					sessionPending: false,
 				});

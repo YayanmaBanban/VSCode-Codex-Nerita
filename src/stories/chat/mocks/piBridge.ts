@@ -145,6 +145,9 @@ export function createPiBridge(showTools = false): Bridge {
 					const done = length >= text.length;
 					patch({
 						run: done ? "completed" : "running",
+						...(done
+							? { usage: { used: 60000, size: 200000 } }
+							: {}),
 						...(showTools && done
 							? {
 									tools: state.tools.map((tool) =>
@@ -205,6 +208,7 @@ export function createPiBridge(showTools = false): Bridge {
 				patch({
 					sessionId: crypto.randomUUID(),
 					run: "idle",
+					usage: null,
 					runId: null,
 					messages: [],
 					tools: [],

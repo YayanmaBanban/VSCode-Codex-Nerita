@@ -57,6 +57,7 @@ export function piHarness() {
 	const events: HostMessage[] = [];
 	const runtime: PiSession = {
 		sessionId: "pi-1",
+		getContextUsage: vi.fn<PiSession["getContextUsage"]>(),
 		model: undefined,
 		isStreaming: true,
 		steer: vi.fn<PiSession["steer"]>().mockResolvedValue(undefined),

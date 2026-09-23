@@ -191,6 +191,22 @@ export abstract class PiLifecycle extends SessionState {
 		}
 	}
 
+	/** 累積課金量ではなくSDKの現在のコンテキスト推定量を共有形式に変換する。 */
+	protected contextUsage() {
+		const usage = this.runtime?.getContextUsage();
+		if (
+			!usage ||
+			usage.tokens === null ||
+			!Number.isFinite(usage.tokens) ||
+			usage.tokens < 0 ||
+			!Number.isFinite(usage.contextWindow) ||
+			usage.contextWindow <= 0
+		) {
+			return null;
+		}
+		return { used: usage.tokens, size: usage.contextWindow };
+	}
+
 	/** 復元済みのSDKセッションとモデル情報をUIへ公開する。 */
 	private publishConnectedSession(
 		restored: Pick<ChatState, "messages" | "tools" | "sessionTitle">,
@@ -228,6 +244,7 @@ export abstract class PiLifecycle extends SessionState {
 					]
 				: [],
 			...session.account?.snapshot(),
+			usage: this.contextUsage(),
 			skills: session.skills ?? [],
 		});
 		this.refreshQuota();

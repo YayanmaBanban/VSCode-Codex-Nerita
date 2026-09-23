@@ -25,8 +25,19 @@ test("Piの逐次応答・停止・再送・新規会話", async ({ page }, info
 		page.getByRole("button", { name: "停止", exact: true }),
 	).toHaveCount(0);
 	await page.screenshot({ path: info.outputPath("pi-completed.png") });
+	await expect(page.getByRole("progressbar")).toHaveAttribute(
+		"aria-valuenow",
+		"60000",
+	);
+	await expect(page.getByRole("progressbar")).toHaveAttribute(
+		"aria-valuemax",
+		"200000",
+	);
 	await page.getByRole("button", { name: "新しいチャット" }).click();
 	await expect(page.getByRole("log")).toBeEmpty();
+	await expect(page.getByRole("progressbar")).not.toHaveAttribute(
+		"aria-valuenow",
+	);
 	await info.attach("browser-errors", {
 		body: JSON.stringify(errors),
 		contentType: "application/json",

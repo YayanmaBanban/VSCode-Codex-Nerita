@@ -28,7 +28,7 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 		return () => animation.stop();
 	}, [percent, progress, reduced]);
 	const label = usage
-		? `${usage.used}/${usage.size} (${Number(percent.toFixed(1))}%)`
+		? `${usage.used / 1000}K/${usage.size / 1000}K (${Number(percent.toFixed(1))}%)`
 		: "使用量は未取得です";
 	return (
 		<SettingsTooltip
