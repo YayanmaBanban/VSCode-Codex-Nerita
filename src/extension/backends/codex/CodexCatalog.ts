@@ -15,7 +15,7 @@ export abstract class CodexCatalog extends CodexRun {
 	private cursors = new Set<string>();
 	/** 復元では一覧のフィルターを保って設定だけを更新する。 */
 	protected restoreThreadOptions(thread: StartedThread): Promise<void> {
-		return super.initializedThread(thread);
+		return super.initializedThread(thread, false);
 	}
 	/** 新規接続時から履歴機能を利用可能にする。 */
 	protected override async initializedThread(

@@ -182,6 +182,7 @@ export class CodexSessionController extends CodexSubmission {
 		}
 		if (message.type === "config/set") {
 			await this.setConfig(message.configId, message.value);
+			await this.rememberSelection(message.configId);
 			return;
 		}
 		if (
