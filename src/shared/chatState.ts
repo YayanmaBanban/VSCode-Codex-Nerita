@@ -83,6 +83,8 @@ export type ChatState = {
 	sessionTitle: string | null;
 	runId: string | null;
 	run: RunStatus;
+	/** 完了したPlanの選択待ち。 */
+	planDecision: { runId: string; text: string } | null;
 	messages: ChatMessage[];
 	tools: ToolSummary[];
 	agents: SubAgentSummary[];
@@ -121,6 +123,7 @@ export function initialState(): ChatState {
 		sessionTitle: null,
 		runId: null,
 		run: "idle",
+		planDecision: null,
 		messages: [],
 		tools: [],
 		agents: [],

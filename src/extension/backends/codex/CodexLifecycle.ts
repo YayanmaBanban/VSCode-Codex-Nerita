@@ -219,6 +219,7 @@ export abstract class CodexLifecycle extends SessionState {
 				sessionId: result.thread.id,
 				runId: null,
 				run: "idle",
+				planDecision: null,
 				messages: [],
 				tools: [],
 				agents: [],

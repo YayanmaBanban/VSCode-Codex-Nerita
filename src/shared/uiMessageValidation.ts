@@ -80,6 +80,10 @@ const uiMessageValidators = new Map<
 		"connection/retry": () => true,
 		"auth/logout": () => true,
 		"session/new": () => true,
+		"plan/decide": (value) =>
+			isId(value.sessionId) &&
+			isId(value.runId) &&
+			["current", "new", "continue"].includes(String(value.action)),
 		"session/list": (value) =>
 			(value.archived === undefined ||
 				typeof value.archived === "boolean") &&
