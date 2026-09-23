@@ -17,6 +17,7 @@ export function isState(value: unknown): value is ChatState {
 			"sessionId",
 			"sessionTitle",
 			"runId",
+			"planDecision",
 			"error",
 			"messages",
 			"tools",

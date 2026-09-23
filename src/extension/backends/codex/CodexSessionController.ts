@@ -107,6 +107,10 @@ export class CodexSessionController extends CodexSubmission {
 
 	/** 接続済みの会話操作と履歴操作を振り分ける。 */
 	private async dispatchReadyAction(message: UiMessage): Promise<void> {
+		if (message.type === "plan/decide") {
+			await this.decidePlan(message);
+			return;
+		}
 		if (message.type === "session/new") {
 			await this.newThread();
 			return;
@@ -130,6 +134,39 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		await this.dispatchThreadAction(message);
+	}
+
+	/** 表示中のPlanだけを対象に、モード変更から送信までを処理する。 */
+	private async decidePlan(
+		message: Extract<UiMessage, { type: "plan/decide" }>,
+	) {
+		const decision = this.state.planDecision;
+		if (
+			!decision ||
+			message.sessionId !== this.state.sessionId ||
+			message.runId !== decision.runId ||
+			this.busy()
+		) {
+			throw new Error("Stale plan");
+		}
+		if (message.action === "continue") {
+			this.patch({ planDecision: null });
+			return;
+		}
+		const plan = decision.text;
+		if (message.action === "new") {
+			const settings = this.capturePlanSettings();
+			await this.newThread();
+			await this.restorePlanSettings(settings);
+		} else {
+			await this.setConfig("collaboration_mode", "default");
+		}
+		this.patch({ planDecision: null });
+		const text =
+			message.action === "new"
+				? `A previous agent produced the plan below to accomplish the user's task. Implement the plan in a fresh context. Treat the plan as the source of user intent, re-read files as needed, and carry the work through implementation and verification.\n\n${plan}`
+				: plan;
+		await this.submitPrompt(text, this.state.sessionId);
 	}
 
 	/** 操作対象が現在の会話であることを確認する。 */

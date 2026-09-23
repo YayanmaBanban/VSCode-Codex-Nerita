@@ -2,6 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
 import { completionItems } from "../../src/webview/chat/composer/completionItems";
+import type { SandboxPolicy } from "../../src/extension/backends/codex/codex-app-server/v2/SandboxPolicy";
 
 const sessions: ReturnType<typeof codexHarness>["session"][] = [];
 afterEach(async () => {
@@ -9,9 +10,17 @@ afterEach(async () => {
 });
 
 /** 有効なモデル候補と設定操作を用意する。 */
-async function ready() {
+async function ready(initialSandbox?: SandboxPolicy) {
 	const h = codexHarness();
 	sessions.push(h.session);
+	if (initialSandbox) {
+		h.client.startThread.mockResolvedValueOnce({
+			thread: { id: "thread-1" },
+			model: "test-model",
+			cwd: "D:/workspace",
+			sandbox: initialSandbox,
+		});
+	}
 	h.client.listModels.mockResolvedValue({
 		data: ["test-model", "other-model"].map((model) => ({
 			model,
@@ -37,6 +46,90 @@ async function ready() {
 		});
 	return { ...h, setting };
 }
+
+/** Plan項目を確定し、実装先カードを表示可能にする。 */
+async function completedPlan(h: Awaited<ReturnType<typeof ready>>) {
+	await h.setting("plan");
+	await h.send("計画を作成");
+	h.notify("item/completed", {
+		threadId: "thread-1",
+		turnId: "turn-1",
+		item: { type: "plan", id: "plan-1", text: "## 実装計画\n変更する" },
+	});
+	h.complete();
+	expect(h.session.snapshot().planDecision?.text).toBe(
+		"## 実装計画\n変更する",
+	);
+}
+
+it("新規セッションの最初のターンにモデル・推論レベル・明示権限を引き継ぐ", async () => {
+	const h = await ready();
+	await h.setting("other-model", "model");
+	await h.setting("high", "reasoning_effort");
+	await h.setting("read-only", "mode");
+	await completedPlan(h);
+	await h.session.receive({
+		type: "plan/decide",
+		requestId: crypto.randomUUID(),
+		sessionId: "thread-1",
+		runId: h.session.snapshot().planDecision?.runId,
+		action: "new",
+	});
+	const state = h.session.snapshot();
+	expect(state.sessionId).toBe("thread-2");
+	expect(
+		Object.fromEntries(
+			state.configOptions.map((option) => [
+				option.id,
+				option.currentValue,
+			]),
+		),
+	).toMatchObject({
+		model: "other-model",
+		reasoning_effort: "high",
+		mode: "read-only",
+		collaboration_mode: "default",
+	});
+	const turn = h.client.startTurn.mock.calls.at(-1)?.[0];
+	expect(turn).toMatchObject({
+		threadId: "thread-2",
+		model: "other-model",
+		effort: "high",
+		sandboxPolicy: { type: "readOnly", networkAccess: false },
+		collaborationMode: { mode: "default" },
+	});
+	expect(JSON.stringify(turn?.input)).toContain("## 実装計画\\n変更する");
+});
+
+it("権限が引き継ぐ設定なら元の会話の実効sandboxを使用する", async () => {
+	const original: SandboxPolicy = { type: "readOnly", networkAccess: true };
+	const h = await ready(original);
+	h.client.startThread.mockResolvedValueOnce({
+		thread: { id: "thread-2" },
+		model: "test-model",
+		cwd: "D:/workspace",
+		sandbox: { type: "dangerFullAccess" },
+	});
+	await completedPlan(h);
+	await h.session.receive({
+		type: "plan/decide",
+		requestId: crypto.randomUUID(),
+		sessionId: "thread-1",
+		runId: h.session.snapshot().planDecision?.runId,
+		action: "new",
+	});
+	expect(
+		h.session
+			.snapshot()
+			.configOptions.find((option) => option.id === "mode")?.currentValue,
+	).toBe("inherit");
+	expect(h.client.startTurn).toHaveBeenLastCalledWith(
+		expect.objectContaining({
+			threadId: "thread-2",
+			sandboxPolicy: original,
+		}),
+	);
+});
 
 it("Plan選択は履歴とモデル設定を保ち、次のターンを組み立てる", async () => {
 	const h = await ready();

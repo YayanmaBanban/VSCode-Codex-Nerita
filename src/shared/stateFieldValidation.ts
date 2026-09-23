@@ -74,6 +74,11 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 			].includes(String(value)),
 		sessionId: (value) => value === null || isId(value),
 		runId: (value) => value === null || isId(value),
+		planDecision: (value) =>
+			value === null ||
+			(isRecord(value) &&
+				isId(value.runId) &&
+				typeof value.text === "string"),
 		error: (value) => value === null || typeof value === "string",
 		messages: (value) =>
 			everyRecord(

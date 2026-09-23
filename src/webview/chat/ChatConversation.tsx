@@ -8,6 +8,7 @@ import { Messages } from "./messages/Messages";
 import { AgentCard } from "./agents/AgentCard";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { RunStatusIcon } from "./RunStatusIcon";
+import { PlanDecisionCard } from "./PlanDecisionCard";
 
 const runLabels = {
 	idle: "",
@@ -85,6 +86,7 @@ export function ChatConversation({
 				/>
 			</div>
 			<Activity state={{ ...state, tools: [] }} send={send} />
+			<PlanDecisionCard state={state} send={send} />
 			{state.run === "running" && <ThinkingIndicator />}
 			{runLabels[state.run] && (
 				<p

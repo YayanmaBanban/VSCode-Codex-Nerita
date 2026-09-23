@@ -10,6 +10,14 @@ import type { AppServerNotification } from "./protocol/rpcMessage";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import { type CodexConnection } from "./runtime/connection";
 
+/** Planから新規会話へ移す、モデルと権限の実効設定。 */
+type PlanSettings = {
+	model: string;
+	effort: string;
+	mode: string;
+	sandboxPolicy: TurnStartParams["sandboxPolicy"];
+};
+
 /** 設定は次のturnに適用し、CLIのユーザー設定ファイルを書き換えない。 */
 export abstract class CodexOptions extends CodexAttachments {
 	protected models: ModelInfo[] = [];
@@ -17,6 +25,36 @@ export abstract class CodexOptions extends CodexAttachments {
 	private initialSandbox: StartedThread["sandbox"];
 	private initialTier: string | null = null;
 	protected collaborationMode = "default";
+	/** 新規会話で初期化される設定を、Plan会話から退避する。 */
+	protected capturePlanSettings(): PlanSettings {
+		const selected = (id: string) =>
+			this.state.configOptions.find((item) => item.id === id)
+				?.currentValue;
+		const model = selected("model");
+		if (!model) {
+			throw new Error("Model unavailable");
+		}
+		return {
+			model,
+			effort: selected("reasoning_effort") ?? "",
+			mode: selected("mode") ?? "inherit",
+			sandboxPolicy:
+				this.turnOptions.sandboxPolicy ?? this.initialSandbox,
+		};
+	}
+
+	/** 新しい会話の候補を検証し、最初のターンより前に設定を復元する。 */
+	protected async restorePlanSettings(settings: PlanSettings): Promise<void> {
+		await this.setConfig("model", settings.model);
+		if (settings.effort) {
+			await this.setConfig("reasoning_effort", settings.effort);
+		}
+		await this.setConfig("mode", settings.mode);
+		if (settings.sandboxPolicy) {
+			// 「引き継ぐ」でも元の会話の実効sandboxを維持する。
+			this.turnOptions.sandboxPolicy = settings.sandboxPolicy;
+		}
+	}
 	/** モデルのページを全て取得し、失敗しても基本会話を利用できるようにする。 */
 	protected override async initializedThread(
 		thread: StartedThread,

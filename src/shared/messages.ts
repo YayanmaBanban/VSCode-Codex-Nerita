@@ -64,6 +64,13 @@ export type UiMessage =
 	| { type: "connection/retry"; requestId: string }
 	| { type: "session/new"; requestId: string }
 	| {
+			type: "plan/decide";
+			requestId: string;
+			sessionId: string;
+			runId: string;
+			action: "current" | "new" | "continue";
+	  }
+	| {
 			type: "changes/open";
 			requestId: string;
 			scope: ChangeScope;

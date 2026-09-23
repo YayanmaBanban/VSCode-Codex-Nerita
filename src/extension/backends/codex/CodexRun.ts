@@ -12,10 +12,12 @@ import { ActiveTurn } from "./ActiveTurn";
 import type { AdditionalContext } from "./context/additionalContext";
 import { type Attachment } from "@/shared/composer";
 import { type TurnInfo } from "./protocol/turn";
+import { isRecord } from "../../../shared/validation";
 
 /** 同じ thread で停止後も会話を続けられる実行管理。 */
 export abstract class CodexRun extends CodexAgents {
 	private cancelTimer: NodeJS.Timeout | undefined;
+	private planText: string | null = null;
 
 	/** 会話と添付の準備中は実行を開始しない。 */
 	private promptPending(): boolean {
@@ -38,10 +40,12 @@ export abstract class CodexRun extends CodexAgents {
 		}
 
 		const run = new ActiveTurn(this.state.sessionId);
+		this.planText = null;
 		this.active = run;
 		const userId = randomUUID();
 		this.patch({
 			run: "running",
+			planDecision: null,
 			runId: randomUUID(),
 			error: null,
 			messages: [
@@ -214,14 +218,53 @@ export abstract class CodexRun extends CodexAgents {
 		) {
 			return;
 		}
+		this.capturePlan(event);
 
 		applyTurnEvent(run, event, {
 			snapshot: () => this.state,
 			patch: (change) => this.patch(change),
 			agentNotification: (message) => this.agentNotification(message),
 			interrupt: () => this.interrupt(),
-			finish: (status) => this.finish(status),
+			finish: (status) => {
+				const planText = this.planText?.trim();
+				this.finish(status);
+				if (
+					status === "completed" &&
+					this.collaborationMode === "plan" &&
+					planText
+				) {
+					this.patch({
+						planDecision: {
+							runId: this.state.runId!,
+							text: planText,
+						},
+					});
+				}
+			},
 		});
+	}
+	/** 完了通知にPlan本文がない場合も項目通知から保持する。 */
+	private capturePlan(event: TurnEvent) {
+		if (
+			event.kind === "item" &&
+			event.item.type === "plan" &&
+			typeof event.item.text === "string"
+		) {
+			this.planText = event.item.text;
+		}
+		if (event.kind === "turn" && event.completed) {
+			for (let index = event.items.length - 1; index >= 0; index--) {
+				const item: unknown = event.items[index];
+				if (
+					isRecord(item) &&
+					item.type === "plan" &&
+					typeof item.text === "string"
+				) {
+					this.planText = item.text;
+					break;
+				}
+			}
+		}
 	}
 	/** 終了時に未完了カードと承認を解消し、会話は保持する。 */
 	private finish(status: "completed" | "cancelled" | "failed"): void {
