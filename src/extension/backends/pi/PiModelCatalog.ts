@@ -10,6 +10,7 @@ export type PiCatalogModel = {
 	defaultReasoning: PiThinkingLevel | "ultra" | null;
 	reasoningLevels: (PiThinkingLevel | "ultra")[];
 	serviceTiers: { id: string; name: string; description: string }[];
+	supportsReasoningEffortUpdates?: boolean;
 };
 
 /** undefinedはmetadata取得元なし、nullはlive能力未確認を表す。 */

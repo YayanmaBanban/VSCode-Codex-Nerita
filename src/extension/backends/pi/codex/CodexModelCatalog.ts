@@ -64,6 +64,12 @@ function normalizeModel(
 		defaultReasoning: reasoning(item.default_reasoning_level),
 		reasoningLevels: levels,
 		serviceTiers: tiers,
+		...(typeof item.supports_reasoning_effort_updates === "boolean"
+			? {
+					supportsReasoningEffortUpdates:
+						item.supports_reasoning_effort_updates,
+				}
+			: {}),
 	};
 }
 

@@ -5,6 +5,7 @@ import type { ConfigChoice, ConfigOption } from "../../../../shared/composer";
 import { isRecord } from "../../../../shared/validation";
 import type { PiModelControls } from "../PiProvider";
 import type { PiCatalogSnapshot } from "../PiModelCatalog";
+import { CodexReasoningOverride } from "./CodexReasoningOverride";
 
 /** 組み込み拡張と設定UIが同じ実効値を参照する。 */
 export class CodexProviderControls implements PiModelControls {
@@ -14,6 +15,7 @@ export class CodexProviderControls implements PiModelControls {
 	private modelKey = "";
 	private catalog: PiCatalogSnapshot;
 	private basis: AgentSession["thinkingLevel"] | undefined;
+	private readonly reasoning = new CodexReasoningOverride();
 
 	/** nullはlive未確認であり、Ultra・Fastの能力を推測しない。 */
 	setCatalog(catalog: PiCatalogSnapshot): void {
@@ -203,20 +205,94 @@ export class CodexProviderControls implements PiModelControls {
 	rewrite(payload: unknown, model: AgentSession["model"]): unknown {
 		const state = this.snapshot();
 		if (
-			this.unsupportedResponsesModel() ||
-			model?.provider !== state.provider ||
-			model?.id !== state.modelId ||
+			!model ||
 			!isRecord(payload) ||
-			(!state.reasoningOverride && !state.fastMode)
+			!this.matchesRequest(payload, model, state)
 		) {
 			return undefined;
 		}
-		return overridePayload(payload, state);
+		const rewritten = this.rewriteReasoning(payload, model, state);
+		return state.reasoningOverride || state.fastMode
+			? overridePayload(isRecord(rewritten) ? rewritten : payload, state)
+			: rewritten;
+	}
+
+	/** 圧縮用・fallback用要求を通常会話の履歴と混同しない。 */
+	private matchesRequest(
+		payload: Record<string, unknown>,
+		model: NonNullable<AgentSession["model"]>,
+		state: ControlsState,
+	): boolean {
+		return (
+			!this.unsupportedResponsesModel() &&
+			!this.session?.isCompacting &&
+			model.provider === state.provider &&
+			model.id === state.modelId &&
+			model.api === "openai-codex-responses" &&
+			(typeof payload.model !== "string" || payload.model === model.id)
+		);
+	}
+
+	/** Ultraと通常推論の履歴管理を切り替える。 */
+	private rewriteReasoning(
+		payload: unknown,
+		model: NonNullable<AgentSession["model"]>,
+		state: ControlsState,
+	): unknown {
+		const store = this.session?.sessionManager;
+		if (store) {
+			if (
+				this.supportsReasoningUpdates(model) &&
+				!state.reasoningOverride
+			) {
+				return this.reasoning.rewrite(
+					payload,
+					`${model.provider}/${model.id}/${model.baseUrl}`,
+					store,
+				);
+			} else {
+				this.reasoning.clear(store);
+			}
+		}
+		return undefined;
+	}
+
+	/** live能力は取得元と同じCodex endpointだけに適用し、custom endpointへ推測しない。 */
+	private supportsReasoningUpdates(model: AgentSession["model"]): boolean {
+		if (
+			model?.provider !== "openai-codex" ||
+			model.api !== "openai-codex-responses" ||
+			this.metadata?.supportsReasoningEffortUpdates !== true
+		) {
+			return false;
+		}
+		return isCatalogEndpoint(model.baseUrl);
 	}
 
 	/** 現在のモデルがCodex固有の要求形式に対応するか照合する。 */
 	private unsupportedResponsesModel() {
 		return this.session?.model?.api !== "openai-codex-responses";
+	}
+}
+
+/** capability取得先と異なるendpointでは有効化しない。 */
+function isCatalogEndpoint(baseUrl: string): boolean {
+	try {
+		const url = new URL(baseUrl);
+		return (
+			url.origin === "https://chatgpt.com" &&
+			[
+				"/backend-api",
+				"/backend-api/codex",
+				"/backend-api/codex/responses",
+			].includes(url.pathname.replace(/\/$/, "")) &&
+			!url.username &&
+			!url.password &&
+			!url.search &&
+			!url.hash
+		);
+	} catch {
+		return false;
 	}
 }
 
