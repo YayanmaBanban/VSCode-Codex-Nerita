@@ -1,6 +1,42 @@
 // 専用・汎用カードの内容、完了時の自動折り畳みと再展開を検証する。
 import { test, expect } from "@playwright/test";
 
+test("大量出力の描画量を制限して完了後もページを読める", async ({
+	page,
+}, info) => {
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	page.on("console", (message) => {
+		if (message.type() === "error") {
+			errors.push(message.text());
+		}
+	});
+	await page.setViewportSize({ width: 320, height: 900 });
+	await page.goto(
+		"/iframe.html?id=chat-tool-cards--large-output&viewMode=story",
+	);
+	const output = page.locator(".tool-body pre");
+	await expect(output).toContainText("出力終了");
+	expect((await output.textContent())!.length).toBeLessThanOrEqual(20_000);
+	await page.getByRole("button", { name: "前へ", exact: true }).click();
+	await expect(output).not.toContainText("出力終了");
+	await page.getByRole("button", { name: "最新を表示" }).click();
+	await expect(output).toContainText("出力終了");
+	await page.screenshot({
+		path: info.outputPath("large-output.png"),
+		fullPage: true,
+	});
+	await page.getByRole("button", { name: "完了通知を受信" }).click();
+	await expect(output).toHaveCount(0);
+	await expect(page.locator(".tool-progress")).toHaveCount(0);
+	await page
+		.getByRole("button", { name: "Get-Content large.txt", exact: true })
+		.click();
+	await expect(output).toContainText("出力終了");
+	expect((await output.textContent())!.length).toBeLessThanOrEqual(20_000);
+	expect(errors).toEqual([]);
+});
+
 test("ターン完了後のAIRタスクを既存カードから停止する", async ({
 	page,
 }, info) => {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { type ChatState, initialState } from "../../shared/chatState";
 import type { UiMessage, HostMessage } from "../../shared/messages";
 import type { Bridge } from "../vscodeBridge";
+import { applyStatePatch } from "../../shared/toolUpdates";
 
 /** 接続ごとに状態を初期化し、差分欠落時はスナップショットを要求する。 */
 export function useChat(bridge: Bridge) {
@@ -43,11 +44,7 @@ export function useChat(bridge: Bridge) {
 					bridge.postMessage({ type: "ui/ready" });
 					return;
 				}
-				current = {
-					...current,
-					...message.patch,
-					revision: message.revision,
-				};
+				current = applyStatePatch(current, message);
 			}
 			setState(current);
 		});
@@ -72,10 +69,14 @@ function requiresSnapshot(
 		type: "state/patch";
 		revision: number;
 		patch: Partial<Omit<ChatState, "revision">>;
+		baseRevision?: number;
 	},
 	current: ChatState,
 ) {
-	return !ready || message.revision !== current.revision + 1;
+	return (
+		!ready ||
+		(message.baseRevision ?? message.revision - 1) !== current.revision
+	);
 }
 
 /** 会話状態以外の専用購読へ渡す通知を識別する。 */

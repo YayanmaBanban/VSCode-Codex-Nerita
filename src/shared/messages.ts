@@ -125,6 +125,8 @@ export type HostMessage =
 	| {
 			type: "state/patch";
 			revision: number;
+			baseRevision?: number;
+			toolUpdates?: ChatState["tools"];
 			patch: Partial<Omit<ChatState, "revision">>;
 	  }
 	| { type: "request/failed"; requestId: string; error: string };
