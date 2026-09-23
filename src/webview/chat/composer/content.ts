@@ -109,6 +109,10 @@ export function $selectOffset(block: ElementNode, offset: number): void {
 			child.select(offset, offset);
 			return;
 		}
+		if ($isElementNode(child) && child.isInline() && offset <= size) {
+			$selectOffset(child, offset);
+			return;
+		}
 		if (offset < size) {
 			child.selectPrevious();
 			return;

@@ -7,6 +7,8 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { ComposerLinksPlugin } from "./ComposerLinksPlugin";
 import type { ComposerPart } from "../../../shared/composerContent";
 import { PastedBlockNode } from "./PastedBlockNode";
 import { PathReferenceNode } from "./PathReferenceNode";
@@ -50,8 +52,14 @@ export function ComposerInput({
 		<LexicalComposer
 			initialConfig={{
 				namespace: "codex-composer",
-				nodes: [PastedBlockNode, PathReferenceNode],
+				nodes: [
+					PastedBlockNode,
+					PathReferenceNode,
+					LinkNode,
+					AutoLinkNode,
+				],
 				theme: {
+					link: "cursor-text text-link underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus",
 					paragraph:
 						"m-0 min-h-[1.7em] whitespace-pre-wrap [overflow-wrap:anywhere]",
 				},
@@ -101,6 +109,7 @@ export function ComposerInput({
 				{renderExpandButton(expanded, inputId, setExpanded)}
 			</div>
 			<HistoryPlugin />
+			<ComposerLinksPlugin />
 			<CodeBlockMenuPlugin bridge={bridge} />
 			<ReferenceActionsPlugin bridge={bridge} />
 			<ComposerPlugin
