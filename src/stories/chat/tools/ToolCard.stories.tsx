@@ -5,6 +5,7 @@ import { initialState, type ToolSummary } from "../../../shared/chatState";
 import { type UiMessage } from "../../../shared/messages";
 import type { AsyncTask } from "../../../shared/asyncTask";
 import { Activity } from "../../../webview/chat/Activity";
+import { ToolCard } from "../../../webview/chat/tools/ToolCard";
 import "../../../webview/chat/chat.css";
 
 const initialTools: ToolSummary[] = [
@@ -194,3 +195,27 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Running: Story = {};
 export const Background: Story = { args: { background: true } };
+
+/** 大量出力のページ切り替えと完了後の再展開を確認する。 */
+function LargeOutputStory() {
+	const [completed, setCompleted] = useState(false);
+	return (
+		<main style={{ padding: 16 }}>
+			<button onClick={() => setCompleted(true)}>完了通知を受信</button>
+			<ToolCard
+				tool={{
+					id: "large",
+					kind: "execute",
+					title: "Get-Content large.txt",
+					paths: [],
+					status: completed ? "completed" : "in_progress",
+					rawOutput: {
+						formatted_output: `出力開始\n${"long output line\n".repeat(100_000)}出力終了`,
+					},
+				}}
+			/>
+		</main>
+	);
+}
+
+export const LargeOutput: Story = { render: () => <LargeOutputStory /> };

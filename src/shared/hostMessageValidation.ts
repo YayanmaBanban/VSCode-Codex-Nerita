@@ -109,9 +109,24 @@ const hostMessageValidators = new Map<
 		"state/patch": (value) =>
 			value.type === "state/patch" &&
 			isRevision(value.revision) &&
+			validBaseRevision(value.baseRevision, value.revision) &&
+			(value.toolUpdates === undefined ||
+				validStateField("tools", value.toolUpdates)) &&
 			isRecord(value.patch) &&
+			!(
+				value.toolUpdates !== undefined &&
+				value.patch.tools !== undefined
+			) &&
 			Object.entries(value.patch).every(([key, item]) =>
 				validStateField(key, item),
 			),
 	} satisfies Record<string, (value: Record<string, unknown>) => boolean>),
 );
+
+/** 集約通知は適用元から最新までの前向きな範囲だけを許可する。 */
+function validBaseRevision(base: unknown, revision: unknown): boolean {
+	return (
+		base === undefined ||
+		(isRevision(base) && Number(base) < Number(revision))
+	);
+}
