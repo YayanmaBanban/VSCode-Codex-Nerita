@@ -29,8 +29,7 @@ export async function piPersistenceSmoke({
 				signal,
 				authorize,
 				resume,
-				provider: "local",
-				model: "smoke",
+				preferredModel: { provider: "local", model: "smoke" },
 			}),
 		}));
 	const receive = (message) =>
@@ -313,9 +312,72 @@ export async function piPersistenceSmoke({
 		console.log(
 			"PASS: Pi global/workspace persistence → fork isolation/restart/context → ignore preservation → restart/context/tools → relocated workspace → incomplete tools → failed restore retains conversation → first-prompt storage changes in both directions",
 		);
+		await startupReasoningSmoke({
+			createPiRuntime,
+			extensionPath,
+			cwd: workspace,
+			agentDir,
+		});
 	} finally {
 		await controller?.dispose();
 	}
+}
+
+/** Controllerによる後処理なしでも、新しいSDKセッションが保存推論で起動する。 */
+async function startupReasoningSmoke({
+	createPiRuntime,
+	extensionPath,
+	cwd,
+	agentDir,
+}) {
+	const modelsPath = path.join(agentDir, "models.json");
+	const config = JSON.parse(await readFile(modelsPath, "utf8"));
+	config.providers.local.models.push({
+		...config.providers.local.models[0],
+		id: "reasoning-startup",
+		reasoning: true,
+	});
+	await writeFile(modelsPath, JSON.stringify(config));
+	let saved;
+	const options = {
+		extensionPath,
+		cwd,
+		agentDir,
+		preferredModel: { provider: "local", model: "reasoning-startup" },
+		signal: new AbortController().signal,
+		saveModel: async (selection) => {
+			saved = selection;
+		},
+	};
+	const first = await createPiRuntime(options);
+	try {
+		await first.account.selectThinkingLevel("high", options.signal);
+		assert.equal(saved.reasoning, "high");
+	} finally {
+		first.dispose();
+	}
+	// SDK側の既定値と保存値を意図的に変え、globalState相当の値が復元されることを確認する。
+	const settingsPath = path.join(agentDir, "settings.json");
+	await writeFile(
+		settingsPath,
+		JSON.stringify({ defaultThinkingLevel: "low" }),
+	);
+	const restarted = await createPiRuntime({
+		...options,
+		preferredModel: saved,
+	});
+	try {
+		assert.equal(restarted.thinkingLevel, "high");
+		assert.equal(
+			restarted.account.snapshot().piProviderControls.effectiveReasoning,
+			"high",
+		);
+	} finally {
+		restarted.dispose();
+	}
+	console.log(
+		"PASS: Pi startup restores saved reasoning before returning SDK session",
+	);
 }
 
 /** ローカル応答の完了を期限付きで待つ。 */

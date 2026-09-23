@@ -42,12 +42,6 @@
 					"scope": "window",
 					"description": "チャットに使用するエージェント。変更後はウィンドウを再読み込みしてください。Piの書き込み・PowerShell実行には毎回の承認が必要です。"
 				},
-				"nerita.pi.provider": {
-					"type": "string",
-					"default": "",
-					"scope": "window",
-					"description": "Piのprovider ID。modelとセットで指定します。空ならPiの設定を使用します。変更後は再接続してください。"
-				},
 				"nerita.pi.sessionStorage": {
 					"type": "string",
 					"enum": [
@@ -61,12 +55,6 @@
 						"ワークスペースの .sessions/ に保存"
 					],
 					"markdownDescription": "Piの新規会話の保存先。未送信の新規会話では初回送信時にも設定変更を反映します。送信済み・復元済みの会話は元の保存先を維持します。workspaceでは `.sessions/.gitignore` を内容 `*` で初回生成します。既存ファイルは上書きしません。"
-				},
-				"nerita.pi.model": {
-					"type": "string",
-					"default": "",
-					"scope": "window",
-					"description": "Piのmodel ID。providerとセットで指定します。空ならPiの設定を使用します。変更後は再接続してください。"
 				},
 				"nerita.codex.changes.exclude": {
 					"type": "array",

@@ -122,8 +122,7 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 					authorize,
 					storage: "workspace",
 					...(resume ? { resume } : {}),
-					provider: "local",
-					model: "smoke",
+					preferredModel: { provider: "local", model: "smoke" },
 				}),
 			}),
 		);

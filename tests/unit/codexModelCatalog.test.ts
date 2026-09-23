@@ -9,7 +9,7 @@ describe("Codex OAuth live catalog transport", () => {
 		await h.account.refreshCatalog(h.signal);
 		expect(h.models.getAuth).toHaveBeenCalled();
 		expect(h.request).toHaveBeenCalledWith(
-			`https://chatgpt.com/backend-api/codex/models?client_version=0.0.0`,
+			`https://chatgpt.com/backend-api/codex/models?client_version=0.999.0`,
 			expect.objectContaining({
 				redirect: "error",
 				headers: {
@@ -18,6 +18,18 @@ describe("Codex OAuth live catalog transport", () => {
 					Accept: "application/json",
 				},
 			}),
+		);
+	});
+
+	it("同期OAuth snapshotが古くても非同期認証結果でmetadataを取得する", async () => {
+		const h = catalogHarness();
+		h.models.isUsingOAuth = () => false;
+		await h.account.refreshCatalog(h.signal);
+		expect(h.models.getAuth).toHaveBeenCalled();
+		expect(h.models.checkAuth).toHaveBeenCalled();
+		expect(h.request).toHaveBeenCalledOnce();
+		expect(h.account.snapshot().configOptions![0]!.options[0]?.name).toBe(
+			"Live small",
 		);
 	});
 

@@ -6,7 +6,7 @@ import { normalizeCodexModels } from "./CodexModelCatalog";
 
 // 制限なしでモデルカタログを取得する
 // Codex CLIバージョンとは独立した決定
-const MODEL_CATALOG_CLIENT_VERSION = "0.0.0";
+const MODEL_CATALOG_CLIENT_VERSION = "0.999.0";
 
 /** 生HTTP本文・token・account IDを返却値や例外へ含めない。 */
 export class CodexModelCatalogService implements PiModelCatalogReader {

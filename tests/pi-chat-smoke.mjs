@@ -191,8 +191,7 @@ try {
 			signal,
 			authorize,
 			resume,
-			provider: "local",
-			model: "smoke",
+			preferredModel: { provider: "local", model: "smoke" },
 		}),
 	}));
 	const events = [];
@@ -304,11 +303,12 @@ try {
 			"Pi read tool works",
 		),
 	);
+	// 配信時にはツール配列が差分のtoolUpdatesへ変換される。
 	assert.ok(
 		events.some(
 			(event) =>
 				event.type === "state/patch" &&
-				event.patch.tools?.some(
+				event.toolUpdates?.some(
 					(tool) =>
 						tool.kind === "read" && tool.status === "in_progress",
 				),

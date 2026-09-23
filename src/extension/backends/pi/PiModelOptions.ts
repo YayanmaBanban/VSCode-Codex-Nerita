@@ -31,9 +31,7 @@ export function piModelOptions(
 				.map((item) => ({
 					value: `${item.provider}/${item.id}`,
 					name:
-						catalog
-							?.snapshot(item.provider)
-							?.find((entry) => entry.slug === item.id)
+						catalog?.metadata(item.provider, item.id)
 							?.displayName ?? item.name,
 				})),
 		},
@@ -62,9 +60,6 @@ function modelDisplayName(
 	model: NonNullable<AgentSession["model"]>,
 ): string {
 	return (
-		catalog
-			?.snapshot(model.provider)
-			?.find((entry) => entry.slug === model.id)?.displayName ??
-		model.name
+		catalog?.metadata(model.provider, model.id)?.displayName ?? model.name
 	);
 }

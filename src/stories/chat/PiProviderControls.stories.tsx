@@ -1,5 +1,5 @@
 // 実Hostの設定クラスとRegistryで、provider切替と実効Reasoningを再現する。
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type {
 	AgentSession,
@@ -14,7 +14,7 @@ import "../../webview/chat/chat.css";
 import { piLiveCatalog } from "../../../tests/fixtures/piLiveCatalog";
 
 /** 認証やネットワークを使用せず、SDKのモデル切替・clampだけを模す。 */
-function createAccount(hidden: boolean) {
+function createAccount(hidden: boolean, noMetadata: boolean) {
 	const models = [
 		{
 			provider: "openai-codex",
@@ -92,16 +92,26 @@ function createAccount(hidden: boolean) {
 		} as unknown as ModelRuntime,
 		session as unknown as AgentSession,
 	);
-	// metadataだけを固定し、候補のintersection・設定操作は本物のHostへ委譲する。
-	account.catalog.snapshot = (provider) =>
-		provider === "openai-codex" ? piLiveCatalog : undefined;
+	// metadataだけを固定し、候補と設定操作は本物のHostへ委譲する。
+	account.catalog.snapshot = (provider) => {
+		if (provider !== "openai-codex") {
+			return undefined;
+		}
+		return noMetadata ? null : piLiveCatalog;
+	};
 	account.catalog.refresh = () => Promise.resolve();
 	return account;
 }
 
 /** provider判定はStoryのHost役だけが行い、本体Rendererは宣言を描画する。 */
-function ProviderControlsStory({ hidden = false }: { hidden?: boolean }) {
-	const [account] = useState(() => createAccount(hidden));
+function ProviderControlsStory({
+	hidden = false,
+	noMetadata = false,
+}: {
+	hidden?: boolean;
+	noMetadata?: boolean;
+}) {
+	const [account] = useState(() => createAccount(hidden, noMetadata));
 	const [registry] = useState(createBuiltinUiRegistry);
 	const [state, setState] = useState<ChatState>(() => ({
 		...initialState(),
@@ -121,6 +131,21 @@ function ProviderControlsStory({ hidden = false }: { hidden?: boolean }) {
 		],
 	}));
 	const [last, setLast] = useState<UiMessage>();
+	useEffect(() => {
+		const abort = new AbortController();
+		void account
+			.refreshCatalog(abort.signal)
+			.then(() => {
+				if (!abort.signal.aborted) {
+					setState((current) => ({
+						...current,
+						...account.snapshot(),
+					}));
+				}
+			})
+			.catch(() => undefined);
+		return () => abort.abort();
+	}, [account]);
 	const contributions = registry.resolve(state, {
 		backend: "pi",
 		provider: state.piProviderControls?.provider ?? null,
@@ -209,3 +234,4 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Connected: Story = {};
 export const HiddenHistory: Story = { args: { hidden: true } };
+export const NoMetadata: Story = { args: { noMetadata: true } };

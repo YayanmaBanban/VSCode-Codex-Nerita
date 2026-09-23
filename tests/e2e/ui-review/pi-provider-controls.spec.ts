@@ -31,9 +31,12 @@ for (const theme of ["dark", "light"] as const) {
 			page.getByRole("combobox", { name: "Pi Model" }),
 		).toHaveText("GPT-6-Astra");
 		await page.getByRole("combobox", { name: "Pi Model" }).click();
-		await expect(page.getByRole("option", { name: /Spark/ })).toHaveCount(
+		await expect(page.getByRole("option", { name: "Spark" })).toHaveCount(
 			0,
 		);
+		await expect(
+			page.getByRole("option", { name: "Hidden Codex" }),
+		).toHaveCount(0);
 		await page
 			.getByRole("option", { name: "GPT-6-Astra", exact: true })
 			.click();
@@ -44,6 +47,13 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(
 			page.getByRole("option", { name: "minimal", exact: true }),
 		).toHaveCount(0);
+		await info.attach("live-reasoning", {
+			body: await page.screenshot({
+				path: info.outputPath("live-reasoning.png"),
+				fullPage: true,
+			}),
+			contentType: "image/png",
+		});
 		await page.getByRole("option", { name: "Ultra", exact: true }).click();
 		await fast.focus();
 		await page.keyboard.press("Space");
@@ -137,17 +147,51 @@ for (const theme of ["dark", "light"] as const) {
 			"/iframe.html?id=chat-pi-provider-controls--hidden-history&viewMode=story",
 		);
 		const model = page.getByRole("combobox", { name: "Pi Model" });
-		await expect(model).toHaveText("Hidden Codex");
+		await expect(model).toHaveText("GPT-6-Astra");
 		await model.click();
 		await expect(
 			page.getByRole("option", { name: "GPT-6-Astra", exact: true }),
 		).toBeVisible();
 		await expect(
-			page.getByRole("option", { name: /Hidden|Spark/ }),
+			page.getByRole("option", { name: "Hidden Codex" }),
 		).toHaveCount(0);
+		await expect(page.getByRole("option", { name: "Spark" })).toHaveCount(
+			0,
+		);
 		await info.attach("hidden-history", {
 			body: await page.screenshot({
 				path: info.outputPath("hidden-history.png"),
+				fullPage: true,
+			}),
+			contentType: "image/png",
+		});
+		await page.goto(
+			"/iframe.html?id=chat-pi-provider-controls--no-metadata&viewMode=story",
+		);
+		const fallbackModel = page.getByRole("combobox", { name: "Pi Model" });
+		await expect(fallbackModel).toHaveText("Codex Max Model");
+		await expect(
+			page.getByRole("switch", { name: "Fast mode" }),
+		).toHaveCount(0);
+		await fallbackModel.click();
+		await expect(page.getByRole("option", { name: "Spark" })).toBeVisible();
+		await expect(
+			page.getByRole("option", { name: "Static hidden" }),
+		).toBeVisible();
+		await page.getByRole("option", { name: "Codex Max Model" }).click();
+		await page.getByRole("combobox", { name: "Reasoning effort" }).click();
+		await expect(
+			page.getByRole("option", { name: "off", exact: true }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("option", { name: "minimal", exact: true }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("option", { name: "Ultra", exact: true }),
+		).toHaveCount(0);
+		await info.attach("no-metadata", {
+			body: await page.screenshot({
+				path: info.outputPath("no-metadata.png"),
 				fullPage: true,
 			}),
 			contentType: "image/png",

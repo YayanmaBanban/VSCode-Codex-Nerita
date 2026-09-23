@@ -65,7 +65,15 @@ describe("Piの認証・モデル", () => {
 			thinkingLevel: "off",
 			getAvailableThinkingLevels: () => ["off"],
 		} as unknown as AgentSession;
-		const account = new PiAccount(models, session);
+		const saveModel = vi.fn(() => Promise.resolve());
+		const account = new PiAccount(
+			models,
+			session,
+			undefined,
+			undefined,
+			undefined,
+			saveModel,
+		);
 		expect(account.snapshot()).toMatchObject({
 			connection: "ready",
 			piAccount: "local: OAuth設定済み",
@@ -89,6 +97,11 @@ describe("Piの認証・モデル", () => {
 		expect(setModel).not.toHaveBeenCalled();
 		await account.selectModel("local/test", new AbortController().signal);
 		expect(setModel).toHaveBeenCalledWith(model);
+		expect(saveModel).toHaveBeenCalledWith({
+			provider: "local",
+			model: "test",
+			reasoning: "off",
+		});
 	});
 	it("推論レベルを会話へ反映し、未対応値・旧会話・取消を拒否する", async () => {
 		const h = piHarness();

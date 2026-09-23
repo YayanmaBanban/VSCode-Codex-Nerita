@@ -54,8 +54,10 @@ export type PiRuntimeOptions = {
 	extensionPath: string;
 	cwd: string;
 	agentDir?: string;
-	provider?: string;
-	model?: string;
+	/** 最後にUIで選択したモデルと推論レベル。 */
+	preferredModel?: PiModelSelection;
+	/** UIで確定したモデルを次回の新規セッション用に保存する。 */
+	saveModel?: (selection: PiModelSelection) => Promise<void>;
 	signal: AbortSignal;
 	authorize?: PiAuthorize;
 	storage?: PiSessionStorage;
@@ -64,6 +66,13 @@ export type PiRuntimeOptions = {
 	authService?: PiAuthService;
 	/** 固定endpointへのHost通信だけを疎通テストで差し替える。 */
 	request?: typeof fetch;
+};
+
+/** 秘密値を含まない、起動時モデルの保存形式。 */
+export type PiModelSelection = {
+	provider: string;
+	model: string;
+	reasoning?: string;
 };
 
 /** Pi標準形式で履歴を保存し、副作用ツールには必ずHostの承認を挟む。 */
@@ -105,11 +114,10 @@ export async function createPiRuntime(
 		modelRefreshTimeoutMs: 15_000,
 		signal: options.signal,
 	});
-	const provider = options.provider?.trim();
 	// SDKが初期モデルを選ぶ前に、パッケージ由来providerも候補へ登録する。
 	registerExtensionProviders(resourceLoader, modelRuntime);
 	await modelRuntime.getAvailable(undefined, { signal: options.signal });
-	const model = configuredModel(options, provider, modelRuntime);
+	const model = resolvePiInitialModel(options, modelRuntime);
 	options.signal.throwIfAborted();
 	const storage = sessionStorage(options);
 	const { manager, history } = await openPiSessionStore(
@@ -145,8 +153,19 @@ export async function createPiRuntime(
 		].map((tool) => approvePiTool(tool, options.cwd, authorize)),
 	});
 	controls.bind(session);
+	const account = new PiAccount(
+		modelRuntime,
+		session,
+		options.authService,
+		controls,
+		new PiModelCatalogService(modelRuntime, session, options.request),
+		options.saveModel,
+		options.resume ? undefined : options.preferredModel,
+	);
 	try {
 		await session.bindExtensions({ mode: "print" });
+		// 起動処理の完了前にlive候補と保存推論を適用し、SDK既定値を公開しない。
+		await account.refreshCatalog(options.signal);
 		options.signal.throwIfAborted();
 	} catch (error) {
 		session.dispose();
@@ -166,13 +185,7 @@ export async function createPiRuntime(
 			session.messages.length === 0 &&
 			!!options.getStorage &&
 			options.getStorage() !== storage,
-		account: new PiAccount(
-			modelRuntime,
-			session,
-			options.authService,
-			controls,
-			new PiModelCatalogService(modelRuntime, session, options.request),
-		),
+		account,
 		quota: new PiQuotaService(modelRuntime, session, options.request),
 		skills: resourceLoader.getSkills().skills.map((skill) => ({
 			name: skill.name,
@@ -202,23 +215,36 @@ function registerExtensionProviders(
 }
 
 /** providerとモデルの指定を検証してSDKの候補から解決する。 */
-function configuredModel(
+export function resolvePiInitialModel(
 	options: PiRuntimeOptions,
-	provider: string | undefined,
 	modelRuntime: PiSdk.ModelRuntime,
 ) {
-	const modelId = options.model?.trim();
-	if (!!provider !== !!modelId) {
-		throw new Error(
-			"nerita.pi.provider と nerita.pi.model は両方指定してください。",
+	return (
+		resolvePreferredModel(options.preferredModel, modelRuntime) ??
+		(options.preferredModel
+			? (modelRuntime
+					.getAvailableSnapshot()
+					.find(
+						(model) =>
+							model.provider === options.preferredModel?.provider,
+					) ?? modelRuntime.getAvailableSnapshot()[0])
+			: undefined)
+	);
+}
+
+/** 保存モデルは現在の利用可能候補に残っている場合だけ復元する。 */
+function resolvePreferredModel(
+	selection: PiModelSelection | undefined,
+	modelRuntime: PiSdk.ModelRuntime,
+) {
+	if (!selection?.provider.trim() || !selection.model.trim()) {
+		return undefined;
+	}
+	return modelRuntime
+		.getAvailableSnapshot()
+		.find(
+			(model) =>
+				model.provider === selection.provider.trim() &&
+				model.id === selection.model.trim(),
 		);
-	}
-	const model =
-		provider && modelId
-			? modelRuntime.getModel(provider, modelId)
-			: undefined;
-	if (provider && !model) {
-		throw new Error(`Piのモデルが見つかりません: ${provider}/${modelId}`);
-	}
-	return model;
 }

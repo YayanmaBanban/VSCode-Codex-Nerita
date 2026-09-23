@@ -1,4 +1,4 @@
-// Provider登録からlive catalogへ委譲し、取消・世代とHost側モデル候補を一元管理する。
+// Provider登録から補助metadata取得へ委譲し、取消・世代と表示情報を管理する。
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -19,9 +19,9 @@ export class PiModelCatalogService {
 		private providers: PiProviders = piProviders,
 	) {}
 
-	/** 未取得のOAuth catalogはnullで示し、static候補へ展開しない。 */
+	/** metadata取得元のあるproviderでは、未取得をnullで示す。 */
 	snapshot(provider: string): PiCatalogSnapshot {
-		return this.providers[provider]?.usesCatalog?.(this.models)
+		return this.providers[provider]?.createCatalog
 			? (this.catalogs.get(provider) ?? null)
 			: undefined;
 	}
@@ -64,51 +64,45 @@ export class PiModelCatalogService {
 		}
 	}
 
-	/** picker候補はlive ∩ Pi。未取得時は現在モデル以外を追加しない。 */
+	/** live取得成功時は公開候補に絞り、未取得ならPiの候補を維持する。 */
 	available(available = this.models.getAvailableSnapshot()) {
-		const providers = [
-			...new Set(available.map((model) => model.provider)),
-		];
-		return available
-			.filter((model) => {
-				const catalog = this.snapshot(model.provider);
-				if (catalog === undefined) {
-					return true;
-				}
-				if (catalog === null) {
-					return (
-						model.provider === this.session.model?.provider &&
-						model.id === this.session.model.id
-					);
-				}
-				return catalog.some(
+		const result = available.filter((model) => {
+			const catalog = this.snapshot(model.provider);
+			return (
+				catalog === null ||
+				catalog === undefined ||
+				catalog.some(
 					(item) =>
 						item.slug === model.id && item.visibility === "list",
+				)
+			);
+		});
+		const indexes = new Map<string, number[]>();
+		for (const [index, model] of result.entries()) {
+			if (this.metadata(model.provider, model.id)) {
+				indexes.set(model.provider, [
+					...(indexes.get(model.provider) ?? []),
+					index,
+				]);
+			}
+		}
+		for (const positions of indexes.values()) {
+			const sorted = positions
+				.map((index) => result[index]!)
+				.sort(
+					(a, b) =>
+						this.metadata(a.provider, a.id)!.priority -
+						this.metadata(b.provider, b.id)!.priority,
 				);
-			})
-			.sort((a, b) => {
-				if (a.provider !== b.provider) {
-					return (
-						providers.indexOf(a.provider) -
-						providers.indexOf(b.provider)
-					);
-				}
-				const catalog = this.snapshot(a.provider);
-				return (
-					(catalog?.find((item) => item.slug === a.id)?.priority ??
-						0) -
-					(catalog?.find((item) => item.slug === b.id)?.priority ?? 0)
-				);
+			positions.forEach((index, offset) => {
+				result[index] = sorted[offset]!;
 			});
+		}
+		return result;
 	}
 
-	/** hidden化だけでは履歴モデルを変更せず、存在しない場合だけ復帰を試みる。 */
-	canRetain(model: NonNullable<AgentSession["model"]>): boolean {
-		const catalog = this.snapshot(model.provider);
-		return (
-			catalog === null ||
-			catalog === undefined ||
-			catalog.some((item) => item.slug === model.id)
-		);
+	/** liveのvisibilityに関わらず、同じslugの補助metadataを返す。 */
+	metadata(provider: string, modelId: string) {
+		return this.snapshot(provider)?.find((item) => item.slug === modelId);
 	}
 }
