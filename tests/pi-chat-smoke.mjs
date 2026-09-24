@@ -1,7 +1,15 @@
 // 実Pi SDKとローカルOpenAI互換サーバーで、通信・read・Stopを外部認証なしで検証する。
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from "node:fs/promises";
+import {
+	mkdtemp,
+	mkdir,
+	writeFile,
+	readFile,
+	cp,
+	rm,
+	realpath,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -71,7 +79,7 @@ const server = createServer((request, response) => {
 				name: "powershell",
 				args: {
 					command:
-						"Write-Output 'command started'; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad",
+						"Set-Content -LiteralPath command-started.txt -Value started; Write-Output 'command started'; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad",
 				},
 			},
 		}[prompt];
@@ -149,7 +157,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./src/extension/backends/pi/PiRuntime"; export { isHostMessage } from "./src/shared/hostMessageValidation";',
+				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./src/extension/backends/pi/PiRuntime"; export { isHostMessage } from "./src/shared/hostMessageValidation"; export { createCodexSandboxExecutor } from "./src/extension/backends/codex/CodexSandboxExecutor";',
 			resolveDir: projectRoot,
 		},
 		bundle: true,
@@ -178,16 +186,30 @@ try {
 			},
 		],
 	});
-	const { PiSessionController, createPiRuntime, isHostMessage } =
-		createRequire(import.meta.url)(
-			path.join(projectRoot, "dist/pi-smoke/host.cjs"),
-		);
+	const {
+		PiSessionController,
+		createPiRuntime,
+		isHostMessage,
+		createCodexSandboxExecutor,
+	} = createRequire(import.meta.url)(
+		path.join(projectRoot, "dist/pi-smoke/host.cjs"),
+	);
 	controller = new PiSessionController(async (signal, authorize, resume) => ({
 		cwd,
 		session: await createPiRuntime({
+			commandExecutor: createCodexSandboxExecutor(projectRoot),
 			extensionPath: fixture,
 			cwd,
 			agentDir,
+			parentPolicy: {
+				filesystem: {
+					readableRoots: [await realpath(cwd)],
+					writableRoots: [await realpath(cwd)],
+					protectedPaths: [],
+				},
+				network: { enabled: false },
+				command: { mode: "deny" },
+			},
 			signal,
 			authorize,
 			resume,
@@ -357,7 +379,7 @@ try {
 		});
 		assert.equal(controller.snapshot().permissions.length, 0);
 	}
-	for (const tool of ["write", "edit", "powershell"]) {
+	for (const tool of ["write", "edit"]) {
 		const target = path.join(
 			cwd,
 			tool === "powershell" ? "command.txt" : "approved.txt",
@@ -399,23 +421,16 @@ try {
 			expectedMutationText(tool),
 		);
 	}
-	await send("commandStop");
-	await until(() => controller.snapshot().permissions.length === 1);
-	await respond("accept");
-	await until(() =>
-		JSON.stringify(controller.snapshot().tools.at(-1).content).includes(
-			"command started",
-		),
+	// 未対応policyはHuman Approvalより前に拒否し、Shellを起動しない。
+	await send("powershell");
+	await until(() => controller.snapshot().run !== "running");
+	assert.equal(controller.snapshot().permissions.length, 0);
+	assert.equal(controller.snapshot().tools.at(-1).status, "failed");
+	assert.match(
+		JSON.stringify(controller.snapshot().tools.at(-1).content),
+		/通信隔離/,
 	);
-	await controller.receive({
-		type: "prompt/cancel",
-		requestId: "command-stop",
-		sessionId: controller.snapshot().sessionId,
-		runId: controller.snapshot().runId,
-	});
-	await until(() => controller.snapshot().run === "cancelled");
-	assert.equal(controller.snapshot().tools.at(-1).status, "cancelled");
-	await assert.rejects(readFile(path.join(cwd, "unexpected.txt")), {
+	await assert.rejects(readFile(path.join(cwd, "command.txt")), {
 		code: "ENOENT",
 	});
 	await send("stop");
@@ -478,7 +493,7 @@ try {
 		requests,
 	});
 	console.log(
-		"PASS: packaged Pi SDK + WASM → same-run steer → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → queued steer cancellation → resume",
+		"PASS: packaged Pi SDK + WASM → read/ls → write/edit approval and rejection → unsupported Shell denied → cancellation → resume",
 	);
 } finally {
 	await controller?.dispose();

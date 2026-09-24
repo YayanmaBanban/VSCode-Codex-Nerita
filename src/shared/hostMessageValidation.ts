@@ -1,4 +1,5 @@
 // Hostから届く通知を、Webviewの状態や描画に反映する前に検証する。
+import { isWindowsSandboxImplementation } from "./windowsSandbox";
 import type { HostMessage } from "./messages";
 import { isBackendId } from "./backend";
 import { isId, isRecord, isRevision } from "./validation";
@@ -24,6 +25,8 @@ const hostMessageValidators = new Map<
 	(value: Record<string, unknown>) => boolean
 >(
 	Object.entries({
+		"ui/sandboxState": (value) =>
+			isWindowsSandboxImplementation(value.implementation),
 		"ui/codeBlock": (value) => {
 			return isId(value.requestId);
 		},

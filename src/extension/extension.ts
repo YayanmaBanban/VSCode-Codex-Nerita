@@ -6,6 +6,7 @@ import type { BackendSession } from "./session/chatSession";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 let controller: BackendSession | undefined;
+
 /** サイドバー・コマンド・接続サービスを登録する。 */
 export function activate(context: vscode.ExtensionContext): void {
 	const session = createBackend(context);

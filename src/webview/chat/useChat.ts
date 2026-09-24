@@ -90,6 +90,7 @@ function isAuxiliaryMessage(message: HostMessage) {
 		message.type === "workspace/symbols" ||
 		message.type === "session/references" ||
 		message.type === "ui/sidebarState" ||
+		message.type === "ui/sandboxState" ||
 		message.type === "ui/backendState"
 	);
 }

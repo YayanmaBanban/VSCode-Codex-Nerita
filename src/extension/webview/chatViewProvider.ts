@@ -1,4 +1,5 @@
 // サイドバーの Webview を生成し、通信と購読の寿命を管理する。
+import { configuredSandbox, saveSandbox } from "./sandboxSettings";
 import type { ComposerPart } from "../../shared/composerContent";
 import * as vscode from "vscode";
 import { webviewHtml } from "./webviewHtml";
@@ -45,7 +46,10 @@ export class ChatViewProvider
 	) {
 		this.backendSubscription = vscode.workspace.onDidChangeConfiguration(
 			(event) => {
-				if (event.affectsConfiguration("nerita.backend")) {
+				if (
+					event.affectsConfiguration("nerita.backend") ||
+					event.affectsConfiguration("nerita.windowsSandbox")
+				) {
 					this.broadcastBackend();
 				}
 			},
@@ -62,6 +66,10 @@ export class ChatViewProvider
 	/** 設定ファイルの変更をすべての表示先へ反映する。 */
 	private broadcastBackend(): void {
 		for (const webview of this.views.keys()) {
+			void webview.postMessage({
+				type: "ui/sandboxState",
+				implementation: configuredSandbox(),
+			} satisfies HostMessage);
 			void webview.postMessage({
 				type: "ui/backendState",
 				backend: configuredBackend(),
@@ -167,13 +175,13 @@ export class ChatViewProvider
 		webview: vscode.Webview,
 		value: UiMessage,
 	): Promise<void> {
-		if (value.type === "ui/setBackend") {
+		if (value.type === "ui/setBackend" || value.type === "ui/setSandbox") {
 			if (this.backendPending) {
 				return;
 			}
 			this.backendPending = true;
 			try {
-				const changed = await saveBackend(value.backend);
+				const changed = await saveRuntimeSetting(value);
 				this.broadcastBackend();
 				if (changed) {
 					await vscode.commands.executeCommand(
@@ -262,6 +270,10 @@ export class ChatViewProvider
 	/** 要求元のWebviewにだけ接続状態と保存済み表示を復元する。 */
 	private async initializeView(webview: vscode.Webview) {
 		void webview.postMessage({
+			type: "ui/sandboxState",
+			implementation: configuredSandbox(),
+		} satisfies HostMessage);
+		void webview.postMessage({
 			type: "ui/backendState",
 			backend: configuredBackend(),
 		} satisfies HostMessage);
@@ -341,6 +353,9 @@ export class ChatViewProvider
 
 /** 表示操作の失敗に対応した復旧方法を返す。 */
 function viewRequestError(type: string) {
+	if (type === "ui/setSandbox") {
+		return "サンドボックス設定を保存できませんでした。設定ファイルを確認してください。";
+	}
 	if (type === "ui/setBackend") {
 		return "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、ウィンドウを再読み込みしてください。";
 	}
@@ -348,4 +363,13 @@ function viewRequestError(type: string) {
 		return "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。";
 	}
 	return "表示先を切り替えられませんでした。再試行してください。";
+}
+
+/** 検証済みの共通実行設定を対応するVS Code設定へ保存する。 */
+function saveRuntimeSetting(
+	value: Extract<UiMessage, { type: "ui/setBackend" | "ui/setSandbox" }>,
+): Promise<boolean> {
+	return value.type === "ui/setSandbox"
+		? saveSandbox(value.implementation)
+		: saveBackend(value.backend);
 }

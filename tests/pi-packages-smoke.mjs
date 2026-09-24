@@ -1,6 +1,12 @@
 // 同梱SDKにCLI形式のパッケージ設定を渡し、承認と登録リソースを検証する。
 import assert from "node:assert/strict";
-import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import {
+	mkdir,
+	writeFile,
+	readFile,
+	readdir,
+	realpath,
+} from "node:fs/promises";
 import path from "node:path";
 
 /** ユーザーの設定には触れず、隔離したglobal/projectパッケージを読み込む。 */
@@ -68,11 +74,31 @@ export default function(pi) {
 		path.join(cwd, ".pi/settings.json"),
 		JSON.stringify({ packages: [packageDir] }),
 	);
-	let allowed = false;
 	let approvals = 0;
 	const abort = new AbortController();
 	const catalogRequests = [];
+	const parentPolicy = {
+		filesystem: {
+			readableRoots: [await realpath(cwd)],
+			writableRoots: [await realpath(cwd)],
+			protectedPaths: [],
+		},
+		network: { enabled: false },
+		command: { mode: "deny" },
+	};
+	await assert.rejects(
+		createPiRuntime({
+			extensionPath,
+			cwd,
+			agentDir,
+			parentPolicy,
+			signal: abort.signal,
+			trustedExtensionPaths: [path.join(packageDir, "extension.mjs")],
+		}),
+		/外部Pi拡張/,
+	);
 	const session = await createPiRuntime({
+		parentPolicy,
 		extensionPath,
 		cwd,
 		agentDir,
@@ -120,9 +146,7 @@ export default function(pi) {
 		},
 		authorize: () => {
 			approvals++;
-			return allowed
-				? Promise.resolve(abort.signal)
-				: Promise.reject(new Error("denied"));
+			return Promise.reject(new Error("denied"));
 		},
 	});
 	try {
@@ -134,10 +158,8 @@ export default function(pi) {
 			).length,
 			1,
 		);
-		assert.ok(
-			extensions.some((extension) => extension.path.endsWith("local.ts")),
-		);
-		assert.ok(
+		assert.equal(extensions.length, 1);
+		assert.equal(
 			session.sessionManager
 				.getEntries()
 				.some(
@@ -145,6 +167,7 @@ export default function(pi) {
 						entry.type === "custom" &&
 						entry.customType === "local-started",
 				),
+			false,
 		);
 		assert.deepEqual(await readdir(localExtensions), ["local.ts"]);
 		assert.equal(
@@ -154,7 +177,7 @@ export default function(pi) {
 		assert.equal(
 			session.skills.filter((skill) => skill.name === "package-skill")
 				.length,
-			1,
+			0,
 		);
 		assert.equal(
 			session.sessionManager
@@ -164,42 +187,28 @@ export default function(pi) {
 						entry.type === "custom" &&
 						entry.customType === "package-started",
 				).length,
-			1,
+			0,
 		);
-		assert.ok(session.getActiveToolNames().includes("package_tool"));
+		assert.ok(!session.getActiveToolNames().includes("package_tool"));
 		const tool = session.agent.state.tools.find(
 			(item) => item.name === "package_tool",
 		);
-		assert.ok(tool);
-		await assert.rejects(
-			tool.execute("denied", {}, abort.signal),
-			/denied/,
-		);
+		assert.equal(tool, undefined);
 		await assert.rejects(readFile(path.join(cwd, "package-tool.txt")), {
 			code: "ENOENT",
 		});
-		allowed = true;
-		await tool.execute("allowed", {}, abort.signal);
-		assert.equal(
-			await readFile(path.join(cwd, "package-tool.txt"), "utf8"),
-			"executed",
-		);
-		assert.equal(approvals, 2);
-		assert.ok(
-			session.resourceLoader
-				.getPrompts()
-				.prompts.some((prompt) => prompt.name === "package-prompt"),
-		);
+		assert.equal(approvals, 0);
+		assert.deepEqual(session.resourceLoader.getPrompts().prompts, []);
 		await session.prompt("/package-prompt expanded");
-		assert.equal(requests.at(-1).neritaLocalSmoke, true);
+		assert.equal(requests.at(-1).neritaLocalSmoke, undefined);
 		assert.ok(
-			JSON.stringify(requests.at(-1).messages).includes(
+			!JSON.stringify(requests.at(-1).messages).includes(
 				"Package prompt expanded",
 			),
 		);
 		await session.prompt("/skill:package-skill");
 		assert.ok(
-			JSON.stringify(requests.at(-1).messages).includes(
+			!JSON.stringify(requests.at(-1).messages).includes(
 				"Package skill instructions.",
 			),
 		);
@@ -300,7 +309,7 @@ export default function(pi) {
 		assert.equal(rewritten.reasoning.effort, "ultra");
 		assert.equal(rewritten.reasoning.summary, "auto");
 		assert.equal(rewritten.service_tier, "priority");
-		assert.equal(rewritten.neritaLocalSmoke, true);
+		assert.equal(rewritten.neritaLocalSmoke, undefined);
 		await session.account.configure("fast-mode", "off", abort.signal);
 		assert.equal(
 			session.account.snapshot().piProviderControls.effectiveReasoning,
@@ -328,9 +337,44 @@ export default function(pi) {
 			});
 		assert.equal(localPayload.service_tier, undefined);
 		assert.equal(localPayload.reasoning, undefined);
-		assert.equal(localPayload.neritaLocalSmoke, true);
+		assert.equal(localPayload.neritaLocalSmoke, undefined);
 	} finally {
 		session.dispose();
+	}
+	// roleからworkspaceのwriteを要求しても、親のread-only上限を超えない。
+	const child = await createPiRuntime({
+		extensionPath,
+		cwd,
+		agentDir,
+		parentPolicy: {
+			...parentPolicy,
+			filesystem: { ...parentPolicy.filesystem, writableRoots: [] },
+		},
+		accessPolicy: parentPolicy,
+		preferredModel: { provider: "local", model: "smoke" },
+		signal: abort.signal,
+		authorize: () => {
+			throw new Error("child must not request write approval");
+		},
+	});
+	try {
+		const write = child.agent.state.tools.find(
+			(tool) => tool.name === "write",
+		);
+		assert.ok(write);
+		await assert.rejects(
+			write.execute(
+				"child",
+				{ path: "child-escalated.txt", content: "bad" },
+				abort.signal,
+			),
+			/境界/,
+		);
+		await assert.rejects(readFile(path.join(cwd, "child-escalated.txt")), {
+			code: "ENOENT",
+		});
+	} finally {
+		child.dispose();
 	}
 	const models = await sdk.ModelRuntime.create({
 		authPath: path.join(agentDir, "test-auth.json"),
@@ -372,6 +416,6 @@ export default function(pi) {
 		),
 	);
 	console.log(
-		"PASS: packaged Pi → package deduplication → extension startup → skills/prompts → tool approval/rejection → model selection → API key login/logout",
+		"PASS: packaged Pi → external extensions denied → unsafe skills/prompts discovery disabled → model selection → API key login/logout",
 	);
 }

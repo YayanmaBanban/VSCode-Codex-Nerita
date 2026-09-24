@@ -1,16 +1,24 @@
 // シェルを介さず App Server を起動し、接続終了時にプロセスツリーを解放する。
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 
+import type { WindowsSandboxImplementation } from "../../../../shared/windowsSandbox";
+
 /** 認証・CODEX_HOME・設定を継承し、同梱ネイティブ実行ファイルを起動する。 */
 export function startAppServerProcess(
 	executable: string,
 	cwd: string,
+	windowsSandbox?: WindowsSandboxImplementation,
 ): ChildProcessWithoutNullStreams {
 	const env = { ...process.env };
 	// Extension Host 固有の Node 起動設定を、Codex が起動する子プロセスへ持ち込まない。
 	delete env.NODE_OPTIONS;
 	delete env.ELECTRON_RUN_AS_NODE;
-	return spawn(executable, ["app-server", "--listen", "stdio://"], {
+	const args = ["app-server", "--listen", "stdio://"];
+	// PiのExecutorではユーザー設定によるSandbox無効化を許可しない。
+	if (windowsSandbox) {
+		//args.push("-c", `windows.sandbox="${windowsSandbox}"`);
+	}
+	return spawn(executable, args, {
 		cwd,
 		env,
 		windowsHide: true,

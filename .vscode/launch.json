@@ -3,12 +3,16 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Run Extension",
+			// Extension Host専用attachのlocalhost固定を避け、下のNodeデバッガーで接続する。
+			"name": "Extension Host (wait for IPv4 debugger)",
 			"type": "extensionHost",
 			"request": "launch",
+			"noDebug": true,
+			"presentation": { "hidden": true },
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--new-window",
+				"--inspect-brk-extensions=9333",
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"${workspaceFolder}/.vscode/development.code-workspace",
 				"--disable-extension",
@@ -21,8 +25,33 @@
 				"vscode.markdown-language-features"
 			],
 			"outFiles": ["${workspaceFolder}/dist/extension.js"],
+			"sourceMaps": true
+		},
+		{
+			"name": "Attach Extension Host (IPv4)",
+			"type": "node",
+			"request": "attach",
+			"address": "127.0.0.1",
+			"port": 9333,
+			"timeout": 60000,
+			// Reload WindowでHostが入れ替わっても、同じポートに再接続する。
+			"restart": true,
+			"continueOnAttach": true,
+			"outFiles": ["${workspaceFolder}/dist/extension.js"],
 			"sourceMaps": true,
-			"preLaunchTask": "build: extension"
+			"presentation": { "hidden": true }
+		}
+	],
+	"compounds": [
+		{
+			"name": "Run Extension",
+			"configurations": [
+				"Extension Host (wait for IPv4 debugger)",
+				"Attach Extension Host (IPv4)"
+			],
+			"preLaunchTask": "build: extension",
+			"stopAll": true,
+			"presentation": { "order": 0 }
 		}
 	]
 }

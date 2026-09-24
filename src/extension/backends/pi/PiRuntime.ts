@@ -6,7 +6,20 @@ import type {
 	AgentSessionEvent,
 } from "@earendil-works/pi-coding-agent";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
-import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
+import { type PiAuthorize } from "./PiApprovedTools";
+import { createPiFileTools } from "./PiFileTools";
+import { createPiSandboxPowerShellTool } from "./PiPowerShellTool";
+import {
+	createWorkspaceAccessPolicy,
+	canonicalPath,
+	WorkspacePathPolicy,
+} from "../../security/WorkspacePathPolicy";
+import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
+import {
+	intersectAccessPolicies,
+	type AgentAccessPolicy,
+} from "../../security/AgentAccessPolicy";
+import { freezeToolCall } from "../../security/ApprovedToolCall";
 import { PiAccount, type PiAuthService } from "./PiAccount";
 import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
@@ -54,6 +67,14 @@ export type PiFactory = (
 export type PiRuntimeOptions = {
 	extensionPath: string;
 	cwd: string;
+	workspaceRoots?: readonly string[];
+	commandExecutor?: SandboxCommandExecutor;
+	/** ユーザーがHostコードとして明示的に信頼した拡張ファイル。 */
+	trustedExtensionPaths?: readonly string[];
+	/** Hostが所有する親の上限。省略時にworkspace権限へ戻してはならない。 */
+	parentPolicy: AgentAccessPolicy;
+	/** subagentへ渡す親・roleの交差policy。workspace上限との交差だけを採用する。 */
+	accessPolicy?: AgentAccessPolicy;
 	agentDir?: string;
 	/** 最後にUIで選択したモデルと推論レベル。 */
 	preferredModel?: PiModelSelection;
@@ -80,12 +101,17 @@ export type PiModelSelection = {
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
 ): Promise<PiSession> {
+	options = snapshotPolicies(options);
 	const sdkUrl = pathToFileURL(
 		join(options.extensionPath, "dist/runtime/pi.mjs"),
 	).href;
 	const sdk = (await import(sdkUrl)) as typeof PiSdk;
 	options.signal.throwIfAborted();
 	const agentDir = options.agentDir || sdk.getAgentDir();
+	const paths = await runtimePathPolicy(options, agentDir);
+	const policy = paths.policy;
+	const toolLifetime = new AbortController();
+	await paths.resolve(options.cwd, "read");
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
 	// 会話の自動再実行はHost側の停止・承認の寿命と分離して無効化する。
 	settingsManager.applyOverrides({
@@ -104,6 +130,8 @@ export async function createPiRuntime(
 		settingsManager,
 		authorize,
 		options.signal,
+		policy,
+		options.trustedExtensionPaths ?? [],
 		controls,
 	);
 	options.signal.throwIfAborted();
@@ -148,10 +176,15 @@ export async function createPiRuntime(
 				.extensions.flatMap((extension) => [...extension.tools.keys()]),
 		],
 		customTools: [
-			sdk.createWriteToolDefinition(options.cwd),
-			sdk.createEditToolDefinition(options.cwd),
-			sdk.createPowerShellToolDefinition(options.cwd),
-		].map((tool) => approvePiTool(tool, options.cwd, authorize)),
+			...createPiFileTools(sdk, paths, authorize, toolLifetime.signal),
+			createPiSandboxPowerShellTool(
+				sdk.createPowerShellToolDefinition(options.cwd),
+				paths,
+				authorize,
+				commandExecutor(options),
+				toolLifetime.signal,
+			),
+		],
 	});
 	controls.bind(session);
 	const account = new PiAccount(
@@ -179,7 +212,12 @@ export async function createPiRuntime(
 			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
 		);
 	}
+	const dispose = session.dispose.bind(session);
 	return Object.assign(session, {
+		dispose: () => {
+			toolLifetime.abort();
+			dispose();
+		},
 		history,
 		storageChanged: () =>
 			!options.resume &&
@@ -194,6 +232,52 @@ export async function createPiRuntime(
 			path: skill.filePath,
 		})),
 	});
+}
+
+/** 非同期起動前に親の上限を固定し、省略からの権限昇格を拒否する。 */
+function snapshotPolicies(options: PiRuntimeOptions): PiRuntimeOptions {
+	if (!options.parentPolicy) {
+		throw new Error(
+			"親のaccess policyが必要です。workspace権限への暗黙の昇格は許可されません。",
+		);
+	}
+	return {
+		...options,
+		parentPolicy: freezeToolCall(options.parentPolicy),
+		...(options.accessPolicy
+			? { accessPolicy: freezeToolCall(options.accessPolicy) }
+			: {}),
+	};
+}
+
+/** 再開・subagentも保存済みpolicyを信用せず、現在のHost rootsで制限する。 */
+async function runtimePathPolicy(options: PiRuntimeOptions, agentDir: string) {
+	const workspace = await createWorkspaceAccessPolicy(
+		options.workspaceRoots ?? [options.cwd],
+	);
+	const parent = intersectAccessPolicies(workspace, options.parentPolicy);
+	const policy = options.accessPolicy
+		? intersectAccessPolicies(parent, options.accessPolicy)
+		: parent;
+	// 次回のHostロードでagent生成物を実行・認証設定として扱わない。
+	policy.filesystem.protectedPaths = [
+		...policy.filesystem.protectedPaths,
+		await canonicalPath(join(options.extensionPath, "dist"), options.cwd),
+		await canonicalPath(agentDir, options.cwd),
+	];
+	return new WorkspacePathPolicy(freezeToolCall(policy), options.cwd);
+}
+
+/** テストや未接続の呼出元でもSDK direct executeへ戻さない。 */
+function commandExecutor(options: PiRuntimeOptions): SandboxCommandExecutor {
+	return (
+		options.commandExecutor ?? {
+			execute: () =>
+				Promise.reject(
+					new Error("Sandbox Executorが接続されていません。"),
+				),
+		}
+	);
 }
 
 /** 最新の保存先設定を明示設定と既定値より優先する。 */

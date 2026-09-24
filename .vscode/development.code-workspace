@@ -3,5 +3,10 @@
 	"folders": [{ "path": ".." }],
 	"settings": {
 		"nerita.backend": "pi",
+		// windowスコープのため、フォルダーのsettings.jsonではなくここにも指定する。
+		"vitest.nodeExecutable": "${env:LOCALAPPDATA}/Programs/Microsoft VS Code/Code.exe",
+		"vitest.nodeEnv": {
+			"ELECTRON_RUN_AS_NODE": "1",
+		},
 	},
 }

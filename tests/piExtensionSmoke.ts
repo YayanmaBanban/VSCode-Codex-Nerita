@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, basename, join } from "node:path";
 import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
 import { createPiRuntime } from "../src/extension/backends/pi/PiRuntime";
+import { createWorkspaceAccessPolicy } from "../src/extension/security/WorkspacePathPolicy";
 
 /** Extension Host上でもESMの動的ロードとストリーム中断が成立することを確認する。 */
 export async function piExtensionSmoke(extensionPath: string): Promise<void> {
@@ -117,6 +118,7 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 				session: await createPiRuntime({
 					extensionPath,
 					cwd: fixture,
+					parentPolicy: await createWorkspaceAccessPolicy([fixture]),
 					agentDir,
 					signal,
 					authorize,

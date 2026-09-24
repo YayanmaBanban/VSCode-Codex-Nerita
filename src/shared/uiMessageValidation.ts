@@ -1,4 +1,5 @@
 // Webviewから届く操作要求を、副作用を実行する前に検証する。
+import { isWindowsSandboxImplementation } from "./windowsSandbox";
 import type { UiMessage } from "./messages";
 import { isBackendId } from "./backend";
 import { isId, isRecord } from "./validation";
@@ -36,6 +37,8 @@ const uiMessageValidators = new Map<
 	(value: Record<string, unknown>) => boolean
 >(
 	Object.entries({
+		"ui/setSandbox": (value) =>
+			isWindowsSandboxImplementation(value.implementation),
 		"ui/setBackend": (value) => isBackendId(value.backend),
 		"agent/read": (value) => isId(value.sessionId) && isId(value.threadId),
 		"changes/open": (value) => isChangeScope(value.scope),

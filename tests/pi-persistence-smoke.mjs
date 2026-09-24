@@ -1,6 +1,13 @@
 // 同梱SDKで保存・再開・保存先切替・移動を検証する。会話はローカルモデルだけを使う。
 import assert from "node:assert/strict";
-import { readFile, writeFile, readdir, mkdir, cp } from "node:fs/promises";
+import {
+	readFile,
+	writeFile,
+	readdir,
+	mkdir,
+	cp,
+	realpath,
+} from "node:fs/promises";
 import path from "node:path";
 
 /** 新しいControllerから同じ履歴を開き、UIとモデルの両方へ文脈を復元する。 */
@@ -23,6 +30,15 @@ export async function piPersistenceSmoke({
 			session: await createPiRuntime({
 				extensionPath,
 				cwd: workspace,
+				parentPolicy: {
+					filesystem: {
+						readableRoots: [await realpath(workspace)],
+						writableRoots: [await realpath(workspace)],
+						protectedPaths: [],
+					},
+					network: { enabled: false },
+					command: { mode: "deny" },
+				},
 				agentDir,
 				storage,
 				getStorage: () => storage,
@@ -342,6 +358,15 @@ async function startupReasoningSmoke({
 	const options = {
 		extensionPath,
 		cwd,
+		parentPolicy: {
+			filesystem: {
+				readableRoots: [await realpath(cwd)],
+				writableRoots: [await realpath(cwd)],
+				protectedPaths: [],
+			},
+			network: { enabled: false },
+			command: { mode: "deny" },
+		},
 		agentDir,
 		preferredModel: { provider: "local", model: "reasoning-startup" },
 		signal: new AbortController().signal,

@@ -1,4 +1,5 @@
 // 利用する RPC の生成型と、受信データの実行時検証を結び付ける。
+import { parseSandboxConfig } from "./config";
 import type { ClientRequest } from "../codex-app-server/ClientRequest";
 import type { CollaborationMode } from "../codex-app-server/CollaborationMode";
 import type { InitializeResponse } from "../codex-app-server/InitializeResponse";
@@ -8,6 +9,11 @@ import { parseSkills } from "./skills";
 import { parseMcpStatus } from "../mcpStatus";
 import { parseModels, parseLogin } from "./account";
 import { parseQuotaResponse } from "./usage";
+import {
+	parseCommandResult,
+	parseSandboxReadiness,
+	parseSandboxSetup,
+} from "./command";
 import {
 	parseThreads,
 	parseTurns,
@@ -25,6 +31,11 @@ import {
 
 /** 対応済みメソッドだけを公開し、応答の生成型を固定する。 */
 export type AppServerResponses = {
+	"config/read": ReturnType<typeof parseSandboxConfig>;
+	"command/exec": ReturnType<typeof parseCommandResult>;
+	"command/exec/terminate": Record<string, never>;
+	"windowsSandbox/readiness": ReturnType<typeof parseSandboxReadiness>;
+	"windowsSandbox/setupStart": ReturnType<typeof parseSandboxSetup>;
 	"thread/settings/update": Record<string, never>;
 	"mcpServerStatus/list": ReturnType<typeof parseMcpStatus>;
 	"skills/list": ReturnType<typeof parseSkills>;
@@ -90,6 +101,11 @@ function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
 export const responseParsers: {
 	[M in keyof AppServerResponses]: (value: unknown) => AppServerResponses[M];
 } = {
+	"config/read": parseSandboxConfig,
+	"command/exec": parseCommandResult,
+	"command/exec/terminate": parseInterrupt,
+	"windowsSandbox/readiness": parseSandboxReadiness,
+	"windowsSandbox/setupStart": parseSandboxSetup,
 	"thread/settings/update": parseInterrupt,
 	"mcpServerStatus/list": parseMcpStatus,
 	"skills/list": parseSkills,

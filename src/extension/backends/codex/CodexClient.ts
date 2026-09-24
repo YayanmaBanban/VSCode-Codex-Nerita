@@ -1,5 +1,7 @@
 // App Server の起動・初期化をまとめ、初期化済み接続だけを呼び出し側へ渡す。
+import type { WindowsSandboxImplementation } from "../../../shared/windowsSandbox";
 import type { ClientInfo } from "./codex-app-server/ClientInfo";
+import type { CommandExecParams } from "./codex-app-server/v2/CommandExecParams";
 import type { InitializeResponse } from "./codex-app-server/InitializeResponse";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import type { ThreadLoadedListParams } from "./codex-app-server/v2/ThreadLoadedListParams";
@@ -29,7 +31,28 @@ export type CodexClientOptions = {
 	clientInfo: ClientInfo;
 	callbacks?: AppServerCallbacks;
 	signal?: AbortSignal;
+	forceWindowsSandbox?: boolean;
+	windowsSandbox?: WindowsSandboxImplementation;
 };
+
+/** Codexが解決した設定が未指定の場合だけVS Codeの既定値を使う。 */
+async function needsSandboxDefault(
+	transport: AppServerTransport,
+	options: CodexClientOptions,
+): Promise<boolean> {
+	if (
+		process.platform !== "win32" ||
+		!options.windowsSandbox ||
+		options.forceWindowsSandbox
+	) {
+		return false;
+	}
+	const config = await transport.request("config/read", {
+		cwd: options.cwd,
+		includeLayers: false,
+	});
+	return config.sandbox === null;
+}
 
 /** 初期化済みの型付きRPCを、機能別の操作として提供する。 */
 export class CodexClient {
@@ -46,7 +69,13 @@ export class CodexClient {
 		const executable = await resolveCodexExecutable(options.extensionPath);
 		options.signal?.throwIfAborted();
 		const transport = new AppServerTransport(
-			startAppServerProcess(executable, options.cwd),
+			startAppServerProcess(
+				executable,
+				options.cwd,
+				options.forceWindowsSandbox
+					? (options.windowsSandbox ?? "elevated")
+					: undefined,
+			),
 			options.callbacks,
 		);
 		/** 初期化待ちでもワークスペース変更・拡張機能終了に追従する。 */
@@ -67,6 +96,17 @@ export class CodexClient {
 			});
 			transport.notify({ method: "initialized" });
 			options.signal?.throwIfAborted();
+			// config/readに信頼済みproject層の解決を任せ、明示設定がない場合だけ再起動する。
+			if (await needsSandboxDefault(transport, options)) {
+				detachAbort();
+				await transport.dispose();
+				options.signal?.throwIfAborted();
+				return await CodexClient.connect({
+					...options,
+					forceWindowsSandbox: true,
+				});
+			}
+			options.signal?.throwIfAborted();
 			return new CodexClient(
 				transport,
 				response,
@@ -78,6 +118,32 @@ export class CodexClient {
 			await transport.dispose();
 			throw error;
 		}
+	}
+	/** 既存の認証状態だけを調べる。 */
+	readSandboxReadiness() {
+		return this.transport.request("windowsSandbox/readiness", undefined);
+	}
+	/** 管理者設定を変更するため、明示的なユーザー操作からだけ呼ぶ。 */
+	setupWindowsSandbox(
+		cwd: string,
+		mode: WindowsSandboxImplementation = "elevated",
+	) {
+		return this.transport.request("windowsSandbox/setupStart", {
+			mode,
+			cwd,
+		});
+	}
+	/** commandの制限時間に通信の終了処理分を加えて待つ。 */
+	executeCommand(params: CommandExecParams) {
+		return this.transport.request(
+			"command/exec",
+			params,
+			(params.timeoutMs ?? 60_000) + 10_000,
+		);
+	}
+	/** connection固有のprocessIdだけを終了させる。 */
+	terminateCommand(processId: string) {
+		return this.transport.request("command/exec/terminate", { processId });
 	}
 	/** 既存の認証状態だけを調べる。 */
 	readAccount() {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import {
 	resolvePiInitialModel,
+	createPiRuntime,
 	type PiRuntimeOptions,
 } from "../../src/extension/backends/pi/PiRuntime";
 
@@ -18,12 +19,31 @@ function fixture() {
 	const options: PiRuntimeOptions = {
 		extensionPath: "fixture",
 		cwd: "fixture",
+		parentPolicy: {
+			filesystem: {
+				readableRoots: [],
+				writableRoots: [],
+				protectedPaths: [],
+			},
+			network: { enabled: false },
+			command: { mode: "deny" },
+		},
 		signal: new AbortController().signal,
 	};
 	return { models, runtime, options };
 }
 
 describe("Piの起動モデル", () => {
+	it("親policyの省略はSDK読込み前に拒否する", async () => {
+		const options: unknown = {
+			extensionPath: "missing",
+			cwd: "missing",
+			signal: new AbortController().signal,
+		};
+		await expect(
+			createPiRuntime(options as PiRuntimeOptions),
+		).rejects.toThrow("親のaccess policy");
+	});
 	it("最後に選択したモデルを使う", () => {
 		const h = fixture();
 		expect(

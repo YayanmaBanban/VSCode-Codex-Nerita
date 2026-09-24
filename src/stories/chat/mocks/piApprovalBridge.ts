@@ -121,7 +121,7 @@ function startApprovalPrompt(
 		permissions: [
 			{
 				id: crypto.randomUUID(),
-				title: `Pi: ${shell ? "powershell" : "write"} の実行承認\n作業フォルダー: ${state.cwd}\n${JSON.stringify(input, null, 2)}`,
+				title: `Pi: ${shell ? "powershell" : "write"} の実行承認\n作業フォルダー: ${state.cwd}\n${JSON.stringify(input, null, 2)}\n実行範囲: ${shell ? "Sandbox" : "ワークスペース内のファイル操作"}\n書込み許可: ${state.cwd}${shell ? "\nShell network: 禁止" : ""}\n副作用を伴うツールは一回ごとの承認が必要です。`,
 				options: [
 					{
 						id: "accept",

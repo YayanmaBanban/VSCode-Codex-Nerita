@@ -1,4 +1,5 @@
 // HostとWebviewの要求・通知の通信契約を定義し、実行環境のAPIに依存させない。
+import type { WindowsSandboxImplementation } from "./windowsSandbox";
 import type { ChatState } from "./chatState";
 import type { BackendId } from "./backend";
 import type { ComposerPart } from "./composerContent";
@@ -29,6 +30,11 @@ import type { SessionHistoryMessage } from "./sessionHistory";
 
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| {
+			type: "ui/setSandbox";
+			requestId: string;
+			implementation: WindowsSandboxImplementation;
+	  }
 	| { type: "ui/setBackend"; requestId: string; backend: BackendId }
 	| {
 			type: "agent/read";
@@ -111,6 +117,7 @@ export type UiMessage =
 
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "ui/sandboxState"; implementation: WindowsSandboxImplementation }
 	| { type: "ui/backendState"; backend: BackendId }
 	| { type: "ui/codeBlock"; requestId: string }
 	| { type: "agent/view"; requestId: string; view: AgentThreadView }

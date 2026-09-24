@@ -1,4 +1,5 @@
 // セッションタイトル・表示先・接続操作と、認証やエラーの案内を表示する。
+import type { WindowsSandboxImplementation } from "../../../shared/windowsSandbox";
 import type { ChatState } from "../../../shared/chatState";
 import type { BackendId } from "../../../shared/backend";
 import type { UiMessage } from "../../../shared/messages";
@@ -16,6 +17,7 @@ const iconClass =
 
 /** 狭い表示でも操作を残し、長いセッションタイトルだけを省略する。 */
 export function ConnectionHeader({
+	windowsSandbox,
 	backend,
 	state,
 	requestError,
@@ -28,6 +30,7 @@ export function ConnectionHeader({
 	sidebarLocation,
 	onSelectSidebar,
 }: {
+	windowsSandbox?: WindowsSandboxImplementation | undefined;
 	backend?: BackendId | undefined;
 	state: ChatState;
 	requestError: string | null;
@@ -98,6 +101,7 @@ export function ConnectionHeader({
 						</button>
 					</SettingsTooltip>
 					<PersonalityOptions
+						windowsSandbox={windowsSandbox}
 						backend={backend}
 						sidebarLocation={sidebarLocation}
 						onSelectSidebar={onSelectSidebar}

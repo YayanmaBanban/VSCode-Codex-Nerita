@@ -4,8 +4,10 @@ import { Menu } from "@base-ui/react/menu";
 import { Dialog } from "@base-ui/react/dialog";
 import { CSPProvider } from "@base-ui/react/csp-provider";
 import { Ellipsis, FileUser, KeyRound, LogOut, X } from "lucide-react";
+import type { WindowsSandboxImplementation } from "../../../shared/windowsSandbox";
 import type { ChatState } from "../../../shared/chatState";
 import type { BackendId } from "../../../shared/backend";
+import { SandboxMenu } from "../connection/SandboxMenu";
 import { BackendMenu } from "../connection/BackendMenu";
 import type { UiMessage } from "../../../shared/messages";
 import type { PersonalityMessage } from "../../../shared/personality";
@@ -16,6 +18,7 @@ import type { SidebarLocation } from "../../../shared/sidebar";
 
 /** メニューとダイアログのフォーカス管理をBase UIに任せる。 */
 export function PersonalityOptions({
+	windowsSandbox,
 	backend,
 	state,
 	send,
@@ -23,6 +26,7 @@ export function PersonalityOptions({
 	sidebarLocation = "secondary",
 	onSelectSidebar,
 }: {
+	windowsSandbox?: WindowsSandboxImplementation | undefined;
 	backend?: BackendId | undefined;
 	state: ChatState;
 	send: (message: UiMessage) => void;
@@ -76,6 +80,16 @@ export function PersonalityOptions({
 											requestId: crypto.randomUUID(),
 											location,
 										}))
+								}
+							/>
+							<SandboxMenu
+								implementation={windowsSandbox}
+								onSelect={(implementation) =>
+									send({
+										type: "ui/setSandbox",
+										requestId: crypto.randomUUID(),
+										implementation,
+									})
 								}
 							/>
 							<BackendMenu

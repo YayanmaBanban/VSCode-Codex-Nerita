@@ -1,9 +1,11 @@
 // 起動時の設定に従い、共通の寿命管理を持つbackendを組み立てる。
+import { configuredSandbox } from "../webview/sandboxSettings";
 import * as vscode from "vscode";
 import type { BackendSession } from "../session/chatSession";
 import { requireLocalWorkspace } from "../workspace";
 import { attachmentService } from "../webview/attachments";
 import { CodexClient } from "./codex/CodexClient";
+import { createCodexSandboxExecutor } from "./codex/CodexSandboxExecutor";
 import { CodexSessionController } from "./codex/CodexSessionController";
 import {
 	authService,
@@ -13,6 +15,7 @@ import { PiSessionController } from "./pi/PiSessionController";
 import { createPiRuntime, type PiModelSelection } from "./pi/PiRuntime";
 import { createPiAuthService } from "./pi/PiAuthService";
 import { codexSelectionStore } from "./codex/settings/modelSelection";
+import { createWorkspaceAccessPolicy } from "../security/WorkspacePathPolicy";
 
 const piModelSelectionKey = "nerita.pi.lastModel";
 
@@ -37,9 +40,30 @@ export function createBackend(
 		return new PiSessionController(async (signal, authorize, resume) => {
 			const cwd = workspaceDirectory();
 			const preferredModel = storedPiModel(context);
+			const workspaceRoots =
+				vscode.workspace.workspaceFolders?.map(
+					(folder) => folder.uri.fsPath,
+				) ?? [];
+			const parentPolicy =
+				await createWorkspaceAccessPolicy(workspaceRoots);
 			const session = await createPiRuntime({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
+				parentPolicy,
+				workspaceRoots:
+					vscode.workspace.workspaceFolders?.map(
+						(folder) => folder.uri.fsPath,
+					) ?? [],
+				commandExecutor: createCodexSandboxExecutor(
+					context.extensionUri.fsPath,
+					configuredSandbox(),
+				),
+				// workspace設定からHostコードの信頼を昇格させない。
+				trustedExtensionPaths:
+					vscode.workspace
+						.getConfiguration("nerita.pi")
+						.inspect<string[]>("trustedExtensionPaths")
+						?.globalValue ?? [],
 				signal,
 				authorize,
 				authService: createPiAuthService(context.extensionUri),
@@ -66,6 +90,7 @@ export function createBackend(
 		async (callbacks, signal) => {
 			const cwd = workspaceDirectory();
 			const client = await CodexClient.connect({
+				windowsSandbox: configuredSandbox(),
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
 				callbacks,

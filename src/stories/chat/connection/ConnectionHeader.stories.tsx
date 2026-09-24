@@ -34,7 +34,18 @@ function HeaderStory({
 			subscribe: mock.subscribe,
 			postMessage(message) {
 				if (message.type === "ui/ready") {
+					mock.emit({
+						type: "ui/sandboxState",
+						implementation: "elevated",
+					});
 					mock.emit({ type: "ui/backendState", backend });
+				}
+				if (message.type === "ui/setSandbox") {
+					mock.emit({
+						type: "ui/sandboxState",
+						implementation: message.implementation,
+					});
+					return;
 				}
 				if (message.type === "ui/setBackend") {
 					mock.emit({

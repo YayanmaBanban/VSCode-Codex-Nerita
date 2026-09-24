@@ -27,6 +27,11 @@ for (const theme of ["dark", "light"] as const) {
 					"D:/workspace with spaces/project",
 				);
 				await approval.scrollIntoViewIfNeeded();
+				await expect(approval).toContainText("書込み許可:");
+				if (tool === "powershell") {
+					await expect(approval).toContainText("実行範囲: Sandbox");
+					await expect(approval).toContainText("Shell network: 禁止");
+				}
 				await info.attach(`${tool}-pending`, {
 					body: await page.screenshot({ fullPage: true }),
 					contentType: "image/png",
