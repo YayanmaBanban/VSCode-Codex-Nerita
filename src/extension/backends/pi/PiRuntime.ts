@@ -7,8 +7,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { type PiAuthorize } from "./PiApprovedTools";
-import { createPiFileTools } from "./PiFileTools";
-import { createPiSandboxPowerShellTool } from "./PiPowerShellTool";
+import { createPiRuntimeTools } from "./PiRuntimeTools";
 import {
 	createWorkspaceAccessPolicy,
 	canonicalPath,
@@ -25,6 +24,7 @@ import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
 import { PiQuotaService } from "./PiQuotaService";
 import { PiModelCatalogService } from "./PiModelCatalogService";
+import { PiChildRuntimes, type PiChildOptions } from "./PiChildRuntimes";
 import type { SkillSummary } from "../../../shared/skills";
 import {
 	openPiSessionStore,
@@ -56,6 +56,11 @@ export type PiSession = Pick<
 };
 export type { AgentSessionEvent as PiEvent };
 
+/** 子RuntimeはHostの生成経路からのみ公開し、親の実効policyを継承する。 */
+export type PiRuntimeSession = PiSession & {
+	createChild: (options: PiChildOptions) => Promise<PiRuntimeSession>;
+};
+
 /** 実SDKとテスト接続を同じ寿命管理で扱う。 */
 export type PiFactory = (
 	signal: AbortSignal,
@@ -83,6 +88,8 @@ export type PiRuntimeOptions = {
 	signal: AbortSignal;
 	authorize?: PiAuthorize;
 	storage?: PiSessionStorage;
+	/** 子Runtimeはユーザーの会話一覧へ内部履歴を保存しない。 */
+	ephemeral?: boolean;
 	getStorage?: () => PiSessionStorage;
 	resume?: PiResumeTarget;
 	authService?: PiAuthService;
@@ -100,7 +107,7 @@ export type PiModelSelection = {
 /** Pi標準形式で履歴を保存し、副作用ツールには必ずHostの承認を挟む。 */
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
-): Promise<PiSession> {
+): Promise<PiRuntimeSession> {
 	options = snapshotPolicies(options);
 	const sdkUrl = pathToFileURL(
 		join(options.extensionPath, "dist/runtime/pi.mjs"),
@@ -111,6 +118,7 @@ export async function createPiRuntime(
 	const paths = await runtimePathPolicy(options, agentDir);
 	const policy = paths.policy;
 	const toolLifetime = new AbortController();
+	const toolSignal = AbortSignal.any([toolLifetime.signal, options.signal]);
 	await paths.resolve(options.cwd, "read");
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
 	// 会話の自動再実行はHost側の停止・承認の寿命と分離して無効化する。
@@ -149,13 +157,18 @@ export async function createPiRuntime(
 	const model = resolvePiInitialModel(options, modelRuntime);
 	options.signal.throwIfAborted();
 	const storage = sessionStorage(options);
-	const { manager, history } = await openPiSessionStore(
+	const { manager, history } = await runtimeSessionStore(
 		sdk,
-		options.cwd,
+		options,
 		agentDir,
 		storage,
-		options.signal,
-		options.resume,
+	);
+	const customTools = createPiRuntimeTools(
+		sdk,
+		paths,
+		authorize,
+		toolSignal,
+		options.commandExecutor,
 	);
 	const { session } = await sdk.createAgentSession({
 		cwd: options.cwd,
@@ -166,25 +179,12 @@ export async function createPiRuntime(
 		...(model && !options.resume ? { model } : {}),
 		sessionManager: manager,
 		tools: [
-			"read",
-			"ls",
-			"write",
-			"edit",
-			"powershell",
+			...customTools.map((tool) => tool.name),
 			...resourceLoader
 				.getExtensions()
 				.extensions.flatMap((extension) => [...extension.tools.keys()]),
 		],
-		customTools: [
-			...createPiFileTools(sdk, paths, authorize, toolLifetime.signal),
-			createPiSandboxPowerShellTool(
-				sdk.createPowerShellToolDefinition(options.cwd),
-				paths,
-				authorize,
-				commandExecutor(options),
-				toolLifetime.signal,
-			),
-		],
+		customTools,
 	});
 	controls.bind(session);
 	const account = new PiAccount(
@@ -213,12 +213,32 @@ export async function createPiRuntime(
 		);
 	}
 	const dispose = session.dispose.bind(session);
+	const abort = session.abort.bind(session);
+	const children = new PiChildRuntimes(
+		options,
+		policy,
+		toolSignal,
+		createPiRuntime,
+	);
 	return Object.assign(session, {
+		createChild: (child: PiChildOptions) => children.open(child),
+		abort: async () => {
+			const results = await Promise.allSettled([
+				abort(),
+				children.stop(),
+			]);
+			for (const result of results) {
+				if (result.status === "rejected") {
+					throw result.reason;
+				}
+			}
+		},
 		dispose: () => {
 			toolLifetime.abort();
+			children.dispose();
 			dispose();
 		},
-		history,
+		...(history ? { history } : {}),
 		storageChanged: () =>
 			!options.resume &&
 			session.messages.length === 0 &&
@@ -243,6 +263,7 @@ function snapshotPolicies(options: PiRuntimeOptions): PiRuntimeOptions {
 	}
 	return {
 		...options,
+		workspaceRoots: [...(options.workspaceRoots ?? [options.cwd])],
 		parentPolicy: freezeToolCall(options.parentPolicy),
 		...(options.accessPolicy
 			? { accessPolicy: freezeToolCall(options.accessPolicy) }
@@ -268,21 +289,31 @@ async function runtimePathPolicy(options: PiRuntimeOptions, agentDir: string) {
 	return new WorkspacePathPolicy(freezeToolCall(policy), options.cwd);
 }
 
-/** テストや未接続の呼出元でもSDK direct executeへ戻さない。 */
-function commandExecutor(options: PiRuntimeOptions): SandboxCommandExecutor {
-	return (
-		options.commandExecutor ?? {
-			execute: () =>
-				Promise.reject(
-					new Error("Sandbox Executorが接続されていません。"),
-				),
-		}
-	);
-}
-
 /** 最新の保存先設定を明示設定と既定値より優先する。 */
 function sessionStorage(options: PiRuntimeOptions) {
 	return options.getStorage?.() ?? options.storage ?? "global";
+}
+
+/** 内部の子会話はメモリだけに置き、通常会話では既存の保存・復元規則を使う。 */
+async function runtimeSessionStore(
+	sdk: typeof PiSdk,
+	options: PiRuntimeOptions,
+	agentDir: string,
+	storage: PiSessionStorage,
+) {
+	return options.ephemeral
+		? {
+				manager: sdk.SessionManager.inMemory(options.cwd),
+				history: undefined,
+			}
+		: openPiSessionStore(
+				sdk,
+				options.cwd,
+				agentDir,
+				storage,
+				options.signal,
+				options.resume,
+			);
 }
 
 /** 拡張由来のproviderを初期モデル選択前に登録する。 */

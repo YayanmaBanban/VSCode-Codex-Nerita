@@ -36,8 +36,7 @@ export function SandboxMenu({
 				>
 					<Menu.Popup className="min-w-[128px] rounded-[6px] border border-solid border-menu-border bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]">
 						<p className="m-0 max-w-[220px] px-[10px] py-[6px] text-[11px] text-muted">
-							VS
-							Codeに保存・再読み込み。Codexはconfig.tomlを優先します。
+							設定を保存して再接続し、新しい会話を開始します。Codexはconfig.tomlを優先します。
 						</p>
 						<Menu.RadioGroup
 							value={implementation ?? ""}

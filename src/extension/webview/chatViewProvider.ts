@@ -43,6 +43,7 @@ export class ChatViewProvider
 	constructor(
 		private extensionUri: vscode.Uri,
 		private session: ChatSession,
+		private restartBackend: () => Promise<void>,
 	) {
 		this.backendSubscription = vscode.workspace.onDidChangeConfiguration(
 			(event) => {
@@ -176,21 +177,7 @@ export class ChatViewProvider
 		value: UiMessage,
 	): Promise<void> {
 		if (value.type === "ui/setBackend" || value.type === "ui/setSandbox") {
-			if (this.backendPending) {
-				return;
-			}
-			this.backendPending = true;
-			try {
-				const changed = await saveRuntimeSetting(value);
-				this.broadcastBackend();
-				if (changed) {
-					await vscode.commands.executeCommand(
-						"workbench.action.reloadWindow",
-					);
-				}
-			} finally {
-				this.backendPending = false;
-			}
+			await this.changeRuntimeSetting(webview, value);
 			return;
 		}
 		if (value.type === "workspace/resolvePath") {
@@ -218,6 +205,56 @@ export class ChatViewProvider
 			return;
 		}
 		await this.dispatchDisplayAction(webview, value);
+	}
+
+	/** 実行中の会話を切断せず、設定保存前に再接続できる状態か確認する。 */
+	private async canChangeRuntime(webview: vscode.Webview, requestId: string) {
+		const state = this.session.snapshot();
+		if (
+			state.run !== "running" &&
+			state.run !== "cancelling" &&
+			state.connection !== "connecting" &&
+			state.connection !== "authenticating" &&
+			!state.sessionPending &&
+			!state.configPending
+		) {
+			return true;
+		}
+		await webview.postMessage({
+			type: "request/failed",
+			requestId,
+			error: "実行・接続処理が終わってからバックエンドやサンドボックスを変更してください。",
+		} satisfies HostMessage);
+		return false;
+	}
+
+	/** 設定保存を直列化し、変更対象に応じてセッションを再接続・再生成する。 */
+	private async changeRuntimeSetting(
+		webview: vscode.Webview,
+		value: Extract<UiMessage, { type: "ui/setBackend" | "ui/setSandbox" }>,
+	): Promise<void> {
+		if (this.backendPending) {
+			return;
+		}
+		this.backendPending = true;
+		try {
+			if (!(await this.canChangeRuntime(webview, value.requestId))) {
+				return;
+			}
+			const changed = await saveRuntimeSetting(value);
+			this.broadcastBackend();
+			if (changed && value.type === "ui/setSandbox") {
+				// Sandboxは接続生成時に再取得するため、Extension Host全体の再起動は不要。
+				await this.session.receive({
+					type: "connection/retry",
+					requestId: value.requestId,
+				});
+			} else if (changed) {
+				await this.restartBackend();
+			}
+		} finally {
+			this.backendPending = false;
+		}
 	}
 
 	/** 下書きと表示位置を同期して会話操作をバックエンドへ渡す。 */
@@ -357,7 +394,7 @@ function viewRequestError(type: string) {
 		return "サンドボックス設定を保存できませんでした。設定ファイルを確認してください。";
 	}
 	if (type === "ui/setBackend") {
-		return "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、ウィンドウを再読み込みしてください。";
+		return "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、再接続してください。";
 	}
 	if (type === "reference/open") {
 		return "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。";

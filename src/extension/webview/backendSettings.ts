@@ -1,4 +1,4 @@
-// バックエンド設定の読み書きと、適用に必要な再読み込みを扱う。
+// バックエンド設定を読み書きし、セッション切替の要否を返す。
 import * as vscode from "vscode";
 import type { BackendId } from "../../shared/backend";
 

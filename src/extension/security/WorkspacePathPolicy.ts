@@ -108,7 +108,8 @@ export async function createWorkspaceAccessPolicy(
 			protectedPaths,
 		},
 		network: { enabled: false },
-		// 現行command/execでは有限のreadableRootsをOSへ伝えられない。
+		// Shellにも読取り上限を維持する。現在のWindows実装は権限profileでも
+		// root読取りを要求するため、強制可能なExecutorが用意されるまで停止する。
 		command: { mode: "deny" },
 	};
 }

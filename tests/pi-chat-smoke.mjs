@@ -17,6 +17,7 @@ import { createRequire } from "node:module";
 import { build } from "esbuild";
 import { piPersistenceSmoke } from "./pi-persistence-smoke.mjs";
 import { piPackagesSmoke } from "./pi-packages-smoke.mjs";
+import { piSubagentSmoke } from "./pi-subagent-smoke.mjs";
 
 const projectRoot = process.cwd();
 // 展開したVSIXも同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
@@ -56,33 +57,35 @@ const server = createServer((request, response) => {
 			};
 			return;
 		}
-		const mutation = {
-			write: {
-				name: "write",
-				args: { path: "approved.txt", content: "approved" },
-			},
-			edit: {
-				name: "edit",
-				args: {
-					path: "approved.txt",
-					edits: [{ oldText: "approved", newText: "edited" }],
-				},
-			},
-			powershell: {
-				name: "powershell",
-				args: {
-					command:
-						"Set-Content -LiteralPath command.txt -Value executed; Write-Output 'command complete'",
-				},
-			},
-			commandStop: {
-				name: "powershell",
-				args: {
-					command:
-						"Set-Content -LiteralPath command-started.txt -Value started; Write-Output 'command started'; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad",
-				},
-			},
-		}[prompt];
+		const mutation = prompt?.startsWith("policy:")
+			? JSON.parse(prompt.slice(7))
+			: {
+					write: {
+						name: "write",
+						args: { path: "approved.txt", content: "approved" },
+					},
+					edit: {
+						name: "edit",
+						args: {
+							path: "approved.txt",
+							edits: [{ oldText: "approved", newText: "edited" }],
+						},
+					},
+					powershell: {
+						name: "powershell",
+						args: {
+							command:
+								"Set-Content -LiteralPath command.txt -Value executed; Write-Output 'command complete'",
+						},
+					},
+					commandStop: {
+						name: "powershell",
+						args: {
+							command:
+								"Set-Content -LiteralPath command-started.txt -Value started; Write-Output 'command started'; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad",
+						},
+					},
+				}[prompt];
 		if (prompt === "stop") {
 			send({ content: "停止待ち" });
 			return;
@@ -312,9 +315,7 @@ try {
 	assert.ok(
 		requests.every((request) =>
 			request.tools.every((tool) =>
-				["read", "ls", "write", "edit", "powershell"].includes(
-					tool.function.name,
-				),
+				["read", "ls", "write", "edit"].includes(tool.function.name),
 			),
 		),
 	);
@@ -421,14 +422,14 @@ try {
 			expectedMutationText(tool),
 		);
 	}
-	// 未対応policyはHuman Approvalより前に拒否し、Shellを起動しない。
+	// 非公開Toolをモデルが捏造しても、Human ApprovalやSDKのShellへ到達しない。
 	await send("powershell");
 	await until(() => controller.snapshot().run !== "running");
 	assert.equal(controller.snapshot().permissions.length, 0);
 	assert.equal(controller.snapshot().tools.at(-1).status, "failed");
 	assert.match(
 		JSON.stringify(controller.snapshot().tools.at(-1).content),
-		/通信隔離/,
+		/not found|not available|unknown tool/i,
 	);
 	await assert.rejects(readFile(path.join(cwd, "command.txt")), {
 		code: "ENOENT",
@@ -491,6 +492,12 @@ try {
 		cwd,
 		agentDir,
 		requests,
+	});
+	await piSubagentSmoke({
+		createPiRuntime,
+		extensionPath: fixture,
+		cwd,
+		agentDir,
 	});
 	console.log(
 		"PASS: packaged Pi SDK + WASM → read/ls → write/edit approval and rejection → unsupported Shell denied → cancellation → resume",

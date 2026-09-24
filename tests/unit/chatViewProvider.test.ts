@@ -4,6 +4,7 @@ import { initialState } from "../../src/shared/chatState";
 import { type HostMessage } from "../../src/shared/messages";
 
 const api = vi.hoisted(() => ({
+	restartBackend: vi.fn().mockResolvedValue(undefined),
 	stat: vi.fn().mockResolvedValue({ type: 1 }),
 	createWebviewPanel: vi.fn(),
 	executeCommand: vi.fn().mockResolvedValue(undefined),
@@ -111,6 +112,7 @@ function harness() {
 	const provider = new ChatViewProvider(
 		vscode.Uri.parse("file:///extension"),
 		session,
+		api.restartBackend,
 	);
 	provider.resolveWebviewView(sidebar as unknown as vscode.WebviewView);
 	return { provider, sidebar, panel, session, listeners, state };
@@ -190,6 +192,7 @@ it("保存済みプライマリを初回表示で復元し、保存失敗時は�
 		location: "secondary",
 	});
 	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(api.restartBackend).not.toHaveBeenCalled();
 	expect(h.sidebar.webview.postMessage).toHaveBeenLastCalledWith(
 		expect.objectContaining({
 			type: "request/failed",
@@ -213,7 +216,7 @@ it.each([
 	[{ globalValue: "codex" }, 1],
 	[{ globalValue: "pi", workspaceValue: "codex" }, 2],
 ])(
-	"バックエンドを既存の設定スコープへ保存してから再読み込みする: %j",
+	"バックエンドを既存の設定スコープへ保存してから拡張内のバックエンドを再起動する: %j",
 	async (inspection, target) => {
 		api.inspect.mockReturnValue(inspection);
 		const h = harness();
@@ -224,11 +227,10 @@ it.each([
 			backend: "pi",
 		});
 		expect(api.update).toHaveBeenCalledWith("backend", "pi", target);
-		expect(api.executeCommand).toHaveBeenCalledWith(
-			"workbench.action.reloadWindow",
-		);
+		expect(api.restartBackend).toHaveBeenCalledTimes(1);
+		expect(api.executeCommand).not.toHaveBeenCalled();
 		expect(api.update.mock.invocationCallOrder[0]).toBeLessThan(
-			api.executeCommand.mock.invocationCallOrder[0]!,
+			api.restartBackend.mock.invocationCallOrder[0]!,
 		);
 		for (const view of [h.sidebar, h.panel]) {
 			expect(view.webview.postMessage).toHaveBeenCalledWith({
@@ -240,6 +242,46 @@ it.each([
 		h.provider.dispose();
 	},
 );
+it("Sandbox変更は保存後に再接続し、ウィンドウを再読み込みしない", async () => {
+	api.get.mockReturnValue("elevated");
+	const h = harness();
+	await h.sidebar.send({
+		type: "ui/setSandbox",
+		requestId: "sandbox",
+		implementation: "unelevated",
+	});
+	expect(api.update).toHaveBeenCalledWith("windowsSandbox", "unelevated", 1);
+	expect(h.session.receive).toHaveBeenCalledWith({
+		type: "connection/retry",
+		requestId: "sandbox",
+	});
+	expect(api.update.mock.invocationCallOrder[0]).toBeLessThan(
+		h.session.receive.mock.invocationCallOrder[0]!,
+	);
+	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(api.restartBackend).not.toHaveBeenCalled();
+	h.provider.dispose();
+});
+it("実行中のSandbox変更は保存せず、接続を維持する", async () => {
+	const h = harness();
+	h.state.run = "running";
+	await h.sidebar.send({
+		type: "ui/setSandbox",
+		requestId: "sandbox-busy",
+		implementation: "unelevated",
+	});
+	expect(api.update).not.toHaveBeenCalled();
+	expect(h.session.receive).not.toHaveBeenCalled();
+	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(api.restartBackend).not.toHaveBeenCalled();
+	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith(
+		expect.objectContaining({
+			type: "request/failed",
+			requestId: "sandbox-busy",
+		}),
+	);
+	h.provider.dispose();
+});
 it("保存失敗では再読み込みせず、設定とチェックを元に保つ", async () => {
 	const h = harness();
 	api.update.mockRejectedValueOnce(new Error("read only"));
@@ -249,6 +291,7 @@ it("保存失敗では再読み込みせず、設定とチェックを元に保�
 		backend: "pi",
 	});
 	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(api.restartBackend).not.toHaveBeenCalled();
 	expect(h.sidebar.webview.postMessage).toHaveBeenCalledWith(
 		expect.objectContaining({
 			type: "request/failed",
@@ -261,7 +304,7 @@ it("保存失敗では再読み込みせず、設定とチェックを元に保�
 	});
 	h.provider.dispose();
 });
-it("保存完了まで再読み込みせず、連続した切替要求を重ねない", async () => {
+it("保存完了まで再起動せず、連続した切替要求を重ねない", async () => {
 	const h = harness();
 	let finish!: () => void;
 	api.update.mockImplementationOnce(
@@ -282,12 +325,9 @@ it("保存完了まで再読み込みせず、連続した切替要求を重ね�
 	});
 	expect(api.update).toHaveBeenCalledTimes(1);
 	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(api.restartBackend).not.toHaveBeenCalled();
 	finish();
-	await vi.waitFor(() =>
-		expect(api.executeCommand).toHaveBeenCalledWith(
-			"workbench.action.reloadWindow",
-		),
-	);
+	await vi.waitFor(() => expect(api.restartBackend).toHaveBeenCalledTimes(1));
 	h.provider.dispose();
 });
 it("同じバックエンドの選択では書き込みや再読み込みをしない", async () => {
@@ -299,6 +339,7 @@ it("同じバックエンドの選択では書き込みや再読み込みをし�
 	});
 	expect(api.update).not.toHaveBeenCalled();
 	expect(api.executeCommand).not.toHaveBeenCalled();
+	expect(api.restartBackend).not.toHaveBeenCalled();
 	h.provider.dispose();
 });
 it("PiからCodexへ戻すときもworkspaceの指定を更新する", async () => {
@@ -311,9 +352,7 @@ it("PiからCodexへ戻すときもworkspaceの指定を更新する", async () 
 		backend: "codex",
 	});
 	expect(api.update).toHaveBeenCalledWith("backend", "codex", 2);
-	expect(api.executeCommand).toHaveBeenCalledWith(
-		"workbench.action.reloadWindow",
-	);
+	expect(api.restartBackend).toHaveBeenCalledTimes(1);
 	h.provider.dispose();
 });
 it("保存済みバックエンドを復元し、不正な選択値は両端で拒否する", async () => {

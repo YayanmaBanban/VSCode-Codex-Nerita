@@ -1,5 +1,7 @@
 # プロジェクトの指示
 
+notionのリンクを記載するのを一切禁止する
+
 ReactのWebviewは `src/webview/`、Extension Hostの処理は `src/extension/`、共通の通信型・検証処理は `src/shared/` にあります。
 
 ## 作業に応じた参照先

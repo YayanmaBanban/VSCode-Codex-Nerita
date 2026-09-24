@@ -40,7 +40,7 @@
 					],
 					"default": "codex",
 					"scope": "window",
-					"description": "チャットに使用するエージェント。変更後はウィンドウを再読み込みしてください。Piの書き込み・PowerShell実行には毎回の承認が必要です。"
+					"description": "チャットに使用するエージェント。オプションメニューで切り替えると、この拡張機能のバックエンドを再起動して新しい会話を開始します。設定ファイルで変更した場合はウィンドウを再読み込みしてください。Piの書き込み・PowerShell実行には毎回の承認が必要です。"
 				},
 				"nerita.pi.sessionStorage": {
 					"type": "string",
@@ -111,7 +111,7 @@
 						"管理者権限でセットアップする標準のSandbox",
 						"管理者権限が利用できない環境向けのSandbox"
 					],
-					"description": "Codex/Pi共通のWindows Sandbox実装。Codexではconfig.tomlの設定を優先します。変更後はウィンドウを再読み込みしてください。"
+					"description": "Codex/Pi共通のWindows Sandbox実装。Codexではconfig.tomlの設定を優先します。オプションメニューで変更すると再接続し、新しい会話を開始します。設定ファイルで変更した場合は再接続してください。"
 				}
 			}
 		},
@@ -208,6 +208,7 @@
 		"test:codex:chat": "node tests/codex-chat-smoke.mjs",
 		"test:pi:chat": "node tests/pi-chat-smoke.mjs",
 		"test:sandbox": "node tests/sandbox-smoke.mjs",
+		"test:sandbox:read-boundary": "node tests/sandbox-read-boundary-smoke.mjs",
 		"test:runtime": "node --test tests/runtime-packaging.test.mjs tests/pi-runtime-packaging.test.mjs tests/pi-update.test.cjs tests/license-cleanup.test.cjs",
 		"test:codex:features": "node tests/codex-features-smoke.mjs",
 		"test:codex:history": "node tests/codex-history-smoke.mjs"

@@ -3,15 +3,18 @@ import * as vscode from "vscode";
 import { randomUUID } from "node:crypto";
 import { createBackend } from "./backends/createBackend";
 import type { BackendSession } from "./session/chatSession";
+import { BackendRuntime } from "./session/BackendRuntime";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 let controller: BackendSession | undefined;
 
 /** サイドバー・コマンド・接続サービスを登録する。 */
 export function activate(context: vscode.ExtensionContext): void {
-	const session = createBackend(context);
+	const session = new BackendRuntime(() => createBackend(context));
 	controller = session;
-	const provider = new ChatViewProvider(context.extensionUri, session);
+	const provider = new ChatViewProvider(context.extensionUri, session, () =>
+		session.restart(),
+	);
 	context.subscriptions.push(
 		provider,
 		vscode.window.registerWebviewViewProvider(

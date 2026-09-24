@@ -16,7 +16,7 @@ export function startAppServerProcess(
 	const args = ["app-server", "--listen", "stdio://"];
 	// PiのExecutorではユーザー設定によるSandbox無効化を許可しない。
 	if (windowsSandbox) {
-		//args.push("-c", `windows.sandbox="${windowsSandbox}"`);
+		args.push("-c", `windows.sandbox="${windowsSandbox}"`);
 	}
 	return spawn(executable, args, {
 		cwd,

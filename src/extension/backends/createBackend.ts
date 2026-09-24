@@ -28,7 +28,7 @@ function workspaceDirectory(): string {
 	);
 }
 
-/** 設定変更はウィンドウ再読み込み時に反映し、実行中のbackendを差し替えない。 */
+/** 起動・バックエンド切替時の最新設定でセッションを生成する。 */
 export function createBackend(
 	context: vscode.ExtensionContext,
 ): BackendSession {

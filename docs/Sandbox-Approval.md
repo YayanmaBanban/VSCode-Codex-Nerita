@@ -1,5 +1,35 @@
 # Phase 11: Sandbox / Approval
 
+## 2026-09-24 Shellの読取り境界を維持する方針を確定
+
+**Shellと子processにもworkspace外読取り禁止を維持する。** `filesystem.readableRoots` と `protectedPaths` はファイルToolだけの制約ではなく、Shell・subagentにも適用する上限。Human Approval、network許可、管理者Sandboxへの切替で解除しない。Codex標準の全域readへ制限を緩める復旧は行わない。
+
+同梱Codex 0.156.0の実バイナリで、試験的な `command/exec.permissionProfile` 経路も確認した。workspaceだけを許可するprofile、および `:root = deny` を明記するprofileは登録できるが、Windows実行時に次の理由で拒否される。
+
+| Windows実装 | 実行時の応答                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| elevated    | `elevated Windows sandbox requires effective :root read access`                                                    |
+| unelevated  | `restricted-token sandbox cannot enforce split filesystem read restrictions directly; refusing to run unsandboxed` |
+
+通常の生成済み `SandboxPolicy` に有限のread指定がないことに加え、**試験的な権限profileでも、このWindows版では要件を満たせない**。profile一覧の `allowed: true` はOSでの強制能力の証明にはならない。OS制約を強制できる実行基盤が必要であり、Shellは停止を維持する。実行不可のPowerShellはPiの有効Toolとcustom Tool登録から外し、モデルへ利用可能な機能として提示しない。捏造されたPowerShell呼出しも実行されない。
+
+`pnpm test:sandbox:read-boundary` は一時CODEX_HOMEと模擬データを使って両Windows実装の拒否を再現する。ユーザーの設定・認証・Firewall・管理者セットアップを変更しない。結果は `dist/sandbox-read-boundary/result.json` に保存し、`shellAvailable: false` / `osReadIsolationVerified: false` を明示する。これは未対応時の拒否の回帰検証であり、Shell実行成功・OS境界の完成・ネットワーク隔離の証明として数えない。
+
+復旧には、現在のアクセスpolicyを拡大せずOSへ適用できるExecutorと、実行成功後の外部read/write/delete・子process・通信・timeout/Stopの検証が必要。公開[権限profile資料](https://learn.chatgpt.com/docs/permissions)だけから同梱Windows版の対応を推定しない。
+
+## 2026-09-24 子Runtimeの実効policy継承と統合検証
+
+`createPiRuntime()` が返す `createChild({ cwd, accessPolicy, signal })` をHost用の子生成入口に追加した。親Runtimeが確定したworkspace・parent・roleの交差と保護対象を固定し、子はその上限と自身のroleをさらに交差する。子からExecutor・承認先・親policy・外部拡張を指定するAPIは公開しない。通常のSDKセッションを起動し、read / ls / write / editは親と同じbrokerとApproval Guardへ渡す。
+
+- 親の起動後に元のpolicyやworkspace roots配列を変更しても、子へ反映しない。
+- 子・孫の履歴はメモリ内だけに置き、親の会話一覧や保存モデルを変更しない。
+- 親のStopは起動中・承認待ち・実行中の子孫を取消し、SDKの終了を待つ。dispose・接続signal・子のsignalの取消しでも子を回収する。
+- 子が親より広いroleやcwdを指定しても、読取り・書込み・protectedPaths・network・commandの上限を引き継ぐ。
+
+`tests/pi-subagent-smoke.mjs` を `pnpm test:pi:chat` に組み込み、同梱の実Pi SDKとローカル模擬モデルで子・孫を動かして検証する。workspace内readの成功、親/roleによるwrite拒否、親から継承した保護パスのread拒否、cwdの逸脱拒否、Shell禁止の継承、親Stopによる承認待ち取消しを確認する。`piChildRuntimes.test.ts` は初期化中の取消し・一度だけの回収・呼出元によるpolicy改変を補う。
+
+**Phase 11全体は未完了。** Shell復旧は、上記の読取り制限と通信制限をOSで強制できる実行基盤が必要。子のShell拒否を、ShellのOS境界やPowerShell / pwsh / nativeの実行成功として数えない。外部subagent拡張の隔離・ロード再開も含まない。
+
 ## 2026-09-24 security boundary review 修正後の状態
 
 **この節が現在の動作です。以降の初期実装・実機確認の節は修正前の記録です。**

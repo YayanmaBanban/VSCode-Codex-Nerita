@@ -4,8 +4,10 @@ import { isAbsolute, relative, sep } from "node:path";
 /** rootsはHostが実在するcanonical pathへ解決してから渡す。 */
 export type AgentAccessPolicy = {
 	filesystem: {
+		/** ファイルTool・Shell・子process共通の上限。空配列は読取り全面禁止。 */
 		readableRoots: readonly string[];
 		writableRoots: readonly string[];
+		/** readableRoots内でも拒否する。Human Approvalで解除しない。 */
 		protectedPaths: readonly string[];
 	};
 	network: { enabled: boolean };

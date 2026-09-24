@@ -55,6 +55,37 @@ function definition(name: string) {
 	);
 	return { tool: { name, execute } as unknown as ToolDefinition, execute };
 }
+it.each([false, true])(
+	"network=%sでも停止中のShellは承認・実行ファイル解決へ進まない",
+	async (enabled) => {
+		paths.policy.network.enabled = enabled;
+		const sdk = definition("powershell");
+		const authorize = vi.fn();
+		const execute = vi.fn();
+		const shell = vi.fn();
+		const tool = createPiSandboxPowerShellTool(
+			sdk.tool,
+			paths,
+			authorize,
+			{ execute },
+			new AbortController().signal,
+			shell,
+		);
+		await expect(
+			tool.execute(
+				"id",
+				{ command: "Get-Content ../outside" },
+				undefined,
+				undefined,
+				context,
+			),
+		).rejects.toThrow("読取り範囲");
+		expect(authorize).not.toHaveBeenCalled();
+		expect(execute).not.toHaveBeenCalled();
+		expect(shell).not.toHaveBeenCalled();
+		expect(sdk.execute).not.toHaveBeenCalled();
+	},
+);
 it("PowerShellは直接SDK実行せず承認済みsnapshotだけをSandboxへ渡す", async () => {
 	paths.policy.command.mode = "sandboxed";
 	const sdk = definition("powershell");

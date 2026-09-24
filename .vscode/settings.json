@@ -9,11 +9,5 @@
 		"dist": true // set this to false to include "dist" folder in search results
 	},
 	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
-	"js/ts.tsc.autoDetect": "off",
-	// Vitest拡張のV8バイナリRPCは新旧V8間で互換性がないため、Hostとworkerの実行環境を揃える。
-	// WindowsのVS Codeユーザーインストールを使用する。CLIのpnpm testには影響しない。
-	"vitest.nodeExecutable": "${env:LOCALAPPDATA}/Programs/Microsoft VS Code/Code.exe",
-	"vitest.nodeEnv": {
-		"ELECTRON_RUN_AS_NODE": "1"
-	}
+	"js/ts.tsc.autoDetect": "off"
 }
