@@ -56,7 +56,7 @@ async function request(): Promise<ToolCall> {
 				protectedPaths: [],
 			},
 			network: { enabled: false },
-			command: { mode: "sandboxed" },
+			command: { mode: "sandboxed", readAccess: "all" },
 		},
 	};
 }
@@ -80,12 +80,12 @@ it.each(["leaking", "broken"] as const)(
 					new AbortController().signal,
 				),
 			),
-		).rejects.toThrow("読取り範囲");
+		).rejects.toThrow("通信隔離");
 		expect(
 			client.executeCommand.mock.calls.every(
 				([params]) => params.command[0] !== "agent-command",
 			),
 		).toBe(true);
-		expect(client.dispose).not.toHaveBeenCalled();
+		expect(client.dispose).toHaveBeenCalledOnce();
 	},
 );

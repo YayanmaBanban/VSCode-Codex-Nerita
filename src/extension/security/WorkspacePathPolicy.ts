@@ -2,7 +2,11 @@
 import { lstat, realpath, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, parse, resolve } from "node:path";
 import { homedir } from "node:os";
-import { containsPath, type AgentAccessPolicy } from "./AgentAccessPolicy";
+import {
+	containsPath,
+	policyWorkspaceRoots,
+	type AgentAccessPolicy,
+} from "./AgentAccessPolicy";
 
 /** Windowsの別名・device namespace・ADSを曖昧に解釈させない。 */
 function validatePath(path: string) {
@@ -103,14 +107,15 @@ export async function createWorkspaceAccessPolicy(
 	}
 	return {
 		filesystem: {
+			readAccess: "all",
 			readableRoots: canonical,
+			workspaceRoots: canonical,
 			writableRoots: canonical,
 			protectedPaths,
 		},
 		network: { enabled: false },
-		// Shellにも読取り上限を維持する。現在のWindows実装は権限profileでも
-		// root読取りを要求するため、強制可能なExecutorが用意されるまで停止する。
-		command: { mode: "deny" },
+		// ShellはCodex標準の全域readを許可し、workspace外write/deleteをOSで遮断する。
+		command: { mode: "sandboxed", readAccess: "all" },
 	};
 }
 
@@ -121,13 +126,38 @@ export class WorkspacePathPolicy {
 		readonly cwd: string,
 	) {}
 
+	/** 全域readでもbrokerへ渡す権限は、検査した実体パス一つに限定する。 */
+	accessRoots(
+		target: string,
+		operation: "read" | "write",
+	): readonly string[] {
+		if (operation === "write") {
+			return this.policy.filesystem.writableRoots;
+		}
+		return this.policy.filesystem.readAccess === "all"
+			? [target]
+			: this.policy.filesystem.readableRoots;
+	}
+
+	/** 作業ディレクトリ・自動指示ファイルは、全域readを許可してもworkspace内に限定する。 */
+	async resolveWorkspace(input: string): Promise<string> {
+		const target = await this.resolve(input, "read");
+		if (
+			!policyWorkspaceRoots(this.policy).some((root) =>
+				containsPath(root, target),
+			)
+		) {
+			throw new Error(
+				`workspace境界外の作業ディレクトリ・自動コンテキストは拒否されました: ${input}`,
+			);
+		}
+		return target;
+	}
+
 	/** 承認前・実行直前・個別ファイル操作の各境界で呼び出す。 */
 	async resolve(input: string, operation: "read" | "write"): Promise<string> {
 		const target = await canonicalPath(input, this.cwd);
-		const roots =
-			operation === "write"
-				? this.policy.filesystem.writableRoots
-				: this.policy.filesystem.readableRoots;
+		const roots = this.accessRoots(target, operation);
 		if (
 			!roots.some((root) => containsPath(root, target)) ||
 			this.policy.filesystem.protectedPaths.some((root) =>

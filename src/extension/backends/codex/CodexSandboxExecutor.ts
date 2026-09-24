@@ -2,7 +2,11 @@
 import type { WindowsSandboxImplementation } from "../../../shared/windowsSandbox";
 import { randomUUID } from "node:crypto";
 import { realpath } from "node:fs/promises";
-import { containsPath } from "../../security/AgentAccessPolicy";
+import {
+	containsPath,
+	policyWorkspaceRoots,
+	shellAccessDeniedReason,
+} from "../../security/AgentAccessPolicy";
 import {
 	consumeApprovedToolCall,
 	type ApprovedToolCall,
@@ -38,8 +42,12 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 		approved.signal.throwIfAborted();
 		const client = await this.connect(call.cwd, approved.signal);
 		const processId = randomUUID();
+		// abortとfinallyが競合しても、同じ回収の完了を待ってからToolを終了する。
+		let closing: Promise<void> | undefined;
+		const close = () =>
+			(closing ??= Promise.resolve().then(() => client.dispose()));
 		const abort = () => {
-			void client.dispose();
+			void close().catch(() => undefined);
 		};
 		approved.signal.addEventListener("abort", abort, { once: true });
 		try {
@@ -80,7 +88,7 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 			return result;
 		} finally {
 			approved.signal.removeEventListener("abort", abort);
-			await client.dispose();
+			await close();
 		}
 	}
 }
@@ -88,15 +96,9 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 /** 承認中にrootやcwdのjunctionが差し替わった場合は再承認を求める。 */
 async function validateSandboxCall(call: ToolCall) {
 	validateCommand(call);
-	// command/execのpolicyはreadableRootsを表現できず、stdout経由の流出も防げない。
-	// 接続やprobeより先に拒否し、Human Approvalを制約解除として使わない。
-	if (
-		call.policy.filesystem.readableRoots.length ||
-		call.policy.filesystem.protectedPaths.length
-	) {
-		throw new Error(
-			"このSandbox APIでは読取り範囲と保護対象の隔離を強制できないため、Shell実行を停止しています。",
-		);
+	const denied = shellAccessDeniedReason(call.policy);
+	if (denied) {
+		throw new Error(denied);
 	}
 	const roots = call.policy.filesystem.writableRoots;
 	for (const path of [...roots, call.cwd]) {
@@ -105,7 +107,7 @@ async function validateSandboxCall(call: ToolCall) {
 		}
 	}
 	if (
-		!call.policy.filesystem.readableRoots.some((root) =>
+		!policyWorkspaceRoots(call.policy).some((root) =>
 			containsPath(root, call.cwd),
 		)
 	) {
@@ -113,17 +115,6 @@ async function validateSandboxCall(call: ToolCall) {
 	}
 	if (roots.length && !roots.some((root) => containsPath(root, call.cwd))) {
 		throw new Error("cwdが書込み許可範囲外です。");
-	}
-	if (
-		roots.some((root) =>
-			call.policy.filesystem.protectedPaths.some(
-				(protectedPath) =>
-					containsPath(root, protectedPath) ||
-					containsPath(protectedPath, root),
-			),
-		)
-	) {
-		throw new Error("保護対象を含むSandbox書込みrootは許可できません。");
 	}
 }
 

@@ -1,7 +1,10 @@
 // 自動コンテキストもworkspace境界とWin32 brokerを通し、SDKの直接読込みを使わない。
 import { lstat } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { containsPath } from "../../security/AgentAccessPolicy";
+import {
+	containsPath,
+	policyWorkspaceRoots,
+} from "../../security/AgentAccessPolicy";
 import type { WorkspacePathPolicy } from "../../security/WorkspacePathPolicy";
 import { windowsFileOperation } from "../../runtime/WindowsFileBroker";
 
@@ -19,11 +22,11 @@ export async function loadPiContextFiles(
 	paths: WorkspacePathPolicy,
 	signal: AbortSignal,
 ): Promise<PiContextFiles> {
-	const cwd = await paths.resolve(paths.cwd, "read");
+	const cwd = await paths.resolveWorkspace(paths.cwd);
 	const directories: string[] = [];
 	for (
 		let directory = cwd;
-		paths.policy.filesystem.readableRoots.some((root) =>
+		policyWorkspaceRoots(paths.policy).some((root) =>
 			containsPath(root, directory),
 		);
 		directory = dirname(directory)
@@ -84,7 +87,7 @@ async function readContextFile(
 		}
 		throw error;
 	}
-	const path = await paths.resolve(input, "read");
+	const path = await paths.resolveWorkspace(input);
 	const encoded = await windowsFileOperation(paths, "read", path, signal);
 	return {
 		path,

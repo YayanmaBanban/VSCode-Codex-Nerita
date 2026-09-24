@@ -31,7 +31,9 @@ function MarkdownStory() {
 		<main className="p-[14px]">
 			<button onClick={() => setStreaming(true)}>途中の本文</button>
 			<button onClick={() => setStreaming(false)}>本文完了</button>
-			<output hidden aria-label="開いたファイル">{opened}</output>
+			<output hidden aria-label="開いたファイル">
+				{opened}
+			</output>
 			<Messages
 				send={(message) => {
 					if (message.type === "reference/open") {

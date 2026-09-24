@@ -1,15 +1,7 @@
 // 実Pi SDKとローカルOpenAI互換サーバーで、通信・read・Stopを外部認証なしで検証する。
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import {
-	mkdtemp,
-	mkdir,
-	writeFile,
-	readFile,
-	cp,
-	rm,
-	realpath,
-} from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -160,7 +152,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./src/extension/backends/pi/PiRuntime"; export { isHostMessage } from "./src/shared/hostMessageValidation"; export { createCodexSandboxExecutor } from "./src/extension/backends/codex/CodexSandboxExecutor";',
+				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./src/extension/backends/pi/PiRuntime"; export { isHostMessage } from "./src/shared/hostMessageValidation"; export { createCodexSandboxExecutor } from "./src/extension/backends/codex/CodexSandboxExecutor"; export { createWorkspaceAccessPolicy } from "./src/extension/security/WorkspacePathPolicy";',
 			resolveDir: projectRoot,
 		},
 		bundle: true,
@@ -194,6 +186,7 @@ try {
 		createPiRuntime,
 		isHostMessage,
 		createCodexSandboxExecutor,
+		createWorkspaceAccessPolicy,
 	} = createRequire(import.meta.url)(
 		path.join(projectRoot, "dist/pi-smoke/host.cjs"),
 	);
@@ -204,15 +197,7 @@ try {
 			extensionPath: fixture,
 			cwd,
 			agentDir,
-			parentPolicy: {
-				filesystem: {
-					readableRoots: [await realpath(cwd)],
-					writableRoots: [await realpath(cwd)],
-					protectedPaths: [],
-				},
-				network: { enabled: false },
-				command: { mode: "deny" },
-			},
+			parentPolicy: await createWorkspaceAccessPolicy([cwd]),
 			signal,
 			authorize,
 			resume,
@@ -315,7 +300,9 @@ try {
 	assert.ok(
 		requests.every((request) =>
 			request.tools.every((tool) =>
-				["read", "ls", "write", "edit"].includes(tool.function.name),
+				["read", "ls", "write", "edit", "powershell"].includes(
+					tool.function.name,
+				),
 			),
 		),
 	);
@@ -355,6 +342,43 @@ try {
 		),
 	);
 	assert.equal(controller.snapshot().tools.length, 3);
+	// 製品と同じ初期policyで、workspace外の通常readは成功しwriteは承認前に拒否される。
+	const outsideText = path.join(fixture, "ンィー育成素材.txt");
+	await writeFile(outsideText, "OUTSIDE_READ_ALLOWED 日本語", "utf8");
+	await send(
+		`policy:${JSON.stringify({ name: "read", args: { path: outsideText } })}`,
+	);
+	await until(() => controller.snapshot().run !== "running");
+	assert.equal(controller.snapshot().tools.at(-1).status, "completed");
+	assert.match(
+		JSON.stringify(controller.snapshot().tools.at(-1).content),
+		/OUTSIDE_READ_ALLOWED 日本語/,
+	);
+	await send(
+		`policy:${JSON.stringify({ name: "write", args: { path: outsideText, content: "bad" } })}`,
+	);
+	await until(() => controller.snapshot().run !== "running");
+	assert.equal(controller.snapshot().tools.at(-1).status, "failed");
+	assert.equal(controller.snapshot().permissions.length, 0);
+	assert.match(
+		JSON.stringify(controller.snapshot().tools.at(-1).content),
+		/境界/,
+	);
+	assert.equal(
+		await readFile(outsideText, "utf8"),
+		"OUTSIDE_READ_ALLOWED 日本語",
+	);
+	const protectedText = path.join(agentDir, "read-protected-fixture.txt");
+	await writeFile(protectedText, "SYNTHETIC_PROTECTED", "utf8");
+	await send(
+		`policy:${JSON.stringify({ name: "read", args: { path: protectedText } })}`,
+	);
+	await until(() => controller.snapshot().run !== "running");
+	assert.equal(controller.snapshot().tools.at(-1).status, "failed");
+	assert.match(
+		JSON.stringify(controller.snapshot().tools.at(-1).content),
+		/保護/,
+	);
 	// 拒否・承認待ちStopではSDKの副作用へ到達しない。
 	const respond = (optionId) =>
 		controller.receive({
@@ -422,14 +446,29 @@ try {
 			expectedMutationText(tool),
 		);
 	}
-	// 非公開Toolをモデルが捏造しても、Human ApprovalやSDKのShellへ到達しない。
+	// 全域readを許可しても、承認と通信禁止は解除しない。
+	for (const decision of ["decline", "cancel"]) {
+		await send("powershell");
+		await until(() => controller.snapshot().permissions.length === 1);
+		await respond(decision);
+		await until(() => controller.snapshot().run !== "running");
+		await assert.rejects(readFile(path.join(cwd, "command.txt")), {
+			code: "ENOENT",
+		});
+	}
 	await send("powershell");
+	await until(() => controller.snapshot().permissions.length === 1);
+	assert.match(
+		controller.snapshot().permissions[0].title,
+		/Shell read: ワークスペース外も許可/,
+	);
+	await respond("accept");
 	await until(() => controller.snapshot().run !== "running");
 	assert.equal(controller.snapshot().permissions.length, 0);
 	assert.equal(controller.snapshot().tools.at(-1).status, "failed");
 	assert.match(
 		JSON.stringify(controller.snapshot().tools.at(-1).content),
-		/not found|not available|unknown tool/i,
+		/通信隔離/,
 	);
 	await assert.rejects(readFile(path.join(cwd, "command.txt")), {
 		code: "ENOENT",
@@ -500,7 +539,7 @@ try {
 		agentDir,
 	});
 	console.log(
-		"PASS: packaged Pi SDK + WASM → read/ls → write/edit approval and rejection → unsupported Shell denied → cancellation → resume",
+		"PASS: packaged Pi SDK + WASM → read/ls including outside workspace → outside write/protected read denied → write/edit approval and rejection → Shell approval/rejection and network fail closed → cancellation → resume",
 	);
 } finally {
 	await controller?.dispose();

@@ -3,6 +3,7 @@ import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import type { ToolAuthorizer } from "../../security/ApprovalGuard";
 import type { WorkspacePathPolicy } from "../../security/WorkspacePathPolicy";
+import { shellAccessDeniedReason } from "../../security/AgentAccessPolicy";
 import { createPiFileTools } from "./PiFileTools";
 import { createPiSandboxPowerShellTool } from "./PiPowerShellTool";
 
@@ -15,7 +16,7 @@ export function createPiRuntimeTools(
 	executor?: SandboxCommandExecutor,
 ): PiSdk.ToolDefinition[] {
 	const tools = createPiFileTools(sdk, paths, authorize, lifetime);
-	if (paths.policy.command.mode === "sandboxed" && executor) {
+	if (!shellAccessDeniedReason(paths.policy) && executor) {
 		tools.push(
 			createPiSandboxPowerShellTool(
 				sdk.createPowerShellToolDefinition(paths.cwd),

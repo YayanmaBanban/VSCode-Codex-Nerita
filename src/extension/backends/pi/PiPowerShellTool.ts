@@ -1,6 +1,9 @@
 // SDKの表示schemaだけを再利用し、実処理は承認済みのSandbox要求へ置き換える。
 import { resolvePowerShell } from "../../runtime/PowerShellExecutable";
-import { containsPath } from "../../security/AgentAccessPolicy";
+import {
+	containsPath,
+	shellAccessDeniedReason,
+} from "../../security/AgentAccessPolicy";
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { z } from "zod";
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
@@ -40,17 +43,16 @@ export function createPiSandboxPowerShellTool(
 		...definition,
 		executionMode: "sequential",
 		async execute(_id, params, signal) {
-			if (paths.policy.command.mode !== "sandboxed") {
-				throw new Error(
-					"Shellの読取り範囲・通信隔離を強制できないため、PowerShell実行を停止しています。",
-				);
+			const denied = shellAccessDeniedReason(paths.policy);
+			if (denied) {
+				throw new Error(denied);
 			}
 			const { command, timeout } = powerShellInput.parse(params);
 			const executionSignal = signal
 				? AbortSignal.any([signal, lifetime])
 				: lifetime;
 			executionSignal.throwIfAborted();
-			const cwd = await paths.resolve(paths.cwd, "read");
+			const cwd = await paths.resolveWorkspace(paths.cwd);
 			const executable = await shell();
 			if (
 				paths.policy.filesystem.writableRoots.some((root) =>
@@ -74,11 +76,9 @@ export function createPiSandboxPowerShellTool(
 						"-NonInteractive",
 						"-OutputFormat",
 						"Text",
-						"-EncodedCommand",
-						Buffer.from(
-							`$ProgressPreference = 'SilentlyContinue'\ntry { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n${command}`,
-							"utf16le",
-						).toString("base64"),
+						// 本文は一つのargvとして固定し、コードのBase64化や追加のshell解釈を挟まない。
+						"-Command",
+						`$ProgressPreference = 'SilentlyContinue'\ntry { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n${command}`,
 					],
 					env: commandEnvironment(),
 					timeoutMs: Math.ceil(timeout * 1000),

@@ -68,12 +68,7 @@ public static class LockTest {
 				process.env.SystemRoot || "C:\\Windows",
 				"System32/WindowsPowerShell/v1.0/powershell.exe",
 			),
-			[
-				"-NoProfile",
-				"-NonInteractive",
-				"-EncodedCommand",
-				Buffer.from(script, "utf16le").toString("base64"),
-			],
+			["-NoProfile", "-NonInteractive", "-Command", script],
 			{ windowsHide: true, timeout: 10000 },
 			(error) => {
 				if (error) {
@@ -128,6 +123,41 @@ public static class LockTest {
 			await windowsFileOperation(paths, "stat", directory, signal),
 		).toBe(true);
 	}, 20_000);
+
+	it("workspace外の日本語名ファイルを読み、write・mkdir・保護対象readを拒否する", async () => {
+		const file = join(outside, "ンィー育成素材.txt");
+		await writeFile(file, "外部readの検証用データ", "utf8");
+		expect(
+			Buffer.from(
+				(await windowsFileOperation(
+					paths,
+					"read",
+					file,
+					signal,
+				)) as string,
+				"base64",
+			).toString("utf8"),
+		).toBe("外部readの検証用データ");
+		expect(
+			await windowsFileOperation(paths, "list", outside, signal),
+		).toEqual(["ンィー育成素材.txt"]);
+		await expect(
+			windowsFileOperation(paths, "write", file, signal, "bad"),
+		).rejects.toThrow("境界");
+		await expect(
+			windowsFileOperation(
+				paths,
+				"mkdir",
+				join(outside, "blocked"),
+				signal,
+			),
+		).rejects.toThrow("policy denied");
+		paths.policy.filesystem.protectedPaths = [outside];
+		await expect(
+			windowsFileOperation(paths, "read", file, signal),
+		).rejects.toThrow("保護");
+		expect(await readFile(file, "utf8")).toBe("外部readの検証用データ");
+	}, 15_000);
 
 	it.each(["read", "write", "image", "stat"] as const)(
 		"Host検査後にhard linkへ変更されても%sを拒否する",

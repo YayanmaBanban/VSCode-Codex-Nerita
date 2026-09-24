@@ -59,6 +59,7 @@ it.each([false, true])(
 	"network=%sでも停止中のShellは承認・実行ファイル解決へ進まない",
 	async (enabled) => {
 		paths.policy.network.enabled = enabled;
+		paths.policy.command.mode = "deny";
 		const sdk = definition("powershell");
 		const authorize = vi.fn();
 		const execute = vi.fn();
@@ -79,50 +80,72 @@ it.each([false, true])(
 				undefined,
 				context,
 			),
-		).rejects.toThrow("読取り範囲");
+		).rejects.toThrow("許可されていません");
 		expect(authorize).not.toHaveBeenCalled();
 		expect(execute).not.toHaveBeenCalled();
 		expect(shell).not.toHaveBeenCalled();
 		expect(sdk.execute).not.toHaveBeenCalled();
 	},
 );
-it("PowerShellは直接SDK実行せず承認済みsnapshotだけをSandboxへ渡す", async () => {
-	paths.policy.command.mode = "sandboxed";
-	const sdk = definition("powershell");
-	const approval = pending<AbortSignal>();
-	const asked = pending<void>();
-	const authorize = vi.fn(() => {
-		asked.resolve();
-		return approval.promise;
-	});
-	const execute = vi.fn((permit: ApprovedToolCall) => {
-		const call = consumeApprovedToolCall(permit);
-		expect(
-			Buffer.from(call.command!.at(-1)!, "base64").toString("utf16le"),
-		).toContain("Write-Output 'original'");
-		return Promise.resolve({ stdout: "out", stderr: "err", exitCode: 5 });
-	});
-	const tool = createPiSandboxPowerShellTool(
-		sdk.tool,
-		paths,
-		authorize,
-		{ execute },
-		new AbortController().signal,
-		() => Promise.resolve("C:\\Windows\\powershell.exe"),
-	);
-	const params = { command: "Write-Output 'original'" };
-	const running = tool.execute("id", params, undefined, undefined, context);
-	await asked.promise;
-	params.command = "changed";
-	expect(execute).not.toHaveBeenCalled();
-	approval.resolve(new AbortController().signal);
-	const result = await running;
-	expect(result.content).toEqual([
-		{ type: "text", text: "out\nerr\nExit code: 5" },
-	]);
-	expect(execute).toHaveBeenCalledOnce();
-	expect(sdk.execute).not.toHaveBeenCalled();
-});
+it.each([
+	"Write-Output 'original'",
+	`$text = @'
+日本語 "引用" 'single' $literal \\path with spaces\\
+'@
+Write-Output $text
+exit 7`,
+])(
+	"PowerShellは改行・引用符を保つ平文の承認snapshotだけをSandboxへ渡す: %s",
+	async (command) => {
+		paths.policy.command.mode = "sandboxed";
+		const sdk = definition("powershell");
+		const approval = pending<AbortSignal>();
+		const asked = pending<void>();
+		const authorize = vi.fn(() => {
+			asked.resolve();
+			return approval.promise;
+		});
+		const execute = vi.fn((permit: ApprovedToolCall) => {
+			const call = consumeApprovedToolCall(permit);
+			expect(call.command!.at(-2)).toBe("-Command");
+			expect(call.command!.at(-1)).toBe(
+				`$ProgressPreference = 'SilentlyContinue'\ntry { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n${command}`,
+			);
+			expect(call.params.command).toBe(command);
+			return Promise.resolve({
+				stdout: "out",
+				stderr: "err",
+				exitCode: 5,
+			});
+		});
+		const tool = createPiSandboxPowerShellTool(
+			sdk.tool,
+			paths,
+			authorize,
+			{ execute },
+			new AbortController().signal,
+			() => Promise.resolve("C:\\Windows\\powershell.exe"),
+		);
+		const params = { command };
+		const running = tool.execute(
+			"id",
+			params,
+			undefined,
+			undefined,
+			context,
+		);
+		await asked.promise;
+		params.command = "changed";
+		expect(execute).not.toHaveBeenCalled();
+		approval.resolve(new AbortController().signal);
+		const result = await running;
+		expect(result.content).toEqual([
+			{ type: "text", text: "out\nerr\nExit code: 5" },
+		]);
+		expect(execute).toHaveBeenCalledOnce();
+		expect(sdk.execute).not.toHaveBeenCalled();
+	},
+);
 it("fileのworkspace外要求はHuman Approvalにも到達しない", async () => {
 	const sdk = definition("write");
 	const authorize = vi.fn();
@@ -177,7 +200,7 @@ it("fileの承認中にjunctionの対象が変われば実行しない", async (
 	await rejected;
 	expect(sdk.execute).not.toHaveBeenCalled();
 });
-it("画像形式の検査もworkspace境界を守る", async () => {
+it("画像のreadもworkspace外を許可し保護対象を拒否する", async () => {
 	await writeFile(
 		join(paths.cwd, "image.png"),
 		Buffer.from("89504e470d0a1a0a00000000", "hex"),
@@ -190,9 +213,20 @@ it("画像形式の検査もworkspace境界を守る", async () => {
 			ops.detectImageMimeType(imagePath),
 		),
 	).toBe("image/png");
+	const outsideImage = join(base, "outside.png");
+	await writeFile(
+		outsideImage,
+		Buffer.from("89504e470d0a1a0a00000000", "hex"),
+	);
+	expect(
+		await withApprovedFileCall(signal, outsideImage, "read", () =>
+			ops.detectImageMimeType(outsideImage),
+		),
+	).toBe("image/png");
+	paths.policy.filesystem.protectedPaths = [outsideImage];
 	await expect(
-		withApprovedFileCall(signal, join(base, "secret.png"), "read", () =>
-			ops.detectImageMimeType(join(base, "secret.png")),
+		withApprovedFileCall(signal, outsideImage, "read", () =>
+			ops.detectImageMimeType(outsideImage),
 		),
 	).rejects.toThrow("境界");
 });

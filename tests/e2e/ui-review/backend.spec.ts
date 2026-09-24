@@ -5,7 +5,9 @@ test("Piでは認証管理の上にバックエンドを表示する", async ({ 
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	page.on("console", (message) => {
-		if (message.type() === "error") {errors.push(message.text());}
+		if (message.type() === "error") {
+			errors.push(message.text());
+		}
 	});
 	await page.setViewportSize({ width: 320, height: 760 });
 	await page.goto("/iframe.html?id=chat-header--pi-backend&viewMode=story");
@@ -37,7 +39,9 @@ for (const colorScheme of ["dark", "light"] as const) {
 			const errors: string[] = [];
 			page.on("pageerror", (error) => errors.push(error.message));
 			page.on("console", (message) => {
-				if (message.type() === "error") {errors.push(message.text());}
+				if (message.type() === "error") {
+					errors.push(message.text());
+				}
 			});
 			await page.setViewportSize({ width, height: 760 });
 			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });

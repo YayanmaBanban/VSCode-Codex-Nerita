@@ -119,7 +119,7 @@ export async function createPiRuntime(
 	const policy = paths.policy;
 	const toolLifetime = new AbortController();
 	const toolSignal = AbortSignal.any([toolLifetime.signal, options.signal]);
-	await paths.resolve(options.cwd, "read");
+	await paths.resolveWorkspace(options.cwd);
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
 	// 会話の自動再実行はHost側の停止・承認の寿命と分離して無効化する。
 	settingsManager.applyOverrides({

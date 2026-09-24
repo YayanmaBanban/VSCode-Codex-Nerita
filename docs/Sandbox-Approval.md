@@ -1,6 +1,47 @@
 # Phase 11: Sandbox / Approval
 
-## 2026-09-24 Shellの読取り境界を維持する方針を確定
+## 2026-09-24 方針変更：workspace外readを許可
+
+**通常ファイルのworkspace外readをファイルToolとShellの双方で許可し、workspace外write/deleteは拒否する。** Shellのwrite/deleteはOS Sandboxで強制する。有限のShell read制限はCodex upstream待ちとする。以下に残す旧方針の「workspace外read禁止を維持する」は、この決定で置き換えた。
+
+- `command.readAccess: "all"` をworkspace policyへ明示し、`command.mode` を `sandboxed` に戻した。ファイルToolの `readableRoots` とShellのreadを分離する。
+- ファイルToolは `filesystem.readAccess: "all"` を既定とし、workspace外のread / ls / 画像判定も許可する。明示的なroleや旧policyでreadAccessを省略した場合は `readableRoots` の制限を維持し、親とroleの交差から読取り権限を拡大しない。
+- `filesystem.workspaceRoots` を読取り範囲から分離し、Runtimeのcwdと自動指示ファイルの探索・読取りはworkspace内に限定する。外部ファイルをToolで読む許可から、workspace外のAGENTSなどを自動読込みする権限は作らない。
+- 子・孫Runtimeは親とroleの双方が全域readを明示した場合だけ継承する。`readAccess` の省略または `workspace` は有限readの要求として扱い、現行Executorでは拒否する。
+- ファイルToolのworkspace内書込み上限・保護パスは維持する。Shellの保護パスはwriteを拒否する契約であり、readは許可する。保護パスが書込みrootと重なる場合は現行APIで除外を強制できないため、Shellを登録・実行しない。
+- 承認にはworkspace外readが許可されることを表示する。承認済みcommand・cwd・env・timeout・policyを固定して `workspaceWrite` / `readOnly` へ渡し、permitの再利用とHost実行へのfallbackを拒否する。
+- Stopと通常終了が競合しても、同じ接続回収の完了を待つ。
+
+**通信禁止は維持する。** `network=false` の隔離を確認できない場合は要求されたShellを拒否する。今回、通信許可設定は追加していない。このPCでは本番Executorの通信検査による拒否を実測したため、読取り方針の変更だけでPi PowerShellが利用可能になったとは扱わない。
+
+ファイルreadの拡張は、workspace外に置いた日本語名の合成fixtureで検証する。Win32 brokerには検査済みの対象パスだけをread rootとして渡し、保護パス・hard link・I/O中の差し替えの拒否を維持する。関連90単体テストで通常の外部read / list / 画像判定、外部write / mkdir拒否、保護対象read拒否、親roleの上限、workspace内だけの自動指示ファイル読込みを確認した。
+
+### 平文のPowerShell起動へ移行
+
+イベント4104を確認したユーザーから、Base64化した `-EncodedCommand` が検出原因と考えられるとの報告を受け、製品のPi PowerShell、固定ファイルbroker、関連テストの起動を `-Command` と平文の単一argvへ変更した。承認済みの本文・argvは引き続き固定し、追加のshellを挟まない。brokerの操作パス・ファイル内容はコードへ埋め込まずstdinのJSONへ渡す。
+
+子・孫processのテストも平文の `-Command` に統一した。Sandbox用ユーザーでは `.ps1` の実行が実行ポリシーで禁止されたため、ユーザーが指定したもう一方の方式を採用した。入れ子の呼出しにはScriptBlockではなく文字列を渡す。
+
+移行後に確認した項目:
+
+- 関連21単体テスト。承認中の変更を受けないこと、改行・日本語・引用符の保持、実Win32 brokerでのファイル境界・リンク差し替え拒否を含む。
+- Lint、本体・Webview・Storybook・テストの型チェック、開発ビルド。
+- filesystem診断でWindows PowerShell・配置済みpwsh・native実行、workspace外read、workspace外write/delete拒否、readOnly、cwd変更、子・孫の境界、Stop・timeout。PowerShell / pwshの平文argvでは日本語・改行・引用符・変数記号も実RPCで確認した。
+- `test:pi:chat` による実SDKのファイルTool、Shell承認・拒否と通信禁止時のfail closed、子・孫Runtime、停止、履歴復元。
+
+通信隔離の成功を示すものではなく、Phase 11全体の完了とはしない。
+
+### 実機検証中のセキュリティ製品によるブロック
+
+21:05:49、21:07:06、21:08:16に、ESETの詳細動作検査がSandboxのWindows PowerShellを `BH/Pterodo.X.6` としてブロックしたと報告された。21:08:13に生成した入れ子の `-EncodedCommand` 検証スクリプトと実行ユーザー・時刻が一致する。対象PowerShellのSHA-256は検出ログと一致し、Microsoft署名は `Valid` だった。これはPowerShell本体の照合であり、実行中の挙動が誤検知だったことの確定ではない。
+
+検出時には実機テストの再実行を停止した。無出力・終了コード0だった孫プロセスは開始マーカーも作成しておらず、その結果を境界成功として数えない。その後、上記の平文起動へ移行してfilesystem診断を再実行した。
+
+`tests/sandbox-smoke.mjs . --filesystem-only` は固定fixtureでfilesystem/process境界だけを調べる診断経路。本番Executorが通信禁止で拒否することを先に検査し、続く診断だけ通信検証関数を差し替える。Codexへ渡す `networkAccess` はfalseのまま。通信隔離やPiでの実行成功の証明にはならず、製品へ検査解除設定を追加するものでもない。
+
+停止直後にはShellを起動しない関連5ファイル・49単体テストを確認した。旧起動方式での `test:pi:chat` はls処理の待機timeoutで失敗したが、平文起動への移行後は全項目を通過した。
+
+## 旧方針：Shellのworkspace外読取り禁止を維持
 
 **Shellと子processにもworkspace外読取り禁止を維持する。** `filesystem.readableRoots` と `protectedPaths` はファイルToolだけの制約ではなく、Shell・subagentにも適用する上限。Human Approval、network許可、管理者Sandboxへの切替で解除しない。Codex標準の全域readへ制限を緩める復旧は行わない。
 
@@ -28,11 +69,11 @@
 
 `tests/pi-subagent-smoke.mjs` を `pnpm test:pi:chat` に組み込み、同梱の実Pi SDKとローカル模擬モデルで子・孫を動かして検証する。workspace内readの成功、親/roleによるwrite拒否、親から継承した保護パスのread拒否、cwdの逸脱拒否、Shell禁止の継承、親Stopによる承認待ち取消しを確認する。`piChildRuntimes.test.ts` は初期化中の取消し・一度だけの回収・呼出元によるpolicy改変を補う。
 
-**Phase 11全体は未完了。** Shell復旧は、上記の読取り制限と通信制限をOSで強制できる実行基盤が必要。子のShell拒否を、ShellのOS境界やPowerShell / pwsh / nativeの実行成功として数えない。外部subagent拡張の隔離・ロード再開も含まない。
+**Phase 11全体は未完了。** 最新のShell方針と制約は冒頭を参照する。子のShell拒否を、ShellのOS境界やPowerShell / pwsh / nativeの実行成功として数えない。外部subagent拡張の隔離・ロード再開も含まない。
 
 ## 2026-09-24 security boundary review 修正後の状態
 
-**この節が現在の動作です。以降の初期実装・実機確認の節は修正前の記録です。**
+**この節は読取り方針変更前の動作記録です。現在のShell方針は冒頭を参照してください。**
 
 ### 再レビューの残件3件への追加修正
 

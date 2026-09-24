@@ -85,6 +85,7 @@ function approvalContext(call: ToolCall): string[] {
 	];
 	if (call.command) {
 		context.push(
+			`Shell read: ${call.policy.command.readAccess === "all" ? "ワークスペース外も許可" : "ワークスペース内のみ"}`,
 			`Shell network: ${call.policy.network.enabled ? "許可" : "禁止"}`,
 		);
 	}

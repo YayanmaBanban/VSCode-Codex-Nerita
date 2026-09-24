@@ -19,6 +19,7 @@ import {
 import {
 	intersectAccessPolicies,
 	containsPath,
+	policyWorkspaceRoots,
 } from "../../src/extension/security/AgentAccessPolicy";
 
 let base: string;
@@ -87,16 +88,18 @@ it("新規階層は実在する祖先から解決しworkspace内だけ許可す�
 	await expect(
 		paths.resolve("../workspace-other/target", "write"),
 	).rejects.toThrow("境界");
-	await expect(
-		paths.resolve(join(outside, "target"), "read"),
-	).rejects.toThrow("境界");
+	await expect(paths.resolve(join(outside, "target"), "read")).resolves.toBe(
+		join(outside, "target"),
+	);
+	await expect(paths.resolveWorkspace(outside)).rejects.toThrow("境界");
 });
 it("junctionを経由した新規ファイルもworkspace外へ出られない", async () => {
 	await symlink(outside, join(root, "escape"), "junction");
 	await expect(paths.resolve("escape/new/file", "write")).rejects.toThrow(
 		"境界",
 	);
-	await expect(paths.resolve("escape", "read")).rejects.toThrow("境界");
+	await expect(paths.resolve("escape", "read")).resolves.toBe(outside);
+	await expect(paths.resolveWorkspace("escape")).rejects.toThrow("境界");
 });
 it("dangling junctionを新規pathとして許可しない", async () => {
 	await symlink(outside, join(root, "broken"), "junction");
@@ -182,8 +185,68 @@ it("子policyは親のread・write・network・command上限を超えない", as
 		command: { mode: "host" as const },
 	};
 	const child = intersectAccessPolicies(paths.policy, role);
-	expect(child.filesystem.readableRoots).toEqual([childRoot]);
+	expect(child.filesystem.readableRoots).toEqual([childRoot, outside]);
+	expect(child.filesystem.readAccess).toBe("roots");
+	expect(policyWorkspaceRoots(child)).toEqual([childRoot]);
 	expect(child.filesystem.writableRoots).toEqual([]);
 	expect(child.network.enabled).toBe(false);
-	expect(child.command.mode).toBe("deny");
+	expect(child.command.mode).toBe("sandboxed");
+	expect(child.command.readAccess).toBe("workspace");
+});
+
+it("制限された親のread範囲を、全域readのroleから拡大しない", async () => {
+	const restricted = {
+		...paths.policy,
+		filesystem: {
+			...paths.policy.filesystem,
+			readAccess: "roots" as const,
+		},
+	};
+	for (const policy of [
+		intersectAccessPolicies(restricted, paths.policy),
+		intersectAccessPolicies(paths.policy, restricted),
+	]) {
+		expect(policy.filesystem.readAccess).toBe("roots");
+		await expect(
+			new WorkspacePathPolicy(policy, root).resolve(outside, "read"),
+		).rejects.toThrow("境界");
+	}
+	const deny = {
+		...restricted,
+		filesystem: { ...restricted.filesystem, readableRoots: [] },
+	};
+	await expect(
+		new WorkspacePathPolicy(
+			intersectAccessPolicies(deny, paths.policy),
+			root,
+		).resolve(root, "read"),
+	).rejects.toThrow("境界");
+});
+
+it("Shellの全域readは親とrole双方の明示許可が必要", () => {
+	expect(paths.policy.command).toEqual({
+		mode: "sandboxed",
+		readAccess: "all",
+	});
+	const allowed = intersectAccessPolicies(paths.policy, paths.policy);
+	expect(allowed.command.readAccess).toBe("all");
+	const restricted = {
+		...paths.policy,
+		command: {
+			mode: "sandboxed" as const,
+			readAccess: "workspace" as const,
+		},
+	};
+	expect(
+		intersectAccessPolicies(restricted, allowed).command.readAccess,
+	).toBe("workspace");
+	expect(
+		intersectAccessPolicies(allowed, restricted).command.readAccess,
+	).toBe("workspace");
+	expect(
+		intersectAccessPolicies(allowed, {
+			...allowed,
+			command: { mode: "deny", readAccess: "all" },
+		}).command.mode,
+	).toBe("deny");
 });

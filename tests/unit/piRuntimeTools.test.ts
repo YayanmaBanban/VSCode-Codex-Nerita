@@ -16,7 +16,7 @@ function paths(mode: AgentAccessPolicy["command"]["mode"]) {
 				protectedPaths: [],
 			},
 			network: { enabled: false },
-			command: { mode },
+			command: { mode, readAccess: "all" },
 		},
 		cwd,
 	);
@@ -73,3 +73,23 @@ it("許可済みpolicyとExecutorがそろった場合だけ承認adapterを登�
 	]);
 	expect(tools.at(-1)!.executionMode).toBe("sequential");
 });
+
+it.each(["finite-read", "protected-write"])(
+	"%sを強制できなければShellを登録しない",
+	(constraint) => {
+		const policy = paths("sandboxed");
+		if (constraint === "finite-read") {
+			policy.policy.command.readAccess = "workspace";
+		} else {
+			policy.policy.filesystem.protectedPaths = [policy.cwd];
+		}
+		const tools = createPiRuntimeTools(
+			sdk,
+			policy,
+			vi.fn(),
+			new AbortController().signal,
+			{ execute: vi.fn() },
+		);
+		expect(tools.some((tool) => tool.name === "powershell")).toBe(false);
+	},
+);

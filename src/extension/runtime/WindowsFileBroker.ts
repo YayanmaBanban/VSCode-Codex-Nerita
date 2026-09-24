@@ -72,9 +72,7 @@ export async function windowsFileOperation(
 	const request = JSON.stringify({
 		operation,
 		path: target,
-		roots: write
-			? paths.policy.filesystem.writableRoots
-			: paths.policy.filesystem.readableRoots,
+		roots: paths.accessRoots(target, write ? "write" : "read"),
 		blocked: paths.policy.filesystem.protectedPaths,
 		content:
 			content === undefined
@@ -89,8 +87,9 @@ export async function windowsFileOperation(
 				"-NoLogo",
 				"-NoProfile",
 				"-NonInteractive",
-				"-EncodedCommand",
-				Buffer.from(script, "utf16le").toString("base64"),
+				// 固定コードを平文の一引数で渡し、ファイルパス・内容はstdinのJSONへ分離する。
+				"-Command",
+				script,
 			],
 			{
 				cwd: windows,
