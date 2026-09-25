@@ -2,22 +2,12 @@
 
 - notionのリンクをファイル内に残さない
 - ローカルの絶対パスをファイル内に残さない。相対パスで扱う
+- ユーザの指示なく、./README.mdを更新しない
+    - 作業内容を残したい場合は、./docs/working_memory/内に残す
 
 # 文章のルール
 
-英語の技術用語を日本語文中で不自然に動詞化・接尾語化しない。
-
-一般的な日本語訳が定着している場合は日本語を使う。
-
-- canonical化 → 正規化
-- retryする → 再試行する
-- resolveする → 解決する
-
-ただし、API名・型名・変数名・関数名などの識別子は翻訳しない。
-
-- Controller → Controller
-- close → close
-- signal → signal
+[日本語コメントの校正](.agents/docs/Japanese-Comments.md)
 
 # プロジェクトの指示
 

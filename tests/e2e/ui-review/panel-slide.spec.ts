@@ -23,7 +23,9 @@ test("性格設定の開閉を時刻指定で撮影し、下書きを保持す�
 		await toggle.click();
 		// CSS Transition を停止し、実時間の撮影遅延に依存せず各時刻を再現する。
 		await panel.evaluate((element) => {
-			for (const animation of element.getAnimations()) {animation.pause();}
+			for (const animation of element.getAnimations()) {
+				animation.pause();
+			}
 		});
 		const heights: number[] = [];
 		for (const [label, time] of [
@@ -34,8 +36,9 @@ test("性格設定の開閉を時刻指定で撮影し、下書きを保持す�
 			["completed", 220],
 		] as const) {
 			await panel.evaluate((element, time) => {
-				for (const animation of element.getAnimations())
-					{animation.currentTime = time;}
+				for (const animation of element.getAnimations()) {
+					animation.currentTime = time;
+				}
 			}, time);
 			heights.push(
 				await panel.evaluate(
@@ -53,7 +56,9 @@ test("性格設定の開閉を時刻指定で撮影し、下書きを保持す�
 		expect(heights[2]).toBeGreaterThan(Math.min(heights[0]!, heights[4]!));
 		expect(heights[2]).toBeLessThan(Math.max(heights[0]!, heights[4]!));
 		await panel.evaluate((element) => {
-			for (const animation of element.getAnimations()) {animation.finish();}
+			for (const animation of element.getAnimations()) {
+				animation.finish();
+			}
 		});
 	}
 	await expect(input).toHaveValue("未保存の下書き");
