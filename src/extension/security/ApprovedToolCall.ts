@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import type { AgentAccessPolicy } from "./AgentAccessPolicy";
 import type { FileSnapshot } from "./FileSnapshot";
+import type { JevReviewResult } from "./JevGuard";
 
 /** 選択された実行基盤が提供する表示情報。承認内容と一緒に固定する。 */
 export type SandboxExecutionInfo = {
@@ -23,6 +24,7 @@ export type ToolCall = {
 	file?: FileSnapshot;
 	guardrailsDigest?: string;
 	guardrailsPaths?: string[];
+	jevReview?: JevReviewResult;
 };
 export type ApprovedToolCall = Readonly<{
 	call: ToolCall;

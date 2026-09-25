@@ -8,6 +8,7 @@ import type { PermissionPresentation } from "../../shared/permission";
 import { toolApprovalPresentation } from "./toolApprovalPresentation";
 import { guardrailRegistry } from "./GuardrailRegistry";
 import { evaluateGuardrails } from "./GuardrailEvaluator";
+import { jevGuard, reviewJevIfNeeded, type JevGuard } from "./JevGuard";
 import {
 	guardProbeSchema,
 	type GuardResult,
@@ -36,8 +37,10 @@ export async function approveToolCall(
 	input: ToolCall,
 	authorize: ToolAuthorizer,
 	signal?: AbortSignal,
+	semanticGuard: JevGuard = jevGuard,
 ) {
 	signal?.throwIfAborted();
+	const semantic = semanticGuard.snapshot();
 	const snapshot = input.policy.guardrailsRoot
 		? guardrailRegistry.snapshot(input.policy.guardrailsRoot, [
 				input.policy.guardrailsRoot,
@@ -45,6 +48,7 @@ export async function approveToolCall(
 		: guardrailRegistry.snapshot(input.cwd, input.policy.workspaceRoots);
 	const combined = AbortSignal.any([
 		snapshot.signal,
+		semantic.signal,
 		...(signal ? [signal] : []),
 	]);
 	const call = freezeToolCall({
@@ -64,15 +68,23 @@ export async function approveToolCall(
 			`ガードレールが実行を拒否しました: ${result.reasons.join(" / ")}`,
 		);
 	}
+	const needsApproval = decision === "ask" || result.action === "ask";
+	const semanticResult = await reviewJevIfNeeded(
+		semantic.reviewer,
+		needsApproval,
+		call,
+		combined,
+	);
+	combined.throwIfAborted();
 	const checkedCall = freezeToolCall({
 		...call,
 		guardrailsPaths: result.paths,
+		...semanticResult,
 	});
 	const presentation = guardPresentation(checkedCall, result);
-	const approvalSignal =
-		decision === "ask" || result.action === "ask"
-			? await authorize(presentation, combined)
-			: combined;
+	const approvalSignal = needsApproval
+		? await authorize(presentation, combined)
+		: combined;
 	return issueApprovedToolCall(
 		checkedCall,
 		AbortSignal.any([combined, approvalSignal]),
@@ -98,6 +110,14 @@ function probeFor(call: ToolCall) {
 /** 判定理由と解析できない範囲を既存の承認表示へ加える。 */
 function guardPresentation(call: ToolCall, result: GuardResult) {
 	const presentation = toolApprovalPresentation(call);
+	if (call.jevReview) {
+		presentation.fields?.push({
+			id: "jev-review",
+			label: "Jev補足判定",
+			value: `${call.jevReview.decision}: ${call.jevReview.guidance}`,
+			display: "text",
+		});
+	}
 	if (result.paths.length) {
 		presentation.fields?.push({
 			id: "guardrails-paths",
