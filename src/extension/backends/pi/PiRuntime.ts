@@ -6,7 +6,17 @@ import type {
 	AgentSessionEvent,
 } from "@earendil-works/pi-coding-agent";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
-import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
+import { type PiAuthorize } from "./PiApprovedTools";
+import type {
+	AgentAccessPolicy,
+	AgentRole,
+	WindowsSandboxImplementation,
+} from "../../security/AgentAccessPolicy";
+import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
+import { preparePiRuntimeTools } from "./PiRuntimeTools";
+import { resolveTrustedExtensions } from "./PiExtensionTrust";
+import { PiChildRuntimes } from "./PiChildRuntimes";
+import { bindPiRuntimeLifetime } from "./PiRuntimeLifetime";
 import { PiAccount, type PiAuthService } from "./PiAccount";
 import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
@@ -40,6 +50,13 @@ export type PiSession = Pick<
 	skills?: SkillSummary[];
 	/** 未送信の新規会話だけ、送信前に保存先設定を読み直す。 */
 	storageChanged?: () => boolean;
+	close?: () => Promise<void>;
+};
+/** 共通Host APIの子だけを管理し、外部拡張の独自subagentとは区別する。 */
+export type PiRuntimeSession = PiSession & {
+	accessPolicy: AgentAccessPolicy;
+	children: PiChildRuntimes;
+	close: () => Promise<void>;
 };
 export type { AgentSessionEvent as PiEvent };
 
@@ -67,6 +84,17 @@ export type PiRuntimeOptions = {
 	authService?: PiAuthService;
 	/** 固定endpointへのHost通信だけを疎通テストで差し替える。 */
 	request?: typeof fetch;
+	workspaceRoots?: string[];
+	workspaceTrusted?: boolean;
+	trustedExtensionPaths?: string[];
+	windowsSandbox?: WindowsSandboxImplementation;
+	executor?: SandboxCommandExecutor | null;
+	parentPolicy?: AgentAccessPolicy;
+	role?: AgentRole;
+	/** 共通子Runtimeの内部履歴を親の履歴一覧へ保存しない。 */
+	ephemeral?: boolean;
+	/** 実行基盤の利用不能も子へ継承し、fallbackによる有効化を防ぐ。 */
+	sandboxUnavailable?: string;
 };
 
 /** 秘密値を含まない、起動時モデルの保存形式。 */
@@ -79,7 +107,13 @@ export type PiModelSelection = {
 /** Pi標準形式で履歴を保存し、副作用ツールには必ずHostの承認を挟む。 */
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
-): Promise<PiSession> {
+): Promise<PiRuntimeSession> {
+	const parentSignal = options.signal;
+	const lifetime = new AbortController();
+	options = {
+		...options,
+		signal: AbortSignal.any([parentSignal, lifetime.signal]),
+	};
 	const sdkUrl = pathToFileURL(
 		join(options.extensionPath, "dist/runtime/pi.mjs"),
 	).href;
@@ -96,6 +130,18 @@ export async function createPiRuntime(
 	const authorize: PiAuthorize =
 		options.authorize ??
 		(() => Promise.reject(new Error("Piの実行承認が接続されていません。")));
+	const runtimeTools = await preparePiRuntimeTools(
+		sdk,
+		options,
+		authorize,
+		settingsManager,
+	);
+	options = { ...options, cwd: runtimeTools.paths.cwd };
+	const trustedExtensions = await runtimeExtensions(
+		options,
+		settingsManager,
+		runtimeTools.paths.policy,
+	);
 	const controls = new PiProviderControls();
 	const resourceLoader = await loadPiResources(
 		sdk,
@@ -105,6 +151,8 @@ export async function createPiRuntime(
 		authorize,
 		options.signal,
 		controls,
+		trustedExtensions,
+		runtimeTools.paths.policy,
 	);
 	options.signal.throwIfAborted();
 	const modelRuntime = await sdk.ModelRuntime.create({
@@ -121,13 +169,30 @@ export async function createPiRuntime(
 	const model = resolvePiInitialModel(options, modelRuntime);
 	options.signal.throwIfAborted();
 	const storage = sessionStorage(options);
-	const { manager, history } = await openPiSessionStore(
-		sdk,
-		options.cwd,
-		agentDir,
-		storage,
-		options.signal,
-		options.resume,
+	const { manager, history } = options.ephemeral
+		? {
+				manager: sdk.SessionManager.inMemory(options.cwd),
+				history: undefined,
+			}
+		: await openPiSessionStore(
+				sdk,
+				options.cwd,
+				agentDir,
+				storage,
+				options.signal,
+				options.resume,
+			);
+	const extensionTools = resourceLoader
+		.getExtensions()
+		.extensions.flatMap((extension) => [...extension.tools.keys()]);
+	// 非Windowsでは、明示的に信頼したbash拡張がSDK標準Toolを置き換えられる。
+	const customTools = runtimeTools.tools.filter(
+		(tool) =>
+			!(
+				process.platform !== "win32" &&
+				tool.name === "bash" &&
+				extensionTools.includes("bash")
+			),
 	);
 	const { session } = await sdk.createAgentSession({
 		cwd: options.cwd,
@@ -140,18 +205,10 @@ export async function createPiRuntime(
 		tools: [
 			"read",
 			"ls",
-			"write",
-			"edit",
-			"powershell",
-			...resourceLoader
-				.getExtensions()
-				.extensions.flatMap((extension) => [...extension.tools.keys()]),
+			...customTools.map((tool) => tool.name),
+			...extensionTools,
 		],
-		customTools: [
-			sdk.createWriteToolDefinition(options.cwd),
-			sdk.createEditToolDefinition(options.cwd),
-			sdk.createPowerShellToolDefinition(options.cwd),
-		].map((tool) => approvePiTool(tool, options.cwd, authorize)),
+		customTools,
 	});
 	controls.bind(session);
 	const account = new PiAccount(
@@ -179,8 +236,18 @@ export async function createPiRuntime(
 			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
 		);
 	}
+	const children = createChildren(options, runtimeTools);
+	const close = bindPiRuntimeLifetime(
+		session,
+		children,
+		lifetime,
+		parentSignal,
+	);
 	return Object.assign(session, {
-		history,
+		accessPolicy: runtimeTools.paths.policy,
+		children,
+		close,
+		...(history ? { history } : {}),
 		storageChanged: () =>
 			!options.resume &&
 			session.messages.length === 0 &&
@@ -194,6 +261,40 @@ export async function createPiRuntime(
 			path: skill.filePath,
 		})),
 	});
+}
+
+/** 親の実行基盤と利用不能理由も子の起動条件へ固定する。 */
+function createChildren(
+	options: PiRuntimeOptions,
+	tools: Awaited<ReturnType<typeof preparePiRuntimeTools>>,
+) {
+	return new PiChildRuntimes(
+		{
+			...options,
+			executor: tools.executor,
+			...(tools.unavailable
+				? { sandboxUnavailable: tools.unavailable }
+				: {}),
+		},
+		tools.paths.policy,
+		options.signal,
+		createPiRuntime,
+	);
+}
+
+/** Workspace Trustとユーザー許可を、コードをロードする前に照合する。 */
+async function runtimeExtensions(
+	options: PiRuntimeOptions,
+	settings: PiSdk.SettingsManager,
+	policy: AgentAccessPolicy,
+) {
+	const trusted = options.workspaceTrusted ?? true;
+	settings.setProjectTrusted(trusted);
+	return resolveTrustedExtensions(
+		options.trustedExtensionPaths ?? [],
+		policy.workspaceRoots,
+		trusted,
+	);
 }
 
 /** 最新の保存先設定を明示設定と既定値より優先する。 */

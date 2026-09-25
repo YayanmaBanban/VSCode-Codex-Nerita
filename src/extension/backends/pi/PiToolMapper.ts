@@ -208,7 +208,11 @@ function toolKind(toolName: string): NonNullable<ToolSummary["kind"]> {
 	if (toolName === "read") {
 		return "read";
 	}
-	if (toolName === "powershell") {
+	if (
+		toolName === "powershell" ||
+		toolName === "pwsh" ||
+		toolName === "bash"
+	) {
 		return "execute";
 	}
 	if (toolName === "write" || toolName === "edit") {

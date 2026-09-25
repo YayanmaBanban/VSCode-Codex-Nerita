@@ -21,6 +21,10 @@ test("末尾追従・手動スクロール・再開・会話切替", async ({ pa
 			(element) =>
 				element.scrollHeight - element.clientHeight - element.scrollTop,
 		);
+	// 初回のStory読み込みを待ってから、末尾追従の応答時間を測る。
+	await expect(page.getByRole("log", { name: "メッセージ" })).toBeVisible({
+		timeout: 20_000,
+	});
 	await expect.poll(gap).toBeLessThanOrEqual(4);
 	await page.getByRole("button", { name: "本文を追記" }).click();
 	await expect.poll(gap).toBeLessThanOrEqual(4);

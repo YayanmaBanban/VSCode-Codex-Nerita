@@ -1,5 +1,9 @@
 // SDKの副作用ツールを包み、承認と取消を確認してから実処理へ渡す。
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
+import { approveToolCall } from "../../security/ApprovalGuard";
+import { consumeApprovedToolCall } from "../../security/ApprovedToolCall";
+import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
+import { z } from "zod";
 
 /** 実行ごとの入力をHostで確認し、許可された場合だけ戻る。 */
 export type PiAuthorize = (
@@ -12,23 +16,41 @@ export function approvePiTool(
 	tool: Omit<ToolDefinition, "renderCall" | "renderResult">,
 	cwd: string,
 	authorize: PiAuthorize,
+	policy: AgentAccessPolicy = {
+		workspaceRoots: [cwd],
+		writableRoots: [cwd],
+		shell: true,
+		networkAccess: false,
+		windowsSandbox: "elevated",
+	},
+	lifetime?: AbortSignal,
 ): ToolDefinition {
 	return {
 		...tool,
 		executionMode: "sequential",
 		async execute(id, params, signal, update, context) {
-			signal?.throwIfAborted();
-			const approvalSignal = await authorize(
-				`Pi: ${tool.name} の実行承認\n作業フォルダー: ${cwd}\n${JSON.stringify(params, null, 2)}`,
-				signal,
+			const combined =
+				lifetime && signal
+					? AbortSignal.any([lifetime, signal])
+					: (lifetime ?? signal);
+			const approved = await approveToolCall(
+				{
+					tool: `extension:${tool.name}`,
+					params: z.record(z.string(), z.unknown()).parse(params),
+					cwd,
+					policy,
+				},
+				authorize,
+				combined,
 			);
-			approvalSignal.throwIfAborted();
-			signal?.throwIfAborted();
-			// SDK側のsignalが省略されても、HostのStop・切断を実処理へ伝える。
-			const executionSignal = signal
-				? AbortSignal.any([approvalSignal, signal])
-				: approvalSignal;
-			return tool.execute(id, params, executionSignal, update, context);
+			const call = consumeApprovedToolCall(approved);
+			return tool.execute(
+				id,
+				call.params,
+				approved.signal,
+				update,
+				context,
+			);
 		},
 	};
 }

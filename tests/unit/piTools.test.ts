@@ -27,6 +27,25 @@ const result = (text: string) => ({
 	details: {},
 });
 
+it.each(["powershell", "pwsh", "bash"])(
+	"%sをShell実行カードとして表示する",
+	async (name) => {
+		const h = await connected();
+		h.emit({
+			type: "tool_execution_start",
+			toolCallId: "shell",
+			toolName: name,
+			args: { command: "node --version" },
+		});
+		expect(h.controller.snapshot().tools.at(-1)).toMatchObject({
+			kind: "execute",
+			title: name,
+			rawInput: { command: "node --version" },
+		});
+		h.complete();
+	},
+);
+
 it("並列read/lsを開始順に保ち、部分結果を置換して本文の間へ表示する", async () => {
 	const h = await connected();
 	h.emit({ type: "message_end", message: assistant("確認します") });
