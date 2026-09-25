@@ -51,6 +51,8 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 				"getPackageDir",
 				"parseSessionEntries",
 				"createWriteToolDefinition",
+				"createReadToolDefinition",
+				"createLsToolDefinition",
 				"createEditToolDefinition",
 				"createPowerShellToolDefinition",
 				"createBashToolDefinition",

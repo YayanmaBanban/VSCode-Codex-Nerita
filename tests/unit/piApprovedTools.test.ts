@@ -36,13 +36,14 @@ it.each(["write", "edit", "powershell", "bash", "custom"])(
 		const h = fixture(name);
 		const result = h.run();
 		const rejected = expect(result).rejects.toThrow("拒否");
+		await vi.waitFor(() => expect(h.authorize).toHaveBeenCalled());
 		expect(h.execute).not.toHaveBeenCalled();
 		expect(
 			h.authorize.mock.calls[0]![0].fields?.find(
 				(field) => field.id === "params",
 			)?.value,
 		).toContain("target.txt");
-		expect(h.authorize.mock.calls[0]![1]).toBeUndefined();
+		expect(h.authorize.mock.calls[0]![1]?.aborted).toBe(false);
 		h.approval.reject(new Error("拒否"));
 		await rejected;
 		expect(h.execute).not.toHaveBeenCalled();

@@ -21,6 +21,8 @@ export type ToolCall = {
 	sandbox?: SandboxExecutionInfo;
 	hostShell?: boolean;
 	file?: FileSnapshot;
+	guardrailsDigest?: string;
+	guardrailsPaths?: string[];
 };
 export type ApprovedToolCall = Readonly<{
 	call: ToolCall;

@@ -9,6 +9,7 @@
 !docs/Pi-Runtime-Packaging.md
 !media/**
 !dist/extension.js
+!dist/guardrails.schema.json
 !dist/webview/index.js
 !dist/webview/index.css
 !dist/runtime/**

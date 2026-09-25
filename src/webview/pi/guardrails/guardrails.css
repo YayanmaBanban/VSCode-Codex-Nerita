@@ -1,0 +1,119 @@
+/* 保存操作を固定し、設定と検査の内容だけを個別にスクロールする。 */
+.guardrails-editor {
+	box-sizing: border-box;
+	height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px;
+	overflow: hidden;
+	font-size: max(12px, var(--vscode-font-size, 13px));
+}
+.guardrails-header {
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.guardrails-panes {
+	display: grid;
+	grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 12px;
+	flex: 1;
+	min-height: 0;
+}
+.guardrails-pane {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	min-width: 0;
+	border: 1px solid var(--vscode-panel-border, #454545);
+	border-radius: 6px;
+	overflow: hidden;
+}
+.guardrails-pane-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 10px;
+	flex-shrink: 0;
+	border-bottom: 1px solid var(--vscode-panel-border, #454545);
+}
+.guardrails-scroll {
+	min-height: 0;
+	overflow: auto;
+	overscroll-behavior: contain;
+	padding: 12px;
+	scrollbar-gutter: stable;
+}
+.guardrails-simulation {
+	background: color-mix(
+		in srgb,
+		#35b878 13%,
+		var(--vscode-editor-background, #181818)
+	);
+	border-color: color-mix(
+		in srgb,
+		#35b878 45%,
+		var(--vscode-panel-border, #454545)
+	);
+}
+.guardrails-rule-group {
+	border: 1px solid var(--vscode-panel-border, #454545);
+	border-radius: 4px;
+}
+.guardrails-rule-group > summary {
+	cursor: pointer;
+	padding: 10px;
+	font-weight: 600;
+	background: color-mix(
+		in srgb,
+		#888 15%,
+		var(--vscode-editor-background, #181818)
+	);
+}
+.guardrails-rule-content {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-height: 420px;
+	overflow: auto;
+	overscroll-behavior: auto;
+	padding: 10px;
+}
+.guardrails-mode-switch {
+	width: 36px;
+	height: 22px;
+	padding: 3px;
+	border: 1px solid var(--vscode-input-border, #777);
+	border-radius: 12px;
+	background: var(--vscode-input-background, #333);
+	cursor: pointer;
+}
+.guardrails-mode-switch > span {
+	display: block;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: var(--vscode-foreground, #ddd);
+}
+.guardrails-mode-switch[aria-checked="true"] {
+	background: var(--vscode-button-background, #007acc);
+}
+.guardrails-mode-switch[aria-checked="true"] > span {
+	transform: translateX(14px);
+	background: var(--vscode-button-foreground, #fff);
+}
+.guardrails-editor input[type="checkbox"]:hover,
+.guardrails-editor summary:hover,
+.guardrails-mode-switch:hover {
+	outline: 1px solid var(--vscode-focusBorder, #007acc);
+	outline-offset: -1px;
+}
+@media (min-width: 900px) {
+	.guardrails-panes {
+		grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr);
+	}
+}

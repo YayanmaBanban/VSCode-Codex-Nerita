@@ -2,10 +2,16 @@
 const esbuild = require("esbuild");
 const { tailwindPlugin } = require("./config/tailwind-esbuild.cjs");
 const { packageRuntime } = require("./config/package-runtime.cjs");
+const { copyFile, mkdir } = require("node:fs/promises");
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
 /** 両方の出力を生成し、監視時も同じ構成を利用する。 */
 async function main() {
+	await mkdir("dist", { recursive: true });
+	await copyFile(
+		"src/extension/backends/pi/guardrails/schema.json",
+		"dist/guardrails.schema.json",
+	);
 	const common = {
 		bundle: true,
 		minify: production,

@@ -7,6 +7,7 @@ import {
 } from "../../security/WorkspacePathPolicy";
 import {
 	intersectPolicy,
+	containsPath,
 	type WindowsSandboxImplementation,
 } from "../../security/AgentAccessPolicy";
 import {
@@ -18,6 +19,7 @@ import { createPiFileTool } from "./PiFileTools";
 import { createPiHostShellTool } from "./PiHostShellTool";
 import type { PiRuntimeOptions } from "./PiRuntime";
 import type { PiAuthorize } from "./PiApprovedTools";
+import { createPiReadTool } from "./guardrails/PiReadTools";
 
 /** SDK のシェル設定だけを実行ツールへ引き継ぐ。 */
 type ShellSettings = Pick<
@@ -46,6 +48,11 @@ export async function preparePiRuntimeTools(
 			paths,
 			authorize,
 			options.signal,
+		),
+	);
+	tools.push(
+		...(["read", "ls"] as const).map((kind) =>
+			createPiReadTool(sdk, kind, paths, authorize, options.signal),
 		),
 	);
 	// OS による選択であり、Windows のサンドボックス失敗を Host 実行へ切り替える処理ではない。
@@ -110,7 +117,16 @@ async function runtimePaths(
 		);
 	}
 	const cwd = await realpath(options.cwd);
-	const paths = new WorkspacePathPolicy(intersectPolicy(base, role), cwd);
+	const guardrailsRoot =
+		base.guardrailsRoot ??
+		base.workspaceRoots
+			.filter((root) => containsPath(root, cwd))
+			.sort((a, b) => b.length - a.length)[0] ??
+		cwd;
+	const paths = new WorkspacePathPolicy(
+		intersectPolicy({ ...base, guardrailsRoot }, role),
+		cwd,
+	);
 	await paths.resolveWorkspace(cwd);
 	return paths;
 }

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "pathAccess": {
+    "outsideRead": "deny",
+    "outsideWrite": "deny"
+  },
+  "pathRules": [
+    {
+      "id": "env-files",
+      "reason": "秘密値を含む可能性があるファイルです。",
+      "action": "deny",
+      "base": "workspace",
+      "match": "glob",
+      "pattern": ".env*",
+      "exceptions": [
+        ".env.example",
+        ".env.sample"
+      ],
+      "operations": [
+        "read",
+        "write"
+      ]
+    }
+  ],
+  "commandRules": []
+}

@@ -90,6 +90,8 @@ it.each(["darwin", "linux"] as const)(
 		expect(h.tools.map((tool) => tool.name)).toEqual([
 			"write",
 			"edit",
+			"read",
+			"ls",
 			"bash",
 		]);
 		expect(h.executor).toBeNull();

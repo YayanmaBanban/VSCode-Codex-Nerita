@@ -61,9 +61,12 @@ describe("U01-U03 policy / snapshot", () => {
 		const permit = await approval;
 		expect(consumeApprovedToolCall(permit)).toEqual({
 			...call(),
+			guardrailsDigest: permit.call.guardrailsDigest,
+			guardrailsPaths: [],
 			sandbox: { name: "Fixture Sandbox", details: ["original"] },
 		});
 		expect(() => consumeApprovedToolCall(permit)).toThrow("再承認");
+		expect(permit.call.guardrailsDigest).toMatch(/^[a-f0-9]{64}$/);
 		expect(authorize.mock.calls[0]![0].fields).toContainEqual({
 			id: "network",
 			label: "Shell network設定",

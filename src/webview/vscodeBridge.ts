@@ -2,15 +2,39 @@
 import type { HostMessage, UiMessage } from "../shared/messages";
 import { isHostMessage } from "../shared/hostMessageValidation";
 import type { PiAuthRequest } from "../shared/piAuth";
+import {
+	guardReplySchema,
+	type GuardBridge,
+	type GuardRequest,
+} from "../shared/guardrails/messages";
 /** UI から利用できる双方向通信の契約。 */
 export type Bridge = {
 	postMessage: (message: UiMessage) => void;
 	subscribe: (listener: (message: HostMessage) => void) => () => void;
 };
 /** VS Code が Webview に提供する最小 API。 */
-type VsCodeApi = { postMessage: (message: UiMessage | PiAuthRequest) => void };
+type VsCodeApi = {
+	postMessage: (message: UiMessage | PiAuthRequest | GuardRequest) => void;
+};
 declare function acquireVsCodeApi(): VsCodeApi;
 let api: VsCodeApi | undefined;
+/** 設定エディターも同じ API 境界を通し、Host の通知を検証する。 */
+export function createGuardrailsBridge(): GuardBridge {
+	api ??= acquireVsCodeApi();
+	return {
+		postMessage: (message) => api?.postMessage(message),
+		subscribe(listener) {
+			const receive = (event: MessageEvent<unknown>) => {
+				const parsed = guardReplySchema.safeParse(event.data);
+				if (parsed.success) {
+					listener(parsed.data);
+				}
+			};
+			window.addEventListener("message", receive);
+			return () => window.removeEventListener("message", receive);
+		},
+	};
+}
 /** 認証専用パネルではチャット状態の保存・復元を利用しない。 */
 export function createPiAuthPost(): (request: PiAuthRequest) => void {
 	api ??= acquireVsCodeApi();

@@ -1,0 +1,141 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"version": {
+			"type": "number",
+			"const": 1
+		},
+		"pathAccess": {
+			"type": "object",
+			"properties": {
+				"outsideRead": {
+					"type": "string",
+					"enum": ["allow", "ask", "deny"]
+				},
+				"outsideWrite": {
+					"type": "string",
+					"const": "deny"
+				}
+			},
+			"required": ["outsideRead", "outsideWrite"],
+			"additionalProperties": false
+		},
+		"pathRules": {
+			"maxItems": 100,
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 80,
+						"pattern": "^[a-zA-Z0-9_-]+$"
+					},
+					"reason": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 500
+					},
+					"action": {
+						"type": "string",
+						"enum": ["allow", "ask", "deny"]
+					},
+					"base": {
+						"type": "string",
+						"enum": ["workspace", "home"]
+					},
+					"match": {
+						"type": "string",
+						"enum": ["glob", "file", "directory"]
+					},
+					"pattern": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 256,
+						"pattern": "^(?![\\\\/])(?!.*:)(?!.*\\\\)(?!.*(?:^|\\/)\\.\\.(?:\\/|$))[\\u0020-\\uffff]+$"
+					},
+					"exceptions": {
+						"maxItems": 30,
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 256,
+							"pattern": "^(?![\\\\/])(?!.*:)(?!.*\\\\)(?!.*(?:^|\\/)\\.\\.(?:\\/|$))[\\u0020-\\uffff]+$"
+						}
+					},
+					"operations": {
+						"minItems": 1,
+						"maxItems": 2,
+						"type": "array",
+						"items": {
+							"type": "string",
+							"enum": ["read", "write"]
+						}
+					}
+				},
+				"required": [
+					"id",
+					"reason",
+					"action",
+					"base",
+					"match",
+					"pattern",
+					"exceptions",
+					"operations"
+				],
+				"additionalProperties": false
+			}
+		},
+		"commandRules": {
+			"maxItems": 100,
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 80,
+						"pattern": "^[a-zA-Z0-9_-]+$"
+					},
+					"reason": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 500
+					},
+					"action": {
+						"type": "string",
+						"enum": ["allow", "ask", "deny"]
+					},
+					"shell": {
+						"type": "string",
+						"enum": ["any", "powershell", "pwsh", "bash"]
+					},
+					"match": {
+						"type": "string",
+						"const": "contains"
+					},
+					"pattern": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 256
+					}
+				},
+				"required": [
+					"id",
+					"reason",
+					"action",
+					"shell",
+					"match",
+					"pattern"
+				],
+				"additionalProperties": false
+			}
+		}
+	},
+	"required": ["version", "pathAccess", "pathRules", "commandRules"],
+	"additionalProperties": false
+}

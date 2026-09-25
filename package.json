@@ -29,6 +29,24 @@
 	},
 	"main": "./dist/extension.js",
 	"contributes": {
+		"customEditors": [
+			{
+				"viewType": "nerita.pi.guardrails",
+				"displayName": "Pi ガードレール",
+				"selector": [
+					{
+						"filenamePattern": "**/.pi/guardrails.json"
+					}
+				],
+				"priority": "default"
+			}
+		],
+		"jsonValidation": [
+			{
+				"fileMatch": "**/.pi/guardrails.json",
+				"url": "./dist/guardrails.schema.json"
+			}
+		],
 		"configuration": {
 			"title": "Nerita for Codex",
 			"properties": {
@@ -103,6 +121,10 @@
 		},
 		"commands": [
 			{
+				"command": "nerita.pi.guardrails",
+				"title": "Nerita: Pi ガードレールを編集"
+			},
+			{
 				"command": "nerita.pi.setupCodexWindowsSandbox",
 				"title": "Nerita: Pi用のCodex Windows Sandboxをセットアップ",
 				"enablement": "isWindows && config.nerita.backend == pi"
@@ -168,6 +190,8 @@
 		}
 	},
 	"scripts": {
+		"guardrails:generate": "node scripts/generate-guardrails-schema.cjs",
+		"test:guardrails:ui": "node tests/guardrails-vscode-smoke.mjs",
 		"codex:generate": "node config/generate-codex.cjs",
 		"pi:generate": "node config/generate-pi.cjs",
 		"pi:verify": "node config/verify-pi.cjs",

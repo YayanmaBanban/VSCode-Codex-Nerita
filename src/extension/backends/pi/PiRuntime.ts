@@ -202,12 +202,7 @@ export async function createPiRuntime(
 		modelRuntime,
 		...(model && !options.resume ? { model } : {}),
 		sessionManager: manager,
-		tools: [
-			"read",
-			"ls",
-			...customTools.map((tool) => tool.name),
-			...extensionTools,
-		],
+		tools: [...customTools.map((tool) => tool.name), ...extensionTools],
 		customTools,
 	});
 	controls.bind(session);

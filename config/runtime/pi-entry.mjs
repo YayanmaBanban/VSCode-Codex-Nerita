@@ -12,6 +12,8 @@ export {
 	resizeImage,
 	parseSessionEntries,
 	createWriteToolDefinition,
+	createReadToolDefinition,
+	createLsToolDefinition,
 	createEditToolDefinition,
 	createPowerShellToolDefinition,
 	createBashToolDefinition,
