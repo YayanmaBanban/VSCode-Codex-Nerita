@@ -1,10 +1,10 @@
-// SDK内部へのbundle互換処理は、確認済みソースにだけ適用する。
+// SDK 内部へのバンドル互換処理は、確認済みソースにだけ適用する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 const contract = require("./pi-sdk-contract.json");
 
-/** SDK更新時は差分を確認してからfingerprintと配布テストを更新する。 */
+/** SDK 更新時は差分を確認してから指紋と配布テストを更新する。 */
 async function verifyPiSources(roots) {
 	for (const [name, files] of Object.entries(contract)) {
 		for (const [file, expected] of Object.entries(files)) {

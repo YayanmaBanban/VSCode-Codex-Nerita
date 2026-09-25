@@ -136,7 +136,7 @@ export class CodexSessionController extends CodexSubmission {
 		await this.dispatchThreadAction(message);
 	}
 
-	/** 表示中のPlanだけを対象に、モード変更から送信までを処理する。 */
+	/** 表示中の Plan だけを対象に、モード変更から送信までを処理する。 */
 	private async decidePlan(
 		message: Extract<UiMessage, { type: "plan/decide" }>,
 	) {
@@ -413,7 +413,7 @@ function requestError(type: UiMessage["type"], error: unknown) {
 	return "現在の状態では操作できません。接続状態を確認してください。";
 }
 
-/** 会話IDを指定して保存履歴を変更する操作を識別する。 */
+/** 会話 ID を指定して保存履歴を変更する操作を識別する。 */
 function isHistoryAction(message: UiMessage): message is Extract<
 	UiMessage,
 	{

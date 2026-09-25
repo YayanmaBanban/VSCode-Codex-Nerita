@@ -1,4 +1,4 @@
-// 固定のGit引数で差分を読み、巨大な差分は要約に切り替えて参照資料にする。
+// 固定の Git 引数で差分を読み、巨大な差分は要約に切り替えて参照資料にする。
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
@@ -11,7 +11,7 @@ import type { AdditionalContext } from "./additionalContext";
 const exec = promisify(execFile);
 const limit = 60_000;
 
-/** Gitの生出力を漏らさず、参照の解除や再試行を案内する。 */
+/** Git の生出力を漏らさず、参照の解除や再試行を案内する。 */
 export class ChangeContextError extends Error {
 	/** 対象範囲と復旧方法を表示する。 */
 	constructor(scope: ChangeScope) {
@@ -33,13 +33,13 @@ async function git(cwd: string, args: string[]): Promise<string> {
 	return stdout;
 }
 
-/** 設定された外部diffやtextconvを実行せず、同じ範囲の差分と統計を取得する。 */
+/** 設定された外部 `diff` や `textconv` を実行せず、同じ範囲の差分と統計を取得する。 */
 export async function readChangeContext(
 	cwd: string,
 	scope: ChangeScope,
 ): Promise<string> {
 	try {
-		// cwdを指定してフォルダー設定も解決し、取得のたびに最新値を使う。
+		// `cwd` を指定してフォルダー設定も解決し、取得のたびに最新値を使う。
 		const excluded = readExcludedPatterns(cwd);
 		const refs = diffRefs(scope);
 		const paths = [
@@ -128,7 +128,7 @@ export async function changeContext(
 	return context;
 }
 
-/** 参照範囲に対応する固定のGit比較引数を返す。 */
+/** 参照範囲に対応する固定の Git 比較引数を返す。 */
 function diffRefs(scope: ChangeScope) {
 	if (scope === "staged") {
 		return ["--cached"];

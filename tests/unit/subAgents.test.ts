@@ -1,4 +1,4 @@
-// 活動の完了とAgentの完了、通知順序、閲覧の副作用を回帰検証する。
+// 活動の完了と Agent の完了、通知順序、閲覧の副作用を回帰検証する。
 import { afterEach, expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({ workspace: {}, window: {} }));
 import { initialState } from "../../src/shared/chatState";
@@ -20,7 +20,7 @@ const harnesses: ReturnType<typeof codexHarness>[] = [];
 afterEach(async () => {
 	await Promise.all(harnesses.splice(0).map((h) => h.session.dispose()));
 });
-/** Agent開始通知を実際のコントローラーへ送る。 */
+/** Agent 開始通知を実際のコントローラーへ送る。 */
 async function connected() {
 	const h = codexHarness();
 	harnesses.push(h);

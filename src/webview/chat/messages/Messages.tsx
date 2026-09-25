@@ -10,7 +10,7 @@ import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 import type { SubAgentSummary } from "../../../shared/subAgents";
 
-/** メッセージのテキストを表示するコンポーネント */
+/** メッセージのテキストを表示するコンポーネント。 */
 function MessageContent({
 	message,
 	user,

@@ -1,4 +1,4 @@
-// 開発ツリー外の実bundleで、provider・動的読込・相対資産の配布契約を検証する。
+// 開発ツリー外の実バンドルで、provider・動的読込・相対資産の配布契約を検証する。
 import assert from "node:assert/strict";
 import {
 	mkdtemp,
@@ -109,7 +109,7 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 			for (const output of Object.values(metadata.outputs)) {
 				for (const imported of output.imports ?? []) {
 					if (imported.external) {
-						// wsの任意native高速化は未同梱でもJS実装へフォールバックする。
+						// `ws` の任意ネイティブ実装による高速化は未同梱でも JS 実装へフォールバックする。
 						assert.ok(
 							isBuiltin(imported.path) ||
 								[

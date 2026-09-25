@@ -1,4 +1,4 @@
-// 閲覧スタックと要求IDで遅い応答を隔離し、親のチャット状態を保つ。
+// 閲覧スタックと要求 ID で遅い応答を隔離し、親のチャット状態を保つ。
 import { useEffect, useRef, useState } from "react";
 import type {
 	AgentThreadView,

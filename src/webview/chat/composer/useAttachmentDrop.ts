@@ -36,7 +36,7 @@ export function useAttachmentDrop(
 	const current = useRef({ scope, enabled });
 	current.current = { scope, enabled };
 
-	/** 子要素のLexicalやブラウザーがファイルを挿入・表示する前に処理する。 */
+	/** 子要素の Lexical やブラウザーがファイルを挿入・表示する前に処理する。 */
 	const stop = (event: DragEvent | ClipboardEvent) => {
 		event.preventDefault();
 		event.stopPropagation();
@@ -90,7 +90,7 @@ export function useAttachmentDrop(
 					return;
 				}
 				stop(event);
-				// コピー元のURLやHTMLではなく、クリップボード内の画像実体を添付する。
+				// コピー元の URL や HTML ではなく、クリップボード内の画像実体を添付する。
 				const transfer = new DataTransfer();
 				for (const file of images) {
 					transfer.items.add(file);

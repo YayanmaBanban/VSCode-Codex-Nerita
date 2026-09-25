@@ -1,9 +1,9 @@
-// 認証URLと質問入力をVS Codeの標準UIへ接続し、取消でダイアログを閉じる。
+// 認証 URL と質問入力を VS Code の標準 UI へ接続し、取消でダイアログを閉じる。
 import * as vscode from "vscode";
 import type { AuthService } from "./AuthFlow";
 import type { InteractionService } from "./interactionService";
 
-/** AbortSignalをVS Codeの取消トークンへ変換する。 */
+/** `AbortSignal` を VS Code の取消トークンへ変換する。 */
 async function cancellable<T>(
 	signal: AbortSignal,
 	action: (token: vscode.CancellationToken) => Thenable<T>,
@@ -25,12 +25,12 @@ async function open(url: string): Promise<void> {
 		throw new Error("Browser unavailable");
 	}
 }
-/** APIキーは環境変数からHost内でのみ読み取る。 */
+/** API キーは環境変数から Host 内でのみ読み取る。 */
 export const authService: AuthService = {
 	open,
 	apiKey: () => process.env.CODEX_API_KEY ?? process.env.OPENAI_API_KEY,
 };
-/** 質問・フォームはエディターの入力UIを使い、秘密の入力をチャット履歴に残さない。 */
+/** 質問・フォームはエディターの入力 UI を使い、秘密の入力をチャット履歴に残さない。 */
 export const interactionService: InteractionService = {
 	open,
 	input: (title, password, signal, validateInput) =>

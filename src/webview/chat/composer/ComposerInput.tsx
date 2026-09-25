@@ -1,4 +1,4 @@
-// 通常文と編集可能な貼り付けブロックを、一つのLexicalフィールドとして表示する。
+// 通常文と編集可能な貼り付けブロックを、1つの Lexical フィールドとして表示する。
 import { clsx } from "clsx";
 import { type SetStateAction, type Dispatch, useId, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";

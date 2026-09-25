@@ -1,4 +1,4 @@
-// 専用cwdで作った会話だけを使い、実App Serverの保存・復元・可逆操作を検証する。
+// 専用 `cwd` で作った会話だけを使い、実 App Server の保存・復元・可逆操作を検証する。
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -77,7 +77,7 @@ function waitFor(predicate) {
 		check();
 	});
 }
-/** 一つの履歴操作を実際のUI要求として送る。 */
+/** 1つの履歴操作を実際の UI 要求として送る。 */
 async function action(type, fields = {}) {
 	let error;
 	const unsubscribe = session.subscribe((message) => {

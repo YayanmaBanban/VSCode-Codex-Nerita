@@ -1,4 +1,4 @@
-// 上部オプションメニューから性格設定パネルを開き、Hostへ編集操作を送る。
+// 上部オプションメニューから性格設定パネルを開き、Host へ編集操作を送る。
 import { useEffect, useRef, useState } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { Dialog } from "@base-ui/react/dialog";
@@ -14,7 +14,7 @@ import { SettingsTooltip } from "../SettingsTooltip";
 import { SidebarMenu } from "../connection/SidebarMenu";
 import type { SidebarLocation } from "../../../shared/sidebar";
 
-/** メニューとダイアログのフォーカス管理をBase UIに任せる。 */
+/** メニューとダイアログのフォーカス管理を Base UI に任せる。 */
 export function PersonalityOptions({
 	backend,
 	state,

@@ -1,4 +1,4 @@
-// Webviewから届く操作要求を、副作用を実行する前に検証する。
+// Webview から届く操作要求を、副作用を実行する前に検証する。
 import type { UiMessage } from "./messages";
 import { isBackendId } from "./backend";
 import { isId, isRecord } from "./validation";
@@ -14,7 +14,7 @@ import { validSessionIds } from "./sessionReferences";
 import { isChangeScope, validChangeScopes } from "./changeReferences";
 import { validCodeReferences } from "./codeReferences";
 
-/** UI からの要求を実行前に検証する。 */
+/** UI からの要求は実行前に検証する。 */
 export function isUiMessage(value: unknown): value is UiMessage {
 	if (!isRecord(value)) {
 		return false;

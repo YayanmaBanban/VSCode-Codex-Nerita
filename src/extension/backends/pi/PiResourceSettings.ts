@@ -1,11 +1,11 @@
-// リソース探索がHostで未導入パッケージをインストールしないよう、導入済みのローカル参照だけを渡す。
+// リソース探索が Host で未導入パッケージをインストールしないよう、導入済みのローカル参照だけを渡す。
 import { realpath } from "node:fs/promises";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 
-/** SDKの公開SettingsManagerから設定型を導出する。 */
+/** SDK の公開 SettingsManager から設定型を導出する。 */
 type ResourceSettings = ReturnType<PiSdk.SettingsManager["getGlobalSettings"]>;
 
-/** CLIによる明示的な導入と、会話開始時のリソース読み込みを分離する。 */
+/** CLI による明示的な導入と、会話開始時のリソース読み込みを分離する。 */
 export async function localResourceSettings(
 	sdk: typeof PiSdk,
 	cwd: string,
@@ -37,7 +37,7 @@ export async function localResourceSettings(
 	);
 }
 
-/** npm/gitの指定も、存在を確認した実体パスへ置換して自動取得を防ぐ。 */
+/** `npm/git` の指定も、存在を確認した実体パスへ置換して自動取得を防ぐ。 */
 async function localPackages(
 	settings: ResourceSettings,
 	scope: "user" | "project",

@@ -1,4 +1,4 @@
-// Ctrl+Fの表示制御と、会話の更新に追従する検索・ハイライトを管理する。
+// Ctrl+F の表示制御と、会話の更新に追従する検索・ハイライトを管理する。
 import {
 	type SetStateAction,
 	type Dispatch,
@@ -11,7 +11,7 @@ import {
 import { searchPattern, type FindOptions } from "./findMatches";
 import { revealMatch, searchRanges } from "./searchRanges";
 
-/** 検索中は本文のDOMを保持し、CSS Highlightで一致箇所だけを強調する。 */
+/** 検索中は本文の DOM を保持し、CSS Highlight で一致箇所だけを強調する。 */
 export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");

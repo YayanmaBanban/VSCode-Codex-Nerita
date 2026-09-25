@@ -1,4 +1,4 @@
-// Hostのメニュー通知を代替し、実入力欄の選択保持と変換を観察する。
+// Host のメニュー通知を代替し、実入力欄の選択保持と変換を観察する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComposerPart } from "../../../shared/composerContent";
@@ -19,7 +19,7 @@ function CodeBlockStory() {
 		<div
 			className="p-4"
 			onContextMenu={(event) => {
-				// Hostと同様にメニューを開いた時点の識別子を保持し、古い通知も再現する。
+				// Host と同様にメニューを開いた時点の識別子を保持し、古い通知も再現する。
 				const context = event.currentTarget
 					.querySelector("[data-vscode-context]")
 					?.getAttribute("data-vscode-context");
@@ -89,6 +89,6 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof CodeBlockStory>;
 export default meta;
-/** 選択範囲と通知の対応を確認するStory。 */
+/** 選択範囲と通知の対応を確認するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Selection: Story = {};

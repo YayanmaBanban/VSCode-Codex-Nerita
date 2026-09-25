@@ -15,7 +15,7 @@ export class CodeReferenceError extends Error {
 	}
 }
 
-/** 読み取り中の会話変更を呼び出し側で検出できるよう、各await後に検証する。 */
+/** 読み取り中の会話変更を呼び出し側で検出できるよう、各 `await` 後に検証する。 */
 export async function readCodeReferenceContext(
 	references: CodeReference[],
 	check: () => void = () => {},

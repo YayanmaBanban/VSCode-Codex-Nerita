@@ -6,7 +6,7 @@ import { createMockBridge } from "../mocks/mockBridge";
 import type { Bridge } from "../../../webview/vscodeBridge";
 import type { BackendId } from "../../../shared/backend";
 
-/** Host専用操作を再現するBridgeで、下書きの復元も確認可能にする。 */
+/** Host 専用操作を再現する Bridge で、下書きの復元も確認可能にする。 */
 function HeaderStory({
 	title = "",
 	error = false,

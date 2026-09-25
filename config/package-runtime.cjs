@@ -37,7 +37,7 @@ async function resetRuntime(projectRoot) {
 	const dist = path.join(projectRoot, "dist");
 	const target = path.join(dist, "runtime");
 	await fs.mkdir(dist, { recursive: true });
-	// distやruntimeが別の場所へのリンクなら、再帰削除を行わずビルドを止める。
+	// `dist` や `runtime` が別の場所へのリンクなら、再帰削除を行わずビルドを止める。
 	if (
 		(await fs.realpath(dist)) !== dist ||
 		path.relative(projectRoot, target) !== path.join("dist", "runtime")
@@ -60,7 +60,7 @@ async function resetRuntime(projectRoot) {
 	return target;
 }
 
-/** 直接依存と生成型のバージョンを揃え、App Server用の資産だけを同梱する。 */
+/** 直接依存と生成型のバージョンを揃え、App Server 用の資産だけを同梱する。 */
 async function packageRuntime() {
 	if (process.platform !== "win32" || process.arch !== "x64") {
 		throw new Error("VSIX のビルドには Windows x64 が必要です。");
@@ -87,7 +87,7 @@ async function packageRuntime() {
 	const target = await resetRuntime(projectRoot);
 	await copyCodex(codexJson, target);
 	await bundlePi(projectRoot, target);
-	// npm配布に含まれない上流のライセンス表記を、固定バージョンの資産と一緒に残す。
+	// npm 配布に含まれない上流のライセンス表記を、固定バージョンの資産と一緒に残す。
 	for (const name of ["LICENSE", "NOTICE"]) {
 		await fs.copyFile(
 			path.join(notices, name),

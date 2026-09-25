@@ -1,4 +1,4 @@
-// 実Host設定を使うStoryで、Ultra・Fast Mode・provider差分を狭幅の明暗テーマで確認する。
+// 実 Host 設定を使うストーリーで、Ultra・Fast Mode・プロバイダー差分を狭幅の明暗テーマで確認する。
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {

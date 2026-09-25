@@ -1,4 +1,4 @@
-// 候補表示の検出とTab操作をLexicalへ登録し、解除時に購読を回収する。
+// 候補表示の検出と Tab 操作を Lexical へ登録し、解除時に購読を回収する。
 import { useEffect, useRef, type RefObject } from "react";
 import {
 	$getSelection,
@@ -48,7 +48,7 @@ function $indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
 	return true;
 }
 
-/** 通常のTab入力だけを字下げ操作として受け付ける。 */
+/** 通常の Tab 入力だけを字下げ操作として受け付ける。 */
 function ignoreIndentKey(event: KeyboardEvent, editor: LexicalEditor) {
 	return (
 		event.key !== "Tab" ||
@@ -61,7 +61,7 @@ function ignoreIndentKey(event: KeyboardEvent, editor: LexicalEditor) {
 	);
 }
 
-/** React側の最新状態を参照し、検索欄への移動でも本文の置換範囲を保つ。 */
+/** React 側の最新状態を参照し、検索欄への移動でも本文の置換範囲を保つ。 */
 export function useCompletionEditor(
 	editor: LexicalEditor,
 	options: {

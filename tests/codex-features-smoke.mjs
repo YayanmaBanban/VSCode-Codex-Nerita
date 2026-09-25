@@ -90,7 +90,7 @@ const session = new CodexSessionController(
 		open: async () => undefined,
 	},
 );
-/** 現在の会話にUIと同じ操作を送る。 */
+/** 現在の会話に UI と同じ操作を送る。 */
 const send = (message) =>
 	session.receive({
 		requestId: randomUUID(),

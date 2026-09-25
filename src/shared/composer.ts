@@ -19,7 +19,7 @@ export type ContextUsage = { used: number; size: number };
 /** /status が返す利用枠の残率と表示用のリセット情報。 */
 export type QuotaWindow = z.infer<typeof QuotaWindowSchema>;
 
-/** Hostで選択またはドロップから取得した添付参照。 */
+/** Host で選択またはドロップから取得した添付参照。 */
 export type Attachment = { id: string; name: string; uri: string };
 
 /** 入力欄から Host へ送る、セッションに限定した操作。 */

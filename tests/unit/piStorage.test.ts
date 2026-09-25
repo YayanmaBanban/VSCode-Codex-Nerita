@@ -1,4 +1,4 @@
-// 保存先とignoreの初回生成・既存ファイル保持を実ファイルで検証する。
+// 保存先と `ignore` の初回生成・既存ファイル保持を実ファイルで検証する。
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

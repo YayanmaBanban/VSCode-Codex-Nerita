@@ -1,4 +1,4 @@
-// 一時ディレクトリだけを使い、TOMLの永続化・優先順位・通信検証を確認する。
+// 一時ディレクトリだけを使い、TOML の永続化・優先順位・通信検証を確認する。
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { randomUUID } from "node:crypto";

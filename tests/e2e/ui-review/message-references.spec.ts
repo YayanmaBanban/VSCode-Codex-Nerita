@@ -1,4 +1,4 @@
-// ユーザー限定の参照チップが明暗・狭幅・Markdown内で表示されることを確認する。
+// ユーザー限定の参照チップが明暗・狭幅・Markdown 内で表示されることを確認する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

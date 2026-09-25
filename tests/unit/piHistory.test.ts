@@ -4,7 +4,7 @@ import { piHarness, pending } from "./piHarness";
 import type { SessionSummary } from "../../src/shared/sessionHistory";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 
-/** 保存SDKを差し替え、表示済み履歴を復元できるControllerを作る。 */
+/** 保存 SDK を差し替え、表示済み履歴を復元できる `Controller` を作る。 */
 async function setup() {
 	const h = piHarness();
 	h.runtime.history = {

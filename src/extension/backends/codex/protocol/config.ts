@@ -1,7 +1,7 @@
-// Sandboxの既定値適用に必要な有効設定だけを検証する。
+// サンドボックスの既定値適用に必要な有効設定だけを検証する。
 import { isRecord } from "../../../../shared/validation";
 
-/** 将来の実装名も明示設定として扱い、VS Code設定で上書きしない。 */
+/** 将来の実装名も明示設定として扱い、VS Code 設定で上書きしない。 */
 export function parseSandboxConfig(value: unknown): { sandbox: string | null } {
 	if (!isRecord(value) || !isRecord(value.config)) {
 		throw new Error("Codexの設定応答が不正です。");

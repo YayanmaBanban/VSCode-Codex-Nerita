@@ -1,4 +1,4 @@
-// 階層の移動とHostへの遅延読み込みを、候補の編集処理から分離する。
+// 階層の移動と Host への遅延読み込みを、候補の編集処理から分離する。
 import { useEffect, useState } from "react";
 import type { Bridge } from "../../vscodeBridge";
 import type {

@@ -1,4 +1,4 @@
-// パス選択のStoryで、階層・空フォルダ・読み込み失敗を再現する。
+// パス選択のストーリーで、階層・空フォルダ・読み込み失敗を再現する。
 import type {
 	WorkspacePath,
 	WorkspacePathsRequest,
@@ -7,7 +7,7 @@ import type {
 	ResolvePathResult,
 } from "../../../shared/workspacePaths";
 
-/** ローカルWindowsパスを持つ候補を作る。 */
+/** ローカル Windows パスを持つ候補を作る。 */
 function entry(path: string, kind: WorkspacePath["kind"]): WorkspacePath {
 	return {
 		uri: `file:///D:/workspace/${path}`,
@@ -31,7 +31,7 @@ const directories: Record<string, WorkspacePath[]> = {
 	[empty.uri]: [],
 };
 
-/** 貼り付けでも一覧と同じ参照を返し、未存在はnullにする。 */
+/** 貼り付けでも一覧と同じ参照を返し、未存在は `null` にする。 */
 export function mockResolvePath(
 	message: ResolvePathRequest,
 ): ResolvePathResult {

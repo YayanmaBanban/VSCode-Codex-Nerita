@@ -1,4 +1,4 @@
-// OS分岐を模擬し、SandboxなしでのSDK実行とCodexへの非接続を検証する。
+// OS 分岐を模擬し、サンドボックスなしでの SDK 実行と Codex への非接続を検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
@@ -21,7 +21,7 @@ afterEach(async () => {
 	await Promise.all(fixtures.splice(0).map((files) => files.cleanup()));
 });
 
-/** 実SDKのShell処理を使い、OSプロセス生成だけを観測可能な操作へ差し替える。 */
+/** 実 SDK のシェル処理を使い、OS プロセス生成だけを観測可能な操作へ差し替える。 */
 async function fixture(
 	platform: "darwin" | "linux",
 	extra: Partial<PiRuntimeOptions> = {},

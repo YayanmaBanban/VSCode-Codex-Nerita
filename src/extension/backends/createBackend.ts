@@ -1,4 +1,4 @@
-// 起動時の設定に従い、共通の寿命管理を持つbackendを組み立てる。
+// 起動時の設定に従い、共通の寿命管理を持つバックエンドを組み立てる。
 import * as vscode from "vscode";
 import type { BackendSession } from "../session/chatSession";
 import { requireLocalWorkspace } from "../workspace";
@@ -17,7 +17,7 @@ import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
 
 const piModelSelectionKey = "nerita.pi.lastModel";
 
-/** 両backendで同じローカル・信頼済みworkspace条件を適用する。 */
+/** 両バックエンドで同じローカル・信頼済みワークスペース条件を適用する。 */
 function workspaceDirectory(): string {
 	return requireLocalWorkspace(
 		vscode.workspace.workspaceFolders,

@@ -1,17 +1,17 @@
-// Hostコードのロード許可はユーザー設定のcanonicalな単一ファイルだけから解決する。
+// Host コードのロード許可はユーザー設定の正規化された単一ファイルだけから解決する。
 import { realpath, stat } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 import { containsPath } from "../../security/AgentAccessPolicy";
 import { validatePath } from "../../security/WorkspacePathPolicy";
 
-/** workspace側の同名設定は信頼の昇格に使用しない。 */
+/** ワークスペース側の同名設定は信頼の昇格に使用しない。 */
 export function userTrustedExtensionPaths(
 	setting: { globalValue?: string[] } | undefined,
 ): string[] {
 	return [...(setting?.globalValue ?? [])];
 }
 
-/** ディレクトリ指定やリンク別名は拒否し、新しいentryの暗黙ロードを防ぐ。 */
+/** ディレクトリ指定やリンク別名は拒否し、新しい `entry` の暗黙ロードを防ぐ。 */
 export async function resolveTrustedExtensions(
 	paths: readonly string[],
 	roots: readonly string[],

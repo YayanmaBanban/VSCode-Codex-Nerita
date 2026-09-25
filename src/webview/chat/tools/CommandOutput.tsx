@@ -4,7 +4,7 @@ import { toolOutputClass } from "./toolStyles";
 
 const pageSize = 20_000;
 
-/** 全文を保持しながらDOMに渡す文字数を制限する。 */
+/** 全文を保持しながら DOM に渡す文字数を制限する。 */
 export function CommandOutput({ text }: { text: string }) {
 	const [selected, setSelected] = useState<number | null>(null);
 	const pages = Math.max(1, Math.ceil(text.length / pageSize));

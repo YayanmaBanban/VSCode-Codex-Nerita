@@ -1,10 +1,10 @@
-// Pi最小版の通信状態だけを再現し、実SDKの検証はHostの疎通テストへ分離する。
+// Pi 最小版の通信状態だけを再現し、実 SDK の検証は Host の疎通テストへ分離する。
 import { initialState } from "../../../shared/chatState";
 import type { HostMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
 import { createBuiltinUiRegistry } from "../../../extension/ui-contributions/builtinContributions";
 
-/** 未対応機能を持たないPiで、逐次応答・Stop・再送を観察する。 */
+/** 未対応機能を持たない Pi で、逐次応答・Stop・再送を観察する。 */
 export function createPiBridge(showTools = false): Bridge {
 	let state = {
 		...initialState(),

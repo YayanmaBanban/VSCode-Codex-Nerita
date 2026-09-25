@@ -1,11 +1,11 @@
-// 承認前に要求全体を固定し、既存Permission UIから一回限りのpermitを発行する。
+// 承認前に要求全体を固定し、既存 `Permission` UI から1回限りの `permit` を発行する。
 import {
 	freezeToolCall,
 	issueApprovedToolCall,
 	type ToolCall,
 } from "./ApprovedToolCall";
 
-/** UIの許可とStopを同じ寿命に結び付ける。 */
+/** UI の許可と `Stop` を同じ寿命に結び付ける。 */
 export type ToolAuthorizer = (
 	title: string,
 	signal?: AbortSignal,
@@ -23,7 +23,7 @@ export function assessToolCall(call: ToolCall): "allow" | "ask" {
 		: "ask";
 }
 
-/** envの値は表示せず、実行と同一の操作・cwd・実効範囲を提示する。 */
+/** `env` の値は表示せず、実行と同一の操作・cwd・実効範囲を提示する。 */
 export async function approveToolCall(
 	input: ToolCall,
 	authorize: ToolAuthorizer,
@@ -50,7 +50,7 @@ export async function approveToolCall(
 	);
 }
 
-/** Host実行にShell Sandboxの保証を付けない。 */
+/** Host 実行にシェル `Sandbox` の保証を付けない。 */
 function approvalContext(call: ToolCall): string[] {
 	if (call.hostShell) {
 		return ["実行範囲: Pi Shell（OSの権限で実行）"];

@@ -1,4 +1,4 @@
-// Phase 9移行前の比較用guard。互換性の基準として固定し、本番から参照しない。
+// Phase 9移行前の比較用の検証処理。互換性の基準として固定し、本番から参照しない。
 // 追加の設定・使用量・ファイル参照を通信境界で検証する。
 import { isRecord } from "../../../src/shared/validation";
 import { validSkills } from "../../../src/shared/skills";

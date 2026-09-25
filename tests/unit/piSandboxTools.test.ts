@@ -1,4 +1,4 @@
-// 実SDKのファイルadapterとPowerShell定義に、承認固定・path境界・Host実行禁止を適用する。
+// 実 SDK のファイルアダプターと PowerShell 定義に、承認固定・`path` 境界・Host 実行禁止を適用する。
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import {
@@ -32,7 +32,7 @@ afterEach(async () => {
 	await Promise.all(fixtures.splice(0).map((fixture) => fixture.cleanup()));
 });
 
-/** ツール呼出しに必要なcwdだけをSDK contextへ渡す。 */
+/** ツール呼出しに必要な `cwd` だけを SDK `context` へ渡す。 */
 async function fixture() {
 	const files = await sandboxFixture();
 	fixtures.push(files);

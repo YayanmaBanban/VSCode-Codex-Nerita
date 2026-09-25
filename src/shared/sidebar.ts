@@ -3,7 +3,7 @@
 /** チャットを配置するサイドバー。 */
 export type SidebarLocation = "primary" | "secondary";
 
-/** 設定値と受信値を二つの配置先に限定する。 */
+/** 設定値と受信値を2つの配置先に限定する。 */
 export function isSidebarLocation(value: unknown): value is SidebarLocation {
 	return value === "primary" || value === "secondary";
 }

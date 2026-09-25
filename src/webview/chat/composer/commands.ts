@@ -1,4 +1,4 @@
-// 貼り付け・改行・送信をLexicalの更新単位で処理し、履歴と選択範囲を保つ。
+// 貼り付け・改行・送信を Lexical の更新単位で処理し、履歴と選択範囲を保つ。
 import {
 	$addUpdateTag,
 	$getSelection,
@@ -40,7 +40,7 @@ function shouldPasteAsBlock(text: string): boolean {
 	].some((pattern) => pattern.test(text));
 }
 
-/** 選択を置換して前後の通常文を保ち、貼り付けを一度でUndoできるようにする。 */
+/** 選択を置換して前後の通常文を保ち、貼り付けの取り消しを1回の操作で完了させる。 */
 function $paste(
 	editor: LexicalEditor,
 	event: ClipboardEvent,
@@ -85,12 +85,12 @@ function $paste(
 	return true;
 }
 
-/** ブロック内とIME中は通常の文字列貼り付けを維持する。 */
+/** ブロック内と IME 中は通常の文字列貼り付けを維持する。 */
 function pasteAsText(inBlock: boolean, editor: LexicalEditor, text: string) {
 	return inBlock || editor.isComposing() || !shouldPasteAsBlock(text);
 }
 
-/** 既存の通常入力・IMEを残し、Composer固有の操作だけを優先処理する。 */
+/** 既存の通常入力・IME を残し、Composer 固有の操作だけを優先処理する。 */
 export function registerComposerCommands(
 	editor: LexicalEditor,
 	submit: () => void,

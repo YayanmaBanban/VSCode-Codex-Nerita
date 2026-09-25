@@ -1,4 +1,4 @@
-// 固定endpoint・OAuth更新・account cacheと不正HTTP応答の公開境界を検証する。
+// 固定エンドポイント・OAuth 更新・account キャッシュと不正 HTTP 応答の公開境界を検証する。
 import { describe, expect, it, vi } from "vitest";
 import { CodexModelCatalogService } from "../../src/extension/backends/pi/codex/CodexModelCatalogService";
 import { catalogHarness, oauthToken } from "./piCatalogHarness";
@@ -71,7 +71,7 @@ describe("Codex OAuth live catalog transport", () => {
 
 	it("5秒timeoutで要求を取り消す", async () => {
 		vi.useFakeTimers();
-		// AbortSignal.timeoutは実時間のため、このテストでは同じ境界を仮想時計へ接続する。
+		// `AbortSignal.timeout` は実時間のため、このテストでは同じ境界を仮想時計へ接続する。
 		const timeout = vi
 			.spyOn(AbortSignal, "timeout")
 			.mockImplementation((ms) => {

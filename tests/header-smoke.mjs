@@ -1,4 +1,4 @@
-// 実際のVS Codeでエディタ移動・下書き同期・サイドバー復元を検証する。
+// 実際の VS Code でエディタ移動・下書き同期・サイドバー復元を検証する。
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
@@ -42,7 +42,7 @@ try {
 		.filter({ hasText: command })
 		.first()
 		.click();
-	/** 表示先固有の操作が利用可能になるまでWebviewを探す。 */
+	/** 表示先固有の操作が利用可能になるまで Webview を探す。 */
 	const findChat = async (label) => {
 		let found;
 		await expect

@@ -42,7 +42,7 @@ export function parseStartedThread(value: unknown): StartedThread {
 	};
 }
 
-/** サーバーが返す任意設定は文字列または未指定のnullを保持する。 */
+/** サーバーが返す任意設定は文字列または未指定の `null` を保持する。 */
 function isOptionalSetting(value: unknown): value is string | null {
 	return typeof value === "string" || value === null;
 }

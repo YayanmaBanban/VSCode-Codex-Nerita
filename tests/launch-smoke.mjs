@@ -1,4 +1,4 @@
-// F5と同じデバッグ開始操作でフォルダーが開かれ、Webviewから接続できることを検証する。
+// F5 と同じデバッグ開始操作でフォルダーが開かれ、Webview から接続できることを検証する。
 import { _electron as electron } from "playwright";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -32,7 +32,7 @@ try {
 	await parent.keyboard.press("Control+Shift+D");
 	await parent.getByText("Run Extension", { exact: true }).waitFor();
 	await parent.bringToFront();
-	// 起動タスクを含め、利用者と同じF5経路を通す。
+	// 起動タスクを含め、利用者と同じ F5 経路を通す。
 	const opened = app.waitForEvent("window", { timeout: 90000 });
 	void opened.catch(() => undefined);
 	await parent.locator(".codicon-debug-start").first().click();

@@ -1,4 +1,4 @@
-// 実Pi SDK・組み込みフック・ローカルResponsesサーバーでwire履歴を検証する。
+// 実 Pi SDK・組み込みフック・ローカル Responses サーバーで通信形式履歴を検証する。
 import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -18,7 +18,7 @@ import { neritaExtensionFactories } from "../../src/extension/backends/pi/PiBuil
 import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
 import { liveModel, oauthToken } from "./piCatalogHarness";
 
-/** HTTPで受け取った要求の検証対象。 */
+/** HTTP で受け取った要求の検証対象。 */
 type WireRequest = {
 	reasoning: { effort: string };
 	input: { type?: string; reasoning?: { effort: string } }[];
@@ -185,7 +185,7 @@ it("実SDKの送信・resume・fork・compactionでbaselineと更新順序を保
 				}),
 			],
 		});
-		/** 新しいcontrolsを生成し、memory stateなしで既存履歴を復元する。 */
+		/** 新しい `controls` を生成し、メモリー上の状態なしで既存履歴を復元する。 */
 		const open = async (store: SessionManager) => {
 			const controls = new PiProviderControls();
 			controls.bindCatalog(() => catalog);
@@ -219,7 +219,7 @@ it("実SDKの送信・resume・fork・compactionでbaselineと更新順序を保
 			SessionManager.create(directory, join(directory, "sessions")),
 		);
 		session = current.session;
-		/** UI経路で選び、実レスポンスの完了まで待つ。 */
+		/** UI 経路で選び、実レスポンスの完了まで待つ。 */
 		const send = async (effort: string, prompt: string) => {
 			current.controls.selectReasoning(
 				effort,
@@ -286,7 +286,7 @@ it("実SDKの送信・resume・fork・compactionでbaselineと更新順序を保
 		vi.unstubAllGlobals();
 		server.closeAllConnections();
 		await new Promise<void>((resolve) => server.close(() => resolve()));
-		// mkdtempで作った専用ディレクトリだけを削除する。
+		// `mkdtemp` で作った専用ディレクトリだけを削除する。
 		if (
 			dirname(resolve(directory)) === resolve(tmpdir()) &&
 			basename(directory).startsWith("nerita-reasoning-")

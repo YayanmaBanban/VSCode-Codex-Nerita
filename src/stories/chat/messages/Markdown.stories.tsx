@@ -1,11 +1,11 @@
-// 通常メッセージのMarkdownと、ツールのJSON表示を同じ画面で確認する。
+// 通常メッセージの Markdown と、ツールの JSON 表示を同じ画面で確認する。
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Messages } from "../../../webview/chat/messages/Messages";
 import { ToolCard } from "../../../webview/chat/tools/ToolCard";
 import "../../../webview/chat/chat.css";
 
-/** 相対パスから検証用のfile URLを作り、実際のローカル配置に依存させない。 */
+/** 相対パスから検証用の `file` URL を作り、実際のローカル配置に依存させない。 */
 function sampleFile(relativePath: string): URL {
 	return new URL(relativePath, "file:///");
 }
@@ -85,6 +85,6 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof MarkdownStory>;
 export default meta;
-/** Markdownの主要構文をまとめたStory。 */
+/** Markdown の主要構文をまとめたストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Preview: Story = {};

@@ -1,4 +1,4 @@
-// 履歴操作はCodexを正とし、復元の成功まで現在の会話を保持する。
+// 履歴操作は Codex を正とし、復元の成功まで現在の会話を保持する。
 import { sameCwd } from "../../workspace";
 import { CodexCatalog } from "./CodexCatalog";
 import { hydrateHistory, replayHistory } from "./history/restoreHistory";
@@ -218,7 +218,7 @@ export abstract class CodexHistory extends CodexCatalog {
 		this.synchronizeAgents();
 	}
 
-	/** 対象Threadを再確認して履歴操作をサーバーへ送る。 */
+	/** 対象スレッドを再確認して履歴操作をサーバーへ送る。 */
 	private async performHistoryAction(
 		client: CodexConnection,
 		cwd: string,
@@ -276,7 +276,7 @@ export abstract class CodexHistory extends CodexCatalog {
 	}
 }
 
-/** 復元したThreadの作業場所と識別子を照合する。 */
+/** 復元したスレッドの作業場所と識別子を照合する。 */
 function validateRestoredThread(
 	result: Awaited<ReturnType<CodexConnection["resumeThread"]>>,
 	cwd: string,

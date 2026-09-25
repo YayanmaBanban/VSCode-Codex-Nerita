@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../../webview/chat/ChatApp";
 import { createMockBridge } from "../mocks/mockBridge";
 
-/** 実接続を使わず、Hostが渡す一覧を再現する。 */
+/** 実接続を使わず、Host が渡す一覧を再現する。 */
 function ComposerMenuStory() {
 	const bridge = useMemo(() => {
 		const mock = createMockBridge("empty");
@@ -44,6 +44,6 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof ComposerMenuStory>;
 export default meta;
-/** 入力候補を操作できるStory。 */
+/** 入力候補を操作できるストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Ready: Story = {};

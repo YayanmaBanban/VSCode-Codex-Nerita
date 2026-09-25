@@ -1,4 +1,4 @@
-// ファイル選択・ドロップ・表示のHostサービスをbackend非依存で定義する。
+// ファイル選択・ドロップ・表示の Host サービスをバックエンド非依存で定義する。
 import type { Attachment } from "../../shared/composer";
 import type { DroppedAttachment } from "../../shared/attachmentDrop";
 

@@ -4,7 +4,7 @@ import { expect, it, vi } from "vitest";
 import { approvePiTool } from "../../src/extension/backends/pi/PiApprovedTools";
 import { pending } from "./piHarness";
 
-/** 副作用の代わりに呼出回数と受け取ったsignalを記録する。 */
+/** 副作用の代わりに呼出回数と受け取った `signal` を記録する。 */
 function fixture(name: string) {
 	const execute = vi.fn<ToolDefinition["execute"]>(() =>
 		Promise.resolve({

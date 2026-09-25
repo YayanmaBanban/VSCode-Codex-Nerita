@@ -2,7 +2,7 @@
 import type { ContextUsage, QuotaWindow } from "../../../../shared/composer";
 import { isRecord } from "../../../../shared/validation";
 
-/** 利用枠の一つのバケットを検証する。 */
+/** 利用枠の1つのバケットを検証する。 */
 export function parseQuota(value: unknown): QuotaWindow[] {
 	if (!isRecord(value)) {
 		throw new Error("Invalid rate limits");

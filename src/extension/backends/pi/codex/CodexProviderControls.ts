@@ -1,4 +1,4 @@
-// Codex専用のUltra・Fast ModeとUI候補を保持し、Codex Responses要求へ適用する。
+// Codex 専用の Ultra・Fast `Mode` と UI 候補を保持し、Codex Responses 要求へ適用する。
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiProviderControls as ControlsState } from "../../../../shared/piProviderControls";
 import type { ConfigChoice, ConfigOption } from "../../../../shared/composer";
@@ -7,7 +7,7 @@ import type { PiModelControls } from "../PiProvider";
 import type { PiCatalogSnapshot } from "../PiModelCatalog";
 import { CodexReasoningOverride } from "./CodexReasoningOverride";
 
-/** 組み込み拡張と設定UIが同じ実効値を参照する。 */
+/** 組み込み拡張と設定 UI が同じ実効値を参照する。 */
 export class CodexProviderControls implements PiModelControls {
 	private session?: AgentSession;
 	private override: "ultra" | null = null;
@@ -17,19 +17,19 @@ export class CodexProviderControls implements PiModelControls {
 	private basis: AgentSession["thinkingLevel"] | undefined;
 	private readonly reasoning = new CodexReasoningOverride();
 
-	/** nullはlive未確認であり、Ultra・Fastの能力を推測しない。 */
+	/** `null` はカタログで未確認の状態であり、Ultra・Fast の能力を推測しない。 */
 	setCatalog(catalog: PiCatalogSnapshot): void {
 		this.catalog = catalog;
 	}
 
-	/** 現在モデルのmetadataだけを要求制御に利用する。 */
+	/** 現在モデルのメタデータだけを要求制御に利用する。 */
 	private get metadata() {
 		return this.catalog?.find(
 			(model) => model.slug === this.session?.model?.id,
 		);
 	}
 
-	/** liveで対応値が確認できたモデルはPi候補を絞り、未取得ならPiへ委譲する。 */
+	/** 取得したカタログで対応値が確認できたモデルは Pi 候補を絞り、未取得なら Pi へ委譲する。 */
 	private get standardLevels() {
 		const levels = this.session?.getAvailableThinkingLevels() ?? [];
 		const metadata = this.metadata;
@@ -38,7 +38,7 @@ export class CodexProviderControls implements PiModelControls {
 			: levels;
 	}
 
-	/** Ultraの基底はmax、live default、近い共通標準値の順で決める。 */
+	/** Ultra の基底は `max`、live default、近い共通標準値の順で決める。 */
 	private get ultraBasis() {
 		const levels = this.standardLevels;
 		const preferred = this.metadata?.defaultReasoning;
@@ -49,13 +49,13 @@ export class CodexProviderControls implements PiModelControls {
 		);
 	}
 
-	/** Provider切替後に固有設定を持ち越さない。 */
+	/** プロバイダー切替後に固有設定を持ち越さない。 */
 	reset(): void {
 		this.override = null;
 		this.fast = false;
 	}
 
-	/** Pi標準候補とliveが明示したUltraを選択一覧へまとめる。 */
+	/** Pi 標準候補と取得したカタログが明示した Ultra を選択一覧へまとめる。 */
 	get reasoningOptions(): ConfigChoice[] {
 		return [
 			...this.standardLevels.map((value) => ({ value, name: value })),
@@ -63,7 +63,7 @@ export class CodexProviderControls implements PiModelControls {
 		];
 	}
 
-	/** Fast ModeのUI定義もCodex側が所有する。 */
+	/** Fast `Mode` の UI 定義も Codex 側が所有する。 */
 	get configOptions(): ConfigOption[] {
 		const state = this.snapshot();
 		return this.supportsFastMode
@@ -86,7 +86,7 @@ export class CodexProviderControls implements PiModelControls {
 			: [];
 	}
 
-	/** 未登録の設定IDは共通処理へ戻す。 */
+	/** 未登録の設定 ID は共通処理へ戻す。 */
 	configure(id: string, value: string, signal: AbortSignal): boolean {
 		if (id !== "fast-mode") {
 			return false;
@@ -95,12 +95,12 @@ export class CodexProviderControls implements PiModelControls {
 		return true;
 	}
 
-	/** ResourceLoader生成後にSDKセッションを接続する。 */
+	/** ResourceLoader 生成後に SDK セッションを接続する。 */
 	bind(session: AgentSession): void {
 		this.session = session;
 	}
 
-	/** Codex Responsesを使うモデルだけが固有の要求形式を受け付ける。 */
+	/** Codex Responses を使うモデルだけが固有の要求形式を受け付ける。 */
 	get supportsFastMode(): boolean {
 		return (
 			this.session?.model?.provider === "openai-codex" &&
@@ -109,7 +109,7 @@ export class CodexProviderControls implements PiModelControls {
 		);
 	}
 
-	/** Ultraはliveが明示し、安全な標準基底を適用できる場合だけ公開する。 */
+	/** Ultra は取得したカタログが明示し、安全な標準基底を適用できる場合だけ公開する。 */
 	get supportsUltra(): boolean {
 		return (
 			this.session?.model?.api === "openai-codex-responses" &&
@@ -118,7 +118,7 @@ export class CodexProviderControls implements PiModelControls {
 		);
 	}
 
-	/** SDKのモデル変更・clampを反映し、非対応のoverrideを破棄する。 */
+	/** SDK のモデル変更・範囲内への補正を反映し、非対応の `override` を破棄する。 */
 	snapshot(): ControlsState {
 		const session = this.session;
 		const model = session?.model;
@@ -149,7 +149,7 @@ export class CodexProviderControls implements PiModelControls {
 		};
 	}
 
-	/** モデル切り替えと能力変更に合わせてUltraの基底を更新する。 */
+	/** モデル切り替えと能力変更に合わせて Ultra の基底を更新する。 */
 	private synchronizeUltraBasis(
 		session: AgentSession | undefined,
 		key: string,
@@ -172,7 +172,7 @@ export class CodexProviderControls implements PiModelControls {
 		}
 	}
 
-	/** 通常値はSDKへ渡し、Ultraだけ有効な標準基底と別に保持する。 */
+	/** 通常値は SDK へ渡し、Ultra だけ有効な標準基底と別に保持する。 */
 	selectReasoning(value: string, signal: AbortSignal): void {
 		signal.throwIfAborted();
 		this.snapshot();
@@ -191,7 +191,7 @@ export class CodexProviderControls implements PiModelControls {
 		this.override = null;
 	}
 
-	/** Fast Modeは推論設定を変更しない。 */
+	/** Fast `Mode` は推論設定を変更しない。 */
 	selectFastMode(value: string, signal: AbortSignal): void {
 		signal.throwIfAborted();
 		this.snapshot();
@@ -217,7 +217,7 @@ export class CodexProviderControls implements PiModelControls {
 			: rewritten;
 	}
 
-	/** 圧縮用・fallback用要求を通常会話の履歴と混同しない。 */
+	/** 圧縮用・フォールバック用要求を通常会話の履歴と混同しない。 */
 	private matchesRequest(
 		payload: Record<string, unknown>,
 		model: NonNullable<AgentSession["model"]>,
@@ -233,7 +233,7 @@ export class CodexProviderControls implements PiModelControls {
 		);
 	}
 
-	/** Ultraと通常推論の履歴管理を切り替える。 */
+	/** Ultra と通常推論の履歴管理を切り替える。 */
 	private rewriteReasoning(
 		payload: unknown,
 		model: NonNullable<AgentSession["model"]>,
@@ -257,7 +257,7 @@ export class CodexProviderControls implements PiModelControls {
 		return undefined;
 	}
 
-	/** live能力は取得元と同じCodex endpointだけに適用し、custom endpointへ推測しない。 */
+	/** カタログで確認した能力は取得元の Codex エンドポイントだけに適用し、独自エンドポイントの能力は推測しない。 */
 	private supportsReasoningUpdates(model: AgentSession["model"]): boolean {
 		if (
 			model?.provider !== "openai-codex" ||
@@ -269,13 +269,13 @@ export class CodexProviderControls implements PiModelControls {
 		return isCatalogEndpoint(model.baseUrl);
 	}
 
-	/** 現在のモデルがCodex固有の要求形式に対応するか照合する。 */
+	/** 現在のモデルが Codex 固有の要求形式に対応するか照合する。 */
 	private unsupportedResponsesModel() {
 		return this.session?.model?.api !== "openai-codex-responses";
 	}
 }
 
-/** capability取得先と異なるendpointでは有効化しない。 */
+/** `capability` 取得先と異なるエンドポイントでは有効化しない。 */
 function isCatalogEndpoint(baseUrl: string): boolean {
 	try {
 		const url = new URL(baseUrl);
@@ -296,7 +296,7 @@ function isCatalogEndpoint(baseUrl: string): boolean {
 	}
 }
 
-/** 既存の要求フィールドを保持してUltraとFastを適用する。 */
+/** 既存の要求フィールドを保持して Ultra と Fast を適用する。 */
 function overridePayload(
 	payload: Record<string, unknown>,
 	state: ControlsState,

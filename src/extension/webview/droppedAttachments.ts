@@ -12,7 +12,7 @@ import type { Attachment } from "../../shared/composer";
 import { readAttachments } from "../session/readAttachments";
 
 let directory: Promise<string> | undefined;
-/** URIは実ファイルを確認し、内容転送は同じ名前・内容を同じ参照にする。 */
+/** URI は実ファイルを確認し、内容転送は同じ名前・内容を同じ参照にする。 */
 export async function droppedAttachments(
 	files: DroppedAttachment[],
 ): Promise<Attachment[]> {
@@ -49,7 +49,7 @@ export async function droppedAttachments(
 	await readAttachments(selected, true);
 	return selected;
 }
-/** 送信済み画像の参照を保ち、拡張機能終了時に専用領域だけを削除する。 */
+/** 送信済み画像の参照を保ち、拡張機能の終了時に専用領域だけを削除する。 */
 export async function disposeDroppedAttachments(): Promise<void> {
 	const current = directory;
 	directory = undefined;

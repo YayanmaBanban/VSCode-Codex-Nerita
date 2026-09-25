@@ -1,12 +1,12 @@
-// Shell名に対応する実行ファイルを環境から解決し、別のShellへ自動切替しない。
+// シェル名に対応する実行ファイルを環境から解決し、別のシェルへ自動切替しない。
 import { access, realpath } from "node:fs/promises";
 import { delimiter, isAbsolute, join } from "node:path";
 
-/** Tool名と実行ファイルを承認前に対応付ける。 */
+/** ツール名と実行ファイルを承認前に対応付ける。 */
 export type PowerShellKind = "powershell" | "pwsh";
 export type PowerShellExecutable = { name: PowerShellKind; executable: string };
 
-/** pwshの利用確認には、呼出元が所有するSandbox接続を使用する。 */
+/** `pwsh` の利用確認には、呼出元が所有するサンドボックス接続を使用する。 */
 export async function resolvePowerShell(
 	name: PowerShellKind = "powershell",
 	usable: (executable: string) => Promise<boolean> = () =>
@@ -28,7 +28,7 @@ export async function resolvePowerShell(
 	);
 }
 
-/** Windows PowerShellはOSの配置、pwshは通常の導入先とPATHだけを探索する。 */
+/** Windows PowerShell は OS の配置、`pwsh` は通常の導入先と PATH だけを探索する。 */
 function candidates(name: PowerShellKind): string[] {
 	if (name === "powershell") {
 		const root = process.env.SystemRoot;
@@ -50,7 +50,7 @@ function candidates(name: PowerShellKind): string[] {
 	];
 }
 
-/** App Execution Aliasやリンク先も検査し、Sandboxユーザーが使えないMSIX配置を除外する。 */
+/** App Execution Alias やリンク先も検査し、サンドボックスユーザーが使えない MSIX 配置を除外する。 */
 async function canonicalExecutable(path: string): Promise<string | undefined> {
 	try {
 		const executable = await realpath(path);

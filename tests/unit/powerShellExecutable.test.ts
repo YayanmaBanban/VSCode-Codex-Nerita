@@ -1,4 +1,4 @@
-// Shell名ごとの探索を独立させ、未導入・MSIX・Sandboxで利用不能な候補を検証する。
+// シェル名ごとの探索を独立させ、未導入・MSIX・サンドボックスで利用不能な候補を検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { mkdir, writeFile, symlink } from "node:fs/promises";
 import { delimiter, dirname, join } from "node:path";
@@ -11,7 +11,7 @@ afterEach(async () => {
 	await Promise.all(fixtures.splice(0).map((fixture) => fixture.cleanup()));
 });
 
-/** 実OSの配置を変えず、探索環境だけを専用fixtureへ向ける。 */
+/** 実 OS の配置を変えず、探索環境だけを専用フィクスチャへ向ける。 */
 async function fixture() {
 	const h = await sandboxFixture();
 	fixtures.push(h);
@@ -21,7 +21,7 @@ async function fixture() {
 	return h;
 }
 
-/** 起動はmock callbackが判定し、fixtureを実行可能なプログラムにはしない。 */
+/** 起動はモックのコールバックが判定し、フィクスチャを実行可能なプログラムにはしない。 */
 async function executable(path: string) {
 	await mkdir(dirname(path), { recursive: true });
 	await writeFile(path, "fixture");

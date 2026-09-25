@@ -1,8 +1,8 @@
-// MCPのURL誘導と基本フォームを検証し、承諾した入力だけを返す。
+// MCP の URL 誘導と基本フォームを検証し、承諾した入力だけを返す。
 import { isRecord } from "../../../../shared/validation";
 import { text, type InteractionService } from "./interactionService";
 
-/** MCPの基本フォームを型と制約で検証し、未対応形式は承諾しない。 */
+/** MCP の基本フォームを型と制約で検証し、未対応形式は承諾しない。 */
 export async function elicitation(
 	p: Record<string, unknown>,
 	ui: InteractionService,
@@ -24,7 +24,7 @@ export async function elicitation(
 	return elicitForm(schema, schema.properties, ui, signal, title, empty);
 }
 
-/** 各項目を順に収集し、最後に送信の確認を行う。 */
+/** 各項目を順に収集し、最後に送信を確認する。 */
 async function elicitForm(
 	schema: Record<string, unknown>,
 	properties: Record<string, unknown>,
@@ -98,7 +98,7 @@ function supportedField(field: unknown): field is Record<string, unknown> {
 	);
 }
 
-/** 任意項目の省略をnull、取消や不正な入力をundefinedで区別する。 */
+/** 任意項目の省略を `null`、取消や不正な入力を `undefined` で区別する。 */
 async function elicitField(
 	field: Record<string, unknown>,
 	required: boolean,
@@ -183,7 +183,7 @@ function fieldValue(type: unknown, value: string) {
 	return Number(value);
 }
 
-/** 許可されたURLで入力を促し、ユーザーの完了確認を待つ。 */
+/** 許可された URL で入力を促し、ユーザーの完了確認を待つ。 */
 async function elicitUrl(
 	p: Record<string, unknown>,
 	ui: InteractionService,

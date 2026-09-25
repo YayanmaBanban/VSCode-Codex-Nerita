@@ -1,4 +1,4 @@
-// 項目ごとの逐次出力を蓄積し、ターンIDを照合済みの通知だけを表示へ反映する。
+// 項目ごとの逐次出力を蓄積し、ターン ID を照合済みの通知だけを表示へ反映する。
 import type { ChatState, ToolSummary } from "../../../../shared/chatState";
 import { isRecord } from "../../../../shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";

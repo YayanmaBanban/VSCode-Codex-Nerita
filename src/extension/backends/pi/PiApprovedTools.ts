@@ -1,17 +1,17 @@
-// SDKの副作用ツールを包み、承認と取消を確認してから実処理へ渡す。
+// SDK の副作用ツールを包み、承認と取消を確認してから実処理へ渡す。
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { approveToolCall } from "../../security/ApprovalGuard";
 import { consumeApprovedToolCall } from "../../security/ApprovedToolCall";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import { z } from "zod";
 
-/** 実行ごとの入力をHostで確認し、許可された場合だけ戻る。 */
+/** 実行ごとの入力を Host で確認し、許可された場合だけ戻る。 */
 export type PiAuthorize = (
 	title: string,
 	signal?: AbortSignal,
 ) => Promise<AbortSignal>;
 
-/** 承認後にも取消を確認し、許可とStopが競合した場合の実行を防ぐ。 */
+/** 承認後にも取消を確認し、許可と `Stop` が競合した場合の実行を防ぐ。 */
 export function approvePiTool(
 	tool: Omit<ToolDefinition, "renderCall" | "renderResult">,
 	cwd: string,

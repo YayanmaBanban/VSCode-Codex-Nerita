@@ -1,4 +1,4 @@
-// 検索可能な認証先一覧と、SDKから要求された入力をエディター内に表示する。
+// 検索可能な認証先一覧と、SDK から要求された入力をエディター内に表示する。
 import { useState } from "react";
 import "../chat/chat.css";
 import { Check, ChevronRight, ChevronDown, Search } from "lucide-react";
@@ -74,7 +74,7 @@ function AuthInput({
 	);
 }
 
-/** providerの認証方式をアコーディオンとして並べる。 */
+/** プロバイダーの認証方式をアコーディオンとして並べる。 */
 export function PiAuthEditor({
 	state,
 	send,

@@ -1,4 +1,4 @@
-// ドロップ通信の検証と、Hostでの保存・重複排除・非対応入力の拒否を確認する。
+// ドロップ通信の検証と、Host での保存・重複排除・非対応入力の拒否を確認する。
 import { afterEach, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";

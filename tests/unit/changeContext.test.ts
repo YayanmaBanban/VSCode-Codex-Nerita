@@ -1,4 +1,4 @@
-// 実際の一時Gitリポジトリで差分範囲・除外・上限と通信境界を検証する。
+// 実際の一時 Git リポジトリで差分範囲・除外・上限と通信境界を検証する。
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
@@ -40,7 +40,7 @@ afterEach(async () => {
 			.map((cwd) => rm(cwd, { recursive: true, force: true })),
 	);
 });
-/** ユーザーのGit設定に依存しない専用リポジトリを作る。 */
+/** ユーザーの Git 設定に依存しない専用リポジトリを作る。 */
 async function repository() {
 	const cwd = await mkdtemp(join(tmpdir(), "codex-changes-"));
 	directories.push(cwd);

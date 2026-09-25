@@ -1,4 +1,4 @@
-// サーバーからの質問・MCPフォームを、取消可能なHostの入力UIへ接続する。
+// サーバーからの質問・MCP フォームを、取消可能な Host の入力 UI へ接続する。
 import { isRecord } from "../../../../shared/validation";
 import {
 	AppServerRpcError,
@@ -9,7 +9,7 @@ import type { InteractionService } from "./interactionService";
 import { userInput } from "./userInput";
 import { elicitation } from "./elicitation";
 
-/** クライアントが提供していない動的ツールや認証更新要求を実行しない。 */
+/** クライアントが提供していない動的ツールや認証更新の要求は受け付けない。 */
 export async function interactionRequest(
 	request: AppServerRequest,
 	ui: InteractionService,

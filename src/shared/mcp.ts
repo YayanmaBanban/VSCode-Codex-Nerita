@@ -1,16 +1,16 @@
-// MCP一覧の表示用データと、Host・Webview共通の検証を定義する。
+// MCP 一覧の表示用データと、Host・Webview 共通の検証を定義する。
 import { isRecord } from "./validation";
 
-/** MCPサーバーの表示に必要な名前と接続状態。 */
+/** MCP サーバーの表示に必要な名前と接続状態。 */
 export type McpServerSummary = { name: string; runtimeStatus: string | null };
 
-/** 一つのMCPメッセージの取得状態。 */
+/** 1つの MCP メッセージの取得状態。 */
 export type McpMessageContent =
 	| { status: "loading" }
 	| { status: "error" }
 	| { status: "ready"; servers: McpServerSummary[] };
 
-/** 未知の接続状態も文字列として受け付け、UIでは中立色で表示する。 */
+/** 未知の接続状態も文字列として受け付け、UI では中立色で表示する。 */
 export function isMcpServerSummary(value: unknown): value is McpServerSummary {
 	return (
 		isRecord(value) &&
@@ -20,7 +20,7 @@ export function isMcpServerSummary(value: unknown): value is McpServerSummary {
 	);
 }
 
-/** 未検証の一覧をWebviewの描画へ渡さない。 */
+/** 未検証の一覧を Webview の描画へ渡さない。 */
 export function isMcpMessageContent(
 	value: unknown,
 ): value is McpMessageContent {

@@ -1,4 +1,4 @@
-// 開始受付とターン完了を分け、早い停止・遅い通知・承認を一つの実行に限定する。
+// 開始受付とターン完了を分け、早い停止・遅い通知・承認を1つの実行に限定する。
 import { randomUUID } from "node:crypto";
 import type { ComposerReference } from "../../../shared/composerReferences";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -243,7 +243,7 @@ export abstract class CodexRun extends CodexAgents {
 			},
 		});
 	}
-	/** 完了通知にPlan本文がない場合も項目通知から保持する。 */
+	/** 完了通知に Plan 本文がない場合も項目通知から保持する。 */
 	private capturePlan(event: TurnEvent) {
 		if (
 			event.kind === "item" &&

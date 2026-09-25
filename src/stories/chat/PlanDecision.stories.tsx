@@ -1,4 +1,4 @@
-// Plan完了カードの表示と選択操作を確認するStory。
+// Plan 完了カードの表示と選択操作を確認するストーリー。
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { initialState, type ChatState } from "../../shared/chatState";

@@ -1,7 +1,7 @@
-// Composerと宣言型UIで共有する通信DTOの構造を定義する。
+// Composer と宣言型 UI で共有する通信 DTO の構造を定義する。
 import * as z from "zod";
 
-/** 既存isIdと同じUTF-16コード単位で通信用識別子を制限する。 */
+/** 既存 `isId` と同じ UTF-16 コード単位で通信用識別子を制限する。 */
 export const IdSchema = z
 	.string()
 	.refine((value) => value.length > 0 && value.length <= 256);
@@ -13,7 +13,7 @@ export const ConfigChoiceSchema = z.object({
 	description: z.string().optional(),
 });
 
-/** 候補から隠された現在値もcurrentLabelで表示できる設定。 */
+/** 候補から隠された現在値も `currentLabel` で表示できる設定。 */
 export const ConfigOptionSchema = z.object({
 	id: z.string(),
 	name: z.string(),
@@ -30,12 +30,12 @@ export const QuotaWindowSchema = z.object({
 	detail: z.string(),
 });
 
-/** Composer境界では従来未検証だったdescriptionを未知キーとして扱う。 */
+/** Composer 境界では従来未検証だった `description` を未知キーとして扱う。 */
 export const ComposerConfigOptionsSchema = z.array(
 	ConfigOptionSchema.omit({ description: true }).extend({
 		options: z.array(ConfigChoiceSchema.omit({ description: true })),
 	}),
 );
 
-/** nullは未取得を表し、取得済みの利用枠には最低1件必要。 */
+/** `null` は未取得を表し、取得済みの利用枠には最低1件必要。 */
 export const ComposerQuotaSchema = z.array(QuotaWindowSchema).min(1).nullable();

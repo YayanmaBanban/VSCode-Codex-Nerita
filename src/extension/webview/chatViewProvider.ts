@@ -130,7 +130,7 @@ export class ChatViewProvider
 			restoreScroll,
 		} satisfies HostMessage);
 	}
-	/** 検証済みの表示操作だけをHostで処理し、会話操作は既存サービスへ渡す。 */
+	/** 検証済みの表示操作だけを Host で処理し、会話操作は既存サービスへ渡す。 */
 	private async receive(
 		webview: vscode.Webview,
 		value: unknown,
@@ -287,7 +287,7 @@ export class ChatViewProvider
 		this.panel?.dispose();
 	}
 
-	/** 要求元のWebviewにだけ接続状態と保存済み表示を復元する。 */
+	/** 要求元の Webview にだけ接続状態と保存済み表示を復元する。 */
 	private async initializeView(webview: vscode.Webview) {
 		void webview.postMessage({
 			type: "ui/backendState",

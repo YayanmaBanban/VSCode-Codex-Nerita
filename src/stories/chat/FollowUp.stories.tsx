@@ -1,4 +1,4 @@
-// 受付待ち・失敗・再送を同じ入力欄で再現するフォローアップ専用Story。
+// 受付待ち・失敗・再送を同じ入力欄で再現するフォローアップ専用ストーリー。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../webview/chat/ChatApp";
@@ -32,7 +32,7 @@ function FollowUpStory({
 					return;
 				}
 				const fail = failFirst && count++ === 0;
-				// 待機中のstate更新で入力ロックが外れないことも確認する。
+				// 待機中の `state` 更新で入力ロックが外れないことも確認する。
 				timers.add(
 					setTimeout(
 						() =>
@@ -66,7 +66,7 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof FollowUpStory>;
 export default meta;
-/** フォローアップ送信の確認用Story。 */
+/** フォローアップ送信の確認用ストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Success: Story = {};
 export const Failure: Story = { args: { failFirst: true } };

@@ -1,4 +1,4 @@
-// Markdownの構造を保ちながら、検証済みの参照位置だけをチップへ置換する。
+// Markdown の構造を保ちながら、検証済みの参照位置だけをチップへ置換する。
 import {
 	pathText,
 	validReferences,
@@ -6,7 +6,7 @@ import {
 } from "../../../shared/composerReferences";
 import type { ComposerTarget } from "../../../shared/composerTargets";
 
-/** テキストと子要素だけを辿る、変換用のHTML構文木。 */
+/** テキストと子要素だけを辿る、変換用の HTML 構文木。 */
 type HtmlNode = {
 	type: string;
 	value?: string;
@@ -26,7 +26,7 @@ export function messageReferences(
 		prefix += "REF";
 	}
 	const pattern = new RegExp(`(${prefix}[0-9]+END)`, "g");
-	/** テキストだけを置換し、生のHTMLや外部URLを生成しない。 */
+	/** テキストだけを置換し、生の HTML や外部 URL を生成しない。 */
 	const plugin = () => (tree: HtmlNode) => {
 		const visit = (node: HtmlNode): void => {
 			// リンク先や画像の代替文ではチップを挿入せず、元の参照文字列を保つ。

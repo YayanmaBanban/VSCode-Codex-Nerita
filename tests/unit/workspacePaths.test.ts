@@ -1,11 +1,11 @@
-// 遅延列挙・ワークスペース境界・通信検証をVS Codeの代替APIで確認する。
+// 遅延列挙・ワークスペース境界・通信検証を VS Code の代替 API で確認する。
 import { beforeEach, expect, it, vi } from "vitest";
 const api = vi.hoisted(() => ({
 	readDirectory: vi.fn(),
 	getWorkspaceFolder: vi.fn(),
 }));
 vi.mock("vscode", () => {
-	/** テスト用URIを生成し、空白や日本語の復号も再現する。 */
+	/** テスト用 URI を生成し、空白や日本語の復号も再現する。 */
 	const parse = (value: string) => {
 		const url = new URL(value);
 		return {

@@ -1,4 +1,4 @@
-// 会話ログ・ツール・承認と実行状態を一つのスクロール領域に配置する。
+// 会話ログ・ツール・承認と実行状態を1つのスクロール領域に配置する。
 import type { RefObject } from "react";
 import type { ChatState } from "../../shared/chatState";
 import type { UiMessage } from "../../shared/messages";

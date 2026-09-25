@@ -1,4 +1,4 @@
-// 既存ConfigOptionを宣言型UIへ変換し、backend固有の既定表示をHostに閉じ込める。
+// 既存 `ConfigOption` を宣言型 UI へ変換し、バックエンド固有の既定表示を Host に閉じ込める。
 import { fastModeControl, fastModeConfigIds as tiers } from "./fastModeControl";
 import type { ConfigOption } from "../../shared/composer";
 import type {
@@ -24,7 +24,7 @@ function configControl(option: ConfigOption): NeritaUiControl {
 		? fastModeControl(option)
 		: { type: "select", option };
 }
-/** Codexは従来の未接続枠を維持し、Piは実際に公開された設定だけを表示する。 */
+/** Codex は従来の未接続枠を維持し、Pi は実際に公開された設定だけを表示する。 */
 const configContributions: UiContributionSource = (state, context) => {
 	const options: ConfigOption[] = defaults.flatMap(([id, name]) => {
 		const option =
@@ -56,7 +56,7 @@ const configContributions: UiContributionSource = (state, context) => {
 	}));
 };
 
-/** セッションごとにRegistryを所有し、別backendへの登録の漏出を防ぐ。 */
+/** セッションごとに Registry を所有し、別バックエンドへの登録の漏出を防ぐ。 */
 export function createBuiltinUiRegistry(): UiContributionRegistry {
 	const registry = new UiContributionRegistry();
 	registry.registerUiContribution("nerita.config", configContributions);

@@ -23,7 +23,7 @@ type ShinyTextProps = {
 	delay?: number;
 };
 
-/** Motionの値で文字のグラデーションを動かす。 */
+/** Motion の値で文字のグラデーションを動かす。 */
 export const ShinyText: React.FC<ShinyTextProps> = (props) => {
 	const {
 		text,

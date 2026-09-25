@@ -1,4 +1,4 @@
-// 通常のコピーで元の座標を記録し、Webviewの貼り付け本文と照合する。
+// 通常のコピーで元の座標を記録し、Webview の貼り付け本文と照合する。
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { win32 } from "node:path";
@@ -15,7 +15,7 @@ function fingerprint(text: string): string {
 export class CopiedCode implements vscode.Disposable {
 	private copied: { entry: WorkspacePath; hash: string } | undefined;
 	private registration: vscode.Disposable;
-	/** 標準コピーを置き換えず、VS Codeのコピー通知に参加する。 */
+	/** 標準コピーを置き換えず、VS Code のコピー通知に参加する。 */
 	constructor() {
 		this.registration = vscode.languages.registerDocumentPasteEditProvider(
 			"*",
@@ -59,7 +59,7 @@ export class CopiedCode implements vscode.Disposable {
 						},
 					};
 					this.copied = { entry, hash: fingerprint(text) };
-					// このメタデータはVS Code内だけで有効。WebviewではHostの記録を照合する。
+					// このメタデータは VS Code 内だけで有効。Webview では Host の記録を照合する。
 					dataTransfer.set(
 						"application/vnd.nerita.code-reference",
 						new vscode.DataTransferItem(entry.uri),

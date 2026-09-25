@@ -22,7 +22,7 @@ import { type CodexConnection } from "./runtime/connection";
 export abstract class CodexSubmission extends CodexHistory {
 	protected submissionPending = false;
 
-	/** 参照のない通常送信で、実行ID確保前に非同期待機を追加しない。 */
+	/** 参照のない通常送信で、実行 ID 確保前に非同期待機を追加しない。 */
 	private needsSubmissionContext(
 		sessions: string[],
 		changes: ChangeScope[],
@@ -43,7 +43,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		}
 	}
 
-	/** モデルのターンを開始せず、現在の会話へMCP一覧を追記する。 */
+	/** モデルのターンを開始せず、現在の会話へ MCP 一覧を追記する。 */
 	protected async showMcpStatus(sessionId: string): Promise<void> {
 		if (this.submissionPending) {
 			throw new Error("Submission pending");
@@ -133,7 +133,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		};
 		try {
 			this.checkSubmission(epoch, sessionId);
-			// Goal はAPIのモードではなく、送信する指示の接頭辞として扱う。
+			// Goal は API のモードではなく、送信する指示の接頭辞として扱う。
 			text = this.submissionText(text);
 			const context = this.needsSubmissionContext(
 				referencedSessionIds,
@@ -188,7 +188,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		}
 	}
 
-	/** Goalモードの入力に必要な接頭辞だけを補う。 */
+	/** Goal モードの入力に必要な接頭辞だけを補う。 */
 	private submissionText(text: string) {
 		if (
 			this.collaborationMode === "goal" &&

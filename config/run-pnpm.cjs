@@ -1,8 +1,8 @@
-// 更新・検証スクリプトから、起動元と同じpnpmをシェルを介さず実行する。
+// 更新・検証スクリプトから、起動元と同じ pnpm をシェルを介さず実行する。
 const { spawnSync } = require("node:child_process");
 const path = require("node:path");
 
-/** 通常版とWindows単体exe版に対応し、失敗時は後続処理を止める。 */
+/** 通常版と Windows 単体実行ファイル版に対応し、失敗時は後続処理を止める。 */
 function runPnpm(args) {
 	const executable = process.env.npm_execpath;
 	if (

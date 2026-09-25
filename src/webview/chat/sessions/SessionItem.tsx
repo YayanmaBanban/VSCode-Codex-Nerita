@@ -1,4 +1,4 @@
-// 一つのセッションの概要と独立した操作ボタンを表示する。
+// 1つのセッションの概要と独立した操作ボタンを表示する。
 import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
 import { type SetStateAction, type Dispatch, useState } from "react";
 import { SessionDelete } from "./SessionDelete";

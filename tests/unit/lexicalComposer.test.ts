@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-// LexicalノードのDOM型を参照し、描画せずに下書き形式の往復を検証する。
+// Lexical ノードの DOM 型を参照し、描画せずに下書き形式の往復を検証する。
 import { describe, expect, it } from "vitest";
 import {
 	$createParagraphNode,

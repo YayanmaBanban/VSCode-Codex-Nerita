@@ -1,4 +1,4 @@
-// 実在する祖先とcanonical pathを確認し、HostファイルToolの書込み境界を検査する。
+// 実在する祖先と正規化されたパスを確認し、Host ファイルツールの書込み境界を検査する。
 import { lstat, realpath, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import {
@@ -8,7 +8,7 @@ import {
 } from "./AgentAccessPolicy";
 import { freezeToolCall } from "./ApprovedToolCall";
 
-/** device namespace・ADS・drive相対名などの別解釈を許さない。 */
+/** デバイス名前空間・ADS・ドライブ相対名などの別解釈を許さない。 */
 export function validatePath(path: string) {
 	if (!path || path.includes("\0")) {
 		throw new Error("不正なファイルパスです。");
@@ -33,7 +33,7 @@ export function validatePath(path: string) {
 	}
 }
 
-/** ENOENTだけを新規パスと扱い、壊れたリンク・権限不足は呼出元へ返す。 */
+/** `ENOENT` だけを新規パスと扱い、壊れたリンク・権限不足は呼出元へ返す。 */
 export async function canonicalPath(
 	input: string,
 	cwd: string,
@@ -65,7 +65,7 @@ export async function canonicalPath(
 	}
 }
 
-/** Workspace Trustを通過したHostのrootsをコピーして固定する。 */
+/** Workspace Trust を通過した Host の `roots` をコピーして固定する。 */
 export async function createWorkspaceAccessPolicy(
 	roots: readonly string[],
 	windowsSandbox: WindowsSandboxImplementation = "elevated",
@@ -91,7 +91,7 @@ export async function createWorkspaceAccessPolicy(
 	});
 }
 
-/** readは外部も許可し、writeにはcanonical化したworkspace上限を適用する。 */
+/** `read` は外部も許可し、`write` には正規化したワークスペース上限を適用する。 */
 export class WorkspacePathPolicy {
 	readonly policy: AgentAccessPolicy;
 	constructor(
@@ -100,7 +100,7 @@ export class WorkspacePathPolicy {
 	) {
 		this.policy = freezeToolCall(policy);
 	}
-	/** cwdはworkspace内に限定し、Shellでの暗黙write拡大を別途検査する。 */
+	/** `cwd` はワークスペース内に限定し、シェルでの暗黙 `write` 拡大を別途検査する。 */
 	async resolveWorkspace(input: string): Promise<string> {
 		const target = await this.resolve(input, "read");
 		if (
@@ -112,7 +112,7 @@ export class WorkspacePathPolicy {
 		}
 		return target;
 	}
-	/** 検査済みの実体pathそのものをSDK operationsへ渡す。 */
+	/** 検査済みの実体 `path` そのものを SDK `operations` へ渡す。 */
 	async resolve(input: string, operation: "read" | "write"): Promise<string> {
 		const target = await canonicalPath(input, this.cwd);
 		if (operation === "write") {

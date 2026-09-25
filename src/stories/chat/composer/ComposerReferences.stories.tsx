@@ -7,7 +7,7 @@ import type { ComposerPart } from "../../../shared/composerContent";
 import { pathText } from "../../../shared/composerReferences";
 import { createMockBridge } from "../mocks/mockBridge";
 
-/** Hostの下書き復元と表示先ごとの再マウントを再現する。 */
+/** Host の下書き復元と表示先ごとの再マウントを再現する。 */
 function ReferenceStory() {
 	const [view, setView] = useState(false);
 	const [opened, setOpened] = useState("");

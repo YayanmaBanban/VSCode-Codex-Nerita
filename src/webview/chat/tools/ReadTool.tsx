@@ -1,10 +1,10 @@
-// 読み取り系ツールの範囲指定と本文を、SDKの生データを見せず表示する。
+// 読み取り系ツールの範囲指定と本文を、SDK の生データを見せず表示する。
 import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { Value } from "./ToolContent";
 import { toolLabelClass } from "./toolStyles";
 
-/** readとlsは同じテキスト出力を使い、MarkdownやHTMLとして実行しない。 */
+/** `read` と `ls` は同じテキスト出力を使い、Markdown や HTML として実行しない。 */
 export function ReadTool({ tool }: { tool: ToolSummary }) {
 	const input = isRecord(tool.rawInput) ? tool.rawInput : {};
 	const texts = (tool.content ?? []).flatMap((part) => {

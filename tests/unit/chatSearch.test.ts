@@ -6,7 +6,7 @@ import {
 	type FindOptions,
 } from "../../src/webview/chat/search/findMatches";
 
-/** 検索設定を部分指定して、純粋な文字列検索を実行する。 */
+/** 検索設定を部分指定して、文字列を検索する。 */
 function matches(
 	text: string,
 	query: string,

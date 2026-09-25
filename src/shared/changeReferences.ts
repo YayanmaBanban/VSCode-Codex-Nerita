@@ -1,4 +1,4 @@
-// Git差分の対象範囲を固定し、チップとHost要求で同じ識別子を使う。
+// Git 差分の対象範囲を固定し、チップと Host 要求で同じ識別子を使う。
 export const changeScopes = {
 	uncommitted: {
 		name: "Uncommitted",
@@ -44,7 +44,7 @@ export function isChangeReference(value: unknown): value is ChangeReference {
 	);
 }
 
-/** 送信範囲の数と値をHost境界で検証する。 */
+/** 送信範囲の数と値を Host 境界で検証する。 */
 export function validChangeScopes(
 	value: unknown,
 ): value is ChangeScope[] | undefined {

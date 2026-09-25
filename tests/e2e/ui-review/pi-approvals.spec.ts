@@ -1,4 +1,4 @@
-// Piの承認カードと完了・拒否・停止を明暗・狭幅で操作して撮影する。
+// Pi の承認カードと完了・拒否・停止を明暗・狭幅で操作して撮影する。
 import { test, expect, type Locator } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -93,7 +93,7 @@ for (const theme of ["dark", "light"] as const) {
 	}
 }
 
-/** OSごとのShell表示とHostファイル操作の表示を区別する。 */
+/** OS ごとのシェル表示と Host ファイル操作の表示を区別する。 */
 async function expectExecutionScope(approval: Locator, tool: string) {
 	if (tool === "bash") {
 		await expect(approval).toContainText("Pi Shell（OSの権限で実行）");

@@ -1,4 +1,4 @@
-// 活動イベントと協調ツールのスナップショットを、Thread単位のカードへ正規化する。
+// 活動イベントと協調ツールのスナップショットを、スレッド単位のカードへ正規化する。
 import type { ChatState } from "../../../../shared/chatState";
 import {
 	agentIconKey,
@@ -9,7 +9,7 @@ import {
 import { isRecord } from "../../../../shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";
 
-/** App ServerのThread状態を表示状態へ変換する。 */
+/** App Server のスレッド状態を表示状態へ変換する。 */
 export function threadAgentStatus(value: unknown): AgentStatus | undefined {
 	const type = isRecord(value) ? value.type : value;
 	if (type === "active") {
@@ -23,7 +23,7 @@ export function threadAgentStatus(value: unknown): AgentStatus | undefined {
 	}
 	return undefined;
 }
-/** idleは明示的な完了・停止を取り消さない。activeは次の実行として扱う。 */
+/** `idle` は明示的な完了・停止を取り消さない。`active` は次の実行として扱う。 */
 export function withThreadStatus(
 	agent: SubAgentSummary,
 	status: AgentStatus,
@@ -126,7 +126,7 @@ function activityAgentPatch(
 	if (!previous && item.kind !== "started") {
 		return {};
 	}
-	// 同じ活動のstarted/completed通知やturn最終一覧による再適用を防ぐ。
+	// 同じ活動の `started/completed` 通知やターン最終一覧による再適用を防ぐ。
 	if (previous?.activityItemId === item.id) {
 		return {};
 	}

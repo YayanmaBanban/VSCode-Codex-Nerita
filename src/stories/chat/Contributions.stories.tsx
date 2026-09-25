@@ -1,4 +1,4 @@
-// HostのRegistryを模した状態更新で、同じUIのbackend/provider差分を観察する。
+// Host の Registry を模した状態更新で、同じ UI の `backend/provider` 差分を観察する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { BackendId } from "../../shared/backend";
@@ -15,7 +15,7 @@ const models = [
 	{ value: "local/demo", name: "Local model" },
 ];
 
-/** 実サービスへ接続せず、Hostと同じ条件解決・config/set契約を使う。 */
+/** 実サービスへ接続せず、Host と同じ条件解決・`config/set` 契約を使う。 */
 function ContributionStory({
 	backend,
 	provider,
@@ -113,13 +113,13 @@ function ContributionStory({
 	const selectedProvider = state.configOptions
 		.find((option) => option.id === "model")!
 		.currentValue.split("/")[0]!;
-	// previewはStoryだけの能力であり、Phase 8のFast Modeを実装済みとは扱わない。
+	// `preview` はストーリーだけの能力であり、Phase 8の Fast `Mode` を実装済みとは扱わない。
 	const contributions = registry.resolve(state, {
 		backend,
 		provider: selectedProvider,
 		capabilities: ["preview"],
 	});
-	/** 通信の応答を模し、UIのローカル値ではなくHostの再生成結果を反映する。 */
+	/** 通信の応答を模し、UI のローカル値ではなく Host の再生成結果を反映する。 */
 	const send = (message: UiMessage) => {
 		setLast(message);
 		if (message.type === "config/set") {
@@ -146,7 +146,7 @@ function ContributionStory({
 			}));
 		}
 	};
-	// previewの内部状態を通常ConfigOption表示へ二重公開しない。
+	// `preview` の内部状態を通常 `ConfigOption` 表示へ二重公開しない。
 	contributions.items = contributions.items.filter(
 		(item) => item.id !== "config:preview",
 	);

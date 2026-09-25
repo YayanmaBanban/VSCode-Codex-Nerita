@@ -11,7 +11,7 @@ import type { ComposerPart } from "../../../shared/composerContent";
 import { contentKey, $readParts, $writeParts } from "./content";
 import { registerComposerCommands } from "./commands";
 
-/** 保存・復元・文字数検証とキー操作を一つのエディタへ接続する。 */
+/** 保存・復元・文字数検証とキー操作を1つのエディタへ接続する。 */
 export function ComposerPlugin(props: {
 	locked?: boolean;
 	parts: ComposerPart[];
@@ -105,7 +105,7 @@ export function ComposerPlugin(props: {
 				],
 			},
 		);
-		// 送信後にUndoで送信済みの文面が戻らないよう、外部置換時は履歴を分ける。
+		// 送信済みの文面を取り消し操作で復元させないよう、外部置換時は履歴を分ける。
 		editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
 	}, [editor, props.parts]);
 	return null;

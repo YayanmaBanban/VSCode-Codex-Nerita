@@ -33,7 +33,7 @@ export abstract class CodexLifecycle extends SessionState {
 	): Promise<unknown>;
 	/** 実行の待機と承認を解除する。 */
 	protected abstract resetRun(): void;
-	/** 新しいthreadに機能別の初期状態を準備する。 */
+	/** 新しいスレッドに機能別の初期状態を準備する。 */
 	protected async initializedThread(_thread: StartedThread): Promise<void> {}
 	/** ログイン完了後も同じ接続で認証を確認する。 */
 	protected async authenticate(method: string): Promise<void> {
@@ -109,7 +109,7 @@ export abstract class CodexLifecycle extends SessionState {
 		}
 	}
 
-	/** 旧接続の終了後に、初期化・認証確認・新規 thread 作成を行う。 */
+	/** 旧接続の終了後は初期化・認証確認を済ませ、新規スレッドを作成する。 */
 	async connect(): Promise<void> {
 		this.disconnect();
 		const epoch = this.epoch;

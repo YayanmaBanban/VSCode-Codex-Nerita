@@ -1,4 +1,4 @@
-// 候補一覧のキー操作を本文・検索欄で共有し、IME確定を選択として扱わない。
+// 候補一覧のキー操作を本文・検索欄で共有し、IME 確定を選択として扱わない。
 import type { LexicalEditor } from "lexical";
 import type { Completion } from "./completions";
 import type { CompletionItem } from "./completionItems";
@@ -15,7 +15,7 @@ type CompletionKeyboardOptions = {
 	setSelected: (index: number) => void;
 };
 
-/** trueを返したキーだけ呼び出し元で伝播を止め、通常の編集操作を残す。 */
+/** `true` を返したキーだけ呼び出し元で伝播を止め、通常の編集操作を残す。 */
 export function handleCompletionKey(
 	event: KeyboardEvent,
 	options: CompletionKeyboardOptions,
@@ -52,7 +52,7 @@ function backFromCategory(
 	return event.key === "ArrowLeft" && category && !inSearch;
 }
 
-/** IME入力中のキーを候補操作から除外する。 */
+/** IME 入力中のキーを候補操作から除外する。 */
 function composingCompletion(event: KeyboardEvent, editor: LexicalEditor) {
 	return event.isComposing || event.keyCode === 229 || editor.isComposing();
 }

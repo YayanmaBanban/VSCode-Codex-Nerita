@@ -1,4 +1,4 @@
-// ブラウザ認証の通知と応答の順序を吸収し、秘密情報をUIへ渡さない。
+// ブラウザ認証の通知と応答の順序を吸収し、秘密情報を UI へ渡さない。
 import type { CodexClient } from "../CodexClient";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import { isRecord } from "../../../../shared/validation";
@@ -8,10 +8,10 @@ export type AuthService = {
 	open: (url: string) => Promise<void>;
 	apiKey: () => string | undefined;
 };
-/** 一つの接続のログインだけを待機する。 */
+/** 1つの接続のログインだけを待機する。 */
 export class AuthFlow {
 	private complete: ((id: string, success: boolean) => void) | undefined;
-	/** login/completed以外の通知は通常の状態管理へ渡す。 */
+	/** `login/completed` 以外の通知は通常の状態管理へ渡す。 */
 	notification(message: AppServerNotification): boolean {
 		if (message.method !== "account/login/completed") {
 			return false;
@@ -52,7 +52,7 @@ export class AuthFlow {
 			resolve = yes;
 			reject = no;
 		});
-		// URLを開く前に失敗・取消が起きても未処理の拒否にしない。
+		// URL を開く前に失敗・取消が起きても未処理の拒否にしない。
 		void done.catch(() => undefined);
 		this.complete = (id, success) => {
 			if (!loginId) {

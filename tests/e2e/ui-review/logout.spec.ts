@@ -1,4 +1,4 @@
-// 両方のログアウト入口と再ログイン、入力の改行・送信を実UIで検証する。
+// 両方のログアウト入口と再ログイン、入力の改行・送信を実 UI で検証する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

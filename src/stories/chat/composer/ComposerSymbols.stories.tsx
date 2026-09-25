@@ -22,7 +22,7 @@ function SymbolStory() {
 				}
 				if (message.type === "workspace/searchSymbols") {
 					setQueries((previous) => [...previous, message.query]);
-					// 遅延はStory専用。実装の待機条件はUIの状態で検証する。
+					// 遅延はストーリー専用。実装の待機条件は UI の状態で検証する。
 					setTimeout(
 						() => {
 							mock.emit(mockWorkspaceSymbols(message));
@@ -60,6 +60,6 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof SymbolStory>;
 export default meta;
-/** 検索から挿入・送信まで操作できるStory。 */
+/** 検索から挿入・送信まで操作できるストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Search: Story = {};

@@ -1,4 +1,4 @@
-// 接続世代で古いSDKの結果を排除し、起動・終了中のセッションも回収する。
+// 接続世代で古い SDK の結果を排除し、起動・終了中のセッションも回収する。
 import { type ChatState, initialState } from "../../../shared/chatState";
 import { SessionState } from "../../session/sessionState";
 import type { PiFactory, PiSession } from "./PiRuntime";
@@ -7,7 +7,7 @@ import type { PiResumeTarget } from "./PiSessionStore";
 import { restorePiHistory } from "./PiHistoryMapper";
 import type { ContributionContext } from "../../ui-contributions/contributionConditions";
 
-/** 実RuntimeはShell・子Runtimeまで回収し、テスト接続は従来のSDK契約を使う。 */
+/** 実 Runtime はシェル・子 Runtime まで回収し、テスト接続は従来の SDK 契約を使う。 */
 async function closePiSession(session: PiSession): Promise<void> {
 	if (session.close) {
 		await session.close();
@@ -20,9 +20,9 @@ async function closePiSession(session: PiSession): Promise<void> {
 	}
 }
 
-/** Piの接続と保存セッションの寿命を管理する。 */
+/** Pi の接続と保存セッションの寿命を管理する。 */
 export abstract class PiLifecycle extends SessionState {
-	/** 選択モデルのproviderはbackendとは別にHostで解決する。 */
+	/** 選択モデルのプロバイダーはバックエンドとは別に Host で解決する。 */
 	protected override contributionContext(): ContributionContext {
 		return {
 			backend: "pi",
@@ -75,7 +75,7 @@ export abstract class PiLifecycle extends SessionState {
 		return this.opening!.signal;
 	}
 
-	/** SDK生成を注入し、実接続とテストで同じ状態遷移を使う。 */
+	/** SDK 生成を注入し、実接続とテストで同じ状態遷移を使う。 */
 	constructor(private readonly factory: PiFactory) {
 		super();
 		this.state.attachmentsSupported = false;
@@ -93,7 +93,7 @@ export abstract class PiLifecycle extends SessionState {
 		void settled.then(() => this.closing.delete(settled));
 	}
 
-	/** 旧セッション終了後に新しいSDKセッションを公開する。 */
+	/** 旧セッション終了後に新しい SDK セッションを公開する。 */
 	async connect(
 		resume?: PiResumeTarget,
 		preserveCurrent = false,
@@ -200,7 +200,7 @@ export abstract class PiLifecycle extends SessionState {
 		}
 	}
 
-	/** 累積課金量ではなくSDKの現在のコンテキスト推定量を共有形式に変換する。 */
+	/** 累積課金量ではなく SDK の現在のコンテキスト推定量を共有形式に変換する。 */
 	protected contextUsage() {
 		const usage = this.runtime?.getContextUsage();
 		if (
@@ -216,7 +216,7 @@ export abstract class PiLifecycle extends SessionState {
 		return { used: usage.tokens, size: usage.contextWindow };
 	}
 
-	/** 復元済みのSDKセッションとモデル情報をUIへ公開する。 */
+	/** 復元済みの SDK セッションとモデル情報を UI へ公開する。 */
 	private publishConnectedSession(
 		restored: Pick<ChatState, "messages" | "tools" | "sessionTitle">,
 		cwd: string,
@@ -259,7 +259,7 @@ export abstract class PiLifecycle extends SessionState {
 		this.refreshQuota();
 	}
 
-	/** 保存履歴が壊れている場合は新しいSDKセッションを回収する。 */
+	/** 保存履歴が壊れている場合は新しい SDK セッションを回収する。 */
 	private restoreSessionHistory(session: PiSession, cwd: string) {
 		let restored: ReturnType<typeof restorePiHistory>;
 		try {
@@ -283,7 +283,7 @@ export abstract class PiLifecycle extends SessionState {
 		}
 	}
 
-	/** 通知を無効化してからSDKの終了を待つ。 */
+	/** 通知を無効化してから SDK の終了を待つ。 */
 	private disconnect(): void {
 		this.cancelQuota();
 		this.epoch++;
@@ -298,7 +298,7 @@ export abstract class PiLifecycle extends SessionState {
 		}
 	}
 
-	/** workspace変更後に旧cwdへの送信を禁止する。 */
+	/** ワークスペース変更後に旧 `cwd` への送信を禁止する。 */
 	invalidate(): void {
 		this.disconnect();
 		const { revision: _revision, ...empty } = initialState();

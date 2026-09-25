@@ -135,7 +135,7 @@ it("UTF-8添付・画像参照を変換し、バイナリと容量超過を拒�
 		await rm(dir, { recursive: true, force: true });
 	}
 });
-/** 外部のUIを開かない入力サービス。 */
+/** 外部の UI を開かない入力サービス。 */
 function dialogs() {
 	return {
 		input: vi.fn<InteractionService["input"]>(),

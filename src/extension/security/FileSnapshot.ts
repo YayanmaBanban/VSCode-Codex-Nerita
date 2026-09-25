@@ -1,4 +1,4 @@
-// 承認したファイルと既存祖先の同一性を保持する。Host検査はOS Sandboxと同じ競合耐性を保証しない。
+// 承認したファイルと既存祖先の同一性を保持する。Host 検査は OS サンドボックスと同じ競合耐性を保証しない。
 import { createHash } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -6,7 +6,7 @@ import { type WorkspacePathPolicy } from "./WorkspacePathPolicy";
 
 /** 既存祖先の入替えを検出し、ディレクトリ内の無関係な変更は許容する。 */
 type Entry = { path: string; dev: number; ino: number; birthtimeMs: number };
-/** 内容も比較し、同じpathへ差し替えたファイルの上書きを防ぐ。 */
+/** 内容も比較し、同じ `path` へ差し替えたファイルの上書きを防ぐ。 */
 export type FileSnapshot = {
 	input: string;
 	path: string;
@@ -14,7 +14,7 @@ export type FileSnapshot = {
 	file: (Entry & { digest: string; nlink: number }) | null;
 };
 
-/** 承認前に対象をcanonical化し、内容と既存祖先をコピーする。 */
+/** 承認前に対象を正規化し、内容と既存祖先をコピーする。 */
 export async function snapshotFile(
 	paths: WorkspacePathPolicy,
 	input: string,

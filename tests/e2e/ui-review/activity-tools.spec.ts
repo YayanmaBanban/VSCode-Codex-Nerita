@@ -1,4 +1,4 @@
-// 専用本文・アイコンと、画像リンクが既存のHost通信を使うことを検証する。
+// 専用本文・アイコンと、画像リンクが既存の Host 通信を使うことを検証する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

@@ -1,4 +1,4 @@
-// 未導入パッケージのHost実行を避け、既存リソースだけがloaderへ渡ることを検証する。
+// 未導入パッケージの Host 実行を避け、既存リソースだけが `loader` へ渡ることを検証する。
 import { sandboxFixture } from "./sandboxFixtures";
 import { join } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";

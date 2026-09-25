@@ -1,4 +1,4 @@
-// Agentの状態一覧と、親の下書きを保持する子・孫Thread閲覧を再現する。
+// Agent の状態一覧と、親の下書きを保持する子・孫スレッド閲覧を再現する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { agentIconKeys, type SubAgentSummary } from "../../shared/subAgents";
@@ -130,7 +130,7 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof AgentsStory>;
 export default meta;
-/** ネスト閲覧を確認するStory。 */
+/** ネスト閲覧を確認するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Viewer: Story = {};
 export const States: Story = { render: () => <StatesStory /> };

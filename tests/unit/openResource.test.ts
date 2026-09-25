@@ -1,11 +1,11 @@
-// ファイル・フォルダの表示先と、実行可能URIを拒否するHost境界を確認する。
+// ファイル・フォルダの表示先と、実行可能 URI を拒否する Host 境界を確認する。
 import { beforeEach, expect, it, vi } from "vitest";
 const api = vi.hoisted(() => ({ stat: vi.fn(), executeCommand: vi.fn() }));
 vi.mock("vscode", () => ({
 	Range: class {
 		start: { line: number; character: number };
 		end: { line: number; character: number };
-		/** VS Codeの座標を保持するテスト用範囲。 */
+		/** VS Code の座標を保持するテスト用範囲。 */
 		constructor(sl: number, sc: number, el: number, ec: number) {
 			this.start = { line: sl, character: sc };
 			this.end = { line: el, character: ec };

@@ -1,11 +1,11 @@
-// 承認と実行で同じ平文argvを使い、文字コードの初期化もsnapshotへ含める。
+// 承認と実行で同じ平文 `argv` を使い、文字コードの初期化もスナップショットへ含める。
 import type { PowerShellExecutable } from "./PowerShellExecutable";
 
-/** Console設定がSandboxに拒否されても通常実行は維持し、未適用を出力に残す。 */
+/** Console 設定がサンドボックスに拒否されても通常実行は維持し、未適用を出力に残す。 */
 function utf8Setup(): string[] {
 	return [
-		// PowerShell側で出力を捨てると旧CodePageがcacheされるため、固定のcmd内で抑制する。
-		// 制約言語は維持し、ConsoleのコードページだけをWindows標準コマンドで設定する。
+		// PowerShell 側で出力を捨てると旧 CodePage がキャッシュされるため、固定の `cmd` 内で抑制する。
+		// 制約言語は維持し、Console のコードページだけを Windows 標準コマンドで設定する。
 		'& "$env:SystemRoot\\System32\\cmd.exe" /d /c \'"%SystemRoot%\\System32\\chcp.com" 65001 >nul\'',
 		...[
 			"$OutputEncoding",
@@ -18,7 +18,7 @@ function utf8Setup(): string[] {
 	];
 }
 
-/** 本文は単一引数。profile・ExecutionPolicy変更・暗黙のBase64化は使用しない。 */
+/** 本文は単一引数。profile・`ExecutionPolicy` 変更・暗黙の Base64 化は使用しない。 */
 export function powerShellCommand(
 	shell: PowerShellExecutable,
 	body: string,

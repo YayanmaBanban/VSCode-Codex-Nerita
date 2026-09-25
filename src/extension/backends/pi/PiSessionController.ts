@@ -1,10 +1,10 @@
-// 検証済みWebviewメッセージをPiの最小機能へ接続する。
+// 検証済み Webview メッセージを Pi の最小機能へ接続する。
 import type { BackendSession } from "../../session/chatSession";
 import { isUiMessage } from "../../../shared/uiMessageValidation";
 import type { UiMessage } from "../../../shared/messages";
 import { PiHistory } from "./PiHistory";
 
-/** Codexと同じ通信境界で送信・停止・再接続・新規会話を公開する。 */
+/** Codex と同じ通信境界で送信・停止・再接続・新規会話を公開する。 */
 export class PiSessionController extends PiHistory implements BackendSession {
 	private seen = new Set<string>();
 	private authAbort: AbortController | undefined;
@@ -49,7 +49,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		}
 	}
 
-	/** 会話IDと実行IDを確認し、古い画面からのStopを拒否する。 */
+	/** 会話 ID と実行 ID を確認し、古い画面からの `Stop` を拒否する。 */
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
@@ -206,7 +206,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			this.track(operation);
 			await operation;
 		} catch {
-			// providerの例外に認証値が含まれる可能性があるため、そのまま表示しない。
+			// プロバイダーの例外は認証値を含む可能性があるため、そのまま表示しない。
 			throw new Error(
 				"Piの認証・モデル・推論レベル設定を完了できませんでした。取消または設定内容を確認してください。",
 			);
@@ -226,7 +226,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		}
 	}
 
-	/** providerやモデルの変更で再利用できない利用枠を破棄する。 */
+	/** プロバイダーやモデルの変更で再利用できない利用枠を破棄する。 */
 	private invalidateConfiguredQuota(
 		message:
 			| {

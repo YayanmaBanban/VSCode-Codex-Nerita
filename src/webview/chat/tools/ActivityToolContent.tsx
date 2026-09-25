@@ -1,4 +1,4 @@
-// 推論のMarkdownと、画像・Web検索の参照先を専用本文として表示する。
+// 推論の Markdown と、画像・Web 検索の参照先を専用本文として表示する。
 import type { ToolSummary } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import { isRecord } from "../../../shared/validation";
@@ -36,7 +36,7 @@ export function ThinkTool({ tool }: ActivityToolProps) {
 	);
 }
 
-/** パスの予約文字をURIへエスケープし、相対パスは実行時のcwdで解決する。 */
+/** パスの予約文字を URI へエスケープし、相対パスは実行時の `cwd` で解決する。 */
 function fileUri(path: string, cwd?: string | null): string | undefined {
 	let normalized = path.replaceAll("\\", "/");
 	if (!normalized.startsWith("/") && !/^[a-z]:\//i.test(normalized)) {
@@ -95,7 +95,7 @@ export function WebSearchTool({ tool }: ActivityToolProps) {
 	if (!label) {
 		return null;
 	}
-	// 検索語は検索リンクへ、URLはHTTP(S)だけを直接開く。
+	// 検索語は検索リンクへ、URL は HTTP(S)だけを直接開く。
 	const href = /^https?:\/\//i.test(label)
 		? label
 		: `https://www.google.com/search?q=${encodeURIComponent(label)}`;
@@ -122,7 +122,7 @@ function contentText(content: unknown) {
 	return "";
 }
 
-/** UNC・絶対パス・ドライブパスに対応するURIの区切りを返す。 */
+/** UNC・絶対パス・ドライブパスに対応する URI の区切りを返す。 */
 function fileUriSlashes(normalized: string) {
 	if (normalized.startsWith("//")) {
 		return "";
@@ -133,7 +133,7 @@ function fileUriSlashes(normalized: string) {
 	return "///";
 }
 
-/** 空でない検索語を優先し、なければ検索先URLを表示する。 */
+/** 空でない検索語を優先し、なければ検索先 URL を表示する。 */
 function searchLabel(query: unknown, url: unknown) {
 	if (typeof query === "string" && query.trim()) {
 		return query;

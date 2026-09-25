@@ -1,4 +1,4 @@
-// 配布先でのESM解決・資産参照・依存のバージョン分離を実ファイルで検証する。
+// 配布先での ESM 解決・資産参照・依存のバージョン分離を実ファイルで検証する。
 import assert from "node:assert/strict";
 import {
 	mkdtemp,
@@ -26,7 +26,7 @@ async function fixture(t) {
 	return root;
 }
 
-/** package.jsonのexportsにはimport条件のみを設け、内部パスへの依存を検出する。 */
+/** package.json の exports にはインポート条件のみを設け、内部パスへの依存を検出する。 */
 async function makePackage(directory, name, code, metadata = {}) {
 	await mkdir(directory, { recursive: true });
 	await writeFile(
@@ -42,7 +42,7 @@ async function makePackage(directory, name, code, metadata = {}) {
 	await writeFile(path.join(directory, "index.js"), code);
 }
 
-/** VSIXが参照先の開発環境を必要としないことを全資産で確認する。 */
+/** VSIX が参照先の開発環境を必要としないことを全資産で確認する。 */
 async function assertNoLinks(directory) {
 	for (const entry of await readdir(directory, { withFileTypes: true })) {
 		const file = path.join(directory, entry.name);

@@ -1,7 +1,7 @@
-// 会話開始時のsandboxを検証し、元の権限へ戻すために保持する。
+// 会話開始時のサンドボックスを検証し、元の権限へ戻すために保持する。
 import type { SandboxPolicy } from "../codex-app-server/v2/SandboxPolicy";
 import { isRecord } from "../../../../shared/validation";
-/** 利用する全フィールドを検証してsandboxを返す。 */
+/** 利用する全フィールドを検証してサンドボックスを返す。 */
 export function parseSandbox(value: unknown): SandboxPolicy {
 	if (!isRecord(value)) {
 		throw new Error("Invalid sandbox");
@@ -22,7 +22,7 @@ export function parseSandbox(value: unknown): SandboxPolicy {
 	return parseWritableSandbox(value);
 }
 
-/** 書き込み可能なsandboxの全設定を検証する。 */
+/** 書き込み可能なサンドボックスの全設定を検証する。 */
 function parseWritableSandbox(value: Record<string, unknown>): SandboxPolicy {
 	if (
 		value.type === "workspaceWrite" &&

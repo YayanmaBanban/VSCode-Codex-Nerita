@@ -1,4 +1,4 @@
-// Pi候補と補助metadataの独立性、Reasoning能力、取消競合を検証する。
+// Pi 候補と補助メタデータの独立性、推論能力、取消競合を検証する。
 import { describe, expect, it } from "vitest";
 import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
 import { catalogHarness, liveModel } from "./piCatalogHarness";

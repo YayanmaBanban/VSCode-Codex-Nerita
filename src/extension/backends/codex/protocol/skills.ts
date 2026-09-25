@@ -2,7 +2,7 @@
 import { isRecord } from "../../../../shared/validation";
 import { validSkills, type SkillSummary } from "../../../../shared/skills";
 
-/** App Serverの一覧を表示と送信に共通の候補へ正規化する。 */
+/** App Server の一覧を表示と送信に共通の候補へ正規化する。 */
 export function parseSkills(value: unknown): SkillSummary[] {
 	if (!isRecord(value) || !Array.isArray(value.data)) {
 		throw new Error("Invalid skills");

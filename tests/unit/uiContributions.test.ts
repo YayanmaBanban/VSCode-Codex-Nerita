@@ -1,4 +1,4 @@
-// Host条件解決・通信検証・状態更新での再生成をUIなしで検証する。
+// Host 条件解決・通信検証・状態更新での再生成を UI なしで検証する。
 import { describe, expect, it } from "vitest";
 import { initialState, type ChatState } from "../../src/shared/chatState";
 import type { NeritaUiContribution } from "../../src/shared/uiContributions";
@@ -134,7 +134,7 @@ describe("UI Contribution通信", () => {
 		Object.defineProperty(h.runtime, "model", {
 			get: () => ({ provider, id: "demo" }),
 		});
-		/** 内部登録を追加したControllerで実際のライフサイクルを通す。 */
+		/** 内部登録を追加した `Controller` で実際のライフサイクルを通す。 */
 		class Controller extends PiSessionController {
 			register() {
 				this.uiRegistry.registerUiContribution("test", () => [

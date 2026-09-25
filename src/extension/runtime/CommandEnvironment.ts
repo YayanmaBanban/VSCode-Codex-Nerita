@@ -1,8 +1,8 @@
-// Shellへ必要なOS変数だけを渡し、RPCの上書き仕様に合わせて不要な継承値を除去する。
+// シェルへ必要な OS 変数だけを渡し、RPC の上書き仕様に合わせて不要な継承値を除去する。
 const allowed =
 	/^(?:systemroot|windir|systemdrive|comspec|path|pathext|temp|tmp|programfiles|programfiles\(x86\)|programw6432|programdata|userprofile|homedrive|homepath|localappdata|appdata|os|processor_architecture|number_of_processors)$/i;
 
-/** provider token等の値をログや承認画面へ渡さない。 */
+/** provider `token` 等の値をログや承認画面へ渡さない。 */
 export function commandEnvironment(
 	env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string | null> {
@@ -14,7 +14,7 @@ export function commandEnvironment(
 	);
 }
 
-/** 専用App Server自体にも認証用環境を継承させず、設定の所在だけ維持する。 */
+/** 専用 App Server 自体にも認証用環境を継承させず、設定の所在だけ維持する。 */
 export function sandboxServerEnvironment(): NodeJS.ProcessEnv {
 	const env: NodeJS.ProcessEnv = {};
 	for (const [key, value] of Object.entries(commandEnvironment())) {

@@ -1,4 +1,4 @@
-// Lexicalの編集状態と、Hostへ保存する下書き断片を相互変換する。
+// Lexical の編集状態と、Host へ保存する下書き断片を相互変換する。
 import {
 	$createParagraphNode,
 	$getRoot,

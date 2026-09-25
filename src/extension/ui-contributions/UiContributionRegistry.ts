@@ -16,7 +16,7 @@ export type UiContributionSource = (
 	context: ContributionContext,
 ) => readonly NeritaUiContribution[];
 
-/** 重複登録を拒否し、解除をセッションの寿命に結び付けられるRegistry。 */
+/** 重複登録を拒否し、解除をセッションの寿命に結び付けられる Registry。 */
 export class UiContributionRegistry {
 	private sources = new Map<string, UiContributionSource>();
 
@@ -38,7 +38,7 @@ export class UiContributionRegistry {
 		};
 	}
 
-	/** 条件を除去し、同順位はID順にして安定した表示を作る。 */
+	/** 条件を除去し、同順位は ID 順にして安定した表示を作る。 */
 	resolve(
 		state: Readonly<ChatState>,
 		context: ContributionContext,

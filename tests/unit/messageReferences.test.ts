@@ -1,4 +1,4 @@
-// 送信本文の位置補正・境界検証と、両backendの参照情報の保持を確認する。
+// 送信本文の位置補正・境界検証と、両バックエンドの参照情報の保持を確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import {
 	promptContent,

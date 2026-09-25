@@ -109,7 +109,7 @@ test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) 
 	await page.getByRole("button", { name: "接続エラー：再接続" }).click();
 	await expect(page.locator(".connection-beam")).toHaveCount(0);
 	await expect(page.locator(".confetti-piece")).toHaveCount(12);
-	// CSSアニメーションの時刻を直接固定し、タイマー経過とは分けて撮影する。
+	// CSS アニメーションの時刻を直接固定し、タイマー経過とは分けて撮影する。
 	for (const [label, time] of [
 		["initial", 0],
 		["early", 100],

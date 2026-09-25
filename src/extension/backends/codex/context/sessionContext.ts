@@ -7,7 +7,7 @@ import type { AdditionalContext } from "./additionalContext";
 
 /** ユーザーに再試行・参照解除を案内できる読み込み失敗。 */
 export class SessionContextError extends Error {
-	/** 生のRPCエラーや会話本文をエラー表示へ漏らさない。 */
+	/** 生の RPC エラーや会話本文をエラー表示へ漏らさない。 */
 	constructor() {
 		super(
 			"参照セッションを読み込めませんでした。同じ作業フォルダーの終了済みセッションを選び直すか、参照を外して再送してください。",
@@ -15,7 +15,7 @@ export class SessionContextError extends Error {
 	}
 }
 
-/** 古い接続・別cwd・実行中の会話を参照しない。 */
+/** 古い接続・別 `cwd`・実行中の会話を参照しない。 */
 function checkThread(
 	thread: HistoryThread,
 	id: string,

@@ -1,4 +1,4 @@
-// 移行前guardと同じ入力を比較し、境界差・未知キー・元データ保持を固定する。
+// 移行前の検証処理と同じ入力を比較し、境界差・未知キー・元データ保持を固定する。
 import { describe, expect, it } from "vitest";
 import {
 	ConfigChoiceSchema,
@@ -59,7 +59,7 @@ const percentages = [
 	undefined,
 ];
 
-/** 単一controlを解決済み通信形式へ包む。 */
+/** 単一コントロールを解決済み通信形式へ包む。 */
 function contribution(control: unknown, change: Record<string, unknown> = {}) {
 	return {
 		surface: "pi",
@@ -67,7 +67,7 @@ function contribution(control: unknown, change: Record<string, unknown> = {}) {
 	};
 }
 
-/** 同じ入力集合について旧guardとの受理・拒否の一致を確認する。 */
+/** 同じ入力集合について旧検証処理との受理・拒否の一致を確認する。 */
 function compareUi(value: unknown) {
 	expect(isUiContributions(value), JSON.stringify(value)).toBe(
 		legacyUi(value),
@@ -245,7 +245,7 @@ describe("Phase 9 通信Schema", () => {
 	});
 });
 
-/** 選択項目と候補の各フィールド変異を旧guardと比較する。 */
+/** 選択項目と候補の各フィールド変異を旧検証処理と比較する。 */
 function compareSelectMutations() {
 	for (const field of [
 		"id",

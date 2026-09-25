@@ -1,4 +1,4 @@
-// Shell Toolが依存する最小契約。実装の差し替えはHostの組み立て時だけ行う。
+// Shell ツールが依存する最小契約。実装の差し替えは Host の組み立て時だけ行う。
 import type {
 	ApprovedToolCall,
 	SandboxExecutionInfo,

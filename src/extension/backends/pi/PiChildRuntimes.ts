@@ -1,4 +1,4 @@
-// 子Runtimeの起動条件を親から固定し、Stop・切断時には子孫も回収する。
+// 子 Runtime の起動条件を親から固定し、Stop・切断時には子孫も回収する。
 import type {
 	AgentAccessPolicy,
 	AgentRole,
@@ -6,14 +6,14 @@ import type {
 import { freezeToolCall } from "../../security/ApprovedToolCall";
 import type { PiRuntimeOptions, PiRuntimeSession } from "./PiRuntime";
 
-/** 子は作業場所とroleを狭められるが、executor・承認先・親policyを差し替えられない。 */
+/** 子は作業場所と `role` を狭められるが、executor・承認先・親 `policy` を差し替えられない。 */
 export type PiChildOptions = {
 	cwd?: string;
 	role: AgentRole;
 	signal?: AbortSignal;
 };
 
-/** 起動中の子も追跡し、親終了とSDK初期化完了の競合を処理する。 */
+/** 起動中の子も追跡し、親終了と SDK 初期化完了の競合を処理する。 */
 type Child = {
 	abort: AbortController;
 	opening: Promise<PiRuntimeSession>;
@@ -22,7 +22,7 @@ type Child = {
 	detachAbort?: () => void;
 };
 
-/** 外部Pi拡張を使わず、Hostが所有する実効policyで子を起動する。 */
+/** 外部 Pi 拡張を使わず、Host が所有する実効 `policy` で子を起動する。 */
 export class PiChildRuntimes {
 	private readonly children = new Set<Child>();
 	private readonly parent: PiRuntimeOptions;
@@ -46,7 +46,7 @@ export class PiChildRuntimes {
 		this.policy = freezeToolCall(policy);
 	}
 
-	/** 親の実効上限とroleをRuntime側で交差し、履歴や外部拡張を引き継がない。 */
+	/** 親の実効上限と `role` を Runtime 側で交差し、履歴や外部拡張を引き継がない。 */
 	async open(options: PiChildOptions): Promise<PiRuntimeSession> {
 		this.lifetime.throwIfAborted();
 		if (this.disposed || this.stoppingNow) {
@@ -65,7 +65,7 @@ export class PiChildRuntimes {
 			parentPolicy: this.policy,
 			role: freezeToolCall(options.role),
 			signal,
-			// 子の内部履歴をworkspaceや親の履歴選択へ混在させない。
+			// 子の内部履歴をワークスペースや親の履歴選択へ混在させない。
 			storage: "global",
 			ephemeral: true,
 			trustedExtensionPaths: [],
@@ -78,7 +78,7 @@ export class PiChildRuntimes {
 			opening: this.create(childOptions),
 		};
 		this.children.add(child);
-		/** 接続signalの取消しでも、モデル応答を待たず子のSDKを停止する。 */
+		/** 接続 `signal` の取消しでも、モデル応答を待たず子の SDK を停止する。 */
 		const cancel = () => {
 			void this.close(child).catch(() => undefined);
 		};
@@ -88,7 +88,7 @@ export class PiChildRuntimes {
 			const session = await child.opening;
 			child.session = session;
 			let disposed = false;
-			/** 個別終了でも親の追跡から外し、起動signalを失効させる。 */
+			/** 個別終了でも親の追跡から外し、起動 `signal` を失効させる。 */
 			session.dispose = () => {
 				if (disposed) {
 					return;
@@ -112,7 +112,7 @@ export class PiChildRuntimes {
 	/** 起動待ち・承認待ち・実行中の子をすべて止め、終了まで待つ。 */
 	stop(): Promise<void> {
 		if (!this.stopping) {
-			// abort listenerが同期的に子を起動し直す場合も、先に受付を閉じる。
+			// 中止イベントのリスナーが同期的に子を起動し直す場合も、先に受付を閉じる。
 			this.stoppingNow = true;
 			this.stopping = Promise.allSettled(
 				[...this.children].map((child) => this.close(child)),
@@ -124,7 +124,7 @@ export class PiChildRuntimes {
 		return this.stopping;
 	}
 
-	/** 起動完了とStopが競合してもabort・disposeは一度だけ実施する。 */
+	/** 起動完了と `Stop` が競合しても `abort`・`dispose` は一度だけ実施する。 */
 	private close(child: Child): Promise<void> {
 		child.closing ??= Promise.resolve().then(async () => {
 			try {
@@ -143,7 +143,7 @@ export class PiChildRuntimes {
 		return child.closing;
 	}
 
-	/** 同期disposeでも起動signalは即座に失効し、終了処理は追跡して回収する。 */
+	/** 同期 `dispose` でも起動 `signal` は即座に失効し、終了処理は追跡して回収する。 */
 	dispose(): void {
 		this.disposed = true;
 		void this.stop();

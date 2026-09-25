@@ -1,4 +1,4 @@
-// チップの開く操作をLexicalからHostへ渡し、URIの実行判断はHostへ任せる。
+// チップの開く操作を Lexical から Host へ渡し、URI の実行判断は Host へ任せる。
 import { useEffect } from "react";
 import { createCommand, COMMAND_PRIORITY_EDITOR } from "lexical";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
@@ -9,7 +9,7 @@ import type { ComposerTarget } from "../../../shared/composerTargets";
 export const OPEN_REFERENCE_COMMAND =
 	createCommand<ComposerTarget>("open-reference");
 
-/** 表示先のBridgeで参照を開き、アンマウント時にコマンドを解除する。 */
+/** 表示先の Bridge で参照を開き、アンマウント時にコマンドを解除する。 */
 export function ReferenceActionsPlugin({
 	bridge,
 }: {

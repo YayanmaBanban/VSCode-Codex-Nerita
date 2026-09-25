@@ -1,4 +1,4 @@
-// 実効Reasoning・要求変換・モデル切替と通信検証の境界を検証する。
+// 実効推論・要求変換・モデル切替と通信検証の境界を検証する。
 import { describe, expect, it } from "vitest";
 import type {
 	AgentSession,
@@ -12,7 +12,7 @@ import { initialState } from "../../src/shared/chatState";
 import { piHarness } from "./piHarness";
 import { piLiveCatalog } from "../fixtures/piLiveCatalog";
 
-/** SDKのモデル変更時clampを持つセッションを用意する。 */
+/** SDK のモデル変更時範囲内への補正を持つセッションを用意する。 */
 function fixture() {
 	const models = [
 		{

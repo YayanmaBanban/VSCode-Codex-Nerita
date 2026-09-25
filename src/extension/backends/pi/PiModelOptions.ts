@@ -1,4 +1,4 @@
-// SDKの利用可能モデルと推論metadataを、秘密値を含まない設定候補へ変換する。
+// SDK の利用可能モデルと推論メタデータを、秘密値を含まない設定候補へ変換する。
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -7,7 +7,7 @@ import type { ConfigOption } from "../../../shared/composer";
 import type { PiProviderControls } from "./PiProviderControls";
 import type { PiModelCatalogService } from "./PiModelCatalogService";
 
-/** UIはこの候補をContributionへ変換し、provider固有の分岐を持たない。 */
+/** UI はこの候補を Contribution へ変換し、プロバイダー固有の分岐を持たない。 */
 export function piModelOptions(
 	session: AgentSession,
 	controls: PiProviderControls,

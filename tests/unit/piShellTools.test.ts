@@ -1,4 +1,4 @@
-// 実SDKのschemaを使い、公開可否・毎回承認・拒否・停止をShell別に確認する。
+// 実 SDK のスキーマを使い、公開可否・毎回承認・拒否・停止をシェル別に確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -17,7 +17,7 @@ afterEach(async () => {
 	await Promise.all(fixtures.splice(0).map((fixture) => fixture.cleanup()));
 });
 
-/** 実際のexeは起動せず、起動確認と承認済み実行をExecutorで区別する。 */
+/** 実際の実行ファイルは起動せず、起動確認と承認済み実行を `Executor` で区別する。 */
 async function fixture(
 	pwsh: "ready" | "missing" | "denied" | "workspace" = "ready",
 ) {

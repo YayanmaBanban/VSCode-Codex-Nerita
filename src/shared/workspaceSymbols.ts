@@ -22,7 +22,7 @@ export function isSymbolQuery(value: unknown): value is string {
 	return typeof value === "string" && value.length <= 256;
 }
 
-/** VS CodeのSymbolKindを候補の表示名へ変換する。 */
+/** VS Code の SymbolKind を候補の表示名へ変換する。 */
 export function symbolKindName(kind: number): string {
 	return (
 		[

@@ -10,7 +10,7 @@ export function isId(value: unknown): value is string {
 	return typeof value === "string" && value.length > 0 && value.length <= 256;
 }
 
-/** 項目の検証に入る前に、配列やnullがレコードとして扱われることを防ぐ。 */
+/** 項目を検証する前に、配列や `null` がレコードとして扱われることを防ぐ。 */
 export function everyRecord(
 	value: unknown,
 	test: (item: Record<string, unknown>) => boolean,

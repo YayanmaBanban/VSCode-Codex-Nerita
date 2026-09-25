@@ -1,14 +1,14 @@
-// 固定HTTPS宛先からOAuthモデル一覧を取得し、同一accountの成功結果だけ再利用する。
+// 固定 HTTPS 宛先から OAuth モデル一覧を取得し、同一アカウントの成功結果だけ再利用する。
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { PiCatalogModel, PiModelCatalogReader } from "../PiModelCatalog";
 import { codexOAuth } from "./CodexOAuth";
 import { normalizeCodexModels } from "./CodexModelCatalog";
 
-// 制限なしでモデルカタログを取得する
-// Codex CLIバージョンとは独立した決定
+// 制限なしでモデルカタログを取得する。
+// Codex CLI のバージョンとは独立した決定。
 const MODEL_CATALOG_CLIENT_VERSION = "0.999.0";
 
-/** 生HTTP本文・token・account IDを返却値や例外へ含めない。 */
+/** 生 HTTP 本文・token・account ID を返却値や例外へ含めない。 */
 export class CodexModelCatalogService implements PiModelCatalogReader {
 	private account: string | undefined;
 	private cached: readonly PiCatalogModel[] | null = null;
@@ -17,7 +17,7 @@ export class CodexModelCatalogService implements PiModelCatalogReader {
 		private request: typeof fetch = fetch,
 	) {}
 
-	/** 認証更新を含め5秒で打ち切り、別accountのcacheは必ず破棄する。 */
+	/** 認証更新を含め5秒で打ち切り、別アカウントのキャッシュは必ず破棄する。 */
 	async read(caller: AbortSignal): Promise<readonly PiCatalogModel[] | null> {
 		const signal = AbortSignal.any([caller, AbortSignal.timeout(5_000)]);
 		let verified = false;
@@ -71,7 +71,7 @@ export class CodexModelCatalogService implements PiModelCatalogReader {
 	}
 }
 
-/** Content-Lengthに依存せず、展開後の受信本文も上限内で読み取る。 */
+/** `Content-Length` に依存せず、展開後の受信本文も上限内で読み取る。 */
 async function readCatalogBody(
 	response: Response,
 	signal: AbortSignal,

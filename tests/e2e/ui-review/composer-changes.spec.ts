@@ -1,4 +1,4 @@
-// Changesの階層・検索・戻る操作を狭い画面と明暗テーマで確認する。
+// Changes の階層・検索・戻る操作を狭い画面と明暗テーマで確認する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

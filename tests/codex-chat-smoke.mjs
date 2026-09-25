@@ -25,7 +25,7 @@ await build({
 	plugins: [
 		{
 			name: "vscode-smoke-boundary",
-			/** VS Code外のモデル疎通ではエディター操作を提供せず、誤用は失敗させる。 */
+			/** VS Code 外のモデル疎通ではエディター操作を提供せず、誤用は失敗させる。 */
 			setup(builder) {
 				builder.onResolve({ filter: /^vscode$/ }, () => ({
 					path: "vscode",

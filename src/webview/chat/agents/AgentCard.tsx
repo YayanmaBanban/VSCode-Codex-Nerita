@@ -25,7 +25,7 @@ export function agentName(agent: SubAgentSummary): string {
 	);
 }
 
-/** 同梱アイコンだけをキーで解決し、サーバー由来のHTMLを挿入しない。 */
+/** 同梱アイコンだけをキーで解決し、サーバー由来の HTML を挿入しない。 */
 export function AgentIcon({
 	iconKey,
 }: {

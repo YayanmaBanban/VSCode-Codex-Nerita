@@ -69,7 +69,7 @@ export class BackendRuntime implements BackendSession {
 		await this.current?.receive(value);
 	}
 
-	/** 同時に届いた切替要求を一つにまとめる。 */
+	/** 同時に届いた切替要求を1つにまとめる。 */
 	restart(): Promise<void> {
 		if (this.disposed) {
 			return Promise.resolve();

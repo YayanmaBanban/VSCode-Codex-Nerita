@@ -42,6 +42,6 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof SearchStory>;
 export default meta;
-/** 検索条件とキーボード操作を確認するStory。 */
+/** 検索条件とキーボード操作を確認するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Ready: Story = {};

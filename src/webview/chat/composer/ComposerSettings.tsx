@@ -7,7 +7,7 @@ import { Attachments } from "./Attachments";
 import { ContributionSlot } from "../../contributions/ContributionSlot";
 import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurface";
 
-/** 接続中の設定はHostの宣言で描画し、操作は既存の検証済み通信へ戻す。 */
+/** 接続中の設定は Host の宣言で描画し、操作は既存の検証済み通信へ戻す。 */
 export function ComposerSettings({
 	state,
 	send,

@@ -1,10 +1,10 @@
-// Plan完了後の実装先を選ぶカードを表示する。
+// Plan 完了後の実装先を選ぶカードを表示する。
 import { useReducedMotion } from "motion/react";
 import type { ChatState } from "../../shared/chatState";
 import type { UiMessage } from "../../shared/messages";
 import { BorderBeam } from "../ui/BorderBeam";
 
-/** 完了したPlanに対する一回限りの選択をHostへ送る。 */
+/** 完了した Plan に対する1回限りの選択を Host へ送る。 */
 export function PlanDecisionCard({
 	state,
 	send,

@@ -1,4 +1,4 @@
-// Codexの履歴一覧を作業フォルダー単位で取得し、ページと接続世代を管理する。
+// Codex の履歴一覧を作業フォルダー単位で取得し、ページと接続世代を管理する。
 import { isRecord } from "../../../shared/validation";
 import { sameCwd } from "../../workspace";
 import { CodexRun } from "./CodexRun";

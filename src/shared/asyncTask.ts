@@ -1,4 +1,4 @@
-// AIRタスクとコマンドカードの対応を、端末IDとは別に管理する。
+// AIR タスクとコマンドカードの対応を、端末 ID とは別に管理する。
 import { isRecord } from "./validation";
 
 /** セッション内のバックグラウンドタスク。 */
@@ -15,7 +15,7 @@ export function taskActive(task: AsyncTask): boolean {
 	return task.state === "running" || task.state === "paused";
 }
 
-/** AIRタスクの通信値を検証する。 */
+/** AIR タスクの通信値を検証する。 */
 export function isAsyncTask(value: unknown): value is AsyncTask {
 	return (
 		isRecord(value) &&

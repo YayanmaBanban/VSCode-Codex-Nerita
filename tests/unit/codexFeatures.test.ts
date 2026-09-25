@@ -1,4 +1,4 @@
-// App Serverの機能設定・逐次ツール・利用枠を実際の状態管理経路で検証する。
+// App Server の機能設定・逐次ツール・利用枠を実際の状態管理経路で検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness } from "./codexHarness";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";

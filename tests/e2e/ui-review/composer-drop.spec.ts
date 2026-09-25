@@ -1,4 +1,4 @@
-// ファイル・URIのドロップ、重複、無効状態を実際の入力欄で確認する。
+// ファイル・URI のドロップ、重複、無効状態を実際の入力欄で確認する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

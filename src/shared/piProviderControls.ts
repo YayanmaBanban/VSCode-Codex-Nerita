@@ -1,4 +1,4 @@
-// Piの標準推論とNeritaの実効値を分け、秘密値を含まない設定状態だけを共有する。
+// Pi の標準推論と Nerita の実効値を分け、秘密値を含まない設定状態だけを共有する。
 import { isRecord } from "./validation";
 
 export const piThinkingLevels = [
@@ -12,7 +12,7 @@ export const piThinkingLevels = [
 ] as const;
 export type PiThinkingLevel = (typeof piThinkingLevels)[number];
 
-/** SDKのモデル・推論と、セッション内のprovider固有設定。 */
+/** SDK のモデル・推論と、セッション内のプロバイダー固有設定。 */
 export type PiProviderControls = {
 	provider: string | null;
 	modelId: string | null;
@@ -40,7 +40,7 @@ export function isPiProviderControls(
 	);
 }
 
-/** 未選択を表すnullまたはモデル・providerの識別子を受け付ける。 */
+/** 未選択を表す `null` またはモデル・プロバイダーの識別子を受け付ける。 */
 function isOptionalModelId(value: unknown): boolean {
 	return value === null || typeof value === "string";
 }

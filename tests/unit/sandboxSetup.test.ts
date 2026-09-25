@@ -1,4 +1,4 @@
-// PiかつWindowsにセットアップを限定し、直接呼出しでもCodexから起動させない。
+// Pi かつ Windows にセットアップを限定し、直接呼出しでも Codex から起動させない。
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ExtensionContext } from "vscode";
 import { readFile } from "node:fs/promises";

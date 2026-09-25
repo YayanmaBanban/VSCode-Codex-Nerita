@@ -1,4 +1,4 @@
-// ツールの本文・差分・任意の入出力を、実行せずテキストとして表示する。
+// ツールの本文・差分・任意の入出力はテキストとして表示し、実行しない。
 import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { FileDiff } from "./FileDiff";
@@ -32,7 +32,7 @@ export function Value({
 	);
 }
 
-/** 専用カードがない項目は、元の構造を省略せずJSONとして表示する。 */
+/** 専用カードがない項目は、元の構造を省略せず JSON として表示する。 */
 export function RawTool({
 	tool,
 	paged = false,

@@ -1,11 +1,11 @@
-// 認証専用Webviewの公開状態と、入力をHostへ渡す通信契約。
+// 認証専用 Webview の公開状態と、入力を Host へ渡す通信契約。
 export type PiAuthItem = {
 	id: string;
 	name: string;
 	configured: boolean;
 	methods: { id: string; name: string }[];
 };
-/** 保存済みの秘密値は含めず、SDKが現在要求する入力だけを公開する。 */
+/** 保存済みの秘密値は含めず、SDK が現在要求する入力だけを公開する。 */
 export type PiAuthPrompt = {
 	id: string;
 	message: string;
@@ -43,7 +43,7 @@ export function isPiAuthRequest(value: unknown): value is PiAuthRequest {
 				item.value.length <= 65536))
 	);
 }
-/** Hostの状態通知を受け入れる前に描画に使う値を確認する。 */
+/** Host の状態通知を受け入れる前に、描画用の値を確認する。 */
 export function isPiAuthState(value: unknown): value is PiAuthState {
 	if (!value || typeof value !== "object") {
 		return false;
@@ -73,7 +73,7 @@ export function isPiAuthState(value: unknown): value is PiAuthState {
 	);
 }
 
-/** 未指定を表すnullまたは文字列を受け付ける。 */
+/** 未指定を表す `null` または文字列を受け付ける。 */
 function isNullableString(value: unknown): boolean {
 	return value === null || typeof value === "string";
 }

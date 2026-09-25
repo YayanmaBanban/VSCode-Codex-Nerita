@@ -1,4 +1,4 @@
-// 補完候補の生成と絞り込みを、Lexicalの選択範囲や編集処理から分離する。
+// 補完候補の生成と絞り込みを、Lexical の選択範囲や編集処理から分離する。
 import type { Attachment } from "../../../shared/composer";
 import type { SkillSummary } from "../../../shared/skills";
 import type { WorkspacePath } from "../../../shared/workspacePaths";
@@ -12,7 +12,7 @@ import {
 	type ChangeReference,
 } from "../../../shared/changeReferences";
 
-/** 選択可能な候補。categoryは次の一覧を開く入口。 */
+/** 選択可能な候補。`category` は次の一覧を開く入口。 */
 export type CompletionItem = {
 	id: string;
 	label: string;

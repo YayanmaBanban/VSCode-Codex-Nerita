@@ -1,4 +1,4 @@
-// 入力文中のパスを添付風に表示し、参照だけをUndo可能に取り外す。
+// 入力文中のパスを添付風に表示し、取り消し可能な操作で参照だけを外す。
 import { X } from "lucide-react";
 import { pathText } from "../../../shared/composerReferences";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";

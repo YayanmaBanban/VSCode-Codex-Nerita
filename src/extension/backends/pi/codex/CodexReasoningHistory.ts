@@ -13,15 +13,15 @@ const efforts = [
 	"xhigh",
 	"max",
 ] as const;
-/** Piで変換済みの既知wire値だけを履歴へ保存する。 */
+/** Pi で変換済みの既知の通信形式の値だけを履歴へ保存する。 */
 export type CodexEffort = (typeof efforts)[number];
-/** indexはconfiguration_updateを除いたinputでの挿入位置。 */
+/** `index` は `configuration_update` を除いた `input` での挿入位置。 */
 export type EffortTransition = {
 	index: number;
 	anchor: string;
 	effort: CodexEffort;
 };
-/** baselineも履歴のprefixに結び付け、本文編集後の古いpinを適用しない。 */
+/** `baseline` も履歴の `prefix` に結び付け、本文編集後の古い固定値を適用しない。 */
 export type ReasoningHistory = {
 	modelKey: string;
 	baseline: CodexEffort;
@@ -35,7 +35,7 @@ export type ReasoningHistoryStore = Pick<
 	"getBranch" | "appendCustomEntry"
 >;
 
-/** 未知値やUltraを通常のconfiguration_updateへ混入させない。 */
+/** 未知値や Ultra を通常の `configuration_update` へ混入させない。 */
 export function isCodexEffort(value: unknown): value is CodexEffort {
 	return efforts.some((effort) => effort === value);
 }
@@ -95,7 +95,7 @@ function validAnchor(
 	);
 }
 
-/** 成功した圧縮・モデル切替・分岐要約以降のtrusted記録だけを採用する。 */
+/** 成功した圧縮・モデル切替・分岐要約以降の信頼済みの記録だけを採用する。 */
 export function readReasoningHistory(
 	store: ReasoningHistoryStore,
 ): ReasoningHistory | undefined {

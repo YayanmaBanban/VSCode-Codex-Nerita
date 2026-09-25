@@ -1,4 +1,4 @@
-// ワークスペースの必要な一階層だけをVS Code APIで列挙する。
+// ワークスペースの必要な一階層だけを VS Code API で列挙する。
 import * as vscode from "vscode";
 import type {
 	WorkspacePath,
@@ -6,7 +6,7 @@ import type {
 	WorkspacePathsResult,
 } from "../../shared/workspacePaths";
 
-/** URIから選択候補を作り、ローカル環境では絶対パスを挿入する。 */
+/** URI から選択候補を作り、ローカル環境では絶対パスを挿入する。 */
 function entry(
 	uri: vscode.Uri,
 	name: string,

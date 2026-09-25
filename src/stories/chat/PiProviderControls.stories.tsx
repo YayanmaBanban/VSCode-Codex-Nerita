@@ -1,4 +1,4 @@
-// 実Hostの設定クラスとRegistryで、provider切替と実効Reasoningを再現する。
+// 実 Host の設定クラスと Registry で、プロバイダー切替と実効推論を再現する。
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type {
@@ -13,7 +13,7 @@ import { ComposerSettings } from "../../webview/chat/composer/ComposerSettings";
 import "../../webview/chat/chat.css";
 import { piLiveCatalog } from "../../../tests/fixtures/piLiveCatalog";
 
-/** 認証やネットワークを使用せず、SDKのモデル切替・clampだけを模す。 */
+/** 認証やネットワークを使用せず、SDK のモデル切替・範囲内への補正だけを模す。 */
 function createAccount(hidden: boolean, noMetadata: boolean) {
 	const models = [
 		{
@@ -92,7 +92,7 @@ function createAccount(hidden: boolean, noMetadata: boolean) {
 		} as unknown as ModelRuntime,
 		session as unknown as AgentSession,
 	);
-	// metadataだけを固定し、候補と設定操作は本物のHostへ委譲する。
+	// メタデータだけを固定し、候補と設定操作は本物の Host へ委譲する。
 	account.catalog.snapshot = (provider) => {
 		if (provider !== "openai-codex") {
 			return undefined;
@@ -103,7 +103,7 @@ function createAccount(hidden: boolean, noMetadata: boolean) {
 	return account;
 }
 
-/** provider判定はStoryのHost役だけが行い、本体Rendererは宣言を描画する。 */
+/** プロバイダー判定はストーリーの Host 役だけが行い、本体 Renderer は宣言を描画する。 */
 function ProviderControlsStory({
 	hidden = false,
 	noMetadata = false,
@@ -151,7 +151,7 @@ function ProviderControlsStory({
 		provider: state.piProviderControls?.provider ?? null,
 		capabilities: state.configOptions.map((option) => option.id),
 	});
-	/** Hostの完了通知で選択値を更新する。 */
+	/** Host の完了通知で選択値を更新する。 */
 	const send = (message: UiMessage) => {
 		setLast(message);
 		if (message.type === "config/set") {

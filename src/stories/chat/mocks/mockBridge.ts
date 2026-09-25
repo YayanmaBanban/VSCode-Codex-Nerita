@@ -116,7 +116,7 @@ export function createMockBridge(
 } {
 	let state = scenarioState(scenario);
 	const registry = createBuiltinUiRegistry();
-	/** 全Storyで選択したbackendのHostと同じ宣言を生成する。 */
+	/** 全ストーリーで選択したバックエンドの Host と同じ宣言を生成する。 */
 	const ui = () =>
 		registry.resolve(state, {
 			backend,
@@ -258,7 +258,7 @@ export function createMockBridge(
 	const respondResource = (message: UiMessage): boolean => {
 		switch (message.type) {
 			case "workspace/resolvePath":
-				// Hostの応答は貼り付けの編集確定より後のタスクで届く。
+				// Host の応答は貼り付けの編集確定より後のタスクで届く。
 				setTimeout(() => emit(mockResolvePath(message)), 0);
 				return true;
 			case "session/searchReferences":

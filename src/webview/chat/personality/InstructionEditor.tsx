@@ -1,4 +1,4 @@
-// 性格設定の本文を、履歴とプレーンテキスト貼り付けに対応するLexicalで編集する。
+// 性格設定の本文を、履歴とプレーンテキスト貼り付けに対応する Lexical で編集する。
 import { useEffect, useId } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
@@ -9,7 +9,7 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { $getRoot, $createParagraphNode, $createTextNode } from "lexical";
 
-/** 保存中やconfig.toml優先時の編集可否を同期する。 */
+/** 保存中や config.toml 優先時の編集可否を同期する。 */
 function EditablePlugin({ disabled }: { disabled: boolean }) {
 	const [editor] = useLexicalComposerContext();
 	useEffect(() => {
@@ -18,7 +18,7 @@ function EditablePlugin({ disabled }: { disabled: boolean }) {
 	return null;
 }
 
-/** 外部のプリセット切替は親のkeyで再初期化し、入力中の選択範囲を保つ。 */
+/** 外部のプリセット切替は親の `key` で再初期化し、入力中の選択範囲を保つ。 */
 export function InstructionEditor({
 	text,
 	disabled,

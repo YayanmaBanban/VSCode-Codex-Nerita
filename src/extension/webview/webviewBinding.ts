@@ -1,8 +1,8 @@
-// Webviewごとの通信購読をまとめ、表示先の破棄と同時に解放する。
+// Webview ごとの通信購読をまとめ、表示先の破棄と同時に解放する。
 import * as vscode from "vscode";
 import type { ChatSession } from "../session/chatSession";
 
-/** ready通知を取りこぼさないよう、HTMLの設定より先に購読を完了する。 */
+/** `ready` 通知を取りこぼさないよう、HTML の設定より先に購読を完了する。 */
 export function bindWebview(
 	view: vscode.WebviewView | vscode.WebviewPanel,
 	extensionUri: vscode.Uri,

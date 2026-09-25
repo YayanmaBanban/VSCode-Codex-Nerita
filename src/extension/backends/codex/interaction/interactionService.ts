@@ -1,7 +1,7 @@
-// Hostの入力UIを注入する契約と、入力要求の共通検証を定義する。
+// Host の入力 UI を注入する契約と、入力要求の共通検証を定義する。
 import { AppServerRpcError } from "../protocol/rpcMessage";
 
-/** 秘密入力や選択をWebviewの永続状態に残さないための境界。 */
+/** 秘密入力や選択を Webview の永続状態に残さないための境界。 */
 export type InteractionService = {
 	input: (
 		title: string,

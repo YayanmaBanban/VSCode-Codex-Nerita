@@ -18,7 +18,7 @@ export function startAppServerProcess(
 	const args = ["app-server", "--listen", "stdio://"];
 	if (windowsSandbox) {
 		args.push("-c", `windows.sandbox="${windowsSandbox}"`);
-		// config.toml内のenv追加・shell起動フックを専用接続へ持ち込まない。
+		// config.toml 内の `env` 追加・`shell` 起動フックを専用接続へ持ち込まない。
 		args.push(
 			"-c",
 			'shell_environment_policy.inherit="none"',

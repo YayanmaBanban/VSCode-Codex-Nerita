@@ -141,7 +141,7 @@ test("Backspaceで参照を一つずつ削除しUndoで戻せる", async ({ page
 	await input.waitFor({ state: "visible" });
 	await expect(input.locator(".inline-path-reference")).toHaveCount(2);
 	await select(input.locator("p > span[data-lexical-text]").last(), 3);
-	// 末尾の「 後文」を消した直後のBackspaceはフォルダ参照全体を削除する。
+	// 末尾の「 後文」を消した直後の Backspace はフォルダ参照全体を削除する。
 	for (let index = 0; index < 4; index++) {
 		await input.press("Backspace");
 	}

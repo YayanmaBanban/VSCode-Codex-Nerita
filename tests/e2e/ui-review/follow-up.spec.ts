@@ -101,7 +101,7 @@ test("通知バーの初期・途中・終了と背景色", async ({ page }, inf
 	await expect
 		.poll(() => bar.evaluate((element) => element.getAnimations().length))
 		.toBeGreaterThan(0);
-	// WAAPIの時刻を直接指定し、スクリーンショットの待ち時間に左右されない。
+	// WAAPI の時刻を直接指定し、スクリーンショットの待ち時間に左右されない。
 	for (const [name, time] of [
 		["initial", 0],
 		["early", 200],

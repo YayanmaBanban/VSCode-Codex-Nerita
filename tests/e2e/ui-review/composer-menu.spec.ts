@@ -1,4 +1,4 @@
-// 候補の検索・カーソル位置への挿入とTabキーの優先順位を検証する。
+// 候補の検索・カーソル位置への挿入と Tab キーの優先順位を検証する。
 import { test, expect } from "@playwright/test";
 
 test("候補のキーボード選択・検索・送信とTabの2スペース", async ({

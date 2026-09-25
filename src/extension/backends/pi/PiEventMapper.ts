@@ -1,11 +1,11 @@
-// PiのAssistant本文とツール通知を、既存の会話タイムラインへ変換する。
+// Pi のアシスタント本文とツール通知を、既存の会話タイムラインへ変換する。
 import { randomUUID } from "node:crypto";
 import type { ChatMessage, ChatState } from "../../../shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
 import { mapPiTool } from "./PiToolMapper";
 
-/** 1回の送信中に複数のAssistantメッセージが生成される場合も区別する。 */
+/** 1回の送信中に複数のアシスタントメッセージが生成される場合も区別する。 */
 export class PiEventMapper {
 	private messageId: string | undefined;
 	error: string | undefined;

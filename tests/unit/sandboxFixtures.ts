@@ -1,4 +1,4 @@
-// Sandbox検証用の内側・外側fixtureを作り、削除先を生成したtempディレクトリへ限定する。
+// サンドボックス検証用の内側・外側フィクスチャを作り、削除先を生成した一時ディレクトリへ限定する。
 import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -7,7 +7,7 @@ import {
 	WorkspacePathPolicy,
 } from "../../src/extension/security/WorkspacePathPolicy";
 
-/** 外側fixtureも専用temp配下に置き、ユーザーデータに触れない。 */
+/** 外側フィクスチャも専用一時配下に置き、ユーザーデータに触れない。 */
 export async function sandboxFixture() {
 	const root = await realpath(
 		await mkdtemp(join(tmpdir(), "nerita-sandbox-unit-")),

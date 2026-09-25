@@ -1,9 +1,9 @@
-// インストール済みの実行依存を辿り、リンクを使わないnode_modulesを組み立てる。
+// インストール済みの実行依存を辿り、リンクを使わない node_modules を組み立てる。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createRequire } = require("node:module");
 
-/** exportsでpackage.jsonを非公開にしたパッケージも、Nodeの探索順で見つける。 */
+/** exports で package.json を非公開にしたパッケージも、Node の探索順で見つける。 */
 async function resolvePackage(name, parent) {
 	const locations = createRequire(
 		path.join(parent, "package.json"),
@@ -22,7 +22,7 @@ async function resolvePackage(name, parent) {
 	return undefined;
 }
 
-/** optional dependencyのOS・CPU制約を現在のビルド環境に照合する。 */
+/** 任意依存の OS・CPU 制約を現在のビルド環境に照合する。 */
 function supportsPlatform(manifest) {
 	return [
 		[manifest.os, process.platform],
@@ -36,7 +36,7 @@ function supportsPlatform(manifest) {
 	);
 }
 
-/** devDependenciesを除き、必須依存の不足は梱包時点でエラーにする。 */
+/** `devDependencies` を除き、必須依存の不足は梱包時点でエラーにする。 */
 async function collectPackages(source, packages) {
 	if (packages.has(source)) {
 		return;
@@ -87,7 +87,7 @@ function isOptionalDependency(manifest, name) {
 	);
 }
 
-/** 相対資産を保ち、競合するバージョンだけ利用側のnode_modulesへ配置する。 */
+/** 相対資産を保ち、競合するバージョンだけ利用側の node_modules へ配置する。 */
 async function copyPackage(source, destination, packages, inherited) {
 	await fs.cp(source, destination, {
 		recursive: true,
@@ -112,7 +112,7 @@ async function copyPackage(source, destination, packages, inherited) {
 	}
 }
 
-/** 固定済み依存グラフを、pnpmや開発ツリーから独立した配布先へコピーする。 */
+/** 固定済み依存グラフを、pnpm や開発ツリーから独立した配布先へコピーする。 */
 async function copyRuntimePackage(source, target) {
 	source = await fs.realpath(source);
 	const packages = new Map();

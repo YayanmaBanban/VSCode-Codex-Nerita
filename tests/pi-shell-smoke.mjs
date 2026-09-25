@@ -1,4 +1,4 @@
-// 実SDKのShell定義と本番Sandboxで、選択・承認・UTF-8入出力を検証する。
+// 実 SDK のシェル定義と本番サンドボックスで、選択・承認・UTF-8 入出力を検証する。
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
@@ -64,7 +64,7 @@ try {
 		path.join(cwd, "native-pipe.cjs"),
 		'process.stdin.setEncoding("utf8"); process.stdin.on("data", s => process.stdout.write(s));',
 	);
-	// 既存portableを明示指定した受入でも、本番の探索・Sandbox起動確認を通す。
+	// 既存ポータブル版を明示指定した受入でも、本番の探索・サンドボックス起動確認を通す。
 	if (process.env.NERITA_SANDBOX_PWSH) {
 		const executable = await realpath(process.env.NERITA_SANDBOX_PWSH);
 		process.env.PATH = `${path.dirname(executable)}${path.delimiter}${originalPath ?? ""}`;
@@ -104,7 +104,7 @@ try {
 	const powershell = tools.find((tool) => tool.name === "powershell");
 	assert.ok(powershell);
 
-	/** 実際のTool.executeを通し、承認回数と観測結果を返す。 */
+	/** 実際の `Tool.execute` を通し、承認回数と観測結果を返す。 */
 	async function run(tool, command) {
 		const before = approvals;
 		await tool.execute("shell-smoke", { command, timeout: 15 }, signal);
@@ -179,7 +179,7 @@ try {
 	await test("powershell: nativeプログラムへのpipeがUTF-8", async () => {
 		const result = await run(powershell, "'日本語' | node native-pipe.cjs");
 		assert.equal(result.exitCode, 0);
-		// 指定されたEncoding.UTF8はBOM付き。文字化けとBOMの有無を混同しない。
+		// 指定された `Encoding.UTF8` は BOM 付き。文字化けと BOM の有無を混同しない。
 		assert.match(result.stdout, /^\uFEFF*日本語\r\n$/);
 		return result;
 	});

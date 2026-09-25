@@ -1,10 +1,10 @@
-// OS判定だけを模擬し、配布SDKと本番Runtimeから通常bash・信頼済みbashを呼ぶ。
+// OS 判定だけを模擬し、配布 SDK と本番 Runtime から通常 `bash`・信頼済み `bash` を呼ぶ。
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { cp, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-/** 実OSの検証とは分け、モデルへのTool公開・承認・SDK実行の接続を確かめる。 */
+/** 実 OS の検証とは分け、モデルへのツール公開・承認・SDK 実行の接続を確かめる。 */
 export async function piPlatformSmoke({
 	createPiRuntime,
 	extensionPath,
@@ -40,7 +40,7 @@ export async function piPlatformSmoke({
 	}
 }
 
-/** ユーザー設定から隔離した作業場所とPi設定を使う。 */
+/** ユーザー設定から隔離した作業場所と Pi 設定を使う。 */
 async function platformCase({
 	createPiRuntime,
 	extensionPath,
@@ -128,7 +128,7 @@ async function platformCase({
 	}
 }
 
-/** Windows上のOS模擬には導入済みGit Bashを使い、存在しなければ成功扱いしない。 */
+/** Windows 上の OS 模擬には導入済み Git Bash を使い、存在しなければ成功扱いしない。 */
 function testShellPath() {
 	if (process.platform !== "win32") {
 		return process.env.NERITA_PI_BASH;

@@ -1,4 +1,4 @@
-// 非公開のCodex利用枠APIを隔離し、失敗・認証情報をチャット状態へ漏らさない。
+// 非公開の Codex 利用枠 API を隔離し、失敗・認証情報をチャット状態へ漏らさない。
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -7,7 +7,7 @@ import type { QuotaWindow } from "../../../../shared/composer";
 import { isRecord } from "../../../../shared/validation";
 import { codexOAuth } from "./CodexOAuth";
 
-/** 正規化されたISO時間の取得 */
+/** 正規化された ISO 時間を取得する。 */
 function getIsoDate(resetAt: number): Date {
 	let data: Date = new Date(resetAt * 1000);
 	data = new Date(data.getTime() - data.getTimezoneOffset() * 60 * 1000);
@@ -42,7 +42,7 @@ export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 	return windows.length ? windows : null;
 }
 
-/** SDKによるOAuth更新を利用し、接続・設定変更・実行後だけ取得する。 */
+/** SDK による OAuth 更新を利用し、接続・設定変更・実行後だけ取得する。 */
 export class CodexQuotaService {
 	constructor(
 		private models: ModelRuntime,
@@ -50,7 +50,7 @@ export class CodexQuotaService {
 		private request: typeof fetch = fetch,
 	) {}
 
-	/** 固定したHTTPS宛先だけへ送信し、redirectで認証が流出する経路を閉じる。 */
+	/** 固定した HTTPS 宛先だけへ送信し、リダイレクトで認証が流出する経路を閉じる。 */
 	async read(caller: AbortSignal): Promise<QuotaWindow[] | null> {
 		try {
 			const model = this.session.model;

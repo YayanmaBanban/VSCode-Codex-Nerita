@@ -1,4 +1,4 @@
-// モデル候補・会話単位の設定・添付を、実行の開始前に確定する。
+// 実行開始前にモデル候補・会話単位の設定・添付を確定する。
 import { modelOptions } from "./settings/modelOptions";
 import type { TurnStartParams } from "./codex-app-server/v2/TurnStartParams";
 import type { ModelInfo } from "./protocol/account";
@@ -11,7 +11,7 @@ import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import { type CodexConnection } from "./runtime/connection";
 import { resolveCodexSelection } from "./settings/modelSelection";
 
-/** Planから新規会話へ移す、モデルと権限の実効設定。 */
+/** Plan から新規会話へ移す、モデルと権限の実効設定。 */
 type PlanSettings = {
 	model: string;
 	effort: string;
@@ -19,14 +19,14 @@ type PlanSettings = {
 	sandboxPolicy: TurnStartParams["sandboxPolicy"];
 };
 
-/** 設定は次のturnに適用し、CLIのユーザー設定ファイルを書き換えない。 */
+/** 設定は次のターンに適用し、CLI のユーザー設定ファイルを書き換えない。 */
 export abstract class CodexOptions extends CodexAttachments {
 	protected models: ModelInfo[] = [];
 	protected turnOptions: Partial<TurnStartParams> = {};
 	private initialSandbox: StartedThread["sandbox"];
 	private initialTier: string | null = null;
 	protected collaborationMode = "default";
-	/** 新規会話で初期化される設定を、Plan会話から退避する。 */
+	/** 新規会話で初期化される設定を、Plan 会話から退避する。 */
 	protected capturePlanSettings(): PlanSettings {
 		const selected = (id: string) =>
 			this.state.configOptions.find((item) => item.id === id)
@@ -52,7 +52,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		}
 		await this.setConfig("mode", settings.mode);
 		if (settings.sandboxPolicy) {
-			// 「引き継ぐ」でも元の会話の実効sandboxを維持する。
+			// 「引き継ぐ」でも元の会話の実効サンドボックスを維持する。
 			this.turnOptions.sandboxPolicy = settings.sandboxPolicy;
 		}
 	}
@@ -117,7 +117,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		);
 	}
 
-	/** UIで確定したモデル・推論だけを保存し、履歴復元では上書きしない。 */
+	/** UI で確定したモデル・推論だけを保存し、履歴復元では上書きしない。 */
 	protected async rememberSelection(id: string): Promise<void> {
 		if (id !== "model" && id !== "reasoning_effort") {
 			return;
@@ -155,7 +155,7 @@ export abstract class CodexOptions extends CodexAttachments {
 				this.patch({ quota });
 			}
 		} catch {
-			/* APIキーや独自プロバイダーには利用枠がない場合がある。 */
+			/* API キーや独自プロバイダーでは利用枠を取得できない場合がある。 */
 		}
 	}
 
@@ -174,7 +174,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			),
 		});
 	}
-	/** 提示した候補だけを次のturnへ渡し、実行中の変更を禁止する。 */
+	/** 提示した候補だけを次のターンへ渡し、実行中の変更を禁止する。 */
 	protected async setConfig(id: string, value: string): Promise<void> {
 		if (this.invalidSetting(id, value)) {
 			throw new Error("Invalid setting");
@@ -186,7 +186,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.turnOptions.effort = value;
 		}
 		if (id === "collaboration_mode") {
-			// Goal選択ではRPCを送らず、Defaultへの切替だけ即時にthreadへ反映する。
+			// Goal 選択では RPC を送らず、Default への切替だけ即時にスレッドへ反映する。
 			await this.setCollaborationMode(value);
 		}
 		if (id === "fast-mode") {
@@ -236,7 +236,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		);
 	}
 
-	/** 初期sandboxへの復元と明示モードへの変更を処理する。 */
+	/** 初期サンドボックスへの復元と明示モードへの変更を処理する。 */
 	private setSandboxMode(value: string) {
 		if (value === "inherit") {
 			if (!this.initialSandbox) {

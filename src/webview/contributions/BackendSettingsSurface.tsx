@@ -1,10 +1,10 @@
-// backendごとの設定領域を分離し、内側の項目は同じ宣言型slotで描画する。
+// バックエンドごとの設定領域を分離し、内側の項目は同じ宣言型 `slot` で描画する。
 import {
 	ContributionSlot,
 	type ContributionSlotProps,
 } from "./ContributionSlot";
 
-/** Codex App Serverの設定面。認証操作は既存Headerで管理する。 */
+/** Codex App Server の設定面。認証操作は既存 Header で管理する。 */
 export function CodexSettingsSurface(props: ContributionSlotProps) {
 	return (
 		<div className="contents" data-settings-surface="codex">
@@ -14,7 +14,7 @@ export function CodexSettingsSurface(props: ContributionSlotProps) {
 	);
 }
 
-/** Piの設定面。内部Registryの項目を同じslotで扱う。 */
+/** Pi の設定面。内部 Registry の項目を同じ `slot` で扱う。 */
 export function PiSettingsSurface(props: ContributionSlotProps) {
 	return (
 		<div className="contents" data-settings-surface="pi">
@@ -26,7 +26,7 @@ export function PiSettingsSurface(props: ContributionSlotProps) {
 
 const surfaces = { codex: CodexSettingsSurface, pi: PiSettingsSurface };
 
-/** provider差分はHostが解決済み。ここでは大枠のSurfaceだけを選ぶ。 */
+/** プロバイダー差分は Host が解決済み。ここでは大枠の Surface だけを選ぶ。 */
 export function BackendSettingsSurface(props: ContributionSlotProps) {
 	const Surface = surfaces[props.contributions.surface];
 	return <Surface {...props} />;

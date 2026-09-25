@@ -1,4 +1,4 @@
-// 出力だけの連続更新を集約し、変更カードだけをWebviewへ送る。
+// 出力だけの連続更新を集約し、変更カードだけを Webview へ送る。
 import type { ToolSummary } from "../../shared/chatState";
 import type { HostMessage } from "../../shared/messages";
 import { toolKey } from "../../shared/toolUpdates";
@@ -6,7 +6,7 @@ import { toolKey } from "../../shared/toolUpdates";
 /** 集約前の順序番号を保持する状態通知。 */
 type PatchMessage = Extract<HostMessage, { type: "state/patch" }>;
 
-/** 正本の更新頻度とUIへの配信頻度を分離する。 */
+/** 正本の更新頻度と UI への配信頻度を分離する。 */
 export class StatePublisher {
 	private tools: ToolSummary[] = [];
 	private pending: PatchMessage | undefined;

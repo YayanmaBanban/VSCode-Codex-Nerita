@@ -50,7 +50,7 @@ export function parseRpcMessage(message: unknown): RpcMessage {
 	return parseResponse(message);
 }
 
-/** methodを持つサーバー要求と通知を検証する。 */
+/** `method` を持つサーバー要求と通知を検証する。 */
 function parseMethodMessage(message: Record<string, unknown>): RpcMessage {
 	if (
 		typeof message.method !== "string" ||
@@ -78,7 +78,7 @@ function parseMethodMessage(message: Record<string, unknown>): RpcMessage {
 	};
 }
 
-/** クライアント要求への応答とRPCエラーを検証する。 */
+/** クライアント要求への応答と RPC エラーを検証する。 */
 function parseResponse(message: Record<string, unknown>): RpcMessage {
 	const hasResult = "result" in message;
 	const hasError = "error" in message;

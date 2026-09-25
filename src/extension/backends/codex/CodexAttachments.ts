@@ -7,9 +7,9 @@ import { CodexLifecycle } from "./CodexLifecycle";
 import type { CodexFactory } from "./runtime/connection";
 import type { CodexSelectionStore } from "./settings/modelSelection";
 
-/** 接続世代と会話IDが一致する添付操作だけを許可する。 */
+/** 接続世代と会話 ID が一致する添付操作だけを許可する。 */
 export abstract class CodexAttachments extends CodexLifecycle {
-	/** VS Codeサービスを接続と同じ寿命で受け取る。 */
+	/** VS Code サービスを接続と同じ寿命で受け取る。 */
 	constructor(
 		factory: CodexFactory,
 		private readonly files?: AttachmentService,

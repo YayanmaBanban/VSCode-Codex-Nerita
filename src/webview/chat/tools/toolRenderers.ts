@@ -21,7 +21,7 @@ import { ImageViewTool, ThinkTool, WebSearchTool } from "./ActivityToolContent";
 
 /** Guardian Review、専用項目、一般のツール種別の順に表示を選ぶ。 */
 export function toolRenderer(tool: ToolSummary) {
-	// Guardian Reviewはthinkの場合も専用の盾アイコンを維持する。
+	// Guardian Review は `think` の場合も専用の盾アイコンを維持する。
 	if (tool.title.trim().toLowerCase() === "guardian review") {
 		return { Icon: ShieldCheck, Body: GuardianReview };
 	}
@@ -41,7 +41,7 @@ const renderers = [
 	},
 ];
 
-/** 専用の表示を持つApp Server項目のアイコンと本文を選ぶ。 */
+/** 専用の表示を持つ App Server 項目のアイコンと本文を選ぶ。 */
 function specialRenderer(type: string | undefined) {
 	if (type === "imageView") {
 		return { Icon: Image, Body: ImageViewTool };

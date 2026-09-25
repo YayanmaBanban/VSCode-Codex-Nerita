@@ -1,4 +1,4 @@
-// MCPコマンドの表示とページ取得に使用する、秘密情報を含まないサンプル。
+// MCP コマンドの表示とページ取得に使用する、秘密情報を含まないサンプル。
 import type { McpServerSummary } from "../../src/shared/mcp";
 export const mcpStatusFixture = {
 	name: "workspace",

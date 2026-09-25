@@ -1,4 +1,4 @@
-// 実行中の承認と追加質問を、同じturnの寿命に限定する。
+// 実行中の承認と追加質問を、同じターンの寿命に限定する。
 import { CodexOptions } from "./CodexOptions";
 import type { ActiveTurn } from "./ActiveTurn";
 import { Approvals, parseApproval } from "./interaction/Approvals";

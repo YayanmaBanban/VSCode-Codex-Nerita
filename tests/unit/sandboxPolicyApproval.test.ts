@@ -1,4 +1,4 @@
-// 承認snapshot・一回限りpermit・Codexで表現できる権限の交差を検証する。
+// 承認スナップショット・1回限り `permit`・Codex で表現できる権限の交差を検証する。
 import { describe, expect, it, vi } from "vitest";
 import { approveToolCall } from "../../src/extension/security/ApprovalGuard";
 import {
@@ -17,7 +17,7 @@ import {
 } from "../../src/extension/backends/codex/protocol/command";
 import { pending } from "./piHarness";
 
-/** ファイルI/Oを伴わない、正規化済み要求。 */
+/** ファイル `I/O` を伴わない、正規化済み要求。 */
 function call(): ToolCall {
 	return {
 		tool: "powershell",

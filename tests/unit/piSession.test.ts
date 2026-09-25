@@ -1,4 +1,4 @@
-// Piの複数ターン・停止競合・旧接続通知を通信契約ごと検証する。
+// Pi の複数ターン・停止競合・旧接続通知を通信契約ごと検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import type { PiSessionController } from "../../src/extension/backends/pi/PiSessionController";
@@ -11,7 +11,7 @@ afterEach(async () => {
 	);
 });
 
-/** 接続後の通知を既存Webviewのvalidatorにも通す。 */
+/** 接続後の通知を既存 Webview の検証処理にも通す。 */
 async function connected() {
 	const harness = piHarness();
 	controllers.push(harness.controller);

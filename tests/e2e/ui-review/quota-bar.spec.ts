@@ -1,4 +1,4 @@
-// status Contributionの時間枠別残率・詳細・非表示を明暗テーマで撮影する。
+// status Contribution の時間枠別残率・詳細・非表示を明暗テーマで撮影する。
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {

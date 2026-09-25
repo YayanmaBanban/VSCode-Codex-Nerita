@@ -1,9 +1,9 @@
-// MCP一覧の応答から名前と接続状態を検証・抽出し、全ページを取得する。
+// MCP 一覧の応答から名前と接続状態を検証・抽出し、全ページを取得する。
 import { isRecord } from "../../../shared/validation";
 import { isMcpServerSummary, type McpServerSummary } from "../../../shared/mcp";
 import type { CodexConnection } from "./runtime/connection";
 
-/** 表示に必要な項目だけを抽出し、ツール定義や認証情報をUIへ渡さない。 */
+/** 表示に必要な項目だけを抽出し、ツール定義や認証情報を UI へ渡さない。 */
 export function parseMcpStatus(value: unknown): {
 	data: McpServerSummary[];
 	nextCursor: string | null;

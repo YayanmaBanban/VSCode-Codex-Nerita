@@ -6,7 +6,7 @@ import type { AttachmentService } from "../session/attachmentService";
 import { openResource } from "./openResource";
 import { droppedAttachments } from "./droppedAttachments";
 
-/** 選択されたローカルファイルをHost内で検証するための参照として扱う。 */
+/** 選択されたローカルファイルを Host 内で検証するための参照として扱う。 */
 export const attachmentService: AttachmentService = {
 	drop: droppedAttachments,
 	async pick() {

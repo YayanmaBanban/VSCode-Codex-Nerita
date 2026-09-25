@@ -1,4 +1,4 @@
-// Pi最小版の状態を既存チャットで表示し、送信・停止・再送とエラーを確認する。
+// Pi 最小版の状態を既存チャットで表示し、送信・停止・再送とエラーを確認する。
 import { test, expect } from "@playwright/test";
 
 test("Piの逐次応答・停止・再送・新規会話", async ({ page }, info) => {

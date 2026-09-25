@@ -1,4 +1,4 @@
-// 非WindowsのShellはPiの実行処理を維持し、承認と取消だけを接続する。
+// 非 Windows のシェルは Pi の実行処理を維持し、承認と取消だけを接続する。
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { z } from "zod";
 import {
@@ -15,7 +15,7 @@ const inputSchema = z
 	})
 	.passthrough();
 
-/** SDKと信頼済みShell拡張の両方に、同じ承認・role・Stopを適用する。 */
+/** SDK と信頼済みシェル拡張の両方に、同じ承認・role・`Stop` を適用する。 */
 export function createPiHostShellTool(
 	definition: Omit<ToolDefinition, "renderCall" | "renderResult">,
 	cwd: string,
@@ -23,7 +23,7 @@ export function createPiHostShellTool(
 	policy: AgentAccessPolicy,
 	lifetime: AbortSignal,
 ): ToolDefinition {
-	// SDKの端末描画は引数型ごとに異なるため、Hostには引き継がない。
+	// SDK の端末描画は引数型ごとに異なるため、Host には引き継がない。
 	const terminalDefinition: ToolDefinition = definition;
 	const {
 		renderCall: _call,

@@ -1,4 +1,4 @@
-// Pi標準のJSONLを保存し、選択した保存先の履歴だけを公開する。
+// Pi 標準の JSONL を保存し、選択した保存先の履歴だけを公開する。
 import {
 	mkdir,
 	readFile,
@@ -10,9 +10,9 @@ import { dirname, join, resolve } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import type { SessionSummary } from "../../../shared/sessionHistory";
 
-/** 保存先の設定値。任意パスはWebviewから受け取らない。 */
+/** 保存先の設定値。任意パスは Webview から受け取らない。 */
 export type PiSessionStorage = "global" | "workspace";
-/** 一覧を取得したHostが保持し、復元先の保存領域を固定する。 */
+/** 一覧を取得した Host が保持し、復元先の保存領域を固定する。 */
 export type PiResumeTarget = {
 	id: string;
 	directory: string;
@@ -20,14 +20,14 @@ export type PiResumeTarget = {
 	/** 元のファイルを保持し、選択ブランチを別の会話へ複製する。 */
 	fork?: boolean;
 };
-/** SDKから独立した履歴一覧と初期表示の境界。 */
+/** SDK から独立した履歴一覧と初期表示の境界。 */
 export type PiHistoryAccess = {
 	entries: PiSdk.SessionEntry[];
 	list: (signal: AbortSignal) => Promise<SessionSummary[]>;
 	target: (id: string) => PiResumeTarget;
 };
 
-/** SDK 0.86の標準配置に合わせ、指定したagentDirも尊重する。 */
+/** SDK 0`.86` の標準配置に合わせ、指定した `agentDir` も尊重する。 */
 export function piSessionDirectory(
 	cwd: string,
 	agentDir: string,
@@ -44,7 +44,7 @@ export function piSessionDirectory(
 			);
 }
 
-/** 初回だけignoreを作り、既存設定や作成権限エラーを握りつぶさない。 */
+/** 初回だけ `ignore` を作り、既存設定や作成権限エラーを握りつぶさない。 */
 export async function preparePiSessionDirectory(
 	directory: string,
 	storage: PiSessionStorage,
@@ -67,7 +67,7 @@ export async function preparePiSessionDirectory(
 	}
 }
 
-/** 一覧と復元を同じ保存先に限定し、移動したworkspaceでは現在のcwdを使用する。 */
+/** 一覧と復元を同じ保存先に限定し、移動したワークスペースでは現在の `cwd` を使用する。 */
 export async function openPiSessionStore(
 	sdk: typeof PiSdk,
 	cwd: string,
@@ -122,7 +122,7 @@ export async function openPiSessionStore(
 			);
 		}
 		const path = matches[0]!.path;
-		// SDK.openは空ファイルを初期化するため、読込前に有効なヘッダーを確認する。
+		// `SDK.open` は空ファイルを初期化するため、読込前に有効なヘッダーを確認する。
 		const header = sdk.parseSessionEntries(await readFile(path, "utf8"))[0];
 		if (header?.type !== "session" || header.id !== resume.id) {
 			throw new Error("Piの履歴ファイルが変更されています。");
@@ -160,7 +160,7 @@ function forkSessionStore(
 		if (!leaf) {
 			throw new Error("空のPi履歴はフォークできません。");
 		}
-		// SDKはこのmanagerだけを新しいID・ファイルへ切り替える。
+		// SDK はこの `manager` だけを新しい ID・ファイルへ切り替える。
 		manager.createBranchedSession(leaf);
 	}
 }

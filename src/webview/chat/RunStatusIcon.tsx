@@ -1,4 +1,4 @@
-// 実行状態に対応する同梱の猫SVGを、テーマ色で表示する。
+// 実行状態に対応する同梱の猫 SVG を、テーマ色で表示する。
 import writing from "../../../media/icons/cat-writing-glasses-48.svg?raw";
 import loaf from "../../../media/icons/cat-loaf-glasses-48.svg?raw";
 import startled from "../../../media/icons/cat-writing-startled-48-fixed.svg?raw";
@@ -6,7 +6,7 @@ import "./thinkingIndicator.css";
 import "./catLoaf.css";
 import "./catStartled.css";
 
-// CSPに従い、SVG内のスタイルを除いて外部CSSから動きを適用する。
+// CSP に従い、SVG 内のスタイルを除いて外部 CSS から動きを適用する。
 const icons = {
 	writing: writing.replace(/<style>[\s\S]*?<\/style>/, ""),
 	loaf: loaf.replace(/<style>[\s\S]*?<\/style>/, ""),

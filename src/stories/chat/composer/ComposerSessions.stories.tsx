@@ -1,4 +1,4 @@
-// セッションチップの保存・復元・送信失敗を実際のチャットUIで確認する。
+// セッションチップの保存・復元・送信失敗を実際のチャット UI で確認する。
 import { useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../../webview/chat/ChatApp";
@@ -6,7 +6,7 @@ import type { Bridge } from "../../../webview/vscodeBridge";
 import type { ComposerPart } from "../../../shared/composerContent";
 import { createMockBridge } from "../mocks/mockBridge";
 
-/** 参照元の会話をロードせず、送信される参照IDだけを観測する。 */
+/** 参照元の会話をロードせず、送信される参照 ID だけを観測する。 */
 function SessionStory() {
 	const [view, setView] = useState(false);
 	const [sent, setSent] = useState("");
@@ -97,6 +97,6 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof SessionStory>;
 export default meta;
-/** 本文の参照チップを操作するStory。 */
+/** 本文の参照チップを操作するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const References: Story = {};

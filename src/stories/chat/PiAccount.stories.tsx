@@ -1,4 +1,4 @@
-// Piの認証待ち・取消・モデル変更を実チャットUIで観察する。
+// Pi の認証待ち・取消・モデル変更を実チャット UI で観察する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../webview/chat/ChatApp";

@@ -1,4 +1,4 @@
-// MCP取得の待機から完了までを、Storybook内の遅延応答で再現する。
+// MCP 取得の待機から完了までを、Storybook 内の遅延応答で再現する。
 import type { ChatState } from "../../../shared/chatState";
 import type { HostMessage } from "../../../shared/messages";
 import { mcpSummaryText } from "../../../shared/mcp";

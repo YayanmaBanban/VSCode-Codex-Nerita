@@ -1,4 +1,4 @@
-// Markdownの構造・安全な表示・コピー・狭幅での表示を実ブラウザーで検証する。
+// Markdown の構造・安全な表示・コピー・狭幅での表示を実ブラウザーで検証する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -46,7 +46,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			["AGENTS.md", "AGENTS.md"],
 			["日本語", "日本語 sample.md"],
 		] as const) {
-			// Storyと同じ仮想ルートで解決し、実マシンのパスを期待値に埋め込まない。
+			// ストーリーと同じ仮想ルートで解決し、実マシンのパスを期待値に埋め込まない。
 			const uri = new URL(relativePath, "file:///").href;
 			const link = answer.getByRole("link", { name, exact: true });
 			await expect(link).toHaveAttribute("href", uri);

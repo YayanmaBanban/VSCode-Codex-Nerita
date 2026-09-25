@@ -1,4 +1,4 @@
-// Pi更新後の型・単体・配布・会話テストを順に実行し、展開済みVSIXも検証する。
+// Pi 更新後の型・単体・配布・会話テストを順に実行し、展開済み VSIX も検証する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { tmpdir } = require("node:os");

@@ -1,4 +1,4 @@
-// 推論・計画・MCPなどの完了項目を、共通ツールカードへ正規化する。
+// 推論・計画・MCP などの完了項目を、共通ツールカードへ正規化する。
 import type { ToolSummary } from "../../../../shared/chatState";
 import { isRecord } from "../../../../shared/validation";
 
@@ -7,7 +7,7 @@ export const textContent = (text: string) => ({
 	type: "content",
 	content: { type: "text", text },
 });
-/** コマンドと編集以外のApp Server項目を表示用に変換する。 */
+/** コマンドと編集以外の App Server 項目を表示用に変換する。 */
 export function activityItem(
 	value: Record<string, unknown>,
 ): Partial<ToolSummary> | null {
@@ -137,7 +137,7 @@ function strings(value: unknown): string[] {
 	}
 	return value.map(string);
 }
-/** unified diffを前後本文へ再構築せず、そのままの差分として保持する。 */
+/** unified `diff` を前後本文へ再構築せず、そのままの差分として保持する。 */
 export function fileChanges(changes: unknown): {
 	paths: string[];
 	content: unknown[];

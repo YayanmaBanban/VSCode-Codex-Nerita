@@ -1,4 +1,4 @@
-// Hostで速度設定を汎用のtoggle宣言へ変換する。
+// Host で速度設定を汎用の `toggle` 宣言へ変換する。
 import type { ConfigOption } from "../../shared/composer";
 import type { NeritaUiControl } from "../../shared/uiContributions";
 

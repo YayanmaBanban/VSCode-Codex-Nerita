@@ -11,7 +11,7 @@ import type { ComposerTarget } from "../../../shared/composerTargets";
 import { pathText } from "../../../shared/composerReferences";
 import { PathReferenceChip } from "./PathReferenceChip";
 
-/** Undoとクリップボードの内部形式に保存するパス情報。 */
+/** 元に戻す操作とクリップボードの内部形式に保存するパス情報。 */
 type SerializedPathReference = SerializedLexicalNode & { path: ComposerTarget };
 
 /** 見た目のファイル名と、送信用のパス文字列を分離するノード。 */
@@ -60,11 +60,11 @@ export class PathReferenceNode extends DecoratorNode<ReactElement> {
 			"inline-path-reference inline-block max-w-full align-middle";
 		return element;
 	}
-	/** 選択を保つため、外側のDOMを再作成しない。 */
+	/** 選択を保つため、外側の DOM を再作成しない。 */
 	override updateDOM(): boolean {
 		return false;
 	}
-	/** 外部のHTML貼り付け先にも完全なパスを渡す。 */
+	/** 外部の HTML 貼り付け先にも完全なパスを渡す。 */
 	override exportDOM(): DOMExportOutput {
 		const element = document.createElement("span");
 		element.textContent = this.getTextContent();
@@ -79,7 +79,7 @@ export class PathReferenceNode extends DecoratorNode<ReactElement> {
 			path: this.getPath(),
 		};
 	}
-	/** Reactで添付と同じアイコン・枠・削除操作を描画する。 */
+	/** React で添付と同じアイコン・枠・削除操作を描画する。 */
 	override decorate(): ReactElement {
 		return (
 			<PathReferenceChip nodeKey={this.getKey()} path={this.getPath()} />
@@ -87,7 +87,7 @@ export class PathReferenceNode extends DecoratorNode<ReactElement> {
 	}
 }
 
-/** Lexicalの更新内でパスチップを作る。 */
+/** Lexical の更新内でパスチップを作る。 */
 export function $createPathReferenceNode(
 	path: ComposerTarget,
 ): PathReferenceNode {

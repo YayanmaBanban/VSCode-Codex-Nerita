@@ -1,4 +1,4 @@
-// Lexical本文のトリガー検出と、選択候補による範囲置換を担当する。
+// Lexical 本文のトリガー検出と、選択候補による範囲置換を担当する。
 import {
 	$getSelection,
 	$isRangeSelection,

@@ -11,7 +11,7 @@ afterEach(async () => {
 		harnesses.splice(0).map(({ session }) => session.dispose()),
 	);
 });
-/** 一つの保存済み会話を一覧に用意する。 */
+/** 1つの保存済み会話を一覧に用意する。 */
 async function connected() {
 	const h = codexHarness();
 	harnesses.push(h);
@@ -23,7 +23,7 @@ async function connected() {
 	await h.session.connect();
 	return h;
 }
-/** 検証済みUIと同じ要求を新しいIDで送る。 */
+/** 検証済み UI と同じ要求を新しい ID で送る。 */
 const action = (
 	h: ReturnType<typeof codexHarness>,
 	type: string,

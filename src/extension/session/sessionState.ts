@@ -1,4 +1,4 @@
-﻿// 会話の正本とUI購読を保持し、単調増加番号付き差分を配信する。
+﻿// 会話の正本と UI 購読を保持し、単調に増加する番号付きの差分を配信する。
 import { initialState, type ChatState } from "../../shared/chatState";
 import { type HostMessage } from "../../shared/messages";
 import { createBuiltinUiRegistry } from "../ui-contributions/builtinContributions";
@@ -8,7 +8,7 @@ import { StatePublisher } from "./statePublisher";
 export class SessionState {
 	protected state = initialState();
 	protected readonly uiRegistry = createBuiltinUiRegistry();
-	/** Piは実SDKの現在のproviderで上書きする。 */
+	/** Pi は実 SDK の現在のプロバイダーで上書きする。 */
 	protected contributionContext(): ContributionContext {
 		return {
 			backend: "codex",
@@ -33,7 +33,7 @@ export class SessionState {
 			),
 		});
 	}
-	/** UI通知の購読と解除を提供する。 */
+	/** UI 通知の購読と解除を提供する。 */
 	subscribe(listener: (event: HostMessage) => void): () => void {
 		this.listeners.add(listener);
 		return () => {
@@ -85,7 +85,7 @@ export class SessionState {
 	protected busy(): boolean {
 		return this.state.run === "running" || this.state.run === "cancelling";
 	}
-	/** 終了時にUI購読を解放する。 */
+	/** 終了時に UI 購読を解放する。 */
 	protected clearListeners(): void {
 		this.publisher.dispose();
 		this.listeners.clear();

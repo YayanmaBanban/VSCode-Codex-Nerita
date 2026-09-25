@@ -1,4 +1,4 @@
-// 認証専用エディターにSDKの対話を接続する。
+// 認証専用エディターに SDK の対話を接続する。
 import * as vscode from "vscode";
 import { randomUUID } from "node:crypto";
 import type { PiAuthService } from "./PiAccount";

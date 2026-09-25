@@ -1,7 +1,7 @@
-// 描画済みの会話から検索範囲を作り、ReactのDOMを書き換えずに一致を示す。
+// 描画済みの会話から検索範囲を作り、React の DOM を書き換えずに一致を示す。
 import { findMatches, matchLimit } from "./findMatches";
 
-/** インライン装飾をまたいで検索できる、一つの表示ブロック。 */
+/** インライン装飾をまたいで検索できる、1つの表示ブロック。 */
 type TextBlock = {
 	element: Element;
 	text: string;
@@ -47,7 +47,7 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 	return blocks;
 }
 
-/** 文字位置をDOM Rangeへ変換し、一致数が多いときは上限到達も返す。 */
+/** 文字位置を DOM Range へ変換し、一致数が多いときは上限到達も返す。 */
 export function searchRanges(
 	root: HTMLElement,
 	pattern: RegExp,

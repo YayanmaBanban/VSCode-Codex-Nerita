@@ -1,8 +1,8 @@
-// CodexのOAuth claimをHost内だけで読み、認証ヘッダーを共通化する。
+// Codex の OAuth `claim` を Host 内だけで読み、認証ヘッダーを共通化する。
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { isRecord } from "../../../../shared/validation";
 
-/** tokenの更新・保存はSDKへ委譲し、認証ファイルは直接読まない。 */
+/** `token` の更新・保存は SDK へ委譲し、認証ファイルは直接読まない。 */
 export async function codexOAuth(models: ModelRuntime, signal: AbortSignal) {
 	const resolved = await models.getAuth("openai-codex", { signal });
 	signal.throwIfAborted();
@@ -29,7 +29,7 @@ export async function codexOAuth(models: ModelRuntime, signal: AbortSignal) {
 	};
 }
 
-/** OAuthトークンからアカウント識別子を読み取る。 */
+/** OAuth トークンからアカウント識別子を読み取る。 */
 function oauthAccount(token: string) {
 	const claims: unknown = JSON.parse(
 		Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8"),

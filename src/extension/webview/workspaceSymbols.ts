@@ -1,4 +1,4 @@
-// VS Codeの言語プロバイダーから検索し、Webviewには位置情報だけを渡す。
+// VS Code の言語プロバイダーから検索し、Webview には位置情報だけを渡す。
 import * as vscode from "vscode";
 import {
 	isWorkspacePath,

@@ -3,7 +3,7 @@ import { useReducedMotion } from "motion/react";
 import { ShinyText } from "../ui/ShinyText";
 import { RunStatusIcon } from "./RunStatusIcon";
 
-/** 状態名を読み上げ、装飾の動きはOSの設定に合わせる。 */
+/** 状態名を読み上げ、装飾の動きは OS の設定に合わせる。 */
 export function ThinkingIndicator() {
 	const reducedMotion = useReducedMotion();
 	return (

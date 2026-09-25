@@ -1,4 +1,4 @@
-// 親の実行セッションを変更せず、子Threadの通知・メタデータ・閲覧を提供する。
+// 親の実行セッションを変更せず、子スレッドの通知・メタデータ・閲覧を提供する。
 import type { UiMessage } from "../../../shared/messages";
 import { CodexRequests } from "./CodexRequests";
 import { AgentRegistry, agentMetadata } from "./agents/AgentRegistry";
@@ -9,14 +9,14 @@ import { isRecord } from "../../../shared/validation";
 import { type SubAgentSummary } from "@/shared/subAgents";
 import { type HistoryTurn, type HistoryThread } from "./protocol/history";
 
-/** Agent用の読み取りを接続世代と親セッションに限定する。 */
+/** Agent 用の読み取りを接続世代と親セッションに限定する。 */
 export abstract class CodexAgents extends CodexRequests {
 	private readonly agentRegistry = new AgentRegistry();
 	private metadataRequests = new Map<string, Promise<void>>();
-	/** 子の通知は親ターンのthreadIdフィルターより前に処理する。 */
+	/** 子の通知は親ターンの `threadId` フィルターより前に処理する。 */
 	protected override notification(message: AppServerNotification): void {
 		super.notification(message);
-		// 親の項目は開始応答待ちも含め、CodexRunが本文と同じ受信順で再生する。
+		// 親の項目は開始応答待ちも含め、`CodexRun` が本文と同じ受信順で再生する。
 		if (
 			isRecord(message.params) &&
 			message.params.threadId === this.state.sessionId &&
@@ -39,7 +39,7 @@ export abstract class CodexAgents extends CodexRequests {
 		}
 		this.synchronizeAgents();
 	}
-	/** 開始直後と履歴復元後に名前を補完し、遅いreadで新しい状態を上書きしない。 */
+	/** 開始直後と履歴復元後に名前を補完し、遅い `read` で新しい状態を上書きしない。 */
 	protected synchronizeAgents(): void {
 		const client = this.client;
 		const sessionId = this.state.sessionId;
@@ -79,7 +79,7 @@ export abstract class CodexAgents extends CodexRequests {
 					});
 				})
 				.catch(() => {
-					/* 未保存のThreadはパス名で表示し、閲覧操作で再取得する。 */
+					/* 未保存のスレッドはパス名で表示し、閲覧操作で再取得する。 */
 				});
 			this.metadataRequests.set(key, operation);
 		}
@@ -89,7 +89,7 @@ export abstract class CodexAgents extends CodexRequests {
 			}
 		}
 	}
-	/** 許可済みの子Threadだけを読み、resumeやactive sessionの切り替えを行わない。 */
+	/** 許可済みの子スレッドだけを読み、`resume` や `active` `session` の切り替えを行わない。 */
 	protected async readAgent(
 		message: Extract<UiMessage, { type: "agent/read" }>,
 	): Promise<void> {
@@ -119,7 +119,7 @@ export abstract class CodexAgents extends CodexRequests {
 		) {
 			throw new Error("Unexpected agent thread");
 		}
-		// 子が専用worktreeを使う場合もあるため、cwdではなく既知のIDと親子関係で限定する。
+		// 子が専用 `worktree` を使う場合もあるため、`cwd` ではなく既知の ID と親子関係で限定する。
 		const turns = await hydrateHistory(client, thread, current, true);
 		if (!current()) {
 			return;
@@ -146,7 +146,7 @@ export abstract class CodexAgents extends CodexRequests {
 			this.state.agents.map((agent) => [agent.threadId, agent]),
 		);
 
-		// 読み取り中の通知を優先し、履歴から見つかった孫Threadだけを追加する。
+		// 読み取り中の通知を優先し、履歴から見つかった孫スレッドだけを追加する。
 		for (const agent of view.agents) {
 			if (!agents.has(agent.threadId)) {
 				agents.set(agent.threadId, agent);
@@ -188,7 +188,7 @@ export abstract class CodexAgents extends CodexRequests {
 	}
 }
 
-/** 子Threadの識別子と既知の親子関係を照合する。 */
+/** 子スレッドの識別子と既知の親子関係を照合する。 */
 function matchesAgentThread(
 	thread: { id: string; parentThreadId?: string },
 	threadId: string,

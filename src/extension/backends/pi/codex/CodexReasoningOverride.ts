@@ -1,4 +1,4 @@
-// 対応モデルのrequest baselineを固定し、trustedな推論変更を元の履歴位置へ再挿入する。
+// 対応モデルの要求の基準値を固定し、信頼済みの推論変更を元の履歴位置へ再挿入する。
 import { isRecord } from "../../../../shared/validation";
 import {
 	historyAnchor,
@@ -10,16 +10,16 @@ import {
 	type CodexEffort,
 } from "./CodexReasoningHistory";
 
-/** 状態の正本をPiの分岐履歴に置き、再起動・forkでも同じ要求を再構成する。 */
+/** 状態の正本を Pi の分岐履歴に置き、再起動・`fork` でも同じ要求を再構成する。 */
 export class CodexReasoningOverride {
-	/** 非対応・Ultraへの移行時は古いpinの復活を防ぐ。 */
+	/** 非対応・Ultra への移行時は古い固定値の復活を防ぐ。 */
 	clear(store: ReasoningHistoryStore): void {
 		if (readReasoningHistory(store)) {
 			store.appendCustomEntry(reasoningHistoryType, null);
 		}
 	}
 
-	/** wireへ変換済みのeffortを使い、PiのthinkingLevelMapとclampを尊重する。 */
+	/** 通信形式へ変換済みの `effort` を使い、Pi の `thinkingLevelMap` と範囲内への補正を尊重する。 */
 	rewrite(
 		payload: unknown,
 		modelKey: string,
@@ -66,7 +66,7 @@ export class CodexReasoningOverride {
 	}
 }
 
-/** 不正な要求は書換えも履歴追加もしない。 */
+/** 不正な要求の書き換えや履歴追加は行わない。 */
 function isReasoningPayload(value: unknown): value is Record<
 	string,
 	unknown
@@ -83,7 +83,7 @@ function isReasoningPayload(value: unknown): value is Record<
 	);
 }
 
-/** 同一tailの再試行では置換し、連続updateを生成しない。 */
+/** 同一末尾の再試行では置換し、連続更新を生成しない。 */
 function updateTail(
 	state: ReasoningHistory,
 	input: unknown[],
@@ -107,7 +107,7 @@ function updateTail(
 	}
 }
 
-/** 短縮・本文置換があれば古いcontext windowのpinを破棄する。 */
+/** 短縮・本文置換があれば古いコンテキストウィンドウの固定値を破棄する。 */
 function survives(state: ReasoningHistory, input: unknown[]): boolean {
 	return [state, ...state.transitions].every(
 		(entry) =>
@@ -116,7 +116,7 @@ function survives(state: ReasoningHistory, input: unknown[]): boolean {
 	);
 }
 
-/** 再入力されたtrusted updateだけを除き、再構成時の重複を防ぐ。 */
+/** 再入力された信頼済みの更新だけを除き、再構成時の重複を防ぐ。 */
 function removeTrustedUpdates(
 	input: Record<string, unknown>[],
 	state: ReasoningHistory | undefined,

@@ -1,4 +1,4 @@
-// Agent専用カードの状態、幅、読み取りビューと親への復帰を実画面で確認する。
+// Agent 専用カードの状態、幅、読み取りビューと親への復帰を実画面で確認する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

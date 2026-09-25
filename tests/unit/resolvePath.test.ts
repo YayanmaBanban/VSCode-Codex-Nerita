@@ -1,4 +1,4 @@
-// 実在確認・種類判定と、Webview境界の不正入力拒否を確認する。
+// 実在確認・種類判定と、Webview 境界の不正入力拒否を確認する。
 import { beforeEach, expect, it, vi } from "vitest";
 import { win32 } from "node:path";
 const api = vi.hoisted(() => ({ stat: vi.fn() }));

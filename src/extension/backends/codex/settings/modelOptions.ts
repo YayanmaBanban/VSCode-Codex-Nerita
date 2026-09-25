@@ -2,7 +2,7 @@
 import type { ConfigOption } from "../../../../shared/composer";
 import type { ModelInfo } from "../protocol/account";
 
-/** モデル能力と会話設定から、Codex専用の選択候補を構成する。 */
+/** モデル能力と会話設定から、Codex 専用の選択候補を構成する。 */
 export function modelOptions(
 	models: ModelInfo[],
 	model: string,

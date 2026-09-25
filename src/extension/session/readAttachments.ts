@@ -1,15 +1,15 @@
-// ローカル添付のサイズ・文字コードを検証し、backendに依存しない入力へ読み込む。
+// ローカル添付のサイズ・文字コードを検証し、バックエンドに依存しない入力へ読み込む。
 import { fileURLToPath } from "node:url";
 import { extname } from "node:path";
 import { open } from "node:fs/promises";
 import type { Attachment } from "../../shared/composer";
 
-/** backend別のプロトコル変換前の添付内容。 */
+/** バックエンド別のプロトコル変換前の添付内容。 */
 export type AttachmentContent =
 	| { type: "image"; path: string }
 	| { type: "text"; path: string; text: string };
 
-/** テキストは合計2MBまで読み込み、画像はローカル参照を渡す。 */
+/** テキストは合計2`MB` まで読み込み、画像はローカル参照を渡す。 */
 export async function readAttachments(
 	files: Attachment[],
 	images: boolean,

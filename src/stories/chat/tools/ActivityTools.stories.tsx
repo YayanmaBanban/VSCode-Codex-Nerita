@@ -1,4 +1,4 @@
-// App Serverの元種別と正規化済み入力を使い、専用カードとリンク要求を確認する。
+// App Server の元種別と正規化済み入力を使い、専用カードとリンク要求を確認する。
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { initialState, type ToolSummary } from "../../../shared/chatState";

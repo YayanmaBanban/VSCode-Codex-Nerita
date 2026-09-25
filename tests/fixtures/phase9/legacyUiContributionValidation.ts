@@ -1,5 +1,5 @@
-// Phase 9移行前の比較用guard。互換性の基準として固定し、本番から参照しない。
-// 宣言型UIの通信境界で、種別・候補・数値・重複IDを検証する。
+// Phase 9移行前の比較用の検証処理。互換性の基準として固定し、本番から参照しない。
+// 宣言型 UI の通信境界で、種別・候補・数値・重複 ID を検証する。
 import { isBackendId } from "../../../src/shared/backend";
 import { isId, isRecord } from "../../../src/shared/validation";
 import type { UiContributions } from "../../../src/shared/uiContributions";
@@ -10,7 +10,7 @@ function description(value: unknown): boolean {
 	return value === undefined || typeof value === "string";
 }
 
-/** 対応するcontrolだけを受け入れる。 */
+/** 対応するコントロールだけを受け入れる。 */
 function control(value: unknown): boolean {
 	if (!isRecord(value)) {
 		return false;
@@ -83,7 +83,7 @@ function legacySelect(value: Record<string, unknown>) {
 	);
 }
 
-/** 未解決条件や未知のcontrolを含むスナップショット・差分を拒否する。 */
+/** 未解決条件や未知のコントロールを含むスナップショット・差分を拒否する。 */
 export function isUiContributions(value: unknown): value is UiContributions {
 	if (
 		!isRecord(value) ||

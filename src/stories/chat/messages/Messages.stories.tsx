@@ -37,11 +37,11 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof MessagesStory>;
 export default meta;
-/** 長文表示の時間制御用Story。 */
+/** 長文表示の時間制御用ストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const LongText: Story = {};
 
-/** 長いファイル名とMarkdown・コードに囲まれた参照を狭幅で確認する。 */
+/** 長いファイル名と Markdown・コードに囲まれた参照を狭幅で確認する。 */
 export const References: Story = {
 	render: () => {
 		const path = {

@@ -1,11 +1,11 @@
-// ドロップ内容を検証し、ローカルURIを優先して添付要求のデータへ変換する。
+// ドロップ内容を検証し、ローカル URI を優先して添付要求のデータへ変換する。
 import {
 	MAX_DROP_BYTES,
 	isLocalFileUri,
 	type DroppedAttachment,
 } from "../../../shared/attachmentDrop";
 
-/** ファイル内容をJSONで送れるBase64へ変換する。 */
+/** ファイル内容を JSON で送れる Base64 へ変換する。 */
 function readFile(file: File): Promise<DroppedAttachment> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
@@ -20,7 +20,7 @@ function readFile(file: File): Promise<DroppedAttachment> {
 	});
 }
 
-/** DataTransferはイベント中に読み取り、URIがなければファイル内容を非同期で取得する。 */
+/** DataTransfer はイベント中に読み取り、URI がなければファイル内容を非同期で取得する。 */
 export async function readDroppedAttachments(
 	transfer: DataTransfer,
 ): Promise<DroppedAttachment[]> {
@@ -37,7 +37,7 @@ export async function readDroppedAttachments(
 		.split(/\r?\n/)
 		.map((uri) => uri.trim())
 		.filter(isLocalFileUri);
-	// VS Codeのエクスプローラーが渡すローカル絶対パスも参照として扱う。
+	// VS Code のエクスプローラーが渡すローカル絶対パスも参照として扱う。
 	const codeFiles = transfer.getData("CodeFiles");
 	if (!uris.length && codeFiles) {
 		const paths: unknown = JSON.parse(codeFiles);
@@ -77,7 +77,7 @@ export async function readDroppedAttachments(
 	return dropped;
 }
 
-/** UNC・絶対パス・ドライブパスに対応するURIの区切りを返す。 */
+/** UNC・絶対パス・ドライブパスに対応する URI の区切りを返す。 */
 function fileUriSlashes(normalized: string) {
 	if (normalized.startsWith("//")) {
 		return "";

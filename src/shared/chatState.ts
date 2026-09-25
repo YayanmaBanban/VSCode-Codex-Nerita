@@ -1,4 +1,4 @@
-// Hostが保持しWebviewへ同期する会話状態と、両側で使う初期値を定義する。
+// Host が保持し Webview へ同期する会話状態と、両側で使う初期値を定義する。
 import type { McpMessageContent } from "./mcp";
 import type { ComposerReference } from "./composerReferences";
 import type { PiProviderControls } from "./piProviderControls";
@@ -24,7 +24,7 @@ export type ConnectionStatus =
 	| "authenticating"
 	| "error";
 
-/** 一つのプロンプトの実行状態。 */
+/** 1つのプロンプトの実行状態。 */
 export type RunStatus =
 	"idle" | "running" | "cancelling" | "completed" | "cancelled" | "failed";
 
@@ -73,7 +73,7 @@ export type Permission = {
 
 /** Host が保持する現在の会話の正本。 */
 export type ChatState = {
-	/** nullはHostから定義を受信する前。両backendとも解決済み定義を公開する。 */
+	/** `null` は Host から定義を受信する前。両バックエンドとも解決済み定義を公開する。 */
 	uiContributions: UiContributions | null;
 	skills: SkillSummary[];
 	personality: PersonalitySettings | null;
@@ -83,7 +83,7 @@ export type ChatState = {
 	sessionTitle: string | null;
 	runId: string | null;
 	run: RunStatus;
-	/** 完了したPlanの選択待ち。 */
+	/** 完了した Plan の選択待ち。 */
 	planDecision: { runId: string; text: string } | null;
 	messages: ChatMessage[];
 	tools: ToolSummary[];

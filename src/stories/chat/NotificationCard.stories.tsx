@@ -26,7 +26,7 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof NotificationStory>;
 export default meta;
-/** 標準色と任意の背景色を比較するStory。 */
+/** 標準色と任意の背景色を比較するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const CustomBackground: Story = { args: { backgroundColor: "#28483a" } };

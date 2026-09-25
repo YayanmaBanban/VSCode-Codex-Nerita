@@ -1,4 +1,4 @@
-// 永続ストレージとControllerを通し、再起動・送信・履歴の設定を検証する。
+// 永続ストレージと `Controller` を通し、再起動・送信・履歴の設定を検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, historyThread } from "./codexHarness";
 import { codexSelectionStore } from "../../src/extension/backends/codex/settings/modelSelection";
@@ -9,7 +9,7 @@ afterEach(async () => {
 	await Promise.all(sessions.splice(0).map((h) => h.session.dispose()));
 });
 
-/** 同じglobalState相当の保存先を、独立したControllerへ渡す。 */
+/** 同じ `globalState` 相当の保存先を、独立した `Controller` へ渡す。 */
 function fixture(initial?: unknown) {
 	let stored = initial;
 	const storage = {
@@ -50,7 +50,7 @@ function fixture(initial?: unknown) {
 	return { storage, store, create, models };
 }
 
-/** 現在の会話へのUI設定要求を送る。 */
+/** 現在の会話への UI 設定要求を送る。 */
 async function configure(
 	h: ReturnType<typeof codexHarness>,
 	configId: string,

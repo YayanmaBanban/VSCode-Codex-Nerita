@@ -4,7 +4,7 @@ import { isRecord } from "./validation";
 /** 指示文を名前で保存するプリセット。 */
 export type PersonalityPreset = { name: string; text: string };
 
-/** 一つの保存先と設定ファイルによる固定状態。 */
+/** 1つの保存先と設定ファイルによる固定状態。 */
 export type PersonalityScope = {
 	presets: PersonalityPreset[];
 	selected: string;
@@ -17,7 +17,7 @@ export type PersonalitySettings = {
 	workspace: PersonalityScope;
 };
 
-/** 読み込み・選択・保存の要求。パスはHost側で確定する。 */
+/** 読み込み・選択・保存の要求。パスは Host 側で確定する。 */
 export type PersonalityMessage =
 	| { type: "personality/read"; requestId: string }
 	| {
@@ -49,7 +49,7 @@ export function isPersonalityPreset(
 	);
 }
 
-/** Hostから受け取る設定を入れ子まで検証する。 */
+/** Host から受け取る設定を入れ子まで検証する。 */
 export function isPersonalitySettings(
 	value: unknown,
 ): value is PersonalitySettings {

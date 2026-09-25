@@ -1,10 +1,10 @@
-// Piのツール実行通知を、会話の実行IDと順序を保った共通カードへ変換する。
+// Pi のツール実行通知を、会話の実行 ID と順序を保った共通カードへ変換する。
 import type { ChatState, ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
 
-/** 本文だけを表示用へ渡し、画像のbase64やSDK内部情報をカードへ露出しない。 */
+/** 本文だけを表示用へ渡し、画像の base64 や SDK 内部情報をカードへ露出しない。 */
 function resultContent(result: unknown): unknown[] {
 	if (!isRecord(result) || !Array.isArray(result.content)) {
 		return [];
@@ -18,12 +18,12 @@ function resultContent(result: unknown): unknown[] {
 	});
 }
 
-/** SDKの出力を、共通のテキスト表示形式へ揃える。 */
+/** SDK の出力を、共通のテキスト表示形式へ揃える。 */
 function textContent(text: string) {
 	return { type: "content", content: { type: "text", text } };
 }
 
-/** 終了済み項目や別ターンの同名IDを変更せず、部分結果は累積値として置換する。 */
+/** 終了済み項目や別ターンの同名 ID を変更せず、部分結果は累積値として置換する。 */
 export function mapPiTool(
 	event: PiEvent,
 	state: ChatState,
@@ -123,7 +123,7 @@ function toolTitle(
 	return existing?.title ?? (file ? `${label}: ${file}` : label);
 }
 
-/** Stopや通信障害で終了通知が来ない場合も、当該実行のカードを実行中のまま残さない。 */
+/** `Stop` や通信障害で終了通知が来ない場合も、当該実行のカードを実行中のまま残さない。 */
 export function finishPiTools(
 	state: ChatState,
 	cancelled: boolean,
@@ -172,7 +172,7 @@ function toolPath(args: Record<string, unknown>, toolName: string) {
 	return undefined;
 }
 
-/** 既知のPiツールを日本語の操作名へ変換する。 */
+/** 既知の Pi ツールを日本語の操作名へ変換する。 */
 function toolLabel(toolName: string) {
 	if (toolName === "read") {
 		return "ファイルを読む";
@@ -200,7 +200,7 @@ function toolResult(event: PiEvent): unknown {
 	return undefined;
 }
 
-/** Piのツール名を共通カードの種別へ変換する。 */
+/** Pi のツール名を共通カードの種別へ変換する。 */
 function toolKind(toolName: string): NonNullable<ToolSummary["kind"]> {
 	if (toolName === "ls") {
 		return "list";

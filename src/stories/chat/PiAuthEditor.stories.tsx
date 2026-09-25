@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PiAuthState } from "../../shared/piAuth";
 import { PiAuthEditor } from "../../webview/pi-auth/PiAuthEditor";
 
-/** Host同様に認証先ごとの通知を保持する。 */
+/** Host 同様に認証先ごとの通知を保持する。 */
 function feedback(
 	state: PiAuthState,
 	methodId: string,

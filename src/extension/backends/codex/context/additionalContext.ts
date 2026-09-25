@@ -1,4 +1,4 @@
-// 同梱Codexの試験的スキーマにある送信フィールドを安定版の生成型に補う。
+// 同梱 Codex の試験的スキーマにある送信フィールドを安定版の生成型に補う。
 import type { TurnStartParams } from "../codex-app-server/v2/TurnStartParams";
 import type { TurnSteerParams } from "../codex-app-server/v2/TurnSteerParams";
 import type { CollaborationMode } from "../codex-app-server/CollaborationMode";

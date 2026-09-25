@@ -1,4 +1,4 @@
-// Plan完了カードの選択肢と閉じる操作を画面で確認する。
+// Plan 完了カードの選択肢と閉じる操作を画面で確認する。
 import { test, expect } from "@playwright/test";
 
 test("Plan完了カードを表示して選択できる", async ({ page }, info) => {

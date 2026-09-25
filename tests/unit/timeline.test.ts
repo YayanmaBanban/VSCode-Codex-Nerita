@@ -1,4 +1,4 @@
-// App Serverの項目IDを使い、本文とツールの順序・次の送信での履歴保持を検証する。
+// App Server の項目 ID を使い、本文とツールの順序・次の送信での履歴保持を検証する。
 import { expect, it } from "vitest";
 import { codexHarness } from "./codexHarness";
 import type { HostMessage } from "../../src/shared/messages";

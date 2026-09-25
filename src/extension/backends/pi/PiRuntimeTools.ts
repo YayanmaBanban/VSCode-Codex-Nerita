@@ -1,4 +1,4 @@
-// OSごとに実行基盤を選び、WindowsのShellだけをSandboxへ接続する。
+// OS ごとに実行基盤を選び、Windows のシェルだけをサンドボックスへ接続する。
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { realpath } from "node:fs/promises";
 import {
@@ -19,13 +19,13 @@ import { createPiHostShellTool } from "./PiHostShellTool";
 import type { PiRuntimeOptions } from "./PiRuntime";
 import type { PiAuthorize } from "./PiApprovedTools";
 
-/** SDKのShell設定だけを実行Toolへ引き継ぐ。 */
+/** SDK のシェル設定だけを実行ツールへ引き継ぐ。 */
 type ShellSettings = Pick<
 	PiSdk.SettingsManager,
 	"getShellPath" | "getShellCommandPrefix"
 >;
 
-/** roleはパスを正規化してから親上限と交差し、symlinkによる拡大も防ぐ。 */
+/** `role` はパスを正規化してから親上限と交差し、シンボリックリンクによる拡大も防ぐ。 */
 export async function preparePiRuntimeTools(
 	sdk: typeof PiSdk,
 	options: PiRuntimeOptions,
@@ -48,7 +48,7 @@ export async function preparePiRuntimeTools(
 			options.signal,
 		),
 	);
-	// OSによる選択であり、WindowsのSandbox失敗をHost実行へ切り替える処理ではない。
+	// OS による選択であり、Windows のサンドボックス失敗を Host 実行へ切り替える処理ではない。
 	if (!windows) {
 		tools.push(
 			createPiHostShellTool(
@@ -82,7 +82,7 @@ export async function preparePiRuntimeTools(
 	return { paths, tools, executor, unavailable: reason };
 }
 
-/** 未指定の設定はSDKの既定値を使う。 */
+/** 未指定の設定は SDK の既定値を使う。 */
 function hostShellOptions(settings?: ShellSettings): PiSdk.BashToolOptions {
 	const shellPath = settings?.getShellPath();
 	const commandPrefix = settings?.getShellCommandPrefix();
@@ -92,7 +92,7 @@ function hostShellOptions(settings?: ShellSettings): PiSdk.BashToolOptions {
 	};
 }
 
-/** ファイル操作と子roleの範囲はOSに依存せず確認する。 */
+/** ファイル操作と子 `role` の範囲は OS に依存せず確認する。 */
 async function runtimePaths(
 	options: PiRuntimeOptions,
 	mode?: WindowsSandboxImplementation,
@@ -115,7 +115,7 @@ async function runtimePaths(
 	return paths;
 }
 
-/** 設定取得の失敗をShell固有の利用不能理由にし、readやモデル接続は維持する。 */
+/** 設定取得の失敗をシェル固有の利用不能理由にし、`read` やモデル接続は維持する。 */
 async function executionMode(options: PiRuntimeOptions) {
 	const mode = options.parentPolicy?.windowsSandbox ?? options.windowsSandbox;
 	if (options.sandboxUnavailable) {

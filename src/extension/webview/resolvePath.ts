@@ -48,7 +48,7 @@ function invalidPathRequest(request: ResolvePathRequest) {
 	);
 }
 
-/** ディレクトリを優先してVS Codeのファイル種別を判定する。 */
+/** ディレクトリを優先して VS Code のファイル種別を判定する。 */
 function pathKind(type: vscode.FileType): "directory" | "file" | null {
 	if (type & vscode.FileType.Directory) {
 		return "directory";

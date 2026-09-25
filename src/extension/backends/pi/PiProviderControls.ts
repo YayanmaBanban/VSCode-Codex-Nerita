@@ -1,25 +1,25 @@
-// 現在のproviderへ設定を委譲し、未登録providerではPi標準の推論設定を使う。
+// 現在のプロバイダーへ設定を委譲し、未登録プロバイダーでは Pi 標準の推論設定を使う。
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiProviderControls as ControlsState } from "../../../shared/piProviderControls";
 import type { PiModelControls, PiProviders } from "./PiProvider";
 import { piProviders } from "./PiProviders";
 import type { PiCatalogSnapshot } from "./PiModelCatalog";
 
-/** 固有機能の状態をセッションに閉じ込め、provider切替で破棄する。 */
+/** 固有機能の状態をセッションに閉じ込め、プロバイダー切替で破棄する。 */
 export class PiProviderControls {
 	private session: AgentSession | undefined;
 	private provider: string | undefined;
 	private active: PiModelControls | undefined;
 	private catalog: (provider: string) => PiCatalogSnapshot = () => undefined;
 
-	/** providerごとの最新metadataを設定処理・要求フックの両方で参照する。 */
+	/** プロバイダーごとの最新メタデータを設定処理・要求フックの両方で参照する。 */
 	bindCatalog(read: (provider: string) => PiCatalogSnapshot): void {
 		this.catalog = read;
 	}
 
 	constructor(private readonly providers: PiProviders = piProviders) {}
 
-	/** SDKセッションを接続し、別セッションの固有設定を破棄する。 */
+	/** SDK セッションを接続し、別セッションの固有設定を破棄する。 */
 	bind(session: AgentSession): void {
 		if (this.session !== session) {
 			this.active?.reset();
@@ -29,7 +29,7 @@ export class PiProviderControls {
 		this.session = session;
 	}
 
-	/** Provider固有の実装は登録一覧から選び、非対応providerは標準経路へ戻す。 */
+	/** プロバイダー固有の実装は登録一覧から選び、非対応プロバイダーは標準経路へ戻す。 */
 	private resolve(): PiModelControls | undefined {
 		const provider = this.session?.model?.provider;
 		this.bindProviderControls(provider);
@@ -39,7 +39,7 @@ export class PiProviderControls {
 		return this.active;
 	}
 
-	/** provider切り替え時に固有設定を作り直す。 */
+	/** プロバイダー切り替え時に固有設定を作り直す。 */
 	private bindProviderControls(provider: string | undefined): void {
 		if (provider !== this.provider) {
 			this.active?.reset();
@@ -53,7 +53,7 @@ export class PiProviderControls {
 		}
 	}
 
-	/** 既存の共有状態形式を保ち、SDK標準モデルも同じUIへ公開する。 */
+	/** 既存の共有状態形式を保ち、SDK 標準モデルも同じ UI へ公開する。 */
 	snapshot(): ControlsState {
 		const active = this.resolve();
 		if (active) {
@@ -81,12 +81,12 @@ export class PiProviderControls {
 		);
 	}
 
-	/** Providerが定義した追加項目をそのままContributionへ渡す。 */
+	/** プロバイダーが定義した追加項目をそのまま Contribution へ渡す。 */
 	get configOptions() {
 		return this.resolve()?.configOptions ?? [];
 	}
 
-	/** 標準経路ではモデルmetadataに含まれる推論値だけを受け付ける。 */
+	/** 標準経路ではモデルメタデータに含まれる推論値だけを受け付ける。 */
 	selectReasoning(value: string, signal: AbortSignal): void {
 		signal.throwIfAborted();
 		const active = this.resolve();
@@ -103,7 +103,7 @@ export class PiProviderControls {
 		this.session!.setThinkingLevel(level);
 	}
 
-	/** 追加設定の受付はそのproviderに限定する。 */
+	/** 追加設定の受付はそのプロバイダーに限定する。 */
 	configure(id: string, value: string, signal: AbortSignal): void {
 		signal.throwIfAborted();
 		if (!this.resolve()?.configure(id, value, signal)) {
@@ -111,7 +111,7 @@ export class PiProviderControls {
 		}
 	}
 
-	/** SDKの要求フックを選択中providerへ渡す。 */
+	/** SDK の要求フックを選択中プロバイダーへ渡す。 */
 	rewrite(payload: unknown, model: AgentSession["model"]): unknown {
 		return this.resolve()?.rewrite(payload, model);
 	}

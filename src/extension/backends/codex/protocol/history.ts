@@ -1,4 +1,4 @@
-// 履歴RPCの応答から、一覧と復元に必要な検証済みフィールドだけを公開する。
+// 履歴 RPC の応答から、一覧と復元に必要な検証済みフィールドだけを公開する。
 import { isRecord } from "../../../../shared/validation";
 import {
 	parseStartedThread,
@@ -36,7 +36,7 @@ function text(value: unknown): string {
 	}
 	return value;
 }
-/** 項目本文は共通の描画変換時に種別ごとに検証する。 */
+/** 項目本文は共通の描画変換処理で種別ごとに検証する。 */
 function item(value: unknown): Record<string, unknown> {
 	if (!isRecord(value)) {
 		throw new Error("Invalid history item");
@@ -63,7 +63,7 @@ export function parseHistoryTurn(value: unknown): HistoryTurn {
 		itemsView: value.itemsView,
 	};
 }
-/** thread/list・read・resume・forkで共通のメタデータを検証する。 */
+/** thread/list・read・resume・`fork` で共通のメタデータを検証する。 */
 export function parseHistoryThread(value: unknown): HistoryThread {
 	if (
 		!isRecord(value) ||
@@ -106,7 +106,7 @@ export function parseHistoryThread(value: unknown): HistoryThread {
 	};
 }
 
-/** 未命名の会話はnullとして受け付ける。 */
+/** 未命名の会話は `null` として受け付ける。 */
 function isThreadName(value: unknown): value is string | null {
 	return value === null || typeof value === "string";
 }
@@ -136,7 +136,7 @@ export const parseItems = (value: unknown) =>
 		}
 		return { turnId: text(entry.turnId), item: item(entry.item) };
 	});
-/** 読み取りとアーカイブ解除は同じthread外形を返す。 */
+/** 読み取りとアーカイブ解除は同じスレッド外形を返す。 */
 export function parseReadThread(value: unknown): { thread: HistoryThread } {
 	if (!isRecord(value)) {
 		throw new Error("Invalid thread response");

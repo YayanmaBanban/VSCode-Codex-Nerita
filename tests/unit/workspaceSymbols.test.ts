@@ -18,7 +18,7 @@ const request = {
 	requestId: "symbols",
 	query: "User",
 };
-/** VS Codeが返すシンボルを最小限のAPIで再現する。 */
+/** VS Code が返すシンボルを最小限の API で再現する。 */
 function symbol(name = "User", line = 4, scheme = "file") {
 	return {
 		name,

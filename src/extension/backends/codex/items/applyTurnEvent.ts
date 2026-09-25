@@ -1,4 +1,4 @@
-// ターン内の通知を到着順に適用し、完了済み項目への遅延deltaを抑止する。
+// ターン内の通知を到着順に適用し、完了済み項目への遅延差分を抑止する。
 import type { ChatState } from "../../../../shared/chatState";
 import { isRecord } from "../../../../shared/validation";
 import type { ActiveTurn } from "../ActiveTurn";
@@ -17,7 +17,7 @@ type TurnTarget = {
 	finish(status: "completed" | "cancelled" | "failed"): void;
 };
 
-/** 接続・thread・turnの一致を呼び出し元で確認してから適用する。 */
+/** 接続・thread・ターンの一致を呼び出し元で確認してから適用する。 */
 export function applyTurnEvent(
 	run: ActiveTurn,
 	event: TurnEvent,
@@ -92,7 +92,7 @@ function completeTurn(
 	target.finish(finishedTurnStatus(event.turn.status));
 }
 
-/** 項目通知を一度だけ適用して完了済みIDを保持する。 */
+/** 項目通知を一度だけ適用して完了済み ID を保持する。 */
 function applyItemEvent(
 	event: {
 		kind: "item";

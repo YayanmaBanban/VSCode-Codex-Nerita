@@ -1,10 +1,10 @@
-// Piの承認前後だけを再現し、副作用と実SDKの確認はHostテストで行う。
+// Pi の承認前後だけを再現し、副作用と実 SDK の確認は Host テストで行う。
 
 import { initialState, type ChatState } from "../../../shared/chatState";
 import type { HostMessage, UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
 
-/** 承認・拒否・停止を実際のチャットUIから操作する。 */
+/** 承認・拒否・停止を実際のチャット UI から操作する。 */
 export function createPiApprovalBridge(): Bridge {
 	let state: ChatState = {
 		...initialState(),
@@ -159,7 +159,7 @@ function startApprovalPrompt(
 	});
 }
 
-/** Host ShellにはSandboxやOS隔離の制限があるような表示を付けない。 */
+/** Host シェルにはサンドボックスや OS 隔離の制限があるような表示を付けない。 */
 function approvalScope(name: string, cwd: string, command?: string) {
 	if (name === "bash") {
 		return ["実行範囲: Pi Shell（OSの権限で実行）"];
@@ -185,7 +185,7 @@ function approvalScope(name: string, cwd: string, command?: string) {
 /** 承諾・拒否・停止の結果をモックの本文へ反映する。 */
 function approvalResultText(choice: string, tool?: string) {
 	if (choice === "accept") {
-		// powershellでは文字コードの初期化も拒否された場合の警告表示を確認する。
+		// `powershell` では文字コードの初期化も拒否された場合の警告表示を確認する。
 		return tool === "powershell"
 			? "WARNING: Nerita: [Console]::InputEncoding UTF-8 was not applied: PropertySetterNotSupportedInConstrainedLanguage\nWARNING: Nerita: [Console]::OutputEncoding UTF-8 was not applied: PropertySetterNotSupportedInConstrainedLanguage\n操作が完了しました。"
 			: "操作が完了しました。";
@@ -196,7 +196,7 @@ function approvalResultText(choice: string, tool?: string) {
 	return "処理を停止しました。";
 }
 
-/** Story内の仮想配置。Host実装に依存せず、承認に現れるShellの差を再現する。 */
+/** ストーリー内の仮想配置。Host 実装に依存せず、承認に現れるシェルの差を再現する。 */
 function shellArgv(name: string, command: string) {
 	const setup =
 		name === "powershell"

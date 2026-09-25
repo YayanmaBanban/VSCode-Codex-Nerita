@@ -1,9 +1,9 @@
-// 実Pi SDKの親・子・孫Runtimeで、権限非拡大・履歴分離・親Stopを検証する。
+// 実 Pi SDK の親・子・孫 Runtime で、権限非拡大・履歴分離・親 `Stop` を検証する。
 import assert from "node:assert/strict";
 import { mkdir, realpath, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 
-/** 外部subagent拡張を介さず、本番Host APIを模擬モデルから実行する。 */
+/** 外部サブエージェント拡張を介さず、本番 Host API を模擬モデルから実行する。 */
 export async function piSubagentSmoke({
 	createPiRuntime,
 	extensionPath,
@@ -137,7 +137,7 @@ export async function piSubagentSmoke({
 	);
 }
 
-/** 実行中の孫Shellも親Stopで回収し、ファイル更新が止まることを確認する。 */
+/** 実行中の孫シェルも親 `Stop` で回収し、ファイル更新が止まることを確認する。 */
 async function runningChildStop(createPiRuntime, options, cwd) {
 	const parent = await createPiRuntime({
 		...options,
@@ -168,7 +168,7 @@ async function runningChildStop(createPiRuntime, options, cwd) {
 	}
 }
 
-/** モデルTool CallからのSDK終了通知を確認する。 */
+/** モデルツール Call からの SDK 終了通知を確認する。 */
 async function toolResult(runtime, name, args, isError, pattern) {
 	const results = [];
 	const unsubscribe = runtime.subscribe((event) => {

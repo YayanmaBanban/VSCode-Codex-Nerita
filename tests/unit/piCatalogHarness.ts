@@ -1,4 +1,4 @@
-// OAuthとlive HTTPの境界だけを模擬し、実Hostの候補・設定処理を検証する。
+// OAuth と取得したカタログ HTTP の境界だけを模擬し、実 Host の候補・設定処理を検証する。
 import { vi } from "vitest";
 import type {
 	AgentSession,
@@ -7,7 +7,7 @@ import type {
 import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
 import { PiModelCatalogService } from "../../src/extension/backends/pi/PiModelCatalogService";
 
-/** live schemaの最小モデル。未使用項目もfixtureに置いて除外条件を検証する。 */
+/** live スキーマの最小モデル。未使用項目もフィクスチャに置いて除外条件を検証する。 */
 export function liveModel(slug = "astra", extra: Record<string, unknown> = {}) {
 	return {
 		slug,
@@ -30,12 +30,12 @@ export function liveModel(slug = "astra", extra: Record<string, unknown> = {}) {
 	};
 }
 
-/** 実認証情報を読まず、SDKのgetAuthが返す形式だけを再現する。 */
+/** 実認証情報を読まず、SDK の `getAuth` が返す形式だけを再現する。 */
 export function oauthToken(account = "fixture-account") {
 	return `header.${Buffer.from(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: account } })).toString("base64url")}.test-secret`;
 }
 
-/** SDKのモデル切替・推論適用とOAuth account変更を操作可能にする。 */
+/** SDK のモデル切替・推論適用と OAuth アカウント変更を操作可能にする。 */
 export function catalogHarness() {
 	const all = ["astra", "spark", "hidden", "small"].map((id) => ({
 		provider: "openai-codex",

@@ -1,4 +1,4 @@
-// VS Code内のNode.jsで同梱Pi SDKを動かし、外部通信なしで本文とStopを確認する。
+// VS Code 内の Node.js で同梱 Pi SDK を動かし、外部通信なしで本文と `Stop` を確認する。
 import * as assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
@@ -7,7 +7,7 @@ import { dirname, basename, join } from "node:path";
 import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
 import { createPiRuntime } from "../src/extension/backends/pi/PiRuntime";
 
-/** Extension Host上でもESMの動的ロードとストリーム中断が成立することを確認する。 */
+/** Extension Host 上でも ESM の動的ロードとストリーム中断が成立することを確認する。 */
 export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 	const fixture = await mkdtemp(join(tmpdir(), "nerita-pi-host-"));
 	const agentDir = join(fixture, "agent");
@@ -146,7 +146,7 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 			session.snapshot().error ?? undefined,
 		);
 		assert.equal(session.snapshot().messages.at(-1)?.text, "Pi Host OK");
-		// 新規会話で書き込み要求を発行し、Hostでも許可前の副作用がないことを確認する。
+		// 新規会話で書き込み要求を発行し、Host でも許可前の副作用がないことを確認する。
 		await session.receive({
 			type: "prompt/send",
 			requestId: "write-send",

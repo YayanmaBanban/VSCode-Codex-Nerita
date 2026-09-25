@@ -1,4 +1,4 @@
-// 実Pi履歴と要求変換を組み合わせ、推論更新の順序・分岐・圧縮境界を検証する。
+// 実 Pi 履歴と要求変換を組み合わせ、推論更新の順序・分岐・圧縮境界を検証する。
 import { describe, expect, it } from "vitest";
 import {
 	SessionManager,
@@ -9,7 +9,7 @@ import { CodexProviderControls } from "../../src/extension/backends/pi/codex/Cod
 import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
 import { liveModel } from "./piCatalogHarness";
 
-/** SDKが毎回構築する更新を含まない要求を再現する。 */
+/** SDK が毎回構築する更新を含まない要求を再現する。 */
 function payload(
 	effort = "medium",
 	input: unknown[] = [{ role: "user", content: "one" }],
@@ -21,20 +21,20 @@ function payload(
 		extensionField: true,
 	};
 }
-/** wire上の更新だけを取り出す。 */
+/** 通信形式上の更新だけを取り出す。 */
 function updates(value: ReturnType<typeof payload>) {
 	return value.input.filter(
 		(item) => (item as { type?: string }).type === "configuration_update",
 	);
 }
-/** Piの永続化形式を保ったまま再起動を模擬する。 */
+/** Pi の永続化形式を保ったまま再起動を模擬する。 */
 function restore(store: SessionManager) {
 	return SessionManager.inMemory(process.cwd(), undefined, [
 		store.getHeader()!,
 		...structuredClone(store.getBranch()),
 	]);
 }
-/** 能力・通常推論・Ultra・Fastを同じセッションで操作する。 */
+/** 能力・通常推論・Ultra・Fast を同じセッションで操作する。 */
 function fixture() {
 	const store = SessionManager.inMemory();
 	const session = {

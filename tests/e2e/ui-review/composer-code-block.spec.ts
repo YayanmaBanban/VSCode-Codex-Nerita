@@ -1,8 +1,8 @@
-// 標準メニューへ渡す条件と、Host通知後の選択保持・変換・履歴を検証する。
+// 標準メニューへ渡す条件と、Host 通知後の選択保持・変換・履歴を検証する。
 import { test, expect, type Locator } from "@playwright/test";
 import { select, paste } from "./composerHelpers";
 
-/** OSのメニュー表示を伴わず、同じcontextmenuイベントを入力欄へ送る。 */
+/** OS のメニュー表示を伴わず、同じ `contextmenu` イベントを入力欄へ送る。 */
 async function prepare(input: Locator, enabled: boolean) {
 	await input.dispatchEvent("contextmenu", { bubbles: true });
 	await expect(input).toHaveAttribute(

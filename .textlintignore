@@ -1,26 +1,36 @@
 # Dependencies
+
 node_modules/
 
 # Build outputs
+
 dist/
 out/
 build/
 
 # Test / coverage outputs
+
 coverage/
 playwright-report/
 test-results/
 storybook-static/
 
 # VS Code test environments
+
 .vscode-test/
 .vscode-test-web/
 
 # Git internals
+
 .git/
 
 # Generated files/directories
+
 **/generated/
 **/*.generated.ts
 **/*.generated.tsx
 **/*.generated.js
+
+# Config
+
+config/licenses/

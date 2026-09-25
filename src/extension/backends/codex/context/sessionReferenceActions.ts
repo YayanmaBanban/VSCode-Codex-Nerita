@@ -1,4 +1,4 @@
-// 履歴パネルを変更せず、コンポーザー用の候補検索と内容表示を行う。
+// 履歴パネルを変更せず、コンポーザー用の候補を検索して内容を表示する。
 import type { CodexConnection } from "../runtime/connection";
 import {
 	type SessionReferenceOpen,
@@ -10,7 +10,7 @@ import { sameCwd } from "../../../workspace";
 import { threadSources } from "../history/threadSources";
 import { readSessionContext } from "./sessionContext";
 
-/** 同じcwdの通常履歴を更新日時順で一ページ返す。 */
+/** 同じ `cwd` の通常履歴を更新日時順で一ページ返す。 */
 export async function searchSessionReferences(
 	client: CodexConnection,
 	cwd: string,
@@ -70,7 +70,7 @@ export async function searchSessionReferences(
 	return result;
 }
 
-/** 会話を切り替えず、参照と同じ本文をVS Codeのテキストエディターで表示する。 */
+/** 会話を切り替えず、参照と同じ本文を VS Code のテキストエディターで表示する。 */
 export async function openSessionReference(
 	client: CodexConnection,
 	cwd: string,

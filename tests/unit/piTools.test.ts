@@ -1,4 +1,4 @@
-// Piのツール通知を実Controllerへ流し、順序・部分結果・停止・別ターンを検証する。
+// Pi のツール通知を実 `Controller` へ流し、順序・部分結果・停止・別ターンを検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import type { PiSessionController } from "../../src/extension/backends/pi/PiSessionController";
@@ -11,7 +11,7 @@ afterEach(async () => {
 	);
 });
 
-/** 実行開始からすべての通知をWebviewと同じvalidatorへ通す。 */
+/** 実行開始からすべての通知を Webview と同じ検証処理へ通す。 */
 async function connected() {
 	const h = piHarness();
 	controllers.push(h.controller);
@@ -21,7 +21,7 @@ async function connected() {
 	return h;
 }
 
-/** SDKの累積テキスト結果を作る。 */
+/** SDK の累積テキスト結果を作る。 */
 const result = (text: string) => ({
 	content: [{ type: "text", text }],
 	details: {},

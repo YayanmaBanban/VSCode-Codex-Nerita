@@ -1,4 +1,4 @@
-// 共通Host子Runtimeの上限・起動取消し・履歴分離を検証する。
+// 共通 Host 子 Runtime の上限・起動取消し・履歴分離を検証する。
 import { expect, it, vi } from "vitest";
 import { PiChildRuntimes } from "../../src/extension/backends/pi/PiChildRuntimes";
 import type {
@@ -8,7 +8,7 @@ import type {
 import type { AgentAccessPolicy } from "../../src/extension/security/AgentAccessPolicy";
 import { pending } from "./piHarness";
 
-/** SDK初期化待ちと終了待ちを独立して制御する。 */
+/** SDK 初期化待ちと終了待ちを独立して制御する。 */
 function fixture() {
 	const abort = new AbortController();
 	const policy: AgentAccessPolicy = {

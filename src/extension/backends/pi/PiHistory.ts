@@ -1,11 +1,11 @@
-// SDKの保存領域に属する一覧だけを表示し、待機中の切替・古い取得結果を防ぐ。
+// SDK の保存領域に属する一覧だけを表示し、待機中の切替・古い取得結果を防ぐ。
 import { PiRun } from "./PiRun";
 
 /** 一覧取得と会話の切替を、送信と同じ接続世代で管理する。 */
 export abstract class PiHistory extends PiRun {
 	private listing = 0;
 
-	/** Piはアーカイブとページ分割を公開せず、現在の保存先を一覧する。 */
+	/** Pi はアーカイブとページ分割を公開せず、現在の保存先を一覧する。 */
 	protected async refreshSessions(): Promise<void> {
 		const runtime = this.runtime;
 		if (!runtime?.history || this.state.sessionPending) {
@@ -43,7 +43,7 @@ export abstract class PiHistory extends PiRun {
 		}
 	}
 
-	/** 選択済みのIDからHost内で復元先を決め、ファイルパスをUIへ渡さない。 */
+	/** 選択済みの ID から Host 内で復元先を決め、ファイルパスを UI へ渡さない。 */
 	protected async loadSession(id: string, fork = false): Promise<void> {
 		const history = this.runtime?.history;
 		if (

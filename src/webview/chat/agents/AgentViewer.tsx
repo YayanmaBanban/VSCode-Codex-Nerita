@@ -1,4 +1,4 @@
-// 読み取り専用の子Threadビューと、ネストを一段戻るヘッダーを表示する。
+// 読み取り専用の子スレッドビューと、ネストを一段戻るヘッダーを表示する。
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
 import type { ChatState } from "../../../shared/chatState";
@@ -8,7 +8,7 @@ import { AgentCard, AgentIcon, agentName } from "./AgentCard";
 import type { useAgentViewer } from "./useAgentViewer";
 import { type AgentThreadView } from "@/shared/subAgents";
 
-/** 親の送信フォームを使わず、閲覧中のThreadを明示する。 */
+/** 親の送信フォームを使わず、閲覧中のスレッドを明示する。 */
 export function AgentViewer({
 	viewer,
 	state,

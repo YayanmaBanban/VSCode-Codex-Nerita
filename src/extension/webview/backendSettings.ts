@@ -2,14 +2,14 @@
 import * as vscode from "vscode";
 import type { BackendId } from "../../shared/backend";
 
-/** 起動時と同じwindowスコープの設定を取得する。 */
+/** 起動時と同じ `window` スコープの設定を取得する。 */
 export function configuredBackend(): BackendId {
 	return vscode.workspace.getConfiguration("nerita").get("backend") === "pi"
 		? "pi"
 		: "codex";
 }
 
-/** 既存のworkspace指定を優先し、それ以外はユーザー設定へ保存する。 */
+/** 既存のワークスペース指定を優先し、それ以外はユーザー設定へ保存する。 */
 export async function saveBackend(backend: BackendId): Promise<boolean> {
 	const config = vscode.workspace.getConfiguration("nerita");
 	if (configuredBackend() === backend) {

@@ -1,4 +1,4 @@
-// 一つの編集領域で貼り付け・コード編集・境界移動・履歴・送信を検証する。
+// 1つの編集領域で貼り付け・コード編集・境界移動・履歴・送信を検証する。
 import { test, expect } from "@playwright/test";
 
 import { select, paste } from "./composerHelpers";

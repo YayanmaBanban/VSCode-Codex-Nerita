@@ -1,4 +1,4 @@
-// 本番Executorを使うWindows受入。通信の到達を実行委譲の成功と混同せず、個別結果を記録する。
+// 本番 `Executor` を使う Windows 受入。通信の到達と実行委譲の成功を区別し、個別結果を記録する。
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
@@ -93,7 +93,7 @@ const report = {
 const servers = [];
 let failed = false;
 
-/** 専用fixtureのみに触れる受入結果を、失敗後も続けて記録する。 */
+/** 専用フィクスチャのみに触れる受入結果を、失敗後も続けて記録する。 */
 async function test(id, operation) {
 	try {
 		const details = await operation();
@@ -110,7 +110,7 @@ async function test(id, operation) {
 	}
 }
 
-/** 承認と同じargv/policyを本番Executorへ渡す。 */
+/** 承認と同じ `argv/policy` を本番 `Executor` へ渡す。 */
 async function execute(command, options = {}) {
 	const signal = options.signal ?? lifetime.signal;
 	const call = {
@@ -130,7 +130,7 @@ async function execute(command, options = {}) {
 	return executor.execute(permit);
 }
 
-/** 実SDKのTool定義と製品adapterを使い、RPC要求・結果は実Executorを通過した値だけを観測する。 */
+/** 実 SDK のツール定義と製品アダプターを使い、RPC 要求・結果は実 `Executor` を通過した値だけを観測する。 */
 async function executePiPowerShell(command, executable = pwsh) {
 	let call;
 	let result;
@@ -163,7 +163,7 @@ async function executePiPowerShell(command, executable = pwsh) {
 	return { call, result, toolResult };
 }
 
-/** ScriptBlock・EncodedCommand・ExecutionPolicy変更を使わない。 */
+/** ScriptBlock・EncodedCommand・`ExecutionPolicy` 変更を使わない。 */
 function shellArgs(executable, text) {
 	return [
 		executable,
@@ -175,7 +175,7 @@ function shellArgs(executable, text) {
 	];
 }
 
-/** 本版は書込み拒否をcommand結果ではなくRPCエラーで返す場合もある。 */
+/** 本版は書込み拒否を `command` 結果ではなく RPC エラーで返す場合もある。 */
 async function deniedWrite(command, options) {
 	let result;
 	try {
@@ -196,7 +196,7 @@ async function deniedWrite(command, options) {
 	return result;
 }
 
-/** PowerShellの単一引用文字列としてfixture pathだけを引用する。 */
+/** PowerShell の単一引用符で囲んだ文字列としてフィクスチャ `path` だけを引用する。 */
 const quote = (value) => `'${value.replaceAll("'", "''")}'`;
 
 /** 確定したプロセス開始マーカーを期限付きで待つ。 */
@@ -523,7 +523,7 @@ if (failed) {
 	process.exitCode = 1;
 }
 
-/** 同じargv・cwd・env・policy・Windows実装で直結と本番Executorを比較する。 */
+/** 同じ `argv`・cwd・env・policy・Windows 実装で直結と本番 `Executor` を比較する。 */
 async function networkComparison(url) {
 	let reachable;
 	try {
@@ -544,7 +544,7 @@ async function networkComparison(url) {
 		`try { $r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri ${quote(url)}; Write-Output 'REACHABLE' } catch { Write-Output ('FAILED: ' + $_.Exception.Message); exit 3 }`,
 	);
 	const command = call.command;
-	// 対照は同じ実行ファイル・argv・envの固定診断のみ。agent commandのHost fallbackではない。
+	// 対照は同じ実行ファイル・argv・`env` の固定診断のみ。agent `command` の Host フォールバックではない。
 	let hostShell;
 	try {
 		hostShell = await promisify(execFile)(command[0], command.slice(1), {
@@ -617,6 +617,6 @@ async function networkComparison(url) {
 	if (denied.test(direct.stdout) && denied.test(production.stdout)) {
 		return details;
 	}
-	// timeoutだけではFirewallによる遮断を実証できない。
+	// `timeout` だけでは `Firewall` による遮断を実証できない。
 	throw new Error(`未検証: Hostは到達したがSandboxの失敗理由が未特定 ${url}`);
 }

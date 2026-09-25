@@ -1,4 +1,4 @@
-// 実Pi SDKとローカルOpenAI互換サーバーで、通信・read・Stopを外部認証なしで検証する。
+// 実 Pi SDK とローカル OpenAI 互換サーバーで、通信・read・`Stop` を外部認証なしで検証する。
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from "node:fs/promises";
@@ -13,7 +13,7 @@ import { piSubagentSmoke } from "./pi-subagent-smoke.mjs";
 import { piPlatformSmoke } from "./pi-platform-smoke.mjs";
 
 const projectRoot = process.cwd();
-// 展開したVSIXも同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
+// 展開した VSIX も同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
 const extensionPath = path.resolve(process.argv[2] ?? projectRoot);
 const fixture = await mkdtemp(path.join(tmpdir(), "nerita-pi-smoke-"));
 const cwd = path.join(fixture, "workspace");
@@ -134,7 +134,7 @@ try {
 			},
 		}),
 	);
-	// リポジトリ外に同梱資産を置き、開発用node_modulesによる依存の補完を防ぐ。
+	// リポジトリ外に同梱資産を置き、開発用 node_modules による依存の補完を防ぐ。
 	await cp(
 		path.join(extensionPath, "dist/runtime"),
 		path.join(fixture, "dist/runtime"),
@@ -146,7 +146,7 @@ try {
 		path.join(extensionPath, "package.json"),
 		path.join(fixture, "package.json"),
 	);
-	// ESMの公開入口と、遅延ロードされる画像変換用WASMも配布物だけで動かす。
+	// ESM の公開入口と、遅延ロードされる画像変換用 WASM も配布物だけで動かす。
 	const sdk = await import(
 		pathToFileURL(path.join(fixture, "dist/runtime/pi.mjs")).href
 	);
@@ -174,7 +174,7 @@ try {
 		plugins: [
 			{
 				name: "vscode-smoke-boundary",
-				/** VS Code外ではAPIを提供せず、未対応のエディター操作は失敗させる。 */
+				/** VS Code 外では API を提供せず、未対応のエディター操作は失敗させる。 */
 				setup(builder) {
 					builder.onResolve({ filter: /^vscode$/ }, () => ({
 						path: "vscode",
@@ -247,7 +247,7 @@ try {
 				),
 		),
 	);
-	// モデル応答を保持し、同じ実行中の追加指示が次のLLM呼出しへ入ることを確認する。
+	// モデル応答を保持し、同じ実行中の追加指示が次の LLM 呼出しへ入ることを確認する。
 	await send("steer-start");
 	await until(
 		() => controller.snapshot().messages.at(-1)?.text === "追加指示待ち",
@@ -339,7 +339,7 @@ try {
 			"Pi read tool works",
 		),
 	);
-	// 配信時にはツール配列が差分のtoolUpdatesへ変換される。
+	// 配信時にはツール配列が差分の `toolUpdates` へ変換される。
 	assert.ok(
 		events.some(
 			(event) =>
@@ -368,7 +368,7 @@ try {
 		),
 	);
 	assert.equal(controller.snapshot().tools.length, 3);
-	// 拒否・承認待ちStopではSDKの副作用へ到達しない。
+	// 拒否・承認待ち `Stop` では SDK の副作用へ到達しない。
 	const respond = (optionId) =>
 		controller.receive({
 			type: "permission/respond",
@@ -438,7 +438,7 @@ try {
 	await send("commandStop");
 	await until(() => controller.snapshot().permissions.length === 1);
 	await respond("accept");
-	// 0.156.0ではまとめ出力を使うため、実process開始をfixtureで確認する。
+	// 0`.156.0` ではまとめ出力を使うため、実プロセス開始をフィクスチャで確認する。
 	await until(async () =>
 		(
 			await readFile(path.join(cwd, "command-started.txt"), "utf8").catch(
@@ -468,7 +468,7 @@ try {
 			).catch(() => "")
 		).includes("started"),
 	);
-	// 実行中の再接続ボタンは拒否される。Host切断を先に発生させて回収を検証する。
+	// 実行中の再接続ボタンは拒否される。Host 切断を先に発生させて回収を検証する。
 	const disconnectedSessionId = controller.snapshot().sessionId;
 	controller.invalidate();
 	await controller.connect();
@@ -615,7 +615,7 @@ function requestPrompt(input) {
 	return prompt;
 }
 
-/** 固定sleepで成功扱いせず、期限内に期待する状態へ到達するまで待つ。 */
+/** 固定 `sleep` で成功扱いせず、期限内に期待する状態へ到達するまで待つ。 */
 async function until(check) {
 	const deadline = Date.now() + 15000;
 	while (!(await check())) {

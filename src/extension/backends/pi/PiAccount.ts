@@ -1,4 +1,4 @@
-// 認証の秘密値をHost内に留め、モデル選択と公開状態をまとめる。
+// 認証の秘密値を Host 内に留め、モデル選択と公開状態をまとめる。
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -10,7 +10,7 @@ import { piModelOptions } from "./PiModelOptions";
 import { PiModelCatalogService } from "./PiModelCatalogService";
 import type { PiModelSelection } from "./PiRuntime";
 
-/** SDKの認証対話をVS Codeとテストで差し替える。 */
+/** SDK の認証対話を VS Code とテストで差し替える。 */
 export type PiAuthService = {
 	manage: (
 		items: () => Promise<PiAuthItem[]>,
@@ -35,7 +35,7 @@ export class PiAccount {
 		controls.bindCatalog((provider) => catalog.snapshot(provider));
 	}
 
-	/** live更新後は利用可能なモデルへ復帰し、選択不能な履歴モデルを残さない。 */
+	/** カタログの更新後は利用可能なモデルへ復帰し、選択不能な履歴モデルを残さない。 */
 	async refreshCatalog(signal: AbortSignal): Promise<void> {
 		const provider = this.session.model?.provider;
 		if (provider && this.catalog.snapshot(provider) !== undefined) {
@@ -76,7 +76,7 @@ export class PiAccount {
 		}
 	}
 
-	/** キー、トークン、SDKの認証結果そのものは公開しない。 */
+	/** キー、トークン、SDK の認証結果そのものは公開しない。 */
 	snapshot(): Partial<ChatState> {
 		const model = this.session.model;
 		const controls = this.controls.snapshot();
@@ -110,7 +110,7 @@ export class PiAccount {
 		};
 	}
 
-	/** Piと取得済みlive catalogの両方で利用可能なモデルだけを選ぶ。 */
+	/** Pi と取得済み取得したモデルカタログの両方で利用可能なモデルだけを選ぶ。 */
 	async selectModel(value: string, signal: AbortSignal): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
 		const target = available.find(
@@ -131,7 +131,7 @@ export class PiAccount {
 		this.controls.snapshot();
 	}
 
-	/** Provider変更では利用可能な先頭モデルを選び、SDKのclampを使う。 */
+	/** プロバイダー変更では利用可能な先頭モデルを選び、SDK の範囲内への補正を使う。 */
 	async selectProvider(value: string, signal: AbortSignal): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
 		await this.catalog.refresh(value, signal);
@@ -159,7 +159,7 @@ export class PiAccount {
 		this.controls.snapshot();
 	}
 
-	/** 現在のモデルが対応する推論レベルだけをSDKへ渡す。 */
+	/** 現在のモデルが対応する推論レベルだけを SDK へ渡す。 */
 	selectThinkingLevel(value: string, signal: AbortSignal): Promise<void> {
 		this.controls.selectReasoning(value, signal);
 		const model = this.session.model;
@@ -168,7 +168,7 @@ export class PiAccount {
 			: Promise.resolve();
 	}
 
-	/** 宣言型UIの設定IDをHostの操作に限定する。 */
+	/** 宣言型 UI の設定 ID を Host の操作に限定する。 */
 	async configure(
 		id: string,
 		value: string,
@@ -185,7 +185,7 @@ export class PiAccount {
 		}
 	}
 
-	/** 保存認証だけを変更し、環境変数やmodels.jsonは保持する。 */
+	/** 保存認証だけを変更し、環境変数や `models.json` は保持する。 */
 	async authenticate(_logout: boolean, signal: AbortSignal): Promise<void> {
 		if (!this.service) {
 			throw new Error("Piの認証画面が接続されていません。");
@@ -237,7 +237,7 @@ export class PiAccount {
 		}
 	}
 
-	/** 認証切れの旧モデルを保持せず、Piの利用可能候補へ復帰する。 */
+	/** 認証切れの旧モデルを保持せず、Pi の利用可能候補へ復帰する。 */
 	private async reconcileModel(
 		signal: AbortSignal,
 		provider?: string,
@@ -277,7 +277,7 @@ export class PiAccount {
 		});
 	}
 
-	/** provider単位の設定状態と、実行できる認証方式を表示する。 */
+	/** プロバイダー単位の設定状態と、実行できる認証方式を表示する。 */
 	private async items(signal: AbortSignal): Promise<PiAuthItem[]> {
 		const credentials = await this.models.listCredentials({ signal });
 		return this.models.getProviders().map((provider) => ({

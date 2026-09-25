@@ -39,7 +39,7 @@ function savedTurn(text = "以前の回答"): HistoryTurn {
 		],
 	};
 }
-/** 参照先は現在の会話とは別のIDで保持する。 */
+/** 参照先は現在の会話とは別の ID で保持する。 */
 async function connected() {
 	const h = codexHarness();
 	harnesses.push(h);

@@ -1,4 +1,4 @@
-// promptの受付と実行を分け、開始直前のStop・旧接続の完了を安全に扱う。
+// `prompt` の受付と実行を分け、開始直前の `Stop`・旧接続の完了を安全に扱う。
 import { randomUUID } from "node:crypto";
 import type { UiMessage } from "../../../shared/messages";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -11,7 +11,7 @@ import { readCodeReferenceContext } from "../../session/codeReferenceContext";
 
 import { type PiSession } from "./PiRuntime";
 
-/** SDK送信の受付状態とイベント購読を保持する。 */
+/** SDK 送信の受付状態とイベント購読を保持する。 */
 type Submission = {
 	id: string;
 	cancelled: boolean;
@@ -49,7 +49,7 @@ export abstract class PiRun extends PiLifecycle {
 		);
 	};
 
-	/** SDKの事前検証が終わった時点でComposerの下書きを解放する。 */
+	/** SDK の事前検証が終わった時点で Composer の下書きを解放する。 */
 	protected submit(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): void {
@@ -90,7 +90,7 @@ export abstract class PiRun extends PiLifecycle {
 			if (patch) {
 				this.patch(patch);
 			}
-			// message_endの通知時点ではSDKの履歴保存が終わっていない。
+			// `message_end` の通知時点では SDK の履歴保存が終わっていない。
 			if (event.type === "turn_end" || event.type === "compaction_end") {
 				this.patch({ usage: this.contextUsage() });
 			}
@@ -174,7 +174,7 @@ export abstract class PiRun extends PiLifecycle {
 		this.track(operation);
 	}
 
-	/** SDKの非同期入力処理中は次の送信を拒否し、遅れて積まれたキューを回収する。 */
+	/** SDK の非同期の入力処理中は次の送信を拒否し、遅れて積まれたキューを回収する。 */
 	private steer(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 		submission: Submission,
@@ -282,7 +282,7 @@ export abstract class PiRun extends PiLifecycle {
 		}
 	}
 
-	/** SDKのpromptが終了するまでrunningを維持し、tool間のturn_endでは完了しない。 */
+	/** SDK の `prompt` が終了するまで `running` を維持し、ツール間の `turn_end` では完了しない。 */
 	private finish(
 		submission: Submission,
 		error?: string,
@@ -292,7 +292,7 @@ export abstract class PiRun extends PiLifecycle {
 		this.submission = undefined;
 		this.runtime?.clearQueue();
 		submission.abort.abort();
-		// SDK内部でモデルが変わっていても、旧providerの利用枠を再公開しない。
+		// SDK 内部でモデルが変わっていても、旧プロバイダーの利用枠を再公開しない。
 		this.cancelQuota();
 		this.patch({
 			run: finishedRunStatus(cancelled, error),
@@ -308,7 +308,7 @@ export abstract class PiRun extends PiLifecycle {
 		this.refreshQuota();
 	}
 
-	/** 実行前ならpreflightで遮断し、実行中ならSDKのabortへ渡す。 */
+	/** 実行前なら `preflight` で遮断し、実行中なら SDK の `abort` へ渡す。 */
 	protected cancel(): void {
 		const submission = this.submission;
 		const runtime = this.runtime;

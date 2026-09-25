@@ -1,4 +1,4 @@
-// 候補メニューをLexicalの選択範囲と接続し、通常の送信より先にキーを処理する。
+// 候補メニューを Lexical の選択範囲と接続し、通常の送信より先にキーを処理する。
 import { useId, useRef, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { Attachment } from "../../../shared/composer";
@@ -14,7 +14,7 @@ import { useWorkspaceSymbols } from "./useWorkspaceSymbols";
 import { useSessionReferences } from "./useSessionReferences";
 import { usePastedPath } from "./usePastedPath";
 
-/** 候補選択とTabの字下げを、本文のUndo履歴へ反映する。 */
+/** 候補選択と Tab の字下げを、本文の編集履歴へ反映する。 */
 export function CompletionPlugin({
 	bridge,
 	attachments,

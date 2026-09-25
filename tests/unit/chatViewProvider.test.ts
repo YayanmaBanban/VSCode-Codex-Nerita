@@ -1,4 +1,4 @@
-// VS Code境界を差し替え、複数Webviewの復元・購読・パネル再利用を検証する。
+// VS Code 境界を差し替え、複数 Webview の復元・購読・パネル再利用を検証する。
 import { beforeEach, expect, it, vi } from "vitest";
 import { initialState } from "../../src/shared/chatState";
 import { type HostMessage } from "../../src/shared/messages";
@@ -88,7 +88,7 @@ function view() {
 		},
 	};
 }
-/** 同じ会話正本を共有するProviderと二つの表示先を作る。 */
+/** 同じ会話正本を共有するプロバイダーと2つの表示先を作る。 */
 function harness() {
 	const state = {
 		...initialState(),

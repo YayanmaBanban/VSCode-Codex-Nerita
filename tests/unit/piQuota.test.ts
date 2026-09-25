@@ -1,4 +1,4 @@
-// 非公開usage APIの変化・失敗・取消がチャットや認証値の公開へ波及しないことを検証する。
+// 非公開 `usage` API の変化・失敗・取消がチャットや認証値の公開へ波及しないことを検証する。
 import { normalizeCodexQuota } from "../../src/extension/backends/pi/codex/CodexQuotaService";
 import { describe, expect, it, vi } from "vitest";
 import type {
@@ -24,7 +24,7 @@ const payload = {
 	credits: { balance: "secret-data" },
 };
 
-/** JWTは外部送信しないテスト専用値。fetchも必ず差し替える。 */
+/** JWT は外部送信しないテスト専用値。`fetch` も必ず差し替える。 */
 function fixture() {
 	const token = `test.${Buffer.from(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "account-test" } })).toString("base64url")}.signature`;
 	const models = {

@@ -1,4 +1,4 @@
-// HostとWebviewの要求・通知の通信契約を定義し、実行環境のAPIに依存させない。
+// Host と Webview の要求・通知の通信契約を定義し、実行環境の API に依存させない。
 import type { ChatState } from "./chatState";
 import type { BackendId } from "./backend";
 import type { ComposerPart } from "./composerContent";

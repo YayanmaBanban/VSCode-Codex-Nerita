@@ -3,7 +3,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 
 import ignore from "ignore";
-import ts from "typescript";
+import { extractSourceComments } from "./textlint-comments.mjs";
 
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
 
@@ -17,15 +17,14 @@ if (mode !== "--all" && mode !== "--changed") {
 }
 
 /**
- * textlintで本文全体を検査するファイル。
+ * textlint で本文全体を検査するファイル。
  */
 const DOCUMENT_EXTENSIONS = new Set([".md", ".markdown", ".txt", ".text"]);
 
 /**
  * コメントだけ抽出して検査するソースコード。
  *
- * TypeScript scannerを利用するため、
- * JS / TS系に限定する。
+ * TypeScript の構文解析を利用するため、JS / TS 系に限定する。
  */
 const SOURCE_EXTENSIONS = new Set([
 	".ts",
@@ -46,21 +45,16 @@ const TARGET_EXTENSIONS = new Set([
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
-const SOURCE_COMMENT_TOKENS = new Set([
-	ts.SyntaxKind.SingleLineCommentTrivia,
-	ts.SyntaxKind.MultiLineCommentTrivia,
-]);
-
 /**
- * Windowsのパス区切りも
- * .textlintignore用に "/" へ統一する。
+ * Windows のパス区切りを統一する。
+ * `.textlintignore` 用に "/" へ統一する。
  */
 function normalizePath(filePath) {
 	return filePath.split(path.sep).join("/");
 }
 
 /**
- * .textlintignoreを読み込む。
+ * `.textlintignore` を読み込む。
  */
 async function loadTextlintIgnore() {
 	const matcher = ignore();
@@ -89,8 +83,8 @@ function isTargetFile(filePath) {
 /**
  * リポジトリ全体を走査する。
  *
- * .gitignoreには依存しない。
- * lint除外は.textlintignoreだけで決定する。
+ * `.gitignore` には依存しない。
+ * `lint` 除外は `.textlintignore` だけで決定する。
  */
 async function getAllFiles(ignoreMatcher) {
 	const files = [];
@@ -108,10 +102,9 @@ async function getAllFiles(ignoreMatcher) {
 			);
 
 			/**
-			 * symlinkは追跡しない。
+			 * シンボリックリンクは追跡しない。
 			 *
-			 * リポジトリ外へ走査が広がることや、
-			 * ディレクトリループを防ぐ。
+			 * リポジトリ外への走査やディレクトリループを防ぐ。
 			 */
 			if (entry.isSymbolicLink()) {
 				continue;
@@ -148,8 +141,7 @@ async function getAllFiles(ignoreMatcher) {
 }
 
 /**
- * gitコマンドを実行し、
- * NUL区切りのファイル一覧を返す。
+ * `git` コマンドを実行し、NUL 区切りのファイル一覧を返す。
  */
 function gitFiles(args) {
 	const output = execFileSync("git", args, {
@@ -162,13 +154,9 @@ function gitFiles(args) {
 }
 
 /**
- * Gitで変更されたファイルを取得する。
+ * Git で変更されたファイルを取得する。
  *
- * HEADとの差分:
- * - staged
- * - unstaged
- *
- * さらにuntrackedを追加する。
+ * HEAD との差分に未追跡ファイルを加え、ステージ済み・未ステージの変更を含める。
  */
 async function getChangedFiles(ignoreMatcher) {
 	const changed = gitFiles([
@@ -217,122 +205,7 @@ async function getChangedFiles(ignoreMatcher) {
 }
 
 /**
- * 拡張子に対応する TypeScript のスキャナーを作成する。
- */
-function createSourceScanner(source, filePath) {
-	const extension = path.extname(filePath).toLowerCase();
-
-	const languageVariant =
-		extension === ".tsx" || extension === ".jsx"
-			? ts.LanguageVariant.JSX
-			: ts.LanguageVariant.Standard;
-
-	return ts.createScanner(
-		ts.ScriptTarget.Latest,
-		false,
-		languageVariant,
-		source,
-	);
-}
-
-/**
- * コメント本文の範囲を取得する。
- */
-function getCommentContentRange(source, scanner, token) {
-	if (!SOURCE_COMMENT_TOKENS.has(token)) {
-		return null;
-	}
-
-	const start = scanner.getTokenPos();
-	const end = scanner.getTextPos();
-	const rawComment = source.slice(start, end);
-
-	/**
-	 * 日本語を含まないコメントは
-	 * 今回の日本語lintでは無視する。
-	 */
-	if (!JAPANESE_PATTERN.test(rawComment)) {
-		return null;
-	}
-
-	const isBlockComment = token === ts.SyntaxKind.MultiLineCommentTrivia;
-
-	/**
-	 * // または /*
-	 * の2文字を除外する。
-	 */
-	let contentStart = start + 2;
-
-	/**
-	 * /** ... *\/ の場合は
-	 * 先頭の追加 "*" も除外する。
-	 */
-	if (isBlockComment && source[contentStart] === "*") {
-		contentStart += 1;
-	}
-
-	/**
-	 * block comment末尾の *\/ を除く。
-	 */
-	const contentEnd = isBlockComment ? Math.max(contentStart, end - 2) : end;
-
-	return { contentStart, contentEnd };
-}
-
-/**
- * コメント本文を同じ文字位置へ転写する。
- */
-function copyCommentContent(source, output, contentRange) {
-	for (
-		let index = contentRange.contentStart;
-		index < contentRange.contentEnd;
-		index += 1
-	) {
-		const char = source[index];
-
-		if (char === "\n" || char === "\r") {
-			continue;
-		}
-
-		output[index] = char;
-	}
-}
-
-/**
- * JS / TSソースからコメントだけを残す。
- *
- * コメント以外は空白へ置換する。
- * 改行と文字位置は維持するため、
- * textlintのline/columnを元ソースと一致させられる。
- */
-function extractSourceComments(source, filePath) {
-	const chars = [...source];
-
-	const output = chars.map((char) =>
-		char === "\n" || char === "\r" ? char : " ",
-	);
-
-	const scanner = createSourceScanner(source, filePath);
-
-	while (true) {
-		const token = scanner.scan();
-
-		if (token === ts.SyntaxKind.EndOfFileToken) {
-			break;
-		}
-
-		const contentRange = getCommentContentRange(source, scanner, token);
-
-		if (contentRange !== null) {
-			copyCommentContent(source, output, contentRange);
-		}
-	}
-
-	return output.join("");
-}
-
-/**
- * lint対象を取得する。
+ * 検査対象を取得する。
  */
 const ignoreMatcher = await loadTextlintIgnore();
 
@@ -348,7 +221,7 @@ if (files.length === 0) {
 }
 
 /**
- * .textlintrc.jsonを読み込む。
+ * `.textlintrc.json` を読み込む。
  */
 const descriptor = await loadTextlintrc();
 
@@ -368,9 +241,14 @@ for (const file of files) {
 	/**
 	 * Markdown / Text
 	 *
-	 * ファイル内容をそのままlintする。
+	 * ファイル内容をそのまま検査する。
 	 */
 	if (DOCUMENT_EXTENSIONS.has(extension)) {
+		// 日本語を含まない文書には日本語用の校正規則を適用しない。
+		if (!JAPANESE_PATTERN.test(source)) {
+			continue;
+		}
+
 		const result = await linter.lintText(source, file);
 
 		results.push(result);
@@ -390,9 +268,7 @@ for (const file of files) {
 		}
 
 		/**
-		 * .txtとして解析することで、
-		 * ソースコード上のインデントなどを
-		 * Markdown構文として解釈させない。
+		 * `.txt` として解析し、インデントなどを Markdown 構文として解釈させない。
 		 */
 		const result = await linter.lintText(commentText, `${file}.txt`);
 
@@ -407,7 +283,7 @@ for (const file of files) {
 }
 
 /**
- * 通常のtextlintと同じstylish形式。
+ * 通常の textlint と同じ `stylish` 形式。
  */
 const formatter = await loadLinterFormatter({
 	formatterName: "stylish",

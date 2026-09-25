@@ -1,4 +1,4 @@
-// 実行ごとの専用App Serverでcommand/execを呼び、停止と終了時の回収を一度だけ待つ。
+// 実行ごとの専用 App Server で `command/exec` を呼び、停止と終了時の回収を一度だけ待つ。
 import { randomUUID } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import {
@@ -15,7 +15,7 @@ import {
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import { CodexClient } from "./CodexClient";
 
-/** provider・threadを必要としない専用接続の契約。 */
+/** provider・スレッドを必要としない専用接続の契約。 */
 export type SandboxConnection = Pick<
 	CodexClient,
 	| "executeCommand"
@@ -30,13 +30,13 @@ export type SandboxConnector = (
 	mode: WindowsSandboxImplementation,
 ) => Promise<SandboxConnection>;
 
-/** 常時失敗probeやHost Shellへのfallbackを挟まず、確定したpolicyを実行する。 */
+/** 常時失敗検査や Host シェルへのフォールバックを挟まず、確定した `policy` を実行する。 */
 export class CodexSandboxExecutor implements SandboxCommandExecutor {
 	constructor(
 		private readonly connect: SandboxConnector,
 		private readonly platform = process.platform,
 	) {}
-	/** この実装固有の表示は、共通のTool説明や承認処理へ埋め込まない。 */
+	/** この実装固有の表示は、共通のツール説明や承認処理へ埋め込まない。 */
 	describe(policy: AgentAccessPolicy) {
 		return {
 			name: "Codex",
@@ -63,7 +63,7 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 		const processId = randomUUID();
 		let started = false;
 		let closing: Promise<void> | undefined;
-		// abortとfinallyの両方が同じ回収の完了を待つ。
+		// `abort` と `finally` の両方が同じ回収の完了を待つ。
 		const close = () =>
 			(closing ??= Promise.resolve().then(async () => {
 				try {
@@ -71,7 +71,7 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 						await client.terminateCommand(processId);
 					}
 				} catch {
-					/* 終了済み・通信断でも所有する専用processを必ず回収する。 */
+					/* 終了済み・通信断でも所有する専用プロセスを必ず回収する。 */
 				} finally {
 					await client.dispose();
 				}
@@ -114,7 +114,7 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 	}
 }
 
-/** 承認後のroot/cwd差し替えと、cwdの暗黙write追加を拒否する。 */
+/** 承認後の `root/cwd` 差し替えと、`cwd` の暗黙 `write` 追加を拒否する。 */
 function validateCommand(call: ToolCall) {
 	if (
 		!call.policy.shell ||
@@ -131,7 +131,7 @@ function validateCommand(call: ToolCall) {
 	}
 }
 
-/** 実在するcwdとrootsを、実行直前にも確認する。 */
+/** 実在する `cwd` と `roots` を、実行直前にも確認する。 */
 async function validateSandboxCall(call: ToolCall) {
 	validateCommand(call);
 	if (
@@ -168,7 +168,7 @@ async function validateSandboxCall(call: ToolCall) {
 	}
 }
 
-/** 既存Codex backendの実効設定を読み、未指定のときだけelevatedを基準にする。 */
+/** 既存 Codex バックエンドの実効設定を読み、未指定のときだけ `elevated` を基準にする。 */
 export async function resolveWindowsSandbox(
 	extensionPath: string,
 	cwd: string,
@@ -198,7 +198,7 @@ export async function resolveWindowsSandbox(
 	}
 }
 
-/** 接続自体のsignalはExecutorが回収し、abortでterminate前に接続を失わないようにする。 */
+/** 接続自体の `signal` は `Executor` が回収し、`abort` で `terminate` 前に接続を失わないようにする。 */
 export function createCodexSandboxExecutor(
 	extensionPath: string,
 ): SandboxCommandExecutor {

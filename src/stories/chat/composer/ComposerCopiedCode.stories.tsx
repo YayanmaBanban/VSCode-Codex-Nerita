@@ -5,7 +5,7 @@ import type { Bridge } from "../../../webview/vscodeBridge";
 import { ChatApp } from "../../../webview/chat/ChatApp";
 import { createMockBridge } from "../mocks/mockBridge";
 
-/** コピー通知はHostのテストで検証し、ここでは照合済み応答を再現する。 */
+/** コピー通知は Host のテストで検証し、ここでは照合済み応答を再現する。 */
 function CopiedCodeStory() {
 	const [opened, setOpened] = useState("");
 	const [sent, setSent] = useState("");

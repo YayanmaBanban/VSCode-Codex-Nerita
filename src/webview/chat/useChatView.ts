@@ -1,18 +1,18 @@
-// サイドバーとエディタの下書き・スクロール位置をHost経由で引き継ぐ。
+// サイドバーとエディタの下書き・スクロール位置を Host 経由で引き継ぐ。
 import { useEffect, useRef, useState } from "react";
 import type { Bridge } from "../vscodeBridge";
 import type { ComposerPart } from "../../shared/composerContent";
 import type { SidebarLocation } from "../../shared/sidebar";
 import type { BackendId } from "../../shared/backend";
 
-/** 空の入力にも編集可能な通常文を一つ用意する。 */
+/** 空の入力にも編集可能な通常文を1つ用意する。 */
 const textPart = (text: string): ComposerPart => ({
 	id: crypto.randomUUID(),
 	type: "text",
 	text,
 });
 
-/** 表示先ごとのDOMと、全表示先で共有する下書きを接続する。 */
+/** 表示先ごとの DOM と、全表示先で共有する下書きを接続する。 */
 export function useChatView(bridge: Bridge) {
 	const [backend, setBackend] = useState<BackendId | undefined>();
 	const [draftParts, updateDraft] = useState<ComposerPart[]>(() => [
@@ -69,7 +69,7 @@ export function useChatView(bridge: Bridge) {
 			draftParts: parts,
 		});
 	};
-	/** 移動直前の位置を保存してから、Hostに表示先の切り替えを依頼する。 */
+	/** 移動直前の位置を保存してから、Host に表示先の切り替えを依頼する。 */
 	const toggleEditor = () => {
 		bridge.postMessage({
 			type: "ui/saveScroll",

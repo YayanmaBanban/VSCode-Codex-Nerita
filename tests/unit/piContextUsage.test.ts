@@ -1,4 +1,4 @@
-// SDKのコンテキスト推定量が共通UIへ届き、未知値や旧接続を持ち越さないことを確認する。
+// SDK のコンテキスト推定量が共通 UI へ届き、未知値や旧接続を持ち越さないことを確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import { assistant, piHarness } from "./piHarness";
@@ -8,7 +8,7 @@ afterEach(async () => {
 	await Promise.all(harnesses.splice(0).map((h) => h.controller.dispose()));
 });
 
-/** 使用量を差し替え、実際の通信validatorを通す。 */
+/** 使用量を差し替え、実際の通信検証処理を通す。 */
 function setup() {
 	const h = piHarness();
 	harnesses.push(h);

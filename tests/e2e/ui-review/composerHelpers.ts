@@ -1,6 +1,6 @@
-// Composerの編集位置とクリップボードイベントを再現する。
+// Composer の編集位置とクリップボードイベントを再現する。
 import type { Locator } from "@playwright/test";
-/** 同じcontenteditable内の指定要素に文字位置で選択範囲を置く。 */
+/** 同じ `contenteditable` 内の指定要素に文字位置で選択範囲を置く。 */
 export async function select(element: Locator, start: number, end = start) {
 	await element.evaluate(
 		(node, offsets) => {
@@ -53,7 +53,7 @@ export async function select(element: Locator, start: number, end = start) {
 	);
 }
 
-/** 実際のクリップボードイベントをLexicalへ渡す。 */
+/** 実際のクリップボードイベントを Lexical へ渡す。 */
 export async function paste(input: Locator, text: string) {
 	await input.evaluate((node, value) => {
 		const clipboardData = new DataTransfer();

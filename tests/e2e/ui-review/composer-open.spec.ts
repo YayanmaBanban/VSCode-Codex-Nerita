@@ -19,7 +19,7 @@ test("入力URLを編集し、修飾クリックで開いてそのまま送信�
 		window.open = () => {
 			throw new Error("WebviewのリンクはVS Codeのクリック処理へ渡す");
 		};
-		// VS Codeのpreloadと同様に、defaultPreventedでも伝播したリンクを処理する。
+		// VS Code の `preload` と同様に、`defaultPrevented` でも伝播したリンクを処理する。
 		window.addEventListener("click", (event) => {
 			if (!event.isTrusted) {
 				return;

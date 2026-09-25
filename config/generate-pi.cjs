@@ -1,11 +1,11 @@
-// Piの固定依存・配布ライセンス・bundle対象ソースの指紋を更新する。
+// Pi の固定依存・配布ライセンス・バンドル対象ソースの指紋を更新する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { runPnpm } = require("./run-pnpm.cjs");
 const { cleanupLicenses } = require("./cleanup-licenses.cjs");
 
-/** JSONをrequireキャッシュに依存せず読み込む。 */
+/** JSON を `require` キャッシュに依存せず読み込む。 */
 async function readJson(file) {
 	return JSON.parse(await fs.readFile(file, "utf8"));
 }
@@ -86,7 +86,7 @@ function readRequestedVersion() {
 	return requested;
 }
 
-/** SDKの互換性確認対象ファイルの指紋を生成する。 */
+/** SDK の互換性の確認対象ファイルの指紋を生成する。 */
 async function readSdkContract(contractPath, sdk, ai) {
 	const previous = await readJson(contractPath);
 	const contract = {};

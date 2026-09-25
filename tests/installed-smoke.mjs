@@ -207,7 +207,7 @@ try {
 	await app.close();
 }
 
-/** 再表示後の入力欄を持つWebviewフレームを探す。 */
+/** 再表示後の入力欄を持つ Webview フレームを探す。 */
 async function findPromptFrame(page, chat) {
 	const candidates = page.frames();
 	for (const frame of candidates) {
@@ -219,7 +219,7 @@ async function findPromptFrame(page, chat) {
 	return chat;
 }
 
-/** 接続ボタンを持つWebviewフレームを探す。 */
+/** 接続ボタンを持つ Webview フレームを探す。 */
 async function findConnectFrame(page, chat) {
 	for (const frame of page.frames()) {
 		if (await frame.getByRole("button", { name: "接続する" }).count()) {

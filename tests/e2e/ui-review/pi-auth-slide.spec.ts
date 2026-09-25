@@ -1,4 +1,4 @@
-// CSS Transitionを停止・シークし、開閉途中の高さと操作不可状態を確認する。
+// CSS Transition を停止・シークし、開閉途中の高さと操作不可状態を確認する。
 import { test, expect } from "@playwright/test";
 
 test("認証アコーディオンの開閉フレームと動きの抑制", async ({ page }, info) => {

@@ -1,4 +1,4 @@
-// #直後のパス・コピーしたコードをHostで照合し、編集位置が変わっていない場合だけ参照にする。
+// #直後のパス・コピーしたコードを Host で照合し、編集位置が変わっていない場合だけ参照にする。
 import { useEffect } from "react";
 import {
 	$addUpdateTag,
@@ -16,7 +16,7 @@ import { parsePastedPath } from "../../../shared/pastedPath";
 import { $completion, $insertCompletion, type Completion } from "./completions";
 import { $pointOffset, $readParts } from "./content";
 
-/** 非同期応答はUndo・削除・カーソル移動後の本文を上書きしない。 */
+/** 非同期応答は元に戻す操作・削除・カーソル移動後の本文を上書きしない。 */
 export function usePastedPath(
 	editor: LexicalEditor,
 	bridge: Bridge | undefined,

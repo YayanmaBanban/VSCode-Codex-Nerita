@@ -1,4 +1,4 @@
-// Pi SDK境界だけを差し替え、Controllerの受付・通知・停止を独立して検証する。
+// Pi SDK 境界だけを差し替え、`Controller` の受付・通知・停止を独立して検証する。
 import { vi } from "vitest";
 import { PiSessionController } from "../../src/extension/backends/pi/PiSessionController";
 import type {
@@ -8,7 +8,7 @@ import type {
 } from "../../src/extension/backends/pi/PiRuntime";
 import type { HostMessage } from "../../src/shared/messages";
 
-/** 任意のタイミングで終了するSDK送信を作る。 */
+/** 任意のタイミングで終了する SDK 送信を作る。 */
 export function pending<T>() {
 	let resolve!: (value: T) => void;
 	let reject!: (reason: Error) => void;
@@ -19,7 +19,7 @@ export function pending<T>() {
 	return { promise, resolve, reject };
 }
 
-/** SDKイベントの最小Assistant応答を作る。 */
+/** SDK イベントの最小アシスタント応答を作る。 */
 export function assistant(
 	text: string,
 	stopReason: "stop" | "error" | "aborted" = "stop",
@@ -49,7 +49,7 @@ export function assistant(
 	};
 }
 
-/** 受付前と実行中の停止を制御できるテスト用SDKを作る。 */
+/** 受付前と実行中の停止を制御できるテスト用 SDK を作る。 */
 export function piHarness() {
 	const listeners = new Set<(event: PiEvent) => void>();
 	let run = pending<void>();

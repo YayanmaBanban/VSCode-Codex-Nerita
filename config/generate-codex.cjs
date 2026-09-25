@@ -102,7 +102,7 @@ function readRequestedVersion() {
 	return requestedVersion;
 }
 
-/** 指定されたCodexの固定版をpnpmで導入する。 */
+/** 指定された Codex の固定版を pnpm で導入する。 */
 function installRequestedVersion(requestedVersion, root) {
 	if (requestedVersion !== undefined) {
 		const pnpmPath = process.env.npm_execpath;

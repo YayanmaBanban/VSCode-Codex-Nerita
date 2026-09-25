@@ -1,4 +1,4 @@
-// Piを専用ESM entryと遅延chunkへbundleし、ファイル参照する資産だけを同梱する。
+// Pi を専用 ESM `entry` と遅延チャンクへバンドルし、ファイル参照する資産だけを同梱する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { build } = require("esbuild");
@@ -8,7 +8,7 @@ const { verifyPiSources } = require("./pi-sdk-contract.cjs");
 
 const { version: SUPPORTED_PI_VERSION } = require("./pi-version.json");
 
-/** WASM実行に必要なファイルだけを保持する。 */
+/** WASM 実行に必要なファイルだけを保持する。 */
 async function copyPhoton(sdkRoot, target) {
 	const source = await fs.realpath(
 		path.join(sdkRoot, "../../@silvia-odwyer/photon-node"),
@@ -27,7 +27,7 @@ async function copyPhoton(sdkRoot, target) {
 	return source;
 }
 
-/** SDKの相対資産探索をbundle専用package境界内で解決する。 */
+/** SDK の相対資産探索をバンドル専用 `package` 境界内で解決する。 */
 async function copyAssets(source, destination, manifest) {
 	await fs.writeFile(
 		path.join(destination, "package.json"),
@@ -60,7 +60,7 @@ async function copyAssets(source, destination, manifest) {
 	);
 }
 
-/** SDK内部のファイル配置をHostに公開せず、ESM境界をビルド側で用意する。 */
+/** SDK 内部のファイル配置を Host に公開せず、ESM 境界をビルド側で用意する。 */
 async function bundlePi(projectRoot, target) {
 	const source = await fs.realpath(
 		path.join(projectRoot, "node_modules/@earendil-works/pi-coding-agent"),
@@ -103,7 +103,7 @@ async function bundlePi(projectRoot, target) {
 		metafile: true,
 		legalComments: "linked",
 		define: { PI_BUNDLED_NODE: "true" },
-		// CJS依存のNode組込requireを各chunkで利用できるようにする。
+		// CJS 依存の Node 組込 `require` を各チャンクで利用できるようにする。
 		banner: {
 			js: 'import { createRequire as __neritaCreateRequire } from "node:module"; const require = __neritaCreateRequire(import.meta.url);',
 		},

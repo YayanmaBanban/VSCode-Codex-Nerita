@@ -1,4 +1,4 @@
-// Hostから届く通知を、Webviewの状態や描画に反映する前に検証する。
+// Host から届く通知を検証してから、Webview の状態や描画に反映する。
 import type { HostMessage } from "./messages";
 import { isBackendId } from "./backend";
 import { isId, isRecord, isRevision } from "./validation";

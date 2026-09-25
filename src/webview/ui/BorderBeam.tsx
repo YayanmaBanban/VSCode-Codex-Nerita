@@ -1,4 +1,4 @@
-// Lightswindの境界線演出。Webview用のMotionと型付きスタイルで描画する。
+// Lightswind の境界線演出。Webview 用の Motion と型付きスタイルで描画する。
 "use client";
 
 import { clsx } from "clsx";

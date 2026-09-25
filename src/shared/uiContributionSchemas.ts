@@ -1,4 +1,4 @@
-// 解決済みUIの通信Schemaを定義し、Host内部の条件型に依存させない。
+// 解決済み UI の通信スキーマを定義し、Host 内部の条件型に依存させない。
 import * as z from "zod";
 import {
 	ConfigChoiceSchema,
@@ -7,7 +7,7 @@ import {
 	QuotaWindowSchema,
 } from "./composerSchemas";
 
-/** 宣言型UI境界だけで識別子長と候補値の一意性を要求する。 */
+/** 宣言型 UI 境界だけで識別子長と候補値の一意性を要求する。 */
 export const UiConfigOptionSchema = ConfigOptionSchema.extend({
 	id: IdSchema,
 	options: z.array(ConfigChoiceSchema.extend({ value: IdSchema })),
@@ -26,14 +26,14 @@ const controlFields = {
 	description: z.string().optional(),
 };
 
-/** 利用枠は未取得のnullや空配列を表示controlとして送らない。 */
+/** 利用枠は未取得の `null` や空配列を表示コントロールとして送らない。 */
 export const QuotaControlSchema = z.object({
 	...controlFields,
 	type: z.literal("quota"),
 	windows: z.array(QuotaWindowSchema).min(1),
 });
 
-/** 選択操作は既存のconfig/setに接続する。 */
+/** 選択操作は既存の `config/set` に接続する。 */
 export const SelectControlSchema = z.object({
 	...controlFields,
 	type: z.literal("select"),
@@ -81,13 +81,13 @@ export const UiSlotSchema = z.enum([
 	"status",
 ]);
 
-/** 旧guardのString(slot)判定を保つ。値の正規化は呼び出し側へ持ち込まない。 */
+/** 旧検証処理の `String`(slot)判定を保つ。値の正規化は呼び出し側へ持ち込まない。 */
 const compatibleSlotSchema = z.preprocess(
 	(value) => String(value),
 	UiSlotSchema,
 );
 
-/** whenは省略またはundefinedだけを許可し、未解決条件を拒否する。 */
+/** `when` は省略または `undefined` だけを許可し、未解決条件を拒否する。 */
 export const ResolvedUiContributionSchema = z.object({
 	id: IdSchema,
 	slot: compatibleSlotSchema,
@@ -96,7 +96,7 @@ export const ResolvedUiContributionSchema = z.object({
 	control: UiControlSchema,
 });
 
-/** backendのSurfaceと、IDが重複しない解決済み宣言。 */
+/** バックエンドの Surface と、ID が重複しない解決済み宣言。 */
 export const UiContributionsSchema = z
 	.object({
 		surface: z.enum(["codex", "pi"]),

@@ -1,8 +1,8 @@
-// bundleへ入った依存だけのライセンス・出典を収集し、丸ごとコピー廃止後も表記を保持する。
+// バンドルへ入った依存だけのライセンス・出典を収集し、丸ごとコピー廃止後も表記を保持する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
-/** nested package境界から、名前を持つ配布パッケージまで遡る。 */
+/** 入れ子のパッケージ境界から、名前を持つ配布パッケージまで遡る。 */
 async function packageRoot(file) {
 	let directory = path.dirname(file);
 	while (directory !== path.dirname(directory)) {
@@ -23,7 +23,7 @@ async function packageRoot(file) {
 	throw new Error(`依存パッケージの出典が見つかりません: ${file}`);
 }
 
-/** esbuildが実際に出力した入力だけを対象にする。 */
+/** esbuild が実際に出力した入力だけを対象にする。 */
 async function copyBundleLicenses(
 	projectRoot,
 	destination,
@@ -68,7 +68,7 @@ async function copyBundleLicenses(
 				path.join(output, "LICENSE"),
 			);
 		} else if (!files.length) {
-			// npmがlicenseを省略した依存は、固定版に対応する上流表記を保持する。
+			// npm が `license` を省略した依存は、固定版に対応する上流表記を保持する。
 			await fs.copyFile(
 				path.join(__dirname, "licenses", name, "LICENSE"),
 				path.join(output, "LICENSE"),

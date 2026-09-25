@@ -28,7 +28,7 @@ export type AppServerCallbacks = {
 	disconnected?: (error: Error) => void;
 };
 
-/** 一つのプロセスに対する通信を順番通り処理する。 */
+/** 1つのプロセスに対する通信を順番通り処理する。 */
 export class AppServerTransport {
 	private nextId = 1;
 	private readonly pending = new Map<RequestId, Pending>();
@@ -116,7 +116,7 @@ export class AppServerTransport {
 		}).then(responseParsers[method]);
 	}
 
-	/** 初期化完了通知など、応答を伴わないメッセージを送る。 */
+	/** 初期化の完了通知など、応答を伴わないメッセージを送る。 */
 	notify(message: ClientNotification): void {
 		this.write(message);
 	}

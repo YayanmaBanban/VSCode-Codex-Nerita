@@ -1,7 +1,7 @@
-// backend共通の一回限りの承認待機と取消を管理する。
+// バックエンド共通の1回限りの承認待機と取消を管理する。
 import { randomUUID } from "node:crypto";
 import type { Permission } from "../../shared/chatState";
-/** 一回の操作に適用する判断。 */
+/** 1回の操作に適用する判断。 */
 type Decision = "accept" | "decline" | "cancel";
 /** 承認ごとの UUID を作り、取消・解決済み通知でも待機を終了する。 */
 export class Approvals {

@@ -1,4 +1,4 @@
-// MCPの取得中表示と、接続状態の色付きリストをメッセージ内に描画する。
+// MCP の取得中表示と、接続状態の色付きリストをメッセージ内に描画する。
 import { useReducedMotion } from "motion/react";
 import type { McpMessageContent } from "../../../shared/mcp";
 import { ShinyText } from "../../ui/ShinyText";
@@ -69,7 +69,7 @@ export function McpMessage({
 	);
 }
 
-/** MCPの接続状態を表示色へ変換し、未知の状態は中立色にする。 */
+/** MCP の接続状態を表示色へ変換し、未知の状態は中立色にする。 */
 function serverStatusColor(status: string | null) {
 	if (status === "connected") {
 		return "bg-menu-check";

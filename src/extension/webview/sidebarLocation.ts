@@ -1,4 +1,4 @@
-// VS Codeのユーザー設定とチャット専用コンテナの配置を同期する。
+// VS Code のユーザー設定とチャット専用コンテナの配置を同期する。
 import * as vscode from "vscode";
 import { isSidebarLocation, type SidebarLocation } from "../../shared/sidebar";
 
@@ -27,7 +27,7 @@ export async function moveSidebar(location: SidebarLocation): Promise<void> {
 	await vscode.commands.executeCommand("nerita.codex.chat.focus");
 }
 
-/** ワークスペースに依存しない配置をsettings.jsonへ保存する。 */
+/** ワークスペースに依存しない配置を `settings.json` へ保存する。 */
 export async function saveSidebar(location: SidebarLocation): Promise<void> {
 	await vscode.workspace
 		.getConfiguration("nerita.codex")
@@ -40,7 +40,7 @@ export class SidebarPlacement implements vscode.Disposable {
 	private applied: SidebarLocation | undefined;
 	private disposed = false;
 	private configuration: vscode.Disposable;
-	/** 移動成功後に全Webviewへ保存値を通知する。 */
+	/** 移動成功後に全 Webview へ保存値を通知する。 */
 	constructor(private notify: (location: SidebarLocation) => void) {
 		this.configuration = vscode.workspace.onDidChangeConfiguration(
 			(event) => {

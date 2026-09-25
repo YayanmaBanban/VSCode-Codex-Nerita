@@ -1,11 +1,11 @@
 // ドロップしたローカル参照とファイル内容の通信制限を共有する。
 export const MAX_DROP_BYTES = 20 * 1024 * 1024;
 
-/** パスを取得できないブラウザーのFileは内容として転送する。 */
+/** パスを取得できないブラウザーの `File` は内容として転送する。 */
 export type DroppedAttachment =
 	{ uri: string } | { name: string; data: string };
 
-/** ローカルファイルURIだけを許可する。 */
+/** ローカルファイル URI だけを許可する。 */
 export function isLocalFileUri(value: unknown): value is string {
 	if (typeof value !== "string" || value.length > 8192) {
 		return false;
@@ -19,7 +19,7 @@ export function isLocalFileUri(value: unknown): value is string {
 	}
 }
 
-/** 件数・名前・Base64形式と合計転送量を通信境界で制限する。 */
+/** 件数・名前・Base64 形式と合計転送量を通信境界で制限する。 */
 export function validDroppedAttachments(
 	value: unknown,
 ): value is DroppedAttachment[] {
@@ -53,7 +53,7 @@ export function validDroppedAttachments(
 	});
 }
 
-/** Windowsで利用できるファイル名だけを受け付ける。 */
+/** Windows で利用できるファイル名だけを受け付ける。 */
 function validAttachmentName(name: unknown): boolean {
 	return (
 		typeof name === "string" &&

@@ -22,7 +22,7 @@ function permissionPath(value: unknown): FileSystemPath {
 	throw new AppServerRpcError(-32602, "Unsupported permission path");
 }
 
-/** 互換read/writeとネットワーク権限を検証し、未知の広い権限形式を許可しない。 */
+/** 互換 `read/write` とネットワーク権限を検証し、未知の広い権限形式を許可しない。 */
 export function permissionProfile(value: unknown): GrantedPermissionProfile {
 	if (!isRecord(value)) {
 		throw new AppServerRpcError(-32602, "Invalid permissions");

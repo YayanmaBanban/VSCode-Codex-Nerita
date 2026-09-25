@@ -1,4 +1,4 @@
-// WindowsのPi利用時に、明示的なコマンドからCodex Sandboxをセットアップする。
+// Windows の Pi 利用時に、明示的なコマンドから Codex Sandbox をセットアップする。
 import * as vscode from "vscode";
 import { z } from "zod";
 import { CodexClient } from "../CodexClient";
@@ -52,7 +52,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 									fail = reject;
 								},
 							);
-							// 接続失敗や通知先行でも未処理rejectを作らない。
+							// 接続失敗や通知先行でも未処理 `reject` を作らない。
 							void finished.catch(() => undefined);
 							const cancel = () =>
 								fail(
@@ -145,7 +145,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 						},
 					);
 					void vscode.window.showInformationMessage(
-						"Windows Sandboxのセットアップが完了しました。Piへ再接続してください。",
+						"Windows Sandbox のセットアップが完了しました。Piへ再接続してください。",
 					);
 				} catch (error) {
 					void vscode.window.showErrorMessage(
@@ -159,7 +159,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 	);
 }
 
-/** 設定変更後の直接呼出しでも、Codex backendからは開始させない。 */
+/** 設定変更後の直接呼出しでも、Codex バックエンドからは開始させない。 */
 function canSetupPiSandbox(): boolean {
 	return (
 		process.platform === "win32" &&

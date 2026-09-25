@@ -1,4 +1,4 @@
-// 通常文のURLをリンクにし、文字の編集とリンクを開く操作を分ける。
+// 通常文の URL をリンクにし、文字の編集とリンクを開く操作を分ける。
 import { useEffect } from "react";
 import { type ElementNode } from "lexical";
 import { autoLinkUrlMatcher, type LinkMatcher } from "@lexical/link";
@@ -6,7 +6,7 @@ import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { PastedBlockNode } from "./PastedBlockNode";
 
-/** URLの認識はLexicalへ任せ、開き方をリンクのツールチップに示す。 */
+/** URL の認識は Lexical へ任せ、開き方をリンクのツールチップに示す。 */
 const matchUrl: LinkMatcher = (text) => {
 	const match = autoLinkUrlMatcher(text);
 	return match
@@ -34,15 +34,15 @@ function openLink(event: MouseEvent) {
 	if (!link || !/^https?:\/\//i.test(link.href)) {
 		return;
 	}
-	// VS CodeはdefaultPreventedに関係なくwindowまで届いたリンククリックを開く。
-	// 編集時は伝播も止め、修飾クリックは信頼済みのイベントのままHostへ渡す。
+	// VS Code は `defaultPrevented` に関係なく `window` まで届いたリンククリックを開く。
+	// 編集時は伝播も止め、修飾クリックは信頼済みのイベントのまま Host へ渡す。
 	event.preventDefault();
 	if (!event.ctrlKey && !event.metaKey) {
 		event.stopPropagation();
 	}
 }
 
-/** 自動リンクとDOMイベントを接続し、エディタの解除時に後始末する。 */
+/** 自動リンクと DOM イベントを接続し、エディタの解除時に後始末する。 */
 export function ComposerLinksPlugin() {
 	const [editor] = useLexicalComposerContext();
 	useEffect(

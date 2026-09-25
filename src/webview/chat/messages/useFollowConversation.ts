@@ -38,7 +38,7 @@ export function useFollowConversation(
 			}
 			previousTop = element.scrollTop;
 		};
-		// wheel直後の描画更新が、ブラウザのscroll通知より先に追従する競合を防ぐ。
+		// `wheel` 直後の描画更新が、ブラウザの `scroll` 通知より先に追従する競合を防ぐ。
 		const wheel = (event: WheelEvent) => {
 			if (event.deltaY < 0 && element.scrollTop > 0) {
 				following.current = false;

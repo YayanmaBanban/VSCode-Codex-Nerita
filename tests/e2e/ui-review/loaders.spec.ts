@@ -28,7 +28,7 @@ for (const theme of ["dark", "light"] as const) {
 		await expect
 			.poll(() => text.evaluate((el) => el.style.backgroundPosition))
 			.not.toBe(initialShine);
-		// SVGの時計を固定する。ShinyTextは上の変化確認と静止画で別に確認する。
+		// SVG の時計を固定する。`ShinyText` は上の変化確認と静止画で別に確認する。
 		for (const time of [0, 400, 1800, 3300, 3600]) {
 			await cat.evaluate((element, time) => {
 				for (const animation of element.getAnimations({

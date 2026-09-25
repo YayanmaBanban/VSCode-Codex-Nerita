@@ -1,4 +1,4 @@
-// 同梱SDKにCLI形式のパッケージ設定を渡し、承認と登録リソースを検証する。
+// 同梱 SDK に CLI 形式のパッケージ設定を渡し、承認と登録リソースを検証する。
 import assert from "node:assert/strict";
 import {
 	mkdir,
@@ -9,7 +9,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 
-/** ユーザーの設定には触れず、隔離したglobal/projectパッケージを読み込む。 */
+/** ユーザーの設定には触れず、隔離した `global/project` パッケージを読み込む。 */
 export async function piPackagesSmoke({
 	createPiRuntime,
 	sdk,
@@ -232,8 +232,8 @@ export default function(pi) {
 		await session.account.selectModel("local/smoke", abort.signal);
 		assert.equal(session.sessionId, originalId);
 		assert.equal(session.account.snapshot().connection, "ready");
-		// 実SDKのmetadataによる候補生成と、ユーザー拡張を含む要求フックの合成を検証する。
-		// 外部providerには送信せず、隔離した認証・モデルとSDKの公開Runnerを使う。
+		// 実 SDK のメタデータによる候補生成と、ユーザー拡張を含む要求フックの合成を検証する。
+		// 外部プロバイダーには送信せず、隔離した認証・モデルと SDK の公開 `Runner` を使う。
 		const controlsModel = {
 			id: "controls-test",
 			name: "Controls test",
@@ -261,7 +261,7 @@ export default function(pi) {
 				{ ...controlsModel, id: "controls-new", name: "New Pi model" },
 			],
 		});
-		// OAuthの解決境界だけを模擬し、catalog parser・overlay・SDK操作は実装を通す。
+		// OAuth の解決境界だけを模擬し、catalog parser・overlay・SDK 操作は実装を通す。
 		const isUsingOAuth = session.modelRuntime.isUsingOAuth.bind(
 			session.modelRuntime,
 		);

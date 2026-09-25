@@ -1,4 +1,4 @@
-// Providerの利用枠取得を共通の寿命管理へ接続し、取得失敗・古い応答を吸収する。
+// プロバイダーの利用枠取得を共通の寿命管理へ接続し、取得失敗・古い応答を吸収する。
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -7,7 +7,7 @@ import type { QuotaWindow } from "../../../shared/composer";
 import type { PiProviders, PiQuotaReader } from "./PiProvider";
 import { piProviders } from "./PiProviders";
 
-/** 認証方式やendpointはprovider側のサービスが所有する。 */
+/** 認証方式やエンドポイントはプロバイダー側のサービスが所有する。 */
 export class PiQuotaService implements PiQuotaReader {
 	constructor(
 		private models: ModelRuntime,
@@ -16,7 +16,7 @@ export class PiQuotaService implements PiQuotaReader {
 		private providers: PiProviders = piProviders,
 	) {}
 
-	/** providerをまたぐ保持は禁止し、モデル間の共有関係だけ登録先に委譲する。 */
+	/** プロバイダーをまたぐ保持は禁止し、モデル間の共有関係だけ登録先に委譲する。 */
 	canRetainForModel(value: string): boolean {
 		const current = this.session.model;
 		if (!current || !value.startsWith(`${current.provider}/`)) {
@@ -32,7 +32,7 @@ export class PiQuotaService implements PiQuotaReader {
 			: current.id === nextId;
 	}
 
-	/** 対応サービスがないproviderでは通信せず、利用枠なしを返す。 */
+	/** 対応サービスがないプロバイダーでは通信せず、利用枠なしを返す。 */
 	async read(signal: AbortSignal): Promise<QuotaWindow[] | null> {
 		try {
 			signal.throwIfAborted();

@@ -1,4 +1,4 @@
-// コードブロックの装飾操作を編集本文から分離し、削除をUndo可能にする。
+// コードブロックの装飾操作を編集本文から分離し、削除の取り消しを可能にする。
 import {
 	$addUpdateTag,
 	$createParagraphNode,
@@ -60,7 +60,7 @@ export function createBlockControls(
 	path.setAttribute("stroke-linecap", "round");
 	icon.append(path);
 	button.append(icon);
-	// マウス押下で編集選択を失わず、TabとEnterによる操作も残す。
+	// マウス押下で編集選択を失わず、Tab と Enter による操作も残す。
 	button.addEventListener("mousedown", (event) => event.preventDefault());
 	button.addEventListener("keydown", (event) => event.stopPropagation());
 	button.addEventListener("keyup", (event) => event.stopPropagation());
@@ -73,7 +73,7 @@ export function createBlockControls(
 	return controls;
 }
 
-/** ホイールがブロックの端に達したら、残りの縦移動をComposer全体へ渡す。 */
+/** ホイールがブロックの端に達したら、残りの縦移動を Composer 全体へ渡す。 */
 export function connectBlockScroll(
 	element: HTMLElement,
 	editor: LexicalEditor,

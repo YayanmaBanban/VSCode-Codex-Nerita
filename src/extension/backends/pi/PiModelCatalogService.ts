@@ -1,4 +1,4 @@
-// Provider登録から補助metadata取得へ委譲し、取消・世代と表示情報を管理する。
+// プロバイダー登録から補助メタデータ取得へ委譲し、取消・世代と表示情報を管理する。
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -7,7 +7,7 @@ import type { PiCatalogSnapshot, PiModelCatalogReader } from "./PiModelCatalog";
 import type { PiProviders } from "./PiProvider";
 import { piProviders } from "./PiProviders";
 
-/** Session内だけに保持し、認証操作でreaderのaccount cacheごと破棄する。 */
+/** Session 内だけに保持し、認証操作で `reader` のアカウント キャッシュごと破棄する。 */
 export class PiModelCatalogService {
 	private readers = new Map<string, PiModelCatalogReader>();
 	private catalogs = new Map<string, PiCatalogSnapshot>();
@@ -19,21 +19,21 @@ export class PiModelCatalogService {
 		private providers: PiProviders = piProviders,
 	) {}
 
-	/** metadata取得元のあるproviderでは、未取得をnullで示す。 */
+	/** メタデータ取得元のあるプロバイダーでは、未取得を `null` で示す。 */
 	snapshot(provider: string): PiCatalogSnapshot {
 		return this.providers[provider]?.createCatalog
 			? (this.catalogs.get(provider) ?? null)
 			: undefined;
 	}
 
-	/** 認証変更は同じproviderでも別accountとして扱う。 */
+	/** 認証変更は同じプロバイダーでも別アカウントとして扱う。 */
 	invalidate(): void {
 		this.abort?.abort();
 		this.readers.clear();
 		this.catalogs.clear();
 	}
 
-	/** provider変更の途中でも取得でき、開始時のsessionが変わった結果は捨てる。 */
+	/** プロバイダー変更の途中でも取得でき、開始時の `session` が変わった結果は捨てる。 */
 	async refresh(provider: string, caller: AbortSignal): Promise<void> {
 		this.abort?.abort();
 		const abort = new AbortController();
@@ -64,7 +64,7 @@ export class PiModelCatalogService {
 		}
 	}
 
-	/** live取得成功時は公開候補に絞り、未取得ならPiの候補を維持する。 */
+	/** カタログの取得成功時は公開候補に絞り、未取得なら Pi の候補を維持する。 */
 	available(available = this.models.getAvailableSnapshot()) {
 		const result = available.filter((model) => {
 			const catalog = this.snapshot(model.provider);
@@ -101,7 +101,7 @@ export class PiModelCatalogService {
 		return result;
 	}
 
-	/** liveのvisibilityに関わらず、同じslugの補助metadataを返す。 */
+	/** 取得したカタログの `visibility` に関わらず、同じ `slug` の補助メタデータを返す。 */
 	metadata(provider: string, modelId: string) {
 		return this.snapshot(provider)?.find((item) => item.slug === modelId);
 	}

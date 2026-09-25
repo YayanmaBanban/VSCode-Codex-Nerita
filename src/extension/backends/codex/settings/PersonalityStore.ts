@@ -1,4 +1,4 @@
-// 指定された保存先のTOMLを読み、設定ファイルを優先してプリセットを保存する。
+// 指定された保存先の TOML を読み、設定ファイルを優先してプリセットを保存する。
 import { readFile, mkdir, writeFile, rename, unlink } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
@@ -27,14 +27,14 @@ async function readToml(path: string) {
 /** 同じ接続の保存操作を直列化し、途中の書き込みを読ませない。 */
 export class PersonalityStore {
 	private tail: Promise<unknown> = Promise.resolve();
-	/** プリセットは固定のホーム配下、Codex設定はCODEX_HOMEにも追従する。 */
+	/** プリセットは固定のホーム配下、Codex 設定は CODEX_HOME にも追従する。 */
 	constructor(
 		private readonly cwd: string,
 		private readonly home = homedir(),
 		private readonly configHome = process.env.CODEX_HOME ||
 			join(home, ".codex"),
 	) {}
-	/** 保存先をUI入力に依存せず決定する。 */
+	/** 保存先を UI 入力に依存せず決定する。 */
 	private presetPath(scope: "global" | "workspace") {
 		return join(
 			scope === "global" ? this.home : this.cwd,
@@ -43,7 +43,7 @@ export class PersonalityStore {
 			"preset.toml",
 		);
 	}
-	/** config.tomlに値があるペインはプリセットより優先して固定する。 */
+	/** config.toml に値があるペインはプリセットより優先して固定する。 */
 	private async readScope(
 		scope: "global" | "workspace",
 	): Promise<PersonalityScope> {

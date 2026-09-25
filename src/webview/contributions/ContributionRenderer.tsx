@@ -1,11 +1,11 @@
-// providerを判定せず、検証済みcontrolの種別だけで描画する。
+// プロバイダーを判定せず、検証済みコントロールの種別だけで描画する。
 import { ToggleSwitch } from "./ToggleSwitch";
 import type { NeritaUiControl } from "../../shared/uiContributions";
 import { ConfigControl } from "../chat/composer/ConfigControl";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
 import { QuotaBar } from "../chat/composer/QuotaBar";
 
-/** select / toggleの操作値はHostが渡した候補に限定する。 */
+/** select / `toggle` の操作値は Host が渡した候補に限定する。 */
 export function ContributionRenderer({
 	control,
 	disabled,

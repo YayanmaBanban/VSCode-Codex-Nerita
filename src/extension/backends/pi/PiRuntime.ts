@@ -1,4 +1,4 @@
-// ビルドが用意したESM入口を遅延読込し、Piの認証・設定で単一セッションを生成する。
+// ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type {
@@ -30,7 +30,7 @@ import {
 	type PiSessionStorage,
 } from "./PiSessionStore";
 
-/** Controllerが必要とするSDKの操作だけを公開する。 */
+/** `Controller` が必要とする SDK の操作だけを公開する。 */
 export type PiSession = Pick<
 	AgentSession,
 	| "sessionId"
@@ -52,7 +52,7 @@ export type PiSession = Pick<
 	storageChanged?: () => boolean;
 	close?: () => Promise<void>;
 };
-/** 共通Host APIの子だけを管理し、外部拡張の独自subagentとは区別する。 */
+/** 共通 Host API の子だけを管理し、外部拡張の独自サブエージェントとは区別する。 */
 export type PiRuntimeSession = PiSession & {
 	accessPolicy: AgentAccessPolicy;
 	children: PiChildRuntimes;
@@ -60,7 +60,7 @@ export type PiRuntimeSession = PiSession & {
 };
 export type { AgentSessionEvent as PiEvent };
 
-/** 実SDKとテスト接続を同じ寿命管理で扱う。 */
+/** 実 SDK とテスト接続を同じ寿命管理で扱う。 */
 export type PiFactory = (
 	signal: AbortSignal,
 	authorize: PiAuthorize,
@@ -72,9 +72,9 @@ export type PiRuntimeOptions = {
 	extensionPath: string;
 	cwd: string;
 	agentDir?: string;
-	/** 最後にUIで選択したモデルと推論レベル。 */
+	/** 最後に UI で選択したモデルと推論レベル。 */
 	preferredModel?: PiModelSelection;
-	/** UIで確定したモデルを次回の新規セッション用に保存する。 */
+	/** UI で確定したモデルを次回の新規セッション用に保存する。 */
 	saveModel?: (selection: PiModelSelection) => Promise<void>;
 	signal: AbortSignal;
 	authorize?: PiAuthorize;
@@ -82,7 +82,7 @@ export type PiRuntimeOptions = {
 	getStorage?: () => PiSessionStorage;
 	resume?: PiResumeTarget;
 	authService?: PiAuthService;
-	/** 固定endpointへのHost通信だけを疎通テストで差し替える。 */
+	/** 固定エンドポイントへの Host 通信だけを疎通テストで差し替える。 */
 	request?: typeof fetch;
 	workspaceRoots?: string[];
 	workspaceTrusted?: boolean;
@@ -91,9 +91,9 @@ export type PiRuntimeOptions = {
 	executor?: SandboxCommandExecutor | null;
 	parentPolicy?: AgentAccessPolicy;
 	role?: AgentRole;
-	/** 共通子Runtimeの内部履歴を親の履歴一覧へ保存しない。 */
+	/** 共通子 Runtime の内部履歴を親の履歴一覧へ保存しない。 */
 	ephemeral?: boolean;
-	/** 実行基盤の利用不能も子へ継承し、fallbackによる有効化を防ぐ。 */
+	/** 実行基盤の利用不能も子へ継承し、フォールバックによる有効化を防ぐ。 */
 	sandboxUnavailable?: string;
 };
 
@@ -104,7 +104,7 @@ export type PiModelSelection = {
 	reasoning?: string;
 };
 
-/** Pi標準形式で履歴を保存し、副作用ツールには必ずHostの承認を挟む。 */
+/** Pi 標準形式で履歴を保存し、副作用ツールには必ず Host の承認を挟む。 */
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
 ): Promise<PiRuntimeSession> {
@@ -121,7 +121,7 @@ export async function createPiRuntime(
 	options.signal.throwIfAborted();
 	const agentDir = options.agentDir || sdk.getAgentDir();
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
-	// 会話の自動再実行はHost側の停止・承認の寿命と分離して無効化する。
+	// 会話の自動再実行は Host 側の停止・承認の寿命と分離して無効化する。
 	settingsManager.applyOverrides({
 		compaction: { enabled: false },
 		retry: { enabled: false, provider: { maxRetries: 0 } },
@@ -163,7 +163,7 @@ export async function createPiRuntime(
 		modelRefreshTimeoutMs: 15_000,
 		signal: options.signal,
 	});
-	// SDKが初期モデルを選ぶ前に、パッケージ由来providerも候補へ登録する。
+	// SDK が初期モデルを選ぶ前に、パッケージ由来プロバイダーも候補へ登録する。
 	registerExtensionProviders(resourceLoader, modelRuntime);
 	await modelRuntime.getAvailable(undefined, { signal: options.signal });
 	const model = resolvePiInitialModel(options, modelRuntime);
@@ -185,7 +185,7 @@ export async function createPiRuntime(
 	const extensionTools = resourceLoader
 		.getExtensions()
 		.extensions.flatMap((extension) => [...extension.tools.keys()]);
-	// 非Windowsでは、明示的に信頼したbash拡張がSDK標準Toolを置き換えられる。
+	// 非 Windows では、明示的に信頼した `bash` 拡張が SDK 標準ツールを置き換えられる。
 	const customTools = runtimeTools.tools.filter(
 		(tool) =>
 			!(
@@ -222,7 +222,7 @@ export async function createPiRuntime(
 	);
 	try {
 		await session.bindExtensions({ mode: "print" });
-		// 起動処理の完了前にlive候補と保存推論を適用し、SDK既定値を公開しない。
+		// 起動処理の完了前に取得したカタログの候補と保存推論を適用し、SDK 既定値を公開しない。
 		await account.refreshCatalog(options.signal);
 		options.signal.throwIfAborted();
 	} catch (error) {
@@ -282,7 +282,7 @@ function createChildren(
 	);
 }
 
-/** Workspace Trustとユーザー許可を、コードをロードする前に照合する。 */
+/** Workspace Trust とユーザー許可を、コードをロードする前に照合する。 */
 async function runtimeExtensions(
 	options: PiRuntimeOptions,
 	settings: PiSdk.SettingsManager,
@@ -302,7 +302,7 @@ function sessionStorage(options: PiRuntimeOptions) {
 	return options.getStorage?.() ?? options.storage ?? "global";
 }
 
-/** 拡張由来のproviderを初期モデル選択前に登録する。 */
+/** 拡張由来のプロバイダーを初期モデル選択前に登録する。 */
 function registerExtensionProviders(
 	resourceLoader: PiSdk.DefaultResourceLoader,
 	modelRuntime: PiSdk.ModelRuntime,
@@ -316,7 +316,7 @@ function registerExtensionProviders(
 	}
 }
 
-/** providerとモデルの指定を検証してSDKの候補から解決する。 */
+/** プロバイダーとモデルの指定を検証して SDK の候補から解決する。 */
 export function resolvePiInitialModel(
 	options: PiRuntimeOptions,
 	modelRuntime: PiSdk.ModelRuntime,

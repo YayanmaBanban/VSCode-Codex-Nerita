@@ -1,4 +1,4 @@
-// バックエンド選択の識別子をHostとWebviewで共有する。
+// バックエンド選択の識別子を Host と Webview で共有する。
 export type BackendId = "codex" | "pi";
 
 /** 設定や通信に含まれる選択値を限定する。 */

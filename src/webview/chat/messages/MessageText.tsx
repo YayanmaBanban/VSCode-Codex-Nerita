@@ -1,4 +1,4 @@
-// 通常メッセージのMarkdownをReact要素へ変換し、テーマに沿って表示する。
+// 通常メッセージの Markdown を React 要素へ変換し、テーマに沿って表示する。
 import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
 import type { UiMessage } from "../../../shared/messages";
 import remarkGfm from "remark-gfm";
@@ -7,7 +7,7 @@ import type { ComposerReference } from "../../../shared/composerReferences";
 import { messageReferences } from "./messageReferences";
 import { MessageReferenceChip } from "./MessageReferenceChip";
 
-/** 絶対パスだけをfile URIへ変換し、その他のURLには既定の安全性検証を適用する。 */
+/** 絶対パスだけを `file` URI へ変換し、その他の URL には既定の安全性検証を適用する。 */
 function markdownUrl(url: string): string {
 	if (/^[a-z]:[\\/]/i.test(url)) {
 		return `file:///${url.replaceAll("\\", "/")}`;
@@ -21,7 +21,7 @@ function markdownUrl(url: string): string {
 	return defaultUrlTransform(url);
 }
 
-/** Webview内の横幅に合わせた要素の表示を定義する。 */
+/** Webview 内の横幅に合わせた要素の表示を定義する。 */
 const components: Components = {
 	pre: ({ children }) => (
 		<pre className="my-[12px] overflow-x-auto rounded-[6px] bg-message-code p-[12px] text-[12px] whitespace-pre">
@@ -39,7 +39,7 @@ const components: Components = {
 	img: ({ alt }) => <span>{alt || "画像"}</span>,
 };
 
-/** 生のHTMLは実行せず、表・リスト・改行を含むMarkdownを表示する。 */
+/** 生の HTML は実行せず、表・リスト・改行を含む Markdown を表示する。 */
 export function MessageText({
 	text,
 	send,

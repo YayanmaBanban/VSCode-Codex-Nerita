@@ -1,9 +1,9 @@
-// live catalogの未知schemaを拒否し、既知の推論能力だけ正規化する。
+// 取得したモデルカタログの未知スキーマを拒否し、既知の推論能力だけ正規化する。
 import { isRecord } from "../../../../shared/validation";
 import { piThinkingLevels } from "../../../../shared/piProviderControls";
 import type { PiCatalogModel } from "../PiModelCatalog";
 
-/** wire値noneだけをoffへ写し、persistent等の未知値は無視する。 */
+/** 通信形式の値 `none` だけを `off` へ写し、`persistent` 等の未知値は無視する。 */
 function reasoning(value: unknown): PiCatalogModel["defaultReasoning"] {
 	if (value === "none") {
 		return "off";
@@ -17,7 +17,7 @@ function reasoning(value: unknown): PiCatalogModel["defaultReasoning"] {
 	);
 }
 
-/** 部分的に壊れた一覧を成功扱いせず、最後に成功したcatalogを維持する。 */
+/** 部分的に壊れた一覧を成功扱いせず、最後に成功したカタログを維持する。 */
 export function normalizeCodexModels(
 	payload: unknown,
 ): PiCatalogModel[] | null {
@@ -36,7 +36,7 @@ export function normalizeCodexModels(
 	return models.sort((left, right) => left.priority - right.priority);
 }
 
-/** 一つのモデルの必須値と推論・サービス候補を検証する。 */
+/** 1つのモデルの必須値と推論・サービス候補を検証する。 */
 function normalizeModel(
 	item: unknown,
 	seen: Set<string>,

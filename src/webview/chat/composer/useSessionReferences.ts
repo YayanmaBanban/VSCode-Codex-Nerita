@@ -16,7 +16,7 @@ type SessionReferencePage = {
 	error?: string;
 };
 
-/** 古い検索・閉じたメニューへの応答を捨て、同名の会話はIDで区別する。 */
+/** 古い検索・閉じたメニューへの応答を捨て、同名の会話は ID で区別する。 */
 export function useSessionReferences(
 	bridge: Bridge | undefined,
 	active: boolean,
@@ -161,7 +161,7 @@ function nextSeenCursors(
 	return [...(old?.seen ?? []), ...(cursor ? [cursor] : [])];
 }
 
-/** ページ間のセッション候補をID単位で統合する。 */
+/** ページ間のセッション候補を ID 単位で統合する。 */
 function mergeSessionEntries(
 	old: SessionReferencePage | null,
 	message: SessionReferencesResult,

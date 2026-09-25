@@ -1,4 +1,4 @@
-// フォローアップの待機・受付・競合・失敗を実際のHost状態管理で確認する。
+// フォローアップの待機・受付・競合・失敗を実際の Host 状態管理で確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
 import type { HostMessage } from "../../src/shared/messages";

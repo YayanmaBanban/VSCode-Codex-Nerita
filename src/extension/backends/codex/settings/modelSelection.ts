@@ -1,17 +1,17 @@
-// Codexの選択だけを永続化し、起動時は現在のモデル候補で検証する。
+// Codex の選択だけを永続化し、起動時は現在のモデル候補で検証する。
 import { isRecord } from "../../../../shared/validation";
 import type { ModelInfo } from "../protocol/account";
 
 /** 認証情報や会話内容を含まない保存形式。 */
 export type CodexModelSelection = { model: string; reasoning: string };
 
-/** VS Codeとテストで保存先を差し替える。 */
+/** VS Code とテストで保存先を差し替える。 */
 export type CodexSelectionStore = {
 	read(): CodexModelSelection | undefined;
 	write(selection: CodexModelSelection): Promise<void>;
 };
 
-/** globalStateの既知の形式だけを読み、Piとは別のキーへ保存する。 */
+/** `globalState` の既知の形式だけを読み、Pi とは別のキーへ保存する。 */
 export function codexSelectionStore(storage: {
 	get(key: string): unknown;
 	update(key: string, value: unknown): PromiseLike<void>;

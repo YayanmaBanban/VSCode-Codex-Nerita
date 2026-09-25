@@ -1,4 +1,4 @@
-// セッション参照の候補・チップ・読み取り要求をHostと共有する。
+// セッション参照の候補・チップ・読み取り要求を Host と共有する。
 import { isPathString } from "./workspacePaths";
 
 /** 会話を再開せず、送信時に本文を読み取るための参照。 */
@@ -9,7 +9,7 @@ export type SessionReference = {
 	cwd: string;
 };
 
-/** IDを本文やURLから推測せず、明示された参照として検証する。 */
+/** ID を本文や URL から推測せず、明示された参照として検証する。 */
 export function isSessionReference(value: unknown): value is SessionReference {
 	if (!value || typeof value !== "object") {
 		return false;
@@ -42,7 +42,7 @@ export type SessionReferencesResult = {
 	error?: string;
 };
 
-/** セッション本文をVS Codeで表示する要求。 */
+/** セッション本文を VS Code で表示する要求。 */
 export type SessionReferenceOpen = {
 	type: "session/openReference";
 	requestId: string;

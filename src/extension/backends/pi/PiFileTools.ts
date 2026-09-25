@@ -1,4 +1,4 @@
-// SDKのwrite/edit形式を維持し、承認済みpath・内容だけをHostのoperationsへ渡す。
+// SDK の `write/edit` 形式を維持し、承認済み `path`・内容だけを Host の `operations` へ渡す。
 import { mkdir, open, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
@@ -23,7 +23,7 @@ const editSchema = z.object({
 		.min(1),
 });
 
-/** 各呼出しに専用operationsを作り、別の承認の対象を共有しない。 */
+/** 各呼出しに専用 `operations` を作り、別の承認の対象を共有しない。 */
 export function createPiFileTool(
 	sdk: typeof PiSdk,
 	kind: "write" | "edit",
@@ -64,13 +64,13 @@ export function createPiFileTool(
 				combined,
 			);
 			const call = consumeApprovedToolCall(approved);
-			/** 実I/Oの各直前にも検査し、SDKのmutation queueで待った間の差替えを検出する。 */
+			/** 実 `I/O` の各直前にも検査し、SDK の変更処理のキューで待った間の差替えを検出する。 */
 			const check = async () => {
 				approved.signal.throwIfAborted();
 				await verifyFileSnapshot(paths, snapshot);
 				approved.signal.throwIfAborted();
 			};
-			/** 開いた既存ファイルのidentity確認後にだけ切り詰め、新規ファイルは排他的に作る。 */
+			/** 開いた既存ファイルの `identity` 確認後にだけ切り詰め、新規ファイルは排他的に作る。 */
 			const write = async (path: string, content: string) => {
 				if (path !== snapshot.path) {
 					throw new Error("承認対象外のファイルです。");

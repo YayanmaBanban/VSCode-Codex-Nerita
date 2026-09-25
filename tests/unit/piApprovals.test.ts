@@ -1,8 +1,8 @@
-// 承認の世代・取消・一回限りの適用をControllerの通信境界から検証する。
+// 承認の世代・取消・1回限りの適用を `Controller` の通信境界から検証する。
 import { describe, expect, it } from "vitest";
 import { piHarness } from "./piHarness";
 
-/** 実行中のControllerと、実SDKに渡す承認コールバックを取得する。 */
+/** 実行中の `Controller` と、実 SDK に渡す承認コールバックを取得する。 */
 async function setup() {
 	const harness = piHarness();
 	await harness.controller.connect();

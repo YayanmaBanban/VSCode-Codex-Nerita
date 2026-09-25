@@ -1,4 +1,4 @@
-// 同梱SVGを表示キーへ対応付け、ViteとExtensionの両ビルドで読み込む。
+// 同梱 SVG を表示キーへ対応付け、Vite と Extension の両ビルドで読み込む。
 import type { AgentIconKey } from "../../../shared/subAgents";
 import alien from "../../../../media/icons/agents/alien_32.svg?raw";
 import anubis from "../../../../media/icons/agents/anubis_32.svg?raw";

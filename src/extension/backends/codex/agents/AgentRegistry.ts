@@ -1,4 +1,4 @@
-// 親ターンのフィルターより先に、子Threadの状態と活動の重複を管理する。
+// 親ターンのフィルターより先に、子スレッドの状態と活動の重複を管理する。
 import type { ChatState } from "../../../../shared/chatState";
 import type {
 	AgentStatus,
@@ -117,7 +117,7 @@ export class AgentRegistry {
 						...agent,
 						...this.metadata.get(agent.threadId),
 					};
-					// 明示的な完了・停止はidleより強く、活動開始よりThread通知を優先する。
+					// 明示的な完了・停止は `idle` より強く、活動開始よりスレッド通知を優先する。
 					return status &&
 						["running", "idle", "pendingInit"].includes(
 							merged.status,
@@ -140,7 +140,7 @@ export class AgentRegistry {
 		}
 	}
 
-	/** 無関係なThread通知によってキャッシュが無制限に増えないようにする。 */
+	/** 無関係なスレッド通知によるキャッシュの無制限な増加を防ぐ。 */
 	private trim(): void {
 		for (const map of [this.statuses, this.metadata]) {
 			if (map.size > 2048) {
@@ -160,7 +160,7 @@ function notificationKey(
 	return key;
 }
 
-/** nullableなメタデータは既存の表示を消さずに補完する。 */
+/** null を許容するメタデータは既存の表示を消さずに補完する。 */
 export function agentMetadata(
 	thread: Record<string, unknown>,
 ): Partial<SubAgentSummary> {

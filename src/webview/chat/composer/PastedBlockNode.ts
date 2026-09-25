@@ -1,4 +1,4 @@
-// 同じLexical編集領域の中に、独立スクロール可能なコード領域を配置する。
+// 同じ Lexical 編集領域の中に、独立スクロール可能なコード領域を配置する。
 import {
 	$applyNodeReplacement,
 	ElementNode,
@@ -16,11 +16,11 @@ export class PastedBlockNode extends ElementNode {
 	static override getType(): string {
 		return "pasted-block";
 	}
-	/** Undo用スナップショットへ同じキーで複製する。 */
+	/** 取り消し操作用のスナップショットへ同じキーで複製する。 */
 	static override clone(node: PastedBlockNode): PastedBlockNode {
 		return new PastedBlockNode(node.__key);
 	}
-	/** Lexicalの履歴・シリアライズ形式から復元する。 */
+	/** Lexical の履歴・シリアライズ形式から復元する。 */
 	static override importJSON(
 		serialized: SerializedElementNode,
 	): PastedBlockNode {
@@ -42,15 +42,15 @@ export class PastedBlockNode extends ElementNode {
 		wrapper.append(createBlockControls(editor, this.getKey()), element);
 		return wrapper;
 	}
-	/** ボタンをLexicalの本文管理から外し、preの中だけを編集する。 */
+	/** ボタンを Lexical の本文管理から外し、`pre` の中だけを編集する。 */
 	override getDOMSlot(element: HTMLElement): ElementDOMSlot<HTMLElement> {
 		return super.getDOMSlot(element.querySelector("pre") ?? element);
 	}
-	/** クリップボードのHTMLには操作ボタンを含めない。 */
+	/** クリップボードの HTML には操作ボタンを含めない。 */
 	override exportDOM(): DOMExportOutput {
 		return { element: document.createElement("pre") };
 	}
-	/** 入力時にDOMを置換せず選択と内部スクロールを保持する。 */
+	/** 入力時に DOM を置換せず選択と内部スクロールを保持する。 */
 	override updateDOM(): boolean {
 		return false;
 	}
@@ -64,7 +64,7 @@ export class PastedBlockNode extends ElementNode {
 	}
 }
 
-/** Lexicalの更新内で貼り付けブロックを生成する。 */
+/** Lexical の更新内で貼り付けブロックを生成する。 */
 export function $createPastedBlockNode(): PastedBlockNode {
 	return $applyNodeReplacement(new PastedBlockNode());
 }

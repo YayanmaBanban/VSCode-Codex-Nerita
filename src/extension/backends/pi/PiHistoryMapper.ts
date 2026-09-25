@@ -7,7 +7,7 @@ import { mapPiTool, finishPiTools } from "./PiToolMapper";
 /** 保存履歴の本文とツール結果を表す。 */
 type HistoryMessage = Extract<SessionEntry, { type: "message" }>["message"];
 
-/** 本文・ツールの順序を復元し、新しい送信に過去の実行IDを使わせない。 */
+/** 本文・ツールの順序を復元し、新しい送信に過去の実行 ID を使わせない。 */
 export function restorePiHistory(
 	entries: SessionEntry[],
 	cwd: string,
@@ -29,7 +29,7 @@ export function restorePiHistory(
 		if (message.role === "user" || message.role === "assistant") {
 			restoreChatMessage(message, state, entry);
 		} else if (message.role === "toolResult") {
-			// SDKは停止をisErrorと定型本文で保存するため、その形式だけを停止へ戻す。
+			// SDK は停止を `isError` と定型本文で保存するため、その形式だけを停止へ戻す。
 			restoreToolResult(message, state);
 		}
 	}

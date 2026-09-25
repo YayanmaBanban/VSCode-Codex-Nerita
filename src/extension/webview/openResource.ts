@@ -1,8 +1,8 @@
-// チップと添付一覧から、ローカルのファイル・フォルダをVS Codeで表示する。
+// チップと添付一覧から、ローカルのファイル・フォルダを VS Code で表示する。
 import * as vscode from "vscode";
 import { isSourceRange, type SourceRange } from "../../shared/symbolLocation";
 
-/** 実在するローカルURIだけを開き、Webview由来のコマンドURIは実行しない。 */
+/** 実在するローカル URI だけを開き、Webview 由来のコマンド URI は実行しない。 */
 export async function openResource(
 	value: string,
 	range?: SourceRange,
@@ -49,7 +49,7 @@ function validateResourceRange(range: SourceRange | undefined) {
 	}
 }
 
-/** URI末尾の行・列指定を選択範囲へ変換する。 */
+/** URI 末尾の行・列指定を選択範囲へ変換する。 */
 function resourceSelection(location: RegExpExecArray) {
 	const start = {
 		line: Number(location[1]) - 1,

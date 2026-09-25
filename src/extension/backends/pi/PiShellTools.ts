@@ -1,4 +1,4 @@
-// powershellとpwshを別々に登録し、モデルに渡す説明を実際のShellと揃える。
+// `powershell` と `pwsh` を別々に登録し、モデルに渡す説明を実際のシェルと揃える。
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { containsPath } from "../../security/AgentAccessPolicy";
 import {
@@ -14,7 +14,7 @@ import {
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import { createPiSandboxPowerShellTool } from "./PiPowerShellTool";
 
-/** 公開するTool名は解決済み実行ファイルと固定し、pwshがなくてもpowershellを維持する。 */
+/** 公開するツール名は解決済み実行ファイルと固定し、`pwsh` がなくても `powershell` を維持する。 */
 export async function createPiShellTools(
 	sdk: typeof PiSdk,
 	paths: WorkspacePathPolicy,
@@ -77,7 +77,7 @@ export async function createPiShellTools(
 	return tools;
 }
 
-/** SDKのHost実行・出力切詰め説明を持ち込まず、本番adapterの契約をモデルへ渡す。 */
+/** SDK の Host 実行・出力切詰め説明を持ち込まず、本番アダプターの契約をモデルへ渡す。 */
 function shellDefinition(
 	sdk: typeof PiSdk,
 	cwd: string,
@@ -125,7 +125,7 @@ function unavailableTool(
 	};
 }
 
-/** 起動確認はモデル入力を含まない固定処理。agent commandの承認は省略しない。 */
+/** 起動確認はモデル入力を含まない固定処理。agent `command` の承認は省略しない。 */
 async function canStartPwsh(
 	executable: string,
 	paths: WorkspacePathPolicy,

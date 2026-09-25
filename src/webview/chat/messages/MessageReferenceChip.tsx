@@ -7,7 +7,7 @@ import {
 	referenceActionLabel,
 } from "../composer/referencePresentation";
 
-/** 参照の種別に応じてHostへ開く操作を渡す。 */
+/** 参照の種別に応じて Host へ開く操作を渡す。 */
 export function MessageReferenceChip({
 	path,
 	send,

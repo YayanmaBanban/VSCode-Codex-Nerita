@@ -2,7 +2,7 @@
 import type { ChatMessage, ToolSummary } from "./chatState";
 import { isRecord } from "./validation";
 
-/** HostとWebviewで共有する同梱アイコンの表示キー。 */
+/** Host と Webview で共有する同梱アイコンの表示キー。 */
 export const agentIconKeys = [
 	"cheetah",
 	"alien",
@@ -23,7 +23,7 @@ export const agentIconKeys = [
 /** 同梱アイコンだけを指定できるキー。 */
 export type AgentIconKey = (typeof agentIconKeys)[number];
 
-/** 履歴の読み直しや通知順序に左右されないアイコンをThread IDから選ぶ。 */
+/** 履歴の読み直しや通知順序に左右されないアイコンをスレッド ID から選ぶ。 */
 export function agentIconKey(threadId: string): AgentIconKey {
 	let hash = 0;
 	for (const char of threadId) {
@@ -44,7 +44,7 @@ export type AgentStatus =
 	| "systemError"
 	| "notFound";
 
-/** Thread IDを識別子とするタイムラインカード。 */
+/** Thread ID を識別子とするタイムラインカード。 */
 export type SubAgentSummary = {
 	threadId: string;
 	parentThreadId: string;
@@ -88,7 +88,7 @@ export function isAgentStatus(value: unknown): value is AgentStatus {
 	);
 }
 
-/** Hostから渡されるカードの全フィールドを検証する。 */
+/** Host から渡されるカードの全フィールドを検証する。 */
 export function isSubAgent(value: unknown): value is SubAgentSummary {
 	return (
 		isRecord(value) &&

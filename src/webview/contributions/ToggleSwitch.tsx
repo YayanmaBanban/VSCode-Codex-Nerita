@@ -1,8 +1,8 @@
-// Hostが解決した切替値を使い、汎用のスイッチを描画する。
+// Host が解決した切替値を使い、汎用のスイッチを描画する。
 import type { NeritaUiControl } from "../../shared/uiContributions";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
 
-/** ラベル・無効状態・送信値はContributionの宣言に従う。 */
+/** ラベル・無効状態・送信値は Contribution の宣言に従う。 */
 export function ToggleSwitch({
 	control,
 	disabled,

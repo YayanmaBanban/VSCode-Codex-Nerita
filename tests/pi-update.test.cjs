@@ -1,4 +1,4 @@
-// Pi更新処理の外部操作を差し替え、失敗時に後続処理や生成物の更新を行わないことを検証する。
+// Pi 更新処理の外部操作を差し替え、失敗時に後続処理を進めず、生成物も更新しないことを検証する。
 const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const path = require("node:path");
@@ -82,7 +82,7 @@ test("検証失敗で後続を停止し、展開後の失敗でも一時ディ�
 	assert.deepEqual(extracted.removed, [extracted.temporary]);
 });
 
-/** 依存更新・ネットワーク・書込を記録して、CLIを隔離環境で実行する。 */
+/** 依存更新・ネットワーク・書込を記録して、CLI を隔離環境で実行する。 */
 async function generate({
 	args = ["0.86.1"],
 	installFails = false,

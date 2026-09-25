@@ -1,4 +1,4 @@
-// 認証専用パネルの通信をチャットBridgeから分離する。
+// 認証専用パネルの通信をチャット Bridge から分離する。
 import { useEffect, useState } from "react";
 import {
 	isPiAuthState,
@@ -7,7 +7,7 @@ import {
 } from "../../shared/piAuth";
 import { PiAuthEditor } from "./PiAuthEditor";
 
-/** 秘密入力をVS Codeの保存状態に書き込まない。 */
+/** 秘密入力を VS Code の保存状態に書き込まない。 */
 export function PiAuthPage({
 	post,
 }: {

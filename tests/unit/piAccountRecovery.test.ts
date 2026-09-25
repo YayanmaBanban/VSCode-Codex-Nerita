@@ -10,7 +10,7 @@ import {
 } from "../../src/extension/backends/pi/PiAccount";
 import { piHarness, pending } from "./piHarness";
 
-/** 認証とモデルの状態だけを差し替えるSDK境界。 */
+/** 認証とモデルの状態だけを差し替える SDK 境界。 */
 function fixture(manage: PiAuthService["manage"], validCurrent = false) {
 	const old = { provider: "old", id: "old", name: "Old" };
 	const model = { provider: "new", id: "new", name: "New" };

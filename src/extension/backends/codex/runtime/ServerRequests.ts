@@ -22,7 +22,7 @@ export class ServerRequests {
 		private write: (message: unknown) => void,
 		private handler?: ServerRequestHandler,
 	) {}
-	/** 一つの要求へ一度だけ結果かエラーを返す。 */
+	/** 1つの要求へ一度だけ結果かエラーを返す。 */
 	accept(request: AppServerRequest): void {
 		if (this.pending.has(request.id)) {
 			throw new Error("Duplicate server request");

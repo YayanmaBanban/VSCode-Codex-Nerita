@@ -1,4 +1,4 @@
-// Piの履歴復元・失敗・継続送信を、明暗テーマと狭幅で確認する。
+// Pi の履歴復元・失敗・継続送信を、明暗テーマと狭幅で確認する。
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {

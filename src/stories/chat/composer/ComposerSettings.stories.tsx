@@ -91,7 +91,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Connected: Story = {};
 
-/** App Serverのplan項目の本文を、通常の返信表示で確認する。 */
+/** App Server の `plan` 項目の本文を、通常の返信表示で確認する。 */
 function ProposedPlanStory() {
 	const bridge = useMemo(() => {
 		const mock = createMockBridge("empty");

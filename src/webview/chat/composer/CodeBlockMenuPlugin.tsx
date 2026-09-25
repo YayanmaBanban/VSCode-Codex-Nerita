@@ -1,4 +1,4 @@
-// 標準コンテキストメニューへ選択状態を渡し、Hostからの変換要求を処理する。
+// 標準コンテキストメニューへ選択状態を渡し、Host からの変換要求を処理する。
 import { useEffect } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
@@ -76,7 +76,7 @@ export function CodeBlockMenuPlugin({
 				});
 			}
 		};
-		/** VS Codeがイベントを受け取る前にメニュー条件と識別子を設定する。 */
+		/** VS Code がイベントを受け取る前にメニュー条件と識別子を設定する。 */
 		const prepare = () => {
 			clear();
 			if (!editor.isEditable() || editor.isComposing()) {

@@ -1,4 +1,4 @@
-// パス選択に必要な項目だけをHostとWebviewで共有する。
+// パス選択に必要な項目だけを Host と Webview で共有する。
 import {
 	isSymbolLocation,
 	type SymbolLocation,
@@ -16,7 +16,7 @@ export type WorkspacePath = {
 	range?: SourceRange;
 };
 
-/** 一階層だけを取得する要求。nullはワークスペース一覧を表す。 */
+/** 一階層だけを取得する要求。`null` はワークスペース一覧を表す。 */
 export type WorkspacePathsRequest = {
 	type: "workspace/listPaths";
 	requestId: string;
@@ -31,14 +31,14 @@ export type ResolvePathRequest = {
 	range?: SourceRange;
 };
 
-/** 存在しないパスは文字列のまま残すため、nullで返す。 */
+/** 存在しないパスは文字列のまま残すため、`null` で返す。 */
 export type ResolvePathResult = {
 	type: "workspace/resolvedPath";
 	requestId: string;
 	entry: WorkspacePath | null;
 };
 
-/** Windowsのドライブ絶対パスとUNCを受け付け、改行や相対パスを除外する。 */
+/** Windows のドライブ絶対パスと UNC を受け付け、改行や相対パスを除外する。 */
 export function isAbsoluteLocalPath(value: unknown): value is string {
 	return (
 		isPathString(value) &&
@@ -56,14 +56,14 @@ export type WorkspacePathsResult = {
 	error?: string;
 };
 
-/** URIと表示用パスの通信上限を検証する。 */
+/** URI と表示用パスの通信上限を検証する。 */
 export function isPathString(value: unknown): value is string {
 	return (
 		typeof value === "string" && value.length > 0 && value.length <= 32_768
 	);
 }
 
-/** Hostから受け取る一覧項目を検証する。 */
+/** Host から受け取る一覧項目を検証する。 */
 export function isWorkspacePath(value: unknown): value is WorkspacePath {
 	if (typeof value !== "object" || value === null) {
 		return false;

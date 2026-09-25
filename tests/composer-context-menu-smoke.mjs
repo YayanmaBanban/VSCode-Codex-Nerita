@@ -1,4 +1,4 @@
-// 実際のVS Code標準メニューから選択範囲を変換し、Undoと表示先を確認する。
+// 実際の VS Code 標準メニューから選択範囲を変換し、元に戻す操作と表示先を確認する。
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";

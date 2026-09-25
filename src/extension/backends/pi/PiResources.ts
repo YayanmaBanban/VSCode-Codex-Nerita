@@ -1,4 +1,4 @@
-// Pi標準のパッケージ解決を利用し、登録ツールをHostの承認へ接続する。
+// Pi 標準のパッケージ解決を利用し、登録ツールを Host の承認へ接続する。
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
 import { neritaExtensionFactories } from "./PiBuiltinExtensions";
@@ -7,7 +7,7 @@ import { localResourceSettings } from "./PiResourceSettings";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import { createPiHostShellTool } from "./PiHostShellTool";
 
-/** CLIで導入したリソースを新規会話・再接続時に読み込む。 */
+/** CLI で導入したリソースを新規会話・再接続時に読み込む。 */
 export async function loadPiResources(
 	sdk: typeof PiSdk,
 	cwd: string,
@@ -28,11 +28,11 @@ export async function loadPiResources(
 			agentDir,
 			settingsManager,
 		),
-		// SDKの自動発見したコードはロードせず、明示Trustを通った単一entryとbuiltinを使う。
+		// SDK の自動発見したコードはロードせず、明示 Trust を通った単一 `entry` と `builtin` を使う。
 		noExtensions: true,
 		additionalExtensionPaths: trustedExtensionPaths,
 		extensionFactories: neritaExtensionFactories(controls),
-		// ターミナル用のテーマはVS Code Webviewには適用しない。
+		// ターミナル用のテーマは VS Code Webview には適用しない。
 		noThemes: true,
 		extensionsOverride(result) {
 			for (const extension of result.extensions) {

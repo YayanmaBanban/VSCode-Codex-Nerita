@@ -1,4 +1,4 @@
-// 同じRendererでprovider差分・操作・無効化を狭幅の明暗テーマで確認する。
+// 同じ Renderer でプロバイダー差分・操作・無効化を狭幅の明暗テーマで確認する。
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {

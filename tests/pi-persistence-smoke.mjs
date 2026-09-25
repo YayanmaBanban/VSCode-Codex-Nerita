@@ -1,9 +1,9 @@
-// 同梱SDKで保存・再開・保存先切替・移動を検証する。会話はローカルモデルだけを使う。
+// 同梱 SDK で保存・再開・保存先切替・移動を検証する。会話はローカルモデルだけを使う。
 import assert from "node:assert/strict";
 import { readFile, writeFile, readdir, mkdir, cp } from "node:fs/promises";
 import path from "node:path";
 
-/** 新しいControllerから同じ履歴を開き、UIとモデルの両方へ文脈を復元する。 */
+/** 新しい `Controller` から同じ履歴を開き、UI とモデルの両方へ文脈を復元する。 */
 export async function piPersistenceSmoke({
 	PiSessionController,
 	createPiRuntime,
@@ -238,7 +238,7 @@ export async function piPersistenceSmoke({
 			readFile(path.join(workspace, "must-not-exist.txt")),
 			{ code: "ENOENT" },
 		);
-		// 一覧取得後に空になった履歴をSDK.openで初期化しない。
+		// 一覧取得後、空になった履歴を `SDK.open` で初期化しない。
 		await load(localId);
 		await writeFile(incomplete.getSessionFile(), "");
 		await load(incomplete.getSessionId());
@@ -246,7 +246,7 @@ export async function piPersistenceSmoke({
 		assert.ok(controller.snapshot().sessionsError);
 		assert.equal(await readFile(incomplete.getSessionFile(), "utf8"), "");
 		await send("continue after failed restore");
-		// 自動接続後・初回送信前の設定変更を、独立したworkspaceで再現する。
+		// 自動接続後・初回送信前の設定変更を、独立したワークスペースで再現する。
 		await controller.dispose();
 		workspace = path.join(
 			path.dirname(cwd),
@@ -323,7 +323,7 @@ export async function piPersistenceSmoke({
 	}
 }
 
-/** Controllerによる後処理なしでも、新しいSDKセッションが保存推論で起動する。 */
+/** `Controller` による後処理なしでも、新しい SDK セッションが保存推論で起動する。 */
 async function startupReasoningSmoke({
 	createPiRuntime,
 	extensionPath,
@@ -356,7 +356,7 @@ async function startupReasoningSmoke({
 	} finally {
 		first.dispose();
 	}
-	// SDK側の既定値と保存値を意図的に変え、globalState相当の値が復元されることを確認する。
+	// SDK 側の既定値と保存値を意図的に変え、`globalState` 相当の値が復元されることを確認する。
 	const settingsPath = path.join(agentDir, "settings.json");
 	await writeFile(
 		settingsPath,

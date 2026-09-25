@@ -1,4 +1,4 @@
-// 承認対象の内容をコピー・固定し、実行直前に同一性と一回限りの許可を検査する。
+// 承認対象の内容をコピー・固定し、実行直前に同一性と1回限りの許可を検査する。
 import { createHash } from "node:crypto";
 import type { AgentAccessPolicy } from "./AgentAccessPolicy";
 import type { FileSnapshot } from "./FileSnapshot";
@@ -9,7 +9,7 @@ export type SandboxExecutionInfo = {
 	details: string[];
 };
 
-/** backendに依存しない実行要求。commandは承認前に確定する。 */
+/** バックエンドに依存しない実行要求。`command` は承認前に確定する。 */
 export type ToolCall = {
 	tool: string;
 	params: Record<string, unknown>;
@@ -42,12 +42,12 @@ export function freezeToolCall<T>(value: T): T {
 	return copy;
 }
 
-/** Hostが正規化した同一形式をdigestへ変換する。 */
+/** Host が正規化した同一形式を `digest` へ変換する。 */
 export function toolCallFingerprint(call: ToolCall): string {
 	return createHash("sha256").update(JSON.stringify(call)).digest("hex");
 }
 
-/** Guardだけが承認後に発行し、シリアライズした偽の許可を受け付けない。 */
+/** `Guard` だけが承認後に発行し、シリアライズした偽の許可を受け付けない。 */
 export function issueApprovedToolCall(
 	call: ToolCall,
 	signal: AbortSignal,

@@ -1,4 +1,4 @@
-// App Serverの設定・逐次出力・承認を、本体と同じ通信契約で再現する。
+// App Server の設定・逐次出力・承認を、本体と同じ通信契約で再現する。
 import type { Bridge } from "../../../webview/vscodeBridge";
 import { createMockBridge, type Scenario } from "./mockBridge";
 

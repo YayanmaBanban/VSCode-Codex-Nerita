@@ -31,13 +31,13 @@ export type CodexClientOptions = {
 	clientInfo: ClientInfo;
 	callbacks?: AppServerCallbacks;
 	signal?: AbortSignal;
-	/** 専用Shell接続だけが指定し、既存Codex backendの設定継承は維持する。 */
+	/** 専用シェル接続だけが指定し、既存 Codex バックエンドの設定継承は維持する。 */
 	windowsSandbox?: WindowsSandboxImplementation;
-	/** Executorが接続後の停止・回収を所有する場合は初期化後にsignalを外す。 */
+	/** `Executor` が接続後の停止・回収を所有する場合は初期化後に `signal` を外す。 */
 	connectAbortOnly?: boolean;
 };
 
-/** 初期化済みの型付きRPCを、機能別の操作として提供する。 */
+/** 初期化済みの型付き RPC を、機能別の操作として提供する。 */
 export class CodexClient {
 	/** 初期化が完了した Transport とサーバー情報を保持する。 */
 	private constructor(
@@ -70,7 +70,7 @@ export class CodexClient {
 			const response = await transport.request("initialize", {
 				clientInfo: options.clientInfo,
 				capabilities: {
-					// セッション参照とcollaborationModeに必要な試験的APIを有効化する。
+					// セッション参照と `collaborationMode` に必要な試験的 API を有効化する。
 					experimentalApi: true,
 					requestAttestation: false,
 				},
@@ -92,25 +92,25 @@ export class CodexClient {
 			throw error;
 		}
 	}
-	/** 信頼済みproject層を含む、Codexの実効Windows設定を取得する。 */
+	/** 信頼済み `project` 層を含む、Codex の実効 Windows 設定を取得する。 */
 	readSandboxConfig(cwd: string) {
 		return this.transport.request("config/read", {
 			cwd,
 			includeLayers: false,
 		});
 	}
-	/** readinessは実行基盤の準備状態で、通信遮断の実測ではない。 */
+	/** `readiness` は実行基盤の準備状態で、通信遮断の実測ではない。 */
 	readSandboxReadiness() {
 		return this.transport.request("windowsSandbox/readiness", undefined);
 	}
-	/** 明示的なVS Codeコマンドからだけセットアップを開始する。 */
+	/** 明示的な VS Code コマンドからだけセットアップを開始する。 */
 	setupWindowsSandbox(cwd: string, mode: WindowsSandboxImplementation) {
 		return this.transport.request("windowsSandbox/setupStart", {
 			cwd,
 			mode,
 		});
 	}
-	/** thread・モデル認証を作らず、承認済みargvをSandbox内で実行する。 */
+	/** thread・モデル認証を作らず、承認済み `argv` をサンドボックス内で実行する。 */
 	executeCommand(params: CommandExecParams) {
 		return this.transport.request(
 			"command/exec",
@@ -118,7 +118,7 @@ export class CodexClient {
 			(params.timeoutMs ?? 60_000) + 10_000,
 		);
 	}
-	/** 接続内の特定commandだけを停止する。 */
+	/** 接続内の特定 `command` だけを停止する。 */
 	terminateCommand(processId: string) {
 		return this.transport.request(
 			"command/exec/terminate",
@@ -130,7 +130,7 @@ export class CodexClient {
 	readAccount() {
 		return this.transport.request("account/read", {});
 	}
-	/** cwdとアーカイブ状態を指定して一覧の一ページを取得する。 */
+	/** `cwd` とアーカイブ状態を指定して一覧の一ページを取得する。 */
 	listThreads(params: ThreadListParams) {
 		return this.transport.request("thread/list", params);
 	}
@@ -151,7 +151,7 @@ export class CodexClient {
 			excludeTurns,
 		});
 	}
-	/** 元の会話を変更せず、新しいthreadへ分岐する。 */
+	/** 元の会話を変更せず、新しいスレッドへ分岐する。 */
 	async forkThread(threadId: string, excludeTurns = false) {
 		return this.transport.request("thread/fork", {
 			developerInstructions: composeDeveloperInstructions(
@@ -181,7 +181,7 @@ export class CodexClient {
 			...(cursor ? { cursor } : {}),
 		});
 	}
-	/** 会話名はCodex側へ保存する。 */
+	/** 会話名は Codex 側へ保存する。 */
 	renameThread(threadId: string, name: string) {
 		return this.transport.request("thread/name/set", { threadId, name });
 	}
@@ -201,7 +201,7 @@ export class CodexClient {
 	listSkills(cwd: string) {
 		return this.transport.request("skills/list", { cwds: [cwd] });
 	}
-	/** 現在のthreadのツールと認証状態に限定してMCP一覧を取得する。 */
+	/** 現在のスレッドのツールと認証状態に限定して MCP 一覧を取得する。 */
 	listMcpServerStatus(threadId: string, cursor?: string) {
 		return this.transport.request("mcpServerStatus/list", {
 			detail: "toolsAndAuthOnly",
@@ -215,11 +215,11 @@ export class CodexClient {
 			...(cursor ? { cursor } : {}),
 		});
 	}
-	/** 既存UIが表示する利用枠を取得する。 */
+	/** 既存 UI が表示する利用枠を取得する。 */
 	readRateLimits() {
 		return this.transport.request("account/rateLimits/read", {});
 	}
-	/** 認証情報はHost内の要求だけに使用する。 */
+	/** 認証情報は Host 内の要求だけに使用する。 */
 	login(params: LoginAccountParams) {
 		return this.transport.request("account/login/start", params);
 	}
@@ -227,7 +227,7 @@ export class CodexClient {
 	cancelLogin(loginId: string) {
 		return this.transport.request("account/login/cancel", { loginId });
 	}
-	/** 保存済みの認証をApp Server経由で解除する。 */
+	/** 保存済みの認証を App Server 経由で解除する。 */
 	logout() {
 		return this.transport.request("account/logout", undefined);
 	}
@@ -240,21 +240,21 @@ export class CodexClient {
 			),
 		});
 	}
-	/** UI表示用に設定を取得する。 */
+	/** UI 表示用に設定を取得する。 */
 	readPersonality() {
 		return this.personality.read();
 	}
-	/** プリセットの選択・保存をHost側の固定パスへ反映する。 */
+	/** プリセットの選択・保存を Host 側の固定パスへ反映する。 */
 	changePersonality(
 		message: Exclude<PersonalityMessage, { type: "personality/read" }>,
 	) {
 		return this.personality.change(message);
 	}
-	/** 一つのターンを開始し、開始受付の応答を返す。 */
+	/** 1つのターンを開始し、開始受付の応答を返す。 */
 	startTurn(params: ContextTurnStartParams) {
 		return this.transport.request("turn/start", params);
 	}
-	/** Planを終了するときは、待機中のthreadにもDefaultを反映する。 */
+	/** Plan を終了するときは、待機中のスレッドにも Default を反映する。 */
 	updateCollaborationMode(
 		threadId: string,
 		collaborationMode: CollaborationMode,

@@ -1,4 +1,4 @@
-// 実際のCodexClientを通し、開始・再開・分岐ごとに最新の指示を渡すことを確認する。
+// 実際の `CodexClient` を通し、開始・再開・分岐ごとに最新の指示を渡すことを確認する。
 import { expect, it, vi } from "vitest";
 import type { PersonalitySettings } from "../../src/shared/personality";
 const fake = vi.hoisted(() => ({

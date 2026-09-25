@@ -1,4 +1,4 @@
-// 固定SDKのcatalog・互換API・動的参照を配布用に限定する。上流ファイルは変更しない。
+// 固定 SDK のカタログ・互換 API・動的参照を配布用に限定する。上流ファイルは変更しない。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
@@ -10,7 +10,7 @@ const supportedApis = new Set([
 	"openai-responses",
 ]);
 
-/** SDK更新時に置換の無効化を見逃さず、ビルドを停止する。 */
+/** SDK 更新時に置換の無効化を見逃さず、ビルドを停止する。 */
 function replaceRequired(source, before, after) {
 	if (!source.includes(before)) {
 		throw new Error(`Pi bundleの互換処理を再確認してください: ${before}`);
@@ -18,7 +18,7 @@ function replaceRequired(source, before, after) {
 	return source.replace(before, after);
 }
 
-/** 上流と同じ同期catalog APIを、選択した3providerのmetadataから構成する。 */
+/** 上流と同じ同期カタログ API を、選択した3プロバイダーのメタデータから構成する。 */
 function providerCatalog() {
 	return `
 import { createModels } from "../models.js";
@@ -38,7 +38,7 @@ export function radiusProvider() { throw new Error("Neritaの同梱Pi runtimeは
 `;
 }
 
-/** 互換層の登録・dispatch処理を維持し、未使用APIと画像生成だけを除く。 */
+/** 互換層の登録・`dispatch` 処理を維持し、未使用 API と画像生成だけを除く。 */
 function limitCompat(source) {
 	return source
 		.split("\n")
@@ -58,7 +58,7 @@ function limitCompat(source) {
 		.join("\n");
 }
 
-/** bundleで追跡できない参照だけを固定SDKに対する小さな変換で補う。 */
+/** バンドルで追跡できない参照だけを固定 SDK に対する小さな変換で補う。 */
 function piBundlePlugin(sdkRoot, aiRoot) {
 	return {
 		name: "nerita-pi-runtime",
@@ -78,7 +78,7 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 						await fs.readFile(args.path, "utf8"),
 					);
 				} else if (aiFile === "dist/legacy-api-aliases.js") {
-					// 対象APIの旧stream名はユーザーExtension向けに維持する。
+					// 対象 API の旧 `stream` 名はユーザー Extension 向けに維持する。
 					contents = (await fs.readFile(args.path, "utf8"))
 						.split("\n")
 						.filter(
@@ -89,11 +89,11 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 						)
 						.join("\n");
 				} else if (aiFile === "dist/auth/oauth/load.js") {
-					// OAuth flowもESM chunkへ分離し、変数importの解決漏れを防ぐ。
+					// OAuth `flow` も ESM チャンクへ分離し、変数インポートの解決漏れを防ぐ。
 					contents = `export const loadAnthropicOAuth = async () => (await import("./anthropic.js")).anthropicOAuth;
 export const loadOpenAICodexOAuth = async () => (await import("./openai-codex.js")).openaiCodexOAuth;`;
 				} else if (sdkFile === "dist/index.js") {
-					// Extensions用namespaceからCLI起動・対話モードを到達不能にする。
+					// `Extensions` 用名前空間から CLI 起動・対話モードを到達不能にする。
 					contents = (await fs.readFile(args.path, "utf8"))
 						.split("\n")
 						.filter(

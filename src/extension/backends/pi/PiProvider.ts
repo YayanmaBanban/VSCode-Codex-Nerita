@@ -1,4 +1,4 @@
-// Pi共通処理とprovider固有実装の境界。SDKイベントと公開用の設定だけを扱う。
+// Pi 共通処理とプロバイダー固有実装の境界。SDK イベントと公開用の設定だけを扱う。
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -11,7 +11,7 @@ import type {
 import type { PiProviderControls } from "../../../shared/piProviderControls";
 import type { PiCatalogSnapshot, PiModelCatalogReader } from "./PiModelCatalog";
 
-/** Provider固有の設定・候補・要求変換をひとまとまりで扱う。 */
+/** プロバイダー固有の設定・候補・要求変換をひとまとまりで扱う。 */
 export type PiModelControls = {
 	bind: (session: AgentSession) => void;
 	setCatalog?: (catalog: PiCatalogSnapshot) => void;
@@ -24,14 +24,14 @@ export type PiModelControls = {
 	rewrite: (payload: unknown, model: AgentSession["model"]) => unknown;
 };
 
-/** 利用枠を取得できないproviderは実装自体を持たなくてよい。 */
+/** 利用枠を取得できないプロバイダーは実装自体を持たなくてよい。 */
 export type PiQuotaReader = {
 	read: (signal: AbortSignal) => Promise<QuotaWindow[] | null>;
 };
 
-/** Sessionごとに設定を生成し、利用枠サービスは必要なproviderだけ登録する。 */
+/** Session ごとに設定を生成し、利用枠サービスは必要なプロバイダーだけ登録する。 */
 export type PiProvider = {
-	/** モデル選択とは独立した補助metadataの取得元。 */
+	/** モデル選択とは独立した補助メタデータの取得元。 */
 	createCatalog?: (
 		models: ModelRuntime,
 		request: typeof fetch,
@@ -46,5 +46,5 @@ export type PiProvider = {
 	) => PiQuotaReader;
 };
 
-/** 未登録providerはPi SDKの標準機能だけで動作する。 */
+/** 未登録プロバイダーは Pi SDK の標準機能だけで動作する。 */
 export type PiProviders = Readonly<Record<string, PiProvider>>;

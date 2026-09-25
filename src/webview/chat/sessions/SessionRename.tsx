@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { UiMessage } from "../../../shared/messages";
 
-/** 空の名前は送信せず、Escapeでは入力だけを閉じる。 */
+/** 空の名前は送信せず、Escape では入力だけを閉じる。 */
 export function SessionRename({
 	sessionId,
 	title,

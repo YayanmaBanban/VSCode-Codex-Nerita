@@ -1,4 +1,4 @@
-// SDKの表示schemaだけを再利用し、実処理は承認済みのSandbox要求へ置き換える。
+// SDK の表示スキーマだけを再利用し、実処理は承認済みのサンドボックス要求へ置き換える。
 import { realpath } from "node:fs/promises";
 import type { PowerShellExecutable } from "../../runtime/PowerShellExecutable";
 import { powerShellCommand } from "../../runtime/PowerShellCommand";
@@ -18,7 +18,7 @@ const powerShellInput = z.object({
 	timeout: z.number().min(1).max(600).default(60),
 });
 
-/** timeout / argv / env / policyはHuman Approvalへ渡す前に確定する。 */
+/** timeout / argv / env / `policy` は Human Approval へ渡す前に確定する。 */
 export function createPiSandboxPowerShellTool(
 	definition: Omit<ToolDefinition, "renderCall" | "renderResult">,
 	paths: WorkspacePathPolicy,

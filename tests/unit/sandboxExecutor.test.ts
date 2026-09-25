@@ -1,4 +1,4 @@
-// network=falseの正常実行、準備失敗、Stop競合、接続回収を検証する。OS隔離は実機smokeで確認する。
+// network=`false` の正常実行、準備失敗、`Stop` 競合、接続回収を検証する。OS 隔離は実機疎通テストで確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import { CodexSandboxExecutor } from "../../src/extension/backends/codex/CodexSandboxExecutor";
 import { issueApprovedToolCall } from "../../src/extension/security/ApprovedToolCall";
@@ -10,7 +10,7 @@ afterEach(async () => {
 	await Promise.all(fixtures.splice(0).map((fixture) => fixture.cleanup()));
 });
 
-/** 本物のcwdとrootを使い、接続の応答だけを模擬する。 */
+/** 本物の `cwd` と `root` を使い、接続の応答だけを模擬する。 */
 async function fixture() {
 	const files = await sandboxFixture();
 	fixtures.push(files);

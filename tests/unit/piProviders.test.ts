@@ -1,4 +1,4 @@
-// 仮のproviderを登録し、共通処理を変更せず追加設定・要求・利用枠を委譲できることを確認する。
+// 仮のプロバイダーを登録し、共通処理を変更せず追加設定・要求・利用枠を委譲できることを確認する。
 import { describe, expect, it, vi } from "vitest";
 import type {
 	AgentSession,

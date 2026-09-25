@@ -1,4 +1,4 @@
-// アカウント・モデル一覧の応答から、UIに必要な検証済み情報だけを取り出す。
+// アカウント・モデル一覧の応答から、UI に必要な検証済み情報だけを取り出す。
 import type { Model } from "../codex-app-server/v2/Model";
 import type { LoginAccountResponse } from "../codex-app-server/v2/LoginAccountResponse";
 import { isRecord } from "../../../../shared/validation";
@@ -96,7 +96,7 @@ export function parseModels(value: unknown): {
 	});
 	return { data, nextCursor: value.nextCursor };
 }
-/** クライアントが開始する二つの認証方式だけを検証する。 */
+/** クライアントが開始する2つの認証方式だけを検証する。 */
 export function parseLogin(
 	value: unknown,
 ): Extract<LoginAccountResponse, { type: "chatgpt" | "apiKey" }> {

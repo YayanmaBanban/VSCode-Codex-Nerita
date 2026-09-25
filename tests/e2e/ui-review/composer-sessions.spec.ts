@@ -1,4 +1,4 @@
-// セッション候補・復元・クリップボードと送信する参照IDを確認する。
+// セッション候補・復元・クリップボードと送信する参照 ID を確認する。
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

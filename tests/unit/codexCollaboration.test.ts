@@ -47,7 +47,7 @@ async function ready(initialSandbox?: SandboxPolicy) {
 	return { ...h, setting };
 }
 
-/** Plan項目を確定し、実装先カードを表示可能にする。 */
+/** Plan 項目を確定し、実装先カードを表示可能にする。 */
 async function completedPlan(h: Awaited<ReturnType<typeof ready>>) {
 	await h.setting("plan");
 	await h.send("計画を作成");

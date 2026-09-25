@@ -17,7 +17,7 @@ export function applyStatePatch(
 	};
 }
 
-/** 別ターンで再利用されたツールIDを区別する。 */
+/** 別ターンで再利用されたツール ID を区別する。 */
 export function toolKey(tool: ToolSummary): string {
 	return JSON.stringify([tool.runId ?? null, tool.id]);
 }

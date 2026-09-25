@@ -19,7 +19,7 @@ import { $appendInlineContent } from "./inlineReferences";
 export const referenceClipboardType =
 	"application/x-codex-composer-references+json";
 
-/** 選択範囲に完全に含まれる参照の位置を、コピー本文に合わせて収集する。 */
+/** 全体が選択範囲内にある参照だけを対象とし、コピー本文での位置を収集する。 */
 function $copyReferences(event: ClipboardEvent): void {
 	const selection = $getSelection();
 	if (
@@ -98,7 +98,7 @@ function invalidClipboardSize(raw: string, text: string) {
 	return !raw || raw.length > 4000000 || text.length > 100000;
 }
 
-/** 既存の文字数検査・Undo境界の内側で、選択範囲をチップ付きの本文へ置換する。 */
+/** 既存の文字数検査と取り消し操作の境界を保ち、選択範囲をチップ付きの本文へ置換する。 */
 export function $pasteReferences(data: DataTransfer, text: string): boolean {
 	const references = readClipboardReferences(data, text);
 	const selection = $getSelection();
@@ -111,7 +111,7 @@ export function $pasteReferences(data: DataTransfer, text: string): boolean {
 	return true;
 }
 
-/** 本文・HTMLのコピーとカットの削除は標準処理へ渡し、付加情報だけを書く。 */
+/** 本文・HTML のコピーとカットの削除は標準処理へ渡し、付加情報だけを書く。 */
 export function registerReferenceClipboard(editor: LexicalEditor): () => void {
 	const copy = (event: ClipboardEvent | KeyboardEvent | null) => {
 		if (event instanceof ClipboardEvent) {

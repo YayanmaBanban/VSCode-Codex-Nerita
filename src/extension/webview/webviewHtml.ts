@@ -1,4 +1,4 @@
-// 拡張機能内の資産だけを許可するCSPと、Webviewの起動HTMLを生成する。
+// 拡張機能内の資産だけを許可する CSP と、Webview の起動 HTML を生成する。
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 
