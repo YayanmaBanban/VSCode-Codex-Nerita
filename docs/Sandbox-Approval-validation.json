@@ -1,0 +1,390 @@
+{
+	"date": "2026-09-24T14:43:43.917Z",
+	"commit": "b553e7665f2cee21e7c4a8490be09d41fc2ba8a8",
+	"workingTree": "implementation changes",
+	"codex": "0.156.0",
+	"pi": "0.87.1",
+	"windows": "10.0.26200",
+	"node": "v24.18.1",
+	"mode": "elevated",
+	"executables": {
+		"windowsShell": "<windows-powershell-dir>\\powershell.exe",
+		"pwsh": "<extension>\\dist\\sandbox-smoke\\pwsh\\pwsh.exe",
+		"native": "<node-dir>\\node.exe"
+	},
+	"policy": {
+		"type": "workspaceWrite",
+		"writableRoots": ["<fixture>\\workspace"],
+		"networkAccess": false,
+		"excludeTmpdirEnvVar": true,
+		"excludeSlashTmp": true
+	},
+	"fixture": "<fixture>",
+	"cases": [
+		{
+			"id": "W01/W04-output Windows PowerShell",
+			"status": "pass",
+			"details": {
+				"exitCode": 7,
+				"stdout": "正常 日本語 $literal\r\n",
+				"stderr": "try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\r\nWrite-Output '正常 日本語 $literal'; Write-Error 'nerita-stderr'; exit 7 : nerita-stderr\r\n    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException\r\n    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException\r\n \r\n"
+			}
+		},
+		{
+			"id": "W01/W04-output pwsh",
+			"status": "pass",
+			"details": {
+				"exitCode": 7,
+				"stdout": "正常 日本語 $literal\r\n",
+				"stderr": "\u001b[31;1mWrite-Error: \u001b[31;1mnerita-stderr\u001b[0m\r\n"
+			}
+		},
+		{
+			"id": "W01/W04-output native node",
+			"status": "pass",
+			"details": {
+				"exitCode": 7,
+				"stdout": "正常 日本語 $literal\n",
+				"stderr": "stderr\n"
+			}
+		},
+		{
+			"id": "W02 workspace create/update/delete",
+			"status": "pass",
+			"details": {
+				"created": true,
+				"updated": true,
+				"deleted": true
+			}
+		},
+		{
+			"id": "W09 Japanese path and short file output",
+			"status": "fail",
+			"error": "The input did not match the regular expression /日本語 \\$literal/. Input:\n\n'“ú–{Śę $literal\\r\\n'\n"
+		},
+		{
+			"id": "W09 Windows PowerShell short Japanese output",
+			"status": "fail",
+			"error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ '“ú–{Śę $literal'\n- '日本語 $literal'\n"
+		},
+		{
+			"id": "W03 outside read",
+			"status": "pass",
+			"details": {
+				"exitCode": 0,
+				"stdout": "outside-safe\r\n",
+				"stderr": ""
+			}
+		},
+		{
+			"id": "W04/W05 outside create",
+			"status": "pass",
+			"details": {
+				"rpcDenied": true,
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m 乧\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\created.txt' is denied.\u001b[0m\r\n"
+			}
+		},
+		{
+			"id": "W04/W05 outside overwrite",
+			"status": "pass",
+			"details": {
+				"rpcDenied": true,
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
+			}
+		},
+		{
+			"id": "W04/W05 outside delete",
+			"status": "pass",
+			"details": {
+				"rpcDenied": true,
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mRemove-Item: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mRemove-Item -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
+			}
+		},
+		{
+			"id": "W04/W05 outside relative",
+			"status": "pass",
+			"details": {
+				"rpcDenied": true,
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m … n\\outside'; \u001b[36;1mSet-Content -LiteralPath '外部.txt' -Value bad -ErrorAction\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
+			}
+		},
+		{
+			"id": "W05 junction write",
+			"status": "pass",
+			"details": {
+				"rpcDenied": true,
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\workspace\\linked\\外部.txt' is denied.\u001b[0m\r\n"
+			}
+		},
+		{
+			"id": "W06 readOnly",
+			"status": "pass",
+			"details": {
+				"rpcDenied": true,
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: node:fs:2422\r\n    return binding.writeFileUtf8(\r\n                   ^\r\n\r\nError: EPERM: operation not permitted, open '<fixture>\\workspace\\readonly.txt'\r\n    at Object.writeFileSync (node:fs:2422:20)\r\n    at [eval]:1:15\r\n    at runScriptInThisContext (node:internal/vm:219:10)\r\n    at node:internal/process/execution:451:12\r\n    at [eval]-wrapper:6:24\r\n    at runScriptInContext (node:internal/process/execution:449:60)\r\n    at evalFunction (node:internal/process/execution:283:30)\r\n    at evalTypeScript (node:internal/process/execution:295:3)\r\n    at node:internal/main/eval_string:71:3 {\r\n  errno: -4048,\r\n  code: 'EPERM',\r\n  syscall: 'open',\r\n  path: '<fixture>\\\\workspace\\\\readonly.txt'\r\n}\r\n\r\nNode.js v24.18.1\r\n"
+			}
+		},
+		{
+			"id": "W06 multi-root",
+			"status": "pass",
+			"details": {
+				"exitCode": 0,
+				"stdout": "",
+				"stderr": ""
+			}
+		},
+		{
+			"id": "W07 descendants inherit write boundary",
+			"status": "pass",
+			"details": {
+				"exitCode": 0,
+				"stdout": "grandchild denied\n\n\n",
+				"stderr": "\n\n"
+			}
+		},
+		{
+			"id": "W08 stop descendants",
+			"status": "pass",
+			"details": {
+				"error": "Codex App Server の接続を終了しました。"
+			}
+		},
+		{
+			"id": "W08 timeout descendants",
+			"status": "pass",
+			"details": {
+				"error": "exec failed: sandbox error: command timed out"
+			}
+		},
+		{
+			"id": "W08 normal descendants",
+			"status": "pass",
+			"details": {
+				"result": {
+					"exitCode": 0,
+					"stdout": "",
+					"stderr": ""
+				}
+			}
+		},
+		{
+			"id": "W08 other connection survives Stop",
+			"status": "pass",
+			"details": {
+				"exitCode": 0,
+				"stdout": "other session alive\n",
+				"stderr": ""
+			}
+		},
+		{
+			"id": "W10-observation http://127.0.0.1:53105",
+			"status": "observation",
+			"details": {
+				"url": "http://127.0.0.1:53105",
+				"hostReachable": true,
+				"hostShell": {
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"direct": {
+					"exitCode": 0,
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"production": {
+					"exitCode": 0,
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"toolResult": {
+					"content": [
+						{
+							"type": "text",
+							"text": "REACHABLE\r\n\nExit code: 0"
+						}
+					],
+					"details": {
+						"exitCode": 0
+					}
+				},
+				"command": [
+					"<extension>\\dist\\sandbox-smoke\\pwsh\\pwsh.exe",
+					"-NoLogo",
+					"-NoProfile",
+					"-NonInteractive",
+					"-OutputFormat",
+					"Text",
+					"-Command",
+					"$ProgressPreference = 'SilentlyContinue'\ntry { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\ntry { $r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri 'http://127.0.0.1:53105'; Write-Output 'REACHABLE' } catch { Write-Output ('FAILED: ' + $_.Exception.Message); exit 3 }"
+				],
+				"samePolicy": true,
+				"shellPolicyNetworkAccess": false
+			}
+		},
+		{
+			"id": "W10 network 127.0.0.1",
+			"status": "fail",
+			"error": "直結がnetwork=falseでも到達した"
+		},
+		{
+			"id": "W10-observation http://[::1]:53125",
+			"status": "observation",
+			"details": {
+				"url": "http://[::1]:53125",
+				"hostReachable": true,
+				"hostShell": {
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"direct": {
+					"exitCode": 0,
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"production": {
+					"exitCode": 0,
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"toolResult": {
+					"content": [
+						{
+							"type": "text",
+							"text": "REACHABLE\r\n\nExit code: 0"
+						}
+					],
+					"details": {
+						"exitCode": 0
+					}
+				},
+				"command": [
+					"<extension>\\dist\\sandbox-smoke\\pwsh\\pwsh.exe",
+					"-NoLogo",
+					"-NoProfile",
+					"-NonInteractive",
+					"-OutputFormat",
+					"Text",
+					"-Command",
+					"$ProgressPreference = 'SilentlyContinue'\ntry { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\ntry { $r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri 'http://[::1]:53125'; Write-Output 'REACHABLE' } catch { Write-Output ('FAILED: ' + $_.Exception.Message); exit 3 }"
+				],
+				"samePolicy": true,
+				"shellPolicyNetworkAccess": false
+			}
+		},
+		{
+			"id": "W10 network ::1",
+			"status": "fail",
+			"error": "直結がnetwork=falseでも到達した"
+		},
+		{
+			"id": "W10-observation http://example.com",
+			"status": "observation",
+			"details": {
+				"url": "http://example.com",
+				"hostReachable": true,
+				"hostShell": {
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"direct": {
+					"exitCode": 0,
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"production": {
+					"exitCode": 0,
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"toolResult": {
+					"content": [
+						{
+							"type": "text",
+							"text": "REACHABLE\r\n\nExit code: 0"
+						}
+					],
+					"details": {
+						"exitCode": 0
+					}
+				},
+				"command": [
+					"<extension>\\dist\\sandbox-smoke\\pwsh\\pwsh.exe",
+					"-NoLogo",
+					"-NoProfile",
+					"-NonInteractive",
+					"-OutputFormat",
+					"Text",
+					"-Command",
+					"$ProgressPreference = 'SilentlyContinue'\ntry { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\ntry { $r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri 'http://example.com'; Write-Output 'REACHABLE' } catch { Write-Output ('FAILED: ' + $_.Exception.Message); exit 3 }"
+				],
+				"samePolicy": true,
+				"shellPolicyNetworkAccess": false
+			}
+		},
+		{
+			"id": "W10 external HTTP example.com",
+			"status": "fail",
+			"error": "直結がnetwork=falseでも到達した"
+		},
+		{
+			"id": "W10-observation https://example.com",
+			"status": "observation",
+			"details": {
+				"url": "https://example.com",
+				"hostReachable": true,
+				"hostShell": {
+					"stdout": "REACHABLE\r\n",
+					"stderr": ""
+				},
+				"direct": {
+					"exitCode": 3,
+					"stdout": "FAILED: The SSL connection could not be established, see inner exception.\r\n",
+					"stderr": ""
+				},
+				"production": {
+					"exitCode": 3,
+					"stdout": "FAILED: The SSL connection could not be established, see inner exception.\r\n",
+					"stderr": ""
+				},
+				"toolResult": {
+					"content": [
+						{
+							"type": "text",
+							"text": "FAILED: The SSL connection could not be established, see inner exception.\r\n\nExit code: 3"
+						}
+					],
+					"details": {
+						"exitCode": 3
+					}
+				},
+				"command": [
+					"<extension>\\dist\\sandbox-smoke\\pwsh\\pwsh.exe",
+					"-NoLogo",
+					"-NoProfile",
+					"-NonInteractive",
+					"-OutputFormat",
+					"Text",
+					"-Command",
+					"$ProgressPreference = 'SilentlyContinue'\ntry { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\ntry { $r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri 'https://example.com'; Write-Output 'REACHABLE' } catch { Write-Output ('FAILED: ' + $_.Exception.Message); exit 3 }"
+				],
+				"samePolicy": true,
+				"shellPolicyNetworkAccess": false
+			}
+		},
+		{
+			"id": "W10 external HTTPS example.com",
+			"status": "unverified",
+			"error": "未検証: Hostは到達したがSandboxの失敗理由が未特定 https://example.com"
+		},
+		{
+			"id": "W12 extension development workspace",
+			"status": "pass",
+			"details": {
+				"exitCode": 0,
+				"stdout": "development workspace works\n",
+				"stderr": ""
+			}
+		}
+	],
+	"pathNotation": "Local absolute paths replaced by placeholders; raw diagnostics remain in dist/sandbox-smoke/results.json"
+}

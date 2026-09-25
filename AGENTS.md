@@ -1,3 +1,24 @@
+# リポジトリの運用
+
+- notionのリンクをファイル内に残さない
+- ローカルの絶対パスをファイル内に残さない。相対パスで扱う
+
+# 文章のルール
+
+英語の技術用語を日本語文中で不自然に動詞化・接尾語化しない。
+
+一般的な日本語訳が定着している場合は日本語を使う。
+
+- canonical化 → 正規化
+- retryする → 再試行する
+- resolveする → 解決する
+
+ただし、API名・型名・変数名・関数名などの識別子は翻訳しない。
+
+- Controller → Controller
+- close → close
+- signal → signal
+
 # プロジェクトの指示
 
 ReactのWebviewは `src/webview/`、Extension Hostの処理は `src/extension/`、共通の通信型・検証処理は `src/shared/` にあります。

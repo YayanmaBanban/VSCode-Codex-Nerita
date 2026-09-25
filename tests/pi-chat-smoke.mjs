@@ -9,6 +9,8 @@ import { createRequire } from "node:module";
 import { build } from "esbuild";
 import { piPersistenceSmoke } from "./pi-persistence-smoke.mjs";
 import { piPackagesSmoke } from "./pi-packages-smoke.mjs";
+import { piSubagentSmoke } from "./pi-subagent-smoke.mjs";
+import { piPlatformSmoke } from "./pi-platform-smoke.mjs";
 
 const projectRoot = process.cwd();
 // 展開したVSIXも同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
@@ -48,33 +50,42 @@ const server = createServer((request, response) => {
 			};
 			return;
 		}
-		const mutation = {
-			write: {
-				name: "write",
-				args: { path: "approved.txt", content: "approved" },
-			},
-			edit: {
-				name: "edit",
-				args: {
-					path: "approved.txt",
-					edits: [{ oldText: "approved", newText: "edited" }],
-				},
-			},
-			powershell: {
-				name: "powershell",
-				args: {
-					command:
-						"Set-Content -LiteralPath command.txt -Value executed; Write-Output 'command complete'",
-				},
-			},
-			commandStop: {
-				name: "powershell",
-				args: {
-					command:
-						"Write-Output 'command started'; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad",
-				},
-			},
-		}[prompt];
+		const mutation = prompt.startsWith("policy:")
+			? JSON.parse(prompt.slice(7))
+			: {
+					write: {
+						name: "write",
+						args: { path: "approved.txt", content: "approved" },
+					},
+					edit: {
+						name: "edit",
+						args: {
+							path: "approved.txt",
+							edits: [{ oldText: "approved", newText: "edited" }],
+						},
+					},
+					powershell: {
+						name: "powershell",
+						args: {
+							command:
+								"Set-Content -LiteralPath command.txt -Value executed; Write-Output 'command complete'",
+						},
+					},
+					commandStop: {
+						name: "powershell",
+						args: {
+							command:
+								"Set-Content -LiteralPath command-started.txt -Value started; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad",
+						},
+					},
+					disconnectCommand: {
+						name: "powershell",
+						args: {
+							command:
+								"Set-Content -LiteralPath disconnect-started.txt -Value started; while ($true) { Add-Content -LiteralPath disconnect-counter.txt -Value tick; Start-Sleep -Milliseconds 80 }",
+						},
+					},
+				}[prompt];
 		if (prompt === "stop") {
 			send({ content: "停止待ち" });
 			return;
@@ -129,8 +140,11 @@ try {
 		path.join(fixture, "dist/runtime"),
 		{
 			recursive: true,
-			filter: (source) => path.basename(source) !== "@openai",
 		},
+	);
+	await cp(
+		path.join(extensionPath, "package.json"),
+		path.join(fixture, "package.json"),
 	);
 	// ESMの公開入口と、遅延ロードされる画像変換用WASMも配布物だけで動かす。
 	const sdk = await import(
@@ -290,12 +304,34 @@ try {
 	assert.ok(
 		requests.every((request) =>
 			request.tools.every((tool) =>
-				["read", "ls", "write", "edit", "powershell"].includes(
+				["read", "ls", "write", "edit", "powershell", "pwsh"].includes(
 					tool.function.name,
 				),
 			),
 		),
 	);
+	const shellDefinition = requests
+		.at(-1)
+		.tools.find((tool) => tool.function.name === "powershell").function;
+	assert.match(
+		shellDefinition.description,
+		/Windows PowerShell \(powershell.exe\)/,
+	);
+	assert.match(shellDefinition.description, /pass the command body directly/);
+	assert.match(
+		shellDefinition.parameters.properties.command.description,
+		/node --version/,
+	);
+	const coreDefinition = requests
+		.at(-1)
+		.tools.find((tool) => tool.function.name === "pwsh")?.function;
+	if (coreDefinition) {
+		assert.match(coreDefinition.description, /PowerShell 7 \(pwsh.exe\)/);
+		assert.match(
+			coreDefinition.parameters.properties.command.description,
+			/node --version/,
+		);
+	}
 	assert.equal(controller.snapshot().tools.at(-1).status, "completed");
 	assert.equal(controller.snapshot().tools.at(-1).kind, "read");
 	assert.ok(
@@ -402,10 +438,13 @@ try {
 	await send("commandStop");
 	await until(() => controller.snapshot().permissions.length === 1);
 	await respond("accept");
-	await until(() =>
-		JSON.stringify(controller.snapshot().tools.at(-1).content).includes(
-			"command started",
-		),
+	// 0.156.0ではまとめ出力を使うため、実process開始をfixtureで確認する。
+	await until(async () =>
+		(
+			await readFile(path.join(cwd, "command-started.txt"), "utf8").catch(
+				() => "",
+			)
+		).includes("started"),
 	);
 	await controller.receive({
 		type: "prompt/cancel",
@@ -418,6 +457,44 @@ try {
 	await assert.rejects(readFile(path.join(cwd, "unexpected.txt")), {
 		code: "ENOENT",
 	});
+	await send("disconnectCommand");
+	await until(() => controller.snapshot().permissions.length === 1);
+	await respond("accept");
+	await until(async () =>
+		(
+			await readFile(
+				path.join(cwd, "disconnect-started.txt"),
+				"utf8",
+			).catch(() => "")
+		).includes("started"),
+	);
+	// 実行中の再接続ボタンは拒否される。Host切断を先に発生させて回収を検証する。
+	const disconnectedSessionId = controller.snapshot().sessionId;
+	controller.invalidate();
+	await controller.connect();
+	assert.equal(controller.snapshot().connection, "ready");
+	const stoppedCounter = await readFile(
+		path.join(cwd, "disconnect-counter.txt"),
+		"utf8",
+	).catch(() => "");
+	await new Promise((resolve) => setTimeout(resolve, 300));
+	assert.equal(
+		await readFile(path.join(cwd, "disconnect-counter.txt"), "utf8").catch(
+			() => "",
+		),
+		stoppedCounter,
+	);
+	await controller.receive({
+		type: "session/list",
+		requestId: "list-after-disconnect",
+	});
+	await controller.receive({
+		type: "session/load",
+		requestId: "load-after-disconnect",
+		sessionId: disconnectedSessionId,
+	});
+	assert.equal(controller.snapshot().sessionId, disconnectedSessionId);
+	assert.equal(controller.snapshot().permissions.length, 0);
 	await send("stop");
 	await until(
 		() => controller.snapshot().messages.at(-1)?.text === "停止待ち",
@@ -477,6 +554,18 @@ try {
 		agentDir,
 		requests,
 	});
+	await piSubagentSmoke({
+		createPiRuntime,
+		extensionPath: fixture,
+		cwd,
+		agentDir,
+	});
+	await piPlatformSmoke({
+		createPiRuntime,
+		extensionPath: fixture,
+		agentDir,
+		requests,
+	});
 	console.log(
 		"PASS: packaged Pi SDK + WASM → same-run steer → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → queued steer cancellation → resume",
 	);
@@ -529,7 +618,7 @@ function requestPrompt(input) {
 /** 固定sleepで成功扱いせず、期限内に期待する状態へ到達するまで待つ。 */
 async function until(check) {
 	const deadline = Date.now() + 15000;
-	while (!check()) {
+	while (!(await check())) {
 		assert.ok(
 			Date.now() < deadline,
 			`Pi state timeout: ${JSON.stringify(controller.snapshot())}`,

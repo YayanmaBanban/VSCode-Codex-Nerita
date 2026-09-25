@@ -12,7 +12,7 @@ export function createPiApprovalBridge(): Bridge {
 		connection: "ready",
 		sessionId: "pi-approval",
 		sessionTitle: "Pi",
-		cwd: "D:/workspace with spaces/project",
+		cwd: "workspace with spaces/project",
 		attachmentsSupported: false,
 	};
 	const listeners = new Set<(event: HostMessage) => void>();
@@ -47,7 +47,10 @@ export function createPiApprovalBridge(): Bridge {
 					message.type === "prompt/cancel"
 						? "cancel"
 						: message.optionId;
-				const text = approvalResultText(choice);
+				const text = approvalResultText(
+					choice,
+					state.tools.at(-1)?.title,
+				);
 				patch({
 					permissions: [],
 					run: choice === "cancel" ? "cancelled" : "completed",
@@ -78,12 +81,14 @@ function startApprovalPrompt(
 	state: ChatState,
 	emit: (event: HostMessage) => void,
 ) {
-	const shell = message.text === "powershell";
+	const shell = ["powershell", "pwsh", "bash"].includes(message.text);
 	const runId = crypto.randomUUID();
 	const input = shell
 		? {
 				command:
-					"Get-Content -LiteralPath 'src/長いフォルダー名/README.md'",
+					message.text === "bash"
+						? "node --version"
+						: "Get-Content -LiteralPath 'src/長いフォルダー名/README.md'",
 				timeout: 30,
 			}
 		: {
@@ -108,7 +113,7 @@ function startApprovalPrompt(
 				id: runId,
 				runId,
 				title: shell
-					? "powershell"
+					? message.text
 					: "ファイルを書き込む: src/長いフォルダー名/README.md",
 				kind: shell ? "execute" : "edit",
 				status: "in_progress",
@@ -121,7 +126,12 @@ function startApprovalPrompt(
 		permissions: [
 			{
 				id: crypto.randomUUID(),
-				title: `Pi: ${shell ? "powershell" : "write"} の実行承認\n作業フォルダー: ${state.cwd}\n${JSON.stringify(input, null, 2)}`,
+				title: [
+					`Pi: ${shell ? message.text : "write"} の実行承認`,
+					`作業フォルダー: ${state.cwd}`,
+					JSON.stringify(input, null, 2),
+					...approvalScope(message.text, state.cwd!, input.command),
+				].join("\n"),
 				options: [
 					{
 						id: "accept",
@@ -149,15 +159,77 @@ function startApprovalPrompt(
 	});
 }
 
+/** Host ShellにはSandboxやOS隔離の制限があるような表示を付けない。 */
+function approvalScope(name: string, cwd: string, command?: string) {
+	if (name === "bash") {
+		return ["実行範囲: Pi Shell（OSの権限で実行）"];
+	}
+	if (!command) {
+		return [
+			"実行範囲: HostファイルTool（Sandbox外）",
+			`書込み許可: ${cwd}`,
+		];
+	}
+	return [
+		"実行範囲: Shell Sandbox",
+		`書込み許可: ${cwd}`,
+		`実行argv: ${JSON.stringify(shellArgv(name, command))}`,
+		"制限時間: 30000 ms",
+		"Shell network設定: 無効",
+		"Sandbox実装: Codex",
+		"Windows Sandbox: elevated",
+		"Shell read: workspace外もOS権限に従う / temp書込み例外: 無効",
+	];
+}
+
 /** 承諾・拒否・停止の結果をモックの本文へ反映する。 */
-function approvalResultText(choice: string) {
+function approvalResultText(choice: string, tool?: string) {
 	if (choice === "accept") {
-		return "操作が完了しました。";
+		// powershellでは文字コードの初期化も拒否された場合の警告表示を確認する。
+		return tool === "powershell"
+			? "WARNING: Nerita: [Console]::InputEncoding UTF-8 was not applied: PropertySetterNotSupportedInConstrainedLanguage\nWARNING: Nerita: [Console]::OutputEncoding UTF-8 was not applied: PropertySetterNotSupportedInConstrainedLanguage\n操作が完了しました。"
+			: "操作が完了しました。";
 	}
 	if (choice === "decline") {
 		return "ユーザーが実行を拒否しました。操作は実行されていません。";
 	}
 	return "処理を停止しました。";
+}
+
+/** Story内の仮想配置。Host実装に依存せず、承認に現れるShellの差を再現する。 */
+function shellArgv(name: string, command: string) {
+	const setup =
+		name === "powershell"
+			? [
+					"$OutputEncoding",
+					"[Console]::InputEncoding",
+					"[Console]::OutputEncoding",
+				].map(
+					(target) =>
+						`try { ${target} = [System.Text.Encoding]::UTF8 } catch { if (${target}.CodePage -ne 65001) { Write-Warning ('Nerita: ${target} UTF-8 was not applied: ' + $_.FullyQualifiedErrorId) } }`,
+				)
+			: [];
+	return [
+		name === "powershell"
+			? "Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+			: "PowerShell/7/pwsh.exe",
+		"-NoLogo",
+		"-NoProfile",
+		"-NonInteractive",
+		"-OutputFormat",
+		"Text",
+		"-Command",
+		[
+			"$ProgressPreference = 'SilentlyContinue'",
+			...(name === "powershell"
+				? [
+						'& "$env:SystemRoot\\System32\\cmd.exe" /d /c \'"%SystemRoot%\\System32\\chcp.com" 65001 >nul\'',
+					]
+				: []),
+			...setup,
+			command,
+		].join("\n"),
+	];
 }
 
 /** 承認の選択結果をモックのツール状態へ変換する。 */

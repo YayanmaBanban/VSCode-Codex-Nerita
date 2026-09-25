@@ -22,6 +22,26 @@ await build({
 	format: "esm",
 	target: "node22",
 	outfile,
+	plugins: [
+		{
+			name: "vscode-smoke-boundary",
+			/** VS Code外のモデル疎通ではエディター操作を提供せず、誤用は失敗させる。 */
+			setup(builder) {
+				builder.onResolve({ filter: /^vscode$/ }, () => ({
+					path: "vscode",
+					namespace: "vscode-smoke-boundary",
+				}));
+				builder.onLoad(
+					{ filter: /.*/, namespace: "vscode-smoke-boundary" },
+					() => ({
+						contents:
+							"module.exports = { workspace: {}, window: {} };",
+						loader: "js",
+					}),
+				);
+			},
+		},
+	],
 });
 const { CodexClient, CodexSessionController } = await import(
 	pathToFileURL(outfile).href

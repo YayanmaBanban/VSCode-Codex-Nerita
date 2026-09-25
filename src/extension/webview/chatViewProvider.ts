@@ -42,6 +42,7 @@ export class ChatViewProvider
 	constructor(
 		private extensionUri: vscode.Uri,
 		private session: ChatSession,
+		private restartBackend: () => Promise<void>,
 	) {
 		this.backendSubscription = vscode.workspace.onDidChangeConfiguration(
 			(event) => {
@@ -168,21 +169,7 @@ export class ChatViewProvider
 		value: UiMessage,
 	): Promise<void> {
 		if (value.type === "ui/setBackend") {
-			if (this.backendPending) {
-				return;
-			}
-			this.backendPending = true;
-			try {
-				const changed = await saveBackend(value.backend);
-				this.broadcastBackend();
-				if (changed) {
-					await vscode.commands.executeCommand(
-						"workbench.action.reloadWindow",
-					);
-				}
-			} finally {
-				this.backendPending = false;
-			}
+			await this.changeBackend(webview, value);
 			return;
 		}
 		if (value.type === "workspace/resolvePath") {
@@ -210,6 +197,47 @@ export class ChatViewProvider
 			return;
 		}
 		await this.dispatchDisplayAction(webview, value);
+	}
+
+	/** 実行中の会話を守り、保存と再生成を直列に行う。 */
+	private async changeBackend(
+		webview: vscode.Webview,
+		value: Extract<UiMessage, { type: "ui/setBackend" }>,
+	): Promise<void> {
+		if (this.backendPending) {
+			return;
+		}
+		if (this.runtimeBusy()) {
+			await webview.postMessage({
+				type: "request/failed",
+				requestId: value.requestId,
+				error: "実行・接続処理が終わってからバックエンドを変更してください。",
+			} satisfies HostMessage);
+			return;
+		}
+		this.backendPending = true;
+		try {
+			const changed = await saveBackend(value.backend);
+			this.broadcastBackend();
+			if (changed) {
+				await this.restartBackend();
+			}
+		} finally {
+			this.backendPending = false;
+		}
+	}
+
+	/** 実行・接続・設定変更の完了前はセッションを交換しない。 */
+	private runtimeBusy(): boolean {
+		const state = this.session.snapshot();
+		return (
+			state.run === "running" ||
+			state.run === "cancelling" ||
+			state.connection === "connecting" ||
+			state.connection === "authenticating" ||
+			state.sessionPending ||
+			state.configPending
+		);
 	}
 
 	/** 下書きと表示位置を同期して会話操作をバックエンドへ渡す。 */
@@ -342,7 +370,7 @@ export class ChatViewProvider
 /** 表示操作の失敗に対応した復旧方法を返す。 */
 function viewRequestError(type: string) {
 	if (type === "ui/setBackend") {
-		return "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、ウィンドウを再読み込みしてください。";
+		return "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、再接続してください。";
 	}
 	if (type === "reference/open") {
 		return "参照先を開けませんでした。ファイルやフォルダの存在を確認してください。";

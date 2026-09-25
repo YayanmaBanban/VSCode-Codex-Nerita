@@ -1,5 +1,7 @@
 // App Server の起動・初期化をまとめ、初期化済み接続だけを呼び出し側へ渡す。
 import type { ClientInfo } from "./codex-app-server/ClientInfo";
+import type { CommandExecParams } from "./codex-app-server/v2/CommandExecParams";
+import type { WindowsSandboxImplementation } from "../../security/AgentAccessPolicy";
 import type { InitializeResponse } from "./codex-app-server/InitializeResponse";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import type { ThreadLoadedListParams } from "./codex-app-server/v2/ThreadLoadedListParams";
@@ -29,6 +31,10 @@ export type CodexClientOptions = {
 	clientInfo: ClientInfo;
 	callbacks?: AppServerCallbacks;
 	signal?: AbortSignal;
+	/** 専用Shell接続だけが指定し、既存Codex backendの設定継承は維持する。 */
+	windowsSandbox?: WindowsSandboxImplementation;
+	/** Executorが接続後の停止・回収を所有する場合は初期化後にsignalを外す。 */
+	connectAbortOnly?: boolean;
 };
 
 /** 初期化済みの型付きRPCを、機能別の操作として提供する。 */
@@ -46,7 +52,11 @@ export class CodexClient {
 		const executable = await resolveCodexExecutable(options.extensionPath);
 		options.signal?.throwIfAborted();
 		const transport = new AppServerTransport(
-			startAppServerProcess(executable, options.cwd),
+			startAppServerProcess(
+				executable,
+				options.cwd,
+				options.windowsSandbox,
+			),
 			options.callbacks,
 		);
 		/** 初期化待ちでもワークスペース変更・拡張機能終了に追従する。 */
@@ -67,6 +77,9 @@ export class CodexClient {
 			});
 			transport.notify({ method: "initialized" });
 			options.signal?.throwIfAborted();
+			if (options.connectAbortOnly) {
+				detachAbort();
+			}
 			return new CodexClient(
 				transport,
 				response,
@@ -78,6 +91,40 @@ export class CodexClient {
 			await transport.dispose();
 			throw error;
 		}
+	}
+	/** 信頼済みproject層を含む、Codexの実効Windows設定を取得する。 */
+	readSandboxConfig(cwd: string) {
+		return this.transport.request("config/read", {
+			cwd,
+			includeLayers: false,
+		});
+	}
+	/** readinessは実行基盤の準備状態で、通信遮断の実測ではない。 */
+	readSandboxReadiness() {
+		return this.transport.request("windowsSandbox/readiness", undefined);
+	}
+	/** 明示的なVS Codeコマンドからだけセットアップを開始する。 */
+	setupWindowsSandbox(cwd: string, mode: WindowsSandboxImplementation) {
+		return this.transport.request("windowsSandbox/setupStart", {
+			cwd,
+			mode,
+		});
+	}
+	/** thread・モデル認証を作らず、承認済みargvをSandbox内で実行する。 */
+	executeCommand(params: CommandExecParams) {
+		return this.transport.request(
+			"command/exec",
+			params,
+			(params.timeoutMs ?? 60_000) + 10_000,
+		);
+	}
+	/** 接続内の特定commandだけを停止する。 */
+	terminateCommand(processId: string) {
+		return this.transport.request(
+			"command/exec/terminate",
+			{ processId },
+			2_000,
+		);
 	}
 	/** 既存の認証状態だけを調べる。 */
 	readAccount() {

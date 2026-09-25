@@ -7,6 +7,19 @@ import type { PiResumeTarget } from "./PiSessionStore";
 import { restorePiHistory } from "./PiHistoryMapper";
 import type { ContributionContext } from "../../ui-contributions/contributionConditions";
 
+/** 実RuntimeはShell・子Runtimeまで回収し、テスト接続は従来のSDK契約を使う。 */
+async function closePiSession(session: PiSession): Promise<void> {
+	if (session.close) {
+		await session.close();
+	} else {
+		try {
+			await session.abort();
+		} finally {
+			session.dispose();
+		}
+	}
+}
+
 /** Piの接続と保存セッションの寿命を管理する。 */
 export abstract class PiLifecycle extends SessionState {
 	/** 選択モデルのproviderはbackendとは別にHostで解決する。 */
@@ -116,11 +129,7 @@ export abstract class PiLifecycle extends SessionState {
 				resume,
 			).then(async (result) => {
 				if (epoch !== this.epoch) {
-					try {
-						await result.session.abort();
-					} finally {
-						result.session.dispose();
-					}
+					await closePiSession(result.session);
 				}
 				return result;
 			});
@@ -134,7 +143,7 @@ export abstract class PiLifecycle extends SessionState {
 			this.runtime = session;
 			this.runtimeEpoch = epoch;
 			if (previous) {
-				this.track(previous.abort().finally(() => previous.dispose()));
+				this.track(closePiSession(previous));
 			}
 			if (session.account) {
 				const refresh = session.account.refreshCatalog(opening.signal);
@@ -256,7 +265,7 @@ export abstract class PiLifecycle extends SessionState {
 		try {
 			restored = restorePiHistory(session.history?.entries ?? [], cwd);
 		} catch (error) {
-			this.track(session.abort().finally(() => session.dispose()));
+			this.track(closePiSession(session));
 			throw error;
 		}
 		return restored;
@@ -285,7 +294,7 @@ export abstract class PiLifecycle extends SessionState {
 		this.runtime = undefined;
 		this.runtimeEpoch = undefined;
 		if (runtime) {
-			this.track(runtime.abort().finally(() => runtime.dispose()));
+			this.track(closePiSession(runtime));
 		}
 	}
 

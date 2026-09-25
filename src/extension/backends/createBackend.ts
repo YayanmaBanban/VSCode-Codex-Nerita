@@ -13,6 +13,7 @@ import { PiSessionController } from "./pi/PiSessionController";
 import { createPiRuntime, type PiModelSelection } from "./pi/PiRuntime";
 import { createPiAuthService } from "./pi/PiAuthService";
 import { codexSelectionStore } from "./codex/settings/modelSelection";
+import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
 
 const piModelSelectionKey = "nerita.pi.lastModel";
 
@@ -25,7 +26,7 @@ function workspaceDirectory(): string {
 	);
 }
 
-/** 設定変更はウィンドウ再読み込み時に反映し、実行中のbackendを差し替えない。 */
+/** 起動・切替時の最新設定を読み、使用するバックエンドを生成する。 */
 export function createBackend(
 	context: vscode.ExtensionContext,
 ): BackendSession {
@@ -40,6 +41,15 @@ export function createBackend(
 			const session = await createPiRuntime({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
+				workspaceRoots: (vscode.workspace.workspaceFolders ?? []).map(
+					(folder) => folder.uri.fsPath,
+				),
+				workspaceTrusted: vscode.workspace.isTrusted,
+				trustedExtensionPaths: userTrustedExtensionPaths(
+					vscode.workspace
+						.getConfiguration("nerita.pi")
+						.inspect<string[]>("trustedExtensionPaths"),
+				),
 				signal,
 				authorize,
 				authService: createPiAuthService(context.extensionUri),
