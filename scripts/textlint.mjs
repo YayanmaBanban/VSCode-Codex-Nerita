@@ -4,6 +4,10 @@ import { execFileSync } from "node:child_process";
 
 import ignore from "ignore";
 import { extractSourceComments } from "./textlint-comments.mjs";
+import {
+	extractDocumentAuditItems,
+	writeTextlintAudit,
+} from "./textlint-audit.mjs";
 
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
 
@@ -17,14 +21,14 @@ if (mode !== "--all" && mode !== "--changed") {
 }
 
 /**
- * textlint で本文全体を検査するファイル。
+ * textlintで本文全体を検査するファイル。
  */
 const DOCUMENT_EXTENSIONS = new Set([".md", ".markdown", ".txt", ".text"]);
 
 /**
  * コメントだけ抽出して検査するソースコード。
  *
- * TypeScript の構文解析を利用するため、JS / TS 系に限定する。
+ * TypeScriptの構文解析を利用するため、JS / TS系に限定する。
  */
 const SOURCE_EXTENSIONS = new Set([
 	".ts",
@@ -46,7 +50,7 @@ const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 /**
- * Windows のパス区切りを統一する。
+ * Windowsのパス区切りを統一する。
  * `.textlintignore` 用に "/" へ統一する。
  */
 function normalizePath(filePath) {
@@ -84,7 +88,7 @@ function isTargetFile(filePath) {
  * リポジトリ全体を走査する。
  *
  * `.gitignore` には依存しない。
- * `lint` 除外は `.textlintignore` だけで決定する。
+ * lint除外は `.textlintignore` だけで決定する。
  */
 async function getAllFiles(ignoreMatcher) {
 	const files = [];
@@ -141,7 +145,7 @@ async function getAllFiles(ignoreMatcher) {
 }
 
 /**
- * `git` コマンドを実行し、NUL 区切りのファイル一覧を返す。
+ * `git` コマンドを実行し、NUL区切りのファイル一覧を返す。
  */
 function gitFiles(args) {
 	const output = execFileSync("git", args, {
@@ -154,9 +158,10 @@ function gitFiles(args) {
 }
 
 /**
- * Git で変更されたファイルを取得する。
+ * Gitで変更されたファイルを取得する。
  *
- * HEAD との差分に未追跡ファイルを加え、ステージ済み・未ステージの変更を含める。
+ * HEADとの差分に未追跡ファイルを加え、
+ * ステージ済み・未ステージの変更を含める。
  */
 async function getChangedFiles(ignoreMatcher) {
 	const changed = gitFiles([
@@ -214,8 +219,19 @@ const files =
 		? await getChangedFiles(ignoreMatcher)
 		: await getAllFiles(ignoreMatcher);
 
+const auditItems = [];
+
 if (files.length === 0) {
+	const auditPath = await writeTextlintAudit({
+		root: ROOT,
+		mode,
+		items: auditItems,
+	});
+
 	console.log("textlint: 対象ファイルはありません。");
+	console.log(
+		`textlint audit: ${normalizePath(path.relative(ROOT, auditPath))}`,
+	);
 
 	process.exit(0);
 }
@@ -242,8 +258,11 @@ for (const file of files) {
 	 * Markdown / Text
 	 *
 	 * ファイル内容をそのまま検査する。
+	 * textlint結果とは別に、全日本語文章を監査JSONへ保存する。
 	 */
 	if (DOCUMENT_EXTENSIONS.has(extension)) {
+		auditItems.push(...extractDocumentAuditItems(source, file));
+
 		// 日本語を含まない文書には日本語用の校正規則を適用しない。
 		if (!JAPANESE_PATTERN.test(source)) {
 			continue;
@@ -259,18 +278,22 @@ for (const file of files) {
 	 * JS / TS
 	 *
 	 * コメントだけを抽出する。
+	 * 全日本語コメントはtextlintの診断結果に関係なく監査JSONへ保存する。
 	 */
 	if (SOURCE_EXTENSIONS.has(extension)) {
-		const commentText = extractSourceComments(source, file);
+		const extracted = extractSourceComments(source, file);
 
-		if (!JAPANESE_PATTERN.test(commentText)) {
+		auditItems.push(...extracted.items);
+
+		if (!JAPANESE_PATTERN.test(extracted.lintText)) {
 			continue;
 		}
 
 		/**
-		 * `.txt` として解析し、インデントなどを Markdown 構文として解釈させない。
+		 * `.txt` として解析し、
+		 * インデントなどをMarkdown構文として解釈させない。
 		 */
-		const result = await linter.lintText(commentText, `${file}.txt`);
+		const result = await linter.lintText(extracted.lintText, `${file}.txt`);
 
 		/**
 		 * 表示上は元のソースファイル名へ戻す。
@@ -283,7 +306,17 @@ for (const file of files) {
 }
 
 /**
- * 通常の textlint と同じ `stylish` 形式。
+ * textlintで警告されたかどうかに関係なく、
+ * 全日本語コメント・文書をLLMレビュー用JSONへ保存する。
+ */
+const auditPath = await writeTextlintAudit({
+	root: ROOT,
+	mode,
+	items: auditItems,
+});
+
+/**
+ * 通常のtextlintと同じ`stylish`形式。
  */
 const formatter = await loadLinterFormatter({
 	formatterName: "stylish",
@@ -294,6 +327,8 @@ const formatted = formatter.format(results);
 if (formatted.trim()) {
 	console.log(formatted);
 }
+
+console.log(`textlint audit: ${normalizePath(path.relative(ROOT, auditPath))}`);
 
 const messageCount = results.reduce(
 	(count, result) => count + result.messages.length,

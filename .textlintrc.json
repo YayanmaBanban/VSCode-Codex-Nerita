@@ -2,6 +2,17 @@
 	"rules": {
 		"preset-ja-technical-writing": true,
 
+		"@textlint-ja/preset-ai-writing": {
+			"ai-tech-writing-guideline": {
+				"disableRedundancyGuidance": false,
+				"disableVoiceGuidance": false,
+				"disableClarityGuidance": false,
+				"disableConsistencyGuidance": false,
+				"disableStructureGuidance": false,
+				"enableDocumentAnalysis": true
+			}
+		},
+
 		"@textlint-rule/pattern": {
 			"patterns": [
 				{

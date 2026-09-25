@@ -13,3 +13,6 @@ storybook-static
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# textlint audit
+.textlint-cache/

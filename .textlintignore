@@ -27,10 +27,14 @@ storybook-static/
 # Generated files/directories
 
 **/generated/
-**/*.generated.ts
-**/*.generated.tsx
+**/_.generated.ts
+\**/_.generated.tsx
 **/*.generated.js
 
 # Config
 
 config/licenses/
+
+# textlint audit
+
+.textlint-cache/

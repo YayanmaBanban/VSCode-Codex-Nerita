@@ -4,7 +4,27 @@ import ts from "typescript";
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
-/** 文字列・正規表現・テンプレート内の記号をコメントと混同しない。 */
+/**
+ * 監査JSONへ保存するコメント本文を整形する。
+ */
+function normalizeCommentText(text, block) {
+	if (!block) {
+		return text.trim();
+	}
+
+	return text
+		.split(/\r?\n/)
+		.map((line) => line.replace(/^\s*\*\s?/, ""))
+		.join("\n")
+		.trim();
+}
+
+/**
+ * 日本語コメントを抽出する。
+ *
+ * `lintText` は元ソースと同じ行・列を維持したtextlint用文字列。
+ * `items` はLLMによる意味レビュー用の全日本語コメント。
+ */
 export function extractSourceComments(source, filePath) {
 	const file = ts.createSourceFile(
 		filePath,
@@ -12,10 +32,13 @@ export function extractSourceComments(source, filePath) {
 		ts.ScriptTarget.Latest,
 		true,
 	);
-	// 構文木と同じ UTF-16 コード単位で扱い、絵文字以降の位置ずれを防ぐ。
+
+	// 構文木と同じUTF-16コード単位で扱い、絵文字以降の位置ずれを防ぐ。
 	const output = source
 		.split("")
 		.map((char) => (char === "\n" || char === "\r" ? char : " "));
+
+	const items = [];
 	const visited = new Set();
 	const jsxTextRanges = [];
 
@@ -24,8 +47,10 @@ export function extractSourceComments(source, filePath) {
 		if (node.kind === ts.SyntaxKind.JsxText) {
 			jsxTextRanges.push([node.pos, node.end]);
 		}
+
 		ts.forEachChild(node, collectJsxText);
 	}
+
 	collectJsxText(file);
 
 	/** 同じコメントを重複処理せず、日本語の本文だけを残す。 */
@@ -36,14 +61,41 @@ export function extractSourceComments(source, filePath) {
 		) {
 			return;
 		}
+
 		visited.add(start);
-		if (!JAPANESE_PATTERN.test(source.slice(start, end))) {
+
+		const rawComment = source.slice(start, end);
+
+		if (!JAPANESE_PATTERN.test(rawComment)) {
 			return;
 		}
+
 		const block = kind === ts.SyntaxKind.MultiLineCommentTrivia;
-		const contentStart =
-			start + (block && source[start + 2] === "*" ? 3 : 2);
-		const contentEnd = block ? end - 2 : end;
+		const jsdoc = block && source[start + 2] === "*";
+
+		const contentStart = start + (jsdoc ? 3 : 2);
+		const contentEnd = block ? Math.max(contentStart, end - 2) : end;
+
+		const rawText = source.slice(contentStart, contentEnd);
+		const text = normalizeCommentText(rawText, block);
+
+		if (!JAPANESE_PATTERN.test(text)) {
+			return;
+		}
+
+		const startPosition = file.getLineAndCharacterOfPosition(contentStart);
+		const endPosition = file.getLineAndCharacterOfPosition(
+			Math.max(contentStart, contentEnd - 1),
+		);
+
+		items.push({
+			file: filePath,
+			startLine: startPosition.line + 1,
+			endLine: endPosition.line + 1,
+			kind: jsdoc ? "jsdoc" : "comment",
+			text,
+		});
+
 		for (let index = contentStart; index < contentEnd; index += 1) {
 			output[index] = source[index];
 		}
@@ -54,16 +106,26 @@ export function extractSourceComments(source, filePath) {
 		if (node.kind === ts.SyntaxKind.JsxText) {
 			return;
 		}
+
 		const children = node.getChildren(file);
+
 		if (children.length > 0) {
 			children.forEach(visit);
 			return;
 		}
+
 		// 文字列・テンプレート・正規表現の本文はコメントとして探索しない。
 		ts.forEachLeadingCommentRange(source, node.pos, copyComment);
 		ts.forEachTrailingCommentRange(source, node.end, copyComment);
 	}
+
 	visit(file);
+
 	// コードを置換した末尾空白は除き、文末の誤検出を防ぐ。行と列は変わらない。
-	return output.join("").replace(/[^\S\r\n]+$/gm, "");
+	const lintText = output.join("").replace(/[^\S\r\n]+$/gm, "");
+
+	return {
+		lintText,
+		items,
+	};
 }
