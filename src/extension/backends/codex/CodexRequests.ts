@@ -45,8 +45,18 @@ export abstract class CodexRequests extends CodexOptions {
 			(item) =>
 				item.id === approval.itemId && item.runId === this.state.runId,
 		);
-		const detail = tool?.paths.length ? `\n${tool.paths.join("\n")}` : "";
-		return this.approvals.ask(approval.title + detail, [
+		if (tool?.paths.length) {
+			approval.presentation.fields = [
+				...approval.presentation.fields,
+				{
+					id: "paths",
+					label: "対象ファイル",
+					value: tool.paths.join("\n"),
+					display: "text",
+				},
+			];
+		}
+		return this.approvals.ask(approval.presentation, [
 			signal,
 			run.abort.signal,
 		]);
@@ -86,7 +96,27 @@ export abstract class CodexRequests extends CodexOptions {
 		if (message.method === "item/permissions/requestApproval") {
 			const permissions = permissionProfile(p.permissions);
 			const choice = await this.approvals.ask(
-				`追加権限の承認（このターンのみ）\n${typeof p.reason === "string" ? p.reason : ""}\n${JSON.stringify(permissions, null, 2)}`,
+				{
+					title: "追加権限の承認（このターンのみ）",
+					fields: [
+						...(typeof p.reason === "string" && p.reason
+							? [
+									{
+										id: "reason",
+										label: "理由",
+										value: p.reason,
+										display: "text" as const,
+									},
+								]
+							: []),
+						{
+							id: "permissions",
+							label: "要求する権限",
+							value: JSON.stringify(permissions, null, 2),
+							display: "code",
+						},
+					],
+				},
 				[combined],
 			);
 			return {

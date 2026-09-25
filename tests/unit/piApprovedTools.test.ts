@@ -3,6 +3,7 @@ import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { expect, it, vi } from "vitest";
 import { approvePiTool } from "../../src/extension/backends/pi/PiApprovedTools";
 import { pending } from "./piHarness";
+import type { ToolAuthorizer } from "../../src/extension/security/ApprovalGuard";
 
 /** 副作用の代わりに呼出回数と受け取った `signal` を記録する。 */
 function fixture(name: string) {
@@ -16,7 +17,7 @@ function fixture(name: string) {
 	const tool = definition as ToolDefinition;
 	const context: unknown = {};
 	const approval = pending<AbortSignal>();
-	const authorize = vi.fn(() => approval.promise);
+	const authorize = vi.fn<ToolAuthorizer>(() => approval.promise);
 	const wrapped = approvePiTool(tool, "D:\\workspace", authorize);
 	const run = (signal?: AbortSignal) =>
 		wrapped.execute(
@@ -36,10 +37,12 @@ it.each(["write", "edit", "powershell", "bash", "custom"])(
 		const result = h.run();
 		const rejected = expect(result).rejects.toThrow("拒否");
 		expect(h.execute).not.toHaveBeenCalled();
-		expect(h.authorize).toHaveBeenCalledWith(
-			expect.stringContaining("target.txt"),
-			undefined,
-		);
+		expect(
+			h.authorize.mock.calls[0]![0].fields?.find(
+				(field) => field.id === "params",
+			)?.value,
+		).toContain("target.txt");
+		expect(h.authorize.mock.calls[0]![1]).toBeUndefined();
 		h.approval.reject(new Error("拒否"));
 		await rejected;
 		expect(h.execute).not.toHaveBeenCalled();

@@ -117,7 +117,17 @@ export function createAppServerBridge(scenario: Scenario): Bridge {
 			permissions: [
 				{
 					id: "permission",
-					title: "コマンド実行の承認\nWrite-Output '確認が必要な操作'\nD:/workspace with spaces\n作業フォルダーでの実行を確認してください。",
+					title: "コマンド実行の承認",
+					cwd: "D:/workspace with spaces",
+					command: "Write-Output '確認が必要な操作'",
+					fields: [
+						{
+							id: "reason",
+							label: "理由",
+							value: "作業フォルダーでの実行を確認してください。",
+							display: "text",
+						},
+					],
 					options: [
 						{
 							id: "accept",

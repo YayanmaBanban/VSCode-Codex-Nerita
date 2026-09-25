@@ -28,6 +28,33 @@ for (const theme of ["dark", "light"] as const) {
 				);
 				await approval.scrollIntoViewIfNeeded();
 				await expectExecutionScope(approval, tool);
+				await expect(approval.getByRole("heading")).toHaveText(
+					`Pi: ${tool} の実行承認`,
+				);
+				await approval.screenshot({
+					path: info.outputPath(`${tool}-collapsed.png`),
+				});
+				if (tool === "powershell" || tool === "pwsh") {
+					const details = approval.locator("details");
+					await expect(details).not.toHaveAttribute("open", "");
+					await details.locator("summary").focus();
+					await details.locator("summary").press("Enter");
+					await expect(details).toHaveAttribute("open", "");
+					const argv = details.getByLabel("実行argv");
+					await expect(argv).toBeVisible();
+					await expect(argv).toContainText(`${tool}.exe`);
+					await argv.focus();
+					await argv.press("End");
+					await expect
+						.poll(() => argv.evaluate((node) => node.scrollTop))
+						.toBeGreaterThan(0);
+					await argv.evaluate((node) => {
+						node.scrollTop = 0;
+					});
+					await approval.screenshot({
+						path: info.outputPath(`${tool}-expanded.png`),
+					});
+				}
 				if (tool === "powershell") {
 					for (const target of [
 						"$OutputEncoding",
@@ -100,13 +127,16 @@ async function expectExecutionScope(approval: Locator, tool: string) {
 		await expect(approval).not.toContainText("Sandbox");
 		return;
 	}
-	await expect(approval).toContainText("書込み許可:");
+	await expect(approval).toContainText("書込み許可");
 	if (tool === "write") {
 		await expect(approval).toContainText("HostファイルTool（Sandbox外）");
 		return;
 	}
-	await expect(approval).toContainText("Shell network設定: 無効");
-	await expect(approval).toContainText(`${tool}.exe`);
-	await expect(approval).toContainText("実行範囲: Shell Sandbox");
-	await expect(approval).toContainText("Sandbox実装: Codex");
+	await expect(
+		approval
+			.locator("dt")
+			.filter({ hasText: "Shell network設定" })
+			.locator("+ dd"),
+	).toHaveText("無効");
+	await expect(approval).toContainText("Shell Sandbox");
 }

@@ -4,6 +4,7 @@ import { BorderBeam } from "../ui/BorderBeam";
 import type { ChatState } from "../../shared/chatState";
 import type { UiMessage } from "../../shared/messages";
 import { ToolCard } from "./tools/ToolCard";
+import { PermissionContent } from "./PermissionContent";
 import { type AsyncTask, taskActive } from "../../shared/asyncTask";
 
 /** 現在の実行の作業状況と承認操作を表示する。 */
@@ -80,9 +81,7 @@ export function Activity({
 					<span className="eyebrow text-[12px] tracking-[0.13em] text-muted">
 						確認が必要です
 					</span>
-					<h2 className="whitespace-pre-wrap leading-[1.7] [overflow-wrap:anywhere]">
-						{permission.title}
-					</h2>
+					<PermissionContent permission={permission} />
 					<div className="permission-actions flex flex-wrap gap-[8px]">
 						{permission.options.map((option) => (
 							<button

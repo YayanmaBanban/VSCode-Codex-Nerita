@@ -1,4 +1,5 @@
 // 承認内容の固定、実行許可の使い捨て、親と子の両方で許可される権限だけを残す処理を検証する。
+import type { PermissionPresentation } from "../../src/shared/permission";
 import { describe, expect, it, vi } from "vitest";
 import { approveToolCall } from "../../src/extension/security/ApprovalGuard";
 import {
@@ -44,7 +45,9 @@ describe("U01-U03 policy / snapshot", () => {
 		const input = call();
 		input.sandbox = { name: "Fixture Sandbox", details: ["original"] };
 		const gate = pending<AbortSignal>();
-		const authorize = vi.fn((_title: string) => gate.promise);
+		const authorize = vi.fn(
+			(_title: PermissionPresentation) => gate.promise,
+		);
 		const approval = approveToolCall(input, authorize);
 		input.command![2] = "changed";
 		input.env!.PATH = "changed";
@@ -61,9 +64,12 @@ describe("U01-U03 policy / snapshot", () => {
 			sandbox: { name: "Fixture Sandbox", details: ["original"] },
 		});
 		expect(() => consumeApprovedToolCall(permit)).toThrow("再承認");
-		expect(authorize.mock.calls[0]![0]).toContain(
-			"Shell network設定: 無効",
-		);
+		expect(authorize.mock.calls[0]![0].fields).toContainEqual({
+			id: "network",
+			label: "Shell network設定",
+			value: "無効",
+			display: "text",
+		});
 	});
 	it("偽造・コピー・改変したpermitを拒否し、元の許可は一度だけ消費する", () => {
 		const permit = issueApprovedToolCall(
@@ -90,12 +96,14 @@ describe("U01-U03 policy / snapshot", () => {
 		).rejects.toThrow();
 	});
 	it("Host拡張は一律拒否せず、Sandbox外の承認を要求する", async () => {
-		const authorize = vi.fn((_title: string) =>
+		const authorize = vi.fn((_title: PermissionPresentation) =>
 			Promise.resolve(new AbortController().signal),
 		);
 		const { command: _command, ...input } = call();
 		await approveToolCall({ ...input, tool: "extension:web" }, authorize);
-		expect(authorize.mock.calls[0]![0]).toContain("Host権限・Sandbox外");
+		expect(JSON.stringify(authorize.mock.calls[0]![0])).toContain(
+			"Host権限・Sandbox外",
+		);
 	});
 	it("roleが親より広いroots・network・Shellを要求しても拡大しない", () => {
 		const parent = { ...call().policy, shell: false };

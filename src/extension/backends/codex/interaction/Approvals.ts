@@ -1,5 +1,9 @@
 // App Server のコマンド・ファイル承認を既存 UI の選択肢へ変換する。
 import { isRecord } from "../../../../shared/validation";
+import type {
+	PermissionField,
+	PermissionPresentation,
+} from "../../../../shared/permission";
 import {
 	AppServerRpcError,
 	type AppServerRequest,
@@ -10,9 +14,9 @@ export type ApprovalRequest = {
 	threadId: string;
 	turnId: string;
 	itemId: string;
-	title: string;
+	presentation: PermissionPresentation & { fields: PermissionField[] };
 };
-/** 対応する要求の範囲と表示用文字列を検証する。 */
+/** 対応する要求の範囲と表示情報を検証する。 */
 export function parseApproval(request: AppServerRequest): ApprovalRequest {
 	if (
 		![
@@ -34,22 +38,25 @@ export function parseApproval(request: AppServerRequest): ApprovalRequest {
 	) {
 		throw new AppServerRpcError(-32602, "Invalid approval request");
 	}
-	const title = approvalDetails(request, params);
+	const presentation = approvalDetails(request, params);
 	return {
 		threadId: params.threadId,
 		turnId: params.turnId,
 		itemId: params.itemId,
-		title: title.join("\n"),
+		presentation,
 	};
 }
 export { Approvals } from "../../../session/Approvals";
 
-/** ネットワーク承認と実行詳細の表示文字列を検証する。 */
+/** ネットワーク承認と実行詳細を表示項目へ変換する。 */
 function approvalDetails(
 	request: AppServerRequest,
 	params: Record<string, unknown>,
-) {
-	const title = [approvalTitle(request.method, params.kind)];
+): ApprovalRequest["presentation"] {
+	const presentation: ApprovalRequest["presentation"] = {
+		title: approvalTitle(request.method, params.kind),
+		fields: [],
+	};
 	if (isRecord(params.networkApprovalContext)) {
 		const context = params.networkApprovalContext;
 		if (
@@ -58,21 +65,41 @@ function approvalDetails(
 		) {
 			throw new AppServerRpcError(-32602, "Invalid network approval");
 		}
-		title[0] = `ネットワーク接続の承認: ${context.protocol}://${context.host}`;
+		presentation.title = "ネットワーク接続の承認";
+		presentation.fields.push({
+			id: "network",
+			label: "接続先",
+			value: `${context.protocol}://${context.host}`,
+			display: "text",
+		});
 	}
 	for (const field of ["command", "cwd", "reason", "grantRoot"] as const) {
-		if (
-			params[field] !== null &&
-			params[field] !== undefined &&
-			typeof params[field] !== "string"
-		) {
-			throw new AppServerRpcError(-32602, "Invalid approval details");
-		}
-		if (typeof params[field] === "string" && params[field]) {
-			title.push(params[field]);
+		const value = approvalString(params[field]);
+		if (value) {
+			if (field === "command" || field === "cwd") {
+				presentation[field] = value;
+			} else {
+				presentation.fields.push({
+					id: field,
+					label: field === "reason" ? "理由" : "書込み許可",
+					value,
+					display: "text",
+				});
+			}
 		}
 	}
-	return title;
+	return presentation;
+}
+
+/** 任意の文字列項目は未指定だけを許し、異なる型は拒否する。 */
+function approvalString(value: unknown): string | undefined {
+	if (value === null || value === undefined) {
+		return undefined;
+	}
+	if (typeof value !== "string") {
+		throw new AppServerRpcError(-32602, "Invalid approval details");
+	}
+	return value;
 }
 
 /** ファイル変更・端末入力・コマンド実行を承認タイトルで区別する。 */

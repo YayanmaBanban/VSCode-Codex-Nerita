@@ -42,6 +42,13 @@ it.each([
 		expect(session.snapshot().permissions).toHaveLength(2),
 	);
 	const [accept, decline] = session.snapshot().permissions;
+	expect(accept).toMatchObject({ command: params.command, cwd: params.cwd });
+	expect(accept!.fields).toContainEqual({
+		id: "reason",
+		label: "理由",
+		value: params.reason,
+		display: "text",
+	});
 	for (const [permission, decision] of [
 		[accept!, "accept"],
 		[decline!, "decline"],
@@ -67,6 +74,52 @@ it.each([
 		result: { decision: "decline" },
 	});
 	expect(session.snapshot().permissions).toEqual([]);
+	requests.dispose();
+});
+
+it("追加権限を構造化して表示し、許可した権限を同じ要求へ返す", async () => {
+	const { session, requests, write } = await setup();
+	requests.accept({
+		method: "item/permissions/requestApproval",
+		id: "permissions",
+		params: {
+			threadId: "thread-1",
+			turnId: "turn-1",
+			reason: "network check",
+			permissions: { network: { enabled: true } },
+		},
+	});
+	await vi.waitFor(() =>
+		expect(session.snapshot().permissions).toHaveLength(1),
+	);
+	const permission = session.snapshot().permissions[0]!;
+	expect(permission.title).toBe("追加権限の承認（このターンのみ）");
+	expect(
+		permission.fields?.find((field) => field.id === "reason")?.value,
+	).toBe("network check");
+	expect(
+		JSON.parse(
+			permission.fields!.find((field) => field.id === "permissions")!
+				.value,
+		),
+	).toEqual({ network: { enabled: true } });
+	await session.receive({
+		type: "permission/respond",
+		requestId: "respond",
+		sessionId: "thread-1",
+		runId: session.snapshot().runId,
+		permissionId: permission.id,
+		optionId: "accept",
+	});
+	await vi.waitFor(() =>
+		expect(write).toHaveBeenCalledWith({
+			id: "permissions",
+			result: {
+				permissions: { network: { enabled: true } },
+				scope: "turn",
+			},
+		}),
+	);
 	requests.dispose();
 });
 

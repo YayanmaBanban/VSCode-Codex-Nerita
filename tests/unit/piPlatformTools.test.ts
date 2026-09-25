@@ -1,4 +1,5 @@
 // OS 分岐を模擬し、サンドボックスなしでの SDK 実行と Codex への非接続を検証する。
+import type { PermissionPresentation } from "../../src/shared/permission";
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
@@ -30,8 +31,9 @@ async function fixture(
 	fixtures.push(h);
 	vi.stubGlobal("process", { ...process, platform });
 	const abort = new AbortController();
-	const authorize = vi.fn((_title: string, signal?: AbortSignal) =>
-		Promise.resolve(signal ?? abort.signal),
+	const authorize = vi.fn(
+		(_title: PermissionPresentation, signal?: AbortSignal) =>
+			Promise.resolve(signal ?? abort.signal),
 	);
 	const exec = vi.fn<sdk.BashOperations["exec"]>(
 		(_command, _cwd, options) => {
@@ -105,10 +107,10 @@ it.each(["darwin", "linux"] as const)(
 		expect(h.createBashToolDefinition.mock.calls[0]![1]?.shellPath).toBe(
 			"configured-bash",
 		);
-		expect(h.authorize.mock.calls[0]![0]).toContain(
+		expect(JSON.stringify(h.authorize.mock.calls[0]![0])).toContain(
 			"Pi Shell（OSの権限で実行）",
 		);
-		expect(h.authorize.mock.calls[0]![0]).not.toMatch(
+		expect(JSON.stringify(h.authorize.mock.calls[0]![0])).not.toMatch(
 			/Sandbox|network設定/,
 		);
 		await h.tools

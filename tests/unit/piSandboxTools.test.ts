@@ -1,4 +1,5 @@
 // 実 SDK のファイル・シェル定義を使い、承認内容の固定、書込み先の検査、サンドボックス外でのシェル実行の防止を検証する。
+import type { PermissionPresentation } from "../../src/shared/permission";
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import {
@@ -37,7 +38,9 @@ async function fixture() {
 	const files = await sandboxFixture();
 	fixtures.push(files);
 	const abort = new AbortController();
-	const authorize = vi.fn((_title: string) => Promise.resolve(abort.signal));
+	const authorize = vi.fn((_title: PermissionPresentation) =>
+		Promise.resolve(abort.signal),
+	);
 	const rawContext: unknown = { cwd: files.cwd };
 	const context = rawContext as Parameters<sdk.ToolDefinition["execute"]>[4];
 	return { ...files, abort, authorize, context };
@@ -101,7 +104,9 @@ it("U07/U08 PowerShell本文を単一の平文argvとして固定し、SDK Host�
 	expect(call.command!.join(" ")).not.toContain("EncodedCommand");
 	expect(call.timeoutMs).toBe(12500);
 	expect(call.env!.NERITA_PROVIDER_TEST_TOKEN).toBeNull();
-	expect(h.authorize.mock.calls[0]![0]).not.toContain("synthetic-secret");
+	expect(JSON.stringify(h.authorize.mock.calls[0]![0])).not.toContain(
+		"synthetic-secret",
+	);
 	expect(hostExecute).not.toHaveBeenCalled();
 });
 

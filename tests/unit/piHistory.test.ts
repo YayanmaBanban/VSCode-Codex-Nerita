@@ -91,7 +91,7 @@ it("復元失敗後も現在の会話とその承認コールバックを使え�
 	});
 	expect(h.runtime.dispose).not.toHaveBeenCalled();
 	await h.send();
-	const approval = authorize("write");
+	const approval = authorize({ title: "write" });
 	const rejected = expect(approval).rejects.toThrow();
 	expect(h.controller.snapshot().permissions).toHaveLength(1);
 	await h.stop();

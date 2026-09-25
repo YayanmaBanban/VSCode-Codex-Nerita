@@ -7,6 +7,7 @@ import { isAsyncTask } from "./asyncTask";
 import { isSubAgent } from "./subAgents";
 import { isUiContributions } from "./uiContributionValidation";
 import { isPiProviderControls } from "./piProviderControls";
+import { isPermissionPresentation } from "./permission";
 
 /** 差分通知に未知のフィールドが混入した場合も拒否する。 */
 export function validStateField(key: string, value: unknown): boolean {
@@ -116,7 +117,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				value,
 				(item) =>
 					isId(item.id) &&
-					typeof item.title === "string" &&
+					isPermissionPresentation(item) &&
 					everyRecord(
 						item.options,
 						(o) =>

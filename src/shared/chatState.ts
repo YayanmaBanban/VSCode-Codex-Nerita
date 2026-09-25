@@ -1,5 +1,6 @@
 // Host が保持し Webview へ同期する会話状態と、両側で使う初期値を定義する。
 import type { McpMessageContent } from "./mcp";
+import type { PermissionPresentation } from "./permission";
 import type { ComposerReference } from "./composerReferences";
 import type { PiProviderControls } from "./piProviderControls";
 import type { UiContributions } from "./uiContributions";
@@ -65,9 +66,8 @@ export type PermissionOption = {
 };
 
 /** 一度だけ回答できる承認要求。 */
-export type Permission = {
+export type Permission = PermissionPresentation & {
 	id: string;
-	title: string;
 	options: PermissionOption[];
 };
 

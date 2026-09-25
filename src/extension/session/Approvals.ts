@@ -1,6 +1,7 @@
 // バックエンド共通の1回限りの承認待機と取消を管理する。
 import { randomUUID } from "node:crypto";
 import type { Permission } from "../../shared/chatState";
+import type { PermissionPresentation } from "../../shared/permission";
 /** 1回の操作に適用する判断。 */
 type Decision = "accept" | "decline" | "cancel";
 /** 承認ごとの UUID を作り、取消・解決済み通知でも待機を終了する。 */
@@ -17,7 +18,7 @@ export class Approvals {
 	}
 	/** サーバー取消とターン取消の両方に追従し、今回だけの許可・拒否・中止を待つ。 */
 	ask(
-		title: string,
+		presentation: string | PermissionPresentation,
 		signals: AbortSignal[],
 	): Promise<{ decision: Decision }> {
 		if (signals.some((signal) => signal.aborted)) {
@@ -40,8 +41,10 @@ export class Approvals {
 			this.pending.set(id, {
 				finish,
 				permission: {
+					...(typeof presentation === "string"
+						? { title: presentation }
+						: presentation),
 					id,
-					title,
 					options: [
 						{
 							id: "accept",

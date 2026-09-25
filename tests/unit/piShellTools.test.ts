@@ -1,4 +1,5 @@
 // 実 SDK のスキーマを使い、公開可否・毎回承認・拒否・停止をシェル別に確認する。
+import type { PermissionPresentation } from "../../src/shared/permission";
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -41,8 +42,9 @@ async function fixture(
 	vi.stubEnv("ProgramFiles", pwsh === "workspace" ? h.cwd : h.outside);
 	vi.stubEnv("PATH", "");
 	const abort = new AbortController();
-	const authorize = vi.fn((_title: string, signal?: AbortSignal) =>
-		Promise.resolve(signal ?? abort.signal),
+	const authorize = vi.fn(
+		(_title: PermissionPresentation, signal?: AbortSignal) =>
+			Promise.resolve(signal ?? abort.signal),
 	);
 	const execute = vi.fn((permit: ApprovedToolCall) => {
 		const call = consumeApprovedToolCall(permit);
@@ -113,13 +115,15 @@ it.each(["powershell", "pwsh"] as const)(
 				expect(h.authorize).toHaveBeenCalledTimes(count),
 			);
 			expect(h.execute).toHaveBeenCalledTimes(count - 1);
-			expect(h.authorize.mock.calls.at(-1)![0]).toContain(`Pi: ${name}`);
-			expect(h.authorize.mock.calls.at(-1)![0]).toContain(
-				"Sandbox実装: Fixture Sandbox",
+			expect(h.authorize.mock.calls.at(-1)![0].title).toContain(
+				`Pi: ${name}`,
 			);
-			expect(h.authorize.mock.calls.at(-1)![0]).not.toContain(
-				"Windows Sandbox:",
+			expect(JSON.stringify(h.authorize.mock.calls.at(-1)![0])).toContain(
+				"Fixture Sandbox",
 			);
+			expect(
+				JSON.stringify(h.authorize.mock.calls.at(-1)![0]),
+			).not.toContain("Windows Sandbox");
 			gate.resolve(h.abort.signal);
 			expect(JSON.stringify(await result)).toContain("v22.fixture");
 			const call = h.execute.mock.calls.at(-1)![0].call;
@@ -129,7 +133,9 @@ it.each(["powershell", "pwsh"] as const)(
 			);
 			expect(call.command!.at(-1)).toMatch(/\nnode --version$/);
 			expect(call.command!.at(-1)).toContain("chcp.com");
-			expect(h.authorize.mock.calls.at(-1)![0]).toContain("chcp.com");
+			expect(JSON.stringify(h.authorize.mock.calls.at(-1)![0])).toContain(
+				"chcp.com",
+			);
 		}
 	},
 );

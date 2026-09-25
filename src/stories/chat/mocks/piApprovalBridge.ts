@@ -126,12 +126,21 @@ function startApprovalPrompt(
 		permissions: [
 			{
 				id: crypto.randomUUID(),
-				title: [
-					`Pi: ${shell ? message.text : "write"} の実行承認`,
-					`作業フォルダー: ${state.cwd}`,
-					JSON.stringify(input, null, 2),
-					...approvalScope(message.text, state.cwd!, input.command),
-				].join("\n"),
+				title: `Pi: ${shell ? message.text : "write"} の実行承認`,
+				cwd: state.cwd!,
+				...(input.command !== undefined && { command: input.command }),
+				...approvalScope(message.text, state.cwd!, input.command),
+				...(!shell && {
+					fields: [
+						...approvalScope(message.text, state.cwd!).fields,
+						{
+							id: "params",
+							label: "入力内容",
+							value: JSON.stringify(input, null, 2),
+							display: "code" as const,
+						},
+					],
+				}),
 				options: [
 					{
 						id: "accept",
@@ -161,25 +170,49 @@ function startApprovalPrompt(
 
 /** Host シェルにはサンドボックスや OS 隔離の制限があるような表示を付けない。 */
 function approvalScope(name: string, cwd: string, command?: string) {
+	const field = (
+		id: string,
+		label: string,
+		value: string,
+		display: "text" | "code" = "text",
+	) => ({ id, label, value, display });
 	if (name === "bash") {
-		return ["実行範囲: Pi Shell（OSの権限で実行）"];
+		return {
+			fields: [field("scope", "実行範囲", "Pi Shell（OSの権限で実行）")],
+			details: [],
+		};
 	}
-	if (!command) {
-		return [
-			"実行範囲: HostファイルTool（Sandbox外）",
-			`書込み許可: ${cwd}`,
-		];
-	}
-	return [
-		"実行範囲: Shell Sandbox",
-		`書込み許可: ${cwd}`,
-		`実行argv: ${JSON.stringify(shellArgv(name, command))}`,
-		"制限時間: 30000 ms",
-		"Shell network設定: 無効",
-		"Sandbox実装: Codex",
-		"Windows Sandbox: elevated",
-		"Shell read: workspace外もOS権限に従う / temp書込み例外: 無効",
+	const fields = [
+		field(
+			"scope",
+			"実行範囲",
+			command ? "Shell Sandbox" : "HostファイルTool（Sandbox外）",
+		),
+		field("writableRoots", "書込み許可", cwd),
 	];
+	if (!command) {
+		return { fields, details: [] };
+	}
+	fields.push(field("network", "Shell network設定", "無効"));
+	return {
+		fields,
+		details: [
+			field(
+				"argv",
+				"実行argv",
+				JSON.stringify(shellArgv(name, command), null, 2),
+				"code",
+			),
+			field("timeout", "制限時間", "30000 ms"),
+			field("sandbox", "Sandbox実装", "Codex"),
+			field("windows", "Windows Sandbox", "elevated"),
+			field(
+				"read",
+				"Shell read",
+				"workspace外もOS権限に従う / temp書込み例外: 無効",
+			),
+		],
+	};
 }
 
 /** 承諾・拒否・停止の結果をモックの本文へ反映する。 */

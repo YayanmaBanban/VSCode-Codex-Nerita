@@ -26,7 +26,7 @@ async function setup() {
 describe("Pi approvals", () => {
 	it("許可は一回だけで、古い回答と未知の選択肢を拒否する", async () => {
 		const h = await setup();
-		const first = h.authorize("write");
+		const first = h.authorize({ title: "write" });
 		const id = h.controller.snapshot().permissions[0]!.id;
 		for (const changes of [
 			{ runId: "old" },
@@ -38,7 +38,7 @@ describe("Pi approvals", () => {
 		}
 		await h.respond("accept");
 		await first;
-		const second = h.authorize("edit");
+		const second = h.authorize({ title: "edit" });
 		const rejected = expect(second).rejects.toThrow("拒否");
 		await h.respond("accept", { permissionId: id });
 		expect(h.controller.snapshot().permissions).toHaveLength(1);
@@ -58,7 +58,7 @@ describe("Pi approvals", () => {
 		it(`承認待ちを${action}で解除し、許可済みにしない`, async () => {
 			const h = await setup();
 			const abort = new AbortController();
-			const pending = h.authorize("powershell", abort.signal);
+			const pending = h.authorize({ title: "powershell" }, abort.signal);
 			const rejected = expect(pending).rejects.toThrow();
 			if (action === "stop") {
 				await h.stop();
@@ -79,7 +79,7 @@ describe("Pi approvals", () => {
 
 	it("許可直後のStopでも実処理を許可しない", async () => {
 		const h = await setup();
-		const pending = h.authorize("write");
+		const pending = h.authorize({ title: "write" });
 		const rejected = expect(pending).rejects.toThrow();
 		const response = h.respond("accept");
 		await h.stop();
@@ -94,7 +94,9 @@ describe("Pi approvals", () => {
 		await Promise.resolve();
 		await h.controller.connect();
 		await h.send();
-		await expect(h.authorize("old write")).rejects.toThrow("古いPi接続");
+		await expect(h.authorize({ title: "old write" })).rejects.toThrow(
+			"古いPi接続",
+		);
 		expect(h.controller.snapshot().permissions).toHaveLength(0);
 		await h.controller.dispose();
 	});

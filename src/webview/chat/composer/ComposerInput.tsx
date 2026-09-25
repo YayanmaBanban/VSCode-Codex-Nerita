@@ -100,7 +100,7 @@ export function ComposerInput({
 							<span className="pointer-events-none absolute top-1 left-1 text-input-placeholder">
 								{followUp
 									? "フォローアップを送信"
-									: "Codexに依頼する…"}
+									: "チャットを送信"}
 							</span>
 						}
 						ErrorBoundary={LexicalErrorBoundary}
