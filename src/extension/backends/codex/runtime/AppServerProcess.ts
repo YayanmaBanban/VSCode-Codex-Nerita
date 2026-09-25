@@ -1,16 +1,32 @@
 // シェルを介さず App Server を起動し、接続終了時にプロセスツリーを解放する。
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import type { WindowsSandboxImplementation } from "../../../security/AgentAccessPolicy";
+import { sandboxServerEnvironment } from "../../../runtime/CommandEnvironment";
 
 /** 認証・CODEX_HOME・設定を継承し、同梱ネイティブ実行ファイルを起動する。 */
 export function startAppServerProcess(
 	executable: string,
 	cwd: string,
+	windowsSandbox?: WindowsSandboxImplementation,
 ): ChildProcessWithoutNullStreams {
-	const env = { ...process.env };
+	const env = windowsSandbox
+		? sandboxServerEnvironment()
+		: { ...process.env };
 	// Extension Host 固有の Node 起動設定を、Codex が起動する子プロセスへ持ち込まない。
 	delete env.NODE_OPTIONS;
 	delete env.ELECTRON_RUN_AS_NODE;
-	return spawn(executable, ["app-server", "--listen", "stdio://"], {
+	const args = ["app-server", "--listen", "stdio://"];
+	if (windowsSandbox) {
+		args.push("-c", `windows.sandbox="${windowsSandbox}"`);
+		// config.toml内のenv追加・shell起動フックを専用接続へ持ち込まない。
+		args.push(
+			"-c",
+			'shell_environment_policy.inherit="none"',
+			"-c",
+			"shell_environment_policy.set={}",
+		);
+	}
+	return spawn(executable, args, {
 		cwd,
 		env,
 		windowsHide: true,

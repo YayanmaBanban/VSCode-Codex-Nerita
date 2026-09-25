@@ -5,6 +5,7 @@ export {
 	SessionManager,
 	SettingsManager,
 	DefaultResourceLoader,
+	DefaultPackageManager,
 	getAgentDir,
 	getPackageDir,
 	convertToPng,
@@ -13,4 +14,5 @@ export {
 	createWriteToolDefinition,
 	createEditToolDefinition,
 	createPowerShellToolDefinition,
+	createBashToolDefinition,
 } from "@earendil-works/pi-coding-agent";

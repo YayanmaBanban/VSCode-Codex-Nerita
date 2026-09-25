@@ -41,24 +41,20 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(
 			answer.locator("a").filter({ hasText: "無効なリンク" }),
 		).not.toHaveAttribute("href", /javascript:/);
-		for (const [name, uri] of [
-			[
-				"Code-Implementation.md",
-				"file:///D:/User/Desktop/vscode-codex-acp/.agents/docs/Code-Implementation.md",
-			],
-			["AGENTS.md", "file:///D:/User/Desktop/vscode-codex-acp/AGENTS.md"],
-			[
-				"日本語",
-				"file:///D:/workspace/%E6%97%A5%E6%9C%AC%E8%AA%9E%20sample.md",
-			],
-		]) {
+		for (const [name, relativePath] of [
+			["Code-Implementation.md", ".agents/docs/Code-Implementation.md"],
+			["AGENTS.md", "AGENTS.md"],
+			["日本語", "日本語 sample.md"],
+		] as const) {
+			// Storyと同じ仮想ルートで解決し、実マシンのパスを期待値に埋め込まない。
+			const uri = new URL(relativePath, "file:///").href;
 			const link = answer.getByRole("link", { name, exact: true });
-			await expect(link).toHaveAttribute("href", uri!);
+			await expect(link).toHaveAttribute("href", uri);
 			await link.click();
-			await expect(page.getByLabel("開いたファイル")).toHaveText(uri!);
+			await expect(page.getByLabel("開いたファイル")).toHaveText(uri);
 			await link.focus();
 			await page.keyboard.press("Enter");
-			await expect(page.getByLabel("開いたファイル")).toHaveText(uri!);
+			await expect(page.getByLabel("開いたファイル")).toHaveText(uri);
 		}
 		await expect(
 			answer.locator("a").filter({ hasText: "コマンド" }),

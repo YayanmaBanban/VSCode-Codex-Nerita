@@ -89,6 +89,7 @@ export class AppServerTransport {
 	request<M extends keyof AppServerResponses>(
 		method: M,
 		params: AppServerParams<M>,
+		timeoutMs = this.timeoutMs,
 	): Promise<AppServerResponses[M]> {
 		if (this.closed) {
 			return Promise.reject(
@@ -104,7 +105,7 @@ export class AppServerTransport {
 							"Codex App Server の応答がタイムアウトしました。",
 						),
 					),
-				this.timeoutMs,
+				timeoutMs,
 			);
 			this.pending.set(id, { resolve, reject, timer });
 			try {

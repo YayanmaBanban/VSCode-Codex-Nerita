@@ -5,6 +5,12 @@ import type { InitializeResponse } from "../codex-app-server/InitializeResponse"
 import type { ThreadLoadedListResponse } from "../codex-app-server/v2/ThreadLoadedListResponse";
 import { isRecord } from "../../../../shared/validation";
 import { parseSkills } from "./skills";
+import {
+	parseCommandResult,
+	parseSandboxReadiness,
+	parseSandboxSetup,
+} from "./command";
+import { parseSandboxConfig } from "./config";
 import { parseMcpStatus } from "../mcpStatus";
 import { parseModels, parseLogin } from "./account";
 import { parseQuotaResponse } from "./usage";
@@ -25,6 +31,11 @@ import {
 
 /** 対応済みメソッドだけを公開し、応答の生成型を固定する。 */
 export type AppServerResponses = {
+	"command/exec": ReturnType<typeof parseCommandResult>;
+	"command/exec/terminate": Record<string, never>;
+	"windowsSandbox/readiness": ReturnType<typeof parseSandboxReadiness>;
+	"windowsSandbox/setupStart": ReturnType<typeof parseSandboxSetup>;
+	"config/read": ReturnType<typeof parseSandboxConfig>;
 	"thread/settings/update": Record<string, never>;
 	"mcpServerStatus/list": ReturnType<typeof parseMcpStatus>;
 	"skills/list": ReturnType<typeof parseSkills>;
@@ -90,6 +101,11 @@ function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
 export const responseParsers: {
 	[M in keyof AppServerResponses]: (value: unknown) => AppServerResponses[M];
 } = {
+	"command/exec": parseCommandResult,
+	"command/exec/terminate": parseInterrupt,
+	"windowsSandbox/readiness": parseSandboxReadiness,
+	"windowsSandbox/setupStart": parseSandboxSetup,
+	"config/read": parseSandboxConfig,
 	"thread/settings/update": parseInterrupt,
 	"mcpServerStatus/list": parseMcpStatus,
 	"skills/list": parseSkills,

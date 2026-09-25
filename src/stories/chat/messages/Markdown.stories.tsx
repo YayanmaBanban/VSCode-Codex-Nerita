@@ -5,6 +5,11 @@ import { Messages } from "../../../webview/chat/messages/Messages";
 import { ToolCard } from "../../../webview/chat/tools/ToolCard";
 import "../../../webview/chat/chat.css";
 
+/** 相対パスから検証用のfile URLを作り、実際のローカル配置に依存させない。 */
+function sampleFile(relativePath: string): URL {
+	return new URL(relativePath, "file:///");
+}
+
 const markdown = [
 	"## 変更内容",
 	"**太字**と*斜体*、~~取り消し~~、`inline code`を表示します。\n改行も保持します。",
@@ -14,11 +19,11 @@ const markdown = [
 	"- [x] 完了\n- [ ] 未完了",
 	"| 項目 | 状態 |\n| --- | --- |\n| Markdown | 対応済み |",
 	"[ドキュメント](https://example.com/docs)",
-	"[Code-Implementation.md](D:/User/Desktop/vscode-codex-acp/.agents/docs/Code-Implementation.md)",
-	"[AGENTS.md](file:///D:/User/Desktop/vscode-codex-acp/AGENTS.md)",
-	"[日本語](<D:/workspace/日本語 sample.md>)",
+	`[Code-Implementation.md](${sampleFile(".agents/docs/Code-Implementation.md").pathname})`,
+	`[AGENTS.md](${sampleFile("AGENTS.md").href})`,
+	`[日本語](<${decodeURI(sampleFile("日本語 sample.md").pathname)}>)`,
 	"[コマンド](command:workbench.action.closeWindow)",
-	'```ts\nconst message = "<strong>文字列</strong>";\nconst longPath = "D:/workspace/project/very/long/path/to/source/file.ts";\n```',
+	'```ts\nconst message = "<strong>文字列</strong>";\nconst longPath = "project/very/long/path/to/source/file.ts";\n```',
 	'<b>HTMLは文字列</b>\n<script>alert("実行しない")</script>',
 	"[無効なリンク](javascript:alert%281%29)",
 ].join("\n\n");
@@ -31,7 +36,9 @@ function MarkdownStory() {
 		<main className="p-[14px]">
 			<button onClick={() => setStreaming(true)}>途中の本文</button>
 			<button onClick={() => setStreaming(false)}>本文完了</button>
-			<output hidden aria-label="開いたファイル">{opened}</output>
+			<output hidden aria-label="開いたファイル">
+				{opened}
+			</output>
 			<Messages
 				send={(message) => {
 					if (message.type === "reference/open") {

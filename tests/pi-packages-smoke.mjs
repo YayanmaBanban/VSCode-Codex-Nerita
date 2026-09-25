@@ -1,6 +1,12 @@
 // 同梱SDKにCLI形式のパッケージ設定を渡し、承認と登録リソースを検証する。
 import assert from "node:assert/strict";
-import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import {
+	mkdir,
+	writeFile,
+	readFile,
+	readdir,
+	realpath,
+} from "node:fs/promises";
 import path from "node:path";
 
 /** ユーザーの設定には触れず、隔離したglobal/projectパッケージを読み込む。 */
@@ -68,6 +74,11 @@ export default function(pi) {
 		path.join(cwd, ".pi/settings.json"),
 		JSON.stringify({ packages: [packageDir] }),
 	);
+	const untrusted = path.join(localExtensions, "untrusted.mjs");
+	await writeFile(
+		untrusted,
+		"throw new Error('UNTRUSTED_EXTENSION_LOADED'); export default () => {};\n",
+	);
 	let allowed = false;
 	let approvals = 0;
 	const abort = new AbortController();
@@ -77,6 +88,12 @@ export default function(pi) {
 		cwd,
 		agentDir,
 		preferredModel: { provider: "local", model: "smoke" },
+		trustedExtensionPaths: await Promise.all(
+			[
+				path.join(packageDir, "extension.mjs"),
+				path.join(localExtensions, "local.ts"),
+			].map((entry) => realpath(entry)),
+		),
 		signal: abort.signal,
 		request: async (url, options) => {
 			catalogRequests.push(String(url));
@@ -146,7 +163,15 @@ export default function(pi) {
 						entry.customType === "local-started",
 				),
 		);
-		assert.deepEqual(await readdir(localExtensions), ["local.ts"]);
+		assert.deepEqual((await readdir(localExtensions)).sort(), [
+			"local.ts",
+			"untrusted.mjs",
+		]);
+		assert.ok(
+			!extensions.some((extension) =>
+				extension.path.endsWith("untrusted.mjs"),
+			),
+		);
 		assert.equal(
 			await readFile(path.join(localExtensions, "local.ts"), "utf8"),
 			localExtensionSource,
