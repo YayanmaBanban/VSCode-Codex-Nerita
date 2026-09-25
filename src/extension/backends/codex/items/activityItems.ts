@@ -2,7 +2,7 @@
 import type { ToolSummary } from "../../../../shared/chatState";
 import { isRecord } from "../../../../shared/validation";
 
-/** テキストを実行しない表示用コンテンツで包む。 */
+/** テキストを表示用のコンテンツ形式へ変換する。 */
 export const textContent = (text: string) => ({
 	type: "content",
 	content: { type: "text", text },
@@ -137,7 +137,7 @@ function strings(value: unknown): string[] {
 	}
 	return value.map(string);
 }
-/** unified `diff` を前後本文へ再構築せず、そのままの差分として保持する。 */
+/** unified diff から変更前後の本文を再構築せず、受信した差分をそのまま保持する。 */
 export function fileChanges(changes: unknown): {
 	paths: string[];
 	content: unknown[];

@@ -1,4 +1,4 @@
-// App Server 接続と新規 thread の寿命を、既存の UI 状態ストアへ接続する。
+// App Server の接続・切断と新規スレッドの作成を管理し、会話状態へ反映する。
 import { initialState } from "../../../shared/chatState";
 import { SessionState } from "../../session/sessionState";
 import { WorkspaceError } from "../../workspace";

@@ -52,7 +52,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 									fail = reject;
 								},
 							);
-							// 接続失敗や通知先行でも未処理 `reject` を作らない。
+							// 完了待ちを始める前に接続失敗や通知が届いても、Promise の拒否を未処理にしない。
 							void finished.catch(() => undefined);
 							const cancel = () =>
 								fail(

@@ -110,7 +110,7 @@ export class PiAccount {
 		};
 	}
 
-	/** Pi と取得済み取得したモデルカタログの両方で利用可能なモデルだけを選ぶ。 */
+	/** Pi の利用可能モデルから選ぶ。カタログを取得済みの場合は、その公開候補にも含まれるモデルに限定する。 */
 	async selectModel(value: string, signal: AbortSignal): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
 		const target = available.find(

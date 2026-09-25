@@ -438,7 +438,7 @@ try {
 	await send("commandStop");
 	await until(() => controller.snapshot().permissions.length === 1);
 	await respond("accept");
-	// 0`.156.0` ではまとめ出力を使うため、実プロセス開始をフィクスチャで確認する。
+	// Codex 0.156.0 では出力を終了時にまとめて受け取るため、開始確認用ファイルでプロセスの起動を確認する。
 	await until(async () =>
 		(
 			await readFile(path.join(cwd, "command-started.txt"), "utf8").catch(

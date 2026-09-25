@@ -69,7 +69,7 @@ export class StatePublisher {
 		this.send(message);
 	}
 
-	/** 廃棄後のタイマー通知と保持中の出力を解放する。 */
+	/** 破棄時にタイマーを解除し、保持している出力とツール一覧を解放する。 */
 	dispose(): void {
 		if (this.timer) {
 			clearTimeout(this.timer);

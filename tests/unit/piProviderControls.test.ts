@@ -12,7 +12,7 @@ import { initialState } from "../../src/shared/chatState";
 import { piHarness } from "./piHarness";
 import { piLiveCatalog } from "../fixtures/piLiveCatalog";
 
-/** SDK のモデル変更時範囲内への補正を持つセッションを用意する。 */
+/** モデル変更時に推論レベルを対応範囲内へ補正する、SDK の動作を模したセッションを用意する。 */
 function fixture() {
 	const models = [
 		{

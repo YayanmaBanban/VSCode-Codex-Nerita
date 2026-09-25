@@ -38,7 +38,7 @@ export class CodexProviderControls implements PiModelControls {
 			: levels;
 	}
 
-	/** Ultra の基底は `max`、live default、近い共通標準値の順で決める。 */
+	/** Ultra 選択時に SDK へ設定する推論レベルを、max、カタログの既定値、対応候補の末尾の順で選ぶ。 */
 	private get ultraBasis() {
 		const levels = this.standardLevels;
 		const preferred = this.metadata?.defaultReasoning;
@@ -109,7 +109,7 @@ export class CodexProviderControls implements PiModelControls {
 		);
 	}
 
-	/** Ultra は取得したカタログが明示し、安全な標準基底を適用できる場合だけ公開する。 */
+	/** カタログが Ultra に対応し、SDK に設定できる標準の推論レベルもある場合だけ Ultra を公開する。 */
 	get supportsUltra(): boolean {
 		return (
 			this.session?.model?.api === "openai-codex-responses" &&
@@ -149,7 +149,7 @@ export class CodexProviderControls implements PiModelControls {
 		};
 	}
 
-	/** モデル切り替えと能力変更に合わせて Ultra の基底を更新する。 */
+	/** モデルや対応能力が変わったら、Ultra 選択中に SDK へ設定する推論レベルを更新する。 */
 	private synchronizeUltraBasis(
 		session: AgentSession | undefined,
 		key: string,
@@ -172,7 +172,7 @@ export class CodexProviderControls implements PiModelControls {
 		}
 	}
 
-	/** 通常値は SDK へ渡し、Ultra だけ有効な標準基底と別に保持する。 */
+	/** 通常の推論レベルは SDK へ渡す。Ultra は SDK 用の標準値を設定し、要求の上書き用に別途保持する。 */
 	selectReasoning(value: string, signal: AbortSignal): void {
 		signal.throwIfAborted();
 		this.snapshot();

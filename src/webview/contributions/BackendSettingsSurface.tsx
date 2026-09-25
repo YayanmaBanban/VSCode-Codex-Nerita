@@ -4,7 +4,7 @@ import {
 	type ContributionSlotProps,
 } from "./ContributionSlot";
 
-/** Codex App Server の設定面。認証操作は既存 Header で管理する。 */
+/** Codex App Server の設定領域。認証操作はヘッダーで管理する。 */
 export function CodexSettingsSurface(props: ContributionSlotProps) {
 	return (
 		<div className="contents" data-settings-surface="codex">
@@ -14,7 +14,7 @@ export function CodexSettingsSurface(props: ContributionSlotProps) {
 	);
 }
 
-/** Pi の設定面。内部 Registry の項目を同じ `slot` で扱う。 */
+/** Pi の設定領域。Host が登録した項目を共通の配置先に表示する。 */
 export function PiSettingsSurface(props: ContributionSlotProps) {
 	return (
 		<div className="contents" data-settings-surface="pi">

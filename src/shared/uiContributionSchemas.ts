@@ -81,7 +81,7 @@ export const UiSlotSchema = z.enum([
 	"status",
 ]);
 
-/** 旧検証処理の `String`(slot)判定を保つ。値の正規化は呼び出し側へ持ち込まない。 */
+/** 旧検証処理と同じく、slot を String(slot) で文字列化して判定する。呼び出し側の値は変更しない。 */
 const compatibleSlotSchema = z.preprocess(
 	(value) => String(value),
 	UiSlotSchema,

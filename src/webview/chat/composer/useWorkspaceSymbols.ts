@@ -7,7 +7,7 @@ import {
 } from "../../../shared/workspaceSymbols";
 import { symbolCompletionItems } from "./completionItems";
 
-/** 入力から250`ms` 待って検索し、応答待ちにも上限を設ける。 */
+/** 入力から250ミリ秒待って検索し、応答待ちにも上限を設ける。 */
 export function useWorkspaceSymbols(
 	bridge: Bridge | undefined,
 	active: boolean,

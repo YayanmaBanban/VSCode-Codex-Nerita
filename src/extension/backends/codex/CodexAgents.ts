@@ -89,7 +89,7 @@ export abstract class CodexAgents extends CodexRequests {
 			}
 		}
 	}
-	/** 許可済みの子スレッドだけを読み、`resume` や `active` `session` の切り替えを行わない。 */
+	/** 既知の子スレッドだけを読み、会話の再開や現在のセッションの切り替えは行わない。 */
 	protected async readAgent(
 		message: Extract<UiMessage, { type: "agent/read" }>,
 	): Promise<void> {

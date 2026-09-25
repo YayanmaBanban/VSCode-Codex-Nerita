@@ -40,7 +40,7 @@ export function ConnectionButton({
 		state.run === "cancelling";
 	const action = connectionAction(state.connection);
 	useEffect(() => {
-		// 接続済みのスナップショットを初めて表示しただけでは祝福しない。
+		// 接続済みの状態を初めて表示しただけでは、紙吹雪を表示しない。
 		const connected =
 			previous.current !== "ready" &&
 			previous.current !== "disconnected" &&

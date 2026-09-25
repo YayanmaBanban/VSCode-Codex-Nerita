@@ -27,7 +27,7 @@ export type PiHistoryAccess = {
 	target: (id: string) => PiResumeTarget;
 };
 
-/** SDK 0`.86` の標準配置に合わせ、指定した `agentDir` も尊重する。 */
+/** ワークスペース内の .sessions、または指定した agentDir 配下の作業場所別ディレクトリを返す。 */
 export function piSessionDirectory(
 	cwd: string,
 	agentDir: string,

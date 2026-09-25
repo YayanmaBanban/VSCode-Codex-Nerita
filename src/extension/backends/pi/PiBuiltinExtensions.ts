@@ -10,7 +10,7 @@ export const neritaProviderExtension: ExtensionFactory = (pi) => {
 	pi.on("before_provider_request", () => undefined);
 };
 
-/** SDK の通常探索を維持したまま、名前付き組み込み拡張を追加する。 */
+/** プロバイダー固有の要求変換を行う、名前付きの組み込み拡張を作る。 */
 export function neritaExtensionFactories(
 	controls?: PiProviderControls,
 ): InlineExtension[] {

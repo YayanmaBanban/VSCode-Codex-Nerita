@@ -1,4 +1,4 @@
-// 開始受付とターン完了を分け、早い停止・遅い通知・承認を1つの実行に限定する。
+// 開始受付とターン完了を区別し、通知・停止・承認を対象の実行に対応付ける。
 import { randomUUID } from "node:crypto";
 import type { ComposerReference } from "../../../shared/composerReferences";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -266,7 +266,7 @@ export abstract class CodexRun extends CodexAgents {
 			}
 		}
 	}
-	/** 終了時に未完了カードと承認を解消し、会話は保持する。 */
+	/** 終了時に未完了カードの状態を確定し、承認待ちを取り消す。会話は保持する。 */
 	private finish(status: "completed" | "cancelled" | "failed"): void {
 		this.patch({
 			tools: this.state.tools.map((tool) =>
@@ -289,7 +289,7 @@ export abstract class CodexRun extends CodexAgents {
 					: null,
 		});
 	}
-	/** 待機中の開始応答・承認・停止期限を解放する。 */
+	/** 開始応答の待機を終了し、承認を取り消して停止用タイマーを解除する。 */
 	protected override resetRun(): void {
 		clearTimeout(this.cancelTimer);
 		const run = this.active;

@@ -31,7 +31,7 @@ const directories: Record<string, WorkspacePath[]> = {
 	[empty.uri]: [],
 };
 
-/** 貼り付けでも一覧と同じ参照を返し、未存在は `null` にする。 */
+/** 貼り付けでも一覧と同じ参照を返し、候補にないパスは null にする。 */
 export function mockResolvePath(
 	message: ResolvePathRequest,
 ): ResolvePathResult {

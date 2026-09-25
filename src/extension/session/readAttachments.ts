@@ -9,7 +9,7 @@ export type AttachmentContent =
 	| { type: "image"; path: string }
 	| { type: "text"; path: string; text: string };
 
-/** テキストは合計2`MB` まで読み込み、画像はローカル参照を渡す。 */
+/** テキストは合計 2 MiB まで読み込み、画像はローカル参照を渡す。 */
 export async function readAttachments(
 	files: Attachment[],
 	images: boolean,

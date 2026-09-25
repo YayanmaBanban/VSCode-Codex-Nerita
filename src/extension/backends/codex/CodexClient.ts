@@ -33,7 +33,7 @@ export type CodexClientOptions = {
 	signal?: AbortSignal;
 	/** 専用シェル接続だけが指定し、既存 Codex バックエンドの設定継承は維持する。 */
 	windowsSandbox?: WindowsSandboxImplementation;
-	/** `Executor` が接続後の停止・回収を所有する場合は初期化後に `signal` を外す。 */
+	/** 実行側で停止・終了を管理する場合は、初期化後に接続用の取消リスナーを外す。 */
 	connectAbortOnly?: boolean;
 };
 
@@ -185,7 +185,7 @@ export class CodexClient {
 	renameThread(threadId: string, name: string) {
 		return this.transport.request("thread/name/set", { threadId, name });
 	}
-	/** 会話を完全に削除する。 */
+	/** 指定した会話の削除を App Server に要求する。 */
 	deleteThread(threadId: string) {
 		return this.transport.request("thread/delete", { threadId });
 	}

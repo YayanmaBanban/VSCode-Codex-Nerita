@@ -1,4 +1,4 @@
-// Pi の固定依存・配布ライセンス・バンドル対象ソースの指紋を更新する。
+// Pi の固定バージョン・配布ライセンス・バンドル対象ソースのハッシュを更新する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
@@ -10,7 +10,7 @@ async function readJson(file) {
 	return JSON.parse(await fs.readFile(file, "utf8"));
 }
 
-/** 全入力を確認してから、バージョン・ライセンス・指紋を書き出す。 */
+/** 全入力を確認してから、バージョン・ライセンス・ソースのハッシュを書き出す。 */
 async function main() {
 	const requested = readRequestedVersion();
 	const root = path.resolve(__dirname, "..");
@@ -86,7 +86,7 @@ function readRequestedVersion() {
 	return requested;
 }
 
-/** SDK の互換性の確認対象ファイルの指紋を生成する。 */
+/** SDK の互換性を確認する対象ファイルの SHA-256 ハッシュを生成する。 */
 async function readSdkContract(contractPath, sdk, ai) {
 	const previous = await readJson(contractPath);
 	const contract = {};

@@ -261,7 +261,7 @@ export default function(pi) {
 				{ ...controlsModel, id: "controls-new", name: "New Pi model" },
 			],
 		});
-		// OAuth の解決境界だけを模擬し、catalog parser・overlay・SDK 操作は実装を通す。
+		// OAuth の認証情報取得だけを模擬し、カタログの解析・設定の上書き・SDK 操作は実装を通す。
 		const isUsingOAuth = session.modelRuntime.isUsingOAuth.bind(
 			session.modelRuntime,
 		);

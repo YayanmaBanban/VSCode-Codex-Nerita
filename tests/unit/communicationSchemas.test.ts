@@ -1,4 +1,4 @@
-// 移行前の検証処理と同じ入力を比較し、境界差・未知キー・元データ保持を固定する。
+// 同じ入力を新旧の検証処理へ渡し、受理・拒否の条件、未知のキーの扱い、元データの保持を比較する。
 import { describe, expect, it } from "vitest";
 import {
 	ConfigChoiceSchema,
@@ -245,7 +245,7 @@ describe("Phase 9 通信Schema", () => {
 	});
 });
 
-/** 選択項目と候補の各フィールド変異を旧検証処理と比較する。 */
+/** 選択項目と候補の各フィールドを書き換え、新旧の検証処理で受理・拒否が一致するか確認する。 */
 function compareSelectMutations() {
 	for (const field of [
 		"id",

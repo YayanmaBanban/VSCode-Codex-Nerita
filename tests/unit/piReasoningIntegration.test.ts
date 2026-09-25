@@ -1,4 +1,4 @@
-// 実 Pi SDK・組み込みフック・ローカル Responses サーバーで通信形式履歴を検証する。
+// 実 Pi SDK・組み込みフック・ローカル Responses サーバーで、推論設定の変更履歴が送信内容へ反映されることを検証する。
 import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";

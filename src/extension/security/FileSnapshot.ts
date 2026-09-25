@@ -14,7 +14,7 @@ export type FileSnapshot = {
 	file: (Entry & { digest: string; nlink: number }) | null;
 };
 
-/** 承認前に対象を正規化し、内容と既存祖先をコピーする。 */
+/** 承認前に対象パスを正規化し、内容のハッシュと、対象および既存の祖先ディレクトリの識別情報を記録する。 */
 export async function snapshotFile(
 	paths: WorkspacePathPolicy,
 	input: string,
@@ -59,7 +59,7 @@ export async function snapshotFile(
 	return { input, path, ancestors, file };
 }
 
-/** 新規祖先だけを省き、権限不足等は拒否する。 */
+/** 存在しないパスだけを記録対象から除き、権限不足などのエラーは呼び出し元へ返す。 */
 async function existingEntry(path: string): Promise<Entry | undefined> {
 	try {
 		const info = await lstat(path);
@@ -77,7 +77,7 @@ async function existingEntry(path: string): Promise<Entry | undefined> {
 	}
 }
 
-/** 自分で作成した新規親ディレクトリは許容し、承認時にあった祖先と対象を再検査する。 */
+/** 承認時にあった祖先と対象を再検査する。承認後に追加された親ディレクトリだけでは変更と判定しない。 */
 export async function verifyFileSnapshot(
 	paths: WorkspacePathPolicy,
 	snapshot: FileSnapshot,

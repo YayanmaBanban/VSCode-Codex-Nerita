@@ -4,7 +4,7 @@ import type { SandboxPolicy } from "../backends/codex/codex-app-server/v2/Sandbo
 
 /** Windows 実装は親から継承し、`role` から変更できない。 */
 export type WindowsSandboxImplementation = "elevated" | "unelevated";
-/** `read` は OS のアクセス権に従い、有限 `read`・独自拒否対象パスは表現しない。 */
+/** 読取りは OS のアクセス権に従う。この型では読取りの許可範囲や独自の拒否対象パスを定義しない。 */
 export type AgentAccessPolicy = {
 	workspaceRoots: string[];
 	writableRoots: string[];
@@ -17,7 +17,7 @@ export type AgentRole = Partial<
 	Pick<AgentAccessPolicy, "writableRoots" | "networkAccess" | "shell">
 >;
 
-/** 兄弟パスの同名 `prefix` を含めず、OS のパス比較規則で配下を判定する。 */
+/** 共通の接頭辞を持つ別ディレクトリを含めず、相対パスから指定ルートの配下か判定する。 */
 export function containsPath(root: string, target: string): boolean {
 	const path = relative(root, target);
 	return (
@@ -48,7 +48,7 @@ export function intersectPolicy(
 	};
 }
 
-/** 2つの `root` の共通部分は包含される側だけになる。 */
+/** 一方のルートが他方を含む場合は狭い方を返し、共通する範囲がなければ空配列を返す。 */
 function intersectRoot(root: string, requested: string): string[] {
 	if (containsPath(root, requested)) {
 		return [requested];
@@ -56,7 +56,7 @@ function intersectRoot(root: string, requested: string): string[] {
 	return containsPath(requested, root) ? [root] : [];
 }
 
-/** `cwd` の暗黙追加を防ぐ検査は `Executor` で行い、一時例外は常に無効にする。 */
+/** 一時ディレクトリへの書込み例外を無効にする。cwd が書込み範囲を広げないかの検査は実行側で行う。 */
 export function toSandboxPolicy(policy: AgentAccessPolicy): SandboxPolicy {
 	return policy.writableRoots.length
 		? {

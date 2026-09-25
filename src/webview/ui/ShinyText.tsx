@@ -78,7 +78,7 @@ export const ShinyText: React.FC<ShinyTextProps> = (props) => {
 				const p = (cycleTime / animationDuration) * 100;
 				progress.set(directionRef.current === 1 ? p : 100 - p);
 			} else {
-				// 光沢が画面外へ抜けた位置で待機する。
+				// 光沢が文字の表示範囲から抜けた位置で待機する。
 				progress.set(directionRef.current === 1 ? 100 : 0);
 			}
 		}

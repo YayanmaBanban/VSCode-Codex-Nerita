@@ -34,7 +34,7 @@ export async function resolvePath(
 			};
 		}
 	} catch {
-		// 未存在・アクセス不可は、貼り付け済みの本文を維持する。
+		// パスが存在しない場合やアクセスできない場合は参照を返さず、貼り付け済みの本文を維持する。
 	}
 	return result;
 }

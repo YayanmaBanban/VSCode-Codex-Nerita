@@ -2,7 +2,7 @@
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiChildRuntimes } from "./PiChildRuntimes";
 
-/** `close` は再入可能にし、`Controller` が回収完了を待てるようにする。 */
+/** close の重複呼出しには同じ Promise を返し、呼び出し元が終了処理の完了を待てるようにする。 */
 export function bindPiRuntimeLifetime(
 	session: AgentSession,
 	children: PiChildRuntimes,

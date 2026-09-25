@@ -81,7 +81,7 @@ export class AppServerTransport {
 		child.stderr.on("error", () =>
 			this.fail(new Error("Codex App Server の診断出力が終了しました。")),
 		);
-		// 診断ログにはユーザー情報が含まれ得るため、記録せずパイプを排出する。
+		// 診断ログにはユーザー情報が含まれ得るため、標準エラー出力を記録せず読み捨てる。
 		child.stderr.resume();
 	}
 

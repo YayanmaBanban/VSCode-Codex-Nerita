@@ -15,7 +15,7 @@ import {
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import { CodexClient } from "./CodexClient";
 
-/** provider・スレッドを必要としない専用接続の契約。 */
+/** モデルのプロバイダーやスレッドを必要としない、コマンド実行専用の接続操作。 */
 export type SandboxConnection = Pick<
 	CodexClient,
 	| "executeCommand"
@@ -30,7 +30,7 @@ export type SandboxConnector = (
 	mode: WindowsSandboxImplementation,
 ) => Promise<SandboxConnection>;
 
-/** 常時失敗検査や Host シェルへのフォールバックを挟まず、確定した `policy` を実行する。 */
+/** 承認済みのコマンドを、確定した権限設定で Codex のサンドボックスへ渡す。 */
 export class CodexSandboxExecutor implements SandboxCommandExecutor {
 	constructor(
 		private readonly connect: SandboxConnector,
@@ -114,7 +114,7 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 	}
 }
 
-/** 承認後の `root/cwd` 差し替えと、`cwd` の暗黙 `write` 追加を拒否する。 */
+/** シェルの実行許可、コマンド引数、制限時間を検証する。 */
 function validateCommand(call: ToolCall) {
 	if (
 		!call.policy.shell ||
@@ -198,7 +198,7 @@ export async function resolveWindowsSandbox(
 	}
 }
 
-/** 接続自体の `signal` は `Executor` が回収し、`abort` で `terminate` 前に接続を失わないようにする。 */
+/** 初期化後の取消ではコマンド停止を先に要求できるよう、接続の終了処理を実行側に任せる。 */
 export function createCodexSandboxExecutor(
 	extensionPath: string,
 ): SandboxCommandExecutor {

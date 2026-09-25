@@ -21,14 +21,14 @@ if (mode !== "--all" && mode !== "--changed") {
 }
 
 /**
- * textlintで本文全体を検査するファイル。
+ * textlint で本文全体を検査するファイルの拡張子。
  */
 const DOCUMENT_EXTENSIONS = new Set([".md", ".markdown", ".txt", ".text"]);
 
 /**
  * コメントだけ抽出して検査するソースコード。
  *
- * TypeScriptの構文解析を利用するため、JS / TS系に限定する。
+ * TypeScript の構文解析を利用するため、JavaScript・TypeScript のファイルに限定する。
  */
 const SOURCE_EXTENSIONS = new Set([
 	".ts",
@@ -50,8 +50,7 @@ const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 /**
- * Windowsのパス区切りを統一する。
- * `.textlintignore` 用に "/" へ統一する。
+ * OS ごとのパス区切りを、`.textlintignore` との照合用に "/" へ統一する。
  */
 function normalizePath(filePath) {
 	return filePath.split(path.sep).join("/");
@@ -78,7 +77,7 @@ async function loadTextlintIgnore() {
 }
 
 /**
- * 対象拡張子か。
+ * ファイルの拡張子が検査対象かを判定する。
  */
 function isTargetFile(filePath) {
 	return TARGET_EXTENSIONS.has(path.extname(filePath).toLowerCase());
@@ -88,7 +87,7 @@ function isTargetFile(filePath) {
  * リポジトリ全体を走査する。
  *
  * `.gitignore` には依存しない。
- * lint除外は `.textlintignore` だけで決定する。
+ * 校正対象からの除外は `.textlintignore` で決定する。
  */
 async function getAllFiles(ignoreMatcher) {
 	const files = [];
@@ -145,7 +144,7 @@ async function getAllFiles(ignoreMatcher) {
 }
 
 /**
- * `git` コマンドを実行し、NUL区切りのファイル一覧を返す。
+ * `git` コマンドの NUL 区切りの出力を、ファイルパスの配列に変換する。
  */
 function gitFiles(args) {
 	const output = execFileSync("git", args, {
@@ -158,10 +157,9 @@ function gitFiles(args) {
 }
 
 /**
- * Gitで変更されたファイルを取得する。
+ * Git で変更されたファイルを取得する。
  *
- * HEADとの差分に未追跡ファイルを加え、
- * ステージ済み・未ステージの変更を含める。
+ * HEAD との差分に未追跡ファイルを加える。ステージ済み・未ステージの変更を含める。
  */
 async function getChangedFiles(ignoreMatcher) {
 	const changed = gitFiles([
@@ -255,10 +253,8 @@ for (const file of files) {
 	const extension = path.extname(file).toLowerCase();
 
 	/**
-	 * Markdown / Text
-	 *
-	 * ファイル内容をそのまま検査する。
-	 * textlint結果とは別に、全日本語文章を監査JSONへ保存する。
+	 * Markdown・テキスト文書はファイル内容をそのまま検査する。
+	 * textlint の診断結果とは別に、抽出した日本語文章を監査用の JSON ファイルへ保存する。
 	 */
 	if (DOCUMENT_EXTENSIONS.has(extension)) {
 		auditItems.push(...extractDocumentAuditItems(source, file));
@@ -275,10 +271,8 @@ for (const file of files) {
 	}
 
 	/**
-	 * JS / TS
-	 *
-	 * コメントだけを抽出する。
-	 * 全日本語コメントはtextlintの診断結果に関係なく監査JSONへ保存する。
+	 * JavaScript・TypeScript ではコメントだけを抽出する。
+	 * 全日本語コメントは textlint の診断結果に関係なく監査用の JSON ファイルへ保存する。
 	 */
 	if (SOURCE_EXTENSIONS.has(extension)) {
 		const extracted = extractSourceComments(source, file);
@@ -290,8 +284,7 @@ for (const file of files) {
 		}
 
 		/**
-		 * `.txt` として解析し、
-		 * インデントなどをMarkdown構文として解釈させない。
+		 * `.txt` として解析する。インデントなどを Markdown 構文として解釈させない。
 		 */
 		const result = await linter.lintText(extracted.lintText, `${file}.txt`);
 
@@ -306,8 +299,7 @@ for (const file of files) {
 }
 
 /**
- * textlintで警告されたかどうかに関係なく、
- * 全日本語コメント・文書をLLMレビュー用JSONへ保存する。
+ * textlint の警告の有無に関係なく、抽出した日本語文章を LLM によるレビュー用の JSON ファイルへ保存する。
  */
 const auditPath = await writeTextlintAudit({
 	root: ROOT,
@@ -316,7 +308,7 @@ const auditPath = await writeTextlintAudit({
 });
 
 /**
- * 通常のtextlintと同じ`stylish`形式。
+ * 診断結果を textlint の `stylish` 形式で表示する。
  */
 const formatter = await loadLinterFormatter({
 	formatterName: "stylish",

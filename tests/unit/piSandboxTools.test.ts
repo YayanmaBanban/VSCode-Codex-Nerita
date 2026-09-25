@@ -1,4 +1,4 @@
-// 実 SDK のファイルアダプターと PowerShell 定義に、承認固定・`path` 境界・Host 実行禁止を適用する。
+// 実 SDK のファイル・シェル定義を使い、承認内容の固定、書込み先の検査、サンドボックス外でのシェル実行の防止を検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import {

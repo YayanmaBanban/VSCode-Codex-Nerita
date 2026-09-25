@@ -1,4 +1,4 @@
-// 生成型のうち Phase 1 が利用する応答フィールドだけを検証して公開する。
+// 会話開始・ターン操作・認証確認で利用する応答フィールドを検証して公開する。
 import type { ThreadStartResponse } from "../codex-app-server/v2/ThreadStartResponse";
 import type { Turn } from "../codex-app-server/v2/Turn";
 import type { TurnInterruptResponse } from "../codex-app-server/v2/TurnInterruptResponse";

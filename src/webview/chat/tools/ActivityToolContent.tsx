@@ -14,7 +14,7 @@ const linkClass =
 	"text-[var(--vscode-textLink-foreground,#6dadc9)] underline underline-offset-2 [overflow-wrap:anywhere]";
 
 export function ThinkTool({ tool }: ActivityToolProps) {
-	// 旧形式の審査カードはタイトルが任意なので、構造化審査の有無も尊重する。
+	// 旧形式の審査カードはタイトルが一定でないため、入力・出力の review オブジェクトでも判定する。
 	if (
 		[tool.rawInput, tool.rawOutput].some(
 			(value) => isRecord(value) && isRecord(value.review),

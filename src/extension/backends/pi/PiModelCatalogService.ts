@@ -33,7 +33,7 @@ export class PiModelCatalogService {
 		this.catalogs.clear();
 	}
 
-	/** プロバイダー変更の途中でも取得でき、開始時の `session` が変わった結果は捨てる。 */
+	/** モデル切替前にもカタログを取得できるが、取得中に選択モデルが変わった場合は結果を捨てる。 */
 	async refresh(provider: string, caller: AbortSignal): Promise<void> {
 		this.abort?.abort();
 		const abort = new AbortController();

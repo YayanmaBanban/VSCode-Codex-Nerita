@@ -13,7 +13,7 @@ export abstract class CodexRequests extends CodexOptions {
 	protected readonly approvals = new Approvals(() =>
 		this.patch({ permissions: this.approvals.list() }),
 	);
-	/** server request の実行範囲を確認し、取消済みの承認は表示しない。 */
+	/** サーバーからの要求が現在の実行に属するか確認し、取消済みの承認は表示しない。 */
 	protected override async request(
 		message: AppServerRequest,
 		signal: AbortSignal,

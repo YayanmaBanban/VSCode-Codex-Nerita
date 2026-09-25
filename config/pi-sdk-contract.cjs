@@ -4,7 +4,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const contract = require("./pi-sdk-contract.json");
 
-/** SDK 更新時は差分を確認してから指紋と配布テストを更新する。 */
+/** SDK 更新時は差分を確認してから、記録したソースのハッシュと配布テストを更新する。 */
 async function verifyPiSources(roots) {
 	for (const [name, files] of Object.entries(contract)) {
 		for (const [file, expected] of Object.entries(files)) {

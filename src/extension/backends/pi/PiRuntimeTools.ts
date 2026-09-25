@@ -25,7 +25,7 @@ type ShellSettings = Pick<
 	"getShellPath" | "getShellCommandPrefix"
 >;
 
-/** `role` はパスを正規化してから親上限と交差し、シンボリックリンクによる拡大も防ぐ。 */
+/** role の書込み先を実体パスに変換し、親の許可範囲と共通する権限だけでツールを作る。 */
 export async function preparePiRuntimeTools(
 	sdk: typeof PiSdk,
 	options: PiRuntimeOptions,

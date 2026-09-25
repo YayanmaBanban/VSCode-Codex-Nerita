@@ -5,9 +5,9 @@ const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 /**
- * Markdown / TextからLLMレビュー用の日本語ブロックを抽出する。
+ * Markdown・テキスト文書から LLM によるレビュー用の日本語ブロックを抽出する。
  *
- * Markdownではフェンスコードブロックを除外する。
+ * Markdown ではフェンスコードブロックを除外する。
  * 空行を文章ブロックの境界として扱う。
  */
 export function extractDocumentAuditItems(source, filePath) {
@@ -84,7 +84,7 @@ export function extractDocumentAuditItems(source, filePath) {
 }
 
 /**
- * 全日本語文章をLLMレビュー用JSONへ保存する。
+ * 抽出したすべての日本語文章を、LLM によるレビュー用の JSON ファイルへ保存する。
  */
 export async function writeTextlintAudit({ root, mode, items }) {
 	const outputDirectory = path.join(root, ".textlint-cache");

@@ -168,7 +168,7 @@ async function runningChildStop(createPiRuntime, options, cwd) {
 	}
 }
 
-/** モデルツール Call からの SDK 終了通知を確認する。 */
+/** モデルがツールを呼び出した後、SDK が返すツール実行の終了通知を確認する。 */
 async function toolResult(runtime, name, args, isError, pattern) {
 	const results = [];
 	const unsubscribe = runtime.subscribe((event) => {

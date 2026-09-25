@@ -1,4 +1,4 @@
-// OAuth と取得したカタログ HTTP の境界だけを模擬し、実 Host の候補・設定処理を検証する。
+// OAuth の認証情報取得とカタログの HTTP 通信を模擬し、Host の候補・設定処理を検証する。
 import { vi } from "vitest";
 import type {
 	AgentSession,
@@ -7,7 +7,7 @@ import type {
 import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
 import { PiModelCatalogService } from "../../src/extension/backends/pi/PiModelCatalogService";
 
-/** live スキーマの最小モデル。未使用項目もフィクスチャに置いて除外条件を検証する。 */
+/** 取得するカタログと同じ形式のモデル情報。未使用項目も含め、候補から除外する条件を検証する。 */
 export function liveModel(slug = "astra", extra: Record<string, unknown> = {}) {
 	return {
 		slug,

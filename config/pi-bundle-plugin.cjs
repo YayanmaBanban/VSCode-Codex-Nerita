@@ -38,7 +38,7 @@ export function radiusProvider() { throw new Error("Neritaの同梱Pi runtimeは
 `;
 }
 
-/** 互換層の登録・`dispatch` 処理を維持し、未使用 API と画像生成だけを除く。 */
+/** 互換層の API 登録と呼び出し先の選択処理を維持し、未使用 API と画像生成の公開を除く。 */
 function limitCompat(source) {
 	return source
 		.split("\n")
@@ -89,7 +89,7 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 						)
 						.join("\n");
 				} else if (aiFile === "dist/auth/oauth/load.js") {
-					// OAuth `flow` も ESM チャンクへ分離し、変数インポートの解決漏れを防ぐ。
+					// OAuth の認証処理も ESM チャンクへ分離する。変数を使うインポートを固定パスに変え、ビルド時の追跡漏れを防ぐ。
 					contents = `export const loadAnthropicOAuth = async () => (await import("./anthropic.js")).anthropicOAuth;
 export const loadOpenAICodexOAuth = async () => (await import("./openai-codex.js")).openaiCodexOAuth;`;
 				} else if (sdkFile === "dist/index.js") {

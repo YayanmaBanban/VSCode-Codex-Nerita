@@ -16,7 +16,7 @@ export type ConfigOption = z.infer<typeof ConfigOptionSchema>;
 /** セッション全体のコンテキスト使用量。 */
 export type ContextUsage = { used: number; size: number };
 
-/** /status が返す利用枠の残率と表示用のリセット情報。 */
+/** 利用枠の残率と、表示用のリセット時刻・期間。 */
 export type QuotaWindow = z.infer<typeof QuotaWindowSchema>;
 
 /** Host で選択またはドロップから取得した添付参照。 */

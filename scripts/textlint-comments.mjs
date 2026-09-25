@@ -5,7 +5,7 @@ const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 /**
- * 監査JSONへ保存するコメント本文を整形する。
+ * 監査用の JSON ファイルへ保存するコメント本文を整形する。
  */
 function normalizeCommentText(text, block) {
 	if (!block) {
@@ -22,8 +22,8 @@ function normalizeCommentText(text, block) {
 /**
  * 日本語コメントを抽出する。
  *
- * `lintText` は元ソースと同じ行・列を維持したtextlint用文字列。
- * `items` はLLMによる意味レビュー用の全日本語コメント。
+ * `lintText` は元ソースのコメントの行・列を維持した textlint 用の文字列。
+ * `items` は LLM による意味レビュー用の全日本語コメント。
  */
 export function extractSourceComments(source, filePath) {
 	const file = ts.createSourceFile(
@@ -33,7 +33,7 @@ export function extractSourceComments(source, filePath) {
 		true,
 	);
 
-	// 構文木と同じUTF-16コード単位で扱い、絵文字以降の位置ずれを防ぐ。
+	// 構文木と同じ UTF-16 コード単位で扱い、絵文字以降の位置ずれを防ぐ。
 	const output = source
 		.split("")
 		.map((char) => (char === "\n" || char === "\r" ? char : " "));
@@ -121,7 +121,7 @@ export function extractSourceComments(source, filePath) {
 
 	visit(file);
 
-	// コードを置換した末尾空白は除き、文末の誤検出を防ぐ。行と列は変わらない。
+	// コードを空白に置換した後の行末の空白を除き、文末の誤検出を防ぐ。コメントの行と列は変わらない。
 	const lintText = output.join("").replace(/[^\S\r\n]+$/gm, "");
 
 	return {

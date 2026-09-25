@@ -87,7 +87,7 @@ function isOptionalDependency(manifest, name) {
 	);
 }
 
-/** 相対資産を保ち、競合するバージョンだけ利用側の node_modules へ配置する。 */
+/** パッケージ内の相対配置を保ち、上位に同じ依存がない場合だけ利用側の node_modules へコピーする。 */
 async function copyPackage(source, destination, packages, inherited) {
 	await fs.cp(source, destination, {
 		recursive: true,
@@ -100,7 +100,7 @@ async function copyPackage(source, destination, packages, inherited) {
 			local.set(name, dependency);
 		}
 	}
-	// 兄弟依存を先に確定し、後から追加した別バージョンで子孫の解決先が変わるのを防ぐ。
+	// 同じ node_modules に配置する依存を先に列挙し、コピー順によって子の依存先が変わるのを防ぐ。
 	const visible = new Map([...inherited, ...local]);
 	for (const [name, dependency] of local) {
 		await copyPackage(

@@ -1,4 +1,4 @@
-// 保存した推論を取得したカタログ候補で検証し、一度だけ復元する境界を検証する。
+// 保存した推論設定をカタログの候補と照合し、起動時に一度だけ復元することを確認する。
 import { describe, expect, it, vi } from "vitest";
 import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
 import { catalogHarness } from "./piCatalogHarness";

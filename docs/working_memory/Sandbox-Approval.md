@@ -35,12 +35,12 @@ flowchart TD
     XH --> XA[拡張 Tool の個別承認]
 ```
 
-- Windows Shell の OS 境界は同梱 Codex に委譲する。非 Windows は通常の Pi シェルを使用する。Nerita は snapshot、承認、接続、出力、停止を担当する。
+- Windows のシェルの OS による隔離は同梱 Codex に委譲する。Windows 以外では通常の Pi シェルを使用する。Nerita は実行要求の固定、承認、接続、出力、停止を担当する。
 - `read` / `ls` は SDK の Host I/O。通常の外部ファイルの読取りを許可する。任意のパスを必ず読める保証ではない。
-- `write` / `edit` は Host の adapter。canonical path、既存祖先、内容、file identity、hard link を検査する。承認中の内容変更・リンク差替えは拒否する。
-- Host の検査と実 I/O の間には競合の余地がある。悪意ある別 process が継続的に差し替える場合まで OS Sandbox と同じ強度で防ぐ保証はない。既存ファイルの handle identity と新規作成の `wx` は追加の防御であり、Host I/O の OS 隔離ではない。
-- 明示 Trust を通った拡張と依存 JavaScript は Host 権限で動く。初期化、独自 process、HTTP 通信は Tool 承認や Shell network 設定による隔離対象ではない。
-- provider API、認証、履歴も Host 機能である。Shell の通信制限と混同しない。
+- `write` / `edit` は Host 側のアダプターを使う。実体パス、既存の祖先ディレクトリ、内容、ファイルの識別情報、ハードリンクを検査する。承認中の内容変更・リンク差替えは拒否する。
+- Host の検査と実際の入出力の間には競合の余地がある。別プロセスが継続的に差し替える場合まで、OS サンドボックスと同じ強度で防ぐ保証はない。開いた既存ファイルの識別情報の確認と、新規作成時の `wx` 指定は追加の防御であり、Host の入出力を OS で隔離するものではない。
+- 明示的に信頼した拡張と依存先の JavaScript は Host の権限で動く。初期化、独自プロセスの起動、HTTP 通信は、ツールの承認やシェルの通信設定による隔離対象ではない。
+- プロバイダーの API、認証、履歴も Host の機能である。シェルの通信制限と混同しない。
 
 ### 実行基盤の選択と他の Sandbox
 
@@ -52,9 +52,9 @@ Windows では Codex 用 `Executor` を使う。Windows 以外では Codex の�
 
 通常の非 Windows 承認は`実行範囲: Pi Shell（OSの権限で実行）`と表示する。Windows Sandbox の情報や Nerita が強制していない書込み・通信制限は表示しない。外部拡張が自身で加える隔離の強度も Nerita 側では保証しない。非 Windows の`bash`以外の組み込みツールの上書きは拒否する。
 
-### Shell の policy
+### シェルの権限設定
 
-`AgentAccessPolicy` は workspace roots、writable roots、network、Shell 許可、Windows 実装だけを持つ。Windows の Pi Shell は canonical な VS Code workspace roots を書込み上限にし、`networkAccess=false` を送る。以下の OS 制約は Windows のサンドボックスに対する契約であり、非 Windows の Host シェルには適用しない。Host ファイルツールのパス検査と `role` のシェル禁止は両 OS で適用する。
+`AgentAccessPolicy` はワークスペースのルート、書込み可能なルート、通信とシェルの許可、Windows のサンドボックス実装だけを持つ。Windows の Pi シェルは VS Code のワークスペースを実体パスへ変換し、その配下に書込みを限定して `networkAccess=false` を送る。以下の OS 制約は Windows のサンドボックスに対する要求であり、Windows 以外の Host シェルには適用しない。Host のファイルツールのパス検査と `role` によるシェル禁止は両方の環境で適用する。
 
 ```json
 {
@@ -66,19 +66,19 @@ Windows では Codex 用 `Executor` を使う。Windows 以外では Codex の�
 }
 ```
 
-書込み root が空の子は `readOnly`。cwd は workspace 内に限定し、workspaceWrite の cwd が許可 root 外なら実行を拒否して Codex の cwd 暗黙追加による拡大を防ぐ。実行直前にも cwd と roots の実体を再検査する。TEMP/TMP と `/tmp` の書込み例外は有効化しない。Codex 自身の保護や OS アクセス権は解除しない。独自の有限 read や `.ssh` 読取り禁止を Shell の契約へ加えていない。
+書込み可能なルートが空の子には `readOnly` を指定する。作業ディレクトリはワークスペース内に限定する。`workspaceWrite` では、作業ディレクトリが書込み許可範囲外なら実行を拒否し、Codex が暗黙に書込み範囲を広げることを防ぐ。実行直前にも作業ディレクトリと各ルートの実体パスを再検査する。TEMP/TMP と `/tmp` への書込み例外は有効化しない。Codex 自身の保護や OS のアクセス権は解除しない。独自の読取り許可範囲や `.ssh` の読取り禁止はシェルの権限設定に追加していない。
 
 Windows 実装は `config/read` の実効値を使う。未指定だけ `elevated`。既存の `unelevated` を黙って切り替えず、承認画面に実装と通信隔離の弱さを表示する。今回の実機記録は elevated のみであり、unelevated の通信隔離は未検証。
 
-通常 Codex backend の権限モードや環境継承は維持する。専用 Shell 接続だけが Windows 実装、`shell_environment_policy.inherit="none"`、`set={}` を固定する。Shell RPC の env でも不要な継承変数を `null` で除去し、provider token を渡さない。環境変数の値は承認表示・診断ログへ出さない。
+通常の Codex バックエンドの権限モードや環境変数の継承は維持する。シェル専用接続では、Windows の実装、`shell_environment_policy.inherit="none"`、`set={}` を固定する。シェル実行 RPC の `env` でも不要な継承変数を `null` で除去し、プロバイダーのトークンを渡さない。環境変数の値は承認表示・診断ログへ出さない。
 
-### Approval と停止
+### 承認と停止
 
-`argv / cwd / env / timeout / policy / file path・内容` を承認前に複製して deep freeze する。Host 内の WeakSet に登録した permit を実行時に1回だけ消費する。コピー・偽造・再利用・取消し済み signal は通らない。拡張 JavaScript 自体に対するセキュリティ境界ではない。
+コマンド引数、作業ディレクトリ、環境変数、制限時間、権限設定、ファイルパスと内容を承認前に複製し、入れ子の値も変更不能にする。Host 内の WeakSet に登録した実行許可を1回だけ消費する。許可のコピー・偽造・再利用や、取消し済みの要求は受け付けない。この仕組みは拡張の JavaScript 自体を隔離するものではない。
 
 `read` / `ls` は承認不要。write、edit、powershell、pwsh、bash、外部拡張 Tool は毎回承認する。`node --version` も例外にしない。Windows シェルの承認表示には cwd、操作、書込み範囲、実 argv、制限時間、Windows 実装、Shell network 設定を載せる。非 Windows の `bash` には操作と `cwd`、Pi シェルの実行範囲を載せる。ファイル Tool と通常の拡張 Tool は Host / Sandbox 外と表示する。
 
-Windows Shell は実行ごとに専用接続を使う。Stop、timeout、disconnect、正常終了で、個別に terminate し、専用 App Server のプロセスツリーを回収する。abort と finally は同じ回収 Promise を待つ。接続初期化中の取消しでも agent command を起動しない。Windows の失敗時に `process/spawn`、`thread/shellCommand`、SDK の Host Shell、直接 Host spawn へのフォールバックはない。非 Windows では Pi SDK または信頼済み `bash` 拡張に実行と取消しを委譲する。
+Windows のシェルは実行ごとに専用接続を使う。停止、時間切れ、切断、正常終了時にはコマンドの終了を要求し、専用 App Server とその子孫プロセスを終了する。取消処理と `finally` は同じ終了処理の Promise を待つ。接続初期化中に取り消された場合も、エージェントのコマンドを起動しない。Windows で失敗しても、`process/spawn`、`thread/shellCommand`、SDK の Host シェル、Host による直接のプロセス起動へは切り替えない。Windows 以外では Pi SDK または信頼済みの `bash` 拡張に実行と取消しを委譲する。
 
 ## 利用と設定移行
 
@@ -95,13 +95,13 @@ Windows 以外ではサンドボックスセットアップは不要で、コマ
 }
 ```
 
-パスの区切りは正規化するが、directory 指定や symlink / junction の別名を Trust の entry にしない。設定の `globalValue` だけを採用し、workspace の同名設定では自己許可できない。workspace-local entry には Workspace Trust も必要。builtin は維持する。外部 Tool の builtin 名上書きは、非 Windows の`bash`を除いてエラーにする。設定から外した entry は再接続後にロードされない。実行中コードを取り消す UI は今回の範囲外。
+信頼する拡張には単一ファイルを指定する。パスの区切りは正規化するが、ディレクトリ指定やシンボリックリンク・ジャンクション経由の別名は受け付けない。設定の `globalValue` だけを採用し、ワークスペースの同名設定からは許可できない。ワークスペース内の拡張には Workspace Trust も必要になる。組み込み拡張は維持する。外部ツールによる組み込みツールの上書きは、Windows 以外の `bash` を除いてエラーにする。設定から外したファイルは再接続後にロードされない。実行中の拡張の信頼を取り消す UI は今回の範囲外。
 
-SDK の自動発見から未知の拡張コードはロードしない。skills、prompt templates、provider controls、設定、履歴は維持する。既に導入済みのローカル package を解決し、新規会話や再接続で npm / git を自動取得しない。
+SDK の自動探索で見つかった未信頼の拡張コードはロードしない。スキル、プロンプトテンプレート、プロバイダー固有の設定、その他の設定、履歴は維持する。導入済みのローカルパッケージを参照し、新規会話や再接続では npm / Git から自動取得しない。
 
 ### powershell / pwsh と UTF-8
 
-Shell は別の Tool として登録し、相互の自動切替をしない。
+Windows PowerShell と PowerShell 7 は別のツールとして登録し、相互の自動切替をしない。
 
 | Tool         | 対応する Shell                        | 解決・公開条件                                                                         |
 | ------------ | ------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -128,9 +128,9 @@ setter が拒否されてもコードページを確認し、既に 65001 なら
 
 ## Host 子 Runtime
 
-`createPiRuntime()` の戻り値が `children.open({ cwd?, role, signal? })` を提供する。親の policy snapshot と role の共通部分だけを採用し、executor・承認先・Windows 実装・利用不能理由を継承する。子からこれらを差し替える API は提供しない。
+`createPiRuntime()` の戻り値が `children.open({ cwd?, role, signal? })` を提供する。親の確定済み権限と子の `role` の両方で許可された権限だけを採用する。実行基盤、承認先、Windows の実装、利用不能理由は親から引き継ぎ、子から差し替える API は提供しない。
 
-親 Stop は起動中、承認待ち、実行中の子・孫へ伝播する。子の履歴は `SessionManager.inMemory()` で、親の保存先設定、resume、モデル保存 callback、外部拡張の Trust を引き継がない。モデル向けの委譲 Tool / UI は追加していない。信頼済み外部拡張が独自に起動する subagent には、この管理の保証を適用しない。
+親を停止すると、起動中、承認待ち、実行中の子・孫も停止する。子の履歴は `SessionManager.inMemory()` でメモリー内に保持し、親の保存先設定、再開対象、モデル保存のコールバック、外部拡張の信頼設定を引き継がない。モデル向けの委譲ツールや UI は追加していない。信頼済み外部拡張が独自に起動するサブエージェントは、この管理の対象外となる。
 
 ## 検証記録
 
@@ -230,6 +230,6 @@ I01〜I07 は `pi-chat-smoke.mjs` とそこから呼ぶ persistence / packages /
 - 明示 Trust がある実 Web 拡張と、実 VS Code Webview / setup 操作を確認する。
 - 新しい実装 commit で受入記録を固定して差分をレビューする。通信未達の環境を対応済みとせず、環境制限を受け入れる明示判断なしに Phase 11 全体を完了にしない。
 
-詳細な command 危険度解析は Phase 11-1、origin / root 別 Trust / Revoke UI は Phase 11-2。有限 read・任意 deny path の OS 強制、任意拡張 JS の完全隔離、Host ファイル I/O の OS Sandbox 化、独自 network proxy は別設計とする。
+コマンドの詳細な危険度解析は Phase 11-1、取得元・ルート別の信頼設定と取消 UI は Phase 11-2 で扱う。読取り許可範囲・拒否対象パスの OS による強制、拡張 JavaScript の隔離、Host のファイル入出力のサンドボックス化、独自の通信プロキシは別途設計する。
 
 公式 API の参照先: [Codex App Server](https://learn.chatgpt.com/docs/app-server)、[Windows Sandbox](https://learn.chatgpt.com/docs/windows/windows-sandbox)。機能の可否は同梱版の生成型と今回の実測を優先して記録した。

@@ -1,4 +1,4 @@
-// App Server の `unified` `diff` を再計算せず、追加・削除の色で表示する。
+// App Server の unified diff を再計算せず、追加・削除の色で表示する。
 import { diffLineClass, toolCodeClass, toolLabelClass } from "./toolStyles";
 /** サーバーが返した差分をテキストとして描画する。 */
 export function UnifiedDiff({ path, diff }: { path: string; diff: string }) {

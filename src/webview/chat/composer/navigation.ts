@@ -85,7 +85,7 @@ function moveSelectedBlock(
 	return true;
 }
 
-/** 通常文の表示上の境界以外では移動を抑制する。 */
+/** 通常文の表示上の先頭行・最終行にカーソルがあるかを調べ、ブロック間の移動を補助するか判断する。 */
 function outsideVisualEdge(
 	block: ElementNode,
 	element: HTMLElement | null,

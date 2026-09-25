@@ -4,11 +4,11 @@ import type { PiCatalogModel, PiModelCatalogReader } from "../PiModelCatalog";
 import { codexOAuth } from "./CodexOAuth";
 import { normalizeCodexModels } from "./CodexModelCatalog";
 
-// 制限なしでモデルカタログを取得する。
-// Codex CLI のバージョンとは独立した決定。
+// モデル一覧の取得に使う client_version を固定する。
+// この値は同梱 Codex CLI のバージョンとは別に管理する。
 const MODEL_CATALOG_CLIENT_VERSION = "0.999.0";
 
-/** 生 HTTP 本文・token・account ID を返却値や例外へ含めない。 */
+/** HTTP 応答の本文・トークン・アカウント ID を返却値や例外へ含めない。 */
 export class CodexModelCatalogService implements PiModelCatalogReader {
 	private account: string | undefined;
 	private cached: readonly PiCatalogModel[] | null = null;

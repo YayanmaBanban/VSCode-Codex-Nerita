@@ -157,7 +157,7 @@ export abstract class CodexHistory extends CodexCatalog {
 		}
 	}
 
-	/** 履歴を復元し、復元中に更新された本文を公開しない。 */
+	/** 履歴を復元する。復元中に本文が更新された場合は、取得した結果を公開しない。 */
 	private async restoreHistoryThread(
 		client: CodexConnection,
 		thread: HistoryThread,

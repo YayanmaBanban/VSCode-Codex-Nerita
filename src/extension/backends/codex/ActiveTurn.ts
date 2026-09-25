@@ -1,7 +1,7 @@
-// 開始応答より早い通知・承認と、サーバーの実行開始を1つのターンに束ねる。
+// 開始応答より先に届く通知を保持し、ターンの開始状態と取消を管理する。
 import type { TurnEvent } from "./items/turnEvents";
 
-/** UI の実行寿命に対応する、応答待ちと取消可能なターン状態。 */
+/** 開始応答の待機、通知の蓄積、取消に使うターン単位の状態。 */
 export class ActiveTurn {
 	readonly streams = new Map<string, Map<string, string>>();
 	turnId: string | undefined;
@@ -14,6 +14,6 @@ export class ActiveTurn {
 	readonly ready = new Promise<void>((resolve) => {
 		this.release = resolve;
 	});
-	/** 開始前から thread の範囲を固定する。 */
+	/** 実行開始前に対象のスレッド ID を固定する。 */
 	constructor(readonly threadId: string) {}
 }

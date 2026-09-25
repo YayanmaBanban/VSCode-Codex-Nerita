@@ -1,4 +1,4 @@
-// Host が利用する公開 API だけを ESM 境界へ公開する。
+// Host が利用する API だけを専用の ESM モジュールから公開する。
 export {
 	createAgentSession,
 	ModelRuntime,

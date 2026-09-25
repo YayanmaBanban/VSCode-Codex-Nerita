@@ -1,4 +1,4 @@
-// Pi を専用 ESM `entry` と遅延チャンクへバンドルし、ファイル参照する資産だけを同梱する。
+// Pi を専用の ESM エントリーポイントと遅延読込用チャンクへまとめ、実行時にファイルとして読む資産を同梱する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { build } = require("esbuild");
@@ -27,7 +27,7 @@ async function copyPhoton(sdkRoot, target) {
 	return source;
 }
 
-/** SDK の相対資産探索をバンドル専用 `package` 境界内で解決する。 */
+/** SDK が相対パスで資産を見つけられるよう、配布先に package.json と必要なファイルを配置する。 */
 async function copyAssets(source, destination, manifest) {
 	await fs.writeFile(
 		path.join(destination, "package.json"),
@@ -60,7 +60,7 @@ async function copyAssets(source, destination, manifest) {
 	);
 }
 
-/** SDK 内部のファイル配置を Host に公開せず、ESM 境界をビルド側で用意する。 */
+/** Host が SDK 内部の配置に依存せず読み込める、専用の ESM バンドルを生成する。 */
 async function bundlePi(projectRoot, target) {
 	const source = await fs.realpath(
 		path.join(projectRoot, "node_modules/@earendil-works/pi-coding-agent"),

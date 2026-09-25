@@ -113,7 +113,7 @@ function ContributionStory({
 	const selectedProvider = state.configOptions
 		.find((option) => option.id === "model")!
 		.currentValue.split("/")[0]!;
-	// `preview` はストーリーだけの能力であり、Phase 8の Fast `Mode` を実装済みとは扱わない。
+	// preview はストーリー専用の能力で、実際の Fast Mode の対応状況とは別に扱う。
 	const contributions = registry.resolve(state, {
 		backend,
 		provider: selectedProvider,

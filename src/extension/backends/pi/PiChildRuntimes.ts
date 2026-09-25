@@ -6,7 +6,7 @@ import type {
 import { freezeToolCall } from "../../security/ApprovedToolCall";
 import type { PiRuntimeOptions, PiRuntimeSession } from "./PiRuntime";
 
-/** 子は作業場所と `role` を狭められるが、executor・承認先・親 `policy` を差し替えられない。 */
+/** 子は許可範囲内の作業場所と権限を指定できる。実行基盤・承認先・親の権限設定は差し替えられない。 */
 export type PiChildOptions = {
 	cwd?: string;
 	role: AgentRole;
@@ -46,7 +46,7 @@ export class PiChildRuntimes {
 		this.policy = freezeToolCall(policy);
 	}
 
-	/** 親の実効上限と `role` を Runtime 側で交差し、履歴や外部拡張を引き継がない。 */
+	/** 子の起動時に親と role の両方で許可される権限だけを残す。親の履歴や外部拡張は引き継がない。 */
 	async open(options: PiChildOptions): Promise<PiRuntimeSession> {
 		this.lifetime.throwIfAborted();
 		if (this.disposed || this.stoppingNow) {
@@ -88,7 +88,7 @@ export class PiChildRuntimes {
 			const session = await child.opening;
 			child.session = session;
 			let disposed = false;
-			/** 個別終了でも親の追跡から外し、起動 `signal` を失効させる。 */
+			/** 個別終了でも起動時の signal を取り消し、終了処理が完了したら親の追跡から外す。 */
 			session.dispose = () => {
 				if (disposed) {
 					return;
@@ -124,7 +124,7 @@ export class PiChildRuntimes {
 		return this.stopping;
 	}
 
-	/** 起動完了と `Stop` が競合しても `abort`・`dispose` は一度だけ実施する。 */
+	/** 起動完了と Stop が競合しても、子の abort と close は一度だけ呼び出す。 */
 	private close(child: Child): Promise<void> {
 		child.closing ??= Promise.resolve().then(async () => {
 			try {

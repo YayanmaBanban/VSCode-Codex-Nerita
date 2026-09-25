@@ -28,7 +28,7 @@ export class AgentRegistry {
 		this.statuses.clear();
 		this.metadata.clear();
 	}
-	/** 状態と開始メタデータはカード生成前にも保持し、協調項目だけでは生成しない。 */
+	/** カード作成前の状態と開始メタデータを保持する。協調ツールの項目だけではカードを作らない。 */
 	notification(
 		state: ChatState,
 		message: AppServerNotification,
@@ -117,7 +117,7 @@ export class AgentRegistry {
 						...agent,
 						...this.metadata.get(agent.threadId),
 					};
-					// 明示的な完了・停止は `idle` より強く、活動開始よりスレッド通知を優先する。
+					// 明示的な完了・停止を維持し、それ以外はスレッドの状態通知を活動開始の通知より優先する。
 					return status &&
 						["running", "idle", "pendingInit"].includes(
 							merged.status,
