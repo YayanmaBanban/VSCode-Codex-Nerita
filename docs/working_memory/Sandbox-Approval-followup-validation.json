@@ -1,0 +1,249 @@
+{
+	"date": "2026-09-25T07:18:06.280Z",
+	"commit": "df1289f5a260906d8dcba715acaf9b791e427c96",
+	"workingTree": "Phase 11 follow-up changes, uncommitted",
+	"node": "v24.18.1",
+	"windows": "10.0.26200",
+	"codex": "0.156.0",
+	"pi": "0.87.1",
+	"checks": {
+		"check": "pass",
+		"compile": "pass",
+		"unit": {
+			"files": 72,
+			"tests": 466,
+			"status": "pass"
+		},
+		"runtime": {
+			"tests": 19,
+			"status": "pass"
+		},
+		"piChat": "pass"
+	},
+	"suites": [
+		{
+			"suite": "pi-shell-smoke",
+			"source": "dist/pi-shell-smoke/results.json",
+			"date": "2026-09-25T07:09:28.446Z",
+			"cases": [
+				{
+					"id": "powershell: 短い日本語ファイル出力",
+					"status": "pass"
+				},
+				{
+					"id": "powershell: 日本語ファイル・stdout・stderr・pipe",
+					"status": "pass"
+				},
+				{
+					"id": "powershell: node --version とShellの一致",
+					"status": "pass"
+				},
+				{
+					"id": "powershell: 拒否でSandbox実行なし",
+					"status": "pass"
+				},
+				{
+					"id": "pwsh: 短い日本語ファイル出力",
+					"status": "pass"
+				},
+				{
+					"id": "pwsh: 日本語ファイル・stdout・stderr・pipe",
+					"status": "pass"
+				},
+				{
+					"id": "pwsh: node --version とShellの一致",
+					"status": "pass"
+				},
+				{
+					"id": "pwsh: 拒否でSandbox実行なし",
+					"status": "pass"
+				},
+				{
+					"id": "powershell: 3つのCodePageが65001、言語制約を維持",
+					"status": "pass"
+				},
+				{
+					"id": "powershell: 短い日本語stdoutとnative UTF-8 stderr・終了コード",
+					"status": "pass"
+				},
+				{
+					"id": "powershell: nativeプログラムへのpipeがUTF-8",
+					"status": "pass"
+				}
+			]
+		},
+		{
+			"suite": "pi-web-access-smoke",
+			"source": "dist/pi-web-access-smoke/results.json",
+			"date": "2026-09-25T07:18:05.008Z",
+			"package": "pi-web-access",
+			"version": "0.30.0",
+			"cases": [
+				{
+					"id": "untrusted",
+					"status": "pass"
+				},
+				{
+					"id": "rejected-no-http",
+					"status": "pass"
+				},
+				{
+					"id": "approved-host-http",
+					"status": "pass"
+				}
+			]
+		},
+		{
+			"suite": "vscode-sandbox-smoke",
+			"source": "dist/vscode-sandbox-smoke/results.json",
+			"date": "2026-09-25T07:15:01.640Z",
+			"artifacts": "dist/vscode-sandbox-smoke/run-DwJHK0",
+			"cases": [
+				{
+					"id": "allow",
+					"status": "pass"
+				},
+				{
+					"id": "deny",
+					"status": "pass"
+				},
+				{
+					"id": "stop",
+					"status": "pass"
+				},
+				{
+					"id": "window-reload-reconnect",
+					"status": "pass"
+				}
+			]
+		},
+		{
+			"suite": "sandbox-smoke",
+			"source": "dist/sandbox-smoke/results.json",
+			"date": "2026-09-25T07:12:30.993Z",
+			"cases": [
+				{
+					"id": "W01/W04-output Windows PowerShell",
+					"status": "pass"
+				},
+				{
+					"id": "W01/W04-output pwsh",
+					"status": "pass"
+				},
+				{
+					"id": "W01/W04-output native node",
+					"status": "pass"
+				},
+				{
+					"id": "W02 workspace create/update/delete",
+					"status": "pass"
+				},
+				{
+					"id": "W09 Japanese path and short file output",
+					"status": "pass"
+				},
+				{
+					"id": "W09 Windows PowerShell short Japanese output",
+					"status": "pass"
+				},
+				{
+					"id": "W03 outside read",
+					"status": "pass"
+				},
+				{
+					"id": "W04/W05 outside create",
+					"status": "pass"
+				},
+				{
+					"id": "W04/W05 outside overwrite",
+					"status": "pass"
+				},
+				{
+					"id": "W04/W05 outside delete",
+					"status": "pass"
+				},
+				{
+					"id": "W04/W05 outside relative",
+					"status": "pass"
+				},
+				{
+					"id": "W05 junction write",
+					"status": "pass"
+				},
+				{
+					"id": "W06 readOnly",
+					"status": "pass"
+				},
+				{
+					"id": "W06 multi-root",
+					"status": "pass"
+				},
+				{
+					"id": "W07 descendants inherit write boundary",
+					"status": "pass"
+				},
+				{
+					"id": "W08 stop descendants",
+					"status": "pass"
+				},
+				{
+					"id": "W08 timeout descendants",
+					"status": "pass"
+				},
+				{
+					"id": "W08 normal descendants",
+					"status": "pass"
+				},
+				{
+					"id": "W08 other connection survives Stop",
+					"status": "pass"
+				},
+				{
+					"id": "W10-observation http://127.0.0.1:55797",
+					"status": "observation"
+				},
+				{
+					"id": "W10 network 127.0.0.1",
+					"status": "fail",
+					"error": "直結がnetwork=falseでも到達した"
+				},
+				{
+					"id": "W10-observation http://[::1]:55818",
+					"status": "observation"
+				},
+				{
+					"id": "W10 network ::1",
+					"status": "fail",
+					"error": "直結がnetwork=falseでも到達した"
+				},
+				{
+					"id": "W10-observation http://example.com",
+					"status": "observation"
+				},
+				{
+					"id": "W10 external HTTP example.com",
+					"status": "fail",
+					"error": "直結がnetwork=falseでも到達した"
+				},
+				{
+					"id": "W10-observation https://example.com",
+					"status": "observation"
+				},
+				{
+					"id": "W10 external HTTPS example.com",
+					"status": "unverified",
+					"error": "未検証: Hostは到達したがSandboxの失敗理由が未特定 https://example.com"
+				},
+				{
+					"id": "W12 extension development workspace",
+					"status": "pass"
+				}
+			]
+		}
+	],
+	"outstanding": [
+		"C03: unprepared Windows Sandbox and setup UI remain unverified; user has no separate test environment",
+		"C14: C03 remains unverified; follow-up changes not committed"
+	],
+	"networkContract": "networkAccess=false is not a complete isolation guarantee; diagnostic failures are retained"
+}

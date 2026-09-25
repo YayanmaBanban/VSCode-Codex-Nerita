@@ -33,7 +33,8 @@ export function powerShellCommand(
 		"-Command",
 		[
 			"$ProgressPreference = 'SilentlyContinue'",
-			...(shell.name === "powershell" ? utf8Setup() : []),
+			// pwsh でも短い日本語出力が文字化けするため、両方のシェルで初期化する。
+			...utf8Setup(),
 			body,
 		].join("\n"),
 	];

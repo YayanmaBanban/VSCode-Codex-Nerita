@@ -2,7 +2,15 @@
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
-import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import {
+	mkdir,
+	mkdtemp,
+	realpath,
+	rm,
+	writeFile,
+	readFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -40,7 +48,13 @@ let approvals = 0;
 let approve = true;
 const calls = [];
 const results = [];
-const report = { date: new Date().toISOString(), cases: [] };
+const report = {
+	date: new Date().toISOString(),
+	commit: execFileSync("git", ["rev-parse", "HEAD"], {
+		encoding: "utf8",
+	}).trim(),
+	cases: [],
+};
 
 /** 成功に見せかけず失敗も記録し、独立した後続ケースは続ける。 */
 async function test(id, operation) {
@@ -94,6 +108,14 @@ try {
 		signal,
 	);
 	report.tools = tools.map((tool) => tool.name);
+	if (!report.tools.includes("pwsh")) {
+		report.cases.push({
+			id: "pwsh",
+			status: "unverified",
+			reason: "Sandboxで利用可能なpwshがありません",
+		});
+		process.exitCode = 1;
+	}
 	assert.equal(approvals, 0, "固定の起動確認だけでモデル入力はまだない");
 	if (process.env.NERITA_SANDBOX_PWSH) {
 		assert.ok(
@@ -113,6 +135,42 @@ try {
 	}
 
 	for (const tool of tools) {
+		await test(`${tool.name}: 短い日本語ファイル出力`, async () => {
+			const result = await run(
+				tool,
+				"Set-Content -LiteralPath '短い日本語.txt' -Encoding utf8 -Value '日本語 $literal'; Get-Content -LiteralPath '短い日本語.txt' -Encoding utf8",
+			);
+			assert.equal(result.exitCode, 0);
+			assert.equal(result.stdout, "日本語 $literal\r\n");
+			return result;
+		});
+		await test(`${tool.name}: 日本語ファイル・stdout・stderr・pipe`, async () => {
+			const file = `${tool.name} 日本語.txt`;
+			const content = "日本語 $literal '引用'";
+			const written = await run(
+				tool,
+				`Set-Content -LiteralPath '${file}' -Encoding utf8 -Value '日本語 $literal ''引用'''; Get-Content -LiteralPath '${file}' -Encoding utf8`,
+			);
+			assert.equal(written.exitCode, 0);
+			assert.equal(written.stdout, `${content}\r\n`);
+			assert.equal(
+				(await readFile(path.join(cwd, file), "utf8")).replace(
+					/^\uFEFF/,
+					"",
+				),
+				`${content}\r\n`,
+			);
+			const native = await run(
+				tool,
+				"node native-error.cjs; exit $LASTEXITCODE",
+			);
+			assert.equal(native.stderr, "エラー日本語");
+			assert.equal(native.exitCode, 7);
+			const pipe = await run(tool, "'日本語' | node native-pipe.cjs");
+			assert.equal(pipe.exitCode, 0);
+			assert.match(pipe.stdout, /^\uFEFF*日本語\r\n$/);
+			return { written, native, pipe };
+		});
 		await test(`${tool.name}: node --version とShellの一致`, async () => {
 			const result = await run(tool, "node --version");
 			assert.equal(result.exitCode, 0);

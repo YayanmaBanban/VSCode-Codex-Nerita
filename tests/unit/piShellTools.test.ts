@@ -128,6 +128,8 @@ it.each(["powershell", "pwsh"] as const)(
 				name === "powershell" ? h.windows : h.core,
 			);
 			expect(call.command!.at(-1)).toMatch(/\nnode --version$/);
+			expect(call.command!.at(-1)).toContain("chcp.com");
+			expect(h.authorize.mock.calls.at(-1)![0]).toContain("chcp.com");
 		}
 	},
 );

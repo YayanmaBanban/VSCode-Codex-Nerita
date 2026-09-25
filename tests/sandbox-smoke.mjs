@@ -34,6 +34,7 @@ await build({
 			'export { toSandboxPolicy } from "./src/extension/security/AgentAccessPolicy";',
 			'export { commandEnvironment } from "./src/extension/runtime/CommandEnvironment";',
 			'export { resolvePowerShell } from "./src/extension/runtime/PowerShellExecutable";',
+			'export { powerShellCommand } from "./src/extension/runtime/PowerShellCommand";',
 		].join("\n"),
 		resolveDir: extensionPath,
 	},
@@ -163,16 +164,18 @@ async function executePiPowerShell(command, executable = pwsh) {
 	return { call, result, toolResult };
 }
 
-/** ScriptBlock・EncodedCommand・`ExecutionPolicy` 変更を使わない。 */
+/** 製品と同じ文字コード初期化と平文引数を使い、古い起動処理との混在を防ぐ。 */
 function shellArgs(executable, text) {
-	return [
-		executable,
-		"-NoLogo",
-		"-NoProfile",
-		"-NonInteractive",
-		"-Command",
-		`try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n${text}`,
-	];
+	return host.powerShellCommand(
+		{
+			executable,
+			name:
+				path.basename(executable).toLowerCase() === "pwsh.exe"
+					? "pwsh"
+					: "powershell",
+		},
+		text,
+	);
 }
 
 /** 本版は書込み拒否を `command` 結果ではなく RPC エラーで返す場合もある。 */

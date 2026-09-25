@@ -1,15 +1,40 @@
 # Phase 11: Sandbox / Approval Architecture
 
-2026-09-24 の Phase 11 再実装仕様に基づく実装・検証記録。**実行委譲を実装したが、Phase 11 全体は未完了**。この Windows 環境では通信隔離に違反する結果が再現している。Windows PowerShell の日本語出力は 2026-09-25 の追加修正で改善を確認した。元の仕様の状態、main、利用者の Trust 設定は変更していない。
+2026-09-24 の Phase 11 再実装仕様に基づく実装・検証記録。**実行委譲は main へマージ済みだが、Phase 11 全体は未完了**。2026-09-25 の追加検証で C04 と C09 を確認した。C03 の Sandbox 未準備状態は、検証用 Windows 環境がないためユーザーの指示により実機未検証として残す。通信隔離の既知の制約は維持する。利用者の Trust 設定は変更していない。
+
+## 2026-09-25 の追加修正と受入
+
+検証対象は `df1289f5a260906d8dcba715acaf9b791e427c96` に今回の差分を加えた作業ツリー。再実装のマージコミットと今回の未コミット差分を区別する。結果の要約は [追加検証記録](Sandbox-Approval-followup-validation.json) に保存した。
+
+- **C03：実機未検証を維持。** `notConfigured` / `updateRequired` での実行拒否、取消し、承認の再利用拒否は単体テストで確認した。未準備の実機と、未準備状態からのセットアップ操作は確認していない。既存端末の設定を壊して再現しない。
+- **C04：確認。** pwsh は長い日本語出力が成功しても、短い `日本語 $literal` のファイル読出しが文字化けした。Windows PowerShell と同じ UTF-8 初期化を pwsh にも適用し、短い出力を含む回帰テストを追加した。受信後の推測による再デコードは行わない。Sandbox の受入テストも製品と同じ引数生成処理を使用する。
+- **C09：確認。** 導入済みの `pi-web-access` `0.30.0` を検証用の設定で明示的に信頼し、実ロード、ツール登録、承認後の `https://example.com/` 取得に成功した。未信頼時は未ロード、拒否時は HTTP 要求が0件であることを確認した。localhost は拡張自身の内部アドレス保護により拒否されたため、保護設定を変更せず公開ページを使用した。モデル API は呼び出していない。
+- **C14：未完了。** 実 VS Code の Webview、Extension Host、実 App Server を通した許可・拒否・実行中 Stop・ウィンドウ再読込み後の再接続と再実行を確認した。モデル応答だけをローカルサーバーで模擬し、承認や Sandbox 実行は製品経路を使用した。未準備状態の実機確認と、今回の差分を新しいコミット上で確定する作業は残る。
+- **C15：文書同期済み。** 再実装のマージ状態、現在の文書配置、C07 / C08 の判定、今回の結果を反映した。Phase 11 全体の完了を意味しない。
+
+実行結果：型・Lint、単体テスト72ファイル / 466件、配布物テスト19件、ビルド、Pi SDK 統合が成功した。`test:pi:shell` は11件、`test:pi:web` は3件、`test:sandbox:ui` は4件成功した。Windows 受入は20件成功、通信隔離3件失敗、HTTPS の失敗理由1件未検証、別途観測4件で、終了コード1を維持する。通信到達を遮断成功に読み替えない。
+
+再実行する場合は、ビルド完了後に次のコマンドを使う。pwsh の選択は後述の `NERITA_SANDBOX_PWSH` を使用する。
+
+```powershell
+rtk pnpm test:pi:shell
+rtk pnpm test:pi:web
+rtk pnpm test:sandbox:ui
+rtk pnpm test:sandbox
+```
+
+Shell の結果は `dist/pi-shell-smoke/results.json` に保存する。実拡張の結果は `dist/pi-web-access-smoke/results.json` に保存する。UI の結果は `dist/vscode-sandbox-smoke/results.json`、Windows 受入は `dist/sandbox-smoke/results.json` に保存する。
+
+UI の画像保存先は結果 JSON の `artifacts` を参照する。今回の画像で承認内容、日本語出力、停止表示、再接続後の結果を確認し、Webview のエラーは0件だった。setup と利用不能状態の画面操作は未検証。UI の検証は一時プロファイルと専用ワークスペースを使用し、通常のユーザー設定を変更しない。
 
 ## 基点と変更範囲
 
-| 項目                 | 値                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| 作業ブランチ         | `phase11-codex-reimplementation`                                                            |
-| 着手時の main / HEAD | `b553e7665f2cee21e7c4a8490be09d41fc2ba8a8`                                                  |
-| 選択参照した保存版   | `e5f31d606a09722e93f78b5ec7aa3682adaefeb7` (`phase11-astra`)                                |
-| 実装の状態           | 上記 main に対する未コミットの作業ツリー差分。保存版全体の merge / cherry-pick はしていない |
+| 項目                 | 値                                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| 作業ブランチ         | `phase11-codex-reimplementation`                                                                    |
+| 着手時の main / HEAD | `b553e7665f2cee21e7c4a8490be09d41fc2ba8a8`                                                          |
+| 選択参照した保存版   | `e5f31d606a09722e93f78b5ec7aa3682adaefeb7` (`phase11-astra`)                                        |
+| 実装の状態           | `f41bdc932fa743551b3f62c89a5ba3b462fd69a6` で main へマージ済み。今回の追加修正は別の作業ツリー差分 |
 
 Notion 記載の旧 main へ戻さず、着手時の main を維持した。新しい依存パッケージ・lockfile 変更・backend 切替の再設計・アニメーション変更は含まない。
 
@@ -114,7 +139,7 @@ MSIX の WindowsApps 配置、そこへのリンク、workspace の書込み範�
 
 Tool と `command` パラメータの説明には、対応 Shell と「`node --version` のように本文を直接渡す」使い方を明記する。これらは実 SDK がモデルへ送る Tool 定義に含まれる。説明で不要な `pwsh -Command ...` 等の二重起動を避けるよう促すが、コマンド本文を自動で書き換えるものではない。
 
-Windows PowerShell では、ユーザーの本文の前に次の3つを設定する。
+Windows PowerShell と pwsh の両方で、ユーザーの本文の前に次の3つを設定する。
 
 ```powershell
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -175,7 +200,7 @@ Shell 分離前の Windows 受入は **18 pass / 5 fail / 1 unverified**（別�
 
 network 比較では、実 SDK の PowerShell Tool 定義と製品アダプターが生成した要求を観測する。executable / argv / cwd / env / timeout / policy / Windows 実装を揃えて、直結・Host を実行する。観測用ラッパーは実 Executor を呼び、結果を置き換えない。SDK＋模擬モデルの Tool Call 経路は別の `test:pi:chat` で検証している。Codex バックエンドの通常モデルターンによる同条件の network 比較は**未検証**。直結と Pi の一致は原因の切分けに使うが、通信テストの合格へ読み替えない。上流または Windows 実行環境のどちらが原因かは未確定。
 
-修正前の W09: 短い `Write-Output '日本語 $literal'` が exit 0 でも `“ú–{Śę $literal` と返った。Windows PowerShell の製品 Tool 経路で再現し、pwsh で日本語ファイルを読み出した出力でも再現した。2026-09-25 の追加試験では Windows PowerShell の同じ短い出力が正しい日本語になった。pwsh 側の日本語ファイル読出しは今回再検証しておらず、W09 全体の合格とはしない。ファイルの UTF-8 内容と出力表示は別に扱い、受信後の推測による再デコードは実装しない。
+修正前の W09: 短い `Write-Output '日本語 $literal'` が exit 0 でも `“ú–{Śę $literal` と返った。Windows PowerShell の製品 Tool 経路と、pwsh の短い日本語ファイル出力で再現した。最初の修正では Windows PowerShell だけを確認していたが、今回 pwsh にも UTF-8 初期化を適用し、W09 と両シェルの製品 Tool 経路で成功した。ファイルの UTF-8 内容と出力表示を別に検査し、受信後の推測による再デコードは実装していない。
 
 この端末の PATH の pwsh は MSIX 版で、Sandbox ユーザーから `CreateProcessAsUserW failed: 5` となる。製品はこの配置を除外して `pwsh` Tool を公開しない。`powershell` Tool は独立して Windows PowerShell を使う。pwsh 自体の受入には、既存の署名済み portable 実行ファイル `dist/sandbox-smoke/pwsh/pwsh.exe` を使用した。ダウンロード・インストール・製品設定変更は行っていない。テスト専用の実行ファイル選択は次のとおりで、Executor / policy を差し替えるものではない。
 
@@ -185,33 +210,33 @@ rtk proxy pwsh -NoProfile -Command '$env:NERITA_SANDBOX_PWSH = (Resolve-Path "di
 
 同じ環境変数で `pnpm test:pi:shell` を実行する。指定された実行ファイルのディレクトリをテストプロセスの PATH へ一時追加し、製品の探索・起動確認・ツール登録から検証する。
 
-通常配置の pwsh がない環境で override を指定しない場合、pwsh は skip と記録し、Windows PowerShell の重複実行を pwsh 成功とは扱わない。Windows Sandbox の streaming command/exec は同梱版で拒否されたため、製品は要求しない。
+通常配置の pwsh がない環境で override を指定しない場合、`test:sandbox` は pwsh を skip と記録する。`test:pi:shell` は未検証として終了コード1を返す。Windows PowerShell の重複実行を pwsh 成功とは扱わない。Windows Sandbox の streaming command/exec は同梱版で拒否されたため、製品は要求しない。
 
-I08: 実 SDK package manager で `pi-web-access` `0.30.0` の導入を確認した。package の宣言は `./dist`、Pi agent directory からの相対 entry は `npm/node_modules/pi-web-access/dist/index.js`。検証用 Runtime にこの entry の明示 Trust を与えていないため、実 Web 拡張のロード・Tool 登録・HTTP 操作は**未検証**。`pi-web-search` は未導入で、別 package へ置き換えていない。I05 は専用の副作用のない信頼済み fixture 拡張で成功し、未信頼 fixture がロードされないことも確認した。
+I08: 実 SDK package manager で `pi-web-access` `0.30.0` の導入を確認した。package の宣言は `./dist`、Pi agent directory からの相対 entry は `npm/node_modules/pi-web-access/dist/index.js`。初回は未検証だったが、追加の `test:pi:web` で明示 Trust による実ロード・Tool 登録・HTTP 操作を確認した。`pi-web-search` は未導入で、別 package へ置き換えていない。I05 の fixture 検証も維持する。
 
-実 VS Code の新しい setup コマンド操作、Sandbox 出力・利用不能理由・承認を一連の Webview 操作として行う目視検証は**未検証**。Extension Host 結合テストと Storybook UI レビューを実 App Server 付き Webview 操作の代替とは扱わない。Sandbox の未設定 / 更新必要状態は unit で検証し、この端末の setup 状態を壊して再現していない。
+実 VS Code の Sandbox 出力・承認・拒否・停止・再接続は、追加の `test:sandbox:ui` と画像確認で検証した。setup コマンド操作と利用不能理由の画面表示は**未検証**。Sandbox の未設定 / 更新必要状態は unit で検証し、この端末の setup 状態を壊して再現していない。
 
 ### 完了条件との対応
 
 「確認」は作業ツリーでの範囲を指し、新しい実装 commit・リリースの承認を意味しない。
 
-| 条件                              | 対応する証拠                                                                                       | 状態           |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
-| C01 通常 Pi Shell                 | I01、実 SDK smoke、W01                                                                             | 確認           |
-| C02 同一 snapshot / fallback 不在 | U02/U03/U07/U08、Executor review、I01                                                              | 確認           |
-| C03 拒否 / Stop / 無効要求        | U03〜U06、I02/I03。実機の未準備状態は未検証                                                        | 一部未検証     |
-| C04 3 種の executable と出力      | W01 は成功。Windows PowerShell の短い日本語は追加試験で改善、pwsh の日本語ファイル出力は再検証待ち | 一部未検証     |
-| C05 read / write / 子孫境界       | U09、I04、W02〜W07                                                                                 | 確認           |
-| C06 回収 / 他接続                 | I03/I07、W08。counter・開始 marker で実行と停止を確認                                              | 確認           |
-| C07 Codex / Pi 比較               | 同条件 standalone / Pi Tool 比較を保存。通常 Codex turn は未検証                                   | 一部未検証     |
-| C08 通信                          | W10 の 3 経路で到達。HTTPS は原因未特定                                                            | **未達**       |
-| C09 明示 Extension Trust          | U10、I05。実 Web 拡張は未信頼・未検証                                                              | fixture で確認 |
-| C10 既存 SDK 機能                 | I06、SDK persistence / packages smoke、Runtime 配布 19 tests                                       | 確認           |
-| C11 file Tool                     | U02/U09、I04、変更・junction・hard link テスト。本書に Host 競合限界                               | 確認           |
-| C12 Host 子・孫                   | U12、I07。権限非拡大、承認待ち / 実行中 Stop、起動競合、履歴分離                                   | 確認           |
-| C13 旧拒否仕様の除外              | source / script / setting 検索と差分レビュー                                                       | 確認           |
-| C14 全検証と新 commit             | 自動検証の成功、Windows の失敗、実 VS Code UI 未検証。未コミット                                   | **未完了**     |
-| C15 文書・設定・差分              | 本書、設定説明、snapshot の承認表示。依存更新なし                                                  | レビュー可能   |
+| 条件                              | 対応する証拠                                                                      | 状態         |
+| --------------------------------- | --------------------------------------------------------------------------------- | ------------ |
+| C01 通常 Pi Shell                 | I01、実 SDK smoke、W01                                                            | 確認         |
+| C02 同一 snapshot / fallback 不在 | U02/U03/U07/U08、Executor review、I01                                             | 確認         |
+| C03 拒否 / Stop / 無効要求        | U03〜U06、I02/I03。実機の未準備状態は未検証                                       | 一部未検証   |
+| C04 3 種の executable と出力      | W01 / W09、追加の Shell 11件。pwsh の短い日本語出力を修正し再検証                 | 確認         |
+| C05 read / write / 子孫境界       | U09、I04、W02〜W07                                                                | 確認         |
+| C06 回収 / 他接続                 | I03/I07、W08。counter・開始 marker で実行と停止を確認                             | 確認         |
+| C07 Codex / Pi 比較               | 同条件比較に加え、Codex CLI 単体でも同じ外部 TCP 到達を再現した記録を確認         | 確認         |
+| C08 通信                          | Nerita 固有ではないと切り分け済み。完全遮断を保証しない契約。W10 の観測失敗は保持 | 制約確認済み |
+| C09 明示 Extension Trust          | U10、I05、実 pi-web-access の未信頼・拒否・承認後 HTTP の3件                      | 確認         |
+| C10 既存 SDK 機能                 | I06、SDK persistence / packages smoke、Runtime 配布 19 tests                      | 確認         |
+| C11 file Tool                     | U02/U09、I04、変更・junction・hard link テスト。本書に Host 競合限界              | 確認         |
+| C12 Host 子・孫                   | U12、I07。権限非拡大、承認待ち / 実行中 Stop、起動競合、履歴分離                  | 確認         |
+| C13 旧拒否仕様の除外              | source / script / setting 検索と差分レビュー                                      | 確認         |
+| C14 全検証と新 commit             | 自動検証と実 VS Code UI は追加確認。未準備の実機確認・追加差分のコミットは残る    | **未完了**   |
+| C15 文書・設定・差分              | マージ状態・文書配置・制約・受入結果を同期。依存更新なし                          | 文書同期済み |
 
 U01〜U12 の主な検証元は次の5ファイル。
 
@@ -225,10 +250,9 @@ I01〜I07 は `pi-chat-smoke.mjs` とそこから呼ぶ persistence / packages /
 
 ## 残る作業
 
-- 同じ Codex 版・実装・policy で通信の最小再現を追跡し、Windows 環境要因と上流を切り分ける。通常 Codex turn の比較を追加する。
-- pwsh の日本語ファイル出力を再検証し、W09 の残る出力変換経路を切り分ける。Windows PowerShell は今回の UTF-8 初期化で改善を確認した。
-- 明示 Trust がある実 Web 拡張と、実 VS Code Webview / setup 操作を確認する。
-- 新しい実装 commit で受入記録を固定して差分をレビューする。通信未達の環境を対応済みとせず、環境制限を受け入れる明示判断なしに Phase 11 全体を完了にしない。
+- C03 の未準備状態と、その状態からの setup 操作を実機未検証として残す。専用環境がないため、既存環境を変更して再現しない。
+- 今回の追加差分を新しいコミットで確定し、C14 の受入記録と対応付ける。再実装自体の main マージは完了済み。
+- 通信隔離は Codex CLI 単体でも到達することを確認済み。C07 / C08 の切り分けは完了とし、Codex / Windows 側の改善を追跡する。完全遮断は保証せず、W10 の失敗結果を保持する。
 
 コマンドの詳細な危険度解析は Phase 11-1、取得元・ルート別の信頼設定と取消 UI は Phase 11-2 で扱う。読取り許可範囲・拒否対象パスの OS による強制、拡張 JavaScript の隔離、Host のファイル入出力のサンドボックス化、独自の通信プロキシは別途設計する。
 
