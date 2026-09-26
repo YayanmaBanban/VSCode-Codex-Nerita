@@ -18,6 +18,11 @@ import {
 } from "../../src/extension/backends/codex/protocol/command";
 import { pending } from "./piHarness";
 
+// このファイルは実在しないパスで要求の固定だけを検証する。Trust の実パス検証は専用テストで行う。
+vi.mock("../../src/extension/security/trust/TrustGate", () => ({
+	evaluateTrust: () => Promise.resolve(undefined),
+}));
+
 /** ファイル `I/O` を伴わない、正規化済み要求。 */
 function call(): ToolCall {
 	return {

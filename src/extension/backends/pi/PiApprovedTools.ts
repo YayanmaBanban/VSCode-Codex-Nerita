@@ -7,6 +7,7 @@ import {
 import { consumeApprovedToolCall } from "../../security/ApprovedToolCall";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import { z } from "zod";
+import { evaluateTrust } from "../../security/trust/TrustGate";
 
 /** 実行ごとの入力を Host で確認し、許可された場合だけ戻る。 */
 export type PiAuthorize = ToolAuthorizer;
@@ -24,11 +25,14 @@ export function approvePiTool(
 		windowsSandbox: "elevated",
 	},
 	lifetime?: AbortSignal,
+	checkOrigin?: () => Promise<void>,
 ): ToolDefinition {
 	return {
 		...tool,
 		executionMode: "sequential",
 		async execute(id, params, signal, update, context) {
+			await checkOrigin?.();
+			const input = z.record(z.string(), z.unknown()).parse(params);
 			const combined =
 				lifetime && signal
 					? AbortSignal.any([lifetime, signal])
@@ -36,7 +40,9 @@ export function approvePiTool(
 			const approved = await approveToolCall(
 				{
 					tool: `extension:${tool.name}`,
-					params: z.record(z.string(), z.unknown()).parse(params),
+					params: input,
+					externalRead:
+						!!checkOrigin && isRawPublicFetch(tool.name, input),
 					cwd,
 					policy,
 				},
@@ -44,6 +50,9 @@ export function approvePiTool(
 				combined,
 			);
 			const call = consumeApprovedToolCall(approved);
+			await evaluateTrust(call);
+			await checkOrigin?.();
+			approved.signal.throwIfAborted();
 			return tool.execute(
 				id,
 				call.params,
@@ -53,4 +62,27 @@ export function approvePiTool(
 			);
 		},
 	};
+}
+
+/** 認証や任意オプションを伴う取得は、未信頼用の読取りとして扱わない。 */
+function isRawPublicFetch(
+	name: string,
+	params: Record<string, unknown>,
+): boolean {
+	if (
+		name !== "fetch_content" ||
+		params.mode !== "raw" ||
+		typeof params.url !== "string"
+	) {
+		return false;
+	}
+	if (Object.keys(params).some((key) => !["url", "mode"].includes(key))) {
+		return false;
+	}
+	try {
+		const url = new URL(params.url);
+		return url.protocol === "https:" && !url.username && !url.password;
+	} catch {
+		return false;
+	}
 }

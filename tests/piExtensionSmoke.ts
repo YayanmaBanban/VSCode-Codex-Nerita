@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, basename, join } from "node:path";
 import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
-import { createPiRuntime } from "../src/extension/backends/pi/PiRuntime";
+import { createPiRuntime } from "./piTrustedRuntime";
 
 /** Extension Host 上でも ESM の動的ロードとストリーム中断が成立することを確認する。 */
 export async function piExtensionSmoke(extensionPath: string): Promise<void> {

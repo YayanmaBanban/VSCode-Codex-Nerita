@@ -6,6 +6,7 @@ import type { PiProviderControls } from "./PiProviderControls";
 import { localResourceSettings } from "./PiResourceSettings";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import { createPiHostShellTool } from "./PiHostShellTool";
+import type { PiWebTrust } from "./PiWebTrust";
 
 /** 本文をファイルパスと解釈させず、定義の指定どおり基底プロンプトへ反映する。 */
 function agentPromptOverride(
@@ -36,6 +37,7 @@ export async function loadPiResources(
 	policy?: AgentAccessPolicy,
 	appendPrompt?: string,
 	promptMode: "append" | "replace" = "append",
+	webTrust: PiWebTrust[] = [],
 ): Promise<PiSdk.DefaultResourceLoader> {
 	const loader = new sdk.DefaultResourceLoader({
 		cwd,
@@ -101,6 +103,9 @@ export async function loadPiResources(
 							authorize,
 							policy,
 							signal,
+							webTrust.find(
+								(item) => item.entry === extension.path,
+							)?.check,
 						),
 					});
 				}

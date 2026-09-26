@@ -9,6 +9,9 @@ import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 import { registerSandboxSetup } from "./backends/codex/settings/sandboxSetup";
 import { registerGuardrailsEditor } from "./backends/pi/guardrails/GuardrailsEditor";
 import { registerWorkflowEditor } from "./backends/pi/workflows/WorkflowEditor";
+import { registerTrustCommands } from "./security/trust/TrustCommands";
+import { preparePiWebTrust } from "./backends/pi/PiWebTrust";
+import { userTrustedExtensionPaths } from "./backends/pi/PiExtensionTrust";
 let controller: BackendSession | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
 export async function activate(
@@ -16,7 +19,30 @@ export async function activate(
 ): Promise<void> {
 	registerSandboxSetup(context);
 	const guardrails = await registerGuardrailsEditor(context);
-	const session = new BackendRuntime(() => createBackend(context));
+	const trust = registerTrustCommands(context);
+	for (const folder of vscode.workspace.workspaceFolders ?? []) {
+		try {
+			await trust.registerWorkspace(folder.uri.fsPath);
+		} catch {
+			/* 解決できない root は未信頼のまま接続側で拒否する。 */
+		}
+	}
+	try {
+		await preparePiWebTrust(
+			userTrustedExtensionPaths(
+				vscode.workspace
+					.getConfiguration("nerita.pi")
+					.inspect<string[]>("trustedExtensionPaths"),
+			),
+			trust,
+		);
+	} catch {
+		/* 未検証の取得設定は Runtime の接続時に拒否して表示する。 */
+	}
+	const session = new BackendRuntime(() => createBackend(context, trust));
+	context.subscriptions.push({
+		dispose: trust.onChange(() => session.invalidate()),
+	});
 	controller = session;
 	registerWorkflowEditor(context, session);
 	const provider = new ChatViewProvider(context.extensionUri, session, () =>

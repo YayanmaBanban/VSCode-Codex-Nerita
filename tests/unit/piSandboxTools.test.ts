@@ -117,6 +117,9 @@ it("U11 通常policyではpowershellを公開し、Executor不在とrole禁止�
 		cwd: h.cwd,
 		signal: h.abort.signal,
 		windowsSandbox: "elevated" as const,
+		trustStore: h.trustStore,
+		trustContextId: h.trustContextId,
+		workspaceTrusted: true,
 	};
 	const normal = await preparePiRuntimeTools(sdk, options, h.authorize);
 	expect(normal.tools.map((tool) => tool.name)).toContain("powershell");

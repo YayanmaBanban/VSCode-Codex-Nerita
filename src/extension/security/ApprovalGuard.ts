@@ -6,6 +6,7 @@ import {
 } from "./ApprovedToolCall";
 import type { PermissionPresentation } from "../../shared/permission";
 import { toolApprovalPresentation } from "./toolApprovalPresentation";
+import { evaluateTrust } from "./trust/TrustGate";
 import { guardrailRegistry } from "./GuardrailRegistry";
 import { evaluateGuardrails } from "./GuardrailEvaluator";
 import { jevGuard, reviewJevIfNeeded, type JevGuard } from "./JevGuard";
@@ -40,6 +41,8 @@ export async function approveToolCall(
 	semanticGuard: JevGuard = jevGuard,
 ) {
 	signal?.throwIfAborted();
+	input = freezeToolCall(input);
+	const trustSignal = await evaluateTrust(input);
 	const semantic = semanticGuard.snapshot();
 	const snapshot = input.policy.guardrailsRoot
 		? guardrailRegistry.snapshot(input.policy.guardrailsRoot, [
@@ -47,6 +50,7 @@ export async function approveToolCall(
 			])
 		: guardrailRegistry.snapshot(input.cwd, input.policy.workspaceRoots);
 	const combined = AbortSignal.any([
+		...(trustSignal ? [trustSignal] : []),
 		snapshot.signal,
 		semantic.signal,
 		...(signal ? [signal] : []),

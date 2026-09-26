@@ -75,6 +75,10 @@ export class PiChildRuntimes {
 			...(options.signal ? [options.signal] : []),
 		]);
 		signal.throwIfAborted();
+		this.parent.trustStore?.audit(
+			"subagent-root",
+			options.cwd ?? this.parent.cwd,
+		);
 		const childOptions: PiRuntimeOptions = {
 			...this.parent,
 			cwd: options.cwd ?? this.parent.cwd,

@@ -22,6 +22,7 @@ export async function createPiShellTools(
 	executor: SandboxCommandExecutor | null,
 	signal: AbortSignal,
 	unavailable?: string,
+	onUnavailable?: () => void,
 ): Promise<PiSdk.ToolDefinition[]> {
 	const tools: PiSdk.ToolDefinition[] = [];
 	for (const name of ["powershell", "pwsh"] as const) {
@@ -32,6 +33,7 @@ export async function createPiShellTools(
 					unavailableTool(
 						definition,
 						unavailable ?? "Sandbox Executorが接続されていません。",
+						onUnavailable,
 					),
 				);
 			}
@@ -69,6 +71,7 @@ export async function createPiShellTools(
 					unavailableTool(
 						definition,
 						error instanceof Error ? error.message : String(error),
+						onUnavailable,
 					),
 				);
 			}
@@ -117,11 +120,15 @@ function shellDefinition(
 function unavailableTool(
 	definition: PiSdk.ToolDefinition,
 	reason: string,
+	onUnavailable?: () => void,
 ): PiSdk.ToolDefinition {
 	return {
 		...definition,
 		description: `${definition.description}\n現在利用できません: ${reason}`,
-		execute: () => Promise.reject(new Error(reason)),
+		execute: () => {
+			onUnavailable?.();
+			return Promise.reject(new Error(reason));
+		},
 	};
 }
 

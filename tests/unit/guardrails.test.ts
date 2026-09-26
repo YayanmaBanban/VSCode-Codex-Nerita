@@ -288,6 +288,7 @@ it("設定ファイルを直接書き換えても実効設定は変わらない"
 
 it("子がcwdを別ルートへ移しても親のガードレールを維持する", async () => {
 	const h = await fixture();
+	await h.trustStore.setUserTrust(h.outside, true);
 	const config = defaultGuardrails();
 	config.commandRules.push({
 		id: "parent-deny",

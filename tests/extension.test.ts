@@ -5,6 +5,7 @@ import { access, readdir, readFile } from "node:fs/promises";
 import { CodexClient } from "../src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
 import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
+import { piTrustSmoke } from "./piTrustSmoke";
 import { piSubagentAdapterSmoke } from "./piSubagentAdapterSmoke";
 import { piWorkflowSmoke } from "./piWorkflowSmoke";
 import { homedir } from "node:os";
@@ -16,6 +17,13 @@ import {
 } from "../src/extension/webview/sidebarLocation";
 
 suite("Nerita for Codex Extension", () => {
+	test("未信頼の実SDKでは読取りだけを許可し、Trust後も書込みを承認する", async function () {
+		this.timeout(60000);
+		await piTrustSmoke(
+			vscode.extensions.getExtension("nerita-local.nerita-codex")!
+				.extensionUri.fsPath,
+		);
+	});
 	test("TOML Workflowが子の継続とForkをガード付きで実行する", async function () {
 		this.timeout(60000);
 		const root =
@@ -154,6 +162,8 @@ suite("Nerita for Codex Extension", () => {
 		const commands = await vscode.commands.getCommands(true);
 		assert.ok(commands.includes("nerita.codex.openChat"));
 		assert.ok(commands.includes("nerita.codex.newSession"));
+		assert.ok(commands.includes("nerita.trust.manage"));
+		assert.ok(commands.includes("nerita.trust.revoke"));
 		for (const asset of [
 			"dist/webview/index.js",
 			"dist/webview/index.css",

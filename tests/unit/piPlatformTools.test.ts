@@ -50,7 +50,15 @@ async function fixture(
 	);
 	const prepared = await preparePiRuntimeTools(
 		{ ...sdk, createBashToolDefinition },
-		{ extensionPath: ".", cwd: h.cwd, signal: abort.signal, ...extra },
+		{
+			extensionPath: ".",
+			cwd: h.cwd,
+			signal: abort.signal,
+			trustStore: h.trustStore,
+			trustContextId: h.trustContextId,
+			workspaceTrusted: true,
+			...extra,
+		},
 		authorize,
 		{
 			getShellPath: () => "configured-bash",
@@ -92,6 +100,8 @@ it.each(["darwin", "linux"] as const)(
 			"edit",
 			"read",
 			"ls",
+			"grep",
+			"find",
 			"bash",
 		]);
 		expect(h.executor).toBeNull();

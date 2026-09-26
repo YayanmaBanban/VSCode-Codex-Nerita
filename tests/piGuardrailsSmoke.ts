@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import {
 	createPiRuntime,
 	type PiRuntimeSession,
-} from "../src/extension/backends/pi/PiRuntime";
+} from "./piTrustedRuntime";
 import { guardrailRegistry } from "../src/extension/security/GuardrailRegistry";
 import { defaultGuardrails } from "../src/shared/guardrails/config";
 import type { PiAuthorize } from "../src/extension/backends/pi/PiApprovedTools";

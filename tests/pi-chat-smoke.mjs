@@ -163,7 +163,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./src/extension/backends/pi/PiRuntime"; export { isHostMessage } from "./src/shared/hostMessageValidation";',
+				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./tests/piTrustedRuntime"; export { isHostMessage } from "./src/shared/hostMessageValidation";',
 			resolveDir: projectRoot,
 		},
 		bundle: true,
@@ -304,9 +304,16 @@ try {
 	assert.ok(
 		requests.every((request) =>
 			request.tools.every((tool) =>
-				["read", "ls", "write", "edit", "powershell", "pwsh"].includes(
-					tool.function.name,
-				),
+				[
+					"read",
+					"ls",
+					"grep",
+					"find",
+					"write",
+					"edit",
+					"powershell",
+					"pwsh",
+				].includes(tool.function.name),
 			),
 		),
 	);

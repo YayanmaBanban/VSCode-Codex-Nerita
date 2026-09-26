@@ -8,7 +8,7 @@ import {
 	createPiRuntime,
 	type PiRuntimeSession,
 	type PiRuntimeOptions,
-} from "../src/extension/backends/pi/PiRuntime";
+} from "./piTrustedRuntime";
 import { guardrailsFixture } from "./piGuardrailsFixture";
 import type { PermissionPresentation } from "../src/shared/permission";
 import { piAgentPersistenceSmoke } from "./piAgentPersistenceSmoke";

@@ -20,6 +20,8 @@ import { createPiHostShellTool } from "./PiHostShellTool";
 import type { PiRuntimeOptions } from "./PiRuntime";
 import type { PiAuthorize } from "./PiApprovedTools";
 import { createPiReadTool } from "./guardrails/PiReadTools";
+import { piWorkspaceTrusted } from "./PiTrustAdapter";
+import { createPiSearchTools } from "./guardrails/PiSearchTools";
 
 /** SDK のシェル設定だけを実行ツールへ引き継ぐ。 */
 type ShellSettings = Pick<
@@ -35,9 +37,16 @@ export async function preparePiRuntimeTools(
 	settings?: ShellSettings,
 ) {
 	const windows = process.platform === "win32";
-	const { mode, unavailable } = windows
-		? await executionMode(options)
-		: { mode: undefined, unavailable: undefined };
+	const trusted = await piWorkspaceTrusted(options);
+	const { mode, unavailable } =
+		windows && trusted
+			? await executionMode(options)
+			: {
+					mode: undefined,
+					unavailable: trusted
+						? undefined
+						: "未信頼のWorkspaceではShellを実行できません。",
+				};
 	options.signal.throwIfAborted();
 	const paths = await runtimePaths(options, mode);
 	const { cwd, policy } = paths;
@@ -55,6 +64,7 @@ export async function preparePiRuntimeTools(
 			createPiReadTool(sdk, kind, paths, authorize, options.signal),
 		),
 	);
+	tools.push(...createPiSearchTools(sdk, paths, authorize, options.signal));
 	// OS による選択であり、Windows のサンドボックス失敗を Host 実行へ切り替える処理ではない。
 	if (!windows) {
 		tools.push(
@@ -84,9 +94,20 @@ export async function preparePiRuntimeTools(
 			executor,
 			options.signal,
 			reason,
+			trustDeniedReporter(options, trusted),
 		)),
 	);
 	return { paths, tools, executor, unavailable: reason };
+}
+
+/** 起動準備を省いた未信頼の Shell の拒否も監査へ残す。 */
+function trustDeniedReporter(
+	options: PiRuntimeOptions,
+	trusted: boolean,
+): (() => void) | undefined {
+	return trusted
+		? undefined
+		: () => options.trustStore?.audit("execution-denied", options.cwd);
 }
 
 /** 未指定の設定は SDK の既定値を使う。 */
@@ -124,7 +145,14 @@ async function runtimePaths(
 			.sort((a, b) => b.length - a.length)[0] ??
 		cwd;
 	const paths = new WorkspacePathPolicy(
-		intersectPolicy({ ...base, guardrailsRoot }, role),
+		intersectPolicy(
+			{
+				...base,
+				guardrailsRoot,
+				trustContextId: options.trustContextId ?? base.trustContextId,
+			},
+			role,
+		),
 		cwd,
 	);
 	await paths.resolveWorkspace(cwd);

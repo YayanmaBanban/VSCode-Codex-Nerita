@@ -7,6 +7,7 @@ import {
 } from "../../security/ApprovalGuard";
 import { consumeApprovedToolCall } from "../../security/ApprovedToolCall";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
+import { evaluateTrust } from "../../security/trust/TrustGate";
 
 const inputSchema = z
 	.object({
@@ -49,6 +50,8 @@ export function createPiHostShellTool(
 				combined,
 			);
 			const call = consumeApprovedToolCall(approved);
+			await evaluateTrust(call);
+			approved.signal.throwIfAborted();
 			return tool.execute(
 				id,
 				call.params,

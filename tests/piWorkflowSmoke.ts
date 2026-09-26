@@ -7,7 +7,7 @@ import { guardrailsFixture } from "./piGuardrailsFixture";
 import {
 	createPiRuntime,
 	type PiRuntimeSession,
-} from "../src/extension/backends/pi/PiRuntime";
+} from "./piTrustedRuntime";
 import { piAgentPersistenceSmoke } from "./piAgentPersistenceSmoke";
 import { piWorkflowEditorSmoke } from "./piWorkflowEditorSmoke";
 

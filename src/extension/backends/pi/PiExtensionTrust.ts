@@ -16,6 +16,7 @@ export async function resolveTrustedExtensions(
 	paths: readonly string[],
 	roots: readonly string[],
 	workspaceTrusted: boolean,
+	rootTrusted?: (path: string) => Promise<boolean>,
 ): Promise<string[]> {
 	const result = [];
 	for (const input of paths) {
@@ -38,7 +39,11 @@ export async function resolveTrustedExtensions(
 				`信頼するPi拡張はcanonicalな単一ファイルで指定してください: ${input}`,
 			);
 		}
+		if (await isRootRestricted(path, roots, rootTrusted)) {
+			continue;
+		}
 		if (
+			!rootTrusted &&
 			!workspaceTrusted &&
 			roots.some((root) => containsPath(root, path))
 		) {
@@ -49,4 +54,17 @@ export async function resolveTrustedExtensions(
 		result.push(path);
 	}
 	return [...new Set(result)];
+}
+
+/** root 単位の判定が接続された場合だけ、未信頼の候補を除外する。 */
+async function isRootRestricted(
+	path: string,
+	roots: readonly string[],
+	trusted?: (path: string) => Promise<boolean>,
+) {
+	return (
+		!!trusted &&
+		roots.some((root) => containsPath(root, path)) &&
+		!(await trusted(path))
+	);
 }

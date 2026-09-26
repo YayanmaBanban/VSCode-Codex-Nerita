@@ -22,8 +22,8 @@
 	],
 	"capabilities": {
 		"untrustedWorkspaces": {
-			"supported": false,
-			"description": "Codexは信頼済みワークスペース内でファイル・コマンド操作を実行します。"
+			"supported": "limited",
+			"description": "未信頼のWorkspaceではPiの読取りだけを利用できます。コード実行には明示的なTrustが必要です。"
 		},
 		"virtualWorkspaces": false
 	},
@@ -130,6 +130,14 @@
 			}
 		},
 		"commands": [
+			{
+				"command": "nerita.trust.manage",
+				"title": "Nerita: Workspace Trustを管理"
+			},
+			{
+				"command": "nerita.trust.revoke",
+				"title": "Nerita: Workspace Trustを取消し"
+			},
 			{
 				"command": "nerita.pi.guardrails",
 				"title": "Nerita: Pi ガードレールを編集"

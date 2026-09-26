@@ -14,6 +14,7 @@ import {
 } from "../../security/ApprovedToolCall";
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import { CodexClient } from "./CodexClient";
+import { evaluateTrust } from "../../security/trust/TrustGate";
 
 /** モデルのプロバイダーやスレッドを必要としない、コマンド実行専用の接続操作。 */
 export type SandboxConnection = Pick<
@@ -95,6 +96,7 @@ export class CodexSandboxExecutor implements SandboxCommandExecutor {
 				);
 			}
 			await validateSandboxCall(call);
+			await evaluateTrust(call);
 			approved.signal.throwIfAborted();
 			started = true;
 			const result = await client.executeCommand({

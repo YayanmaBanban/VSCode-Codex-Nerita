@@ -1,5 +1,12 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
 import { randomUUID } from "node:crypto";
+import type { WorkspaceTrustStore } from "../../security/trust/WorkspaceTrustStore";
+import {
+	preparePiTrust,
+	piWorkspaceTrusted,
+	restrictPiStorage,
+} from "./PiTrustAdapter";
+import { preparePiWebTrust, type PiWebTrust } from "./PiWebTrust";
 import type { WorkflowExecution } from "../../../shared/workflows/messages";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -106,6 +113,10 @@ export type PiRuntimeOptions = {
 	request?: typeof fetch;
 	workspaceRoots?: string[];
 	workspaceTrusted?: boolean;
+	trustStore?: WorkspaceTrustStore;
+	trustEnabled?: () => boolean;
+	trustContextId?: string;
+	webTrust?: PiWebTrust[];
 	trustedExtensionPaths?: string[];
 	windowsSandbox?: WindowsSandboxImplementation;
 	executor?: SandboxCommandExecutor | null;
@@ -143,6 +154,47 @@ export type PiModelSelection = {
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
 ): Promise<PiRuntimeSession> {
+	if (options.trustStore) {
+		options = {
+			...options,
+			webTrust: await preparePiWebTrust(
+				options.trustedExtensionPaths ?? [],
+				options.trustStore,
+			),
+		};
+	}
+	const trust = preparePiTrust(options);
+	try {
+		const session = await openPiRuntime(
+			await restrictPiStorage(trust.options),
+		);
+		const dispose = session.dispose.bind(session);
+		session.dispose = () => {
+			trust.dispose();
+			dispose();
+		};
+		const close = session.close;
+		session.close = async () => {
+			try {
+				await close();
+			} finally {
+				trust.dispose();
+			}
+		};
+		trust.options.signal.addEventListener("abort", trust.dispose, {
+			once: true,
+		});
+		return session;
+	} catch (error) {
+		trust.dispose();
+		throw error;
+	}
+}
+
+/** 信頼コンテキストの準備が終わった起動条件だけで SDK を組み立てる。 */
+async function openPiRuntime(
+	options: PiRuntimeOptions,
+): Promise<PiRuntimeSession> {
 	const parentSignal = options.signal;
 	const lifetime = new AbortController();
 	options = {
@@ -156,6 +208,7 @@ export async function createPiRuntime(
 	options.signal.throwIfAborted();
 	const agentDir = options.agentDir || sdk.getAgentDir();
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
+	settingsManager.setProjectTrusted(await piWorkspaceTrusted(options));
 	// 会話の自動再実行は Host 側の停止・承認の寿命と分離して無効化する。
 	settingsManager.applyOverrides({
 		compaction: { enabled: false },
@@ -197,6 +250,7 @@ export async function createPiRuntime(
 		runtimeTools.paths.policy,
 		options.subagentPrompt,
 		options.subagentPromptMode,
+		options.webTrust,
 	);
 	options.signal.throwIfAborted();
 	const modelRuntime = await sdk.ModelRuntime.create({
@@ -213,7 +267,7 @@ export async function createPiRuntime(
 	const model = resolvePiInitialModel(options, modelRuntime);
 	validateChildModel(options, model);
 	options.signal.throwIfAborted();
-	const storage = sessionStorage(options);
+	const storage = await trustedSessionStorage(options);
 	const { manager, history } = options.ephemeral
 		? {
 				manager: sdk.SessionManager.inMemory(options.cwd),
@@ -410,18 +464,34 @@ async function runtimeExtensions(
 	settings: PiSdk.SettingsManager,
 	policy: AgentAccessPolicy,
 ) {
-	const trusted = options.workspaceTrusted ?? true;
+	const trusted = await piWorkspaceTrusted(options);
 	settings.setProjectTrusted(trusted);
 	return resolveTrustedExtensions(
 		options.trustedExtensionPaths ?? [],
 		policy.workspaceRoots,
 		trusted,
+		async (path) => {
+			const allowed =
+				options.workspaceTrusted === true &&
+				(await options.trustStore!.trusted(path));
+			if (!allowed) {
+				options.trustStore!.audit("extension-load-denied", path);
+			}
+			return allowed;
+		},
 	);
 }
 
 /** 最新の保存先設定を明示設定と既定値より優先する。 */
 function sessionStorage(options: PiRuntimeOptions) {
 	return options.getStorage?.() ?? options.storage ?? "global";
+}
+
+/** 未信頼の会話履歴は workspace 内へ書き込まない。 */
+async function trustedSessionStorage(options: PiRuntimeOptions) {
+	return (await piWorkspaceTrusted(options))
+		? sessionStorage(options)
+		: "global";
 }
 
 /** 拡張由来のプロバイダーを初期モデル選択前に登録する。 */

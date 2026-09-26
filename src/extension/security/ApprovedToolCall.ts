@@ -21,6 +21,8 @@ export type ToolCall = {
 	timeoutMs?: number;
 	sandbox?: SandboxExecutionInfo;
 	hostShell?: boolean;
+	/** 検証済みの Web 取得アダプターだけが、認証なしの raw 取得に設定する。 */
+	externalRead?: boolean;
 	file?: FileSnapshot;
 	guardrailsDigest?: string;
 	guardrailsPaths?: string[];

@@ -2,6 +2,8 @@
 import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { WorkspaceTrustStore } from "../../src/extension/security/trust/WorkspaceTrustStore";
+import { bindTrustContext } from "../../src/extension/security/trust/TrustGate";
 import {
 	createWorkspaceAccessPolicy,
 	WorkspacePathPolicy,
@@ -15,7 +17,14 @@ export async function sandboxFixture() {
 	const cwd = join(root, "workspace");
 	const outside = join(root, "outside");
 	await Promise.all([mkdir(cwd), mkdir(outside)]);
-	const policy = await createWorkspaceAccessPolicy([cwd]);
+	const basePolicy = await createWorkspaceAccessPolicy([cwd]);
+	const trustStore = new WorkspaceTrustStore({
+		read: () => undefined,
+		write: async () => {},
+	});
+	await trustStore.setUserTrust(cwd, true);
+	const trust = bindTrustContext(trustStore, [cwd], () => true);
+	const policy = { ...basePolicy, trustContextId: trust.id };
 	const paths = new WorkspacePathPolicy(policy, cwd);
 	return {
 		root,
@@ -23,7 +32,11 @@ export async function sandboxFixture() {
 		outside,
 		policy,
 		paths,
+		trustStore,
+		trustContextId: trust.id,
+		workspaceTrusted: true,
 		async cleanup() {
+			trust.dispose();
 			if (
 				dirname(root) !== (await realpath(tmpdir())) ||
 				!basename(root).startsWith("nerita-sandbox-unit-")

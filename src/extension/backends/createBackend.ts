@@ -14,6 +14,8 @@ import { createPiRuntime, type PiModelSelection } from "./pi/PiRuntime";
 import { createPiAuthService } from "./pi/PiAuthService";
 import { codexSelectionStore } from "./codex/settings/modelSelection";
 import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
+import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
+import { containsPath } from "../security/AgentAccessPolicy";
 
 const piModelSelectionKey = "nerita.pi.lastModel";
 
@@ -29,6 +31,7 @@ function workspaceDirectory(): string {
 /** 起動・切替時の最新設定を読み、使用するバックエンドを生成する。 */
 export function createBackend(
 	context: vscode.ExtensionContext,
+	trustStore?: WorkspaceTrustStore,
 ): BackendSession {
 	if (
 		vscode.workspace
@@ -36,7 +39,21 @@ export function createBackend(
 			.get<string>("backend", "codex") === "pi"
 	) {
 		return new PiSessionController(async (signal, authorize, resume) => {
-			const cwd = workspaceDirectory();
+			const folders = vscode.workspace.workspaceFolders;
+			let folder = folders?.[0];
+			if (folders && folders.length > 1) {
+				folder = await vscode.window.showWorkspaceFolderPick({
+					placeHolder: "この会話の作業rootを選択してください",
+				});
+				if (!folder) {
+					throw new Error("作業rootの選択を取り消しました。");
+				}
+			}
+			const cwd = requireLocalWorkspace(
+				folder ? [folder] : undefined,
+				true,
+				vscode.env.remoteName,
+			);
 			const preferredModel = storedPiModel(context);
 			const session = await createPiRuntime({
 				extensionPath: context.extensionUri.fsPath,
@@ -45,6 +62,8 @@ export function createBackend(
 					(folder) => folder.uri.fsPath,
 				),
 				workspaceTrusted: vscode.workspace.isTrusted,
+				...(trustStore ? { trustStore } : {}),
+				trustEnabled: () => vscode.workspace.isTrusted,
 				trustedExtensionPaths: userTrustedExtensionPaths(
 					vscode.workspace
 						.getConfiguration("nerita.pi")
@@ -75,6 +94,24 @@ export function createBackend(
 	return new CodexSessionController(
 		async (callbacks, signal) => {
 			const cwd = workspaceDirectory();
+			if (!trustStore || !(await trustStore.trusted(cwd))) {
+				throw new Error(
+					"Codexへの接続にはNeritaのTrust操作が必要です。",
+				);
+			}
+			if (
+				trustStore
+					.list()
+					.some(
+						(record) =>
+							record.trust === "untrusted" &&
+							containsPath(cwd, record.root),
+					)
+			) {
+				throw new Error(
+					"未信頼の外部rootを含むWorkspaceでのCodex実行には未対応です。",
+				);
+			}
 			const client = await CodexClient.connect({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,

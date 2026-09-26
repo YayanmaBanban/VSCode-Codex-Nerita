@@ -49,8 +49,9 @@ const server = createServer(async (request, response) => {
 			);
 			const prompt = JSON.stringify(latest.content);
 			const kind =
-				["stop", "deny"].find((value) => prompt.includes(value)) ??
-				"allow";
+				["stop", "deny", "revoked"].find((value) =>
+					prompt.includes(value),
+				) ?? "allow";
 			const command =
 				kind === "stop"
 					? "Set-Content -LiteralPath started.txt -Value started; Start-Sleep -Seconds 30; Set-Content -LiteralPath unexpected.txt -Value bad"
@@ -109,6 +110,7 @@ await writeFile(
 		"security.workspace.trust.enabled": false,
 		"workbench.startupEditor": "none",
 		"window.restoreWindows": "none",
+		"window.dialogStyle": "custom",
 		"git.enabled": false,
 	}),
 );
@@ -179,6 +181,40 @@ try {
 		.locator(".quick-input-widget input")
 		.fill(">Notifications: Hide Notifications");
 	await page.keyboard.press("Enter");
+	await expect(
+		frame.getByRole("button", { name: "接続済み", exact: true }),
+	).toBeVisible();
+	await expect(
+		page.getByText("Nerita Trust 0/1", { exact: true }),
+	).toBeVisible();
+	await page.screenshot({ path: path.join(fixture, "trust-restricted.png") });
+	await page.getByText("Nerita Trust 0/1", { exact: true }).click();
+	await expect(page.locator(".quick-input-list")).toContainText(
+		"取得したrepoを選択",
+	);
+	await page.locator(".quick-input-widget input").fill(cwd);
+	await page.keyboard.press("Enter");
+	await expect(
+		page.locator(".quick-input-list").getByText("Trust", { exact: true }),
+	).toBeVisible();
+	await page.keyboard.press("Enter");
+	await expect(
+		page.getByText("このコードを信頼しますか？", { exact: false }),
+	).toBeVisible();
+	await page.screenshot({ path: path.join(fixture, "trust-confirm.png") });
+	await page
+		.getByRole("button", { name: "Trust this root", exact: true })
+		.click();
+	await expect(
+		page.getByText("Nerita Trust 1/1", { exact: true }),
+	).toBeVisible();
+	report.cases.push({ id: "human-trust", status: "pass" });
+	await frame
+		.getByRole("button", { name: "未接続：接続する", exact: true })
+		.click();
+	await expect(
+		frame.getByRole("button", { name: "接続済み", exact: true }),
+	).toBeVisible();
 	for (const kind of ["allow", "deny", "stop"]) {
 		await frame.getByRole("textbox").fill(kind);
 		await frame.getByRole("button", { name: "送信", exact: true }).click();
@@ -276,6 +312,41 @@ try {
 	).toBeVisible();
 	await page.screenshot({ path: path.join(fixture, "reconnected.png") });
 	report.cases.push({ id: "window-reload-reconnect", status: "pass" });
+	await page.getByText("Nerita Trust 1/1", { exact: true }).click();
+	await expect(page.locator(".quick-input-list")).toContainText(
+		"取得したrepoを選択",
+	);
+	await page.locator(".quick-input-widget input").fill(cwd);
+	await page.keyboard.press("Enter");
+	await expect(
+		page
+			.locator(".quick-input-list")
+			.getByText("Revoke Trust", { exact: true }),
+	).toBeVisible();
+	await page.keyboard.press("ArrowDown");
+	await page.keyboard.press("Enter");
+	await expect(
+		page.getByText("Nerita Trust 0/1", { exact: true }),
+	).toBeVisible();
+	await frame
+		.getByRole("button", { name: "未接続：接続する", exact: true })
+		.click();
+	await expect(
+		frame.getByRole("button", { name: "接続済み", exact: true }),
+	).toBeVisible();
+	await frame.getByRole("textbox").fill("revoked");
+	await frame.getByRole("button", { name: "送信", exact: true }).click();
+	await expect(
+		frame.locator('.tool-card[data-status="failed"]').last(),
+	).toBeVisible();
+	await expect(frame.getByRole("region", { name: "承認要求" })).toHaveCount(
+		0,
+	);
+	await assert.rejects(readFile(path.join(cwd, "revoked.txt")), {
+		code: "ENOENT",
+	});
+	await page.screenshot({ path: path.join(fixture, "trust-revoked.png") });
+	report.cases.push({ id: "revoke-denies-without-approval", status: "pass" });
 	assert.deepEqual(report.errors, []);
 } catch (error) {
 	const failedPage = app?.windows()[0];

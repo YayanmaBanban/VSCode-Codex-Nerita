@@ -6,7 +6,7 @@ import {
 	createPiRuntime,
 	type PiRuntimeOptions,
 	type PiRuntimeSession,
-} from "../src/extension/backends/pi/PiRuntime";
+} from "./piTrustedRuntime";
 import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
 
 /** 実モデルの代わりに既存のローカル HTTP フィクスチャを使う。 */

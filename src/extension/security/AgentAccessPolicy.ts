@@ -12,6 +12,7 @@ export type AgentAccessPolicy = {
 	shell: boolean;
 	windowsSandbox: WindowsSandboxImplementation;
 	guardrailsRoot?: string;
+	trustContextId?: string | undefined;
 };
 /** 子の `role` は権限を縮小する項目だけを受け付ける。 */
 export type AgentRole = Partial<

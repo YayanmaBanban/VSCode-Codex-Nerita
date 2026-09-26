@@ -6,7 +6,7 @@ import {
 	createPiRuntime,
 	type PiRuntimeOptions,
 	type PiRuntimeSession,
-} from "../src/extension/backends/pi/PiRuntime";
+} from "./piTrustedRuntime";
 
 /** 保存済みの子を読み直してもモデルや承認を呼び出さない。 */
 export async function piAgentPersistenceSmoke(

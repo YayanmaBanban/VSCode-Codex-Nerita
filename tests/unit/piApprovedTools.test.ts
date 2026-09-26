@@ -1,12 +1,20 @@
 // 実ツール境界で承認前の副作用抑止と、実行中への取消伝播を検証する。
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+import { sandboxFixture } from "./sandboxFixtures";
+
+const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];
+afterEach(async () => {
+	await Promise.all(fixtures.splice(0).map((item) => item.cleanup()));
+});
 import { approvePiTool } from "../../src/extension/backends/pi/PiApprovedTools";
 import { pending } from "./piHarness";
 import type { ToolAuthorizer } from "../../src/extension/security/ApprovalGuard";
 
 /** 副作用の代わりに呼出回数と受け取った `signal` を記録する。 */
-function fixture(name: string) {
+async function fixture(name: string) {
+	const files = await sandboxFixture();
+	fixtures.push(files);
 	const execute = vi.fn<ToolDefinition["execute"]>(() =>
 		Promise.resolve({
 			content: [{ type: "text", text: "done" }],
@@ -18,7 +26,7 @@ function fixture(name: string) {
 	const context: unknown = {};
 	const approval = pending<AbortSignal>();
 	const authorize = vi.fn<ToolAuthorizer>(() => approval.promise);
-	const wrapped = approvePiTool(tool, "D:\\workspace", authorize);
+	const wrapped = approvePiTool(tool, files.cwd, authorize, files.policy);
 	const run = (signal?: AbortSignal) =>
 		wrapped.execute(
 			"call",
@@ -33,7 +41,7 @@ function fixture(name: string) {
 it.each(["write", "edit", "powershell", "bash", "custom"])(
 	"%sは承認前に実行せず、拒否を呼出元へ返す",
 	async (name) => {
-		const h = fixture(name);
+		const h = await fixture(name);
 		const result = h.run();
 		const rejected = expect(result).rejects.toThrow("拒否");
 		await vi.waitFor(() => expect(h.authorize).toHaveBeenCalled());
@@ -53,7 +61,7 @@ it.each(["write", "edit", "powershell", "bash", "custom"])(
 it.each(["host", "sdk", "host-only"])(
 	"承認後も%sの取消を実ツールへ伝える",
 	async (source) => {
-		const h = fixture("powershell");
+		const h = await fixture("powershell");
 		const host = new AbortController();
 		const sdk = new AbortController();
 		const result = h.run(source === "host-only" ? undefined : sdk.signal);
@@ -67,7 +75,7 @@ it.each(["host", "sdk", "host-only"])(
 );
 
 it("許可の直後にHostが停止した場合は実ツールを呼ばない", async () => {
-	const h = fixture("write");
+	const h = await fixture("write");
 	const host = new AbortController();
 	const result = h.run();
 	const rejected = expect(result).rejects.toThrow();

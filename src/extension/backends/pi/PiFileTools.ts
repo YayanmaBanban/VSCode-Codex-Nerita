@@ -14,6 +14,7 @@ import {
 } from "../../security/ApprovedToolCall";
 import { snapshotFile, verifyFileSnapshot } from "../../security/FileSnapshot";
 import type { WorkspacePathPolicy } from "../../security/WorkspacePathPolicy";
+import { evaluateTrust } from "../../security/trust/TrustGate";
 
 const writeSchema = z.object({ path: z.string().min(1), content: z.string() });
 const editSchema = z.object({
@@ -68,6 +69,7 @@ export function createPiFileTool(
 			const check = async () => {
 				approved.signal.throwIfAborted();
 				await verifyFileSnapshot(paths, snapshot);
+				await evaluateTrust(call);
 				approved.signal.throwIfAborted();
 			};
 			/** 開いた既存ファイルの `identity` 確認後にだけ切り詰め、新規ファイルは排他的に作る。 */

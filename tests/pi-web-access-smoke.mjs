@@ -7,6 +7,7 @@ import {
 	mkdtemp,
 	readFile,
 	realpath,
+	readdir,
 	writeFile,
 } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -67,7 +68,11 @@ try {
 	await writeFile(
 		path.join(agentDir, "web-search.json"),
 		JSON.stringify({
-			fetch: { defaultMode: "raw", allowedModes: ["raw"] },
+			fetch: { defaultMode: "raw", allowedModes: ["raw", "readable"] },
+			githubClone: {
+				clonePath: path.join(fixture, "external"),
+				cloneTimeoutSeconds: 15,
+			},
 		}),
 	);
 	await writeFile(
@@ -94,7 +99,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { createPiRuntime } from "./src/extension/backends/pi/PiRuntime";',
+				'export { createPiRuntime } from "./tests/piTrustedRuntime"; export { WorkspaceTrustStore } from "./src/extension/security/trust/WorkspaceTrustStore"; export { evaluateTrust } from "./src/extension/security/trust/TrustGate";',
 			resolveDir: extensionPath,
 		},
 		bundle: true,
@@ -103,19 +108,24 @@ try {
 		target: "node22",
 		outfile: path.join(output, "host.cjs"),
 	});
-	const { createPiRuntime } = createRequire(import.meta.url)(
-		path.join(output, "host.cjs"),
-	);
+	const { createPiRuntime, WorkspaceTrustStore, evaluateTrust } =
+		createRequire(import.meta.url)(path.join(output, "host.cjs"));
+	const trustStore = new WorkspaceTrustStore({
+		read: () => undefined,
+		write: async () => {},
+	});
+	await trustStore.setUserTrust(cwd, true);
 	const options = {
 		extensionPath,
 		cwd,
+		trustStore,
 		agentDir,
 		preferredModel: { provider: "local", model: "smoke" },
 		signal: abort.signal,
 		executor: null,
 		ephemeral: true,
 		authorize: (title) => {
-			assert.match(title, /fetch_content/);
+			assert.match(title.title, /fetch_content/);
 			approvals++;
 			return allowed
 				? Promise.resolve(abort.signal)
@@ -171,6 +181,88 @@ try {
 		requests,
 		approvals,
 	});
+	// 公開リポジトリの取得は個人の Git 設定・認証ヘルパー・gh を使用しない。
+	const gitExecutable = execFileSync("where.exe", ["git.exe"], {
+		encoding: "utf8",
+	})
+		.trim()
+		.split(/\r?\n/)[0];
+	for (const name of Object.keys(process.env)) {
+		if (
+			name.startsWith("GIT_") ||
+			["GH_TOKEN", "GITHUB_TOKEN", "SSH_ASKPASS"].includes(name)
+		) {
+			delete process.env[name];
+		}
+	}
+	process.env.PATH = [
+		path.dirname(gitExecutable),
+		path.join(process.env.SystemRoot, "System32"),
+	].join(path.delimiter);
+	process.env.GIT_CONFIG_NOSYSTEM = "1";
+	process.env.GIT_CONFIG_GLOBAL = path.join(fixture, "empty-gitconfig");
+	process.env.GIT_TERMINAL_PROMPT = "0";
+	await writeFile(process.env.GIT_CONFIG_GLOBAL, "");
+	const cloneResult = await tool.execute(
+		"clone",
+		{
+			url: "https://github.com/octocat/Hello-World",
+			mode: "readable",
+			forceClone: true,
+		},
+		abort.signal,
+	);
+	assert.ok(
+		JSON.stringify(cloneResult).includes("Repository cloned to:"),
+		JSON.stringify(cloneResult),
+	);
+	const cache = path.join(fixture, "external");
+	const runtime = (await readdir(cache)).find((name) =>
+		name.startsWith("runtime-"),
+	);
+	assert.ok(runtime);
+	const repoName = (await readdir(path.join(cache, runtime))).find((name) =>
+		/^[0-9a-f]{64}$/.test(name),
+	);
+	assert.ok(repoName);
+	const repo = path.join(cache, runtime, repoName);
+	assert.equal(await trustStore.trusted(repo), false);
+	await assert.rejects(
+		evaluateTrust({
+			tool: "powershell",
+			params: { command: "pnpm test" },
+			command: ["powershell", "pnpm test"],
+			cwd: repo,
+			policy: session.accessPolicy,
+		}),
+		/未信頼/,
+	);
+	report.cases.push({ id: "real-clone-untrusted", status: "pass" });
+	await session.close();
+	session = await createPiRuntime({
+		...options,
+		workspaceTrusted: false,
+		trustedExtensionPaths: [entry],
+	});
+	const rawTool = session.agent.state.tools.find(
+		(item) => item.name === "fetch_content",
+	);
+	assert.ok(rawTool);
+	const publicResult = await rawTool.execute(
+		"untrusted-raw",
+		{ url, mode: "raw" },
+		abort.signal,
+	);
+	assert.ok(JSON.stringify(publicResult).includes(marker));
+	await assert.rejects(
+		rawTool.execute(
+			"untrusted-readable",
+			{ url, mode: "readable" },
+			abort.signal,
+		),
+		/未信頼/,
+	);
+	report.cases.push({ id: "untrusted-public-raw-only", status: "pass" });
 	console.log(JSON.stringify(report, null, 2));
 } catch (error) {
 	report.cases.push({
