@@ -106,8 +106,10 @@ async function platformCase({
 		}
 		assert.ok(!names.includes("powershell") && !names.includes("pwsh"));
 		assert.equal(approvals.length, 1);
-		assert.match(approvals[0], /Pi Shell/);
-		assert.doesNotMatch(approvals[0], /Sandbox/);
+		const scope = approvals[0].fields.find((field) => field.id === "scope");
+		assert.ok(scope);
+		assert.match(scope.value, /Pi Shell/);
+		assert.doesNotMatch(scope.value, /Sandbox/);
 		const result = session.messages.findLast(
 			(message) => message.role === "toolResult",
 		);

@@ -15,7 +15,11 @@ import type {
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import { preparePiRuntimeTools } from "./PiRuntimeTools";
 import { resolveTrustedExtensions } from "./PiExtensionTrust";
+import { PiAgentViews } from "./PiAgentViews";
+import { PiAgentHistory, restorePiAgentRecords } from "./PiAgentHistory";
 import { PiChildRuntimes } from "./PiChildRuntimes";
+import { loadSubagentDefinitions } from "./PiSubagentDefinitions";
+import { createPiSubagentTools } from "./PiSubagentTool";
 import { bindPiRuntimeLifetime } from "./PiRuntimeLifetime";
 import { PiAccount, type PiAuthService } from "./PiAccount";
 import { loadPiResources } from "./PiResources";
@@ -44,6 +48,7 @@ export type PiSession = Pick<
 	| "abort"
 	| "dispose"
 > & {
+	agentViews?: PiAgentViews;
 	history?: PiHistoryAccess;
 	account?: PiAccount;
 	quota?: PiQuotaService;
@@ -95,6 +100,10 @@ export type PiRuntimeOptions = {
 	ephemeral?: boolean;
 	/** 実行基盤の利用不能も子へ継承し、フォールバックによる有効化を防ぐ。 */
 	sandboxUnavailable?: string;
+	allowedTools?: string[];
+	subagentPrompt?: string;
+	subagentPromptMode?: "append" | "replace";
+	strictModel?: boolean;
 };
 
 /** 秘密値を含まない、起動時モデルの保存形式。 */
@@ -142,6 +151,13 @@ export async function createPiRuntime(
 		settingsManager,
 		runtimeTools.paths.policy,
 	);
+	const subagents = await runtimeSubagents(
+		sdk,
+		options,
+		agentDir,
+		settingsManager,
+		trustedExtensions,
+	);
 	const controls = new PiProviderControls();
 	const resourceLoader = await loadPiResources(
 		sdk,
@@ -151,8 +167,10 @@ export async function createPiRuntime(
 		authorize,
 		options.signal,
 		controls,
-		trustedExtensions,
+		subagents.trusted,
 		runtimeTools.paths.policy,
+		options.subagentPrompt,
+		options.subagentPromptMode,
 	);
 	options.signal.throwIfAborted();
 	const modelRuntime = await sdk.ModelRuntime.create({
@@ -167,6 +185,7 @@ export async function createPiRuntime(
 	registerExtensionProviders(resourceLoader, modelRuntime);
 	await modelRuntime.getAvailable(undefined, { signal: options.signal });
 	const model = resolvePiInitialModel(options, modelRuntime);
+	validateChildModel(options, model);
 	options.signal.throwIfAborted();
 	const storage = sessionStorage(options);
 	const { manager, history } = options.ephemeral
@@ -186,13 +205,35 @@ export async function createPiRuntime(
 		.getExtensions()
 		.extensions.flatMap((extension) => [...extension.tools.keys()]);
 	// 非 Windows では、明示的に信頼した `bash` 拡張が SDK 標準ツールを置き換えられる。
-	const customTools = runtimeTools.tools.filter(
+	const customTools = permittedTools(
+		runtimeTools.tools,
+		options.allowedTools,
+	).filter(
 		(tool) =>
 			!(
 				process.platform !== "win32" &&
 				tool.name === "bash" &&
 				extensionTools.includes("bash")
 			),
+	);
+	const children = createChildren(options, runtimeTools);
+	const agentHistory = new PiAgentHistory(manager);
+	const agentViews = new PiAgentViews((record) => agentHistory.write(record));
+	agentViews.restore(
+		restorePiAgentRecords(manager.getBranch()),
+		manager.getSessionId(),
+		options.cwd,
+	);
+	customTools.push(
+		...createPiSubagentTools(
+			subagents.definitions,
+			children,
+			runtimeTools.paths.policy,
+			options.cwd,
+			authorize,
+			options.signal,
+			agentViews,
+		),
 	);
 	const { session } = await sdk.createAgentSession({
 		cwd: options.cwd,
@@ -205,6 +246,7 @@ export async function createPiRuntime(
 		tools: [...customTools.map((tool) => tool.name), ...extensionTools],
 		customTools,
 	});
+	agentViews.parentId = session.sessionId;
 	controls.bind(session);
 	const account = new PiAccount(
 		modelRuntime,
@@ -231,7 +273,6 @@ export async function createPiRuntime(
 			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
 		);
 	}
-	const children = createChildren(options, runtimeTools);
 	const close = bindPiRuntimeLifetime(
 		session,
 		children,
@@ -240,6 +281,7 @@ export async function createPiRuntime(
 	);
 	return Object.assign(session, {
 		accessPolicy: runtimeTools.paths.policy,
+		agentViews,
 		children,
 		close,
 		...(history ? { history } : {}),
@@ -344,4 +386,43 @@ function resolvePreferredModel(
 				model.provider === selection.provider.trim() &&
 				model.id === selection.model.trim(),
 		);
+}
+/** 子には定義探索と再委譲用 Tool を公開しない。 */
+async function runtimeSubagents(
+	sdk: typeof PiSdk,
+	options: PiRuntimeOptions,
+	agentDir: string,
+	settings: PiSdk.SettingsManager,
+	trusted: string[],
+) {
+	return options.parentPolicy
+		? { definitions: [], trusted }
+		: loadSubagentDefinitions(
+				sdk,
+				options.cwd,
+				agentDir,
+				settings,
+				trusted,
+			);
+}
+/** 指定モデルの不在を別モデルへの自動切替で隠さない。 */
+function validateChildModel(
+	options: PiRuntimeOptions,
+	model: ReturnType<typeof resolvePiInitialModel>,
+) {
+	if (
+		options.strictModel &&
+		(!model ||
+			model.id !== options.preferredModel?.model ||
+			model.provider !== options.preferredModel.provider)
+	) {
+		throw new Error("子に指定されたモデルを利用できません。");
+	}
+}
+/** 子の許可リストにない Tool は定義自体を登録しない。 */
+function permittedTools(
+	tools: PiSdk.ToolDefinition[],
+	allowed: string[] | undefined,
+) {
+	return tools.filter((tool) => !allowed || allowed.includes(tool.name));
 }

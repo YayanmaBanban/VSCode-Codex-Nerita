@@ -3,6 +3,7 @@ import type {
 	AgentAccessPolicy,
 	AgentRole,
 } from "../../security/AgentAccessPolicy";
+import { childSettings } from "./PiChildSettings";
 import { freezeToolCall } from "../../security/ApprovedToolCall";
 import type { PiRuntimeOptions, PiRuntimeSession } from "./PiRuntime";
 
@@ -11,6 +12,11 @@ export type PiChildOptions = {
 	cwd?: string;
 	role: AgentRole;
 	signal?: AbortSignal;
+	allowedTools?: string[];
+	systemPrompt?: string;
+	systemPromptMode?: "append" | "replace";
+	preferredModel?: PiRuntimeOptions["preferredModel"];
+	approvalContext?: { agent: string; task: string };
 };
 
 /** 起動中の子も追跡し、親終了と SDK 初期化完了の競合を処理する。 */
@@ -19,6 +25,7 @@ type Child = {
 	opening: Promise<PiRuntimeSession>;
 	session?: PiRuntimeSession;
 	closing?: Promise<void>;
+	closeSession?: () => Promise<void>;
 	detachAbort?: () => void;
 };
 
@@ -42,6 +49,9 @@ export class PiChildRuntimes {
 		this.parent = {
 			...parent,
 			workspaceRoots: [...(parent.workspaceRoots ?? [parent.cwd])],
+			...(parent.allowedTools
+				? { allowedTools: [...parent.allowedTools] }
+				: {}),
 		};
 		this.policy = freezeToolCall(policy);
 	}
@@ -69,6 +79,7 @@ export class PiChildRuntimes {
 			storage: "global",
 			ephemeral: true,
 			trustedExtensionPaths: [],
+			...childSettings(this.parent, options),
 		};
 		delete childOptions.resume;
 		delete childOptions.getStorage;
@@ -87,6 +98,8 @@ export class PiChildRuntimes {
 		try {
 			const session = await child.opening;
 			child.session = session;
+			child.closeSession = session.close.bind(session);
+			session.close = () => this.close(child);
 			let disposed = false;
 			/** 個別終了でも起動時の signal を取り消し、終了処理が完了したら親の追跡から外す。 */
 			session.dispose = () => {
@@ -132,7 +145,7 @@ export class PiChildRuntimes {
 				try {
 					await session.abort();
 				} finally {
-					await session.close();
+					await (child.closeSession ?? session.close.bind(session))();
 				}
 			} finally {
 				child.detachAbort?.();

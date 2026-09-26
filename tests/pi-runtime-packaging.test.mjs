@@ -50,6 +50,7 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 				"getAgentDir",
 				"getPackageDir",
 				"parseSessionEntries",
+				"parseFrontmatter",
 				"createWriteToolDefinition",
 				"createReadToolDefinition",
 				"createLsToolDefinition",

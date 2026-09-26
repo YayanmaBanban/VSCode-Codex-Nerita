@@ -4,6 +4,8 @@ import * as vscode from "vscode";
 import { access, readdir, readFile } from "node:fs/promises";
 import { CodexClient } from "../src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
+import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
+import { piSubagentAdapterSmoke } from "./piSubagentAdapterSmoke";
 import { createPiAuthService } from "../src/extension/backends/pi/PiAuthService";
 import {
 	moveSidebar,
@@ -11,6 +13,20 @@ import {
 } from "../src/extension/webview/sidebarLocation";
 
 suite("Nerita for Codex Extension", () => {
+	test("subagentアダプターが子の書込みを別途承認し、結果を親へ返す", async function () {
+		this.timeout(60000);
+		await piSubagentAdapterSmoke(
+			vscode.extensions.getExtension("nerita-local.nerita-codex")!
+				.extensionUri.fsPath,
+		);
+	});
+	test("子と孫の実SDK Tool Callがガード・承認・親の取消しに従う", async function () {
+		this.timeout(60000);
+		const extension = vscode.extensions.getExtension(
+			"nerita-local.nerita-codex",
+		)!;
+		await piGuardrailsSmoke(extension.extensionUri.fsPath);
+	});
 	test("Pi認証管理をエディターグループに開き、取消で閉じる", async () => {
 		const extension = vscode.extensions.getExtension(
 			"nerita-local.nerita-codex",

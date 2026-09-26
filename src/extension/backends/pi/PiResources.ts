@@ -7,6 +7,22 @@ import { localResourceSettings } from "./PiResourceSettings";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import { createPiHostShellTool } from "./PiHostShellTool";
 
+/** 本文をファイルパスと解釈させず、定義の指定どおり基底プロンプトへ反映する。 */
+function agentPromptOverride(
+	prompt: string | undefined,
+	mode: "append" | "replace",
+) {
+	if (prompt === undefined) {
+		return {};
+	}
+	if (mode === "replace") {
+		return { systemPromptOverride: () => prompt };
+	}
+	return {
+		appendSystemPromptOverride: (base: string[]) => [...base, prompt],
+	};
+}
+
 /** CLI で導入したリソースを新規会話・再接続時に読み込む。 */
 export async function loadPiResources(
 	sdk: typeof PiSdk,
@@ -18,6 +34,8 @@ export async function loadPiResources(
 	controls?: PiProviderControls,
 	trustedExtensionPaths: string[] = [],
 	policy?: AgentAccessPolicy,
+	appendPrompt?: string,
+	promptMode: "append" | "replace" = "append",
 ): Promise<PiSdk.DefaultResourceLoader> {
 	const loader = new sdk.DefaultResourceLoader({
 		cwd,
@@ -34,6 +52,7 @@ export async function loadPiResources(
 		extensionFactories: neritaExtensionFactories(controls),
 		// ターミナル用のテーマは VS Code Webview には適用しない。
 		noThemes: true,
+		...agentPromptOverride(appendPrompt, promptMode),
 		extensionsOverride(result) {
 			for (const extension of result.extensions) {
 				for (const [name, tool] of extension.tools) {
@@ -65,6 +84,7 @@ export async function loadPiResources(
 							"bash",
 							"grep",
 							"find",
+							"subagent",
 						].includes(name)
 					) {
 						throw new Error(

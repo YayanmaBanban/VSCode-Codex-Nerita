@@ -7,6 +7,7 @@ import { ToolCard } from "../tools/ToolCard";
 import { AgentCard, AgentIcon, agentName } from "./AgentCard";
 import type { useAgentViewer } from "./useAgentViewer";
 import { type AgentThreadView } from "@/shared/subAgents";
+import { AgentRunControls } from "./AgentRunControls";
 
 /** 親の送信フォームを使わず、閲覧中のスレッドを明示する。 */
 export function AgentViewer({
@@ -104,6 +105,7 @@ export function AgentViewer({
 					</p>
 				)}
 			</div>
+			{send && <AgentRunControls state={state} send={send} />}
 		</section>
 	);
 }

@@ -113,6 +113,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		) {
 			throw new Error("現在のPi会話では実行できない操作です。");
 		}
+		if (message.type === "agent/read") {
+			this.readAgent(message);
+			return;
+		}
 		if (message.type === "prompt/send") {
 			if (
 				!this.busy() &&
@@ -125,6 +129,15 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			return;
 		}
 		this.dispatchRunAction(message);
+	}
+
+	/** 現在の接続が保持する子の会話だけを返す。 */
+	private readAgent(message: Extract<UiMessage, { type: "agent/read" }>) {
+		const view = this.runtime?.agentViews?.read(message.threadId);
+		if (!view) {
+			throw new Error("このPi接続に子の会話がありません。");
+		}
+		this.emit({ type: "agent/view", requestId: message.requestId, view });
 	}
 
 	/** 初回送信前に保存先を更新し、接続が変わった場合は中止する。 */

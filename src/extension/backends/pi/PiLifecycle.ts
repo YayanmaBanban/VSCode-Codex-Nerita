@@ -228,6 +228,7 @@ export abstract class PiLifecycle extends SessionState {
 		this.patch({
 			...empty,
 			...restored,
+			agents: restoredAgents(session, restored),
 			connection: "ready",
 			cwd,
 			sessionId: session.sessionId,
@@ -312,4 +313,19 @@ export abstract class PiLifecycle extends SessionState {
 		this.clearListeners();
 		await Promise.allSettled(this.closing);
 	}
+}
+
+/** 子カードを元の委譲ツールの位置へ戻し、会話順で閲覧できるようにする。 */
+function restoredAgents(
+	session: PiSession,
+	restored: Pick<ChatState, "tools">,
+) {
+	return (
+		session.agentViews?.list().map((agent) => ({
+			...agent,
+			order:
+				restored.tools.find((tool) => tool.id === agent.activityItemId)
+					?.order ?? agent.order,
+		})) ?? []
+	);
 }

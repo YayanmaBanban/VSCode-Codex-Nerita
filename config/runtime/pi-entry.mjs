@@ -11,6 +11,7 @@ export {
 	convertToPng,
 	resizeImage,
 	parseSessionEntries,
+	parseFrontmatter,
 	createWriteToolDefinition,
 	createReadToolDefinition,
 	createLsToolDefinition,

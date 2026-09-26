@@ -36,7 +36,15 @@ function fixture() {
 		dispose: vi.fn(),
 		close: vi.fn(() => Promise.resolve()),
 	} as unknown as PiRuntimeSession;
-	return { abort, policy, options, create, children, session };
+	return {
+		abort,
+		policy,
+		options,
+		create,
+		children,
+		session,
+		close: session.close,
+	};
 }
 
 it("U12 親snapshot・executor・承認先を保持し、内部履歴と外部拡張を継承しない", async () => {
@@ -61,7 +69,7 @@ it("U12 親snapshot・executor・承認先を保持し、内部履歴と外部�
 	expect(passed.saveModel).toBeUndefined();
 	await h.children.stop();
 	expect(h.session.abort).toHaveBeenCalledTimes(1);
-	expect(h.session.close).toHaveBeenCalledTimes(1);
+	expect(h.close).toHaveBeenCalledTimes(1);
 });
 
 it("U12 起動中Stopをsignalへ伝え、遅れて返ったSDKも回収する", async () => {
@@ -76,7 +84,7 @@ it("U12 起動中Stopをsignalへ伝え、遅れて返ったSDKも回収する",
 	gate.resolve(h.session);
 	await rejected;
 	await closing;
-	expect(h.session.close).toHaveBeenCalledTimes(1);
+	expect(h.close).toHaveBeenCalledTimes(1);
 });
 
 it("U12 親切断で実行中の子を停止し、新規起動を拒否する", async () => {
@@ -84,6 +92,16 @@ it("U12 親切断で実行中の子を停止し、新規起動を拒否する", 
 	h.create.mockResolvedValue(h.session);
 	await h.children.open({ role: {} });
 	h.abort.abort();
-	await vi.waitFor(() => expect(h.session.close).toHaveBeenCalledTimes(1));
+	await vi.waitFor(() => expect(h.close).toHaveBeenCalledTimes(1));
 	await expect(h.children.open({ role: {} })).rejects.toThrow();
+});
+
+it("個別close後は親の回収対象から外れ、二重に停止しない", async () => {
+	const h = fixture();
+	h.create.mockResolvedValue(h.session);
+	const child = await h.children.open({ role: {} });
+	await child.close();
+	await h.children.stop();
+	expect(h.close).toHaveBeenCalledTimes(1);
+	expect(h.session.abort).toHaveBeenCalledTimes(1);
 });

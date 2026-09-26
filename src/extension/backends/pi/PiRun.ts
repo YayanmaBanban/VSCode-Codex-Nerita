@@ -82,7 +82,8 @@ export abstract class PiRun extends PiLifecycle {
 		const current = () =>
 			this.epoch === epoch && this.submission === submission;
 		const mapper = new PiEventMapper();
-		submission.unsubscribe = runtime.subscribe((event) => {
+		const unsubscribeAgents = this.watchAgents(runtime, current);
+		const unsubscribeEvents = runtime.subscribe((event) => {
 			if (!current()) {
 				return;
 			}
@@ -95,6 +96,10 @@ export abstract class PiRun extends PiLifecycle {
 				this.patch({ usage: this.contextUsage() });
 			}
 		});
+		submission.unsubscribe = () => {
+			unsubscribeEvents();
+			unsubscribeAgents();
+		};
 		this.patch({ run: "running", runId: submission.id, error: null });
 		const start = (text: string) =>
 			runtime.prompt(text, {
@@ -172,6 +177,25 @@ export abstract class PiRun extends PiLifecycle {
 			)
 			.finally(() => submission.unsubscribe());
 		this.track(operation);
+	}
+
+	/** 現在の親へ子のカードを追加し、以後は表示順を固定する。 */
+	private watchAgents(runtime: PiSession, current: () => boolean) {
+		return (
+			runtime.agentViews?.subscribe(() => {
+				if (!current()) {
+					return;
+				}
+				const agents = runtime.agentViews!.list().map((agent) => ({
+					...agent,
+					order:
+						this.state.agents.find(
+							(item) => item.threadId === agent.threadId,
+						)?.order ?? nextTimelineOrder(this.state),
+				}));
+				this.patch({ agents });
+			}) ?? (() => {})
+		);
 	}
 
 	/** SDK の非同期の入力処理中は次の送信を拒否し、遅れて積まれたキューを回収する。 */

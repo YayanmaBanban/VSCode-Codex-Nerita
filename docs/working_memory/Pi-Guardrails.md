@@ -1,5 +1,7 @@
 # Pi ガードレールの初期実装
 
+仕様との照合、子・孫の結合検証、`pi-subagents` の Host アダプターとの境界は [Phase 11-1 の確認記録](Phase-11-1-Review.md) にまとめた。
+
 ## 操作
 
 コマンドパレットの `Nerita: Pi ガードレールを編集` で、選んだ workspace の `.pi/guardrails.json` をエディタグループに開く。ファイルがなければ既定設定を作る。複数の workspace がある場合は対象を選択する。

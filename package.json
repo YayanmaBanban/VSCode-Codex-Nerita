@@ -192,6 +192,7 @@
 	"scripts": {
 		"guardrails:generate": "node scripts/generate-guardrails-schema.cjs",
 		"test:guardrails:ui": "node tests/guardrails-vscode-smoke.mjs",
+		"test:pi:subagents": "node tests/pi-subagents-package-smoke.mjs",
 		"codex:generate": "node config/generate-codex.cjs",
 		"pi:generate": "node config/generate-pi.cjs",
 		"pi:verify": "node config/verify-pi.cjs",
@@ -287,6 +288,7 @@
 		"@lexical/link": "^0.50.0",
 		"@lexical/react": "^0.50.0",
 		"@openai/codex": "0.156.0",
+		"@xyflow/react": "^12.12.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"diff": "8.0.4",

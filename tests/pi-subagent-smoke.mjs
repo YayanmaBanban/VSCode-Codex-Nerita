@@ -13,7 +13,7 @@ export async function piSubagentSmoke({
 	const root = await realpath(cwd);
 	const childRoot = path.join(root, "child");
 	const external = path.join(path.dirname(root), "外部.txt");
-	await writeFile(external, "EXTERNAL_READ_ALLOWED");
+	await writeFile(external, "EXTERNAL_READ_PROTECTED");
 	await mkdir(childRoot);
 	await writeFile(path.join(childRoot, "hello.txt"), "CHILD_READ_ALLOWED");
 	const abort = new AbortController();
@@ -104,8 +104,8 @@ export async function piSubagentSmoke({
 			writableParent,
 			"read",
 			{ path: external },
-			false,
-			/EXTERNAL_READ_ALLOWED/,
+			true,
+			/ガードレールが実行を拒否/,
 		);
 		await toolResult(
 			writableParent,
@@ -114,7 +114,10 @@ export async function piSubagentSmoke({
 			true,
 			/境界/,
 		);
-		assert.equal(await readFile(external, "utf8"), "EXTERNAL_READ_ALLOWED");
+		assert.equal(
+			await readFile(external, "utf8"),
+			"EXTERNAL_READ_PROTECTED",
+		);
 		const running = toolResult(
 			grandchild,
 			"write",
@@ -133,7 +136,7 @@ export async function piSubagentSmoke({
 	}
 	await runningChildStop(createPiRuntime, options, childRoot);
 	console.log(
-		"PASS: live Pi child/grandchild → role intersection → external read → no history → parent Stop during approval",
+		"PASS: live Pi child/grandchild → role intersection → external read denied → no history → parent Stop during approval",
 	);
 }
 
