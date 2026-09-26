@@ -45,7 +45,7 @@ export function piSessionDirectory(
 	storage: PiSessionStorage,
 ): string {
 	return storage === "workspace"
-		? join(cwd, ".pi", ".sessions")
+		? join(cwd, ".pi", "sessions")
 		: join(
 				agentDir,
 				"sessions",
