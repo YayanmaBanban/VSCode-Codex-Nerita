@@ -10,7 +10,7 @@ import { validReferences } from "./composerReferences";
 import { isPathString, isAbsoluteLocalPath } from "./workspacePaths";
 import { isSourceRange } from "./symbolLocation";
 import { isSymbolQuery } from "./workspaceSymbols";
-import { validSessionIds } from "./sessionReferences";
+import { validSessionReferences } from "./sessionReferences";
 import { isChangeScope, validChangeScopes } from "./changeReferences";
 import { validCodeReferences } from "./codeReferences";
 
@@ -113,7 +113,7 @@ const uiMessageValidators = new Map<
 			typeof value.text === "string" &&
 			value.text.trim().length > 0 &&
 			value.text.length <= 100_000 &&
-			validSessionIds(value.referencedSessionIds) &&
+			validSessionReferences(value.sessionReferences) &&
 			validReferences(value.text, value.references) &&
 			validChangeScopes(value.changeScopes) &&
 			validCodeReferences(value.codeReferences),

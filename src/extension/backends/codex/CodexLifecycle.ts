@@ -19,7 +19,7 @@ export abstract class CodexLifecycle extends SessionState {
 	private readonly auth = new AuthFlow();
 	/** 実接続とテスト用接続を同じ契約で受け取る。 */
 	constructor(
-		private readonly factory: CodexFactory,
+		protected readonly factory: CodexFactory,
 		private readonly authService?: AuthService,
 	) {
 		super();

@@ -108,17 +108,29 @@ export function usePromptSubmission(
 				),
 			),
 		];
-		const referencedSessionIds = [
-			...new Set(
-				parts.flatMap(
-					(part) =>
-						part.references?.flatMap(({ path }) =>
-							path.kind === "session" ? [path.sessionId] : [],
-						) ?? [],
-				),
-			),
+		const sessionReferences = [
+			...new Map(
+				parts
+					.flatMap(
+						(part) =>
+							part.references?.flatMap(({ path }) =>
+								path.kind === "session"
+									? [
+											{
+												sessionId: path.sessionId,
+												mode: path.mode,
+											},
+										]
+									: [],
+							) ?? [],
+					)
+					.map((ref) => [
+						JSON.stringify([ref.sessionId, ref.mode]),
+						ref,
+					]),
+			).values(),
 		];
-		if (referencedSessionIds.length > 5) {
+		if (sessionReferences.length > 5) {
 			setNotice({
 				id: requestId,
 				text: "参照するセッションは5件までにしてください。",
@@ -133,7 +145,7 @@ export function usePromptSubmission(
 			requestId,
 			sessionId: state.sessionId,
 			...promptContent(draft, parts),
-			...(referencedSessionIds.length ? { referencedSessionIds } : {}),
+			...(sessionReferences.length ? { sessionReferences } : {}),
 			...(changeScopes.length ? { changeScopes } : {}),
 			...(codeReferences.length ? { codeReferences } : {}),
 		});

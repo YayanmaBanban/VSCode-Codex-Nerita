@@ -3,7 +3,6 @@ import type { CodexConnection } from "../runtime/connection";
 import type { HistoryThread } from "../protocol/history";
 import { sameCwd } from "../../../workspace";
 import { hydrateHistory, replayHistory } from "../history/restoreHistory";
-import type { AdditionalContext } from "./additionalContext";
 
 /** ユーザーに再試行・参照解除を案内できる読み込み失敗。 */
 export class SessionContextError extends Error {
@@ -38,6 +37,7 @@ export async function readSessionContext(
 	id: string,
 	cwd: string,
 	current: () => boolean,
+	mode: "transcript" | "handoff" = "transcript",
 ): Promise<string> {
 	try {
 		if (!current()) {
@@ -84,36 +84,15 @@ export async function readSessionContext(
 		}
 		const header = `Referenced session: ${thread.name?.trim() || thread.preview || id}\nSession ID: ${id}\nWorking directory: ${thread.cwd}\nScope: user and assistant messages; tool logs and attachment binaries are omitted.\n`;
 		// 大きい会話は直近部分を使い、省略をモデルにも明示する。
-		return (
-			header +
-			(text.length > 40_000
-				? `[Earlier content omitted; latest 40,000 characters follow]\n\n${text.slice(
-						-40_000,
-					)}`
-				: `\n${text}`)
-		);
+		return header + referenceText(text, mode);
 	} catch {
 		throw new SessionContextError();
 	}
 }
 
-/** 同じチップは一度だけ読み、送信先とは別のセッションだけを参照する。 */
-export async function sessionContext(
-	client: CodexConnection,
-	ids: string[],
-	currentId: string,
-	cwd: string,
-	current: () => boolean,
-): Promise<AdditionalContext> {
-	const context: AdditionalContext = {};
-	if (ids.length > 5 || ids.includes(currentId)) {
-		throw new SessionContextError();
-	}
-	for (const id of new Set(ids)) {
-		context[`referenced_session:${id}`] = {
-			kind: "untrusted",
-			value: await readSessionContext(client, id, cwd, current),
-		};
-	}
-	return context;
+/** 原文参照だけを直近の文字数に制限し、要約生成には取得できた履歴全体を渡す。 */
+function referenceText(text: string, mode: "transcript" | "handoff") {
+	return mode === "transcript" && text.length > 40_000
+		? `[Earlier content omitted; latest 40,000 characters follow]\n\n${text.slice(-40_000)}`
+		: `\n${text}`;
 }

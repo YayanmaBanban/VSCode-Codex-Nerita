@@ -10,6 +10,7 @@ import { SessionContextError } from "./context/sessionContext";
 import { ChangeContextError } from "./context/changeContext";
 import { openChanges } from "./context/openChanges";
 import { CodeReferenceError } from "../../session/codeReferenceContext";
+import { HandoffContextError } from "../../session/HandoffContext";
 
 import {
 	type SessionReferencesRequest,
@@ -327,7 +328,7 @@ export class CodexSessionController extends CodexSubmission {
 		const mode = await this.submitPrompt(
 			message.text,
 			message.sessionId,
-			message.referencedSessionIds,
+			message.sessionReferences,
 			message.changeScopes,
 			message.codeReferences,
 			message.references,
@@ -399,6 +400,7 @@ export class CodexSessionController extends CodexSubmission {
 function requestError(type: UiMessage["type"], error: unknown) {
 	if (
 		error instanceof SessionContextError ||
+		error instanceof HandoffContextError ||
 		error instanceof ChangeContextError ||
 		error instanceof CodeReferenceError
 	) {

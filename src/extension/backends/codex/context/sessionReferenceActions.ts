@@ -53,6 +53,7 @@ export async function searchSessionReferences(
 			)
 			.map((thread) => ({
 				kind: "session" as const,
+				mode: "transcript" as const,
 				sessionId: thread.id,
 				name: (
 					thread.name?.trim() ||

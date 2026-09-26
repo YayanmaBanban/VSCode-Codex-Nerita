@@ -10,7 +10,7 @@ export function pathText(path: ComposerTarget): string {
 		return `[Changes: ${path.name}]`;
 	}
 	if (path.kind === "session") {
-		return `[Session: ${path.name}; ID: ${path.sessionId}]`;
+		return `[${path.mode === "handoff" ? "Handoff" : "Session"}: ${path.name}; ID: ${path.sessionId}]`;
 	}
 	const file = /\s/.test(path.path) ? `"${path.path}"` : path.path;
 	if (path.range) {

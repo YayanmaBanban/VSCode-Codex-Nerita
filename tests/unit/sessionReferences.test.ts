@@ -103,7 +103,10 @@ it("通常送信では選択した会話だけをuntrustedで渡し、参照元�
 		requestId: "send",
 		sessionId: h.session.snapshot().sessionId,
 		text: "この方針で",
-		referencedSessionIds: ["saved", "saved"],
+		sessionReferences: ["saved", "saved"].map((sessionId) => ({
+			sessionId,
+			mode: "transcript" as const,
+		})),
 	});
 	const params = h.client.startTurn.mock.calls[0]![0];
 	expect(params.threadId).toBe("thread-1");
@@ -127,7 +130,10 @@ it("フォローアップでも参照を渡し、読み込み中に完了した�
 		requestId: "steer",
 		sessionId: "thread-1",
 		text: "参照して",
-		referencedSessionIds: ["saved"],
+		sessionReferences: ["saved"].map((sessionId) => ({
+			sessionId,
+			mode: "transcript" as const,
+		})),
 	});
 	expect(h.client.steerTurn).toHaveBeenCalledWith(
 		expect.objectContaining({
@@ -146,7 +152,10 @@ it("フォローアップでも参照を渡し、読み込み中に完了した�
 		requestId: "next",
 		sessionId: "thread-1",
 		text: "次",
-		referencedSessionIds: ["saved"],
+		sessionReferences: ["saved"].map((sessionId) => ({
+			sessionId,
+			mode: "transcript" as const,
+		})),
 	});
 	h.complete();
 	pending.resolve({ thread: historyThread() });
@@ -172,7 +181,10 @@ it("削除・別cwd・実行中・現在の会話への参照は送信せず下�
 			requestId: "failed",
 			sessionId: "thread-1",
 			text: "参照して",
-			referencedSessionIds: ["saved"],
+			sessionReferences: ["saved"].map((sessionId) => ({
+				sessionId,
+				mode: "transcript" as const,
+			})),
 		});
 		expect(h.client.startTurn).not.toHaveBeenCalled();
 		expect(received.at(-1)).toMatchObject({
@@ -187,7 +199,10 @@ it("削除・別cwd・実行中・現在の会話への参照は送信せず下�
 		requestId: "self",
 		sessionId: "thread-1",
 		text: "自分",
-		referencedSessionIds: ["thread-1"],
+		sessionReferences: ["thread-1"].map((sessionId) => ({
+			sessionId,
+			mode: "transcript" as const,
+		})),
 	});
 	expect(h.client.readThread).not.toHaveBeenCalled();
 });
@@ -200,7 +215,10 @@ it("古い接続の参照結果は送信しない", async () => {
 		requestId: "old",
 		sessionId: "thread-1",
 		text: "参照",
-		referencedSessionIds: ["saved"],
+		sessionReferences: ["saved"].map((sessionId) => ({
+			sessionId,
+			mode: "transcript" as const,
+		})),
 	});
 	h.session.invalidate();
 	pending.resolve({ thread: historyThread() });
@@ -250,6 +268,7 @@ it("チップの内容表示はVS Codeに開き、現在の会話を切り替え
 it("参照型の保存・復元と送信数の上限を検証する", () => {
 	const reference = {
 		kind: "session" as const,
+		mode: "transcript" as const,
 		sessionId: "saved",
 		name: "以前の会話",
 		cwd: "D:/workspace",
@@ -268,7 +287,10 @@ it("参照型の保存・復元と送信数の上限を検証する", () => {
 			requestId: "x",
 			sessionId: "now",
 			text: "hello",
-			referencedSessionIds: Array(6).fill("saved"),
+			sessionReferences: Array(6).fill({
+				sessionId: "saved",
+				mode: "transcript",
+			}),
 		}),
 	).toBe(false);
 	expect(

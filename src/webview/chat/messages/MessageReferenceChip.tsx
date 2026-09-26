@@ -50,7 +50,9 @@ export function MessageReferenceChip({
 		>
 			<Icon size={14} aria-hidden="true" />
 			<span className="truncate">
-				{path.name}
+				{path.kind === "session"
+					? `${path.mode === "handoff" ? "Handoff" : "Session"}: ${path.name}`
+					: path.name}
 				{path.kind === "file" && path.range
 					? `(${path.range.start.line}:${path.range.end.line})`
 					: ""}

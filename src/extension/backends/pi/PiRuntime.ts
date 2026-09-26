@@ -1,5 +1,7 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
 import { randomUUID } from "node:crypto";
+import type { HandoffGenerator } from "../../session/HandoffContext";
+import { generatePiHandoff } from "./PiHandoffGeneration";
 import type { WorkspaceTrustStore } from "../../security/trust/WorkspaceTrustStore";
 import {
 	preparePiTrust,
@@ -72,6 +74,7 @@ export type PiSession = Pick<
 	contextSource?: Pick<PiSdk.SessionManager, "buildSessionContext">;
 	jobs?: PiJobs;
 	history?: PiHistoryAccess;
+	generateHandoff?: HandoffGenerator;
 	account?: PiAccount;
 	quota?: PiQuotaService;
 	skills?: SkillSummary[];
@@ -388,6 +391,14 @@ async function openPiRuntime(
 		parentSignal,
 	);
 	return Object.assign(session, {
+		generateHandoff: (request: Parameters<HandoffGenerator>[0]) =>
+			generatePiHandoff(
+				modelRuntime,
+				request,
+				account
+					.agentModels()
+					.find((item) => item.value === request.model)?.efforts,
+			),
 		workflow: async (
 			request: WorkflowExecution,
 			signal: AbortSignal,

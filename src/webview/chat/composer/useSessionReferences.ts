@@ -21,6 +21,7 @@ export function useSessionReferences(
 	bridge: Bridge | undefined,
 	active: boolean,
 	query: string,
+	mode: SessionReference["mode"],
 ) {
 	const term = query.trim();
 	const [page, setPage] = useState<{ query: string; cursor?: string }>({
@@ -120,7 +121,9 @@ export function useSessionReferences(
 		};
 	}, [bridge, active, term, cursor]);
 	const data = result?.query === term ? result : null;
-	const items = sessionCompletionItems(data?.entries ?? []);
+	const items = sessionCompletionItems(
+		(data?.entries ?? []).map((entry) => ({ ...entry, mode })),
+	);
 	if (data?.nextCursor && !loading) {
 		items.push({
 			id: "load-more-sessions",

@@ -5,6 +5,7 @@ import type { ComposerPart } from "./composerContent";
 import type { ComposerReference } from "./composerReferences";
 import type { ChangeScope } from "./changeReferences";
 import type {
+	SessionContextReference,
 	SessionReferencesRequest,
 	SessionReferencesResult,
 	SessionReferenceOpen,
@@ -82,7 +83,7 @@ export type UiMessage =
 			requestId: string;
 			sessionId: string;
 			text: string;
-			referencedSessionIds?: string[];
+			sessionReferences?: SessionContextReference[];
 			references?: ComposerReference[];
 			changeScopes?: ChangeScope[];
 			codeReferences?: CodeReference[];

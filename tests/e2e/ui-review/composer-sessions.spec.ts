@@ -2,6 +2,69 @@
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
+	test(`同じセッションの原文とハンドオフを別々に送信: ${colorScheme}`, async ({
+		page,
+	}, info) => {
+		const errors: string[] = [];
+		page.on("pageerror", (error) => errors.push(error.message));
+		page.on("console", (message) => {
+			if (message.type() === "error") {
+				errors.push(message.text());
+			}
+		});
+		await page.setViewportSize({ width: 320, height: 820 });
+		await page.emulateMedia({ colorScheme });
+		await page.goto(
+			"/iframe.html?id=chat-composer-sessions--references&viewMode=story",
+		);
+		const input = page.getByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		await input.fill("#");
+		await page
+			.getByRole("option", { name: "セッション", exact: true })
+			.click();
+		await page.getByRole("option", { name: /saved-ui-1/ }).click();
+		await input.press("End");
+		await page.keyboard.insertText(" #");
+		await page
+			.getByRole("option", { name: "ハンドオフ", exact: true })
+			.click();
+		await expect(
+			page.getByRole("combobox", { name: "ハンドオフを検索" }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("option", { name: /saved-ui-1/ }),
+		).toBeVisible();
+		await info.attach("handoff-candidates", {
+			body: await page.screenshot({
+				path: info.outputPath("handoff-candidates.png"),
+			}),
+			contentType: "image/png",
+		});
+		await page.getByRole("option", { name: /saved-ui-1/ }).click();
+		await expect(input.locator(".inline-path-reference")).toHaveCount(2);
+		await expect(input).toContainText("Session: UI設計");
+		await expect(input).toContainText("Handoff: UI設計");
+		await info.attach("mixed-reference-chips", {
+			body: await page.screenshot({
+				path: info.outputPath("mixed-reference-chips.png"),
+			}),
+			contentType: "image/png",
+		});
+		await input.press("End");
+		await input.press("Control+Enter");
+		await expect(page.getByLabel("送信した参照")).toContainText(
+			'"sessionReferences":[{"sessionId":"saved-ui-1","mode":"transcript"},{"sessionId":"saved-ui-1","mode":"handoff"}]',
+		);
+		await expect(page.locator(".message.user")).toContainText(
+			"Handoff: UI設計",
+		);
+		expect(errors).toEqual([]);
+	});
+}
+
+for (const colorScheme of ["dark", "light"] as const) {
 	test(`セッションを選択して内容を開きコピー後も参照を送信: ${colorScheme}`, async ({
 		page,
 	}, info) => {
@@ -64,11 +127,11 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await input.press("End");
 		await input.press("Control+Enter");
 		await expect(page.getByLabel("送信した参照")).toContainText(
-			'"referencedSessionIds":["saved-input"]',
+			'"sessionReferences":[{"sessionId":"saved-input","mode":"transcript"}]',
 		);
-		await expect(page.locator(".message.user")).toContainText(
-			"ID: saved-input",
-		);
+		await expect(
+			page.locator(".message.user .message-reference"),
+		).toHaveAttribute("title", /ID: saved-input/);
 		expect(errors).toEqual([]);
 	});
 }
@@ -95,7 +158,7 @@ test("検索・失敗・再送・取り外しを行い参照解除後はIDを送
 	await expect(page.getByRole("option")).toHaveCount(2);
 	await search.press("ArrowDown");
 	await search.press("Enter");
-	await expect(input).toHaveText("この方針で UI設計");
+	await expect(input).toHaveText("この方針で Session: UI設計");
 	await page.getByRole("button", { name: "次の送信を失敗" }).click();
 	await input.press("End");
 	await input.press("Control+Enter");
@@ -113,7 +176,7 @@ test("検索・失敗・再送・取り外しを行い参照解除後はIDを送
 		.click();
 	await input.press("Control+Enter");
 	await expect(page.getByLabel("送信した参照")).not.toContainText(
-		"referencedSessionIds",
+		"sessionReferences",
 	);
 	await expect(page.locator(".message.user")).toHaveText("この方針で");
 });

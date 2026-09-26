@@ -1,11 +1,14 @@
 // 追加指示の待機・送信を管理し、受付が確定するまで二重送信を防ぐ。
+import type { SessionContextReference } from "../../../shared/sessionReferences";
 import { randomUUID } from "node:crypto";
 import type { ComposerReference } from "../../../shared/composerReferences";
 import { CodexHistory } from "./CodexHistory";
 import { attachmentInput } from "./context/attachmentInput";
 import { skillInput } from "./context/skillInput";
 import { nextTimelineOrder } from "../../session/timelineOrder";
-import { sessionContext } from "./context/sessionContext";
+import { readSessionContext } from "./context/sessionContext";
+import { buildSessionReferenceContext } from "../../session/SessionReferenceContext";
+import { generateCodexHandoff } from "./context/handoffGeneration";
 import { changeContext } from "./context/changeContext";
 import type { ChangeScope } from "../../../shared/changeReferences";
 import { listMcpServers } from "./mcpStatus";
@@ -21,10 +24,17 @@ import { type CodexConnection } from "./runtime/connection";
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
 export abstract class CodexSubmission extends CodexHistory {
 	protected submissionPending = false;
+	private contextAbort: AbortController | undefined;
+
+	/** 要約生成中の停止は、親ターンを開始せず生成だけを中止する。 */
+	protected override cancel(): void {
+		this.contextAbort?.abort();
+		super.cancel();
+	}
 
 	/** 参照のない通常送信で、実行 ID 確保前に非同期待機を追加しない。 */
 	private needsSubmissionContext(
-		sessions: string[],
+		sessions: SessionContextReference[],
 		changes: ChangeScope[],
 		code: CodeReference[],
 	): boolean {
@@ -111,7 +121,7 @@ export abstract class CodexSubmission extends CodexHistory {
 	protected async submitPrompt(
 		text: string,
 		sessionId: string,
-		referencedSessionIds: string[] = [],
+		sessionReferences: SessionContextReference[] = [],
 		changeScopes: ChangeScope[] = [],
 		codeReferences: CodeReference[] = [],
 		references: ComposerReference[] = [],
@@ -122,6 +132,11 @@ export abstract class CodexSubmission extends CodexHistory {
 		this.submissionPending = true;
 		const epoch = this.epoch;
 		const waitingRun = this.active;
+		const preparation = this.beginContextPreparation(
+			sessionReferences,
+			epoch,
+			sessionId,
+		);
 		/** 明示的な停止や失敗の後に、待機中の指示で実行を再開しない。 */
 		const checkWaitingRun = () => {
 			if (
@@ -136,22 +151,24 @@ export abstract class CodexSubmission extends CodexHistory {
 			// Goal は API のモードではなく、送信する指示の接頭辞として扱う。
 			text = this.submissionText(text);
 			const context = this.needsSubmissionContext(
-				referencedSessionIds,
+				sessionReferences,
 				changeScopes,
 				codeReferences,
 			)
 				? await this.prepareSubmissionContext(
-						referencedSessionIds,
+						sessionReferences,
 						sessionId,
 						epoch,
 						waitingRun,
 						changeScopes,
 						codeReferences,
 						checkWaitingRun,
+						text,
 					)
 				: undefined;
 			this.checkSubmission(epoch, sessionId);
 			checkWaitingRun();
+			preparation.ready();
 			if (!this.busy()) {
 				await this.prompt(text, context, references);
 				this.checkSubmission(epoch, sessionId);
@@ -184,8 +201,48 @@ export abstract class CodexSubmission extends CodexHistory {
 			);
 			return "steer";
 		} finally {
+			preparation.finish();
 			this.submissionPending = false;
 		}
+	}
+
+	/** 生成待ちの停止ボタンと取消を、通常ターンから分離する。 */
+	private beginContextPreparation(
+		refs: SessionContextReference[],
+		epoch: number,
+		sessionId: string,
+	) {
+		let preparing =
+			!this.busy() && refs.some((ref) => ref.mode === "handoff");
+		const previousRun = { run: this.state.run, runId: this.state.runId };
+		const abort = new AbortController();
+		this.contextAbort = abort;
+		if (preparing) {
+			this.patch({ run: "running", runId: randomUUID() });
+		}
+		const restore = () => {
+			if (
+				preparing &&
+				epoch === this.epoch &&
+				sessionId === this.state.sessionId &&
+				!this.active
+			) {
+				this.patch(previousRun);
+				preparing = false;
+			}
+		};
+		return {
+			ready: () => {
+				abort.signal.throwIfAborted();
+				restore();
+			},
+			finish: () => {
+				if (this.contextAbort === abort) {
+					this.contextAbort = undefined;
+				}
+				restore();
+			},
+		};
 	}
 
 	/** Goal モードの入力に必要な接頭辞だけを補う。 */
@@ -252,29 +309,71 @@ export abstract class CodexSubmission extends CodexHistory {
 
 	/** 会話・変更・コード参照を送信直前の状態で読み込む。 */
 	private async prepareSubmissionContext(
-		referencedSessionIds: string[],
+		sessionReferences: SessionContextReference[],
 		sessionId: string,
 		epoch: number,
 		waitingRun: ActiveTurn | undefined,
 		changeScopes: ChangeScope[],
 		codeReferences: CodeReference[],
 		checkWaitingRun: () => void,
+		goal: string,
 	) {
-		let context = referencedSessionIds.length
-			? await sessionContext(
-					this.client!,
-					referencedSessionIds,
-					sessionId,
-					this.state.cwd!,
-					() =>
-						epoch === this.epoch &&
-						sessionId === this.state.sessionId &&
-						!(
-							waitingRun?.abort.signal.aborted &&
-							this.state.run !== "completed"
-						),
-				)
-			: undefined;
+		const current = () =>
+			epoch === this.epoch &&
+			sessionId === this.state.sessionId &&
+			!(
+				waitingRun?.abort.signal.aborted &&
+				this.state.run !== "completed"
+			);
+		const abort = new AbortController();
+		const monitor = setInterval(() => {
+			if (!current()) {
+				abort.abort();
+			}
+		}, 50);
+		let context: AdditionalContext | undefined;
+		try {
+			context = sessionReferences.length
+				? await buildSessionReferenceContext({
+						references: sessionReferences,
+						currentId: sessionId,
+						cwd: this.state.cwd!,
+						backend: "codex",
+						model:
+							this.turnOptions.model ??
+							this.state.configOptions.find(
+								(item) => item.id === "model",
+							)?.currentValue ??
+							"",
+						goal,
+						signal: AbortSignal.any([
+							abort.signal,
+							this.contextAbort!.signal,
+						]),
+						check: () => {
+							this.checkSubmission(epoch, sessionId);
+							checkWaitingRun();
+						},
+						read: (ref) =>
+							readSessionContext(
+								this.client!,
+								ref.sessionId,
+								this.state.cwd!,
+								current,
+								ref.mode,
+							),
+						generate: (request) =>
+							generateCodexHandoff(
+								this.factory,
+								this.state.cwd!,
+								request,
+							),
+					})
+				: undefined;
+		} finally {
+			clearInterval(monitor);
+		}
+
 		if (changeScopes.length) {
 			context = {
 				...context,

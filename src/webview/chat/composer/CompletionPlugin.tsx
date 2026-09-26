@@ -41,8 +41,13 @@ export function CompletionPlugin({
 	const paths = useWorkspacePaths(bridge, browsing, query);
 	const searchingSymbols = marker === "#" && category === "シンボル";
 	const symbols = useWorkspaceSymbols(bridge, searchingSymbols, query);
-	const searchingSessions = marker === "#" && category === "セッション";
-	const sessions = useSessionReferences(bridge, searchingSessions, query);
+	const searchingSessions = marker === "#" && isSessionCategory(category);
+	const sessions = useSessionReferences(
+		bridge,
+		searchingSessions,
+		query,
+		sessionMode(category),
+	);
 	/** 選択中のカテゴリに属する候補と案内をまとめて返す。 */
 	function candidates(): {
 		items: CompletionItem[];
@@ -203,4 +208,13 @@ function completionTitle(marker: string, category: string): string {
 /** ファイル階層内でのみ親ディレクトリへの移動を案内する。 */
 function completionBackLabel(browsing: boolean, hasParent: boolean): string {
 	return browsing && hasParent ? "上の階層へ戻る" : "カテゴリへ戻る";
+}
+
+/** 2種類の参照で同じ候補一覧を利用する。 */
+function isSessionCategory(category: string) {
+	return ["セッション", "ハンドオフ"].includes(category);
+}
+/** 選択したカテゴリを DTO の参照方法へ変換する。 */
+function sessionMode(category: string) {
+	return category === "ハンドオフ" ? "handoff" : "transcript";
 }

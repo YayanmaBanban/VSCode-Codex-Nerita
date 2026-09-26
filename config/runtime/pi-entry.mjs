@@ -12,6 +12,8 @@ export {
 	convertToPng,
 	resizeImage,
 	parseSessionEntries,
+	convertToLlm,
+	serializeConversation,
 	parseFrontmatter,
 	createWriteToolDefinition,
 	createReadToolDefinition,

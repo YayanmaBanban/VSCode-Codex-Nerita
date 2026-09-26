@@ -10,18 +10,21 @@ export function mockSessionReferences(
 	const all = [
 		{
 			kind: "session" as const,
+			mode: "transcript" as const,
 			sessionId: "saved-ui-1",
 			name: "UI設計",
 			cwd: "D:/workspace/project",
 		},
 		{
 			kind: "session" as const,
+			mode: "transcript" as const,
 			sessionId: "saved-ui-2",
 			name: "UI設計",
 			cwd: "D:/workspace/project",
 		},
 		{
 			kind: "session" as const,
+			mode: "transcript" as const,
 			sessionId: "saved-input",
 			name: "入力欄の実装とセッション参照の確認",
 			cwd: "D:/workspace/project",

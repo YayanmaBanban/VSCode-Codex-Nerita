@@ -9,7 +9,8 @@ import { PiEventMapper } from "./PiEventMapper";
 import { finishPiTools } from "./PiToolMapper";
 import { PiPermissions } from "./PiPermissions";
 import type { PiAuthorize } from "./PiApprovedTools";
-import { readCodeReferenceContext } from "../../session/codeReferenceContext";
+import { piPromptContext } from "./PiPromptContext";
+import { setPiSessionRunning } from "./PiSessionActivity";
 
 import { type PiSession } from "./PiRuntime";
 
@@ -120,13 +121,8 @@ export abstract class PiRun extends PiLifecycle {
 		if (!runtime || this.state.sessionPending) {
 			throw new Error("Piへ接続してから送信してください。");
 		}
-		if (
-			message.referencedSessionIds?.length ||
-			message.changeScopes?.length
-		) {
-			throw new Error(
-				"Piの最小版では会話参照・変更点の添付には対応していません。",
-			);
+		if (message.changeScopes?.length) {
+			throw new Error("Piの最小版では変更点の添付には対応していません。");
 		}
 		if (this.submission) {
 			this.steer(message, this.submission);
@@ -142,6 +138,7 @@ export abstract class PiRun extends PiLifecycle {
 			ended: false,
 		};
 		this.submission = submission;
+		setPiSessionRunning(runtime.sessionId, true);
 		const current = () =>
 			this.epoch === epoch && this.submission === submission;
 		const mapper = new PiEventMapper();
@@ -196,14 +193,18 @@ export abstract class PiRun extends PiLifecycle {
 				throw new Error("送信を停止しました。");
 			}
 		};
-		const input = message.codeReferences?.length
-			? readCodeReferenceContext(message.codeReferences, check).then(
-					(context) => {
-						check();
-						return start(`${message.text}\n\n${context}`);
-					},
-				)
-			: start(message.text);
+
+		const input =
+			message.codeReferences?.length || message.sessionReferences?.length
+				? piPromptContext(
+						runtime,
+						this.state.cwd!,
+						message,
+						submission.abort.signal,
+						check,
+					).then(start)
+				: start(message.text);
+
 		const operation = input
 			.then(
 				async () => {
@@ -284,25 +285,22 @@ export abstract class PiRun extends PiLifecycle {
 						"追加指示の対象の実行は終了しました。再送してください。",
 					);
 				}
-				const context = message.codeReferences?.length
-					? await readCodeReferenceContext(
-							message.codeReferences,
-							() => {
-								if (
-									submission.cancelled ||
-									submission.ended ||
-									this.epoch !== epoch
-								) {
-									throw new Error(
-										"追加指示の対象の実行は終了しました。再送してください。",
-									);
-								}
-							},
-						)
-					: "";
-				await runtime.steer(
-					context ? `${message.text}\n\n${context}` : message.text,
+
+				const text = await piPromptContext(
+					runtime,
+					this.state.cwd!,
+					message,
+					submission.abort.signal,
+					() => {
+						if (this.staleSubmission(submission, epoch)) {
+							throw new Error(
+								"追加指示の対象の実行は終了しました。再送してください。",
+							);
+						}
+					},
 				);
+				await runtime.steer(text);
+
 				if (
 					this.staleSubmission(submission, epoch) ||
 					!runtime.isStreaming
@@ -374,6 +372,9 @@ export abstract class PiRun extends PiLifecycle {
 		aborted = false,
 	): void {
 		const cancelled = submission.cancelled || aborted;
+		if (this.runtime) {
+			setPiSessionRunning(this.runtime.sessionId, false);
+		}
 		this.submission = undefined;
 		this.runtime?.clearQueue();
 		submission.abort.abort();
@@ -423,6 +424,9 @@ export abstract class PiRun extends PiLifecycle {
 
 	/** 遅れて完了する事前検証も、古い会話へ送信できない状態にする。 */
 	protected override resetRun(): void {
+		if (this.runtime) {
+			setPiSessionRunning(this.runtime.sessionId, false);
+		}
 		if (this.submission) {
 			this.runtime?.clearQueue();
 			this.submission.cancelled = true;

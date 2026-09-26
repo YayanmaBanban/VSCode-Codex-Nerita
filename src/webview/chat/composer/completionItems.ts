@@ -120,6 +120,7 @@ export function completionItems(
 			"ファイルとディレクトリ",
 			"シンボル",
 			"セッション",
+			"ハンドオフ",
 			"変更点",
 		].map((label) => ({ id: label, label, category: label }));
 	} else if (category === "変更点") {

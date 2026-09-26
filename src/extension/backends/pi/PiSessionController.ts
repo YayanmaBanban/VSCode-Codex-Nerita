@@ -3,6 +3,7 @@ import type { BackendSession } from "../../session/chatSession";
 import { isUiMessage } from "../../../shared/uiMessageValidation";
 import type { UiMessage } from "../../../shared/messages";
 import { PiHistory } from "./PiHistory";
+import { piReferenceAction } from "./PiReferenceActions";
 
 /** Codex と同じ通信境界で送信・停止・再接続・新規会話を公開する。 */
 export class PiSessionController extends PiHistory implements BackendSession {
@@ -80,7 +81,33 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (this.state.connection !== "ready") {
 			throw new Error("Piへ再接続してから操作してください。");
 		}
+		if (await this.dispatchReferenceAction(message)) {
+			return;
+		}
 		await this.dispatchReadyAction(message);
+	}
+
+	/** 接続中の会話を維持して参照の検索と表示を処理する。 */
+	private async dispatchReferenceAction(
+		message: UiMessage,
+	): Promise<boolean> {
+		if (
+			message.type === "session/searchReferences" ||
+			message.type === "session/openReference"
+		) {
+			const runtime = this.runtime!;
+			const result = await piReferenceAction(
+				runtime,
+				this.state.cwd!,
+				message,
+				this.connectionSignal,
+			);
+			if (result && this.runtime === runtime) {
+				this.emit(result);
+			}
+			return true;
+		}
+		return false;
 	}
 
 	/** 接続後の履歴操作を処理して会話単位の操作へ渡す。 */

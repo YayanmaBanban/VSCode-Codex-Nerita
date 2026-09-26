@@ -13,6 +13,8 @@
 
 React の Webview は `src/webview/`、Extension Host の処理は `src/extension/`、共通の通信型・検証処理は `src/shared/` にあります。
 
+開発中に互換性を考える必要はありません。
+
 ## 作業に応じた参照先
 
 該当する作業を始める際に、対応するガイドを参照してください。

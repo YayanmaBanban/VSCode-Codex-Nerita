@@ -25,14 +25,13 @@ for (const colorScheme of ["dark", "light"] as const) {
 			"ファイルとディレクトリ",
 			"シンボル",
 			"セッション",
-			"Changes",
+			"ハンドオフ",
+			"変更点",
 		]);
 		await page.screenshot({
 			path: info.outputPath(`categories-${colorScheme}.png`),
 		});
-		await page
-			.getByRole("option", { name: "Changes", exact: true })
-			.click();
+		await page.getByRole("option", { name: "変更点", exact: true }).click();
 		await expect(page.getByRole("option")).toHaveCount(4);
 		await expect(page.getByRole("option").nth(0)).toContainText(
 			"Uncommitted",
@@ -50,7 +49,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			}),
 			contentType: "image/png",
 		});
-		const search = page.getByRole("combobox", { name: "Changesを検索" });
+		const search = page.getByRole("combobox", { name: "変更点を検索" });
 		await search.fill("main");
 		await expect(page.getByRole("option")).toHaveCount(1);
 		await search.fill("存在しない候補");
@@ -58,10 +57,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			"候補がありません。",
 		);
 		await page.getByRole("button", { name: "カテゴリへ戻る" }).click();
-		await expect(page.getByRole("option")).toHaveCount(5);
-		await page
-			.getByRole("option", { name: "Changes", exact: true })
-			.click();
+		await expect(page.getByRole("option")).toHaveCount(6);
+		await page.getByRole("option", { name: "変更点", exact: true }).click();
 		await page.getByRole("option", { name: /^Staged/ }).click();
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",

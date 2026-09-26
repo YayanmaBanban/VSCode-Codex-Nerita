@@ -26,7 +26,7 @@ export function referenceKindLabel(path: ComposerTarget) {
 		return "Changes";
 	}
 	if (path.kind === "session") {
-		return "セッション";
+		return path.mode === "handoff" ? "ハンドオフ" : "セッション";
 	}
 	if (path.symbol) {
 		return "シンボル";
