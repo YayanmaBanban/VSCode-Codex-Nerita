@@ -1,7 +1,6 @@
 // 接続・会話・承認・障害状態を同じ UI で再現し、基本操作をブラウザで検証する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
 import { ChatApp } from "../../webview/chat/ChatApp";
 import { createMockBridge, type Scenario } from "./mocks/mockBridge";
 import { createAppServerBridge } from "./mocks/appServerBridge";
@@ -72,17 +71,3 @@ export const Cancelled: Story = { args: { scenario: "cancelled" } };
 export const Cancelling: Story = { args: { scenario: "cancelling" } };
 export const Failed: Story = { args: { scenario: "failed" } };
 export const Error: Story = { args: { scenario: "error" } };
-export const SendMessage: Story = {
-	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		await userEvent.type(
-			canvas.getByRole("textbox"),
-			"設定を確認してください",
-		);
-		await userEvent.click(canvas.getByRole("button", { name: "送信" }));
-		await expect(canvas.getByText("設定を確認してください")).toBeVisible();
-		await expect(
-			await canvas.findByText(/作業が完了しました/),
-		).toBeVisible();
-	},
-};

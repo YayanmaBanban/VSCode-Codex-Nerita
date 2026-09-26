@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
+import { vscodeBoundary } from "./fixtures/vscodeBoundary.mjs";
 
 const extensionPath = path.resolve(process.argv[2] ?? ".");
 const cwd = path.resolve("dist", "codex chat smoke", randomUUID());
@@ -22,26 +23,7 @@ await build({
 	format: "esm",
 	target: "node22",
 	outfile,
-	plugins: [
-		{
-			name: "vscode-smoke-boundary",
-			/** VS Code 外のモデル疎通ではエディター操作を提供せず、誤用は失敗させる。 */
-			setup(builder) {
-				builder.onResolve({ filter: /^vscode$/ }, () => ({
-					path: "vscode",
-					namespace: "vscode-smoke-boundary",
-				}));
-				builder.onLoad(
-					{ filter: /.*/, namespace: "vscode-smoke-boundary" },
-					() => ({
-						contents:
-							"module.exports = { workspace: {}, window: {} };",
-						loader: "js",
-					}),
-				);
-			},
-		},
-	],
+	plugins: [vscodeBoundary],
 });
 const { CodexClient, CodexSessionController } = await import(
 	pathToFileURL(outfile).href

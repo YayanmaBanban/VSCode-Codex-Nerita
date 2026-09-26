@@ -25,6 +25,7 @@ await Promise.all([mkdir(cwd), mkdir(agentDir)]);
 await build({
 	stdin: {
 		contents: [
+			'export { trustedPolicy } from "./tests/fixtures/trustedPolicy";',
 			'export { loadPiResources } from "./src/extension/backends/pi/PiResources";',
 			'export { loadSubagentDefinitions } from "./src/extension/backends/pi/PiSubagentDefinitions";',
 			'export { createPiSubagentTool } from "./src/extension/backends/pi/PiSubagentTool";',
@@ -37,8 +38,12 @@ await build({
 	target: "node22",
 	outfile: join(fixture, "host.cjs"),
 });
-const { loadPiResources, loadSubagentDefinitions, createPiSubagentTool } =
-	createRequire(import.meta.url)(join(fixture, "host.cjs"));
+const {
+	trustedPolicy,
+	loadPiResources,
+	loadSubagentDefinitions,
+	createPiSubagentTool,
+} = createRequire(import.meta.url)(join(fixture, "host.cjs"));
 const sdk = await import(
 	pathToFileURL(join(extensionPath, "dist/runtime/pi.mjs")).href
 );
@@ -88,6 +93,7 @@ assert.ok(
 		(agent) => agent.name === "codex-exec" && agent.unavailableReason,
 	),
 );
+const trustFixture = await trustedPolicy([cwd], "elevated");
 let opened = 0;
 const tool = createPiSubagentTool(
 	adapted.definitions,
@@ -97,13 +103,7 @@ const tool = createPiSubagentTool(
 			throw new Error("unexpected child");
 		},
 	},
-	{
-		workspaceRoots: [cwd],
-		writableRoots: [cwd],
-		shell: true,
-		networkAccess: false,
-		windowsSandbox: "elevated",
-	},
+	trustFixture.policy,
 	cwd,
 	authorize,
 	lifetime.signal,
@@ -143,6 +143,7 @@ await assert.rejects(
 	),
 );
 assert.equal(requests, 1);
+trustFixture.dispose();
 const report = {
 	package: metadata.name,
 	version: metadata.version,

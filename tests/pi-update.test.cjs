@@ -29,7 +29,7 @@ async function verify(failAt) {
 					return {
 						runPnpm(command) {
 							commands.push(Array.from(command));
-							if (commands.length === failAt) {
+							if (failAt(command)) {
 								throw new Error("verification failed");
 							}
 						},
@@ -67,14 +67,15 @@ async function verify(failAt) {
 }
 
 test("検証失敗で後続を停止し、展開後の失敗でも一時ディレクトリを削除する", async () => {
-	const early = await verify(2);
+	const early = await verify((command) => command.includes("check"));
 	assert.equal(early.exitCode, 1);
-	assert.equal(early.commands.length, 2);
+	assert.deepEqual(early.commands.at(-1), ["run", "check"]);
 	assert.deepEqual(early.removed, []);
-	const extracted = await verify(6);
+	const extracted = await verify(
+		(command) => command.includes("test:pi:chat") && command.length > 2,
+	);
 	assert.equal(extracted.exitCode, 1);
-	assert.equal(extracted.commands.length, 6);
-	assert.deepEqual(extracted.commands[5], [
+	assert.deepEqual(extracted.commands.at(-1), [
 		"run",
 		"test:pi:chat",
 		path.join(extracted.temporary, "extension"),

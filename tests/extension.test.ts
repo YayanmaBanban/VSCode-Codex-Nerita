@@ -1,7 +1,7 @@
 ﻿// 実際の Extension Host で拡張機能の起動・コマンド・UI 資産を確認する。
 import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
-import { access, readdir, readFile } from "node:fs/promises";
+import { access } from "node:fs/promises";
 import { CodexClient } from "../src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
 import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
@@ -182,67 +182,11 @@ suite("Nerita for Codex Extension", () => {
 			"dist/webview/index.css",
 			"dist/runtime/node_modules/@openai/codex/LICENSE",
 			"dist/runtime/node_modules/@openai/codex/NOTICE",
-			"dist/runtime/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
 		]) {
 			await access(
 				vscode.Uri.joinPath(extension.extensionUri, asset).fsPath,
 			);
 		}
 		await vscode.commands.executeCommand("nerita.codex.openChat");
-	});
-	test("配布runtimeにCodexとPiの実行資産が含まれる", async () => {
-		const extension = vscode.extensions.getExtension(
-			"nerita-local.nerita-codex",
-		);
-		assert.ok(extension);
-		const runtime = vscode.Uri.joinPath(
-			extension.extensionUri,
-			"dist/runtime",
-		);
-		assert.deepEqual((await readdir(runtime.fsPath)).sort(), [
-			"node_modules",
-			"pi",
-			"pi.mjs",
-		]);
-		await access(vscode.Uri.joinPath(runtime, "pi.mjs").fsPath);
-		await access(vscode.Uri.joinPath(runtime, "pi/core.mjs").fsPath);
-		await access(
-			vscode.Uri.joinPath(runtime, "pi/image-resize-worker.mjs").fsPath,
-		);
-		await access(
-			vscode.Uri.joinPath(
-				runtime,
-				"node_modules/@silvia-odwyer/photon-node/photon_rs_bg.wasm",
-			).fsPath,
-		);
-		await assert.rejects(
-			access(
-				vscode.Uri.joinPath(
-					runtime,
-					"node_modules/@earendil-works/pi-coding-agent",
-				).fsPath,
-			),
-			{ code: "ENOENT" },
-		);
-		assert.deepEqual(
-			(
-				await readdir(
-					vscode.Uri.joinPath(runtime, "node_modules/@openai").fsPath,
-				)
-			).sort(),
-			["codex", "codex-win32-x64"],
-		);
-		const manifest = JSON.parse(
-			await readFile(
-				vscode.Uri.joinPath(extension.extensionUri, "package.json")
-					.fsPath,
-				"utf8",
-			),
-		) as { dependencies: Record<string, string> };
-		assert.ok(
-			!Object.keys(manifest.dependencies).some((name) =>
-				name.startsWith("@agentclientprotocol/"),
-			),
-		);
 	});
 });

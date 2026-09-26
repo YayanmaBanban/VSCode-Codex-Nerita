@@ -61,7 +61,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await input.press("End");
 		await input.press("Control+Enter");
-		await expect(page.locator(".message.user")).toContainText(
+		await expect(page.getByLabel("送信した本文")).toContainText(
 			"D:\\workspace\\project\\src\\tests\\UserService.ts:9:1 (UserService)",
 		);
 		expect(errors).toEqual([]);

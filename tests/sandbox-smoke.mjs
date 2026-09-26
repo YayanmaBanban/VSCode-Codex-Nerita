@@ -28,8 +28,9 @@ await build({
 		contents: [
 			'export { CodexClient } from "./src/extension/backends/codex/CodexClient";',
 			'export { createCodexSandboxExecutor, resolveWindowsSandbox } from "./src/extension/backends/codex/CodexSandboxExecutor";',
-			'export { approveToolCall } from "./src/extension/security/ApprovalGuard";',
-			'export { createWorkspaceAccessPolicy, WorkspacePathPolicy } from "./src/extension/security/WorkspacePathPolicy";',
+			'export { issueApprovedToolCall } from "./src/extension/security/ApprovedToolCall";',
+			'export { WorkspacePathPolicy } from "./src/extension/security/WorkspacePathPolicy";',
+			'export { trustedPolicy } from "./tests/fixtures/trustedPolicy";',
 			'export { createPiSandboxPowerShellTool } from "./src/extension/backends/pi/PiPowerShellTool";',
 			'export { toSandboxPolicy } from "./src/extension/security/AgentAccessPolicy";',
 			'export { commandEnvironment } from "./src/extension/runtime/CommandEnvironment";',
@@ -61,7 +62,14 @@ const mode = await host.resolveWindowsSandbox(
 	cwd,
 	lifetime.signal,
 );
-const policy = await host.createWorkspaceAccessPolicy([cwd], mode);
+const trustFixtures = [];
+/** 外側 fixture も信頼し、拒否が Trust ではなく Sandbox によるものかを確認する。 */
+async function createPolicy(roots) {
+	const fixture = await host.trustedPolicy(roots, mode, [...roots, outside]);
+	trustFixtures.push(fixture);
+	return fixture.policy;
+}
+const policy = await createPolicy([cwd]);
 const executor = host.createCodexSandboxExecutor(extensionPath);
 const pwsh = process.env.NERITA_SANDBOX_PWSH
 	? await realpath(process.env.NERITA_SANDBOX_PWSH)
@@ -92,6 +100,8 @@ const report = {
 	cases: [],
 };
 const servers = [];
+const commandSources = new WeakMap();
+let scriptId = 0;
 let failed = false;
 
 /** 専用フィクスチャのみに触れる受入結果を、失敗後も続けて記録する。 */
@@ -111,23 +121,31 @@ async function test(id, operation) {
 	}
 }
 
-/** 承認と同じ `argv/policy` を本番 `Executor` へ渡す。 */
+/** 承認済みの入力を固定し、下流の OS 境界だけを検証する。承認・Trust は別の owner が検証する。 */
 async function execute(command, options = {}) {
 	const signal = options.signal ?? lifetime.signal;
+	let source = commandSources.get(command) ?? command.at(-1);
+	if (
+		!options.cwd &&
+		command[0] === process.execPath &&
+		command[1] === "-e"
+	) {
+		// 子プロセス用のコードは信頼済み fixture に置き、コード文字列の解析を OS 試験へ混ぜない。
+		const script = path.join(cwd, `sandbox-fixture-${++scriptId}.cjs`);
+		await writeFile(script, command[2]);
+		command = [process.execPath, script];
+		source = `node ${quote(script)}`;
+	}
 	const call = {
 		tool: "powershell",
-		params: { command },
+		params: { command: source },
 		command,
 		cwd: options.cwd ?? cwd,
 		policy: options.policy ?? policy,
 		env: host.commandEnvironment(),
 		timeoutMs: options.timeoutMs ?? 15_000,
 	};
-	const permit = await host.approveToolCall(
-		call,
-		() => Promise.resolve(signal),
-		signal,
-	);
+	const permit = host.issueApprovedToolCall(call, signal);
 	return executor.execute(permit);
 }
 
@@ -166,7 +184,7 @@ async function executePiPowerShell(command, executable = pwsh) {
 
 /** 製品と同じ文字コード初期化と平文引数を使い、古い起動処理との混在を防ぐ。 */
 function shellArgs(executable, text) {
-	return host.powerShellCommand(
+	const argv = host.powerShellCommand(
 		{
 			executable,
 			name:
@@ -176,6 +194,8 @@ function shellArgs(executable, text) {
 		},
 		text,
 	);
+	commandSources.set(argv, text);
+	return argv;
 }
 
 /** 本版は書込み拒否を `command` 結果ではなく RPC エラーで返す場合もある。 */
@@ -365,10 +385,7 @@ try {
 		return result;
 	});
 	await test("W06 multi-root", async () => {
-		const multiple = await host.createWorkspaceAccessPolicy(
-			[cwd, second],
-			mode,
-		);
+		const multiple = await createPolicy([cwd, second]);
 		const result = await execute(
 			[
 				process.execPath,
@@ -491,10 +508,7 @@ try {
 	await test("W10 external HTTPS example.com", () =>
 		networkComparison("https://example.com"));
 	await test("W12 extension development workspace", async () => {
-		const developmentPolicy = await host.createWorkspaceAccessPolicy(
-			[extensionPath],
-			mode,
-		);
+		const developmentPolicy = await createPolicy([extensionPath]);
 		const result = await execute(
 			[
 				process.execPath,
@@ -509,6 +523,9 @@ try {
 	});
 } finally {
 	lifetime.abort();
+	for (const fixture of trustFixtures) {
+		fixture.dispose();
+	}
 	for (const server of servers) {
 		server.closeAllConnections();
 		await new Promise((resolve) => server.close(resolve));

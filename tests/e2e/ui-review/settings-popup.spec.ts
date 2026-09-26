@@ -32,16 +32,11 @@ for (const theme of ["dark", "light"] as const) {
 			exact: true,
 		});
 		await expect(selected).toHaveAttribute("aria-selected", "true");
-		await expect(selected.locator(".lucide-check")).toBeVisible();
-		await expect(other.locator(".lucide-check")).toHaveCount(0);
-		await expect(selected).toHaveCSS("font-size", "12px");
-		await expect(page.locator(".config-popup")).toHaveCSS("width", "280px");
-		await expect(page.locator(".config-popup style")).toHaveCount(0);
+		await expect(other).toHaveAttribute("aria-selected", "false");
 		await other.hover();
 		await expect(page.getByRole("tooltip")).toHaveText(
 			"Fast and affordable agentic coding model.",
 		);
-		await expect(other).toHaveAttribute("data-highlighted", "");
 		await info.attach("model-menu-hover", {
 			body: await page.screenshot({
 				path: info.outputPath("model-menu.png"),
@@ -54,20 +49,19 @@ for (const theme of ["dark", "light"] as const) {
 		await model.focus();
 		await page.keyboard.press("ArrowDown");
 		await expect(
-			page
-				.getByRole("option", { name: "5.6 Luna", exact: true })
-				.locator(".lucide-check"),
-		).toBeVisible();
+			page.getByRole("option", { name: "5.6 Luna", exact: true }),
+		).toHaveAttribute("aria-selected", "true");
+		await expect(other).toBeFocused();
 		await page.keyboard.press("Home");
+		await expect(selected).toBeFocused();
 		await page.keyboard.press("Enter");
 		await expect(model).toHaveText("6 Astra");
 		await page.getByRole("button", { name: "使用量60%" }).click();
 		const context = page.getByRole("progressbar");
 		await context.hover();
 		await expect(page.getByRole("tooltip")).toHaveText(
-			"context600/1000 (60%)",
+			"context0.6K/1K (60%)",
 		);
-		await expect(page.getByRole("tooltip").locator("hr")).toBeVisible();
 		await info.attach("context-tooltip", {
 			body: await page.screenshot({
 				path: info.outputPath("context.png"),

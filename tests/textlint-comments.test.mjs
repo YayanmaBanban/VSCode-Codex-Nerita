@@ -12,7 +12,7 @@ test("keeps Japanese comments after templates, regexes, and emoji", () => {
 		'const view = <div title="// 属性">{/* 描画の説明。 */}</div>;',
 		"// 最後の説明。",
 	].join("\r\n");
-	const result = extractSourceComments(source, "fixture.tsx");
+	const { lintText: result } = extractSourceComments(source, "fixture.tsx");
 	const actual = result.split("\r\n");
 	const original = source.split("\r\n");
 	for (const [line, comment] of [
@@ -35,7 +35,7 @@ test("keeps Japanese comments after templates, regexes, and emoji", () => {
 		extractSourceComments(
 			"const view = <div> // 表示する文字列</div>;",
 			"fixture.tsx",
-		),
+		).lintText,
 		"",
 	);
 });
@@ -43,13 +43,16 @@ test("keeps Japanese comments after templates, regexes, and emoji", () => {
 test("keeps comments inside expressions and at the end of an empty file", () => {
 	const source =
 		"function f() { return 1 /* 途中の説明。 */ + 2; } // 末尾の説明。";
-	const result = extractSourceComments(source, "fixture.ts");
+	const { lintText: result } = extractSourceComments(source, "fixture.ts");
 	for (const comment of ["途中の説明。", "末尾の説明。"]) {
 		assert.equal(result.indexOf(comment), source.indexOf(comment));
 	}
 	assert.equal(
-		extractSourceComments("/** 説明。 */", "fixture.ts").trim(),
+		extractSourceComments("/** 説明。 */", "fixture.ts").lintText.trim(),
 		"説明。",
 	);
-	assert.equal(extractSourceComments("// English only", "fixture.ts"), "");
+	assert.equal(
+		extractSourceComments("// English only", "fixture.ts").lintText,
+		"",
+	);
 });

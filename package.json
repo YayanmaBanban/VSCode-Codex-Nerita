@@ -84,9 +84,9 @@
 					"scope": "window",
 					"enumDescriptions": [
 						"Pi標準の ~/.pi/agent/sessions/ に保存",
-						"ワークスペースの .sessions/ に保存"
+						"ワークスペース内の Pi 会話保存領域に保存"
 					],
-					"markdownDescription": "Piの新規会話の保存先。未送信の新規会話では初回送信時にも設定変更を反映します。送信済み・復元済みの会話は元の保存先を維持します。workspaceでは `.sessions/.gitignore` を内容 `*` で初回生成します。既存ファイルは上書きしません。"
+					"markdownDescription": "Piの新規会話の保存先。未送信の新規会話では初回送信時にも設定変更を反映します。送信済み・復元済みの会話は元の保存先を維持します。workspaceでは会話の保存領域に `.gitignore` を内容 `*` で初回生成します。既存ファイルは上書きしません。"
 				},
 				"nerita.pi.trustedExtensionPaths": {
 					"type": "array",
@@ -258,7 +258,12 @@
 		"ui-review": "playwright test --config tests/e2e/config/ui-review.config.ts",
 		"ui-review:chat": "pnpm ui-review chat",
 		"ui-review:report": "playwright show-report dist/ui-review/report",
-		"test:unit": "vitest run --config config/vitest.host.config.ts",
+		"test:unit": "vitest run --config config/vitest.host.config.ts tests/unit",
+		"test:host": "vitest run --config config/vitest.host.config.ts",
+		"test:contract": "vitest run --config config/vitest.host.config.ts tests/contract",
+		"test:integration": "vitest run --config config/vitest.host.config.ts tests/integration && node --test tests/pi-handoff-context.test.mjs",
+		"test:tooling": "node --test tests/textlint-comments.test.mjs",
+		"test:all": "pnpm test:local && pnpm test:acceptance",
 		"test:codex": "node tests/codex-app-server-smoke.mjs",
 		"test:codex:chat": "node tests/codex-chat-smoke.mjs",
 		"test:pi:chat": "node tests/pi-chat-smoke.mjs",
@@ -269,7 +274,9 @@
 		"test:sandbox:read-boundary": "node tests/sandbox-read-boundary-smoke.mjs",
 		"test:runtime": "node --test tests/runtime-packaging.test.mjs tests/pi-runtime-packaging.test.mjs tests/pi-update.test.cjs tests/license-cleanup.test.cjs",
 		"test:codex:features": "node tests/codex-features-smoke.mjs",
-		"test:codex:history": "node tests/codex-history-smoke.mjs"
+		"test:codex:history": "node tests/codex-history-smoke.mjs",
+		"test:local": "pnpm check && pnpm test:host && pnpm test:runtime && pnpm test:tooling && node --test tests/pi-handoff-context.test.mjs && pnpm test:storybook && pnpm ui-review && pnpm test && pnpm test:pi:chat && pnpm test:codex",
+		"test:acceptance": "pnpm test:codex:chat && pnpm test:codex:features && pnpm test:codex:history && pnpm test:pi:subagents && pnpm test:pi:workflow && pnpm test:pi:shell && pnpm test:pi:web && pnpm test:sandbox && pnpm test:sandbox:read-boundary && pnpm test:guardrails:ui && pnpm test:workflow:ui && pnpm test:sandbox:ui && node tests/header-smoke.mjs && node tests/composer-context-menu-smoke.mjs && node tests/launch-smoke.mjs && node tests/installed-smoke.mjs"
 	},
 	"devDependencies": {
 		"@chromatic-com/storybook": "latest",

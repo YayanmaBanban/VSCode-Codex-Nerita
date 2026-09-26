@@ -25,12 +25,16 @@ test("Pi の保存済み履歴を変更せず、圧縮要約と保持範囲を�
 		format: "esm",
 		bundle: true,
 	});
-	const { openPiSessionStore, preparePiSessionDirectory } = await import(
-		pathToFileURL(target).href
-	);
-	const directory = path.join(root, ".sessions");
-	await preparePiSessionDirectory(directory, "workspace");
-	const source = sdk.SessionManager.create(root, directory);
+	const { openPiSessionStore } = await import(pathToFileURL(target).href);
+	const { manager: source, history: sourceHistory } =
+		await openPiSessionStore(
+			sdk,
+			root,
+			path.join(root, "agent"),
+			"workspace",
+			new AbortController().signal,
+		);
+	const directory = sourceHistory.target(source.getSessionId()).directory;
 	source.appendMessage({
 		role: "user",
 		content: "old-original-message",

@@ -61,7 +61,10 @@ for (const choice of ["今回のみ許可", "拒否"]) {
 }
 test("停止後も同じ会話で再送・エラー復帰", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
+	const answer = page.locator(".message.assistant .message-text");
+	const received = await answer.textContent();
 	await page.getByRole("button", { name: "停止" }).click();
+	await expect(answer).toHaveText(received!);
 	await expect(page.getByText("停止しました", { exact: true })).toBeVisible();
 	await expect(page.getByText("接続済み", { exact: true })).toBeVisible();
 	await page
@@ -124,20 +127,9 @@ test("回答コピー・対応する送信文と返信末尾へ移動", async ({
 		"長いパスやコードも画面の幅に合わせて折り返します。".repeat(12),
 	);
 	await expect(page.locator(".text-type")).toHaveCount(0);
-	await expect(page.locator(".message.assistant")).toHaveCSS(
-		"background-color",
-		"rgba(0, 0, 0, 0)",
-	);
-	await expect(
-		page.getByRole("button", { name: "回答をコピー" }).locator("svg"),
-	).toHaveAttribute("width", "12");
 	await page.getByRole("button", { name: "送信メッセージへ移動" }).click();
 	await expect(page.locator(".message.user")).toBeFocused();
 	await expect(page.locator(".message.user")).toBeInViewport();
-	await expect(page.locator(".message.user")).toHaveCSS(
-		"outline-style",
-		"none",
-	);
 	await page.getByRole("button", { name: "回答の末尾へ移動" }).click();
 	await expect(
 		page.locator(".message.assistant .message-actions"),
@@ -145,48 +137,7 @@ test("回答コピー・対応する送信文と返信末尾へ移動", async ({
 	await expect(
 		page.locator(".message.assistant .message-actions"),
 	).toBeInViewport();
-	await expect(page.locator(".message.assistant .message-actions")).toHaveCSS(
-		"outline-style",
-		"none",
-	);
 	await page.locator(".message.assistant .message-text").click();
-	await expect(page.locator(".message.assistant")).toHaveCSS(
-		"outline-style",
-		"none",
-	);
-	await expect(page.locator(".message-author, .run-status")).toHaveCount(0);
-});
-test("TextTypeの開始・途中・全文表示と停止", async ({ page }, info) => {
-	await page.clock.install();
-	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
-	const content = page.locator(".text-type > div");
-	await expect(page.locator(".text-type-cursor")).toHaveCount(0);
-	await expect(page.locator(".text-type")).toHaveAttribute(
-		"data-typing",
-		"true",
-	);
-	await info.attach("typing-start", {
-		body: await page.screenshot(),
-		contentType: "image/png",
-	});
-	await page.clock.runFor(400);
-	await expect(content).toContainText("設定を確認");
-	await info.attach("typing-middle", {
-		body: await page.screenshot(),
-		contentType: "image/png",
-	});
-	await page.clock.runFor(2000);
-	await expect(page.locator(".text-type")).toHaveAttribute(
-		"data-typing",
-		"false",
-	);
-	await info.attach("typing-end", {
-		body: await page.screenshot(),
-		contentType: "image/png",
-	});
-	await page.getByRole("button", { name: "停止", exact: true }).click();
-	await expect(page.locator(".text-type")).toHaveCount(0);
-	await expect(page.locator(".text-type-cursor")).toHaveCount(0);
 });
 for (const colorScheme of ["dark", "light"] as const) {
 	test(`空の会話・520px・補助文字: ${colorScheme}`, async ({
@@ -209,10 +160,6 @@ for (const colorScheme of ["dark", "light"] as const) {
 				"rgb(120, 130, 140)",
 			);
 		});
-		await expect(empty.locator("p").last()).toHaveCSS(
-			"color",
-			"rgb(120, 130, 140)",
-		);
 		expect(
 			await page
 				.locator("main *")

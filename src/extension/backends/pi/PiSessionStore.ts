@@ -38,7 +38,7 @@ export type PiHistoryAccess = {
 	) => Promise<string>;
 };
 
-/** ワークスペース内の .sessions、または指定した agentDir 配下の作業場所別ディレクトリを返す。 */
+/** 保存設定に応じて、ワークスペース内または agentDir 配下の保存先を返す。 */
 export function piSessionDirectory(
 	cwd: string,
 	agentDir: string,

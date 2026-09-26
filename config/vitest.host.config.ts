@@ -4,7 +4,11 @@ export default defineConfig({
 	test: {
 		environment: "node",
 		setupFiles: ["tests/unit/hostSetup.ts"],
-		include: ["tests/unit/**/*.test.ts"],
+		include: [
+			"tests/unit/**/*.test.ts",
+			"tests/contract/**/*.test.ts",
+			"tests/integration/**/*.test.ts",
+		],
 		restoreMocks: true,
 	},
 });

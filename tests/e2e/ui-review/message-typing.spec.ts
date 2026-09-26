@@ -17,7 +17,6 @@ test("長文は1.5秒で全文表示し、本文完了では即時にアニメ�
 	const full = "長い回答を確認します。".repeat(30);
 	const body = page.locator(".message.assistant .message-text");
 	await expect(body).toHaveText(full);
-	await expect(page.locator(".text-type")).toHaveCount(0);
 	await page.getByRole("button", { name: "書き込み開始" }).click();
 	for (const [name, duration] of [
 		["initial", 0],
@@ -27,25 +26,27 @@ test("長文は1.5秒で全文表示し、本文完了では即時にアニメ�
 		["completed", 50],
 	] as const) {
 		await page.clock.runFor(duration);
-		await expect(page.locator(".text-type")).toHaveAttribute(
-			"data-typing",
-			name === "completed" ? "false" : "true",
-		);
+		if (name === "initial") {
+			await expect(body).toHaveText("");
+		} else if (name === "completed") {
+			await expect(body).toHaveText(full);
+		} else {
+			const visible = await body.innerText();
+			expect(visible.length).toBeGreaterThan(0);
+			expect(visible.length).toBeLessThan(full.length);
+			expect(full.startsWith(visible)).toBe(true);
+		}
 		await info.attach(name, {
 			body: await page.screenshot(),
 			contentType: "image/png",
 		});
 	}
-	await expect(page.locator(".text-type > div")).toHaveText(full);
 	await page.getByRole("button", { name: "追記", exact: true }).click();
-	await expect(page.locator(".text-type > div")).toHaveText(
-		`${full}追加の本文です。`,
-	);
+	await expect(body).toHaveText(`${full}追加の本文です。`);
 	await page.getByRole("button", { name: "本文完了" }).click();
 	await page.getByRole("button", { name: "書き込み開始" }).click();
 	await page.clock.runFor(100);
 	await page.getByRole("button", { name: "本文完了" }).click();
-	await expect(page.locator(".text-type")).toHaveCount(0);
 	await expect(body).toHaveText(`${full}追加の本文です。`);
 	expect(errors).toEqual([]);
 });

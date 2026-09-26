@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
+import { vscodeBoundary } from "./fixtures/vscodeBoundary.mjs";
 
 const root = path.resolve("dist", "codex phase2 smoke", randomUUID());
 await mkdir(root, { recursive: true });
@@ -22,6 +23,7 @@ await build({
 		loader: "ts",
 	},
 	bundle: true,
+	plugins: [vscodeBoundary],
 	platform: "node",
 	format: "esm",
 	outfile: bundle,

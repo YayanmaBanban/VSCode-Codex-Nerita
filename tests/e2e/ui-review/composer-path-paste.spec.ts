@@ -60,10 +60,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(input.locator(".inline-path-reference")).toHaveCount(2);
 		await page.screenshot({ path: info.outputPath("pasted-paths.png") });
 		await input.press("Control+Enter");
-		await expect(page.locator(".message.user")).toContainText(
+		await expect(page.getByLabel("送信した本文")).toContainText(
 			"D:\\workspace\\project\\empty",
 		);
-		await expect(page.locator(".message.user")).toContainText(
+		await expect(page.getByLabel("送信した本文")).toContainText(
 			"D:\\workspace\\project\\日本語 sample.md",
 		);
 		expect(errors).toEqual([]);

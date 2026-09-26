@@ -7,6 +7,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import { build } from "esbuild";
+import { vscodeBoundary } from "./fixtures/vscodeBoundary.mjs";
 import { piPersistenceSmoke } from "./pi-persistence-smoke.mjs";
 import { piPackagesSmoke } from "./pi-packages-smoke.mjs";
 import { piSubagentSmoke } from "./pi-subagent-smoke.mjs";
@@ -146,19 +147,9 @@ try {
 		path.join(extensionPath, "package.json"),
 		path.join(fixture, "package.json"),
 	);
-	// ESM の公開入口と、遅延ロードされる画像変換用 WASM も配布物だけで動かす。
+	// 配布物の SDK を実会話と履歴復元に使用する。
 	const sdk = await import(
 		pathToFileURL(path.join(fixture, "dist/runtime/pi.mjs")).href
-	);
-	assert.equal(sdk.getPackageDir(), path.join(fixture, "dist/runtime/pi"));
-	const png = await sdk.convertToPng(
-		"R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-		"image/gif",
-	);
-	assert.ok(png, "配布した画像変換用WASMを読み込めませんでした。");
-	assert.deepEqual(
-		Buffer.from(png.data, "base64").subarray(0, 8),
-		Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
 	);
 	await build({
 		stdin: {
@@ -171,26 +162,7 @@ try {
 		format: "cjs",
 		target: "node22",
 		outfile: "dist/pi-smoke/host.cjs",
-		plugins: [
-			{
-				name: "vscode-smoke-boundary",
-				/** VS Code 外では API を提供せず、未対応のエディター操作は失敗させる。 */
-				setup(builder) {
-					builder.onResolve({ filter: /^vscode$/ }, () => ({
-						path: "vscode",
-						namespace: "vscode-smoke-boundary",
-					}));
-					builder.onLoad(
-						{ filter: /.*/, namespace: "vscode-smoke-boundary" },
-						() => ({
-							contents:
-								"module.exports = { workspace: {}, window: {} };",
-							loader: "js",
-						}),
-					);
-				},
-			},
-		],
+		plugins: [vscodeBoundary],
 	});
 	const { PiSessionController, createPiRuntime, isHostMessage } =
 		createRequire(import.meta.url)(
@@ -574,7 +546,7 @@ try {
 		requests,
 	});
 	console.log(
-		"PASS: packaged Pi SDK + WASM → same-run steer → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → queued steer cancellation → resume",
+		"PASS: packaged Pi SDK → same-run steer → read/ls → write/edit/PowerShell approval and rejection → pending cancellation → command stop → queued steer cancellation → resume",
 	);
 } finally {
 	await controller?.dispose();

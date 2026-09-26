@@ -1,3 +1,4 @@
+import { openCommand } from "./fixtures/openCommand.mjs";
 // 実際の VS Code 標準メニューから選択範囲を変換し、元に戻す操作と表示先を確認する。
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
@@ -31,16 +32,7 @@ const app = await electron.launch({
 try {
 	const window = await app.firstWindow();
 	await window.waitForSelector(".monaco-workbench");
-	await window.keyboard.press("F1");
-	await window
-		.locator(".quick-input-widget input")
-		.fill(">Nerita for Codex: チャットを開く");
-	await window
-		.locator(".quick-input-list")
-		.getByText("Nerita for Codex: チャットを開く", { exact: true })
-		.click({ timeout: 3000 })
-		.catch(() => undefined);
-	// 前回のサイドバー復元がパレットを閉じた場合も、実際の入力欄で起動を判定する。
+	await openCommand(window, "Nerita for Codex: チャットを開く");
 	let chat;
 	await expect
 		.poll(

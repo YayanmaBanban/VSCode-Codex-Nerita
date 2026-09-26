@@ -45,10 +45,6 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.clock.runFor(150);
 		await expect(primary).toBeVisible();
 		await expect(secondary).toBeChecked();
-		await expect(secondary.locator("svg")).toHaveCSS(
-			"color",
-			"rgb(76, 175, 120)",
-		);
 		await info.attach("secondary-selected", {
 			body: await page.screenshot({
 				path: info.outputPath("secondary.png"),

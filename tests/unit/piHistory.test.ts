@@ -20,7 +20,7 @@ async function setup() {
 		),
 		target: (id) => ({
 			id,
-			directory: "D:\\workspace\\.sessions",
+			directory: "fixture-history",
 			storage: "workspace",
 		}),
 	};
@@ -136,7 +136,9 @@ it("選択した履歴を別IDへフォークし、成功後に一覧を更新�
 			delete: false,
 		},
 	});
-	expect(h.runtime.history!.list).toHaveBeenCalledTimes(2);
+	expect(h.controller.snapshot().sessions).toContainEqual(
+		expect.objectContaining({ sessionId: "saved" }),
+	);
 	await h.controller.dispose();
 });
 

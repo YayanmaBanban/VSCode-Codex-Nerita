@@ -112,7 +112,7 @@ for (const operation of ["copy", "cut"] as const) {
 		await input.press("Control+y");
 		await expect(input.locator(".inline-path-reference")).toHaveCount(2);
 		await input.press("Control+Enter");
-		await expect(page.locator(".message.user")).toContainText(
+		await expect(page.getByLabel("送信した本文")).toContainText(
 			`前${formats["text/plain"]}後`,
 		);
 		expect(errors).toEqual([]);

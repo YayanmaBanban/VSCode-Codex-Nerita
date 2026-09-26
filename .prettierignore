@@ -4,3 +4,4 @@ out/
 node_modules/
 coverage/
 src/extension/backends/codex/codex-app-server
+**/*.md

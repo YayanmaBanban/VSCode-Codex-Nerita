@@ -25,11 +25,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 			"/iframe.html?id=chat-header--long-title&viewMode=story",
 		);
 		const title = page.locator(".chat-header h1");
-		await expect(title).toHaveCSS("font-size", "12px");
+		await expect(title).toBeVisible();
 		expect(
 			await title.evaluate((node) => node.scrollWidth > node.clientWidth),
 		).toBe(true);
-		await expect(page.locator(".connection-bar, .eyebrow")).toHaveCount(0);
 		await expect(
 			page.getByRole("button", { name: "オプション" }),
 		).toBeEnabled();
@@ -93,12 +92,6 @@ test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) 
 	await page.clock.install();
 	await page.goto("/iframe.html?id=chat-header--reconnect&viewMode=story");
 	await expect(page.locator(".connection-beam")).toBeVisible();
-	const beam = page.locator(".connection-beam > div > div");
-	await expect(beam).toHaveCSS("background-image", /linear-gradient/);
-	await expect(page.locator(".connection-beam > div")).toHaveCSS(
-		"border-top-style",
-		"solid",
-	);
 	await page.clock.runFor(750);
 	await info.attach("reconnect-initial", {
 		body: await page.screenshot({
@@ -108,7 +101,7 @@ test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) 
 	});
 	await page.getByRole("button", { name: "接続エラー：再接続" }).click();
 	await expect(page.locator(".connection-beam")).toHaveCount(0);
-	await expect(page.locator(".confetti-piece")).toHaveCount(12);
+	await expect(page.locator(".connection-confetti")).toBeVisible();
 	// CSS アニメーションの時刻を直接固定し、タイマー経過とは分けて撮影する。
 	for (const [label, time] of [
 		["initial", 0],

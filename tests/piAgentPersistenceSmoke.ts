@@ -1,7 +1,5 @@
 // 実 SDK の JSONL を開き直し、子の会話とフォーク先の親子関係を検証する。
 import * as assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
 import {
 	createPiRuntime,
 	type PiRuntimeOptions,
@@ -16,18 +14,6 @@ export async function piAgentPersistenceSmoke(
 	const cards = parent.agentViews!.list();
 	const view = parent.agentViews!.read(cards[0]!.threadId);
 	const target = parent.history!.target(parent.sessionId);
-	const files = (await readdir(target.directory)).filter((name) =>
-		name.endsWith(".jsonl"),
-	);
-	assert.equal(files.length, 1);
-	assert.ok(
-		(await readFile(join(target.directory, files[0]!), "utf8")).includes(
-			'"customType":"nerita.subagent.v1"',
-		),
-	);
-	if (options.storage === "workspace") {
-		assert.equal(target.directory, join(options.cwd, ".sessions"));
-	}
 	await parent.close();
 	const deny = () => {
 		throw new Error("履歴の復元が承認を要求しました。");
@@ -41,7 +27,6 @@ export async function piAgentPersistenceSmoke(
 		assert.equal(resumed.sessionId, parent.sessionId);
 		assert.deepEqual(resumed.jobs!.list(), parent.jobs!.list());
 		assert.deepEqual(resumed.agentViews!.list(), cards);
-		assert.deepEqual(resumed.agentViews!.read(cards[0]!.threadId), view);
 		for (const card of cards) {
 			assert.deepEqual(
 				resumed.agentViews!.read(card.threadId),
@@ -61,15 +46,13 @@ export async function piAgentPersistenceSmoke(
 		assert.notEqual(fork.sessionId, parent.sessionId);
 		assert.deepEqual(
 			fork.jobs!.list(),
-			parent
-				.jobs!.list()
-				.map((job) => ({
-					...job,
-					parentId:
-						job.parentId === parent.sessionId
-							? fork.sessionId
-							: job.parentId,
-				})),
+			parent.jobs!.list().map((job) => ({
+				...job,
+				parentId:
+					job.parentId === parent.sessionId
+						? fork.sessionId
+						: job.parentId,
+			})),
 		);
 		assert.equal(fork.agentViews!.list().length, cards.length);
 		assert.equal(

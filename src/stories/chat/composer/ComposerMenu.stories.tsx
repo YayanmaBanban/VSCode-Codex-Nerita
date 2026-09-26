@@ -1,11 +1,13 @@
 // 添付とスキルを持つチャットで、候補選択と送信する本文を確認する。
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import type { UiMessage } from "../../../shared/messages";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../../webview/chat/ChatApp";
 import { createMockBridge } from "../mocks/mockBridge";
 
 /** 実接続を使わず、Host が渡す一覧を再現する。 */
 function ComposerMenuStory() {
+	const [sent, setSent] = useState("");
 	const bridge = useMemo(() => {
 		const mock = createMockBridge("empty");
 		mock.patchState({
@@ -34,9 +36,24 @@ function ComposerMenuStory() {
 				},
 			],
 		});
-		return mock;
+		return {
+			subscribe: mock.subscribe,
+			postMessage(message: UiMessage) {
+				if (message.type === "prompt/send") {
+					setSent(message.text);
+				}
+				mock.postMessage(message);
+			},
+		};
 	}, []);
-	return <ChatApp bridge={bridge} />;
+	return (
+		<>
+			<ChatApp bridge={bridge} />
+			<output hidden aria-label="送信した本文">
+				{sent}
+			</output>
+		</>
+	);
 }
 const meta = {
 	title: "Chat/Composer Menu",

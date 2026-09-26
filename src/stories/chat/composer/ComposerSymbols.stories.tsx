@@ -8,6 +8,7 @@ import { mockWorkspaceSymbols } from "../mocks/mockWorkspaceSymbols";
 
 /** 遅い検索が新しい検索を上書きしない状態を再現する。 */
 function SymbolStory() {
+	const [sent, setSent] = useState("");
 	const [opened, setOpened] = useState("");
 	const [queries, setQueries] = useState<string[]>([]);
 	const [completed, setCompleted] = useState<string[]>([]);
@@ -16,6 +17,9 @@ function SymbolStory() {
 		return {
 			subscribe: mock.subscribe,
 			postMessage(message) {
+				if (message.type === "prompt/send") {
+					setSent(message.text);
+				}
 				if (message.type === "reference/open") {
 					setOpened(JSON.stringify(message));
 					return;
@@ -42,6 +46,9 @@ function SymbolStory() {
 	return (
 		<>
 			<ChatApp bridge={bridge} />
+			<output hidden aria-label="送信した本文">
+				{sent}
+			</output>
 			<output hidden aria-label="開いた参照">
 				{opened}
 			</output>

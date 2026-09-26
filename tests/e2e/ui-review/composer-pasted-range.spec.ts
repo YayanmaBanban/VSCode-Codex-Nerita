@@ -53,7 +53,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await input.press("Control+End");
 		await input.press("Control+Enter");
-		await expect(page.locator(".message.user")).toContainText(
+		await expect(page.getByLabel("送信した本文")).toContainText(
 			"ComposerInput.tsx:1:3-101:5",
 		);
 		expect(errors).toEqual([]);

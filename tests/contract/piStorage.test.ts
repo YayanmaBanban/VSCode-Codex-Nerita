@@ -25,7 +25,7 @@ it("workspace保存では並行初期化しても*だけを生成し、既存ign
 		join(root, "agent"),
 		"workspace",
 	);
-	expect(directory).toBe(join(root, ".sessions"));
+	expect(directory).toBe(join(root, ".pi", "sessions"));
 	await Promise.all([
 		preparePiSessionDirectory(directory, "workspace"),
 		preparePiSessionDirectory(directory, "workspace"),
@@ -55,7 +55,7 @@ it("globalはagentDir以下のcwd別ディレクトリに保存しignoreを作�
 it("保存先に同名のファイルがあれば上書きも別保存先への退避もしない", async () => {
 	const root = await mkdtemp(join(tmpdir(), "nerita-pi-store-"));
 	fixtures.push(root);
-	const directory = join(root, ".sessions");
+	const directory = join(root, "occupied");
 	await writeFile(directory, "keep");
 	await expect(
 		preparePiSessionDirectory(directory, "workspace"),

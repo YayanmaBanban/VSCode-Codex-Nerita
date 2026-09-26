@@ -24,7 +24,8 @@ await build({
 		contents: [
 			'export { createPiShellTools } from "./src/extension/backends/pi/PiShellTools";',
 			'export { createCodexSandboxExecutor, resolveWindowsSandbox } from "./src/extension/backends/codex/CodexSandboxExecutor";',
-			'export { createWorkspaceAccessPolicy, WorkspacePathPolicy } from "./src/extension/security/WorkspacePathPolicy";',
+			'export { WorkspacePathPolicy } from "./src/extension/security/WorkspacePathPolicy";',
+			'export { trustedPolicy } from "./tests/fixtures/trustedPolicy";',
 		].join("\n"),
 		resolveDir: extensionPath,
 	},
@@ -44,6 +45,7 @@ const cwd = await realpath(
 const signal = new AbortController().signal;
 const executor = host.createCodexSandboxExecutor(extensionPath);
 const originalPath = process.env.PATH;
+let trustFixture;
 let approvals = 0;
 let approve = true;
 const calls = [];
@@ -84,13 +86,20 @@ try {
 		process.env.PATH = `${path.dirname(executable)}${path.delimiter}${originalPath ?? ""}`;
 	}
 	const mode = await host.resolveWindowsSandbox(extensionPath, cwd, signal);
-	const policy = await host.createWorkspaceAccessPolicy([cwd], mode);
+	trustFixture = await host.trustedPolicy([cwd], mode);
+	const policy = trustFixture.policy;
 	const tools = await host.createPiShellTools(
 		sdk,
 		new host.WorkspacePathPolicy(policy, cwd),
-		(title, executionSignal) => {
-			assert.match(title, /実行範囲: Shell Sandbox/);
-			assert.match(title, /Sandbox実装: Codex/);
+		(presentation, executionSignal) => {
+			assert.ok(
+				presentation.fields.some(
+					(field) => field.value === "Shell Sandbox",
+				),
+			);
+			assert.ok(
+				presentation.details.some((field) => field.value === "Codex"),
+			);
 			approvals++;
 			return approve
 				? Promise.resolve(executionSignal)
@@ -242,6 +251,7 @@ try {
 		return result;
 	});
 } finally {
+	trustFixture?.dispose();
 	if (originalPath === undefined) {
 		delete process.env.PATH;
 	} else {

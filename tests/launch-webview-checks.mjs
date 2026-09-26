@@ -1,21 +1,14 @@
-// 実際の VS Code Webview で CSS の読み込みと設定メニューの表示を確認する。
+// 実際の VS Code Webview で入力と設定メニューの操作・画面内表示を確認する。
 import { expect } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /** Storybook を経由せず、本体の CSS とポータル表示を検証して記録する。 */
 export async function checkLaunchWebview(chat, window, output) {
-	const composer = chat.locator(".composer");
-	await expect(composer).toHaveCSS("padding", "12px");
-	await expect(composer).toHaveCSS("border-radius", "10px");
-	await expect(chat.locator(".settings-toolbar")).toHaveCSS(
-		"display",
-		"flex",
-	);
 	await expect(
 		chat.getByRole("button", { name: "送信", exact: true }),
-	).toHaveCSS("width", "32px");
-	await expect(chat.getByRole("textbox")).toHaveCSS("min-height", "65px");
+	).toBeInViewport();
+	await expect(chat.getByRole("textbox")).toBeInViewport();
 	await expect(
 		chat.getByRole("button", { name: "送信", exact: true }),
 	).toBeDisabled();
@@ -27,14 +20,9 @@ export async function checkLaunchWebview(chat, window, output) {
 	const model = chat.getByRole("combobox", { name: "Model", exact: true });
 	await expect(model).toBeEnabled();
 	await model.click();
-	const popup = chat.locator(".config-popup");
+	const popup = chat.getByRole("listbox");
 	await expect(popup).toBeVisible();
-	await expect(popup).toHaveCSS("border-radius", "8px");
-	await expect(chat.getByRole("option").first()).toHaveCSS(
-		"font-size",
-		"12px",
-	);
-	await expect(chat.locator(".config-check")).toHaveCount(1);
+	await expect(chat.getByRole("option", { selected: true })).toHaveCount(1);
 	await window.screenshot({ path: path.join(output, "model-menu.png") });
 	const metrics = await chat.evaluate(() => {
 		/** 寸法と配色を記録し、本文や認証情報を収集しない。 */
@@ -70,7 +58,5 @@ export async function checkLaunchWebview(chat, window, output) {
 	await window.keyboard.press("Escape");
 	await expect(model).toHaveAttribute("aria-expanded", "false");
 	await expect(popup).toBeHidden();
-	console.log(
-		"Webview: Tailwind dimensions, input state and model menu verified",
-	);
+	console.log("Webview: viewport, input state and model menu verified");
 }

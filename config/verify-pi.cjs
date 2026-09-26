@@ -27,7 +27,7 @@ async function main() {
 	}
 	for (const script of [
 		"check",
-		"test:unit",
+		"test:host",
 		"test:runtime",
 		"package:vsix",
 		"test:pi:chat",

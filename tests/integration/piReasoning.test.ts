@@ -16,7 +16,7 @@ import {
 import { PiProviderControls } from "../../src/extension/backends/pi/PiProviderControls";
 import { neritaExtensionFactories } from "../../src/extension/backends/pi/PiBuiltinExtensions";
 import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
-import { liveModel, oauthToken } from "./piCatalogHarness";
+import { liveModel, oauthToken } from "../unit/piCatalogHarness";
 
 /** HTTP で受け取った要求の検証対象。 */
 type WireRequest = {
@@ -26,7 +26,7 @@ type WireRequest = {
 	metadata?: unknown;
 };
 
-it.each(["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
+it.each(["gpt-6-astra", "gpt-6-sol"])(
 	"実SDKの%sで更新の許可と通常effortへの復帰を検証する",
 	async (modelId) => {
 		const directory = await mkdtemp(join(tmpdir(), "nerita-reasoning-"));

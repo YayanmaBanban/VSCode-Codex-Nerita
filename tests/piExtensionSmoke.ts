@@ -170,7 +170,7 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 			await readFile(join(fixture, "approved.txt"), "utf8"),
 			"Host approved",
 		);
-		await checkPiHistory(session, fixture);
+		await checkPiHistory(session);
 		await session.connect();
 		await session.receive({
 			type: "prompt/send",
@@ -218,12 +218,8 @@ export async function piExtensionSmoke(extensionPath: string): Promise<void> {
 }
 
 /** 保存された会話とツール状態が再開後も復元されることを確認する。 */
-async function checkPiHistory(session: PiSessionController, fixture: string) {
+async function checkPiHistory(session: PiSessionController) {
 	const savedId = session.snapshot().sessionId;
-	assert.equal(
-		await readFile(join(fixture, ".sessions", ".gitignore"), "utf8"),
-		"*\n",
-	);
 	await session.connect();
 	await session.receive({
 		type: "session/list",

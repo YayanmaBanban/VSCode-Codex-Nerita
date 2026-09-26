@@ -1,3 +1,4 @@
+import { openCommand } from "./fixtures/openCommand.mjs";
 // 実際の VS Code でエディタ移動・下書き同期・サイドバー復元を検証する。
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
@@ -35,13 +36,7 @@ const app = await electron.launch({
 try {
 	const page = await app.firstWindow();
 	await page.waitForSelector(".monaco-workbench");
-	await page.keyboard.press("F1");
-	await page.locator(".quick-input-widget input").fill(`>${command}`);
-	await page
-		.locator(".quick-input-list .monaco-list-row")
-		.filter({ hasText: command })
-		.first()
-		.click();
+	await openCommand(page, command);
 	/** 表示先固有の操作が利用可能になるまで Webview を探す。 */
 	const findChat = async (label) => {
 		let found;
@@ -70,20 +65,17 @@ try {
 		return found;
 	};
 	let sidebar = await findChat("エディタグループへ移動");
-	await expect(
-		sidebar.getByRole("heading", { name: "新規チャット" }),
-	).toHaveCSS("font-size", "12px");
 	await sidebar.getByRole("textbox").fill("移動前の下書き");
 	await sidebar
 		.getByRole("button", { name: "エディタグループへ移動" })
 		.click();
 	let editor = await findChat("サイドバーへ戻る");
-	await expect(editor.getByRole("textbox")).toHaveValue("移動前の下書き");
+	await expect(editor.getByRole("textbox")).toHaveText("移動前の下書き");
 	await editor.getByRole("textbox").fill("エディタで編集した下書き");
 	await page.screenshot({ path: path.join(output, "editor.png") });
 	await editor.getByRole("button", { name: "サイドバーへ戻る" }).click();
 	sidebar = await findChat("エディタグループへ移動");
-	await expect(sidebar.getByRole("textbox")).toHaveValue(
+	await expect(sidebar.getByRole("textbox")).toHaveText(
 		"エディタで編集した下書き",
 	);
 	await page.screenshot({ path: path.join(output, "sidebar-return.png") });
@@ -91,7 +83,7 @@ try {
 		.getByRole("button", { name: "エディタグループへ移動" })
 		.click();
 	editor = await findChat("サイドバーへ戻る");
-	await expect(editor.getByRole("textbox")).toHaveValue(
+	await expect(editor.getByRole("textbox")).toHaveText(
 		"エディタで編集した下書き",
 	);
 	await page.keyboard.press("F1");
@@ -103,12 +95,12 @@ try {
 		.filter({ hasText: "View: Show Explorer" })
 		.first()
 		.click();
-	await expect(editor.getByRole("textbox")).toHaveValue(
+	await expect(editor.getByRole("textbox")).toHaveText(
 		"エディタで編集した下書き",
 	);
 	await editor.getByRole("button", { name: "サイドバーへ戻る" }).click();
 	sidebar = await findChat("エディタグループへ移動");
-	await expect(sidebar.getByRole("textbox")).toHaveValue(
+	await expect(sidebar.getByRole("textbox")).toHaveText(
 		"エディタで編集した下書き",
 	);
 	console.log(

@@ -1,6 +1,6 @@
 // 同梱 SDK で保存・再開・保存先切替・移動を検証する。会話はローカルモデルだけを使う。
 import assert from "node:assert/strict";
-import { readFile, writeFile, readdir, mkdir, cp } from "node:fs/promises";
+import { readFile, writeFile, mkdir, cp } from "node:fs/promises";
 import path from "node:path";
 
 /** 新しい `Controller` から同じ履歴を開き、UI とモデルの両方へ文脈を復元する。 */
@@ -17,10 +17,10 @@ export async function piPersistenceSmoke({
 	let workspace = cwd;
 	let sequence = 0;
 	let controller;
+	let runtime;
 	const create = () =>
-		new PiSessionController(async (signal, authorize, resume) => ({
-			cwd: workspace,
-			session: await createPiRuntime({
+		new PiSessionController(async (signal, authorize, resume) => {
+			const session = await createPiRuntime({
 				extensionPath,
 				cwd: workspace,
 				agentDir,
@@ -30,8 +30,10 @@ export async function piPersistenceSmoke({
 				authorize,
 				resume,
 				preferredModel: { provider: "local", model: "smoke" },
-			}),
-		}));
+			});
+			runtime = session;
+			return { cwd: workspace, session };
+		});
 	const receive = (message) =>
 		controller.receive({ requestId: `history-${++sequence}`, ...message });
 	const list = () => receive({ type: "session/list" });
@@ -95,17 +97,10 @@ export async function piPersistenceSmoke({
 				),
 		);
 		assert.ok(requests.at(-1).messages.some((m) => m.role === "tool"));
-		const standardDirectory = path.join(
-			agentDir,
-			"sessions",
-			(await readdir(path.join(agentDir, "sessions")))[0],
-		);
-		const standardFile = path.join(
-			standardDirectory,
-			(await readdir(standardDirectory)).find((file) =>
-				file.endsWith(".jsonl"),
-			),
-		);
+		const standardDirectory = runtime.history.target(savedId).directory;
+		const standardFile = (
+			await sdk.SessionManager.listAll(standardDirectory)
+		).find((row) => row.id === savedId).path;
 		const original = await readFile(standardFile, "utf8");
 		assert.ok(original.includes("resume saved context"));
 		// 現在の履歴を分岐し、モデル文脈を引き継いでも元ファイルは変えない。
@@ -152,10 +147,6 @@ export async function piPersistenceSmoke({
 		await receive({ type: "session/new" });
 		const localId = controller.snapshot().sessionId;
 		assert.notEqual(localId, savedId);
-		assert.equal(
-			await readFile(path.join(cwd, ".sessions", ".gitignore"), "utf8"),
-			"*\n",
-		);
 		await list();
 		assert.equal(controller.snapshot().sessions.length, 0);
 		await send("local history");
@@ -165,17 +156,9 @@ export async function piPersistenceSmoke({
 			[localId],
 		);
 		assert.equal(await readFile(standardFile, "utf8"), original);
-		await writeFile(
-			path.join(cwd, ".sessions", ".gitignore"),
-			"custom-*\n",
-		);
 		await controller.dispose();
 		controller = create();
 		await controller.connect();
-		assert.equal(
-			await readFile(path.join(cwd, ".sessions", ".gitignore"), "utf8"),
-			"custom-*\n",
-		);
 		await list();
 		await load(localId);
 		assert.equal(controller.snapshot().sessionId, localId);
@@ -183,12 +166,7 @@ export async function piPersistenceSmoke({
 		await controller.dispose();
 		// フォルダーの移動はコピーで再現し、元の成果物を保持する。
 		workspace = path.join(path.dirname(cwd), "relocated workspace");
-		await mkdir(workspace);
-		await cp(
-			path.join(cwd, ".sessions"),
-			path.join(workspace, ".sessions"),
-			{ recursive: true },
-		);
+		await cp(cwd, workspace, { recursive: true });
 		controller = create();
 		await controller.connect();
 		await list();
@@ -203,7 +181,7 @@ export async function piPersistenceSmoke({
 		await send("after move");
 		// 完了通知がないツールは、復元時に停止表示へ落とし承認・実行しない。
 		await controller.dispose();
-		const localDir = path.join(workspace, ".sessions");
+		const localDir = runtime.history.target(localId).directory;
 		const incomplete = sdk.SessionManager.create(workspace, localDir);
 		incomplete.appendMessage({
 			role: "user",
@@ -256,34 +234,20 @@ export async function piPersistenceSmoke({
 		storage = "global";
 		controller = create();
 		await controller.connect();
+		const globalDir = runtime.history.target(runtime.sessionId).directory;
 		storage = "workspace";
 		await send("first prompt after storage change");
 		const switchedId = controller.snapshot().sessionId;
-		const switchedDir = path.join(workspace, ".sessions");
-		const switchedFile = path.join(
-			switchedDir,
-			(await readdir(switchedDir)).find((file) =>
-				file.endsWith(".jsonl"),
-			),
-		);
+		const switchedDir = runtime.history.target(switchedId).directory;
+		const switchedFile = (
+			await sdk.SessionManager.listAll(switchedDir)
+		).find((row) => row.id === switchedId).path;
 		assert.ok(
 			(await readFile(switchedFile, "utf8")).includes(
 				"first prompt after storage change",
 			),
 		);
-		const globalDir = path.join(
-			agentDir,
-			"sessions",
-			`--${path
-				.resolve(workspace)
-				.replace(/^[/\\]/, "")
-				.replace(/[/\\:]/g, "-")}--`,
-		);
-		assert.equal(
-			(await readdir(globalDir)).filter((file) => file.endsWith(".jsonl"))
-				.length,
-			0,
-		);
+		assert.deepEqual(await sdk.SessionManager.listAll(globalDir), []);
 		// 送信済みの会話は途中で設定を変えても同じファイルへ追記する。
 		storage = "global";
 		await send("continue in workspace storage");
@@ -298,19 +262,18 @@ export async function piPersistenceSmoke({
 		await receive({ type: "session/new" });
 		storage = "global";
 		await send("first prompt in global storage");
-		assert.equal(
-			(await readdir(switchedDir)).filter((file) =>
-				file.endsWith(".jsonl"),
-			).length,
-			1,
+		assert.deepEqual(
+			(await sdk.SessionManager.listAll(switchedDir)).map(
+				(row) => row.id,
+			),
+			[switchedId],
 		);
-		assert.equal(
-			(await readdir(globalDir)).filter((file) => file.endsWith(".jsonl"))
-				.length,
-			1,
+		assert.deepEqual(
+			(await sdk.SessionManager.listAll(globalDir)).map((row) => row.id),
+			[controller.snapshot().sessionId],
 		);
 		console.log(
-			"PASS: Pi global/workspace persistence → fork isolation/restart/context → ignore preservation → restart/context/tools → relocated workspace → incomplete tools → failed restore retains conversation → first-prompt storage changes in both directions",
+			"PASS: Pi global/workspace persistence → fork isolation/restart/context → relocated workspace → incomplete tools → failed restore retains conversation → first-prompt storage changes in both directions",
 		);
 		await startupReasoningSmoke({
 			createPiRuntime,

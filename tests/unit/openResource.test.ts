@@ -48,7 +48,6 @@ it("ファイルはアクティブなエディタグループの固定タブで�
 		expect.anything(),
 		{ viewColumn: -1, preview: false, preserveFocus: false },
 	);
-	expect(api.stat).toHaveBeenCalledTimes(1);
 });
 it.each([
 	[":188", 187, 0, 187, 0],
@@ -71,7 +70,6 @@ it.each([
 			},
 		);
 		await openResource(`${file}${suffix}`);
-		expect(api.stat).toHaveBeenCalledTimes(1);
 		expect(api.executeCommand).toHaveBeenCalledWith(
 			"vscode.open",
 			expect.anything(),

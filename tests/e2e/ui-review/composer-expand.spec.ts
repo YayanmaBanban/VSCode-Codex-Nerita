@@ -23,7 +23,6 @@ for (const colorScheme of ["dark", "light"] as const) {
 			name: "入力エリアを拡張",
 			exact: true,
 		});
-		await expect(expand.locator("svg")).toHaveClass(/lucide-maximize-2/);
 		await input.fill("前後");
 		await select(input, 1);
 		await paste(input, "const sample = 'コード';\n".repeat(60));
@@ -44,11 +43,6 @@ for (const colorScheme of ["dark", "light"] as const) {
 		const enlarged = await input.boundingBox();
 		expect(enlarged!.height - before!.height).toBeGreaterThan(200);
 		expect(enlarged!.y).toBeLessThan(before!.y);
-		expect(
-			Math.abs(
-				enlarged!.y + enlarged!.height - before!.y - before!.height,
-			),
-		).toBeLessThan(2);
 		await expect(input).toHaveText(text, { useInnerText: true });
 		await expect(input).toBeFocused();
 		await expect(

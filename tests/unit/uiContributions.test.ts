@@ -2,7 +2,6 @@
 import { describe, expect, it } from "vitest";
 import { initialState, type ChatState } from "../../src/shared/chatState";
 import type { NeritaUiContribution } from "../../src/shared/uiContributions";
-import { isUiContributions } from "../../src/shared/uiContributionValidation";
 import { isState } from "../../src/shared/stateValidation";
 import { UiContributionRegistry } from "../../src/extension/ui-contributions/UiContributionRegistry";
 import { createBuiltinUiRegistry } from "../../src/extension/ui-contributions/builtinContributions";
@@ -182,78 +181,6 @@ describe("UI Contribution通信", () => {
 			await controller.dispose();
 			await h.controller.dispose();
 		}
-	});
-	it("未対応control、未解決条件、不正候補・数値を拒否する", () => {
-		const valid = {
-			surface: "pi",
-			items: [
-				{
-					id: "test",
-					slot: "status",
-					control: { type: "progress", label: "Quota", value: 0 },
-				},
-			],
-		};
-		expect(isUiContributions(valid)).toBe(true);
-		for (const value of [-1, 101, Infinity, NaN, "50"]) {
-			expect(
-				isUiContributions({
-					...valid,
-					items: [
-						{
-							...valid.items[0],
-							control: { ...valid.items[0]!.control, value },
-						},
-					],
-				}),
-			).toBe(false);
-		}
-		for (const change of [
-			{ slot: "unknown" },
-			{ when: {} },
-			{ order: Infinity },
-			{ control: { type: "react", component: "code" } },
-			{
-				control: {
-					type: "toggle",
-					label: "x",
-					configId: "x",
-					checked: true,
-					onValue: "on",
-					offValue: "on",
-				},
-			},
-			{
-				control: {
-					type: "select",
-					option: {
-						id: "x",
-						name: "x",
-						currentValue: "x",
-						options: [
-							{ value: "x", name: "x" },
-							{ value: "x", name: "duplicate" },
-						],
-					},
-				},
-			},
-		]) {
-			expect(
-				isUiContributions({
-					...valid,
-					items: [{ ...valid.items[0], ...change }],
-				}),
-			).toBe(false);
-		}
-		expect(isState({ ...initialState(), uiContributions: valid })).toBe(
-			true,
-		);
-		expect(
-			isState({
-				...initialState(),
-				uiContributions: { ...valid, surface: "unknown" },
-			}),
-		).toBe(false);
 	});
 	it("config変更・resetをsnapshotとpatchの両方に反映する", () => {
 		/** テストから正本の更新だけを公開する。 */

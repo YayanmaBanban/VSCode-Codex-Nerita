@@ -1,3 +1,4 @@
+import { openCommand } from "./fixtures/openCommand.mjs";
 // 隔離した VS Code にインストールした VSIX から実際の会話を検証する。
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
@@ -31,11 +32,7 @@ try {
 	const page = await app.firstWindow();
 	await page.waitForSelector(".monaco-workbench", { timeout: 30000 });
 	await page.screenshot({ path: path.join(root, "startup.png") });
-	await page.keyboard.press("F1");
-	await page
-		.locator(".quick-input-widget input")
-		.fill(">Nerita for Codex: チャットを開く");
-	await page.keyboard.press("Enter");
+	await openCommand(page, "Nerita for Codex: チャットを開く");
 	let chat;
 	// Webview の準備は新規 frame のロードで非同期に進む。
 	for (let attempt = 0; attempt < 100; attempt++) {
@@ -49,7 +46,9 @@ try {
 		chat = await findConnectFrame(page, chat);
 		if (
 			chat &&
-			(await chat.getByRole("button", { name: "接続する" }).count())
+			(await chat
+				.getByRole("textbox", { name: "Codexへのメッセージ" })
+				.count())
 		) {
 			break;
 		}
@@ -57,7 +56,9 @@ try {
 	}
 	if (
 		!chat ||
-		!(await chat.getByRole("button", { name: "接続する" }).count())
+		!(await chat
+			.getByRole("textbox", { name: "Codexへのメッセージ" })
+			.count())
 	) {
 		await writeFile(
 			path.join(root, "frames.json"),
@@ -69,7 +70,10 @@ try {
 		);
 		throw new Error("Chat webview not found");
 	}
-	await chat.getByRole("button", { name: "接続する" }).click();
+	const reconnect = chat.getByRole("button", { name: /(接続する|再接続)$/ });
+	if (await reconnect.count()) {
+		await reconnect.click();
+	}
 	await chat
 		.getByText("接続済み", { exact: true })
 		.waitFor({ timeout: 60000 });
@@ -110,7 +114,9 @@ try {
 		chat = await findPromptFrame(page, chat);
 		if (
 			!chat.isDetached() &&
-			(await chat.locator("textarea#prompt").count())
+			(await chat
+				.getByRole("textbox", { name: "Codexへのメッセージ" })
+				.count())
 		) {
 			break;
 		}
@@ -211,7 +217,11 @@ try {
 async function findPromptFrame(page, chat) {
 	const candidates = page.frames();
 	for (const frame of candidates) {
-		if (await frame.locator("textarea#prompt").count()) {
+		if (
+			await frame
+				.getByRole("textbox", { name: "Codexへのメッセージ" })
+				.count()
+		) {
 			chat = frame;
 			break;
 		}
@@ -219,10 +229,14 @@ async function findPromptFrame(page, chat) {
 	return chat;
 }
 
-/** 接続ボタンを持つ Webview フレームを探す。 */
+/** 入力欄を持つ Webview フレームを探す。 */
 async function findConnectFrame(page, chat) {
 	for (const frame of page.frames()) {
-		if (await frame.getByRole("button", { name: "接続する" }).count()) {
+		if (
+			await frame
+				.getByRole("textbox", { name: "Codexへのメッセージ" })
+				.count()
+		) {
 			chat = frame;
 			break;
 		}
