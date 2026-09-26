@@ -15,7 +15,7 @@ function payload(
 	input: unknown[] = [{ role: "user", content: "one" }],
 ) {
 	return {
-		model: "astra",
+		model: "gpt-6-astra",
 		reasoning: { effort, summary: "auto" },
 		input,
 		extensionField: true,
@@ -40,7 +40,7 @@ function fixture() {
 	const session = {
 		model: {
 			provider: "openai-codex",
-			id: "astra",
+			id: "gpt-6-astra",
 			api: "openai-codex-responses",
 			baseUrl: "https://chatgpt.com/backend-api",
 		},
@@ -56,7 +56,7 @@ function fixture() {
 	controls.bind(session as unknown as AgentSession);
 	const catalog = normalizeCodexModels({
 		models: [
-			liveModel("astra", {
+			liveModel("gpt-6-astra", {
 				supports_reasoning_effort_updates: true,
 				supported_reasoning_levels: [
 					"low",
@@ -194,7 +194,7 @@ describe("Codex reasoning update history", () => {
 		h.rewrite();
 		h.rewrite(payload("high"));
 		h.store.appendModelChange("openai-codex", "other");
-		h.store.appendModelChange("openai-codex", "astra");
+		h.store.appendModelChange("openai-codex", "gpt-6-astra");
 		expect(h.rewrite(payload("low"))?.reasoning.effort).toBe("low");
 		expect(
 			h.rewrite(payload("high", [{ role: "user", content: "edited" }]))
@@ -208,7 +208,7 @@ describe("Codex reasoning update history", () => {
 			h.controls.setCatalog(
 				normalizeCodexModels({
 					models: [
-						liveModel("astra", {
+						liveModel("gpt-6-astra", {
 							supports_reasoning_effort_updates: capability,
 						}),
 					],
@@ -217,6 +217,37 @@ describe("Codex reasoning update history", () => {
 			expect(h.rewrite()).toBeUndefined();
 			expect(h.rewrite(payload("high"))).toBeUndefined();
 			expect(h.store.getBranch()).toEqual([]);
+		},
+	);
+	it.each(["gpt-6-sol", "gpt-6-luna", "gpt-6-astra-preview", "unknown"])(
+		"live=trueでもbundledで未確認の%sは通常effortを維持する",
+		(modelId) => {
+			const h = fixture();
+			h.session.model.id = modelId;
+			h.catalog[0]!.slug = modelId;
+			const low = { ...payload("low"), model: modelId };
+			const high = { ...payload("high"), model: modelId };
+			// 更新前の版で保存した baseline があっても、通常要求へ復帰させる。
+			const old = new CodexReasoningOverride();
+			const key = `openai-codex/${modelId}/${h.session.model.baseUrl}`;
+			old.rewrite(low, key, h.store);
+			old.rewrite(high, key, h.store);
+			expect(h.rewrite(high)).toBeUndefined();
+			expect(high.reasoning.effort).toBe("high");
+			expect(updates(high)).toEqual([]);
+			expect(h.store.getBranch().at(-1)).toMatchObject({ data: null });
+			const entries = h.store.getBranch().length;
+			expect(h.rewrite(low)).toBeUndefined();
+			expect(h.store.getBranch()).toHaveLength(entries);
+			h.controls.configure(
+				"fast-mode",
+				"on",
+				new AbortController().signal,
+			);
+			expect(h.rewrite(high)).toMatchObject({
+				reasoning: { effort: "high" },
+				service_tier: "priority",
+			});
 		},
 	);
 	it("カスタムendpointと非Codex APIにはlive能力を転用しない", () => {

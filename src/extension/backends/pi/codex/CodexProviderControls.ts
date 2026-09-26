@@ -257,11 +257,14 @@ export class CodexProviderControls implements PiModelControls {
 		return undefined;
 	}
 
-	/** カタログで確認した能力は取得元の Codex エンドポイントだけに適用し、独自エンドポイントの能力は推測しない。 */
+	/** live と固定した bundled 能力の共通モデルだけ許可する。推論への反映を保証する判定ではない。 */
 	private supportsReasoningUpdates(model: AgentSession["model"]): boolean {
 		if (
 			model?.provider !== "openai-codex" ||
 			model.api !== "openai-codex-responses" ||
+			// Codex rust-v0.157.0 の models-manager/models.json で明示的に true。
+			// #47843 のため live だけで対象を広げず、更新時は実サービスの検証も別途行う。
+			model.id !== "gpt-6-astra" ||
 			this.metadata?.supportsReasoningEffortUpdates !== true
 		) {
 			return false;

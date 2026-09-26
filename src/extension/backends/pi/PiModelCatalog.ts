@@ -10,6 +10,7 @@ export type PiCatalogModel = {
 	defaultReasoning: PiThinkingLevel | "ultra" | null;
 	reasoningLevels: (PiThinkingLevel | "ultra")[];
 	serviceTiers: { id: string; name: string; description: string }[];
+	/** 更新項目を受理する能力。指定した推論レベルへの反映が正常かは別途検証する。 */
 	supportsReasoningEffortUpdates?: boolean;
 };
 
