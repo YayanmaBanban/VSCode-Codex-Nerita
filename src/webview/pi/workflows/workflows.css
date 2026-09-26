@@ -1,0 +1,123 @@
+/* VS Code のテーマを優先し、Storybook では明暗の代替色を使用する。 */
+.workflow-editor {
+	--workflow-border: var(--vscode-panel-border, #333b46);
+	--workflow-input: var(--vscode-input-background, #15191f);
+	--workflow-fg: var(--vscode-editor-foreground, #dce2eb);
+	color: var(--workflow-fg);
+	background: var(--vscode-editor-background, #1c2027);
+	font-family: var(--vscode-font-family, system-ui, sans-serif);
+}
+.workflow-editor,
+.workflow-editor * {
+	box-sizing: border-box;
+}
+.workflow-editor .workflow-inline {
+	white-space: nowrap;
+}
+.workflow-editor .workflow-inline select {
+	width: auto;
+}
+.workflow-editor label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+.workflow-editor input,
+.workflow-editor select,
+.workflow-editor textarea,
+.workflow-editor button {
+	border: 1px solid var(--workflow-border);
+	border-radius: 5px;
+	padding: 7px 9px;
+	font-size: 12px;
+	color: inherit;
+	background: var(--workflow-input);
+	min-width: 0;
+}
+.workflow-editor input,
+.workflow-editor select,
+.workflow-editor textarea {
+	width: 100%;
+}
+.workflow-editor button {
+	cursor: pointer;
+	white-space: nowrap;
+}
+.workflow-editor :is(input, select, textarea, button):hover {
+	border-color: var(--vscode-focusBorder, #8192b9);
+}
+.workflow-editor :is(input, select, textarea, button):focus-visible {
+	outline: 2px solid var(--vscode-focusBorder, #84a9ff);
+	outline-offset: 2px;
+}
+.workflow-editor button:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+.workflow-editor :is(input, select, textarea):disabled {
+	opacity: 0.75;
+	cursor: default;
+}
+.workflow-editor .workflow-primary {
+	background: var(--vscode-button-background, #345ead);
+	color: var(--vscode-button-foreground, white);
+}
+.workflow-editor .workflow-unsaved {
+	border-color: var(--vscode-focusBorder, #84a9ff);
+}
+.workflow-editor .workflow-check,
+.workflow-editor .workflow-inline {
+	flex-direction: row;
+	align-items: center;
+}
+.workflow-editor .workflow-check input {
+	width: auto;
+}
+.workflow-graph-layout {
+	grid-template-columns: minmax(0, 1fr) 310px;
+}
+.workflow-canvas .react-flow {
+	--xy-background-color: var(--vscode-editor-background, #1c2027);
+	--xy-node-background-color: var(--workflow-input);
+	--xy-node-color: var(--workflow-fg);
+	--xy-node-border: 1px solid var(--workflow-border);
+	--xy-controls-button-background-color: var(--workflow-input);
+	--xy-controls-button-color: var(--workflow-fg);
+	--xy-edge-stroke: #8291ad;
+}
+.workflow-canvas .react-flow__node {
+	width: 175px;
+	border-radius: 8px;
+	padding: 14px;
+	font-size: 12px;
+}
+.workflow-canvas .react-flow__handle {
+	width: 10px;
+	height: 10px;
+}
+.workflow-canvas .react-flow__attribution {
+	font-size: 12px;
+}
+@media (max-width: 720px) {
+	.workflow-graph-layout {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: 390px minmax(180px, 1fr);
+		overflow: auto;
+	}
+	.workflow-inspector {
+		border-left: 0;
+		border-top: 1px solid var(--workflow-border);
+	}
+}
+@media (prefers-color-scheme: light) {
+	.workflow-editor {
+		--workflow-border: var(--vscode-panel-border, #cbd1d9);
+		--workflow-input: var(--vscode-input-background, #fff);
+		--workflow-fg: var(--vscode-editor-foreground, #232936);
+		background: var(--vscode-editor-background, #f6f7f9);
+	}
+	.workflow-canvas .react-flow {
+		--xy-background-color: var(--vscode-editor-background, #f6f7f9);
+	}
+}

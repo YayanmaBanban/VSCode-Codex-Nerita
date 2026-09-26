@@ -4,14 +4,20 @@ import {
 	createVsCodeBridge,
 	createPiAuthPost,
 	createGuardrailsBridge,
+	createWorkflowBridge,
 } from "./vscodeBridge";
 import { ChatApp } from "./chat/ChatApp";
 import { PiAuthPage } from "./pi-auth/PiAuthPage";
 import { GuardrailsEditor } from "./pi/guardrails/GuardrailsEditor";
+import { WorkflowEditor } from "./pi/workflows/WorkflowEditor";
 import "./chat/tailwind.css";
 const root = document.getElementById("root");
 if (root) {
-	if (root.dataset.page === "pi-guardrails") {
+	if (root.dataset.page === "pi-workflow") {
+		createRoot(root).render(
+			<WorkflowEditor bridge={createWorkflowBridge()} />,
+		);
+	} else if (root.dataset.page === "pi-guardrails") {
 		createRoot(root).render(
 			<GuardrailsEditor bridge={createGuardrailsBridge()} />,
 		);

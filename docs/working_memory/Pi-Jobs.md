@@ -2,7 +2,7 @@
 
 ## 実装範囲
 
-共通ジョブ管理、バックグラウンド実行、親コンテキストの複製を追加した。TOML、WorkflowScript、React Flow は後続の計画で扱う。外部 runner は Nerita では非対応とし、指定時に拒否する。
+共通ジョブ管理、バックグラウンド実行、親コンテキストの複製を追加した。TOML と WorkflowScript の対応は [ワークフローの記録](Pi-Workflows.md) を参照する。React Flow は後続の計画で扱う。外部 runner は Nerita では非対応とし、指定時に拒否する。
 
 `subagent` の入力例は次のとおり。
 

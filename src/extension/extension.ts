@@ -8,6 +8,7 @@ import { ChatViewProvider } from "./webview/chatViewProvider";
 import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 import { registerSandboxSetup } from "./backends/codex/settings/sandboxSetup";
 import { registerGuardrailsEditor } from "./backends/pi/guardrails/GuardrailsEditor";
+import { registerWorkflowEditor } from "./backends/pi/workflows/WorkflowEditor";
 let controller: BackendSession | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
 export async function activate(
@@ -17,6 +18,7 @@ export async function activate(
 	const guardrails = await registerGuardrailsEditor(context);
 	const session = new BackendRuntime(() => createBackend(context));
 	controller = session;
+	registerWorkflowEditor(context, session);
 	const provider = new ChatViewProvider(context.extensionUri, session, () =>
 		session.restart(),
 	);

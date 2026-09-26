@@ -31,7 +31,37 @@ export function childSettings(
 	if (context && authorize) {
 		result.authorize = subagentAuthorizer(authorize, context);
 	}
+	applyWorkflowAuthorizer(result, parent, options, jobs);
 	return result;
+}
+
+/** 通常の子には継続用の可変状態を持たせない。 */
+function applyWorkflowAuthorizer(
+	result: Partial<PiRuntimeOptions>,
+	parent: PiRuntimeOptions,
+	options: PiChildOptions,
+	jobs: PiJobs | undefined,
+) {
+	if (options.workflowApproval && parent.authorize && jobs) {
+		result.authorize = workflowAuthorizer(
+			parent.authorize,
+			options.workflowApproval,
+			jobs,
+		);
+	}
+}
+
+/** 継続する子の承認は、その時点のジョブとタスクへ結び付け直す。 */
+function workflowAuthorizer(
+	authorize: ToolAuthorizer,
+	current: { id: string; agent: string; task: string },
+	jobs: PiJobs,
+): ToolAuthorizer {
+	return (presentation, signal) =>
+		jobs.authorizer(current.id, subagentAuthorizer(authorize, current))(
+			presentation,
+			signal,
+		);
 }
 
 /** 承認先は親から固定し、ジョブは状態の観測だけを追加する。 */

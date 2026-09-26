@@ -1,0 +1,32 @@
+version = 1
+name = "implementation-review"
+outputs = ["fix"]
+
+[limits]
+max_concurrency = 3
+timeout_ms = 600000
+
+[[steps]]
+id = "implement"
+agent = "worker"
+task = "実装を進めてください"
+
+[[steps]]
+id = "review"
+agent = "reviewer"
+fork = "implement"
+depends_on = ["implement"]
+task = "実装の経緯を踏まえて確認してください。{{ implement.output }}"
+
+[[steps]]
+id = "tests"
+agent = "reviewer"
+group = "review"
+depends_on = ["implement"]
+task = "テスト観点で確認してください。{{ implement.output }}"
+
+[[steps]]
+id = "fix"
+resume = "implement"
+depends_on = ["review", "tests"]
+task = "レビュー結果を反映してください。{{ review.output }} / {{ tests.output }}"

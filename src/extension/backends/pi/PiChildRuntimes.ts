@@ -21,6 +21,7 @@ export type PiChildOptions = {
 	approvalContext?: { agent: string; task: string };
 	initialMessages?: PiForkMessage[];
 	jobId?: string;
+	workflowApproval?: { id: string; agent: string; task: string };
 };
 
 /** 起動中の子も追跡し、親終了と SDK 初期化完了の競合を処理する。 */

@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
 export function webviewHtml(
 	webview: vscode.Webview,
 	extensionUri: vscode.Uri,
-	page: "chat" | "pi-auth" | "pi-guardrails" = "chat",
+	page: "chat" | "pi-auth" | "pi-guardrails" | "pi-workflow" = "chat",
 ): string {
 	const nonce = randomBytes(24).toString("base64");
 	const script = webview.asWebviewUri(

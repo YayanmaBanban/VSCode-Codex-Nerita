@@ -6,6 +6,9 @@ import { CodexClient } from "../src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
 import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
 import { piSubagentAdapterSmoke } from "./piSubagentAdapterSmoke";
+import { piWorkflowSmoke } from "./piWorkflowSmoke";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { createPiAuthService } from "../src/extension/backends/pi/PiAuthService";
 import {
 	moveSidebar,
@@ -13,6 +16,23 @@ import {
 } from "../src/extension/webview/sidebarLocation";
 
 suite("Nerita for Codex Extension", () => {
+	test("TOML Workflowが子の継続とForkをガード付きで実行する", async function () {
+		this.timeout(60000);
+		const root =
+			process.env.NERITA_SUBAGENTS_PACKAGE ??
+			join(homedir(), ".pi/agent/npm/node_modules/pi-subagents");
+		try {
+			await access(join(root, "package.json"));
+		} catch {
+			this.skip();
+			return;
+		}
+		await piWorkflowSmoke(
+			vscode.extensions.getExtension("nerita-local.nerita-codex")!
+				.extensionUri.fsPath,
+			root,
+		);
+	});
 	test("subagentアダプターが子の書込みを別途承認し、結果を親へ返す", async function () {
 		this.timeout(60000);
 		await piSubagentAdapterSmoke(

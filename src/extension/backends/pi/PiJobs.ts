@@ -51,13 +51,17 @@ export class PiJobs {
 				continue;
 			}
 			const record = jobSchema.parse(entry.data);
-			record.parentId = parentId;
 			if (activeStates.has(record.status)) {
 				record.status = "interrupted";
 			}
 			this.records.set(record.id, record);
 			if (this.records.size > 128) {
 				throw new Error("ジョブ履歴の上限を超えています。");
+			}
+		}
+		for (const record of this.records.values()) {
+			if (!this.records.has(record.parentId)) {
+				record.parentId = parentId;
 			}
 		}
 	}
@@ -67,6 +71,7 @@ export class PiJobs {
 		record: PiJob,
 		signal: AbortSignal,
 		run: (signal: AbortSignal) => Promise<T>,
+		useSlot = true,
 	): Promise<T> {
 		if (
 			this.stopping ||
@@ -80,8 +85,8 @@ export class PiJobs {
 		const combined = AbortSignal.any([signal, abort.signal]);
 		this.records.set(record.id, { ...record });
 		this.update(record.id, "queued");
-		const done = this.execute(record.id, combined, run).finally(() =>
-			this.active.delete(record.id),
+		const done = this.execute(record.id, combined, run, useSlot).finally(
+			() => this.active.delete(record.id),
 		);
 		this.active.set(record.id, { abort, done });
 		void done.catch(() => undefined);
@@ -93,11 +98,14 @@ export class PiJobs {
 		id: string,
 		signal: AbortSignal,
 		run: (signal: AbortSignal) => Promise<T>,
+		useSlot: boolean,
 	): Promise<T> {
 		let acquired = false;
 		try {
-			await this.acquire(signal);
-			acquired = true;
+			if (useSlot) {
+				await this.acquire(signal);
+				acquired = true;
+			}
 			signal.throwIfAborted();
 			this.update(id, "running");
 			const result = await run(signal);

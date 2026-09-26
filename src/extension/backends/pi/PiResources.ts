@@ -86,6 +86,7 @@ export async function loadPiResources(
 							"find",
 							"subagent",
 							"subagent_job",
+							"subagent_workflow",
 						].includes(name)
 					) {
 						throw new Error(

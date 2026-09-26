@@ -1,4 +1,5 @@
 // 表示先とコマンドの接続先を保持し、バックエンドの終了・再生成を管理する。
+import type { WorkflowExecution } from "../../shared/workflows/messages";
 import { randomUUID } from "node:crypto";
 import { initialState } from "../../shared/chatState";
 import type { HostMessage } from "../../shared/messages";
@@ -69,6 +70,13 @@ export class BackendRuntime implements BackendSession {
 		await this.current?.receive(value);
 	}
 
+	/** エディタの実行を現在のバックエンドへ限定する。 */
+	async workflow(request: WorkflowExecution, signal: AbortSignal) {
+		if (this.disposed || this.restarting || !this.current?.workflow) {
+			throw new Error("Pi バックエンドへ接続してください。");
+		}
+		return this.current.workflow(request, signal);
+	}
 	/** 同時に届いた切替要求を1つにまとめる。 */
 	restart(): Promise<void> {
 		if (this.disposed) {

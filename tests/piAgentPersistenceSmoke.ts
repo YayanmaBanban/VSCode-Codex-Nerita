@@ -63,7 +63,13 @@ export async function piAgentPersistenceSmoke(
 			fork.jobs!.list(),
 			parent
 				.jobs!.list()
-				.map((job) => ({ ...job, parentId: fork.sessionId })),
+				.map((job) => ({
+					...job,
+					parentId:
+						job.parentId === parent.sessionId
+							? fork.sessionId
+							: job.parentId,
+				})),
 		);
 		assert.equal(fork.agentViews!.list().length, cards.length);
 		assert.equal(

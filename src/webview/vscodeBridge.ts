@@ -1,6 +1,11 @@
 ﻿// VS Code API を呼ぶ唯一のブラウザ境界。Storybook では同じ契約を差し替える。
 import type { HostMessage, UiMessage } from "../shared/messages";
 import { isHostMessage } from "../shared/hostMessageValidation";
+import {
+	workflowReplySchema,
+	type WorkflowBridge,
+	type WorkflowRequest,
+} from "../shared/workflows/messages";
 import type { PiAuthRequest } from "../shared/piAuth";
 import {
 	guardReplySchema,
@@ -14,10 +19,29 @@ export type Bridge = {
 };
 /** VS Code が Webview に提供する最小 API。 */
 type VsCodeApi = {
-	postMessage: (message: UiMessage | PiAuthRequest | GuardRequest) => void;
+	postMessage: (
+		message: UiMessage | PiAuthRequest | GuardRequest | WorkflowRequest,
+	) => void;
 };
 declare function acquireVsCodeApi(): VsCodeApi;
 let api: VsCodeApi | undefined;
+/** Workflow の専用パネルでも受信内容を共有スキーマで検証する。 */
+export function createWorkflowBridge(): WorkflowBridge {
+	api ??= acquireVsCodeApi();
+	return {
+		postMessage: (message) => api?.postMessage(message),
+		subscribe(listener) {
+			const receive = (event: MessageEvent<unknown>) => {
+				const parsed = workflowReplySchema.safeParse(event.data);
+				if (parsed.success) {
+					listener(parsed.data);
+				}
+			};
+			window.addEventListener("message", receive);
+			return () => window.removeEventListener("message", receive);
+		},
+	};
+}
 /** 設定エディターも同じ API 境界を通し、Host の通知を検証する。 */
 export function createGuardrailsBridge(): GuardBridge {
 	api ??= acquireVsCodeApi();

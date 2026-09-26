@@ -1,0 +1,13 @@
+version = 1
+name = "workflow"
+outputs = [ "start" ]
+
+[limits]
+max_concurrency = 3
+timeout_ms = 600000
+
+[[steps]]
+id = "start"
+agent = "worker"
+task = "実行するタスクを入力してください"
+depends_on = []

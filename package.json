@@ -39,6 +39,16 @@
 					}
 				],
 				"priority": "default"
+			},
+			{
+				"viewType": "nerita.pi.workflow",
+				"displayName": "Pi Workflow",
+				"selector": [
+					{
+						"filenamePattern": "**/.pi/workflows/*.toml"
+					}
+				],
+				"priority": "default"
 			}
 		],
 		"jsonValidation": [
@@ -140,6 +150,10 @@
 			{
 				"command": "nerita.codex.newSession",
 				"title": "Nerita for Codex: 新規会話"
+			},
+			{
+				"command": "nerita.pi.workflow",
+				"title": "Nerita: Pi Workflow を作成"
 			}
 		],
 		"menus": {
@@ -192,7 +206,9 @@
 	"scripts": {
 		"guardrails:generate": "node scripts/generate-guardrails-schema.cjs",
 		"test:guardrails:ui": "node tests/guardrails-vscode-smoke.mjs",
+		"test:workflow:ui": "node tests/workflow-vscode-smoke.mjs",
 		"test:pi:subagents": "node tests/pi-subagents-package-smoke.mjs",
+		"test:pi:workflow": "node tests/pi-workflow-package-smoke.mjs",
 		"codex:generate": "node config/generate-codex.cjs",
 		"pi:generate": "node config/generate-pi.cjs",
 		"pi:verify": "node config/verify-pi.cjs",

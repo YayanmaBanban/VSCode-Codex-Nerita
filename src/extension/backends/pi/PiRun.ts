@@ -1,4 +1,6 @@
 // `prompt` の受付と実行を分け、開始直前の `Stop`・旧接続の完了を安全に扱う。
+import { realpath } from "node:fs/promises";
+import type { WorkflowExecution } from "../../../shared/workflows/messages";
 import { randomUUID } from "node:crypto";
 import type { UiMessage } from "../../../shared/messages";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -68,6 +70,48 @@ export abstract class PiRun extends PiLifecycle {
 		);
 	};
 
+	/** 文書と同じルートの会話だけを使い、親モデルへの送信なしで子を起動する。 */
+	async workflow(request: WorkflowExecution, signal: AbortSignal) {
+		const runtime = this.runtime;
+		if (
+			!runtime?.workflow ||
+			this.state.connection !== "ready" ||
+			this.state.sessionPending ||
+			this.state.configPending
+		) {
+			throw new Error("Pi への接続とモデル設定を完了してください。");
+		}
+		if (
+			!this.state.cwd ||
+			(await realpath(this.state.cwd)) !== request.root
+		) {
+			throw new Error(
+				"Workflow と同じワークスペースの Pi 会話を開いてください。",
+			);
+		}
+		if (this.runtime !== runtime) {
+			throw new Error("Pi の接続が変更されました。");
+		}
+		const abort = new AbortController();
+		const combined = AbortSignal.any([
+			signal,
+			abort.signal,
+			this.connectionSignal,
+		]);
+		this.patch({ runId: this.state.runId ?? randomUUID() });
+		const operation = runtime.workflow(
+			request,
+			combined,
+			(title, toolSignal) =>
+				this.approvals.authorize(
+					title,
+					{ signal: combined, cancel: () => abort.abort() },
+					toolSignal,
+				),
+		);
+		this.track(operation);
+		return operation;
+	}
 	/** SDK の事前検証が終わった時点で Composer の下書きを解放する。 */
 	protected submit(
 		message: Extract<UiMessage, { type: "prompt/send" }>,

@@ -1,4 +1,6 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
+import { randomUUID } from "node:crypto";
+import type { WorkflowExecution } from "../../../shared/workflows/messages";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type {
@@ -22,6 +24,10 @@ import { PiJobs } from "./PiJobs";
 import type { PiForkMessage } from "./PiForkContext";
 import { loadSubagentDefinitions } from "./PiSubagentDefinitions";
 import { createPiSubagentTools } from "./PiSubagentTool";
+import {
+	createPiWorkflowTools,
+	createPiWorkflowRunner,
+} from "./workflows/PiWorkflowTool";
 import { bindPiRuntimeLifetime } from "./PiRuntimeLifetime";
 import { PiAccount, type PiAuthService } from "./PiAccount";
 import { loadPiResources } from "./PiResources";
@@ -50,7 +56,13 @@ export type PiSession = Pick<
 	| "abort"
 	| "dispose"
 > & {
+	workflow?: (
+		request: WorkflowExecution,
+		signal: AbortSignal,
+		authorize: PiAuthorize,
+	) => Promise<string>;
 	agentViews?: PiAgentViews;
+	contextSource?: Pick<PiSdk.SessionManager, "buildSessionContext">;
 	jobs?: PiJobs;
 	history?: PiHistoryAccess;
 	account?: PiAccount;
@@ -254,6 +266,20 @@ export async function createPiRuntime(
 			manager,
 		),
 	);
+	customTools.push(
+		...createPiWorkflowTools(
+			subagents.workflowPackage,
+			subagents.definitions,
+			children,
+			runtimeTools.paths.policy,
+			options.cwd,
+			authorize,
+			options.signal,
+			agentViews,
+			jobs,
+			manager,
+		),
+	);
 	const { session } = await sdk.createAgentSession({
 		cwd: options.cwd,
 		agentDir,
@@ -303,7 +329,39 @@ export async function createPiRuntime(
 		parentSignal,
 	);
 	return Object.assign(session, {
+		workflow: async (
+			request: WorkflowExecution,
+			signal: AbortSignal,
+			directAuthorize: PiAuthorize,
+		) => {
+			const run = createPiWorkflowRunner(
+				subagents.workflowPackage,
+				subagents.definitions,
+				children,
+				runtimeTools.paths.policy,
+				options.cwd,
+				directAuthorize,
+				options.signal,
+				agentViews,
+				jobs,
+				manager,
+			);
+			if (!run) {
+				throw new Error(
+					"pi-subagents が未導入です。ユーザー設定へ登録して再接続してください。",
+				);
+			}
+			const result = await run(
+				randomUUID(),
+				{ action: "run", file: request.file, async: false },
+				signal,
+				session.model,
+				request.text,
+			);
+			return result.content.map((item) => item.text).join("\n");
+		},
 		accessPolicy: runtimeTools.paths.policy,
+		contextSource: manager,
 		agentViews,
 		jobs,
 		children,
@@ -312,6 +370,7 @@ export async function createPiRuntime(
 		storageChanged: () =>
 			!options.resume &&
 			session.messages.length === 0 &&
+			jobs.list().length === 0 &&
 			!!options.getStorage &&
 			options.getStorage() !== storage,
 		account,
@@ -422,7 +481,7 @@ async function runtimeSubagents(
 	trusted: string[],
 ) {
 	return options.parentPolicy
-		? { definitions: [], trusted }
+		? { definitions: [], trusted, workflowPackage: undefined }
 		: loadSubagentDefinitions(
 				sdk,
 				options.cwd,

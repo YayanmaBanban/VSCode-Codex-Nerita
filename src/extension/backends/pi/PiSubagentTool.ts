@@ -25,7 +25,7 @@ import {
 } from "../../security/ApprovedToolCall";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 
-const supportedTools = [
+export const supportedTools = [
 	"read",
 	"ls",
 	"write",
@@ -84,7 +84,7 @@ export function createPiSubagentTool(
 		name: "subagent",
 		label: "Subagent",
 		executionMode: "sequential",
-		description: `Nerita guarded foreground adapter for pi-subagents definitions, supports async background jobs and fresh/fork context (same model). Use subagent_job to inspect or cancel a returned jobId. Native workflowScript and external runners are unsupported. Available agents: ${availableAgentNames(agents)}`,
+		description: `Nerita guarded foreground adapter for pi-subagents definitions, supports async background jobs and fresh/fork context (same model). Use subagent_job to inspect or cancel a returned jobId. Use subagent_workflow for TOML workflows when available. Raw workflowScript and external runners are unsupported. Available agents: ${availableAgentNames(agents)}`,
 		// SDK の実行契約は JSON Schema。入力は実行時にも Zod で検証する。
 		parameters: {
 			type: "object",
@@ -263,7 +263,7 @@ export function createPiSubagentTool(
 }
 
 /** プロジェクト定義は明示したスコープだけで採用する。 */
-function selectAgent(
+export function selectAgent(
 	agents: PiSubagentDefinition[],
 	name: string,
 	scope: "user" | "project" | "both",
@@ -286,7 +286,7 @@ function selectAgent(
 }
 
 /** 未指定モデルは呼出時の親モデルを使い、定義のモデル指定は厳密に解決する。 */
-function agentModel(
+export function agentModel(
 	definition: PiSubagentDefinition,
 	parent: { provider: string; id: string } | undefined,
 ): PiModelSelection {

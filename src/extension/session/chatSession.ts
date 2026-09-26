@@ -1,4 +1,5 @@
 // UI の通信契約と Extension Host の寿命管理をバックエンドから独立させる。
+import type { WorkflowExecution } from "../../shared/workflows/messages";
 import type { ChatState } from "../../shared/chatState";
 import type { HostMessage } from "../../shared/messages";
 
@@ -11,6 +12,10 @@ export type ChatSession = {
 
 /** ワークスペース変更と拡張終了も扱う Host 側のセッション。 */
 export type BackendSession = ChatSession & {
+	workflow?: (
+		request: WorkflowExecution,
+		signal: AbortSignal,
+	) => Promise<string>;
 	invalidate(): void;
 	dispose(): Promise<void>;
 };

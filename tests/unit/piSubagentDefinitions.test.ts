@@ -93,6 +93,9 @@ it("pi-subagents の直下の定義を読み、ルート entry を Host 実行�
 		[join(root, "index.js")],
 	);
 	expect(result.trusted).toEqual([]);
+	expect(result.workflowPackage).toBeUndefined();
+	h.settings.setPackages([root]);
+	expect((await h.load()).workflowPackage).toBe(root);
 	expect(
 		result.definitions.find((agent) => agent.name === "worker"),
 	).toMatchObject({

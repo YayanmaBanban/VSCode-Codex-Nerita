@@ -88,11 +88,49 @@ export async function loadSubagentDefinitions(
 	}
 	return {
 		definitions,
+		workflowPackage: await userWorkflowPackage(
+			sdk,
+			cwd,
+			agentDir,
+			settings,
+			packages,
+		),
 		// 既知の独立 CLI 拡張はロードせず、Host の同名 Tool に置き換える。
 		trusted: entries.filter(
 			(entry) => !packages.some((root) => containsPath(root, entry)),
 		),
 	};
+}
+
+/** エンジンのコードはユーザー登録済みのパッケージだけから読み、プロジェクト定義では差し替えさせない。 */
+async function userWorkflowPackage(
+	sdk: typeof PiSdk,
+	cwd: string,
+	agentDir: string,
+	settings: PiSdk.SettingsManager,
+	packages: string[],
+) {
+	const manager = new sdk.DefaultPackageManager({
+		cwd,
+		agentDir,
+		settingsManager: settings,
+	});
+	for (const entry of settings.getGlobalSettings().packages ?? []) {
+		const source = typeof entry === "string" ? entry : entry.source;
+		const installed = manager.getInstalledPath(source, "user");
+		if (!installed) {
+			continue;
+		}
+		try {
+			const root = await realpath(installed);
+			if (packages.includes(root)) {
+				return root;
+			}
+		} catch {
+			/* 未導入のパッケージは取得しない。 */
+		}
+	}
+	return undefined;
 }
 
 /** リンクによるディレクトリ外への読取りと、過大な定義を拒否する。 */
