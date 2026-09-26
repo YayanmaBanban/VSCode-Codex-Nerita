@@ -1,0 +1,148 @@
+{
+	"date": "2026-09-26T07:32:20.386Z",
+	"codex": "codex-cli 0.157.0",
+	"binarySha256": "ed1c7b36e44536809c868864c833af8a857f56599a7a7fe23b908a1ba1093b1f",
+	"binarySource": "dist/runtime/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
+	"windows": "10.0.26200",
+	"node": "v24.18.1",
+	"commit": "af77d24cbcf3311651e4097237104bfcbf28fd83",
+	"profile": {
+		"root": "deny",
+		"minimal": "read",
+		"workspace": "write",
+		"network": false,
+		"backend": "elevated"
+	},
+	"cases": [
+		{
+			"id": "host-control",
+			"status": "pass"
+		},
+		{
+			"id": "cli/read/workspace-read-write",
+			"status": "pass"
+		},
+		{
+			"id": "cli/read/outside-absolute",
+			"status": "pass",
+			"details": {
+				"outcome": "readable"
+			}
+		},
+		{
+			"id": "cli/read/outside-relative",
+			"status": "pass",
+			"details": {
+				"outcome": "readable"
+			}
+		},
+		{
+			"id": "cli/read/outside-junction",
+			"status": "pass",
+			"details": {
+				"outcome": "readable"
+			}
+		},
+		{
+			"id": "cli/read/child-read",
+			"status": "pass"
+		},
+		{
+			"id": "cli/read/outside-write",
+			"status": "pass"
+		},
+		{
+			"id": "cli/deny/workspace-read-write",
+			"status": "fail",
+			"error": "{\"exitCode\":1,\"stdout\":\"\",\"stderr\":\"windows sandbox failed: elevated Windows sandbox requires effective `:root` read access\\n\"}\n\n1 !== 0\n"
+		},
+		{
+			"id": "cli/deny/outside-absolute",
+			"status": "fail",
+			"error": "{\"exitCode\":1,\"stdout\":\"\",\"stderr\":\"windows sandbox failed: elevated Windows sandbox requires effective `:root` read access\\n\"}\n\n1 !== 0\n"
+		},
+		{
+			"id": "cli/deny/outside-relative",
+			"status": "fail",
+			"error": "{\"exitCode\":1,\"stdout\":\"\",\"stderr\":\"windows sandbox failed: elevated Windows sandbox requires effective `:root` read access\\n\"}\n\n1 !== 0\n"
+		},
+		{
+			"id": "cli/deny/outside-junction",
+			"status": "fail",
+			"error": "{\"exitCode\":1,\"stdout\":\"\",\"stderr\":\"windows sandbox failed: elevated Windows sandbox requires effective `:root` read access\\n\"}\n\n1 !== 0\n"
+		},
+		{
+			"id": "cli/deny/child-read",
+			"status": "fail",
+			"error": "{\"exitCode\":1,\"stdout\":\"\",\"stderr\":\"windows sandbox failed: elevated Windows sandbox requires effective `:root` read access\\n\"}\n\n1 !== 0\n"
+		},
+		{
+			"id": "cli/deny/outside-write",
+			"status": "fail",
+			"error": "{\"exitCode\":1,\"stdout\":\"\",\"stderr\":\"windows sandbox failed: elevated Windows sandbox requires effective `:root` read access\\n\"}\n\n1 !== 0\n"
+		},
+		{
+			"id": "command/exec/read/workspace-read-write",
+			"status": "pass"
+		},
+		{
+			"id": "command/exec/read/outside-absolute",
+			"status": "pass",
+			"details": {
+				"outcome": "readable"
+			}
+		},
+		{
+			"id": "command/exec/read/outside-relative",
+			"status": "pass",
+			"details": {
+				"outcome": "readable"
+			}
+		},
+		{
+			"id": "command/exec/read/outside-junction",
+			"status": "pass",
+			"details": {
+				"outcome": "readable"
+			}
+		},
+		{
+			"id": "command/exec/read/child-read",
+			"status": "pass"
+		},
+		{
+			"id": "command/exec/read/outside-write",
+			"status": "pass"
+		},
+		{
+			"id": "command/exec/deny/workspace-read-write",
+			"status": "fail",
+			"error": "exec failed: windows sandbox: elevated Windows sandbox requires effective `:root` read access"
+		},
+		{
+			"id": "command/exec/deny/outside-absolute",
+			"status": "fail",
+			"error": "exec failed: windows sandbox: elevated Windows sandbox requires effective `:root` read access"
+		},
+		{
+			"id": "command/exec/deny/outside-relative",
+			"status": "fail",
+			"error": "exec failed: windows sandbox: elevated Windows sandbox requires effective `:root` read access"
+		},
+		{
+			"id": "command/exec/deny/outside-junction",
+			"status": "fail",
+			"error": "exec failed: windows sandbox: elevated Windows sandbox requires effective `:root` read access"
+		},
+		{
+			"id": "command/exec/deny/child-read",
+			"status": "fail",
+			"error": "exec failed: windows sandbox: elevated Windows sandbox requires effective `:root` read access"
+		},
+		{
+			"id": "command/exec/deny/outside-write",
+			"status": "fail",
+			"error": "exec failed: windows sandbox: elevated Windows sandbox requires effective `:root` read access"
+		}
+	]
+}
