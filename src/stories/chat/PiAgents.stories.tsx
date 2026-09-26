@@ -7,7 +7,7 @@ import { ChatApp } from "../../webview/chat/ChatApp";
 import { createMockBridge } from "./mocks/mockBridge";
 
 /** 同名の子を別タスクとして識別できる表示データ。 */
-function PiAgentsStory() {
+function PiAgentsStory({ background = false }: { background?: boolean }) {
 	const bridge = useMemo(() => {
 		const mock = createMockBridge("streaming", "pi");
 		let agents: SubAgentSummary[] = ["APIの検査", "画面の検査"].map(
@@ -45,7 +45,11 @@ function PiAgentsStory() {
 				{ id: "reject", name: "拒否", kind: "reject_once" },
 			],
 		}));
-		mock.patchState({ agents, permissions });
+		mock.patchState({
+			agents,
+			permissions,
+			...(background ? { run: "completed" as const } : {}),
+		});
 		const post = mock.postMessage;
 		mock.postMessage = (message) => {
 			if (message.type === "agent/read") {
@@ -89,7 +93,7 @@ function PiAgentsStory() {
 			}
 		};
 		return mock;
-	}, []);
+	}, [background]);
 	return <ChatApp bridge={bridge} />;
 }
 const meta = {
@@ -100,3 +104,4 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Parallel: Story = {};
+export const Background: Story = { args: { background: true } };

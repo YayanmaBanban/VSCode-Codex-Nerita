@@ -128,7 +128,7 @@ await assert.rejects(
 		undefined,
 		{ cwd, model: { provider: "local", id: "fixture" } },
 	),
-	/未対応/,
+	/非対応/,
 );
 assert.equal(requests, 1);
 assert.equal(opened, 0);

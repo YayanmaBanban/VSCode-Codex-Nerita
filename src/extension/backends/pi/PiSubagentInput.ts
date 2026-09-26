@@ -7,8 +7,8 @@ export const subagentInputSchema = z
 		task: z.string().min(1).max(32768),
 		cwd: z.string().max(4096).optional(),
 		model: z.string().min(1).max(512).optional(),
-		context: z.literal("fresh").optional(),
-		async: z.literal(false).optional(),
+		context: z.enum(["fresh", "fork"]).optional(),
+		async: z.boolean().optional(),
 		agentScope: z.enum(["user", "project", "both"]).default("both"),
 	})
 	.strict();

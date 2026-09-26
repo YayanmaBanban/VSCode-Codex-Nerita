@@ -6,6 +6,8 @@ import type {
 import { childSettings } from "./PiChildSettings";
 import { freezeToolCall } from "../../security/ApprovedToolCall";
 import type { PiRuntimeOptions, PiRuntimeSession } from "./PiRuntime";
+import type { PiForkMessage } from "./PiForkContext";
+import type { PiJobs } from "./PiJobs";
 
 /** 子は許可範囲内の作業場所と権限を指定できる。実行基盤・承認先・親の権限設定は差し替えられない。 */
 export type PiChildOptions = {
@@ -17,6 +19,8 @@ export type PiChildOptions = {
 	systemPromptMode?: "append" | "replace";
 	preferredModel?: PiRuntimeOptions["preferredModel"];
 	approvalContext?: { agent: string; task: string };
+	initialMessages?: PiForkMessage[];
+	jobId?: string;
 };
 
 /** 起動中の子も追跡し、親終了と SDK 初期化完了の競合を処理する。 */
@@ -45,6 +49,7 @@ export class PiChildRuntimes {
 		private readonly create: (
 			options: PiRuntimeOptions,
 		) => Promise<PiRuntimeSession>,
+		private readonly jobs?: PiJobs,
 	) {
 		this.parent = {
 			...parent,
@@ -56,7 +61,7 @@ export class PiChildRuntimes {
 		this.policy = freezeToolCall(policy);
 	}
 
-	/** 子の起動時に親と role の両方で許可される権限だけを残す。親の履歴や外部拡張は引き継がない。 */
+	/** 親と role の両方で許可される権限だけを残す。会話の複製と外部拡張の継承は分ける。 */
 	async open(options: PiChildOptions): Promise<PiRuntimeSession> {
 		this.lifetime.throwIfAborted();
 		if (this.disposed || this.stoppingNow) {
@@ -79,7 +84,7 @@ export class PiChildRuntimes {
 			storage: "global",
 			ephemeral: true,
 			trustedExtensionPaths: [],
-			...childSettings(this.parent, options),
+			...childSettings(this.parent, options, this.jobs),
 		};
 		delete childOptions.resume;
 		delete childOptions.getStorage;

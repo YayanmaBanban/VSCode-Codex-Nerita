@@ -157,12 +157,23 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		}
 	}
 
+	/** 親の応答が完了していても、子が残っていれば停止を受け付ける。 */
+	private canCancelJobs() {
+		return (
+			this.busy() ||
+			this.runtime?.jobs
+				?.list()
+				.some((job) =>
+					["queued", "running", "approval"].includes(job.status),
+				)
+		);
+	}
+
 	/** 現在の実行に属する承認と停止だけを受け付ける。 */
 	private dispatchRunAction(message: UiMessage): void {
 		if (
 			message.type === "permission/respond" &&
 			message.runId === this.state.runId &&
-			this.state.run === "running" &&
 			this.approvals.respond(message.permissionId, message.optionId)
 		) {
 			return;
@@ -170,7 +181,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (
 			message.type === "prompt/cancel" &&
 			message.runId === this.state.runId &&
-			this.busy()
+			this.canCancelJobs()
 		) {
 			this.cancel();
 			return;

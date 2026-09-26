@@ -36,6 +36,7 @@ export class PiAgentViews {
 			const summary = { ...record.summary, parentThreadId: parentId };
 			if (["running", "pendingInit", "idle"].includes(summary.status)) {
 				summary.status = "interrupted";
+				summary.statusMessage = "中断";
 			}
 			const state: ChatState = {
 				...initialState(),
@@ -132,9 +133,12 @@ export class PiAgentViews {
 	}
 
 	/** 承認待ち・実行・終了を親のカードへ通知する。 */
-	status(id: string, status: AgentStatus) {
+	status(id: string, status: AgentStatus, message?: string) {
 		const entry = this.entries.get(id)!;
 		entry.summary.status = status;
+		if (message !== undefined) {
+			entry.summary.statusMessage = message;
+		}
 		if (status !== "running" && status !== "pendingInit") {
 			entry.state.tools = finishPiTools(
 				entry.state,
@@ -189,7 +193,7 @@ export class PiAgentViews {
 		});
 	}
 
-	/** 親の実行期間だけカードの状態変更を購読する。 */
+	/** 親の接続期間を通してカードの状態変更を購読する。 */
 	subscribe(listener: () => void) {
 		this.listeners.add(listener);
 		return () => {

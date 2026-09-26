@@ -11,7 +11,15 @@ export function AgentRunControls({
 	state: ChatState;
 	send: (message: UiMessage) => void;
 }) {
-	if (state.run !== "running" && state.run !== "cancelling") {
+	const activeChildren = state.agents.some(
+		(agent) => agent.status === "running" || agent.status === "pendingInit",
+	);
+	if (
+		state.run !== "running" &&
+		state.run !== "cancelling" &&
+		!activeChildren &&
+		!state.permissions.length
+	) {
 		return null;
 	}
 	return (

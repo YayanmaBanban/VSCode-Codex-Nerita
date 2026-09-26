@@ -135,7 +135,7 @@ async function readDefinitions(
 				? {}
 				: {
 						unavailableReason:
-							"外部 runner は Nerita のガード付きアダプターでは未対応です。",
+							"外部 runner は Nerita では非対応です。",
 					}),
 			...(tools === undefined
 				? {}

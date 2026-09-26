@@ -18,6 +18,8 @@ import { resolveTrustedExtensions } from "./PiExtensionTrust";
 import { PiAgentViews } from "./PiAgentViews";
 import { PiAgentHistory, restorePiAgentRecords } from "./PiAgentHistory";
 import { PiChildRuntimes } from "./PiChildRuntimes";
+import { PiJobs } from "./PiJobs";
+import type { PiForkMessage } from "./PiForkContext";
 import { loadSubagentDefinitions } from "./PiSubagentDefinitions";
 import { createPiSubagentTools } from "./PiSubagentTool";
 import { bindPiRuntimeLifetime } from "./PiRuntimeLifetime";
@@ -49,6 +51,7 @@ export type PiSession = Pick<
 	| "dispose"
 > & {
 	agentViews?: PiAgentViews;
+	jobs?: PiJobs;
 	history?: PiHistoryAccess;
 	account?: PiAccount;
 	quota?: PiQuotaService;
@@ -104,7 +107,18 @@ export type PiRuntimeOptions = {
 	subagentPrompt?: string;
 	subagentPromptMode?: "append" | "replace";
 	strictModel?: boolean;
+	initialMessages?: PiForkMessage[];
 };
+
+/** 子のメモリー内セッションだけに、固定した親会話を追加する。 */
+function seedChildContext(
+	manager: PiSdk.SessionManager,
+	messages: PiForkMessage[] = [],
+) {
+	for (const message of messages) {
+		manager.appendMessage(message);
+	}
+}
 
 /** 秘密値を含まない、起動時モデルの保存形式。 */
 export type PiModelSelection = {
@@ -216,7 +230,7 @@ export async function createPiRuntime(
 				extensionTools.includes("bash")
 			),
 	);
-	const children = createChildren(options, runtimeTools);
+	seedChildContext(manager, options.initialMessages);
 	const agentHistory = new PiAgentHistory(manager);
 	const agentViews = new PiAgentViews((record) => agentHistory.write(record));
 	agentViews.restore(
@@ -224,6 +238,9 @@ export async function createPiRuntime(
 		manager.getSessionId(),
 		options.cwd,
 	);
+	const jobs = new PiJobs(agentViews, manager);
+	jobs.restore(manager.getBranch(), manager.getSessionId());
+	const children = createChildren(options, runtimeTools, jobs);
 	customTools.push(
 		...createPiSubagentTools(
 			subagents.definitions,
@@ -233,6 +250,8 @@ export async function createPiRuntime(
 			authorize,
 			options.signal,
 			agentViews,
+			jobs,
+			manager,
 		),
 	);
 	const { session } = await sdk.createAgentSession({
@@ -273,6 +292,10 @@ export async function createPiRuntime(
 			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
 		);
 	}
+	const stopJobs = session.abort.bind(session);
+	session.abort = async () => {
+		await Promise.all([jobs.stop(), stopJobs()]);
+	};
 	const close = bindPiRuntimeLifetime(
 		session,
 		children,
@@ -282,6 +305,7 @@ export async function createPiRuntime(
 	return Object.assign(session, {
 		accessPolicy: runtimeTools.paths.policy,
 		agentViews,
+		jobs,
 		children,
 		close,
 		...(history ? { history } : {}),
@@ -304,6 +328,7 @@ export async function createPiRuntime(
 function createChildren(
 	options: PiRuntimeOptions,
 	tools: Awaited<ReturnType<typeof preparePiRuntimeTools>>,
+	jobs: PiJobs,
 ) {
 	return new PiChildRuntimes(
 		{
@@ -316,6 +341,7 @@ function createChildren(
 		tools.paths.policy,
 		options.signal,
 		createPiRuntime,
+		jobs,
 	);
 }
 

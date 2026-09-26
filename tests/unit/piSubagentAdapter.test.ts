@@ -77,7 +77,7 @@ it.each([
 	{ chain: [{ agent: "reviewer", task: "x" }] },
 	{ agent: "missing", task: "x" },
 	{ agent: "reviewer", task: "x", extra: true },
-	{ agent: "reviewer", task: "x", async: true },
+	{ agent: "reviewer", task: "x", async: "yes" },
 	{ agent: "reviewer", task: "x", context: "fork" },
 	{
 		workflowScript:

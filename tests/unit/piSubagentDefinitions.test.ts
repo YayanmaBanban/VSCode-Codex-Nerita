@@ -102,7 +102,7 @@ it("pi-subagents の直下の定義を読み、ルート entry を Host 実行�
 	expect(
 		result.definitions.find((agent) => agent.name === "external")
 			?.unavailableReason,
-	).toContain("未対応");
+	).toContain("非対応");
 });
 
 it("定義を再帰探索し、chainファイルと循環リンクを除外する", async () => {

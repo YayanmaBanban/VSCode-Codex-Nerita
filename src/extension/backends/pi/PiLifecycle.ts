@@ -31,6 +31,11 @@ export abstract class PiLifecycle extends SessionState {
 		};
 	}
 	protected runtime: PiSession | undefined;
+	private unsubscribeAgents: (() => void) | undefined;
+	/** 子の購読期間を親の応答終了から分離する。 */
+	protected watchSessionAgents(_runtime: PiSession): () => void {
+		return () => {};
+	}
 	private runtimeEpoch: number | undefined;
 	protected epoch = 0;
 	protected disposed = false;
@@ -225,6 +230,8 @@ export abstract class PiLifecycle extends SessionState {
 	) {
 		this.resetRun();
 		const { revision: _revision, ...empty } = initialState();
+		this.unsubscribeAgents?.();
+		this.unsubscribeAgents = this.watchSessionAgents(session);
 		this.patch({
 			...empty,
 			...restored,
@@ -293,6 +300,8 @@ export abstract class PiLifecycle extends SessionState {
 		this.resetRun();
 		const runtime = this.runtime;
 		this.runtime = undefined;
+		this.unsubscribeAgents?.();
+		this.unsubscribeAgents = undefined;
 		this.runtimeEpoch = undefined;
 		if (runtime) {
 			this.track(closePiSession(runtime));

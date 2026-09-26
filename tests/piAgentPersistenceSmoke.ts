@@ -39,6 +39,7 @@ export async function piAgentPersistenceSmoke(
 	});
 	try {
 		assert.equal(resumed.sessionId, parent.sessionId);
+		assert.deepEqual(resumed.jobs!.list(), parent.jobs!.list());
 		assert.deepEqual(resumed.agentViews!.list(), cards);
 		assert.deepEqual(resumed.agentViews!.read(cards[0]!.threadId), view);
 		for (const card of cards) {
@@ -58,6 +59,12 @@ export async function piAgentPersistenceSmoke(
 	});
 	try {
 		assert.notEqual(fork.sessionId, parent.sessionId);
+		assert.deepEqual(
+			fork.jobs!.list(),
+			parent
+				.jobs!.list()
+				.map((job) => ({ ...job, parentId: fork.sessionId })),
+		);
 		assert.equal(fork.agentViews!.list().length, cards.length);
 		assert.equal(
 			fork.agentViews!.read(cards[0]!.threadId).parentThreadId,

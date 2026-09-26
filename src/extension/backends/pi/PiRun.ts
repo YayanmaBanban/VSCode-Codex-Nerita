@@ -31,6 +31,25 @@ export abstract class PiRun extends PiLifecycle {
 
 	/** 拒否はツールエラーとして返し、中止はターン全体を停止する。 */
 	protected authorize: PiAuthorize = async (title, signal) => {
+		const jobId =
+			typeof title === "string"
+				? undefined
+				: title.fields?.find((field) => field.id === "subagent-job")
+						?.value;
+		if (jobId && signal && this.runtime?.jobs) {
+			const jobs = this.runtime.jobs;
+			jobs.read(jobId);
+			return this.approvals.authorize(
+				title,
+				{
+					signal,
+					cancel: () => {
+						void jobs.cancel(jobId);
+					},
+				},
+				signal,
+			);
+		}
 		const submission = this.submission;
 		if (!submission || submission.cancelled) {
 			throw new Error("実行中のPi会話がありません。");
@@ -82,7 +101,6 @@ export abstract class PiRun extends PiLifecycle {
 		const current = () =>
 			this.epoch === epoch && this.submission === submission;
 		const mapper = new PiEventMapper();
-		const unsubscribeAgents = this.watchAgents(runtime, current);
 		const unsubscribeEvents = runtime.subscribe((event) => {
 			if (!current()) {
 				return;
@@ -98,7 +116,6 @@ export abstract class PiRun extends PiLifecycle {
 		});
 		submission.unsubscribe = () => {
 			unsubscribeEvents();
-			unsubscribeAgents();
 		};
 		this.patch({ run: "running", runId: submission.id, error: null });
 		const start = (text: string) =>
@@ -180,10 +197,10 @@ export abstract class PiRun extends PiLifecycle {
 	}
 
 	/** 現在の親へ子のカードを追加し、以後は表示順を固定する。 */
-	private watchAgents(runtime: PiSession, current: () => boolean) {
+	protected override watchSessionAgents(runtime: PiSession) {
 		return (
 			runtime.agentViews?.subscribe(() => {
-				if (!current()) {
+				if (this.runtime !== runtime) {
 					return;
 				}
 				const agents = runtime.agentViews!.list().map((agent) => ({
@@ -336,6 +353,10 @@ export abstract class PiRun extends PiLifecycle {
 	protected cancel(): void {
 		const submission = this.submission;
 		const runtime = this.runtime;
+		if (!submission && runtime) {
+			this.track(runtime.abort());
+			return;
+		}
 		if (!submission || !runtime || submission.cancelled) {
 			return;
 		}

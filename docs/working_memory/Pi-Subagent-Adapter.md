@@ -59,9 +59,9 @@ Pi の子も既存の Agent カードに表示し、選択すると子の本文�
 
 ## 初期版の制約
 
-これは Nerita のガード付きアダプターであり、元パッケージ全体の互換実装ではない。直接の `agent / task / model / cwd / agentScope` と、`context: fresh`・`async: false` を受け付ける。並列・チェーン実行用の `workflowScript` は今後の対応とする。
+これは Nerita のガード付きアダプターであり、元パッケージ全体の互換実装ではない。直接の `agent / task / model / cwd / agentScope` と、`context: fresh / fork`・`async: true / false` を受け付ける。並列・チェーン実行用の `workflowScript` は今後の対応とする。
 
-`workflowScript`・バックグラウンド実行・親コンテキストの複製・外部 runner は未対応。`runner` を持つ定義は普通の子として実行せず、起動承認より前に拒否する。`oracle` の `defaultContext` など、元パッケージ固有の既定動作は引き継がず、子は常に新しい文脈で開始する。`subagents_enable`、管理アクション、追加探索ルート、他パッケージのエージェント宣言、外部拡張・スキルの個別継承設定も対象外。これらが必要な機能は別途対応する。
+背景実行と親コンテキストの複製は [ジョブ管理の記録](Pi-Jobs.md) を参照する。`workflowScript` は後続の対応とし、外部 runner は非対応。`runner` を持つ定義は普通の子として実行せず、起動承認より前に拒否する。`oracle` の `defaultContext` など、元パッケージ固有の既定動作は引き継がず、既定では新しい文脈で開始する。明示的な `fork` は親と同じモデルで会話を複製する。`subagents_enable`、管理アクション、追加探索ルート、他パッケージのエージェント宣言、外部拡張・スキルの個別継承設定も対象外。これらが必要な機能は別途対応する。
 
 公開可能なツールは `read / ls / write / edit / powershell / pwsh / bash` とする。実行環境にないツールは公開しない。`grep / find`、外部拡張のツール、孫へのモデル主導の再委譲は未対応。
 

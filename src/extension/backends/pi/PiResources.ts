@@ -85,6 +85,7 @@ export async function loadPiResources(
 							"grep",
 							"find",
 							"subagent",
+							"subagent_job",
 						].includes(name)
 					) {
 						throw new Error(

@@ -3,6 +3,7 @@ import * as assert from "node:assert/strict";
 import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { join, dirname, basename } from "node:path";
 import { tmpdir } from "node:os";
+import { setTimeout as delay } from "node:timers/promises";
 import {
 	createPiRuntime,
 	type PiRuntimeSession,
@@ -28,13 +29,23 @@ async function adapterModeSmoke(
 	const controller = new AbortController();
 	let parent: PiRuntimeSession | undefined;
 	const approvals: PermissionPresentation[] = [];
+	const background = storage === "workspace";
+	let release!: () => void;
+	const gate = new Promise<void>((resolve) => {
+		release = resolve;
+	});
 	try {
 		await mkdir(join(h.agentDir, "agents"));
 		await writeFile(
 			join(h.agentDir, "agents/worker.md"),
 			"---\nname: worker\ndescription: fixture\ntools: read, write\nsystemPromptMode: replace\n---\nADAPTER_ROLE_FIXTURE",
 		);
-		const task = { agent: "worker", task: "write a fixture" };
+		const task = {
+			agent: "worker",
+			task: "write a fixture",
+			async: background,
+			context: background ? "fork" : "fresh",
+		};
 		h.setTool("subagent", task);
 		h.setChildTool("write", {
 			path: "child.txt",
@@ -49,9 +60,12 @@ async function adapterModeSmoke(
 			windowsSandbox: "elevated",
 			executor: null,
 			storage,
-			authorize: (presentation, signal) => {
+			authorize: async (presentation, signal) => {
 				approvals.push(presentation);
-				return Promise.resolve(signal ?? controller.signal);
+				if (background) {
+					await gate;
+				}
+				return signal ?? controller.signal;
 			},
 		};
 		parent = await createPiRuntime(options);
@@ -61,7 +75,13 @@ async function adapterModeSmoke(
 				results.push(event);
 			}
 		});
-		await parent.prompt("delegate fixture");
+		await parent.prompt("PARENT_CONTEXT_FIXTURE delegate fixture");
+		if (background) {
+			assert.ok(JSON.stringify(results).includes("jobId"));
+			assert.equal(parent.jobs!.list()[0]!.status, "approval");
+		}
+		release();
+		await waitForJobs(parent);
 		const count = 1;
 		assert.equal(approvals.length, count * 2, JSON.stringify(results));
 		assert.equal(
@@ -78,7 +98,7 @@ async function adapterModeSmoke(
 			).length,
 			count * 2,
 		);
-		assert.ok(JSON.stringify(results).includes("finished"));
+		assert.ok(JSON.stringify(parent.jobs!.list()).includes("finished"));
 		const cards = parent.agentViews!.list();
 		assert.equal(cards.length, count);
 		assert.ok(
@@ -94,17 +114,37 @@ async function adapterModeSmoke(
 			body.includes("ADAPTER_ROLE_FIXTURE"),
 		);
 		assert.ok(childRequest);
+		assert.equal(
+			childRequest.includes("PARENT_CONTEXT_FIXTURE"),
+			background,
+		);
 		assert.ok(!childRequest.includes('"name":"powershell"'));
 		assert.ok(!childRequest.includes('"name":"subagent"'));
 		const requestCount = h.requests.length;
 		await piAgentPersistenceSmoke(parent, options);
 		assert.equal(h.requests.length, requestCount);
 	} finally {
+		release();
 		controller.abort();
 		await parent?.close();
 		await h.close();
 		assert.equal(dirname(h.root), tmpdir());
 		assert.ok(basename(h.root).startsWith("nerita-guard-integration-"));
 		await rm(h.root, { recursive: true, force: true });
+	}
+}
+
+/** 背景実行は親の応答とは別に完了を待ち、停止不能なら検証を失敗させる。 */
+async function waitForJobs(parent: PiRuntimeSession) {
+	const deadline = Date.now() + 5000;
+	while (
+		parent
+			.jobs!.list()
+			.some((job) =>
+				["queued", "running", "approval"].includes(job.status),
+			)
+	) {
+		assert.ok(Date.now() < deadline, "背景ジョブが終了しませんでした。");
+		await delay(10);
 	}
 }

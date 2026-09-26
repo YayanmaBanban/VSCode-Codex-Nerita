@@ -2,13 +2,16 @@
 import type { PiRuntimeOptions } from "./PiRuntime";
 import type { PiChildOptions } from "./PiChildRuntimes";
 import type { ToolAuthorizer } from "../../security/ApprovalGuard";
+import type { PiJobs } from "./PiJobs";
 
 /** Host の承認関数を包むだけにし、子に別の承認先を指定させない。 */
 export function childSettings(
 	parent: PiRuntimeOptions,
 	options: PiChildOptions,
+	jobs?: PiJobs,
 ): Partial<PiRuntimeOptions> {
 	const result: Partial<PiRuntimeOptions> = {};
+	result.initialMessages = structuredClone(options.initialMessages ?? []);
 	if (options.allowedTools) {
 		result.allowedTools = options.allowedTools.filter(
 			(tool) =>
@@ -24,11 +27,20 @@ export function childSettings(
 		result.strictModel = true;
 	}
 	const context = options.approvalContext;
-	const authorize = parent.authorize;
+	const authorize = jobAuthorizer(parent.authorize, options.jobId, jobs);
 	if (context && authorize) {
 		result.authorize = subagentAuthorizer(authorize, context);
 	}
 	return result;
+}
+
+/** 承認先は親から固定し、ジョブは状態の観測だけを追加する。 */
+function jobAuthorizer(
+	authorize: ToolAuthorizer | undefined,
+	id: string | undefined,
+	jobs: PiJobs | undefined,
+) {
+	return authorize && id && jobs ? jobs.authorizer(id, authorize) : authorize;
 }
 
 /** 同名の並列の子もタスクを常時表示して承認先を区別する。 */
