@@ -1,4 +1,5 @@
 // Host が利用する API だけを専用の ESM モジュールから公開する。
+export { getSupportedThinkingLevels } from "@earendil-works/pi-ai/compat";
 export {
 	createAgentSession,
 	ModelRuntime,

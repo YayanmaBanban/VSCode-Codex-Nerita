@@ -1,0 +1,155 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"version": {
+			"type": "number",
+			"const": 1
+		},
+		"defaults": {
+			"type": "object",
+			"properties": {
+				"timeoutMs": {
+					"type": "integer",
+					"exclusiveMinimum": 0,
+					"maximum": 2147483647
+				}
+			},
+			"required": ["timeoutMs"],
+			"additionalProperties": false
+		},
+		"backends": {
+			"type": "object",
+			"properties": {
+				"pi": {
+					"oneOf": [
+						{
+							"type": "object",
+							"properties": {
+								"strategy": {
+									"type": "string",
+									"const": "fixed"
+								},
+								"model": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 300
+								},
+								"thinking": {
+									"anyOf": [
+										{
+											"type": "string",
+											"enum": [
+												"off",
+												"minimal",
+												"low",
+												"medium",
+												"high",
+												"xhigh",
+												"max"
+											]
+										},
+										{
+											"type": "string",
+											"const": "ultra"
+										}
+									]
+								}
+							},
+							"required": ["strategy", "model"],
+							"additionalProperties": false
+						},
+						{
+							"type": "object",
+							"properties": {
+								"strategy": {
+									"type": "string",
+									"const": "current"
+								},
+								"thinking": {
+									"anyOf": [
+										{
+											"type": "string",
+											"enum": [
+												"off",
+												"minimal",
+												"low",
+												"medium",
+												"high",
+												"xhigh",
+												"max"
+											]
+										},
+										{
+											"type": "string",
+											"const": "ultra"
+										}
+									]
+								}
+							},
+							"required": ["strategy"],
+							"additionalProperties": false
+						}
+					]
+				},
+				"codex": {
+					"oneOf": [
+						{
+							"type": "object",
+							"properties": {
+								"strategy": {
+									"type": "string",
+									"const": "fixed"
+								},
+								"model": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 300
+								},
+								"reasoningEffort": {
+									"type": "string",
+									"enum": [
+										"low",
+										"medium",
+										"high",
+										"xhigh",
+										"max",
+										"ultra"
+									]
+								}
+							},
+							"required": ["strategy", "model"],
+							"additionalProperties": false
+						},
+						{
+							"type": "object",
+							"properties": {
+								"strategy": {
+									"type": "string",
+									"const": "current"
+								},
+								"reasoningEffort": {
+									"type": "string",
+									"enum": [
+										"low",
+										"medium",
+										"high",
+										"xhigh",
+										"max",
+										"ultra"
+									]
+								}
+							},
+							"required": ["strategy"],
+							"additionalProperties": false
+						}
+					]
+				}
+			},
+			"required": ["pi", "codex"],
+			"additionalProperties": false
+		}
+	},
+	"required": ["version", "defaults", "backends"],
+	"additionalProperties": false
+}

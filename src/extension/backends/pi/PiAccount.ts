@@ -9,6 +9,7 @@ import { PiProviderControls } from "./PiProviderControls";
 import { piModelOptions } from "./PiModelOptions";
 import { PiModelCatalogService } from "./PiModelCatalogService";
 import type { PiModelSelection } from "./PiRuntime";
+import { piAgentModel } from "./PiAgentModels";
 
 /** SDK の認証対話を VS Code とテストで差し替える。 */
 export type PiAuthService = {
@@ -22,6 +23,18 @@ export type PiAuthService = {
 
 /** 接続中の会話を維持して認証・モデル設定を変更する。 */
 export class PiAccount {
+	/** 管理画面では親とは異なるプロバイダーのモデルも選択できる。 */
+	agentModels() {
+		return this.catalog
+			.available()
+			.map((model) =>
+				piAgentModel(
+					model,
+					this.supportedThinking?.(model),
+					this.catalog.metadata(model.provider, model.id),
+				),
+			);
+	}
 	constructor(
 		private models: ModelRuntime,
 		private session: AgentSession,
@@ -30,6 +43,9 @@ export class PiAccount {
 		readonly catalog = new PiModelCatalogService(models, session),
 		private saveModel?: (selection: PiModelSelection) => Promise<void>,
 		private initialSelection?: PiModelSelection,
+		private supportedThinking?: (
+			model: NonNullable<AgentSession["model"]>,
+		) => string[],
 	) {
 		controls.bind(session);
 		controls.bindCatalog((provider) => catalog.snapshot(provider));

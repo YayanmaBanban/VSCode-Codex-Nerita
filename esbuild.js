@@ -9,6 +9,10 @@ const watch = process.argv.includes("--watch");
 async function main() {
 	await mkdir("dist", { recursive: true });
 	await copyFile(
+		"src/shared/agentManager/handoff.schema.json",
+		"dist/handoff.schema.json",
+	);
+	await copyFile(
 		"src/extension/backends/pi/guardrails/schema.json",
 		"dist/guardrails.schema.json",
 	);
@@ -21,6 +25,8 @@ async function main() {
 	};
 	const host = await esbuild.context({
 		...common,
+		// UMD 内の相対 require が配布先へ残らないよう、ESM の依存を静的に取り込む。
+		alias: { "jsonc-parser": "jsonc-parser/lib/esm/main.js" },
 		entryPoints: ["src/extension/extension.ts"],
 		format: "cjs",
 		platform: "node",

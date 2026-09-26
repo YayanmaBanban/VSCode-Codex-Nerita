@@ -21,6 +21,16 @@ type PlanSettings = {
 
 /** 設定は次のターンに適用し、CLI のユーザー設定ファイルを書き換えない。 */
 export abstract class CodexOptions extends CodexAttachments {
+	/** App Server が返すモデル別の対応推論量を管理画面へ公開する。 */
+	agentModels() {
+		return this.models.map((model) => ({
+			value: model.model,
+			name: model.displayName,
+			efforts: model.supportedReasoningEfforts.map(
+				(item) => item.reasoningEffort,
+			),
+		}));
+	}
 	protected models: ModelInfo[] = [];
 	protected turnOptions: Partial<TurnStartParams> = {};
 	private initialSandbox: StartedThread["sandbox"];

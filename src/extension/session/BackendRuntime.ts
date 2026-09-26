@@ -70,6 +70,15 @@ export class BackendRuntime implements BackendSession {
 		await this.current?.receive(value);
 	}
 
+	/** 現在のバックエンドが公開するモデル候補だけを管理画面へ渡す。 */
+	agentModels() {
+		return (
+			this.current?.agentModels?.() ??
+			this.snapshot().configOptions.find((item) => item.id === "model")
+				?.options ??
+			[]
+		);
+	}
 	/** エディタの実行を現在のバックエンドへ限定する。 */
 	async workflow(request: WorkflowExecution, signal: AbortSignal) {
 		if (this.disposed || this.restarting || !this.current?.workflow) {

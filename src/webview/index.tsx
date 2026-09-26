@@ -5,15 +5,21 @@ import {
 	createPiAuthPost,
 	createGuardrailsBridge,
 	createWorkflowBridge,
+	createAgentManagerBridge,
 } from "./vscodeBridge";
 import { ChatApp } from "./chat/ChatApp";
 import { PiAuthPage } from "./pi-auth/PiAuthPage";
 import { GuardrailsEditor } from "./pi/guardrails/GuardrailsEditor";
 import { WorkflowEditor } from "./pi/workflows/WorkflowEditor";
+import { AgentManager } from "./agentManager/AgentManager";
 import "./chat/tailwind.css";
 const root = document.getElementById("root");
 if (root) {
-	if (root.dataset.page === "pi-workflow") {
+	if (root.dataset.page === "agent-manager") {
+		createRoot(root).render(
+			<AgentManager bridge={createAgentManagerBridge()} />,
+		);
+	} else if (root.dataset.page === "pi-workflow") {
 		createRoot(root).render(
 			<WorkflowEditor bridge={createWorkflowBridge()} />,
 		);

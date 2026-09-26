@@ -8,6 +8,11 @@ import {
 } from "../shared/workflows/messages";
 import type { PiAuthRequest } from "../shared/piAuth";
 import {
+	managerReplySchema,
+	type ManagerBridge,
+	type ManagerRequest,
+} from "../shared/agentManager/messages";
+import {
 	guardReplySchema,
 	type GuardBridge,
 	type GuardRequest,
@@ -20,11 +25,33 @@ export type Bridge = {
 /** VS Code が Webview に提供する最小 API。 */
 type VsCodeApi = {
 	postMessage: (
-		message: UiMessage | PiAuthRequest | GuardRequest | WorkflowRequest,
+		message:
+			| UiMessage
+			| PiAuthRequest
+			| GuardRequest
+			| WorkflowRequest
+			| ManagerRequest,
 	) => void;
 };
 declare function acquireVsCodeApi(): VsCodeApi;
 let api: VsCodeApi | undefined;
+/** Agent Manager の専用通信にも共有スキーマを適用する。 */
+export function createAgentManagerBridge(): ManagerBridge {
+	api ??= acquireVsCodeApi();
+	return {
+		postMessage: (message) => api?.postMessage(message),
+		subscribe(listener) {
+			const receive = (event: MessageEvent<unknown>) => {
+				const parsed = managerReplySchema.safeParse(event.data);
+				if (parsed.success) {
+					listener(parsed.data);
+				}
+			};
+			window.addEventListener("message", receive);
+			return () => window.removeEventListener("message", receive);
+		},
+	};
+}
 /** Workflow の専用パネルでも受信内容を共有スキーマで検証する。 */
 export function createWorkflowBridge(): WorkflowBridge {
 	api ??= acquireVsCodeApi();

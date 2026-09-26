@@ -6,6 +6,10 @@ import { PiHistory } from "./PiHistory";
 
 /** Codex と同じ通信境界で送信・停止・再接続・新規会話を公開する。 */
 export class PiSessionController extends PiHistory implements BackendSession {
+	/** モデル一覧だけを公開し、管理画面から親セッションのモデルを変更しない。 */
+	agentModels() {
+		return this.runtime?.account?.agentModels() ?? [];
+	}
 	private seen = new Set<string>();
 	private authAbort: AbortController | undefined;
 

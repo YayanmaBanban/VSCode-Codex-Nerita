@@ -204,7 +204,11 @@ async function openPiRuntime(
 	const sdkUrl = pathToFileURL(
 		join(options.extensionPath, "dist/runtime/pi.mjs"),
 	).href;
-	const sdk = (await import(sdkUrl)) as typeof PiSdk;
+	const sdk = (await import(sdkUrl)) as typeof PiSdk & {
+		getSupportedThinkingLevels(
+			model: NonNullable<AgentSession["model"]>,
+		): string[];
+	};
 	options.signal.throwIfAborted();
 	const agentDir = options.agentDir || sdk.getAgentDir();
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
@@ -355,6 +359,7 @@ async function openPiRuntime(
 		new PiModelCatalogService(modelRuntime, session, options.request),
 		options.saveModel,
 		options.resume ? undefined : options.preferredModel,
+		(model) => sdk.getSupportedThinkingLevels(model),
 	);
 	try {
 		await session.bindExtensions({ mode: "print" });

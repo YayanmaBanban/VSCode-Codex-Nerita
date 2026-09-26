@@ -84,6 +84,9 @@ async function bundlePi(projectRoot, target) {
 	const destination = path.join(target, "pi");
 	const result = await build({
 		absWorkingDir: projectRoot,
+		alias: {
+			"@earendil-works/pi-ai/compat": path.join(aiRoot, "dist/compat.js"),
+		},
 		entryPoints: {
 			core: path.join(__dirname, "runtime/pi-entry.mjs"),
 			"image-resize-worker": path.join(

@@ -12,6 +12,11 @@ export type ChatSession = {
 
 /** ワークスペース変更と拡張終了も扱う Host 側のセッション。 */
 export type BackendSession = ChatSession & {
+	agentModels?: () => {
+		value: string;
+		name: string;
+		efforts?: string[] | undefined;
+	}[];
 	workflow?: (
 		request: WorkflowExecution,
 		signal: AbortSignal,

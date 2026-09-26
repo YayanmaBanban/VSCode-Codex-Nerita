@@ -102,6 +102,13 @@ export function catalogHarness() {
 		undefined,
 		undefined,
 		catalog,
+		undefined,
+		undefined,
+		(model) =>
+			all.find(
+				(item) =>
+					item.provider === model.provider && item.id === model.id,
+			)?.levels ?? [],
 	);
 	return {
 		all,

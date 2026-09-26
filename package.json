@@ -53,6 +53,10 @@
 		],
 		"jsonValidation": [
 			{
+				"fileMatch": "**/.nerita/handoff.json",
+				"url": "./dist/handoff.schema.json"
+			},
+			{
 				"fileMatch": "**/.pi/guardrails.json",
 				"url": "./dist/guardrails.schema.json"
 			}
@@ -130,6 +134,10 @@
 			}
 		},
 		"commands": [
+			{
+				"command": "nerita.agents.manage",
+				"title": "Nerita: Agent Manager を開く"
+			},
 			{
 				"command": "nerita.trust.manage",
 				"title": "Nerita: Workspace Trustを管理"
@@ -212,6 +220,7 @@
 		}
 	},
 	"scripts": {
+		"handoff:generate": "node scripts/generate-handoff-schema.cjs",
 		"guardrails:generate": "node scripts/generate-guardrails-schema.cjs",
 		"test:guardrails:ui": "node tests/guardrails-vscode-smoke.mjs",
 		"test:workflow:ui": "node tests/workflow-vscode-smoke.mjs",
@@ -319,6 +328,7 @@
 		"diff": "8.0.4",
 		"framer-motion": "^13.3.0",
 		"gsap": "^3.15.0",
+		"jsonc-parser": "^3.3.1",
 		"lexical": "^0.50.0",
 		"lightswind": "^3.2.5",
 		"lucide-react": "^1.45.0",

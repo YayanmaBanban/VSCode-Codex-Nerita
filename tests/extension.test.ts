@@ -8,6 +8,7 @@ import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
 import { piTrustSmoke } from "./piTrustSmoke";
 import { piSubagentAdapterSmoke } from "./piSubagentAdapterSmoke";
 import { piWorkflowSmoke } from "./piWorkflowSmoke";
+import { agentManagerSmoke } from "./agentManagerSmoke";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createPiAuthService } from "../src/extension/backends/pi/PiAuthService";
@@ -17,6 +18,18 @@ import {
 } from "../src/extension/webview/sidebarLocation";
 
 suite("Nerita for Codex Extension", () => {
+	test("Agent Manager が同梱 SDK の定義を読み、設定を保存する", async () => {
+		const extension = vscode.extensions.getExtension(
+			"nerita-local.nerita-codex",
+		)!;
+		await extension.activate();
+		assert.ok(
+			(await vscode.commands.getCommands(true)).includes(
+				"nerita.agents.manage",
+			),
+		);
+		await agentManagerSmoke(extension.extensionUri.fsPath);
+	});
 	test("未信頼の実SDKでは読取りだけを許可し、Trust後も書込みを承認する", async function () {
 		this.timeout(60000);
 		await piTrustSmoke(

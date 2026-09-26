@@ -9,6 +9,7 @@ import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 import { registerSandboxSetup } from "./backends/codex/settings/sandboxSetup";
 import { registerGuardrailsEditor } from "./backends/pi/guardrails/GuardrailsEditor";
 import { registerWorkflowEditor } from "./backends/pi/workflows/WorkflowEditor";
+import { registerAgentManager } from "./agentManager/AgentManagerPanel";
 import { registerTrustCommands } from "./security/trust/TrustCommands";
 import { preparePiWebTrust } from "./backends/pi/PiWebTrust";
 import { userTrustedExtensionPaths } from "./backends/pi/PiExtensionTrust";
@@ -45,6 +46,7 @@ export async function activate(
 	});
 	controller = session;
 	registerWorkflowEditor(context, session);
+	registerAgentManager(context, session);
 	const provider = new ChatViewProvider(context.extensionUri, session, () =>
 		session.restart(),
 	);
