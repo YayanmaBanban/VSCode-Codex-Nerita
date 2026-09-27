@@ -8,7 +8,7 @@ import {
 	createAgentManagerBridge,
 } from "./vscodeBridge";
 import { ChatApp } from "./chat/ChatApp";
-import { PiAuthPage } from "./pi-auth/PiAuthPage";
+import { PiAuthPage } from "./pi/PiAuthPage";
 import { GuardrailsEditor } from "./pi/guardrails/GuardrailsEditor";
 import { WorkflowEditor } from "./pi/workflows/WorkflowEditor";
 import { AgentManager } from "./agentManager/AgentManager";

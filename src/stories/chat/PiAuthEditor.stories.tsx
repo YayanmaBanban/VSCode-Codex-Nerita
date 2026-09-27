@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PiAuthState } from "../../shared/piAuth";
-import { PiAuthEditor } from "../../webview/pi-auth/PiAuthEditor";
+import { PiAuthEditor } from "../../webview/pi/PiAuthEditor";
 
 /** Host 同様に認証先ごとの通知を保持する。 */
 function feedback(
