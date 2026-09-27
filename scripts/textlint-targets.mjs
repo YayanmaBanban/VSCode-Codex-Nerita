@@ -21,6 +21,11 @@ export async function resolveTextlintTargets(root, rawTargets) {
 	const seen = new Set();
 
 	for (const rawTarget of rawTargets) {
+		// pnpm の `--` はスクリプト引数と対象パスを分ける区切りなので、検査対象には含めない。
+		if (rawTarget === "--") {
+			continue;
+		}
+
 		const absolutePath = path.resolve(root, rawTarget);
 		const relativePath = path.relative(root, absolutePath);
 
