@@ -1,5 +1,7 @@
 // 実際のチャット上でタイトル・接続遷移・表示先メッセージを再現する。
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { initialState, type ConnectionStatus } from "../../../shared/chatState";
+import { ConnectionButton } from "../../../webview/chat/connection/ConnectionButton";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../../webview/chat/ChatApp";
 import { createMockBridge } from "../mocks/mockBridge";
@@ -105,3 +107,44 @@ export const Reconnect: Story = {
 export const PiBackend: Story = {
 	args: { backend: "pi" },
 };
+
+/** 接続状態を任意に切り替え、連続した変更や待機中の演出を確認する。 */
+function ConnectionTransitions() {
+	const [state, setState] = useState(initialState);
+	const connections: ConnectionStatus[] = [
+		"disconnected",
+		"connecting",
+		"authenticating",
+		"ready",
+		"error",
+	];
+	return (
+		<div style={{ padding: 24 }}>
+			<ConnectionButton state={state} send={() => {}} />
+			<div
+				style={{
+					marginTop: 24,
+					display: "flex",
+					flexWrap: "wrap",
+					gap: 8,
+				}}
+			>
+				{connections.map((connection) => (
+					<button
+						key={connection}
+						onClick={() =>
+							setState({
+								...state,
+								connection,
+								sessionPending: true,
+							})
+						}
+					>
+						{connection}
+					</button>
+				))}
+			</div>
+		</div>
+	);
+}
+export const Transitions: Story = { render: () => <ConnectionTransitions /> };

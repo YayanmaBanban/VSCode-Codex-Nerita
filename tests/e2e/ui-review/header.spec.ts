@@ -99,7 +99,11 @@ test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) 
 		}),
 		contentType: "image/png",
 	});
-	await page.getByRole("button", { name: "接続エラー：再接続" }).click();
+	await page
+		.getByRole("button", {
+			name: "接続エラー：アカウントを再認証して接続します",
+		})
+		.click();
 	await expect(page.locator(".connection-beam")).toHaveCount(0);
 	await expect(page.locator(".connection-confetti")).toBeVisible();
 	// CSS アニメーションの時刻を直接固定し、タイマー経過とは分けて撮影する。
@@ -133,16 +137,122 @@ test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) 
 		page.getByRole("button", { name: "接続済み", exact: true }),
 	).toBeDisabled();
 });
-test("動きを減らす設定では接続演出を抑止する", async ({ page }) => {
+test("動きを減らす設定では接続演出を抑止する", async ({ page }, info) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/iframe.html?id=chat-header--reconnect&viewMode=story");
 	await expect(
-		page.getByRole("button", { name: "接続エラー：再接続" }),
+		page.getByRole("button", {
+			name: "接続エラー：アカウントを再認証して接続します",
+		}),
 	).toBeEnabled();
 	await expect(page.locator(".connection-beam")).toHaveCount(0);
-	await page.getByRole("button", { name: "接続エラー：再接続" }).click();
+	await page.locator(".connection-button").hover();
+	await info.attach("connection-hover", {
+		body: await page.screenshot({
+			path: info.outputPath("connection-hover.png"),
+		}),
+		contentType: "image/png",
+	});
+	await page
+		.getByRole("button", {
+			name: "接続エラー：アカウントを再認証して接続します",
+		})
+		.click();
 	await expect(
 		page.getByRole("button", { name: "接続済み", exact: true }),
 	).toBeVisible();
 	await expect(page.locator(".connection-confetti")).toHaveCount(0);
+});
+
+test("接続カーテンと待機中の境界線・エラー色", async ({ page }, info) => {
+	await page.goto("/iframe.html?id=chat-header--transitions&viewMode=story");
+	const button = page.locator(".connection-button");
+	// 新しく現れる段階も停止し、撮影中に次の段階へ進むのを防ぐ。
+	await page.addStyleTag({
+		content:
+			".connection-curtain, .connection-button { animation-play-state: paused !important; }",
+	});
+	let previousLabel = "未接続";
+	for (const state of ["connecting", "authenticating", "error"] as const) {
+		const nextLabel = {
+			connecting: "接続中",
+			authenticating: "ログイン待ち",
+			error: "接続エラー",
+		}[state];
+		await page.getByRole("button", { name: state, exact: true }).click();
+		for (const [phase, times] of [
+			["cover", [0, 110, 219]],
+			["reveal", [0, 110, 219]],
+		] as const) {
+			const curtain = page.locator(
+				`.connection-curtain[data-phase="${phase}"]`,
+			);
+			await expect(curtain).toBeAttached();
+			await expect(button.getByRole("status")).toHaveText(
+				phase === "cover" ? previousLabel : nextLabel,
+			);
+			for (const time of times) {
+				await curtain.evaluate((node, currentTime) => {
+					for (const animation of node.getAnimations()) {
+						animation.pause();
+						animation.currentTime = currentTime;
+					}
+				}, time);
+				await info.attach(`${state}-${phase}-${time}ms`, {
+					body: await page.screenshot({
+						path: info.outputPath(`${state}-${phase}-${time}.png`),
+					}),
+					contentType: "image/png",
+				});
+			}
+			await curtain.evaluate((node) => {
+				for (const animation of node.getAnimations()) {
+					animation.finish();
+				}
+			});
+		}
+		await expect(page.locator(".connection-curtain")).toHaveCount(0);
+		await expect(button.getByRole("status")).toHaveText(nextLabel);
+		previousLabel = nextLabel;
+		if (state !== "error") {
+			await expect(page.locator(".connection-beam")).toBeVisible();
+			await expect(button).toBeDisabled();
+		} else {
+			await expect(button.locator(".status-dot")).toHaveCSS(
+				"background-color",
+				"rgb(244, 135, 113)",
+			);
+			for (const time of [0, 72, 180, 288, 360]) {
+				await button.evaluate((node, currentTime) => {
+					for (const animation of node.getAnimations()) {
+						animation.pause();
+						animation.currentTime = currentTime;
+					}
+				}, time);
+				await info.attach(`shake-${time}ms`, {
+					body: await page.screenshot({
+						path: info.outputPath(`shake-${time}.png`),
+					}),
+					contentType: "image/png",
+				});
+			}
+		}
+	}
+	await page.getByRole("button", { name: "connecting", exact: true }).click();
+	await page.getByRole("button", { name: "ready", exact: true }).click();
+	await expect(page.locator(".connection-curtain")).toHaveAttribute(
+		"data-target",
+		"ready",
+	);
+	for (const phase of ["cover", "reveal"]) {
+		await page
+			.locator(`.connection-curtain[data-phase="${phase}"]`)
+			.evaluate((node) => {
+				for (const animation of node.getAnimations()) {
+					animation.finish();
+				}
+			});
+	}
+	await expect(button.getByRole("status")).toHaveText("接続済み");
+	await expect(page.locator(".connection-curtain")).toHaveCount(0);
 });

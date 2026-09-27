@@ -4,6 +4,7 @@ import { useReducedMotion } from "motion/react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import { BorderBeam } from "../../ui/BorderBeam";
+import { ShinyText } from "../../ui/ShinyText";
 import { SettingsTooltip } from "../SettingsTooltip";
 import "./connectionButton.css";
 
@@ -11,12 +12,12 @@ const labels = {
 	disconnected: "未接続",
 	connecting: "接続中",
 	ready: "接続済み",
-	"auth-required": "認証が必要",
+	"auth-required": "認証して再接続",
 	authenticating: "ログイン待ち",
 	error: "接続エラー",
 };
 
-/** 状態が接続済みに変わった時だけ紙吹雪を一度表示する。 */
+/** 状態の切り替えをカーテンで覆い、接続結果に応じた演出を表示する。 */
 export function ConnectionButton({
 	state,
 	send,
@@ -27,6 +28,11 @@ export function ConnectionButton({
 	const reduced = useReducedMotion();
 	const previous = useRef(state.connection);
 	const [celebrating, setCelebrating] = useState(false);
+	const [displayed, setDisplayed] = useState(state.connection);
+	const [curtain, setCurtain] = useState<{
+		target: ChatState["connection"];
+		phase: "cover" | "reveal";
+	} | null>(null);
 	const reconnectable = [
 		"disconnected",
 		"error",
@@ -40,6 +46,13 @@ export function ConnectionButton({
 		state.run === "cancelling";
 	const action = connectionAction(state.connection);
 	useEffect(() => {
+		if (reduced) {
+			setDisplayed(state.connection);
+			setCurtain(null);
+		} else if (previous.current !== state.connection) {
+			// 途中で状態が変わった場合も、最新の状態色で覆い直す。
+			setCurtain({ target: state.connection, phase: "cover" });
+		}
 		// 接続済みの状態を初めて表示しただけでは、紙吹雪を表示しない。
 		const connected =
 			previous.current !== "ready" &&
@@ -61,7 +74,8 @@ export function ConnectionButton({
 			>
 				<button
 					type="button"
-					className="connection-button relative flex h-[28px] items-center gap-[5px] whitespace-nowrap bg-transparent px-[7px] py-0 text-[12px] disabled:opacity-100"
+					className={`${connectionMouseCursor(displayed)} connection-button relative flex h-[28px] items-center gap-[5px] whitespace-nowrap ${connectionBgColor(displayed)} px-[7px] py-0 text-[12px] enabled:hover:border-[color-mix(in_srgb,var(--vscode-button-border,#414851)_55%,white)] disabled:opacity-100`}
+					data-connection={state.connection}
 					disabled={disabled}
 					aria-label={
 						reconnectable
@@ -77,22 +91,59 @@ export function ConnectionButton({
 				>
 					<span
 						aria-hidden="true"
-						className={`status-dot size-[5px] rounded-full ${connectionColor(state.connection, reconnectable)}`}
+						className={`status-dot size-[5px] rounded-full ${connectionColor(displayed)}`}
 					/>
-					<span role="status">{labels[state.connection]}</span>
-					{reconnectable && !disabled && !reduced && (
+					<span role="status">
+						<ConnectionLabel
+							connection={displayed}
+							reduced={reduced === true}
+						/>
+					</span>
+					{curtain && (
 						<span
 							aria-hidden="true"
-							className="connection-beam pointer-events-none absolute inset-0 rounded-[inherit]"
+							className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
 						>
-							<BorderBeam
-								size={22}
-								duration={3}
-								colorFrom="var(--vscode-focusBorder, #6dadc9)"
-								colorTo="var(--vscode-editorWarning-foreground, #deb86d)"
+							<span
+								key={`${curtain.target}-${curtain.phase}`}
+								className={`connection-curtain absolute inset-0 ${connectionColor(curtain.target)}`}
+								data-phase={curtain.phase}
+								data-target={curtain.target}
+								onAnimationEnd={() => {
+									if (curtain.target !== state.connection) {
+										return;
+									}
+									if (curtain.phase === "cover") {
+										setDisplayed(curtain.target);
+										setCurtain({
+											...curtain,
+											phase: "reveal",
+										});
+									} else {
+										setCurtain(null);
+									}
+								}}
 							/>
 						</span>
 					)}
+					{!reduced &&
+						showConnectionBeam(
+							state.connection,
+							reconnectable,
+							disabled,
+						) && (
+							<span
+								aria-hidden="true"
+								className="connection-beam pointer-events-none absolute inset-0 rounded-[inherit]"
+							>
+								<BorderBeam
+									size={22}
+									duration={3}
+									colorFrom="var(--vscode-focusBorder, #6dadc9)"
+									colorTo="var(--vscode-editorWarning-foreground, #deb86d)"
+								/>
+							</span>
+						)}
 				</button>
 			</SettingsTooltip>
 			{celebrating && (
@@ -112,6 +163,39 @@ export function ConnectionButton({
 	);
 }
 
+/** 待機中は操作の可否にかかわらず、境界線の演出を表示する。 */
+function showConnectionBeam(
+	connection: ChatState["connection"],
+	reconnectable: boolean,
+	disabled: boolean,
+) {
+	return (
+		["connecting", "authenticating"].includes(connection) ||
+		(reconnectable && !disabled)
+	);
+}
+
+/** 接続処理中の文言だけに青い光沢を付ける。 */
+function ConnectionLabel({
+	connection,
+	reduced,
+}: {
+	connection: ChatState["connection"];
+	reduced: boolean;
+}) {
+	if (connection !== "connecting") {
+		return labels[connection];
+	}
+	return (
+		<ShinyText
+			text={labels[connection]}
+			disabled={reduced}
+			color="var(--vscode-editorInfo-foreground, #8fc1eb)"
+			shineColor="var(--vscode-foreground, #ffffff)"
+		/>
+	);
+}
+
 /** 接続状態に応じて再接続操作の文言を返す。 */
 function connectionAction(connection: ChatState["connection"]) {
 	if (connection === "disconnected") {
@@ -120,19 +204,34 @@ function connectionAction(connection: ChatState["connection"]) {
 	if (connection === "authenticating") {
 		return "ログインを中止して再接続";
 	}
-	return "再接続";
+	return "アカウントを再認証して接続します";
 }
 
 /** 接続成功・復旧可能・処理中を状態色で区別する。 */
-function connectionColor(
-	connection: ChatState["connection"],
-	reconnectable: boolean,
-) {
+function connectionColor(connection: ChatState["connection"]) {
+	if (connection === "error") {
+		return "bg-tool-error";
+	}
 	if (connection === "ready") {
 		return "bg-menu-check";
 	}
-	if (reconnectable) {
+	if (connection !== "connecting") {
 		return "bg-warning";
 	}
-	return "bg-muted";
+	return "bg-[var(--vscode-editorInfo-foreground,#3794ff)]";
+}
+
+/** 接続成功とそれ以外を背景色で区別する。 */
+function connectionBgColor(connection: ChatState["connection"]) {
+	if (connection === "ready" || connection === "connecting") {
+		return "bg-transparent";
+	}
+	return "bg-secondary";
+}
+
+/** 接続成功とそれ以外のマウスカーソルの状態。 */
+function connectionMouseCursor(connection: ChatState["connection"]) {
+	return connection === "ready" || connection === "connecting"
+		? ""
+		: "cursor-pointer";
 }

@@ -89,6 +89,7 @@
 	--color-alert: var(--vscode-inputValidation-warningBackground, #302a20);
 	--color-primary: var(--vscode-button-background, #b1d7cb);
 	--color-primary-text: var(--vscode-button-foreground, #162c26);
+	--color-secondary: var(--vscode-button-secondaryBackground, #ffffff10);
 	--color-link: var(--vscode-textLink-foreground, #93c9df);
 	--color-empty-border: var(--vscode-panel-border, #38434a);
 	--color-quota-track: light-dark(#d9eaf4, #243d50);
