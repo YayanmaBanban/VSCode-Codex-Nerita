@@ -1,4 +1,4 @@
-// すべての Story に共通するプレビュー設定を定義する。
+// すべてのストーリーに共通するプレビュー設定を定義する。
 import type { Preview } from "@storybook/react-vite";
 import "./tailwind.css";
 import "./theme.css";

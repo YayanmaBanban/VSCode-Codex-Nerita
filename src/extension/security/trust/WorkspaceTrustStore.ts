@@ -37,7 +37,7 @@ export type TrustRecord = {
 	updatedAt: number;
 	identity?: { dev: number; ino: number; birthtimeMs: number } | undefined;
 };
-/** 保存先は Host が所有し、モデルや workspace 設定から差し替えない。 */
+/** 保存先は Host が所有し、モデルやワークスペース設定から差し替えない。 */
 export type TrustStorage = {
 	read(): unknown;
 	write(value: { version: 1; records: TrustRecord[] }): Promise<void>;
@@ -201,7 +201,7 @@ export class WorkspaceTrustStore {
 	}
 }
 
-/** 初回の workspace 登録と外部取得を監査で区別する。 */
+/** 初回のワークスペース登録と外部取得を監査で区別する。 */
 function registrationEvent(
 	origin: TrustRecord["origin"] | undefined,
 	fallback: string,

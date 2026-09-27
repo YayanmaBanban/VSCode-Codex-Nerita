@@ -7,7 +7,7 @@ import type { PiCatalogSnapshot, PiModelCatalogReader } from "./PiModelCatalog";
 import type { PiProviders } from "./PiProvider";
 import { piProviders } from "./PiProviders";
 
-/** Session 内だけに保持し、認証操作で `reader` のアカウント キャッシュごと破棄する。 */
+/** セッション内だけに保持し、認証操作で `reader` のアカウント キャッシュごと破棄する。 */
 export class PiModelCatalogService {
 	private readers = new Map<string, PiModelCatalogReader>();
 	private catalogs = new Map<string, PiCatalogSnapshot>();

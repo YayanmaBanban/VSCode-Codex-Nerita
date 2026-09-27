@@ -87,7 +87,7 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof SettingsStory>;
 export default meta;
-/** 操作と通知の競合を再現する Story。 */
+/** 操作と通知の競合を再現するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Connected: Story = {};
 

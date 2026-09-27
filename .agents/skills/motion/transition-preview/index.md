@@ -34,12 +34,12 @@ browser immediately. See [css-spring/index.md](../css-spring/index.md).
 
 For named easings, the cubic-bezier control points are:
 
-| Name        | Control points          |
+| Name | Control points |
 | ----------- | ----------------------- |
-| `ease`      | `0.25, 0.1, 0.25, 1`    |
-| `easeIn`    | `0.42, 0, 1, 1`         |
-| `easeOut`   | `0, 0, 0.58, 1`         |
-| `easeInOut` | `0.42, 0, 0.58, 1`      |
+| `ease` | `0.25, 0.1, 0.25, 1` |
+| `easeIn` | `0.42, 0, 1, 1` |
+| `easeOut` | `0, 0, 0.58, 1` |
+| `easeInOut` | `0.42, 0, 0.58, 1` |
 
 ## Rendered curve images
 

@@ -19,23 +19,23 @@ pnpm test:sandbox:read-boundary
 
 ## 検証条件
 
-- elevated backend をプロセス起動引数で指定する。
-- 専用 permissions profile に `:root=deny`、`:minimal=read`、一時 workspace のみ `write`、network 無効を指定する。
+- elevated バックエンドをプロセス起動引数で指定する。
+- 専用 permissions profile に `:root=deny`、`:minimal=read`、一時ワークスペースのみ `write`、network 無効を指定する。
 - 対照は同じ設定の `:root=read`。Host からも外部 canary の内容を確認する。
 - `codex sandbox -P` と App Server の `command/exec` を比較する。後者は専用 profile を既定にし、旧 `sandboxPolicy` で上書きしない。
-- workspace の読取り・書込み、外部 canary の絶対パス・相対パス・junction・子プロセス経由の読取り、外部への書込み拒否を確認する。
+- ワークスペースの読取り・書込み、外部 canary の絶対パス・相対パス・junction・子プロセス経由の読取り、外部への書込み拒否を確認する。
 - 権限拒否の例外と実行マーカーを検証する。起動失敗、ファイル不在、PowerShell の言語制約を読取り拒否の成功として扱わない。
 - 操作対象は作成した一時検証データに限定し、終了時に回収する。ユーザーの設定ファイルと製品の権限設定は変更しない。
 
 ## 結果
 
-| 対象                  | 成功 | 失敗 | 内容                                           |
+| 対象 | 成功 | 失敗 | 内容 |
 | --------------------- | ---: | ---: | ---------------------------------------------- |
-| Host 対照             |    1 |    0 | canary の読取り成功                            |
-| CLI、root=read        |    6 |    0 | workspace 操作・外部読取り成功、外部書込み拒否 |
-| App Server、root=read |    6 |    0 | 同上                                           |
-| CLI、root=deny        |    0 |    6 | 全件が実行前に root read 必須エラー            |
-| App Server、root=deny |    0 |    6 | 同上                                           |
+| Host 対照 |    1 |    0 | canary の読取り成功 |
+| CLI、root=read |    6 |    0 | ワークスペース操作・外部読取り成功、外部書込み拒否 |
+| App Server、root=read |    6 |    0 | 同上 |
+| CLI、root=deny |    0 |    6 | 全件が実行前に root read 必須エラー |
+| App Server、root=deny |    0 |    6 | 同上 |
 
 合計 13 件成功、12 件失敗。スモークテストの終了コードは 1。
 有限読取りの OS 境界は未検証のままであり、外部読取りを遮断できたという結果ではない。

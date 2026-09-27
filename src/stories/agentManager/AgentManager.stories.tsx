@@ -189,7 +189,7 @@ function mockBridge(mode: string): ManagerBridge {
 	};
 }
 
-/** Story の再描画で通信状態を作り直さない。 */
+/** ストーリーの再描画で通信状態を作り直さない。 */
 function Preview({ mode }: { mode: string }) {
 	const bridge = useMemo(() => mockBridge(mode), [mode]);
 	return <AgentManager bridge={bridge} />;

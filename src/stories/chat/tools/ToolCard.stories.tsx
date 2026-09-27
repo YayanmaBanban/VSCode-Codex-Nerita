@@ -191,7 +191,7 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof ToolCardsStory>;
 export default meta;
-/** 全種類のツールカードを表示する Story。 */
+/** 全種類のツールカードを表示するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Running: Story = {};
 export const Background: Story = { args: { background: true } };

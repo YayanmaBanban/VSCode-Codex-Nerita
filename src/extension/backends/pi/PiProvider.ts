@@ -29,7 +29,7 @@ export type PiQuotaReader = {
 	read: (signal: AbortSignal) => Promise<QuotaWindow[] | null>;
 };
 
-/** Session ごとに設定を生成し、利用枠サービスは必要なプロバイダーだけ登録する。 */
+/** セッションごとに設定を生成し、利用枠サービスは必要なプロバイダーだけ登録する。 */
 export type PiProvider = {
 	/** モデル選択とは独立した補助メタデータの取得元。 */
 	createCatalog?: (

@@ -36,7 +36,7 @@ export async function piWorkspaceTrusted(
 	);
 }
 
-/** 未信頼のセッションは履歴を workspace へ書かず、保存先変更による再接続ループも防ぐ。 */
+/** 未信頼のセッションは履歴をワークスペースへ書かず、保存先変更による再接続ループも防ぐ。 */
 export async function restrictPiStorage(
 	options: PiRuntimeOptions,
 ): Promise<PiRuntimeOptions> {

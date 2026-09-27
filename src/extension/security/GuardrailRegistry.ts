@@ -35,7 +35,7 @@ export class GuardrailRegistry {
 			abort: new AbortController(),
 		});
 	}
-	/** cwd を含む最も深い workspace の設定を採用する。 */
+	/** cwd を含む最も深いワークスペースの設定を採用する。 */
 	snapshot(cwd: string, roots: string[]) {
 		const root =
 			roots
@@ -67,7 +67,7 @@ export class GuardrailRegistry {
 				),
 			);
 	}
-	/** workspace の終了時も古い承認を持ち越さない。 */
+	/** ワークスペースの終了時も古い承認を持ち越さない。 */
 	dispose() {
 		for (const entry of this.entries.values()) {
 			entry.abort.abort();

@@ -63,7 +63,7 @@ const mode = await host.resolveWindowsSandbox(
 	lifetime.signal,
 );
 const trustFixtures = [];
-/** 外側 fixture も信頼し、拒否が Trust ではなく Sandbox によるものかを確認する。 */
+/** 外側の検証データも信頼し、拒否が Trust ではなく Sandbox によるものかを確認する。 */
 async function createPolicy(roots) {
 	const fixture = await host.trustedPolicy(roots, mode, [...roots, outside]);
 	trustFixtures.push(fixture);
@@ -121,7 +121,7 @@ async function test(id, operation) {
 	}
 }
 
-/** 承認済みの入力を固定し、下流の OS 境界だけを検証する。承認・Trust は別の owner が検証する。 */
+/** 承認済みの入力を固定し、下流の OS 境界だけを検証する。承認・Trust は別の担当テストが検証する。 */
 async function execute(command, options = {}) {
 	const signal = options.signal ?? lifetime.signal;
 	let source = commandSources.get(command) ?? command.at(-1);
@@ -130,7 +130,7 @@ async function execute(command, options = {}) {
 		command[0] === process.execPath &&
 		command[1] === "-e"
 	) {
-		// 子プロセス用のコードは信頼済み fixture に置き、コード文字列の解析を OS 試験へ混ぜない。
+		// 子プロセス用のコードは信頼済みの検証データに置き、コード文字列の解析を OS 試験へ混ぜない。
 		const script = path.join(cwd, `sandbox-fixture-${++scriptId}.cjs`);
 		await writeFile(script, command[2]);
 		command = [process.execPath, script];

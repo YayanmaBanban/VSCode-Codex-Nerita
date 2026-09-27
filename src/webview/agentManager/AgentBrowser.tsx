@@ -32,7 +32,7 @@ function agentLabel(agent: ManagedAgent) {
 	return `${agent.name} · ${source} · ${status}`;
 }
 
-/** 定義がない環境でも Workspace defaults を編集できる。 */
+/** 定義がない環境でも `Workspace defaults` を編集できる。 */
 export function AgentBrowser({ state, busy, save, viewer }: Props) {
 	const [backend, setBackend] = useState(state.activeBackend);
 	const [selected, setSelected] = useState("defaults");

@@ -65,7 +65,7 @@ export async function canonicalPath(
 	}
 }
 
-/** Workspace Trust を通過した Host の `roots` をコピーして固定する。 */
+/** `Workspace Trust` を通過した Host の `roots` をコピーして固定する。 */
 export async function createWorkspaceAccessPolicy(
 	roots: readonly string[],
 	windowsSandbox: WindowsSandboxImplementation = "elevated",

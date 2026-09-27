@@ -1,4 +1,4 @@
-// 実際のチャット Story を操作し、画像・動画・trace とブラウザエラーを保存する。
+// 実際のチャットストーリーを操作し、画像・動画・トレースとブラウザエラーを保存する。
 import { test, expect, type Page } from "@playwright/test";
 const pageErrors = new Map<Page, string[]>();
 test.beforeEach(({ page }) => {

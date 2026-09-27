@@ -55,7 +55,7 @@ export function ModelField({
 	);
 }
 
-/** 推論レベルは backend ごとの値のまま保存する。 */
+/** 推論レベルはバックエンドごとの値のまま保存する。 */
 export function EffortField({
 	label,
 	value,

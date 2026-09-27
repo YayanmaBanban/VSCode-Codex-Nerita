@@ -1,4 +1,4 @@
-// Sandbox まで到達させる検証用に、指定した fixture だけへ一時的な信頼を設定する。
+// Sandbox まで到達させる検証用に、指定した検証データだけへ一時的な信頼を設定する。
 import { createWorkspaceAccessPolicy } from "../../src/extension/security/WorkspacePathPolicy";
 import type { WindowsSandboxImplementation } from "../../src/extension/security/AgentAccessPolicy";
 import { WorkspaceTrustStore } from "../../src/extension/security/trust/WorkspaceTrustStore";

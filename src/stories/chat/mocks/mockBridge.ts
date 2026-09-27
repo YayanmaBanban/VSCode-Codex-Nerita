@@ -1,4 +1,4 @@
-// Story ごとに独立する、App Server や認証を必要としない双方向 Bridge。
+// ストーリーごとに独立する、App Server や認証を必要としない双方向ブリッジ。
 import { initialState, type ChatState } from "../../../shared/chatState";
 import type { BackendId } from "../../../shared/backend";
 import { type HostMessage, type UiMessage } from "../../../shared/messages";
@@ -11,7 +11,7 @@ import { mockSessionReferences } from "./mockSessionReferences";
 import { mockMcpCommand } from "./mockMcpCommand";
 import { createBuiltinUiRegistry } from "../../../extension/ui-contributions/builtinContributions";
 
-/** Story の開始状態。 */
+/** ストーリーの開始状態。 */
 export type Scenario =
 	| "empty"
 	| "connecting"

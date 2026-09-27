@@ -87,3 +87,32 @@ test("allows complete multiword terms without hiding partial or interrupted matc
 		],
 	);
 });
+
+test("ignores English inside matching multi-backtick code spans", () => {
+	const lines = [
+		"``owner`` と ``fooBar`` を確認する。",
+		"`` `nested` owner `` と plain を確認する。",
+		"```owner``` と visible を確認する。",
+		"``owner` と bare を確認する。",
+	];
+	const issues = findEnglishTermIssues(
+		[
+			{
+				file: "docs/code.md",
+				startLine: 10,
+				text: lines.join("\n"),
+			},
+		],
+		config,
+	);
+
+	assert.deepEqual(
+		issues.map(({ line, term }) => ({ line, term })),
+		[
+			{ line: 11, term: "plain" },
+			{ line: 12, term: "visible" },
+			{ line: 13, term: "owner" },
+			{ line: 13, term: "bare" },
+		],
+	);
+});

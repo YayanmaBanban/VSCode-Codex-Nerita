@@ -46,7 +46,7 @@ function matchesRule(rule: PathRule, path: string, root: string): boolean {
 		: relative(target, path) === "";
 }
 
-/** 設定自体の書換えと秘密鍵のアクセスは、workspace の追加ルールでは緩和しない。 */
+/** 設定自体の書換えと秘密鍵のアクセスは、ワークスペースの追加ルールでは緩和しない。 */
 function builtinProtection(
 	path: string,
 	roots: string[],
@@ -71,7 +71,7 @@ function builtinProtection(
 	return undefined;
 }
 
-/** workspace 境界は cwd ではなく固定ルートで判定する。 */
+/** ワークスペース境界は cwd ではなく固定ルートで判定する。 */
 export async function inspectGuardPath(
 	config: GuardrailsConfig,
 	root: string,

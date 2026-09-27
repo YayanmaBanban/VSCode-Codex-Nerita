@@ -474,7 +474,7 @@ function createChildren(
 	);
 }
 
-/** Workspace Trust とユーザー許可を、コードをロードする前に照合する。 */
+/** `Workspace Trust` とユーザー許可を、コードをロードする前に照合する。 */
 async function runtimeExtensions(
 	options: PiRuntimeOptions,
 	settings: PiSdk.SettingsManager,
@@ -503,7 +503,7 @@ function sessionStorage(options: PiRuntimeOptions) {
 	return options.getStorage?.() ?? options.storage ?? "global";
 }
 
-/** 未信頼の会話履歴は workspace 内へ書き込まない。 */
+/** 未信頼の会話履歴はワークスペース内へ書き込まない。 */
 async function trustedSessionStorage(options: PiRuntimeOptions) {
 	return (await piWorkspaceTrusted(options))
 		? sessionStorage(options)

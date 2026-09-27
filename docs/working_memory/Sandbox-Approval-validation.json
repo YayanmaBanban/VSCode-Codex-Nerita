@@ -81,7 +81,7 @@
 			"status": "pass",
 			"details": {
 				"rpcDenied": true,
-				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m 乧\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\created.txt' is denied.\u001b[0m\r\n"
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m 乧\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m | \u001b[31;1mAccess to the path '<fixture>\\outside\\created.txt' is denied.\u001b[0m\r\n"
 			}
 		},
 		{
@@ -89,7 +89,7 @@
 			"status": "pass",
 			"details": {
 				"rpcDenied": true,
-				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
 			}
 		},
 		{
@@ -97,7 +97,7 @@
 			"status": "pass",
 			"details": {
 				"rpcDenied": true,
-				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mRemove-Item: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mRemove-Item -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mRemove-Item: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mRemove-Item -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
 			}
 		},
 		{
@@ -105,7 +105,7 @@
 			"status": "pass",
 			"details": {
 				"rpcDenied": true,
-				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m … n\\outside'; \u001b[36;1mSet-Content -LiteralPath '外部.txt' -Value bad -ErrorAction\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m … n\\outside'; \u001b[36;1mSet-Content -LiteralPath '外部.txt' -Value bad -ErrorAction\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m | \u001b[31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m | \u001b[31;1mAccess to the path '<fixture>\\outside\\外部.txt' is denied.\u001b[0m\r\n"
 			}
 		},
 		{
@@ -113,7 +113,7 @@
 			"status": "pass",
 			"details": {
 				"rpcDenied": true,
-				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m     | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m     | \u001b[31;1mAccess to the path '<fixture>\\workspace\\linked\\外部.txt' is denied.\u001b[0m\r\n"
+				"message": "exec failed: sandbox error: sandbox denied exec error, exit code: 1, stdout: , stderr: \u001b[31;1mSet-Content: \u001b[0m\r\n\u001b[31;1m\u001b[36;1mLine |\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m   2 | \u001b[0m \u001b[36;1mSet-Content -LiteralPath '<user-profile>\\AppData\\Local\\Temp\\nerita-sa\u001b[0m …\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m | \u001b[31;1m ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\u001b[0m\r\n\u001b[31;1m\u001b[36;1m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[0m\u001b[36;1m\u001b[31;1m\u001b[31;1m\u001b[36;1m | \u001b[31;1mAccess to the path '<fixture>\\workspace\\linked\\外部.txt' is denied.\u001b[0m\r\n"
 			}
 		},
 		{

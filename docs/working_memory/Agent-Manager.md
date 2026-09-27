@@ -6,15 +6,15 @@
 複数ルートの場合はワークスペースを選択する。同じルートのパネルは再利用する。
 閲覧だけでは設定ファイルを作らない。
 
-| 対象        | 編集内容                                                                   | 保存先                                            |
+| 対象 | 編集内容 | 保存先 |
 | ----------- | -------------------------------------------------------------------------- | ------------------------------------------------- |
-| Pi Agent    | disabled / model / thinking の Workspace override                          | `.pi/settings.json` の `subagents.agentOverrides` |
-| Pi 既定値   | defaultModel / defaultThinking / maxThinking / maxSubagentSpawnsPerSession | `.pi/settings.json` の `subagents`                |
-| Codex Agent | model / model_reasoning_effort                                             | `.codex/agents/*.toml`                            |
-| ハンドオフ  | timeoutMs / backend ごとの strategy・model・推論指定                       | `.nerita/handoff.json`                            |
+| Pi Agent | disabled / model / thinking の `Workspace override` | `.pi/settings.json` の `subagents.agentOverrides` |
+| Pi 既定値 | defaultModel / defaultThinking / maxThinking / maxSubagentSpawnsPerSession | `.pi/settings.json` の `subagents` |
+| Codex Agent | model / model_reasoning_effort | `.codex/agents/*.toml` |
+| ハンドオフ | timeoutMs / バックエンドごとの strategy・model・推論指定 | `.nerita/handoff.json` |
 
 Pi の定義は既存ローダーで package / user / project から取得する。
-定義値と Workspace override を分けて表示し、ユーザー設定と modelScope は閲覧のみとする。
+定義値と `Workspace override` を分けて表示し、ユーザー設定と modelScope は閲覧のみとする。
 管理画面は設定優先順位を計算しない。接続中のバックエンドの候補を使い、未接続側は管理画面専用のカタログ読込みで取得する。
 Pi では親と異なるプロバイダーのモデルも候補に含める。
 
@@ -31,13 +31,13 @@ Codex は標準配置の直下 TOML を対象とする。名前はファイル�
 - `current` は実行開始時のセッションモデルを使う指定。固定の `model` を保存しない。
 - Pi は `thinking`、Codex は `reasoningEffort` を保存する。
 - `timeoutMs` の初期値は120000。正の整数に限定する。
-- ファイルがない場合は両 backend とも `current` を表示する。
+- ファイルがない場合は両バックエンドとも `current` を表示する。
 - スキーマは拡張機能に同梱し、VS Code の `jsonValidation` で関連付ける。
-- Workspace には `handoff.json` だけを保存し、`$schema` は付けない。旧形式の相対参照は次回保存時に除去する。既存のスキーマファイルは削除しない。
+- ワークスペースには `handoff.json` だけを保存し、`$schema` は付けない。旧形式の相対参照は次回保存時に除去する。既存のスキーマファイルは削除しない。
 - 壊れた JSON を検出した場合、初期値から作り直す操作を選ぶまで保存を無効にする。
 
 ハンドオフのモデル欄は全候補を表示する選択欄で、選択済みの名前による自動絞込みは行わない。
-未接続 backend の保存済みモデルも保持できる。モデル実行による利用可能性の確認は行わない。
+未接続バックエンドの保存済みモデルも保持できる。モデル実行による利用可能性の確認は行わない。
 
 ## 保存と競合
 

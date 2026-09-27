@@ -1,4 +1,4 @@
-// Pi の Workspace override と Codex の標準 TOML を、同じフォームから編集する。
+// Pi の `Workspace override` と Codex の標準 TOML を、同じフォームから編集する。
 import { useState } from "react";
 import {
 	agentEditSchema,

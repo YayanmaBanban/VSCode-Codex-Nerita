@@ -9,7 +9,7 @@ import {
 import { guardrailRegistry } from "../../../security/GuardrailRegistry";
 import { canonicalPath } from "../../../security/WorkspacePathPolicy";
 
-/** 設定を適用できる workspace とファイルを Host 側で確定する。 */
+/** 設定を適用できるワークスペースとファイルを Host 側で確定する。 */
 export class GuardrailsSettings {
 	private queue: Promise<unknown> = Promise.resolve();
 	constructor(private readonly state: vscode.Memento) {}
@@ -34,7 +34,7 @@ export class GuardrailsSettings {
 			}
 		}
 	}
-	/** 設定ファイルへのリンクを通して workspace 外へ保存しない。 */
+	/** 設定ファイルへのリンクを通してワークスペース外へ保存しない。 */
 	async rootFor(uri: vscode.Uri): Promise<string> {
 		const folder = vscode.workspace.getWorkspaceFolder(uri);
 		if (

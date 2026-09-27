@@ -19,7 +19,7 @@ const meta = {
 	args: { scenario: "history" },
 } satisfies Meta<typeof SessionsStory>;
 export default meta;
-/** 履歴ペインの Story 定義。 */
+/** 履歴ペインのストーリー定義。 */
 type Story = StoryObj<typeof meta>;
 export const History: Story = {};
 export const Paginated: Story = { args: { scenario: "paginated" } };

@@ -1,4 +1,4 @@
-// Story 内で設定・添付操作の Host 応答を再現する。
+// ストーリー内で設定・添付操作の Host 応答を再現する。
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 

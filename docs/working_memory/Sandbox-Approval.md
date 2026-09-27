@@ -25,18 +25,18 @@ rtk pnpm test:sandbox
 
 Shell の結果は `dist/pi-shell-smoke/results.json` に保存する。実拡張の結果は `dist/pi-web-access-smoke/results.json` に保存する。UI の結果は `dist/vscode-sandbox-smoke/results.json`、Windows 受入は `dist/sandbox-smoke/results.json` に保存する。
 
-UI の画像保存先は結果 JSON の `artifacts` を参照する。今回の画像で承認内容、日本語出力、停止表示、再接続後の結果を確認し、Webview のエラーは0件だった。setup と利用不能状態の画面操作は未検証。UI の検証は一時プロファイルと専用ワークスペースを使用し、通常のユーザー設定を変更しない。
+UI の画像保存先は結果 JSON の `artifacts` を参照する。今回の画像で承認内容、日本語出力、停止表示、再接続後の結果を確認し、Webview のエラーは0件だった。`setup` と利用不能状態の画面操作は未検証。UI の検証は一時プロファイルと専用ワークスペースを使用し、通常のユーザー設定を変更しない。
 
 ## 基点と変更範囲
 
-| 項目                 | 値                                                                                                  |
+| 項目 | 値 |
 | -------------------- | --------------------------------------------------------------------------------------------------- |
-| 作業ブランチ         | `phase11-codex-reimplementation`                                                                    |
-| 着手時の main / HEAD | `b553e7665f2cee21e7c4a8490be09d41fc2ba8a8`                                                          |
-| 選択参照した保存版   | `e5f31d606a09722e93f78b5ec7aa3682adaefeb7` (`phase11-astra`)                                        |
-| 実装の状態           | `f41bdc932fa743551b3f62c89a5ba3b462fd69a6` で main へマージ済み。今回の追加修正は別の作業ツリー差分 |
+| 作業ブランチ | `phase11-codex-reimplementation` |
+| 着手時の main / HEAD | `b553e7665f2cee21e7c4a8490be09d41fc2ba8a8` |
+| 選択参照した保存版 | `e5f31d606a09722e93f78b5ec7aa3682adaefeb7` (`phase11-astra`) |
+| 実装の状態 | `f41bdc932fa743551b3f62c89a5ba3b462fd69a6` で main へマージ済み。今回の追加修正は別の作業ツリー差分 |
 
-Notion 記載の旧 main へ戻さず、着手時の main を維持した。新しい依存パッケージ・lockfile 変更・backend 切替の再設計・アニメーション変更は含まない。
+Notion 記載の旧 main へ戻さず、着手時の main を維持した。新しい依存パッケージ・lockfile 変更・バックエンド切替の再設計・アニメーション変更は含まない。
 
 保存版の permit、command/config 応答検証、PowerShell 探索、導入済みリソース解決、子 Runtime の追跡を選択参照した。policy、ファイル操作、Runtime 接続、テストの期待値は今回の仕様に合わせて作り直した。常時拒否の通信検査、範囲を限定した読み取り、独自の保護ルート、拡張の一律拒否は採用していない。Win32 broker、通信診断の no-op、`--filesystem-only` も採用していない。生成済み App Server 型は変更していない。
 
@@ -107,7 +107,7 @@ Windows のシェルは実行ごとに専用接続を使う。停止、時間切
 
 ## 利用と設定移行
 
-1. Windows x64 のローカル VS Code で信頼済み workspace を開き、Pi に接続する。
+1. Windows x64 のローカル VS Code で信頼済みワークスペースを開き、Pi に接続する。
 2. Sandbox が未準備なら、コマンドパレットから `nerita.pi.setupCodexWindowsSandbox` を明示的に実行する。表示名は「Nerita: Pi 用の Codex Windows Sandbox をセットアップ」。Windows かつ Pi バックエンドの場合だけ登録・表示・有効化し、実行時にも条件を確認する。Codex バックエンドからは開始できない。セットアップ完了通知を確認して Pi へ再接続する。会話開始時に自動セットアップはしない。
 3. `powershell` / `pwsh` の承認内容を確認して許可する。readiness 未完了、設定不一致、RPC 拒否は理由を表示する。network=false は Shell の起動禁止条件ではない。
 4. 外部 Pi 拡張を使う場合、導入済みパッケージの entry を確認し、VS Code の**ユーザー設定**に単一ファイルの絶対パスを列挙して再接続する。
@@ -120,7 +120,7 @@ Windows 以外ではサンドボックスセットアップは不要で、コマ
 }
 ```
 
-信頼する拡張には単一ファイルを指定する。パスの区切りは正規化するが、ディレクトリ指定やシンボリックリンク・ジャンクション経由の別名は受け付けない。設定の `globalValue` だけを採用し、ワークスペースの同名設定からは許可できない。ワークスペース内の拡張には Workspace Trust も必要になる。組み込み拡張は維持する。外部ツールによる組み込みツールの上書きは、Windows 以外の `bash` を除いてエラーにする。設定から外したファイルは再接続後にロードされない。実行中の拡張の信頼を取り消す UI は今回の範囲外。
+信頼する拡張には単一ファイルを指定する。パスの区切りは正規化するが、ディレクトリ指定やシンボリックリンク・ジャンクション経由の別名は受け付けない。設定の `globalValue` だけを採用し、ワークスペースの同名設定からは許可できない。ワークスペース内の拡張には `Workspace Trust` も必要になる。組み込み拡張は維持する。外部ツールによる組み込みツールの上書きは、Windows 以外の `bash` を除いてエラーにする。設定から外したファイルは再接続後にロードされない。実行中の拡張の信頼を取り消す UI は今回の範囲外。
 
 SDK の自動探索で見つかった未信頼の拡張コードはロードしない。スキル、プロンプトテンプレート、プロバイダー固有の設定、その他の設定、履歴は維持する。導入済みのローカルパッケージを参照し、新規会話や再接続では npm / Git から自動取得しない。
 
@@ -128,12 +128,12 @@ SDK の自動探索で見つかった未信頼の拡張コードはロードし�
 
 Windows PowerShell と PowerShell 7 は別のツールとして登録し、相互の自動切替をしない。
 
-| Tool         | 対応する Shell                        | 解決・公開条件                                                                         |
+| Tool | 対応する Shell | 解決・公開条件 |
 | ------------ | ------------------------------------- | -------------------------------------------------------------------------------------- |
-| `powershell` | Windows PowerShell (`powershell.exe`) | `SystemRoot` 配下の OS 標準配置のみ。解決不能なら具体的な理由を返す                    |
-| `pwsh`       | PowerShell 7 (`pwsh.exe`)             | 通常の導入先と PATH を探索。Sandbox 内で Core / 7 以降の起動確認に成功した場合だけ公開 |
+| `powershell` | Windows PowerShell (`powershell.exe`) | `SystemRoot` 配下の OS 標準配置のみ。解決不能なら具体的な理由を返す |
+| `pwsh` | PowerShell 7 (`pwsh.exe`) | 通常の導入先と PATH を探索。Sandbox 内で Core / 7 以降の起動確認に成功した場合だけ公開 |
 
-MSIX の WindowsApps 配置、そこへのリンク、workspace の書込み範囲内にある実行ファイルは使わない。`pwsh` が未導入・起動不能でも `powershell` は維持する。インストール・アンインストールは行わず、環境の変更は Pi への再接続時に反映する。
+MSIX の WindowsApps 配置、そこへのリンク、ワークスペースの書込み範囲内にある実行ファイルは使わない。`pwsh` が未導入・起動不能でも `powershell` は維持する。インストール・アンインストールは行わず、環境の変更は Pi への再接続時に反映する。
 
 `pwsh` の起動確認は接続時の固定処理で、モデル入力やユーザーの command を含まない。同じ Sandbox Executor / policy を通し、5 秒の制限を付ける。モデルが呼ぶ Shell Tool の承認は毎回必要。
 
@@ -161,17 +161,17 @@ setter が拒否されてもコードページを確認し、既に 65001 なら
 
 検証対象は上記 HEAD に今回の作業ツリー差分を適用したもの。環境は Windows `10.0.26200` x64、Node `v24.18.1`。同梱 Codex は `0.156.0`、Pi SDK は `0.87.1`。Windows Sandbox は `elevated`、readiness は `ready`。VS Code 結合テストは `1.139.0`。
 
-| 実行                              | 結果と範囲                                                                                                                                                                                                 |
+| 実行 | 結果と範囲 |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rtk pnpm check`                  | Lint・Host / Webview / Stories / tests 型検査が成功                                                                                                                                                        |
-| `rtk pnpm test:unit`              | 71 files / 455 tests 成功。U01〜U12、OS 別のツール選択、セットアップの非 Windows 除外、Shell 別の探索・公開・承認、既存回帰                                                                                |
-| `rtk pnpm compile`                | 開発ビルド成功                                                                                                                                                                                             |
-| `rtk pnpm test:runtime`           | 19 tests 成功。移設した Runtime、公開 API、provider chunk、拡張 SDK import、画像 WASM、ライセンス・更新処理                                                                                                |
-| `rtk pnpm test:pi:chat`           | 実 SDK＋模擬モデル＋本番 Sandbox Executor。承認 / 拒否 / Stop / 切断再接続、履歴、provider controls、明示 Trust 拡張、Host 子・孫 Runtime。追加の OS 模擬4ケースで通常 `bash` と信頼済み `bash` 置換を確認 |
-| `rtk pnpm test:pi:shell`          | 本番 Shell Tool と Sandbox で 7 cases 成功。両 Shell の選択・Node・承認拒否、Windows PowerShell の UTF-8 / 日本語 stdout・stderr / pipe / exit 7。既存 portable pwsh を明示指定                            |
-| `rtk pnpm test`                   | 実 VS Code Extension Host の 6 tests 成功。Pi SDK / file 承認 / Stop / 履歴、Codex 初期化、Webview 資産                                                                                                    |
-| `rtk pnpm ui-review pi-approvals` | 8 tests 成功。write / powershell / pwsh / bash、320px、light / dark、長い argv と policy、許可 / 拒否 / 取消し / Stop、console / page error 検査。生成画像を変更前後で目視確認                             |
-| `rtk pnpm test:sandbox`           | Windows 本番 Executor の受入。通信と日本語出力の失敗を含むため exit 1。詳細は下記                                                                                                                          |
+| `rtk pnpm check` | Lint・Host / Webview / Stories / tests 型検査が成功 |
+| `rtk pnpm test:unit` | 71 files / 455 tests 成功。U01〜U12、OS 別のツール選択、セットアップの非 Windows 除外、Shell 別の探索・公開・承認、既存回帰 |
+| `rtk pnpm compile` | 開発ビルド成功 |
+| `rtk pnpm test:runtime` | 19 tests 成功。移設した Runtime、公開 API、provider chunk、拡張 SDK import、画像 WASM、ライセンス・更新処理 |
+| `rtk pnpm test:pi:chat` | 実 SDK＋模擬モデル＋本番 Sandbox Executor。承認 / 拒否 / Stop / 切断再接続、履歴、provider controls、明示 Trust 拡張、Host 子・孫 Runtime。追加の OS 模擬4ケースで通常 `bash` と信頼済み `bash` 置換を確認 |
+| `rtk pnpm test:pi:shell` | 本番 Shell Tool と Sandbox で 7 cases 成功。両 Shell の選択・Node・承認拒否、Windows PowerShell の UTF-8 / 日本語 stdout・stderr / pipe / exit 7。既存 portable pwsh を明示指定 |
+| `rtk pnpm test` | 実 VS Code Extension Host の 6 tests 成功。Pi SDK / file 承認 / Stop / 履歴、Codex 初期化、Webview 資産 |
+| `rtk pnpm ui-review pi-approvals` | 8 tests 成功。write / powershell / pwsh / bash、320px、light / dark、長い argv と policy、許可 / 拒否 / 取消し / Stop、console / page error 検査。生成画像を変更前後で目視確認 |
+| `rtk pnpm test:sandbox` | Windows 本番 Executor の受入。通信と日本語出力の失敗を含むため exit 1。詳細は下記 |
 
 `rtk pnpm test:codex:chat` も認証済みモデルで返信・中断・同一会話の継続に成功した。既存 smoke は Node 単独で `vscode` を解決できず build で止まったため、Pi smoke と同じ空のエディター API 境界を追加した。エディター操作は利用できず、Codex の接続やモデル応答は実物を使う。この試験は network 比較ではない。
 
@@ -183,20 +183,20 @@ setter が拒否されてもコードページを確認し、既に 65001 なら
 
 `pi-platform-smoke.mjs` は配布 SDK・本番 Runtime・模擬モデルを通して検証した。macOS / Linux の判定それぞれで、通常の bash による `node --version` と、明示的に信頼した bash 拡張への置換を確認した。モデルへのツール公開と1回の承認も確認している。実行 OS は Windows で、通常の bash には既存の Git Bash を使い、OS 判定だけを模擬した。**macOS / Linux 実機や実際の sandbox-runtime との結合検証ではない**。非 Windows 対応前の UI 記録は `dist/ui-review-history/pi-host-shell-20260925-092925/before/`。対応後は `dist/ui-review/report/` で、bash の承認待ち・完了表示を明暗で確認した。Windows 側の画像が変更前と一致することも確認した。
 
-build / package は `dist/runtime` を作り直すので SDK / Windows smoke と同時実行しない。受入は専用の内側・外側 fixture だけを作り、削除前に絶対パスを検査する。ユーザーデータ、AV、Firewall、ExecutionPolicy は変更しない。
+build / package は `dist/runtime` を作り直すので SDK / Windows smoke と同時実行しない。受入は専用の内側・外側の検証データだけを作り、削除前に絶対パスを検査する。ユーザーデータ、AV、Firewall、ExecutionPolicy は変更しない。
 
-Shell 分離前の Windows 受入は **18 pass / 5 fail / 1 unverified**（別途 network の観測記録 4 件）。当時の各ケースと network 比較の argv・policy・応答は [検証 JSON](Sandbox-Approval-validation.json) に保存する。ローカル絶対パスは `<fixture>` / `<extension>` 等に置換してあり、そのまま実行する入力ではない。再実行時のローカル診断出力先は `dist/sandbox-smoke/results.json`。fixture はテスト後に削除する。
+Shell 分離前の Windows 受入は **18 pass / 5 fail / 1 unverified**（別途 network の観測記録 4 件）。当時の各ケースと network 比較の argv・policy・応答は [検証 JSON](Sandbox-Approval-validation.json) に保存する。ローカル絶対パスは `<fixture>` / `<extension>` 等に置換してあり、そのまま実行する入力ではない。再実行時のローカル診断出力先は `dist/sandbox-smoke/results.json`。検証データはテスト後に削除する。
 
 2026-09-25 の Shell 分離・UTF-8 修正は `test:pi:shell` で追加検証した。結果は `dist/pi-shell-smoke/results.json`。3設定すべての CodePage=65001、ConstrainedLanguage の維持、短い日本語 stdout を確認した。native の UTF-8 stderr と明示 `exit $LASTEXITCODE` による exit 7、日本語 pipe も確認した。全体の network 受入は再実行しておらず、過去の失敗を成功へ書き換えていない。UI の変更前は `dist/ui-review-history/shell-tools-20260925-083321/before/`。変更後は `dist/ui-review/report/` と `dist/ui-review/test-results/`。write / powershell / pwsh、長い argv、UTF-8 設定失敗時の警告を確認した。明暗・320px・承認 / 拒否 / 取消し / Stop も確認した。
 
 ### 実機の既知の失敗・未検証
 
-| 対象                  | Host 対照 | Codex command/exec 直結 | Pi 製品 Tool → 承認 → Executor | 判定                                     |
+| 対象 | Host 対照 | Codex command/exec 直結 | Pi 製品 Tool → 承認 → Executor | 判定 |
 | --------------------- | --------- | ----------------------- | ------------------------------ | ---------------------------------------- |
-| IPv4 loopback HTTP    | 到達      | 到達                    | 到達                           | **fail: network=false の隔離未達**       |
-| IPv6 loopback HTTP    | 到達      | 到達                    | 到達                           | **fail: network=false の隔離未達**       |
-| `http://example.com`  | 到達      | 到達                    | 到達                           | **fail: network=false の隔離未達**       |
-| `https://example.com` | 到達      | SSL 接続失敗            | SSL 接続失敗                   | **unverified: 通信遮断の証明にならない** |
+| IPv4 loopback HTTP | 到達 | 到達 | 到達 | **fail: network=false の隔離未達** |
+| IPv6 loopback HTTP | 到達 | 到達 | 到達 | **fail: network=false の隔離未達** |
+| `http://example.com` | 到達 | 到達 | 到達 | **fail: network=false の隔離未達** |
+| `https://example.com` | 到達 | SSL 接続失敗 | SSL 接続失敗 | **unverified: 通信遮断の証明にならない** |
 
 network 比較では、実 SDK の PowerShell Tool 定義と製品アダプターが生成した要求を観測する。executable / argv / cwd / env / timeout / policy / Windows 実装を揃えて、直結・Host を実行する。観測用ラッパーは実 Executor を呼び、結果を置き換えない。SDK＋模擬モデルの Tool Call 経路は別の `test:pi:chat` で検証している。Codex バックエンドの通常モデルターンによる同条件の network 比較は**未検証**。直結と Pi の一致は原因の切分けに使うが、通信テストの合格へ読み替えない。上流または Windows 実行環境のどちらが原因かは未確定。
 
@@ -210,33 +210,33 @@ rtk proxy pwsh -NoProfile -Command '$env:NERITA_SANDBOX_PWSH = (Resolve-Path "di
 
 同じ環境変数で `pnpm test:pi:shell` を実行する。指定された実行ファイルのディレクトリをテストプロセスの PATH へ一時追加し、製品の探索・起動確認・ツール登録から検証する。
 
-通常配置の pwsh がない環境で override を指定しない場合、`test:sandbox` は pwsh を skip と記録する。`test:pi:shell` は未検証として終了コード1を返す。Windows PowerShell の重複実行を pwsh 成功とは扱わない。Windows Sandbox の streaming command/exec は同梱版で拒否されたため、製品は要求しない。
+通常配置の pwsh がない環境で override を指定しない場合、`test:sandbox` は pwsh を `skip` と記録する。`test:pi:shell` は未検証として終了コード1を返す。Windows PowerShell の重複実行を pwsh 成功とは扱わない。Windows Sandbox の streaming command/exec は同梱版で拒否されたため、製品は要求しない。
 
-I08: 実 SDK package manager で `pi-web-access` `0.30.0` の導入を確認した。package の宣言は `./dist`、Pi agent directory からの相対 entry は `npm/node_modules/pi-web-access/dist/index.js`。初回は未検証だったが、追加の `test:pi:web` で明示 Trust による実ロード・Tool 登録・HTTP 操作を確認した。`pi-web-search` は未導入で、別 package へ置き換えていない。I05 の fixture 検証も維持する。
+I08: 実 SDK package manager で `pi-web-access` `0.30.0` の導入を確認した。package の宣言は `./dist`、Pi agent directory からの相対 entry は `npm/node_modules/pi-web-access/dist/index.js`。初回は未検証だったが、追加の `test:pi:web` で明示 Trust による実ロード・Tool 登録・HTTP 操作を確認した。`pi-web-search` は未導入で、別 package へ置き換えていない。I05 の検証データによる確認も維持する。
 
-実 VS Code の Sandbox 出力・承認・拒否・停止・再接続は、追加の `test:sandbox:ui` と画像確認で検証した。setup コマンド操作と利用不能理由の画面表示は**未検証**。Sandbox の未設定 / 更新必要状態は unit で検証し、この端末の setup 状態を壊して再現していない。
+実 VS Code の Sandbox 出力・承認・拒否・停止・再接続は、追加の `test:sandbox:ui` と画像確認で検証した。`setup` コマンド操作と利用不能理由の画面表示は**未検証**。Sandbox の未設定 / 更新必要状態は unit で検証し、この端末の `setup` 状態を壊して再現していない。
 
 ### 完了条件との対応
 
 「確認」は作業ツリーでの範囲を指し、新しい実装 commit・リリースの承認を意味しない。
 
-| 条件                              | 対応する証拠                                                                      | 状態         |
+| 条件 | 対応する証拠 | 状態 |
 | --------------------------------- | --------------------------------------------------------------------------------- | ------------ |
-| C01 通常 Pi Shell                 | I01、実 SDK smoke、W01                                                            | 確認         |
-| C02 同一 snapshot / fallback 不在 | U02/U03/U07/U08、Executor review、I01                                             | 確認         |
-| C03 拒否 / Stop / 無効要求        | U03〜U06、I02/I03。実機の未準備状態は未検証                                       | 一部未検証   |
-| C04 3 種の executable と出力      | W01 / W09、追加の Shell 11件。pwsh の短い日本語出力を修正し再検証                 | 確認         |
-| C05 read / write / 子孫境界       | U09、I04、W02〜W07                                                                | 確認         |
-| C06 回収 / 他接続                 | I03/I07、W08。counter・開始 marker で実行と停止を確認                             | 確認         |
-| C07 Codex / Pi 比較               | 同条件比較に加え、Codex CLI 単体でも同じ外部 TCP 到達を再現した記録を確認         | 確認         |
-| C08 通信                          | Nerita 固有ではないと切り分け済み。完全遮断を保証しない契約。W10 の観測失敗は保持 | 制約確認済み |
-| C09 明示 Extension Trust          | U10、I05、実 pi-web-access の未信頼・拒否・承認後 HTTP の3件                      | 確認         |
-| C10 既存 SDK 機能                 | I06、SDK persistence / packages smoke、Runtime 配布 19 tests                      | 確認         |
-| C11 file Tool                     | U02/U09、I04、変更・junction・hard link テスト。本書に Host 競合限界              | 確認         |
-| C12 Host 子・孫                   | U12、I07。権限非拡大、承認待ち / 実行中 Stop、起動競合、履歴分離                  | 確認         |
-| C13 旧拒否仕様の除外              | source / script / setting 検索と差分レビュー                                      | 確認         |
-| C14 全検証と新 commit             | 自動検証と実 VS Code UI は追加確認。未準備の実機確認・追加差分のコミットは残る    | **未完了**   |
-| C15 文書・設定・差分              | マージ状態・文書配置・制約・受入結果を同期。依存更新なし                          | 文書同期済み |
+| C01 通常 Pi Shell | I01、実 SDK smoke、W01 | 確認 |
+| C02 同一 snapshot / fallback 不在 | U02/U03/U07/U08、Executor review、I01 | 確認 |
+| C03 拒否 / Stop / 無効要求 | U03〜U06、I02/I03。実機の未準備状態は未検証 | 一部未検証 |
+| C04 3 種の executable と出力 | W01 / W09、追加の Shell 11件。pwsh の短い日本語出力を修正し再検証 | 確認 |
+| C05 read / write / 子孫境界 | U09、I04、W02〜W07 | 確認 |
+| C06 回収 / 他接続 | I03/I07、W08。counter・開始 marker で実行と停止を確認 | 確認 |
+| C07 Codex / Pi 比較 | 同条件比較に加え、Codex CLI 単体でも同じ外部 TCP 到達を再現した記録を確認 | 確認 |
+| C08 通信 | Nerita 固有ではないと切り分け済み。完全遮断を保証しない契約。W10 の観測失敗は保持 | 制約確認済み |
+| C09 明示 Extension Trust | U10、I05、実 pi-web-access の未信頼・拒否・承認後 HTTP の3件 | 確認 |
+| C10 既存 SDK 機能 | I06、SDK persistence / packages smoke、Runtime 配布 19 tests | 確認 |
+| C11 file Tool | U02/U09、I04、変更・junction・hard link テスト。本書に Host 競合限界 | 確認 |
+| C12 Host 子・孫 | U12、I07。権限非拡大、承認待ち / 実行中 Stop、起動競合、履歴分離 | 確認 |
+| C13 旧拒否仕様の除外 | source / script / setting 検索と差分レビュー | 確認 |
+| C14 全検証と新 commit | 自動検証と実 VS Code UI は追加確認。未準備の実機確認・追加差分のコミットは残る | **未完了** |
+| C15 文書・設定・差分 | マージ状態・文書配置・制約・受入結果を同期。依存更新なし | 文書同期済み |
 
 U01〜U12 の主な検証元は次の5ファイル。
 
@@ -250,7 +250,7 @@ I01〜I07 は `pi-chat-smoke.mjs` とそこから呼ぶ persistence / packages /
 
 ## 残る作業
 
-- C03 の未準備状態と、その状態からの setup 操作を実機未検証として残す。専用環境がないため、既存環境を変更して再現しない。
+- C03 の未準備状態と、その状態からの `setup` 操作を実機未検証として残す。専用環境がないため、既存環境を変更して再現しない。
 - 今回の追加差分を新しいコミットで確定し、C14 の受入記録と対応付ける。再実装自体の main マージは完了済み。
 - 通信隔離は Codex CLI 単体でも到達することを確認済み。C07 / C08 の切り分けは完了とし、Codex / Windows 側の改善を追跡する。完全遮断は保証せず、W10 の失敗結果を保持する。
 

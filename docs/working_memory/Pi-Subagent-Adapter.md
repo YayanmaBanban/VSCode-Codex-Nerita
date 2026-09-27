@@ -14,7 +14,7 @@ Pi の新規会話・再接続時にエージェント定義を読み、定義�
 }
 ```
 
-`cwd` は省略時に親の作業場所を使用する。指定しても親の workspace 外へ移動できない。独立 CLI へ切り替えない。
+`cwd` は省略時に親の作業場所を使用する。指定しても親のワークスペース外へ移動できない。独立 CLI へ切り替えない。
 
 Stop・切断・ガードレール変更は実行中の子にも伝える。
 
@@ -40,7 +40,7 @@ Pi の子も既存の Agent カードに表示し、選択すると子の本文�
 
 1. 設定済みで導入済みの `pi-subagents` パッケージの `agents/**/*.md`。
 2. Pi agent directory の `agents/**/*.md`。
-3. 信頼済み workspace の、起動時 cwd にある `.pi/agents/**/*.md`。
+3. 信頼済みワークスペースの、起動時 cwd にある `.pi/agents/**/*.md`。
 
 同名定義は後の出所を優先する。`agentScope: user` はパッケージとユーザー定義、`project` はパッケージとプロジェクト定義、`both` はすべてを対象にする。新パッケージに合わせ、既定は `both`。親ディレクトリへの探索は行わない。新たなパッケージをダウンロードしない。定義ディレクトリやファイルがリンクで指定範囲外へ出る場合は拒否する。再帰探索は128ディレクトリ・128ファイルを上限とし、`.chain.md` はエージェント定義から除外する。循環リンクは再訪しない。
 
@@ -82,7 +82,7 @@ AgentViewer 接続時の画面検証9件も成功。画面は明暗テーマ・�
 画面の変更前後は `dist/ui-review-history/pi-agent-viewer/` と `dist/ui-review/` に保存。初回は Storybook が依存パッケージを事前生成している間に読み込みが失敗し、生成完了後の直列実行で解消した。Extension Host のテストはサンドボックス外で再実行し成功した。
 
 - `piSubagentAdapter.test.ts`：入力検証、起動拒否、取消し、固定した内容、ツール制限、子の回収。
-- `piSubagentDefinitions.test.ts`：定義の出所、Workspace Trust、サイズ、リンク境界。
+- `piSubagentDefinitions.test.ts`：定義の出所、`Workspace Trust`、サイズ、リンク境界。
 - `piChildRuntimes.test.ts`：個別終了後に二重停止しないことを追加確認。
 - `piSubagentAdapterSmoke.ts`：実 Extension Host と同梱 SDK で、単一子の委譲、子の書込み承認、保存、結果返却、Viewer 用会話を確認。
 - `piAgentViews.test.ts`：Controller の子通知、本文の分離、他セッション・未知 ID の取得拒否。

@@ -8,13 +8,39 @@ function maskWithSpaces(text, pattern) {
 	return text.replace(pattern, (value) => " ".repeat(value.length));
 }
 
+/** 対応する数のバッククォートで囲まれたインラインコードを空白化する。 */
+function maskInlineCode(text) {
+	const runs = [...text.matchAll(/`+/g)];
+	let masked = text;
+
+	for (let index = 0; index < runs.length; index += 1) {
+		const opening = runs[index];
+		const closingIndex = runs.findIndex(
+			(run, candidateIndex) =>
+				candidateIndex > index && run[0].length === opening[0].length,
+		);
+
+		if (closingIndex < 0) {
+			continue;
+		}
+
+		const end = runs[closingIndex].index + runs[closingIndex][0].length;
+		masked =
+			masked.slice(0, opening.index) +
+			" ".repeat(end - opening.index) +
+			masked.slice(end);
+		index = closingIndex;
+	}
+
+	return masked;
+}
+
 /**
  * 識別子・URL・Markdown のリンク先など、英単語チェックの対象外を空白化する。
  */
 function maskProtectedText(text) {
-	let masked = text;
+	let masked = maskInlineCode(text);
 
-	masked = maskWithSpaces(masked, /`[^`\r\n]+`/g);
 	masked = maskWithSpaces(masked, /https?:\/\/[^\s<>)\]}]+/gi);
 	masked = maskWithSpaces(masked, /\]\([^)]+\)/g);
 

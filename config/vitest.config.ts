@@ -26,7 +26,7 @@ export default defineConfig({
 			{
 				extends: true,
 				plugins: [
-					// 移動後の Storybook 設定から Story を収集する。
+					// 移動後の Storybook 設定からストーリーを収集する。
 					storybookTest({
 						configDir: path.join(dirname, "storybook"),
 					}),

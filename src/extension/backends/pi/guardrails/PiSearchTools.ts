@@ -1,4 +1,4 @@
-// 検索は Host の読取りだけで行い、workspace 内の検索プログラムを起動しない。
+// 検索は Host の読取りだけで行い、ワークスペース内の検索プログラムを起動しない。
 import { lstat, readdir, realpath } from "node:fs/promises";
 import { join, relative } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";

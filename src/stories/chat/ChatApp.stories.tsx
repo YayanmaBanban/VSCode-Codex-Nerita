@@ -8,7 +8,7 @@ import { createPiBridge } from "./mocks/piBridge";
 import { createPiApprovalBridge } from "./mocks/piApprovalBridge";
 import { createPiHistoryBridge } from "./mocks/piHistoryBridge";
 
-/** 各マウントで独立する Bridge を Story へ注入する。 */
+/** 各マウントで独立するブリッジをストーリーへ注入する。 */
 function ChatStory({
 	scenario,
 	appServer = false,
@@ -48,7 +48,7 @@ const meta = {
 	args: { scenario: "empty" },
 } satisfies Meta<typeof ChatStory>;
 export default meta;
-/** チャット画面の Story 定義。 */
+/** チャット画面のストーリー定義。 */
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 export const Pi: Story = { args: { pi: true } };

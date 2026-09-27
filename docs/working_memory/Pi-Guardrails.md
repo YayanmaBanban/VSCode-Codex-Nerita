@@ -4,7 +4,7 @@
 
 ## 操作
 
-コマンドパレットの `Nerita: Pi ガードレールを編集` で、選んだ workspace の `.pi/guardrails.json` をエディタグループに開く。ファイルがなければ既定設定を作る。複数の workspace がある場合は対象を選択する。
+コマンドパレットの `Nerita: Pi ガードレールを編集` で、選んだワークスペースの `.pi/guardrails.json` をエディタグループに開く。ファイルがなければ既定設定を作る。複数のワークスペースがある場合は対象を選択する。
 
 - ルール編集と JSON 表示は同じ文書を編集する。未保存状態と VS Code の文書バージョンを共有する。
 - 「保存」はファイルへ保存する。これだけでは実行設定を変更しない。
@@ -16,13 +16,13 @@
 
 `src/shared/guardrails/config.ts` の Zod 定義を正本にする。`pnpm guardrails:generate` で `src/extension/backends/pi/guardrails/schema.json` を生成する。ビルド時に `dist/guardrails.schema.json` へコピーし、JSON 編集時の検証にも関連付ける。配布スキーマと実行時定義の一致を単体テストで検証する。
 
-| 項目                      | 意味                                                 |
+| 項目 | 意味 |
 | ------------------------- | ---------------------------------------------------- |
-| `version`                 | 初期版は `1`                                         |
-| `pathAccess.outsideRead`  | 外部読取りの既定。初期値は `deny`                    |
-| `pathAccess.outsideWrite` | `deny` 固定                                          |
-| `pathRules`               | ID、基準、照合方法、パターン、例外、操作、判定、理由 |
-| `commandRules`            | ID、対象 Shell、部分一致させる文字列、判定、理由     |
+| `version` | 初期版は `1` |
+| `pathAccess.outsideRead` | 外部読取りの既定。初期値は `deny` |
+| `pathAccess.outsideWrite` | `deny` 固定 |
+| `pathRules` | ID、基準、照合方法、パターン、例外、操作、判定、理由 |
+| `commandRules` | ID、対象 Shell、部分一致させる文字列、判定、理由 |
 
 パスの基準は `workspace` または `home`。設定中のパスは相対形式で、区切りは `/` とする。ドライブ指定、上位参照、バックスラッシュを拒否する。`file` は完全一致、`directory` はディレクトリ自身と配下、`glob` はワイルドカードで照合する。単一のアスタリスクは階層をまたがず、二重のアスタリスクは階層をまたぐ。区切りを含まないパターンはファイル名で照合する。
 
