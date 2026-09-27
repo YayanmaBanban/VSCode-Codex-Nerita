@@ -63,6 +63,10 @@ function maskProtectedText(text) {
 		masked,
 		/\b(?:Ctrl|Alt|Shift|Meta|Cmd)(?:\+[A-Za-z0-9]+)+\b/g,
 	);
+	masked = maskWithSpaces(
+		masked,
+		/(?:^|[\s（(])\/[A-Za-z][A-Za-z0-9:_-]*/g,
+	);
 	masked = maskWithSpaces(masked, /\b[A-Z](?:\/[A-Z])+\b/g);
 	masked = maskWithSpaces(masked, /\b[A-Z]{2,}\([A-Z0-9]+\)/g);
 	masked = maskWithSpaces(
