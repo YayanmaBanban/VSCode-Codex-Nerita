@@ -92,7 +92,7 @@ CSpell は software-terms 本体と Node 辞書も使用し、一般英語辞書
 
 候補がある場合だけ `.textlint-cache/issues-all.json` または
 `.textlint-cache/issues-changed.json` を生成する。
-同じ英単語はまとめ、保存する出現例は最大20件に抑える。
+`unknown-english` と `preferred-japanese` は先頭の大文字小文字を区別せず同じ語としてまとめ、表記差がある場合は `variants` に元表記を残す。`unquoted-identifier` は識別子名として大文字小文字を区別する。保存する出現例は最大20件に抑える。
 
 ### コメントの意味レビュー
 
