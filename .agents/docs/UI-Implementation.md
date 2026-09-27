@@ -15,7 +15,7 @@ Webview UI を作成する際に参照します。既存のコンポーネント
 - 既存の UI コンポーネントや操作パターンを利用し、キーボード操作・フォーカス・無効状態を保つ。
 - 狭い幅、長い文言、明暗テーマでも表示と操作が成立するようにする。
 - 実機用の UI と Storybook 専用のモック・サンプルデータを分ける。配置は [ディレクトリ構成](Directory-Structure.md) に従う。
-- 表示・操作の確認は [UI レビュー](UI-Review-Guide.md) に従う。Storybook での確認と、Extension Host や実際の CodexAppServer 接続の検証は分ける。
+- 表示・操作の確認は [UI レビュー](UI-Review-Guide.md) に従う。Storybook での確認と、Extension Host や実際の `CodexAppServer` 接続の検証は分ける。
 
 ### JSX の可読性
 

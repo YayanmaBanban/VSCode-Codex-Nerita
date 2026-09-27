@@ -20,9 +20,9 @@ pnpm test:sandbox:read-boundary
 ## 検証条件
 
 - elevated バックエンドをプロセス起動引数で指定する。
-- 専用 permissions profile に `:root=deny`、`:minimal=read`、一時ワークスペースのみ `write`、network 無効を指定する。
+- 専用の権限プロファイルに `:root=deny`、`:minimal=read`、一時ワークスペースのみ `write`、network 無効を指定する。
 - 対照は同じ設定の `:root=read`。Host からも外部 canary の内容を確認する。
-- `codex sandbox -P` と App Server の `command/exec` を比較する。後者は専用 profile を既定にし、旧 `sandboxPolicy` で上書きしない。
+- `codex sandbox -P` と App Server の `command/exec` を比較する。後者は専用プロファイルを既定にし、旧 `sandboxPolicy` で上書きしない。
 - ワークスペースの読取り・書込み、外部 canary の絶対パス・相対パス・junction・子プロセス経由の読取り、外部への書込み拒否を確認する。
 - 権限拒否の例外と実行マーカーを検証する。起動失敗、ファイル不在、PowerShell の言語制約を読取り拒否の成功として扱わない。
 - 操作対象は作成した一時検証データに限定し、終了時に回収する。ユーザーの設定ファイルと製品の権限設定は変更しない。

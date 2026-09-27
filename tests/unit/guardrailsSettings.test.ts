@@ -1,4 +1,4 @@
-// 永続化・復元・適用中の変更を、実ファイルと模擬 workspaceState で検証する。
+// 永続化・復元・適用中の変更を、実ファイルと模擬 `workspaceState` で検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import type { Memento, Uri } from "vscode";
 import { join } from "node:path";

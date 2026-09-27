@@ -27,7 +27,7 @@ async function readToml(path: string) {
 /** 同じ接続の保存操作を直列化し、途中の書き込みを読ませない。 */
 export class PersonalityStore {
 	private tail: Promise<unknown> = Promise.resolve();
-	/** プリセットは固定のホーム配下、Codex 設定は CODEX_HOME にも追従する。 */
+	/** プリセットは固定のホーム配下、Codex 設定は `CODEX_HOME` にも追従する。 */
 	constructor(
 		private readonly cwd: string,
 		private readonly home = homedir(),

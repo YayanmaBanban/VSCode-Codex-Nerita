@@ -177,7 +177,7 @@ export abstract class CodexRun extends CodexAgents {
 		}, 10_000);
 		this.interrupt();
 	}
-	/** interrupt の応答後も turn/completed まで停止待ちを維持する。 */
+	/** `interrupt` の応答後も turn/completed まで停止待ちを維持する。 */
 	private interrupt(): void {
 		const run = this.active;
 		if (!run?.turnId || !run.started || run.interruptSent || !this.client) {

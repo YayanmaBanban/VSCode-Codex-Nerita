@@ -70,10 +70,7 @@ function maskProtectedText(text) {
 		masked,
 		/\b(?:Ctrl|Alt|Shift|Meta|Cmd)(?:\+[A-Za-z0-9]+)+\b/g,
 	);
-	masked = maskWithSpaces(
-		masked,
-		/(?:^|[\s（(])\/[A-Za-z][A-Za-z0-9:_-]*/g,
-	);
+	masked = maskWithSpaces(masked, /(?:^|[\s（(])\/[A-Za-z][A-Za-z0-9:_-]*/g);
 	masked = maskWithSpaces(masked, /\b[A-Z](?:\/[A-Z])+\b/g);
 	masked = maskWithSpaces(masked, /\b[A-Z]{2,}\([A-Z0-9]+\)/g);
 	masked = maskWithSpaces(
@@ -111,7 +108,6 @@ function matchesAllowedPhrase(matches, index, phrase, text) {
 	return true;
 }
 
-/** 日本語を含む1行から、許可されていない英単語を抽出する。 */
 const BUILTIN_COMMANDS = new Set([
 	"bash",
 	"chcp",
@@ -154,6 +150,38 @@ function isBuiltinTechnicalToken(term) {
 	return BUILTIN_COMMANDS.has(term.toLowerCase()) || BUILTIN_KEYS.has(term);
 }
 
+/** 英単語の優先表記・識別子・許可語を判定し、報告内容を返す。 */
+function classifyEnglishTerm(
+	term,
+	allowed,
+	preferred,
+	automaticAllowed,
+	sourceIdentifiers,
+) {
+	const normalizedTerm = term.toLowerCase();
+	const suggestion = preferred.get(normalizedTerm);
+
+	if (suggestion) {
+		return { type: "preferred-japanese", suggestion };
+	}
+
+	if (sourceIdentifiers.has(term)) {
+		return { type: "unquoted-identifier", suggestion: `\`${term}\`` };
+	}
+
+	if (
+		allowed.has(term) ||
+		automaticAllowed.has(normalizedTerm) ||
+		isTechnicalAcronym(term) ||
+		isBuiltinTechnicalToken(term)
+	) {
+		return null;
+	}
+
+	return { type: "unknown-english", suggestion: null };
+}
+
+/** 日本語を含む1行から、許可されていない英単語を抽出する。 */
 function findLineIssues(
 	item,
 	text,
@@ -185,48 +213,24 @@ function findLineIssues(
 
 		const match = matches[index];
 		const term = match[0];
-		const normalizedTerm = term.toLowerCase();
-		const suggestion = preferred.get(normalizedTerm) ?? null;
+		const classification = classifyEnglishTerm(
+			term,
+			allowed,
+			preferred,
+			automaticAllowed,
+			sourceIdentifiers,
+		);
 
-		if (suggestion) {
-			issues.push({
-				file: item.file,
-				line,
-				type: "preferred-japanese",
-				term,
-				suggestion,
-				text: text.trim(),
-			});
-			continue;
-		}
-
-		if (sourceIdentifiers.has(term)) {
-			issues.push({
-				file: item.file,
-				line,
-				type: "unquoted-identifier",
-				term,
-				suggestion: `\`${term}\``,
-				text: text.trim(),
-			});
-			continue;
-		}
-
-		if (
-			allowed.has(term) ||
-			automaticAllowed.has(normalizedTerm) ||
-			isTechnicalAcronym(term) ||
-			isBuiltinTechnicalToken(term)
-		) {
+		if (!classification) {
 			continue;
 		}
 
 		issues.push({
 			file: item.file,
 			line,
-			type: "unknown-english",
+			type: classification.type,
 			term,
-			suggestion: null,
+			suggestion: classification.suggestion,
 			text: text.trim(),
 		});
 	}

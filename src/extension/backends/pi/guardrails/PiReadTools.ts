@@ -1,4 +1,4 @@
-// SDK の read / ls に共通 Guard を挟み、承認した実体だけを読み取る。
+// SDK の read / ls に共通ガードを挟み、承認した実体だけを読み取る。
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { open, realpath, readdir, lstat } from "node:fs/promises";
 import { join, relative } from "node:path";

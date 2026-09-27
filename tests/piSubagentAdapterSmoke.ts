@@ -1,4 +1,4 @@
-// 親モデルの subagent 呼出しを、子モデルの実ファイル Tool まで通して検証する。
+// 親モデルの `subagent` 呼出しを、子モデルの実ファイルツールまで通して検証する。
 import * as assert from "node:assert/strict";
 import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { join, dirname, basename } from "node:path";

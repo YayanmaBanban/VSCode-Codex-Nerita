@@ -12,7 +12,7 @@ const inputSchema = z.discriminatedUnion("action", [
 		})
 		.strict(),
 ]);
-/** 外部 runner や他セッションの ID へ処理を委譲しない。 */
+/** 外部ランナーや他セッションの ID へ処理を委譲しない。 */
 export function createPiJobTool(jobs: PiJobs): ToolDefinition {
 	return {
 		name: "subagent_job",

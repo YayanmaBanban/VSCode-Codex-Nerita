@@ -35,7 +35,7 @@ Webview 側から `src/extension/` や VSCode API・Node.js 専用モジュー�
 
 ストーリーは `src/stories/chat/`、ツールカードのストーリーは `src/stories/chat/tools/` に置きます。ストーリー専用の通信ブリッジ・応答モックは `src/stories/chat/mocks/`、ストーリーと単体テストで共有するサンプルデータは `tests/fixtures/` に置きます。
 
-実際の UI コンポーネントは `src/webview/` に置き、ストーリー側からインポートします。3領域の実機用コードからストーリー・モック・テスト検証データをインポートしません。Host・共有領域の単体テストは `tests/unit/`、結合テスト・E2E もルートの `tests/` に置きます。Storybook の確認で Host や実際の CodexAppServer 接続の検証を代替しません。
+実際の UI コンポーネントは `src/webview/` に置き、ストーリー側からインポートします。3領域の実機用コードからストーリー・モック・テスト検証データをインポートしません。Host・共有領域の単体テストは `tests/unit/`、結合テスト・E2E もルートの `tests/` に置きます。Storybook の確認で Host や実際の `CodexAppServer` 接続の検証を代替しません。
 
 ストーリーの型検査は `src/stories/tsconfig.json`、ストーリー専用の Tailwind クラスの収集は `config/storybook/tailwind.css` が担当します。本体の Tailwind 走査対象へストーリーを追加しません。
 

@@ -40,8 +40,9 @@ function addPackageName(terms, packageName) {
 /**
  * ソースや文書内でパッケージ名として明示されている語を抽出する。
  *
- * 単なるハイフン語は対象にせず、npm:、node_modules、`manifest.name` / `metadata.name`、
- * scoped package、または semver と隣接する名前だけを採用する。
+ * `npm:`、`node_modules`、`manifest.name` / `metadata.name` から抽出する。
+ * scoped package と semver に隣接する名前も対象にする。
+ * 単なるハイフン語は対象にしない。
  */
 export function extractReferencedPackageTerms(source) {
 	const terms = new Set();

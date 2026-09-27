@@ -75,7 +75,7 @@ export function parseSteeredTurn(value: unknown): { turnId: string } {
 	}
 	return { turnId: value.turnId };
 }
-/** interrupt の成功は空オブジェクトとして受け取る。 */
+/** `interrupt` の成功は空オブジェクトとして受け取る。 */
 export function parseInterrupt(value: unknown): TurnInterruptResponse {
 	if (!isRecord(value) || Object.keys(value).length) {
 		throw new Error("Invalid interrupt response");

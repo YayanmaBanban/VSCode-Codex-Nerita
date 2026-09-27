@@ -1,4 +1,4 @@
-// 適用済み設定を workspaceState に保存し、ディスク上の編集を自動適用しない。
+// 適用済み設定を `workspaceState` に保存し、ディスク上の編集を自動適用しない。
 import * as vscode from "vscode";
 import { realpath } from "node:fs/promises";
 import { resolve } from "node:path";

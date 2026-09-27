@@ -3,7 +3,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import type { WindowsSandboxImplementation } from "../../../security/AgentAccessPolicy";
 import { sandboxServerEnvironment } from "../../../runtime/CommandEnvironment";
 
-/** 認証・CODEX_HOME・設定を継承し、同梱ネイティブ実行ファイルを起動する。 */
+/** 認証・`CODEX_HOME`・設定を継承し、同梱ネイティブ実行ファイルを起動する。 */
 export function startAppServerProcess(
 	executable: string,
 	cwd: string,

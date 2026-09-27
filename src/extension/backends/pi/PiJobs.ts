@@ -181,7 +181,7 @@ export class PiJobs {
 		};
 	}
 
-	/** 保存先と Viewer の表示を同じ状態遷移から更新する。 */
+	/** 保存先と `AgentViewer` の表示を同じ状態遷移から更新する。 */
 	private update(id: string, status: PiJob["status"], result?: string) {
 		const record = this.records.get(id)!;
 		record.status = status;

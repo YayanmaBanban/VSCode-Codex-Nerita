@@ -1,4 +1,4 @@
-// 接続中の子の会話を保持し、既存 AgentViewer の読み取り契約へ変換する。
+// 接続中の子の会話を保持し、既存 `AgentViewer` の読み取り契約へ変換する。
 import { randomUUID } from "node:crypto";
 import { relative, resolve } from "node:path";
 import { initialState, type ChatState } from "../../../shared/chatState";
@@ -24,7 +24,7 @@ export class PiAgentViews {
 	private saveError: Error | undefined;
 	private rootCwd = ".";
 
-	/** 保存処理は親の SessionManager に結び付け、子から保存先を指定させない。 */
+	/** 保存処理は親の `SessionManager` に結び付け、子から保存先を指定させない。 */
 	constructor(private readonly save?: (record: PiAgentRecord) => void) {}
 
 	/** フォーク先では親 ID を付け替え、過去の処理は再実行しない。 */
@@ -99,7 +99,7 @@ export class PiAgentViews {
 		return id;
 	}
 
-	/** 子の本文と Tool を親とは別のタイムラインへ蓄積する。 */
+	/** 子の本文とツールを親とは別のタイムラインへ蓄積する。 */
 	event(id: string, event: PiEvent) {
 		const entry = this.entries.get(id)!;
 		Object.assign(entry.state, entry.mapper.apply(event, entry.state));
@@ -200,7 +200,7 @@ export class PiAgentViews {
 			this.listeners.delete(listener);
 		};
 	}
-	/** 会話本文は Viewer の定期取得に任せ、カードの変化だけを通知する。 */
+	/** 会話本文は `AgentViewer` の定期取得に任せ、カードの変化だけを通知する。 */
 	private changed() {
 		for (const listener of this.listeners) {
 			listener();
@@ -208,7 +208,7 @@ export class PiAgentViews {
 	}
 }
 
-/** 大きな Tool 入出力は表示用だけを短縮し、SDK の実行結果は変更しない。 */
+/** 大きなツール入出力は表示用だけを短縮し、SDK の実行結果は変更しない。 */
 function boundedValue(value: unknown): unknown {
 	const text = JSON.stringify(value);
 	return text && text.length > 8192

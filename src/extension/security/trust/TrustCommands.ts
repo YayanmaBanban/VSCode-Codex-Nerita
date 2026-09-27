@@ -6,7 +6,7 @@ import { canonicalPath } from "../WorkspacePathPolicy";
 import { containsPath } from "../AgentAccessPolicy";
 import { stat } from "node:fs/promises";
 
-/** 正本は globalState に保存し、ワークスペース設定による信頼の注入を防ぐ。 */
+/** 正本は `globalState` に保存し、ワークスペース設定による信頼の注入を防ぐ。 */
 export function registerTrustCommands(context: vscode.ExtensionContext) {
 	const key = "nerita.workspaceTrust.v1";
 	const log = vscode.window.createOutputChannel("Nerita Trust", {

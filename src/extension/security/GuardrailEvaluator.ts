@@ -1,4 +1,4 @@
-// エディターの検査と実際の Tool Call が同じ判定を使用する。
+// エディターの検査と実際のツール呼び出しが同じ判定を使用する。
 import type { GuardrailsConfig } from "../../shared/guardrails/config";
 import type { GuardProbe, GuardResult } from "../../shared/guardrails/messages";
 import { inspectGuardPath, addFinding } from "./GuardrailPaths";

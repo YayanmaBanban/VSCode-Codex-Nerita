@@ -1,4 +1,4 @@
-// Codex 専用の Ultra・Fast `Mode` と UI 候補を保持し、Codex Responses 要求へ適用する。
+// Codex 専用の Ultra・Fast `Mode` と UI 候補を保持し、Codex の `Responses` 要求へ適用する。
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiProviderControls as ControlsState } from "../../../../shared/piProviderControls";
 import type { ConfigChoice, ConfigOption } from "../../../../shared/composer";
@@ -100,7 +100,7 @@ export class CodexProviderControls implements PiModelControls {
 		this.session = session;
 	}
 
-	/** Codex Responses を使うモデルだけが固有の要求形式を受け付ける。 */
+	/** Codex の `Responses` を使うモデルだけが固有の要求形式を受け付ける。 */
 	get supportsFastMode(): boolean {
 		return (
 			this.session?.model?.provider === "openai-codex" &&
@@ -257,7 +257,7 @@ export class CodexProviderControls implements PiModelControls {
 		return undefined;
 	}
 
-	/** live と固定した bundled 能力の共通モデルだけ許可する。推論への反映を保証する判定ではない。 */
+	/** 実行時と固定した同梱データの両方で対応するモデルだけ許可する。推論への反映を保証する判定ではない。 */
 	private supportsReasoningUpdates(model: AgentSession["model"]): boolean {
 		if (
 			model?.provider !== "openai-codex" ||

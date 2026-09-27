@@ -41,7 +41,7 @@ export async function generatePiHandoff(
 		.join("\n");
 }
 
-/** Ultra は対応する Responses 要求だけに適用し、標準推論と区別する。 */
+/** Ultra は対応する `Responses` 要求だけに適用し、標準推論と区別する。 */
 function piHandoffOptions(
 	api: string,
 	request: HandoffRequest,

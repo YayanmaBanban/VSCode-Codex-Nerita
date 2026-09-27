@@ -61,7 +61,7 @@ export function profileArgs(cwd, rootAccess) {
 	];
 }
 
-/** 旧 sandboxPolicy を指定せず、設定から解決した有限読取りを使う。 */
+/** 旧 `sandboxPolicy` を指定せず、設定から解決した有限読取りを使う。 */
 export async function connectRuntime(runtime, executable, cwd, args) {
 	const child = spawn(
 		executable,

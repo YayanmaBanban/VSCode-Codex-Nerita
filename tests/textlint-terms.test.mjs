@@ -23,7 +23,7 @@ test("classifies bare English while ignoring code, URLs, links, and allowed term
 				"`role` を正規化する。",
 				"API と TypeScript を使う。",
 				"詳細は https://example.com/fooBar を参照する。",
-				"[UI レビュー](UI-Review-Guide.md) を参照する。",
+				"[Widget レビュー](UI-Review-Guide.md) を参照する。",
 			].join("\n"),
 		},
 	];
@@ -49,9 +49,9 @@ test("classifies bare English while ignoring code, URLs, links, and allowed term
 			file: "docs/policy.md",
 			line: 15,
 			type: "unknown-english",
-			term: "UI",
+			term: "Widget",
 			suggestion: null,
-			text: "[UI レビュー](UI-Review-Guide.md) を参照する。",
+			text: "[Widget レビュー](UI-Review-Guide.md) を参照する。",
 		},
 	]);
 });
@@ -181,7 +181,9 @@ test("ignores file names and repository paths without hiding ordinary dotted ter
 	];
 
 	assert.deepEqual(
-		findEnglishTermIssues(items, { allowedEnglish: [] }).map(({ term }) => term),
+		findEnglishTermIssues(items, { allowedEnglish: [] }).map(
+			({ term }) => term,
+		),
 		["reasoning.effort"],
 	);
 });
@@ -197,11 +199,14 @@ test("allows package names discovered from repository evidence", () => {
 	const automaticAllowed = new Set(["pi-web-access", "pi-subagents"]);
 
 	assert.deepEqual(
-		findEnglishTermIssues(items, { allowedEnglish: [] }, automaticAllowed).map(({ term }) => term),
+		findEnglishTermIssues(
+			items,
+			{ allowedEnglish: [] },
+			automaticAllowed,
+		).map(({ term }) => term),
 		["request-level"],
 	);
 });
-
 
 test("ignores known command and key names plus slash commands", () => {
 	const items = [
@@ -271,12 +276,8 @@ test("preferred Japanese still wins over repository identifiers", () => {
 	];
 
 	assert.equal(
-		findEnglishTermIssues(
-			items,
-			config,
-			new Set(),
-			new Set(["owner"]),
-		)[0].type,
+		findEnglishTermIssues(items, config, new Set(), new Set(["owner"]))[0]
+			.type,
 		"preferred-japanese",
 	);
 });
