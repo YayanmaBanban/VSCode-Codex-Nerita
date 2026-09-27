@@ -7,6 +7,7 @@ import test from "node:test";
 import {
 	filterFilesByTargets,
 	resolveTextlintTargets,
+	shouldUseChangedFiles,
 } from "../scripts/textlint-targets.mjs";
 
 test("accepts repository files and folders and rejects paths outside the repository", async () => {
@@ -36,4 +37,13 @@ test("accepts repository files and folders and rejects paths outside the reposit
 	} finally {
 		await fs.rm(root, { recursive: true, force: true });
 	}
+});
+
+test("explicit targets override changed-file selection", () => {
+	assert.equal(shouldUseChangedFiles(true, []), true);
+	assert.equal(
+		shouldUseChangedFiles(true, [{ path: ".agents/docs/Testing-Policy.md", kind: "file" }]),
+		false,
+	);
+	assert.equal(shouldUseChangedFiles(false, []), false);
 });

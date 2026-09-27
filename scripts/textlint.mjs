@@ -14,6 +14,7 @@ import {
 import {
 	filterFilesByTargets,
 	resolveTextlintTargets,
+	shouldUseChangedFiles,
 } from "./textlint-targets.mjs";
 import { findEnglishTermIssues } from "./textlint-terms.mjs";
 
@@ -284,7 +285,7 @@ await clearTextlintCacheForScope({
 	scope: mode.scope,
 });
 
-const candidates = mode.changed
+const candidates = shouldUseChangedFiles(mode.changed, targetSpecs)
 	? await getChangedFiles(ignoreMatcher)
 	: await getAllFiles(ignoreMatcher);
 const files = filterFilesByTargets(candidates, targetSpecs);

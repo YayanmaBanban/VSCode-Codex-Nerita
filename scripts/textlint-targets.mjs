@@ -96,3 +96,12 @@ export function filterFilesByTargets(files, targets) {
 		}),
 	);
 }
+
+/**
+ * 対象パスが明示されていない `--changed` のときだけ Git の変更ファイルへ絞る。
+ *
+ * ファイル・フォルダが明示された場合は、その指定を優先して変更状態に関係なく検査する。
+ */
+export function shouldUseChangedFiles(changed, targets) {
+	return changed && targets.length === 0;
+}

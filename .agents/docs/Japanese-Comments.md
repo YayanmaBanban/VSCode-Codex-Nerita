@@ -17,6 +17,7 @@
     pnpm textlint
 
 `textlint` と `textlint:changed` のどちらも、引数を複数指定できる。
+`textlint:changed` にファイルやフォルダを明示した場合は、Git の変更状態に関係なく指定対象を検査する。
 `.textlintignore` に含まれるファイルやディレクトリは対象外とする。
 リポジトリ外のパスとシンボリックリンクは検査対象として受け付けない。
 
@@ -82,6 +83,7 @@ textlint の警告を機械的に修正しない。
 全日本語文章のレビュー用ファイルを生成しない。
 
 変更した文章を LLM で意味レビューする場合は次を使用する。
+引数を明示した `textlint:review:changed` も、Git の変更状態に関係なく指定対象をレビューする。
 
     pnpm textlint:review:changed
 
