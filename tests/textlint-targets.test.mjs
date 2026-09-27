@@ -19,7 +19,7 @@ test("accepts repository files and folders and rejects paths outside the reposit
 		await fs.writeFile(path.join(root, "docs", "nested", "b.md"), "b");
 		await fs.writeFile(path.join(root, "src", "a.ts"), "a");
 
-		const targets = await resolveTextlintTargets(root, ["docs", "src/a.ts"]);
+		const targets = await resolveTextlintTargets(root, ["--", "docs", "src/a.ts"]);
 
 		assert.deepEqual(
 			filterFilesByTargets(
