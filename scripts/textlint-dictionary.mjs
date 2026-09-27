@@ -58,7 +58,7 @@ export function extractReferencedPackageTerms(source) {
 	);
 	addMatches(/(@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*)/gi);
 	addMatches(
-		/\b([a-z0-9][a-z0-9._-]*(?:-[a-z0-9._-]+)+)\s+v?\d+\.\d+\.\d+\b/gi,
+		/`?\b([a-z0-9][a-z0-9._-]*(?:-[a-z0-9._-]+)+)\b`?\s+`?v?\d+\.\d+\.\d+\b`?/gi,
 	);
 
 	return terms;
