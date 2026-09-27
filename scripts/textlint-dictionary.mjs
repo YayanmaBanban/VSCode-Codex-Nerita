@@ -36,6 +36,35 @@ function addPackageName(terms, packageName) {
 }
 
 /**
+ * ソースや文書内でパッケージ名として明示されている語を抽出する。
+ *
+ * 単なるハイフン語は対象にせず、npm:、node_modules、manifest/metadata.name、
+ * scoped package、または semver と隣接する名前だけを採用する。
+ */
+export function extractReferencedPackageTerms(source) {
+	const terms = new Set();
+	const addMatches = (pattern, group = 1) => {
+		for (const match of source.matchAll(pattern)) {
+			addPackageName(terms, match[group]);
+		}
+	};
+
+	addMatches(/npm:((?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*)/gi);
+	addMatches(
+		/node_modules[\\/]((?:@[a-z0-9][a-z0-9._-]*[\\/])?[a-z0-9][a-z0-9._-]*)/gi,
+	);
+	addMatches(
+		/(?:manifest|metadata)\.name\s*(?:===|!==|==|!=)\s*["']([^"']+)["']/g,
+	);
+	addMatches(/(@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*)/gi);
+	addMatches(
+		/\b([a-z0-9][a-z0-9._-]*(?:-[a-z0-9._-]+)+)\s+v?\d+\.\d+\.\d+\b/gi,
+	);
+
+	return terms;
+}
+
+/**
  * CSpell のソース辞書から、この lint で扱える単純な英数字語だけを取り出す。
  */
 export function parseCspellWordList(source) {

@@ -80,6 +80,8 @@ CSpell の技術辞書は初回だけ取得し、`.textlint-cache/technical-term
 CSpell は software-terms 本体と Node 辞書も使用し、一般英語辞書は使用しない。
 `CPU`、`ESM`、`CJS`、`WASM`、`SHA-256` のような大文字の技術略語も自動許可する。
 `320px`、`32KiB`、`2 MiB` などの数値と単位、キーボードショートカット、I/O 表記、バージョン番号は英単語レビューの対象外とする。
+`config.toml`、`guardrails.json`、`models-manager/models.json` のようなファイル名・パスも対象外とする。
+`npm:`、`node_modules`、パッケージの manifest / metadata 名、scoped package、バージョン併記からパッケージ名を自動抽出し、同じ実行内では技術語として扱う。単なるハイフン語はパッケージと推測しない。
 `preferredJapanese` はこれらの自動語彙より優先するため、`owner` などを辞書が認識しても日本語化のエラーを維持できる。
 
 未登録の英単語はレビュー候補として表示するが、それだけではコマンドを失敗させない。

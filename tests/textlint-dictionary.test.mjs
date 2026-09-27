@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
 	extractProjectTerms,
+	extractReferencedPackageTerms,
 	loadExternalTechnicalTerms,
 	parseCspellWordList,
 } from "../scripts/textlint-dictionary.mjs";
@@ -84,4 +85,20 @@ test("caches a pinned external dictionary and reuses it without network", async 
 	} finally {
 		await fs.rm(root, { recursive: true, force: true });
 	}
+});
+
+test("extracts package names only from package-shaped repository evidence", () => {
+	const terms = extractReferencedPackageTerms([
+		'manifest.name !== "pi-web-access";',
+		'const root = "npm/node_modules/pi-subagents";',
+		'`@anthropic-ai/sandbox-runtime` を使う。',
+		'other-package 1.2.3 を確認する。',
+		'request-level と no-op は一般のハイフン語として残す。',
+	].join("\n"));
+
+	for (const term of ["pi-web-access", "pi-subagents", "sandbox-runtime", "other-package"]) {
+		assert.equal(terms.has(term), true, term);
+	}
+	assert.equal(terms.has("request-level"), false);
+	assert.equal(terms.has("no-op"), false);
 });

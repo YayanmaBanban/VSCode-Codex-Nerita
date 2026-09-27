@@ -166,3 +166,38 @@ test("ignores measurements and common technical notation", () => {
 
 	assert.deepEqual(findEnglishTermIssues(items, { allowedEnglish: [] }), []);
 });
+
+test("ignores file names and repository paths without hiding ordinary dotted terms", () => {
+	const items = [
+		{
+			file: "docs/files.md",
+			startLine: 1,
+			text: [
+				"config.toml と guardrails.json と models-manager/models.json を使う。",
+				"./docs/working_memory/ に保存する。",
+				"reasoning.effort は確認する。",
+			].join("\n"),
+		},
+	];
+
+	assert.deepEqual(
+		findEnglishTermIssues(items, { allowedEnglish: [] }).map(({ term }) => term),
+		["reasoning.effort"],
+	);
+});
+
+test("allows package names discovered from repository evidence", () => {
+	const items = [
+		{
+			file: "docs/packages.md",
+			startLine: 1,
+			text: "pi-web-access と pi-subagents を使い、request-level は確認する。",
+		},
+	];
+	const automaticAllowed = new Set(["pi-web-access", "pi-subagents"]);
+
+	assert.deepEqual(
+		findEnglishTermIssues(items, { allowedEnglish: [] }, automaticAllowed).map(({ term }) => term),
+		["request-level"],
+	);
+});

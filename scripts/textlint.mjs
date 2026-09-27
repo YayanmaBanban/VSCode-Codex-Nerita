@@ -17,7 +17,10 @@ import {
 	resolveTextlintTargets,
 	shouldUseChangedFiles,
 } from "./textlint-targets.mjs";
-import { loadAutomaticEnglishTerms } from "./textlint-dictionary.mjs";
+import {
+	extractReferencedPackageTerms,
+	loadAutomaticEnglishTerms,
+} from "./textlint-dictionary.mjs";
 import { findEnglishTermIssues } from "./textlint-terms.mjs";
 
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
@@ -294,6 +297,7 @@ const candidates = shouldUseChangedFiles(mode.changed, targetSpecs)
 	: await getAllFiles(ignoreMatcher);
 const files = filterFilesByTargets(candidates, targetSpecs);
 const auditItems = [];
+const referencedPackageTerms = new Set();
 
 if (files.length === 0) {
 	console.log("textlint: 対象ファイルはありません。");
@@ -315,6 +319,10 @@ for (const file of files) {
 	const absolutePath = path.join(ROOT, file);
 
 	const source = await fs.readFile(absolutePath, "utf8");
+
+	for (const term of extractReferencedPackageTerms(source)) {
+		referencedPackageTerms.add(term);
+	}
 
 	const extension = path.extname(file).toLowerCase();
 
@@ -374,10 +382,14 @@ if (automaticTerms.warning) {
 	console.warn(`textlint dictionary: ${automaticTerms.warning}`);
 }
 
+const automaticAllowed = new Set([
+	...automaticTerms.terms,
+	...referencedPackageTerms,
+]);
 const termIssues = findEnglishTermIssues(
 	auditItems,
 	termsConfig,
-	automaticTerms.terms,
+	automaticAllowed,
 );
 const issuePath = await writeTextlintIssues({
 	root: ROOT,
