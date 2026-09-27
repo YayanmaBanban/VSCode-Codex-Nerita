@@ -148,3 +148,21 @@ test("allows automatic technical terms and uppercase acronyms but keeps preferre
 		},
 	]);
 });
+
+test("ignores measurements and common technical notation", () => {
+	const items = [
+		{
+			file: "docs/measurements.md",
+			startLine: 1,
+			text: [
+				"320px / 1100px で表示を確認する。",
+				"応答サイズは 32KiB、本文は 2 MiB までとする。",
+				"余白は 1.5rem、高さは 100vh とする。",
+				"Ctrl+F と I/O と HTTP(S) を確認する。",
+				"v5.0.8 と rust-v0.157.0 を比較する。",
+			].join("\n"),
+		},
+	];
+
+	assert.deepEqual(findEnglishTermIssues(items, { allowedEnglish: [] }), []);
+});

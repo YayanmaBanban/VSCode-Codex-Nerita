@@ -43,6 +43,20 @@ function maskProtectedText(text) {
 
 	masked = maskWithSpaces(masked, /https?:\/\/[^\s<>)\]}]+/gi);
 	masked = maskWithSpaces(masked, /\]\([^)]+\)/g);
+	masked = maskWithSpaces(
+		masked,
+		/\b\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|vmin|vmax|KiB|MiB|GiB|TiB|B|KB|MB|GB|TB|ms|s|min|h|Hz|kHz|MHz|GHz|dpi|fps)\b/g,
+	);
+	masked = maskWithSpaces(
+		masked,
+		/\b(?:Ctrl|Alt|Shift|Meta|Cmd)(?:\+[A-Za-z0-9]+)+\b/g,
+	);
+	masked = maskWithSpaces(masked, /\b[A-Z](?:\/[A-Z])+\b/g);
+	masked = maskWithSpaces(masked, /\b[A-Z]{2,}\([A-Z0-9]+\)/g);
+	masked = maskWithSpaces(
+		masked,
+		/\b(?:[A-Za-z][A-Za-z0-9-]*-)?v?\d+(?:\.\d+){1,3}\b/g,
+	);
 
 	return masked;
 }

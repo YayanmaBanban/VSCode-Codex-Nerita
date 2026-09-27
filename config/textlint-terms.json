@@ -1,5 +1,7 @@
 {
-	"allowedEnglish": ["CSpell"],
+	"allowedEnglish": [
+		"CSpell"
+	],
 	"preferredJapanese": {
 		"assertion": "アサーション",
 		"backend": "バックエンド",
@@ -20,11 +22,13 @@
 		"files": [
 			"dictionaries/software-terms/src/coding-terms.txt",
 			"dictionaries/software-terms/src/computing-acronyms.txt",
+			"dictionaries/software-terms/src/software-terms.txt",
 			"dictionaries/software-terms/src/software-tools.txt",
 			"dictionaries/software-terms/src/software-services.txt",
 			"dictionaries/typescript/src/typescript.txt",
 			"dictionaries/typescript/src/ecosystem-terms.txt",
-			"dictionaries/node/src/additional_words.txt"
+			"dictionaries/node/src/additional_words.txt",
+			"dictionaries/node/src/node.txt"
 		]
 	}
 }

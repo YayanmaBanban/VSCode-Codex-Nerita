@@ -51,7 +51,10 @@ export function parseCspellWordList(source) {
 			continue;
 		}
 
-		if (/^[A-Za-z0-9][A-Za-z0-9._+#:@-]*$/.test(line)) {
+		if (
+			line.length >= 2 &&
+			/^[A-Za-z0-9][A-Za-z0-9._+#:@-]*$/.test(line)
+		) {
 			terms.add(line.toLowerCase());
 		}
 	}
