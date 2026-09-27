@@ -201,3 +201,82 @@ test("allows package names discovered from repository evidence", () => {
 		["request-level"],
 	);
 });
+
+
+test("ignores known command and key names plus slash commands", () => {
+	const items = [
+		{
+			file: "docs/commands.md",
+			startLine: 1,
+			text: [
+				"ls と gh と chcp を使う。",
+				"Backspace と Tab と Undo を確認する。",
+				"/plan で計画を開始する。",
+			].join("\n"),
+		},
+	];
+
+	assert.deepEqual(findEnglishTermIssues(items, { allowedEnglish: [] }), []);
+});
+
+test("reports real identifier-shaped source names as unquoted identifiers", () => {
+	const items = [
+		{
+			file: "docs/identifiers.md",
+			startLine: 1,
+			text: [
+				"agentDir 配下へ保存する。",
+				"AgentViewer を開く。",
+				"Plan を開く。",
+				"`agentDir` 配下なら問題ない。",
+			].join("\n"),
+		},
+	];
+	const sourceIdentifiers = new Set(["agentDir", "AgentViewer"]);
+
+	assert.deepEqual(
+		findEnglishTermIssues(
+			items,
+			{ allowedEnglish: [] },
+			new Set(),
+			sourceIdentifiers,
+		).map(({ type, term, suggestion }) => ({ type, term, suggestion })),
+		[
+			{
+				type: "unquoted-identifier",
+				term: "agentDir",
+				suggestion: "`agentDir`",
+			},
+			{
+				type: "unquoted-identifier",
+				term: "AgentViewer",
+				suggestion: "`AgentViewer`",
+			},
+			{
+				type: "unknown-english",
+				term: "Plan",
+				suggestion: null,
+			},
+		],
+	);
+});
+
+test("preferred Japanese still wins over repository identifiers", () => {
+	const items = [
+		{
+			file: "docs/preferred.md",
+			startLine: 1,
+			text: "owner を確認する。",
+		},
+	];
+
+	assert.equal(
+		findEnglishTermIssues(
+			items,
+			config,
+			new Set(),
+			new Set(["owner"]),
+		)[0].type,
+		"preferred-japanese",
+	);
+});

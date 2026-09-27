@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import ts from "typescript";
+
 const CACHE_VERSION = 1;
 const CACHE_FILE = "technical-terms.json";
 const CSPELL_RAW_BASE =
@@ -38,7 +40,7 @@ function addPackageName(terms, packageName) {
 /**
  * ソースや文書内でパッケージ名として明示されている語を抽出する。
  *
- * 単なるハイフン語は対象にせず、npm:、node_modules、manifest/metadata.name、
+ * 単なるハイフン語は対象にせず、npm:、node_modules、`manifest.name` / `metadata.name`、
  * scoped package、または semver と隣接する名前だけを採用する。
  */
 export function extractReferencedPackageTerms(source) {
@@ -62,6 +64,46 @@ export function extractReferencedPackageTerms(source) {
 	);
 
 	return terms;
+}
+
+/**
+ * 日本語文中で裸ならコード表記を促したい識別子の形だけを対象にする。
+ *
+ * 単語1個の PascalCase は製品名や一般的なラベルと衝突しやすいため対象外。
+ */
+function isIdentifierLike(name) {
+	return (
+		/^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(name) ||
+		/^[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+$/.test(name) ||
+		/^[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+$/.test(name)
+	);
+}
+
+/**
+ * TypeScript / JavaScript の構文木に実在する識別子を抽出する。
+ *
+ * コメントや文字列の単語は AST の Identifier ではないため語彙へ混入しない。
+ */
+export function extractSourceIdentifiers(source, filePath) {
+	const sourceFile = ts.createSourceFile(
+		filePath,
+		source,
+		ts.ScriptTarget.Latest,
+		true,
+	);
+	const identifiers = new Set();
+
+	function visit(node) {
+		if (ts.isIdentifier(node) && isIdentifierLike(node.text)) {
+			identifiers.add(node.text);
+		}
+
+		ts.forEachChild(node, visit);
+	}
+
+	visit(sourceFile);
+
+	return identifiers;
 }
 
 /**

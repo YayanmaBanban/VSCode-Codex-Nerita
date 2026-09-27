@@ -19,6 +19,7 @@ import {
 } from "./textlint-targets.mjs";
 import {
 	extractReferencedPackageTerms,
+	extractSourceIdentifiers,
 	loadAutomaticEnglishTerms,
 } from "./textlint-dictionary.mjs";
 import { findEnglishTermIssues } from "./textlint-terms.mjs";
@@ -246,23 +247,25 @@ async function getChangedFiles(ignoreMatcher) {
 }
 
 function printTermIssues(issues) {
-	const preferred = issues.filter(
-		(issue) => issue.type === "preferred-japanese",
+	const deterministic = issues.filter(
+		(issue) =>
+			issue.type === "preferred-japanese" ||
+			issue.type === "unquoted-identifier",
 	);
 	const unknown = issues.filter((issue) => issue.type === "unknown-english");
 
-	if (preferred.length > 0) {
+	if (deterministic.length > 0) {
 		console.log("\ntextlint terms:");
 
-		for (const issue of preferred.slice(0, 50)) {
+		for (const issue of deterministic.slice(0, 50)) {
 			console.log(
 				`${issue.file}:${issue.line}  error  ${issue.term} -> ${issue.suggestion}`,
 			);
 		}
 
-		if (preferred.length > 50) {
+		if (deterministic.length > 50) {
 			console.log(
-				`... ${preferred.length - 50} more preferred term issue(s)`,
+				`... ${deterministic.length - 50} more deterministic term issue(s)`,
 			);
 		}
 	}
@@ -281,7 +284,7 @@ function printTermIssues(issues) {
 		}
 	}
 
-	return preferred.length;
+	return deterministic.length;
 }
 
 const targetSpecs = await resolveTextlintTargets(ROOT, process.argv.slice(3));
@@ -292,12 +295,30 @@ await clearTextlintCacheForScope({
 	scope: mode.scope,
 });
 
+const repositoryFiles = await getAllFiles(ignoreMatcher);
 const candidates = shouldUseChangedFiles(mode.changed, targetSpecs)
 	? await getChangedFiles(ignoreMatcher)
-	: await getAllFiles(ignoreMatcher);
+	: repositoryFiles;
 const files = filterFilesByTargets(candidates, targetSpecs);
 const auditItems = [];
 const referencedPackageTerms = new Set();
+const sourceIdentifiers = new Set();
+
+for (const file of repositoryFiles) {
+	if (!SOURCE_EXTENSIONS.has(path.extname(file).toLowerCase())) {
+		continue;
+	}
+
+	const source = await fs.readFile(path.join(ROOT, file), "utf8");
+
+	for (const term of extractReferencedPackageTerms(source)) {
+		referencedPackageTerms.add(term);
+	}
+
+	for (const identifier of extractSourceIdentifiers(source, file)) {
+		sourceIdentifiers.add(identifier);
+	}
+}
 
 if (files.length === 0) {
 	console.log("textlint: 対象ファイルはありません。");
@@ -390,6 +411,7 @@ const termIssues = findEnglishTermIssues(
 	auditItems,
 	termsConfig,
 	automaticAllowed,
+	sourceIdentifiers,
 );
 const issuePath = await writeTextlintIssues({
 	root: ROOT,

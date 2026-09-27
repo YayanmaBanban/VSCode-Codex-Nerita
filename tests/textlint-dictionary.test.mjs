@@ -7,6 +7,7 @@ import test from "node:test";
 import {
 	extractProjectTerms,
 	extractReferencedPackageTerms,
+	extractSourceIdentifiers,
 	loadExternalTechnicalTerms,
 	parseCspellWordList,
 } from "../scripts/textlint-dictionary.mjs";
@@ -101,4 +102,26 @@ test("extracts package names only from package-shaped repository evidence", () =
 	}
 	assert.equal(terms.has("request-level"), false);
 	assert.equal(terms.has("no-op"), false);
+});
+
+
+test("extracts only identifier-shaped names from the TypeScript syntax tree", () => {
+	const identifiers = extractSourceIdentifiers(
+		[
+			"const agentDir = root;",
+			"class AgentViewer {}",
+			"const CODEX_HOME = env.CODEX_HOME;",
+			"const client_version = 1;",
+			"const simple = 1;",
+			"class Plan {}",
+			'const text = "fakeIdentifier";',
+			"// commentIdentifier は拾わない",
+		].join("\n"),
+		"fixture.ts",
+	);
+
+	assert.deepEqual(
+		[...identifiers].sort(),
+		["AgentViewer", "CODEX_HOME", "agentDir", "client_version"].sort(),
+	);
 });

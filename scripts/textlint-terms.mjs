@@ -101,8 +101,46 @@ function matchesAllowedPhrase(matches, index, phrase, text) {
 }
 
 /** 日本語を含む1行から、許可されていない英単語を抽出する。 */
+const BUILTIN_COMMANDS = new Set([
+	"bash",
+	"chcp",
+	"cmd",
+	"find",
+	"gh",
+	"git",
+	"grep",
+	"ls",
+	"node",
+	"npm",
+	"pnpm",
+	"powershell",
+	"pwsh",
+]);
+
+const BUILTIN_KEYS = new Set([
+	"ArrowDown",
+	"ArrowLeft",
+	"ArrowRight",
+	"ArrowUp",
+	"Backspace",
+	"Delete",
+	"End",
+	"Enter",
+	"Escape",
+	"Home",
+	"PageDown",
+	"PageUp",
+	"Space",
+	"Tab",
+	"Undo",
+]);
+
 function isTechnicalAcronym(term) {
 	return /^[A-Z][A-Z0-9]{1,11}(?:-[A-Z0-9]{1,12})*$/.test(term);
+}
+
+function isBuiltinTechnicalToken(term) {
+	return BUILTIN_COMMANDS.has(term.toLowerCase()) || BUILTIN_KEYS.has(term);
 }
 
 function findLineIssues(
@@ -113,6 +151,7 @@ function findLineIssues(
 	allowedPhrases,
 	preferred,
 	automaticAllowed,
+	sourceIdentifiers,
 ) {
 	const masked = maskProtectedText(text);
 
@@ -149,10 +188,23 @@ function findLineIssues(
 			continue;
 		}
 
+		if (sourceIdentifiers.has(term)) {
+			issues.push({
+				file: item.file,
+				line,
+				type: "unquoted-identifier",
+				term,
+				suggestion: `\`${term}\``,
+				text: text.trim(),
+			});
+			continue;
+		}
+
 		if (
 			allowed.has(term) ||
 			automaticAllowed.has(normalizedTerm) ||
-			isTechnicalAcronym(term)
+			isTechnicalAcronym(term) ||
+			isBuiltinTechnicalToken(term)
 		) {
 			continue;
 		}
@@ -175,7 +227,12 @@ function findLineIssues(
  *
  * `preferredJapanese` はエラー候補、未知語は LLM のレビュー候補として扱う。
  */
-export function findEnglishTermIssues(items, config, automaticAllowed = new Set()) {
+export function findEnglishTermIssues(
+	items,
+	config,
+	automaticAllowed = new Set(),
+	sourceIdentifiers = new Set(),
+) {
 	const allowed = new Set(config.allowedEnglish ?? []);
 	const allowedPhrases = [...allowed]
 		.filter((term) => /\s/.test(term))
@@ -202,6 +259,7 @@ export function findEnglishTermIssues(items, config, automaticAllowed = new Set(
 					allowedPhrases,
 					preferred,
 					automaticAllowed,
+					sourceIdentifiers,
 				),
 			);
 		}

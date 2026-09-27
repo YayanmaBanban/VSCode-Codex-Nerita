@@ -82,7 +82,9 @@ CSpell は software-terms 本体と Node 辞書も使用し、一般英語辞書
 `320px`、`32KiB`、`2 MiB` などの数値と単位、キーボードショートカット、I/O 表記、バージョン番号は英単語レビューの対象外とする。
 `config.toml`、`guardrails.json`、`models-manager/models.json` のようなファイル名・パスも対象外とする。
 `npm:`、`node_modules`、パッケージの manifest / metadata 名、scoped package、バージョン併記からパッケージ名を自動抽出し、同じ実行内では技術語として扱う。単なるハイフン語はパッケージと推測しない。
-`preferredJapanese` はこれらの自動語彙より優先するため、`owner` などを辞書が認識しても日本語化のエラーを維持できる。
+`ls`、`gh`、`chcp` などの既知コマンド名、`Backspace`、`Tab`、`Undo` などのキー名、`/plan` のようなスラッシュコマンドはレビュー対象外とする。
+リポジトリの TypeScript / JavaScript 構文木に実在する `camelCase`、複合 `PascalCase`、`snake_case` 形式の識別子が裸で出た場合は、未知語ではなくバッククォート不足のエラーとして扱う。単語1個の `Plan` や `Tool` のような PascalCase は自動識別子扱いしない。
+`preferredJapanese` はこれらの自動語彙・識別子判定より優先するため、`owner` などを辞書やコードが認識しても日本語化のエラーを維持できる。
 
 未登録の英単語はレビュー候補として表示するが、それだけではコマンドを失敗させない。
 バッククォート内の識別子、URL、Markdown のリンク先は英単語チェックから除外する。
