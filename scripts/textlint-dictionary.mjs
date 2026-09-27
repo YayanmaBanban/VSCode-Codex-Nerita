@@ -11,7 +11,9 @@ function addTerm(terms, value) {
 		return;
 	}
 
-	for (const match of value.matchAll(/[A-Za-z][A-Za-z0-9]*(?:[._+#:@-][A-Za-z0-9]+)*/g)) {
+	for (const match of value.matchAll(
+		/[A-Za-z][A-Za-z0-9]*(?:[._+#:@-][A-Za-z0-9]+)*/g,
+	)) {
 		const term = match[0].toLowerCase();
 		terms.add(term);
 
@@ -141,7 +143,9 @@ async function downloadDictionary(dictionaryConfig, fetchImpl) {
 			});
 
 			if (!response.ok) {
-				throw new Error(`${response.status} ${response.statusText}: ${file}`);
+				throw new Error(
+					`${response.status} ${response.statusText}: ${file}`,
+				);
 			}
 
 			return response.text();
@@ -159,6 +163,15 @@ async function downloadDictionary(dictionaryConfig, fetchImpl) {
 	return terms;
 }
 
+/** 技術辞書の取得に必要な設定が揃っているかを判定する。 */
+function isDictionaryConfigured(dictionaryConfig) {
+	return (
+		Boolean(dictionaryConfig?.revision) &&
+		Array.isArray(dictionaryConfig.files) &&
+		dictionaryConfig.files.length > 0
+	);
+}
+
 /**
  * SHA 固定した CSpell 技術辞書をローカルキャッシュへ取得する。
  *
@@ -169,11 +182,7 @@ export async function loadExternalTechnicalTerms({
 	dictionaryConfig,
 	fetchImpl = globalThis.fetch,
 }) {
-	if (
-		!dictionaryConfig?.revision ||
-		!Array.isArray(dictionaryConfig.files) ||
-		dictionaryConfig.files.length === 0
-	) {
+	if (!isDictionaryConfigured(dictionaryConfig)) {
 		return { terms: new Set(), source: "disabled", warning: null };
 	}
 
