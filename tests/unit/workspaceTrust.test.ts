@@ -24,6 +24,29 @@ import { resolveTrustedExtensions } from "../../src/extension/backends/pi/PiExte
 
 const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];
 const cleanup: (() => void)[] = [];
+it("存在しないルートの記録も削除し、実行許可を失効させる", async () => {
+	const h = await fixture();
+	await h.store.setUserTrust(h.cwd, true);
+	const signal = h.store.signal;
+	const missing = join(h.cwd, "old-workspace");
+	await h.store.registerWorkspace(missing);
+	await h.store.setUserTrust(h.cwd, false);
+	await h.store.remove(missing);
+	expect(h.store.list().some((record) => record.root === missing)).toBe(
+		false,
+	);
+	expect(signal.aborted).toBe(true);
+});
+
+it("記録の削除で親の信頼を復活させない", async () => {
+	const h = await fixture();
+	await h.store.setUserTrust(h.cwd, true);
+	const child = join(h.cwd, "blocked");
+	await mkdir(child);
+	await h.store.registerWorkspace(child);
+	await expect(h.store.remove(child)).rejects.toThrow("親フォルダー");
+	expect(await h.store.trusted(child)).toBe(false);
+});
 afterEach(async () => {
 	vi.unstubAllEnvs();
 	cleanup.splice(0).forEach((dispose) => dispose());

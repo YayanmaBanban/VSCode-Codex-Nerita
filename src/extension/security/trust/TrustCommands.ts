@@ -5,6 +5,8 @@ import { WorkspaceTrustStore } from "./WorkspaceTrustStore";
 import { canonicalPath } from "../WorkspacePathPolicy";
 import { containsPath } from "../AgentAccessPolicy";
 import { stat } from "node:fs/promises";
+import { configuredBackend } from "../../webview/backendSettings";
+import { trustPanel } from "./TrustPanel";
 
 /** 正本は `globalState` に保存し、ワークスペース設定による信頼の注入を防ぐ。 */
 export function registerTrustCommands(context: vscode.ExtensionContext) {
@@ -37,6 +39,10 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 	let revision = 0;
 	const refresh = async () => {
 		const current = ++revision;
+		if (configuredBackend() !== "pi") {
+			badge.hide();
+			return;
+		}
 		const roots = vscode.workspace.workspaceFolders ?? [];
 		const trusted = await Promise.all(
 			roots.map((root) => store.trusted(root.uri.fsPath)),
@@ -52,53 +58,9 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 			"rootごとの信頼状態を管理します。未信頼のコードは実行できません。";
 		badge.show();
 	};
-	const change = async (revoke = false) => {
-		const roots = [
-			...new Set([
-				...(vscode.workspace.workspaceFolders ?? []).map(
-					(folder) => folder.uri.fsPath,
-				),
-				...store.list().map((record) => record.root),
-			]),
-		];
-		const picked = await vscode.window.showQuickPick(
-			[
-				{ label: "取得したrepoを選択…" },
-				...roots.map((root) => ({ label: root })),
-			],
-			{
-				title: revoke
-					? "Nerita: Trustを取り消すroot"
-					: "Nerita: Trustを管理するroot",
-			},
-		);
-		const selected = await selectedRoot(picked);
-		if (!selected) {
-			return;
-		}
-		if (revoke) {
-			await store.setUserTrust(selected.label, false);
-			return;
-		}
-		const action = await vscode.window.showQuickPick(
-			["Trust", "Revoke Trust"],
-			{ title: selected.label },
-		);
-		if (action === "Revoke Trust") {
-			await store.setUserTrust(selected.label, false);
-			return;
-		}
-		if (action !== "Trust") {
-			return;
-		}
-		await confirmTrust(store, selected.label);
-	};
-	const command = (revoke: boolean) => () =>
-		change(revoke).catch((error) =>
-			vscode.window.showErrorMessage(
-				`Trustを更新できません: ${String(error)}`,
-			),
-		);
+	const openPanel = trustPanel(context, store, (root, active) =>
+		confirmTrust(store, root, active),
+	);
 	const unsubscribe = store.onChange(() => {
 		void refresh();
 	});
@@ -106,17 +68,26 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 		log,
 		badge,
 		{ dispose: unsubscribe },
-		vscode.commands.registerCommand("nerita.trust.manage", command(false)),
-		vscode.commands.registerCommand("nerita.trust.revoke", command(true)),
+		vscode.commands.registerCommand("nerita.trust.manage", openPanel),
+		vscode.commands.registerCommand("nerita.trust.revoke", openPanel),
 		vscode.workspace.onDidGrantWorkspaceTrust(() => store.invalidate()),
 		vscode.workspace.onDidChangeWorkspaceFolders(() => store.invalidate()),
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration("nerita.backend")) {
+				void refresh();
+			}
+		}),
 	);
 	void refresh();
 	return store;
 }
 
 /** 確認画面に表示した実体だけを信頼し、待機中の差替えを拒否する。 */
-async function confirmTrust(store: WorkspaceTrustStore, root: string) {
+async function confirmTrust(
+	store: WorkspaceTrustStore,
+	root: string,
+	active: () => boolean,
+) {
 	if (!vscode.workspace.isTrusted) {
 		await vscode.window.showWarningMessage(
 			"VS CodeのWorkspace Trustも必要です。制限モードを解除してから再試行してください。",
@@ -145,23 +116,7 @@ async function confirmTrust(store: WorkspaceTrustStore, root: string) {
 		},
 		"Trust this root",
 	);
-	if (answer === "Trust this root") {
+	if (active() && answer === "Trust this root") {
 		await store.setUserTrust(canonical, true, identity);
 	}
-}
-
-/** ユーザーが確認するリポジトリをダイアログで選ぶ。 */
-async function selectedRoot(
-	picked: { label: string } | undefined,
-): Promise<{ label: string } | undefined> {
-	if (!picked || picked.label !== "取得したrepoを選択…") {
-		return picked;
-	}
-	const selected = await vscode.window.showOpenDialog({
-		canSelectFiles: false,
-		canSelectFolders: true,
-		canSelectMany: false,
-		title: "信頼状態を管理するrepo",
-	});
-	return selected?.[0] ? { label: selected[0].fsPath } : undefined;
 }

@@ -15,11 +15,9 @@ import { createPiAuthService } from "./pi/PiAuthService";
 import { codexSelectionStore } from "./codex/settings/modelSelection";
 import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
-import { containsPath } from "../security/AgentAccessPolicy";
+import { ModelConfig } from "../settings/ModelConfig";
 
-const piModelSelectionKey = "nerita.pi.lastModel";
-
-/** 両バックエンドで同じローカル・信頼済みワークスペース条件を適用する。 */
+/** Codex の接続先に VS Code 標準のワークスペース条件を適用する。 */
 function workspaceDirectory(): string {
 	return requireLocalWorkspace(
 		vscode.workspace.workspaceFolders,
@@ -54,7 +52,8 @@ export function createBackend(
 				true,
 				vscode.env.remoteName,
 			);
-			const preferredModel = storedPiModel(context);
+			const config = modelConfig(cwd);
+			const preferredModel = storedPiModel(await config.read("pi"));
 			const session = await createPiRuntime({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
@@ -80,13 +79,7 @@ export function createBackend(
 						: "global",
 				...(resume ? { resume } : {}),
 				...(preferredModel ? { preferredModel } : {}),
-				saveModel: (selection) =>
-					Promise.resolve(
-						context.globalState.update(
-							piModelSelectionKey,
-							selection,
-						),
-					),
+				saveModel: (selection) => config.write("pi", selection),
 			});
 			return { session, cwd };
 		});
@@ -94,24 +87,6 @@ export function createBackend(
 	return new CodexSessionController(
 		async (callbacks, signal) => {
 			const cwd = workspaceDirectory();
-			if (!trustStore || !(await trustStore.trusted(cwd))) {
-				throw new Error(
-					"Codexへの接続にはNeritaのTrust操作が必要です。",
-				);
-			}
-			if (
-				trustStore
-					.list()
-					.some(
-						(record) =>
-							record.trust === "untrusted" &&
-							containsPath(cwd, record.root),
-					)
-			) {
-				throw new Error(
-					"未信頼の外部rootを含むWorkspaceでのCodex実行には未対応です。",
-				);
-			}
 			const client = await CodexClient.connect({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
@@ -128,15 +103,16 @@ export function createBackend(
 		attachmentService,
 		authService,
 		interactionService,
-		codexSelectionStore(context.globalState),
+		codexSelectionStore({
+			read: () => modelConfig(workspaceDirectory()).read("codex"),
+			write: (selection) =>
+				modelConfig(workspaceDirectory()).write("codex", selection),
+		}),
 	);
 }
 
-/** 壊れた旧データを起動失敗へ波及させず、既知の保存形式だけを読む。 */
-function storedPiModel(
-	context: vscode.ExtensionContext,
-): PiModelSelection | undefined {
-	const value: unknown = context.globalState.get(piModelSelectionKey);
+/** Pi の接続に必要なプロバイダーとモデルが揃っている場合だけ復元する。 */
+function storedPiModel(value: unknown): PiModelSelection | undefined {
 	if (
 		typeof value !== "object" ||
 		value === null ||
@@ -154,6 +130,23 @@ function storedPiModel(
 		model: value.model.trim(),
 		...storedReasoning(value),
 	};
+}
+
+/** エディターで未保存の設定を、モデル選択によって上書きしない。 */
+function modelConfig(root: string): ModelConfig {
+	return new ModelConfig(root, undefined, (file) => {
+		const uri = vscode.Uri.file(file).toString();
+		if (
+			vscode.workspace.textDocuments.some(
+				(document) =>
+					document.isDirty && document.uri.toString() === uri,
+			)
+		) {
+			throw new Error(
+				"config.toml に未保存の編集があります。保存してから再試行してください。",
+			);
+		}
+	});
 }
 
 /** 未知の保存値は候補照合へ渡し、型が壊れた推論値だけを除外する。 */

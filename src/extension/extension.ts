@@ -42,7 +42,11 @@ export async function activate(
 	}
 	const session = new BackendRuntime(() => createBackend(context, trust));
 	context.subscriptions.push({
-		dispose: trust.onChange(() => session.invalidate()),
+		dispose: trust.onChange(() => {
+			if (session.snapshot().uiContributions?.surface === "pi") {
+				session.invalidate();
+			}
+		}),
 	});
 	controller = session;
 	registerWorkflowEditor(context, session);

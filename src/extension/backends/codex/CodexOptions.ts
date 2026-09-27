@@ -9,7 +9,10 @@ import { parseQuota, parseUsage } from "./protocol/usage";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import { type CodexConnection } from "./runtime/connection";
-import { resolveCodexSelection } from "./settings/modelSelection";
+import {
+	resolveCodexSelection,
+	type CodexModelSelection,
+} from "./settings/modelSelection";
 
 /** Plan から新規会話へ移す、モデルと権限の実効設定。 */
 type PlanSettings = {
@@ -98,24 +101,30 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.models = [];
 		}
 
-		this.applyInitialSelection(thread, restoreSelection);
+		const saved = await this.savedSelection(restoreSelection);
+		if (epoch !== this.epoch) {
+			return;
+		}
+		this.applyInitialSelection(thread, saved);
 		this.patch({ attachmentsSupported: this.supportsAttachments });
 
 		await this.loadThreadCapabilities(client, thread, epoch);
 	}
 
-	/** 新規会話だけ保存値を復元し、実際の送信設定と表示を同時に更新する。 */
+	/** 新規会話の場合だけ保存先から設定を読み込む。 */
+	private async savedSelection(restore: boolean) {
+		return restore ? await this.selectionStore?.read() : undefined;
+	}
+	/** モデル候補で検証した保存値を、送信設定と表示に反映する。 */
 	private applyInitialSelection(
 		thread: StartedThread,
-		restoreSelection: boolean,
+		saved: CodexModelSelection | undefined,
 	): void {
-		const selection = restoreSelection
-			? resolveCodexSelection(
-					this.selectionStore?.read(),
-					this.models,
-					thread.model,
-				)
-			: undefined;
+		const selection = resolveCodexSelection(
+			saved,
+			this.models,
+			thread.model,
+		);
 		if (selection) {
 			this.turnOptions.model = selection.model;
 			this.turnOptions.effort = selection.reasoning;

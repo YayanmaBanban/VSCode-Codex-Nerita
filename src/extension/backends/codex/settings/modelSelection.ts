@@ -7,19 +7,21 @@ export type CodexModelSelection = { model: string; reasoning: string };
 
 /** VS Code とテストで保存先を差し替える。 */
 export type CodexSelectionStore = {
-	read(): CodexModelSelection | undefined;
+	read():
+		| CodexModelSelection
+		| undefined
+		| Promise<CodexModelSelection | undefined>;
 	write(selection: CodexModelSelection): Promise<void>;
 };
 
-/** `globalState` の既知の形式だけを読み、Pi とは別のキーへ保存する。 */
+/** 保存先から既知の形式だけを読み、モデル候補との検証に渡す。 */
 export function codexSelectionStore(storage: {
-	get(key: string): unknown;
-	update(key: string, value: unknown): PromiseLike<void>;
+	read(): unknown;
+	write(value: CodexModelSelection): PromiseLike<void>;
 }): CodexSelectionStore {
-	const key = "nerita.codex.lastModel";
 	return {
-		read: () => {
-			const value = storage.get(key);
+		read: async () => {
+			const value = await storage.read();
 			if (
 				!isRecord(value) ||
 				typeof value.model !== "string" ||
@@ -33,7 +35,7 @@ export function codexSelectionStore(storage: {
 					typeof value.reasoning === "string" ? value.reasoning : "",
 			};
 		},
-		write: (selection) => Promise.resolve(storage.update(key, selection)),
+		write: (selection) => Promise.resolve(storage.write(selection)),
 	};
 }
 

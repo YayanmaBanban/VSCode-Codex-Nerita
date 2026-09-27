@@ -1,5 +1,10 @@
 ﻿// VS Code API を呼ぶ唯一のブラウザ境界。Storybook では同じ契約を差し替える。
 import type { HostMessage, UiMessage } from "../shared/messages";
+import {
+	trustReplySchema,
+	type TrustBridge,
+	type TrustRequest,
+} from "../shared/workspaceTrust";
 import { isHostMessage } from "../shared/hostMessageValidation";
 import {
 	workflowReplySchema,
@@ -27,6 +32,7 @@ type VsCodeApi = {
 	postMessage: (
 		message:
 			| UiMessage
+			| TrustRequest
 			| PiAuthRequest
 			| GuardRequest
 			| WorkflowRequest
@@ -35,6 +41,23 @@ type VsCodeApi = {
 };
 declare function acquireVsCodeApi(): VsCodeApi;
 let api: VsCodeApi | undefined;
+/** Trust 管理画面の受信データも共有スキーマで検証する。 */
+export function createTrustBridge(): TrustBridge {
+	api ??= acquireVsCodeApi();
+	return {
+		postMessage: (message) => api?.postMessage(message),
+		subscribe(listener) {
+			const receive = (event: MessageEvent<unknown>) => {
+				const parsed = trustReplySchema.safeParse(event.data);
+				if (parsed.success) {
+					listener(parsed.data);
+				}
+			};
+			window.addEventListener("message", receive);
+			return () => window.removeEventListener("message", receive);
+		},
+	};
+}
 /** Agent Manager の専用通信にも共有スキーマを適用する。 */
 export function createAgentManagerBridge(): ManagerBridge {
 	api ??= acquireVsCodeApi();

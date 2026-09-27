@@ -11,6 +11,7 @@ export function webviewHtml(
 		| "pi-auth"
 		| "pi-guardrails"
 		| "pi-workflow"
+		| "workspace-trust"
 		| "agent-manager" = "chat",
 ): string {
 	const nonce = randomBytes(24).toString("base64");

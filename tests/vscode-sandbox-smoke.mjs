@@ -7,6 +7,27 @@ import path from "node:path";
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
 
+/** エディターに開いた Trust 管理画面の読み込みを待つ。 */
+async function trustFrame(page) {
+	let result;
+	await expect(async () => {
+		for (const candidate of page.frames()) {
+			if (
+				await candidate
+					.getByRole("heading", {
+						name: "ワークスペースの信頼",
+						exact: true,
+					})
+					.count()
+			) {
+				result = candidate;
+			}
+		}
+		assert.ok(result);
+	}).toPass({ timeout: 15_000 });
+	return result;
+}
+
 const root = process.cwd();
 const output = path.join(root, "dist/vscode-sandbox-smoke");
 await mkdir(output, { recursive: true });
@@ -189,15 +210,12 @@ try {
 	).toBeVisible();
 	await page.screenshot({ path: path.join(fixture, "trust-restricted.png") });
 	await page.getByText("Nerita Trust 0/1", { exact: true }).click();
-	await expect(page.locator(".quick-input-list")).toContainText(
-		"取得したrepoを選択",
-	);
-	await page.locator(".quick-input-widget input").fill(cwd);
-	await page.keyboard.press("Enter");
-	await expect(
-		page.locator(".quick-input-list").getByText("Trust", { exact: true }),
-	).toBeVisible();
-	await page.keyboard.press("Enter");
+	const trustView = await trustFrame(page);
+	await trustView
+		.getByRole("article")
+		.filter({ hasText: cwd })
+		.getByRole("button", { name: "信頼する", exact: true })
+		.click();
 	await expect(
 		page.getByText("このコードを信頼しますか？", { exact: false }),
 	).toBeVisible();
@@ -313,18 +331,12 @@ try {
 	await page.screenshot({ path: path.join(fixture, "reconnected.png") });
 	report.cases.push({ id: "window-reload-reconnect", status: "pass" });
 	await page.getByText("Nerita Trust 1/1", { exact: true }).click();
-	await expect(page.locator(".quick-input-list")).toContainText(
-		"取得したrepoを選択",
-	);
-	await page.locator(".quick-input-widget input").fill(cwd);
-	await page.keyboard.press("Enter");
-	await expect(
-		page
-			.locator(".quick-input-list")
-			.getByText("Revoke Trust", { exact: true }),
-	).toBeVisible();
-	await page.keyboard.press("ArrowDown");
-	await page.keyboard.press("Enter");
+	const reloadedTrustView = await trustFrame(page);
+	await reloadedTrustView
+		.getByRole("article")
+		.filter({ hasText: cwd })
+		.getByRole("button", { name: "信頼を取り消す", exact: true })
+		.click();
 	await expect(
 		page.getByText("Nerita Trust 0/1", { exact: true }),
 	).toBeVisible();

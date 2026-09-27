@@ -6,16 +6,20 @@ import {
 	createGuardrailsBridge,
 	createWorkflowBridge,
 	createAgentManagerBridge,
+	createTrustBridge,
 } from "./vscodeBridge";
 import { ChatApp } from "./chat/ChatApp";
 import { PiAuthPage } from "./pi/PiAuthPage";
 import { GuardrailsEditor } from "./pi/guardrails/GuardrailsEditor";
 import { WorkflowEditor } from "./pi/workflows/WorkflowEditor";
 import { AgentManager } from "./agentManager/AgentManager";
+import { TrustManager } from "./trust/TrustManager";
 import "./chat/tailwind.css";
 const root = document.getElementById("root");
 if (root) {
-	if (root.dataset.page === "agent-manager") {
+	if (root.dataset.page === "workspace-trust") {
+		createRoot(root).render(<TrustManager bridge={createTrustBridge()} />);
+	} else if (root.dataset.page === "agent-manager") {
 		createRoot(root).render(
 			<AgentManager bridge={createAgentManagerBridge()} />,
 		);

@@ -9,17 +9,20 @@ afterEach(async () => {
 	await Promise.all(sessions.splice(0).map((h) => h.session.dispose()));
 });
 
-/** 同じ `globalState` 相当の保存先を、独立した `Controller` へ渡す。 */
+/** 同じ保存先を、独立した `Controller` へ渡す。 */
 function fixture(initial?: unknown) {
 	let stored = initial;
 	const storage = {
-		get: vi.fn(() => stored),
-		update: vi.fn((_key: string, value: unknown) => {
+		read: vi.fn(() => stored),
+		update: vi.fn((value: unknown) => {
 			stored = value;
 			return Promise.resolve();
 		}),
 	};
-	const store = codexSelectionStore(storage);
+	const store = codexSelectionStore({
+		read: storage.read,
+		write: storage.update,
+	});
 	const models: ModelInfo[] = ["test-model", "chosen"].map((model) => ({
 		model,
 		displayName: model,
@@ -70,10 +73,10 @@ it("モデルとUltraを保存し、独立した起動後の送信に復元す�
 	const first = await f.create();
 	await configure(first, "model", "chosen");
 	await configure(first, "reasoning_effort", "ultra");
-	expect(f.storage.update).toHaveBeenLastCalledWith(
-		"nerita.codex.lastModel",
-		{ model: "chosen", reasoning: "ultra" },
-	);
+	expect(f.storage.update).toHaveBeenLastCalledWith({
+		model: "chosen",
+		reasoning: "ultra",
+	});
 	const restarted = await f.create();
 	expect(restarted.session.snapshot().configOptions).toEqual(
 		expect.arrayContaining([

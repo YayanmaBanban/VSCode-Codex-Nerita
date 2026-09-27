@@ -150,6 +150,50 @@ export class WorkspaceTrustStore {
 	): Promise<void> {
 		return this.change(root, trusted, undefined, expected);
 	}
+	/** 存在しなくなったフォルダーも保存済みのキーで削除する。 */
+	remove(root: string): Promise<void> {
+		this.pendingRestrictions++;
+		this.invalidate();
+		const action = this.queue
+			.then(async () => {
+				const record = this.records.get(trustKey(root));
+				if (!record) {
+					return;
+				}
+				// 拒否の記録を削除して、親の信頼が復活することを防ぐ。
+				if (
+					this.list().some(
+						(parent) =>
+							parent.root !== record.root &&
+							parent.trust === "trusted" &&
+							containsPath(parent.root, record.root),
+					)
+				) {
+					throw new Error(
+						"親フォルダーの信頼を取り消してから、この記録を削除してください。",
+					);
+				}
+				const records = new Map(this.records);
+				records.delete(trustKey(root));
+				try {
+					await this.storage.write({
+						version: 1,
+						records: [...records.values()],
+					});
+				} catch (error) {
+					this.failed = true;
+					throw error;
+				}
+				this.records = records;
+				this.audit("user-removed", root);
+			})
+			.finally(() => {
+				this.pendingRestrictions--;
+				this.invalidate();
+			});
+		this.queue = action.catch(() => {});
+		return action;
+	}
 	/** 保存を直列化し、取消しを保存待ちの間も有効にする。 */
 	private change(
 		root: string,
