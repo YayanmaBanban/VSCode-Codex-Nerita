@@ -83,20 +83,122 @@ export function extractDocumentAuditItems(source, filePath) {
 	return items;
 }
 
+function cachePath(root, type, scope, extension) {
+	return path.join(root, ".textlint-cache", `${type}-${scope}.${extension}`);
+}
+
+async function removeIfExists(filePath) {
+	try {
+		await fs.unlink(filePath);
+	} catch (error) {
+		if (error?.code !== "ENOENT") {
+			throw error;
+		}
+	}
+}
+
 /**
- * 抽出したすべての日本語文章を、LLM によるレビュー用の JSON ファイルへ保存する。
+ * 同じ範囲の古い監査結果を消し、校正前の内容が次回へ残らないようにする。
  */
-export async function writeTextlintAudit({ root, mode, items }) {
-	const outputDirectory = path.join(root, ".textlint-cache");
+export async function clearTextlintCacheForScope({ root, scope }) {
+	await Promise.all([
+		removeIfExists(cachePath(root, "issues", scope, "json")),
+		removeIfExists(cachePath(root, "review", scope, "jsonl")),
+	]);
+}
 
-	await fs.mkdir(outputDirectory, {
+/**
+ * textlint の一時監査ファイルをすべて削除する。
+ */
+export async function cleanTextlintCache(root) {
+	await fs.rm(path.join(root, ".textlint-cache"), {
 		recursive: true,
+		force: true,
 	});
+}
 
-	const modeName = mode === "--changed" ? "changed" : "all";
+function groupIssues(issues) {
+	const groups = new Map();
 
-	const outputPath = path.join(outputDirectory, `audit-${modeName}.json`);
+	for (const issue of issues) {
+		const key = `${issue.type}\0${issue.term}\0${issue.suggestion ?? ""}`;
+		let group = groups.get(key);
 
+		if (!group) {
+			group = {
+				type: issue.type,
+				term: issue.term,
+				suggestion: issue.suggestion,
+				occurrenceCount: 0,
+				occurrences: [],
+			};
+			groups.set(key, group);
+		}
+
+		group.occurrenceCount += 1;
+
+		if (group.occurrences.length < 20) {
+			group.occurrences.push({
+				file: issue.file,
+				line: issue.line,
+				text: issue.text,
+			});
+		}
+	}
+
+	return [...groups.values()].sort((left, right) => {
+		const typeComparison = left.type.localeCompare(right.type);
+
+		return typeComparison !== 0
+			? typeComparison
+			: left.term.localeCompare(right.term);
+	});
+}
+
+/**
+ * 靁的チェックで見つけた候補だけを、小さな JSON として保存する。
+ * 同じ英単語はまとめ、保存する出現例は最大20件に抑える。
+ */
+export async function writeTextlintIssues({ root, scope, issues }) {
+	if (issues.length === 0) {
+		return null;
+	}
+
+	const outputDirectory = path.join(root, ".textlint-cache");
+	await fs.mkdir(outputDirectory, { recursive: true });
+
+	const outputPath = cachePath(root, "issues", scope, "json");
+	const groupedIssues = groupIssues(issues);
+	const payload = {
+		version: 2,
+		scope,
+		issueCount: issues.length,
+		termCount: groupedIssues.length,
+		issues: groupedIssues,
+	};
+
+	await fs.writeFile(
+		outputPath,
+		`${JSON.stringify(payload, null, 2)}\n`,
+		"utf8",
+	);
+
+	return outputPath;
+}
+
+/**
+ * 明示的な LLM レビュー時だけ、全日本語文章を JSONL で保存する。
+ * 1項目1行にして、巨大な整形済み JSON を避ける。
+ */
+export async function writeTextlintReview({ root, scope, items }) {
+	if (items.length === 0) {
+		return null;
+	}
+
+	const outputDirectory = path.join(root, ".textlint-cache");
+	await fs.mkdir(outputDirectory, { recursive: true });
+
+	const outputPath = cachePath(root, "review", scope, "jsonl");
 	const sortedItems = [...items].sort((left, right) => {
 		const fileComparison = left.file.localeCompare(right.file);
 
@@ -111,19 +213,22 @@ export async function writeTextlintAudit({ root, mode, items }) {
 		return left.endLine - right.endLine;
 	});
 
-	const audit = {
-		version: 1,
-		mode: modeName,
-		generatedAt: new Date().toISOString(),
-		itemCount: sortedItems.length,
-		items: sortedItems,
-	};
+	const lines = [
+		JSON.stringify({
+			record: "meta",
+			version: 2,
+			scope,
+			itemCount: sortedItems.length,
+		}),
+		...sortedItems.map((item) =>
+			JSON.stringify({
+				record: "item",
+				...item,
+			}),
+		),
+	];
 
-	await fs.writeFile(
-		outputPath,
-		`${JSON.stringify(audit, null, 2)}\n`,
-		"utf8",
-	);
+	await fs.writeFile(outputPath, `${lines.join("\n")}\n`, "utf8");
 
 	return outputPath;
 }

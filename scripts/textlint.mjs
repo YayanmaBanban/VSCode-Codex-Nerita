@@ -5,18 +5,44 @@ import { execFileSync } from "node:child_process";
 import ignore from "ignore";
 import { extractSourceComments } from "./textlint-comments.mjs";
 import {
+	cleanTextlintCache,
+	clearTextlintCacheForScope,
 	extractDocumentAuditItems,
-	writeTextlintAudit,
+	writeTextlintIssues,
+	writeTextlintReview,
 } from "./textlint-audit.mjs";
+import {
+	filterFilesByTargets,
+	resolveTextlintTargets,
+	shouldUseChangedFiles,
+} from "./textlint-targets.mjs";
+import { findEnglishTermIssues } from "./textlint-terms.mjs";
 
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
 
 const ROOT = process.cwd();
 
-const mode = process.argv[2] ?? "--all";
+const MODE_OPTIONS = new Map([
+	["--all", { scope: "all", changed: false, review: false }],
+	["--changed", { scope: "changed", changed: true, review: false }],
+	["--review-all", { scope: "all", changed: false, review: true }],
+	["--review-changed", { scope: "changed", changed: true, review: true }],
+]);
 
-if (mode !== "--all" && mode !== "--changed") {
-	console.error("Usage: node scripts/textlint.mjs --all|--changed");
+const rawMode = process.argv[2] ?? "--all";
+
+if (rawMode === "--clean") {
+	await cleanTextlintCache(ROOT);
+	console.log("textlint cache: cleared");
+	process.exit(0);
+}
+
+const mode = MODE_OPTIONS.get(rawMode);
+
+if (!mode) {
+	console.error(
+		"Usage: node scripts/textlint.mjs --all|--changed|--review-all|--review-changed|--clean [file-or-directory ...]",
+	);
 	process.exit(2);
 }
 
@@ -74,6 +100,13 @@ async function loadTextlintIgnore() {
 	}
 
 	return matcher;
+}
+
+async function loadTextlintTerms() {
+	const configPath = path.join(ROOT, "config", "textlint-terms.json");
+	const content = await fs.readFile(configPath, "utf8");
+
+	return JSON.parse(content);
 }
 
 /**
@@ -207,30 +240,59 @@ async function getChangedFiles(ignoreMatcher) {
 	return files;
 }
 
-/**
- * 検査対象を取得する。
- */
+function printTermIssues(issues) {
+	const preferred = issues.filter(
+		(issue) => issue.type === "preferred-japanese",
+	);
+	const unknown = issues.filter((issue) => issue.type === "unknown-english");
+
+	if (preferred.length > 0) {
+		console.log("\ntextlint terms:");
+
+		for (const issue of preferred.slice(0, 50)) {
+			console.log(
+				`${issue.file}:${issue.line}  error  ${issue.term} -> ${issue.suggestion}`,
+			);
+		}
+
+		if (preferred.length > 50) {
+			console.log(`... ${preferred.length - 50} more preferred term issue(s)`);
+		}
+	}
+
+	if (unknown.length > 0) {
+		console.log(
+			`textlint terms: ${unknown.length} unknown English occurrence(s) require review.`,
+		);
+
+		for (const issue of unknown.slice(0, 20)) {
+			console.log(`${issue.file}:${issue.line}  review  ${issue.term}`);
+		}
+
+		if (unknown.length > 20) {
+			console.log(`... ${unknown.length - 20} more review occurrence(s)`);
+		}
+	}
+
+	return preferred.length;
+}
+
+const targetSpecs = await resolveTextlintTargets(ROOT, process.argv.slice(3));
 const ignoreMatcher = await loadTextlintIgnore();
 
-const files =
-	mode === "--changed"
-		? await getChangedFiles(ignoreMatcher)
-		: await getAllFiles(ignoreMatcher);
+await clearTextlintCacheForScope({
+	root: ROOT,
+	scope: mode.scope,
+});
 
+const candidates = shouldUseChangedFiles(mode.changed, targetSpecs)
+	? await getChangedFiles(ignoreMatcher)
+	: await getAllFiles(ignoreMatcher);
+const files = filterFilesByTargets(candidates, targetSpecs);
 const auditItems = [];
 
 if (files.length === 0) {
-	const auditPath = await writeTextlintAudit({
-		root: ROOT,
-		mode,
-		items: auditItems,
-	});
-
 	console.log("textlint: 対象ファイルはありません。");
-	console.log(
-		`textlint audit: ${normalizePath(path.relative(ROOT, auditPath))}`,
-	);
-
 	process.exit(0);
 }
 
@@ -254,7 +316,7 @@ for (const file of files) {
 
 	/**
 	 * Markdown・テキスト文書はファイル内容をそのまま検査する。
-	 * textlint の診断結果とは別に、抽出した日本語文章を監査用の JSON ファイルへ保存する。
+	 * textlint の診断結果とは別に、日本語文章を静的な用語チェックへ渡す。
 	 */
 	if (DOCUMENT_EXTENSIONS.has(extension)) {
 		auditItems.push(...extractDocumentAuditItems(source, file));
@@ -272,7 +334,6 @@ for (const file of files) {
 
 	/**
 	 * JavaScript・TypeScript ではコメントだけを抽出する。
-	 * 全日本語コメントは textlint の診断結果に関係なく監査用の JSON ファイルへ保存する。
 	 */
 	if (SOURCE_EXTENSIONS.has(extension)) {
 		const extracted = extractSourceComments(source, file);
@@ -298,14 +359,20 @@ for (const file of files) {
 	}
 }
 
-/**
- * textlint の警告の有無に関係なく、抽出した日本語文章を LLM によるレビュー用の JSON ファイルへ保存する。
- */
-const auditPath = await writeTextlintAudit({
+const termsConfig = await loadTextlintTerms();
+const termIssues = findEnglishTermIssues(auditItems, termsConfig);
+const issuePath = await writeTextlintIssues({
 	root: ROOT,
-	mode,
-	items: auditItems,
+	scope: mode.scope,
+	issues: termIssues,
 });
+const reviewPath = mode.review
+	? await writeTextlintReview({
+			root: ROOT,
+			scope: mode.scope,
+			items: auditItems,
+		})
+	: null;
 
 /**
  * 診断結果を textlint の `stylish` 形式で表示する。
@@ -320,13 +387,25 @@ if (formatted.trim()) {
 	console.log(formatted);
 }
 
-console.log(`textlint audit: ${normalizePath(path.relative(ROOT, auditPath))}`);
+const preferredIssueCount = printTermIssues(termIssues);
+
+if (issuePath) {
+	console.log(
+		`textlint issues: ${normalizePath(path.relative(ROOT, issuePath))}`,
+	);
+}
+
+if (reviewPath) {
+	console.log(
+		`textlint review: ${normalizePath(path.relative(ROOT, reviewPath))}`,
+	);
+}
 
 const messageCount = results.reduce(
 	(count, result) => count + result.messages.length,
 	0,
 );
 
-if (messageCount > 0) {
+if (messageCount > 0 || preferredIssueCount > 0) {
 	process.exitCode = 1;
 }
