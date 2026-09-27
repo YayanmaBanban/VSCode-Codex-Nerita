@@ -7,12 +7,18 @@
 
     pnpm textlint:changed
 
+検査対象をファイルやフォルダに限定できる。
+
+    pnpm textlint:changed -- .agents/docs/Testing-Policy.md
+    pnpm textlint:changed -- src/extension src/shared
+
 リポジトリ全体を確認する場合のみ次を使用する。
 
     pnpm textlint
 
-`.textlintignore` に含まれるファイルやディレクトリは
-textlint の対象外とする。
+`textlint` と `textlint:changed` のどちらも、引数を複数指定できる。
+`.textlintignore` に含まれるファイルやディレクトリは対象外とする。
+リポジトリ外のパスとシンボリックリンクは検査対象として受け付けない。
 
 ### textlint の修正方針
 
@@ -54,14 +60,54 @@ textlint が英語・識別子と日本語の不自然な接続を報告した�
 textlint の警告を機械的に修正しない。
 コード上の意味を確認してから修正する。
 
-修正後は次のコマンドを再実行し、対象となる警告が解消されたことを確認する。
+### 静的な英単語チェック
 
-    pnpm textlint:changed
+日本語文章に裸で混在する英単語も、通常の textlint 実行時に確認する。
+設定は `config/textlint-terms.json` に置く。
+
+- `allowedEnglish`: API 名、製品名、略語など、そのまま使う語。
+- `preferredJapanese`: 一般的な日本語表現へ置き換えたい語と推奨表記。
+
+`preferredJapanese` に一致した語はエラーとして扱う。
+未登録の英単語はレビュー候補として表示するが、それだけではコマンドを失敗させない。
+バッククォート内の識別子、URL、Markdown のリンク先は英単語チェックから除外する。
+
+候補がある場合だけ `.textlint-cache/issues-all.json` または
+`.textlint-cache/issues-changed.json` を生成する。
+同じ英単語はまとめ、保存する出現例は最大20件に抑える。
 
 ### コメントの意味レビュー
 
+通常の `pnpm textlint` / `pnpm textlint:changed` では、
+全日本語文章のレビュー用ファイルを生成しない。
+
+変更した文章を LLM で意味レビューする場合は次を使用する。
+
+    pnpm textlint:review:changed
+
+ファイルやフォルダへ限定する場合は次のように指定する。
+
+    pnpm textlint:review:changed -- .agents/docs/Testing-Policy.md
+    pnpm textlint:review -- .agents/docs
+
+リポジトリ全体を意味レビューする場合だけ次を使用する。
+
+    pnpm textlint:review
+
+レビュー用の全文は `.textlint-cache/review-changed.jsonl` または
+`.textlint-cache/review-all.jsonl` に1項目1行で一時保存する。
+巨大な整形済み JSON は作らない。
+
+同じ範囲の textlint を次に実行すると、対応する古い候補ファイルと
+レビュー用ファイルを先に削除する。
+校正後に通常の textlint を再実行すれば、校正前のレビュー内容は残らない。
+
+一時ファイルをまとめて削除する場合は次を使用する。
+
+    pnpm textlint:clean
+
 textlint で警告されなかった文章も含めて、
-変更した日本語コメントを周囲のコードと照合する。
+意味レビューでは変更した日本語コメントを周囲のコードと照合する。
 
 次のような文章は修正する。
 
