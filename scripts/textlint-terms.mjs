@@ -8,6 +8,13 @@ function maskWithSpaces(text, pattern) {
 	return text.replace(pattern, (value) => " ".repeat(value.length));
 }
 
+/** HTML コメントを、改行位置を保ったまま空白化する。 */
+function maskHtmlComments(text) {
+	return text.replace(/<!--[\s\S]*?-->/g, (value) =>
+		value.replace(/[^\r\n]/g, " "),
+	);
+}
+
 /** 対応する数のバッククォートで囲まれたインラインコードを空白化する。 */
 function maskInlineCode(text) {
 	const runs = [...text.matchAll(/`+/g)];
@@ -156,8 +163,9 @@ function findLineIssues(
 	preferred,
 	automaticAllowed,
 	sourceIdentifiers,
+	protectedText = text,
 ) {
-	const masked = maskProtectedText(text);
+	const masked = maskProtectedText(protectedText);
 
 	if (!JAPANESE_PATTERN.test(masked)) {
 		return [];
@@ -252,6 +260,7 @@ export function findEnglishTermIssues(
 
 	for (const item of items) {
 		const lines = item.text.split(/\r?\n/);
+		const maskedLines = maskHtmlComments(item.text).split(/\r?\n/);
 
 		for (let index = 0; index < lines.length; index += 1) {
 			issues.push(
@@ -264,6 +273,7 @@ export function findEnglishTermIssues(
 					preferred,
 					automaticAllowed,
 					sourceIdentifiers,
+					maskedLines[index],
 				),
 			);
 		}

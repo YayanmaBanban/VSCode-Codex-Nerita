@@ -87,7 +87,7 @@ CSpell は software-terms 本体と Node 辞書も使用し、一般英語辞書
 `preferredJapanese` はこれらの自動語彙・識別子判定より優先するため、`owner` などを辞書やコードが認識しても日本語化のエラーを維持できる。
 
 未登録の英単語はレビュー候補として表示するが、それだけではコマンドを失敗させない。
-バッククォート内の識別子、URL、Markdown のリンク先は英単語チェックから除外する。
+バッククォート内の識別子、URL、Markdown のリンク先、HTML コメントは英単語チェックから除外する。
 文書の検査対象から外す範囲は、単独行の `<!-- texlint-ignore-start -->` と `<!-- texlint-ignore-end-->` で囲む。
 
 候補がある場合だけ `.textlint-cache/issues-all.json` または

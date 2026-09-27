@@ -280,3 +280,28 @@ test("preferred Japanese still wins over repository identifiers", () => {
 		"preferred-japanese",
 	);
 });
+
+
+test("ignores inline and multiline HTML comments", () => {
+	const items = [
+		{
+			file: "docs/generated.md",
+			startLine: 1,
+			text: [
+				'本文です。<!-- :chatgpt-content-reference{index="0"} -->',
+				"<!-- internal-marker",
+				"generated metadata",
+				"-->",
+				"outsideWord は確認する。",
+			].join("\n"),
+		},
+	];
+
+	assert.deepEqual(
+		findEnglishTermIssues(items, { allowedEnglish: [] }).map(({ line, term }) => ({
+			line,
+			term,
+		})),
+		[{ line: 5, term: "outsideWord" }],
+	);
+});
