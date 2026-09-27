@@ -15,8 +15,9 @@ for (const theme of ["dark", "light"] as const) {
 			colorScheme: theme,
 			reducedMotion: "reduce",
 		});
+		const storybookTheme = theme === "dark" ? "dark2026" : "light";
 		await page.goto(
-			"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
+			`/iframe.html?id=chat-composer-settings--connected&viewMode=story&globals=theme:${storybookTheme}`,
 		);
 		const model = page.getByRole("combobox", {
 			name: "Model",

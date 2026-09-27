@@ -5,7 +5,6 @@ import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
 import type { ChatMessage, ToolSummary } from "../../../shared/chatState";
 import { MessageText } from "./MessageText";
-import { TextType } from "./TextType";
 import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 import type { SubAgentSummary } from "../../../shared/subAgents";
@@ -14,16 +13,10 @@ import type { SubAgentSummary } from "../../../shared/subAgents";
 function MessageContent({
 	message,
 	user,
-	busy,
-	index,
-	length,
 	send,
 }: {
 	message: ChatMessage;
 	user: boolean;
-	busy: boolean;
-	index: number;
-	length: number;
 	send?: ((message: UiMessage) => void) | undefined;
 }): React.JSX.Element {
 	if (message.mcp) {
@@ -36,16 +29,6 @@ function MessageContent({
 			references={user ? message.references : undefined}
 		/>
 	);
-	if (user || !busy || message.streaming === false || index !== length - 1) {
-		return (
-			<MessageText
-				text={message.text}
-				send={send}
-				references={user ? message.references : undefined}
-			/>
-		);
-	}
-	return <TextType text={message.text} />;
 }
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
@@ -158,16 +141,7 @@ export function Messages({
 				}}
 			>
 				<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
-					{
-						<MessageContent
-							message={message}
-							user={user}
-							busy={busy}
-							index={index}
-							length={messages.length - 1}
-							send={send}
-						/>
-					}
+					<MessageContent message={message} user={user} send={send} />
 				</div>
 				{renderMessageActions(
 					elements,

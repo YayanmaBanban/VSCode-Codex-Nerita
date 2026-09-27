@@ -94,7 +94,6 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page
 			.getByRole("button", { name: "本文完了", exact: true })
 			.click();
-		await expect(answer.locator(".text-type")).toHaveCount(0);
 		await expect(
 			answer.getByRole("heading", { name: "変更内容" }),
 		).toBeVisible();

@@ -126,7 +126,6 @@ test("回答コピー・対応する送信文と返信末尾へ移動", async ({
 	expect(copied).toContain(
 		"長いパスやコードも画面の幅に合わせて折り返します。".repeat(12),
 	);
-	await expect(page.locator(".text-type")).toHaveCount(0);
 	await page.getByRole("button", { name: "送信メッセージへ移動" }).click();
 	await expect(page.locator(".message.user")).toBeFocused();
 	await expect(page.locator(".message.user")).toBeInViewport();
@@ -188,7 +187,6 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.goto("/iframe.html?id=chat-app--completed&viewMode=story");
 		await expect(page.getByText(/const config/)).toBeVisible();
-		await expect(page.locator(".text-type")).toHaveCount(0);
 		await page.evaluate(() => document.fonts.ready);
 		expect(
 			await page.evaluate(

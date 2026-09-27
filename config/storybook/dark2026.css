@@ -1,0 +1,33 @@
+/* Storybook で選択したテーマの色変数を適用する。 */
+:root[data-storybook-theme="dark2026"] {
+	color-scheme: dark;
+	--vscode-descriptionForeground: #8c8c8c;
+	--vscode-input-background: #191a1b;
+	--vscode-input-foreground: #bfbfbf;
+	--vscode-input-border: #333536;
+	--vscode-input-placeholderForeground: #555;
+	--vscode-panel-border: #2a2b2c;
+	--vscode-errorForeground: #f48771;
+	--vscode-diffEditor-insertedLineBackground: #347d3926;
+	--vscode-diffEditor-removedLineBackground: #c93c3726;
+	--vscode-textCodeBlock-background: #242526;
+	--vscode-editor-font-family: Consolas, "Courier New", monospace;
+	--vscode-foreground: #bfbfbf;
+	--vscode-editorWarning-foreground: #e5ba7d;
+	--vscode-button-background: #297aa0;
+	--vscode-focusBorder: #3994bcb3;
+	--vscode-widget-border: #2a2b2c;
+	--vscode-dropdown-background: #191a1b;
+	--vscode-dropdown-foreground: #bfbfbf;
+	--vscode-testing-iconPassed: #73c991;
+	--vscode-editorHoverWidget-background: #202122;
+	--vscode-editorHoverWidget-foreground: #bfbfbf;
+	--vscode-editorHoverWidget-border: #2a2b2c;
+	--vscode-editor-background: #121314;
+	--vscode-inputValidation-warningBorder: #b89500;
+	--vscode-inputValidation-warningBackground: #352a05;
+	--vscode-button-foreground: #fff;
+	--vscode-textLink-foreground: #48a0c7;
+	--vscode-sideBar-background: #191a1b;
+	--vscode-button-secondaryBackground: #00000000;
+}
