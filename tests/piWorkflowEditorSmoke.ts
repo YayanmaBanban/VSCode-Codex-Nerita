@@ -9,7 +9,7 @@ import {
 } from "./piTrustedRuntime";
 import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
 
-/** 実モデルの代わりに既存のローカル HTTP フィクスチャを使う。 */
+/** 実モデルの代わりに既存のローカル HTTP 検証データを使う。 */
 export async function piWorkflowEditorSmoke(
 	options: PiRuntimeOptions,
 	text: string,

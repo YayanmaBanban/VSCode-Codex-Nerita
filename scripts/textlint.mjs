@@ -8,6 +8,7 @@ import {
 	cleanTextlintCache,
 	clearTextlintCacheForScope,
 	extractDocumentAuditItems,
+	maskIgnoredDocument,
 	writeTextlintIssues,
 	writeTextlintReview,
 } from "./textlint-audit.mjs";
@@ -256,7 +257,9 @@ function printTermIssues(issues) {
 		}
 
 		if (preferred.length > 50) {
-			console.log(`... ${preferred.length - 50} more preferred term issue(s)`);
+			console.log(
+				`... ${preferred.length - 50} more preferred term issue(s)`,
+			);
 		}
 	}
 
@@ -315,18 +318,19 @@ for (const file of files) {
 	const extension = path.extname(file).toLowerCase();
 
 	/**
-	 * Markdown・テキスト文書はファイル内容をそのまま検査する。
+	 * Markdown・テキスト文書は無効化範囲を空白化して検査する。
 	 * textlint の診断結果とは別に、日本語文章を静的な用語チェックへ渡す。
 	 */
 	if (DOCUMENT_EXTENSIONS.has(extension)) {
-		auditItems.push(...extractDocumentAuditItems(source, file));
+		const lintSource = maskIgnoredDocument(source, file);
+		auditItems.push(...extractDocumentAuditItems(lintSource, file));
 
 		// 日本語を含まない文書には日本語用の校正規則を適用しない。
-		if (!JAPANESE_PATTERN.test(source)) {
+		if (!JAPANESE_PATTERN.test(lintSource)) {
 			continue;
 		}
 
-		const result = await linter.lintText(source, file);
+		const result = await linter.lintText(lintSource, file);
 
 		results.push(result);
 		continue;

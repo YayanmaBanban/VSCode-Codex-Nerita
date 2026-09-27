@@ -104,7 +104,7 @@ const commandSources = new WeakMap();
 let scriptId = 0;
 let failed = false;
 
-/** 専用フィクスチャのみに触れる受入結果を、失敗後も続けて記録する。 */
+/** 専用検証データのみに触れる受入結果を、失敗後も続けて記録する。 */
 async function test(id, operation) {
 	try {
 		const details = await operation();
@@ -219,7 +219,7 @@ async function deniedWrite(command, options) {
 	return result;
 }
 
-/** PowerShell の単一引用符で囲んだ文字列としてフィクスチャ `path` だけを引用する。 */
+/** PowerShell の単一引用符で囲んだ文字列として検証データ `path` だけを引用する。 */
 const quote = (value) => `'${value.replaceAll("'", "''")}'`;
 
 /** 確定したプロセス開始マーカーを期限付きで待つ。 */

@@ -55,3 +55,35 @@ test("classifies bare English while ignoring code, URLs, links, and allowed term
 		},
 	]);
 });
+
+test("allows complete multiword terms without hiding partial or interrupted matches", () => {
+	const lines = [
+		"Unreal Engine と VS Code を使う。",
+		"Unreal  Engine を使う。",
+		"Unreal Engines を使う。",
+		"Unreal `ignored` Engine を使う。",
+		"SuperUnreal Engine を使う。",
+	];
+	const items = [
+		{
+			file: "docs/engines.md",
+			startLine: 10,
+			text: lines.join("\n"),
+		},
+	];
+	const issues = findEnglishTermIssues(items, {
+		allowedEnglish: ["Unreal Engine", "VS Code"],
+	});
+
+	assert.deepEqual(
+		issues.map(({ line, term }) => ({ line, term })),
+		[
+			{ line: 12, term: "Unreal" },
+			{ line: 12, term: "Engines" },
+			{ line: 13, term: "Unreal" },
+			{ line: 13, term: "Engine" },
+			{ line: 14, term: "SuperUnreal" },
+			{ line: 14, term: "Engine" },
+		],
+	);
+});

@@ -11,7 +11,7 @@ afterEach(async () => {
 	await Promise.all(fixtures.splice(0).map((fixture) => fixture.cleanup()));
 });
 
-/** 実 OS の配置を変えず、探索環境だけを専用フィクスチャへ向ける。 */
+/** 実 OS の配置を変えず、探索環境だけを専用検証データへ向ける。 */
 async function fixture() {
 	const h = await sandboxFixture();
 	fixtures.push(h);
@@ -21,7 +21,7 @@ async function fixture() {
 	return h;
 }
 
-/** 起動はモックのコールバックが判定し、フィクスチャを実行可能なプログラムにはしない。 */
+/** 起動はモックのコールバックが判定し、検証データを実行可能なプログラムにはしない。 */
 async function executable(path: string) {
 	await mkdir(dirname(path), { recursive: true });
 	await writeFile(path, "fixture");

@@ -1,5 +1,5 @@
 {
-	// Story 専用コードと共有フィクスチャを、本体から独立して型検査する。
+	// Story 専用コードと共有検証データを、本体から独立して型検査する。
 	"extends": "../webview/tsconfig.json",
 	"compilerOptions": {
 		"rootDir": "../.."

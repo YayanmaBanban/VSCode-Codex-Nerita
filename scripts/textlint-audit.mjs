@@ -3,6 +3,51 @@ import path from "node:path";
 
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
+const IGNORE_START = /^<!--\s*texlint-ignore-start\s*-->$/u;
+const IGNORE_END = /^<!--\s*texlint-ignore-end\s*-->$/u;
+
+/**
+ * 文書の無効化範囲を、診断行番号が変わらないよう改行以外の空白へ置き換える。
+ */
+export function maskIgnoredDocument(source, filePath) {
+	let ignored = false;
+	let startLine = null;
+	const lines = source.split(/(?<=\n)/u);
+	const masked = lines.map((line, index) => {
+		const marker = line.trim();
+
+		const endsIgnore = IGNORE_END.test(marker);
+
+		if (IGNORE_START.test(marker)) {
+			if (ignored) {
+				throw new Error(
+					`nested texlint-ignore-start: ${filePath}:${index + 1}`,
+				);
+			}
+
+			ignored = true;
+			startLine = index + 1;
+		} else if (endsIgnore) {
+			if (!ignored) {
+				throw new Error(
+					`unmatched texlint-ignore-end: ${filePath}:${index + 1}`,
+				);
+			}
+
+			ignored = false;
+		}
+
+		return ignored || endsIgnore ? line.replace(/[^\r\n]/g, " ") : line;
+	});
+
+	if (ignored) {
+		throw new Error(
+			`unclosed texlint-ignore-start: ${filePath}:${startLine}`,
+		);
+	}
+
+	return masked.join("");
+}
 
 /**
  * Markdown・テキスト文書から LLM によるレビュー用の日本語ブロックを抽出する。

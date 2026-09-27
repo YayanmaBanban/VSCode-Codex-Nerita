@@ -60,7 +60,7 @@ const report = {
 	cases: [],
 };
 
-/** フィクスチャのパスを PowerShell のリテラルとして引用する。 */
+/** 検証データのパスを PowerShell のリテラルとして引用する。 */
 const quote = (value) => `'${value.replaceAll("'", "''")}'`;
 /** プロファイルの成功・拒否を機械判定できるマーカーを返す。 */
 const command = (code) => [

@@ -21,8 +21,35 @@ function maskProtectedText(text) {
 	return masked;
 }
 
+/** 許可語句が、元の文章で空白だけを挟んで連続しているか確認する。 */
+function matchesAllowedPhrase(matches, index, phrase, text) {
+	if (index + phrase.length > matches.length) {
+		return false;
+	}
+
+	for (let offset = 0; offset < phrase.length; offset += 1) {
+		const match = matches[index + offset];
+		const previous = matches[index + offset - 1];
+
+		if (match[0] !== phrase[offset]) {
+			return false;
+		}
+
+		if (
+			offset > 0 &&
+			!/^[ \t]+$/.test(
+				text.slice(previous.index + previous[0].length, match.index),
+			)
+		) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /** 日本語を含む1行から、許可されていない英単語を抽出する。 */
-function findLineIssues(item, text, line, allowed, preferred) {
+function findLineIssues(item, text, line, allowed, allowedPhrases, preferred) {
 	const masked = maskProtectedText(text);
 
 	if (!JAPANESE_PATTERN.test(masked)) {
@@ -30,7 +57,18 @@ function findLineIssues(item, text, line, allowed, preferred) {
 	}
 
 	const issues = [];
-	for (const match of masked.matchAll(ENGLISH_TOKEN_PATTERN)) {
+	const matches = [...masked.matchAll(ENGLISH_TOKEN_PATTERN)];
+	for (let index = 0; index < matches.length; index += 1) {
+		const phrase = allowedPhrases.find((candidate) =>
+			matchesAllowedPhrase(matches, index, candidate, text),
+		);
+
+		if (phrase) {
+			index += phrase.length - 1;
+			continue;
+		}
+
+		const match = matches[index];
 		const term = match[0];
 
 		if (allowed.has(term)) {
@@ -59,6 +97,10 @@ function findLineIssues(item, text, line, allowed, preferred) {
  */
 export function findEnglishTermIssues(items, config) {
 	const allowed = new Set(config.allowedEnglish ?? []);
+	const allowedPhrases = [...allowed]
+		.filter((term) => /\s/.test(term))
+		.map((term) => term.trim().split(/\s+/))
+		.sort((left, right) => right.length - left.length);
 	const preferred = new Map(
 		Object.entries(config.preferredJapanese ?? {}).map(
 			([term, suggestion]) => [term.toLowerCase(), suggestion],
@@ -77,6 +119,7 @@ export function findEnglishTermIssues(items, config) {
 					lines[index],
 					item.startLine + index,
 					allowed,
+					allowedPhrases,
 					preferred,
 				),
 			);

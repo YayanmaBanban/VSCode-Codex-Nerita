@@ -33,6 +33,7 @@ textlint が英語・識別子と日本語の不自然な接続を報告した�
 一般的な日本語訳が定着している自然言語上の技術用語は、
 自然な日本語へ置き換える。
 
+<!-- texlint-ignore-start -->
 例を示す。
 
     canonical化
@@ -57,6 +58,7 @@ textlint が英語・識別子と日本語の不自然な接続を報告した�
 
     pwshが
     → `pwsh` が
+<!-- texlint-ignore-end-->
 
 textlint の警告を機械的に修正しない。
 コード上の意味を確認してから修正する。
@@ -72,6 +74,7 @@ textlint の警告を機械的に修正しない。
 `preferredJapanese` に一致した語はエラーとして扱う。
 未登録の英単語はレビュー候補として表示するが、それだけではコマンドを失敗させない。
 バッククォート内の識別子、URL、Markdown のリンク先は英単語チェックから除外する。
+文書の検査対象から外す範囲は、単独行の `<!-- texlint-ignore-start -->` と `<!-- texlint-ignore-end-->` で囲む。
 
 候補がある場合だけ `.textlint-cache/issues-all.json` または
 `.textlint-cache/issues-changed.json` を生成する。

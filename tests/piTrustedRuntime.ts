@@ -1,4 +1,4 @@
-// 既存の実 SDK テストでは、専用フィクスチャへの人の信頼操作を起動前に再現する。
+// 既存の実 SDK テストでは、専用検証データへの人の信頼操作を起動前に再現する。
 import {
 	createPiRuntime as createRuntime,
 	type PiRuntimeOptions,
