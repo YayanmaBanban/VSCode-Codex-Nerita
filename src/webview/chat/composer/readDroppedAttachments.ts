@@ -20,7 +20,7 @@ function readFile(file: File): Promise<DroppedAttachment> {
 	});
 }
 
-/** DataTransfer はイベント中に読み取り、URI がなければファイル内容を非同期で取得する。 */
+/** `DataTransfer` はイベント中に読み取り、URI がなければファイル内容を非同期で取得する。 */
 export async function readDroppedAttachments(
 	transfer: DataTransfer,
 ): Promise<DroppedAttachment[]> {

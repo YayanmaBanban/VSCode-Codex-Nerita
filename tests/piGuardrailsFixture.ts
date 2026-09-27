@@ -1,4 +1,4 @@
-// 実 SDK に決めた Tool Call を返し、外部モデルを使わず承認経路を検証する。
+// 実 SDK に決めたツール呼び出しを返し、外部モデルを使わず承認経路を検証する。
 import { createServer } from "node:http";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

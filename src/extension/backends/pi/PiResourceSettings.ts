@@ -2,7 +2,7 @@
 import { realpath } from "node:fs/promises";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 
-/** SDK の公開 SettingsManager から設定型を導出する。 */
+/** SDK の公開 `SettingsManager` から設定型を導出する。 */
 type ResourceSettings = ReturnType<PiSdk.SettingsManager["getGlobalSettings"]>;
 
 /** CLI による明示的な導入と、会話開始時のリソース読み込みを分離する。 */

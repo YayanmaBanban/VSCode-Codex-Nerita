@@ -13,7 +13,7 @@ export type AgentModelReader = (
 	signal: AbortSignal,
 ) => Promise<ManagerModel[]>;
 
-/** 会話・Tool・外部 Extension を起動せず、カタログだけを読む。 */
+/** 会話・ツール・外部 Extension を起動せず、カタログだけを読む。 */
 export function agentModelReader(
 	extensionPath: string,
 	cwd: string,

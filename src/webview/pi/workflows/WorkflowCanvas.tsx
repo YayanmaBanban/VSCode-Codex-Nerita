@@ -1,4 +1,4 @@
-// React Flow の配置は表示だけに使い、接続線を depends_on として扱う。
+// React Flow の配置は表示だけに使い、接続線を `depends_on` として扱う。
 import { useEffect, useState } from "react";
 import {
 	ReactFlow,

@@ -162,24 +162,34 @@ export async function cleanTextlintCache(root) {
 	});
 }
 
+function groupingTerm(issue) {
+	return issue.type === "unquoted-identifier"
+		? issue.term
+		: issue.term.toLowerCase();
+}
+
 function groupIssues(issues) {
 	const groups = new Map();
 
 	for (const issue of issues) {
-		const key = `${issue.type}\0${issue.term}\0${issue.suggestion ?? ""}`;
+		const normalizedTerm = groupingTerm(issue);
+		const key = `${issue.type}\0${normalizedTerm}\0${issue.suggestion ?? ""}`;
 		let group = groups.get(key);
 
 		if (!group) {
 			group = {
 				type: issue.type,
 				term: issue.term,
+				normalizedTerm,
 				suggestion: issue.suggestion,
+				variants: new Set(),
 				occurrenceCount: 0,
 				occurrences: [],
 			};
 			groups.set(key, group);
 		}
 
+		group.variants.add(issue.term);
 		group.occurrenceCount += 1;
 
 		if (group.occurrences.length < 20) {
@@ -191,7 +201,31 @@ function groupIssues(issues) {
 		}
 	}
 
-	return [...groups.values()].sort((left, right) => {
+	const grouped = [...groups.values()].map((group) => {
+		const variants = [...group.variants].sort((left, right) =>
+			left.localeCompare(right),
+		);
+		const preferredTerm =
+			group.type === "unquoted-identifier"
+				? group.term
+				: variants.find((variant) => variant === group.normalizedTerm) ??
+					group.term;
+		const output = {
+			type: group.type,
+			term: preferredTerm,
+			suggestion: group.suggestion,
+			occurrenceCount: group.occurrenceCount,
+			occurrences: group.occurrences,
+		};
+
+		if (variants.length > 1) {
+			output.variants = variants;
+		}
+
+		return output;
+	});
+
+	return grouped.sort((left, right) => {
 		const typeComparison = left.type.localeCompare(right.type);
 
 		return typeComparison !== 0
@@ -201,7 +235,7 @@ function groupIssues(issues) {
 }
 
 /**
- * 靁的チェックで見つけた候補だけを、小さな JSON として保存する。
+ * 静的チェックで見つけた候補だけを、小さな JSON として保存する。
  * 同じ英単語はまとめ、保存する出現例は最大20件に抑える。
  */
 export async function writeTextlintIssues({ root, scope, issues }) {

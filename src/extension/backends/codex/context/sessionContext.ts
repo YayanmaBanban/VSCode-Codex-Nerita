@@ -31,7 +31,7 @@ function checkThread(
 	}
 }
 
-/** 復元用のページ取得を借り、通信量とページ数に参照専用の上限を設ける。 */
+/** 復元用のページ取得処理を再利用し、通信量とページ数に参照専用の上限を設ける。 */
 export async function readSessionContext(
 	client: CodexConnection,
 	id: string,

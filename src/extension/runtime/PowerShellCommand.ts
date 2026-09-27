@@ -18,7 +18,7 @@ function utf8Setup(): string[] {
 	];
 }
 
-/** 本文は単一引数。profile・`ExecutionPolicy` 変更・暗黙の Base64 化は使用しない。 */
+/** 本文は単一引数。プロファイル・`ExecutionPolicy` 変更・暗黙の Base64 化は使用しない。 */
 export function powerShellCommand(
 	shell: PowerShellExecutable,
 	body: string,

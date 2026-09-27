@@ -1,4 +1,4 @@
-// 同梱 SDK の親子 Runtime を起動し、実 Tool Call の承認と取消しを確認する。
+// 同梱 SDK の親子 Runtime を起動し、実際のツール呼び出しの承認と取消しを確認する。
 import * as assert from "node:assert/strict";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";

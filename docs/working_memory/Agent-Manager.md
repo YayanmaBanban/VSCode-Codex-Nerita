@@ -8,13 +8,13 @@
 
 | 対象 | 編集内容 | 保存先 |
 | ----------- | -------------------------------------------------------------------------- | ------------------------------------------------- |
-| Pi Agent | disabled / model / thinking の `Workspace override` | `.pi/settings.json` の `subagents.agentOverrides` |
-| Pi 既定値 | defaultModel / defaultThinking / maxThinking / maxSubagentSpawnsPerSession | `.pi/settings.json` の `subagents` |
+| Pi Agent | `disabled` / `model` / `thinking` のワークスペース上書き | `.pi/settings.json` の `subagents.agentOverrides` |
+| Pi 既定値 | `defaultModel` / `defaultThinking` / `maxThinking` / `maxSubagentSpawnsPerSession` | `.pi/settings.json` の `subagents` |
 | Codex Agent | model / model_reasoning_effort | `.codex/agents/*.toml` |
-| ハンドオフ | timeoutMs / バックエンドごとの strategy・model・推論指定 | `.nerita/handoff.json` |
+| ハンドオフ | `timeoutMs` / バックエンドごとの strategy・model・推論指定 | `.nerita/handoff.json` |
 
-Pi の定義は既存ローダーで package / user / project から取得する。
-定義値と `Workspace override` を分けて表示し、ユーザー設定と modelScope は閲覧のみとする。
+Pi の定義は既存ローダーで `package` / `user` / `project` から取得する。
+定義値とワークスペース上書きを分けて表示し、ユーザー設定と `modelScope` は閲覧のみとする。
 管理画面は設定優先順位を計算しない。接続中のバックエンドの候補を使い、未接続側は管理画面専用のカタログ読込みで取得する。
 Pi では親と異なるプロバイダーのモデルも候補に含める。
 
@@ -48,16 +48,16 @@ Host はパネルのワークスペースと内容の世代を照合する。
 保存はルートごとに直列化し、一時ファイルから置き換える。
 
 Pi 設定は `jsonc-parser` で対象プロパティだけを変更する。
-SDK の公開 SettingsManager には `subagents` を更新する汎用メソッドがないため、
+SDK の公開 `SettingsManager` には `subagents` を更新する汎用メソッドがないため、
 非公開メソッドの呼出しや JSON 全体の再生成は行わない。
 配布時にはライブラリの ESM 入口を使用し、UMD 内の相対 require を残さない。
 
 ## 実行側との境界
 
-モデルを明示した Agent 設定・Pi defaultThinking・fixed ハンドオフでは、モデル別の推論候補を表示し、Host でも保存時に組合せを検証する。
+モデルを明示した Agent 設定・Pi `defaultThinking`・fixed ハンドオフでは、モデル別の推論候補を表示し、Host でも保存時に組合せを検証する。
 Pi は同梱 SDK の `getSupportedThinkingLevels(model)`、Codex は App Server の `supportedReasoningEfforts` を使う。
-Pi にプロバイダーの補助カタログがある場合は、各モデルの provider と ID に対応する項目の推論値を優先する。SDK 標準候補との積集合で Ultra などを除外しない。親の選択モデルの候補を他モデルへ流用しない。
-Pi の管理・保存スキーマは Ultra を受理する。SDK の実行時の推論変換や override はこの管理機能の対象外。
+Pi にプロバイダーの補助カタログがある場合は、各モデルの `provider` と ID に対応する項目の推論値を優先する。SDK 標準候補との積集合で Ultra などを除外しない。親の選択モデルの候補を他モデルへ流用しない。
+Pi の管理・保存スキーマは Ultra を受理する。SDK の実行時の推論変換や上書きはこの管理機能の対象外。
 Codex の専用接続はモデル一覧の取得後に終了し、会話を作らない。取得失敗はバックエンド別に表示する。
 非対応の値は選び直すまで保存できない。未接続の既存値は保持できるが、新しい推論指定には対応値の確認が必要。
 モデル未指定時の優先順位は解決しない。Pi の `maxThinking` はモデル横断の上限なので共通の列挙値を使う。
@@ -65,7 +65,7 @@ Codex の専用接続はモデル一覧の取得後に終了し、会話を作�
 `current` の入力候補には現在接続中のモデルの対応値を表示する。接続中のモデルが不明なら新しい推論候補を推測しない。
 
 この変更は設定管理と保存の層を追加する。
-PiSubagentTool の実行時の設定解決、Registry による即時反映、
+PiSubagentTool の実行時の設定解決、レジストリによる即時反映、
 起動上限の強制は変更していない。
 現行 Host アダプターは接続時の定義を保持しており、
 管理画面の保存成功を新規子への適用完了として扱わない。
@@ -74,7 +74,7 @@ PiSubagentTool の実行時の設定解決、Registry による即時反映、
 
 ## 検証
 
-- 管理・保存と Host 境界の単体18件、BackendRuntime の既存5件。
+- 管理・保存と Host 境界の単体18件、`BackendRuntime` の既存5件。
 - 実 Extension Host 11件。同梱 SDK による定義読込と設定保存、既存起動処理を確認。
 - UI レビュー6件。320px / 1100px、明暗テーマ、Pi・Codex・ハンドオフの保存、
   キーボード操作、競合時の入力保持、不正 JSON の修復、空一覧を確認。

@@ -1,4 +1,4 @@
-// 手動で過去を読んでいる位置を守り、末尾にいる間だけ内容の伸長へ追従する。
+// 手動で過去を読んでいる位置を守り、末尾にいる間だけ内容の追加へ追従する。
 import { useLayoutEffect, useRef, type RefObject } from "react";
 
 export function useFollowConversation(

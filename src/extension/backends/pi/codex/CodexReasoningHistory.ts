@@ -95,7 +95,7 @@ function validAnchor(
 	);
 }
 
-/** 成功した圧縮・モデル切替・分岐要約以降の信頼済みの記録だけを採用する。 */
+/** 圧縮・モデル切替・分岐要約・本文編集より後に保存された、形式が有効な最新記録だけを採用する。 */
 export function readReasoningHistory(
 	store: ReasoningHistoryStore,
 ): ReasoningHistory | undefined {

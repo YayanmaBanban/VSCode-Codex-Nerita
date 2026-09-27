@@ -18,7 +18,7 @@ const powerShellInput = z.object({
 	timeout: z.number().min(1).max(600).default(60),
 });
 
-/** timeout / argv / env / `policy` は Human Approval へ渡す前に確定する。 */
+/** `timeout` / `argv` / `env` / `policy` は人による承認へ渡す前に確定する。 */
 export function createPiSandboxPowerShellTool(
 	definition: Omit<ToolDefinition, "renderCall" | "renderResult">,
 	paths: WorkspacePathPolicy,

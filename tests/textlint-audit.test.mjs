@@ -83,3 +83,73 @@ test("writes only requested cache files and clears stale review data", async () 
 		await fs.rm(root, { recursive: true, force: true });
 	}
 });
+
+
+test("groups review terms case-insensitively while preserving variants", async () => {
+	const root = await fs.mkdtemp(path.join(os.tmpdir(), "nerita-textlint-case-"));
+
+	try {
+		const issuesPath = await writeTextlintIssues({
+			root,
+			scope: "all",
+			issues: [
+				{
+					file: "docs/a.md",
+					line: 1,
+					type: "unknown-english",
+					term: "effort",
+					suggestion: null,
+					text: "effort を確認する。",
+				},
+				{
+					file: "docs/b.md",
+					line: 2,
+					type: "unknown-english",
+					term: "Effort",
+					suggestion: null,
+					text: "Effort を確認する。",
+				},
+				{
+					file: "src/a.ts",
+					line: 3,
+					type: "unquoted-identifier",
+					term: "modelScope",
+					suggestion: "`modelScope`",
+					text: "modelScope を確認する。",
+				},
+				{
+					file: "src/b.ts",
+					line: 4,
+					type: "unquoted-identifier",
+					term: "ModelScope",
+					suggestion: "`ModelScope`",
+					text: "ModelScope を確認する。",
+				},
+			],
+		});
+		const payload = JSON.parse(await fs.readFile(issuesPath, "utf8"));
+
+		assert.equal(payload.issueCount, 4);
+		assert.equal(payload.termCount, 3);
+		assert.deepEqual(payload.issues[0], {
+			type: "unknown-english",
+			term: "effort",
+			suggestion: null,
+			occurrenceCount: 2,
+			occurrences: [
+				{ file: "docs/a.md", line: 1, text: "effort を確認する。" },
+				{ file: "docs/b.md", line: 2, text: "Effort を確認する。" },
+			],
+			variants: ["effort", "Effort"].sort((left, right) =>
+				left.localeCompare(right),
+			),
+		});
+		assert.equal(
+			payload.issues.filter((issue) => issue.type === "unquoted-identifier")
+				.length,
+			2,
+		);
+	} finally {
+		await fs.rm(root, { recursive: true, force: true });
+	}
+});

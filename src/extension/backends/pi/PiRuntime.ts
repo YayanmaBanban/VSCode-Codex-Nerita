@@ -558,7 +558,7 @@ function resolvePreferredModel(
 				model.id === selection.model.trim(),
 		);
 }
-/** 子には定義探索と再委譲用 Tool を公開しない。 */
+/** 子には定義探索と再委譲用ツールを公開しない。 */
 async function runtimeSubagents(
 	sdk: typeof PiSdk,
 	options: PiRuntimeOptions,
@@ -590,7 +590,7 @@ function validateChildModel(
 		throw new Error("子に指定されたモデルを利用できません。");
 	}
 }
-/** 子の許可リストにない Tool は定義自体を登録しない。 */
+/** 子の許可リストにないツールは定義自体を登録しない。 */
 function permittedTools(
 	tools: PiSdk.ToolDefinition[],
 	allowed: string[] | undefined,

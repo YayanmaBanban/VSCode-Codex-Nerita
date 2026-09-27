@@ -8,6 +8,13 @@ function maskWithSpaces(text, pattern) {
 	return text.replace(pattern, (value) => " ".repeat(value.length));
 }
 
+/** HTML コメントを、改行位置を保ったまま空白化する。 */
+function maskHtmlComments(text) {
+	return text.replace(/<!--[\s\S]*?-->/g, (value) =>
+		value.replace(/[^\r\n]/g, " "),
+	);
+}
+
 /** 対応する数のバッククォートで囲まれたインラインコードを空白化する。 */
 function maskInlineCode(text) {
 	const runs = [...text.matchAll(/`+/g)];
@@ -43,6 +50,33 @@ function maskProtectedText(text) {
 
 	masked = maskWithSpaces(masked, /https?:\/\/[^\s<>)\]}]+/gi);
 	masked = maskWithSpaces(masked, /\]\([^)]+\)/g);
+	masked = maskWithSpaces(
+		masked,
+		/(?:\.{1,2}[\\/])(?:[A-Za-z0-9_.@*+-]+[\\/])+[A-Za-z0-9_.@*+-]*/g,
+	);
+	masked = maskWithSpaces(
+		masked,
+		/(?:[A-Za-z0-9_.@*+-]+[\\/])*[A-Za-z0-9_.@*+-]+\.(?:jsonl?|toml|ya?ml|md|markdown|txt|text|js|jsx|mjs|cjs|ts|tsx|mts|cts|css|scss|less|html?|svg|png|jpe?g|gif|webp|ico|wasm|xml|csv|lock|log|ini|cfg|conf|env)\b/gi,
+	);
+	masked = maskWithSpaces(
+		masked,
+		/(?:^|[\s"'(])\.(?:env|gitignore|npmrc|pnpmfile|prettierrc|textlintrc)\b/gi,
+	);
+	masked = maskWithSpaces(
+		masked,
+		/\b\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|vmin|vmax|KiB|MiB|GiB|TiB|B|KB|MB|GB|TB|ms|s|min|h|Hz|kHz|MHz|GHz|dpi|fps)\b/g,
+	);
+	masked = maskWithSpaces(
+		masked,
+		/\b(?:Ctrl|Alt|Shift|Meta|Cmd)(?:\+[A-Za-z0-9]+)+\b/g,
+	);
+	masked = maskWithSpaces(masked, /(?:^|[\s（(])\/[A-Za-z][A-Za-z0-9:_-]*/g);
+	masked = maskWithSpaces(masked, /\b[A-Z](?:\/[A-Z])+\b/g);
+	masked = maskWithSpaces(masked, /\b[A-Z]{2,}\([A-Z0-9]+\)/g);
+	masked = maskWithSpaces(
+		masked,
+		/\b(?:[A-Za-z][A-Za-z0-9-]*-)?v?\d+(?:\.\d+){1,3}\b/g,
+	);
 
 	return masked;
 }
@@ -74,9 +108,92 @@ function matchesAllowedPhrase(matches, index, phrase, text) {
 	return true;
 }
 
+const BUILTIN_COMMANDS = new Set([
+	"bash",
+	"chcp",
+	"cmd",
+	"find",
+	"gh",
+	"git",
+	"grep",
+	"ls",
+	"node",
+	"npm",
+	"pnpm",
+	"powershell",
+	"pwsh",
+]);
+
+const BUILTIN_KEYS = new Set([
+	"ArrowDown",
+	"ArrowLeft",
+	"ArrowRight",
+	"ArrowUp",
+	"Backspace",
+	"Delete",
+	"End",
+	"Enter",
+	"Escape",
+	"Home",
+	"PageDown",
+	"PageUp",
+	"Space",
+	"Tab",
+	"Undo",
+]);
+
+function isTechnicalAcronym(term) {
+	return /^[A-Z][A-Z0-9]{1,11}(?:-[A-Z0-9]{1,12})*$/.test(term);
+}
+
+function isBuiltinTechnicalToken(term) {
+	return BUILTIN_COMMANDS.has(term.toLowerCase()) || BUILTIN_KEYS.has(term);
+}
+
+/** 英単語の優先表記・識別子・許可語を判定し、報告内容を返す。 */
+function classifyEnglishTerm(
+	term,
+	allowed,
+	preferred,
+	automaticAllowed,
+	sourceIdentifiers,
+) {
+	const normalizedTerm = term.toLowerCase();
+	const suggestion = preferred.get(normalizedTerm);
+
+	if (suggestion) {
+		return { type: "preferred-japanese", suggestion };
+	}
+
+	if (sourceIdentifiers.has(term)) {
+		return { type: "unquoted-identifier", suggestion: `\`${term}\`` };
+	}
+
+	if (
+		allowed.has(term) ||
+		automaticAllowed.has(normalizedTerm) ||
+		isTechnicalAcronym(term) ||
+		isBuiltinTechnicalToken(term)
+	) {
+		return null;
+	}
+
+	return { type: "unknown-english", suggestion: null };
+}
+
 /** 日本語を含む1行から、許可されていない英単語を抽出する。 */
-function findLineIssues(item, text, line, allowed, allowedPhrases, preferred) {
-	const masked = maskProtectedText(text);
+function findLineIssues(
+	item,
+	text,
+	line,
+	allowed,
+	allowedPhrases,
+	preferred,
+	automaticAllowed,
+	sourceIdentifiers,
+	protectedText = text,
+) {
+	const masked = maskProtectedText(protectedText);
 
 	if (!JAPANESE_PATTERN.test(masked)) {
 		return [];
@@ -96,19 +213,24 @@ function findLineIssues(item, text, line, allowed, allowedPhrases, preferred) {
 
 		const match = matches[index];
 		const term = match[0];
+		const classification = classifyEnglishTerm(
+			term,
+			allowed,
+			preferred,
+			automaticAllowed,
+			sourceIdentifiers,
+		);
 
-		if (allowed.has(term)) {
+		if (!classification) {
 			continue;
 		}
-
-		const suggestion = preferred.get(term.toLowerCase()) ?? null;
 
 		issues.push({
 			file: item.file,
 			line,
-			type: suggestion ? "preferred-japanese" : "unknown-english",
+			type: classification.type,
 			term,
-			suggestion,
+			suggestion: classification.suggestion,
 			text: text.trim(),
 		});
 	}
@@ -121,7 +243,12 @@ function findLineIssues(item, text, line, allowed, allowedPhrases, preferred) {
  *
  * `preferredJapanese` はエラー候補、未知語は LLM のレビュー候補として扱う。
  */
-export function findEnglishTermIssues(items, config) {
+export function findEnglishTermIssues(
+	items,
+	config,
+	automaticAllowed = new Set(),
+	sourceIdentifiers = new Set(),
+) {
 	const allowed = new Set(config.allowedEnglish ?? []);
 	const allowedPhrases = [...allowed]
 		.filter((term) => /\s/.test(term))
@@ -137,6 +264,7 @@ export function findEnglishTermIssues(items, config) {
 
 	for (const item of items) {
 		const lines = item.text.split(/\r?\n/);
+		const maskedLines = maskHtmlComments(item.text).split(/\r?\n/);
 
 		for (let index = 0; index < lines.length; index += 1) {
 			issues.push(
@@ -147,6 +275,9 @@ export function findEnglishTermIssues(items, config) {
 					allowed,
 					allowedPhrases,
 					preferred,
+					automaticAllowed,
+					sourceIdentifiers,
+					maskedLines[index],
 				),
 			);
 		}

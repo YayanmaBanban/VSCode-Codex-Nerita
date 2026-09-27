@@ -1,6 +1,6 @@
 // 通信内容に依存しない基本検証をまとめ、機能別の検証から循環参照させない。
 
-/** 配列・null を除いたオブジェクトを判定する。 */
+/** 配列・`null` を除いたオブジェクトを判定する。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

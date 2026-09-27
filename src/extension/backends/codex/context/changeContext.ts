@@ -11,7 +11,7 @@ import type { AdditionalContext } from "./additionalContext";
 const exec = promisify(execFile);
 const limit = 60_000;
 
-/** Git の生出力を漏らさず、参照の解除や再試行を案内する。 */
+/** Git の未加工の出力を漏らさず、参照の解除や再試行を案内する。 */
 export class ChangeContextError extends Error {
 	/** 対象範囲と復旧方法を表示する。 */
 	constructor(scope: ChangeScope) {

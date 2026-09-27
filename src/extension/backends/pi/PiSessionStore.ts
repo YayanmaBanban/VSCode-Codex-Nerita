@@ -38,7 +38,7 @@ export type PiHistoryAccess = {
 	) => Promise<string>;
 };
 
-/** 保存設定に応じて、ワークスペース内または agentDir 配下の保存先を返す。 */
+/** 保存設定に応じて、ワークスペース内または `agentDir` 配下の保存先を返す。 */
 export function piSessionDirectory(
 	cwd: string,
 	agentDir: string,
@@ -55,7 +55,7 @@ export function piSessionDirectory(
 			);
 }
 
-/** 初回だけ `ignore` を作り、既存設定や作成権限エラーを握りつぶさない。 */
+/** ワークスペース保存時は初回だけ `.gitignore` を作り、作成権限エラーを握りつぶさない。 */
 export async function preparePiSessionDirectory(
 	directory: string,
 	storage: PiSessionStorage,

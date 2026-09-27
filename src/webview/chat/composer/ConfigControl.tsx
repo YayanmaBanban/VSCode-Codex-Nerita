@@ -1,11 +1,11 @@
-// 設定候補の name を表示し、value だけを Host に送る。
+// 設定候補の `name` を表示し、`value` だけを Host に送る。
 import { Check, ChevronDown } from "lucide-react";
 import { Select } from "@base-ui/react/select";
 import { CSPProvider } from "@base-ui/react/csp-provider";
 import type { ConfigOption } from "../../../shared/composer";
 import { SettingsTooltip } from "../SettingsTooltip";
 
-/** 各 select を同じ ChevronDown とキーボード操作で表示する。 */
+/** 各 `select` を同じ `ChevronDown` とキーボード操作で表示する。 */
 export function ConfigControl({
 	option,
 	disabled,

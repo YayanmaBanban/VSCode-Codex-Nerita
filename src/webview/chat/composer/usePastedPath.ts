@@ -1,4 +1,4 @@
-// #直後のパス・コピーしたコードを Host で照合し、編集位置が変わっていない場合だけ参照にする。
+// `#` 直後のパス・コピーしたコードを Host で照合し、編集位置が変わっていない場合だけ参照にする。
 import { useEffect } from "react";
 import {
 	$addUpdateTag,

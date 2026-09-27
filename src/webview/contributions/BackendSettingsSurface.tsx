@@ -26,7 +26,7 @@ export function PiSettingsSurface(props: ContributionSlotProps) {
 
 const surfaces = { codex: CodexSettingsSurface, pi: PiSettingsSurface };
 
-/** プロバイダー差分は Host が解決済み。ここでは大枠の Surface だけを選ぶ。 */
+/** Host がプロバイダーごとの項目を選別済みなので、ここではバックエンドに対応する設定領域だけを選ぶ。 */
 export function BackendSettingsSurface(props: ContributionSlotProps) {
 	const Surface = surfaces[props.contributions.surface];
 	return <Surface {...props} />;

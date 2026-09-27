@@ -1,4 +1,4 @@
-// SDK の副作用ツールを包み、承認と取消を確認してから実処理へ渡す。
+// 副作用のある SDK ツールに承認処理を追加し、取消しを確認してから実処理へ渡す。
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import {
 	approveToolCall,
@@ -9,7 +9,7 @@ import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import { z } from "zod";
 import { evaluateTrust } from "../../security/trust/TrustGate";
 
-/** 実行ごとの入力を Host で確認し、許可された場合だけ戻る。 */
+/** 実行ごとの入力に対する Host の承認結果を返す。 */
 export type PiAuthorize = ToolAuthorizer;
 
 /** 承認後にも取消を確認し、許可と `Stop` が競合した場合の実行を防ぐ。 */

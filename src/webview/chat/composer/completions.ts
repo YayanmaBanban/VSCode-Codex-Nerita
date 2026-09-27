@@ -22,7 +22,7 @@ export type Completion = {
 	query: string;
 };
 
-/** 行頭の/・@、任意位置の#をカーソル直前から検出する。 */
+/** 行頭の `/`・`@`、任意位置の `#` をカーソル直前から検出する。 */
 export function $completion(): Completion | null {
 	const selection = $getSelection();
 	if (!$isRangeSelection(selection) || !selection.isCollapsed()) {

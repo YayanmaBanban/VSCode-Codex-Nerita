@@ -7,7 +7,7 @@ import type { QuotaWindow } from "../../../../shared/composer";
 import { isRecord } from "../../../../shared/validation";
 import { codexOAuth } from "./CodexOAuth";
 
-/** 正規化された ISO 時間を取得する。 */
+/** UNIX 秒を、現地時刻の表示に使う `Date` へ変換する。 */
 function getIsoDate(resetAt: number): Date {
 	let data: Date = new Date(resetAt * 1000);
 	data = new Date(data.getTime() - data.getTimezoneOffset() * 60 * 1000);

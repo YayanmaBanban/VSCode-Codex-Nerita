@@ -1,4 +1,4 @@
-// React Bits TextType の逐次表示を、追記されるチャットとコード表示に合わせて構成する。
+// React Bits `TextType` の逐次表示を、追記されるチャットとコード表示に合わせて構成する。
 // 参照: https://reactbits.dev/text-animations/text-type （MIT）
 import { useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "motion/react";

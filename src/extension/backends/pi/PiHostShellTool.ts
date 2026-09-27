@@ -16,7 +16,7 @@ const inputSchema = z
 	})
 	.passthrough();
 
-/** SDK と信頼済みシェル拡張の両方に、同じ承認・role・`Stop` を適用する。 */
+/** SDK と信頼済みシェル拡張の両方に、同じ承認・`role`・`Stop` を適用する。 */
 export function createPiHostShellTool(
 	definition: Omit<ToolDefinition, "renderCall" | "renderResult">,
 	cwd: string,
@@ -24,7 +24,7 @@ export function createPiHostShellTool(
 	policy: AgentAccessPolicy,
 	lifetime: AbortSignal,
 ): ToolDefinition {
-	// SDK の端末描画は引数型ごとに異なるため、Host には引き継がない。
+	// SDK 固有の端末表示は引数型ごとに異なるため、Host には引き継がない。
 	const terminalDefinition: ToolDefinition = definition;
 	const {
 		renderCall: _call,

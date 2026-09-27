@@ -97,7 +97,7 @@ function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
 	}
 	return { data: value.data, nextCursor: value.nextCursor };
 }
-/** RPC と検証関数の対応を型検査し、未検証の result を公開しない。 */
+/** RPC と検証関数の対応を型検査し、未検証の `result` を公開しない。 */
 export const responseParsers: {
 	[M in keyof AppServerResponses]: (value: unknown) => AppServerResponses[M];
 } = {

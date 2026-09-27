@@ -29,7 +29,7 @@ export function compileWorkflow(value: unknown): string {
 				`neritaFork: results[${JSON.stringify(step.fork)}].runId`,
 			);
 		}
-		// fork はコンパイル済みのステップ ID から Host が解決する。任意の runId は受け付けない。
+		// fork はコンパイル済みのステップ ID から Host が解決する。任意の `runId` は受け付けない。
 		return `const ${names.get(step.id)} = Promise.all([${dependencies}]).then(() => runs.run(${JSON.stringify(step.id)}, {${fields.join(",")}})).then(result => { if (!result.ok) throw new Error(result.error || "Step failed"); results[${JSON.stringify(step.id)}] = result; return result; });`;
 	});
 	lines.unshift("const results = Object.create(null);");

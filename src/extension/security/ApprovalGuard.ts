@@ -95,7 +95,7 @@ export async function approveToolCall(
 	);
 }
 
-/** 実行用の入力を検査専用の形式へ移し、未知の Tool を暗黙に許可しない。 */
+/** 実行用の入力を検査専用の形式へ移し、未知のツールを暗黙に許可しない。 */
 function probeFor(call: ToolCall) {
 	let input = call.file?.input ?? ".";
 	if (typeof call.params.path === "string" && !call.file) {

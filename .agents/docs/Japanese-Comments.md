@@ -68,17 +68,33 @@ textlint の警告を機械的に修正しない。
 日本語文章に裸で混在する英単語も、通常の textlint 実行時に確認する。
 設定は `config/textlint-terms.json` に置く。
 
-- `allowedEnglish`: API 名、製品名、略語など、そのまま使う語。
-- `preferredJapanese`: 一般的な日本語表現へ置き換えたい語と推奨表記。
+- `preferredJapanese`: 一般的な日本語表現へ置き換えたい語と推奨表記。最優先で判定する。
+- `technicalDictionary`: SHA を固定した CSpell の技術辞書ソース。一般英語辞書は使わない。
+- `allowedEnglish`: 辞書やプロジェクト情報でも判断できない固有名詞などの例外。
 
-`preferredJapanese` に一致した語はエラーとして扱う。
+CSpell の技術辞書は初回だけ取得し、`.textlint-cache/technical-terms.json` に圧縮して保存する。
+取得元のリビジョンを固定するため、上流更新だけで lint 結果は変わらない。
+ネットワークから取得できない場合は警告を表示し、外部辞書なしでレビュー候補を出す。
+
+`package.json` の依存パッケージ、実行コマンド、スクリプト中のパスもプロジェクト語彙として自動許可する。
+CSpell は software-terms 本体と Node 辞書も使用し、一般英語辞書は使用しない。
+`CPU`、`ESM`、`CJS`、`WASM`、`SHA-256` のような大文字の技術略語も自動許可する。
+`320px`、`32KiB`、`2 MiB` などの数値と単位、キーボードショートカット、I/O 表記、バージョン番号は英単語レビューの対象外とする。
+`config.toml`、`guardrails.json`、`models-manager/models.json` のようなファイル名・パスも対象外とする。
+`npm:`、`node_modules`、パッケージの manifest / metadata 名、scoped package、バージョン併記からパッケージ名を自動抽出し、同じ実行内では技術語として扱う。単なるハイフン語はパッケージと推測しない。
+`ls`、`gh`、`chcp` などの既知コマンド名、`Backspace`、`Tab`、`Undo` などのキー名、`/plan` のようなスラッシュコマンドはレビュー対象外とする。
+TypeScript / JavaScript の構文木に実在する識別子が裸で出た場合は、バッククォート不足のエラーとして扱う。
+対象は `camelCase`、複合 `PascalCase`、`snake_case` 形式に限る。
+単語1個の `Plan` や `Tool` のような PascalCase は自動識別子扱いしない。
+`preferredJapanese` はこれらの自動語彙・識別子判定より優先するため、`owner` などを辞書やコードが認識しても日本語化のエラーを維持できる。
+
 未登録の英単語はレビュー候補として表示するが、それだけではコマンドを失敗させない。
-バッククォート内の識別子、URL、Markdown のリンク先は英単語チェックから除外する。
+バッククォート内の識別子、URL、Markdown のリンク先、HTML コメントは英単語チェックから除外する。
 文書の検査対象から外す範囲は、単独行の `<!-- texlint-ignore-start -->` と `<!-- texlint-ignore-end-->` で囲む。
 
 候補がある場合だけ `.textlint-cache/issues-all.json` または
 `.textlint-cache/issues-changed.json` を生成する。
-同じ英単語はまとめ、保存する出現例は最大20件に抑える。
+`unknown-english` と `preferred-japanese` は先頭の大文字小文字を区別せず同じ語としてまとめ、表記差がある場合は `variants` に元表記を残す。`unquoted-identifier` は識別子名として大文字小文字を区別する。保存する出現例は最大20件に抑える。
 
 ### コメントの意味レビュー
 

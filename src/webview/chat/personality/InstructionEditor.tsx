@@ -9,7 +9,7 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { $getRoot, $createParagraphNode, $createTextNode } from "lexical";
 
-/** 保存中や config.toml 優先時の編集可否を同期する。 */
+/** 保存中や `config.toml` 優先時の編集可否を同期する。 */
 function EditablePlugin({ disabled }: { disabled: boolean }) {
 	const [editor] = useLexicalComposerContext();
 	useEffect(() => {

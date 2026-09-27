@@ -1,4 +1,4 @@
-// Codex 専用の Ultra・Fast `Mode` と UI 候補を保持し、Codex Responses 要求へ適用する。
+// Codex 専用の Ultra・Fast `Mode` と UI 候補を保持し、Codex の `Responses` 要求へ適用する。
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiProviderControls as ControlsState } from "../../../../shared/piProviderControls";
 import type { ConfigChoice, ConfigOption } from "../../../../shared/composer";
@@ -38,7 +38,7 @@ export class CodexProviderControls implements PiModelControls {
 			: levels;
 	}
 
-	/** Ultra 選択時に SDK へ設定する推論レベルを、max、カタログの既定値、対応候補の末尾の順で選ぶ。 */
+	/** Ultra 選択時に SDK へ設定する推論レベルを、`max`、カタログの既定値、対応候補の末尾の順で選ぶ。 */
 	private get ultraBasis() {
 		const levels = this.standardLevels;
 		const preferred = this.metadata?.defaultReasoning;
@@ -95,12 +95,12 @@ export class CodexProviderControls implements PiModelControls {
 		return true;
 	}
 
-	/** ResourceLoader 生成後に SDK セッションを接続する。 */
+	/** `ResourceLoader` 生成後に SDK セッションを接続する。 */
 	bind(session: AgentSession): void {
 		this.session = session;
 	}
 
-	/** Codex Responses を使うモデルだけが固有の要求形式を受け付ける。 */
+	/** Codex の `Responses` を使うモデルだけが固有の要求形式を受け付ける。 */
 	get supportsFastMode(): boolean {
 		return (
 			this.session?.model?.provider === "openai-codex" &&
@@ -257,13 +257,13 @@ export class CodexProviderControls implements PiModelControls {
 		return undefined;
 	}
 
-	/** live と固定した bundled 能力の共通モデルだけ許可する。推論への反映を保証する判定ではない。 */
+	/** 実行時と固定した同梱データの両方で対応するモデルだけ許可する。推論への反映を保証する判定ではない。 */
 	private supportsReasoningUpdates(model: AgentSession["model"]): boolean {
 		if (
 			model?.provider !== "openai-codex" ||
 			model.api !== "openai-codex-responses" ||
-			// Codex rust-v0.157.0 の models-manager/models.json で明示的に true。
-			// #47843 のため live だけで対象を広げず、更新時は実サービスの検証も別途行う。
+			// Codex `rust-v0.157.0` の `models-manager/models.json` で明示的に `true`。
+			// Issue #47843 があるため、`live` だけで対象を広げず、更新時は実サービスの検証も別途行う。
 			model.id !== "gpt-6-astra" ||
 			this.metadata?.supportsReasoningEffortUpdates !== true
 		) {

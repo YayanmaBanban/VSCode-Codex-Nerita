@@ -66,7 +66,7 @@ export class PiJobs {
 		}
 	}
 
-	/** 受付時点の実行条件を閉じ込め、背景実行でも失敗を必ず回収する。 */
+	/** 受付時点のジョブ情報と取消シグナルを固定し、背景実行の失敗も追跡する。 */
 	submit<T>(
 		record: PiJob,
 		signal: AbortSignal,
@@ -181,7 +181,7 @@ export class PiJobs {
 		};
 	}
 
-	/** 保存先と Viewer の表示を同じ状態遷移から更新する。 */
+	/** 保存先と `AgentViewer` の表示を同じ状態遷移から更新する。 */
 	private update(id: string, status: PiJob["status"], result?: string) {
 		const record = this.records.get(id)!;
 		record.status = status;

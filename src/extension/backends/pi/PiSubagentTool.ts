@@ -1,4 +1,4 @@
-// 単一の subagent 要求を Host 管理の子へ変換し、結果を親へ返す。
+// 単一の `subagent` 要求を Host 管理の子へ変換し、結果を親へ返す。
 import { resolve } from "node:path";
 import { z } from "zod";
 import { subagentInputSchema } from "./PiSubagentInput";
@@ -54,7 +54,7 @@ function subagentSignal(
 	]);
 }
 
-/** 定義がある親だけに委譲用 Tool を公開する。 */
+/** 定義がある親だけに委譲用ツールを公開する。 */
 export function createPiSubagentTools(
 	...args: Parameters<typeof createPiSubagentTool>
 ): ToolDefinition[] {

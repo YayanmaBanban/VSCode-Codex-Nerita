@@ -29,7 +29,7 @@ type ShellSettings = Pick<
 	"getShellPath" | "getShellCommandPrefix"
 >;
 
-/** role の書込み先を実体パスに変換し、親の許可範囲と共通する権限だけでツールを作る。 */
+/** `role` の書込み先を実体パスに変換し、親の許可範囲と共通する権限だけでツールを作る。 */
 export async function preparePiRuntimeTools(
 	sdk: typeof PiSdk,
 	options: PiRuntimeOptions,
@@ -120,7 +120,7 @@ function hostShellOptions(settings?: ShellSettings): PiSdk.BashToolOptions {
 	};
 }
 
-/** ファイル操作と子 `role` の範囲は OS に依存せず確認する。 */
+/** ファイル操作と子の `role` の範囲は OS に依存せず確認する。 */
 async function runtimePaths(
 	options: PiRuntimeOptions,
 	mode?: WindowsSandboxImplementation,

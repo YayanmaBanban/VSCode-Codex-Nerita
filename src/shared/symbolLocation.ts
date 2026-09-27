@@ -34,7 +34,7 @@ export function isSourceRange(value: unknown): value is SourceRange {
 	);
 }
 
-/** VS Code の SymbolKind と定義位置を保持する。 */
+/** VS Code の `SymbolKind` と定義位置を保持する。 */
 export type SymbolLocation = { kind: number; range: SourceRange };
 
 /** シンボルの種別と位置を検証する。 */

@@ -95,7 +95,7 @@ export async function loadSubagentDefinitions(
 			settings,
 			packages,
 		),
-		// 既知の独立 CLI 拡張はロードせず、Host の同名 Tool に置き換える。
+		// 既知の独立 CLI 拡張はロードせず、Host の同名ツールに置き換える。
 		trusted: entries.filter(
 			(entry) => !packages.some((root) => containsPath(root, entry)),
 		),

@@ -176,7 +176,7 @@ export class AgentManagerStore {
 		});
 	}
 
-	/** 保存するバックエンドに応じて、定義と override の書込み先を分ける。 */
+	/** 保存するバックエンドに応じて、定義と上書き設定の書込み先を分ける。 */
 	private async saveAgent(
 		request: Extract<ManagerMutation, { type: "agent" }>,
 		state: Awaited<ReturnType<AgentManagerStore["read"]>>,

@@ -82,7 +82,7 @@ function agentView(
 	};
 }
 
-/** ファイル名ではなく標準の name を識別子として重複を検出する。 */
+/** ファイル名ではなく標準の `name` を識別子として重複を検出する。 */
 function markDuplicates(agents: ManagedAgent[]) {
 	const counts = new Map<string, number>();
 	for (const agent of agents) {
