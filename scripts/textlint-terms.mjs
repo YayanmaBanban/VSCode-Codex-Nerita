@@ -21,6 +21,37 @@ function maskProtectedText(text) {
 	return masked;
 }
 
+/** 日本語を含む1行から、許可されていない英単語を抽出する。 */
+function findLineIssues(item, text, line, allowed, preferred) {
+	const masked = maskProtectedText(text);
+
+	if (!JAPANESE_PATTERN.test(masked)) {
+		return [];
+	}
+
+	const issues = [];
+	for (const match of masked.matchAll(ENGLISH_TOKEN_PATTERN)) {
+		const term = match[0];
+
+		if (allowed.has(term)) {
+			continue;
+		}
+
+		const suggestion = preferred.get(term.toLowerCase()) ?? null;
+
+		issues.push({
+			file: item.file,
+			line,
+			type: suggestion ? "preferred-japanese" : "unknown-english",
+			term,
+			suggestion,
+			text: text.trim(),
+		});
+	}
+
+	return issues;
+}
+
 /**
  * 日本語文章に裸で混在する英単語を抽出する。
  *
@@ -29,10 +60,9 @@ function maskProtectedText(text) {
 export function findEnglishTermIssues(items, config) {
 	const allowed = new Set(config.allowedEnglish ?? []);
 	const preferred = new Map(
-		Object.entries(config.preferredJapanese ?? {}).map(([term, suggestion]) => [
-			term.toLowerCase(),
-			suggestion,
-		]),
+		Object.entries(config.preferredJapanese ?? {}).map(
+			([term, suggestion]) => [term.toLowerCase(), suggestion],
+		),
 	);
 
 	const issues = [];
@@ -41,31 +71,15 @@ export function findEnglishTermIssues(items, config) {
 		const lines = item.text.split(/\r?\n/);
 
 		for (let index = 0; index < lines.length; index += 1) {
-			const text = lines[index];
-			const masked = maskProtectedText(text);
-
-			if (!JAPANESE_PATTERN.test(masked)) {
-				continue;
-			}
-
-			for (const match of masked.matchAll(ENGLISH_TOKEN_PATTERN)) {
-				const term = match[0];
-
-				if (allowed.has(term)) {
-					continue;
-				}
-
-				const suggestion = preferred.get(term.toLowerCase()) ?? null;
-
-				issues.push({
-					file: item.file,
-					line: item.startLine + index,
-					type: suggestion ? "preferred-japanese" : "unknown-english",
-					term,
-					suggestion,
-					text: text.trim(),
-				});
-			}
+			issues.push(
+				...findLineIssues(
+					item,
+					lines[index],
+					item.startLine + index,
+					allowed,
+					preferred,
+				),
+			);
 		}
 	}
 

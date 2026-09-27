@@ -13,6 +13,49 @@ function isOutsideRoot(relativePath) {
 	);
 }
 
+/** 指定されたパスを検査対象として検証し、リポジトリ相対の情報に変換する。 */
+async function resolveTarget(root, rawTarget) {
+	const absolutePath = path.resolve(root, rawTarget);
+	const relativePath = path.relative(root, absolutePath);
+
+	if (isOutsideRoot(relativePath)) {
+		throw new Error(`textlint target is outside repository: ${rawTarget}`);
+	}
+
+	let stat;
+
+	try {
+		stat = await fs.lstat(absolutePath);
+	} catch (error) {
+		if (error?.code === "ENOENT") {
+			throw new Error(`textlint target does not exist: ${rawTarget}`, {
+				cause: error,
+			});
+		}
+
+		throw error;
+	}
+
+	if (stat.isSymbolicLink()) {
+		throw new Error(
+			`textlint target must not be a symbolic link: ${rawTarget}`,
+		);
+	}
+
+	let kind;
+	if (stat.isDirectory()) {
+		kind = "directory";
+	} else if (stat.isFile()) {
+		kind = "file";
+	} else {
+		throw new Error(
+			`textlint target must be a file or directory: ${rawTarget}`,
+		);
+	}
+
+	return { path: normalizePath(relativePath), kind };
+}
+
 /**
  * コマンド引数のファイル・フォルダを、リポジトリ相対の検査対象へ変換する。
  */
@@ -26,43 +69,7 @@ export async function resolveTextlintTargets(root, rawTargets) {
 			continue;
 		}
 
-		const absolutePath = path.resolve(root, rawTarget);
-		const relativePath = path.relative(root, absolutePath);
-
-		if (isOutsideRoot(relativePath)) {
-			throw new Error(`textlint target is outside repository: ${rawTarget}`);
-		}
-
-		let stat;
-
-		try {
-			stat = await fs.lstat(absolutePath);
-		} catch (error) {
-			if (error?.code === "ENOENT") {
-				throw new Error(`textlint target does not exist: ${rawTarget}`);
-			}
-
-			throw error;
-		}
-
-		if (stat.isSymbolicLink()) {
-			throw new Error(`textlint target must not be a symbolic link: ${rawTarget}`);
-		}
-
-		const kind = stat.isDirectory()
-			? "directory"
-			: stat.isFile()
-				? "file"
-				: null;
-
-		if (!kind) {
-			throw new Error(`textlint target must be a file or directory: ${rawTarget}`);
-		}
-
-		const target = {
-			path: normalizePath(relativePath),
-			kind,
-		};
+		const target = await resolveTarget(root, rawTarget);
 		const key = `${target.kind}:${target.path}`;
 
 		if (!seen.has(key)) {
