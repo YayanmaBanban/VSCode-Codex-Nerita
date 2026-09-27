@@ -300,6 +300,12 @@ const candidates = shouldUseChangedFiles(mode.changed, targetSpecs)
 	? await getChangedFiles(ignoreMatcher)
 	: repositoryFiles;
 const files = filterFilesByTargets(candidates, targetSpecs);
+
+if (files.length === 0) {
+	console.log("textlint: 対象ファイルはありません。");
+	process.exit(0);
+}
+
 const auditItems = [];
 const referencedPackageTerms = new Set();
 const sourceIdentifiers = new Set();
@@ -318,11 +324,6 @@ for (const file of repositoryFiles) {
 	for (const identifier of extractSourceIdentifiers(source, file)) {
 		sourceIdentifiers.add(identifier);
 	}
-}
-
-if (files.length === 0) {
-	console.log("textlint: 対象ファイルはありません。");
-	process.exit(0);
 }
 
 /**
@@ -439,7 +440,7 @@ if (formatted.trim()) {
 	console.log(formatted);
 }
 
-const preferredIssueCount = printTermIssues(termIssues);
+const deterministicIssueCount = printTermIssues(termIssues);
 
 if (issuePath) {
 	console.log(
@@ -458,6 +459,6 @@ const messageCount = results.reduce(
 	0,
 );
 
-if (messageCount > 0 || preferredIssueCount > 0) {
+if (messageCount > 0 || deterministicIssueCount > 0) {
 	process.exitCode = 1;
 }
