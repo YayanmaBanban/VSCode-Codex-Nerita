@@ -75,7 +75,19 @@ function matchesAllowedPhrase(matches, index, phrase, text) {
 }
 
 /** 日本語を含む1行から、許可されていない英単語を抽出する。 */
-function findLineIssues(item, text, line, allowed, allowedPhrases, preferred) {
+function isTechnicalAcronym(term) {
+	return /^[A-Z][A-Z0-9]{1,11}(?:-[A-Z0-9]{1,12})*$/.test(term);
+}
+
+function findLineIssues(
+	item,
+	text,
+	line,
+	allowed,
+	allowedPhrases,
+	preferred,
+	automaticAllowed,
+) {
 	const masked = maskProtectedText(text);
 
 	if (!JAPANESE_PATTERN.test(masked)) {
@@ -96,19 +108,35 @@ function findLineIssues(item, text, line, allowed, allowedPhrases, preferred) {
 
 		const match = matches[index];
 		const term = match[0];
+		const normalizedTerm = term.toLowerCase();
+		const suggestion = preferred.get(normalizedTerm) ?? null;
 
-		if (allowed.has(term)) {
+		if (suggestion) {
+			issues.push({
+				file: item.file,
+				line,
+				type: "preferred-japanese",
+				term,
+				suggestion,
+				text: text.trim(),
+			});
 			continue;
 		}
 
-		const suggestion = preferred.get(term.toLowerCase()) ?? null;
+		if (
+			allowed.has(term) ||
+			automaticAllowed.has(normalizedTerm) ||
+			isTechnicalAcronym(term)
+		) {
+			continue;
+		}
 
 		issues.push({
 			file: item.file,
 			line,
-			type: suggestion ? "preferred-japanese" : "unknown-english",
+			type: "unknown-english",
 			term,
-			suggestion,
+			suggestion: null,
 			text: text.trim(),
 		});
 	}
@@ -121,7 +149,7 @@ function findLineIssues(item, text, line, allowed, allowedPhrases, preferred) {
  *
  * `preferredJapanese` はエラー候補、未知語は LLM のレビュー候補として扱う。
  */
-export function findEnglishTermIssues(items, config) {
+export function findEnglishTermIssues(items, config, automaticAllowed = new Set()) {
 	const allowed = new Set(config.allowedEnglish ?? []);
 	const allowedPhrases = [...allowed]
 		.filter((term) => /\s/.test(term))
@@ -147,6 +175,7 @@ export function findEnglishTermIssues(items, config) {
 					allowed,
 					allowedPhrases,
 					preferred,
+					automaticAllowed,
 				),
 			);
 		}

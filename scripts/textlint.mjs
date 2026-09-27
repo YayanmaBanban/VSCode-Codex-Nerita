@@ -17,6 +17,7 @@ import {
 	resolveTextlintTargets,
 	shouldUseChangedFiles,
 } from "./textlint-targets.mjs";
+import { loadAutomaticEnglishTerms } from "./textlint-dictionary.mjs";
 import { findEnglishTermIssues } from "./textlint-terms.mjs";
 
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
@@ -364,7 +365,20 @@ for (const file of files) {
 }
 
 const termsConfig = await loadTextlintTerms();
-const termIssues = findEnglishTermIssues(auditItems, termsConfig);
+const automaticTerms = await loadAutomaticEnglishTerms({
+	root: ROOT,
+	dictionaryConfig: termsConfig.technicalDictionary,
+});
+
+if (automaticTerms.warning) {
+	console.warn(`textlint dictionary: ${automaticTerms.warning}`);
+}
+
+const termIssues = findEnglishTermIssues(
+	auditItems,
+	termsConfig,
+	automaticTerms.terms,
+);
 const issuePath = await writeTextlintIssues({
 	root: ROOT,
 	scope: mode.scope,

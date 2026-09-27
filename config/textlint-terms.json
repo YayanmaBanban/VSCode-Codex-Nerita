@@ -9,6 +9,7 @@
 		"Chromium",
 		"CI",
 		"DevTools",
+		"CSpell",
 		"CSS",
 		"DOM",
 		"e2e",
@@ -41,7 +42,6 @@
 		"README",
 		"package.json",
 		"Pi",
-		"pnpm",
 		"PowerShell",
 		"Playwright",
 		"PR",
@@ -78,5 +78,18 @@
 		"skip": "スキップ",
 		"symlink": "シンボリックリンク",
 		"workspace": "ワークスペース"
+	},
+	"technicalDictionary": {
+		"provider": "cspell-dicts",
+		"revision": "e7286c7bf672565a9b42402e0aef747a1be71021",
+		"files": [
+			"dictionaries/software-terms/src/coding-terms.txt",
+			"dictionaries/software-terms/src/computing-acronyms.txt",
+			"dictionaries/software-terms/src/software-tools.txt",
+			"dictionaries/software-terms/src/software-services.txt",
+			"dictionaries/typescript/src/typescript.txt",
+			"dictionaries/typescript/src/ecosystem-terms.txt",
+			"dictionaries/node/src/additional_words.txt"
+		]
 	}
 }

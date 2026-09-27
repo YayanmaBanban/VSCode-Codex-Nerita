@@ -28,7 +28,7 @@ test("classifies bare English while ignoring code, URLs, links, and allowed term
 		},
 	];
 
-	assert.deepEqual(findEnglishTermIssues(items, config), [
+	assert.deepEqual(findEnglishTermIssues(items, config, new Set(["owner"])), [
 		{
 			file: "docs/policy.md",
 			line: 10,
@@ -115,4 +115,36 @@ test("ignores English inside matching multi-backtick code spans", () => {
 			{ line: 13, term: "bare" },
 		],
 	);
+});
+
+test("allows automatic technical terms and uppercase acronyms but keeps preferred Japanese", () => {
+	const items = [
+		{
+			file: "docs/tooling.md",
+			startLine: 1,
+			text: [
+				"exports と Node と pnpm と dist を使う。",
+				"CPU と ESM と WASM と CJS と SHA-256 を扱う。",
+				"owner は自動辞書に含まれていても日本語を優先する。",
+			].join("\n"),
+		},
+	];
+	const automaticAllowed = new Set([
+		"exports",
+		"node",
+		"pnpm",
+		"dist",
+		"owner",
+	]);
+
+	assert.deepEqual(findEnglishTermIssues(items, config, automaticAllowed), [
+		{
+			file: "docs/tooling.md",
+			line: 3,
+			type: "preferred-japanese",
+			term: "owner",
+			suggestion: "担当テスト",
+			text: "owner は自動辞書に含まれていても日本語を優先する。",
+		},
+	]);
 });

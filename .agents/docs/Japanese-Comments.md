@@ -68,10 +68,18 @@ textlint の警告を機械的に修正しない。
 日本語文章に裸で混在する英単語も、通常の textlint 実行時に確認する。
 設定は `config/textlint-terms.json` に置く。
 
-- `allowedEnglish`: API 名、製品名、略語など、そのまま使う語。
-- `preferredJapanese`: 一般的な日本語表現へ置き換えたい語と推奨表記。
+- `preferredJapanese`: 一般的な日本語表現へ置き換えたい語と推奨表記。最優先で判定する。
+- `technicalDictionary`: SHA を固定した CSpell の技術辞書ソース。一般英語辞書は使わない。
+- `allowedEnglish`: 辞書やプロジェクト情報でも判断できない固有名詞などの例外。
 
-`preferredJapanese` に一致した語はエラーとして扱う。
+CSpell の技術辞書は初回だけ取得し、`.textlint-cache/technical-terms.json` に圧縮して保存する。
+取得元のリビジョンを固定するため、上流更新だけで lint 結果は変わらない。
+ネットワークから取得できない場合は警告を表示し、外部辞書なしでレビュー候補を出す。
+
+`package.json` の依存パッケージ、実行コマンド、スクリプト中のパスもプロジェクト語彙として自動許可する。
+`CPU`、`ESM`、`CJS`、`WASM`、`SHA-256` のような大文字の技術略語も自動許可する。
+`preferredJapanese` はこれらの自動語彙より優先するため、`owner` などを辞書が認識しても日本語化のエラーを維持できる。
+
 未登録の英単語はレビュー候補として表示するが、それだけではコマンドを失敗させない。
 バッククォート内の識別子、URL、Markdown のリンク先は英単語チェックから除外する。
 文書の検査対象から外す範囲は、単独行の `<!-- texlint-ignore-start -->` と `<!-- texlint-ignore-end-->` で囲む。
