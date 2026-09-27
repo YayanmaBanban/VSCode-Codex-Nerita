@@ -1,4 +1,4 @@
-// 開発ツリー外の実バンドルで、provider・動的読込・相対資産の配布契約を検証する。
+// 開発ツリー外の実バンドルで、プロバイダー・動的読込み・相対資産の配布契約を検証する。
 import assert from "node:assert/strict";
 import {
 	mkdtemp,

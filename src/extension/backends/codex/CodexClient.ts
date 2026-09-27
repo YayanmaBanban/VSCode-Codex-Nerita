@@ -39,7 +39,7 @@ export type CodexClientOptions = {
 
 /** 初期化済みの型付き RPC を、機能別の操作として提供する。 */
 export class CodexClient {
-	/** 初期化が完了した Transport とサーバー情報を保持する。 */
+	/** 初期化が完了した `AppServerTransport` とサーバー情報を保持する。 */
 	private constructor(
 		private readonly transport: AppServerTransport,
 		readonly serverInfo: InitializeResponse,
@@ -47,7 +47,7 @@ export class CodexClient {
 		private readonly personality: PersonalityStore,
 	) {}
 
-	/** initialize の成功後に initialized を送り、失敗時は起動したプロセスを回収する。 */
+	/** `initialize` の成功後に `initialized` を送り、失敗時は起動したプロセスを回収する。 */
 	static async connect(options: CodexClientOptions): Promise<CodexClient> {
 		const executable = await resolveCodexExecutable(options.extensionPath);
 		options.signal?.throwIfAborted();

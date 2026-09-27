@@ -40,7 +40,7 @@ export const piDefaultsSchema = z.strictObject({
 });
 export type PiDefaults = z.infer<typeof piDefaultsSchema>;
 
-/** current に固定モデルが残らないよう、保存形式を別々に検証する。 */
+/** `current` に固定モデルが残らないよう、保存形式を別々に検証する。 */
 const piHandoffSchema = z.discriminatedUnion("strategy", [
 	z.strictObject({
 		strategy: z.literal("fixed"),

@@ -13,7 +13,7 @@ function backendEffort(item: HandoffConfig["backends"]["pi" | "codex"]) {
 	return undefined;
 }
 
-/** current の実行モデルは保存時に確定しないため、fixed だけを照合する。 */
+/** `current` の実行モデルは保存時に確定しないため、`fixed` だけを照合する。 */
 export function handoffEffortError(
 	config: HandoffConfig,
 	previous: HandoffConfig,

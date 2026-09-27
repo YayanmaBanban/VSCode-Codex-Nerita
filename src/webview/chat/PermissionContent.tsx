@@ -55,7 +55,7 @@ export function PermissionContent({
 	);
 }
 
-/** 短い値は２列に揃え、コードは狭い画面でも読める全幅で表示する。 */
+/** 短い値は2列に揃え、コードは狭い画面でも読める全幅で表示する。 */
 function PermissionFields({ fields }: { fields: PermissionField[] }) {
 	if (!fields.length) {
 		return null;

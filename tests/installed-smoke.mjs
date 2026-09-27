@@ -34,7 +34,7 @@ try {
 	await page.screenshot({ path: path.join(root, "startup.png") });
 	await openCommand(page, "Nerita for Codex: チャットを開く");
 	let chat;
-	// Webview の準備は新規 frame のロードで非同期に進む。
+	// Webview の準備は新規フレームの読み込みで非同期に進む。
 	for (let attempt = 0; attempt < 100; attempt++) {
 		chat = page
 			.frames()

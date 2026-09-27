@@ -43,7 +43,7 @@ export class PersonalityStore {
 			"preset.toml",
 		);
 	}
-	/** config.toml に値があるペインはプリセットより優先して固定する。 */
+	/** `config.toml` に値があるペインはプリセットより優先して固定する。 */
 	private async readScope(
 		scope: "global" | "workspace",
 	): Promise<PersonalityScope> {

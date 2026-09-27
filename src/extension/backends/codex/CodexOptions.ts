@@ -196,7 +196,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.turnOptions.effort = value;
 		}
 		if (id === "collaboration_mode") {
-			// Goal 選択では RPC を送らず、Default への切替だけ即時にスレッドへ反映する。
+			// `Goal` 選択では RPC を送らず、`Default` への切替だけ即時にスレッドへ反映する。
 			await this.setCollaborationMode(value);
 		}
 		if (id === "fast-mode") {

@@ -26,7 +26,7 @@ export class HandoffContextError extends Error {
 	}
 }
 
-/** 生履歴への切替を行わず、生成失敗を送信元へ返す。 */
+/** 要約に失敗しても未加工の履歴へ切り替えず、送信元へエラーを返す。 */
 export async function generateHandoff(
 	cwd: string,
 	backend: "pi" | "codex",

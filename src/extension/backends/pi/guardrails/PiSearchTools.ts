@@ -20,7 +20,7 @@ const inputSchema = z
 	})
 	.strict();
 
-/** grep は文字列検索、find は glob 検索として公開する。 */
+/** `grep` は文字列検索、`find` は glob パターン検索として公開する。 */
 export function createPiSearchTools(
 	sdk: typeof PiSdk,
 	paths: WorkspacePathPolicy,
@@ -155,7 +155,7 @@ async function searchFiles(
 	return files;
 }
 
-/** glob が一致した名前だけを返す。 */
+/** glob パターンに一致した名前だけを返す。 */
 function matchingName(pattern: string, name: string): string[] {
 	return matchPath(pattern, name) ? [name] : [];
 }

@@ -38,7 +38,7 @@ export class CodexProviderControls implements PiModelControls {
 			: levels;
 	}
 
-	/** Ultra 選択時に SDK へ設定する推論レベルを、max、カタログの既定値、対応候補の末尾の順で選ぶ。 */
+	/** Ultra 選択時に SDK へ設定する推論レベルを、`max`、カタログの既定値、対応候補の末尾の順で選ぶ。 */
 	private get ultraBasis() {
 		const levels = this.standardLevels;
 		const preferred = this.metadata?.defaultReasoning;
@@ -95,7 +95,7 @@ export class CodexProviderControls implements PiModelControls {
 		return true;
 	}
 
-	/** ResourceLoader 生成後に SDK セッションを接続する。 */
+	/** `ResourceLoader` 生成後に SDK セッションを接続する。 */
 	bind(session: AgentSession): void {
 		this.session = session;
 	}
@@ -262,8 +262,8 @@ export class CodexProviderControls implements PiModelControls {
 		if (
 			model?.provider !== "openai-codex" ||
 			model.api !== "openai-codex-responses" ||
-			// Codex rust-v0.157.0 の models-manager/models.json で明示的に true。
-			// #47843 のため live だけで対象を広げず、更新時は実サービスの検証も別途行う。
+			// Codex `rust-v0.157.0` の `models-manager/models.json` で明示的に `true`。
+			// Issue #47843 があるため、`live` だけで対象を広げず、更新時は実サービスの検証も別途行う。
 			model.id !== "gpt-6-astra" ||
 			this.metadata?.supportsReasoningEffortUpdates !== true
 		) {

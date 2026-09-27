@@ -14,7 +14,7 @@ export type StartedThread = Pick<ThreadStartResponse, "model" | "cwd"> & {
 };
 /** 未使用の詳細を型保証せず、ターンの識別子と状態だけを公開する。 */
 export type TurnInfo = Pick<Turn, "id" | "status">;
-/** thread/start の必要フィールドを検証する。 */
+/** `thread/start` の必要フィールドを検証する。 */
 export function parseStartedThread(value: unknown): StartedThread {
 	if (
 		!isRecord(value) ||
@@ -61,7 +61,7 @@ export function parseTurn(value: unknown): TurnInfo {
 	}
 	return { id: value.id, status: value.status };
 }
-/** turn/start は開始受付として検証し、完了判定には使わない。 */
+/** `turn/start` は開始受付として検証し、完了判定には使わない。 */
 export function parseStartedTurn(value: unknown): { turn: TurnInfo } {
 	if (!isRecord(value)) {
 		throw new Error("Invalid turn response");

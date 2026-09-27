@@ -14,7 +14,7 @@ const linkClass =
 	"text-[var(--vscode-textLink-foreground,#6dadc9)] underline underline-offset-2 [overflow-wrap:anywhere]";
 
 export function ThinkTool({ tool }: ActivityToolProps) {
-	// 旧形式の審査カードはタイトルが一定でないため、入力・出力の review オブジェクトでも判定する。
+	// 旧形式の審査カードはタイトルが一定でないため、入力・出力の `review` オブジェクトでも判定する。
 	if (
 		[tool.rawInput, tool.rawOutput].some(
 			(value) => isRecord(value) && isRecord(value.review),
@@ -95,7 +95,7 @@ export function WebSearchTool({ tool }: ActivityToolProps) {
 	if (!label) {
 		return null;
 	}
-	// 検索語は検索リンクへ、URL は HTTP(S)だけを直接開く。
+	// 検索語は検索リンクへ、URL は HTTP(S) だけを直接開く。
 	const href = /^https?:\/\//i.test(label)
 		? label
 		: `https://www.google.com/search?q=${encodeURIComponent(label)}`;

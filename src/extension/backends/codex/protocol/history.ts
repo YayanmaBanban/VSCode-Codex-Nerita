@@ -63,7 +63,7 @@ export function parseHistoryTurn(value: unknown): HistoryTurn {
 		itemsView: value.itemsView,
 	};
 }
-/** thread/list・read・resume・`fork` で共通のメタデータを検証する。 */
+/** `thread/list`・`thread/read`・`thread/resume`・`thread/fork` で共通のメタデータを検証する。 */
 export function parseHistoryThread(value: unknown): HistoryThread {
 	if (
 		!isRecord(value) ||

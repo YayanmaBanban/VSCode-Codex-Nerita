@@ -235,7 +235,7 @@ function groupIssues(issues) {
 }
 
 /**
- * 靁的チェックで見つけた候補だけを、小さな JSON として保存する。
+ * 静的チェックで見つけた候補だけを、小さな JSON として保存する。
  * 同じ英単語はまとめ、保存する出現例は最大20件に抑える。
  */
 export async function writeTextlintIssues({ root, scope, issues }) {

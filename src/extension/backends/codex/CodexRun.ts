@@ -14,7 +14,7 @@ import { type Attachment } from "@/shared/composer";
 import { type TurnInfo } from "./protocol/turn";
 import { isRecord } from "../../../shared/validation";
 
-/** 同じ thread で停止後も会話を続けられる実行管理。 */
+/** 同じ `thread` で停止後も会話を続けられる実行管理。 */
 export abstract class CodexRun extends CodexAgents {
 	private cancelTimer: NodeJS.Timeout | undefined;
 	private planText: string | null = null;
@@ -177,7 +177,7 @@ export abstract class CodexRun extends CodexAgents {
 		}, 10_000);
 		this.interrupt();
 	}
-	/** `interrupt` の応答後も turn/completed まで停止待ちを維持する。 */
+	/** `interrupt` の応答後も `turn/completed` まで停止待ちを維持する。 */
 	private interrupt(): void {
 		const run = this.active;
 		if (!run?.turnId || !run.started || run.interruptSent || !this.client) {
@@ -208,7 +208,7 @@ export abstract class CodexRun extends CodexAgents {
 			this.applyEvent(event);
 		}
 	}
-	/** 完了項目・完了ターンの後に届いた delta で確定本文を壊さない。 */
+	/** 完了項目・完了ターンの後に届いた `delta` で確定本文を壊さない。 */
 	private applyEvent(event: TurnEvent): void {
 		const run = this.active;
 		if (
@@ -243,7 +243,7 @@ export abstract class CodexRun extends CodexAgents {
 			},
 		});
 	}
-	/** 完了通知に Plan 本文がない場合も項目通知から保持する。 */
+	/** 完了通知に `Plan` 本文がない場合も項目通知から保持する。 */
 	private capturePlan(event: TurnEvent) {
 		if (
 			event.kind === "item" &&

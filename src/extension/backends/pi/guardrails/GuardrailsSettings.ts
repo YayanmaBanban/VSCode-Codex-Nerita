@@ -13,7 +13,7 @@ import { canonicalPath } from "../../../security/WorkspacePathPolicy";
 export class GuardrailsSettings {
 	private queue: Promise<unknown> = Promise.resolve();
 	constructor(private readonly state: vscode.Memento) {}
-	/** ディスクの guardrails.json ではなく、利用者が適用した内容だけを復元する。 */
+	/** ディスクの `guardrails.json` ではなく、利用者が適用した内容だけを復元する。 */
 	async restore() {
 		for (const folder of vscode.workspace.workspaceFolders ?? []) {
 			if (folder.uri.scheme !== "file") {

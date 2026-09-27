@@ -1,4 +1,4 @@
-// Fork 成功後も一覧に現れない会話を、接続中だけサーバーの確定応答で補う。
+// `fork` 成功後も一覧に現れない会話を、接続中だけサーバーの確定応答で補う。
 import type { SessionSummary } from "../../../../shared/sessionHistory";
 import type { HistoryThread } from "../protocol/history";
 
@@ -29,7 +29,7 @@ export class PendingThreads {
 			this.epoch = epoch;
 		}
 	}
-	/** Fork の確定応答に含まれる会話だけを補完対象にする。 */
+	/** `fork` の確定応答に含まれる会話だけを補完対象にする。 */
 	remember(epoch: number, thread: HistoryThread): void {
 		this.current(epoch);
 		this.rows.set(thread.id, historySummary(thread, false));

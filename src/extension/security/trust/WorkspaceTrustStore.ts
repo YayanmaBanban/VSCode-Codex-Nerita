@@ -42,7 +42,7 @@ export type TrustStorage = {
 	read(): unknown;
 	write(value: { version: 1; records: TrustRecord[] }): Promise<void>;
 };
-/** ログには操作の種別と root だけを渡し、本文や認証情報を含めない。 */
+/** ログには操作の種別とルートだけを渡し、本文や認証情報を含めない。 */
 export type TrustAudit = (event: string, root: string) => void;
 
 /** Windows の大小文字差を保存キーへ反映させない。 */
@@ -102,7 +102,7 @@ export class WorkspaceTrustStore {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
 	}
-	/** 実体パスを照合し、最も深い登録 root の状態を採用する。 */
+	/** 実体パスを照合し、最も深い登録ルートの状態を採用する。 */
 	async trusted(path: string): Promise<boolean> {
 		if (this.failed || this.pendingRestrictions > 0) {
 			return false;
@@ -122,11 +122,11 @@ export class WorkspaceTrustStore {
 			return false;
 		}
 	}
-	/** 外部 root は親が信頼済みでも独立した未信頼の記録にする。 */
+	/** 外部ルートは親が信頼済みでも独立した未信頼の記録にする。 */
 	registerExternal(root: string): Promise<void> {
 		return this.change(root, false, "external");
 	}
-	/** キャッシュ全体の信頼では、新しく取得する repo へ許可を継承させない。 */
+	/** キャッシュ全体の信頼では、新しく取得するリポジトリへ許可を継承させない。 */
 	async registerExternalCache(root: string): Promise<void> {
 		const canonical = await canonicalPath(root, process.cwd());
 		if (
@@ -135,7 +135,7 @@ export class WorkspaceTrustStore {
 			await this.change(canonical, false, "external-cache");
 		}
 	}
-	/** 初めて開いた root を登録し、既存の明示的な信頼を上書きしない。 */
+	/** 初めて開いたルートを登録し、既存の明示的な信頼を上書きしない。 */
 	async registerWorkspace(root: string): Promise<void> {
 		const canonical = await canonicalPath(root, process.cwd());
 		if (!this.records.has(trustKey(canonical))) {

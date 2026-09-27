@@ -1,4 +1,4 @@
-// 導入済みの実拡張を隔離した設定でロードし、Host HTTP と承認境界を検証する。
+// 導入済みの実拡張を隔離した設定で読み込み、Host HTTP と承認境界を検証する。
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { execFileSync } from "node:child_process";
@@ -132,7 +132,7 @@ try {
 				: Promise.reject(new Error("denied"));
 		},
 	};
-	// パッケージ設定に存在しても、明示 Trust がなければコードを読み込まない。
+	// パッケージ設定に存在しても、明示的な信頼がなければコードを読み込まない。
 	session = await createPiRuntime({ ...options, trustedExtensionPaths: [] });
 	assert.ok(!session.getActiveToolNames().includes("fetch_content"));
 	assert.ok(

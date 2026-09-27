@@ -39,7 +39,7 @@ function isRequestId(value: unknown): value is RequestId {
 		(typeof value === "number" && Number.isSafeInteger(value))
 	);
 }
-/** method を先に判定し、同じ ID のサーバー要求を応答と取り違えない。 */
+/** `method` を先に判定し、同じ ID のサーバー要求を応答と取り違えない。 */
 export function parseRpcMessage(message: unknown): RpcMessage {
 	if (!isRecord(message)) {
 		throw new Error("Invalid envelope");

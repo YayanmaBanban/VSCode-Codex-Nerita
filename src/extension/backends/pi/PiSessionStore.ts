@@ -55,7 +55,7 @@ export function piSessionDirectory(
 			);
 }
 
-/** 初回だけ `ignore` を作り、既存設定や作成権限エラーを握りつぶさない。 */
+/** ワークスペース保存時は初回だけ `.gitignore` を作り、作成権限エラーを握りつぶさない。 */
 export async function preparePiSessionDirectory(
 	directory: string,
 	storage: PiSessionStorage,

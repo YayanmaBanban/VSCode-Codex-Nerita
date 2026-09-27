@@ -4,7 +4,7 @@ import type { PiCatalogModel, PiModelCatalogReader } from "../PiModelCatalog";
 import { codexOAuth } from "./CodexOAuth";
 import { normalizeCodexModels } from "./CodexModelCatalog";
 
-// モデル一覧の取得に使う client_version を固定する。
+// モデル一覧の取得に使う `client_version` を固定する。
 // この値は同梱 Codex CLI のバージョンとは別に管理する。
 const MODEL_CATALOG_CLIENT_VERSION = "0.999.0";
 

@@ -34,7 +34,7 @@ Host の Pi 固有処理は `src/extension/backends/pi/guardrails/` に置く。
 
 `read / ls` を SDK の標準ツールからガード付きのアダプターへ置き換える。承認前に表記と実体を検査し、承認後にもリンク先を確認する。read は開いたハンドルの識別情報を検査してから取得した内容を SDK へ渡す。ls は子のリンク先へ追従しない。
 
-既存の `write / edit / powershell / pwsh / bash` と登録済みの拡張ツールは共通の `approveToolCall` で設定を検査する。設定の digest を承認対象の fingerprint に含め、設定の世代ごとの `AbortSignal` を許可の寿命へ結び付ける。Host 管理の子 Runtime は親の `guardrailsRoot` を維持し、cwd の変更で別ルートの緩い設定へ切り替えない。
+既存の `write / edit / powershell / pwsh / bash` と登録済みの拡張ツールは共通の `approveToolCall` で設定を検査する。設定の `digest` を承認対象の `fingerprint` に含め、設定の世代ごとの `AbortSignal` を許可の寿命へ結び付ける。Host 管理の子 Runtime は親の `guardrailsRoot` を維持し、`cwd` の変更で別ルートの緩い設定へ切り替えない。
 
 初期版では write/edit・Shell・拡張ツールの毎回承認を維持する。`allow` ルールでこの承認や Sandbox の書込み上限は解除しない。認証情報のディレクトリと Git の認証情報ファイルは組込みルールで拒否する。ファイルツールから設定自体への書込みも拒否する。
 

@@ -21,7 +21,7 @@ export type ContributionCondition = {
 /** 操作は既存の検証済み `config/set` へ接続する。 */
 export type NeritaUiControl = z.infer<typeof UiControlSchema>;
 
-/** Registry への登録形式。条件そのものは Webview へ送らない。 */
+/** レジストリへの登録形式。条件そのものは Webview へ送らない。 */
 export type NeritaUiContribution = {
 	id: string;
 	slot: NeritaUiSlot;
@@ -35,5 +35,5 @@ export type ResolvedUiContribution = z.infer<
 	typeof ResolvedUiContributionSchema
 >;
 
-/** バックエンド固有の Surface と、その内側に配置する宣言。 */
+/** バックエンド固有の設定領域と、その内側に配置する宣言。 */
 export type UiContributions = z.infer<typeof UiContributionsSchema>;

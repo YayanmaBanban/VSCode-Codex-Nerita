@@ -44,7 +44,7 @@ export type AgentStatus =
 	| "systemError"
 	| "notFound";
 
-/** Thread ID を識別子とするタイムラインカード。 */
+/** スレッド ID を識別子とするタイムラインカード。 */
 export type SubAgentSummary = {
 	threadId: string;
 	parentThreadId: string;

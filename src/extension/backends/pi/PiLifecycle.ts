@@ -91,7 +91,7 @@ export abstract class PiLifecycle extends SessionState {
 	/** 現在の実行に属する承認だけを受け付ける。 */
 	protected abstract authorize: PiAuthorize;
 
-	/** 終了まで待つ操作の拒否を処理し、追跡から除外する。 */
+	/** 終了待ちの処理が拒否されても未処理にせず、完了後に追跡対象から外す。 */
 	protected track(operation: Promise<unknown>): void {
 		const settled = operation.catch(() => undefined);
 		this.closing.add(settled);

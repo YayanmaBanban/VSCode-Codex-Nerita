@@ -1,4 +1,4 @@
-// 明示登録した root の内側にある別リポジトリへ、親の信頼を暗黙に引き継がせない。
+// 明示登録したルートの内側にある別リポジトリへ、親の信頼を暗黙に引き継がせない。
 import { lstat } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { containsPath } from "../AgentAccessPolicy";

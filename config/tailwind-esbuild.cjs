@@ -1,4 +1,4 @@
-// Webview の Tailwind CSS を生成し、クラスの追加・変更も watch に反映する。
+// Webview の Tailwind CSS を生成し、クラスの追加・変更も監視ビルドに反映する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const postcss = require("postcss");

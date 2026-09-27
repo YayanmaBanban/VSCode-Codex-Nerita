@@ -1,4 +1,4 @@
-// 対応モデルの要求の基準値を固定し、信頼済みの推論変更を元の履歴位置へ再挿入する。
+// 対応モデルの推論レベルの基準値と変更履歴を保存し、送信時に元の入力位置へ再挿入する。
 import { isRecord } from "../../../../shared/validation";
 import {
 	historyAnchor,
@@ -107,7 +107,7 @@ function updateTail(
 	}
 }
 
-/** 短縮・本文置換があれば古いコンテキストウィンドウの固定値を破棄する。 */
+/** 入力の短縮や途中の置換を検出した場合は、以前の基準値と変更履歴を破棄する。 */
 function survives(state: ReasoningHistory, input: unknown[]): boolean {
 	return [state, ...state.transitions].every(
 		(entry) =>

@@ -73,7 +73,7 @@ Windows のシェル ツールの説明は「設定された Sandbox Executor �
 
 Windows では Codex 用 `Executor` を使う。Windows 以外では Codex の設定取得・`Executor` 生成・サンドボックスセットアップを行わず、Pi SDK 標準の`bash`を登録する。サンドボックスがないことを利用不能理由やエラー通知にしない。`read` / `ls` / `write` / `edit`も利用できる。Windows のサンドボックス失敗時に Host シェルへ切り替える処理ではない。
 
-非 Windows では SDK の`shellPath` / `shellCommandPrefix`設定を維持する。Nerita は`@anthropic-ai/sandbox-runtime`を自動検出・導入しないが、明示的に信頼した Pi 拡張による`bash`の置換を許可する。その拡張が提供するサンドボックス処理を実行でき、Nerita の承認・`role` のシェル禁止・取消しも適用する。実パッケージと macOS / Linux 実機での共存は未検証。
+非 Windows では SDK の `shellPath` / `shellCommandPrefix` 設定を維持する。Nerita は `@anthropic-ai/sandbox-runtime` を自動検出・導入しないが、明示的に信頼した Pi 拡張による `bash` の置換を許可する。その拡張が提供するサンドボックス処理を実行でき、Nerita の承認・`role` のシェル禁止・取消しも適用する。実パッケージと macOS / Linux 実機での共存は未検証。
 
 通常の非 Windows 承認は`実行範囲: Pi Shell（OSの権限で実行）`と表示する。Windows Sandbox の情報や Nerita が強制していない書込み・通信制限は表示しない。外部拡張が自身で加える隔離の強度も Nerita 側では保証しない。非 Windows の`bash`以外の組み込みツールの上書きは拒否する。
 
@@ -147,9 +147,9 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 ```
 
-実機の ConstrainedLanguage では Console の setter が拒否される。その前に OS 標準の `chcp.com 65001` で Console のコードページを設定する。PowerShell 側の出力リダイレクトは古いコードページをキャッシュすることを実測した。このため、固定の `cmd.exe /d /c` 内で chcp の表示だけを抑制する。実行ファイルは `SystemRoot` 基準のフルパスを使用する。制約言語・ExecutionPolicy・Sandbox 設定は変更しない。
+実機の ConstrainedLanguage では Console の設定処理が拒否される。その前に OS 標準の `chcp.com 65001` で Console のコードページを設定する。PowerShell 側の出力リダイレクトは古いコードページをキャッシュすることを実測した。このため、固定の `cmd.exe /d /c` 内で `chcp` の表示だけを抑制する。実行ファイルは `SystemRoot` 基準のフルパスを使用する。制約言語・ExecutionPolicy・Sandbox 設定は変更しない。
 
-setter が拒否されてもコードページを確認し、既に 65001 なら継続する。65001 にならなかった設定は警告として結果に残す。初期化を含む平文 `-Command` の本文は単一 argv として承認対象になる。`-EncodedCommand` は使わず、stdout / stderr は終了時にまとめて表示する。ファイル保存の既定エンコーディングは変更しない。指定された `Encoding.UTF8` は BOM 付きであり、native へのパイプでも BOM 付きになる場合がある。
+設定処理が拒否されてもコードページを確認し、既に 65001 なら継続する。65001 にならなかった設定は警告として結果に残す。初期化を含む平文 `-Command` の本文は単一の `argv` として承認対象になる。`-EncodedCommand` は使わず、`stdout` / `stderr` は終了時にまとめて表示する。ファイル保存の既定エンコーディングは変更しない。指定された `Encoding.UTF8` は BOM 付きであり、ネイティブコマンドへのパイプでも BOM 付きになる場合がある。
 
 ## Host 子 Runtime
 
@@ -164,13 +164,13 @@ setter が拒否されてもコードページを確認し、既に 65001 なら
 | 実行 | 結果と範囲 |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `rtk pnpm check` | Lint・Host / Webview / Stories / tests 型検査が成功 |
-| `rtk pnpm test:unit` | 71 files / 455 tests 成功。U01〜U12、OS 別のツール選択、セットアップの非 Windows 除外、Shell 別の探索・公開・承認、既存回帰 |
+| `rtk pnpm test:unit` | 71ファイル / 455件成功。U01〜U12、OS 別のツール選択、セットアップの非 Windows 除外、Shell 別の探索・公開・承認、既存回帰 |
 | `rtk pnpm compile` | 開発ビルド成功 |
-| `rtk pnpm test:runtime` | 19 tests 成功。移設した Runtime、公開 API、provider chunk、拡張 SDK import、画像 WASM、ライセンス・更新処理 |
-| `rtk pnpm test:pi:chat` | 実 SDK＋模擬モデル＋本番 Sandbox Executor。承認 / 拒否 / Stop / 切断再接続、履歴、provider controls、明示 Trust 拡張、Host 子・孫 Runtime。追加の OS 模擬4ケースで通常 `bash` と信頼済み `bash` 置換を確認 |
-| `rtk pnpm test:pi:shell` | 本番 Shell ツールと Sandbox で 7 cases 成功。両 Shell の選択・Node・承認拒否、Windows PowerShell の UTF-8 / 日本語 stdout・stderr / pipe / exit 7。既存のポータブル版 pwsh を明示指定 |
-| `rtk pnpm test` | 実 VS Code Extension Host の 6 tests 成功。Pi SDK / file 承認 / Stop / 履歴、Codex 初期化、Webview 資産 |
-| `rtk pnpm ui-review pi-approvals` | 8 tests 成功。write / powershell / pwsh / bash、320px、light / dark、長い argv と policy、許可 / 拒否 / 取消し / Stop、console / page error 検査。生成画像を変更前後で目視確認 |
+| `rtk pnpm test:runtime` | 19件成功。移設した Runtime、公開 API、プロバイダーのチャンク、拡張 SDK のインポート、画像 WASM、ライセンス・更新処理 |
+| `rtk pnpm test:pi:chat` | 実 SDK＋模擬モデル＋本番 Sandbox Executor。承認 / 拒否 / Stop / 切断再接続、履歴、プロバイダー制御、明示的に信頼した拡張、Host 子・孫 Runtime。追加の OS 模擬4ケースで通常 `bash` と信頼済み `bash` 置換を確認 |
+| `rtk pnpm test:pi:shell` | 本番 Shell ツールと Sandbox で7件成功。両 Shell の選択・Node・承認拒否、Windows PowerShell の UTF-8 / 日本語 `stdout`・`stderr` / パイプ / 終了コード7。既存のポータブル版 pwsh を明示指定 |
+| `rtk pnpm test` | 実 VS Code Extension Host の6件成功。Pi SDK / ファイル承認 / Stop / 履歴、Codex 初期化、Webview 資産 |
+| `rtk pnpm ui-review pi-approvals` | 8件成功。`write` / `powershell` / `pwsh` / `bash`、320px、明暗テーマ、長い `argv` とポリシー、許可 / 拒否 / 取消し / Stop、コンソール / ページエラー検査。生成画像を変更前後で目視確認 |
 | `rtk pnpm test:sandbox` | Windows 本番 Executor の受入。通信と日本語出力の失敗を含むため exit 1。詳細は下記 |
 
 `rtk pnpm test:codex:chat` も認証済みモデルで返信・中断・同一会話の継続に成功した。既存 smoke は Node 単独で `vscode` を解決できず build で止まったため、Pi smoke と同じ空のエディター API 境界を追加した。エディター操作は利用できず、Codex の接続やモデル応答は実物を使う。この試験は network 比較ではない。
@@ -185,7 +185,7 @@ setter が拒否されてもコードページを確認し、既に 65001 なら
 
 build / package は `dist/runtime` を作り直すので SDK / Windows smoke と同時実行しない。受入は専用の内側・外側の検証データだけを作り、削除前に絶対パスを検査する。ユーザーデータ、AV、Firewall、ExecutionPolicy は変更しない。
 
-Shell 分離前の Windows 受入は **18 pass / 5 fail / 1 unverified**（別途 network の観測記録 4 件）。当時の各ケースと network 比較の argv・policy・応答は [検証 JSON](Sandbox-Approval-validation.json) に保存する。ローカル絶対パスは `<fixture>` / `<extension>` 等に置換してあり、そのまま実行する入力ではない。再実行時のローカル診断出力先は `dist/sandbox-smoke/results.json`。検証データはテスト後に削除する。
+Shell 分離前の Windows 受入は **18件成功 / 5件失敗 / 1件未検証**（別途、通信の観測記録4件）。当時の各ケースと通信比較の `argv`・ポリシー・応答は [検証 JSON](Sandbox-Approval-validation.json) に保存する。ローカル絶対パスは `<fixture>` / `<extension>` 等に置換してあり、そのまま実行する入力ではない。再実行時のローカル診断出力先は `dist/sandbox-smoke/results.json`。検証データはテスト後に削除する。
 
 2026-09-25 の Shell 分離・UTF-8 修正は `test:pi:shell` で追加検証した。結果は `dist/pi-shell-smoke/results.json`。3設定すべての CodePage=65001、ConstrainedLanguage の維持、短い日本語 stdout を確認した。native の UTF-8 stderr と明示 `exit $LASTEXITCODE` による exit 7、日本語 pipe も確認した。全体の network 受入は再実行しておらず、過去の失敗を成功へ書き換えていない。UI の変更前は `dist/ui-review-history/shell-tools-20260925-083321/before/`。変更後は `dist/ui-review/report/` と `dist/ui-review/test-results/`。write / powershell / pwsh、長い argv、UTF-8 設定失敗時の警告を確認した。明暗・320px・承認 / 拒否 / 取消し / Stop も確認した。
 
@@ -223,19 +223,19 @@ I08: 実 SDK package manager で `pi-web-access` `0.30.0` の導入を確認し�
 | 条件 | 対応する証拠 | 状態 |
 | --------------------------------- | --------------------------------------------------------------------------------- | ------------ |
 | C01 通常 Pi Shell | I01、実 SDK smoke、W01 | 確認 |
-| C02 同一 snapshot / fallback 不在 | U02/U03/U07/U08、Executor review、I01 | 確認 |
+| C02 同一スナップショット / 代替経路なし | U02/U03/U07/U08、Executor のレビュー、I01 | 確認 |
 | C03 拒否 / Stop / 無効要求 | U03〜U06、I02/I03。実機の未準備状態は未検証 | 一部未検証 |
 | C04 3 種の executable と出力 | W01 / W09、追加の Shell 11件。pwsh の短い日本語出力を修正し再検証 | 確認 |
 | C05 read / write / 子孫境界 | U09、I04、W02〜W07 | 確認 |
-| C06 回収 / 他接続 | I03/I07、W08。counter・開始 marker で実行と停止を確認 | 確認 |
+| C06 回収 / 他接続 | I03/I07、W08。カウンター・開始マーカーで実行と停止を確認 | 確認 |
 | C07 Codex / Pi 比較 | 同条件比較に加え、Codex CLI 単体でも同じ外部 TCP 到達を再現した記録を確認 | 確認 |
 | C08 通信 | Nerita 固有ではないと切り分け済み。完全遮断を保証しない契約。W10 の観測失敗は保持 | 制約確認済み |
 | C09 明示 Extension Trust | U10、I05、実 pi-web-access の未信頼・拒否・承認後 HTTP の3件 | 確認 |
 | C10 既存 SDK 機能 | I06、SDK persistence / packages smoke、Runtime 配布 19 tests | 確認 |
 | C11 ファイルツール | U02/U09、I04、変更・junction・hard link テスト。本書に Host 競合限界 | 確認 |
 | C12 Host 子・孫 | U12、I07。権限非拡大、承認待ち / 実行中 Stop、起動競合、履歴分離 | 確認 |
-| C13 旧拒否仕様の除外 | source / script / setting 検索と差分レビュー | 確認 |
-| C14 全検証と新 commit | 自動検証と実 VS Code UI は追加確認。未準備の実機確認・追加差分のコミットは残る | **未完了** |
+| C13 旧拒否仕様の除外 | ソース / スクリプト / 設定の検索と差分レビュー | 確認 |
+| C14 全検証と新しいコミット | 自動検証と実 VS Code UI は追加確認。未準備の実機確認・追加差分のコミットは残る | **未完了** |
 | C15 文書・設定・差分 | マージ状態・文書配置・制約・受入結果を同期。依存更新なし | 文書同期済み |
 
 U01〜U12 の主な検証元は次の5ファイル。

@@ -81,7 +81,7 @@ export const UiSlotSchema = z.enum([
 	"status",
 ]);
 
-/** 旧検証処理と同じく、slot を String(slot) で文字列化して判定する。呼び出し側の値は変更しない。 */
+/** 旧検証処理と同じく、`slot` を `String(slot)` で文字列化して判定する。呼び出し側の値は変更しない。 */
 const compatibleSlotSchema = z.preprocess(
 	(value) => String(value),
 	UiSlotSchema,
@@ -96,7 +96,7 @@ export const ResolvedUiContributionSchema = z.object({
 	control: UiControlSchema,
 });
 
-/** バックエンドの Surface と、ID が重複しない解決済み宣言。 */
+/** バックエンドの設定領域と、ID が重複しない解決済み宣言。 */
 export const UiContributionsSchema = z
 	.object({
 		surface: z.enum(["codex", "pi"]),

@@ -14,7 +14,7 @@ type Context = {
 };
 const contexts = new Map<string, Context>();
 
-/** ID は Host 内の policy にだけ格納し、セッション終了時に回収する。 */
+/** ID は Host 内のポリシーにだけ格納し、セッション終了時に回収する。 */
 export function bindTrustContext(
 	store: WorkspaceTrustStore,
 	roots: string[],
@@ -55,7 +55,7 @@ export async function evaluateTrust(
 		(
 			await Promise.all(paths.map((path) => context.store.trusted(path)))
 		).every(Boolean);
-	// 任意コマンドは同じ root 内の未信頼ツリーにも到達できるため、混在時は実行を止める。
+	// 任意コマンドは同じルート内の未信頼ツリーにも到達できるため、混在時は実行を止める。
 	const mixed = containsUntrustedCode(call, context, paths);
 	if (!trusted || mixed) {
 		context.store.audit("execution-denied", call.cwd);
@@ -67,7 +67,7 @@ export async function evaluateTrust(
 	return signal;
 }
 
-/** 複数の root を許可した実行基盤へ渡す場合は、そのすべてを実行対象として判定する。 */
+/** 複数のルートを許可した実行基盤へ渡す場合は、そのすべてを実行対象として判定する。 */
 function executionRoots(call: ToolCall): string[] {
 	return call.command || call.hostShell || call.tool.startsWith("extension:")
 		? call.policy.workspaceRoots

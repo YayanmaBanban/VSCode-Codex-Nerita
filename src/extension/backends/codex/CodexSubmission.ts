@@ -148,7 +148,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		};
 		try {
 			this.checkSubmission(epoch, sessionId);
-			// Goal は API のモードではなく、送信する指示の接頭辞として扱う。
+			// `Goal` は API のモードではなく、送信する指示の接頭辞として扱う。
 			text = this.submissionText(text);
 			const context = this.needsSubmissionContext(
 				sessionReferences,
@@ -245,7 +245,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		};
 	}
 
-	/** Goal モードの入力に必要な接頭辞だけを補う。 */
+	/** `Goal` モードの入力に必要な接頭辞だけを補う。 */
 	private submissionText(text: string) {
 		if (
 			this.collaborationMode === "goal" &&

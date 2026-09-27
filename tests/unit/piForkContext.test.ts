@@ -8,7 +8,7 @@ import { assistant } from "./piHarness";
 
 const parent = { provider: "local", id: "test" };
 const target = { provider: "local", model: "test" };
-/** SDK の投影済み会話だけを提供する。 */
+/** SDK の `buildSessionContext()` が返す会話だけを提供する。 */
 function source(messages: PiForkMessage[]) {
 	return {
 		buildSessionContext: () => ({
