@@ -1,5 +1,9 @@
 // ストーリーごとに独立する、App Server や認証を必要としない双方向ブリッジ。
 import { initialState, type ChatState } from "../../../shared/chatState";
+import {
+	codexAuthMethods,
+	codexConnectionText,
+} from "../../../shared/codexConnection";
 import type { BackendId } from "../../../shared/backend";
 import { type HostMessage, type UiMessage } from "../../../shared/messages";
 import type { Bridge } from "../../../webview/vscodeBridge";
@@ -37,15 +41,11 @@ function scenarioState(scenario: Scenario): ChatState {
 	}
 	if (scenario === "auth") {
 		state.connection = "auth-required";
-		state.authMethods = [
-			{ id: "chat-gpt", name: "ChatGPT" },
-			{ id: "api-key", name: "API Key" },
-		];
+		state.authMethods = codexAuthMethods();
 	}
 	if (scenario === "error") {
 		state.connection = "error";
-		state.error =
-			"Codexとの接続が切れました。再接続してやり直してください。";
+		state.error = codexConnectionText.disconnected;
 	}
 	if (
 		[
