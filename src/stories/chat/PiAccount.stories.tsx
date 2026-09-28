@@ -15,7 +15,7 @@ function PiAccountStory() {
 		mock.patchState({
 			piAccount: "local: 認証未設定",
 			connection: "auth-required",
-			authMethods: [{ id: "pi", name: "Piの認証情報を管理" }],
+			authMethods: [{ id: "pi", name: "認証情報を設定" }],
 			attachmentsSupported: false,
 			configOptions: [
 				{

@@ -1,11 +1,4 @@
-// クラス名の統合・表示整形・呼び出し頻度の制御を提供する。
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-// Utility function to merge class names with Tailwind
-export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs));
-}
+// 数値・日付・文字列の整形、ID の生成、関数の実行頻度制御を提供する。
 
 // Utility function to format a number with currency
 export function formatCurrency(

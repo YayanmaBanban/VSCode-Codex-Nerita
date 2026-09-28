@@ -207,13 +207,16 @@ function connectionAction(connection: ChatState["connection"]) {
 	return "アカウントを再認証して接続します";
 }
 
-/** 接続成功・復旧可能・処理中を状態色で区別する。 */
+/** 接続エラー・接続済み・接続中・その他の状態を色分けする。 */
 function connectionColor(connection: ChatState["connection"]) {
 	if (connection === "error") {
 		return "bg-tool-error";
 	}
 	if (connection === "ready") {
 		return "bg-menu-check";
+	}
+	if (connection === "authenticating") {
+		return "bg-[#3794ff]";
 	}
 	if (connection !== "connecting") {
 		return "bg-warning";
@@ -223,15 +226,21 @@ function connectionColor(connection: ChatState["connection"]) {
 
 /** 接続成功とそれ以外を背景色で区別する。 */
 function connectionBgColor(connection: ChatState["connection"]) {
-	if (connection === "ready" || connection === "connecting") {
+	if (
+		connection === "ready" ||
+		connection === "connecting" ||
+		connection === "authenticating"
+	) {
 		return "bg-transparent";
 	}
-	return "bg-secondary";
+	return "bg-[var(--vscode-button-secondaryBackground,#3794ff)]";
 }
 
 /** 接続成功とそれ以外のマウスカーソルの状態。 */
 function connectionMouseCursor(connection: ChatState["connection"]) {
-	return connection === "ready" || connection === "connecting"
+	return connection === "ready" ||
+		connection === "connecting" ||
+		connection === "authenticating"
 		? ""
 		: "cursor-pointer";
 }

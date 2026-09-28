@@ -65,7 +65,7 @@ export class PiAccount {
 		this.controls.snapshot();
 	}
 
-	/** 新規起動時だけ保存した推論を適用し、非対応値は現在の候補へ戻す。 */
+	/** 起動時に保存済みの推論レベルを一度だけ適用し、使えない値は現在の候補から選び直す。 */
 	private restoreReasoning(signal: AbortSignal): void {
 		const saved = this.initialSelection;
 		this.initialSelection = undefined;
@@ -113,7 +113,7 @@ export class PiAccount {
 				)
 					? "ready"
 					: "auth-required",
-			authMethods: [{ id: "pi", name: "Piの認証情報を管理" }],
+			authMethods: [{ id: "pi", name: "認証情報を設定" }],
 			piAccount: model
 				? `${model.provider}: ${authStatusLabel(this.models, model.provider, status?.configured)}`
 				: "Pi: モデル・認証未設定",
@@ -147,7 +147,7 @@ export class PiAccount {
 		this.controls.snapshot();
 	}
 
-	/** プロバイダー変更では利用可能な先頭モデルを選び、SDK の範囲内への補正を使う。 */
+	/** プロバイダーを変更する際は、利用可能なモデルを選択して保存する。 */
 	async selectProvider(value: string, signal: AbortSignal): Promise<void> {
 		const available = await this.models.getAvailable(undefined, { signal });
 		await this.catalog.refresh(value, signal);
@@ -184,7 +184,7 @@ export class PiAccount {
 			: Promise.resolve();
 	}
 
-	/** 宣言型 UI の設定 ID を Host の操作に限定する。 */
+	/** 設定 ID に応じてモデル関連の変更を処理し、その他は共通の設定処理へ渡す。 */
 	async configure(
 		id: string,
 		value: string,

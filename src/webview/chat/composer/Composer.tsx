@@ -1,5 +1,6 @@
 // 入力領域と送信・停止・設定操作をまとめる。
-import { SendHorizontal, SquareStop } from "lucide-react";
+import { SettingsTooltip } from "../SettingsTooltip";
+import { ArrowUp } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import type { ComposerPart } from "../../../shared/composerContent";
@@ -86,35 +87,45 @@ export function Composer({
 				</span>
 				<div className="flex shrink-0 items-center gap-2">
 					{busy && (
-						<button
-							type="button"
-							className={`${iconButtonClass} stop-button bg-[#bd3948]`}
-							aria-label="停止"
-							title="停止"
-							disabled={state.run === "cancelling"}
-							onClick={() => {
-								if (state.sessionId && state.runId) {
-									send({
-										type: "prompt/cancel",
-										requestId: crypto.randomUUID(),
-										sessionId: state.sessionId,
-										runId: state.runId,
-									});
-								}
-							}}
-						>
-							<SquareStop size={18} aria-hidden="true" />
-						</button>
+						<SettingsTooltip content="停止">
+							<button
+								type="button"
+								className={`${iconButtonClass} stop-button bg-[#bd3948]`}
+								aria-label="停止"
+								disabled={state.run === "cancelling"}
+								onClick={() => {
+									if (state.sessionId && state.runId) {
+										send({
+											type: "prompt/cancel",
+											requestId: crypto.randomUUID(),
+											sessionId: state.sessionId,
+											runId: state.runId,
+										});
+									}
+								}}
+							>
+								<span
+									className="size-[14px] rounded-[2px] bg-white"
+									aria-hidden="true"
+								/>
+							</button>
+						</SettingsTooltip>
 					)}
-					<button
-						type="submit"
-						className={`${iconButtonClass} send-button bg-[#2563b8]`}
-						aria-label={sendLabel}
-						title={sendLabel}
-						disabled={sendDisabled(drop, available, state, parts)}
-					>
-						<SendHorizontal size={18} aria-hidden="true" />
-					</button>
+					<SettingsTooltip content={sendLabel}>
+						<button
+							type="submit"
+							className={`${iconButtonClass} send-button bg-[#2563b8]`}
+							aria-label={sendLabel}
+							disabled={sendDisabled(
+								drop,
+								available,
+								state,
+								parts,
+							)}
+						>
+							<ArrowUp size={18} aria-hidden="true" />
+						</button>
+					</SettingsTooltip>
 				</div>
 			</div>
 			<div inert={inputLocked}>
@@ -124,7 +135,7 @@ export function Composer({
 	);
 }
 
-/** 送信準備と空の下書きを確認して送信を制御する。 */
+/** 添付の読み込み中、接続やセッションが利用できない場合、下書きが空の場合は送信を無効にする。 */
 function sendDisabled(
 	drop: ReturnType<typeof useAttachmentDrop>,
 	available: boolean,

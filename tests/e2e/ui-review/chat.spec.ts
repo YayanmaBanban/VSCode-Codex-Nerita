@@ -83,7 +83,11 @@ test("停止後も同じ会話で再送・エラー復帰", async ({ page }, inf
 	});
 	await page.goto("/iframe.html?id=chat-app--error&viewMode=story");
 	await expect(page.getByRole("alert")).toBeVisible();
-	await page.getByRole("button", { name: "再接続" }).click();
+	await page
+		.getByRole("button", {
+			name: "接続エラー：アカウントを再認証して接続します",
+		})
+		.click();
 	await expect(page.getByRole("alert")).toHaveCount(0);
 });
 test("IME確定・改行・キーボード送信", async ({ page }) => {

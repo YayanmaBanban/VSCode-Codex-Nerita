@@ -1,4 +1,5 @@
-// 読み取り専用の子スレッドビューと、ネストを一段戻るヘッダーを表示する。
+// 読み取り専用の子スレッドと、親のスレッドへ戻るヘッダーを表示する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
 import type { ChatState } from "../../../shared/chatState";
@@ -34,16 +35,17 @@ export function AgentViewer({
 			aria-label="サブエージェントの会話"
 		>
 			<header className="flex min-w-0 items-center gap-3 border-b border-solid border-message-border p-3">
-				<button
-					autoFocus
-					type="button"
-					onClick={viewer.back}
-					aria-label="親へ戻る"
-					title="親へ戻る"
-					className="shrink-0 rounded p-2 hover:bg-message-user focus-visible:outline-2 focus-visible:outline-[var(--vscode-focusBorder)]"
-				>
-					<ArrowLeft size={18} />
-				</button>
+				<SettingsTooltip content="親へ戻る">
+					<button
+						autoFocus
+						type="button"
+						onClick={viewer.back}
+						aria-label="親へ戻る"
+						className="shrink-0 rounded p-2 hover:bg-message-user focus-visible:outline-2 focus-visible:outline-[var(--vscode-focusBorder)]"
+					>
+						<ArrowLeft size={18} />
+					</button>
+				</SettingsTooltip>
 				<AgentIcon iconKey={current.iconKey} />
 				<div className="min-w-0 flex-1">
 					<span className="block [overflow-wrap:anywhere]">

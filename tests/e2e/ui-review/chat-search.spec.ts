@@ -24,6 +24,15 @@ for (const colorScheme of ["dark", "light"] as const) {
 		const input = search.getByRole("textbox", { name: "会話を検索" });
 		const count = search.getByLabel("検索結果");
 		await expect(input).toBeFocused();
+		const caseSensitive = search.getByRole("button", {
+			name: "大文字と小文字を区別",
+		});
+		await caseSensitive.focus();
+		await expect(page.getByRole("tooltip")).toHaveText(
+			"大文字と小文字を区別",
+		);
+		await page.screenshot({ path: info.outputPath("search-tooltip.png") });
+		await input.focus();
 		await input.fill("power");
 		await expect(count).toHaveText("1/8");
 		await expect

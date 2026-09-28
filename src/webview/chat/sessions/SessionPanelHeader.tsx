@@ -1,4 +1,5 @@
 // 履歴パネルの閉じる操作と作業フォルダ・取得状態を表示する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import type { RefObject } from "react";
 import { LoaderCircle, X } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
@@ -20,16 +21,17 @@ export function SessionPanelHeader({
 				<h2 className="m-0 text-[13px] font-semibold">
 					セッション一覧
 				</h2>
-				<button
-					ref={close}
-					type="button"
-					className={actionClass}
-					aria-label="セッション一覧を閉じる"
-					title="閉じる"
-					onClick={onClose}
-				>
-					<X size={16} aria-hidden="true" />
-				</button>
+				<SettingsTooltip content="閉じる">
+					<button
+						ref={close}
+						type="button"
+						className={actionClass}
+						aria-label="セッション一覧を閉じる"
+						onClick={onClose}
+					>
+						<X size={16} aria-hidden="true" />
+					</button>
+				</SettingsTooltip>
 			</div>
 			<div className="mt-[8px] flex items-start gap-[8px]">
 				<span

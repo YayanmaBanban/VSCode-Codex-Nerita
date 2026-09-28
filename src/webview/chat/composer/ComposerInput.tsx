@@ -1,4 +1,5 @@
 // 通常文と編集可能な貼り付けブロックを、1つの Lexical フィールドとして表示する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { clsx } from "clsx";
 import { type SetStateAction, type Dispatch, useId, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
@@ -135,25 +136,30 @@ function renderExpandButton(
 	setExpanded: Dispatch<SetStateAction<boolean>>,
 ) {
 	return (
-		<button
-			type="button"
-			className="flex h-7 w-7 shrink-0 items-center justify-center border-0 bg-transparent p-1 text-muted hover:text-input-text"
-			aria-label={
+		<SettingsTooltip
+			content={
 				expanded ? "入力エリアを元のサイズに戻す" : "入力エリアを拡張"
 			}
-			title={
-				expanded ? "入力エリアを元のサイズに戻す" : "入力エリアを拡張"
-			}
-			aria-expanded={expanded}
-			aria-controls={inputId}
-			onMouseDown={(event) => event.preventDefault()}
-			onClick={() => setExpanded((value) => !value)}
 		>
-			{expanded ? (
-				<Minimize2 size={16} aria-hidden="true" />
-			) : (
-				<Maximize2 size={16} aria-hidden="true" />
-			)}
-		</button>
+			<button
+				type="button"
+				className="flex h-7 w-7 shrink-0 items-center justify-center border-0 bg-transparent p-1 text-muted hover:text-input-text"
+				aria-label={
+					expanded
+						? "入力エリアを元のサイズに戻す"
+						: "入力エリアを拡張"
+				}
+				aria-expanded={expanded}
+				aria-controls={inputId}
+				onMouseDown={(event) => event.preventDefault()}
+				onClick={() => setExpanded((value) => !value)}
+			>
+				{expanded ? (
+					<Minimize2 size={16} aria-hidden="true" />
+				) : (
+					<Maximize2 size={16} aria-hidden="true" />
+				)}
+			</button>
+		</SettingsTooltip>
 	);
 }

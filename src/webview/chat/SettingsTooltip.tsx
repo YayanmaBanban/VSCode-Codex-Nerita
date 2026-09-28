@@ -18,7 +18,14 @@ export function SettingsTooltip({
 		return children;
 	}
 	return (
-		<Tooltip.Root>
+		<Tooltip.Root
+			onOpenChange={(_open, details) => {
+				// 説明を閉じる際も、親のパネルや検索欄へ Escape を届ける。
+				if (details.reason === "escape-key") {
+					details.allowPropagation();
+				}
+			}}
+		>
 			<Tooltip.Trigger
 				ref={(element: HTMLElement | null) => {
 					trigger.current = element;

@@ -1,4 +1,5 @@
 // ツールの種別に応じた本文・状態アイコン・停止操作と開閉を表示する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { type SetStateAction, type Dispatch, useId, useState } from "react";
 import {
 	ChevronDown,
@@ -129,16 +130,19 @@ function renderStopButton(
 	task: AsyncTask | undefined,
 ) {
 	return (
-		<button
-			type="button"
-			className="tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 p-0 text-tool-error enabled:hover:bg-tool-error/12"
-			aria-label={`${tool.title} を停止`}
-			title={stopTitle(Boolean(onStop), cancelTurn, task?.stopPending)}
-			disabled={!onStop}
-			onClick={onStop}
+		<SettingsTooltip
+			content={stopTitle(Boolean(onStop), cancelTurn, task?.stopPending)}
 		>
-			<Square size={13} fill="currentColor" aria-hidden="true" />
-		</button>
+			<button
+				type="button"
+				className="tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 p-0 text-tool-error enabled:hover:bg-tool-error/12"
+				aria-label={`${tool.title} を停止`}
+				disabled={!onStop}
+				onClick={onStop}
+			>
+				<Square size={13} fill="currentColor" aria-hidden="true" />
+			</button>
+		</SettingsTooltip>
 	);
 }
 

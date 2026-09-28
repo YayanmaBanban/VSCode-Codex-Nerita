@@ -3,6 +3,7 @@ import type { ChatState } from "../../../shared/chatState";
 import type { BackendId } from "../../../shared/backend";
 import type { UiMessage } from "../../../shared/messages";
 import { List, MessageSquareText, Maximize2, Minimize2 } from "lucide-react";
+import { AuthenticationNotice } from "./AuthenticationNotice";
 import { ConnectionButton } from "./ConnectionButton";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { PersonalityOptions } from "../personality/PersonalityOptions";
@@ -10,7 +11,7 @@ import type { SidebarLocation } from "../../../shared/sidebar";
 
 /** 認証案内とエラー通知に共通する枠・色・余白。 */
 const noticeClass =
-	"mx-[14px] mt-[12px] mb-0 rounded-[6px] border border-solid border-alert-border bg-alert p-[12px] leading-[1.7]";
+	"mx-[14px] mt-[12px] mb-0 rounded-[8px] border border-solid border-alert-border bg-alert p-[12px] leading-[1.7]";
 const iconClass =
 	"inline-flex size-[28px] shrink-0 items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover";
 
@@ -109,62 +110,16 @@ export function ConnectionHeader({
 					{requestError || state.error}
 				</div>
 			)}
-			{state.connection === "auth-required" &&
-				renderAuthenticationNotice(state, send)}
-			{state.connection === "authenticating" && (
-				<p className={`auth-card ${noticeClass}`}>
-					{state.piAccount !== null
-						? "エディターの「Pi 認証情報」で設定してください。画面を閉じるとチャットへ戻れます。"
-						: "ブラウザでログインを完了してください。最大3分間待機します。"}
-					{state.piAccount !== null && (
-						<button
-							type="button"
-							className="ml-[6px]"
-							onClick={() =>
-								send({
-									type: "auth/start",
-									requestId: crypto.randomUUID(),
-									methodId: "pi-cancel",
-								})
-							}
-						>
-							認証をキャンセル
-						</button>
-					)}
-				</p>
+			{(state.connection === "auth-required" ||
+				state.connection === "authenticating") && (
+				<AuthenticationNotice
+					key={state.connection}
+					state={state}
+					send={send}
+					noticeClass={noticeClass}
+				/>
 			)}
 		</>
-	);
-}
-
-/** 未認証時の案内と認証開始ボタンを表示する。 */
-function renderAuthenticationNotice(
-	state: ChatState,
-	send: (message: UiMessage) => void,
-) {
-	return (
-		<section className={`auth-card ${noticeClass}`} aria-label="認証">
-			<p>
-				{state.piAccount !== null
-					? "Piの認証情報を設定してください。利用可能なモデルは入力欄で選択できます。"
-					: "ChatGPTにログインするか、VS Codeの起動環境に設定したAPIキーを使用します。"}
-			</p>
-			{state.authMethods.map((method) => (
-				<button
-					key={method.id}
-					className="m-[3px]"
-					onClick={() =>
-						send({
-							type: "auth/start",
-							requestId: crypto.randomUUID(),
-							methodId: method.id,
-						})
-					}
-				>
-					{method.name}
-				</button>
-			))}
-		</section>
 	);
 }
 

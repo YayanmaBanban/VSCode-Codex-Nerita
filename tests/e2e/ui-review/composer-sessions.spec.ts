@@ -129,9 +129,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(page.getByLabel("送信した参照")).toContainText(
 			'"sessionReferences":[{"sessionId":"saved-input","mode":"transcript"}]',
 		);
-		await expect(
-			page.locator(".message.user .message-reference"),
-		).toHaveAttribute("title", /ID: saved-input/);
+		await page.locator(".message.user .message-reference").hover();
+		await expect(page.getByRole("tooltip")).toContainText(
+			"ID: saved-input",
+		);
 		expect(errors).toEqual([]);
 	});
 }

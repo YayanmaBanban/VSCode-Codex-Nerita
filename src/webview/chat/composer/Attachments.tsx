@@ -1,4 +1,5 @@
 // 添付の種別・ファイル名と、エディターで開く・取り外す操作を表示する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { X } from "lucide-react";
 import type { Attachment } from "../../../shared/composer";
 import { fileIcon } from "./fileIcon";
@@ -30,17 +31,18 @@ export function Attachments({
 						className="attachment inline-flex max-w-full rounded-[5px] border border-solid border-panel-border [&_svg]:shrink-0"
 						key={file.id}
 					>
-						<button
-							type="button"
-							disabled={disabled}
-							title={file.uri}
-							aria-label={`${file.name} を開く`}
-							className="inline-flex min-w-0 flex-1 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[12px]"
-							onClick={() => onOpen(file.id)}
-						>
-							<Icon size={14} aria-hidden="true" />
-							<span className="truncate">{file.name}</span>
-						</button>
+						<SettingsTooltip content={file.uri}>
+							<button
+								type="button"
+								disabled={disabled}
+								aria-label={`${file.name} を開く`}
+								className="inline-flex min-w-0 flex-1 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[12px]"
+								onClick={() => onOpen(file.id)}
+							>
+								<Icon size={14} aria-hidden="true" />
+								<span className="truncate">{file.name}</span>
+							</button>
+						</SettingsTooltip>
 						<button
 							type="button"
 							disabled={disabled}

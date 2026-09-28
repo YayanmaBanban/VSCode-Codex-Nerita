@@ -1,4 +1,5 @@
 // 入力欄の下に添付・使用量・接続中の設定を指定順で配置する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { Plus } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
@@ -7,7 +8,7 @@ import { Attachments } from "./Attachments";
 import { ContributionSlot } from "../../contributions/ContributionSlot";
 import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurface";
 
-/** 接続中の設定は Host の宣言で描画し、操作は既存の検証済み通信へ戻す。 */
+/** 設定項目を Host から受け取り、変更要求を検証済みのメッセージで送る。 */
 export function ComposerSettings({
 	state,
 	send,
@@ -69,26 +70,27 @@ export function ComposerSettings({
 				className="settings-toolbar flex flex-wrap items-center gap-x-[6px] gap-y-[4px]"
 				aria-label="モデル設定"
 			>
-				<button
-					type="button"
-					className="attach-button flex border-0 bg-transparent p-[5px]"
-					aria-label="ファイルを添付"
-					title="ファイルを添付"
-					disabled={
-						disabled ||
-						state.attachmentPending ||
-						!state.attachmentsSupported
-					}
-					onClick={() =>
-						send({
-							type: "attachment/add",
-							requestId: crypto.randomUUID(),
-							sessionId: state.sessionId!,
-						})
-					}
-				>
-					<Plus size={16} aria-hidden="true" />
-				</button>
+				<SettingsTooltip content="ファイルを添付">
+					<button
+						type="button"
+						className="attach-button flex border-0 bg-transparent p-[5px]"
+						aria-label="ファイルを添付"
+						disabled={
+							disabled ||
+							state.attachmentPending ||
+							!state.attachmentsSupported
+						}
+						onClick={() =>
+							send({
+								type: "attachment/add",
+								requestId: crypto.randomUUID(),
+								sessionId: state.sessionId!,
+							})
+						}
+					>
+						<Plus size={16} aria-hidden="true" />
+					</button>
+				</SettingsTooltip>
 				<ContextUsage
 					key={state.sessionId ?? "disconnected"}
 					usage={state.usage}

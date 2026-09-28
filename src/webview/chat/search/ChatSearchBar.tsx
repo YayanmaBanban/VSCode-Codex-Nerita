@@ -1,4 +1,5 @@
 // 会話内検索の入力・一致条件・前後移動をコンパクトなバーにまとめる。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { useChatSearch } from "./useChatSearch";
 import "./chatSearch.css";
@@ -66,44 +67,46 @@ export function ChatSearchBar({
 							["regex", "正規表現", ".*"],
 						] as const
 					).map(([key, label, icon]) => (
-						<button
-							key={key}
-							type="button"
-							className={`${buttonClass} ${key === "wholeWord" ? "underline underline-offset-2" : ""}`}
-							aria-label={label}
-							title={label}
-							aria-pressed={options[key]}
-							onClick={() =>
-								search.setOptions({
-									...options,
-									[key]: !options[key],
-								})
-							}
-						>
-							{icon}
-						</button>
+						<SettingsTooltip content={label} key={key}>
+							<button
+								type="button"
+								className={`${buttonClass} ${key === "wholeWord" ? "underline underline-offset-2" : ""}`}
+								aria-label={label}
+								aria-pressed={options[key]}
+								onClick={() =>
+									search.setOptions({
+										...options,
+										[key]: !options[key],
+									})
+								}
+							>
+								{icon}
+							</button>
+						</SettingsTooltip>
 					))}
 				</div>
-				<button
-					type="button"
-					className={buttonClass}
-					aria-label="前の一致"
-					title="前の一致 (Shift+Enter)"
-					disabled={!result.count}
-					onClick={() => search.move(-1)}
-				>
-					<ChevronLeft size={14} />
-				</button>
-				<button
-					type="button"
-					className={buttonClass}
-					aria-label="次の一致"
-					title="次の一致 (Enter)"
-					disabled={!result.count}
-					onClick={() => search.move(1)}
-				>
-					<ChevronRight size={14} />
-				</button>
+				<SettingsTooltip content="前の一致 (Shift+Enter)">
+					<button
+						type="button"
+						className={buttonClass}
+						aria-label="前の一致"
+						disabled={!result.count}
+						onClick={() => search.move(-1)}
+					>
+						<ChevronLeft size={14} />
+					</button>
+				</SettingsTooltip>
+				<SettingsTooltip content="次の一致 (Enter)">
+					<button
+						type="button"
+						className={buttonClass}
+						aria-label="次の一致"
+						disabled={!result.count}
+						onClick={() => search.move(1)}
+					>
+						<ChevronRight size={14} />
+					</button>
+				</SettingsTooltip>
 				<output
 					aria-label="検索結果"
 					aria-live="polite"
@@ -111,15 +114,16 @@ export function ChatSearchBar({
 				>
 					{counter}
 				</output>
-				<button
-					type="button"
-					className={buttonClass}
-					aria-label="検索を閉じる"
-					title="閉じる (Escape)"
-					onClick={search.close}
-				>
-					<X size={14} />
-				</button>
+				<SettingsTooltip content="閉じる (Escape)">
+					<button
+						type="button"
+						className={buttonClass}
+						aria-label="検索を閉じる"
+						onClick={search.close}
+					>
+						<X size={14} />
+					</button>
+				</SettingsTooltip>
 			</form>
 			{result.error && (
 				<p role="alert" className="my-1 text-[12px] text-tool-error">

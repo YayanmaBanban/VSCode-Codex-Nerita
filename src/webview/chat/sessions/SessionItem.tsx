@@ -1,4 +1,5 @@
 // 1つのセッションの概要と独立した操作ボタンを表示する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
 import { type SetStateAction, type Dispatch, useState } from "react";
 import { SessionDelete } from "./SessionDelete";
@@ -35,28 +36,31 @@ export function SessionItem({
 			key={session.sessionId}
 			className={`session-item mb-[4px] rounded-[7px] border border-solid ${selected ? "border-focus bg-menu-hover" : "border-transparent bg-menu"} hover:bg-menu-hover hover:brightness-110 focus-within:bg-menu-hover`}
 		>
-			<button
-				type="button"
-				className="block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px] pb-[5px] text-left focus-visible:outline-offset-[-2px]"
-				disabled={disabled || !capabilities.load || session.archived}
-				aria-current={selected ? "true" : undefined}
-				aria-label={`${title}を開く`}
-				title={title}
-				onClick={() =>
-					send({
-						type: "session/load",
-						requestId: crypto.randomUUID(),
-						sessionId: session.sessionId,
-					})
-				}
-			>
-				<span className="block truncate text-[13px] leading-[1.6]">
-					{title}
-				</span>
-				<span className="mt-[4px] block text-[12px] text-muted">
-					{relativeTime(session.updatedAt, now)}
-				</span>
-			</button>
+			<SettingsTooltip content={title}>
+				<button
+					type="button"
+					className="block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px] pb-[5px] text-left focus-visible:outline-offset-[-2px]"
+					disabled={
+						disabled || !capabilities.load || session.archived
+					}
+					aria-current={selected ? "true" : undefined}
+					aria-label={`${title}を開く`}
+					onClick={() =>
+						send({
+							type: "session/load",
+							requestId: crypto.randomUUID(),
+							sessionId: session.sessionId,
+						})
+					}
+				>
+					<span className="block truncate text-[13px] leading-[1.6]">
+						{title}
+					</span>
+					<span className="mt-[4px] block text-[12px] text-muted">
+						{relativeTime(session.updatedAt, now)}
+					</span>
+				</button>
+			</SettingsTooltip>
 			{renaming && (
 				<SessionRename
 					sessionId={session.sessionId}
@@ -94,59 +98,66 @@ function renderSessionActions(
 				disabled={disabled || !capabilities.delete}
 				send={send}
 			/>
-			<button
-				type="button"
-				className={sessionActionClass}
-				aria-label={`${title}の名前を変更`}
-				title="名前を変更"
-				disabled={disabled || !capabilities.rename || session.archived}
-				onClick={() => setRenaming(true)}
+			<SettingsTooltip content="名前を変更">
+				<button
+					type="button"
+					className={sessionActionClass}
+					aria-label={`${title}の名前を変更`}
+					disabled={
+						disabled || !capabilities.rename || session.archived
+					}
+					onClick={() => setRenaming(true)}
+				>
+					<Pencil size={14} aria-hidden="true" />
+				</button>
+			</SettingsTooltip>
+			<SettingsTooltip
+				content={session.archived ? "アーカイブから戻す" : "アーカイブ"}
 			>
-				<Pencil size={14} aria-hidden="true" />
-			</button>
-			<button
-				type="button"
-				className={sessionActionClass}
-				disabled={
-					disabled ||
-					!(session.archived
-						? capabilities.unarchive
-						: capabilities.archive)
-				}
-				aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
-				title={session.archived ? "アーカイブから戻す" : "アーカイブ"}
-				onClick={() =>
-					send({
-						type: session.archived
-							? "session/unarchive"
-							: "session/archive",
-						requestId: crypto.randomUUID(),
-						sessionId: session.sessionId,
-					})
-				}
-			>
-				{session.archived ? (
-					<ArchiveRestore size={14} aria-hidden="true" />
-				) : (
-					<Archive size={14} aria-hidden="true" />
-				)}
-			</button>
-			<button
-				type="button"
-				className={sessionActionClass}
-				disabled={forkDisabled(disabled, capabilities, session)}
-				aria-label={`${title}をフォーク`}
-				title="フォーク"
-				onClick={() =>
-					send({
-						type: "session/fork",
-						requestId: crypto.randomUUID(),
-						sessionId: session.sessionId,
-					})
-				}
-			>
-				<GitFork size={14} aria-hidden="true" />
-			</button>
+				<button
+					type="button"
+					className={sessionActionClass}
+					disabled={
+						disabled ||
+						!(session.archived
+							? capabilities.unarchive
+							: capabilities.archive)
+					}
+					aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
+					onClick={() =>
+						send({
+							type: session.archived
+								? "session/unarchive"
+								: "session/archive",
+							requestId: crypto.randomUUID(),
+							sessionId: session.sessionId,
+						})
+					}
+				>
+					{session.archived ? (
+						<ArchiveRestore size={14} aria-hidden="true" />
+					) : (
+						<Archive size={14} aria-hidden="true" />
+					)}
+				</button>
+			</SettingsTooltip>
+			<SettingsTooltip content="フォーク">
+				<button
+					type="button"
+					className={sessionActionClass}
+					disabled={forkDisabled(disabled, capabilities, session)}
+					aria-label={`${title}をフォーク`}
+					onClick={() =>
+						send({
+							type: "session/fork",
+							requestId: crypto.randomUUID(),
+							sessionId: session.sessionId,
+						})
+					}
+				>
+					<GitFork size={14} aria-hidden="true" />
+				</button>
+			</SettingsTooltip>
 		</div>
 	);
 }

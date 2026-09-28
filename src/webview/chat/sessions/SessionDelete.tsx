@@ -1,4 +1,5 @@
 // 履歴とアーカイブ共通の削除操作に、取り消せないことを伝える確認を挟む。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Trash2 } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
@@ -17,14 +18,15 @@ export function SessionDelete({
 	const title = session.title?.trim() || "無題のセッション";
 	return (
 		<AlertDialog.Root>
-			<AlertDialog.Trigger
-				disabled={disabled}
-				aria-label={`${title}を削除`}
-				title="セッションを削除"
-				className="inline-flex size-[28px] shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-red-500 hover:bg-red-500/10 focus-visible:outline-offset-[-2px]"
-			>
-				<Trash2 size={14} aria-hidden="true" />
-			</AlertDialog.Trigger>
+			<SettingsTooltip content="セッションを削除">
+				<AlertDialog.Trigger
+					disabled={disabled}
+					aria-label={`${title}を削除`}
+					className="inline-flex size-[28px] shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-red-500 hover:bg-red-500/10 focus-visible:outline-offset-[-2px]"
+				>
+					<Trash2 size={14} aria-hidden="true" />
+				</AlertDialog.Trigger>
+			</SettingsTooltip>
 			<AlertDialog.Portal>
 				<AlertDialog.Backdrop className="fixed inset-0 z-40 bg-black/40" />
 				<AlertDialog.Popup

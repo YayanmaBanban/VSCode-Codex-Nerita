@@ -33,6 +33,15 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		await expect(panel.getByRole("listitem")).toHaveCount(3);
 		const trigger = panel.getByRole("button", { name: /を削除$/ }).first();
+		await trigger.hover();
+		await expect(page.getByRole("tooltip")).toHaveText("セッションを削除");
+		await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
+		await info.attach(`delete-tooltip-${theme}`, {
+			body: await page.screenshot({
+				path: info.outputPath("delete-tooltip.png"),
+			}),
+			contentType: "image/png",
+		});
 		await trigger.click();
 		const dialog = page.getByRole("alertdialog");
 		await expect(dialog).toContainText("この操作は取り消せません。");

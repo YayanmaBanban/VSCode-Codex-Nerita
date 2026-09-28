@@ -1,4 +1,5 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
+import { SettingsTooltip } from "../SettingsTooltip";
 import { clsx } from "clsx";
 import { type ReactNode, type RefObject, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
@@ -193,34 +194,40 @@ function renderMessageActions(
 			}}
 		>
 			{!user && message.mcp?.status !== "loading" && (
+				<SettingsTooltip content="回答をコピー">
+					<button
+						type="button"
+						className={`${messageIconButtonClass} bg-[#416482]`}
+						aria-label="回答をコピー"
+						onClick={() => void copy(message)}
+					>
+						<Copy size={12} aria-hidden="true" />
+					</button>
+				</SettingsTooltip>
+			)}
+			<SettingsTooltip
+				content={user ? "回答の末尾へ移動" : "送信メッセージへ移動"}
+			>
 				<button
 					type="button"
 					className={`${messageIconButtonClass} bg-[#416482]`}
-					aria-label="回答をコピー"
-					title="回答をコピー"
-					onClick={() => void copy(message)}
-				>
-					<Copy size={12} aria-hidden="true" />
-				</button>
-			)}
-			<button
-				type="button"
-				className={`${messageIconButtonClass} bg-[#416482]`}
-				aria-label={user ? "回答の末尾へ移動" : "送信メッセージへ移動"}
-				title={user ? "回答の末尾へ移動" : "送信メッセージへ移動"}
-				disabled={!target || replyPending}
-				onClick={() => {
-					if (target) {
-						jump(target.id, user);
+					aria-label={
+						user ? "回答の末尾へ移動" : "送信メッセージへ移動"
 					}
-				}}
-			>
-				{user ? (
-					<ArrowDownToLine size={12} aria-hidden="true" />
-				) : (
-					<ArrowUpToLine size={12} aria-hidden="true" />
-				)}
-			</button>
+					disabled={!target || replyPending}
+					onClick={() => {
+						if (target) {
+							jump(target.id, user);
+						}
+					}}
+				>
+					{user ? (
+						<ArrowDownToLine size={12} aria-hidden="true" />
+					) : (
+						<ArrowUpToLine size={12} aria-hidden="true" />
+					)}
+				</button>
+			</SettingsTooltip>
 		</div>
 	);
 }
