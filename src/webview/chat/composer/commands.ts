@@ -97,6 +97,7 @@ export function registerComposerCommands(
 	onError: (message: string) => void,
 ): () => void {
 	return mergeRegister(
+		registerHistoryShortcuts(editor),
 		registerReferenceClipboard(editor),
 		editor.registerCommand(
 			PASTE_COMMAND,
@@ -149,4 +150,22 @@ export function registerComposerCommands(
 			COMMAND_PRIORITY_HIGH,
 		),
 	);
+}
+
+/** 履歴のキー操作を VS Code へ転送せず、Lexical 内で完結させる。 */
+function registerHistoryShortcuts(editor: LexicalEditor): () => void {
+	const handleKey = (event: KeyboardEvent) => {
+		if (
+			(event.ctrlKey || event.metaKey) &&
+			!event.altKey &&
+			["z", "y"].includes(event.key.toLowerCase())
+		) {
+			// 同じルートの Lexical ハンドラーは実行し、外側への伝播だけを止める。
+			event.stopPropagation();
+		}
+	};
+	return editor.registerRootListener((root, previous) => {
+		previous?.removeEventListener("keydown", handleKey);
+		root?.addEventListener("keydown", handleKey);
+	});
 }

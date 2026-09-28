@@ -23,7 +23,29 @@ for (const colorScheme of ["dark", "light"] as const) {
 			name: "入力エリアを拡張",
 			exact: true,
 		});
+		const help = page
+			.getByRole("tooltip")
+			.filter({ hasText: "Ctrl+Enter で送信" });
+		await input.hover();
+		await expect(help).toBeHidden();
 		await input.fill("前後");
+		await expect(help).toBeVisible();
+		await page.screenshot({
+			path: info.outputPath(`help-focused-${colorScheme}.png`),
+		});
+		await input.press("Escape");
+		await expect(help).toBeHidden();
+		await expand.focus();
+		await expect(help).toBeHidden();
+		await input.focus();
+		await expect(help).toBeVisible();
+		const footer = page.locator(".composer-footer");
+		await expect(
+			footer.getByRole("button", { name: "ファイルを添付", exact: true }),
+		).toBeVisible();
+		await expect(
+			footer.getByRole("button", { name: "送信", exact: true }),
+		).toBeVisible();
 		await select(input, 1);
 		await paste(input, "const sample = 'コード';\n".repeat(60));
 		const text = await input.innerText();

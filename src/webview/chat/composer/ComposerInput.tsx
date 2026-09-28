@@ -48,7 +48,9 @@ export function ComposerInput({
 }) {
 	const [error, setError] = useState("");
 	const [expanded, setExpanded] = useState(false);
+	const [showHelp, setShowHelp] = useState(false);
 	const inputId = useId();
+	const helpId = `${inputId}-help`;
 	return (
 		<LexicalComposer
 			initialConfig={{
@@ -84,7 +86,14 @@ export function ComposerInput({
 							<ContentEditable
 								id={inputId}
 								aria-label="Codexへのメッセージ"
-								aria-describedby="composer-help"
+								aria-describedby={helpId}
+								onFocus={() => setShowHelp(true)}
+								onBlur={() => setShowHelp(false)}
+								onKeyDown={(event) => {
+									if (event.key === "Escape") {
+										setShowHelp(false);
+									}
+								}}
 								aria-disabled={locked}
 								spellCheck={false}
 								className={cn(
@@ -106,6 +115,15 @@ export function ComposerInput({
 						}
 						ErrorBoundary={LexicalErrorBoundary}
 					/>
+					<span
+						id={helpId}
+						role="tooltip"
+						hidden={!showHelp}
+						className="absolute bottom-full left-0 z-30 mb-2 w-max max-w-full rounded-[6px] border border-solid border-tooltip-border bg-tooltip px-3 py-2 text-[12px] leading-[1.5] text-tooltip-text shadow-[0_4px_16px_#0003]"
+					>
+						Ctrl+Enter で送信・Enter / Shift+Enter で改行・Shift +
+						ドロップでファイル添付
+					</span>
 				</div>
 				{renderExpandButton(expanded, inputId, setExpanded)}
 			</div>

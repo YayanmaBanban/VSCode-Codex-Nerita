@@ -397,6 +397,16 @@ for (const theme of ["dark", "light"] as const) {
 			}),
 			contentType: "image/png",
 		});
+		await page.getByRole("button", { name: "ファイルを添付" }).hover();
+		await expect(
+			page.getByRole("tooltip", { name: "ファイルを添付", exact: true }),
+		).toHaveCSS("opacity", "1");
+		await info.attach("attachment-hover", {
+			body: await page.screenshot({
+				path: info.outputPath("attachment-hover.png"),
+			}),
+			contentType: "image/png",
+		});
 		await page.getByRole("button", { name: "ファイルを添付" }).click();
 		await expect(
 			page.locator(".attachment .lucide-file-code"),

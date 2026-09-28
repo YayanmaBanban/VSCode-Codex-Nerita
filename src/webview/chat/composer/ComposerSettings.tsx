@@ -35,7 +35,7 @@ export function ComposerSettings({
 		}
 	};
 	return (
-		<div className="composer-settings mt-[10px] border-0 border-t border-solid border-panel-border pt-[8px]">
+		<div className="composer-settings min-w-0">
 			{state.uiContributions && (
 				<div className="flex flex-wrap items-center gap-[6px]">
 					<ContributionSlot
@@ -73,7 +73,7 @@ export function ComposerSettings({
 				<SettingsTooltip content="ファイルを添付">
 					<button
 						type="button"
-						className="attach-button flex border-0 bg-transparent p-[5px]"
+						className="attach-button flex rounded-[5px] border-0 bg-transparent p-[5px] enabled:hover:bg-settings-hover"
 						aria-label="ファイルを添付"
 						disabled={
 							disabled ||

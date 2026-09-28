@@ -82,13 +82,9 @@ export function Composer({
 				/>
 			</div>
 			<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
-				<span
-					id="composer-help"
-					className="text-[12px] text-muted [@media(max-width:360px)]:max-w-[145px] [@media(max-width:360px)]:leading-[1.7]"
-				>
-					Ctrl+Enter で送信 · Enter / Shift+Enter で改行・Shift +
-					ドロップでファイル添付にも対応
-				</span>
+				<div className="min-w-0 flex-1" inert={inputLocked}>
+					<ComposerSettings state={state} send={send} />
+				</div>
 				<div className="flex shrink-0 items-center gap-2">
 					{busy && (
 						<SettingsTooltip content="停止">
@@ -137,9 +133,6 @@ export function Composer({
 						</button>
 					</SettingsTooltip>
 				</div>
-			</div>
-			<div inert={inputLocked}>
-				<ComposerSettings state={state} send={send} />
 			</div>
 		</form>
 	);

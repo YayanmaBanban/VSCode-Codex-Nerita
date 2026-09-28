@@ -107,10 +107,10 @@ function quotaWindowLabel(minutes: number | null, key: string) {
 		return key;
 	}
 	if (minutes % 1440 === 0) {
-		return `${minutes / 1440}日`;
+		return "Weekly";
 	}
 	if (minutes % 60 === 0) {
-		return `${minutes / 60}時間`;
+		return "5h";
 	}
 	return `${minutes}分`;
 }

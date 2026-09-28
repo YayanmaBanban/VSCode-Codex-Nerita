@@ -35,7 +35,7 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 		<SettingsTooltip
 			content={
 				<>
-					<span>context</span>
+					<span>コンテキスト</span>
 					<hr />
 					<span>{label}</span>
 				</>
