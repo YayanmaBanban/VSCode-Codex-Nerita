@@ -1,6 +1,6 @@
 // 通常文と編集可能な貼り付けブロックを、1つの Lexical フィールドとして表示する。
 import { SettingsTooltip } from "../SettingsTooltip";
-import { clsx } from "clsx";
+import { cn } from "cnfast";
 import { type SetStateAction, type Dispatch, useId, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
@@ -87,7 +87,7 @@ export function ComposerInput({
 								aria-describedby="composer-help"
 								aria-disabled={locked}
 								spellCheck={false}
-								className={clsx(
+								className={cn(
 									"composer-content min-h-[65px] overflow-y-auto overscroll-y-contain p-1",
 									"text-input-text leading-[1.7] [scrollbar-width:thin]",
 									"focus-visible:outline-2 focus-visible:outline-focus",

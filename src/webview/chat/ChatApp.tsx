@@ -1,5 +1,6 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
 import { useRef } from "react";
+import { cn } from "cnfast";
 import { useFollowConversation } from "./messages/useFollowConversation";
 import { AnimatePresence } from "motion/react";
 import type { Bridge } from "../vscodeBridge";
@@ -76,11 +77,11 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 					/>
 				)}
 				<div
-					className={
+					className={cn(
 						agentViewer.agent
 							? "hidden"
-							: "flex min-w-0 flex-1 flex-col"
-					}
+							: "flex min-w-0 flex-1 flex-col",
+					)}
 					inert={sessionPanel.open && sessionPanel.compact}
 				>
 					<ChatSearchBar search={search} />

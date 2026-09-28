@@ -1,5 +1,5 @@
 // 右ペインに作業フォルダとセッション履歴を表示する。
-import { clsx } from "clsx";
+import { cn } from "cnfast";
 import { useEffect, useRef, useState } from "react";
 import { motion, useIsPresent, useReducedMotion } from "motion/react";
 import { Archive, List } from "lucide-react";
@@ -50,7 +50,7 @@ export function SessionPanel({
 			aria-hidden={!present}
 			id="session-panel"
 			aria-label="セッション一覧"
-			className={clsx(
+			className={cn(
 				"absolute inset-y-0 right-0 z-20 flex w-[350px] max-w-full shrink-0 flex-col",
 				"border-0 border-l border-solid border-panel-border bg-menu text-menu-text shadow-[-8px_0_24px_#0002]",
 				"[@media(min-width:760px)]:static [@media(min-width:760px)]:shadow-none",
@@ -73,10 +73,8 @@ export function SessionPanel({
 						<button
 							key={String(archived)}
 							type="button"
-							className={clsx(
-								"inline-flex items-center",
-								"gap-[6px]",
-								"text-[12px]",
+							className={cn(
+								"inline-flex items-center gap-[6px] text-[12px]",
 								"aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4",
 							)}
 							aria-pressed={state.sessionsArchived === archived}

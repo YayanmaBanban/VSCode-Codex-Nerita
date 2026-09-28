@@ -1,4 +1,5 @@
 // 接続状態を操作可能なボタンで示し、再接続の誘導と成功演出を表示する。
+import { cn } from "cnfast";
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { ChatState } from "../../../shared/chatState";
@@ -74,7 +75,12 @@ export function ConnectionButton({
 			>
 				<button
 					type="button"
-					className={`${connectionMouseCursor(displayed)} connection-button relative flex h-[28px] items-center gap-[5px] whitespace-nowrap ${connectionBgColor(displayed)} px-[7px] py-0 text-[12px] enabled:hover:border-[color-mix(in_srgb,var(--vscode-button-border,#414851)_55%,white)] disabled:opacity-100`}
+					className={cn(
+						"connection-button relative flex h-[28px] items-center gap-[5px] whitespace-nowrap px-[7px] py-0",
+						"text-[12px] enabled:hover:border-[color-mix(in_srgb,var(--vscode-button-border,#414851)_55%,white)] disabled:opacity-100",
+						connectionMouseCursor(displayed),
+						connectionBgColor(displayed),
+					)}
 					data-connection={state.connection}
 					disabled={disabled}
 					aria-label={
@@ -91,7 +97,10 @@ export function ConnectionButton({
 				>
 					<span
 						aria-hidden="true"
-						className={`status-dot size-[5px] rounded-full ${connectionColor(displayed)}`}
+						className={cn(
+							"status-dot size-[5px] rounded-full",
+							connectionColor(displayed),
+						)}
 					/>
 					<span role="status">
 						<ConnectionLabel
@@ -106,7 +115,10 @@ export function ConnectionButton({
 						>
 							<span
 								key={`${curtain.target}-${curtain.phase}`}
-								className={`connection-curtain absolute inset-0 ${connectionColor(curtain.target)}`}
+								className={cn(
+									"connection-curtain absolute inset-0",
+									connectionColor(curtain.target),
+								)}
 								data-phase={curtain.phase}
 								data-target={curtain.target}
 								onAnimationEnd={() => {
@@ -154,7 +166,7 @@ export function ConnectionButton({
 					{Array.from({ length: 12 }, (_, index) => (
 						<i
 							key={index}
-							className={`confetti-piece confetti-${index}`}
+							className={cn(`confetti-piece confetti-${index}`)}
 						/>
 					))}
 				</span>

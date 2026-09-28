@@ -1,4 +1,5 @@
 // 設定編集と実行しない検査を、エディタグループ内の一画面で提供する。
+import { cn } from "cnfast";
 import { GuardrailsFeedback } from "./GuardrailsFeedback";
 import { GuardrailsSaveButton } from "./GuardrailsSaveButton";
 import "./guardrails.css";
@@ -56,7 +57,7 @@ export function GuardrailsEditor({ bridge }: { bridge: GuardBridge }) {
 						onSave={() => editor.request("save", probe)}
 					/>
 					<button
-						className={`${buttonStyle} border-focus`}
+						className={cn(buttonStyle, "border-focus")}
 						disabled={editor.busy || editor.state.dirty}
 						onClick={() => editor.request("apply", probe)}
 					>
@@ -115,7 +116,10 @@ export function GuardrailsEditor({ bridge }: { bridge: GuardBridge }) {
 										id="guardrails-json"
 										maxLength={131072}
 										spellCheck={false}
-										className={`${inputStyle} min-h-80 resize-y font-editor text-[12px]`}
+										className={cn(
+											inputStyle,
+											"min-h-80 resize-y font-editor text-[12px]",
+										)}
 										value={editor.text}
 										onChange={(event) =>
 											editor.change(event.target.value)
@@ -126,7 +130,7 @@ export function GuardrailsEditor({ bridge }: { bridge: GuardBridge }) {
 						</fieldset>
 						{editor.conflict && (
 							<button
-								className={`${buttonStyle} self-start`}
+								className={cn(buttonStyle, "self-start")}
 								onClick={editor.reload}
 							>
 								編集を破棄して再読込
@@ -197,7 +201,10 @@ export function GuardrailsEditor({ bridge }: { bridge: GuardBridge }) {
 						<label>
 							対象パス / コマンド
 							<textarea
-								className={`${inputStyle} min-h-20 resize-y font-editor`}
+								className={cn(
+									inputStyle,
+									"min-h-20 resize-y font-editor",
+								)}
 								value={probe.input}
 								maxLength={32768}
 								onChange={(event) =>

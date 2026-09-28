@@ -1,7 +1,7 @@
 // Lightswind の境界線演出。Webview 用の Motion と型付きスタイルで描画する。
 "use client";
 
-import { clsx } from "clsx";
+import { cn } from "cnfast";
 import { motion, type Transition, type MotionStyle } from "motion/react";
 
 /** 境界線の色・速度・大きさを指定する。 */
@@ -94,11 +94,14 @@ export const BorderBeam = (props: BorderBeamProps) => {
 
 	return (
 		<div
-			className="pointer-events-none absolute inset-0 rounded-[inherit] border border-solid border-transparent [mask-clip:padding-box,border-box] [mask-composite:exclude] [mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]"
+			className={cn(
+				"pointer-events-none absolute inset-0 rounded-[inherit] border border-solid border-transparent",
+				"[mask-clip:padding-box,border-box] [mask-composite:exclude] [mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]",
+			)}
 			style={{ borderWidth: `${borderThickness}px` }}
 		>
 			<motion.div
-				className={clsx(
+				className={cn(
 					"absolute aspect-square",
 					"bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)] to-transparent",
 					pauseOnHover && "group-hover:animation-play-state-paused",

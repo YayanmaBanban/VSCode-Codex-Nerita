@@ -1,4 +1,5 @@
 // ハンドオフの設定だけを保存し、モデル実行やセッション移行は開始しない。
+import { cn } from "cnfast";
 import { useState } from "react";
 import {
 	handoffSchema,
@@ -222,7 +223,7 @@ export function HandoffSettings({
 				</div>
 				<button
 					disabled={!!effortError}
-					className={`${buttonStyle} justify-self-start`}
+					className={cn(buttonStyle, "justify-self-start")}
 					type="submit"
 				>
 					ハンドオフ設定を保存

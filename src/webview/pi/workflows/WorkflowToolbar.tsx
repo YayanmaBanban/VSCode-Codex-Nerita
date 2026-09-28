@@ -1,5 +1,6 @@
 // 固定した操作欄と結果欄を、スクロールする編集内容から分離する。
 import { useState } from "react";
+import { cn } from "cnfast";
 import type { WorkflowBridge } from "../../../shared/workflows/messages";
 import type { useWorkflow } from "./useWorkflow";
 
@@ -75,7 +76,7 @@ function WorkflowActions({
 		<>
 			<button
 				aria-label="保存"
-				className={dirty ? "workflow-unsaved" : ""}
+				className={cn(dirty && "workflow-unsaved")}
 				disabled={disabled}
 				onClick={() => editor.request("save")}
 			>

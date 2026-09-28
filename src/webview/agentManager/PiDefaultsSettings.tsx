@@ -1,4 +1,5 @@
 // Pi のプロジェクト既定値だけを編集し、ユーザー設定や優先順位を変更しない。
+import { cn } from "cnfast";
 import { useState } from "react";
 import {
 	piThinkingSchema,
@@ -112,7 +113,7 @@ export function PiDefaultsSettings({
 				</Field>
 				<button
 					disabled={!!error}
-					className={`${buttonStyle} justify-self-start`}
+					className={cn(buttonStyle, "justify-self-start")}
 					type="submit"
 				>
 					既定値を保存

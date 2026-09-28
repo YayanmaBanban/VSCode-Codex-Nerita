@@ -1,5 +1,6 @@
 // 入力欄の上で送信結果を短く伝え、残り表示時間と閉じる操作を提供する。
 import { useEffect, useRef, type CSSProperties } from "react";
+import { cn } from "cnfast";
 import { X } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
@@ -39,7 +40,10 @@ export function NotificationCard({
 					type="button"
 					aria-label="通知を閉じる"
 					onClick={onClose}
-					className="flex h-5 w-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0 text-muted hover:text-input-text focus-visible:outline-2 focus-visible:outline-focus"
+					className={cn(
+						"flex h-5 w-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0 text-muted",
+						"hover:text-input-text focus-visible:outline-2 focus-visible:outline-focus",
+					)}
 				>
 					<X size={14} aria-hidden="true" />
 				</button>

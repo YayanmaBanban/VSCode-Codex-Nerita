@@ -1,4 +1,5 @@
 // セッションタイトル・表示先・接続操作と、認証やエラーの案内を表示する。
+import { cn } from "cnfast";
 import type { ChatState } from "../../../shared/chatState";
 import type { BackendId } from "../../../shared/backend";
 import type { UiMessage } from "../../../shared/messages";
@@ -106,7 +107,7 @@ export function ConnectionHeader({
 				</div>
 			</header>
 			{(state.error || requestError) && (
-				<div role="alert" className={`error-banner ${noticeClass}`}>
+				<div role="alert" className={cn("error-banner", noticeClass)}>
 					{requestError || state.error}
 				</div>
 			)}

@@ -1,4 +1,5 @@
 // 保存先ごとのプリセット選択・名前変更・指示文編集をまとめる。
+import { cn } from "cnfast";
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type {
@@ -43,7 +44,10 @@ export function PersonalityPane({
 				id={`personality-${scope}`}
 				inert={!expanded}
 				aria-hidden={!expanded}
-				className={`grid transition-[grid-template-rows] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+				className={cn(
+					"grid transition-[grid-template-rows] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+					expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+				)}
 			>
 				<div className="min-h-0 overflow-hidden">
 					<PaneEditor

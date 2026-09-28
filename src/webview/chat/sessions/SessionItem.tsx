@@ -1,4 +1,5 @@
 // 1つのセッションの概要と独立した操作ボタンを表示する。
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
 import { type SetStateAction, type Dispatch, useState } from "react";
@@ -34,7 +35,12 @@ export function SessionItem({
 	return (
 		<li
 			key={session.sessionId}
-			className={`session-item mb-[4px] rounded-[7px] border border-solid ${selected ? "border-focus bg-menu-hover" : "border-transparent bg-menu"} hover:bg-menu-hover hover:brightness-110 focus-within:bg-menu-hover`}
+			className={cn(
+				"session-item mb-[4px] rounded-[7px] border border-solid hover:bg-menu-hover hover:brightness-110 focus-within:bg-menu-hover",
+				selected
+					? "border-focus bg-menu-hover"
+					: "border-transparent bg-menu",
+			)}
 		>
 			<SettingsTooltip content={title}>
 				<button

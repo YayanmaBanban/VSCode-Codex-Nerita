@@ -1,4 +1,5 @@
 // 文字に光沢を流し、速度・方向・一時停止を制御する。
+import { cn } from "cnfast";
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
 	motion,
@@ -113,7 +114,7 @@ export const ShinyText: React.FC<ShinyTextProps> = (props) => {
 
 	return (
 		<motion.span
-			className={`inline-block ${className}`}
+			className={cn("inline-block", className)}
 			style={{ ...gradientStyle, backgroundPosition }}
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}

@@ -1,4 +1,5 @@
 // 大量のコマンド出力を一定量ずつ表示し、追記中は最新ページを追う。
+import { cn } from "cnfast";
 import { useState } from "react";
 import { toolOutputClass } from "./toolStyles";
 
@@ -52,7 +53,7 @@ export function CommandOutput({ text }: { text: string }) {
 					</button>
 				</div>
 			)}
-			<pre className={`${toolOutputClass} max-h-[400px] overflow-auto`}>
+			<pre className={cn(toolOutputClass, "max-h-[400px] overflow-auto")}>
 				{text.slice(start, end)}
 			</pre>
 		</>

@@ -1,5 +1,6 @@
 // ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
 import { useReducedMotion } from "motion/react";
+import { cn } from "cnfast";
 import { BorderBeam } from "../ui/BorderBeam";
 import type { ChatState } from "../../shared/chatState";
 import type { UiMessage } from "../../shared/messages";
@@ -86,11 +87,11 @@ export function Activity({
 						{permission.options.map((option) => (
 							<button
 								key={option.id}
-								className={
+								className={cn(
 									option.kind.startsWith("allow")
 										? "primary border-transparent bg-primary text-primary-text"
-										: "quiet bg-transparent"
-								}
+										: "quiet bg-transparent",
+								)}
 								onClick={() => {
 									if (state.sessionId && state.runId) {
 										send({

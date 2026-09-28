@@ -2,6 +2,7 @@
 import { Check, ChevronDown } from "lucide-react";
 import { Select } from "@base-ui/react/select";
 import { CSPProvider } from "@base-ui/react/csp-provider";
+import { cn } from "cnfast";
 import type { ConfigOption } from "../../../shared/composer";
 import { SettingsTooltip } from "../SettingsTooltip";
 
@@ -37,7 +38,11 @@ export function ConfigControl({
 						content={current?.description ?? option.description}
 					>
 						<Select.Trigger
-							className="config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] border-0 bg-transparent px-[5px] py-[6px] text-[12px] text-ellipsis text-inherit enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-settings-focus focus-visible:outline-offset-1 [&_svg]:shrink-0"
+							className={cn(
+								"config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] border-0 bg-transparent px-[5px] py-[6px] [&_svg]:shrink-0",
+								"text-[12px] text-ellipsis text-inherit enabled:hover:bg-settings-hover",
+								"focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-settings-focus focus-visible:outline-offset-1",
+							)}
 							aria-label={option.name}
 						>
 							<span className="truncate">
@@ -55,14 +60,16 @@ export function ConfigControl({
 							sideOffset={6}
 							alignItemWithTrigger={false}
 							collisionPadding={12}
-							className={
-								inDialog
-									? "config-positioner z-[60]"
-									: "config-positioner z-20"
-							}
+							className={cn(
+								"config-positioner",
+								inDialog ? "z-[60]" : "z-20",
+							)}
 						>
 							<Select.Popup
-								className="config-popup w-[min(280px,calc(100vw-24px))] max-h-[min(340px,var(--available-height))] overflow-hidden rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003]"
+								className={cn(
+									"config-popup w-[min(280px,calc(100vw-24px))] max-h-[min(340px,var(--available-height))] overflow-hidden",
+									"rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003]",
+								)}
 								aria-label={option.name}
 							>
 								<Select.List className="config-list max-h-[inherit] scroll-p-[5px] overflow-y-auto p-[5px]">
@@ -75,7 +82,11 @@ export function ConfigControl({
 											<Select.Item
 												value={choice.value}
 												label={choice.name}
-												className="config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px] px-[10px] py-[8px] text-[12px] leading-[1.5] [overflow-wrap:anywhere] [outline:none] hover:bg-menu-hover data-highlighted:bg-menu-hover"
+												className={cn(
+													"config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px] px-[10px] py-[8px]",
+													"text-[12px] leading-[1.5] [overflow-wrap:anywhere] [outline:none]",
+													"hover:bg-menu-hover data-highlighted:bg-menu-hover",
+												)}
 											>
 												<Select.ItemText>
 													{choice.name}

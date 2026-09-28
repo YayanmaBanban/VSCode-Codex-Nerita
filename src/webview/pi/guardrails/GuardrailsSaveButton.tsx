@@ -1,4 +1,5 @@
 // 未保存の設定を保存ボタンの枠で知らせる。
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../../chat/SettingsTooltip";
 import { BorderBeam } from "../../ui/BorderBeam";
 import { useReducedMotion } from "motion/react";
@@ -19,7 +20,7 @@ export function GuardrailsSaveButton({
 			content={dirty ? "未保存の変更があります" : "設定を保存"}
 		>
 			<button
-				className={`${buttonStyle} relative overflow-hidden`}
+				className={cn(buttonStyle, "relative overflow-hidden")}
 				aria-label="保存"
 				disabled={busy}
 				onClick={onSave}

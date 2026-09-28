@@ -1,5 +1,6 @@
 // 利用枠の最小残率と、枠ごとの詳細を入力欄に表示する。
 import type { QuotaWindow } from "../../../shared/composer";
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import "./quotaBar.css";
 
@@ -27,7 +28,10 @@ export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
 			}
 		>
 			<span
-				className="quota-bar inline-flex h-[24px] w-[76px] items-center rounded-[4px] hover:brightness-[1.12] focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-quota-focus focus-visible:outline-offset-2"
+				className={cn(
+					"quota-bar inline-flex h-[24px] w-[76px] items-center rounded-[4px]",
+					"hover:brightness-[1.12] focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-quota-focus focus-visible:outline-offset-2",
+				)}
 				role="progressbar"
 				aria-label="利用枠の残量"
 				aria-valuemin={0}

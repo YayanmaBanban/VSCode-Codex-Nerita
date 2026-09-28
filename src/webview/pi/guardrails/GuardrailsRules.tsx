@@ -1,4 +1,5 @@
 // パスとコマンドのルールを、JSON と同じ設定オブジェクト上で編集する。
+import { cn } from "cnfast";
 import type {
 	GuardrailsConfig,
 	PathRule,
@@ -250,7 +251,10 @@ export function GuardrailsRules({
 											),
 										)}
 										<button
-											className={`${buttonStyle} self-start`}
+											className={cn(
+												buttonStyle,
+												"self-start",
+											)}
 											onClick={() =>
 												updatePath(index, {
 													exceptions: [
@@ -313,7 +317,7 @@ export function GuardrailsRules({
 									</label>
 								</div>
 								<button
-									className={`${buttonStyle} mt-3`}
+									className={cn(buttonStyle, "mt-3")}
 									onClick={() =>
 										onChange({
 											...config,
@@ -454,7 +458,7 @@ export function GuardrailsRules({
 										</label>
 									</div>
 									<button
-										className={`${buttonStyle} mt-3`}
+										className={cn(buttonStyle, "mt-3")}
 										onClick={() =>
 											onChange({
 												...config,

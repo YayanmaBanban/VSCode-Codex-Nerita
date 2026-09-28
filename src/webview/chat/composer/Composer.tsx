@@ -1,4 +1,5 @@
 // 入力領域と送信・停止・設定操作をまとめる。
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { ArrowUp } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
@@ -38,7 +39,10 @@ export function Composer({
 	return (
 		<form
 			{...drop.handlers}
-			className={`composer relative mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px] ${drop.active ? "outline-2 outline-focus" : ""}`}
+			className={cn(
+				"composer relative mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px]",
+				drop.active && "outline-2 outline-focus",
+			)}
 			onSubmit={(event) => {
 				event.preventDefault();
 				if (!drop.reading) {
@@ -90,7 +94,10 @@ export function Composer({
 						<SettingsTooltip content="停止">
 							<button
 								type="button"
-								className={`${iconButtonClass} stop-button bg-[#bd3948]`}
+								className={cn(
+									iconButtonClass,
+									"stop-button bg-[#bd3948]",
+								)}
 								aria-label="停止"
 								disabled={state.run === "cancelling"}
 								onClick={() => {
@@ -114,7 +121,10 @@ export function Composer({
 					<SettingsTooltip content={sendLabel}>
 						<button
 							type="submit"
-							className={`${iconButtonClass} send-button bg-[#2563b8]`}
+							className={cn(
+								iconButtonClass,
+								"send-button bg-[#2563b8]",
+							)}
 							aria-label={sendLabel}
 							disabled={sendDisabled(
 								drop,

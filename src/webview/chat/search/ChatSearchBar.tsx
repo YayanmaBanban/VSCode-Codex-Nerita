@@ -1,4 +1,5 @@
 // 会話内検索の入力・一致条件・前後移動をコンパクトなバーにまとめる。
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { useChatSearch } from "./useChatSearch";
@@ -70,7 +71,12 @@ export function ChatSearchBar({
 						<SettingsTooltip content={label} key={key}>
 							<button
 								type="button"
-								className={`${buttonClass} ${key === "wholeWord" ? "underline underline-offset-2" : ""}`}
+								className={cn(
+									buttonClass,
+									key === "wholeWord"
+										? "underline underline-offset-2"
+										: "",
+								)}
 								aria-label={label}
 								aria-pressed={options[key]}
 								onClick={() =>

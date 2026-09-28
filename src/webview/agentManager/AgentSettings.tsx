@@ -1,4 +1,5 @@
 // Pi の `Workspace override` と Codex の標準 TOML を、同じフォームから編集する。
+import { cn } from "cnfast";
 import { useState } from "react";
 import {
 	agentEditSchema,
@@ -112,7 +113,7 @@ export function AgentSettings({
 				)}
 				<button
 					disabled={!!error}
-					className={`${buttonStyle} justify-self-start`}
+					className={cn(buttonStyle, "justify-self-start")}
 					type="submit"
 				>
 					Agent 設定を保存

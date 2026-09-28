@@ -1,5 +1,6 @@
 // 履歴とアーカイブ共通の削除操作に、取り消せないことを伝える確認を挟む。
 import { SettingsTooltip } from "../SettingsTooltip";
+import { cn } from "cnfast";
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Trash2 } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
@@ -22,7 +23,10 @@ export function SessionDelete({
 				<AlertDialog.Trigger
 					disabled={disabled}
 					aria-label={`${title}を削除`}
-					className="inline-flex size-[28px] shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-red-500 hover:bg-red-500/10 focus-visible:outline-offset-[-2px]"
+					className={cn(
+						"inline-flex size-[28px] shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-red-500",
+						"hover:bg-red-500/10 focus-visible:outline-offset-[-2px]",
+					)}
 				>
 					<Trash2 size={14} aria-hidden="true" />
 				</AlertDialog.Trigger>
@@ -30,7 +34,10 @@ export function SessionDelete({
 			<AlertDialog.Portal>
 				<AlertDialog.Backdrop className="fixed inset-0 z-40 bg-black/40" />
 				<AlertDialog.Popup
-					className="fixed top-1/2 left-1/2 z-50 w-[min(360px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-[10px] border border-solid border-menu-border bg-menu p-[20px] text-menu-text shadow-[0_8px_32px_#0004]"
+					className={cn(
+						"fixed top-1/2 left-1/2 z-50 w-[min(360px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2",
+						"rounded-[10px] border border-solid border-menu-border bg-menu p-[20px] text-menu-text shadow-[0_8px_32px_#0004]",
+					)}
 					onKeyDown={(event) => event.stopPropagation()}
 				>
 					<AlertDialog.Title className="m-0 text-[14px] font-semibold">

@@ -1,4 +1,5 @@
 // 読み取り系ツールの範囲指定と本文を、SDK の生データを見せず表示する。
+import { cn } from "cnfast";
 import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { Value } from "./ToolContent";
@@ -29,7 +30,7 @@ export function ReadTool({ tool }: { tool: ToolSummary }) {
 			{texts.length ? (
 				<Value value={texts.join("\n\n")} />
 			) : (
-				<p className={`${toolLabelClass} text-muted`}>
+				<p className={cn(toolLabelClass, "text-muted")}>
 					{emptyOutputMessage(tool.status)}
 				</p>
 			)}

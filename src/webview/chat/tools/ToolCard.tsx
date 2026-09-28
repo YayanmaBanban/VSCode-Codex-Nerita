@@ -1,4 +1,5 @@
 // ツールの種別に応じた本文・状態アイコン・停止操作と開閉を表示する。
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { type SetStateAction, type Dispatch, useId, useState } from "react";
 import {
@@ -135,7 +136,10 @@ function renderStopButton(
 		>
 			<button
 				type="button"
-				className="tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 p-0 text-tool-error enabled:hover:bg-tool-error/12"
+				className={cn(
+					"tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center p-0",
+					"rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 text-tool-error enabled:hover:bg-tool-error/12",
+				)}
 				aria-label={`${tool.title} を停止`}
 				disabled={!onStop}
 				onClick={onStop}
@@ -165,7 +169,10 @@ function renderToolHeading(
 	const Icon = icon;
 	return (
 		<Heading
-			className="tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent p-[10px] text-left focus-visible:outline-offset-[-3px] [&_svg]:shrink-0"
+			className={cn(
+				"tool-heading group flex w-full min-w-0 items-center gap-[8px] p-[10px] [&_svg]:shrink-0",
+				"rounded-none border-0 bg-transparent text-left focus-visible:outline-offset-[-3px]",
+			)}
 			aria-expanded={Body ? state.open : undefined}
 			aria-controls={Body ? bodyId : undefined}
 			onClick={
@@ -186,7 +193,12 @@ function renderToolHeading(
 			{Body && (
 				<ChevronDown
 					size={14}
-					className={`tool-chevron group-aria-[expanded=false]:-rotate-90 ${status === "failed" || (executing && active) ? "ml-[26px]" : ""}`}
+					className={cn(
+						"tool-chevron group-aria-[expanded=false]:-rotate-90",
+						status === "failed" || (executing && active)
+							? "ml-[26px]"
+							: "",
+					)}
 					aria-hidden="true"
 				/>
 			)}

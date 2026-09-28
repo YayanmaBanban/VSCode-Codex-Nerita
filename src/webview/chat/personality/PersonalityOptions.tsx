@@ -1,5 +1,6 @@
 // 上部オプションメニューから性格設定パネルを開き、Host へ編集操作を送る。
 import { useEffect, useRef, useState } from "react";
+import { cn } from "cnfast";
 import { Menu } from "@base-ui/react/menu";
 import { Dialog } from "@base-ui/react/dialog";
 import { CSPProvider } from "@base-ui/react/csp-provider";
@@ -102,7 +103,10 @@ export function PersonalityOptions({
 											methodId: "pi",
 										})
 									}
-									className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50"
+									className={cn(
+										"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none",
+										"data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50",
+									)}
 								>
 									<KeyRound size={16} aria-hidden="true" />
 									認証情報を管理
@@ -129,7 +133,10 @@ export function PersonalityOptions({
 										requestId: crypto.randomUUID(),
 									})
 								}
-								className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50"
+								className={cn(
+									"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none",
+									"data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50",
+								)}
 							>
 								<LogOut size={16} aria-hidden="true" />
 								ログアウト
@@ -143,7 +150,10 @@ export function PersonalityOptions({
 					<Dialog.Backdrop className="fixed inset-0 z-40 bg-black/30" />
 					<Dialog.Popup
 						finalFocus={trigger}
-						className="fixed inset-y-[12px] right-[12px] z-50 flex w-[min(460px,calc(100vw-24px))] flex-col rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003] outline-none"
+						className={cn(
+							"fixed inset-y-[12px] right-[12px] z-50 flex w-[min(460px,calc(100vw-24px))] flex-col",
+							"rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003] outline-none",
+						)}
 					>
 						<div className="flex items-center justify-between px-[16px] py-[12px]">
 							<Dialog.Title className="m-0 text-[14px] font-medium">

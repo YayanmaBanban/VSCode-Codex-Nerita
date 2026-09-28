@@ -1,5 +1,6 @@
 // 名前変更の入力と確定・取消を、履歴行の中に表示する。
 import { useState } from "react";
+import { cn } from "cnfast";
 import type { UiMessage } from "../../../shared/messages";
 
 /** 空の名前は送信せず、Escape では入力だけを閉じる。 */
@@ -43,7 +44,10 @@ export function SessionRename({
 			<input
 				autoFocus
 				aria-label="新しいセッション名"
-				className="box-border min-w-0 w-full rounded-[4px] border border-solid border-input-border bg-input px-[8px] py-[6px] text-[12px] text-input-text focus-visible:outline-2 focus-visible:outline-focus"
+				className={cn(
+					"box-border min-w-0 w-full rounded-[4px] border border-solid border-input-border bg-input px-[8px] py-[6px]",
+					"text-[12px] text-input-text focus-visible:outline-2 focus-visible:outline-focus",
+				)}
 				value={name}
 				maxLength={200}
 				disabled={disabled}

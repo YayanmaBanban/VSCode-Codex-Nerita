@@ -1,5 +1,6 @@
 // 通常メッセージの Markdown を React 要素へ変換し、テーマに沿って表示する。
 import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
+import { cn } from "cnfast";
 import type { UiMessage } from "../../../shared/messages";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -52,7 +53,7 @@ export function MessageText({
 	const content = messageReferences(text, references);
 	return (
 		<div
-			className={[
+			className={cn(
 				"message-markdown min-w-0 whitespace-normal [overflow-wrap:anywhere] [&>:first-child]:mt-0 [&>:last-child]:mb-0",
 				"[&_p]:my-[10px] [&_h1]:my-[16px] [&_h1]:text-[20px] [&_h2]:my-[14px] [&_h2]:text-[17px] [&_h3]:my-[12px] [&_h3]:text-[15px]",
 				"[&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold [&_h5]:font-semibold [&_h6]:font-semibold",
@@ -61,7 +62,7 @@ export function MessageText({
 				"[&_code]:rounded-[3px] [&_code]:bg-message-code [&_code]:px-[3px] [&_code]:font-mono [&_code]:text-[12px] [&_pre_code]:p-0",
 				"[&_th]:border [&_th]:border-panel-border [&_th]:px-[8px] [&_th]:py-[5px] [&_td]:border [&_td]:border-panel-border [&_td]:px-[8px] [&_td]:py-[5px]",
 				"[&_hr]:my-[16px] [&_hr]:border-panel-border [&_.task-list-item]:list-none [&_input]:mr-[6px]",
-			].join(" ")}
+			)}
 		>
 			<Markdown
 				remarkPlugins={[remarkGfm, remarkBreaks]}

@@ -1,5 +1,6 @@
 // セッションの使用量を円形で表示し、増分だけを現在位置から補間する。
 import { useEffect } from "react";
+import { cn } from "cnfast";
 import {
 	animate,
 	motion,
@@ -41,7 +42,10 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 			}
 		>
 			<span
-				className="context-usage inline-flex flex-[0_0_24px] text-muted data-[warning=true]:text-warning [&_circle]:fill-none [&_circle]:stroke-current [&_circle]:stroke-2"
+				className={cn(
+					"context-usage inline-flex flex-[0_0_24px] text-muted data-[warning=true]:text-warning",
+					"[&_circle]:fill-none [&_circle]:stroke-current [&_circle]:stroke-2",
+				)}
 				role="progressbar"
 				aria-label="コンテキスト使用量"
 				aria-valuemin={0}

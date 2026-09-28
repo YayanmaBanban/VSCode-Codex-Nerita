@@ -1,4 +1,5 @@
 // エージェントの状態・アイコン・名前を独立したタイムラインカードで表示する。
+import { cn } from "cnfast";
 import { Check, Circle, LoaderCircle, Square, X } from "lucide-react";
 import type { AgentStatus, SubAgentSummary } from "../../../shared/subAgents";
 import { icons } from "./AgentIcons";
@@ -54,14 +55,21 @@ export function AgentCard({
 	return (
 		<button
 			type="button"
-			className="agent-card mb-3 flex w-full min-w-0 items-center gap-3 rounded-[9px] border border-solid border-message-border bg-transparent px-[14px] py-3 text-left text-inherit hover:bg-message-user focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--vscode-focusBorder)]"
+			className={cn(
+				"agent-card mb-3 flex w-full min-w-0 items-center gap-3 px-[14px] py-3",
+				"rounded-[9px] border border-solid border-message-border bg-transparent text-left text-inherit",
+				"hover:bg-message-user focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--vscode-focusBorder)]",
+			)}
 			onClick={() => onOpen(agent)}
 			aria-label={`${agentName(agent)}の会話を表示 · ${labels[agent.status]}`}
 		>
 			<Icon
 				size={16}
 				aria-hidden="true"
-				className={`shrink-0 ${agent.status === "running" ? "tool-progress" : "text-muted"}`}
+				className={cn(
+					"shrink-0",
+					agent.status === "running" ? "tool-progress" : "text-muted",
+				)}
 			/>
 			<AgentIcon iconKey={agent.iconKey} />
 			<span className="min-w-0 flex-1">

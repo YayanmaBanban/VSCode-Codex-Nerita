@@ -1,4 +1,5 @@
 // App Server の unified diff を再計算せず、追加・削除の色で表示する。
+import { cn } from "cnfast";
 import { diffLineClass, toolCodeClass, toolLabelClass } from "./toolStyles";
 /** サーバーが返した差分をテキストとして描画する。 */
 export function UnifiedDiff({ path, diff }: { path: string; diff: string }) {
@@ -6,14 +7,18 @@ export function UnifiedDiff({ path, diff }: { path: string; diff: string }) {
 		<section className="tool-diff" aria-label={`${path} の差分`}>
 			<h3 className={toolLabelClass}>{path}</h3>
 			<pre
-				className={`file-diff-lines ${toolCodeClass} whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]`}
+				className={cn(
+					"file-diff-lines",
+					toolCodeClass,
+					"whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]",
+				)}
 				tabIndex={0}
 				aria-label="差分コード"
 			>
 				{diff.split("\n").map((line, index) => (
 					<span
 						key={index}
-						className={`${diffLineClass} ${diffLineColor(line)}`}
+						className={cn(diffLineClass, diffLineColor(line))}
 					>
 						{line}
 						{"\n"}

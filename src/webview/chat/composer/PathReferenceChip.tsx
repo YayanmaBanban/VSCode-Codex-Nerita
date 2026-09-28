@@ -1,5 +1,6 @@
 // 入力文中のパスを添付風に表示し、取り消し可能な操作で参照だけを外す。
 import { X } from "lucide-react";
+import { cn } from "cnfast";
 import { pathText } from "../../../shared/composerReferences";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalEditable } from "@lexical/react/useLexicalEditable";
@@ -27,13 +28,19 @@ export function PathReferenceChip({
 		<span
 			title={pathText(path)}
 			aria-label={`${referenceKindLabel(path)}: ${pathText(path)}`}
-			className="inline-flex max-w-full items-center rounded-[5px] border border-solid border-panel-border bg-input text-[12px] leading-normal align-middle [&_svg]:shrink-0"
+			className={cn(
+				"inline-flex max-w-full items-center align-middle [&_svg]:shrink-0",
+				"rounded-[5px] border border-solid border-panel-border bg-input text-[12px] leading-normal",
+			)}
 		>
 			<button
 				type="button"
 				disabled={!editable}
 				aria-label={referenceActionLabel(path)}
-				className="inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus"
+				className={cn(
+					"inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px]",
+					"hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus",
+				)}
 				onMouseDown={(event) => event.preventDefault()}
 				onKeyDown={(event) => event.stopPropagation()}
 				onKeyUp={(event) => event.stopPropagation()}
@@ -57,7 +64,10 @@ export function PathReferenceChip({
 				type="button"
 				disabled={!editable}
 				aria-label={`${path.name} の参照を取り外す`}
-				className="inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px] hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus"
+				className={cn(
+					"inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px]",
+					"hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus",
+				)}
 				onMouseDown={(event) => event.preventDefault()}
 				onKeyDown={(event) => event.stopPropagation()}
 				onKeyUp={(event) => event.stopPropagation()}

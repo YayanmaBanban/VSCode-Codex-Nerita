@@ -1,5 +1,6 @@
 // 送信済みの参照を、削除操作のないインラインチップで表示する。
 import { SettingsTooltip } from "../SettingsTooltip";
+import { cn } from "cnfast";
 import type { ComposerTarget } from "../../../shared/composerTargets";
 import { pathText } from "../../../shared/composerReferences";
 import type { UiMessage } from "../../../shared/messages";
@@ -23,7 +24,11 @@ export function MessageReferenceChip({
 				type="button"
 				aria-label={referenceActionLabel(path)}
 				disabled={!send}
-				className="message-reference inline-flex max-w-full items-center gap-[5px] rounded-[5px] border border-solid border-panel-border bg-input px-[5px] py-[4px] text-[12px] leading-normal align-middle hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus [&_svg]:shrink-0"
+				className={cn(
+					"message-reference inline-flex max-w-full items-center gap-[5px] px-[5px] py-[4px] align-middle [&_svg]:shrink-0",
+					"rounded-[5px] border border-solid border-panel-border bg-input text-[12px] leading-normal",
+					"hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus",
+				)}
 				onClick={() => {
 					const requestId = crypto.randomUUID();
 					if (path.kind === "changes") {

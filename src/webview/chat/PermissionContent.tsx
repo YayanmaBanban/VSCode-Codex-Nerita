@@ -1,5 +1,5 @@
 // 承認の要点を常時表示し、長い実行情報は開閉できる詳細へまとめる。
-import clsx from "clsx";
+import { cn } from "cnfast";
 import type {
 	PermissionField,
 	PermissionPresentation,
@@ -39,12 +39,7 @@ export function PermissionContent({
 			)}
 			<PermissionFields fields={permission.fields ?? []} />
 			{!!permission.details?.length && (
-				<details
-					className={clsx(
-						"my-[12px] min-w-0 p-[10px]",
-						"rounded-[6px] border border-solid border-panel-border",
-					)}
-				>
+				<details className="my-[12px] min-w-0 rounded-[6px] border border-solid border-panel-border p-[10px]">
 					<summary className="cursor-pointer text-muted">
 						詳細 ({permission.details.length})
 					</summary>
@@ -61,20 +56,15 @@ function PermissionFields({ fields }: { fields: PermissionField[] }) {
 		return null;
 	}
 	return (
-		<dl
-			className={clsx(
-				"my-[12px] grid min-w-0",
-				"grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-[12px] gap-y-[8px]",
-			)}
-		>
+		<dl className="my-[12px] grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-[12px] gap-y-[8px]">
 			{fields.map((field) => (
 				<div
 					key={field.id}
-					className={
+					className={cn(
 						field.display === "code"
 							? "col-span-2 min-w-0"
-							: "contents"
-					}
+							: "contents",
+					)}
 				>
 					<dt className="text-muted [overflow-wrap:anywhere]">
 						{field.label}
@@ -101,7 +91,7 @@ function PermissionCode({ label, value }: { label: string; value: string }) {
 		<pre
 			aria-label={label}
 			tabIndex={0}
-			className={clsx(
+			className={cn(
 				"m-0 max-h-[200px] min-w-0 max-w-full overflow-auto p-[10px]",
 				"rounded-[6px] border border-solid border-panel-border bg-input text-input-text",
 				"font-mono text-[12px] leading-[1.6] whitespace-pre [overflow-wrap:normal]",

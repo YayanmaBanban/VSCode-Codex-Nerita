@@ -1,4 +1,5 @@
 // ツールの本文・差分・任意の入出力はテキストとして表示し、実行しない。
+import { cn } from "cnfast";
 import type { ToolSummary } from "../../../shared/chatState";
 import { isRecord } from "../../../shared/validation";
 import { FileDiff } from "./FileDiff";
@@ -107,7 +108,7 @@ export function GenericTool({
 	return (
 		<>
 			{tool.paths.map((path) => (
-				<div className={`tool-path ${toolLabelClass}`} key={path}>
+				<div className={cn("tool-path", toolLabelClass)} key={path}>
 					{path}
 				</div>
 			))}

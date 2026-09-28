@@ -1,4 +1,5 @@
 // 変更前後の本文を、文脈付きの unified diff として表示する。
+import { cn } from "cnfast";
 import { useMemo } from "react";
 import { structuredPatch } from "diff";
 import {
@@ -84,19 +85,26 @@ function DiffBody({
 	}
 	return (
 		<pre
-			className={`file-diff-lines ${toolCodeClass} whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]`}
+			className={cn(
+				"file-diff-lines",
+				toolCodeClass,
+				"whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]",
+			)}
 			tabIndex={0}
 			aria-label="差分コード"
 		>
 			{patch.hunks.map((hunk, index) => (
 				<span key={index}>
 					<span
-						className={`${diffLineClass} file-diff-hunk text-muted bg-diff-hunk`}
+						className={cn(
+							diffLineClass,
+							"file-diff-hunk text-muted bg-diff-hunk",
+						)}
 					>{`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@\n`}</span>
 					{hunk.lines.map((line, lineIndex) => (
 						<span
 							key={lineIndex}
-							className={`${diffLineClass} ${diffLineColor(line)}`}
+							className={cn(diffLineClass, diffLineColor(line))}
 						>
 							{line}
 							{"\n"}

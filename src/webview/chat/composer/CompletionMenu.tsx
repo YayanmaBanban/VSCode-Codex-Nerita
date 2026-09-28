@@ -1,4 +1,5 @@
 // 検索ペインと候補ペインを持ち、選択中の行を見える範囲に保つ。
+import { cn } from "cnfast";
 import {
 	useEffect,
 	useLayoutEffect,
@@ -62,7 +63,10 @@ export function CompletionMenu({
 	return (
 		<div
 			ref={panel}
-			className={`absolute left-0 z-50 w-full min-w-0 rounded-[6px] border border-panel-border bg-input p-2 shadow-lg ${above ? "bottom-full mb-2" : "top-0"}`}
+			className={cn(
+				"absolute left-0 z-50 w-full min-w-0 rounded-[6px] border border-panel-border bg-input p-2 shadow-lg",
+				above ? "bottom-full mb-2" : "top-0",
+			)}
 			role="region"
 			aria-label={title}
 		>
@@ -122,7 +126,12 @@ export function CompletionMenu({
 						aria-selected={index === selected}
 						onMouseDown={(event) => event.preventDefault()}
 						onClick={() => onPick(item)}
-						className={`cursor-pointer rounded border border-transparent p-2 [overflow-wrap:anywhere] ${index === selected ? "bg-settings-hover border-settings-focus" : "hover:bg-settings-hover"}`}
+						className={cn(
+							"cursor-pointer rounded border border-transparent p-2 [overflow-wrap:anywhere]",
+							index === selected
+								? "bg-settings-hover border-settings-focus"
+								: "hover:bg-settings-hover",
+						)}
 					>
 						<div>{item.label}</div>
 						{item.description && (

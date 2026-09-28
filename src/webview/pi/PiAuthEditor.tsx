@@ -1,4 +1,5 @@
 // 検索可能な認証先一覧と、SDK から要求された入力をエディター内に表示する。
+import { cn } from "cnfast";
 import { useState } from "react";
 import "../chat/chat.css";
 import { Check, ChevronRight, ChevronDown, Search } from "lucide-react";
@@ -151,7 +152,12 @@ export function PiAuthEditor({
 								id={`provider-${item.id}`}
 								inert={!open}
 								aria-hidden={!open}
-								className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+								className={cn(
+									"grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+									open
+										? "grid-rows-[1fr]"
+										: "grid-rows-[0fr]",
+								)}
 							>
 								<div className="min-h-0 overflow-hidden">
 									<div className="pb-[20px] pl-[38px] pr-[8px]">

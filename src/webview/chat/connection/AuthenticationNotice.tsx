@@ -35,7 +35,7 @@ export function AuthenticationNotice({
 
 	return (
 		<motion.section
-			className={`auth-card ${noticeClass}`}
+			className={cn("auth-card", noticeClass)}
 			aria-label="認証"
 			initial={
 				reducedMotion
@@ -67,17 +67,11 @@ export function AuthenticationNotice({
 							key={method.id}
 							type="button"
 							className={cn(
-								"m-0 h-8 px-3 text-[12px] leading-2",
-								"group relative isolate shrink-0 overflow-hidden",
-								"rounded-md border",
-								"bg-zinc-950 text-white",
+								"group relative isolate m-0 h-8 shrink-0 overflow-hidden rounded-md border px-3",
+								"bg-zinc-950 text-[12px] font-medium leading-2 text-white",
 								"[border-color:color-mix(in_srgb,var(--vscode-button-border,#414851)_75%,transparent)]",
-								"font-medium",
-								"transition-colors duration-100",
-								"hover:[border-color:var(--vscode-focusBorder,#007acc)]",
-								"focus-visible:outline-none",
-								"focus-visible:ring-1",
-								"focus-visible:ring-[var(--vscode-focusBorder,#007acc)]",
+								"transition-colors duration-100 hover:[border-color:var(--vscode-focusBorder,#007acc)]",
+								"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--vscode-focusBorder,#007acc)]",
 							)}
 							onClick={() =>
 								send({
@@ -92,11 +86,9 @@ export function AuthenticationNotice({
 								aria-hidden="true"
 								className={cn(
 									"pointer-events-none absolute inset-0 flex items-center justify-center",
-									"bg-sky-300 text-black",
-									"[clip-path:polygon(0_0,0_0,0_0)]",
+									"bg-sky-300 text-black [clip-path:polygon(0_0,0_0,0_0)]",
 									"transition-[clip-path] duration-300 ease-out motion-reduce:transition-none",
-									"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)]",
-									"group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
+									"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)] group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
 								)}
 							>
 								{method.name}

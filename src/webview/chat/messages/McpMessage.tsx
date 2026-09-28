@@ -1,4 +1,5 @@
 // MCP の取得中表示と、接続状態の色付きリストをメッセージ内に描画する。
+import { cn } from "cnfast";
 import { useReducedMotion } from "motion/react";
 import type { McpMessageContent } from "../../../shared/mcp";
 import { ShinyText } from "../../ui/ShinyText";
@@ -56,7 +57,10 @@ export function McpMessage({
 								role="img"
 								aria-label={server.runtimeStatus ?? "不明"}
 								title={server.runtimeStatus ?? "不明"}
-								className={`mt-[0.6em] size-2 shrink-0 rounded-full ${serverStatusColor(server.runtimeStatus)}`}
+								className={cn(
+									"mt-[0.6em] size-2 shrink-0 rounded-full",
+									serverStatusColor(server.runtimeStatus),
+								)}
 							/>
 							<span className="min-w-0 [overflow-wrap:anywhere]">
 								{server.name}

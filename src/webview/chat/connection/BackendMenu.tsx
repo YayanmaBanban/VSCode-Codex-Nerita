@@ -1,5 +1,6 @@
 // オプションからバックエンドの保存済み設定を選択する。
 import { Menu } from "@base-ui/react/menu";
+import { cn } from "cnfast";
 import { Check, ChevronRight, Cpu } from "lucide-react";
 import type { BackendId } from "../../../shared/backend";
 
@@ -52,7 +53,10 @@ export function BackendMenu({
 									value={value}
 									disabled={backend === undefined}
 									closeOnClick
-									className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50"
+									className={cn(
+										"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none",
+										"data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50",
+									)}
 								>
 									<span className="size-[16px] shrink-0">
 										<Menu.RadioItemIndicator>

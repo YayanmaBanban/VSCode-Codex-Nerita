@@ -1,5 +1,6 @@
 // 性格設定の本文を、履歴とプレーンテキスト貼り付けに対応する Lexical で編集する。
 import { useEffect, useId } from "react";
+import { cn } from "cnfast";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -59,7 +60,10 @@ export function InstructionEditor({
 							aria-label={label}
 							aria-describedby={helpId}
 							aria-readonly={disabled}
-							className="min-h-[120px] max-h-[240px] overflow-y-auto rounded-[6px] border border-solid border-input-border bg-input p-[10px] text-input-text leading-[1.7] focus-visible:outline-2 focus-visible:outline-focus"
+							className={cn(
+								"min-h-[120px] max-h-[240px] overflow-y-auto rounded-[6px] border border-solid border-input-border bg-input p-[10px]",
+								"text-input-text leading-[1.7] focus-visible:outline-2 focus-visible:outline-focus",
+							)}
 						/>
 					}
 					ErrorBoundary={LexicalErrorBoundary}

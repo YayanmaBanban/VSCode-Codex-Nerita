@@ -1,6 +1,6 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
 import { SettingsTooltip } from "../SettingsTooltip";
-import { clsx } from "clsx";
+import { cn } from "cnfast";
 import { type ReactNode, type RefObject, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { UiMessage } from "../../../shared/messages";
@@ -121,7 +121,7 @@ export function Messages({
 		const replyPending = isReplyPending(user, nextUser, busy);
 		return (
 			<article
-				className={clsx(
+				className={cn(
 					"message",
 					message.role,
 					"mb-[24px] min-w-0 p-[14px]",
@@ -183,7 +183,10 @@ function renderMessageActions(
 ) {
 	return (
 		<div
-			className={`message-actions mt-[10px] flex justify-end gap-[6px] ${messageFocusClass}`}
+			className={cn(
+				"message-actions mt-[10px] flex justify-end gap-[6px]",
+				messageFocusClass,
+			)}
 			tabIndex={-1}
 			ref={(element) => {
 				if (element) {
@@ -197,7 +200,7 @@ function renderMessageActions(
 				<SettingsTooltip content="回答をコピー">
 					<button
 						type="button"
-						className={`${messageIconButtonClass} bg-[#416482]`}
+						className={cn(messageIconButtonClass, "bg-[#416482]")}
 						aria-label="回答をコピー"
 						onClick={() => void copy(message)}
 					>
@@ -210,7 +213,7 @@ function renderMessageActions(
 			>
 				<button
 					type="button"
-					className={`${messageIconButtonClass} bg-[#416482]`}
+					className={cn(messageIconButtonClass, "bg-[#416482]")}
 					aria-label={
 						user ? "回答の末尾へ移動" : "送信メッセージへ移動"
 					}
