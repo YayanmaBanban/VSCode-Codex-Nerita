@@ -4,10 +4,31 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StoryChat as ChatApp } from "../StoryChat";
 import { createChatStoryBridge } from "../mocks/mockBridge";
 import type { UiMessage } from "../../../shared/messages";
+import { settingsFixture } from "../../../../tests/fixtures/settingsFixture";
 
 /** テスト操作で通知を注入し、送信された要求も表示する。 */
-function SettingsStory() {
-	const mock = useMemo(() => createChatStoryBridge("empty"), []);
+function SettingsStory({
+	mode = "workspace-write",
+	reviewer = "user",
+}: {
+	mode?: string;
+	reviewer?: string;
+}) {
+	const mock = useMemo(() => {
+		const bridge = createChatStoryBridge("empty");
+		bridge.patchState({
+			configOptions: settingsFixture().map((option) => {
+				if (option.id === "mode") {
+					return { ...option, currentValue: mode };
+				}
+				if (option.id === "approvals_reviewer") {
+					return { ...option, currentValue: reviewer };
+				}
+				return option;
+			}),
+		});
+		return bridge;
+	}, [mode, reviewer]);
 	const [last, setLast] = useState<UiMessage>();
 	const bridge = useMemo(
 		() => ({
@@ -91,6 +112,16 @@ export default meta;
 /** 操作と通知の競合を再現するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Connected: Story = {};
+
+/** 権限と承認者を固定し、カードを開いて見た目を比較する。 */
+export const ReadOnly: Story = { args: { mode: "read-only" } };
+export const WorkspaceWriteUser: Story = {
+	args: { mode: "workspace-write", reviewer: "user" },
+};
+export const WorkspaceWriteAutoReview: Story = {
+	args: { mode: "workspace-write", reviewer: "auto_review" },
+};
+export const FullAccess: Story = { args: { mode: "danger-full-access" } };
 
 /** App Server の `plan` 項目の本文を、通常の返信表示で確認する。 */
 function ProposedPlanStory() {

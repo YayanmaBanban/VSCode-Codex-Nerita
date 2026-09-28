@@ -1,0 +1,21 @@
+/* レイアウトと当たり判定を変えず、目盛りとつまみの見た目だけを拡大する。 */
+.step-slider-thumb > span {
+	transform: scale(1);
+	transition: transform 160ms ease-out;
+}
+.step-slider-input:enabled:hover ~ .step-slider-thumb > span {
+	transform: scale(1.12);
+}
+.step-slider-point > span {
+	transform: scale(1);
+	transition: transform 160ms ease-out;
+}
+.step-slider-point:enabled:hover > span {
+	transform: scale(2);
+}
+@media (prefers-reduced-motion: reduce) {
+	.step-slider-thumb > span,
+	.step-slider-point > span {
+		transition: none;
+	}
+}

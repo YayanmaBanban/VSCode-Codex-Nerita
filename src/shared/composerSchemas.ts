@@ -11,6 +11,7 @@ export const ConfigChoiceSchema = z.object({
 	value: z.string(),
 	name: z.string(),
 	description: z.string().optional(),
+	icon: z.enum(["user", "bot"]).optional(),
 });
 
 /** 候補から隠された現在値も `currentLabel` で表示できる設定。 */

@@ -15,7 +15,7 @@ for (const theme of ["dark", "light"] as const) {
 		await page.setViewportSize({ width: 320, height: 900 });
 		await page.emulateMedia({ colorScheme: theme });
 		await page.goto(
-			"/iframe.html?id=chat-composer-settings--proposed-plan&viewMode=story",
+			`/iframe.html?id=chat-composer-settings--proposed-plan&viewMode=story&globals=theme:${theme === "light" ? "light" : "dark2026"}`,
 		);
 		await expect(
 			page.getByRole("heading", { name: "認証機能の実装計画" }),
@@ -45,14 +45,14 @@ for (const theme of ["dark", "light"] as const) {
 			reducedMotion: "no-preference",
 		});
 		await page.goto(
-			"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
+			`/iframe.html?id=chat-composer-settings--connected&viewMode=story&globals=theme:${theme === "light" ? "light" : "dark2026"}`,
 		);
 		await expect(
 			page.getByRole("combobox", { name: "Collaboration mode" }),
 		).toBeVisible({ timeout: 30_000 });
 		await expect(
-			page.getByRole("combobox", { name: "Mode", exact: true }),
-		).toHaveText("Approve for me");
+			page.getByRole("button", { name: "Mode", exact: true }),
+		).toBeVisible();
 		await expect(
 			page.getByRole("combobox", { name: "Model", exact: true }),
 		).toHaveText("6 Astra");
@@ -65,7 +65,101 @@ for (const theme of ["dark", "light"] as const) {
 		).toEqual(["attach-button", "context-usage", "contents"]);
 		await expect(
 			page.locator(".config-control .lucide-chevron-down"),
-		).toHaveCount(4);
+		).toHaveCount(3);
+		const mode = page.getByRole("button", { name: "Mode", exact: true });
+		await mode.hover();
+		await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
+		await expect(
+			page.getByRole("tooltip").locator(".lucide-user"),
+		).toBeVisible();
+		await expect(page.getByRole("tooltip")).toContainText(
+			"ワークスペース内に書き込み",
+		);
+		await info.attach("mode-hover", {
+			body: await page.screenshot({
+				path: info.outputPath("mode-hover.png"),
+			}),
+			contentType: "image/png",
+		});
+		await mode.click();
+		const slider = page.getByRole("slider", { name: "Mode" });
+		await expect(slider).toHaveAttribute(
+			"aria-valuetext",
+			"ワークスペース内に書き込み",
+		);
+		await page.getByRole("combobox", { name: "ApprovalsReviewer" }).hover();
+		await expect(
+			page.getByRole("tooltip", { name: "ユーザが承認", exact: true }),
+		).toBeVisible();
+		await page.getByRole("combobox", { name: "ApprovalsReviewer" }).click();
+		await expect(
+			page.getByRole("option").filter({ hasText: "代わりに承認" }),
+		).toContainText("追加のトークンを使用します。");
+		await info.attach("reviewer-options", {
+			body: await page.screenshot({
+				path: info.outputPath("reviewer-options.png"),
+			}),
+			contentType: "image/png",
+		});
+		await page.getByRole("option", { name: /代わりに承認/ }).click();
+		await expectSent(page, {
+			type: "config/set",
+			configId: "approvals_reviewer",
+			value: "auto_review",
+		});
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "approvals_reviewer"
+					? { ...option, currentValue: "auto_review" }
+					: option,
+			),
+		});
+		await expect(
+			page
+				.getByRole("combobox", { name: "ApprovalsReviewer" })
+				.locator("svg"),
+		).toHaveClass(/lucide-bot/);
+		await info.attach("write-card", {
+			body: await page.screenshot({
+				path: info.outputPath("write-card.png"),
+			}),
+			contentType: "image/png",
+		});
+		for (const [key, value, label] of [
+			["Home", "read-only", "読み取り専用"],
+			["End", "danger-full-access", "フルアクセス"],
+		] as const) {
+			await slider.focus();
+			await slider.press(key);
+			await expectSent(page, {
+				type: "config/set",
+				configId: "mode",
+				value,
+			});
+			await showState(page, {
+				configOptions: settingsFixture().map((option) =>
+					option.id === "mode"
+						? { ...option, currentValue: value }
+						: option,
+				),
+			});
+			await expect(slider).toHaveAttribute("aria-valuetext", label);
+			await expect(
+				page.getByRole("heading", { name: label, exact: true }),
+			).toBeVisible();
+			await expect(
+				page.getByRole("combobox", { name: "ApprovalsReviewer" }),
+			).toHaveCount(0);
+			await info.attach(value, {
+				body: await page.screenshot({
+					path: info.outputPath(`${value}.png`),
+				}),
+				contentType: "image/png",
+			});
+		}
+		await expect(mode.locator("svg")).toHaveClass(/lucide-shield-alert/);
+		await slider.press("Escape");
+		await expect(slider).toHaveCount(0);
 		await page
 			.getByRole("combobox", { name: "Collaboration mode" })
 			.click();

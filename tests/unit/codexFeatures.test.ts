@@ -4,8 +4,30 @@ import { codexHarness } from "./codexHarness";
 import { isHostMessage } from "../../src/shared/hostMessageValidation";
 import { parseModels } from "../../src/extension/backends/codex/protocol/account";
 import { parseQuotaResponse } from "../../src/extension/backends/codex/protocol/usage";
+import { parseStartedThread } from "../../src/extension/backends/codex/protocol/turn";
 
 const sessions: ReturnType<typeof codexHarness>["session"][] = [];
+
+it("会話開始応答の承認者を保持し、不正な値を拒否する", () => {
+	const response = {
+		thread: { id: "thread" },
+		model: "model",
+		cwd: "workspace",
+	};
+	for (const approvalsReviewer of [
+		"user",
+		"auto_review",
+		"guardian_subagent",
+	] as const) {
+		expect(
+			parseStartedThread({ ...response, approvalsReviewer })
+				.approvalsReviewer,
+		).toBe(approvalsReviewer);
+	}
+	expect(() =>
+		parseStartedThread({ ...response, approvalsReviewer: "unknown" }),
+	).toThrow("Invalid approvals reviewer");
+});
 afterEach(async () => {
 	await Promise.all(sessions.splice(0).map((s) => s.dispose()));
 });
@@ -221,10 +243,12 @@ it("モデル・推論量・権限を次のturnへ適用し実行中は変更し
 	await setting("reasoning_effort", "high");
 	await setting("fast-mode", "on");
 	await setting("mode", "read-only");
+	await setting("approvals_reviewer", "auto_review");
 	await h.send();
 	expect(h.client.startTurn).toHaveBeenCalledWith(
 		expect.objectContaining({
 			effort: "high",
+			approvalsReviewer: "auto_review",
 			serviceTierForTurn: "priority",
 			sandboxPolicy: { type: "readOnly", networkAccess: false },
 		}),
@@ -232,13 +256,86 @@ it("モデル・推論量・権限を次のturnへ適用し実行中は変更し
 	const failed = vi.fn();
 	h.session.subscribe(failed);
 	await setting("mode", "danger-full-access");
+	await setting("approvals_reviewer", "user");
 	expect(failed).toHaveBeenCalledWith(
 		expect.objectContaining({ type: "request/failed" }),
 	);
 	h.complete();
+	await setting("approvals_reviewer", "invalid");
 	await setting("fast-mode", "off");
 	await h.send();
 	expect(h.client.startTurn).toHaveBeenLastCalledWith(
-		expect.objectContaining({ serviceTierForTurn: "default" }),
+		expect.objectContaining({
+			serviceTierForTurn: "default",
+			approvalsReviewer: "auto_review",
+		}),
 	);
 });
+
+it.each([
+	["read-only", { type: "readOnly", networkAccess: true }],
+	[
+		"workspace-write",
+		{
+			type: "workspaceWrite",
+			writableRoots: ["workspace/extra"],
+			networkAccess: true,
+			excludeTmpdirEnvVar: true,
+			excludeSlashTmp: true,
+		},
+	],
+	["danger-full-access", { type: "dangerFullAccess" }],
+] as const)(
+	"初期権限 %s を表示し、再選択でも詳細設定を維持する",
+	async (mode, policy) => {
+		const h = codexHarness();
+		sessions.push(h.session);
+		const sandbox =
+			policy.type === "workspaceWrite"
+				? { ...policy, writableRoots: [...policy.writableRoots] }
+				: policy;
+		h.client.startThread.mockResolvedValueOnce({
+			thread: { id: "thread-1" },
+			model: "test-model",
+			cwd: "workspace",
+			sandbox,
+			approvalsReviewer: "auto_review",
+		});
+		await h.session.connect();
+		const option = h.session
+			.snapshot()
+			.configOptions.find((item) => item.id === "mode");
+		expect(option?.currentValue).toBe(mode);
+		expect(option?.options.map((choice) => choice.value)).toEqual([
+			"read-only",
+			"workspace-write",
+			"danger-full-access",
+		]);
+		const setting = (configId: string, value: string) =>
+			h.session.receive({
+				type: "config/set",
+				requestId: crypto.randomUUID(),
+				sessionId: "thread-1",
+				configId,
+				value,
+			});
+		await setting(
+			"mode",
+			mode === "read-only" ? "workspace-write" : "read-only",
+		);
+		await setting("mode", mode);
+		await h.send();
+		expect(h.client.startTurn).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				sandboxPolicy: sandbox,
+				approvalsReviewer: "auto_review",
+			}),
+		);
+		h.complete();
+		await setting("approvals_reviewer", "user");
+		await h.send();
+		expect(h.client.startTurn).toHaveBeenLastCalledWith(
+			expect.objectContaining({ approvalsReviewer: "user" }),
+		);
+	},
+);

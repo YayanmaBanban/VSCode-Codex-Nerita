@@ -20,6 +20,7 @@ type PlanSettings = {
 	effort: string;
 	mode: string;
 	sandboxPolicy: TurnStartParams["sandboxPolicy"];
+	approvalsReviewer: TurnStartParams["approvalsReviewer"];
 };
 
 /** 設定は次のターンに適用し、CLI のユーザー設定ファイルを書き換えない。 */
@@ -51,7 +52,8 @@ export abstract class CodexOptions extends CodexAttachments {
 		return {
 			model,
 			effort: selected("reasoning_effort") ?? "",
-			mode: selected("mode") ?? "inherit",
+			mode: selected("mode") ?? "",
+			approvalsReviewer: this.turnOptions.approvalsReviewer,
 			sandboxPolicy:
 				this.turnOptions.sandboxPolicy ?? this.initialSandbox,
 		};
@@ -59,13 +61,18 @@ export abstract class CodexOptions extends CodexAttachments {
 
 	/** 新しい会話の候補を検証し、最初のターンより前に設定を復元する。 */
 	protected async restorePlanSettings(settings: PlanSettings): Promise<void> {
+		if (settings.approvalsReviewer) {
+			this.turnOptions.approvalsReviewer = settings.approvalsReviewer;
+		}
 		await this.setConfig("model", settings.model);
 		if (settings.effort) {
 			await this.setConfig("reasoning_effort", settings.effort);
 		}
-		await this.setConfig("mode", settings.mode);
+		if (settings.mode) {
+			await this.setConfig("mode", settings.mode);
+		}
 		if (settings.sandboxPolicy) {
-			// 「引き継ぐ」でも元の会話の実効サンドボックスを維持する。
+			// 書き込み先やネットワーク設定も元の会話と同じ状態に保つ。
 			this.turnOptions.sandboxPolicy = settings.sandboxPolicy;
 		}
 	}
@@ -77,7 +84,9 @@ export abstract class CodexOptions extends CodexAttachments {
 		const client = this.client!;
 		const epoch = this.epoch;
 		this.models = [];
-		this.turnOptions = {};
+		this.turnOptions = {
+			approvalsReviewer: thread.approvalsReviewer ?? "user",
+		};
 		this.collaborationMode = "default";
 		this.initialSandbox = thread.sandbox;
 		this.initialTier = thread.serviceTier ?? null;
@@ -187,9 +196,11 @@ export abstract class CodexOptions extends CodexAttachments {
 				effort,
 				tier,
 				this.initialTier,
-				this.state.configOptions.find((item) => item.id === "mode")
-					?.currentValue ?? "inherit",
+				sandboxMode(
+					this.turnOptions.sandboxPolicy ?? this.initialSandbox,
+				),
 				this.collaborationMode,
+				this.turnOptions.approvalsReviewer ?? "user",
 			),
 		});
 	}
@@ -216,14 +227,13 @@ export abstract class CodexOptions extends CodexAttachments {
 			return;
 		}
 		if (id === "service_tier") {
-			if (value === "inherit") {
-				delete this.turnOptions.serviceTierForTurn;
-			} else {
-				this.turnOptions.serviceTierForTurn = value;
-			}
+			this.setServiceTier(value);
 		}
 		if (id === "mode") {
 			this.setSandboxMode(value);
+		}
+		if (id === "approvals_reviewer") {
+			this.turnOptions.approvalsReviewer = reviewerValue(value);
 		}
 		this.patch({
 			configOptions: this.state.configOptions.map((item) => {
@@ -244,6 +254,14 @@ export abstract class CodexOptions extends CodexAttachments {
 			}),
 		});
 	}
+	/** 継承を選んだときだけターン単位の速度指定を外す。 */
+	private setServiceTier(value: string) {
+		if (value === "inherit") {
+			delete this.turnOptions.serviceTierForTurn;
+		} else {
+			this.turnOptions.serviceTierForTurn = value;
+		}
+	}
 	/** 提示済みの選択肢と設定変更可能な状態を照合する。 */
 	private invalidSetting(id: string, value: string) {
 		return (
@@ -255,12 +273,9 @@ export abstract class CodexOptions extends CodexAttachments {
 		);
 	}
 
-	/** 初期サンドボックスへの復元と明示モードへの変更を処理する。 */
+	/** 初期モードへ戻すときは書き込み先などの詳細設定も維持する。 */
 	private setSandboxMode(value: string) {
-		if (value === "inherit") {
-			if (!this.initialSandbox) {
-				throw new Error("Initial sandbox unavailable");
-			}
+		if (this.initialSandbox && value === sandboxMode(this.initialSandbox)) {
 			this.turnOptions.sandboxPolicy = this.initialSandbox;
 		} else {
 			this.turnOptions.sandboxPolicy = sandboxPolicy(value);
@@ -357,6 +372,20 @@ export abstract class CodexOptions extends CodexAttachments {
 	}
 }
 
+/** 候補検証に加え、送信型が許可する承認者だけを返す。 */
+function reviewerValue(
+	value: string,
+): NonNullable<TurnStartParams["approvalsReviewer"]> {
+	if (
+		value === "user" ||
+		value === "auto_review" ||
+		value === "guardian_subagent"
+	) {
+		return value;
+	}
+	throw new Error("Invalid approvals reviewer");
+}
+
 /** モデル一覧のカーソル循環を拒否する。 */
 function recordModelCursor(cursor: string | undefined, seen: Set<string>) {
 	if (cursor && seen.has(cursor)) {
@@ -383,5 +412,22 @@ function sandboxPolicy(
 			excludeSlashTmp: false,
 		};
 	}
-	return { type: "dangerFullAccess" };
+	if (value === "danger-full-access") {
+		return { type: "dangerFullAccess" };
+	}
+	throw new Error("Invalid sandbox mode");
+}
+
+/** サーバーの実効サンドボックスを UI の選択値へ対応付ける。 */
+function sandboxMode(policy: TurnStartParams["sandboxPolicy"]): string {
+	switch (policy?.type) {
+		case "readOnly":
+			return "read-only";
+		case "workspaceWrite":
+			return "workspace-write";
+		case "dangerFullAccess":
+			return "danger-full-access";
+		default:
+			return "";
+	}
 }

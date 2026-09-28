@@ -1,5 +1,6 @@
 // プロバイダーを判定せず、検証済みコントロールの種別だけで描画する。
 import { ToggleSwitch } from "./ToggleSwitch";
+import { SliderCard } from "./SliderCard";
 import type { NeritaUiControl } from "../../shared/uiContributions";
 import { ConfigControl } from "../chat/composer/ConfigControl";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
@@ -15,6 +16,15 @@ export function ContributionRenderer({
 	disabled: boolean;
 	onChange: (configId: string, value: string) => void;
 }) {
+	if (control.type === "slider-card") {
+		return (
+			<SliderCard
+				control={control}
+				disabled={disabled || !!control.disabled}
+				onChange={onChange}
+			/>
+		);
+	}
 	if (control.type === "quota") {
 		return <QuotaBar windows={control.windows} />;
 	}

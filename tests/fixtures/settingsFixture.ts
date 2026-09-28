@@ -7,16 +7,35 @@ export function settingsFixture(): ConfigOption[] {
 		{
 			id: "mode",
 			name: "Mode",
-			currentValue: "agent",
+			currentValue: "workspace-write",
 			options: [
-				{ value: "read-only", name: "Ask for approval" },
+				{ value: "read-only", name: "読み取り専用" },
 				{
-					value: "agent",
-					name: "Approve for me",
-					description:
-						"Only ask for actions detected as potentially unsafe",
+					value: "workspace-write",
+					name: "ワークスペース内に書き込み",
 				},
-				{ value: "agent-full-access", name: "Full access" },
+				{ value: "danger-full-access", name: "フルアクセス" },
+			],
+		},
+		{
+			id: "approvals_reviewer",
+			name: "ApprovalsReviewer",
+			currentValue: "user",
+			options: [
+				{
+					value: "user",
+					icon: "user",
+					name: "ユーザが承認",
+					description:
+						"追加の権限が必要な操作は、実行前に確認します。",
+				},
+				{
+					value: "auto_review",
+					icon: "bot",
+					name: "代わりに承認",
+					description:
+						"操作を自動レビューし、リスクに応じて承認します。\n追加のトークンを使用します。",
+				},
 			],
 		},
 		{

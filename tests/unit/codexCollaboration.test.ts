@@ -67,6 +67,7 @@ it("新規セッションの最初のターンにモデル・推論レベル・�
 	await h.setting("other-model", "model");
 	await h.setting("high", "reasoning_effort");
 	await h.setting("read-only", "mode");
+	await h.setting("auto_review", "approvals_reviewer");
 	await completedPlan(h);
 	await h.session.receive({
 		type: "plan/decide",
@@ -96,12 +97,13 @@ it("新規セッションの最初のターンにモデル・推論レベル・�
 		model: "other-model",
 		effort: "high",
 		sandboxPolicy: { type: "readOnly", networkAccess: false },
+		approvalsReviewer: "auto_review",
 		collaborationMode: { mode: "default" },
 	});
 	expect(JSON.stringify(turn?.input)).toContain("## 実装計画\\n変更する");
 });
 
-it("権限が引き継ぐ設定なら元の会話の実効sandboxを使用する", async () => {
+it("初期権限を選択表示し、新規会話にも元の実効サンドボックスを使用する", async () => {
 	const original: SandboxPolicy = { type: "readOnly", networkAccess: true };
 	const h = await ready(original);
 	h.client.startThread.mockResolvedValueOnce({
@@ -122,7 +124,7 @@ it("権限が引き継ぐ設定なら元の会話の実効sandboxを使用する
 		h.session
 			.snapshot()
 			.configOptions.find((option) => option.id === "mode")?.currentValue,
-	).toBe("inherit");
+	).toBe("read-only");
 	expect(h.client.startTurn).toHaveBeenLastCalledWith(
 		expect.objectContaining({
 			threadId: "thread-2",

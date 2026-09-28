@@ -43,6 +43,10 @@ const configContributions: UiContributionSource = (state, context) => {
 	options.push(
 		...state.configOptions.filter(
 			(item) =>
+				!(
+					context.backend === "codex" &&
+					item.id === "approvals_reviewer"
+				) &&
 				!tiers.includes(item.id) &&
 				!options.some((option) => option.id === item.id),
 		),
@@ -52,9 +56,34 @@ const configContributions: UiContributionSource = (state, context) => {
 		slot: "settings.main",
 		order,
 		when: { backend: context.backend },
-		control: configControl(option),
+		control:
+			context.backend === "codex" && option.id === "mode"
+				? permissionControl(option, state.configOptions)
+				: configControl(option),
 	}));
 };
+
+/** 権限の表示と、書き込み時だけ見せる承認者を解決する。 */
+function permissionControl(
+	option: ConfigOption,
+	options: ConfigOption[],
+): NeritaUiControl {
+	const reviewer = options.find((item) => item.id === "approvals_reviewer");
+	const warning = option.currentValue === "danger-full-access";
+	return {
+		type: "slider-card",
+		option,
+		icon: warning ? "shield-alert" : "shield",
+		warning,
+		secondary:
+			option.currentValue === "workspace-write" && reviewer
+				? {
+						option: reviewer,
+						icon: reviewer.currentValue === "user" ? "user" : "bot",
+					}
+				: undefined,
+	};
+}
 
 /** セッションごとに Registry を所有し、別バックエンドへの登録の漏出を防ぐ。 */
 export function createBuiltinUiRegistry(): UiContributionRegistry {

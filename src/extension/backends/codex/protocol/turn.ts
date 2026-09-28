@@ -11,6 +11,7 @@ export type StartedThread = Pick<ThreadStartResponse, "model" | "cwd"> & {
 	reasoningEffort?: string | null;
 	serviceTier?: string | null;
 	sandbox?: ReturnType<typeof parseSandbox>;
+	approvalsReviewer?: ThreadStartResponse["approvalsReviewer"] | undefined;
 };
 /** 未使用の詳細を型保証せず、ターンの識別子と状態だけを公開する。 */
 export type TurnInfo = Pick<Turn, "id" | "status">;
@@ -28,6 +29,7 @@ export function parseStartedThread(value: unknown): StartedThread {
 	}
 	return {
 		thread: { id: value.thread.id },
+		approvalsReviewer: parseReviewer(value.approvalsReviewer),
 		...(value.sandbox === undefined
 			? {}
 			: { sandbox: parseSandbox(value.sandbox) }),
@@ -40,6 +42,19 @@ export function parseStartedThread(value: unknown): StartedThread {
 		model: value.model,
 		cwd: value.cwd,
 	};
+}
+
+/** 未指定は保持し、不正な承認者を既定値へ置き換えない。 */
+function parseReviewer(value: unknown): StartedThread["approvalsReviewer"] {
+	if (
+		value === undefined ||
+		value === "user" ||
+		value === "auto_review" ||
+		value === "guardian_subagent"
+	) {
+		return value;
+	}
+	throw new Error("Invalid approvals reviewer");
 }
 
 /** サーバーが返す任意設定は文字列または未指定の `null` を保持する。 */

@@ -40,6 +40,21 @@ export const SelectControlSchema = z.object({
 	option: UiConfigOptionSchema,
 });
 
+/** アイコンと段階選択、特定の段階で表示する追加設定をまとめる。 */
+export const SliderCardControlSchema = z.object({
+	...controlFields,
+	type: z.literal("slider-card"),
+	option: UiConfigOptionSchema,
+	icon: z.enum(["shield", "shield-alert"]),
+	warning: z.boolean().optional(),
+	secondary: z
+		.object({
+			option: UiConfigOptionSchema,
+			icon: z.enum(["user", "bot"]),
+		})
+		.optional(),
+});
+
 /** 切替の送信値が同一になる定義を拒否する。 */
 export const ToggleControlSchema = z
 	.object({
@@ -68,6 +83,7 @@ export const ProgressControlSchema = z.object({
 export const UiControlSchema = z.discriminatedUnion("type", [
 	QuotaControlSchema,
 	SelectControlSchema,
+	SliderCardControlSchema,
 	ToggleControlSchema,
 	ProgressControlSchema,
 ]);
