@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../webview/chat/ChatApp";
 import { createMockBridge, type Scenario } from "./mocks/mockBridge";
 import { createAppServerBridge } from "./mocks/appServerBridge";
+import { createCodexLifecycleBridge } from "./mocks/codexLifecycleBridge";
 import { createPiBridge } from "./mocks/piBridge";
 import { createPiApprovalBridge } from "./mocks/piApprovalBridge";
 import { createPiHistoryBridge } from "./mocks/piHistoryBridge";
@@ -36,6 +37,12 @@ function ChatStory({
 		}
 		if (appServer) {
 			return createAppServerBridge(scenario);
+		}
+		if (scenario === "auth") {
+			return createCodexLifecycleBridge("success");
+		}
+		if (scenario === "error") {
+			return createCodexLifecycleBridge("reconnect");
 		}
 		return createMockBridge(scenario);
 	}, [scenario, appServer, pi, piTools, piApprovals, piHistory]);

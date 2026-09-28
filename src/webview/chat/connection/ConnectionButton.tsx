@@ -102,7 +102,7 @@ export function ConnectionButton({
 							connectionColor(displayed),
 						)}
 					/>
-					<span role="status">
+					<span role="status" className="font-medium">
 						<ConnectionLabel
 							connection={displayed}
 							reduced={reduced === true}
@@ -202,7 +202,7 @@ function ConnectionLabel({
 		<ShinyText
 			text={labels[connection]}
 			disabled={reduced}
-			color="var(--vscode-editorInfo-foreground, #8fc1eb)"
+			color="var(--vscode-textLink-foreground, #8fc1eb)"
 			shineColor="var(--vscode-foreground, #ffffff)"
 		/>
 	);
@@ -228,7 +228,7 @@ function connectionColor(connection: ChatState["connection"]) {
 		return "bg-menu-check";
 	}
 	if (connection === "authenticating") {
-		return "bg-[#3794ff]";
+		return "bg-[var(--vscode-editorInfo-foreground,#3794ff)]";
 	}
 	if (connection !== "connecting") {
 		return "bg-warning";
@@ -245,7 +245,7 @@ function connectionBgColor(connection: ChatState["connection"]) {
 	) {
 		return "bg-transparent";
 	}
-	return "bg-[var(--vscode-button-secondaryBackground,#3794ff)]";
+	return "bg-[var(--vscode-editor-background,#20252b)]";
 }
 
 /** 接続成功とそれ以外のマウスカーソルの状態。 */

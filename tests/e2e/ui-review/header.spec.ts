@@ -1,6 +1,67 @@
 // ヘッダーの省略表示・操作・接続演出を実コンポーネントで検証する。
 import { test, expect, type Page } from "@playwright/test";
+import { codexConnectionText } from "../../../src/shared/codexConnection";
 const errors = new Map<Page, string[]>();
+
+test("認証失敗の通知を閉じ、再試行時に再表示する", async ({ page }, info) => {
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await page.goto(
+		"/iframe.html?id=chat-header--authentication-failure&viewMode=story",
+	);
+	const login = page.getByRole("button", {
+		name: codexConnectionText.chatgpt,
+		exact: true,
+	});
+	const notice = page
+		.getByRole("status")
+		.filter({ hasText: codexConnectionText.authenticationFailed });
+	await login.click();
+	await expect(
+		page.getByRole("heading", { name: "認証を待っています" }),
+	).toBeVisible();
+	await expect(notice).toBeVisible();
+	await expect(page.locator(".error-banner")).toHaveCount(0);
+	await expect(login).toBeEnabled();
+	await info.attach("authentication-failure", {
+		body: await page.screenshot({
+			path: info.outputPath("authentication-failure.png"),
+		}),
+		contentType: "image/png",
+	});
+	await page.getByRole("button", { name: "通知を閉じる" }).click();
+	await expect(notice).toHaveCount(0);
+	await login.click();
+	await expect(notice).toBeVisible();
+	await expect(notice).toHaveCount(0, { timeout: 10000 });
+	await login.click();
+	await expect(notice).toBeVisible();
+});
+
+test("認証成功は待機を経て接続済みへ進む", async ({ page }, info) => {
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await page.goto(
+		"/iframe.html?id=chat-header--authentication-success&viewMode=story",
+	);
+	await page
+		.getByRole("button", { name: codexConnectionText.chatgpt, exact: true })
+		.click();
+	await expect(
+		page.getByRole("heading", { name: "認証を待っています" }),
+	).toBeVisible();
+	await expect(
+		page.getByRole("button", { name: "接続済み", exact: true }),
+	).toBeVisible();
+	await expect(
+		page.getByRole("region", { name: "認証", exact: true }),
+	).toHaveCount(0);
+	await info.attach("authentication-success", {
+		body: await page.screenshot({
+			path: info.outputPath("authentication-success.png"),
+		}),
+		contentType: "image/png",
+	});
+});
+
 test.beforeEach(({ page }) => {
 	const messages: string[] = [];
 	errors.set(page, messages);
@@ -104,6 +165,10 @@ test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) 
 			name: "接続エラー：アカウントを再認証して接続します",
 		})
 		.click();
+	await expect(
+		page.getByRole("button", { name: "接続中", exact: true }),
+	).toBeVisible();
+	await page.clock.runFor(450);
 	await expect(page.locator(".connection-beam")).toHaveCount(0);
 	await expect(page.locator(".connection-confetti")).toBeVisible();
 	// CSS アニメーションの時刻を直接固定し、タイマー経過とは分けて撮影する。

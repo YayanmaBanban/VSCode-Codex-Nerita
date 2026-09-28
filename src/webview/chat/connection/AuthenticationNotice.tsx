@@ -49,26 +49,33 @@ export function AuthenticationNotice({
 			}}
 		>
 			<div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-				<div className="flex items-center gap-2 py-[4px]">
+				<div
+					className={cn(
+						"flex items-center gap-2 py-[4px]",
+						"[.vscode-dark_&]:[color-scheme:dark] [.vscode-high-contrast_&]:[color-scheme:dark]",
+						"[.vscode-light_&]:[color-scheme:light] [.vscode-high-contrast-light_&]:[color-scheme:light]",
+						"[color:light-dark(var(--vscode-foreground),color-mix(in_srgb,var(--vscode-foreground)_40%,white))]",
+					)}
+				>
 					<Info
 						size={16}
 						aria-hidden="true"
-						className="text-slate-50 drop-shadow-[0_0_10px_#59616b]"
+						className="drop-shadow-[0_0_6px_var(--vscode-focusBorder,var(--vscode-textLink-foreground))]"
 					/>
-					<h2 className="m-0 text-[13px] font-medium text-4xl font-black text-white [text-shadow:0_0_5px_#59616b]">
+					<h2 className="m-0 text-[13px] font-medium text-4xl font-black [text-shadow:0_0_3px_var(--vscode-focusBorder,var(--vscode-textLink-foreground))]">
 						{authenticating
 							? "認証を待っています"
 							: "認証が必要です"}
 					</h2>
 				</div>
-				<div className="ml-auto flex shrink-0 items-center justify-end">
+				<div className="ml-auto flex gap-[4px] shrink-0 items-center justify-end">
 					{actions.map((method) => (
 						<button
 							key={method.id}
 							type="button"
 							className={cn(
 								"group relative isolate m-0 h-8 shrink-0 overflow-hidden rounded-md border px-3",
-								"bg-zinc-950 text-[12px] font-medium leading-2 text-white",
+								"bg-[var(--vscode-editor-background,zinc-950)] text-[12px] font-medium leading-2",
 								"[border-color:color-mix(in_srgb,var(--vscode-button-border,#414851)_75%,transparent)]",
 								"transition-colors duration-100 hover:[border-color:var(--vscode-focusBorder,#007acc)]",
 								"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--vscode-focusBorder,#007acc)]",
@@ -97,7 +104,7 @@ export function AuthenticationNotice({
 					))}
 				</div>
 			</div>
-			<p className="mb-0 mt-[-5px] pl-6 text-[12px]">{description}</p>
+			<p className="mb-0 mt-2 pl-6 text-[12px]">{description}</p>
 		</motion.section>
 	);
 }

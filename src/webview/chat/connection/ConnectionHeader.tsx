@@ -106,7 +106,8 @@ export function ConnectionHeader({
 					/>
 				</div>
 			</header>
-			{(state.error || requestError) && (
+			{(requestError ||
+				(state.connection !== "auth-required" && state.error)) && (
 				<div role="alert" className={cn("error-banner", noticeClass)}>
 					{requestError || state.error}
 				</div>

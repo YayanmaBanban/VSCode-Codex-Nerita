@@ -1,7 +1,11 @@
 // App Server の接続・切断と新規スレッドの作成を管理し、会話状態へ反映する。
 import { initialState } from "../../../shared/chatState";
+import {
+	codexAuthMethods,
+	codexConnectionText,
+} from "../../../shared/codexConnection";
 import { SessionState } from "../../session/sessionState";
-import { WorkspaceError } from "../../workspace";
+import { WorkspaceError } from "../../workspaceError";
 import type { CodexConnection, CodexFactory } from "./runtime/connection";
 import type {
 	AppServerNotification,
@@ -75,7 +79,7 @@ export abstract class CodexLifecycle extends SessionState {
 		if (epoch === this.epoch) {
 			this.patch({
 				connection: "auth-required",
-				error: "ログインできませんでした。認証方法と環境変数を確認して再試行してください。",
+				error: codexConnectionText.authenticationFailed,
 			});
 		}
 	}
@@ -171,16 +175,7 @@ export abstract class CodexLifecycle extends SessionState {
 			if (account.requiresOpenaiAuth && !account.authenticated) {
 				this.patch({
 					connection: "auth-required",
-					authMethods: this.authService
-						? [
-								{ id: "chatgpt", name: "ChatGPTでログイン" },
-								{
-									id: "apiKey",
-									name: "環境変数のAPIキーを使用",
-								},
-							]
-						: [],
-					error: "Codexへのログインが必要です。ログイン方法を選ぶか、同じユーザー環境のCLIでログインして再接続してください。",
+					authMethods: this.authService ? codexAuthMethods() : [],
 				});
 				return;
 			}
@@ -269,7 +264,7 @@ export abstract class CodexLifecycle extends SessionState {
 	}
 	/** 実行中の切断は失敗として表示し、再接続できる状態にする。 */
 	protected failConnection(
-		message = "Codexとの接続が終了しました。再接続してください。",
+		message: string = codexConnectionText.disconnected,
 	): void {
 		const failed = this.busy();
 		this.disconnect();

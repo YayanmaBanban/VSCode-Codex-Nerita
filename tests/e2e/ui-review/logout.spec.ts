@@ -1,5 +1,6 @@
 // 両方のログアウト入口と再ログイン、入力の改行・送信を実 UI で検証する。
 import { test, expect } from "@playwright/test";
+import { codexConnectionText } from "../../../src/shared/codexConnection";
 
 for (const colorScheme of ["dark", "light"] as const) {
 	test(`ログアウト・改行・Ctrl+Enter: ${colorScheme}`, async ({
@@ -49,7 +50,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(page.locator(".message")).toHaveCount(0);
 		await page.screenshot({ path: info.outputPath("logged-out.png") });
 		await page
-			.getByRole("button", { name: "ChatGPT", exact: true })
+			.getByRole("button", {
+				name: codexConnectionText.chatgpt,
+				exact: true,
+			})
 			.click();
 		await input.fill("/log");
 		await expect(

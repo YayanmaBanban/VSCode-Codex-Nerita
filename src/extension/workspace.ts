@@ -1,5 +1,6 @@
 // 接続前のワークスペース条件を検証し、利用者が解決できる原因を区別する。
 import path from "node:path";
+import { WorkspaceError } from "./workspaceError";
 
 /** Windows の大小文字・区切り・末尾スラッシュの差を吸収する。 */
 export function sameCwd(left: string, right: string): boolean {
@@ -12,8 +13,6 @@ export function sameCwd(left: string, right: string): boolean {
 }
 /** VS Code に依存せず検査できるフォルダー情報。 */
 type WorkspaceFolder = { uri: { scheme: string; fsPath: string } };
-/** Host で確定した、秘密情報を含まない起動条件のエラー。 */
-export class WorkspaceError extends Error {}
 
 /** 単一の信頼済みローカルフォルダーだけを Codex の作業場所にする。 */
 export function requireLocalWorkspace(

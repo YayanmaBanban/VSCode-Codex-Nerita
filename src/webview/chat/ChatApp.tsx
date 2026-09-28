@@ -1,5 +1,5 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { cn } from "cnfast";
 import { useFollowConversation } from "./messages/useFollowConversation";
 import { AnimatePresence } from "motion/react";
@@ -93,6 +93,12 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 						bottom={bottom}
 						onOpenAgent={agentViewer.open}
 					/>
+					{state.connection === "auth-required" && state.error && (
+						<AuthenticationFailureNotification
+							key={state.error}
+							message={state.error}
+						/>
+					)}
 					{submission.notice && (
 						<NotificationCard
 							key={submission.notice.id}
@@ -127,6 +133,20 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 				</AnimatePresence>
 			</div>
 		</main>
+	);
+}
+
+/** 認証の再試行で取り外し、同じ失敗でも次回は通知を表示する。 */
+function AuthenticationFailureNotification({ message }: { message: string }) {
+	const [dismissed, setDismissed] = useState(false);
+	return dismissed ? null : (
+		<NotificationCard
+			onClose={() => setDismissed(true)}
+			duration={8000}
+			backgroundColor="var(--vscode-inputValidation-errorBackground, light-dark(#fbe9e7, #482b2e))"
+		>
+			{message}
+		</NotificationCard>
 	);
 }
 

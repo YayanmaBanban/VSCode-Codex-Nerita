@@ -1,6 +1,7 @@
 // 実際のチャット上でタイトル・接続遷移・表示先メッセージを再現する。
 import { useMemo, useState } from "react";
 import { initialState, type ConnectionStatus } from "../../../shared/chatState";
+import { createCodexLifecycleBridge } from "../mocks/codexLifecycleBridge";
 import { ConnectionButton } from "../../../webview/chat/connection/ConnectionButton";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChatApp } from "../../../webview/chat/ChatApp";
@@ -12,14 +13,27 @@ import type { BackendId } from "../../../shared/backend";
 function HeaderStory({
 	title = "",
 	error = false,
+	authFailure = false,
+	authSuccess = false,
 	backend = "codex",
 }: {
 	title?: string;
 	error?: boolean;
+	authFailure?: boolean;
+	authSuccess?: boolean;
 	backend?: BackendId;
 }) {
 	const bridge = useMemo(() => {
-		const mock = createMockBridge(error ? "error" : "completed");
+		if (error) {
+			return createCodexLifecycleBridge("reconnect");
+		}
+		if (authFailure) {
+			return createCodexLifecycleBridge("failure");
+		}
+		if (authSuccess) {
+			return createCodexLifecycleBridge("success");
+		}
+		const mock = createMockBridge("completed");
 		mock.patchState({
 			piAccount: backend === "pi" ? "local: 認証未設定" : null,
 			sessionTitle: title,
@@ -84,7 +98,7 @@ function HeaderStory({
 			},
 		};
 		return result;
-	}, [title, error, backend]);
+	}, [title, error, backend, authFailure, authSuccess]);
 	return <ChatApp bridge={bridge} />;
 }
 const meta = {
@@ -106,6 +120,12 @@ export const Reconnect: Story = {
 };
 export const PiBackend: Story = {
 	args: { backend: "pi" },
+};
+export const AuthenticationFailure: Story = {
+	args: { authFailure: true },
+};
+export const AuthenticationSuccess: Story = {
+	args: { authSuccess: true },
 };
 
 /** 接続状態を任意に切り替え、連続した変更や待機中の演出を確認する。 */
