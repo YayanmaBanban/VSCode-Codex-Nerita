@@ -2,8 +2,8 @@
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { Bridge } from "../../../webview/vscodeBridge";
-import { ChatApp } from "../../../webview/chat/ChatApp";
-import { createMockBridge } from "../mocks/mockBridge";
+import { StoryChat as ChatApp } from "../StoryChat";
+import { createChatStoryBridge } from "../mocks/mockBridge";
 import { mockWorkspaceSymbols } from "../mocks/mockWorkspaceSymbols";
 
 /** 遅い検索が新しい検索を上書きしない状態を再現する。 */
@@ -13,8 +13,9 @@ function SymbolStory() {
 	const [queries, setQueries] = useState<string[]>([]);
 	const [completed, setCompleted] = useState<string[]>([]);
 	const bridge = useMemo(() => {
-		const mock = createMockBridge("empty");
+		const mock = createChatStoryBridge("empty");
 		return {
+			...mock,
 			subscribe: mock.subscribe,
 			postMessage(message) {
 				if (message.type === "prompt/send") {

@@ -1,4 +1,5 @@
 // バックエンドの選択・配置・キーボード操作を明暗と狭幅で確認する。
+import { expectSent, emitHost } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
 test("Piでは認証管理の上にバックエンドを表示する", async ({ page }, info) => {
@@ -46,7 +47,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			await page.setViewportSize({ width, height: 760 });
 			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 			await page.goto(
-				"/iframe.html?id=chat-header--reconnect&viewMode=story",
+				"/iframe.html?id=chat-header--untitled&viewMode=story",
 			);
 			const options = page.getByRole("button", { name: "オプション" });
 			await options.click();
@@ -76,6 +77,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 				contentType: "image/png",
 			});
 			await pi.click();
+			await expectSent(page, { type: "ui/setBackend", backend: "pi" });
+			await emitHost(page, { type: "ui/backendState", backend: "pi" });
 			await options.click();
 			await trigger.hover();
 			await expect(pi).toBeChecked();
@@ -87,6 +90,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 				contentType: "image/png",
 			});
 			await codex.click();
+			await expectSent(page, { type: "ui/setBackend", backend: "codex" });
+			await emitHost(page, { type: "ui/backendState", backend: "codex" });
 			await options.click();
 			await trigger.click();
 			await expect(codex).toBeChecked();

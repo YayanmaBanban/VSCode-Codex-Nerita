@@ -1,4 +1,5 @@
 // Pi の履歴復元・失敗・継続送信を、明暗テーマと狭幅で確認する。
+import { expectSent, showState } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -41,6 +42,13 @@ for (const theme of ["dark", "light"] as const) {
 		await panel
 			.getByRole("button", { name: "削除された履歴ファイルを開く" })
 			.click();
+		await expectSent(page, {
+			type: "session/load",
+			sessionId: "pi-missing",
+		});
+		await showState(page, {
+			sessionsError: "Piの履歴が見つかりません。一覧を更新してください。",
+		});
 		await expect(panel.getByRole("alert")).toContainText(
 			"Piの履歴が見つかりません",
 		);
@@ -51,6 +59,8 @@ for (const theme of ["dark", "light"] as const) {
 		await panel
 			.getByRole("button", { name: "再試行", exact: true })
 			.click();
+		await expectSent(page, { type: "session/list" });
+		await showState(page, { sessionsError: null });
 		await expect(panel.getByRole("alert")).toHaveCount(0);
 		await panel
 			.getByRole("button", {
@@ -58,13 +68,7 @@ for (const theme of ["dark", "light"] as const) {
 				exact: true,
 			})
 			.click();
-		await expect(panel.getByRole("listitem")).toHaveCount(3);
-		await expect(
-			panel.getByRole("button", {
-				name: "Piの会話のフォークを開く",
-				exact: true,
-			}),
-		).toHaveAttribute("aria-current", "true");
+		await expectSent(page, { type: "session/fork", sessionId: "pi-saved" });
 		await expect(
 			panel.getByRole("button", { name: /をアーカイブ$/ }).first(),
 		).toBeDisabled();
@@ -96,7 +100,11 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		await page.getByRole("textbox").fill("続きをお願いします");
 		await page.getByRole("button", { name: "送信", exact: true }).click();
-		await expect(page.getByText(/作業が完了しました/)).toBeVisible();
+		await expectSent(page, {
+			type: "prompt/send",
+			text: "続きをお願いします",
+			sessionId: "pi-saved",
+		});
 		await expect(read).toHaveCount(1);
 		expect(
 			await page.evaluate(

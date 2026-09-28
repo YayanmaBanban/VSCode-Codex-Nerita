@@ -1,4 +1,5 @@
 // チップと添付一覧の開く操作を、本文編集・送信から分離して確認する。
+import { expectSent, acceptPrompt } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 import { paste, select } from "./composerHelpers";
 
@@ -69,9 +70,12 @@ test("入力URLを編集し、修飾クリックで開いてそのまま送信�
 		input.getByRole("link", { name: "www.example.org/path" }),
 	).toHaveAttribute("href", "https://www.example.org/path");
 	await input.press("Control+Enter");
-	await expect(page.locator(".message.user")).toContainText(
-		"確認 https://example.com/guide と www.example.org/path",
-	);
+	expect(await expectSent(page, { type: "prompt/send" })).toMatchObject({
+		text: expect.stringContaining(
+			"確認 https://example.com/guide と www.example.org/path",
+		),
+	});
+	await acceptPrompt(page);
 	await expect(input).toHaveText("");
 	expect(errors).toEqual([]);
 });

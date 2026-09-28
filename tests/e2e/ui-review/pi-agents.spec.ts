@@ -1,4 +1,6 @@
 // 子の閲覧中も承認先を区別して回答し、全体停止と親への復帰を確認する。
+import { expectSent, showState } from "../storyBridge";
+import { piAgentState } from "../../../src/stories/chat/fixtures/piAgents";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -40,6 +42,22 @@ for (const colorScheme of ["dark", "light"] as const) {
 					.getByRole("button", { name: "今回のみ許可", exact: true })
 					.first()
 					.click();
+				await expectSent(page, {
+					type: "permission/respond",
+					permissionId: "approval-0",
+					optionId: "allow",
+					sessionId: "story-session",
+					runId: "story-run",
+				});
+				await expect(
+					controls.getByRole("button", {
+						name: "今回のみ許可",
+						exact: true,
+					}),
+				).toHaveCount(2);
+				await showState(page, {
+					permissions: piAgentState().permissions.slice(1),
+				});
 				await expect(
 					controls.getByRole("button", {
 						name: "今回のみ許可",
@@ -56,6 +74,19 @@ for (const colorScheme of ["dark", "light"] as const) {
 				await controls
 					.getByRole("button", { name: "すべて停止" })
 					.click();
+				await expectSent(page, {
+					type: "prompt/cancel",
+					sessionId: "story-session",
+					runId: "story-run",
+				});
+				await showState(page, {
+					run: "cancelled",
+					permissions: [],
+					agents: piAgentState().agents.map((agent) => ({
+						...agent,
+						status: "interrupted",
+					})),
+				});
 				await expect(controls).toBeHidden();
 				await page.getByRole("button", { name: "親へ戻る" }).click();
 				await expect(

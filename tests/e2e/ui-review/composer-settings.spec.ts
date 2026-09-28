@@ -1,4 +1,6 @@
 // 設定順・選択値・添付・使用量アニメーションを明暗テーマで確認する。
+import { expectSent, showState } from "../storyBridge";
+import { settingsFixture } from "../../fixtures/settingsFixture";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -77,6 +79,13 @@ for (const theme of ["dark", "light"] as const) {
 			contentType: "image/png",
 		});
 		await page.getByRole("option", { name: "Plan", exact: true }).click();
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "collaboration_mode"
+					? { ...option, currentValue: "plan" }
+					: option,
+			),
+		});
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"plan"',
 		);
@@ -84,6 +93,13 @@ for (const theme of ["dark", "light"] as const) {
 			.getByRole("combobox", { name: "Collaboration mode" })
 			.click();
 		await page.getByRole("option", { name: "Goal", exact: true }).click();
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "collaboration_mode"
+					? { ...option, currentValue: "goal" }
+					: option,
+			),
+		});
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"goal"',
 		);
@@ -102,13 +118,31 @@ for (const theme of ["dark", "light"] as const) {
 		await page
 			.getByRole("option", { name: "5.6 Luna", exact: true })
 			.click();
+		await expectSent(page, { type: "config/set", configId: "model" });
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "reasoning_effort"
+					? {
+							...option,
+							currentValue: "low",
+							options: option.options.filter(
+								(choice) => choice.value !== "ultra",
+							),
+						}
+					: option,
+			),
+		});
 		await page.getByRole("combobox", { name: "Reasoning effort" }).click();
 		await expect(
 			page.getByRole("option", { name: "Ultra", exact: true }),
 		).toHaveCount(0);
 		await page.getByRole("option", { name: "High", exact: true }).click();
 		await page.getByRole("switch", { name: "Fast mode" }).click();
-		await expect(page.getByRole("switch")).toBeChecked();
+		await expectSent(page, {
+			type: "config/set",
+			configId: "fast-mode",
+			value: "on",
+		});
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"on"',
 		);

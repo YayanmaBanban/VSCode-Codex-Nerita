@@ -1,4 +1,5 @@
 // 配置選択のホバー待機・チェック・移動後の入力維持を検証する。
+import { expectSent, emitHost } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -53,6 +54,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.clock.resume();
 		await primary.click();
+		await expectSent(page, { type: "ui/setSidebar", location: "primary" });
+		await emitHost(page, { type: "ui/sidebarState", location: "primary" });
 		await expect(
 			page.getByRole("button", { name: "エディタグループへ移動" }),
 		).toBeVisible();
@@ -71,6 +74,14 @@ for (const colorScheme of ["dark", "light"] as const) {
 			contentType: "image/png",
 		});
 		await secondary.click();
+		await expectSent(page, {
+			type: "ui/setSidebar",
+			location: "secondary",
+		});
+		await emitHost(page, {
+			type: "ui/sidebarState",
+			location: "secondary",
+		});
 		await page.getByRole("button", { name: "オプション" }).click();
 		await trigger.click();
 		await expect(secondary).toBeChecked();

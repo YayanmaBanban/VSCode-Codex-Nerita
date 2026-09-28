@@ -1,10 +1,9 @@
 // App Server の設定・逐次出力・承認を、本体と同じ通信契約で再現する。
-import type { Bridge } from "../../../webview/vscodeBridge";
-import { createMockBridge, type Scenario } from "./mockBridge";
+import { createChatStoryBridge, type Scenario } from "./mockBridge";
 
 /** 未実装の操作を無効にし、App Server の承認選択肢を表示する。 */
-export function createAppServerBridge(scenario: Scenario): Bridge {
-	const bridge = createMockBridge(scenario);
+export function createAppServerBridge(scenario: Scenario) {
+	const bridge = createChatStoryBridge(scenario);
 	bridge.patchState({
 		attachmentsSupported: true,
 		configOptions: [
@@ -86,7 +85,7 @@ export function createAppServerBridge(scenario: Scenario): Bridge {
 					id: "command",
 					runId: "story-run",
 					title: "pnpm.cmd check",
-					cwd: "D:/workspace with spaces",
+					cwd: "workspace with spaces",
 					kind: "execute",
 					status: "in_progress",
 					paths: [],
@@ -118,7 +117,7 @@ export function createAppServerBridge(scenario: Scenario): Bridge {
 				{
 					id: "permission",
 					title: "コマンド実行の承認",
-					cwd: "D:/workspace with spaces",
+					cwd: "workspace with spaces",
 					command: "Write-Output '確認が必要な操作'",
 					fields: [
 						{
@@ -145,27 +144,5 @@ export function createAppServerBridge(scenario: Scenario): Bridge {
 			],
 		});
 	}
-	return {
-		subscribe: bridge.subscribe,
-		postMessage(message) {
-			if (message.type === "permission/respond") {
-				if (message.optionId === "cancel") {
-					bridge.postMessage({
-						type: "prompt/cancel",
-						requestId: message.requestId,
-						sessionId: message.sessionId,
-						runId: message.runId,
-					});
-				} else {
-					bridge.postMessage({
-						...message,
-						optionId:
-							message.optionId === "accept" ? "allow" : "reject",
-					});
-				}
-			} else {
-				bridge.postMessage(message);
-			}
-		},
-	};
+	return bridge;
 }

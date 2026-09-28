@@ -1,4 +1,5 @@
 // ヘッダーの省略表示・操作・接続演出を実コンポーネントで検証する。
+import { expectSent, emitHost, showState } from "../storyBridge";
 import { test, expect, type Page } from "@playwright/test";
 import { codexConnectionText } from "../../../src/shared/codexConnection";
 const errors = new Map<Page, string[]>();
@@ -115,6 +116,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			contentType: "image/png",
 		});
 		await button.click();
+		await expectSent(page, { type: "session/new" });
+		await showState(page, { sessionTitle: "", messages: [], run: "idle" });
 		await expect(title).toHaveText("新規チャット");
 	});
 }
@@ -126,6 +129,14 @@ test("表示先操作で下書きとスクロールを保持する", async ({ pa
 		node.scrollTop = 50;
 	});
 	await page.getByRole("button", { name: "エディタグループへ移動" }).click();
+	await expectSent(page, { type: "ui/openEditor" });
+	await emitHost(page, {
+		type: "ui/viewState",
+		editor: true,
+		draft: "まだ送信していない下書き",
+		scrollTop: 50,
+		restoreScroll: true,
+	});
 	await expect(
 		page.getByRole("button", { name: "サイドバーへ戻る" }),
 	).toBeVisible();
@@ -138,6 +149,14 @@ test("表示先操作で下書きとスクロールを保持する", async ({ pa
 		)
 		.toBe(50);
 	await page.getByRole("button", { name: "サイドバーへ戻る" }).click();
+	await expectSent(page, { type: "ui/openSidebar" });
+	await emitHost(page, {
+		type: "ui/viewState",
+		editor: false,
+		draft: "まだ送信していない下書き",
+		scrollTop: 50,
+		restoreScroll: true,
+	});
 	await expect(
 		page.getByRole("button", { name: "エディタグループへ移動" }),
 	).toBeVisible();

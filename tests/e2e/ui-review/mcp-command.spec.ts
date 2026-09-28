@@ -1,4 +1,7 @@
 // スラッシュ候補から MCP 一覧を表示し、狭い画面と明暗テーマの表示を確認する。
+import { expectSent, showState, acceptPrompt } from "../storyBridge";
+import { mcpServersFixture } from "../../fixtures/mcpStatusFixture";
+import { mcpSummaryText } from "../../../src/shared/mcp";
 import { test, expect } from "@playwright/test";
 
 for (const variant of ["dark", "light", "reduced"] as const) {
@@ -27,6 +30,17 @@ for (const variant of ["dark", "light", "reduced"] as const) {
 		await expect(input).toHaveText("/mcp");
 		await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
 		await input.press("Control+Enter");
+		await expectSent(page, { type: "prompt/send", text: "/mcp" });
+		await showState(page, {
+			messages: [
+				{
+					id: "mcp",
+					role: "assistant",
+					text: "取得中…",
+					mcp: { status: "loading" },
+				},
+			],
+		});
 		const result = page.locator(".message.assistant");
 		const loading = result.getByRole("status", { name: "取得中…" });
 		await expect(loading).toBeVisible();
@@ -58,6 +72,17 @@ for (const variant of ["dark", "light", "reduced"] as const) {
 			path: info.outputPath("mcp-loading-500ms.png"),
 		});
 		await page.clock.runFor(1100);
+		await showState(page, {
+			messages: [
+				{
+					id: "mcp",
+					role: "assistant",
+					text: mcpSummaryText(mcpServersFixture),
+					mcp: { status: "ready", servers: mcpServersFixture },
+				},
+			],
+		});
+		await acceptPrompt(page);
 		await expect(loading).toHaveCount(0);
 		const list = result.getByRole("list", { name: "MCPサーバー" });
 		await expect(result).toContainText("設定済みMCPサーバー:");

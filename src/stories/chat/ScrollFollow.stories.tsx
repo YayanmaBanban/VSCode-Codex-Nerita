@@ -2,9 +2,8 @@
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { initialState, type ChatState } from "../../shared/chatState";
-import type { HostMessage } from "../../shared/messages";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import type { Bridge } from "../../webview/vscodeBridge";
+import { createStoryBridge } from "./mocks/storyBridge";
+import { StoryChat as ChatApp } from "./StoryChat";
 
 function ScrollFollowStory() {
 	const control = useMemo(() => {
@@ -20,24 +19,8 @@ function ScrollFollowStory() {
 				},
 			],
 		};
-		const listeners = new Set<(message: HostMessage) => void>();
-		const emit = () =>
-			listeners.forEach((listener) =>
-				listener({ type: "state/snapshot", state }),
-			);
-		const bridge: Bridge = {
-			subscribe(listener) {
-				listeners.add(listener);
-				return () => {
-					listeners.delete(listener);
-				};
-			},
-			postMessage(message) {
-				if (message.type === "ui/ready") {
-					emit();
-				}
-			},
-		};
+		const bridge = createStoryBridge(state);
+		const emit = () => bridge.emit({ type: "state/snapshot", state });
 		return {
 			bridge,
 			append() {

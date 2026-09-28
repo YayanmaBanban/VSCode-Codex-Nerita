@@ -122,7 +122,7 @@ function sampleState(): ManagerState {
 	};
 }
 
-/** 保存失敗では世代と入力を保持し、成功時だけ新しい状態を通知する。 */
+/** 編集内容をメモリに保持する。競合は固定応答で、保存規則や世代判定は持たない。 */
 function mockBridge(mode: string): ManagerBridge {
 	const state = sampleState();
 	if (mode === "invalid") {
@@ -161,7 +161,7 @@ function mockBridge(mode: string): ManagerBridge {
 				agent.edit = message.edit;
 			}
 		}
-		state.generation = String(Number(state.generation) + 1);
+		state.generation = "saved-fixture";
 		publish(state);
 		publish({
 			type: "reply",

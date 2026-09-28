@@ -1,4 +1,6 @@
 // 会話検索の条件・一致移動・ハイライトと、明暗テーマの狭い表示を検証する。
+import { expectSent, acceptPrompt, showState } from "../storyBridge";
+import { searchMessages } from "../../../src/stories/chat/fixtures/search";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -137,6 +139,14 @@ test("検索中の追加メッセージと再表示・F3での一致移動", asy
 	await input.fill("追加した検索語");
 	await expect(count).toHaveText("0/0");
 	await composer.press("Control+Enter");
+	await expectSent(page, { type: "prompt/send", text: "追加した検索語" });
+	await acceptPrompt(page);
+	await showState(page, {
+		messages: [
+			...searchMessages(),
+			{ id: "added", role: "user", text: "追加した検索語" },
+		],
+	});
 	await expect(count).toHaveText("1/1");
 	await input.press("F3");
 	await expect(page.locator(".message.user").last()).toBeInViewport();

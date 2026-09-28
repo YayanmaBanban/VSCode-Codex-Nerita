@@ -1,4 +1,5 @@
 // ブロックのホイール境界と削除ボタンを、実際のスクロール・履歴で検証する。
+import { expectSent } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 import { select, paste } from "./composerHelpers";
 
@@ -47,7 +48,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(input).toHaveText("前文後文");
 		await expect(page.getByRole("log")).toBeEmpty();
 		await input.press("Control+Enter");
-		await expect(page.locator(".message.user")).toHaveText("前文後文");
+		await expectSent(page, { type: "prompt/send", text: "前文後文" });
 		expect(errors).toEqual([]);
 	});
 }

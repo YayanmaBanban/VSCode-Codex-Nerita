@@ -1,13 +1,13 @@
 // 性格設定の編集と config.toml による固定を実チャット内で再現する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import { createMockBridge } from "./mocks/mockBridge";
+import { StoryChat as ChatApp } from "./StoryChat";
+import { createChatStoryBridge } from "./mocks/mockBridge";
 import type { PersonalitySettings } from "../../shared/personality";
 /** 保存と選択の応答を返す性格設定専用ストーリー。 */
 function PersonalityStory({ configured = false }: { configured?: boolean }) {
 	const bridge = useMemo(() => {
-		const mock = createMockBridge();
+		const mock = createChatStoryBridge();
 		let settings: PersonalitySettings = {
 			global: {
 				presets: [
@@ -28,6 +28,7 @@ function PersonalityStory({ configured = false }: { configured?: boolean }) {
 			},
 		};
 		return {
+			...mock,
 			subscribe: mock.subscribe,
 			postMessage: (message: Parameters<typeof mock.postMessage>[0]) => {
 				if (message.type === "personality/read") {

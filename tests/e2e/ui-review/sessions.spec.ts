@@ -1,4 +1,6 @@
 // 履歴ペインの取得表示・各操作・明暗テーマと狭い幅を実画面で確認する。
+import { expectSent, showState } from "../storyBridge";
+import { sessionRows } from "../../../src/stories/chat/fixtures/sessions";
 import { expect, test, type Page } from "@playwright/test";
 const errors = new Map<Page, string[]>();
 test.beforeEach(({ page }) => {
@@ -65,11 +67,15 @@ for (const theme of ["dark", "light"] as const) {
 		await dialog
 			.getByRole("button", { name: "セッションを削除", exact: true })
 			.click();
+		await expectSent(page, { type: "session/delete", sessionId: "recent" });
+		await showState(page, { sessions: sessionRows().slice(1) });
 		await expect(panel.getByRole("listitem")).toHaveCount(2);
 		await panel
 			.getByRole("button", { name: /をアーカイブ$/ })
 			.first()
 			.click();
+		await expectSent(page, { type: "session/archive", sessionId: "older" });
+		await showState(page, { sessions: [sessionRows()[2]!] });
 		await expect(panel.getByRole("listitem")).toHaveCount(1);
 		await panel
 			.getByRole("button", { name: "アーカイブ", exact: true })
@@ -81,6 +87,8 @@ for (const theme of ["dark", "light"] as const) {
 		await dialog
 			.getByRole("button", { name: "セッションを削除", exact: true })
 			.click();
+		await expectSent(page, { type: "session/delete" });
+		await showState(page, { sessions: [] });
 		await expect(panel.getByRole("listitem")).toHaveCount(0);
 	});
 }
@@ -160,46 +168,27 @@ test("取得・再取得・選択・名前ボタン・フォーク・アーカ�
 	await page.screenshot({ path: info.outputPath("rename.png") });
 	await row.getByRole("button", { name: "保存", exact: true }).click();
 	await page.clock.runFor(800);
-	await expect(
-		row.getByRole("button", { name: "名前を変更した会話を開く" }),
-	).toBeVisible();
-	await expect(page.getByRole("log")).toBeEmpty();
+	await expectSent(page, {
+		type: "session/rename",
+		sessionId: "recent",
+		name: "名前を変更した会話",
+	});
 	await row.getByRole("button", { name: /を開く$/ }).click();
-	await expect(page.getByRole("log")).toContainText(
-		"保存された会話を読み込みました。",
-	);
+	await expectSent(page, { type: "session/load", sessionId: "recent" });
 	await row.getByRole("button", { name: /をフォーク$/ }).click();
-	await page.clock.runFor(800);
-	await expect(panel.getByRole("listitem")).toHaveCount(4);
-	await expect(
-		panel.getByRole("button", { name: /（フォーク）を開く/ }),
-	).toHaveAttribute("aria-current", "true");
-	await panel
-		.getByRole("listitem")
-		.nth(1)
-		.getByRole("button", { name: /をアーカイブ$/ })
-		.click();
-	await page.clock.runFor(800);
-	await expect(panel.getByRole("listitem")).toHaveCount(3);
+	await expectSent(page, { type: "session/fork", sessionId: "recent" });
+	await row.getByRole("button", { name: /をアーカイブ$/ }).click();
+	await expectSent(page, { type: "session/archive", sessionId: "recent" });
 	await panel
 		.getByRole("button", { name: "アーカイブ", exact: true })
 		.click();
 	await page.clock.runFor(800);
-	await expect(panel.getByRole("listitem")).toHaveCount(1);
 	await expect(panel.getByRole("button", { name: /を開く$/ })).toBeDisabled();
 	await page.screenshot({ path: info.outputPath("archived.png") });
 	await panel.getByRole("button", { name: /をアーカイブから戻す$/ }).click();
-	await page.clock.runFor(800);
-	await expect(panel.getByRole("listitem")).toHaveCount(0);
-	await panel.getByRole("button", { name: "履歴", exact: true }).click();
-	await page.clock.runFor(800);
-	await expect(panel.getByRole("listitem")).toHaveCount(4);
+	await expectSent(page, { type: "session/unarchive", sessionId: "recent" });
 	await page.getByRole("button", { name: "新しいチャット" }).click();
-	await expect(panel.getByRole("progressbar")).toBeVisible();
-	await page.clock.runFor(800);
-	await expect(
-		panel.getByRole("button", { name: "新しいセッションを開く" }),
-	).toBeVisible();
+	await expectSent(page, { type: "session/new" });
 	await panel.getByRole("button", { name: "セッション一覧を閉じる" }).click();
 	const toggle = page.getByRole("button", {
 		name: "セッション一覧",

@@ -4,12 +4,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComposerPart } from "../../../shared/composerContent";
 import { isRecord } from "../../../shared/validation";
 import { ComposerInput } from "../../../webview/chat/composer/ComposerInput";
-import { createMockBridge } from "../mocks/mockBridge";
+import { createChatStoryBridge } from "../mocks/mockBridge";
 import "../../../webview/chat/chat.css";
 
 /** 標準メニューの代わりに通知ボタンを置き、フォーカス移動も再現する。 */
 function CodeBlockStory() {
-	const bridge = useMemo(() => createMockBridge(), []);
+	const bridge = useMemo(() => createChatStoryBridge(), []);
 	const [locked, setLocked] = useState(false);
 	const [requestId, setRequestId] = useState<string>();
 	const [parts, setParts] = useState<ComposerPart[]>([

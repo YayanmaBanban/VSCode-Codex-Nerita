@@ -2,14 +2,14 @@
 import { useMemo, useState } from "react";
 import type { UiMessage } from "../../../shared/messages";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../../webview/chat/ChatApp";
-import { createMockBridge } from "../mocks/mockBridge";
+import { StoryChat as ChatApp } from "../StoryChat";
+import { createChatStoryBridge } from "../mocks/mockBridge";
 
 /** 実接続を使わず、Host が渡す一覧を再現する。 */
 function ComposerMenuStory() {
 	const [sent, setSent] = useState("");
 	const bridge = useMemo(() => {
-		const mock = createMockBridge("empty");
+		const mock = createChatStoryBridge("empty");
 		mock.patchState({
 			attachments: [
 				{
@@ -37,6 +37,7 @@ function ComposerMenuStory() {
 			],
 		});
 		return {
+			...mock,
 			subscribe: mock.subscribe,
 			postMessage(message: UiMessage) {
 				if (message.type === "prompt/send") {

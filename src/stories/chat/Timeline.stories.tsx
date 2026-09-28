@@ -1,36 +1,18 @@
 // ツールを挟む会話と次の送信後の履歴を実画面で確認する。
+import { timelineMessages } from "./fixtures/timeline";
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import { createMockBridge } from "./mocks/mockBridge";
+import { StoryChat as ChatApp } from "./StoryChat";
+import { createChatStoryBridge } from "./mocks/mockBridge";
 
 /** 受信順を持つ完了済み会話を作る。 */
 function TimelineStory() {
 	const bridge = useMemo(() => {
-		const bridge = createMockBridge();
+		const bridge = createChatStoryBridge();
 		bridge.patchState({
 			run: "completed",
 			runId: "previous",
-			messages: [
-				{
-					id: "user",
-					role: "user",
-					text: "テストしてください",
-					order: 1,
-				},
-				{
-					id: "before",
-					role: "assistant",
-					text: "テストを実行します。",
-					order: 2,
-				},
-				{
-					id: "after",
-					role: "assistant",
-					text: "テストが成功しました。",
-					order: 4,
-				},
-			],
+			messages: timelineMessages(),
 			tools: [
 				{
 					id: "cmd",

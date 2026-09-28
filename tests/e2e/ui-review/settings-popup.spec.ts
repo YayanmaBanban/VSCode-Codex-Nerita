@@ -1,4 +1,6 @@
 // 項目の説明・選択チェック・ホバーと context ツールチップを検証する。
+import { expectSent, showState } from "../storyBridge";
+import { settingsFixture } from "../../fixtures/settingsFixture";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -45,6 +47,18 @@ for (const theme of ["dark", "light"] as const) {
 			contentType: "image/png",
 		});
 		await other.click();
+		await expectSent(page, {
+			type: "config/set",
+			configId: "model",
+			value: "gpt-5.6-luna",
+		});
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "model"
+					? { ...option, currentValue: "gpt-5.6-luna" }
+					: option,
+			),
+		});
 		await expect(model).toHaveText("5.6 Luna");
 		await expect(page.getByRole("listbox")).toHaveCount(0);
 		await model.focus();
@@ -56,6 +70,12 @@ for (const theme of ["dark", "light"] as const) {
 		await page.keyboard.press("Home");
 		await expect(selected).toBeFocused();
 		await page.keyboard.press("Enter");
+		await expectSent(page, {
+			type: "config/set",
+			configId: "model",
+			value: "gpt-6-astra",
+		});
+		await showState(page, { configOptions: settingsFixture() });
 		await expect(model).toHaveText("6 Astra");
 		await page.getByRole("button", { name: "使用量60%" }).click();
 		const context = page.getByRole("progressbar");

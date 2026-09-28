@@ -1,4 +1,5 @@
 // ローダーの途中フレームと動きの抑制設定、停止後の除去を確認する。
+import { expectSent, showState } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -65,6 +66,8 @@ for (const theme of ["dark", "light"] as const) {
 		);
 		await expect(text).toHaveCSS("background-position", stoppedShine);
 		await page.getByRole("button", { name: "停止", exact: true }).click();
+		await expectSent(page, { type: "prompt/cancel" });
+		await showState(page, { run: "cancelled" });
 		await expect(cat.locator("svg.cat-writing-glasses-48")).toHaveCount(0);
 		await expect(cat.locator("svg.cat-loaf-glasses-48")).toBeVisible();
 		await expect(text).toHaveCount(0);

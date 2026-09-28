@@ -2,18 +2,17 @@
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { GuardrailsEditor } from "../../../webview/pi/guardrails/GuardrailsEditor";
-import {
-	defaultGuardrails,
-	parseGuardrails,
-} from "../../../shared/guardrails/config";
+import { defaultGuardrails } from "../../../shared/guardrails/config";
 import type {
 	GuardBridge,
 	GuardReply,
 	GuardState,
 } from "../../../shared/guardrails/messages";
 
-/** 文書通知を先に送り、Host と同じ順序で処理完了を通知する。 */
-function mockBridge(): GuardBridge {
+/** 編集バッファを保持し、保存・適用・検査の固定応答を返す。永続化や判定は行わない。 */
+function mockBridge() {
+	// 検査結果は外部応答の例であり、入力から判定を再実装しない。
+	const response = { inspectionError: null as string | null };
 	const text = JSON.stringify(defaultGuardrails(), null, 2);
 	let state: GuardState = {
 		type: "state",
@@ -27,13 +26,14 @@ function mockBridge(): GuardBridge {
 	const post = (message: GuardReply) =>
 		listeners.forEach((listener) => listener(message));
 	return {
-		subscribe(listener) {
+		response,
+		subscribe(listener: Parameters<GuardBridge["subscribe"]>[0]) {
 			listeners.add(listener);
 			return () => {
 				listeners.delete(listener);
 			};
 		},
-		postMessage(message) {
+		postMessage(message: Parameters<GuardBridge["postMessage"]>[0]) {
 			if (message.type === "ready") {
 				post(state);
 				return;
@@ -47,8 +47,8 @@ function mockBridge(): GuardBridge {
 				warnings: [],
 			};
 			try {
-				if (message.version !== state.version) {
-					throw new Error("文書が変更されています。");
+				if (message.type === "check" && response.inspectionError) {
+					throw new Error(response.inspectionError);
 				}
 				if (message.type === "edit") {
 					state = {
@@ -58,7 +58,6 @@ function mockBridge(): GuardBridge {
 						dirty: true,
 					};
 				} else {
-					parseGuardrails(state.text);
 					if (message.type === "save") {
 						state = { ...state, dirty: false };
 						reply.notice =
@@ -94,7 +93,19 @@ function mockBridge(): GuardBridge {
 /** 実コンポーネントを同じ Bridge 契約で描画する。 */
 function EditorStory() {
 	const bridge = useMemo(mockBridge, []);
-	return <GuardrailsEditor bridge={bridge} />;
+	return (
+		<div
+			style={{ display: "contents" }}
+			data-story-guardrails
+			ref={(element) => {
+				if (element) {
+					Object.assign(element, { response: bridge.response });
+				}
+			}}
+		>
+			<GuardrailsEditor bridge={bridge} />
+		</div>
+	);
 }
 
 const meta = {

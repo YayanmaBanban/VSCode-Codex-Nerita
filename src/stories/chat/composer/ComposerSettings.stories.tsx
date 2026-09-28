@@ -1,16 +1,17 @@
 // 設定・使用量の非同期更新と添付の送信内容を実際のチャットで再現する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../../webview/chat/ChatApp";
-import { createMockBridge } from "../mocks/mockBridge";
+import { StoryChat as ChatApp } from "../StoryChat";
+import { createChatStoryBridge } from "../mocks/mockBridge";
 import type { UiMessage } from "../../../shared/messages";
 
 /** テスト操作で通知を注入し、送信された要求も表示する。 */
 function SettingsStory() {
-	const mock = useMemo(() => createMockBridge("empty"), []);
+	const mock = useMemo(() => createChatStoryBridge("empty"), []);
 	const [last, setLast] = useState<UiMessage>();
 	const bridge = useMemo(
 		() => ({
+			...mock,
 			subscribe: mock.subscribe,
 			postMessage: (message: UiMessage) => {
 				setLast(message);
@@ -94,7 +95,7 @@ export const Connected: Story = {};
 /** App Server の `plan` 項目の本文を、通常の返信表示で確認する。 */
 function ProposedPlanStory() {
 	const bridge = useMemo(() => {
-		const mock = createMockBridge("empty");
+		const mock = createChatStoryBridge("empty");
 		mock.patchState({
 			messages: [
 				{

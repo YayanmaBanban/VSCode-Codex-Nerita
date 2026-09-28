@@ -1,13 +1,13 @@
 // Pi の認証待ち・取消・モデル変更を実チャット UI で観察する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import { createMockBridge } from "./mocks/mockBridge";
+import { StoryChat as ChatApp } from "./StoryChat";
+import { createChatStoryBridge } from "./mocks/mockBridge";
 
 /** ネイティブ認証画面の結果だけをモックする。 */
 function PiAccountStory() {
 	const bridge = useMemo(() => {
-		const mock = createMockBridge("empty", "pi");
+		const mock = createChatStoryBridge("empty", "pi");
 		const options = [
 			{ value: "local/first", name: "First (local)" },
 			{ value: "local/second", name: "Second (local)" },
@@ -29,6 +29,7 @@ function PiAccountStory() {
 		return {
 			...mock,
 			postMessage(message: Parameters<typeof mock.postMessage>[0]) {
+				mock.postMessage(message);
 				if (message.type === "auth/start") {
 					mock.patchState(
 						message.methodId === "pi-cancel"
@@ -49,13 +50,11 @@ function PiAccountStory() {
 							{
 								id: "model",
 								name: "Pi Model",
-								currentValue: message.value,
+								currentValue: "local/second",
 								options,
 							},
 						],
 					});
-				} else {
-					mock.postMessage(message);
 				}
 			},
 		};

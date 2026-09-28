@@ -1,4 +1,5 @@
 // セッション候補・復元・クリップボードと送信する参照 ID を確認する。
+import { expectSent, restoreDraft } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -57,9 +58,13 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(page.getByLabel("送信した参照")).toContainText(
 			'"sessionReferences":[{"sessionId":"saved-ui-1","mode":"transcript"},{"sessionId":"saved-ui-1","mode":"handoff"}]',
 		);
-		await expect(page.locator(".message.user")).toContainText(
-			"Handoff: UI設計",
-		);
+		await expectSent(page, {
+			type: "prompt/send",
+			sessionReferences: [
+				{ sessionId: "saved-ui-1", mode: "transcript" },
+				{ sessionId: "saved-ui-1", mode: "handoff" },
+			],
+		});
 		expect(errors).toEqual([]);
 	});
 }
@@ -114,6 +119,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page
 			.getByRole("button", { name: "エディタグループへ移動" })
 			.click();
+		await restoreDraft(page, true);
 		await expect(input.locator(".inline-path-reference")).toHaveCount(1);
 		await input.getByRole("button", { name: /の内容を表示/ }).focus();
 		await page.keyboard.press("Enter");
@@ -129,10 +135,12 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(page.getByLabel("送信した参照")).toContainText(
 			'"sessionReferences":[{"sessionId":"saved-input","mode":"transcript"}]',
 		);
-		await page.locator(".message.user .message-reference").hover();
-		await expect(page.getByRole("tooltip")).toContainText(
-			"ID: saved-input",
-		);
+		await expectSent(page, {
+			type: "prompt/send",
+			sessionReferences: [
+				{ sessionId: "saved-input", mode: "transcript" },
+			],
+		});
 		expect(errors).toEqual([]);
 	});
 }
@@ -179,7 +187,7 @@ test("検索・失敗・再送・取り外しを行い参照解除後はIDを送
 	await expect(page.getByLabel("送信した参照")).not.toContainText(
 		"sessionReferences",
 	);
-	await expect(page.locator(".message.user")).toHaveText("この方針で");
+	await expectSent(page, { type: "prompt/send", text: "この方針で" });
 });
 
 test("ページ送り後に検索語を戻しても先頭ページから表示する", async ({

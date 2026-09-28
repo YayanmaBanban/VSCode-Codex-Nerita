@@ -1,24 +1,21 @@
 // セッションチップの保存・復元・送信失敗を実際のチャット UI で確認する。
 import { useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../../webview/chat/ChatApp";
+import { StoryChat as ChatApp } from "../StoryChat";
 import type { Bridge } from "../../../webview/vscodeBridge";
-import type { ComposerPart } from "../../../shared/composerContent";
-import { createMockBridge } from "../mocks/mockBridge";
+import { createChatStoryBridge } from "../mocks/mockBridge";
 
 /** 参照元の会話をロードせず、送信される参照 ID だけを観測する。 */
 function SessionStory() {
-	const [view, setView] = useState(false);
 	const [sent, setSent] = useState("");
 	const [opened, setOpened] = useState("");
 	const [changes, setChanges] = useState("");
 	const fail = useRef(false);
 	const bridge = useMemo(() => {
-		const mock = createMockBridge("empty");
-		let draft = "";
-		let parts: ComposerPart[] | undefined;
-		let editor = false;
+		const mock = createChatStoryBridge("empty");
+
 		return {
+			...mock,
 			subscribe: mock.subscribe,
 			postMessage(message) {
 				if (message.type === "changes/open") {
@@ -27,19 +24,6 @@ function SessionStory() {
 				}
 				if (message.type === "session/openReference") {
 					setOpened(message.referencedSessionId);
-					return;
-				}
-				if (message.type === "ui/saveDraft") {
-					draft = message.draft;
-					parts = message.draftParts;
-					return;
-				}
-				if (
-					message.type === "ui/openEditor" ||
-					message.type === "ui/openSidebar"
-				) {
-					editor = message.type === "ui/openEditor";
-					setView(editor);
 					return;
 				}
 				if (message.type === "prompt/send") {
@@ -55,22 +39,12 @@ function SessionStory() {
 					}
 				}
 				mock.postMessage(message);
-				if (message.type === "ui/ready") {
-					mock.emit({
-						type: "ui/viewState",
-						editor,
-						draft,
-						...(parts ? { draftParts: parts } : {}),
-						scrollTop: 0,
-						restoreScroll: true,
-					});
-				}
 			},
 		} satisfies Bridge;
 	}, []);
 	return (
 		<>
-			<ChatApp key={String(view)} bridge={bridge} />
+			<ChatApp bridge={bridge} />
 			<button
 				type="button"
 				onClick={() => {

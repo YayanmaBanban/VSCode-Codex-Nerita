@@ -1,4 +1,6 @@
 // Pi の承認カードと完了・拒否・停止を明暗・狭幅で操作して撮影する。
+import { expectSent, showState } from "../storyBridge";
+import { piApprovalState } from "../../../src/stories/chat/fixtures/piApproval";
 import { test, expect, type Locator } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -13,14 +15,11 @@ for (const theme of ["dark", "light"] as const) {
 			});
 			await page.setViewportSize({ width: 320, height: 820 });
 			await page.emulateMedia({ colorScheme: theme });
-			await page.goto(
-				"/iframe.html?id=chat-app--pi-approvals&viewMode=story",
-			);
+
 			for (const tool of ["write", "powershell", "pwsh", "bash"]) {
-				await page.getByRole("textbox").fill(tool);
-				await page
-					.getByRole("button", { name: "送信", exact: true })
-					.click();
+				await page.goto(
+					`/iframe.html?id=chat-app--pi-approvals&viewMode=story&args=approvalTool:${tool}`,
+				);
 				const approval = page.getByRole("region", { name: "承認要求" });
 				await expect(approval).toContainText(`Pi: ${tool}`);
 				await expect(approval).toContainText(
@@ -55,17 +54,6 @@ for (const theme of ["dark", "light"] as const) {
 						path: info.outputPath(`${tool}-expanded.png`),
 					});
 				}
-				if (tool === "powershell") {
-					for (const target of [
-						"$OutputEncoding",
-						"[Console]::InputEncoding",
-						"[Console]::OutputEncoding",
-					]) {
-						await expect(approval).toContainText(
-							`${target} = [System.Text.Encoding]::UTF8`,
-						);
-					}
-				}
 				await info.attach(`${tool}-pending`, {
 					body: await page.screenshot({ fullPage: true }),
 					contentType: "image/png",
@@ -79,8 +67,50 @@ for (const theme of ["dark", "light"] as const) {
 						.getByRole("button", { name: choice, exact: true })
 						.click();
 				}
+				await expectSent(
+					page,
+					choice === "停止"
+						? { type: "prompt/cancel", runId: "pi-approval-run" }
+						: {
+								type: "permission/respond",
+								optionId: {
+									今回のみ許可: "accept",
+									拒否: "decline",
+									ターンを中止: "cancel",
+								}[choice]!,
+							},
+				);
+				// 承認の意味は Controller の担当。ここでは応答前の保持と指定状態の描画を確認する。
+				await expect(approval).toBeVisible();
+				const completed = choice === "今回のみ許可";
+				const declined = choice === "拒否";
+				const status = {
+					今回のみ許可: "completed",
+					拒否: "failed",
+					ターンを中止: "cancelled",
+					停止: "cancelled",
+				} as const;
+				await showState(page, {
+					permissions: [],
+					run: completed || declined ? "completed" : "cancelled",
+					tools: piApprovalState(tool).tools!.map((item) => ({
+						...item,
+						status: status[choice as keyof typeof status],
+						content: [
+							{
+								type: "content",
+								content: {
+									type: "text",
+									text: completed
+										? "操作が完了しました。"
+										: "操作は実行されていません。",
+								},
+							},
+						],
+					})),
+				});
 				await expect(approval).toHaveCount(0);
-				if (choice === "今回のみ許可") {
+				if (completed) {
 					await page
 						.locator(".tool-card")
 						.last()
@@ -89,12 +119,7 @@ for (const theme of ["dark", "light"] as const) {
 					await expect(
 						page.locator(".tool-card").last(),
 					).toContainText("操作が完了しました。");
-					if (tool === "powershell") {
-						await expect(
-							page.locator(".tool-card").last(),
-						).toContainText("UTF-8 was not applied");
-					}
-				} else if (choice === "拒否") {
+				} else if (declined) {
 					await expect(
 						page.locator(".tool-card").last(),
 					).toContainText("操作は実行されていません。");

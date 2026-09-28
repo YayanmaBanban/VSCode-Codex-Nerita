@@ -48,7 +48,7 @@ const sample = stringify({
 	],
 });
 
-/** 実行は停止されるまで保持し、承認待ちの UI 操作を観察する。 */
+/** 編集バッファと表示用の実行フラグだけを保持する。検証・変換は本番の純粋関数を使う。 */
 function mockBridge(invalid: boolean): WorkflowBridge {
 	let state: WorkflowState = {
 		type: "state",
@@ -70,9 +70,6 @@ function mockBridge(invalid: boolean): WorkflowBridge {
 			notice: "",
 		};
 		try {
-			if (message.version !== state.version) {
-				throw new Error("文書が変更されました。");
-			}
 			if (message.type === "edit") {
 				state = {
 					...state,

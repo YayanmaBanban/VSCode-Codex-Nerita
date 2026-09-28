@@ -1,4 +1,6 @@
 // 会話とツールの順序・履歴・一枚のカード構造をブラウザで検証する。
+import { expectSent, acceptPrompt, showState } from "../storyBridge";
+import { timelineMessages } from "../../../src/stories/chat/fixtures/timeline";
 import { test, expect } from "@playwright/test";
 
 test("受信順のカードを次の送信後も保持する", async ({ page }, info) => {
@@ -24,7 +26,21 @@ test("受信順のカードを次の送信後も保持する", async ({ page }, 
 		.getByRole("textbox", { name: "Codexへのメッセージ" })
 		.fill("続けてください");
 	await page.getByRole("button", { name: "送信", exact: true }).click();
-	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
+	await expectSent(page, { type: "prompt/send", text: "続けてください" });
+	await acceptPrompt(page);
+	await showState(page, {
+		messages: [
+			...timelineMessages(),
+			{ id: "next-user", role: "user", text: "続けてください", order: 5 },
+			{
+				id: "next-answer",
+				role: "assistant",
+				text: "作業が完了しました。",
+				order: 6,
+			},
+		],
+	});
+	await expect(page.getByText("作業が完了しました。")).toBeVisible();
 	await expect(entries.nth(2)).toContainText("pnpm.cmd test");
 	await expect(entries.nth(4)).toContainText("続けてください");
 	await expect(page.locator(".tool-body")).toBeVisible();

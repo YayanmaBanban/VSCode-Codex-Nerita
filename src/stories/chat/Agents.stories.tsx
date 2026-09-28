@@ -2,9 +2,9 @@
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { agentIconKeys, type SubAgentSummary } from "../../shared/subAgents";
-import { ChatApp } from "../../webview/chat/ChatApp";
+import { StoryChat as ChatApp } from "./StoryChat";
 import { AgentCard } from "../../webview/chat/agents/AgentCard";
-import { createMockBridge } from "./mocks/mockBridge";
+import { createChatStoryBridge } from "./mocks/mockBridge";
 
 const child: SubAgentSummary = {
 	threadId: "child",
@@ -28,7 +28,7 @@ const grandchild: SubAgentSummary = {
 /** 子の読み取りだけをモックし、画面と戻る操作は実装を使う。 */
 function AgentsStory() {
 	const bridge = useMemo(() => {
-		const mock = createMockBridge();
+		const mock = createChatStoryBridge();
 		mock.patchState({
 			agents: [child, grandchild],
 			messages: [
@@ -46,7 +46,7 @@ function AgentsStory() {
 				},
 			],
 		});
-		const post = mock.postMessage;
+		const post = mock.postMessage.bind(mock);
 		mock.postMessage = (message) => {
 			if (message.type !== "agent/read") {
 				post(message);

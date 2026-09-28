@@ -1,8 +1,8 @@
 // 受付待ち・失敗・再送を同じ入力欄で再現するフォローアップ専用ストーリー。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
-import { createMockBridge } from "./mocks/mockBridge";
+import { StoryChat as ChatApp } from "./StoryChat";
+import { createChatStoryBridge } from "./mocks/mockBridge";
 import type { Bridge } from "../../webview/vscodeBridge";
 
 /** 最初の要求だけを失敗させ、入力保持と再送を観察できるようにする。 */
@@ -14,10 +14,13 @@ function FollowUpStory({
 	completed?: boolean;
 }) {
 	const bridge = useMemo(() => {
-		const base = createMockBridge(completed ? "completed" : "streaming");
+		const base = createChatStoryBridge(
+			completed ? "completed" : "streaming",
+		);
 		let count = 0;
 		const timers = new Set<ReturnType<typeof setTimeout>>();
 		return {
+			...base,
 			subscribe(listener) {
 				const unsubscribe = base.subscribe(listener);
 				return () => {
@@ -27,8 +30,8 @@ function FollowUpStory({
 				};
 			},
 			postMessage(message) {
+				base.postMessage(message);
 				if (message.type !== "prompt/send") {
-					base.postMessage(message);
 					return;
 				}
 				const fail = failFirst && count++ === 0;
@@ -51,7 +54,11 @@ function FollowUpStory({
 								error: "フォローアップを送信できませんでした。",
 							});
 						} else {
-							base.postMessage(message);
+							base.emit({
+								type: "prompt/accepted",
+								requestId: message.requestId,
+								mode: completed ? "start" : "steer",
+							});
 						}
 					}, 500),
 				);

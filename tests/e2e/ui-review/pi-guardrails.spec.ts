@@ -147,6 +147,16 @@ for (const theme of ["dark", "light"] as const) {
 			const original = await json.inputValue();
 			await json.fill("{ invalid }");
 			await page
+				.locator("[data-story-guardrails]")
+				.evaluate((element) => {
+					(
+						element as HTMLElement & {
+							response: { inspectionError: string | null };
+						}
+					).response.inspectionError =
+						"設定 JSON を読み込めませんでした。";
+				});
+			await page
 				.getByRole("button", { name: "検査", exact: true })
 				.click();
 			await expect(page.getByRole("alert")).toBeVisible();
@@ -155,6 +165,15 @@ for (const theme of ["dark", "light"] as const) {
 				fullPage: true,
 			});
 			await json.fill(original);
+			await page
+				.locator("[data-story-guardrails]")
+				.evaluate((element) => {
+					(
+						element as HTMLElement & {
+							response: { inspectionError: string | null };
+						}
+					).response.inspectionError = null;
+				});
 			await page
 				.getByRole("button", { name: "保存", exact: true })
 				.click();

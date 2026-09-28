@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { TrustManager } from "../../webview/trust/TrustManager";
 import type { TrustBridge, TrustReply } from "../../shared/workspaceTrust";
 
-/** Host の応答だけを模擬し、操作後も同じコンポーネントを表示する。 */
+/** 表示用リストだけを更新する。実際の権限判定・保存・実行の許可は行わない。 */
 function Preview() {
 	const bridge = useMemo<TrustBridge>(() => {
 		let listener: ((state: TrustReply) => void) | undefined;

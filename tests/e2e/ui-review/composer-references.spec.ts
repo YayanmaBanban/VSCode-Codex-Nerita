@@ -1,4 +1,5 @@
 // チップの復元・コピー・削除・Undo・コード貼り付けとの共存を確認する。
+import { expectSent, acceptPrompt, restoreDraft } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 import { paste, select } from "./composerHelpers";
 
@@ -110,6 +111,7 @@ test("参照を復元し、全文コピー・取り外し・Undo・送信でき�
 	await input.press("Control+z");
 	await expect(chips).toHaveCount(2);
 	await page.getByRole("button", { name: "エディタグループへ移動" }).click();
+	await restoreDraft(page, true);
 	await expect(chips).toHaveCount(2);
 	await expect(input).toHaveText("前文日本語 sample.md と src 後文");
 	await input.press("Control+End");
@@ -121,15 +123,27 @@ test("参照を復元し、全文コピー・取り外し・Undo・送信でき�
 	await expect(chips).toHaveCount(2);
 	await input.press("Control+End");
 	await input.press("Control+Enter");
-	const sent = page.locator(".message.user");
-	await expect(sent.locator(".message-reference")).toHaveCount(2);
-	await expect(sent).toContainText("前文日本語 sample.md と src 後文");
-	await expect(sent.getByRole("button", { name: /取り外す/ })).toHaveCount(0);
-	await sent.getByRole("button", { name: "日本語 sample.md を開く" }).click();
-	await expect(page.getByLabel("開いた参照")).toHaveText(
-		"file:///D:/workspace/日本語%20sample.md",
-	);
-	await page.screenshot({ path: info.outputPath("sent-references.png") });
+	const sent = await expectSent(page, { type: "prompt/send" });
+	expect(sent).toMatchObject({
+		references: [
+			expect.objectContaining({
+				offset: 2,
+				path: expect.objectContaining({
+					kind: "file",
+					name: "日本語 sample.md",
+				}),
+			}),
+			expect.objectContaining({
+				offset: 33,
+				path: expect.objectContaining({
+					kind: "directory",
+					name: "src",
+				}),
+			}),
+		],
+	});
+	await acceptPrompt(page);
+	await expect(input).toBeEmpty();
 	expect(errors).toEqual([]);
 });
 

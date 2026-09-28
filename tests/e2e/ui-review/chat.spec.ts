@@ -1,4 +1,5 @@
 // 実際のチャットストーリーを操作し、画像・動画・トレースとブラウザエラーを保存する。
+import { expectSent, showState, acceptPrompt } from "../storyBridge";
 import { test, expect, type Page } from "@playwright/test";
 const pageErrors = new Map<Page, string[]>();
 test.beforeEach(({ page }) => {
@@ -20,75 +21,58 @@ test.afterEach(async ({ page }, info) => {
 	pageErrors.delete(page);
 	expect(errors).toEqual([]);
 });
-test("送信・逐次応答・完了・新規会話", async ({ page }, info) => {
+test("送信と新規会話の要求", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
 	await page.getByRole("textbox").fill("設定を確認してください");
-	await page.getByRole("button", { name: "送信" }).click();
-	await expect(page.getByRole("button", { name: "停止" })).toBeVisible();
-	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
-	await info.attach("completed", {
+	await page.getByRole("button", { name: "送信", exact: true }).click();
+	await expectSent(page, {
+		type: "prompt/send",
+		text: "設定を確認してください",
+		sessionId: "story-session",
+	});
+	await acceptPrompt(page);
+	await expect(page.getByRole("textbox")).toBeEmpty();
+	await page.getByRole("button", { name: "新しいチャット" }).click();
+	await expectSent(page, { type: "session/new" });
+	await info.attach("empty", {
 		body: await page.screenshot(),
 		contentType: "image/png",
 	});
-	await page.getByRole("button", { name: "新しいチャット" }).click();
-	await expect(
-		page.getByText("このワークスペースで作業します"),
-	).toBeVisible();
 });
-for (const choice of ["今回のみ許可", "拒否"]) {
-	test(`承認要求: ${choice}`, async ({ page }, info) => {
+for (const [label, optionId] of [
+	["今回のみ許可", "allow"],
+	["拒否", "reject"],
+]) {
+	test(`承認要求の送信: ${label}`, async ({ page }, info) => {
 		await page.goto("/iframe.html?id=chat-app--permission&viewMode=story");
-		await expect(
-			page.getByRole("region", { name: "承認要求" }),
-		).toBeVisible();
 		await info.attach("permission", {
 			body: await page.screenshot(),
 			contentType: "image/png",
 		});
-		await page.getByRole("button", { name: choice, exact: true }).click();
-		await expect(
-			page.getByRole("region", { name: "承認要求" }),
-		).toHaveCount(0);
-		await expect(
-			page.locator(
-				`.tool-card[data-status="${choice === "拒否" ? "failed" : "completed"}"]`,
-			),
-		).toBeVisible();
-		await expect(page.getByRole("img", { name: "失敗" })).toHaveCount(
-			choice === "拒否" ? 1 : 0,
-		);
+		await page.getByRole("button", { name: label, exact: true }).click();
+		await expectSent(page, {
+			type: "permission/respond",
+			permissionId: "permission",
+			optionId,
+			sessionId: "story-session",
+			runId: "story-run",
+		});
 	});
 }
-test("停止後も同じ会話で再送・エラー復帰", async ({ page }, info) => {
+test("停止要求と停止済み状態の表示", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
-	const answer = page.locator(".message.assistant .message-text");
-	const received = await answer.textContent();
-	await page.getByRole("button", { name: "停止" }).click();
-	await expect(answer).toHaveText(received!);
-	await expect(page.getByText("停止しました", { exact: true })).toBeVisible();
-	await expect(page.getByText("接続済み", { exact: true })).toBeVisible();
-	await page
-		.getByRole("textbox", { name: "Codexへのメッセージ" })
-		.fill("続けてください");
-	await page.getByRole("button", { name: "送信", exact: true }).click();
-	await expect(page.getByText(/作業が完了しました/)).toBeVisible();
-	await expect(
-		page.getByText("設定ファイルの変更点を教えてください。", {
-			exact: true,
-		}),
-	).toBeVisible();
-	await page.screenshot({
-		path: info.outputPath("cancel-continue.png"),
-		fullPage: true,
+	await page.getByRole("button", { name: "停止", exact: true }).click();
+	await expectSent(page, {
+		type: "prompt/cancel",
+		sessionId: "story-session",
+		runId: "story-run",
 	});
-	await page.goto("/iframe.html?id=chat-app--error&viewMode=story");
-	await expect(page.getByRole("alert")).toBeVisible();
-	await page
-		.getByRole("button", {
-			name: "接続エラー：アカウントを再認証して接続します",
-		})
-		.click();
-	await expect(page.getByRole("alert")).toHaveCount(0);
+	await showState(page, { run: "cancelled" });
+	await expect(page.getByText("停止しました", { exact: true })).toBeVisible();
+	await info.attach("cancelled", {
+		body: await page.screenshot(),
+		contentType: "image/png",
+	});
 });
 test("IME確定・改行・キーボード送信", async ({ page }) => {
 	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
@@ -111,7 +95,10 @@ test("IME確定・改行・キーボード送信", async ({ page }) => {
 		useInnerText: true,
 	});
 	await input.press("Control+Enter");
-	await expect(page.getByRole("log")).toContainText("日本語の入力");
+	await expectSent(page, {
+		type: "prompt/send",
+		text: "日本語の入力\n2行目\n3行目",
+	});
 });
 test("回答コピー・対応する送信文と返信末尾へ移動", async ({
 	page,
@@ -151,7 +138,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
 		const empty = page.locator(".empty-state");
 		await expect(empty).toHaveText(
-			"このワークスペースで作業しますD:/workspace/project",
+			"このワークスペースで作業しますworkspace/project",
 		);
 		await page.evaluate(() => {
 			document.documentElement.style.setProperty(

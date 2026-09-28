@@ -1,7 +1,7 @@
 // 実際のチャット画面でセッション一覧の各状態を観察する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../webview/chat/ChatApp";
+import { StoryChat as ChatApp } from "./StoryChat";
 import {
 	createSessionBridge,
 	type SessionScenario,

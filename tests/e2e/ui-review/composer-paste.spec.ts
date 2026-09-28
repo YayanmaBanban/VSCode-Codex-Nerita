@@ -1,4 +1,5 @@
 // 1つの編集領域で貼り付け・コード編集・境界移動・履歴・送信を検証する。
+import { expectSent, acceptPrompt } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
 import { select, paste } from "./composerHelpers";
@@ -93,12 +94,18 @@ for (const colorScheme of ["dark", "light"] as const) {
 		).toBe("後文");
 		const expectedCode = await code.innerText();
 		await input.press("Control+Enter");
-		const sent = page.locator(".message.user");
-		await expect(sent).toContainText(expectedCode);
-		await expect(sent).toContainText("前文");
-		await expect(sent).toContainText("後文");
+		const sent = await expectSent(page, { type: "prompt/send" });
+		expect(sent).toMatchObject({
+			text: expect.stringContaining(expectedCode),
+		});
+		expect(sent).toMatchObject({ text: expect.stringContaining("前文") });
+		expect(sent).toMatchObject({ text: expect.stringContaining("後文") });
+		await acceptPrompt(page);
 		await expect(input).toHaveText("");
-		await expect(input).toBeFocused();
+		await expect(input).toHaveAttribute("contenteditable", "true");
+		await input.focus();
+		await page.keyboard.insertText("次の下書き");
+		await expect(input).toHaveText("次の下書き");
 		expect(errors).toEqual([]);
 	});
 }
@@ -177,7 +184,9 @@ test("コード判定と通常テキストの5行境界", async ({ page }, info)
 		["一行目\r\n二行目\r\n三行目\r\n四行目\r\n五行目", true],
 	];
 	for (const [text, block] of samples) {
-		await input.fill("");
+		await input.press("Control+a");
+		await input.press("Backspace");
+		await expect(input).toHaveText("");
 		await paste(input, text);
 		await expect(input.locator("pre"), text).toHaveCount(block ? 1 : 0);
 		if (block) {

@@ -2,8 +2,8 @@
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { Bridge } from "../../../webview/vscodeBridge";
-import { ChatApp } from "../../../webview/chat/ChatApp";
-import { createMockBridge } from "../mocks/mockBridge";
+import { StoryChat as ChatApp } from "../StoryChat";
+import { createChatStoryBridge } from "../mocks/mockBridge";
 
 /** コピー通知は Host のテストで検証し、ここでは照合済み応答を再現する。 */
 function CopiedCodeStory() {
@@ -11,8 +11,9 @@ function CopiedCodeStory() {
 	const [sent, setSent] = useState("");
 	const [resolved, setResolved] = useState(0);
 	const bridge = useMemo(() => {
-		const mock = createMockBridge("empty");
+		const mock = createChatStoryBridge("empty");
 		return {
+			...mock,
 			subscribe: mock.subscribe,
 			postMessage(message) {
 				if (message.type === "workspace/resolveCode") {

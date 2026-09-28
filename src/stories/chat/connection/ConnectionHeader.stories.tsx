@@ -4,12 +4,11 @@ import { initialState, type ConnectionStatus } from "../../../shared/chatState";
 import { createCodexLifecycleBridge } from "../mocks/codexLifecycleBridge";
 import { ConnectionButton } from "../../../webview/chat/connection/ConnectionButton";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChatApp } from "../../../webview/chat/ChatApp";
-import { createMockBridge } from "../mocks/mockBridge";
-import type { Bridge } from "../../../webview/vscodeBridge";
+import { StoryChat as ChatApp } from "../StoryChat";
+import { createChatStoryBridge } from "../mocks/mockBridge";
 import type { BackendId } from "../../../shared/backend";
 
-/** Host 専用操作を再現する Bridge で、下書きの復元も確認可能にする。 */
+/** ヘッダーの初期状態を注入し、表示先の操作は記録する。 */
 function HeaderStory({
 	title = "",
 	error = false,
@@ -33,7 +32,7 @@ function HeaderStory({
 		if (authSuccess) {
 			return createCodexLifecycleBridge("success");
 		}
-		const mock = createMockBridge("completed");
+		const mock = createChatStoryBridge("completed", backend);
 		mock.patchState({
 			piAccount: backend === "pi" ? "local: 認証未設定" : null,
 			sessionTitle: title,
@@ -44,60 +43,16 @@ function HeaderStory({
 				delete: true,
 			},
 		});
-		let draft = "";
-		let scrollTop = 0;
-		const result: Bridge = {
-			subscribe: mock.subscribe,
-			postMessage(message) {
+		const post = mock.postMessage.bind(mock);
+		return {
+			...mock,
+			postMessage(message: Parameters<typeof post>[0]) {
+				post(message);
 				if (message.type === "ui/ready") {
 					mock.emit({ type: "ui/backendState", backend });
 				}
-				if (message.type === "ui/setBackend") {
-					mock.emit({
-						type: "ui/backendState",
-						backend: message.backend,
-					});
-					return;
-				}
-				if (message.type === "ui/setSidebar") {
-					mock.emit({
-						type: "ui/sidebarState",
-						location: message.location,
-					});
-					mock.emit({
-						type: "ui/viewState",
-						editor: false,
-						draft,
-						scrollTop,
-						restoreScroll: true,
-					});
-					return;
-				}
-				if (message.type === "ui/saveDraft") {
-					draft = message.draft;
-					return;
-				}
-				if (message.type === "ui/saveScroll") {
-					scrollTop = message.scrollTop;
-					return;
-				}
-				if (
-					message.type === "ui/openEditor" ||
-					message.type === "ui/openSidebar"
-				) {
-					mock.emit({
-						type: "ui/viewState",
-						editor: message.type === "ui/openEditor",
-						draft,
-						scrollTop,
-						restoreScroll: true,
-					});
-					return;
-				}
-				mock.postMessage(message);
 			},
 		};
-		return result;
 	}, [title, error, backend, authFailure, authSuccess]);
 	return <ChatApp bridge={bridge} />;
 }
