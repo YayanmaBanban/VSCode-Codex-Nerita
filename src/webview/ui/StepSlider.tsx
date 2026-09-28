@@ -1,5 +1,6 @@
 // 等間隔の段階と現在位置までの塗りつぶしを持つ、汎用スライダー。
 import { cn } from "cnfast";
+import { useEffect, useRef, useState } from "react";
 import "./stepSlider.css";
 
 /** 数値の段階を扱い、選択肢の意味や送信先には依存しない。 */
@@ -10,6 +11,7 @@ export function StepSlider({
 	valueText,
 	disabled = false,
 	onChange,
+	onPreview,
 }: {
 	value: number;
 	count: number;
@@ -17,10 +19,46 @@ export function StepSlider({
 	valueText: string;
 	disabled?: boolean;
 	onChange: (value: number) => void;
+	onPreview?: (value: number | null) => void;
 }) {
+	const [draft, setDraft] = useState<number | null>(null);
+	const drag = useRef<number | null>(null);
 	const max = Math.max(0, count - 1);
-	const selected = Math.min(max, Math.max(0, value));
+	const selected = Math.min(max, Math.max(0, draft ?? value));
 	const progress = max > 0 ? selected / max : 0;
+	// Host の更新を受け取るまでは、解放した位置を維持する。
+	useEffect(() => {
+		if (drag.current === null) {
+			setDraft(null);
+			onPreview?.(null);
+		}
+	}, [value, count, onPreview]);
+	/** マウスとキーボードの確定位置を、Host の反映前にも表示する。 */
+	function commit(next: number) {
+		setDraft(next);
+		onPreview?.(next);
+		onChange(next);
+	}
+	/** ドラッグ中は表示だけを更新し、設定要求で操作が中断されないようにする。 */
+	function preview(next: number) {
+		drag.current = next;
+		setDraft(next);
+		onPreview?.(Math.round(next));
+	}
+	/** 解放時だけ段階を確定し、中断時は Host の現在値へ戻す。 */
+	function finish(shouldCommit: boolean) {
+		const next = drag.current;
+		if (next === null) {
+			return;
+		}
+		drag.current = null;
+		if (shouldCommit && !disabled) {
+			commit(Math.round(next));
+		} else {
+			setDraft(null);
+			onPreview?.(null);
+		}
+	}
 	return (
 		<div
 			className={cn(
@@ -43,17 +81,34 @@ export function StepSlider({
 				type="range"
 				min={0}
 				max={max}
-				step={1}
+				step={drag.current === null ? 1 : "any"}
 				value={selected}
 				aria-label={label}
 				aria-valuetext={valueText}
 				disabled={disabled || count < 2}
 				className={cn(
-					"step-slider-input relative m-0 block h-[32px] w-full cursor-pointer appearance-none rounded-full bg-transparent p-0 accent-foreground",
+					"step-slider-input relative m-0 block h-[32px] w-full touch-none cursor-pointer appearance-none rounded-full bg-transparent p-0 accent-foreground",
 					"focus-visible:outline-1 focus-visible:outline-settings-focus focus-visible:outline-offset-[-1px] disabled:cursor-default",
 					"[&::-webkit-slider-thumb]:size-[36px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-transparent",
 				)}
-				onChange={(event) => onChange(Number(event.target.value))}
+				onPointerDown={(event) => {
+					if (event.button !== 0 || disabled || count < 2) {
+						return;
+					}
+					event.currentTarget.setPointerCapture(event.pointerId);
+					preview(selected);
+				}}
+				onPointerUp={() => finish(true)}
+				onPointerCancel={() => finish(false)}
+				onLostPointerCapture={() => finish(false)}
+				onChange={(event) => {
+					const next = Number(event.target.value);
+					if (drag.current !== null) {
+						preview(next);
+					} else {
+						commit(next);
+					}
+				}}
 			/>
 			<div
 				aria-hidden="true"
@@ -81,7 +136,7 @@ export function StepSlider({
 						style={{
 							left: `${max > 0 ? (index / max) * 100 : 0}%`,
 						}}
-						onClick={() => onChange(index)}
+						onClick={() => commit(index)}
 					>
 						<span
 							aria-hidden="true"

@@ -31,7 +31,12 @@ for (const theme of ["dark", "light"] as const) {
 				),
 			).toHaveCount(1);
 			await expect(
-				page.getByRole("combobox", { name: "Model", exact: true }),
+				story === "codex-app-server" || story === "pi-codex"
+					? page.getByRole("button", { name: "モデルと推論レベル" })
+					: page.getByRole("combobox", {
+							name: "Model",
+							exact: true,
+						}),
 			).toBeEnabled();
 			await expect(
 				page.getByRole("combobox", { name: "モデルヘッダーの拡張例" }),
@@ -69,6 +74,7 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"on"',
 		);
+		await page.getByRole("button", { name: "モデルと推論レベル" }).click();
 		await page
 			.getByRole("combobox", { name: "Model", exact: true })
 			.click();

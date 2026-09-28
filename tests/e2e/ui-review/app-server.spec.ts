@@ -37,7 +37,7 @@ test("App Serverの推論・端末出力・差分と実行中の設定", async (
 		"-export const enabled = false;",
 	);
 	await expect(
-		page.getByRole("combobox", { name: "Model", exact: true }),
+		page.getByRole("button", { name: "モデルと推論レベル" }),
 	).toBeDisabled();
 	await diff.scrollIntoViewIfNeeded();
 	await page.screenshot({
@@ -64,7 +64,8 @@ test("App Server の利用可能な操作と送信", async ({ page }, info) => {
 	await expect(
 		page.getByRole("combobox", { name: "Service tier" }),
 	).toHaveCount(0);
-	const fast = page.getByRole("switch", { name: "Fast mode" });
+	await page.getByRole("button", { name: "モデルと推論レベル" }).click();
+	const fast = page.getByRole("switch", { name: "ファストモード" });
 	await expect(fast).toHaveCount(1);
 	await expect(fast).not.toBeChecked();
 	await fast.click();
@@ -121,6 +122,7 @@ test("App Server の利用可能な操作と送信", async ({ page }, info) => {
 		configId: "model",
 		value: "other",
 	});
+	await page.keyboard.press("Escape");
 	await page.screenshot({
 		path: info.outputPath("app-server-ready.png"),
 		fullPage: true,

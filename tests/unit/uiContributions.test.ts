@@ -23,6 +23,53 @@ const item: NeritaUiContribution = {
 };
 
 describe("UI Contribution Registry", () => {
+	it.each(["openai", "openai-codex", "anthropic"])(
+		"Piの%sはプロバイダーに応じたモデル設定を公開する",
+		(provider) => {
+			const state = initialState();
+			state.configOptions = [
+				{
+					id: "model",
+					name: "Pi Model",
+					currentValue: "demo",
+					options: [{ value: "demo", name: "Demo" }],
+				},
+				{
+					id: "reasoning_effort",
+					name: "Reasoning effort",
+					currentValue: "high",
+					options: [{ value: "high", name: "High" }],
+				},
+				{
+					id: "fast-mode",
+					name: "Fast mode",
+					currentValue: "on",
+					options: [
+						{ value: "on", name: "On" },
+						{ value: "off", name: "Off" },
+					],
+				},
+			];
+			const result = createBuiltinUiRegistry().resolve(state, {
+				...context,
+				provider,
+			});
+			if (provider === "anthropic") {
+				expect(result.items.map((entry) => entry.control.type)).toEqual(
+					["select", "select", "toggle"],
+				);
+			} else {
+				expect(result.items).toHaveLength(1);
+				expect(result.items[0]?.control).toMatchObject({
+					type: "slider-card",
+					model: { currentValue: "demo" },
+					option: { currentValue: "high" },
+					fastMode: { checked: true },
+				});
+			}
+			expect(isState({ ...state, uiContributions: result })).toBe(true);
+		},
+	);
 	it("backend・provider・capabilityをANDで解決し、条件を通信へ出さない", () => {
 		const registry = new UiContributionRegistry();
 		registry.registerUiContribution("test", () => [item]);
@@ -95,12 +142,14 @@ describe("UI Contribution Registry", () => {
 			],
 		});
 		const codex = registry.resolve(state, { ...context, backend: "codex" });
-		expect(codex.items).toHaveLength(5);
+		expect(codex.items).toHaveLength(3);
 		expect(codex.items.at(-1)?.control).toMatchObject({
-			type: "toggle",
-			checked: true,
-			onValue: "priority",
-			offValue: "default",
+			type: "slider-card",
+			fastMode: {
+				checked: true,
+				onValue: "priority",
+				offValue: "default",
+			},
 		});
 		state.configOptions.push({
 			id: "fast-mode",
@@ -117,11 +166,13 @@ describe("UI Contribution Registry", () => {
 		});
 		expect(
 			aliases.items.filter((entry) => entry.control.type === "toggle"),
-		).toHaveLength(1);
+		).toHaveLength(0);
 		expect(aliases.items.at(-1)?.control).toMatchObject({
-			configId: "fast-mode",
-			onValue: "on",
-			checked: true,
+			fastMode: {
+				configId: "fast-mode",
+				onValue: "on",
+				checked: true,
+			},
 		});
 	});
 });
@@ -213,7 +264,7 @@ describe("UI Contribution通信", () => {
 				.uiContributions?.items.find(
 					(entry) => entry.id === "config:model",
 				)?.control,
-		).toMatchObject({ option: { currentValue: "new" } });
+		).toMatchObject({ model: { currentValue: "new" } });
 		session.update(initialState());
 		expect(isState(session.snapshot())).toBe(true);
 		expect(

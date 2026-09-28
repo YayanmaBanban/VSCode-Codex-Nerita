@@ -54,8 +54,8 @@ for (const theme of ["dark", "light"] as const) {
 			page.getByRole("button", { name: "Mode", exact: true }),
 		).toBeVisible();
 		await expect(
-			page.getByRole("combobox", { name: "Model", exact: true }),
-		).toHaveText("6 Astra");
+			page.getByRole("button", { name: "モデルと推論レベル" }),
+		).toHaveText("6 Astra low");
 		expect(
 			await page
 				.locator(".settings-toolbar > *")
@@ -65,7 +65,7 @@ for (const theme of ["dark", "light"] as const) {
 		).toEqual(["attach-button", "context-usage", "contents"]);
 		await expect(
 			page.locator(".config-control .lucide-chevron-down"),
-		).toHaveCount(3);
+		).toHaveCount(1);
 		const mode = page.getByRole("button", { name: "Mode", exact: true });
 		await mode.hover();
 		await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
@@ -206,6 +206,90 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"default"',
 		);
+		await page.getByRole("button", { name: "モデルと推論レベル" }).click();
+		const reasoning = page.getByRole("slider", {
+			name: "Reasoning effort",
+		});
+		const bounds = (await reasoning.boundingBox())!;
+		const beforeDrag = await page.getByLabel("最後の要求").textContent();
+		await page.mouse.move(bounds.x + 18, bounds.y + bounds.height / 2);
+		await page.mouse.down();
+		await page.mouse.move(
+			bounds.x + 18 + (bounds.width - 36) * 0.38,
+			bounds.y + bounds.height / 2,
+			{ steps: 12 },
+		);
+		await expect
+			.poll(async () => Number(await reasoning.inputValue()))
+			.toBeGreaterThan(0.5);
+		await expect
+			.poll(async () => Number(await reasoning.inputValue()))
+			.toBeLessThan(1);
+		await expect(reasoning).toHaveAttribute("aria-valuetext", "High");
+		await expect(page.getByLabel("最後の要求")).toHaveText(beforeDrag!);
+		await info.attach("reasoning-drag", {
+			body: await page.screenshot({
+				path: info.outputPath("reasoning-drag.png"),
+			}),
+			contentType: "image/png",
+		});
+		await page.mouse.up();
+		await expectSent(page, {
+			type: "config/set",
+			configId: "reasoning_effort",
+			value: "high",
+		});
+		await expect(reasoning).toHaveValue("1");
+		await page.mouse.move(
+			bounds.x + 18 + (bounds.width - 36) / 2,
+			bounds.y + bounds.height / 2,
+		);
+		await page.mouse.down();
+		await page.mouse.move(
+			bounds.x + bounds.width - 18,
+			bounds.y + bounds.height / 2,
+			{ steps: 10 },
+		);
+		await page.mouse.up();
+		await expect(reasoning).toHaveValue("2");
+		await expect(reasoning).toHaveAttribute("aria-valuetext", "Ultra");
+		// Host がまだ Low の間も、描画フレームをまたいで確定位置を保つ。
+		const releaseValues = await reasoning.evaluate(async (element) => {
+			const values: string[] = [];
+			for (let frame = 0; frame < 8; frame++) {
+				await new Promise(requestAnimationFrame);
+				values.push((element as HTMLInputElement).value);
+			}
+			return values;
+		});
+		expect(releaseValues).toEqual(Array(8).fill("2"));
+		await info.attach("reasoning-released", {
+			body: await page.screenshot({
+				path: info.outputPath("reasoning-released.png"),
+			}),
+			contentType: "image/png",
+		});
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "reasoning_effort"
+					? { ...option, currentValue: "ultra" }
+					: option,
+			),
+		});
+		await expect(reasoning).toHaveValue("2");
+		await reasoning.focus();
+		await reasoning.press("End");
+		await expectSent(page, {
+			type: "config/set",
+			configId: "reasoning_effort",
+			value: "ultra",
+		});
+		await info.attach("model-card", {
+			body: await page.screenshot({
+				path: info.outputPath("model-card.png"),
+			}),
+			contentType: "image/png",
+		});
 		await page
 			.getByRole("combobox", { name: "Model", exact: true })
 			.click();
@@ -214,24 +298,39 @@ for (const theme of ["dark", "light"] as const) {
 			.click();
 		await expectSent(page, { type: "config/set", configId: "model" });
 		await showState(page, {
-			configOptions: settingsFixture().map((option) =>
-				option.id === "reasoning_effort"
-					? {
-							...option,
-							currentValue: "low",
-							options: option.options.filter(
-								(choice) => choice.value !== "ultra",
-							),
-						}
-					: option,
-			),
+			configOptions: settingsFixture().map((option) => {
+				if (option.id === "reasoning_effort") {
+					return {
+						...option,
+						currentValue: "high",
+						options: option.options.filter(
+							(choice) => choice.value !== "ultra",
+						),
+					};
+				}
+				return option.id === "model"
+					? { ...option, currentValue: "gpt-5.6-luna" }
+					: option;
+			}),
 		});
-		await page.getByRole("combobox", { name: "Reasoning effort" }).click();
+		await expect(reasoning).toHaveAttribute("max", "1");
+		await expect(reasoning).toHaveAttribute("aria-valuetext", "High");
 		await expect(
-			page.getByRole("option", { name: "Ultra", exact: true }),
-		).toHaveCount(0);
-		await page.getByRole("option", { name: "High", exact: true }).click();
-		await page.getByRole("switch", { name: "Fast mode" }).click();
+			page.getByRole("button", { name: "モデルと推論レベル" }),
+		).toHaveText("5.6 Luna high");
+		const fastMode = page.getByRole("switch", { name: "ファストモード" });
+		await fastMode.hover();
+		await expect(page.getByRole("tooltip")).toContainText(
+			"速度1.5倍、使用量が増えます",
+		);
+		await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
+		await info.attach("fast-mode-hover", {
+			body: await page.screenshot({
+				path: info.outputPath("fast-mode-hover.png"),
+			}),
+			contentType: "image/png",
+		});
+		await fastMode.click();
 		await expectSent(page, {
 			type: "config/set",
 			configId: "fast-mode",
@@ -240,6 +339,64 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(page.getByLabel("最後の要求")).toContainText(
 			'"value":"on"',
 		);
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "fast-mode"
+					? { ...option, currentValue: "on" }
+					: option,
+			),
+		});
+		await expect(fastMode).toHaveAttribute("aria-checked", "true");
+		const modelTrigger = page.getByRole("button", {
+			name: "モデルと推論レベル",
+		});
+		await expect(modelTrigger.locator(".lucide-zap")).toBeVisible();
+		await expect(fastMode.locator("svg")).toHaveAttribute(
+			"fill",
+			"#FACC15",
+		);
+		await info.attach("fast-mode-on", {
+			body: await page.screenshot({
+				path: info.outputPath("fast-mode-on.png"),
+			}),
+			contentType: "image/png",
+		});
+		await fastMode.click();
+		await expectSent(page, {
+			type: "config/set",
+			configId: "fast-mode",
+			value: "off",
+		});
+		await reasoning.press("Escape");
+		await modelTrigger.hover();
+		await expect(page.getByRole("tooltip")).toHaveText(
+			"軽い推論。速度とコストを、優先します。",
+		);
+		await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
+		await info.attach("model-trigger-fast", {
+			body: await page.screenshot({
+				path: info.outputPath("model-trigger-fast.png"),
+			}),
+			contentType: "image/png",
+		});
+		await showState(page, { configOptions: settingsFixture() });
+		await expect(modelTrigger.locator(".lucide-zap")).toHaveCount(0);
+		await showState(page, {
+			configOptions: settingsFixture().map((option) =>
+				option.id === "reasoning_effort"
+					? { ...option, currentValue: "ultra" }
+					: option,
+			),
+		});
+		await expect(page.getByRole("tooltip")).toHaveText(
+			"複雑な作業を必要に応じて、複数のエージェントへ委譲します。\n使用量が大きく、増える場合があります。",
+		);
+		await info.attach("model-trigger-ultra", {
+			body: await page.screenshot({
+				path: info.outputPath("model-trigger-ultra.png"),
+			}),
+			contentType: "image/png",
+		});
 		await page.getByRole("button", { name: "ファイルを添付" }).click();
 		await expect(
 			page.locator(".attachment .lucide-file-code"),
@@ -300,7 +457,9 @@ for (const theme of ["dark", "light"] as const) {
 		for (const control of await page.getByRole("combobox").all()) {
 			await expect(control).toBeDisabled();
 		}
-		await expect(page.getByRole("switch")).toBeDisabled();
+		await expect(
+			page.getByRole("button", { name: "モデルと推論レベル" }),
+		).toBeDisabled();
 		await expect(
 			page.getByRole("button", { name: "ファイルを添付" }),
 		).toBeDisabled();

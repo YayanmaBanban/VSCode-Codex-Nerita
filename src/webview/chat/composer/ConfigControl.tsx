@@ -1,5 +1,5 @@
 // 設定候補の `name` を表示し、`value` だけを Host に送る。
-import { Bot, User, Check, ChevronDown } from "lucide-react";
+import { Bot, User, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { Select } from "@base-ui/react/select";
 import { CSPProvider } from "@base-ui/react/csp-provider";
 import { cn } from "cnfast";
@@ -13,12 +13,14 @@ export function ConfigControl({
 	onChange,
 	inDialog = false,
 	icon,
+	chevron = "down",
 }: {
 	option: ConfigOption;
 	disabled: boolean;
 	onChange: (value: string) => void;
 	inDialog?: boolean;
 	icon?: "user" | "bot" | undefined;
+	chevron?: "down" | "right";
 }) {
 	return (
 		<div className="config-control relative inline-flex min-w-0 max-w-full text-muted">
@@ -42,7 +44,11 @@ export function ConfigControl({
 							)}
 							aria-label={option.name}
 						>
-							<ControlLabel option={option} icon={icon} />
+							<ControlLabel
+								option={option}
+								icon={icon}
+								chevron={chevron}
+							/>
 						</Select.Trigger>
 					</SettingsTooltip>
 					<Select.Portal>
@@ -138,9 +144,11 @@ function ChoiceLabel({ choice }: { choice: ConfigChoice }) {
 function ControlLabel({
 	option,
 	icon,
+	chevron,
 }: {
 	option: ConfigOption;
 	icon?: "user" | "bot" | undefined;
+	chevron: "down" | "right";
 }) {
 	if (icon) {
 		const Icon = icon === "user" ? User : Bot;
@@ -149,12 +157,13 @@ function ControlLabel({
 	const current = option.options.find(
 		(choice) => choice.value === option.currentValue,
 	);
+	const Chevron = chevron === "right" ? ChevronRight : ChevronDown;
 	return (
 		<>
 			<span className="truncate">
 				{current?.name ?? option.currentLabel ?? option.name}
 			</span>
-			<ChevronDown size={12} aria-hidden="true" />
+			<Chevron size={12} aria-hidden="true" />
 		</>
 	);
 }

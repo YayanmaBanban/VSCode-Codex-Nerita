@@ -1,6 +1,7 @@
 // モデルの対応能力から表示候補を生成し、会話状態の更新とは分離する。
 import type { ConfigOption } from "../../../../shared/composer";
 import type { ModelInfo } from "../protocol/account";
+import { reasoningLevels } from "./modelSelection";
 
 /** モデル能力と会話設定から、Codex 専用の選択候補を構成する。 */
 export function modelOptions(
@@ -39,11 +40,22 @@ export function modelOptions(
 			name: "Reasoning effort",
 			currentValue: effort,
 			options:
-				selected?.supportedReasoningEfforts.map((item) => ({
-					value: item.reasoningEffort,
-					name: item.reasoningEffort,
-					description: item.description,
-				})) ?? [],
+				selected?.supportedReasoningEfforts
+					.filter((item) =>
+						reasoningLevels.includes(item.reasoningEffort),
+					)
+					.sort(
+						(a, b) =>
+							reasoningLevels.indexOf(a.reasoningEffort) -
+							reasoningLevels.indexOf(b.reasoningEffort),
+					)
+					.map((item) => ({
+						value: item.reasoningEffort,
+						name:
+							item.reasoningEffort.charAt(0).toUpperCase() +
+							item.reasoningEffort.slice(1),
+						description: item.description,
+					})) ?? [],
 		},
 		{
 			id: "service_tier",

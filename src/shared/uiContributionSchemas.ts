@@ -45,7 +45,17 @@ export const SliderCardControlSchema = z.object({
 	...controlFields,
 	type: z.literal("slider-card"),
 	option: UiConfigOptionSchema,
-	icon: z.enum(["shield", "shield-alert"]),
+	icon: z.enum(["shield", "shield-alert", "model"]),
+	model: UiConfigOptionSchema.optional(),
+	fastMode: z
+		.object({
+			configId: IdSchema,
+			checked: z.boolean(),
+			onValue: IdSchema,
+			offValue: IdSchema,
+			disabled: z.boolean().optional(),
+		})
+		.optional(),
 	warning: z.boolean().optional(),
 	secondary: z
 		.object({

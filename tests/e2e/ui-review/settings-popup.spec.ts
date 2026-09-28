@@ -25,6 +25,7 @@ for (const theme of ["dark", "light"] as const) {
 			name: "Model",
 			exact: true,
 		});
+		await page.getByRole("button", { name: "モデルと推論レベル" }).click();
 		await model.click();
 		const selected = page.getByRole("option", {
 			name: "6 Astra",
@@ -91,9 +92,10 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		await page.keyboard.press("Escape");
 		await expect(page.getByRole("tooltip")).toHaveCount(0);
-		await page.getByRole("switch", { name: "Fast mode" }).hover();
+		await page.getByRole("button", { name: "モデルと推論レベル" }).click();
+		await page.getByRole("switch", { name: "ファストモード" }).hover();
 		await expect(page.getByRole("tooltip")).toHaveText(
-			"Default speed, normal usage",
+			"ファストモード\n速度1.5倍、使用量が増えます",
 		);
 		await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 320);
 		expect(errors).toEqual([]);

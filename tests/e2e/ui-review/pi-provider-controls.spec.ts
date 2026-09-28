@@ -16,19 +16,26 @@ for (const theme of ["dark", "light"] as const) {
 			reducedMotion: "reduce",
 		});
 		await page.goto(
-			"/iframe.html?id=chat-pi-provider-controls--connected&viewMode=story",
+			`/iframe.html?id=chat-pi-provider-controls--connected&viewMode=story&globals=theme:${theme === "light" ? "light" : "dark2026"}`,
 		);
 		const provider = page.getByRole("combobox", {
 			name: "Provider",
 			exact: true,
 		});
-		const reasoning = page.getByRole("combobox", {
+		const trigger = page.getByRole("button", {
+			name: "モデルと推論レベル",
+		});
+		await trigger.click();
+		await expect(
+			page.getByRole("combobox", { name: "Pi Model" }),
+		).toHaveText("GPT-6-Astra");
+		const reasoning = page.getByRole("slider", {
 			name: "Reasoning effort",
 		});
-		const fast = page.getByRole("switch", { name: "Fast mode" });
+		const fast = page.getByRole("switch", { name: "ファストモード" });
 		const request = page.getByLabel("送信した要求");
-		await reasoning.click();
-		await page.getByRole("option", { name: "Ultra", exact: true }).click();
+		await reasoning.focus();
+		await reasoning.press("End");
 		await expect(request).toContainText('"configId":"reasoning_effort"');
 		await expect(request).toContainText('"value":"ultra"');
 		await fast.focus();
@@ -36,10 +43,26 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(request).toContainText('"configId":"fast-mode"');
 		await expect(request).toContainText('"value":"on"');
 		await expect(fast).toBeChecked();
-		await expect(reasoning).toHaveText("Ultra");
+		await expect(reasoning).toHaveAttribute("aria-valuetext", "Ultra");
+		await info.attach("model-card", {
+			body: await page.screenshot({
+				path: info.outputPath("model-card.png"),
+			}),
+			contentType: "image/png",
+		});
+		await reasoning.press("Escape");
+		await expect(trigger.locator(".lucide-zap")).toBeVisible();
+		await trigger.hover();
+		await expect(page.getByRole("tooltip")).toContainText(
+			"複雑な作業を必要に応じて、複数のエージェントへ委譲します。",
+		);
 		await page.getByRole("progressbar", { name: "利用枠の残量" }).hover();
-		await expect(page.getByRole("tooltip")).toContainText("5h: 68%");
-		await expect(page.getByRole("tooltip")).toContainText("Weekly: 82%");
+		await expect(
+			page.getByRole("tooltip", { name: /利用枠の残量/ }),
+		).toContainText("5h: 68%");
+		await expect(
+			page.getByRole("tooltip", { name: /利用枠の残量/ }),
+		).toContainText("Weekly: 82%");
 		await info.attach("ultra-fast-quota", {
 			body: await page.screenshot({ fullPage: true }),
 			contentType: "image/png",
@@ -61,20 +84,22 @@ for (const theme of ["dark", "light"] as const) {
 		await page
 			.getByRole("option", { name: "openai-codex", exact: true })
 			.click();
+		await trigger.click();
 		await expect(fast).not.toBeChecked();
+		await reasoning.press("Escape");
+		await page.getByRole("button", { name: "実行状態を切替" }).focus();
 		await page.getByRole("button", { name: "実行状態を切替" }).click();
 		await expect(provider).toBeDisabled();
-		await expect(fast).toBeDisabled();
+		await expect(trigger).toBeDisabled();
 		await page.getByRole("button", { name: "実行状態を切替" }).click();
 		await expect(provider).toBeEnabled();
 		await page.getByRole("button", { name: "切断", exact: true }).click();
 		await expect(provider).toBeDisabled();
 		await page.goto(
-			"/iframe.html?id=chat-pi-provider-controls--no-metadata&viewMode=story",
+			`/iframe.html?id=chat-pi-provider-controls--no-metadata&viewMode=story&globals=theme:${theme === "light" ? "light" : "dark2026"}`,
 		);
-		await expect(
-			page.getByRole("combobox", { name: "Pi Model" }),
-		).toHaveText("Codex Max Model");
+		await expect(trigger).toHaveText("Codex Max Model high");
+		await trigger.click();
 		await expect(fast).toHaveCount(0);
 		expect(
 			await page

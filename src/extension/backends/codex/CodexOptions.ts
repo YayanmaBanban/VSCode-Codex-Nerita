@@ -11,6 +11,7 @@ import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import { type CodexConnection } from "./runtime/connection";
 import {
 	resolveCodexSelection,
+	modelReasoning,
 	type CodexModelSelection,
 } from "./settings/modelSelection";
 
@@ -320,11 +321,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		const previousEffort = this.state.configOptions.find(
 			(item) => item.id === "reasoning_effort",
 		)?.currentValue;
-		// 対応する推論量は引き継ぎ、非対応の値だけ切替先の既定値へ戻す。
-		const effort =
-			model.supportedReasoningEfforts.find(
-				(item) => item.reasoningEffort === previousEffort,
-			)?.reasoningEffort ?? model.defaultReasoningEffort;
+		const effort = modelReasoning(model, previousEffort);
 		this.turnOptions.model = value;
 		this.turnOptions.effort = effort;
 		delete this.turnOptions.serviceTierForTurn;

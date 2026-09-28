@@ -110,7 +110,9 @@ function ProviderControlsStory({
 	};
 	const contributions = registry.resolve(state, {
 		backend: "pi",
-		provider: null,
+		provider:
+			state.configOptions.find((option) => option.id === "provider")
+				?.currentValue ?? null,
 		capabilities: [],
 	});
 	return (

@@ -51,17 +51,56 @@ const configContributions: UiContributionSource = (state, context) => {
 				!options.some((option) => option.id === item.id),
 		),
 	);
-	return options.map((option, order): NeritaUiContribution => ({
+	const visible = usesModelCard()
+		? options.filter(
+				(option) =>
+					option.id !== "reasoning_effort" &&
+					!tiers.includes(option.id),
+			)
+		: options;
+	return visible.map((option, order): NeritaUiContribution => ({
 		id: `config:${option.id}`,
 		slot: "settings.main",
 		order,
 		when: { backend: context.backend },
-		control:
-			context.backend === "codex" && option.id === "mode"
-				? permissionControl(option, state.configOptions)
-				: configControl(option),
+		control: resolveControl(option),
 	}));
+	/** Codex と Pi の OpenAI 設定を同じモデルカードへまとめる。 */
+	function usesModelCard(): boolean {
+		return (
+			context.backend === "codex" ||
+			(["openai", "openai-codex"].includes(context.provider ?? "") &&
+				options.some((option) => option.id === "model") &&
+				options.some((option) => option.id === "reasoning_effort"))
+		);
+	}
+	/** 権限とモデルの複合設定を、それぞれの表示条件で解決する。 */
+	function resolveControl(option: ConfigOption): NeritaUiControl {
+		if (context.backend === "codex" && option.id === "mode") {
+			return permissionControl(option, state.configOptions);
+		}
+		if (usesModelCard() && option.id === "model") {
+			return modelControl(option, options);
+		}
+		return configControl(option);
+	}
 };
+
+/** モデル・推論量・速度設定を1つのカードへまとめる。 */
+function modelControl(
+	model: ConfigOption,
+	options: ConfigOption[],
+): NeritaUiControl {
+	const effort = options.find((option) => option.id === "reasoning_effort")!;
+	const tier = options.find((option) => tiers.includes(option.id));
+	return {
+		type: "slider-card",
+		icon: "model",
+		model,
+		option: effort,
+		fastMode: tier ? fastModeControl(tier) : undefined,
+	};
+}
 
 /** 権限の表示と、書き込み時だけ見せる承認者を解決する。 */
 function permissionControl(

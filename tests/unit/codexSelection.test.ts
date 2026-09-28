@@ -93,6 +93,38 @@ it("モデルとUltraを保存し、独立した起動後の送信に復元す�
 	);
 });
 
+it.each(["max", "high"])(
+	"モデル変更でUltraを対応上限%sへ下げ、保存と送信へ反映する",
+	async (maximum) => {
+		const f = fixture();
+		f.models[1]!.supportedReasoningEfforts = [maximum, "low"].map(
+			(reasoningEffort) => ({
+				reasoningEffort,
+				description: reasoningEffort,
+			}),
+		);
+		const h = await f.create();
+		await configure(h, "reasoning_effort", "ultra");
+		await configure(h, "model", "chosen");
+		expect(f.storage.update).toHaveBeenLastCalledWith({
+			model: "chosen",
+			reasoning: maximum,
+		});
+		await configure(h, "model", "test-model");
+		await configure(h, "reasoning_effort", "low");
+		await configure(h, "model", "chosen");
+		expect(f.storage.update).toHaveBeenLastCalledWith({
+			model: "chosen",
+			reasoning: "low",
+		});
+		await configure(h, "reasoning_effort", maximum);
+		await h.send();
+		expect(h.client.startTurn).toHaveBeenCalledWith(
+			expect.objectContaining({ model: "chosen", effort: maximum }),
+		);
+	},
+);
+
 it.each([
 	{ model: "removed", reasoning: "ultra" },
 	{ model: "test-model", reasoning: "removed" },

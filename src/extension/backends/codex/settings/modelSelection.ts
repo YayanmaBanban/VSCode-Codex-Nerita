@@ -5,6 +5,33 @@ import type { ModelInfo } from "../protocol/account";
 /** 認証情報や会話内容を含まない保存形式。 */
 export type CodexModelSelection = { model: string; reasoning: string };
 
+/** スライダーとモデル切り替えで共通に使う推論量の順序。 */
+export const reasoningLevels = [
+	"low",
+	"medium",
+	"high",
+	"xhigh",
+	"max",
+	"ultra",
+];
+
+/** 対応値を維持し、上限を超える場合だけ切り替え先の最大値へ下げる。 */
+export function modelReasoning(model: ModelInfo, previous = ""): string {
+	const supported = model.supportedReasoningEfforts.map(
+		(item) => item.reasoningEffort,
+	);
+	if (supported.includes(previous)) {
+		return previous;
+	}
+	const maximum = reasoningLevels
+		.filter((level) => supported.includes(level))
+		.at(-1);
+	return maximum &&
+		reasoningLevels.indexOf(previous) > reasoningLevels.indexOf(maximum)
+		? maximum
+		: model.defaultReasoningEffort;
+}
+
 /** VS Code とテストで保存先を差し替える。 */
 export type CodexSelectionStore = {
 	read():
