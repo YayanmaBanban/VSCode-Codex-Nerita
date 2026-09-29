@@ -1,0 +1,34 @@
+/* 本文の高さへ追従し、途中で開閉を切り替えても現在位置から遷移する。 */
+.combo-list-collapse {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		grid-template-rows 220ms ease-out,
+		opacity 220ms ease-out,
+		visibility 0s 220ms;
+}
+
+.combo-list-card[data-open="true"] > .combo-list-collapse {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	visibility: visible;
+	transition-delay: 0s;
+}
+
+.combo-list-chevron {
+	transform: rotate(0deg);
+	transition: transform 220ms ease-out;
+}
+
+.combo-list-card[data-open="true"] .combo-list-chevron {
+	transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.combo-list-collapse,
+	.combo-list-chevron {
+		transition: none;
+	}
+}

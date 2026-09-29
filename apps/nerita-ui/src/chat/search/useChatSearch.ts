@@ -137,8 +137,17 @@ export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 				});
 			}
 		};
-		update(true);
 		let timer: ReturnType<typeof setTimeout> | undefined;
+		if (query) {
+			// 入力中の本文走査を避け、最後の条件変更から250ミリ秒後に検索する。
+			setResult({ count: 0, index: 0, limited: false, error: "" });
+			timer = setTimeout(() => {
+				timer = undefined;
+				update(true);
+			}, 250);
+		} else {
+			update(true);
+		}
 		const observer = new MutationObserver(() => {
 			// 逐次出力が続いても、一定間隔で検索結果を更新する。
 			if (timer !== undefined) {

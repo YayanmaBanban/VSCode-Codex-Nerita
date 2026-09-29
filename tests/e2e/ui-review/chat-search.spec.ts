@@ -129,6 +129,48 @@ for (const colorScheme of ["dark", "light"] as const) {
 	});
 }
 
+test("連続入力の検索をまとめ、クリアと終了で予約を取り消す", async ({
+	page,
+}) => {
+	await page.goto("/iframe.html?id=chat-search--ready&viewMode=story");
+	await page
+		.getByRole("textbox", { name: "Codexへのメッセージ" })
+		.press("Control+f");
+	const input = page.getByRole("textbox", { name: "会話を検索" });
+	const count = page.getByLabel("検索結果");
+	await expect(input).toBeFocused();
+	await page.clock.install();
+	await page.clock.pauseAt(new Date());
+	await input.fill("pow");
+	await page.clock.runFor(200);
+	await input.fill("power");
+	await page.clock.runFor(200);
+	await expect(count).toHaveText("0/0");
+	expect(
+		await page.evaluate(() => CSS.highlights.has("chat-find-matches")),
+	).toBe(false);
+	await page.clock.runFor(100);
+	await expect(count).toHaveText("1/8");
+	await input.fill("");
+	await expect(count).toHaveText("0/0");
+	await input.fill("power");
+	await page.clock.runFor(200);
+	await input.fill("");
+	await page.clock.runFor(300);
+	await expect(count).toHaveText("0/0");
+	expect(
+		await page.evaluate(
+			() => CSS.highlights.get("chat-find-matches")?.size,
+		),
+	).toBe(0);
+	await input.fill("power");
+	await input.press("Escape");
+	await page.clock.runFor(300);
+	expect(
+		await page.evaluate(() => CSS.highlights.has("chat-find-matches")),
+	).toBe(false);
+});
+
 test("検索中の追加メッセージと再表示・F3での一致移動", async ({ page }) => {
 	await page.goto("/iframe.html?id=chat-search--ready&viewMode=story");
 	const composer = page.getByRole("textbox", { name: "Codexへのメッセージ" });

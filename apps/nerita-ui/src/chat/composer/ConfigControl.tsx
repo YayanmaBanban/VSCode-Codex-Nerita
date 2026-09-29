@@ -38,7 +38,10 @@ export function ConfigControl({
 					<SettingsTooltip content={controlTooltip(option, icon)}>
 						<Select.Trigger
 							className={cn(
-								"config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] border-0 bg-transparent px-[5px] py-[6px] [&_svg]:shrink-0",
+								"config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] [&_svg]:shrink-0",
+								icon
+									? "border border-solid border-input-border bg-input px-[4px] py-[5px]"
+									: "border-0 bg-transparent px-[5px] py-[6px]",
 								"text-[12px] text-ellipsis text-inherit enabled:hover:bg-settings-hover",
 								"focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-settings-focus focus-visible:outline-offset-1",
 							)}

@@ -1,6 +1,4 @@
-// Lightswind の境界線演出。Webview 用の Motion と型付きスタイルで描画する。
-"use client";
-
+// BorderBeam
 import { cn } from "cnfast";
 import { motion, type Transition, type MotionStyle } from "motion/react";
 

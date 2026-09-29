@@ -30,7 +30,7 @@ export function FastModeButton({
 				aria-label="ファストモード"
 				aria-checked={control.checked}
 				disabled={disabled || control.disabled}
-				className="inline-flex size-[28px] items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-muted enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-settings-focus disabled:opacity-50"
+				className="inline-flex size-[28px] items-center justify-center rounded-[5px] border border-solid border-input-border bg-input p-0 text-muted enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-settings-focus disabled:opacity-50"
 				onClick={() =>
 					onChange(
 						control.configId,

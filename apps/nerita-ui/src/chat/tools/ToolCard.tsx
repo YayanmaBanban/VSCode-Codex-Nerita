@@ -13,8 +13,14 @@ import type { ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { taskActive, type AsyncTask } from "@nerita/shared/asyncTask";
 import "../loaders.css";
-import type { ActivityToolProps } from "./ActivityToolContent";
+import {
+	ThinkTool,
+	ImageViewTool,
+	WebSearchTool,
+	type ActivityToolProps,
+} from "./ActivityToolContent";
 import { toolRenderer } from "./toolRenderers";
+import { ComboListCard } from "./ComboListCard";
 
 /** 開閉状態と直前の実行状態を保持する。 */
 type CardState = { status: ToolSummary["status"]; open: boolean };
@@ -35,20 +41,24 @@ export function ToolCard({
 } & Pick<ActivityToolProps, "send" | "cwd">) {
 	const bodyId = useId();
 	const status = cardStatus(tool, task);
-	const [state, setState] = useState({
-		status,
-		open: status !== "completed",
-	});
-	if (state.status !== status) {
-		setState({
-			status,
-			open: status === "completed" ? false : state.open,
-		});
-	}
+	const [state, setState] = useCardState(status);
 	const executing = tool.kind === "execute";
 	const { cwd, command } = toolCommandDetails(tool);
 	const active = cardActive(status);
 	const { Icon, Body } = toolRenderer(tool);
+	if (usesComboList(tool, Body)) {
+		return (
+			<ComboListCard
+				tool={{ ...tool, status }}
+				icon={Icon}
+				open={state.open}
+				bodyId={bodyId}
+				onToggle={() => setState({ status, open: !state.open })}
+			>
+				<Body tool={tool} send={send} cwd={workspaceCwd} />
+			</ComboListCard>
+		);
+	}
 	const Heading = Body ? "button" : "div";
 	return (
 		<div
@@ -94,6 +104,34 @@ export function ToolCard({
 			{Body &&
 				renderToolBody(bodyId, state, Body, tool, send, workspaceCwd)}
 		</div>
+	);
+}
+
+/** 完了への状態遷移で一度だけ閉じ、手動の開閉状態を保持する。 */
+function useCardState(status: ToolSummary["status"]) {
+	const [state, setState] = useState({
+		status,
+		open: status !== "completed",
+	});
+	if (state.status !== status) {
+		setState({ status, open: status === "completed" ? false : state.open });
+	}
+	return [state, setState] as const;
+}
+
+/** 通常の推論・画像参照・ウェブ検索を縦線付きの開閉表示にまとめる。 */
+function usesComboList(
+	tool: ToolSummary,
+	body: ReturnType<typeof toolRenderer>["Body"],
+): body is NonNullable<ReturnType<typeof toolRenderer>["Body"]> {
+	if (body === ImageViewTool || body === WebSearchTool) {
+		return true;
+	}
+	return (
+		body === ThinkTool &&
+		![tool.rawInput, tool.rawOutput].some(
+			(value) => isRecord(value) && isRecord(value.review),
+		)
 	);
 }
 
@@ -172,6 +210,7 @@ function renderToolHeading(
 			className={cn(
 				"tool-heading group flex w-full min-w-0 items-center gap-[8px] p-[10px] [&_svg]:shrink-0",
 				"rounded-none border-0 bg-transparent text-left focus-visible:outline-offset-[-3px]",
+				"hover:bg-menu-hover data-highlighted:bg-menu-hover",
 			)}
 			aria-expanded={Body ? state.open : undefined}
 			aria-controls={Body ? bodyId : undefined}

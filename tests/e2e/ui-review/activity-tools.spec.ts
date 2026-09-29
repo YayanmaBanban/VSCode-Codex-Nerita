@@ -15,12 +15,66 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.emulateMedia({ colorScheme });
 		await page.setViewportSize({ width: 320, height: 900 });
 		await page.goto(
-			"/iframe.html?id=chat-activity-tools--all&viewMode=story",
+			`/iframe.html?id=chat-activity-tools--all&viewMode=story&globals=theme:${colorScheme === "light" ? "light" : "dark2026"}`,
 		);
 		await expect(page.locator(".message-markdown strong")).toHaveText([
 			"Implementing file move mapping",
 			"Moving files with mappings",
 		]);
+		const think = page.locator('.combo-list-card[data-kind="think"]');
+		const heading = think.getByRole("button");
+		const collapse = think.locator(".combo-list-collapse");
+		await heading.click();
+		await expect(heading).toHaveAttribute("aria-expanded", "false");
+		await expect(collapse).toHaveCSS("visibility", "hidden");
+		await heading.press("Enter");
+		await expect(heading).toHaveAttribute("aria-expanded", "true");
+		await think.evaluate((element) => {
+			for (const animation of element.getAnimations({ subtree: true })) {
+				animation.pause();
+				animation.currentTime = 0;
+			}
+		});
+		for (const time of [0, 50, 110, 180, 220]) {
+			await think.evaluate((element, time) => {
+				for (const animation of element.getAnimations({
+					subtree: true,
+				})) {
+					animation.currentTime = time;
+				}
+			}, time);
+			await page.screenshot({
+				path: info.outputPath(`think-opening-${time}.png`),
+			});
+		}
+		await expect(collapse).toHaveCSS("opacity", "1");
+		for (const title of [
+			"画像を確認",
+			"Web検索（検索語）",
+			"Web検索（URL）",
+			"Web検索（正規化後）",
+		]) {
+			const card = page
+				.locator(".combo-list-card")
+				.filter({
+					has: page.getByRole("button", {
+						name: `${title} 実行中`,
+						exact: true,
+					}),
+				});
+			const toggle = card.getByRole("button");
+			await toggle.click();
+			await expect(toggle).toHaveAttribute("aria-expanded", "false");
+			await expect(card.getByRole("link").first()).not.toBeVisible();
+			await toggle.press("Enter");
+			await expect(toggle).toHaveAttribute("aria-expanded", "true");
+			await expect(card.getByRole("link").first()).toBeVisible();
+		}
+		await page.emulateMedia({ reducedMotion: "reduce" });
+		await heading.click();
+		await expect(collapse).toHaveCSS("visibility", "hidden");
+		await heading.press("Space");
+		await expect(collapse).toHaveCSS("opacity", "1");
 		for (const icon of ["image", "plug-zap", "shelving-unit"]) {
 			await expect(page.locator(`.lucide-${icon}`)).toHaveCount(1);
 		}

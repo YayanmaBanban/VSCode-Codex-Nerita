@@ -137,9 +137,6 @@ importers:
       lexical:
         specifier: ^0.50.0
         version: 0.50.0(typescript@6.0.3)
-      lightswind:
-        specifier: ^3.2.5
-        version: 3.2.5(class-variance-authority@0.7.1)(clsx@2.1.1)(framer-motion@13.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(gsap@3.15.0)(lucide-react@1.45.0(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tailwind-merge@3.7.0)
       lucide-react:
         specifier: ^1.45.0
         version: 1.45.0(react@19.3.0)
@@ -3129,10 +3126,6 @@ packages:
       react-dom:
         optional: true
 
-  fs-extra@11.4.0:
-    resolution: {integrity: sha512-EQsFzMUJkCKGr1ePqlYADkIUmHW1s3ZXr5Yqy6wbGrfUCphpl2maM/kyOIRA2HpP3AaFQTZXD4ldjek+nccddA==}
-    engines: {node: '>=14.14'}
-
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -3851,41 +3844,6 @@ packages:
   lightningcss@1.33.0:
     resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
     engines: {node: '>= 12.0.0'}
-
-  lightswind@3.2.5:
-    resolution: {integrity: sha512-APvRXg4zrHYprp0tPMYv8ufUPF77PjL73fFIIwTFn9gleCZSxTTcODHG9JtyXedGCBkFhQvDIzBtOX0JvtpenA==}
-    hasBin: true
-    peerDependencies:
-      '@ai-sdk/openai': ^0.0.1 || ^1.0.0
-      ai: ^3.0.0 || ^4.0.0
-      class-variance-authority: ^0.7.0
-      clsx: ^2.1.1
-      framer-motion: ^10.0.0 || ^11.0.0 || ^12.0.0
-      gsap: ^3.0.0
-      lucide-react: ^0.400.0 || ^1.0.0
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-      tailwind-merge: ^2.6.1
-      three: ^0.150.0 || ^0.160.0 || ^0.170.0 || ^0.180.0
-    peerDependenciesMeta:
-      '@ai-sdk/openai':
-        optional: true
-      ai:
-        optional: true
-      class-variance-authority:
-        optional: true
-      clsx:
-        optional: true
-      framer-motion:
-        optional: true
-      gsap:
-        optional: true
-      lucide-react:
-        optional: true
-      tailwind-merge:
-        optional: true
-      three:
-        optional: true
 
   load-json-file@4.0.0:
     resolution: {integrity: sha512-Kx8hMakjX03tiGTLAIdJ+lL0htKnXjEZN6hk/tozf/WOuYGdZBJrZ+rCJRbVCugsjB3jMLn9746NsQIf5VjBMw==}
@@ -8682,12 +8640,6 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  fs-extra@11.4.0:
-    dependencies:
-      graceful-fs: 4.2.11
-      jsonfile: 6.2.1
-      universalify: 2.0.1
-
   fsevents@2.3.3:
     optional: true
 
@@ -9386,19 +9338,6 @@ snapshots:
       lightningcss-linux-x64-musl: 1.33.0
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
-
-  lightswind@3.2.5(class-variance-authority@0.7.1)(clsx@2.1.1)(framer-motion@13.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(gsap@3.15.0)(lucide-react@1.45.0(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tailwind-merge@3.7.0):
-    dependencies:
-      fs-extra: 11.4.0
-      react: 19.3.0
-      react-dom: 19.3.0(react@19.3.0)
-    optionalDependencies:
-      class-variance-authority: 0.7.1
-      clsx: 2.1.1
-      framer-motion: 13.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      gsap: 3.15.0
-      lucide-react: 1.45.0(react@19.3.0)
-      tailwind-merge: 3.7.0
 
   load-json-file@4.0.0:
     dependencies:
