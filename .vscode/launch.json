@@ -13,6 +13,9 @@
 				"--skip-release-notes",
 				"--extensionDevelopmentPath=${workspaceFolder}/apps/vscode-nerita",
 				"${workspaceFolder}/.vscode/development.code-workspace",
+				// 旧拡張とコマンド・ビューの ID が重複するため、開発用 Host では無効にする。
+				"--disable-extension",
+				"nerita-local.nerita-codex",
 				"--disable-extension",
 				"jgclark.vscode-todo-highlight",
 				"--disable-extension",
