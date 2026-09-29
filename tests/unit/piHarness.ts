@@ -6,7 +6,7 @@ import type {
 	PiSession,
 	PiFactory,
 } from "../../src/extension/backends/pi/PiRuntime";
-import type { HostMessage } from "../../src/shared/messages";
+import type { HostMessage } from "@nerita/shared/messages";
 
 /** 任意のタイミングで終了する SDK 送信を作る。 */
 export function pending<T>() {

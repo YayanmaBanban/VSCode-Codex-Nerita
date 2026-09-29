@@ -3,7 +3,7 @@ import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import type { ConfigOption } from "../../../shared/composer";
+import type { ConfigOption } from "@nerita/shared/composer";
 import type { PiProviderControls } from "./PiProviderControls";
 import type { PiModelCatalogService } from "./PiModelCatalogService";
 

@@ -1,0 +1,12 @@
+/* 検索の選択状態と、DOMを変更しない一致ハイライトにテーマ色を適用する。 */
+.chat-search-button[aria-pressed="true"] {
+	background: var(--nerita-input-option-active-background);
+	border-color: var(--nerita-input-option-active-border);
+}
+::highlight(chat-find-matches) {
+	background-color: var(--nerita-editor-find-match-highlight-background);
+}
+::highlight(chat-find-current) {
+	background-color: var(--nerita-editor-find-match-background);
+	color: var(--nerita-editor-find-match-foreground);
+}

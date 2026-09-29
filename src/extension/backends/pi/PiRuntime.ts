@@ -9,7 +9,7 @@ import {
 	restrictPiStorage,
 } from "./PiTrustAdapter";
 import { preparePiWebTrust, type PiWebTrust } from "./PiWebTrust";
-import type { WorkflowExecution } from "../../../shared/workflows/messages";
+import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type {
@@ -43,7 +43,7 @@ import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
 import { PiQuotaService } from "./PiQuotaService";
 import { PiModelCatalogService } from "./PiModelCatalogService";
-import type { SkillSummary } from "../../../shared/skills";
+import type { SkillSummary } from "@nerita/shared/skills";
 import {
 	openPiSessionStore,
 	type PiHistoryAccess,

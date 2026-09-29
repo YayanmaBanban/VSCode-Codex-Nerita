@@ -9,10 +9,10 @@ vi.mock("vscode", () => ({
 	workspace: { getWorkspaceFolder: api.getWorkspaceFolder },
 }));
 import { searchWorkspaceSymbols } from "../../src/extension/webview/workspaceSymbols";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import { pathText, validReferences } from "../../src/shared/composerReferences";
-import { isSourceRange } from "../../src/shared/symbolLocation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import { pathText, validReferences } from "@nerita/shared/composerReferences";
+import { isSourceRange } from "@nerita/shared/symbolLocation";
 const request = {
 	type: "workspace/searchSymbols" as const,
 	requestId: "symbols",

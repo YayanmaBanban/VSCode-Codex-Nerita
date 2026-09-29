@@ -1,12 +1,12 @@
 // グラフ編集で参照を失わず、循環や危険な削除を拒否することを確認する。
 import { expect, it } from "vitest";
-import { validateWorkflow } from "../../src/shared/workflows/definition";
+import { validateWorkflow } from "@nerita/shared/workflows/definition";
 import {
 	connectSteps,
 	removeStep,
 	renameStep,
-} from "../../src/webview/pi/workflows/workflowModel";
-import { workflowRequestSchema } from "../../src/shared/workflows/messages";
+} from "../../apps/nerita-ui/src/pi/workflows/workflowModel";
+import { workflowRequestSchema } from "@nerita/shared/workflows/messages";
 
 /** 継続と結果参照を含む最小の定義。 */
 function fixture() {

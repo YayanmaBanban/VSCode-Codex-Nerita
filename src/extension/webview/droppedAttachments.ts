@@ -7,8 +7,8 @@ import { createHash, randomUUID } from "node:crypto";
 import {
 	validDroppedAttachments,
 	type DroppedAttachment,
-} from "../../shared/attachmentDrop";
-import type { Attachment } from "../../shared/composer";
+} from "@nerita/shared/attachmentDrop";
+import type { Attachment } from "@nerita/shared/composer";
 import { readAttachments } from "../session/readAttachments";
 
 let directory: Promise<string> | undefined;

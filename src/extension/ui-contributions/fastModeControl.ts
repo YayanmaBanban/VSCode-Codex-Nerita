@@ -1,6 +1,6 @@
 // Host で速度設定を汎用の `toggle` 宣言へ変換する。
-import type { ConfigOption } from "../../shared/composer";
-import type { NeritaUiControl } from "../../shared/uiContributions";
+import type { ConfigOption } from "@nerita/shared/composer";
+import type { NeritaUiControl } from "@nerita/shared/uiContributions";
 
 /** サーバーが公開する速度設定の別名。 */
 export const fastModeConfigIds: readonly string[] = [

@@ -1,8 +1,8 @@
 // `prompt` の受付と実行を分け、開始直前の `Stop`・旧接続の完了を安全に扱う。
 import { realpath } from "node:fs/promises";
-import type { WorkflowExecution } from "../../../shared/workflows/messages";
+import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
 import { randomUUID } from "node:crypto";
-import type { UiMessage } from "../../../shared/messages";
+import type { UiMessage } from "@nerita/shared/messages";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { PiLifecycle } from "./PiLifecycle";
 import { PiEventMapper } from "./PiEventMapper";

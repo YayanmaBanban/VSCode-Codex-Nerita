@@ -1,5 +1,5 @@
 // 実 SDK のスキーマを使い、公開可否・毎回承認・拒否・停止をシェル別に確認する。
-import type { PermissionPresentation } from "../../src/shared/permission";
+import type { PermissionPresentation } from "@nerita/shared/permission";
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { mkdir, writeFile } from "node:fs/promises";

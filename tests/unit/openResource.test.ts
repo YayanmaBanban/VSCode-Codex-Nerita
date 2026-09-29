@@ -34,7 +34,7 @@ vi.mock("vscode", () => ({
 }));
 import { openResource } from "../../src/extension/webview/openResource";
 import { attachmentService } from "../../src/extension/webview/attachments";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 
 beforeEach(() => {
 	vi.clearAllMocks();

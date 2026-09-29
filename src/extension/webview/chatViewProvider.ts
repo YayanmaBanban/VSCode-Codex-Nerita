@@ -1,13 +1,13 @@
 // サイドバーの Webview を生成し、通信と購読の寿命を管理する。
-import type { ComposerPart } from "../../shared/composerContent";
+import type { ComposerPart } from "@nerita/shared/composerContent";
 import * as vscode from "vscode";
 import { webviewHtml } from "./webviewHtml";
 import { bindWebview } from "./webviewBinding";
 import type { ChatSession } from "../session/chatSession";
-import type { HostMessage, UiMessage } from "../../shared/messages";
-import { isHostMessage } from "../../shared/hostMessageValidation";
-import { isRecord } from "../../shared/validation";
-import { isUiMessage } from "../../shared/uiMessageValidation";
+import type { HostMessage, UiMessage } from "@nerita/shared/messages";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
+import { isRecord } from "@nerita/shared/validation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { listWorkspacePaths } from "./workspacePaths";
 import { resolvePath } from "./resolvePath";
 import { CopiedCode } from "./copiedCode";
@@ -19,7 +19,7 @@ import {
 	saveSidebar,
 	sidebarLocation,
 } from "./sidebarLocation";
-import { type SidebarLocation } from "@/shared/sidebar";
+import { type SidebarLocation } from "@nerita/shared/sidebar";
 
 /** UI を閉じても会話を保持し、再表示時の ready で状態を復元する。 */
 export class ChatViewProvider

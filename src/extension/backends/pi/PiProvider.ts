@@ -7,8 +7,8 @@ import type {
 	ConfigChoice,
 	ConfigOption,
 	QuotaWindow,
-} from "../../../shared/composer";
-import type { PiProviderControls } from "../../../shared/piProviderControls";
+} from "@nerita/shared/composer";
+import type { PiProviderControls } from "@nerita/shared/piProviderControls";
 import type { PiCatalogSnapshot, PiModelCatalogReader } from "./PiModelCatalog";
 
 /** プロバイダー固有の設定・候補・要求変換をひとまとまりで扱う。 */

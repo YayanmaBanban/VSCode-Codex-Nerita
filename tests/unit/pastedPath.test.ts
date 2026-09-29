@@ -1,7 +1,7 @@
 // 行番号形式の変換と、送信・復元時の範囲保持を確認する。
 import { expect, it } from "vitest";
-import { parsePastedPath } from "../../src/shared/pastedPath";
-import { pathText, validReferences } from "../../src/shared/composerReferences";
+import { parsePastedPath } from "@nerita/shared/pastedPath";
+import { pathText, validReferences } from "@nerita/shared/composerReferences";
 
 it.each([
 	["D:/test.ts:20:1", 19, 0, 19, 0],

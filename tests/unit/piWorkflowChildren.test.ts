@@ -1,7 +1,7 @@
 // 保持した SDK の再利用、完了時の Fork、取消し後の回収を検証する。
 import { expect, it, vi } from "vitest";
 import { PiWorkflowChildren } from "../../src/extension/backends/pi/workflows/PiWorkflowChildren";
-import { parseWorkflow } from "../../src/shared/workflows/definition";
+import { parseWorkflow } from "@nerita/shared/workflows/definition";
 import { PiAgentViews } from "../../src/extension/backends/pi/PiAgentViews";
 import { PiJobs } from "../../src/extension/backends/pi/PiJobs";
 import type {

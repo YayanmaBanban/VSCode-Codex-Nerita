@@ -2,7 +2,7 @@
 import { fileURLToPath } from "node:url";
 import { extname } from "node:path";
 import { open } from "node:fs/promises";
-import type { Attachment } from "../../shared/composer";
+import type { Attachment } from "@nerita/shared/composer";
 
 /** バックエンド別のプロトコル変換前の添付内容。 */
 export type AttachmentContent =

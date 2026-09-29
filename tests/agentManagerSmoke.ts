@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { readPiAgents } from "../src/extension/agentManager/PiAgentSettings";
 import { AgentManagerStore } from "../src/extension/agentManager/AgentManagerStore";
 import { readWorkspaceFile } from "../src/extension/agentManager/WorkspaceFiles";
-import { defaultHandoff } from "../src/shared/agentManager/config";
+import { defaultHandoff } from "@nerita/shared/agentManager/config";
 import { agentModelReader } from "../src/extension/agentManager/AgentModelCatalog";
 
 /** Pi の設定保存は、実効モデルを再計算せず定義本文を保持する。 */

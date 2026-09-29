@@ -4,7 +4,7 @@ import {
 	findMatches,
 	searchPattern,
 	type FindOptions,
-} from "../../src/webview/chat/search/findMatches";
+} from "../../apps/nerita-ui/src/chat/search/findMatches";
 
 /** 検索設定を部分指定して、文字列を検索する。 */
 function matches(

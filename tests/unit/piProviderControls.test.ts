@@ -6,9 +6,9 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { PiProviderControls } from "../../src/extension/backends/pi/PiProviderControls";
 import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
-import { isPiProviderControls } from "../../src/shared/piProviderControls";
+import { isPiProviderControls } from "@nerita/shared/piProviderControls";
 import { createBuiltinUiRegistry } from "../../src/extension/ui-contributions/builtinContributions";
-import { initialState } from "../../src/shared/chatState";
+import { initialState } from "@nerita/shared/chatState";
 import { piHarness } from "./piHarness";
 import { piLiveCatalog } from "../fixtures/piLiveCatalog";
 

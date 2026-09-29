@@ -1,7 +1,7 @@
 // 検証済み Webview メッセージを Pi の最小機能へ接続する。
 import type { BackendSession } from "../../session/chatSession";
-import { isUiMessage } from "../../../shared/uiMessageValidation";
-import type { UiMessage } from "../../../shared/messages";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import type { UiMessage } from "@nerita/shared/messages";
 import { PiHistory } from "./PiHistory";
 import { piReferenceAction } from "./PiReferenceActions";
 

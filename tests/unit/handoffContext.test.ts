@@ -9,11 +9,11 @@ import {
 	handoffEntries,
 	piSessionContext,
 } from "../../src/extension/backends/pi/PiSessionContext";
-import { defaultHandoff } from "../../src/shared/agentManager/config";
+import { defaultHandoff } from "@nerita/shared/agentManager/config";
 import {
 	isSessionReference,
 	validSessionReferences,
-} from "../../src/shared/sessionReferences";
+} from "@nerita/shared/sessionReferences";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 
 const read = vi.hoisted(() => vi.fn<() => Promise<string | undefined>>());

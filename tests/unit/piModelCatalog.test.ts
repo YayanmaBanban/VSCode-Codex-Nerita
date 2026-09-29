@@ -4,7 +4,7 @@ import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/Code
 import { catalogHarness, liveModel } from "./piCatalogHarness";
 import { pending, piHarness } from "./piHarness";
 import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
-import { validComposerField } from "../../src/shared/composerValidation";
+import { validComposerField } from "@nerita/shared/composerValidation";
 import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
 
 describe("Pi live model catalog", () => {

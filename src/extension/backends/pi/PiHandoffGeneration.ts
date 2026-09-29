@@ -1,7 +1,7 @@
 // 現在の認証とモデル一覧を利用し、会話やツールを作らず要約だけを生成する。
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { HandoffRequest } from "../../session/HandoffContext";
-import { isRecord } from "../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 /** 選択されたモデルへ推論指定と取消を渡し、異常終了を要約として採用しない。 */
 export async function generatePiHandoff(

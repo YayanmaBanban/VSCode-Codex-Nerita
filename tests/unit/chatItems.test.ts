@@ -1,6 +1,6 @@
 // 項目完了と未知のツールデータを、表示への変換で失わないことを確認する。
 import { expect, it } from "vitest";
-import { initialState } from "../../src/shared/chatState";
+import { initialState } from "@nerita/shared/chatState";
 import {
 	itemPatch,
 	messagePatch,

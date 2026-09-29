@@ -3,10 +3,10 @@ import type {
 	SessionEntry,
 	SessionManager,
 } from "@earendil-works/pi-coding-agent";
-import type { ChatMessage, ToolSummary } from "../../../shared/chatState";
-import { isSubAgent, type SubAgentSummary } from "../../../shared/subAgents";
-import { validStateField } from "../../../shared/stateFieldValidation";
-import { isRecord } from "../../../shared/validation";
+import type { ChatMessage, ToolSummary } from "@nerita/shared/chatState";
+import { isSubAgent, type SubAgentSummary } from "@nerita/shared/subAgents";
+import { validStateField } from "@nerita/shared/stateFieldValidation";
+import { isRecord } from "@nerita/shared/validation";
 import { isAbsolute } from "node:path";
 
 const customType = "nerita.subagent.v1";

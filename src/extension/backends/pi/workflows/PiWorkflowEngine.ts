@@ -3,7 +3,7 @@ import { readFile, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { containsPath } from "../../../security/AgentAccessPolicy";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 /** Worker へ返す値はサイズを制限した JSON のみとする。 */
 export type WorkflowResult = {

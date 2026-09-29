@@ -1,7 +1,7 @@
 // App Server の項目 ID を使い、本文とツールの順序・次の送信での履歴保持を検証する。
 import { expect, it } from "vitest";
 import { codexHarness } from "./codexHarness";
-import type { HostMessage } from "../../src/shared/messages";
+import type { HostMessage } from "@nerita/shared/messages";
 
 it("本文をツール前後で分け、次の送信でも履歴を保持する", async () => {
 	const h = codexHarness();

@@ -8,7 +8,7 @@ import {
 	type PiRuntimeSession,
 } from "./piTrustedRuntime";
 import { guardrailRegistry } from "../src/extension/security/GuardrailRegistry";
-import { defaultGuardrails } from "../src/shared/guardrails/config";
+import { defaultGuardrails } from "@nerita/shared/guardrails/config";
 import type { PiAuthorize } from "../src/extension/backends/pi/PiApprovedTools";
 import { guardrailsFixture } from "./piGuardrailsFixture";
 

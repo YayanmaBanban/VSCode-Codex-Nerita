@@ -10,7 +10,7 @@ import {
 	type PiRuntimeOptions,
 } from "./piTrustedRuntime";
 import { guardrailsFixture } from "./piGuardrailsFixture";
-import type { PermissionPresentation } from "../src/shared/permission";
+import type { PermissionPresentation } from "@nerita/shared/permission";
 import { piAgentPersistenceSmoke } from "./piAgentPersistenceSmoke";
 
 /** 独立 CLI を使わず、起動と子の変更を別々に承認する。 */

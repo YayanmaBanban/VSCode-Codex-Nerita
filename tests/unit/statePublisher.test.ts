@@ -1,13 +1,13 @@
 // 出力集約の順序、差分復元、緊急通知と破棄を検証する。
 import { afterEach, expect, test, vi } from "vitest";
 import { StatePublisher } from "../../src/extension/session/statePublisher";
-import { initialState, type ToolSummary } from "../../src/shared/chatState";
-import type { HostMessage } from "../../src/shared/messages";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { initialState, type ToolSummary } from "@nerita/shared/chatState";
+import type { HostMessage } from "@nerita/shared/messages";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import {
 	applyToolUpdates,
 	applyStatePatch,
-} from "../../src/shared/toolUpdates";
+} from "@nerita/shared/toolUpdates";
 
 afterEach(() => vi.useRealTimers());
 

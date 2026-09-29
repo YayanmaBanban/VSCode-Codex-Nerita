@@ -1,5 +1,5 @@
 // 検証済み添付を App Server の画像・テキスト入力へ変換する。
-import type { Attachment } from "../../../../shared/composer";
+import type { Attachment } from "@nerita/shared/composer";
 import type { UserInput } from "../codex-app-server/v2/UserInput";
 import { readAttachments } from "../../../session/readAttachments";
 

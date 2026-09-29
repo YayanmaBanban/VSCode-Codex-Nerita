@@ -1,8 +1,8 @@
 // Codex 専用の Ultra・Fast `Mode` と UI 候補を保持し、Codex の `Responses` 要求へ適用する。
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
-import type { PiProviderControls as ControlsState } from "../../../../shared/piProviderControls";
-import type { ConfigChoice, ConfigOption } from "../../../../shared/composer";
-import { isRecord } from "../../../../shared/validation";
+import type { PiProviderControls as ControlsState } from "@nerita/shared/piProviderControls";
+import type { ConfigChoice, ConfigOption } from "@nerita/shared/composer";
+import { isRecord } from "@nerita/shared/validation";
 import type { PiModelControls } from "../PiProvider";
 import type { PiCatalogSnapshot } from "../PiModelCatalog";
 import { CodexReasoningOverride } from "./CodexReasoningOverride";

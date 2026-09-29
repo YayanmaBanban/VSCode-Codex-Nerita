@@ -1,13 +1,13 @@
 // 文書更新を直列化し、パネルごとの実行・停止・破棄を管理する。
 import * as vscode from "vscode";
 import type { BackendSession } from "../../../session/chatSession";
-import { parseWorkflow } from "../../../../shared/workflows/definition";
-import { compileWorkflow } from "../../../../shared/workflows/compiler";
+import { parseWorkflow } from "@nerita/shared/workflows/definition";
+import { compileWorkflow } from "@nerita/shared/workflows/compiler";
 import {
 	workflowRequestSchema,
 	type WorkflowRequest,
 	type WorkflowReply,
-} from "../../../../shared/workflows/messages";
+} from "@nerita/shared/workflows/messages";
 import { workflowDocument } from "./WorkflowDocument";
 /** 版を照合して直列更新し、長い実行でも停止要求を先に処理する。 */
 export class WorkflowPanel {

@@ -1,0 +1,24 @@
+// 思考中の光沢付き文言と、筆記する猫を横並びに表示する。
+import { useReducedMotion } from "motion/react";
+import { ShinyText } from "../ui/ShinyText";
+import { RunStatusIcon } from "./RunStatusIcon";
+
+/** 状態名を読み上げ、装飾の動きは OS の設定に合わせる。 */
+export function ThinkingIndicator() {
+	const reducedMotion = useReducedMotion();
+	return (
+		<div
+			className="my-2 flex items-center gap-1 text-[12px] text-muted"
+			role="status"
+			aria-label="思考中..."
+		>
+			<ShinyText
+				text="思考中..."
+				disabled={reducedMotion === true}
+				color="var(--nerita-description-foreground)"
+				shineColor="var(--nerita-foreground)"
+			/>
+			<RunStatusIcon kind="writing" />
+		</div>
+	);
+}

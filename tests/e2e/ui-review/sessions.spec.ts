@@ -1,6 +1,6 @@
 // 履歴ペインの取得表示・各操作・明暗テーマと狭い幅を実画面で確認する。
 import { expectSent, showState } from "../storyBridge";
-import { sessionRows } from "../../../src/stories/chat/fixtures/sessions";
+import { sessionRows } from "../../../apps/nerita-ui/stories/chat/fixtures/sessions";
 import { expect, test, type Page } from "@playwright/test";
 const errors = new Map<Page, string[]>();
 test.beforeEach(({ page }) => {

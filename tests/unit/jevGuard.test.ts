@@ -12,7 +12,7 @@ import {
 	type ToolCall,
 } from "../../src/extension/security/ApprovedToolCall";
 import { guardrailRegistry } from "../../src/extension/security/GuardrailRegistry";
-import { defaultGuardrails } from "../../src/shared/guardrails/config";
+import { defaultGuardrails } from "@nerita/shared/guardrails/config";
 import { sandboxFixture } from "./sandboxFixtures";
 
 let fixture: Awaited<ReturnType<typeof sandboxFixture>>;

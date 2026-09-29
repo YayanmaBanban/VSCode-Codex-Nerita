@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { win32 } from "node:path";
-import type { WorkspacePath } from "../../shared/workspacePaths";
+import type { WorkspacePath } from "@nerita/shared/workspacePaths";
 
 /** クリップボードの改行差だけを吸収し、本文自体は保持しない。 */
 function fingerprint(text: string): string {

@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 import {
 	codexConnectionText,
 	codexAuthMethods,
-} from "../../../src/shared/codexConnection";
+} from "@nerita/shared/codexConnection";
 
 for (const colorScheme of ["dark", "light"] as const) {
 	test(`ログアウト・改行・Ctrl+Enter: ${colorScheme}`, async ({

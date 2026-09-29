@@ -1,0 +1,180 @@
+// 1つのセッションの概要と独立した操作ボタンを表示する。
+import { cn } from "cnfast";
+import { SettingsTooltip } from "../SettingsTooltip";
+import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
+import { type SetStateAction, type Dispatch, useState } from "react";
+import { SessionDelete } from "./SessionDelete";
+import { SessionRename } from "./SessionRename";
+import type { UiMessage } from "@nerita/shared/messages";
+import type {
+	SessionSummary,
+	SessionCapabilities,
+} from "@nerita/shared/sessionHistory";
+import { relativeTime } from "./relativeTime";
+/** 履歴ペインで使う小さなアイコンボタン。 */
+export const sessionActionClass =
+	"inline-flex size-[28px] shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-muted hover:bg-menu-hover focus-visible:outline-offset-[-2px]";
+/** セッションを開く操作と補助操作を別々のボタンで提供する。 */
+export function SessionItem({
+	session,
+	selected,
+	now,
+	disabled,
+	capabilities,
+	send,
+}: {
+	session: SessionSummary;
+	selected: boolean;
+	now: number;
+	disabled: boolean;
+	capabilities: SessionCapabilities;
+	send: (message: UiMessage) => void;
+}) {
+	const title = session.title?.trim() || "無題のセッション";
+	const [renaming, setRenaming] = useState(false);
+	return (
+		<li
+			key={session.sessionId}
+			className={cn(
+				"session-item mb-[4px] rounded-[7px] border border-solid hover:bg-menu-hover hover:brightness-110 focus-within:bg-menu-hover",
+				selected
+					? "border-focus bg-menu-hover"
+					: "border-transparent bg-menu",
+			)}
+		>
+			<SettingsTooltip content={title}>
+				<button
+					type="button"
+					className="block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px] pb-[5px] text-left focus-visible:outline-offset-[-2px]"
+					disabled={
+						disabled || !capabilities.load || session.archived
+					}
+					aria-current={selected ? "true" : undefined}
+					aria-label={`${title}を開く`}
+					onClick={() =>
+						send({
+							type: "session/load",
+							requestId: crypto.randomUUID(),
+							sessionId: session.sessionId,
+						})
+					}
+				>
+					<span className="block truncate text-[13px] leading-[1.6]">
+						{title}
+					</span>
+					<span className="mt-[4px] block text-[12px] text-muted">
+						{relativeTime(session.updatedAt, now)}
+					</span>
+				</button>
+			</SettingsTooltip>
+			{renaming && (
+				<SessionRename
+					sessionId={session.sessionId}
+					title={title}
+					disabled={disabled}
+					send={send}
+					close={() => setRenaming(false)}
+				/>
+			)}
+			{renderSessionActions(
+				session,
+				disabled,
+				capabilities,
+				send,
+				title,
+				setRenaming,
+			)}
+		</li>
+	);
+}
+
+/** セッションの削除・名前変更・アーカイブ・分岐を表示する。 */
+function renderSessionActions(
+	session: SessionSummary,
+	disabled: boolean,
+	capabilities: SessionCapabilities,
+	send: (message: UiMessage) => void,
+	title: string,
+	setRenaming: Dispatch<SetStateAction<boolean>>,
+) {
+	return (
+		<div className="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
+			<SessionDelete
+				session={session}
+				disabled={disabled || !capabilities.delete}
+				send={send}
+			/>
+			<SettingsTooltip content="名前を変更">
+				<button
+					type="button"
+					className={sessionActionClass}
+					aria-label={`${title}の名前を変更`}
+					disabled={
+						disabled || !capabilities.rename || session.archived
+					}
+					onClick={() => setRenaming(true)}
+				>
+					<Pencil size={14} aria-hidden="true" />
+				</button>
+			</SettingsTooltip>
+			<SettingsTooltip
+				content={session.archived ? "アーカイブから戻す" : "アーカイブ"}
+			>
+				<button
+					type="button"
+					className={sessionActionClass}
+					disabled={
+						disabled ||
+						!(session.archived
+							? capabilities.unarchive
+							: capabilities.archive)
+					}
+					aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
+					onClick={() =>
+						send({
+							type: session.archived
+								? "session/unarchive"
+								: "session/archive",
+							requestId: crypto.randomUUID(),
+							sessionId: session.sessionId,
+						})
+					}
+				>
+					{session.archived ? (
+						<ArchiveRestore size={14} aria-hidden="true" />
+					) : (
+						<Archive size={14} aria-hidden="true" />
+					)}
+				</button>
+			</SettingsTooltip>
+			<SettingsTooltip content="フォーク">
+				<button
+					type="button"
+					className={sessionActionClass}
+					disabled={forkDisabled(disabled, capabilities, session)}
+					aria-label={`${title}をフォーク`}
+					onClick={() =>
+						send({
+							type: "session/fork",
+							requestId: crypto.randomUUID(),
+							sessionId: session.sessionId,
+						})
+					}
+				>
+					<GitFork size={14} aria-hidden="true" />
+				</button>
+			</SettingsTooltip>
+		</div>
+	);
+}
+
+/** 読み込みと分岐が可能な履歴だけをフォーク対象にする。 */
+function forkDisabled(
+	disabled: boolean,
+	capabilities: SessionCapabilities,
+	session: SessionSummary,
+): boolean | undefined {
+	return (
+		disabled || !capabilities.fork || !capabilities.load || session.archived
+	);
+}

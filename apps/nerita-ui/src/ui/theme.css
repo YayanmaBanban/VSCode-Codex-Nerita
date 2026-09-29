@@ -1,0 +1,167 @@
+/* VS Code の色を優先し、テーマ変数がない環境では明暗に応じた既定色を使う。 */
+:root {
+	color-scheme: light dark;
+}
+
+:root,
+body {
+	--nerita-description-foreground: var(
+		--vscode-descriptionForeground,
+		light-dark(#626f79, #a6afb8)
+	);
+	--nerita-input-background: var(
+		--vscode-input-background,
+		light-dark(#fff, #22272e)
+	);
+	--nerita-input-foreground: var(
+		--vscode-input-foreground,
+		light-dark(#242e36, #e1e7ec)
+	);
+	--nerita-input-border: var(
+		--vscode-input-border,
+		light-dark(#adbcc5, #333536)
+	);
+	--nerita-input-placeholder-foreground: var(
+		--vscode-input-placeholderForeground,
+		light-dark(#a0a9b3, #555)
+	);
+	--nerita-panel-border: var(
+		--vscode-panel-border,
+		light-dark(#d8dfe3, #2a2b2c)
+	);
+	--nerita-error-foreground: var(
+		--vscode-errorForeground,
+		light-dark(#b42318, #f48771)
+	);
+	--nerita-diff-editor-inserted-line-background: var(
+		--vscode-diffEditor-insertedLineBackground,
+		light-dark(#3fb95026, #347d3926)
+	);
+	--nerita-diff-editor-removed-line-background: var(
+		--vscode-diffEditor-removedLineBackground,
+		light-dark(#f8514926, #c93c3726)
+	);
+	--nerita-text-code-block-background: var(
+		--vscode-textCodeBlock-background,
+		light-dark(#e6ecee, #242526)
+	);
+	--nerita-foreground: var(--vscode-foreground, light-dark(#242e36, #dfe4e9));
+	--nerita-editor-warning-foreground: var(
+		--vscode-editorWarning-foreground,
+		light-dark(#8a6500, #e5ba7d)
+	);
+	--nerita-button-background: var(
+		--vscode-button-background,
+		light-dark(#527e70, #297aa0)
+	);
+	--nerita-focus-border: var(
+		--vscode-focusBorder,
+		light-dark(#267065, #3994bcb3)
+	);
+	--nerita-widget-border: var(
+		--vscode-widget-border,
+		light-dark(#cbd3da, #2a2b2c)
+	);
+	--nerita-dropdown-background: var(
+		--vscode-dropdown-background,
+		light-dark(#f1f4f6, #191a1b)
+	);
+	--nerita-dropdown-foreground: var(
+		--vscode-dropdown-foreground,
+		light-dark(#263340, #bfbfbf)
+	);
+	--nerita-testing-icon-passed: var(
+		--vscode-testing-iconPassed,
+		light-dark(#227a46, #73c991)
+	);
+	--nerita-editor-hover-widget-background: var(
+		--vscode-editorHoverWidget-background,
+		light-dark(#fff, #202122)
+	);
+	--nerita-editor-hover-widget-foreground: var(
+		--vscode-editorHoverWidget-foreground,
+		light-dark(#263340, #bfbfbf)
+	);
+	--nerita-editor-hover-widget-border: var(
+		--vscode-editorHoverWidget-border,
+		light-dark(#cbd3da, #2a2b2c)
+	);
+	--nerita-editor-background: var(
+		--vscode-editor-background,
+		light-dark(#eaf0f1, #20252b)
+	);
+	--nerita-input-validation-warning-border: var(
+		--vscode-inputValidation-warningBorder,
+		light-dark(#8f7544, #b89500)
+	);
+	--nerita-input-validation-warning-background: var(
+		--vscode-inputValidation-warningBackground,
+		light-dark(#fff7e9, #352a05)
+	);
+	--nerita-button-foreground: var(
+		--vscode-button-foreground,
+		light-dark(#162c26, #fff)
+	);
+	--nerita-text-link-foreground: var(
+		--vscode-textLink-foreground,
+		light-dark(#267065, #48a0c7)
+	);
+	--nerita-side-bar-background: var(
+		--vscode-sideBar-background,
+		light-dark(#f7f9f9, #16191d)
+	);
+	--nerita-button-secondary-background: var(
+		--vscode-button-secondaryBackground,
+		light-dark(#e7edef, #000000)
+	);
+	--nerita-button-border: var(
+		--vscode-button-border,
+		light-dark(#adbcc5, #414851)
+	);
+	--nerita-editor-foreground: var(
+		--vscode-editor-foreground,
+		light-dark(#242e36, #dce2eb)
+	);
+	--nerita-editor-info-foreground: var(
+		--vscode-editorInfo-foreground,
+		light-dark(#2677bb, #3794ff)
+	);
+	--nerita-input-validation-error-background: var(
+		--vscode-inputValidation-errorBackground,
+		light-dark(#fbe9e7, #482b2e)
+	);
+	--nerita-input-option-active-background: var(
+		--vscode-inputOption-activeBackground,
+		light-dark(#397a9c33, #397a9c55)
+	);
+	--nerita-input-option-active-border: var(
+		--vscode-inputOption-activeBorder,
+		light-dark(#267065, #6dadc9)
+	);
+	--nerita-editor-find-match-highlight-background: var(
+		--vscode-editor-findMatchHighlightBackground,
+		light-dark(#d1861633, #d1861655)
+	);
+	--nerita-editor-find-match-background: var(
+		--vscode-editor-findMatchBackground,
+		#d18616
+	);
+	--nerita-editor-find-match-foreground: var(
+		--vscode-editor-findMatchForeground,
+		#101010
+	);
+}
+
+/* VS Code が body に付けるテーマ種別を、既定色の明暗にも反映する。 */
+body {
+	color: var(--nerita-foreground);
+	background: var(--nerita-side-bar-background);
+}
+body.vscode-dark,
+body.vscode-high-contrast {
+	color-scheme: dark;
+}
+body.vscode-light,
+body.vscode-high-contrast-light {
+	color-scheme: light;
+}

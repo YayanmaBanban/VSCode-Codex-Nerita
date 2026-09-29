@@ -1,6 +1,6 @@
 // 取得したモデルカタログの未知スキーマを拒否し、既知の推論能力だけ正規化する。
-import { isRecord } from "../../../../shared/validation";
-import { piThinkingLevels } from "../../../../shared/piProviderControls";
+import { isRecord } from "@nerita/shared/validation";
+import { piThinkingLevels } from "@nerita/shared/piProviderControls";
 import type { PiCatalogModel } from "../PiModelCatalog";
 
 /** 通信形式の値 `none` だけを `off` へ写し、`persistent` 等の未知値は無視する。 */

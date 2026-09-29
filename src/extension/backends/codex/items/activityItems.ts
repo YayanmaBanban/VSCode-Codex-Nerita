@@ -1,6 +1,6 @@
 // 推論・計画・MCP などの完了項目を、共通ツールカードへ正規化する。
-import type { ToolSummary } from "../../../../shared/chatState";
-import { isRecord } from "../../../../shared/validation";
+import type { ToolSummary } from "@nerita/shared/chatState";
+import { isRecord } from "@nerita/shared/validation";
 
 /** テキストを表示用のコンテンツ形式へ変換する。 */
 export const textContent = (text: string) => ({

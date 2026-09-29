@@ -1,6 +1,6 @@
 // Pi の承認待機をターンの寿命へ結び付け、拒否をツールエラーとして返す。
 import { Approvals } from "../../session/Approvals";
-import type { PermissionPresentation } from "../../../shared/permission";
+import type { PermissionPresentation } from "@nerita/shared/permission";
 
 /** 実行中のターンだけが提供する取消境界。 */
 type PermissionRun = {

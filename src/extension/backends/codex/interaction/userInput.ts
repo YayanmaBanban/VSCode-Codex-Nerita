@@ -1,5 +1,5 @@
 // 通常の質問を順に収集し、取消時は回答全体を破棄する。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import { AppServerRpcError } from "../protocol/rpcMessage";
 import { text, type InteractionService } from "./interactionService";
 

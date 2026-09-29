@@ -1,6 +1,6 @@
 // サーバー発の要求を通常 RPC と分け、取消・二重回答・切断後の送信を防ぐ。
 import type { RequestId } from "../codex-app-server/RequestId";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import {
 	AppServerRpcError,
 	type AppServerRequest,

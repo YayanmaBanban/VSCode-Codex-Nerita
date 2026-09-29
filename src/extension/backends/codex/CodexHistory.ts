@@ -3,10 +3,10 @@ import { sameCwd } from "../../workspace";
 import { CodexCatalog } from "./CodexCatalog";
 import { hydrateHistory, replayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
-import { isRecord } from "../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import { type CodexConnection } from "./runtime/connection";
 import type { HistoryThread } from "./protocol/history";
-import { type SessionSummary } from "@/shared/sessionHistory";
+import { type SessionSummary } from "@nerita/shared/sessionHistory";
 
 /** アーカイブと恒久削除を区別し、成功後に一覧と現在の会話を更新する。 */
 export abstract class CodexHistory extends CodexCatalog {

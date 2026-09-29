@@ -4,7 +4,7 @@ import { stat } from "node:fs/promises";
 import type { ExtensionContext } from "vscode";
 import { trustPanel } from "../../src/extension/security/trust/TrustPanel";
 import { sandboxFixture } from "./sandboxFixtures";
-import type { TrustReply } from "../../src/shared/workspaceTrust";
+import type { TrustReply } from "@nerita/shared/workspaceTrust";
 
 const api = vi.hoisted(() => ({
 	createWebviewPanel: vi.fn(),

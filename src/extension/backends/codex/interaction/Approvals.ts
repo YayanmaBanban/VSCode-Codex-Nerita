@@ -1,9 +1,9 @@
 // App Server のコマンド・ファイル承認を既存 UI の選択肢へ変換する。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import type {
 	PermissionField,
 	PermissionPresentation,
-} from "../../../../shared/permission";
+} from "@nerita/shared/permission";
 import {
 	AppServerRpcError,
 	type AppServerRequest,

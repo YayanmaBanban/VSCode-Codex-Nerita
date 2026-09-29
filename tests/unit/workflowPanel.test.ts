@@ -2,7 +2,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import type { TextDocument, WebviewPanel } from "vscode";
 import type { BackendSession } from "../../src/extension/session/chatSession";
-import type { WorkflowReply } from "../../src/shared/workflows/messages";
+import type { WorkflowReply } from "@nerita/shared/workflows/messages";
 import { WorkflowPanel } from "../../src/extension/backends/pi/workflows/WorkflowPanel";
 import { pending } from "./piHarness";
 

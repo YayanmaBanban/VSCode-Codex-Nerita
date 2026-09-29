@@ -2,7 +2,7 @@
 
 ## ストーリーを追加するとき
 
-- `src/stories/chat/fixtures/` に表示状態を置き、`createStoryBridge()` へ渡す。
+- `apps/nerita-ui/stories/chat/fixtures/` に表示状態を置き、`createStoryBridge()` へ渡す。
 - 共通ブリッジは送信記録、初回スナップショット、指定された通知の配信だけを扱う。`prompt/send`、承認、認証、セッション操作から結果を計算しない。
 - UI 操作は `sent` で確認する。次の表示も検証する場合は、要求の検証後に固定の `HostMessage` または状態差分を注入する。
 - 対話デモの認証・フォローアップは、固定の成功・失敗通知と遅延を使える。本文や選択肢から業務処理を組み立てない。

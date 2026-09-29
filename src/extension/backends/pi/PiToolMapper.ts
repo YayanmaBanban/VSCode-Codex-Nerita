@@ -1,6 +1,6 @@
 // Pi のツール実行通知を、会話の実行 ID と順序を保った共通カードへ変換する。
-import type { ChatState, ToolSummary } from "../../../shared/chatState";
-import { isRecord } from "../../../shared/validation";
+import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
+import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
 

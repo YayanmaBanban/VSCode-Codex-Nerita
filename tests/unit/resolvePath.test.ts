@@ -14,8 +14,8 @@ vi.mock("vscode", () => ({
 	workspace: { fs: { stat: api.stat } },
 }));
 import { resolvePath } from "../../src/extension/webview/resolvePath";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 beforeEach(() => vi.clearAllMocks());
 it("ファイルの範囲を保持し、フォルダや不正な範囲は拒否する", async () => {
 	const range = {

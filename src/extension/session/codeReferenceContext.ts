@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import {
 	validCodeReferences,
 	type CodeReference,
-} from "../../shared/codeReferences";
+} from "@nerita/shared/codeReferences";
 
 /** 取得できなかった参照を黙って省略せず、下書きを残して再選択を促す。 */
 export class CodeReferenceError extends Error {

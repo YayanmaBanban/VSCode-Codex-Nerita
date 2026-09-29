@@ -1,8 +1,8 @@
 // Host 条件解決・通信検証・状態更新での再生成を UI なしで検証する。
 import { describe, expect, it } from "vitest";
-import { initialState, type ChatState } from "../../src/shared/chatState";
-import type { NeritaUiContribution } from "../../src/shared/uiContributions";
-import { isState } from "../../src/shared/stateValidation";
+import { initialState, type ChatState } from "@nerita/shared/chatState";
+import type { NeritaUiContribution } from "@nerita/shared/uiContributions";
+import { isState } from "@nerita/shared/stateValidation";
 import { UiContributionRegistry } from "../../src/extension/ui-contributions/UiContributionRegistry";
 import { createBuiltinUiRegistry } from "../../src/extension/ui-contributions/builtinContributions";
 import { SessionState } from "../../src/extension/session/sessionState";

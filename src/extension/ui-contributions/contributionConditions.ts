@@ -1,6 +1,6 @@
 // プロバイダー名を React へ判断させず、Host の現在の文脈で表示条件を解決する。
-import type { BackendId } from "../../shared/backend";
-import type { ContributionCondition } from "../../shared/uiContributions";
+import type { BackendId } from "@nerita/shared/backend";
+import type { ContributionCondition } from "@nerita/shared/uiContributions";
 
 /** バックエンドとは独立したプロバイダーと、Host が確認した能力。 */
 export type ContributionContext = {

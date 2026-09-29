@@ -1,7 +1,7 @@
 // 新規定義を作る際も既存ファイルを上書きせず、専用エディタへ開く。
 import * as vscode from "vscode";
 import { stringify } from "smol-toml";
-import { workflowFileSchema } from "../../../../shared/workflows/messages";
+import { workflowFileSchema } from "@nerita/shared/workflows/messages";
 import { workflowDocument } from "./WorkflowDocument";
 
 /** 保存先をワークスペースとファイル名から組み立てる。 */

@@ -8,21 +8,124 @@ importers:
 
   .:
     dependencies:
-      '@base-ui/react':
-        specifier: ^1.8.0
-        version: 1.8.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@earendil-works/pi-coding-agent':
         specifier: 0.87.1
         version: 0.87.1(supports-color@8.1.1)(ws@8.21.3)(zod@4.6.5)
+      '@nerita/shared':
+        specifier: workspace:*
+        version: link:packages/shared
+      '@openai/codex':
+        specifier: 0.157.0
+        version: 0.157.0
+      diff:
+        specifier: 8.0.4
+        version: 8.0.4
+      jsonc-parser:
+        specifier: ^3.3.1
+        version: 3.3.1
+      smol-toml:
+        specifier: ^1.8.0
+        version: 1.8.0
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@eslint/js':
+        specifier: ^10.0.1
+        version: 10.0.1(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
+      '@textlint-ja/textlint-rule-preset-ai-writing':
+        specifier: ^1.7.0
+        version: 1.7.0
+      '@textlint-rule/textlint-rule-pattern':
+        specifier: ^2.0.2
+        version: 2.0.2
+      '@types/mocha':
+        specifier: ^10.0.10
+        version: 10.0.10
+      '@types/node':
+        specifier: 24.x
+        version: 24.13.4
+      '@types/vscode':
+        specifier: ^1.137.0
+        version: 1.137.0
+      '@vitest/coverage-v8':
+        specifier: latest
+        version: 5.0.2(@vitest/browser@5.0.2)(vitest@5.0.2)
+      '@vscode/test-cli':
+        specifier: ^0.0.15
+        version: 0.0.15
+      '@vscode/test-electron':
+        specifier: ^3.0.0
+        version: 3.1.0(supports-color@8.1.1)
+      '@vscode/vsce':
+        specifier: ^4.0.0
+        version: 4.0.0(supports-color@8.1.1)
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.2
+      eslint:
+        specifier: ^10.5.0
+        version: 10.10.0(jiti@2.7.0)(supports-color@8.1.1)
+      eslint-config-prettier:
+        specifier: ^10.1.8
+        version: 10.1.8(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))
+      eslint-plugin-storybook:
+        specifier: ^10.6.0
+        version: 10.6.0(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
+      globals:
+        specifier: ^17.12.0
+        version: 17.12.0
+      ignore:
+        specifier: ^7.0.10
+        version: 7.0.10
+      lexical:
+        specifier: ^0.50.0
+        version: 0.50.0(typescript@6.0.3)
+      npm-run-all:
+        specifier: ^4.1.5
+        version: 4.1.5
+      playwright:
+        specifier: latest
+        version: 1.63.0
+      prettier:
+        specifier: ^3.9.6
+        version: 3.9.6
+      textlint:
+        specifier: ^15.8.0
+        version: 15.8.0(supports-color@8.1.1)
+      textlint-rule-preset-ja-technical-writing:
+        specifier: ^12.0.2
+        version: 12.0.2(supports-color@8.1.1)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      typescript-eslint:
+        specifier: ^8.61.1
+        version: 8.70.0(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
+      vite:
+        specifier: ^8.3.0
+        version: 8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)
+      vitest:
+        specifier: latest
+        version: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+
+  apps/nerita-ui:
+    dependencies:
+      '@base-ui/react':
+        specifier: ^1.8.0
+        version: 1.8.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/link':
         specifier: ^0.50.0
         version: 0.50.0(typescript@6.0.3)
       '@lexical/react':
         specifier: ^0.50.0
         version: 0.50.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(yjs@13.6.32)
-      '@openai/codex':
-        specifier: 0.157.0
-        version: 0.157.0
+      '@nerita/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@xyflow/react':
         specifier: ^12.12.0
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -44,9 +147,6 @@ importers:
       gsap:
         specifier: ^3.15.0
         version: 3.15.0
-      jsonc-parser:
-        specifier: ^3.3.1
-        version: 3.3.1
       lexical:
         specifier: ^0.50.0
         version: 0.50.0(typescript@6.0.3)
@@ -87,18 +187,12 @@ importers:
       '@chromatic-com/storybook':
         specifier: latest
         version: 5.3.1(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))
-      '@eslint/js':
-        specifier: ^10.0.1
-        version: 10.0.1(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))
-      '@playwright/test':
-        specifier: ^1.63.0
-        version: 1.63.0
       '@storybook/addon-mcp':
         specifier: ^10.6.0
-        version: 10.6.0(@storybook/addon-vitest@10.6.0(@vitest/browser-playwright@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2))(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(typescript@6.0.3)
+        version: 10.6.0(@storybook/addon-vitest@10.6.0(@vitest/browser-playwright@5.0.2)(@vitest/browser@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2))(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(typescript@6.0.3)
       '@storybook/addon-vitest':
         specifier: ^10.6.0
-        version: 10.6.0(@vitest/browser-playwright@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2)
+        version: 10.6.0(@vitest/browser-playwright@5.0.2)(@vitest/browser@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2)
       '@storybook/react-vite':
         specifier: ^10.6.0
         version: 10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
@@ -108,15 +202,6 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
-      '@textlint-ja/textlint-rule-preset-ai-writing':
-        specifier: ^1.7.0
-        version: 1.7.0
-      '@textlint-rule/textlint-rule-pattern':
-        specifier: ^2.0.2
-        version: 2.0.2
-      '@types/mocha':
-        specifier: ^10.0.10
-        version: 10.0.10
       '@types/node':
         specifier: 24.x
         version: 24.13.4
@@ -126,81 +211,46 @@ importers:
       '@types/react-dom':
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
-      '@types/vscode':
-        specifier: ^1.137.0
-        version: 1.137.0
       '@vitejs/plugin-react':
         specifier: ^6.1.1
         version: 6.1.1(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
       '@vitest/browser-playwright':
         specifier: latest
         version: 5.0.2(playwright@1.63.0)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.2)
-      '@vitest/coverage-v8':
-        specifier: latest
-        version: 5.0.2(vitest@5.0.2)
-      '@vscode/test-cli':
-        specifier: ^0.0.15
-        version: 0.0.15
-      '@vscode/test-electron':
-        specifier: ^3.0.0
-        version: 3.1.0(supports-color@8.1.1)
-      '@vscode/vsce':
-        specifier: ^4.0.0
-        version: 4.0.0(supports-color@8.1.1)
       esbuild:
         specifier: ^0.28.1
         version: 0.28.2
-      eslint:
-        specifier: ^10.5.0
-        version: 10.10.0(jiti@2.7.0)(supports-color@8.1.1)
-      eslint-config-prettier:
-        specifier: ^10.1.8
-        version: 10.1.8(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))
-      eslint-plugin-storybook:
-        specifier: ^10.6.0
-        version: 10.6.0(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
-      globals:
-        specifier: ^17.12.0
-        version: 17.12.0
-      ignore:
-        specifier: ^7.0.10
-        version: 7.0.10
-      npm-run-all:
-        specifier: ^4.1.5
-        version: 4.1.5
-      playwright:
-        specifier: latest
-        version: 1.63.0
       postcss:
         specifier: ^8.5.28
         version: 8.5.28
-      prettier:
-        specifier: ^3.9.6
-        version: 3.9.6
       storybook:
         specifier: ^10.6.0
         version: 10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0)
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
-      textlint:
-        specifier: ^15.8.0
-        version: 15.8.0(supports-color@8.1.1)
-      textlint-rule-preset-ja-technical-writing:
-        specifier: ^12.0.2
-        version: 12.0.2(supports-color@8.1.1)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
-      typescript-eslint:
-        specifier: ^8.61.1
-        version: 8.70.0(eslint@10.10.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
       vite:
         specifier: ^8.3.0
         version: 8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)
       vitest:
         specifier: latest
-        version: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+        version: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/shared:
+    dependencies:
+      smol-toml:
+        specifier: ^1.8.0
+        version: 1.8.0
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
 packages:
 
@@ -6911,7 +6961,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@storybook/addon-mcp@10.6.0(@storybook/addon-vitest@10.6.0(@vitest/browser-playwright@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2))(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(typescript@6.0.3)':
+  '@storybook/addon-mcp@10.6.0(@storybook/addon-vitest@10.6.0(@vitest/browser-playwright@5.0.2)(@vitest/browser@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2))(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(typescript@6.0.3)':
     dependencies:
       '@tmcp/adapter-valibot': 0.1.6(tmcp@1.20.0(typescript@6.0.3))(valibot@1.5.0(typescript@6.0.3))
       '@tmcp/transport-http': 0.8.6(tmcp@1.20.0(typescript@6.0.3))
@@ -6919,19 +6969,20 @@ snapshots:
       tmcp: 1.20.0(typescript@6.0.3)
       valibot: 1.5.0(typescript@6.0.3)
     optionalDependencies:
-      '@storybook/addon-vitest': 10.6.0(@vitest/browser-playwright@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2)
+      '@storybook/addon-vitest': 10.6.0(@vitest/browser-playwright@5.0.2)(@vitest/browser@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2)
     transitivePeerDependencies:
       - '@tmcp/auth'
       - typescript
 
-  '@storybook/addon-vitest@10.6.0(@vitest/browser-playwright@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2)':
+  '@storybook/addon-vitest@10.6.0(@vitest/browser-playwright@5.0.2)(@vitest/browser@5.0.2)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))(vitest@5.0.2)':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.1.0(react@19.3.0)
       storybook: 10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0)
     optionalDependencies:
+      '@vitest/browser': 5.0.2(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.2)
       '@vitest/browser-playwright': 5.0.2(playwright@1.63.0)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.2)
-      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
     transitivePeerDependencies:
       - react
 
@@ -7572,7 +7623,7 @@ snapshots:
       '@vitest/mocker': 5.0.2(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
       playwright: 1.63.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -7589,7 +7640,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
@@ -7597,7 +7648,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/coverage-v8@5.0.2(vitest@5.0.2)':
+  '@vitest/coverage-v8@5.0.2(@vitest/browser@5.0.2)(vitest@5.0.2)':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/istanbul-lib-coverage': 1.0.1
@@ -7607,7 +7658,9 @@ snapshots:
       obug: 2.2.1
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+    optionalDependencies:
+      '@vitest/browser': 5.0.2(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.2)
 
   '@vitest/expect@3.2.4':
     dependencies:
@@ -7654,7 +7707,7 @@ snapshots:
       pathe: 2.0.3
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
+      vitest: 5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -11419,7 +11472,7 @@ snapshots:
       jiti: 2.7.0
       yaml: 2.9.0
 
-  vitest@5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)):
+  vitest@5.0.2(@types/node@24.13.4)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/mocker': 5.0.2(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
@@ -11438,7 +11491,8 @@ snapshots:
     optionalDependencies:
       '@types/node': 24.13.4
       '@vitest/browser-playwright': 5.0.2(playwright@1.63.0)(vite@8.3.0(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.2)
-      '@vitest/coverage-v8': 5.0.2(vitest@5.0.2)
+      '@vitest/coverage-v8': 5.0.2(@vitest/browser@5.0.2)(vitest@5.0.2)
+      '@vitest/ui': 5.0.2(vitest@5.0.2)
     transitivePeerDependencies:
       - msw
 

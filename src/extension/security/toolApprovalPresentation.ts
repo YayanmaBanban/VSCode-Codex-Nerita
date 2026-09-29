@@ -2,7 +2,7 @@
 import type {
 	PermissionField,
 	PermissionPresentation,
-} from "../../shared/permission";
+} from "@nerita/shared/permission";
 import type { ToolCall } from "./ApprovedToolCall";
 
 /** 実行用の環境変数を渡さず、コマンド本文と実際の引数を分けて表示する。 */

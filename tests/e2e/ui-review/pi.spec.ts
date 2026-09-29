@@ -1,6 +1,6 @@
 // Pi の送信契約と、独立した実行状態の表示を確認する。
 import { test, expect } from "@playwright/test";
-import { piState } from "../../../src/stories/chat/fixtures/pi";
+import { piState } from "../../../apps/nerita-ui/stories/chat/fixtures/pi";
 import { expectSent, showState, acceptPrompt } from "../storyBridge";
 
 test("Pi の送信・停止要求と表示状態", async ({ page }, info) => {

@@ -1,10 +1,10 @@
 // 通信 DTO の受理・拒否と元データの保持を、独立した期待値で検証する。
 import { describe, expect, it } from "vitest";
-import { IdSchema } from "../../src/shared/composerSchemas";
-import { validComposerField } from "../../src/shared/composerValidation";
-import { isUiContributions } from "../../src/shared/uiContributionValidation";
-import { isState } from "../../src/shared/stateValidation";
-import { initialState } from "../../src/shared/chatState";
+import { IdSchema } from "@nerita/shared/composerSchemas";
+import { validComposerField } from "@nerita/shared/composerValidation";
+import { isUiContributions } from "@nerita/shared/uiContributionValidation";
+import { isState } from "@nerita/shared/stateValidation";
+import { initialState } from "@nerita/shared/chatState";
 
 const choice = { value: "model", name: "Model", description: "choice" };
 const option = {

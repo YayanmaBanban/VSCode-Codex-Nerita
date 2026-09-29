@@ -1,6 +1,6 @@
 // 会話とツールの順序・履歴・一枚のカード構造をブラウザで検証する。
 import { expectSent, acceptPrompt, showState } from "../storyBridge";
-import { timelineMessages } from "../../../src/stories/chat/fixtures/timeline";
+import { timelineMessages } from "../../../apps/nerita-ui/stories/chat/fixtures/timeline";
 import { test, expect } from "@playwright/test";
 
 test("受信順のカードを次の送信後も保持する", async ({ page }, info) => {

@@ -7,18 +7,18 @@ import {
 	$getRoot,
 	createEditor,
 } from "lexical";
-import { PastedBlockNode } from "../../src/webview/chat/composer/PastedBlockNode";
-import { PathReferenceNode } from "../../src/webview/chat/composer/PathReferenceNode";
-import { pathText } from "../../src/shared/composerReferences";
+import { PastedBlockNode } from "../../apps/nerita-ui/src/chat/composer/PastedBlockNode";
+import { PathReferenceNode } from "../../apps/nerita-ui/src/chat/composer/PathReferenceNode";
+import { pathText } from "@nerita/shared/composerReferences";
 import {
 	$readParts,
 	$writeParts,
 	contentKey,
-} from "../../src/webview/chat/composer/content";
+} from "../../apps/nerita-ui/src/chat/composer/content";
 import {
 	validDraftParts,
 	type ComposerPart,
-} from "../../src/shared/composerContent";
+} from "@nerita/shared/composerContent";
 
 describe("Lexical下書きの変換", () => {
 	it("文中のファイルとフォルダをチップとして往復し、送信本文は完全なパスを保持する", () => {

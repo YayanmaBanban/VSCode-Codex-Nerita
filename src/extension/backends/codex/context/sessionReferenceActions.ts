@@ -5,7 +5,7 @@ import {
 	type SessionReferencesRequest,
 	type SessionReferencesResult,
 	isSessionReference,
-} from "../../../../shared/sessionReferences";
+} from "@nerita/shared/sessionReferences";
 import { sameCwd } from "../../../workspace";
 import { threadSources } from "../history/threadSources";
 import { readSessionContext } from "./sessionContext";

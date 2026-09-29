@@ -1,6 +1,6 @@
 // SDK のコンテキスト推定量が共通 UI へ届き、未知値や旧接続を持ち越さないことを確認する。
 import { afterEach, expect, it, vi } from "vitest";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { assistant, piHarness } from "./piHarness";
 
 const harnesses: ReturnType<typeof piHarness>[] = [];

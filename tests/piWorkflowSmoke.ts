@@ -4,10 +4,7 @@ import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join, dirname, basename } from "node:path";
 import { tmpdir } from "node:os";
 import { guardrailsFixture } from "./piGuardrailsFixture";
-import {
-	createPiRuntime,
-	type PiRuntimeSession,
-} from "./piTrustedRuntime";
+import { createPiRuntime, type PiRuntimeSession } from "./piTrustedRuntime";
 import { piAgentPersistenceSmoke } from "./piAgentPersistenceSmoke";
 import { piWorkflowEditorSmoke } from "./piWorkflowEditorSmoke";
 
@@ -15,6 +12,7 @@ import { piWorkflowEditorSmoke } from "./piWorkflowEditorSmoke";
 export async function piWorkflowSmoke(
 	extensionPath: string,
 	packagePath: string,
+	workflowText: string,
 ) {
 	const h = await guardrailsFixture();
 	const abort = new AbortController();
@@ -32,16 +30,7 @@ export async function piWorkflowSmoke(
 			JSON.stringify({ packages: [packagePath] }),
 		);
 		await mkdir(join(h.cwd, ".pi/workflows"), { recursive: true });
-		await writeFile(
-			join(h.cwd, ".pi/workflows/test.toml"),
-			await readFile(
-				join(
-					extensionPath,
-					"tests/fixtures/workflows/implementation-review.toml",
-				),
-				"utf8",
-			),
-		);
+		await writeFile(join(h.cwd, ".pi/workflows/test.toml"), workflowText);
 		h.setTool("subagent_workflow", { action: "run", file: "test.toml" });
 		h.setChildTool("write", {
 			path: "child.txt",

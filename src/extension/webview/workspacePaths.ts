@@ -4,7 +4,7 @@ import type {
 	WorkspacePath,
 	WorkspacePathsRequest,
 	WorkspacePathsResult,
-} from "../../shared/workspacePaths";
+} from "@nerita/shared/workspacePaths";
 
 /** URI から選択候補を作り、ローカル環境では絶対パスを挿入する。 */
 function entry(

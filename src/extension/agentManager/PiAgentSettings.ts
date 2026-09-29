@@ -7,8 +7,8 @@ import { loadSubagentDefinitions } from "../backends/pi/PiSubagentDefinitions";
 import {
 	agentEditSchema,
 	piDefaultsSchema,
-} from "../../shared/agentManager/config";
-import type { ManagedAgent } from "../../shared/agentManager/messages";
+} from "@nerita/shared/agentManager/config";
+import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 
 const settingsSchema = z.object({
 	subagents: z

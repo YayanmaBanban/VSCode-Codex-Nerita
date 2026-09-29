@@ -2,7 +2,7 @@
 import { afterEach, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import {
 	droppedAttachments,
 	disposeDroppedAttachments,

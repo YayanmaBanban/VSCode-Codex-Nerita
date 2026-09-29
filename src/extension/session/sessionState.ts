@@ -1,6 +1,6 @@
 ﻿// 会話の正本と UI 購読を保持し、単調に増加する番号付きの差分を配信する。
-import { initialState, type ChatState } from "../../shared/chatState";
-import { type HostMessage } from "../../shared/messages";
+import { initialState, type ChatState } from "@nerita/shared/chatState";
+import { type HostMessage } from "@nerita/shared/messages";
 import { createBuiltinUiRegistry } from "../ui-contributions/builtinContributions";
 import type { ContributionContext } from "../ui-contributions/contributionConditions";
 import { StatePublisher } from "./statePublisher";

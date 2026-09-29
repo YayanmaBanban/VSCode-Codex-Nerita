@@ -41,7 +41,7 @@ vi.mock("vscode", () => ({
 import { Range } from "vscode";
 import { CopiedCode } from "../../src/extension/webview/copiedCode";
 import { readCodeReferenceContext } from "../../src/extension/session/codeReferenceContext";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 
 const reference = {
 	uri: "file:///D:/test.ts",

@@ -1,6 +1,6 @@
 // 保存された選択ブランチを再表示し、未完了ツールや承認を再実行しない。
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
-import { initialState, type ChatState } from "../../../shared/chatState";
+import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { mapPiTool, finishPiTools } from "./PiToolMapper";
 

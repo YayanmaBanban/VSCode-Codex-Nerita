@@ -1,5 +1,5 @@
 // 実 SDK のファイル・シェル定義を使い、承認内容の固定、書込み先の検査、サンドボックス外でのシェル実行の防止を検証する。
-import type { PermissionPresentation } from "../../src/shared/permission";
+import type { PermissionPresentation } from "@nerita/shared/permission";
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import {

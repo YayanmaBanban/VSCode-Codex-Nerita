@@ -10,7 +10,7 @@
 検査対象をファイルやフォルダに限定できる。
 
     pnpm textlint:changed -- .agents/docs/Testing-Policy.md
-    pnpm textlint:changed -- src/extension src/shared
+    pnpm textlint:changed -- src/extension packages/shared/src
 
 リポジトリ全体を確認する場合のみ次を使用する。
 

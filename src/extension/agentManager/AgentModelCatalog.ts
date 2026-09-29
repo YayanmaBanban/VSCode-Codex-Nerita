@@ -2,7 +2,7 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
-import type { ManagerModel } from "../../shared/agentManager/messages";
+import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 import { CodexClient } from "../backends/codex/CodexClient";
 import { parseModels } from "../backends/codex/protocol/account";
 import { piAgentModel } from "../backends/pi/PiAgentModels";

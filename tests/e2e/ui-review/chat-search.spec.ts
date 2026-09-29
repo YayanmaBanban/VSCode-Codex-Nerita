@@ -1,6 +1,6 @@
 // 会話検索の条件・一致移動・ハイライトと、明暗テーマの狭い表示を検証する。
 import { expectSent, acceptPrompt, showState } from "../storyBridge";
-import { searchMessages } from "../../../src/stories/chat/fixtures/search";
+import { searchMessages } from "../../../apps/nerita-ui/stories/chat/fixtures/search";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { symlink } from "node:fs/promises";
 import { GuardrailsSettings } from "../../src/extension/backends/pi/guardrails/GuardrailsSettings";
 import { guardrailRegistry } from "../../src/extension/security/GuardrailRegistry";
-import { defaultGuardrails } from "../../src/shared/guardrails/config";
+import { defaultGuardrails } from "@nerita/shared/guardrails/config";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
 

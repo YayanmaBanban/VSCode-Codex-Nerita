@@ -1,9 +1,9 @@
 // 下書きの共有時に不正な断片や本文との不一致を拒否する。
 import { describe, it, expect } from "vitest";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import type { ComposerPart } from "../../src/shared/composerContent";
-import { validReferences } from "../../src/shared/composerReferences";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import type { ComposerPart } from "@nerita/shared/composerContent";
+import { validReferences } from "@nerita/shared/composerReferences";
 
 it("チップの参照位置・種別・本文との対応を検証する", () => {
 	const path = {

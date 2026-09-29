@@ -1,5 +1,5 @@
 // `fork` 成功後も一覧に現れない会話を、接続中だけサーバーの確定応答で補う。
-import type { SessionSummary } from "../../../../shared/sessionHistory";
+import type { SessionSummary } from "@nerita/shared/sessionHistory";
 import type { HistoryThread } from "../protocol/history";
 
 /** Codex の時刻とタイトルを共通の一覧行へ変換する。 */

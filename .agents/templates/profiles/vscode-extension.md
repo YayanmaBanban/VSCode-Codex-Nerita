@@ -12,7 +12,7 @@
 
 - Host 側の起動・VS Code 連携・状態管理・外部通信と、Webview 側の UI・状態管理に、それぞれ必要な配置・分割の判断基準があるか確認する。
 - 元文書が Webview だけを対象としていないか確認し、責務による分割や共通化などの共通基準を Host と共有コードにも適用する。コンポーネント・フックなど React 固有の分類は Host へ適用しない。
-- 実際のディレクトリ名へ対応付ける。`src/extension/`・`src/webview/`・`src/shared/` という構成自体は要求しない。
+- 実際のディレクトリ名へ対応付ける。`src/extension/`・`apps/nerita-ui/src/`・`packages/shared/src/` という構成自体は要求しない。
 
 ## 共有・通信
 

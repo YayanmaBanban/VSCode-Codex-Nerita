@@ -1,7 +1,7 @@
 // 推論更新を会話本文と分離して永続化し、現在の分岐に残った記録だけ復元する。
 import { createHash } from "node:crypto";
 import type { SessionManager } from "@earendil-works/pi-coding-agent";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 export const reasoningHistoryType = "nerita.codex.reasoning.v1";
 const efforts = [

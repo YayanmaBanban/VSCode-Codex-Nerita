@@ -1,5 +1,5 @@
 // 接続世代で古い SDK の結果を排除し、起動・終了中のセッションも回収する。
-import { type ChatState, initialState } from "../../../shared/chatState";
+import { type ChatState, initialState } from "@nerita/shared/chatState";
 import { SessionState } from "../../session/sessionState";
 import type { PiFactory, PiSession } from "./PiRuntime";
 import type { PiAuthorize } from "./PiApprovedTools";

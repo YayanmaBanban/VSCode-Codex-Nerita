@@ -1,5 +1,5 @@
 // OS 分岐を模擬し、サンドボックスなしでの SDK 実行と Codex への非接続を検証する。
-import type { PermissionPresentation } from "../../src/shared/permission";
+import type { PermissionPresentation } from "@nerita/shared/permission";
 import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";

@@ -1,7 +1,7 @@
 // スラッシュ候補から MCP 一覧を表示し、狭い画面と明暗テーマの表示を確認する。
 import { expectSent, showState, acceptPrompt } from "../storyBridge";
 import { mcpServersFixture } from "../../fixtures/mcpStatusFixture";
-import { mcpSummaryText } from "../../../src/shared/mcp";
+import { mcpSummaryText } from "@nerita/shared/mcp";
 import { test, expect } from "@playwright/test";
 
 for (const variant of ["dark", "light", "reduced"] as const) {

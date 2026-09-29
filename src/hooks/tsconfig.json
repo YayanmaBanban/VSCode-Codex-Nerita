@@ -1,5 +1,0 @@
-{
-	"extends": "../webview/tsconfig.json",
-	"include": ["**/*.ts", "**/*.tsx"],
-	"exclude": []
-}

@@ -1,6 +1,6 @@
 // VS Code のユーザー設定とチャット専用コンテナの配置を同期する。
 import * as vscode from "vscode";
-import { isSidebarLocation, type SidebarLocation } from "../../shared/sidebar";
+import { isSidebarLocation, type SidebarLocation } from "@nerita/shared/sidebar";
 
 /** 不正な手編集値には既定のセカンダリを使用する。 */
 export function sidebarLocation(): SidebarLocation {

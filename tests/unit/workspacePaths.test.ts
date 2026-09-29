@@ -36,8 +36,8 @@ vi.mock("vscode", () => {
 	};
 });
 import { listWorkspacePaths } from "../../src/extension/webview/workspacePaths";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 
 beforeEach(() => {
 	vi.clearAllMocks();

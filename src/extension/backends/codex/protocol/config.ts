@@ -1,5 +1,5 @@
 // サンドボックスの既定値適用に必要な有効設定だけを検証する。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 /** 将来の実装名も明示設定として扱い、VS Code 設定で上書きしない。 */
 export function parseSandboxConfig(value: unknown): { sandbox: string | null } {

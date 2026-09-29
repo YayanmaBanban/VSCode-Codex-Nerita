@@ -3,8 +3,8 @@ import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import type { ChatState } from "../../../shared/chatState";
-import type { PiAuthItem } from "../../../shared/piAuth";
+import type { ChatState } from "@nerita/shared/chatState";
+import type { PiAuthItem } from "@nerita/shared/piAuth";
 import { PiProviderControls } from "./PiProviderControls";
 import { piModelOptions } from "./PiModelOptions";
 import { PiModelCatalogService } from "./PiModelCatalogService";

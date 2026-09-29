@@ -1,5 +1,5 @@
 // 承認内容の固定、実行許可の使い捨て、親と子の両方で許可される権限だけを残す処理を検証する。
-import type { PermissionPresentation } from "../../src/shared/permission";
+import type { PermissionPresentation } from "@nerita/shared/permission";
 import { describe, expect, it, vi } from "vitest";
 import { approveToolCall } from "../../src/extension/security/ApprovalGuard";
 import {

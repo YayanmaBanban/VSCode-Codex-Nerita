@@ -1,0 +1,106 @@
+// 階層の移動と Host への遅延読み込みを、候補の編集処理から分離する。
+import { useEffect, useState } from "react";
+import type { Bridge } from "@nerita/shared/bridge";
+import type {
+	WorkspacePath,
+	WorkspacePathsResult,
+} from "@nerita/shared/workspacePaths";
+import type { CompletionItem } from "./completionItems";
+import { pathText } from "@nerita/shared/composerReferences";
+
+/** 開いている階層だけを読み、閉じたメニューや旧要求への応答を捨てる。 */
+export function useWorkspacePaths(
+	bridge: Bridge | undefined,
+	active: boolean,
+	query: string,
+) {
+	const [stack, setStack] = useState<WorkspacePath[]>([]);
+	const [result, setResult] = useState<{
+		uri: string | null;
+		data: WorkspacePathsResult;
+	} | null>(null);
+	const current = stack.at(-1);
+	const uri = current?.uri ?? null;
+	useEffect(() => {
+		setResult(null);
+		if (!active || !bridge) {
+			return;
+		}
+		const requestId = crypto.randomUUID();
+		const unsubscribe = bridge.subscribe((message) => {
+			if (
+				message.type === "workspace/paths" &&
+				message.requestId === requestId
+			) {
+				setResult({ uri, data: message });
+			}
+		});
+		bridge.postMessage({ type: "workspace/listPaths", requestId, uri });
+		return unsubscribe;
+	}, [active, bridge, uri]);
+	const data = result?.uri === uri ? result.data : null;
+	const filtered = workspaceCompletionItems(data, query, current);
+	return {
+		ancestors: stack,
+		goTo: (depth: number) =>
+			setStack((previous) => previous.slice(0, depth)),
+		items: filtered,
+		path: current?.path ?? "ワークスペース",
+		empty: emptyPathMessage(bridge, data, uri),
+		open: (entry: WorkspacePath) =>
+			setStack((previous) => [...previous, entry]),
+		back: () => setStack((previous) => previous.slice(0, -1)),
+		reset: () => setStack([]),
+		hasParent: stack.length > 0,
+	};
+}
+
+/** 取得した階層から検索語に一致する候補を作る。 */
+function workspaceCompletionItems(
+	data: WorkspacePathsResult | null,
+	query: string,
+	current: WorkspacePath | undefined,
+) {
+	const items: CompletionItem[] =
+		data?.entries.map((entry) => ({
+			id: entry.uri,
+			label: entry.name + (entry.kind === "directory" ? "/" : ""),
+			description: entry.path,
+			...(entry.kind === "directory"
+				? { directory: entry }
+				: { text: `${pathText(entry)} `, reference: entry }),
+		})) ?? [];
+	const filtered = items.filter((item) =>
+		item.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+	);
+	if (current && data && !data.error && !query.trim()) {
+		filtered.unshift({
+			id: "insert-directory",
+			label: "このフォルダのパスを挿入",
+			description: current.path,
+			text: `${pathText(current)} `,
+			reference: current,
+		});
+	}
+	return filtered;
+}
+
+/** 接続・取得状態とフォルダーの有無から候補がない理由を返す。 */
+function emptyPathMessage(
+	bridge: Bridge | undefined,
+	data: WorkspacePathsResult | null,
+	uri: string | null,
+) {
+	if (!bridge) {
+		return "ファイル選択を利用できません。";
+	}
+	if (!data) {
+		return "読み込み中…";
+	}
+	return (
+		data.error ||
+		(uri || data.entries.length
+			? "候補がありません。"
+			: "開いているワークスペースがありません。")
+	);
+}

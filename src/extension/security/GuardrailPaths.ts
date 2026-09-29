@@ -5,8 +5,8 @@ import type {
 	GuardrailsConfig,
 	GuardAction,
 	PathRule,
-} from "../../shared/guardrails/config";
-import type { GuardResult } from "../../shared/guardrails/messages";
+} from "@nerita/shared/guardrails/config";
+import type { GuardResult } from "@nerita/shared/guardrails/messages";
 import { canonicalPath } from "./WorkspacePathPolicy";
 import { containsPath } from "./AgentAccessPolicy";
 import { matchPath } from "./GuardrailGlob";

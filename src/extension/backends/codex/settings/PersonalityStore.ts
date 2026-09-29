@@ -10,7 +10,7 @@ import {
 	type PersonalityScope,
 	type PersonalityMessage,
 	type PersonalityPreset,
-} from "../../../../shared/personality";
+} from "@nerita/shared/personality";
 
 /** 存在しないファイルだけを空設定として扱い、破損や権限エラーは通知する。 */
 async function readToml(path: string) {

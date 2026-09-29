@@ -1,15 +1,26 @@
 ﻿// Extension Host とブラウザを個別にバンドルし、実行依存を同梱する。
 const esbuild = require("esbuild");
-const { tailwindPlugin } = require("./config/tailwind-esbuild.cjs");
+const { createUiBuild } = require("./apps/nerita-ui/build.cjs");
 const { packageRuntime } = require("./config/package-runtime.cjs");
-const { copyFile, mkdir } = require("node:fs/promises");
+const { copyFile, mkdir, readdir } = require("node:fs/promises");
+const path = require("node:path");
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
+/** 成功した UI ビルドの JavaScript・CSS・マップを配布先へ反映する。 */
+async function collectUiArtifacts(directory) {
+	await mkdir("dist/webview", { recursive: true });
+	for (const file of await readdir(directory)) {
+		await copyFile(
+			path.join(directory, file),
+			path.join("dist/webview", file),
+		);
+	}
+}
 /** 両方の出力を生成し、監視時も同じ構成を利用する。 */
 async function main() {
 	await mkdir("dist", { recursive: true });
 	await copyFile(
-		"src/shared/agentManager/handoff.schema.json",
+		"packages/shared/src/agentManager/handoff.schema.json",
 		"dist/handoff.schema.json",
 	);
 	await copyFile(
@@ -22,6 +33,7 @@ async function main() {
 		sourcemap: !production,
 		sourcesContent: false,
 		logLevel: "info",
+		conditions: ["nerita-source"],
 	};
 	const host = await esbuild.context({
 		...common,
@@ -34,15 +46,9 @@ async function main() {
 		outfile: "dist/extension.js",
 		external: ["vscode"],
 	});
-	const webview = await esbuild.context({
-		...common,
-		entryPoints: ["src/webview/index.tsx"],
-		loader: { ".svg": "text" },
-		plugins: [tailwindPlugin()],
-		format: "iife",
-		platform: "browser",
-		target: "es2022",
-		outfile: "dist/webview/index.js",
+	const webview = await createUiBuild({
+		production,
+		onBuild: collectUiArtifacts,
 	});
 	await packageRuntime();
 	if (watch) {

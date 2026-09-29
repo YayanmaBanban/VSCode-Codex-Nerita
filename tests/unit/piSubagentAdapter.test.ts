@@ -8,7 +8,7 @@ import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
 import { guardrailRegistry } from "../../src/extension/security/GuardrailRegistry";
-import { defaultGuardrails } from "../../src/shared/guardrails/config";
+import { defaultGuardrails } from "@nerita/shared/guardrails/config";
 
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => {

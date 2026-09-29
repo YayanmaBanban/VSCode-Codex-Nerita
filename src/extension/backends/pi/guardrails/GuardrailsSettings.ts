@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import {
 	defaultGuardrails,
 	parseGuardrails,
-} from "../../../../shared/guardrails/config";
+} from "@nerita/shared/guardrails/config";
 import { guardrailRegistry } from "../../../security/GuardrailRegistry";
 import { canonicalPath } from "../../../security/WorkspacePathPolicy";
 

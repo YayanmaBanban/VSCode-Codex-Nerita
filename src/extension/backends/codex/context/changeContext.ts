@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import {
 	changeScopes,
 	type ChangeScope,
-} from "../../../../shared/changeReferences";
+} from "@nerita/shared/changeReferences";
 import type { AdditionalContext } from "./additionalContext";
 
 const exec = promisify(execFile);

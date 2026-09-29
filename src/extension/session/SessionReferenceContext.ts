@@ -2,7 +2,7 @@
 import {
 	validSessionReferences,
 	type SessionContextReference,
-} from "../../shared/sessionReferences";
+} from "@nerita/shared/sessionReferences";
 import { generateHandoff, type HandoffGenerator } from "./HandoffContext";
 
 /** 読み込みと要約生成を分離し、両バックエンドで件数と参照先を検証する。 */

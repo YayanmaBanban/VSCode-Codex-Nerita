@@ -3,7 +3,7 @@ import { CodexOptions } from "./CodexOptions";
 import type { ActiveTurn } from "./ActiveTurn";
 import { Approvals, parseApproval } from "./interaction/Approvals";
 import type { AppServerRequest } from "./protocol/rpcMessage";
-import { isRecord } from "../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import { interactionRequest } from "./interaction/interactionRequests";
 import { permissionProfile } from "./settings/permissionProfile";
 /** 承認と入力要求を停止・切断・サーバー側取消へ追従させる。 */

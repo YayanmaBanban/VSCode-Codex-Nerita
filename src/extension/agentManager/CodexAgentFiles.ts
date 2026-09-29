@@ -2,8 +2,8 @@
 import { readdir } from "node:fs/promises";
 import { parse } from "smol-toml";
 import { z } from "zod";
-import { codexReasoningSchema } from "../../shared/agentManager/config";
-import type { ManagedAgent } from "../../shared/agentManager/messages";
+import { codexReasoningSchema } from "@nerita/shared/agentManager/config";
+import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import { readWorkspaceFile, workspaceFile } from "./WorkspaceFiles";
 
 const definitionSchema = z.object({

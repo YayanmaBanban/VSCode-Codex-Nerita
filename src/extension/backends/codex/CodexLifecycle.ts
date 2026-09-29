@@ -1,9 +1,9 @@
 // App Server の接続・切断と新規スレッドの作成を管理し、会話状態へ反映する。
-import { initialState } from "../../../shared/chatState";
+import { initialState } from "@nerita/shared/chatState";
 import {
 	codexAuthMethods,
 	codexConnectionText,
-} from "../../../shared/codexConnection";
+} from "@nerita/shared/codexConnection";
 import { SessionState } from "../../session/sessionState";
 import { WorkspaceError } from "../../workspaceError";
 import type { CodexConnection, CodexFactory } from "./runtime/connection";

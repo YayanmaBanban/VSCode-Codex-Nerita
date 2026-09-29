@@ -4,7 +4,7 @@ import {
 	trustRequestSchema,
 	type TrustReply,
 	type TrustRequest,
-} from "../../../shared/workspaceTrust";
+} from "@nerita/shared/workspaceTrust";
 import { webviewHtml } from "../../webview/webviewHtml";
 import type { WorkspaceTrustStore } from "./WorkspaceTrustStore";
 

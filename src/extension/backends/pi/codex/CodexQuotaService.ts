@@ -3,8 +3,8 @@ import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import type { QuotaWindow } from "../../../../shared/composer";
-import { isRecord } from "../../../../shared/validation";
+import type { QuotaWindow } from "@nerita/shared/composer";
+import { isRecord } from "@nerita/shared/validation";
 import { codexOAuth } from "./CodexOAuth";
 
 /** UNIX 秒を、現地時刻の表示に使う `Date` へ変換する。 */

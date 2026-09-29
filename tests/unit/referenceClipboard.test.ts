@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 // 外部由来のクリップボード付加情報を厳密に検証する。
 import { expect, it } from "vitest";
-import { readClipboardReferences } from "../../src/webview/chat/composer/referenceClipboard";
+import { readClipboardReferences } from "../../apps/nerita-ui/src/chat/composer/referenceClipboard";
 
 it("コピー本文と一致する参照だけを受け入れる", () => {
 	const path = {

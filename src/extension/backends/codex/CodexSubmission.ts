@@ -1,7 +1,7 @@
 // 追加指示の待機・送信を管理し、受付が確定するまで二重送信を防ぐ。
-import type { SessionContextReference } from "../../../shared/sessionReferences";
+import type { SessionContextReference } from "@nerita/shared/sessionReferences";
 import { randomUUID } from "node:crypto";
-import type { ComposerReference } from "../../../shared/composerReferences";
+import type { ComposerReference } from "@nerita/shared/composerReferences";
 import { CodexHistory } from "./CodexHistory";
 import { attachmentInput } from "./context/attachmentInput";
 import { skillInput } from "./context/skillInput";
@@ -10,12 +10,12 @@ import { readSessionContext } from "./context/sessionContext";
 import { buildSessionReferenceContext } from "../../session/SessionReferenceContext";
 import { generateCodexHandoff } from "./context/handoffGeneration";
 import { changeContext } from "./context/changeContext";
-import type { ChangeScope } from "../../../shared/changeReferences";
+import type { ChangeScope } from "@nerita/shared/changeReferences";
 import { listMcpServers } from "./mcpStatus";
-import { mcpSummaryText } from "../../../shared/mcp";
-import type { CodeReference } from "../../../shared/codeReferences";
+import { mcpSummaryText } from "@nerita/shared/mcp";
+import type { CodeReference } from "@nerita/shared/codeReferences";
 import { readCodeReferenceContext } from "../../session/codeReferenceContext";
-import { type Attachment } from "@/shared/composer";
+import { type Attachment } from "@nerita/shared/composer";
 import { type ActiveTurn } from "./ActiveTurn";
 import { type UserInput } from "./codex-app-server/v2/UserInput";
 import { type AdditionalContext } from "./context/additionalContext";

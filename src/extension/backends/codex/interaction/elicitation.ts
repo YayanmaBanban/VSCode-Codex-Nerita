@@ -1,5 +1,5 @@
 // MCP の URL 誘導と基本フォームを検証し、承諾した入力だけを返す。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import { text, type InteractionService } from "./interactionService";
 
 /** MCP の基本フォームを型と制約で検証し、未対応形式は承諾しない。 */

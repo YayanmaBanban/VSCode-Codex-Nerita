@@ -1,6 +1,6 @@
 // コマンド内の既知の危険操作を検出する。動的な実行内容は推測で許可しない。
-import type { GuardrailsConfig } from "../../shared/guardrails/config";
-import type { GuardResult } from "../../shared/guardrails/messages";
+import type { GuardrailsConfig } from "@nerita/shared/guardrails/config";
+import type { GuardResult } from "@nerita/shared/guardrails/messages";
 import { addFinding, inspectGuardPath } from "./GuardrailPaths";
 import { homedir } from "node:os";
 import { join } from "node:path";

@@ -4,8 +4,8 @@ vi.mock("vscode", () => ({ workspace: {}, window: {} }));
 import { responseParsers } from "../../src/extension/backends/codex/protocol/responses";
 import { codexHarness, deferred } from "./codexHarness";
 import { mcpStatusFixture } from "../fixtures/mcpStatusFixture";
-import type { McpServerSummary } from "../../src/shared/mcp";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import type { McpServerSummary } from "@nerita/shared/mcp";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 
 it("名前と接続状態だけを検証・抽出する", () => {
 	const page = { data: [mcpStatusFixture], nextCursor: null };

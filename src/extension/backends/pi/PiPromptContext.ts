@@ -1,5 +1,5 @@
 // 送信と追加指示で同じ参照検証を使い、資料を本文から区別する。
-import type { UiMessage } from "../../../shared/messages";
+import type { UiMessage } from "@nerita/shared/messages";
 import type { PiSession } from "./PiRuntime";
 import { buildSessionReferenceContext } from "../../session/SessionReferenceContext";
 import { readCodeReferenceContext } from "../../session/codeReferenceContext";

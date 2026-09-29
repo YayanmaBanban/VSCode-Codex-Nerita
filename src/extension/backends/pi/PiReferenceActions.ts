@@ -4,7 +4,7 @@ import type {
 	SessionReferencesRequest,
 	SessionReferencesResult,
 	SessionReferenceOpen,
-} from "../../../shared/sessionReferences";
+} from "@nerita/shared/sessionReferences";
 import { sameCwd } from "../../workspace";
 import { isPiSessionRunning } from "./PiSessionActivity";
 

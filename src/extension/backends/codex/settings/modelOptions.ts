@@ -1,5 +1,5 @@
 // モデルの対応能力から表示候補を生成し、会話状態の更新とは分離する。
-import type { ConfigOption } from "../../../../shared/composer";
+import type { ConfigOption } from "@nerita/shared/composer";
 import type { ModelInfo } from "../protocol/account";
 import { reasoningLevels } from "./modelSelection";
 

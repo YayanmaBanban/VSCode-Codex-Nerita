@@ -1,7 +1,7 @@
 // モード選択から実際の送信引数・逐次表示までを状態管理経路で検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
-import { completionItems } from "../../src/webview/chat/composer/completionItems";
+import { completionItems } from "../../apps/nerita-ui/src/chat/composer/completionItems";
 import type { SandboxPolicy } from "../../src/extension/backends/codex/codex-app-server/v2/SandboxPolicy";
 
 const sessions: ReturnType<typeof codexHarness>["session"][] = [];

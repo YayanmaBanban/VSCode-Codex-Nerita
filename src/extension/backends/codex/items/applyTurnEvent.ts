@@ -1,6 +1,6 @@
 // ターン内の通知を到着順に適用し、完了済み項目への遅延差分を抑止する。
-import type { ChatState } from "../../../../shared/chatState";
-import { isRecord } from "../../../../shared/validation";
+import type { ChatState } from "@nerita/shared/chatState";
+import { isRecord } from "@nerita/shared/validation";
 import type { ActiveTurn } from "../ActiveTurn";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import type { TurnEvent } from "./turnEvents";

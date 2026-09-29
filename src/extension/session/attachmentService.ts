@@ -1,6 +1,6 @@
 // ファイル選択・ドロップ・表示の Host サービスをバックエンド非依存で定義する。
-import type { Attachment } from "../../shared/composer";
-import type { DroppedAttachment } from "../../shared/attachmentDrop";
+import type { Attachment } from "@nerita/shared/composer";
+import type { DroppedAttachment } from "@nerita/shared/attachmentDrop";
 
 /** 検証済みのローカルファイル参照を扱う。 */
 export type AttachmentService = {

@@ -1,6 +1,6 @@
 // チップと添付一覧から、ローカルのファイル・フォルダを VS Code で表示する。
 import * as vscode from "vscode";
-import { isSourceRange, type SourceRange } from "../../shared/symbolLocation";
+import { isSourceRange, type SourceRange } from "@nerita/shared/symbolLocation";
 
 /** 実在するローカル URI だけを開き、Webview 由来のコマンド URI は実行しない。 */
 export async function openResource(

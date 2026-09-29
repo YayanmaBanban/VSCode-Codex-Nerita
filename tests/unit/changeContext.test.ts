@@ -10,8 +10,8 @@ import {
 	readChangeContext,
 	ChangeContextError,
 } from "../../src/extension/backends/codex/context/changeContext";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import { isChangeReference } from "../../src/shared/changeReferences";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import { isChangeReference } from "@nerita/shared/changeReferences";
 
 const exec = promisify(execFile);
 const configuration = vi.hoisted(() => ({ get: vi.fn(), resolve: vi.fn() }));

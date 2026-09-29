@@ -3,7 +3,7 @@ import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import type { QuotaWindow } from "../../../shared/composer";
+import type { QuotaWindow } from "@nerita/shared/composer";
 import type { PiProviders, PiQuotaReader } from "./PiProvider";
 import { piProviders } from "./PiProviders";
 

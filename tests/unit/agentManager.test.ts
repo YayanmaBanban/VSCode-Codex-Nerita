@@ -20,8 +20,8 @@ import { readWorkspaceFile } from "../../src/extension/agentManager/WorkspaceFil
 import {
 	defaultHandoff,
 	handoffSchema,
-} from "../../src/shared/agentManager/config";
-import { managerRequestSchema } from "../../src/shared/agentManager/messages";
+} from "@nerita/shared/agentManager/config";
+import { managerRequestSchema } from "@nerita/shared/agentManager/messages";
 
 let root: string;
 const definition =
@@ -299,7 +299,7 @@ describe("Agent Manager persistence", () => {
 		expect(config).not.toHaveProperty("$schema");
 		const schema: unknown = JSON.parse(
 			await readFile(
-				"src/shared/agentManager/handoff.schema.json",
+				"packages/shared/src/agentManager/handoff.schema.json",
 				"utf8",
 			),
 		);

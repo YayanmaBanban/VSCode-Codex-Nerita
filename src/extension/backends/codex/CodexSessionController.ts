@@ -1,6 +1,6 @@
 // 検証済みの Webview 操作を、現在の thread とローカル実行 ID に限定する。
-import type { UiMessage } from "../../../shared/messages";
-import { isUiMessage } from "../../../shared/uiMessageValidation";
+import type { UiMessage } from "@nerita/shared/messages";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { CodexSubmission } from "./CodexSubmission";
 import {
 	searchSessionReferences,
@@ -15,7 +15,7 @@ import { HandoffContextError } from "../../session/HandoffContext";
 import {
 	type SessionReferencesRequest,
 	type SessionReferenceOpen,
-} from "@/shared/sessionReferences";
+} from "@nerita/shared/sessionReferences";
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
 export class CodexSessionController extends CodexSubmission {

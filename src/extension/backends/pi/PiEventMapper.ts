@@ -1,6 +1,6 @@
 // Pi のアシスタント本文とツール通知を、既存の会話タイムラインへ変換する。
 import { randomUUID } from "node:crypto";
-import type { ChatMessage, ChatState } from "../../../shared/chatState";
+import type { ChatMessage, ChatState } from "@nerita/shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
 import { mapPiTool } from "./PiToolMapper";

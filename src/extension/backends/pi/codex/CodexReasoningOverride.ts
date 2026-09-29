@@ -1,5 +1,5 @@
 // 対応モデルの推論レベルの基準値と変更履歴を保存し、送信時に元の入力位置へ再挿入する。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import {
 	historyAnchor,
 	isCodexEffort,

@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
 import type { AdditionalContext } from "../../src/extension/backends/codex/context/additionalContext";
-import type { HostMessage } from "../../src/shared/messages";
+import type { HostMessage } from "@nerita/shared/messages";
 import { ChangeContextError } from "../../src/extension/backends/codex/context/changeContext";
 import type * as ChangeContextModule from "../../src/extension/backends/codex/context/changeContext";
 

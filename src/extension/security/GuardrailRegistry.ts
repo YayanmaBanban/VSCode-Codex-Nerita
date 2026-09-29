@@ -4,7 +4,7 @@ import {
 	defaultGuardrails,
 	parseGuardrails,
 	type GuardrailsConfig,
-} from "../../shared/guardrails/config";
+} from "@nerita/shared/guardrails/config";
 import { containsPath } from "./AgentAccessPolicy";
 import { freezeToolCall } from "./ApprovedToolCall";
 

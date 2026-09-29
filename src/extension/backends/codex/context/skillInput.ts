@@ -1,5 +1,5 @@
 // 接続先が公開したスキルだけを、明示的な入力コンテキストへ変換する。
-import type { SkillSummary } from "../../../../shared/skills";
+import type { SkillSummary } from "@nerita/shared/skills";
 import type { UserInput } from "../codex-app-server/v2/UserInput";
 
 /** 行頭の `@スキル名` に一致する候補を重複なく添付する。 */

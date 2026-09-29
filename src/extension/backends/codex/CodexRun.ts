@@ -1,6 +1,6 @@
 // 開始受付とターン完了を区別し、通知・停止・承認を対象の実行に対応付ける。
 import { randomUUID } from "node:crypto";
-import type { ComposerReference } from "../../../shared/composerReferences";
+import type { ComposerReference } from "@nerita/shared/composerReferences";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { CodexAgents } from "./CodexAgents";
 import { attachmentInput } from "./context/attachmentInput";
@@ -10,9 +10,9 @@ import { parseTurnEvent, type TurnEvent } from "./items/turnEvents";
 import { applyTurnEvent } from "./items/applyTurnEvent";
 import { ActiveTurn } from "./ActiveTurn";
 import type { AdditionalContext } from "./context/additionalContext";
-import { type Attachment } from "@/shared/composer";
+import { type Attachment } from "@nerita/shared/composer";
 import { type TurnInfo } from "./protocol/turn";
-import { isRecord } from "../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 /** 同じ `thread` で停止後も会話を続けられる実行管理。 */
 export abstract class CodexRun extends CodexAgents {

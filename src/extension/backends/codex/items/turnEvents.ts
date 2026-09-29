@@ -1,5 +1,5 @@
 // ターン処理で使う通知を検証し、会話・ターン・項目の識別子を共通の形式で取り出す。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import { parseTurn, type TurnInfo } from "../protocol/turn";
 

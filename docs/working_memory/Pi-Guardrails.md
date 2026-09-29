@@ -14,7 +14,7 @@
 
 ## スキーマと配置
 
-`src/shared/guardrails/config.ts` の Zod 定義を正本にする。`pnpm guardrails:generate` で `src/extension/backends/pi/guardrails/schema.json` を生成する。ビルド時に `dist/guardrails.schema.json` へコピーし、JSON 編集時の検証にも関連付ける。配布スキーマと実行時定義の一致を単体テストで検証する。
+`packages/shared/src/guardrails/config.ts` の Zod 定義を正本にする。`pnpm guardrails:generate` で `src/extension/backends/pi/guardrails/schema.json` を生成する。ビルド時に `dist/guardrails.schema.json` へコピーし、JSON 編集時の検証にも関連付ける。配布スキーマと実行時定義の一致を単体テストで検証する。
 
 | 項目 | 意味 |
 | ------------------------- | ---------------------------------------------------- |
@@ -28,7 +28,7 @@
 
 例外は同じパスルールだけに適用する。複数ルールに一致すると `deny > ask > allow` を優先する。外部読取りの個別例外は、リンクの表記だけでなく実体への一致も必要とする。任意の正規表現は初期版では受け付けない。コマンドの追加ルールは大文字・小文字を区別しない部分一致とする。
 
-Host の Pi 固有処理は `src/extension/backends/pi/guardrails/` に置く。共通判定は `src/extension/security/`、通信契約は `src/shared/guardrails/`、UI は `src/webview/pi/guardrails/` に置く。参考スキーマの設定ファイルとの互換性は保証しない。
+Host の Pi 固有処理は `src/extension/backends/pi/guardrails/` に置く。共通判定は `src/extension/security/`、通信契約は `packages/shared/src/guardrails/` に置く。UI は `apps/nerita-ui/src/pi/guardrails/` に置く。参考スキーマの設定ファイルとの互換性は保証しない。
 
 ## 実行経路
 

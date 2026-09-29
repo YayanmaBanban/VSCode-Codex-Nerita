@@ -8,7 +8,7 @@ import {
 	defaultGuardrails,
 	parseGuardrails,
 	guardrailsConfigSchema,
-} from "../../src/shared/guardrails/config";
+} from "@nerita/shared/guardrails/config";
 import {
 	evaluateGuardrails,
 	guardrailWarnings,

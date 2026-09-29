@@ -1,6 +1,6 @@
 // Pi の読み取りカードを明暗・狭幅で操作し、停止後の継続と失敗表示を確認する。
 import { expectSent, showState, acceptPrompt } from "../storyBridge";
-import { piState } from "../../../src/stories/chat/fixtures/pi";
+import { piState } from "../../../apps/nerita-ui/stories/chat/fixtures/pi";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {

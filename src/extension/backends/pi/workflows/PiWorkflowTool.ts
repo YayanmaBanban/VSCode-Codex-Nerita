@@ -3,8 +3,8 @@ import { readFile, stat, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
-import { parseWorkflow } from "../../../../shared/workflows/definition";
-import { compileWorkflow } from "../../../../shared/workflows/compiler";
+import { parseWorkflow } from "@nerita/shared/workflows/definition";
+import { compileWorkflow } from "@nerita/shared/workflows/compiler";
 import { containsPath } from "../../../security/AgentAccessPolicy";
 import { WorkspacePathPolicy } from "../../../security/WorkspacePathPolicy";
 import {

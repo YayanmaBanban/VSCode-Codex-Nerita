@@ -4,7 +4,7 @@ import type { TurnStartParams } from "./codex-app-server/v2/TurnStartParams";
 import type { ModelInfo } from "./protocol/account";
 import type { StartedThread } from "./protocol/turn";
 import { CodexAttachments } from "./CodexAttachments";
-import { isRecord } from "../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import { parseQuota, parseUsage } from "./protocol/usage";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";

@@ -1,5 +1,5 @@
 // 添付ファイルの選択と寿命を、接続やモデル設定から分離する。
-import type { ComposerMessage } from "../../../shared/composer";
+import type { ComposerMessage } from "@nerita/shared/composer";
 import type { AttachmentService } from "../../session/attachmentService";
 import type { AuthService } from "./interaction/AuthFlow";
 import type { InteractionService } from "./interaction/interactionService";

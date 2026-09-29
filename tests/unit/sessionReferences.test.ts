@@ -2,11 +2,11 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
 import type { HistoryTurn } from "../../src/extension/backends/codex/protocol/history";
-import type { HostMessage } from "../../src/shared/messages";
+import type { HostMessage } from "@nerita/shared/messages";
 import { readSessionContext } from "../../src/extension/backends/codex/context/sessionContext";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import { pathText, validReferences } from "../../src/shared/composerReferences";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import { pathText, validReferences } from "@nerita/shared/composerReferences";
 
 const preview = vi.hoisted(() => ({
 	open: vi.fn().mockResolvedValue({}),

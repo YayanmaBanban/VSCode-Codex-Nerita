@@ -1,7 +1,7 @@
 // 出力だけの連続更新を集約し、変更カードだけを Webview へ送る。
-import type { ToolSummary } from "../../shared/chatState";
-import type { HostMessage } from "../../shared/messages";
-import { toolKey } from "../../shared/toolUpdates";
+import type { ToolSummary } from "@nerita/shared/chatState";
+import type { HostMessage } from "@nerita/shared/messages";
+import { toolKey } from "@nerita/shared/toolUpdates";
 
 /** 集約前の順序番号を保持する状態通知。 */
 type PatchMessage = Extract<HostMessage, { type: "state/patch" }>;

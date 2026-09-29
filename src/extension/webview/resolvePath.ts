@@ -1,12 +1,12 @@
 // 明示的に貼り付けられたパスだけを調べ、本文を読まずに参照の種類を確定する。
 import * as vscode from "vscode";
 import { win32 } from "node:path";
-import { isSourceRange } from "../../shared/symbolLocation";
+import { isSourceRange } from "@nerita/shared/symbolLocation";
 import {
 	isAbsoluteLocalPath,
 	type ResolvePathRequest,
 	type ResolvePathResult,
-} from "../../shared/workspacePaths";
+} from "@nerita/shared/workspacePaths";
 
 /** 一覧選択と異なり、ユーザー指定のワークスペース外パスも参照にできる。 */
 export async function resolvePath(

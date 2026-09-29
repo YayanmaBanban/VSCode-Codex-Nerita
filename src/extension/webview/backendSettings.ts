@@ -1,6 +1,6 @@
 // バックエンドの選択を保存し、セッションの再生成が必要かを返す。
 import * as vscode from "vscode";
-import type { BackendId } from "../../shared/backend";
+import type { BackendId } from "@nerita/shared/backend";
 
 /** 起動時と同じ `window` スコープの設定を取得する。 */
 export function configuredBackend(): BackendId {

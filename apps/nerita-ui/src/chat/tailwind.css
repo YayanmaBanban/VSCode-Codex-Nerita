@@ -1,0 +1,68 @@
+/* Preflight は読み込まず、既存のリセットと VS Code テーマを維持する。 */
+@layer theme, base, components, utilities;
+@import "../ui/theme.css";
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "..";
+@source "../ui/BorderBeam.tsx";
+
+/* 実行時に変わる VS Code の色変数を各ユーティリティから参照する。 */
+@theme inline {
+	--color-muted: var(--nerita-description-foreground);
+	--color-input: var(--nerita-input-background);
+	--color-input-text: var(--nerita-input-foreground);
+	--color-input-border: var(--nerita-input-border);
+	--color-input-placeholder: var(--nerita-input-placeholder-foreground);
+	--color-panel-border: var(--nerita-panel-border);
+	--color-tool-error: var(--nerita-error-foreground);
+	--color-diff-added: var(--nerita-diff-editor-inserted-line-background);
+	--color-diff-removed: var(--nerita-diff-editor-removed-line-background);
+	--color-diff-hunk: var(--nerita-text-code-block-background);
+	--font-editor: var(--vscode-editor-font-family, monospace);
+	--color-foreground: var(--nerita-foreground);
+	--color-warning: var(--nerita-editor-warning-foreground);
+	--color-switch-off: var(--nerita-panel-border);
+	--color-switch-on: var(--nerita-button-background);
+	--color-settings-focus: var(--nerita-focus-border);
+	--color-focus: var(--nerita-focus-border);
+	--color-settings-hover: color-mix(
+		in srgb,
+		var(--nerita-input-background) 88%,
+		white
+	);
+	--color-menu-border: var(--nerita-widget-border);
+	--color-menu: var(--nerita-dropdown-background);
+	--color-menu-text: var(--nerita-dropdown-foreground);
+	--color-menu-hover: color-mix(
+		in srgb,
+		var(--nerita-dropdown-background) 86%,
+		white
+	);
+	--color-menu-check: var(--nerita-testing-icon-passed);
+	--color-tooltip: var(--nerita-editor-hover-widget-background);
+	--color-tooltip-text: var(--nerita-editor-hover-widget-foreground);
+	--color-tooltip-border: var(--nerita-editor-hover-widget-border);
+	--color-tooltip-divider: var(--nerita-panel-border);
+	--color-message-user: var(--nerita-editor-background);
+	--color-message-border: var(--nerita-panel-border);
+	--color-message-assistant: color-mix(
+		in srgb,
+		#75b9ef 18%,
+		var(--nerita-editor-background)
+	);
+	--color-message-assistant-border: color-mix(
+		in srgb,
+		#75b9ef 32%,
+		var(--nerita-panel-border)
+	);
+	--color-message-code: var(--nerita-text-code-block-background);
+	--color-alert-border: var(--nerita-input-validation-warning-border);
+	--color-alert: var(--nerita-input-validation-warning-background);
+	--color-primary: var(--nerita-button-background);
+	--color-primary-text: var(--nerita-button-foreground);
+	--color-secondary: var(--nerita-button-secondary-background);
+	--color-link: var(--nerita-text-link-foreground);
+	--color-empty-border: var(--nerita-panel-border);
+	--color-quota-track: light-dark(#d9eaf4, #243d50);
+	--color-quota-focus: var(--nerita-focus-border);
+}

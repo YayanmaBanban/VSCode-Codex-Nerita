@@ -11,7 +11,7 @@ vi.mock("../../src/extension/session/codeReferenceContext", () => ({
 }));
 import { codexHarness, deferred } from "./codexHarness";
 import { piHarness } from "./piHarness";
-import type { HostMessage } from "../../src/shared/messages";
+import type { HostMessage } from "@nerita/shared/messages";
 import { CodeReferenceError } from "../../src/extension/session/codeReferenceContext";
 
 const dispose: (() => Promise<void>)[] = [];

@@ -4,12 +4,12 @@ import { realpath } from "node:fs/promises";
 import {
 	defaultGuardrails,
 	parseGuardrails,
-} from "../../../../shared/guardrails/config";
+} from "@nerita/shared/guardrails/config";
 import {
 	guardRequestSchema,
 	type GuardRequest,
 	type GuardReply,
-} from "../../../../shared/guardrails/messages";
+} from "@nerita/shared/guardrails/messages";
 import {
 	evaluateGuardrails,
 	guardrailWarnings,

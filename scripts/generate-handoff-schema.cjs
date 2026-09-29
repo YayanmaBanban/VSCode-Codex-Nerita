@@ -8,7 +8,7 @@ async function main() {
 	await mkdir("dist/handoff-schema", { recursive: true });
 	const output = join(process.cwd(), "dist/handoff-schema/config.cjs");
 	await build({
-		entryPoints: ["src/shared/agentManager/config.ts"],
+		entryPoints: ["packages/shared/src/agentManager/config.ts"],
 		bundle: true,
 		platform: "node",
 		format: "cjs",
@@ -18,7 +18,7 @@ async function main() {
 	const { handoffSchema } = require(output);
 	const { z } = require("zod");
 	await writeFile(
-		"src/shared/agentManager/handoff.schema.json",
+		"packages/shared/src/agentManager/handoff.schema.json",
 		`${JSON.stringify(z.toJSONSchema(handoffSchema), null, 2)}\n`,
 	);
 }

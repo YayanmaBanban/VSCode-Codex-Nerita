@@ -5,13 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WebviewPanel, WorkspaceFolder } from "vscode";
 import { AgentManagerPanel } from "../../src/extension/agentManager/AgentManagerPanel";
-import { defaultHandoff } from "../../src/shared/agentManager/config";
-import { initialState } from "../../src/shared/chatState";
+import { defaultHandoff } from "@nerita/shared/agentManager/config";
+import { initialState } from "@nerita/shared/chatState";
 import type { BackendSession } from "../../src/extension/session/chatSession";
 import type {
 	ManagerReply,
 	ManagerState,
-} from "../../src/shared/agentManager/messages";
+} from "@nerita/shared/agentManager/messages";
 
 const api = vi.hoisted(() => ({ trusted: true, dirty: false, present: true }));
 vi.mock("../../src/extension/agentManager/PiAgentSettings", () => ({

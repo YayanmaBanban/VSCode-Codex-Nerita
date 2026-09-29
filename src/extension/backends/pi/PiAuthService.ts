@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import { randomUUID } from "node:crypto";
 import type { PiAuthService } from "./PiAccount";
-import { isPiAuthRequest, type PiAuthState } from "../../../shared/piAuth";
+import { isPiAuthRequest, type PiAuthState } from "@nerita/shared/piAuth";
 import { webviewHtml } from "../../webview/webviewHtml";
 
 /** パネルを閉じると処理・入力待ちを回収する接続専用サービス。 */

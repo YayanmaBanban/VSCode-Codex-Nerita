@@ -2,7 +2,7 @@
 import type { ThreadStartResponse } from "../codex-app-server/v2/ThreadStartResponse";
 import type { Turn } from "../codex-app-server/v2/Turn";
 import type { TurnInterruptResponse } from "../codex-app-server/v2/TurnInterruptResponse";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import { parseSandbox } from "./sandbox";
 
 /** 会話開始時に UI が必要とするサーバー確定情報。 */

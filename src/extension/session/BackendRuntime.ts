@@ -1,9 +1,9 @@
 // 表示先とコマンドの接続先を保持し、バックエンドの終了・再生成を管理する。
-import type { WorkflowExecution } from "../../shared/workflows/messages";
+import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
 import { randomUUID } from "node:crypto";
-import { initialState } from "../../shared/chatState";
-import type { HostMessage } from "../../shared/messages";
-import { isUiMessage } from "../../shared/uiMessageValidation";
+import { initialState } from "@nerita/shared/chatState";
+import type { HostMessage } from "@nerita/shared/messages";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import type { BackendSession } from "./chatSession";
 
 /** 旧接続の終了を待ち、購読を新しいセッションへ引き継ぐ。 */

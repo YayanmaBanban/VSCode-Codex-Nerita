@@ -4,8 +4,8 @@ import {
 	effortError,
 	effortOptions,
 	handoffEffortError,
-} from "../../src/shared/agentManager/effort";
-import { defaultHandoff } from "../../src/shared/agentManager/config";
+} from "@nerita/shared/agentManager/effort";
+import { defaultHandoff } from "@nerita/shared/agentManager/config";
 
 describe("model effort validation", () => {
 	const models = [

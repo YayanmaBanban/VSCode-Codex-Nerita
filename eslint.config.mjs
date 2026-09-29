@@ -6,12 +6,19 @@ import prettier from "eslint-config-prettier";
 import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import typescriptEslint from "typescript-eslint";
+import { builtinModules } from "node:module";
+
+const platformImports = [
+	"vscode",
+	...builtinModules,
+	...builtinModules.map((name) => `node:${name}`),
+];
 
 export default defineConfig([
 	globalIgnores([
 		".vscode-test/**",
 		"coverage/**",
-		"dist/**",
+		"**/dist/**",
 		"out/**",
 		"src/extension/backends/codex/codex-app-server/**",
 	]),
@@ -140,13 +147,81 @@ export default defineConfig([
 		// ツールが要求する default export を設定ファイルで許可する。
 		files: [
 			"config/**/*.{ts,tsx}",
+			"apps/nerita-ui/.storybook/**/*.{ts,tsx}",
+			"apps/nerita-ui/vitest.config.ts",
 			"tests/e2e/config/*.ts",
 			"**/*.stories.tsx",
 		],
 		rules: { "no-restricted-syntax": "off" },
 	},
 	{
-		files: ["src/webview/**/*.{ts,tsx}", "src/stories/**/*.{ts,tsx}"],
+		files: [
+			"apps/nerita-ui/src/**/*.{ts,tsx}",
+			"apps/nerita-ui/stories/**/*.{ts,tsx}",
+		],
 		languageOptions: { globals: globals.browser },
+	},
+	{
+		files: ["apps/nerita-ui/vitest.config.ts"],
+		languageOptions: {
+			parserOptions: {
+				projectService: false,
+				project: "apps/nerita-ui/tsconfig.tools.json",
+			},
+		},
+	},
+	{
+		files: [
+			"apps/nerita-ui/src/**/*.{ts,tsx}",
+			"packages/shared/src/**/*.ts",
+		],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: platformImports,
+					patterns: [
+						"**/extension/**",
+						"@/extension/**",
+						"**/stories/**",
+						"**/tests/**",
+					],
+				},
+			],
+		},
+	},
+	{
+		files: ["packages/shared/src/**/*.ts"],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: [...platformImports, "react", "react-dom"],
+					patterns: [
+						"react/*",
+						"react-dom/*",
+						"**/extension/**",
+						"**/nerita-ui/**",
+						"@nerita/ui",
+						"@nerita/ui/*",
+						"**/tests/**",
+					],
+				},
+			],
+		},
+	},
+	{
+		files: ["src/extension/**/*.ts"],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{ patterns: ["**/nerita-ui/**", "@nerita/ui", "@nerita/ui/*"] },
+			],
+		},
+	},
+	{
+		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
+		ignores: ["apps/nerita-ui/src/bridge/vscodeBridge.ts"],
+		rules: { "no-restricted-globals": ["error", "acquireVsCodeApi"] },
 	},
 ]);

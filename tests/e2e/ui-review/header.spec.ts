@@ -1,7 +1,7 @@
 // ヘッダーの省略表示・操作・接続演出を実コンポーネントで検証する。
 import { expectSent, emitHost, showState } from "../storyBridge";
 import { test, expect, type Page } from "@playwright/test";
-import { codexConnectionText } from "../../../src/shared/codexConnection";
+import { codexConnectionText } from "@nerita/shared/codexConnection";
 const errors = new Map<Page, string[]>();
 
 test("認証失敗の通知を閉じ、再試行時に再表示する", async ({ page }, info) => {

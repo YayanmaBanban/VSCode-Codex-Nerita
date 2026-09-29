@@ -8,7 +8,7 @@ async function main() {
 	await mkdir("dist/guardrails-schema", { recursive: true });
 	const output = join(process.cwd(), "dist/guardrails-schema/config.cjs");
 	await build({
-		entryPoints: ["src/shared/guardrails/config.ts"],
+		entryPoints: ["packages/shared/src/guardrails/config.ts"],
 		bundle: true,
 		platform: "node",
 		format: "cjs",

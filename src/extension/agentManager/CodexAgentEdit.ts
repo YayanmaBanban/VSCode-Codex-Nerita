@@ -1,6 +1,6 @@
 // TOML の完結した文を単位として、ルート直下のモデル設定だけを置き換える。
 import { parse } from "smol-toml";
-import type { AgentEdit } from "../../shared/agentManager/config";
+import type { AgentEdit } from "@nerita/shared/agentManager/config";
 
 /** 複数行の文字列や配列に現れるキーを設定と誤認しない。 */
 function statements(text: string) {

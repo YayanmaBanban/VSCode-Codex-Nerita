@@ -1,5 +1,5 @@
 // Codex の選択だけを永続化し、起動時は現在のモデル候補で検証する。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import type { ModelInfo } from "../protocol/account";
 
 /** 認証情報や会話内容を含まない保存形式。 */

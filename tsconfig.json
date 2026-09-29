@@ -13,7 +13,7 @@
 		"skipLibCheck": true,
 
 		// 本体コードのソース位置とデバッグ用 Source Map を明示する。
-		"rootDir": "src",
+		"rootDir": ".",
 		"sourceMap": true,
 
 		// TypeScript 標準の厳格な型チェックをまとめて有効化する。
@@ -51,7 +51,7 @@
 	},
 	"include": [
 		"src/extension/**/*.ts",
-		"src/shared/**/*.ts",
+		"packages/shared/src/**/*.ts",
 		"src/extension/backends/codex/codex-app-server/**/*.ts"
 	],
 	"exclude": ["tests", "node_modules"]

@@ -1,13 +1,13 @@
 // 接続中の子の会話を保持し、既存 `AgentViewer` の読み取り契約へ変換する。
 import { randomUUID } from "node:crypto";
 import { relative, resolve } from "node:path";
-import { initialState, type ChatState } from "../../../shared/chatState";
+import { initialState, type ChatState } from "@nerita/shared/chatState";
 import {
 	agentIconKey,
 	type AgentThreadView,
 	type AgentStatus,
 	type SubAgentSummary,
-} from "../../../shared/subAgents";
+} from "@nerita/shared/subAgents";
 import { PiEventMapper } from "./PiEventMapper";
 import { finishPiTools } from "./PiToolMapper";
 import type { PiEvent } from "./PiRuntime";

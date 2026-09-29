@@ -1,4 +1,4 @@
-// 項目の説明・選択チェック・ホバーと context ツールチップを検証する。
+// 項目の説明・選択チェック・ホバーとコンテキストのツールチップを検証する。
 import { expectSent, showState } from "../storyBridge";
 import { settingsFixture } from "../../fixtures/settingsFixture";
 import { test, expect } from "@playwright/test";
@@ -82,7 +82,7 @@ for (const theme of ["dark", "light"] as const) {
 		const context = page.getByRole("progressbar");
 		await context.hover();
 		await expect(page.getByRole("tooltip")).toHaveText(
-			"context0.6K/1K (60%)",
+			"コンテキスト0.6K/1K (60%)",
 		);
 		await info.attach("context-tooltip", {
 			body: await page.screenshot({

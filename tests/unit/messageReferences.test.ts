@@ -4,8 +4,8 @@ import {
 	promptContent,
 	promptReferences,
 	type ComposerPart,
-} from "../../src/shared/composerContent";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
+} from "@nerita/shared/composerContent";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { codexHarness } from "./codexHarness";
 import { piHarness } from "./piHarness";
 

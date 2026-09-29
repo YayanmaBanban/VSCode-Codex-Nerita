@@ -3,8 +3,8 @@ import { expect, it } from "vitest";
 import {
 	validateWorkflow,
 	parseWorkflow,
-} from "../../src/shared/workflows/definition";
-import { compileWorkflow } from "../../src/shared/workflows/compiler";
+} from "@nerita/shared/workflows/definition";
+import { compileWorkflow } from "@nerita/shared/workflows/compiler";
 
 const step = { id: "start", agent: "worker", task: "task" };
 const base = { version: 1, name: "test", outputs: ["start"], steps: [step] };

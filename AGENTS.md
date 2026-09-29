@@ -12,7 +12,7 @@
 
 # プロジェクトの指示
 
-React の Webview は `src/webview/`、Extension Host の処理は `src/extension/`、共通の通信型・検証処理は `src/shared/` にあります。
+React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `src/extension/` にあります。共通の通信型・検証処理は `packages/shared/src/` に置きます。
 
 開発中に互換性を考える必要はありません。
 
@@ -23,7 +23,7 @@ React の Webview は `src/webview/`、Extension Host の処理は `src/extensio
 | 作業 | 参照先 |
 | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | コードの追加・変更 | [コード実装](.agents/docs/Code-Implementation.md) |
-| `src/webview/`・`src/extension/`・`src/shared/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
+| `apps/nerita-ui/src/`・`src/extension/`・`packages/shared/src/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
 | 複数ファイルの依存調査・構造変更・コードレビュー | [コード調査・依存グラフ](.agents/docs/Code-Review-Graph.md) |
 | Webview UI の作成 | [UI 実装](.agents/docs/UI-Implementation.md) |
 | テスト作成 | [テストポリシー](.agents/docs/Testing-Policy.md) |
@@ -33,7 +33,7 @@ React の Webview は `src/webview/`、Extension Host の処理は `src/extensio
 
 ## Webview UI と Extension Host の境界
 
-UI ライブラリや Web 向けアニメーションは Webview に使用します。VS Code API・Node.js・Codex App Server プロセスの処理は Extension Host に置き、Webview とは検証済みメッセージで通信してください。共有する通信型・検証処理は `src/shared/` に置き、React・DOM・VS Code API・Node.js 専用 API に依存させません。
+UI ライブラリや Web 向けアニメーションは Webview に使用します。VS Code API・Node.js・Codex App Server プロセスの処理は Extension Host に置き、Webview とは検証済みメッセージで通信してください。共有する通信型・検証処理は `packages/shared/src/` に置き、React・DOM・VS Code API・Node.js 専用 API に依存させません。
 
 実行・配布は Windows x64 のローカル VS Code、開発用 Node.js は22以降を前提とします。Extension Host は VS Code 内の Node.js で動作します。Storybook は UI の確認用で、Extension Host や実際の Codex App Server 接続の検証とは分けます。
 

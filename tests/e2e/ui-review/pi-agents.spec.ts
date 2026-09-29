@@ -1,6 +1,6 @@
 // 子の閲覧中も承認先を区別して回答し、全体停止と親への復帰を確認する。
 import { expectSent, showState } from "../storyBridge";
-import { piAgentState } from "../../../src/stories/chat/fixtures/piAgents";
+import { piAgentState } from "../../../apps/nerita-ui/stories/chat/fixtures/piAgents";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {

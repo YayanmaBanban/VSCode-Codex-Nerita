@@ -1,6 +1,6 @@
 // Pi のツール通知を実 `Controller` へ流し、順序・部分結果・停止・別ターンを検証する。
 import { afterEach, expect, it, vi } from "vitest";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import type { PiSessionController } from "../../src/extension/backends/pi/PiSessionController";
 import { assistant, pending, piHarness } from "./piHarness";
 

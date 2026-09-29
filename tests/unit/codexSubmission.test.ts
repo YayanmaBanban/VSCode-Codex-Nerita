@@ -1,8 +1,8 @@
 // フォローアップの待機・受付・競合・失敗を実際の Host 状態管理で確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
-import type { HostMessage } from "../../src/shared/messages";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import type { HostMessage } from "@nerita/shared/messages";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { parseSteeredTurn } from "../../src/extension/backends/codex/protocol/turn";
 
 const harnesses: ReturnType<typeof codexHarness>[] = [];

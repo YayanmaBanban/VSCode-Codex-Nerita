@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 await build({
-	entryPoints: ["src/shared/workflows/compiler.ts"],
+	entryPoints: ["packages/shared/src/workflows/compiler.ts"],
 	outfile: "dist/workflow-compiler.cjs",
 	bundle: true,
 	platform: "node",

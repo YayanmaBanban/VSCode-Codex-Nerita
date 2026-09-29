@@ -1,0 +1,71 @@
+/* VS Code の色変数に追従し、ブラウザでは同じ画面を明暗テーマで表示する。 */
+:root {
+	font-family: var(
+		--vscode-font-family,
+		-apple-system,
+		BlinkMacSystemFont,
+		"Segoe UI",
+		sans-serif
+	);
+	color: var(--nerita-foreground);
+	background: var(--nerita-side-bar-background);
+	font-size: max(12px, var(--vscode-font-size, 13px));
+}
+* {
+	box-sizing: border-box;
+}
+body {
+	margin: 0;
+}
+/* 基本の操作スタイルを Tailwind から上書きできるよう、基本層に置く。 */
+@layer base {
+	button,
+	textarea {
+		font: inherit;
+	}
+	button {
+		cursor: pointer;
+		border: 1px solid var(--nerita-button-border);
+		color: inherit;
+		background: var(--nerita-button-secondary-background);
+		border-radius: 6px;
+		padding: 7px 11px;
+	}
+	button:hover:enabled {
+		filter: brightness(1.14);
+	}
+	button:disabled {
+		opacity: 0.45;
+		cursor: default;
+	}
+	button:focus-visible,
+	textarea:focus-visible {
+		outline: 2px solid var(--nerita-focus-border);
+		outline-offset: 3px;
+	}
+}
+@layer base {
+	h1 {
+		margin: 5px 0 0;
+		font-size: 22px;
+		font-weight: 600;
+		letter-spacing: -0.04em;
+	}
+	h1 span {
+		color: var(--nerita-description-foreground);
+		font-size: 12px;
+		letter-spacing: 0.04em;
+		font-weight: 400;
+		margin-left: 5px;
+	}
+	h2 {
+		font-size: 14px;
+		font-weight: 500;
+	}
+}
+@media (prefers-color-scheme: light) {
+	:root:not(.vscode-dark):not(.vscode-high-contrast) {
+		color: var(--nerita-foreground);
+		background: var(--nerita-side-bar-background);
+	}
+}

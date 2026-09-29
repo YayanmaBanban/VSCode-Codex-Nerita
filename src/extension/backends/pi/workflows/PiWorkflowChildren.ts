@@ -2,7 +2,7 @@
 import type {
 	Workflow,
 	WorkflowStep,
-} from "../../../../shared/workflows/definition";
+} from "@nerita/shared/workflows/definition";
 import type { PiChildRuntimes } from "../PiChildRuntimes";
 import type { PiAgentViews } from "../PiAgentViews";
 import type { PiJobs } from "../PiJobs";

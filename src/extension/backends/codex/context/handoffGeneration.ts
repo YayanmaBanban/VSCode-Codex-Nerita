@@ -1,7 +1,7 @@
 // 要約専用の一時接続で生成し、表示中の会話や参照元を変更しない。
 import type { CodexFactory, CodexConnection } from "../runtime/connection";
 import type { HandoffRequest } from "../../../session/HandoffContext";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 /** 成功・失敗・取消のいずれでも専用プロセスを終了する。 */
 export async function generateCodexHandoff(

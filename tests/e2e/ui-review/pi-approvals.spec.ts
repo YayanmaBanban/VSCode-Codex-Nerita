@@ -1,6 +1,6 @@
 // Pi の承認カードと完了・拒否・停止を明暗・狭幅で操作して撮影する。
 import { expectSent, showState } from "../storyBridge";
-import { piApprovalState } from "../../../src/stories/chat/fixtures/piApproval";
+import { piApprovalState } from "../../../apps/nerita-ui/stories/chat/fixtures/piApproval";
 import { test, expect, type Locator } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {

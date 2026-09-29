@@ -1,7 +1,7 @@
 // 認証解除の両入口と、失敗・競合時に会話を失わない境界を検証する。
 import { expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { responseParsers } from "../../src/extension/backends/codex/protocol/responses";
 
 it("ログアウト要求とRPC応答を境界で検証する", () => {

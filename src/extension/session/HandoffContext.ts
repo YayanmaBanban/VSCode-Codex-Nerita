@@ -2,7 +2,7 @@
 import {
 	handoffSchema,
 	defaultHandoff,
-} from "../../shared/agentManager/config";
+} from "@nerita/shared/agentManager/config";
 import { handoffWithDeadline } from "./HandoffDeadline";
 import { readWorkspaceFile } from "../agentManager/WorkspaceFiles";
 

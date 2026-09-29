@@ -1,5 +1,5 @@
 // プロバイダーが公開したモデル能力のうち、選択 UI と要求制御に必要な情報だけ保持する。
-import type { PiThinkingLevel } from "../../../shared/piProviderControls";
+import type { PiThinkingLevel } from "@nerita/shared/piProviderControls";
 
 /** `none` は Host で `off` へ変換し、未知の推論値は公開しない。 */
 export type PiCatalogModel = {

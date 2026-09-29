@@ -1,12 +1,12 @@
 // 活動イベントと協調ツールのスナップショットを、スレッド単位のカードへ正規化する。
-import type { ChatState } from "../../../../shared/chatState";
+import type { ChatState } from "@nerita/shared/chatState";
 import {
 	agentIconKey,
 	isAgentStatus,
 	type AgentStatus,
 	type SubAgentSummary,
-} from "../../../../shared/subAgents";
-import { isRecord } from "../../../../shared/validation";
+} from "@nerita/shared/subAgents";
+import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";
 
 /** App Server のスレッド状態を表示状態へ変換する。 */

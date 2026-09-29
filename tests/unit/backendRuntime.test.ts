@@ -1,8 +1,8 @@
 // 接続の切替・遅延通知・差分の基準番号・再接続後の送信を検証する。
 import { expect, it, vi } from "vitest";
-import { initialState } from "../../src/shared/chatState";
-import type { HostMessage } from "../../src/shared/messages";
-import { applyStatePatch } from "../../src/shared/toolUpdates";
+import { initialState } from "@nerita/shared/chatState";
+import type { HostMessage } from "@nerita/shared/messages";
+import { applyStatePatch } from "@nerita/shared/toolUpdates";
 import { BackendRuntime } from "../../src/extension/session/BackendRuntime";
 import { codexHarness, deferred } from "./codexHarness";
 

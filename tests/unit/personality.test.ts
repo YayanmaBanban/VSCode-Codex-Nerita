@@ -5,9 +5,9 @@ import { randomUUID } from "node:crypto";
 import { expect, it } from "vitest";
 import { parse, stringify } from "smol-toml";
 import { PersonalityStore } from "../../src/extension/backends/codex/settings/PersonalityStore";
-import { composeDeveloperInstructions } from "../../src/shared/personality";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { composeDeveloperInstructions } from "@nerita/shared/personality";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 /** 実ユーザーの設定に触れない保存先を用意する。 */
 async function fixture() {
 	const root = resolve("dist/personality-tests", randomUUID());

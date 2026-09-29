@@ -4,7 +4,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { realpath } from "node:fs/promises";
 import { canonicalPath } from "../../../security/WorkspacePathPolicy";
 import { containsPath } from "../../../security/AgentAccessPolicy";
-import { workflowFileSchema } from "../../../../shared/workflows/messages";
+import { workflowFileSchema } from "@nerita/shared/workflows/messages";
 
 /** リンク先もルートと定義ディレクトリの内側に収まることを確認する。 */
 export async function workflowDocument(uri: vscode.Uri) {

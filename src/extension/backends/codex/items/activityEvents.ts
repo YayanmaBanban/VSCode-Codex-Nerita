@@ -1,6 +1,6 @@
 // 項目ごとの逐次出力を蓄積し、ターン ID を照合済みの通知だけを表示へ反映する。
-import type { ChatState, ToolSummary } from "../../../../shared/chatState";
-import { isRecord } from "../../../../shared/validation";
+import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
+import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";
 import { fileChanges, textContent } from "./activityItems";
 

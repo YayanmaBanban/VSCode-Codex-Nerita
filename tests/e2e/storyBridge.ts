@@ -1,8 +1,8 @@
 // Storybook の通信境界を観測し、テストが指定した Host 応答だけを注入する。
 import { expect, type Page } from "@playwright/test";
-import type { ChatState } from "../../src/shared/chatState";
-import type { HostMessage, UiMessage } from "../../src/shared/messages";
-import type { StoryBridge } from "../../src/stories/chat/mocks/storyBridge";
+import type { ChatState } from "@nerita/shared/chatState";
+import type { HostMessage, UiMessage } from "@nerita/shared/messages";
+import type { StoryBridge } from "../../apps/nerita-ui/stories/chat/mocks/storyBridge";
 
 /** 実 UI が送信したメッセージを取得する。 */
 export async function sentMessages(page: Page): Promise<UiMessage[]> {

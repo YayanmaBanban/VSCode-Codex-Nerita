@@ -154,7 +154,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./tests/piTrustedRuntime"; export { isHostMessage } from "./src/shared/hostMessageValidation";',
+				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./tests/piTrustedRuntime"; export { isHostMessage } from "./packages/shared/src/hostMessageValidation";',
 			resolveDir: projectRoot,
 		},
 		bundle: true,

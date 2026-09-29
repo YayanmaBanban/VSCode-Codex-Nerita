@@ -1,7 +1,7 @@
 // App Server の機能設定・逐次ツール・利用枠を実際の状態管理経路で検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness } from "./codexHarness";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { parseModels } from "../../src/extension/backends/codex/protocol/account";
 import { parseQuotaResponse } from "../../src/extension/backends/codex/protocol/usage";
 import { parseStartedThread } from "../../src/extension/backends/codex/protocol/turn";
@@ -159,7 +159,7 @@ it("使用量は現在のthreadだけを反映し、利用枠の残率を計算�
 		},
 	});
 	expect(h.session.snapshot().quota?.[0]).toMatchObject({
-		label: "5時間",
+		label: "5h",
 		remaining: 75,
 	});
 	expect(() =>

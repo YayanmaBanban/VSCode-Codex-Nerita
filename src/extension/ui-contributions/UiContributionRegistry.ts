@@ -1,10 +1,10 @@
 // 内部の登録元を集約し、現在の状態に応じた宣言だけを公開する。
-import type { ChatState } from "../../shared/chatState";
+import type { ChatState } from "@nerita/shared/chatState";
 import type {
 	NeritaUiContribution,
 	UiContributions,
-} from "../../shared/uiContributions";
-import { isUiContributions } from "../../shared/uiContributionValidation";
+} from "@nerita/shared/uiContributions";
+import { isUiContributions } from "@nerita/shared/uiContributionValidation";
 import {
 	matchesContribution,
 	type ContributionContext,

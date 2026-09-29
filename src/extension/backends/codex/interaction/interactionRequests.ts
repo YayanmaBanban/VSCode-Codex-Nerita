@@ -1,5 +1,5 @@
 // サーバーからの質問・MCP フォームを、取消可能な Host の入力 UI へ接続する。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import {
 	AppServerRpcError,
 	type AppServerRequest,

@@ -4,7 +4,7 @@ import {
 	issueApprovedToolCall,
 	type ToolCall,
 } from "./ApprovedToolCall";
-import type { PermissionPresentation } from "../../shared/permission";
+import type { PermissionPresentation } from "@nerita/shared/permission";
 import { toolApprovalPresentation } from "./toolApprovalPresentation";
 import { evaluateTrust } from "./trust/TrustGate";
 import { guardrailRegistry } from "./GuardrailRegistry";
@@ -13,7 +13,7 @@ import { jevGuard, reviewJevIfNeeded, type JevGuard } from "./JevGuard";
 import {
 	guardProbeSchema,
 	type GuardResult,
-} from "../../shared/guardrails/messages";
+} from "@nerita/shared/guardrails/messages";
 
 /** UI の許可と `Stop` を同じ寿命に結び付ける。 */
 export type ToolAuthorizer = (

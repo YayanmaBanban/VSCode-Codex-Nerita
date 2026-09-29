@@ -10,12 +10,12 @@ import {
 	handoffSchema,
 	defaultHandoff,
 	piDefaultsSchema,
-} from "../../shared/agentManager/config";
+} from "@nerita/shared/agentManager/config";
 import type {
 	ManagedAgent,
 	ManagerModel,
 	ManagerRequest,
-} from "../../shared/agentManager/messages";
+} from "@nerita/shared/agentManager/messages";
 import { codexAgentFiles } from "./CodexAgentFiles";
 import { editCodexAgent } from "./CodexAgentEdit";
 import {
@@ -28,7 +28,7 @@ import { piSettings, type readPiAgents } from "./PiAgentSettings";
 import {
 	effortError,
 	handoffEffortError,
-} from "../../shared/agentManager/effort";
+} from "@nerita/shared/agentManager/effort";
 
 export type PiAgentReader = () => Promise<
 	Awaited<ReturnType<typeof readPiAgents>>

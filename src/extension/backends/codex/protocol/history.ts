@@ -1,5 +1,5 @@
 // 履歴 RPC の応答から、一覧と復元に必要な検証済みフィールドだけを公開する。
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import {
 	parseStartedThread,
 	parseTurn,

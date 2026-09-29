@@ -1,7 +1,7 @@
 // VS Code 境界を差し替え、複数 Webview の復元・購読・パネル再利用を検証する。
 import { beforeEach, expect, it, vi } from "vitest";
-import { initialState } from "../../src/shared/chatState";
-import { type HostMessage } from "../../src/shared/messages";
+import { initialState } from "@nerita/shared/chatState";
+import { type HostMessage } from "@nerita/shared/messages";
 
 const api = vi.hoisted(() => ({
 	restartBackend: vi.fn().mockResolvedValue(undefined),
@@ -45,8 +45,8 @@ vi.mock("vscode", () => ({
 }));
 import * as vscode from "vscode";
 import { ChatViewProvider } from "../../src/extension/webview/chatViewProvider";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
-import { isUiMessage } from "../../src/shared/uiMessageValidation";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 
 /** イベント解除と送信先を追跡できる最小の表示先を用意する。 */
 function view() {

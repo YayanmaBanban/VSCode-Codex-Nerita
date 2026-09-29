@@ -9,7 +9,7 @@ import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
 import { piHarness, pending } from "./piHarness";
 import type { PiAccount } from "../../src/extension/backends/pi/PiAccount";
 
-import { type HostMessage } from "@/shared/messages";
+import { type HostMessage } from "@nerita/shared/messages";
 
 const payload = {
 	rate_limit: {

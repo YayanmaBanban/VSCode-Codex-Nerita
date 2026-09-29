@@ -1,7 +1,7 @@
 // UI の通信契約と Extension Host の寿命管理をバックエンドから独立させる。
-import type { WorkflowExecution } from "../../shared/workflows/messages";
-import type { ChatState } from "../../shared/chatState";
-import type { HostMessage } from "../../shared/messages";
+import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
+import type { ChatState } from "@nerita/shared/chatState";
+import type { HostMessage } from "@nerita/shared/messages";
 
 /** Webview が利用する最小のセッション境界。 */
 export type ChatSession = {

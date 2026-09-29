@@ -1,7 +1,7 @@
 // アカウント・モデル一覧の応答から、UI に必要な検証済み情報だけを取り出す。
 import type { Model } from "../codex-app-server/v2/Model";
 import type { LoginAccountResponse } from "../codex-app-server/v2/LoginAccountResponse";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 /** モデル設定と画像入力の可否を判断するためのカタログ情報。 */
 export type ModelInfo = Pick<

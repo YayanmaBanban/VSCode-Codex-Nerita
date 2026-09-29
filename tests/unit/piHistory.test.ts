@@ -1,8 +1,8 @@
 // 履歴取得と復元の競合を検証し、失敗時は現在の会話を使用可能なまま残す。
 import { expect, it, vi } from "vitest";
 import { piHarness, pending } from "./piHarness";
-import type { SessionSummary } from "../../src/shared/sessionHistory";
-import { isHostMessage } from "../../src/shared/hostMessageValidation";
+import type { SessionSummary } from "@nerita/shared/sessionHistory";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 
 /** 保存 SDK を差し替え、表示済み履歴を復元できる `Controller` を作る。 */
 async function setup() {

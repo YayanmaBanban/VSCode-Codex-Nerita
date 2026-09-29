@@ -8,7 +8,7 @@ import {
 } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
-import type { SessionSummary } from "../../../shared/sessionHistory";
+import type { SessionSummary } from "@nerita/shared/sessionHistory";
 import { sameCwd } from "../../workspace";
 import { piSessionContext } from "./PiSessionContext";
 import { isPiSessionRunning } from "./PiSessionActivity";

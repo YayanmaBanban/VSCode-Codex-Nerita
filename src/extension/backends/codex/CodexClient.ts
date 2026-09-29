@@ -22,7 +22,7 @@ import { PersonalityStore } from "./settings/PersonalityStore";
 import {
 	composeDeveloperInstructions,
 	type PersonalityMessage,
-} from "../../../shared/personality";
+} from "@nerita/shared/personality";
 
 /** Extension Host が確定したローカル起動条件。 */
 export type CodexClientOptions = {

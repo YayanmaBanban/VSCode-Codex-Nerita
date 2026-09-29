@@ -1,10 +1,10 @@
 // 既存 `ConfigOption` を宣言型 UI へ変換し、バックエンド固有の既定表示を Host に閉じ込める。
 import { fastModeControl, fastModeConfigIds as tiers } from "./fastModeControl";
-import type { ConfigOption } from "../../shared/composer";
+import type { ConfigOption } from "@nerita/shared/composer";
 import type {
 	NeritaUiContribution,
 	NeritaUiControl,
-} from "../../shared/uiContributions";
+} from "@nerita/shared/uiContributions";
 import {
 	UiContributionRegistry,
 	type UiContributionSource,

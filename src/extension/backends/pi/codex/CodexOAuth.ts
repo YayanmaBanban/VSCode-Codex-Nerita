@@ -1,6 +1,6 @@
 // Codex の OAuth `claim` を Host 内だけで読み、認証ヘッダーを共通化する。
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 
 /** `token` の更新・保存は SDK へ委譲し、認証ファイルは直接読まない。 */
 export async function codexOAuth(models: ModelRuntime, signal: AbortSignal) {

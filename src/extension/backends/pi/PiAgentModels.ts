@@ -1,7 +1,7 @@
 // プロバイダーのモデル能力を優先し、不在の場合だけ SDK の推論候補を使う。
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiCatalogModel } from "./PiModelCatalog";
-import type { ManagerModel } from "../../../shared/agentManager/messages";
+import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 
 /** 設定管理ではモデルの公開能力を優先し、SDK の標準列挙値で切り落とさない。 */
 export function piAgentModel(

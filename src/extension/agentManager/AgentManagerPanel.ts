@@ -6,7 +6,7 @@ import {
 	type ManagerReply,
 	type ManagerState,
 	type ManagerModel,
-} from "../../shared/agentManager/messages";
+} from "@nerita/shared/agentManager/messages";
 import type { BackendSession } from "../session/chatSession";
 import { configuredBackend } from "../webview/backendSettings";
 import { webviewHtml } from "../webview/webviewHtml";

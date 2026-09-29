@@ -3,7 +3,7 @@ import type { ClientRequest } from "../codex-app-server/ClientRequest";
 import type { CollaborationMode } from "../codex-app-server/CollaborationMode";
 import type { InitializeResponse } from "../codex-app-server/InitializeResponse";
 import type { ThreadLoadedListResponse } from "../codex-app-server/v2/ThreadLoadedListResponse";
-import { isRecord } from "../../../../shared/validation";
+import { isRecord } from "@nerita/shared/validation";
 import { parseSkills } from "./skills";
 import {
 	parseCommandResult,

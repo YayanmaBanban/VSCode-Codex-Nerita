@@ -1,7 +1,7 @@
 ﻿// 実際の Extension Host で拡張機能の起動・コマンド・UI 資産を確認する。
 import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
-import { access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { CodexClient } from "../src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
 import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
@@ -52,6 +52,14 @@ suite("Nerita for Codex Extension", () => {
 			vscode.extensions.getExtension("nerita-local.nerita-codex")!
 				.extensionUri.fsPath,
 			root,
+			// 配布物へテスト用ファイルを要求せず、検証コード側から渡す。
+			await readFile(
+				join(
+					__dirname,
+					"../../tests/fixtures/workflows/implementation-review.toml",
+				),
+				"utf8",
+			),
 		);
 	});
 	test("subagentアダプターが子の書込みを別途承認し、結果を親へ返す", async function () {

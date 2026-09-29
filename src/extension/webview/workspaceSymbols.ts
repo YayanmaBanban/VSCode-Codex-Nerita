@@ -3,11 +3,11 @@ import * as vscode from "vscode";
 import {
 	isWorkspacePath,
 	type WorkspacePath,
-} from "../../shared/workspacePaths";
+} from "@nerita/shared/workspacePaths";
 import type {
 	WorkspaceSymbolsRequest,
 	WorkspaceSymbolsResult,
-} from "../../shared/workspaceSymbols";
+} from "@nerita/shared/workspaceSymbols";
 
 /** 空検索では全走査せず、重複を除いた最大100件のローカル定義を返す。 */
 export async function searchWorkspaceSymbols(

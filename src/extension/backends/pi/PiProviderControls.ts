@@ -1,6 +1,6 @@
 // 現在のプロバイダーへ設定を委譲し、未登録プロバイダーでは Pi 標準の推論設定を使う。
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
-import type { PiProviderControls as ControlsState } from "../../../shared/piProviderControls";
+import type { PiProviderControls as ControlsState } from "@nerita/shared/piProviderControls";
 import type { PiModelControls, PiProviders } from "./PiProvider";
 import { piProviders } from "./PiProviders";
 import type { PiCatalogSnapshot } from "./PiModelCatalog";
