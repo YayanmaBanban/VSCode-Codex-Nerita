@@ -397,9 +397,12 @@ for (const theme of ["dark", "light"] as const) {
 			}),
 			contentType: "image/png",
 		});
-		await page.getByRole("button", { name: "ファイルを添付" }).hover();
+		await page.getByRole("button", { name: "コンテキストを追加" }).hover();
 		await expect(
-			page.getByRole("tooltip", { name: "ファイルを添付", exact: true }),
+			page.getByRole("tooltip", {
+				name: "コンテキストを追加",
+				exact: true,
+			}),
 		).toHaveCSS("opacity", "1");
 		await info.attach("attachment-hover", {
 			body: await page.screenshot({
@@ -407,7 +410,10 @@ for (const theme of ["dark", "light"] as const) {
 			}),
 			contentType: "image/png",
 		});
-		await page.getByRole("button", { name: "ファイルを添付" }).click();
+		await page.getByRole("button", { name: "コンテキストを追加" }).click();
+		await page
+			.getByRole("option", { name: "添付ファイル", exact: true })
+			.click();
 		await expect(
 			page.locator(".attachment .lucide-file-code"),
 		).toBeVisible();
@@ -471,7 +477,7 @@ for (const theme of ["dark", "light"] as const) {
 			page.getByRole("button", { name: "モデルと推論レベル" }),
 		).toBeDisabled();
 		await expect(
-			page.getByRole("button", { name: "ファイルを添付" }),
+			page.getByRole("button", { name: "コンテキストを追加" }),
 		).toBeDisabled();
 		await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 320);
 		expect(errors).toEqual([]);

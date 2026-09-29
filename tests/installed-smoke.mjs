@@ -91,7 +91,7 @@ try {
 		chat.getByRole("button", { name: "停止", exact: true }),
 	).toHaveCount(0);
 	await expect(
-		chat.getByRole("button", { name: "ファイルを添付" }),
+		chat.getByRole("button", { name: "コンテキストを追加" }),
 	).toBeEnabled();
 	await expect(
 		chat.getByRole("combobox", { name: "Model", exact: true }),

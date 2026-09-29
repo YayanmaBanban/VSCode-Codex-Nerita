@@ -7,6 +7,7 @@ import {
 	$createTextNode,
 	$addUpdateTag,
 	HISTORY_PUSH_TAG,
+	$getRoot,
 } from "lexical";
 import type { ComposerTarget } from "../../../shared/composerTargets";
 import { $pointOffset, $selectOffset } from "./content";
@@ -21,6 +22,39 @@ export type Completion = {
 	marker: string;
 	query: string;
 };
+
+/** ＋から開く場合は本文を置換せず、選択位置への挿入範囲を記録する。 */
+export function $buttonCompletion(): Completion | null {
+	const selection = $getSelection();
+	const selected = $isRangeSelection(selection)
+		? selection.anchor.getNode().getTopLevelElement()
+		: null;
+	const block =
+		selected && !(selected instanceof PastedBlockNode)
+			? selected
+			: $getRoot()
+					.getChildren()
+					.reverse()
+					.find(
+						(node) =>
+							$isElementNode(node) &&
+							!(node instanceof PastedBlockNode),
+					);
+	if (!$isElementNode(block)) {
+		return null;
+	}
+	const offset =
+		selected === block && $isRangeSelection(selection)
+			? $pointOffset(selection.anchor, block)
+			: block.getTextContentSize();
+	return {
+		key: block.getKey(),
+		start: offset,
+		end: offset,
+		marker: "#",
+		query: "",
+	};
+}
 
 /** 行頭の `/`・`@`、任意位置の `#` をカーソル直前から検出する。 */
 export function $completion(): Completion | null {

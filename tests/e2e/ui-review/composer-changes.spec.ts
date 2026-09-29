@@ -20,18 +20,26 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page
 			.getByRole("textbox", { name: "Codexへのメッセージ" })
 			.fill("#");
-		await expect(page.getByRole("option")).toHaveText([
+		expect(
+			await page
+				.getByRole("option")
+				.evaluateAll((items) =>
+					items.map((item) => item.getAttribute("aria-label")),
+				),
+		).toEqual([
 			"添付ファイル",
 			"ファイルとディレクトリ",
 			"シンボル",
 			"セッション",
 			"ハンドオフ",
-			"変更点",
+			"Git の変更",
 		]);
 		await page.screenshot({
 			path: info.outputPath(`categories-${colorScheme}.png`),
 		});
-		await page.getByRole("option", { name: "変更点", exact: true }).click();
+		await page
+			.getByRole("option", { name: "Git の変更", exact: true })
+			.click();
 		await expect(page.getByRole("option")).toHaveCount(4);
 		await expect(page.getByRole("option").nth(0)).toContainText(
 			"Uncommitted",
@@ -49,16 +57,18 @@ for (const colorScheme of ["dark", "light"] as const) {
 			}),
 			contentType: "image/png",
 		});
-		const search = page.getByRole("combobox", { name: "変更点を検索" });
+		const search = page.getByRole("combobox", { name: "Git の変更を検索" });
 		await search.fill("main");
 		await expect(page.getByRole("option")).toHaveCount(1);
 		await search.fill("存在しない候補");
 		await expect(page.getByRole("listbox")).toHaveText(
 			"候補がありません。",
 		);
-		await page.getByRole("button", { name: "カテゴリへ戻る" }).click();
+		await search.press("Escape");
 		await expect(page.getByRole("option")).toHaveCount(6);
-		await page.getByRole("option", { name: "変更点", exact: true }).click();
+		await page
+			.getByRole("option", { name: "Git の変更", exact: true })
+			.click();
 		await page.getByRole("option", { name: /^Staged/ }).click();
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",

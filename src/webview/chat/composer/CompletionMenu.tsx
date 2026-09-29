@@ -6,8 +6,10 @@ import {
 	useRef,
 	useState,
 	type KeyboardEvent,
+	type ReactNode,
 } from "react";
 import type { CompletionItem } from "./completionItems";
+import { CompletionOption } from "./CompletionOption";
 
 /** 検索中も本文の選択範囲を保持し、キーボードとクリックを共通化する。 */
 export function CompletionMenu({
@@ -20,10 +22,11 @@ export function CompletionMenu({
 	onQuery,
 	onKeyDown,
 	onPick,
-	onBack,
 	location,
 	notice,
-	backLabel = "カテゴリへ戻る",
+	header,
+	context,
+	autoFocus,
 }: {
 	id: string;
 	title: string;
@@ -32,12 +35,13 @@ export function CompletionMenu({
 	selected: number;
 	empty: string;
 	onQuery: (text: string) => void;
-	onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+	onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
 	onPick: (item: CompletionItem) => void;
-	onBack?: (() => void) | undefined;
 	location?: string | undefined;
 	notice?: string | undefined;
-	backLabel?: string;
+	header?: ReactNode;
+	context?: boolean;
+	autoFocus?: boolean;
 }) {
 	const list = useRef<HTMLDivElement>(null);
 	const panel = useRef<HTMLDivElement>(null);
@@ -64,24 +68,24 @@ export function CompletionMenu({
 		<div
 			ref={panel}
 			className={cn(
-				"absolute left-0 z-50 w-full min-w-0 rounded-[6px] border border-panel-border bg-input p-2 shadow-lg",
+				"absolute left-0 z-50 flex min-w-0 max-h-[min(560px,80dvh)] flex-col overflow-y-auto rounded-[6px] border border-panel-border bg-input p-2 shadow-lg",
+				context ? "w-[min(460px,calc(100vw-54px))]" : "w-full",
 				above ? "bottom-full mb-2" : "top-0",
 			)}
 			role="region"
 			aria-label={title}
 		>
-			<div className="mb-2 flex items-center gap-2 border-b border-panel-border pb-2">
-				{onBack && (
-					<button
-						type="button"
-						aria-label={backLabel}
-						onMouseDown={(event) => event.preventDefault()}
-						onClick={onBack}
-					>
-						←
-					</button>
+			{header}
+			<div
+				className={cn(
+					"flex shrink-0 items-center gap-2",
+					context
+						? "order-last mt-2 border-t border-panel-border pt-2"
+						: "mb-2 border-b border-panel-border pb-2",
 				)}
+			>
 				<input
+					autoFocus={autoFocus}
 					aria-label={`${title}を検索`}
 					role="combobox"
 					aria-expanded="true"
@@ -114,32 +118,14 @@ export function CompletionMenu({
 				className="max-h-[min(240px,35vh)] overflow-y-auto"
 			>
 				{items.map((item, index) => (
-					<div
+					<CompletionOption
 						key={item.id}
 						id={`${id}-${index}`}
-						role="option"
-						title={
-							item.description
-								? `${item.label}\n${item.description}`
-								: item.label
-						}
-						aria-selected={index === selected}
-						onMouseDown={(event) => event.preventDefault()}
-						onClick={() => onPick(item)}
-						className={cn(
-							"cursor-pointer rounded border border-transparent p-2 [overflow-wrap:anywhere]",
-							index === selected
-								? "bg-settings-hover border-settings-focus"
-								: "hover:bg-settings-hover",
-						)}
-					>
-						<div>{item.label}</div>
-						{item.description && (
-							<div className="line-clamp-2 text-[12px] text-muted">
-								{item.description}
-							</div>
-						)}
-					</div>
+						item={item}
+						selected={index === selected}
+						context={Boolean(context)}
+						onPick={onPick}
+					/>
 				))}
 				{!items.length && (
 					<p className="p-2 text-[12px] text-muted" role="status">

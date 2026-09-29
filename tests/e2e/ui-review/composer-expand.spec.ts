@@ -41,7 +41,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(help).toBeVisible();
 		const footer = page.locator(".composer-footer");
 		await expect(
-			footer.getByRole("button", { name: "ファイルを添付", exact: true }),
+			footer.getByRole("button", { name: "コンテキストを追加", exact: true }),
 		).toBeVisible();
 		await expect(
 			footer.getByRole("button", { name: "送信", exact: true }),

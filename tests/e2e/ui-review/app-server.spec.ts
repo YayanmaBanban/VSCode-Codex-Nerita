@@ -107,7 +107,7 @@ test("App Server の利用可能な操作と送信", async ({ page }, info) => {
 		page.getByRole("heading", { name: "新規チャット", exact: true }),
 	).toBeVisible();
 	await expect(
-		page.getByRole("button", { name: "ファイルを添付" }),
+		page.getByRole("button", { name: "コンテキストを追加" }),
 	).toBeEnabled();
 	await expect(
 		page.getByRole("button", { name: "セッション一覧" }),

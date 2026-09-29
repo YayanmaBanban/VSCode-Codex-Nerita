@@ -34,6 +34,8 @@ export function ComposerInput({
 	skills = [],
 	completionScope = "",
 	collaborationModes = false,
+	contextRequest,
+	onAttach,
 }: {
 	bridge?: Bridge | undefined;
 	parts: ComposerPart[];
@@ -45,6 +47,8 @@ export function ComposerInput({
 	skills?: SkillSummary[];
 	completionScope?: string;
 	collaborationModes?: boolean;
+	contextRequest?: number | undefined;
+	onAttach?: (() => void) | undefined;
 }) {
 	const [error, setError] = useState("");
 	const [expanded, setExpanded] = useState(false);
@@ -75,6 +79,8 @@ export function ComposerInput({
 			<div className="flex items-start gap-2">
 				<div className="relative min-w-0 flex-1">
 					<CompletionPlugin
+						contextRequest={contextRequest}
+						onAttach={onAttach}
 						collaborationModes={collaborationModes}
 						key={completionScope}
 						bridge={bridge}

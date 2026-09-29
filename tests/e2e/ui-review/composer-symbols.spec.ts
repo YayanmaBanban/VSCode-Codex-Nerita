@@ -89,6 +89,9 @@ test("空結果・失敗から再検索し、古い応答を無視する", async
 	await expect(page.getByLabel("検索完了")).toContainText("slow");
 	await expect(page.getByRole("option")).toHaveCount(2);
 	await search.press("Escape");
+	await page
+		.getByRole("combobox", { name: "コンテキストを検索" })
+		.press("Escape");
 	await expect(page.getByRole("listbox")).toHaveCount(0);
 	await expect(input).toHaveText("#");
 	await expect(page.locator(".message.user")).toHaveCount(0);

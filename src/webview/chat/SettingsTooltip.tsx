@@ -45,7 +45,10 @@ export function SettingsTooltip({
 					side="top"
 					sideOffset={8}
 					collisionPadding={12}
-					className="settings-tooltip-positioner z-30"
+					className={cn(
+						"settings-tooltip-positioner",
+						aboveMenu ? "z-[60]" : "z-30",
+					)}
 				>
 					<Tooltip.Popup
 						className={cn(

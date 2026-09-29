@@ -123,7 +123,9 @@ export function useCompletionEditor(
 	);
 	useEffect(() => {
 		const outside = (event: Event) => {
+			// 初回表示中の検索欄へのフォーカスを、パネル外への移動と判定しない。
 			if (
+				latest.current.container.current &&
 				event.target instanceof Node &&
 				!latest.current.container.current?.contains(event.target) &&
 				!editor.getRootElement()?.contains(event.target)

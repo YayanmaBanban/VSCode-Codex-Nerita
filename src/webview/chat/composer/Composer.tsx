@@ -1,5 +1,6 @@
 // 入力領域と送信・停止・設定操作をまとめる。
 import { cn } from "cnfast";
+import { useState } from "react";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { ArrowUp } from "lucide-react";
 import type { ChatState } from "../../../shared/chatState";
@@ -34,6 +35,7 @@ export function Composer({
 	send: (message: UiMessage) => void;
 }) {
 	const drop = useAttachmentDrop(state, locked, send);
+	const [contextRequest, setContextRequest] = useState(0);
 	const inputLocked = locked || drop.reading;
 	const sendLabel = busy ? "フォローアップを送信" : "送信";
 	return (
@@ -65,6 +67,8 @@ export function Composer({
 			)}
 			<div inert={inputLocked} aria-busy={inputLocked}>
 				<ComposerInput
+					contextRequest={contextRequest}
+					onAttach={attachmentAction(state, inputLocked, send)}
 					collaborationModes={
 						state.uiContributions?.surface === "codex"
 					}
@@ -83,7 +87,13 @@ export function Composer({
 			</div>
 			<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
 				<div className="min-w-0 flex-1" inert={inputLocked}>
-					<ComposerSettings state={state} send={send} />
+					<ComposerSettings
+						state={state}
+						send={send}
+						onOpenContext={() =>
+							setContextRequest((value) => value + 1)
+						}
+					/>
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
 					{busy && (
@@ -151,4 +161,32 @@ function sendDisabled(
 		!state.sessionId ||
 		!parts.some((part) => part.text.trim())
 	);
+}
+
+/** 添付可能な状態でのみ、Host のファイル選択を開く操作を渡す。 */
+function attachmentAction(
+	state: ChatState,
+	locked: boolean,
+	send: (message: UiMessage) => void,
+) {
+	if (
+		!state.sessionId ||
+		state.connection !== "ready" ||
+		state.sessionPending ||
+		state.configPending ||
+		state.attachmentPending ||
+		!state.attachmentsSupported ||
+		state.run === "running" ||
+		state.run === "cancelling" ||
+		locked
+	) {
+		return undefined;
+	}
+	const sessionId = state.sessionId;
+	return () =>
+		send({
+			type: "attachment/add",
+			requestId: crypto.randomUUID(),
+			sessionId,
+		});
 }

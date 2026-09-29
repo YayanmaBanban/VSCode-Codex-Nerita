@@ -1,6 +1,5 @@
 // 入力欄の下に添付・使用量・接続中の設定を指定順で配置する。
-import { SettingsTooltip } from "../SettingsTooltip";
-import { Plus } from "lucide-react";
+import { ContextPickerTrigger } from "./ContextPickerTrigger";
 import type { ChatState } from "../../../shared/chatState";
 import type { UiMessage } from "../../../shared/messages";
 import { ContextUsage } from "./ContextUsage";
@@ -12,9 +11,11 @@ import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurfa
 export function ComposerSettings({
 	state,
 	send,
+	onOpenContext,
 }: {
 	state: ChatState;
 	send: (message: UiMessage) => void;
+	onOpenContext?: (() => void) | undefined;
 }) {
 	const connected = settingsConnected(state);
 	const disabled =
@@ -70,27 +71,10 @@ export function ComposerSettings({
 				className="settings-toolbar flex flex-wrap items-center gap-x-[6px] gap-y-[4px]"
 				aria-label="モデル設定"
 			>
-				<SettingsTooltip content="ファイルを添付">
-					<button
-						type="button"
-						className="attach-button flex rounded-[5px] border-0 bg-transparent p-[5px] enabled:hover:bg-settings-hover"
-						aria-label="ファイルを添付"
-						disabled={
-							disabled ||
-							state.attachmentPending ||
-							!state.attachmentsSupported
-						}
-						onClick={() =>
-							send({
-								type: "attachment/add",
-								requestId: crypto.randomUUID(),
-								sessionId: state.sessionId!,
-							})
-						}
-					>
-						<Plus size={16} aria-hidden="true" />
-					</button>
-				</SettingsTooltip>
+				<ContextPickerTrigger
+					disabled={!connected}
+					onOpen={onOpenContext}
+				/>
 				<ContextUsage
 					key={state.sessionId ?? "disconnected"}
 					usage={state.usage}

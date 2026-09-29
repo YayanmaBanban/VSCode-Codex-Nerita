@@ -18,16 +18,17 @@ test("候補のキーボード選択・検索・送信とTabの2スペース", a
 		page.getByRole("listbox", { name: "コンテキスト" }),
 	).toBeVisible();
 	await page.screenshot({ path: info.outputPath("categories.png") });
+	await input.press("ArrowDown");
 	await input.press("Enter");
 	await expect(
-		page.getByRole("listbox", { name: "添付ファイル" }),
+		page.getByRole("listbox", { name: "ファイルとディレクトリ" }),
 	).toBeVisible();
 	await page
-		.getByRole("combobox", { name: "添付ファイルを検索" })
+		.getByRole("combobox", { name: "ファイルとディレクトリを検索" })
 		.fill("sample");
 	await page.screenshot({ path: info.outputPath("attachments.png") });
 	await page
-		.getByRole("combobox", { name: "添付ファイルを検索" })
+		.getByRole("combobox", { name: "ファイルとディレクトリを検索" })
 		.press("Tab");
 	await expect(input).toHaveText("前文日本語 sample.md 後文");
 	await expect(input.locator(".inline-path-reference")).toHaveCount(1);
@@ -121,10 +122,11 @@ test("行頭の判定・クリック挿入・Esc後の再表示・IME確定", as
 	await expect(
 		page.getByRole("listbox", { name: "コンテキスト" }),
 	).toBeVisible();
+	await input.press("ArrowDown");
 	await input.press("ArrowRight");
 	await input.press("a");
 	await expect(
-		page.getByRole("listbox", { name: "添付ファイル" }),
+		page.getByRole("listbox", { name: "ファイルとディレクトリ" }),
 	).toBeVisible();
 	await page.getByRole("option", { name: /alpha.ts/ }).click();
 	await expect(input).toHaveText("alpha.ts");
@@ -148,6 +150,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 			name: "Codexへのメッセージ",
 		});
 		await input.fill("#");
+		await input.press("ArrowDown");
 		await input.press("Enter");
 		await page.getByRole("option", { name: /日本語 sample.md/ }).click();
 		await expect(input.locator(".inline-path-reference")).toHaveCount(1);
@@ -190,6 +193,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.screenshot({
 			path: info.outputPath(`entry-${colorScheme}.png`),
 		});
+		await input.press("Escape");
+		await expect(
+			page.getByRole("listbox", { name: "コンテキスト" }),
+		).toBeVisible();
 		await input.press("Escape");
 		await expect(page.getByRole("listbox")).toHaveCount(0);
 		await input.fill("#");

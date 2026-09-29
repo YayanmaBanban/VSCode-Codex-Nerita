@@ -140,7 +140,10 @@ test("添付画像を一覧と本文のチップから開ける", async ({ page 
 	await page.goto(
 		"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
 	);
-	await page.getByRole("button", { name: "ファイルを添付" }).click();
+	await page.getByRole("button", { name: "コンテキストを追加" }).click();
+	await page
+		.getByRole("option", { name: "添付ファイル", exact: true })
+		.click();
 	await page
 		.locator(".attachments")
 		.getByRole("button", { name: "design.png を開く" })
@@ -153,6 +156,7 @@ test("添付画像を一覧と本文のチップから開ける", async ({ page 
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("#");
+	await input.press("ArrowDown");
 	await input.press("Enter");
 	await page.getByRole("option", { name: /design.png/ }).click();
 	await input.getByRole("button", { name: "design.png を開く" }).click();

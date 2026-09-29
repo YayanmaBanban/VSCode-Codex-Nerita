@@ -41,6 +41,9 @@ export function useWorkspacePaths(
 	const data = result?.uri === uri ? result.data : null;
 	const filtered = workspaceCompletionItems(data, query, current);
 	return {
+		ancestors: stack,
+		goTo: (depth: number) =>
+			setStack((previous) => previous.slice(0, depth)),
 		items: filtered,
 		path: current?.path ?? "ワークスペース",
 		empty: emptyPathMessage(bridge, data, uri),

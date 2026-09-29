@@ -21,19 +21,19 @@ export function handleCompletionKey(
 	options: CompletionKeyboardOptions,
 	inSearch = false,
 ): boolean {
-	const { editor, match, category, close, back } = options;
+	const { editor, match, category, back } = options;
 
 	if (composingCompletion(event, editor)) {
 		return false;
 	}
-	if (!match || event.ctrlKey || event.metaKey || event.altKey) {
+	if (!match || event.ctrlKey || event.metaKey) {
 		return false;
 	}
-	if (event.key === "Escape") {
-		event.preventDefault();
-		close();
-		editor.focus();
+	if (handleBackKey(event, options)) {
 		return true;
+	}
+	if (event.altKey) {
+		return false;
 	}
 	if (backFromCategory(event, category, inSearch)) {
 		event.preventDefault();
@@ -41,6 +41,27 @@ export function handleCompletionKey(
 		return true;
 	}
 	return handleCompletionSelection(event, options);
+}
+
+/** Esc は親階層へ戻り、ルートでのみ閉じる。Alt + ← はルートでも履歴移動を防ぐ。 */
+function handleBackKey(
+	event: KeyboardEvent,
+	options: CompletionKeyboardOptions,
+) {
+	if (
+		event.key !== "Escape" &&
+		!(event.altKey && event.key === "ArrowLeft")
+	) {
+		return false;
+	}
+	event.preventDefault();
+	if (options.category) {
+		options.back();
+	} else if (event.key === "Escape") {
+		options.close();
+		options.editor.focus();
+	}
+	return true;
 }
 
 /** 本文からカテゴリの親へ戻るキーを判定する。 */

@@ -1,5 +1,6 @@
 // 補完候補の生成と絞り込みを、Lexical の選択範囲や編集処理から分離する。
 import type { Attachment } from "../../../shared/composer";
+import { contextCategories } from "./contextCategories";
 import type { SkillSummary } from "../../../shared/skills";
 import type { WorkspacePath } from "../../../shared/workspacePaths";
 import type { ComposerTarget } from "../../../shared/composerTargets";
@@ -22,6 +23,8 @@ export type CompletionItem = {
 	directory?: WorkspacePath;
 	reference?: ComposerTarget;
 	more?: boolean;
+	keywords?: string;
+	disabled?: boolean;
 };
 
 /** サーバーの並びを維持してセッション候補を参照チップに変換する。 */
@@ -115,15 +118,14 @@ export function completionItems(
 			text: `@${skill.name} `,
 		}));
 	} else if (!category) {
-		items = [
-			"添付ファイル",
-			"ファイルとディレクトリ",
-			"シンボル",
-			"セッション",
-			"ハンドオフ",
-			"変更点",
-		].map((label) => ({ id: label, label, category: label }));
-	} else if (category === "変更点") {
+		items = contextCategories.map(({ label, description, keywords }) => ({
+			id: label,
+			label,
+			description,
+			keywords,
+			category: label,
+		}));
+	} else if (category === "Git の変更") {
 		items = (Object.keys(changeScopes) as ChangeScope[]).map((scope) => {
 			const { name, description } = changeScopes[scope];
 			const reference: ChangeReference = { kind: "changes", scope, name };
@@ -135,7 +137,7 @@ export function completionItems(
 				text: `${pathText(reference)} `,
 			};
 		});
-	} else if (category === "添付ファイル") {
+	} else if (category === "ファイルとディレクトリ") {
 		items = attachments.map((file) => ({
 			id: file.id,
 			label: file.name,
@@ -152,7 +154,7 @@ export function completionItems(
 		items = [];
 	}
 	return items.filter((item) =>
-		`${item.label} ${item.description ?? ""}`
+		`${item.label} ${item.description ?? ""} ${item.keywords ?? ""}`
 			.toLocaleLowerCase()
 			.includes(query.toLocaleLowerCase()),
 	);

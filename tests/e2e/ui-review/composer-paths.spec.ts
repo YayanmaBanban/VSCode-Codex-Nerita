@@ -103,7 +103,7 @@ test("階層を戻り、読み込み失敗から復帰してキャンセルす�
 		"フォルダを読み込めませんでした。",
 	);
 	await page.screenshot({ path: info.outputPath("read-error.png") });
-	await page.getByRole("button", { name: "上の階層へ戻る" }).click();
+	await input.press("Alt+ArrowLeft");
 	await expect(page.getByRole("option", { name: /src\// })).toBeVisible();
 	await input.press("ArrowLeft");
 	await expect(page.getByRole("option", { name: /project\// })).toBeVisible();
