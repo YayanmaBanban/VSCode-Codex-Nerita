@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { stat } from "node:fs/promises";
 import type { ExtensionContext } from "vscode";
-import { trustPanel } from "../../src/extension/security/trust/TrustPanel";
+import { trustPanel } from "../../apps/vscode-nerita/src/extension/security/trust/TrustPanel";
 import { sandboxFixture } from "./sandboxFixtures";
 import type { TrustReply } from "@nerita/shared/workspaceTrust";
 
@@ -15,7 +15,7 @@ vi.mock("vscode", () => ({
 	ViewColumn: { Active: -1 },
 	Uri: { joinPath: () => ({}) },
 }));
-vi.mock("../../src/extension/webview/webviewHtml", () => ({
+vi.mock("../../apps/vscode-nerita/src/extension/webview/webviewHtml", () => ({
 	webviewHtml: () => "<html></html>",
 }));
 const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];

@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
 import { completionItems } from "../../apps/nerita-ui/src/chat/composer/completionItems";
-import type { SandboxPolicy } from "../../src/extension/backends/codex/codex-app-server/v2/SandboxPolicy";
+import type { SandboxPolicy } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/SandboxPolicy";
 
 const sessions: ReturnType<typeof codexHarness>["session"][] = [];
 afterEach(async () => {

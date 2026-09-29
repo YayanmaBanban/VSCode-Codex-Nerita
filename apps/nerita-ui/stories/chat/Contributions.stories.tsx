@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { BackendId } from "@nerita/shared/backend";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
-import { createBuiltinUiRegistry } from "../../../../src/extension/ui-contributions/builtinContributions";
+import { createBuiltinUiRegistry } from "../../../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
 import { ComposerSettings } from "../../src/chat/composer/ComposerSettings";
 import "../../src/chat/chat.css";
 

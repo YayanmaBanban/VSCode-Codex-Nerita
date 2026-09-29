@@ -1,4 +1,5 @@
 // 実 SDK のシェル定義と本番サンドボックスで、選択・承認・UTF-8 入出力を検証する。
+import { extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
@@ -16,15 +17,15 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 assert.equal(process.platform, "win32", "Windows実機専用");
-const extensionPath = process.cwd();
+const extensionPath = extensionRoot;
 const out = path.join(extensionPath, "dist/pi-shell-smoke");
 await mkdir(out, { recursive: true });
 await build({
 	stdin: {
 		contents: [
-			'export { createPiShellTools } from "./src/extension/backends/pi/PiShellTools";',
-			'export { createCodexSandboxExecutor, resolveWindowsSandbox } from "./src/extension/backends/codex/CodexSandboxExecutor";',
-			'export { WorkspacePathPolicy } from "./src/extension/security/WorkspacePathPolicy";',
+			'export { createPiShellTools } from "./apps/vscode-nerita/src/extension/backends/pi/PiShellTools";',
+			'export { createCodexSandboxExecutor, resolveWindowsSandbox } from "./apps/vscode-nerita/src/extension/backends/codex/CodexSandboxExecutor";',
+			'export { WorkspacePathPolicy } from "./apps/vscode-nerita/src/extension/security/WorkspacePathPolicy";',
 			'export { trustedPolicy } from "./tests/fixtures/trustedPolicy";',
 		].join("\n"),
 		resolveDir: extensionPath,

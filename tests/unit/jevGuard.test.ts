@@ -4,14 +4,14 @@ import {
 	JevGuard,
 	reviewWithJev,
 	summarizeJevCall,
-} from "../../src/extension/security/JevGuard";
-import { createJevReviewer } from "../../src/extension/security/JevClient";
-import { approveToolCall } from "../../src/extension/security/ApprovalGuard";
+} from "../../apps/vscode-nerita/src/extension/security/JevGuard";
+import { createJevReviewer } from "../../apps/vscode-nerita/src/extension/security/JevClient";
+import { approveToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovalGuard";
 import {
 	consumeApprovedToolCall,
 	type ToolCall,
-} from "../../src/extension/security/ApprovedToolCall";
-import { guardrailRegistry } from "../../src/extension/security/GuardrailRegistry";
+} from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
+import { guardrailRegistry } from "../../apps/vscode-nerita/src/extension/security/GuardrailRegistry";
 import { defaultGuardrails } from "@nerita/shared/guardrails/config";
 import { sandboxFixture } from "./sandboxFixtures";
 

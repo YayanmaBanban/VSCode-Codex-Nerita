@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
 import type { HostMessage } from "@nerita/shared/messages";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
-import { parseSteeredTurn } from "../../src/extension/backends/codex/protocol/turn";
+import { parseSteeredTurn } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/turn";
 
 const harnesses: ReturnType<typeof codexHarness>[] = [];
 afterEach(async () => {

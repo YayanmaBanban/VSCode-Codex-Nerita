@@ -35,7 +35,7 @@ vi.mock("vscode", () => {
 		},
 	};
 });
-import { listWorkspacePaths } from "../../src/extension/webview/workspacePaths";
+import { listWorkspacePaths } from "../../apps/vscode-nerita/src/extension/webview/workspacePaths";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 

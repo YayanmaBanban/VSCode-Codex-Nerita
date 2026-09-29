@@ -9,7 +9,7 @@
 対象を限定する場合は、ファイルやフォルダを引数に渡す。
 
     pnpm textlint:review -- .agents/docs
-    pnpm textlint:review -- .agents/docs/Testing-Policy.md src/extension
+    pnpm textlint:review -- .agents/docs/Testing-Policy.md apps/vscode-nerita/src/extension
 
 変更ファイルだけを対象にする場合は次を使用する。
 

@@ -4,11 +4,11 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
-import { readPiAgents } from "../src/extension/agentManager/PiAgentSettings";
-import { AgentManagerStore } from "../src/extension/agentManager/AgentManagerStore";
-import { readWorkspaceFile } from "../src/extension/agentManager/WorkspaceFiles";
+import { readPiAgents } from "../apps/vscode-nerita/src/extension/agentManager/PiAgentSettings";
+import { AgentManagerStore } from "../apps/vscode-nerita/src/extension/agentManager/AgentManagerStore";
+import { readWorkspaceFile } from "../apps/vscode-nerita/src/extension/agentManager/WorkspaceFiles";
 import { defaultHandoff } from "@nerita/shared/agentManager/config";
-import { agentModelReader } from "../src/extension/agentManager/AgentModelCatalog";
+import { agentModelReader } from "../apps/vscode-nerita/src/extension/agentManager/AgentModelCatalog";
 
 /** Pi の設定保存は、実効モデルを再計算せず定義本文を保持する。 */
 export async function agentManagerSmoke(extensionPath: string) {

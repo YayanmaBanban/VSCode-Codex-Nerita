@@ -44,7 +44,7 @@ vi.mock("vscode", () => ({
 	},
 }));
 import * as vscode from "vscode";
-import { ChatViewProvider } from "../../src/extension/webview/chatViewProvider";
+import { ChatViewProvider } from "../../apps/vscode-nerita/src/extension/webview/chatViewProvider";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 

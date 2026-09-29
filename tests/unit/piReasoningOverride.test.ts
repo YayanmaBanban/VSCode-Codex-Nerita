@@ -4,9 +4,9 @@ import {
 	SessionManager,
 	type AgentSession,
 } from "@earendil-works/pi-coding-agent";
-import { CodexReasoningOverride } from "../../src/extension/backends/pi/codex/CodexReasoningOverride";
-import { CodexProviderControls } from "../../src/extension/backends/pi/codex/CodexProviderControls";
-import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
+import { CodexReasoningOverride } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexReasoningOverride";
+import { CodexProviderControls } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexProviderControls";
+import { normalizeCodexModels } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexModelCatalog";
 import { liveModel } from "./piCatalogHarness";
 
 /** SDK が毎回構築する更新を含まない要求を再現する。 */

@@ -9,7 +9,9 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--new-window",
-				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--skip-welcome",
+				"--skip-release-notes",
+				"--extensionDevelopmentPath=${workspaceFolder}/apps/vscode-nerita",
 				"${workspaceFolder}/.vscode/development.code-workspace",
 				"--disable-extension",
 				"jgclark.vscode-todo-highlight",
@@ -20,7 +22,9 @@
 				"--disable-extension",
 				"vscode.markdown-language-features"
 			],
-			"outFiles": ["${workspaceFolder}/dist/extension.js"],
+			"outFiles": [
+				"${workspaceFolder}/apps/vscode-nerita/dist/extension.js"
+			],
 			"sourceMaps": true,
 			"preLaunchTask": "build: extension"
 		}

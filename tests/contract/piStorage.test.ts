@@ -6,7 +6,7 @@ import { afterEach, expect, it } from "vitest";
 import {
 	piSessionDirectory,
 	preparePiSessionDirectory,
-} from "../../src/extension/backends/pi/PiSessionStore";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionStore";
 
 const fixtures: string[] = [];
 afterEach(async () => {

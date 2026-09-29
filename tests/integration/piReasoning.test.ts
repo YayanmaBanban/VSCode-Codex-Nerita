@@ -13,9 +13,9 @@ import {
 	SettingsManager,
 	type AgentSession,
 } from "@earendil-works/pi-coding-agent";
-import { PiProviderControls } from "../../src/extension/backends/pi/PiProviderControls";
-import { neritaExtensionFactories } from "../../src/extension/backends/pi/PiBuiltinExtensions";
-import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
+import { PiProviderControls } from "../../apps/vscode-nerita/src/extension/backends/pi/PiProviderControls";
+import { neritaExtensionFactories } from "../../apps/vscode-nerita/src/extension/backends/pi/PiBuiltinExtensions";
+import { normalizeCodexModels } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexModelCatalog";
 import { liveModel, oauthToken } from "../unit/piCatalogHarness";
 
 /** HTTP で受け取った要求の検証対象。 */

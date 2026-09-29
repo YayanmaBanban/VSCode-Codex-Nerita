@@ -1,10 +1,10 @@
 // 待機列、背景実行の承認、取消し、履歴復元の境界を検証する。
 import { expect, it, vi } from "vitest";
-import { PiJobs } from "../../src/extension/backends/pi/PiJobs";
-import { PiAgentViews } from "../../src/extension/backends/pi/PiAgentViews";
+import { PiJobs } from "../../apps/vscode-nerita/src/extension/backends/pi/PiJobs";
+import { PiAgentViews } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAgentViews";
 import { pending, piHarness } from "./piHarness";
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
-import { createPiJobTool } from "../../src/extension/backends/pi/PiJobTool";
+import { createPiJobTool } from "../../apps/vscode-nerita/src/extension/backends/pi/PiJobTool";
 
 /** 表示 ID とジョブ ID は共通とし、保存はメモリー内で観測する。 */
 function fixture() {

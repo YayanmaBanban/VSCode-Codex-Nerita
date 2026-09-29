@@ -7,9 +7,9 @@ const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];
 afterEach(async () => {
 	await Promise.all(fixtures.splice(0).map((item) => item.cleanup()));
 });
-import { approvePiTool } from "../../src/extension/backends/pi/PiApprovedTools";
+import { approvePiTool } from "../../apps/vscode-nerita/src/extension/backends/pi/PiApprovedTools";
 import { pending } from "./piHarness";
-import type { ToolAuthorizer } from "../../src/extension/security/ApprovalGuard";
+import type { ToolAuthorizer } from "../../apps/vscode-nerita/src/extension/security/ApprovalGuard";
 
 /** 副作用の代わりに呼出回数と受け取った `signal` を記録する。 */
 async function fixture(name: string) {

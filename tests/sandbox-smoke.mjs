@@ -1,4 +1,5 @@
 // 本番 `Executor` を使う Windows 受入。通信の到達と実行委譲の成功を区別し、個別結果を記録する。
+import { extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
@@ -20,22 +21,22 @@ import { pathToFileURL } from "node:url";
 
 assert.equal(process.platform, "win32", "Windows x64実機専用");
 assert.equal(process.arch, "x64");
-const extensionPath = process.cwd();
+const extensionPath = extensionRoot;
 const out = path.join(extensionPath, "dist/sandbox-smoke");
 await mkdir(out, { recursive: true });
 await build({
 	stdin: {
 		contents: [
-			'export { CodexClient } from "./src/extension/backends/codex/CodexClient";',
-			'export { createCodexSandboxExecutor, resolveWindowsSandbox } from "./src/extension/backends/codex/CodexSandboxExecutor";',
-			'export { issueApprovedToolCall } from "./src/extension/security/ApprovedToolCall";',
-			'export { WorkspacePathPolicy } from "./src/extension/security/WorkspacePathPolicy";',
+			'export { CodexClient } from "./apps/vscode-nerita/src/extension/backends/codex/CodexClient";',
+			'export { createCodexSandboxExecutor, resolveWindowsSandbox } from "./apps/vscode-nerita/src/extension/backends/codex/CodexSandboxExecutor";',
+			'export { issueApprovedToolCall } from "./apps/vscode-nerita/src/extension/security/ApprovedToolCall";',
+			'export { WorkspacePathPolicy } from "./apps/vscode-nerita/src/extension/security/WorkspacePathPolicy";',
 			'export { trustedPolicy } from "./tests/fixtures/trustedPolicy";',
-			'export { createPiSandboxPowerShellTool } from "./src/extension/backends/pi/PiPowerShellTool";',
-			'export { toSandboxPolicy } from "./src/extension/security/AgentAccessPolicy";',
-			'export { commandEnvironment } from "./src/extension/runtime/CommandEnvironment";',
-			'export { resolvePowerShell } from "./src/extension/runtime/PowerShellExecutable";',
-			'export { powerShellCommand } from "./src/extension/runtime/PowerShellCommand";',
+			'export { createPiSandboxPowerShellTool } from "./apps/vscode-nerita/src/extension/backends/pi/PiPowerShellTool";',
+			'export { toSandboxPolicy } from "./apps/vscode-nerita/src/extension/security/AgentAccessPolicy";',
+			'export { commandEnvironment } from "./apps/vscode-nerita/src/extension/runtime/CommandEnvironment";',
+			'export { resolvePowerShell } from "./apps/vscode-nerita/src/extension/runtime/PowerShellExecutable";',
+			'export { powerShellCommand } from "./apps/vscode-nerita/src/extension/runtime/PowerShellCommand";',
 		].join("\n"),
 		resolveDir: extensionPath,
 	},

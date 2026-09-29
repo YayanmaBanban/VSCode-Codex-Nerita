@@ -6,14 +6,20 @@ const fake = vi.hoisted(() => ({
 	read: vi.fn(),
 	notify: vi.fn(),
 }));
-vi.mock("../../src/extension/backends/codex/runtime/executable", () => ({
-	resolveCodexExecutable: () => Promise.resolve("codex.exe"),
-}));
-vi.mock("../../src/extension/backends/codex/runtime/AppServerProcess", () => ({
-	startAppServerProcess: vi.fn(),
-}));
 vi.mock(
-	"../../src/extension/backends/codex/runtime/AppServerTransport",
+	"../../apps/vscode-nerita/src/extension/backends/codex/runtime/executable",
+	() => ({
+		resolveCodexExecutable: () => Promise.resolve("codex.exe"),
+	}),
+);
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerProcess",
+	() => ({
+		startAppServerProcess: vi.fn(),
+	}),
+);
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerTransport",
 	() => ({
 		AppServerTransport: class {
 			request = fake.request;
@@ -21,12 +27,15 @@ vi.mock(
 		},
 	}),
 );
-vi.mock("../../src/extension/backends/codex/settings/PersonalityStore", () => ({
-	PersonalityStore: class {
-		read = fake.read;
-	},
-}));
-import { CodexClient } from "../../src/extension/backends/codex/CodexClient";
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/codex/settings/PersonalityStore",
+	() => ({
+		PersonalityStore: class {
+			read = fake.read;
+		},
+	}),
+);
+import { CodexClient } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
 it("MCP一覧は指定したthreadと詳細度で要求する", async () => {
 	const client = await CodexClient.connect({
 		extensionPath: ".",

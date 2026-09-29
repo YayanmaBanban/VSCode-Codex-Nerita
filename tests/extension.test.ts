@@ -2,7 +2,7 @@
 import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
 import { access, readFile } from "node:fs/promises";
-import { CodexClient } from "../src/extension/backends/codex/CodexClient";
+import { CodexClient } from "../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
 import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
 import { piTrustSmoke } from "./piTrustSmoke";
@@ -11,16 +11,16 @@ import { piWorkflowSmoke } from "./piWorkflowSmoke";
 import { agentManagerSmoke } from "./agentManagerSmoke";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { createPiAuthService } from "../src/extension/backends/pi/PiAuthService";
+import { createPiAuthService } from "../apps/vscode-nerita/src/extension/backends/pi/PiAuthService";
 import {
 	moveSidebar,
 	saveSidebar,
-} from "../src/extension/webview/sidebarLocation";
+} from "../apps/vscode-nerita/src/extension/webview/sidebarLocation";
 
-suite("Nerita for Codex Extension", () => {
+suite("Nerita Extension", () => {
 	test("Agent Manager が同梱 SDK の定義を読み、設定を保存する", async () => {
 		const extension = vscode.extensions.getExtension(
-			"nerita-local.nerita-codex",
+			"nerita-local.nerita",
 		)!;
 		await extension.activate();
 		assert.ok(
@@ -33,8 +33,8 @@ suite("Nerita for Codex Extension", () => {
 	test("未信頼の実SDKでは読取りだけを許可し、Trust後も書込みを承認する", async function () {
 		this.timeout(60000);
 		await piTrustSmoke(
-			vscode.extensions.getExtension("nerita-local.nerita-codex")!
-				.extensionUri.fsPath,
+			vscode.extensions.getExtension("nerita-local.nerita")!.extensionUri
+				.fsPath,
 		);
 	});
 	test("TOML Workflowが子の継続とForkをガード付きで実行する", async function () {
@@ -49,8 +49,8 @@ suite("Nerita for Codex Extension", () => {
 			return;
 		}
 		await piWorkflowSmoke(
-			vscode.extensions.getExtension("nerita-local.nerita-codex")!
-				.extensionUri.fsPath,
+			vscode.extensions.getExtension("nerita-local.nerita")!.extensionUri
+				.fsPath,
 			root,
 			// 配布物へテスト用ファイルを要求せず、検証コード側から渡す。
 			await readFile(
@@ -65,20 +65,20 @@ suite("Nerita for Codex Extension", () => {
 	test("subagentアダプターが子の書込みを別途承認し、結果を親へ返す", async function () {
 		this.timeout(60000);
 		await piSubagentAdapterSmoke(
-			vscode.extensions.getExtension("nerita-local.nerita-codex")!
-				.extensionUri.fsPath,
+			vscode.extensions.getExtension("nerita-local.nerita")!.extensionUri
+				.fsPath,
 		);
 	});
 	test("子と孫の実SDK Tool Callがガード・承認・親の取消しに従う", async function () {
 		this.timeout(60000);
 		const extension = vscode.extensions.getExtension(
-			"nerita-local.nerita-codex",
+			"nerita-local.nerita",
 		)!;
 		await piGuardrailsSmoke(extension.extensionUri.fsPath);
 	});
 	test("Pi認証管理をエディターグループに開き、取消で閉じる", async () => {
 		const extension = vscode.extensions.getExtension(
-			"nerita-local.nerita-codex",
+			"nerita-local.nerita",
 		)!;
 		const abort = new AbortController();
 		const service = createPiAuthService(extension.extensionUri);
@@ -110,16 +110,12 @@ suite("Nerita for Codex Extension", () => {
 		}
 	});
 	test("同梱Pi SDKで本文・ツール結果を受信し、Extension Hostから停止する", async () => {
-		const extension = vscode.extensions.getExtension(
-			"nerita-local.nerita-codex",
-		);
+		const extension = vscode.extensions.getExtension("nerita-local.nerita");
 		assert.ok(extension);
 		await piExtensionSmoke(extension.extensionUri.fsPath);
 	});
 	test("サイドバーの両コンテナへ移動しユーザー設定を保存する", async () => {
-		await vscode.extensions
-			.getExtension("nerita-local.nerita-codex")!
-			.activate();
+		await vscode.extensions.getExtension("nerita-local.nerita")!.activate();
 		const config = vscode.workspace.getConfiguration("nerita.codex");
 		const previous = config.inspect<string>("sidebarLocation")?.globalValue;
 		const commands = await vscode.commands.getCommands(true);
@@ -151,9 +147,7 @@ suite("Nerita for Codex Extension", () => {
 		}
 	});
 	test("同梱 App Server を Extension Host から初期化して終了する", async () => {
-		const extension = vscode.extensions.getExtension(
-			"nerita-local.nerita-codex",
-		);
+		const extension = vscode.extensions.getExtension("nerita-local.nerita");
 		assert.ok(extension);
 		const client = await CodexClient.connect({
 			extensionPath: extension.extensionUri.fsPath,
@@ -175,9 +169,7 @@ suite("Nerita for Codex Extension", () => {
 		}
 	});
 	test("チャット用コマンドを登録し、Webview の資産を同梱する", async () => {
-		const extension = vscode.extensions.getExtension(
-			"nerita-local.nerita-codex",
-		);
+		const extension = vscode.extensions.getExtension("nerita-local.nerita");
 		assert.ok(extension);
 		await extension.activate();
 		const commands = await vscode.commands.getCommands(true);
@@ -188,6 +180,9 @@ suite("Nerita for Codex Extension", () => {
 		for (const asset of [
 			"dist/webview/index.js",
 			"dist/webview/index.css",
+			"dist/media/nerita_store_icon.png",
+			"dist/media/nerita.svg",
+			"dist/media/nerita-24.svg",
 			"dist/runtime/node_modules/@openai/codex/LICENSE",
 			"dist/runtime/node_modules/@openai/codex/NOTICE",
 		]) {

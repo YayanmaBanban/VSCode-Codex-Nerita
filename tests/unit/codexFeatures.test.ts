@@ -2,9 +2,9 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness } from "./codexHarness";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
-import { parseModels } from "../../src/extension/backends/codex/protocol/account";
-import { parseQuotaResponse } from "../../src/extension/backends/codex/protocol/usage";
-import { parseStartedThread } from "../../src/extension/backends/codex/protocol/turn";
+import { parseModels } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/account";
+import { parseQuotaResponse } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/usage";
+import { parseStartedThread } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/turn";
 
 const sessions: ReturnType<typeof codexHarness>["session"][] = [];
 

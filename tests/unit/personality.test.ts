@@ -4,7 +4,7 @@ import { resolve, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { expect, it } from "vitest";
 import { parse, stringify } from "smol-toml";
-import { PersonalityStore } from "../../src/extension/backends/codex/settings/PersonalityStore";
+import { PersonalityStore } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/PersonalityStore";
 import { composeDeveloperInstructions } from "@nerita/shared/personality";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";

@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import type { NeritaUiContribution } from "@nerita/shared/uiContributions";
 import { isState } from "@nerita/shared/stateValidation";
-import { UiContributionRegistry } from "../../src/extension/ui-contributions/UiContributionRegistry";
-import { createBuiltinUiRegistry } from "../../src/extension/ui-contributions/builtinContributions";
-import { SessionState } from "../../src/extension/session/sessionState";
-import type { ContributionContext } from "../../src/extension/ui-contributions/contributionConditions";
-import { PiSessionController } from "../../src/extension/backends/pi/PiSessionController";
+import { UiContributionRegistry } from "../../apps/vscode-nerita/src/extension/ui-contributions/UiContributionRegistry";
+import { createBuiltinUiRegistry } from "../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
+import { SessionState } from "../../apps/vscode-nerita/src/extension/session/sessionState";
+import type { ContributionContext } from "../../apps/vscode-nerita/src/extension/ui-contributions/contributionConditions";
+import { PiSessionController } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import { piHarness } from "./piHarness";
 
 const context: ContributionContext = {

@@ -1,11 +1,12 @@
 // 専用プロファイルの実 VS Code で、設定の作成・検査・適用・再起動後の復元を確認する。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
 
-const root = process.cwd();
+const root = repoRoot;
 const output = path.join(root, "dist/guardrails-vscode");
 await mkdir(output, { recursive: true });
 const fixture = await mkdtemp(path.join(output, "run-"));
@@ -39,7 +40,7 @@ try {
 		args: [
 			`--user-data-dir=${profile}`,
 			`--extensions-dir=${path.join(fixture, "extensions")}`,
-			`--extensionDevelopmentPath=${root}`,
+			`--extensionDevelopmentPath=${extensionRoot}`,
 			"--disable-extensions",
 			"--skip-welcome",
 			"--skip-release-notes",

@@ -1,14 +1,14 @@
 // 差分資料が通常送信・追加指示へ届き、取得失敗や接続変更では送信しないことを確認する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred } from "./codexHarness";
-import type { AdditionalContext } from "../../src/extension/backends/codex/context/additionalContext";
+import type { AdditionalContext } from "../../apps/vscode-nerita/src/extension/backends/codex/context/additionalContext";
 import type { HostMessage } from "@nerita/shared/messages";
-import { ChangeContextError } from "../../src/extension/backends/codex/context/changeContext";
-import type * as ChangeContextModule from "../../src/extension/backends/codex/context/changeContext";
+import { ChangeContextError } from "../../apps/vscode-nerita/src/extension/backends/codex/context/changeContext";
+import type * as ChangeContextModule from "../../apps/vscode-nerita/src/extension/backends/codex/context/changeContext";
 
 const context = vi.hoisted(() => ({ read: vi.fn() }));
 vi.mock(
-	"../../src/extension/backends/codex/context/changeContext",
+	"../../apps/vscode-nerita/src/extension/backends/codex/context/changeContext",
 	async (original) => ({
 		...(await original<typeof ChangeContextModule>()),
 		changeContext: context.read,

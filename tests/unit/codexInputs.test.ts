@@ -4,11 +4,11 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { AuthFlow } from "../../src/extension/backends/codex/interaction/AuthFlow";
-import { attachmentInput } from "../../src/extension/backends/codex/context/attachmentInput";
-import { interactionRequest } from "../../src/extension/backends/codex/interaction/interactionRequests";
-import type { InteractionService } from "../../src/extension/backends/codex/interaction/interactionService";
-import { permissionProfile } from "../../src/extension/backends/codex/settings/permissionProfile";
+import { AuthFlow } from "../../apps/vscode-nerita/src/extension/backends/codex/interaction/AuthFlow";
+import { attachmentInput } from "../../apps/vscode-nerita/src/extension/backends/codex/context/attachmentInput";
+import { interactionRequest } from "../../apps/vscode-nerita/src/extension/backends/codex/interaction/interactionRequests";
+import type { InteractionService } from "../../apps/vscode-nerita/src/extension/backends/codex/interaction/interactionService";
+import { permissionProfile } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/permissionProfile";
 import { deferred } from "./codexHarness";
 
 it("ログイン開始応答より早い完了通知を保持する", async () => {

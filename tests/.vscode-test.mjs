@@ -1,3 +1,4 @@
+import { extensionRoot } from "../config/workspace-paths.cjs";
 import { defineConfig } from "@vscode/test-cli";
 import { fileURLToPath } from "node:url";
 
@@ -6,8 +7,7 @@ export default defineConfig({
 		new URL("../out/tests/extension.test.js", import.meta.url),
 	),
 	extensionDevelopmentPath:
-		process.env.NERITA_TEST_EXTENSION_PATH ??
-		fileURLToPath(new URL("..", import.meta.url)),
+		process.env.NERITA_TEST_EXTENSION_PATH ?? extensionRoot,
 	useInstallation: process.env.VSCODE_EXECUTABLE
 		? { fromPath: process.env.VSCODE_EXECUTABLE }
 		: undefined,

@@ -3,12 +3,18 @@ import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, historyThread } from "./codexHarness";
 import { piHarness } from "./piHarness";
 const mocks = vi.hoisted(() => ({ generate: vi.fn() }));
-vi.mock("../../src/extension/backends/codex/context/handoffGeneration", () => ({
-	generateCodexHandoff: mocks.generate,
-}));
-vi.mock("../../src/extension/agentManager/WorkspaceFiles", () => ({
-	readWorkspaceFile: () => Promise.resolve(undefined),
-}));
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/codex/context/handoffGeneration",
+	() => ({
+		generateCodexHandoff: mocks.generate,
+	}),
+);
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/agentManager/WorkspaceFiles",
+	() => ({
+		readWorkspaceFile: () => Promise.resolve(undefined),
+	}),
+);
 const cleanups: (() => Promise<unknown>)[] = [];
 afterEach(async () => {
 	await Promise.all(cleanups.splice(0).map((close) => close()));

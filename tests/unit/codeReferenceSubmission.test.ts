@@ -1,18 +1,21 @@
 // 本文取得を含む通常送信・追加指示・停止時の境界を両バックエンドで確認する。
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const api = vi.hoisted(() => ({ read: vi.fn() }));
-vi.mock("../../src/extension/session/codeReferenceContext", () => ({
-	readCodeReferenceContext: api.read,
-	CodeReferenceError: class extends Error {
-		constructor() {
-			super("コードを追加し直してください");
-		}
-	},
-}));
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/session/codeReferenceContext",
+	() => ({
+		readCodeReferenceContext: api.read,
+		CodeReferenceError: class extends Error {
+			constructor() {
+				super("コードを追加し直してください");
+			}
+		},
+	}),
+);
 import { codexHarness, deferred } from "./codexHarness";
 import { piHarness } from "./piHarness";
 import type { HostMessage } from "@nerita/shared/messages";
-import { CodeReferenceError } from "../../src/extension/session/codeReferenceContext";
+import { CodeReferenceError } from "../../apps/vscode-nerita/src/extension/session/codeReferenceContext";
 
 const dispose: (() => Promise<void>)[] = [];
 const codeReferences = [

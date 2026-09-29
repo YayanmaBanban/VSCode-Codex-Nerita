@@ -2,6 +2,7 @@
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const { extensionRoot, extensionRequire } = require("./workspace-paths.cjs");
 const { cleanupLicenses } = require("./cleanup-licenses.cjs");
 
 /** 公式リリースからライセンスを取得し、取得失敗時は生成物を更新せずに止める。 */
@@ -30,15 +31,19 @@ async function downloadLicenses(version) {
 async function main() {
 	const root = path.resolve(__dirname, "..");
 	const requestedVersion = readRequestedVersion();
-	installRequestedVersion(requestedVersion, root);
-	const codexJson = require.resolve("@openai/codex/package.json");
+	installRequestedVersion(requestedVersion, extensionRoot);
+	const codexJson = extensionRequire.resolve("@openai/codex/package.json");
 	const { version } = require(codexJson);
 	if (requestedVersion !== undefined && requestedVersion !== version) {
 		throw new Error(
 			`指定した Codex ${requestedVersion} とインストール済みの ${version} が一致しません。`,
 		);
 	}
-	if (require("../package.json").dependencies["@openai/codex"] !== version) {
+	if (
+		require("../apps/vscode-nerita/package.json").dependencies[
+			"@openai/codex"
+		] !== version
+	) {
 		throw new Error(
 			"直接依存の Codex を完全固定し、pnpm install を実行してください。",
 		);
@@ -46,7 +51,7 @@ async function main() {
 	const licenses = await downloadLicenses(version);
 	const out = path.join(
 		root,
-		"src/extension/backends/codex/codex-app-server",
+		"apps/vscode-nerita/src/extension/backends/codex/codex-app-server",
 	);
 	const result = spawnSync(
 		process.execPath,

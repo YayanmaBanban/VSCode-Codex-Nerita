@@ -1,7 +1,7 @@
 // Host から届く設定 DTO を固定し、ブラウザーでは描画と設定要求だけを再現する。
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { createBuiltinUiRegistry } from "../../../../src/extension/ui-contributions/builtinContributions";
+import { createBuiltinUiRegistry } from "../../../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import type { ConfigOption } from "@nerita/shared/composer";
 import type { UiMessage } from "@nerita/shared/messages";

@@ -2,12 +2,12 @@
 import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { WorkspaceTrustStore } from "../../src/extension/security/trust/WorkspaceTrustStore";
-import { bindTrustContext } from "../../src/extension/security/trust/TrustGate";
+import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
+import { bindTrustContext } from "../../apps/vscode-nerita/src/extension/security/trust/TrustGate";
 import {
 	createWorkspaceAccessPolicy,
 	WorkspacePathPolicy,
-} from "../../src/extension/security/WorkspacePathPolicy";
+} from "../../apps/vscode-nerita/src/extension/security/WorkspacePathPolicy";
 
 /** 外側検証データも専用一時配下に置き、ユーザーデータに触れない。 */
 export async function sandboxFixture() {

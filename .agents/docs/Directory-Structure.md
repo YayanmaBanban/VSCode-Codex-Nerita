@@ -1,8 +1,10 @@
 # ソースのディレクトリ構成
 
-`apps/nerita-ui/src/`・`src/extension/`・`packages/shared/src/` のファイル追加・分割・移動時に参照します。配置・分割・共通化の判断基準は3領域に適用し、コンポーネント・フックなど React 固有の構成は Webview に適用します。以下のパスはリポジトリルートからの相対パスです。
+`apps/nerita-ui/src/`・`apps/vscode-nerita/src/extension/`・`packages/shared/src/` のファイル追加・分割・移動時に参照します。配置・分割・共通化の判断基準は3領域に適用し、コンポーネント・フックなど React 固有の構成は Webview に適用します。以下のパスはリポジトリルートからの相対パスです。
 
 ## 配置の判断
+
+ルートはワークスペース全体の実行入口です。VS Code の Manifest・Host ビルド・VSIX 配布は `apps/vscode-nerita/` が担当します。画像・SVG の正本は `apps/nerita-ui/media/` に置きます。VS Code が直接読むブランド資産だけをビルド時に `apps/vscode-nerita/dist/media/` へ収集します。
 
 まず実行環境で領域を選び、その中で同じ機能に属する処理・型を近くに置きます。Webview ではコンポーネント・フック・CSS、Extension Host では VSCode 連携・プロセス通信、共有領域では通信型・検証処理を責務に応じてまとめます。Storybook 専用コードは `apps/nerita-ui/stories/` に分離し、実機側に対応する機能別の構成にします。
 
@@ -11,9 +13,9 @@
 | React の起動・画面の組み立て       | `apps/nerita-ui/src/index.tsx`・`apps/nerita-ui/src/chat/`    |
 | 共通 UI 部品・テーマ               | `apps/nerita-ui/src/ui/`・`apps/nerita-ui/src/ui/theme.css`   |
 | Webview 側の Host 通信             | `apps/nerita-ui/src/bridge/vscodeBridge.ts`                   |
-| 拡張機能の起動・VSCode 連携        | `src/extension/extension.ts`・`src/extension/webview/`        |
-| バックエンド固有のエージェント連携 | `src/extension/backends/codex/`・`src/extension/backends/pi/` |
-| Host 共通のセッション・添付処理    | `src/extension/session/`                                      |
+| 拡張機能の起動・VSCode 連携        | `apps/vscode-nerita/src/extension/extension.ts`・`apps/vscode-nerita/src/extension/webview/`        |
+| バックエンド固有のエージェント連携 | `apps/vscode-nerita/src/extension/backends/codex/`・`apps/vscode-nerita/src/extension/backends/pi/` |
+| Host 共通のセッション・添付処理    | `apps/vscode-nerita/src/extension/session/`                                      |
 | 両側で共有する通信型・検証処理     | `packages/shared/src/`                                        |
 
 既存の配置は各領域で確認できます。追加説明はルートの `README.md` にありますが、配置の判断基準はこのガイド内で完結しています。
@@ -29,7 +31,7 @@
 
 ## Webview と Extension Host の境界
 
-Webview 側から `src/extension/` や VSCode API・Node.js 専用モジュールをインポートしません。Host 側も `apps/nerita-ui/src/` の UI 実装をインポートしません。通信は `apps/nerita-ui/src/bridge/vscodeBridge.ts` のメッセージ経由で行います。両側に必要な型・検証処理は `packages/shared/src/` へ置きます。共有領域から両領域の実装や React・DOM・VSCode API・Node.js 専用 API に依存させません。Webview 用と Host 用のエクスポートを同じ公開ファイルにまとめないでください。
+Webview 側から `apps/vscode-nerita/src/extension/` や VSCode API・Node.js 専用モジュールをインポートしません。Host 側も `apps/nerita-ui/src/` の UI 実装をインポートしません。通信は `apps/nerita-ui/src/bridge/vscodeBridge.ts` のメッセージ経由で行います。両側に必要な型・検証処理は `packages/shared/src/` へ置きます。共有領域から両領域の実装や React・DOM・VSCode API・Node.js 専用 API に依存させません。Webview 用と Host 用のエクスポートを同じ公開ファイルにまとめないでください。
 
 共有契約は `@nerita/shared/*` から参照します。`Bridge` 型の正本は `packages/shared/src/bridge.ts` です。バンドラーは `nerita-source` 条件でソースを解決します。Node.js で実行するテストには `pnpm build:shared` で生成した JavaScript を使います。
 

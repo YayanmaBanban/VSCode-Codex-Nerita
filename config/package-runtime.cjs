@@ -2,6 +2,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createRequire } = require("node:module");
+const { extensionRoot, extensionRequire } = require("./workspace-paths.cjs");
 const { bundlePi } = require("./package-pi.cjs");
 
 /** 指定した Codex とネイティブ資産を、pnpm のリンクから独立して同梱する。 */
@@ -65,11 +66,13 @@ async function packageRuntime() {
 	if (process.platform !== "win32" || process.arch !== "x64") {
 		throw new Error("VSIX のビルドには Windows x64 が必要です。");
 	}
-	const codexJson = require.resolve("@openai/codex/package.json");
+	const codexJson = extensionRequire.resolve("@openai/codex/package.json");
 	const { version } = require(codexJson);
-	const generated = require("../src/extension/backends/codex/codex-app-server/version.json");
+	const generated = require("../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/version.json");
 	if (
-		require("../package.json").dependencies["@openai/codex"] !== version ||
+		require("../apps/vscode-nerita/package.json").dependencies[
+			"@openai/codex"
+		] !== version ||
 		generated.version !== version ||
 		generated.experimental !== false
 	) {
@@ -83,7 +86,7 @@ async function packageRuntime() {
 	for (const name of ["LICENSE", "NOTICE"]) {
 		await fs.access(path.join(notices, name));
 	}
-	const projectRoot = await fs.realpath(path.resolve(__dirname, ".."));
+	const projectRoot = await fs.realpath(extensionRoot);
 	const target = await resetRuntime(projectRoot);
 	await copyCodex(codexJson, target);
 	await bundlePi(projectRoot, target);

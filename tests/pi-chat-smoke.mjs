@@ -1,4 +1,5 @@
 // 実 Pi SDK とローカル OpenAI 互換サーバーで、通信・read・`Stop` を外部認証なしで検証する。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from "node:fs/promises";
@@ -13,9 +14,9 @@ import { piPackagesSmoke } from "./pi-packages-smoke.mjs";
 import { piSubagentSmoke } from "./pi-subagent-smoke.mjs";
 import { piPlatformSmoke } from "./pi-platform-smoke.mjs";
 
-const projectRoot = process.cwd();
+const projectRoot = repoRoot;
 // 展開した VSIX も同じ疎通検証へ渡せるようにし、梱包漏れを検出する。
-const extensionPath = path.resolve(process.argv[2] ?? projectRoot);
+const extensionPath = path.resolve(process.argv[2] ?? extensionRoot);
 const fixture = await mkdtemp(path.join(tmpdir(), "nerita-pi-smoke-"));
 const cwd = path.join(fixture, "workspace");
 const agentDir = path.join(fixture, "agent");
@@ -154,7 +155,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { PiSessionController } from "./src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./tests/piTrustedRuntime"; export { isHostMessage } from "./packages/shared/src/hostMessageValidation";',
+				'export { PiSessionController } from "./apps/vscode-nerita/src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./tests/piTrustedRuntime"; export { isHostMessage } from "./packages/shared/src/hostMessageValidation";',
 			resolveDir: projectRoot,
 		},
 		bundle: true,

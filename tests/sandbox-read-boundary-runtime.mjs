@@ -1,4 +1,5 @@
 // 同梱 Codex の CLI と App Server に同一の有限読取り設定を渡す。
+import { repoRoot } from "../config/workspace-paths.cjs";
 import { build } from "esbuild";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
@@ -11,10 +12,10 @@ export async function loadRuntime(out) {
 	await build({
 		stdin: {
 			contents: [
-				'export { resolveCodexExecutable } from "./src/extension/backends/codex/runtime/executable";',
-				'export { AppServerTransport } from "./src/extension/backends/codex/runtime/AppServerTransport";',
+				'export { resolveCodexExecutable } from "./apps/vscode-nerita/src/extension/backends/codex/runtime/executable";',
+				'export { AppServerTransport } from "./apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerTransport";',
 			].join("\n"),
-			resolveDir: process.cwd(),
+			resolveDir: repoRoot,
 		},
 		bundle: true,
 		platform: "node",

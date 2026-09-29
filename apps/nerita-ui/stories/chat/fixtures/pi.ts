@@ -1,6 +1,6 @@
 // Pi の会話とツールの表示状態。送信内容や承認結果から状態を導出しない。
 import { initialState, type ChatState } from "@nerita/shared/chatState";
-import { createBuiltinUiRegistry } from "../../../../../src/extension/ui-contributions/builtinContributions";
+import { createBuiltinUiRegistry } from "../../../../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
 
 /** 独立した Pi の表示状態を作る。 */
 export function piState(

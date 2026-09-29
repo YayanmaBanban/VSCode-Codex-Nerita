@@ -4,8 +4,8 @@ import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
-import { PiModelCatalogService } from "../../src/extension/backends/pi/PiModelCatalogService";
+import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
+import { PiModelCatalogService } from "../../apps/vscode-nerita/src/extension/backends/pi/PiModelCatalogService";
 
 /** 取得するカタログと同じ形式のモデル情報。未使用項目も含め、候補から除外する条件を検証する。 */
 export function liveModel(slug = "astra", extra: Record<string, unknown> = {}) {

@@ -4,7 +4,7 @@ import { initialState } from "@nerita/shared/chatState";
 import {
 	itemPatch,
 	messagePatch,
-} from "../../src/extension/backends/codex/items/chatItems";
+} from "../../apps/vscode-nerita/src/extension/backends/codex/items/chatItems";
 
 it("本文の完了はTurnの実行中にも反映される", () => {
 	const state = { ...initialState(), runId: "turn", run: "running" as const };

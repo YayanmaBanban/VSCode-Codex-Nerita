@@ -1,0 +1,4 @@
+# 配布時にルートの正本から収集する文書
+/README.md
+/LICENSE
+/CHANGELOG.md

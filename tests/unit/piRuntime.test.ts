@@ -4,7 +4,7 @@ import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import {
 	resolvePiInitialModel,
 	type PiRuntimeOptions,
-} from "../../src/extension/backends/pi/PiRuntime";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 
 /** 初期選択に必要な利用可能候補だけを用意する。 */
 function fixture() {

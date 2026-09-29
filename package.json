@@ -1,227 +1,9 @@
 {
-	"name": "nerita-codex",
-	"displayName": "Nerita for Codex",
-	"description": "codex-app-serverを利用した、Codex用のVSCode拡張機能",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/YayanmaBanban/VSCode-Codex-Nerita"
-	},
+	"name": "nerita-workspace",
+	"private": true,
 	"version": "0.0.1",
 	"engines": {
-		"vscode": "^1.137.0"
-	},
-	"categories": [
-		"AI",
-		"Other"
-	],
-	"activationEvents": [],
-	"publisher": "nerita-local",
-	"icon": "media/nerita_store_icon.png",
-	"extensionKind": [
-		"ui"
-	],
-	"capabilities": {
-		"untrustedWorkspaces": {
-			"supported": "limited",
-			"description": "未信頼のWorkspaceではPiの読取りだけを利用できます。コード実行には明示的なTrustが必要です。"
-		},
-		"virtualWorkspaces": false
-	},
-	"main": "./dist/extension.js",
-	"contributes": {
-		"customEditors": [
-			{
-				"viewType": "nerita.pi.guardrails",
-				"displayName": "Pi ガードレール",
-				"selector": [
-					{
-						"filenamePattern": "**/.pi/guardrails.json"
-					}
-				],
-				"priority": "default"
-			},
-			{
-				"viewType": "nerita.pi.workflow",
-				"displayName": "Pi Workflow",
-				"selector": [
-					{
-						"filenamePattern": "**/.pi/workflows/*.toml"
-					}
-				],
-				"priority": "default"
-			}
-		],
-		"jsonValidation": [
-			{
-				"fileMatch": "**/.nerita/handoff.json",
-				"url": "./dist/handoff.schema.json"
-			},
-			{
-				"fileMatch": "**/.pi/guardrails.json",
-				"url": "./dist/guardrails.schema.json"
-			}
-		],
-		"configuration": {
-			"title": "Nerita for Codex",
-			"properties": {
-				"nerita.backend": {
-					"type": "string",
-					"enum": [
-						"codex",
-						"pi"
-					],
-					"default": "codex",
-					"scope": "window",
-					"description": "チャットに使用するエージェント。オプションから変更するとバックエンドだけを再起動し、新しい会話を開始します。設定ファイルで変更した場合はウィンドウを再読み込みしてください。Piの書き込み・PowerShell実行には毎回の承認が必要です。"
-				},
-				"nerita.pi.sessionStorage": {
-					"type": "string",
-					"enum": [
-						"global",
-						"workspace"
-					],
-					"default": "global",
-					"scope": "window",
-					"enumDescriptions": [
-						"Pi標準の ~/.pi/agent/sessions/ に保存",
-						"ワークスペース内の Pi 会話保存領域に保存"
-					],
-					"markdownDescription": "Piの新規会話の保存先。未送信の新規会話では初回送信時にも設定変更を反映します。送信済み・復元済みの会話は元の保存先を維持します。workspaceでは会話の保存領域に `.gitignore` を内容 `*` で初回生成します。既存ファイルは上書きしません。"
-				},
-				"nerita.pi.trustedExtensionPaths": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"minLength": 1
-					},
-					"default": [],
-					"scope": "application",
-					"markdownDescription": "Pi拡張のロードを許可するcanonicalな絶対ファイルパス。ユーザー設定だけを使用し、ディレクトリや未指定のentryはロードしません。依存コードを含むHost権限の実行を信頼する設定です。Toolは毎回承認しますが、任意JavaScriptやHTTP通信をShell Sandboxで隔離する保証ではありません。変更はPiへの再接続後に反映されます。"
-				},
-				"nerita.codex.changes.exclude": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"minLength": 1
-					},
-					"default": [
-						"**/*.lock",
-						"**/package-lock.json",
-						"**/pnpm-lock.yaml",
-						"**/yarn.lock",
-						"**/dist/**",
-						"**/build/**",
-						"**/generated/**",
-						"**/*.generated.*"
-					],
-					"scope": "resource",
-					"markdownDescription": "変更点のプレビュー・送信から除外するGit globパターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダー単位で設定でき、次回の差分取得から反映されます。"
-				},
-				"nerita.codex.sidebarLocation": {
-					"type": "string",
-					"enum": [
-						"primary",
-						"secondary"
-					],
-					"enumDescriptions": [
-						"プライマリ サイドバー",
-						"セカンダリ サイドバー"
-					],
-					"default": "secondary",
-					"scope": "application",
-					"description": "Codexチャットを表示するサイドバー。"
-				}
-			}
-		},
-		"commands": [
-			{
-				"command": "nerita.trust.manage",
-				"title": "Nerita: Pi のワークスペース Trust を管理"
-			},
-			{
-				"command": "nerita.agents.manage",
-				"title": "Nerita: Agent Manager を開く"
-			},
-			{
-				"command": "nerita.trust.manage",
-				"title": "Nerita: Workspace Trustを管理"
-			},
-			{
-				"command": "nerita.trust.revoke",
-				"title": "Nerita: Workspace Trustを取消し"
-			},
-			{
-				"command": "nerita.pi.guardrails",
-				"title": "Nerita: Pi ガードレールを編集"
-			},
-			{
-				"command": "nerita.pi.setupCodexWindowsSandbox",
-				"title": "Nerita: Pi用のCodex Windows Sandboxをセットアップ",
-				"enablement": "isWindows && config.nerita.backend == pi"
-			},
-			{
-				"command": "nerita.codex.codeBlock",
-				"title": "コードブロック化"
-			},
-			{
-				"command": "nerita.codex.openChat",
-				"title": "Nerita for Codex: チャットを開く"
-			},
-			{
-				"command": "nerita.codex.newSession",
-				"title": "Nerita for Codex: 新規会話"
-			},
-			{
-				"command": "nerita.pi.workflow",
-				"title": "Nerita: Pi Workflow を作成"
-			}
-		],
-		"menus": {
-			"webview/context": [
-				{
-					"command": "nerita.codex.codeBlock",
-					"when": "(webviewId == 'nerita.codex.chat' || webviewId == 'nerita.codex.editor') && webviewSection == 'composer' && composerCanCodeBlock",
-					"group": "edit@10"
-				}
-			],
-			"commandPalette": [
-				{
-					"command": "nerita.pi.setupCodexWindowsSandbox",
-					"when": "isWindows && config.nerita.backend == pi"
-				},
-				{
-					"command": "nerita.codex.codeBlock",
-					"when": "false"
-				}
-			]
-		},
-		"viewsContainers": {
-			"activitybar": [
-				{
-					"id": "nerita-primary",
-					"title": "Nerita for Codex",
-					"icon": "media/nerita.svg"
-				}
-			],
-			"secondarySidebar": [
-				{
-					"id": "nerita",
-					"title": "Nerita for Codex",
-					"icon": "media/nerita.svg"
-				}
-			]
-		},
-		"views": {
-			"nerita-primary": [],
-			"nerita": [
-				{
-					"id": "nerita.codex.chat",
-					"name": "Nerita for Codex",
-					"type": "webview",
-					"icon": "media/nerita.svg"
-				}
-			]
-		}
+		"node": ">=22"
 	},
 	"scripts": {
 		"handoff:generate": "node scripts/generate-handoff-schema.cjs",
@@ -233,19 +15,18 @@
 		"codex:generate": "node config/generate-codex.cjs",
 		"pi:generate": "node config/generate-pi.cjs",
 		"pi:verify": "node config/verify-pi.cjs",
-		"compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
-		"compile-tests": "pnpm build:shared && tsc -p tests/tsconfig.json",
+		"compile": "pnpm check-types && pnpm lint && pnpm build",
+		"compile-tests": "pnpm build:shared && pnpm check-types:tests && node config/build-vscode-tests.cjs",
 		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
-		"package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-		"package:vsix": "vsce package --no-dependencies --target win32-x64 --out dist/nerita.vsix",
-		"vscode:prepublish": "pnpm run package",
+		"package": "pnpm check-types && pnpm lint && pnpm build:shared && pnpm --filter @nerita/ui build --production && pnpm --filter nerita package",
+		"package:vsix": "pnpm --filter nerita package:vsix",
 		"watch": "npm-run-all -p watch:*",
-		"watch:esbuild": "node esbuild.js --watch",
-		"watch-tests": "tsc -p tests/tsconfig.json -w",
-		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+		"watch:esbuild": "pnpm build:shared && pnpm --filter nerita watch",
+		"watch-tests": "npm-run-all -p test-watch:*",
+		"watch:tsc": "pnpm --filter nerita exec tsc --noEmit --watch -p tsconfig.json",
 		"watch:webview": "pnpm --filter @nerita/ui exec tsc -p tsconfig.json --watch",
 		"check": "pnpm lint && pnpm check-types && pnpm check-types:tests",
-		"check-types": "tsc --noEmit && pnpm --filter @nerita/shared check && pnpm --filter @nerita/ui check",
+		"check-types": "pnpm --filter nerita check && pnpm --filter @nerita/shared check && pnpm --filter @nerita/ui check",
 		"check-types:tests": "tsc --noEmit -p tests/tsconfig.json",
 		"check-types:tools": "tsc -p config/tsconfig.json && tsc -p tests/e2e/tsconfig.json",
 		"lint": "eslint .",
@@ -284,7 +65,12 @@
 		"test:codex:history": "pnpm build:shared && node tests/codex-history-smoke.mjs",
 		"test:local": "pnpm check && pnpm test:host && pnpm test:runtime && pnpm test:tooling && node --test tests/pi-handoff-context.test.mjs && pnpm test:storybook && pnpm ui-review && pnpm test && pnpm test:pi:chat && pnpm test:codex",
 		"test:acceptance": "pnpm test:codex:chat && pnpm test:codex:features && pnpm test:codex:history && pnpm test:pi:subagents && pnpm test:pi:workflow && pnpm test:pi:shell && pnpm test:pi:web && pnpm test:sandbox && pnpm test:sandbox:read-boundary && pnpm test:guardrails:ui && pnpm test:workflow:ui && pnpm test:sandbox:ui && node tests/header-smoke.mjs && node tests/composer-context-menu-smoke.mjs && node tests/launch-smoke.mjs && node tests/installed-smoke.mjs",
-		"build:shared": "pnpm --filter @nerita/shared build"
+		"build:shared": "pnpm --filter @nerita/shared build",
+		"build:ui": "pnpm --filter @nerita/ui build",
+		"build:vscode": "pnpm --filter nerita build",
+		"build": "pnpm build:shared && pnpm build:ui && pnpm build:vscode",
+		"test-watch:types": "tsc --noEmit --watch --project tests/tsconfig.json",
+		"test-watch:bundle": "node config/build-vscode-tests.cjs --watch"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -297,7 +83,6 @@
 		"@vitest/coverage-v8": "latest",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.0.0",
-		"@vscode/vsce": "^4.0.0",
 		"esbuild": "^0.28.1",
 		"eslint": "^10.5.0",
 		"eslint-config-prettier": "^10.1.8",
@@ -313,19 +98,14 @@
 		"typescript-eslint": "^8.61.1",
 		"vitest": "latest",
 		"lexical": "^0.50.0",
-		"vite": "^8.3.0"
+		"vite": "^8.3.0",
+		"@nerita/shared": "workspace:*",
+		"zod": "^4.6.5",
+		"@earendil-works/pi-coding-agent": "0.87.1",
+		"smol-toml": "^1.8.0"
 	},
 	"overrides": {
 		"diff": "^8.0.4",
 		"serialize-javascript": "^7.0.6"
-	},
-	"dependencies": {
-		"@earendil-works/pi-coding-agent": "0.87.1",
-		"@openai/codex": "0.157.0",
-		"diff": "8.0.4",
-		"jsonc-parser": "^3.3.1",
-		"smol-toml": "^1.8.0",
-		"zod": "^4.6.5",
-		"@nerita/shared": "workspace:*"
 	}
 }

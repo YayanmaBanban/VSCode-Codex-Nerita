@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { mkdir, writeFile, symlink } from "node:fs/promises";
 import { delimiter, dirname, join } from "node:path";
-import { resolvePowerShell } from "../../src/extension/runtime/PowerShellExecutable";
+import { resolvePowerShell } from "../../apps/vscode-nerita/src/extension/runtime/PowerShellExecutable";
 import { sandboxFixture } from "./sandboxFixtures";
 
 const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];

@@ -15,11 +15,14 @@ test("Pi の保存済み履歴を変更せず、圧縮要約と保持範囲を�
 		await rm(root, { recursive: true, force: true });
 	});
 	const sdk = await import(
-		new URL("../dist/runtime/pi.mjs", import.meta.url).href
+		new URL("../apps/vscode-nerita/dist/runtime/pi.mjs", import.meta.url)
+			.href
 	);
 	const target = path.join(root, "store.mjs");
 	await build({
-		entryPoints: ["src/extension/backends/pi/PiSessionStore.ts"],
+		entryPoints: [
+			"apps/vscode-nerita/src/extension/backends/pi/PiSessionStore.ts",
+		],
 		outfile: target,
 		platform: "node",
 		format: "esm",

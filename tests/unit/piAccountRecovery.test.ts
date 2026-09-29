@@ -7,7 +7,7 @@ import type {
 import {
 	PiAccount,
 	type PiAuthService,
-} from "../../src/extension/backends/pi/PiAccount";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { piHarness, pending } from "./piHarness";
 
 /** 認証とモデルの状態だけを差し替える SDK 境界。 */

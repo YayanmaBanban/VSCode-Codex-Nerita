@@ -1,5 +1,5 @@
 // 承認待ちの表示データを操作から独立して生成する。
-import { toolApprovalPresentation } from "../../../../../src/extension/security/toolApprovalPresentation";
+import { toolApprovalPresentation } from "../../../../../apps/vscode-nerita/src/extension/security/toolApprovalPresentation";
 import type { ChatState } from "@nerita/shared/chatState";
 /** ツール別の表示を選ぶ。承認の結果は計算しない。 */
 export function piApprovalState(name: string): Partial<ChatState> {

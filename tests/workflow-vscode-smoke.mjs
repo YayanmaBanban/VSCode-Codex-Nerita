@@ -1,4 +1,5 @@
 // 専用プロファイルの VS Code で、Workflow 文書の作成・保存・再表示を確認する。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -6,7 +7,7 @@ import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
 import { parse } from "smol-toml";
 
-const root = process.cwd();
+const root = repoRoot;
 const output = path.join(root, "dist/workflow-vscode");
 await mkdir(output, { recursive: true });
 const fixture = await mkdtemp(path.join(output, "run-"));
@@ -41,7 +42,7 @@ try {
 		args: [
 			`--user-data-dir=${profile}`,
 			`--extensions-dir=${path.join(fixture, "extensions")}`,
-			`--extensionDevelopmentPath=${root}`,
+			`--extensionDevelopmentPath=${extensionRoot}`,
 			"--disable-extensions",
 			"--skip-welcome",
 			"--skip-release-notes",

@@ -12,11 +12,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parse } from "smol-toml";
 import { z } from "zod";
-import { AgentManagerStore } from "../../src/extension/agentManager/AgentManagerStore";
-import { editCodexAgent } from "../../src/extension/agentManager/CodexAgentEdit";
-import { codexAgentFiles } from "../../src/extension/agentManager/CodexAgentFiles";
-import { piSettings } from "../../src/extension/agentManager/PiAgentSettings";
-import { readWorkspaceFile } from "../../src/extension/agentManager/WorkspaceFiles";
+import { AgentManagerStore } from "../../apps/vscode-nerita/src/extension/agentManager/AgentManagerStore";
+import { editCodexAgent } from "../../apps/vscode-nerita/src/extension/agentManager/CodexAgentEdit";
+import { codexAgentFiles } from "../../apps/vscode-nerita/src/extension/agentManager/CodexAgentFiles";
+import { piSettings } from "../../apps/vscode-nerita/src/extension/agentManager/PiAgentSettings";
+import { readWorkspaceFile } from "../../apps/vscode-nerita/src/extension/agentManager/WorkspaceFiles";
 import {
 	defaultHandoff,
 	handoffSchema,

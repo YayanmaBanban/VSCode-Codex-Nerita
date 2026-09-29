@@ -3,7 +3,7 @@ import { expect, it, vi } from "vitest";
 import { initialState } from "@nerita/shared/chatState";
 import type { HostMessage } from "@nerita/shared/messages";
 import { applyStatePatch } from "@nerita/shared/toolUpdates";
-import { BackendRuntime } from "../../src/extension/session/BackendRuntime";
+import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
 import { codexHarness, deferred } from "./codexHarness";
 
 /** 解除後に遅れて届く通知も再現できる接続を作る。 */

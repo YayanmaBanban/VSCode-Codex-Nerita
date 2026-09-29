@@ -1,11 +1,11 @@
 // Pi 候補と補助メタデータの独立性、推論能力、取消競合を検証する。
 import { describe, expect, it } from "vitest";
-import { normalizeCodexModels } from "../../src/extension/backends/pi/codex/CodexModelCatalog";
+import { normalizeCodexModels } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexModelCatalog";
 import { catalogHarness, liveModel } from "./piCatalogHarness";
 import { pending, piHarness } from "./piHarness";
-import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
+import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { validComposerField } from "@nerita/shared/composerValidation";
-import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
+import { PiQuotaService } from "../../apps/vscode-nerita/src/extension/backends/pi/PiQuotaService";
 
 describe("Pi live model catalog", () => {
 	it("provider切替前にliveを取得し、Pi先頭の非掲載Sparkを選ばない", async () => {

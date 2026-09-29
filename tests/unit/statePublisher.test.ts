@@ -1,13 +1,10 @@
 // 出力集約の順序、差分復元、緊急通知と破棄を検証する。
 import { afterEach, expect, test, vi } from "vitest";
-import { StatePublisher } from "../../src/extension/session/statePublisher";
+import { StatePublisher } from "../../apps/vscode-nerita/src/extension/session/statePublisher";
 import { initialState, type ToolSummary } from "@nerita/shared/chatState";
 import type { HostMessage } from "@nerita/shared/messages";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
-import {
-	applyToolUpdates,
-	applyStatePatch,
-} from "@nerita/shared/toolUpdates";
+import { applyToolUpdates, applyStatePatch } from "@nerita/shared/toolUpdates";
 
 afterEach(() => vi.useRealTimers());
 

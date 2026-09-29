@@ -1,4 +1,5 @@
 // 実 VS Code の Webview から、模擬モデルと実 App Server による承認・停止を検証する。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { execFileSync } from "node:child_process";
@@ -28,7 +29,7 @@ async function trustFrame(page) {
 	return result;
 }
 
-const root = process.cwd();
+const root = repoRoot;
 const output = path.join(root, "dist/vscode-sandbox-smoke");
 await mkdir(output, { recursive: true });
 const fixture = await mkdtemp(path.join(output, "run-"));
@@ -148,7 +149,7 @@ try {
 		args: [
 			`--user-data-dir=${userData}`,
 			`--extensions-dir=${path.join(fixture, "extensions")}`,
-			`--extensionDevelopmentPath=${root}`,
+			`--extensionDevelopmentPath=${extensionRoot}`,
 			"--disable-extensions",
 			"--skip-welcome",
 			"--skip-release-notes",
@@ -177,9 +178,9 @@ try {
 	}).toPass({ timeout: 15_000 });
 	await page
 		.locator(".quick-input-widget input")
-		.fill(">Nerita for Codex: チャットを開く");
+		.fill(">Nerita: チャットを開く");
 	await expect(page.locator(".quick-input-list")).toContainText(
-		"Nerita for Codex: チャットを開く",
+		"Nerita: チャットを開く",
 	);
 	await page.keyboard.press("Enter");
 	let frame;

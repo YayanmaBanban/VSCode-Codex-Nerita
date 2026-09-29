@@ -1,17 +1,21 @@
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import { openCommand } from "./fixtures/openCommand.mjs";
 // 実際の VS Code でエディタ移動・下書き同期・サイドバー復元を検証する。
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const executablePath = process.argv[2] ?? process.env.VSCODE_EXECUTABLE;
 if (!executablePath) {
 	throw new Error("VS Codeの実行ファイルを指定してください");
 }
-const output = path.resolve("dist/header-smoke");
-await mkdir(output, { recursive: true });
-const manifest = JSON.parse(await readFile("package.json", "utf8"));
+const outputRoot = path.resolve("dist/header-smoke");
+await mkdir(outputRoot, { recursive: true });
+const output = await mkdtemp(path.join(outputRoot, "run-"));
+const manifest = JSON.parse(
+	await readFile(path.join(extensionRoot, "package.json"), "utf8"),
+);
 const command = manifest.contributes.commands.find(
 	(item) => item.command === "nerita.codex.openChat",
 ).title;
@@ -24,13 +28,13 @@ const app = await electron.launch({
 	args: [
 		`--user-data-dir=${path.join(output, "profile")}`,
 		`--extensions-dir=${path.join(output, "extensions")}`,
-		`--extensionDevelopmentPath=${process.cwd()}`,
+		`--extensionDevelopmentPath=${extensionRoot}`,
 		"--skip-welcome",
 		"--skip-release-notes",
 		"--disable-workspace-trust",
 		"--disable-updates",
 		"--locale=en",
-		process.cwd(),
+		repoRoot,
 	],
 });
 try {

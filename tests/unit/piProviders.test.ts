@@ -7,9 +7,9 @@ import type {
 import type {
 	PiModelControls,
 	PiProviders,
-} from "../../src/extension/backends/pi/PiProvider";
-import { PiProviderControls } from "../../src/extension/backends/pi/PiProviderControls";
-import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiProvider";
+import { PiProviderControls } from "../../apps/vscode-nerita/src/extension/backends/pi/PiProviderControls";
+import { PiQuotaService } from "../../apps/vscode-nerita/src/extension/backends/pi/PiQuotaService";
 
 describe("Pi providerの登録境界", () => {
 	it("追加providerの設定候補・操作・要求変換を登録だけで有効化する", () => {

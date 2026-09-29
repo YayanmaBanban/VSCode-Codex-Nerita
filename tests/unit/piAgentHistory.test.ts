@@ -5,8 +5,8 @@ import type { SessionEntry } from "@earendil-works/pi-coding-agent";
 import {
 	PiAgentHistory,
 	restorePiAgentRecords,
-} from "../../src/extension/backends/pi/PiAgentHistory";
-import { PiAgentViews } from "../../src/extension/backends/pi/PiAgentViews";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiAgentHistory";
+import { PiAgentViews } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAgentViews";
 import { assistant, piHarness } from "./piHarness";
 
 /** JSONL と同じコピー境界を使い、SDK の記録操作だけを差し替える。 */

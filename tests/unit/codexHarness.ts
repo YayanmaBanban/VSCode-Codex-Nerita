@@ -1,13 +1,13 @@
 // App Server の応答順序と通知を任意に制御する、状態管理テスト用の接続。
-import type { ModelInfo } from "../../src/extension/backends/codex/protocol/account";
+import type { ModelInfo } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/account";
 import { vi } from "vitest";
-import type { ContextTurnStartParams } from "../../src/extension/backends/codex/context/additionalContext";
-import type { ThreadStartParams } from "../../src/extension/backends/codex/codex-app-server/v2/ThreadStartParams";
-import type { AppServerCallbacks } from "../../src/extension/backends/codex/runtime/AppServerTransport";
-import { CodexSessionController } from "../../src/extension/backends/codex/CodexSessionController";
-import type { CodexConnection } from "../../src/extension/backends/codex/runtime/connection";
-import type { HistoryThread } from "../../src/extension/backends/codex/protocol/history";
-import type { CodexSelectionStore } from "../../src/extension/backends/codex/settings/modelSelection";
+import type { ContextTurnStartParams } from "../../apps/vscode-nerita/src/extension/backends/codex/context/additionalContext";
+import type { ThreadStartParams } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ThreadStartParams";
+import type { AppServerCallbacks } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerTransport";
+import { CodexSessionController } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";
+import type { CodexConnection } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/connection";
+import type { HistoryThread } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/history";
+import type { CodexSelectionStore } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/modelSelection";
 
 /** 各テストで保存形式や本文を上書きできる履歴を用意する。 */
 export function historyThread(id = "saved"): HistoryThread {

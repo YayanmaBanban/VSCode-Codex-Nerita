@@ -3,5 +3,5 @@ dist/
 out/
 node_modules/
 coverage/
-src/extension/backends/codex/codex-app-server
+apps/vscode-nerita/src/extension/backends/codex/codex-app-server
 **/*.md

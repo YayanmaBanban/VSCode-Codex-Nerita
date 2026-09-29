@@ -32,7 +32,7 @@ try {
 	const page = await app.firstWindow();
 	await page.waitForSelector(".monaco-workbench", { timeout: 30000 });
 	await page.screenshot({ path: path.join(root, "startup.png") });
-	await openCommand(page, "Nerita for Codex: チャットを開く");
+	await openCommand(page, "Nerita: チャットを開く");
 	let chat;
 	// Webview の準備は新規フレームの読み込みで非同期に進む。
 	for (let attempt = 0; attempt < 100; attempt++) {
@@ -94,7 +94,7 @@ try {
 		chat.getByRole("button", { name: "コンテキストを追加" }),
 	).toBeEnabled();
 	await expect(
-		chat.getByRole("combobox", { name: "Model", exact: true }),
+		chat.getByRole("button", { name: "モデルと推論レベル", exact: true }),
 	).toBeEnabled();
 	await expect(
 		chat.getByRole("button", { name: "セッション一覧" }),
@@ -108,7 +108,7 @@ try {
 	await page.keyboard.press("F1");
 	await page
 		.locator(".quick-input-widget input")
-		.fill(">Nerita for Codex: チャットを開く");
+		.fill(">Nerita: チャットを開く");
 	await page.keyboard.press("Enter");
 	for (let attempt = 0; attempt < 100; attempt++) {
 		chat = await findPromptFrame(page, chat);
@@ -182,7 +182,7 @@ try {
 		.click();
 	await expect(panel.getByRole("listitem")).toHaveCount(0);
 	await panel
-		.getByRole("button", { name: "アーカイブ済み", exact: true })
+		.getByRole("button", { name: "アーカイブ", exact: true })
 		.click();
 	await expect(panel.getByRole("listitem")).toHaveCount(1);
 	await page.screenshot({ path: path.join(root, "history-archived.png") });
@@ -192,9 +192,7 @@ try {
 		})
 		.click();
 	await expect(panel.getByRole("listitem")).toHaveCount(0);
-	await panel
-		.getByRole("button", { name: "通常の履歴", exact: true })
-		.click();
+	await panel.getByRole("button", { name: "履歴", exact: true }).click();
 	await panel
 		.getByRole("button", { name: "インストール済み履歴テストを開く" })
 		.click();

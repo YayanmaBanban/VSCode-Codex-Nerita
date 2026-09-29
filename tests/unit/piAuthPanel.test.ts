@@ -1,6 +1,6 @@
 // VS Code のパネル境界を差し替え、入力の寿命・秘密値・取消を検証する。
 import { expect, it, vi } from "vitest";
-import { createPiAuthService } from "../../src/extension/backends/pi/PiAuthService";
+import { createPiAuthService } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAuthService";
 import type { PiAuthState } from "@nerita/shared/piAuth";
 import { Uri } from "vscode";
 

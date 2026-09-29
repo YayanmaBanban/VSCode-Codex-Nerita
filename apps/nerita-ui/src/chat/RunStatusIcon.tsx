@@ -1,7 +1,7 @@
 // 実行状態に対応する同梱の猫 SVG を、テーマ色で表示する。
-import writing from "../../../../media/icons/cat-writing-glasses-48.svg?raw";
-import loaf from "../../../../media/icons/cat-loaf-glasses-48.svg?raw";
-import startled from "../../../../media/icons/cat-writing-startled-48-fixed.svg?raw";
+import writing from "../../media/icons/cat-writing-glasses-48.svg?raw";
+import loaf from "../../media/icons/cat-loaf-glasses-48.svg?raw";
+import startled from "../../media/icons/cat-writing-startled-48-fixed.svg?raw";
 import "./thinkingIndicator.css";
 import "./catLoaf.css";
 import "./catStartled.css";

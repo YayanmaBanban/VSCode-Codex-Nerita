@@ -3,7 +3,7 @@ import { expect, it } from "vitest";
 import {
 	forkContext,
 	type PiForkMessage,
-} from "../../src/extension/backends/pi/PiForkContext";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiForkContext";
 import { assistant } from "./piHarness";
 
 const parent = { provider: "local", id: "test" };

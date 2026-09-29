@@ -6,7 +6,7 @@ import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import {
 	droppedAttachments,
 	disposeDroppedAttachments,
-} from "../../src/extension/webview/droppedAttachments";
+} from "../../apps/vscode-nerita/src/extension/webview/droppedAttachments";
 
 afterEach(disposeDroppedAttachments);
 

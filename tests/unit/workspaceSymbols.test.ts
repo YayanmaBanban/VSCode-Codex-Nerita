@@ -8,7 +8,7 @@ vi.mock("vscode", () => ({
 	commands: { executeCommand: api.executeCommand },
 	workspace: { getWorkspaceFolder: api.getWorkspaceFolder },
 }));
-import { searchWorkspaceSymbols } from "../../src/extension/webview/workspaceSymbols";
+import { searchWorkspaceSymbols } from "../../apps/vscode-nerita/src/extension/webview/workspaceSymbols";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { pathText, validReferences } from "@nerita/shared/composerReferences";

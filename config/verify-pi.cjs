@@ -53,7 +53,7 @@ async function main() {
 					...process.env,
 					NERITA_VERIFY_VSIX: path.resolve(
 						__dirname,
-						"../dist/nerita.vsix",
+						"../apps/vscode-nerita/dist/nerita.vsix",
 					),
 					NERITA_VERIFY_DIRECTORY: temporary,
 				},

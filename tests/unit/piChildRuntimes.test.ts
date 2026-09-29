@@ -1,11 +1,11 @@
 // 共通 Host 子 Runtime の上限・起動取消し・履歴分離を検証する。
 import { expect, it, vi } from "vitest";
-import { PiChildRuntimes } from "../../src/extension/backends/pi/PiChildRuntimes";
+import { PiChildRuntimes } from "../../apps/vscode-nerita/src/extension/backends/pi/PiChildRuntimes";
 import type {
 	PiRuntimeOptions,
 	PiRuntimeSession,
-} from "../../src/extension/backends/pi/PiRuntime";
-import type { AgentAccessPolicy } from "../../src/extension/security/AgentAccessPolicy";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
+import type { AgentAccessPolicy } from "../../apps/vscode-nerita/src/extension/security/AgentAccessPolicy";
 import { pending } from "./piHarness";
 
 /** SDK 初期化待ちと終了待ちを独立して制御する。 */

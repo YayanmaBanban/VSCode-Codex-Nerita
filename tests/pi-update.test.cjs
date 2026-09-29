@@ -218,7 +218,20 @@ test("指定版を完全固定し、公式ライセンスを改変せず保存�
 	assert.equal(result.exitCode, undefined);
 	assert.equal(result.cleanups.length, 1);
 	assert.deepEqual(result.installs, [
-		["add", "--save-exact", "@earendil-works/pi-coding-agent@0.86.1"],
+		[
+			"--filter",
+			"nerita",
+			"add",
+			"--save-exact",
+			"@earendil-works/pi-coding-agent@0.86.1",
+		],
+		[
+			"add",
+			"--workspace-root",
+			"--save-dev",
+			"--save-exact",
+			"@earendil-works/pi-coding-agent@0.86.1",
+		],
 	]);
 	assert.equal(
 		result.writes

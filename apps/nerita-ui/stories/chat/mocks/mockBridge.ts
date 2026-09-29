@@ -1,6 +1,6 @@
 // 表示状態と外部データの固定応答を組み合わせる。
 import type { BackendId } from "@nerita/shared/backend";
-import { createBuiltinUiRegistry } from "../../../../../src/extension/ui-contributions/builtinContributions";
+import { createBuiltinUiRegistry } from "../../../../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
 import { scenarioState, type Scenario } from "../fixtures/chatState";
 import { createStoryBridge } from "./storyBridge";
 import { withAttachmentResources } from "./attachmentResources";

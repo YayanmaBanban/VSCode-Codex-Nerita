@@ -1,7 +1,7 @@
 // MCP コマンドの検証・ページ取得と、接続変更時の古い応答の破棄を確認する。
 import { expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({ workspace: {}, window: {} }));
-import { responseParsers } from "../../src/extension/backends/codex/protocol/responses";
+import { responseParsers } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/responses";
 import { codexHarness, deferred } from "./codexHarness";
 import { mcpStatusFixture } from "../fixtures/mcpStatusFixture";
 import type { McpServerSummary } from "@nerita/shared/mcp";

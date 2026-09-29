@@ -39,8 +39,8 @@ vi.mock("vscode", () => ({
 	},
 }));
 import { Range } from "vscode";
-import { CopiedCode } from "../../src/extension/webview/copiedCode";
-import { readCodeReferenceContext } from "../../src/extension/session/codeReferenceContext";
+import { CopiedCode } from "../../apps/vscode-nerita/src/extension/webview/copiedCode";
+import { readCodeReferenceContext } from "../../apps/vscode-nerita/src/extension/session/codeReferenceContext";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 
 const reference = {

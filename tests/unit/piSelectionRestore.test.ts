@@ -1,6 +1,6 @@
 // 保存した推論設定をカタログの候補と照合し、起動時に一度だけ復元することを確認する。
 import { describe, expect, it, vi } from "vitest";
-import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
+import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { catalogHarness } from "./piCatalogHarness";
 
 describe("Piの推論復元", () => {

@@ -1,4 +1,5 @@
 // 導入済み pi-subagents の定義と承認境界を検証し、外部コードの起動を防ぐ。
+import { extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
@@ -7,7 +8,7 @@ import { join, resolve } from "node:path";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
-const extensionPath = process.cwd();
+const extensionPath = extensionRoot;
 const packageDir =
 	process.env.NERITA_SUBAGENTS_PACKAGE ??
 	join(homedir(), ".pi/agent/npm/node_modules/pi-subagents");
@@ -26,9 +27,9 @@ await build({
 	stdin: {
 		contents: [
 			'export { trustedPolicy } from "./tests/fixtures/trustedPolicy";',
-			'export { loadPiResources } from "./src/extension/backends/pi/PiResources";',
-			'export { loadSubagentDefinitions } from "./src/extension/backends/pi/PiSubagentDefinitions";',
-			'export { createPiSubagentTool } from "./src/extension/backends/pi/PiSubagentTool";',
+			'export { loadPiResources } from "./apps/vscode-nerita/src/extension/backends/pi/PiResources";',
+			'export { loadSubagentDefinitions } from "./apps/vscode-nerita/src/extension/backends/pi/PiSubagentDefinitions";',
+			'export { createPiSubagentTool } from "./apps/vscode-nerita/src/extension/backends/pi/PiSubagentTool";',
 		].join("\n"),
 		resolveDir: extensionPath,
 	},

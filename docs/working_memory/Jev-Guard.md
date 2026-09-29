@@ -8,9 +8,9 @@
 
 ## 接続点
 
-- `src/extension/security/JevGuard.ts`：任意の判定器、接続世代、時間切れと取消し、送信する要約。
-- `src/extension/security/JevClient.ts`：公式の tool-guard REST API アダプター。キーを閉包に保持し、固定した HTTPS 接続先だけを使用する。
-- `src/extension/security/ApprovalGuard.ts`：決定論的な検査の後、人による承認の前に補足判定を挟む。
+- `apps/vscode-nerita/src/extension/security/JevGuard.ts`：任意の判定器、接続世代、時間切れと取消し、送信する要約。
+- `apps/vscode-nerita/src/extension/security/JevClient.ts`：公式の tool-guard REST API アダプター。キーを閉包に保持し、固定した HTTPS 接続先だけを使用する。
+- `apps/vscode-nerita/src/extension/security/ApprovalGuard.ts`：決定論的な検査の後、人による承認の前に補足判定を挟む。
 - `tests/unit/jevGuard.test.ts`：接続なし、各判定、障害、取消し、送信内容、HTTP 契約の検証。
 
 将来、Host の認証処理から `jevGuard.configure(createJevReviewer(apiKey))` を呼ぶ。解除は `jevGuard.configure()` とする。接続変更は古い世代の判定待ち・承認・実行許可を取り消す。ワークスペースの JSON やエージェント入力から接続を有効化する経路は設けていない。

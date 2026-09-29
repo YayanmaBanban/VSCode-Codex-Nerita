@@ -4,10 +4,10 @@ import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import { PiProviderControls } from "../../src/extension/backends/pi/PiProviderControls";
-import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
+import { PiProviderControls } from "../../apps/vscode-nerita/src/extension/backends/pi/PiProviderControls";
+import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { isPiProviderControls } from "@nerita/shared/piProviderControls";
-import { createBuiltinUiRegistry } from "../../src/extension/ui-contributions/builtinContributions";
+import { createBuiltinUiRegistry } from "../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
 import { initialState } from "@nerita/shared/chatState";
 import { piHarness } from "./piHarness";
 import { piLiveCatalog } from "../fixtures/piLiveCatalog";

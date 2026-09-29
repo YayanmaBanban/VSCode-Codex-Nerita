@@ -3,7 +3,7 @@ import { sandboxFixture } from "./sandboxFixtures";
 import { join } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { expect, it, vi } from "vitest";
-import { localResourceSettings } from "../../src/extension/backends/pi/PiResourceSettings";
+import { localResourceSettings } from "../../apps/vscode-nerita/src/extension/backends/pi/PiResourceSettings";
 
 it("導入済みだけを実体パスへ変換し、元の設定とresource filterを維持する", async () => {
 	const fixture = await sandboxFixture();

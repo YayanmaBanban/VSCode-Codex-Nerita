@@ -1,27 +1,30 @@
 // 承認内容の固定、実行許可の使い捨て、親と子の両方で許可される権限だけを残す処理を検証する。
 import type { PermissionPresentation } from "@nerita/shared/permission";
 import { describe, expect, it, vi } from "vitest";
-import { approveToolCall } from "../../src/extension/security/ApprovalGuard";
+import { approveToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovalGuard";
 import {
 	consumeApprovedToolCall,
 	issueApprovedToolCall,
 	type ToolCall,
-} from "../../src/extension/security/ApprovedToolCall";
+} from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
 import {
 	intersectPolicy,
 	toSandboxPolicy,
-} from "../../src/extension/security/AgentAccessPolicy";
-import { commandEnvironment } from "../../src/extension/runtime/CommandEnvironment";
+} from "../../apps/vscode-nerita/src/extension/security/AgentAccessPolicy";
+import { commandEnvironment } from "../../apps/vscode-nerita/src/extension/runtime/CommandEnvironment";
 import {
 	parseCommandResult,
 	parseSandboxReadiness,
-} from "../../src/extension/backends/codex/protocol/command";
+} from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/command";
 import { pending } from "./piHarness";
 
 // このファイルは実在しないパスで要求の固定だけを検証する。Trust の実パス検証は専用テストで行う。
-vi.mock("../../src/extension/security/trust/TrustGate", () => ({
-	evaluateTrust: () => Promise.resolve(undefined),
-}));
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/security/trust/TrustGate",
+	() => ({
+		evaluateTrust: () => Promise.resolve(undefined),
+	}),
+);
 
 /** ファイル `I/O` を伴わない、正規化済み要求。 */
 function call(): ToolCall {

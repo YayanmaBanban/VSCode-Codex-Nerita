@@ -13,10 +13,20 @@ async function readJson(file) {
 /** 全入力を確認してから、バージョン・ライセンス・ソースのハッシュを書き出す。 */
 async function main() {
 	const requested = readRequestedVersion();
-	const root = path.resolve(__dirname, "..");
+	const root = path.resolve(__dirname, "../apps/vscode-nerita");
 	if (requested !== undefined) {
 		runPnpm([
+			"--filter",
+			"nerita",
 			"add",
+			"--save-exact",
+			`@earendil-works/pi-coding-agent@${requested}`,
+		]);
+		// 実 SDK を直接使うルートのテストも、配布版と同じバージョンへ揃える。
+		runPnpm([
+			"add",
+			"--workspace-root",
+			"--save-dev",
 			"--save-exact",
 			`@earendil-works/pi-coding-agent@${requested}`,
 		]);

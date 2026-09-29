@@ -12,18 +12,18 @@ import {
 	realpath,
 } from "node:fs/promises";
 import { join } from "node:path";
-import { createPiFileTool } from "../../src/extension/backends/pi/PiFileTools";
-import { createPiSandboxPowerShellTool } from "../../src/extension/backends/pi/PiPowerShellTool";
-import { preparePiRuntimeTools } from "../../src/extension/backends/pi/PiRuntimeTools";
-import { loadPiResources } from "../../src/extension/backends/pi/PiResources";
+import { createPiFileTool } from "../../apps/vscode-nerita/src/extension/backends/pi/PiFileTools";
+import { createPiSandboxPowerShellTool } from "../../apps/vscode-nerita/src/extension/backends/pi/PiPowerShellTool";
+import { preparePiRuntimeTools } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntimeTools";
+import { loadPiResources } from "../../apps/vscode-nerita/src/extension/backends/pi/PiResources";
 import {
 	consumeApprovedToolCall,
 	type ApprovedToolCall,
-} from "../../src/extension/security/ApprovedToolCall";
+} from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
 import {
 	resolveTrustedExtensions,
 	userTrustedExtensionPaths,
-} from "../../src/extension/backends/pi/PiExtensionTrust";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiExtensionTrust";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
 

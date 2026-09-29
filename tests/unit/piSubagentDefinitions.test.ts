@@ -3,7 +3,7 @@ import { afterEach, expect, it } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { mkdir, writeFile, symlink } from "node:fs/promises";
 import { join } from "node:path";
-import { loadSubagentDefinitions } from "../../src/extension/backends/pi/PiSubagentDefinitions";
+import { loadSubagentDefinitions } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSubagentDefinitions";
 import { sandboxFixture } from "./sandboxFixtures";
 
 const cleanups: (() => Promise<void>)[] = [];

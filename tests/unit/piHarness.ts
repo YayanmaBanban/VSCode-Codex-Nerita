@@ -1,11 +1,11 @@
 // Pi SDK 境界だけを差し替え、`Controller` の受付・通知・停止を独立して検証する。
 import { vi } from "vitest";
-import { PiSessionController } from "../../src/extension/backends/pi/PiSessionController";
+import { PiSessionController } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import type {
 	PiEvent,
 	PiSession,
 	PiFactory,
-} from "../../src/extension/backends/pi/PiRuntime";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 import type { HostMessage } from "@nerita/shared/messages";
 
 /** 任意のタイミングで終了する SDK 送信を作る。 */

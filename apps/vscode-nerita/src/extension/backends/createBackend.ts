@@ -94,7 +94,7 @@ export function createBackend(
 				signal,
 				clientInfo: {
 					name: "vscode_nerita_codex",
-					title: "Nerita for Codex",
+					title: "Nerita",
 					version: "0.0.1",
 				},
 			});

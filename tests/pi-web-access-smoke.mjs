@@ -1,4 +1,5 @@
 // 導入済みの実拡張を隔離した設定で読み込み、Host HTTP と承認境界を検証する。
+import { extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { execFileSync } from "node:child_process";
@@ -15,7 +16,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { build } from "esbuild";
 
-const extensionPath = process.cwd();
+const extensionPath = extensionRoot;
 const output = path.join(extensionPath, "dist/pi-web-access-smoke");
 await mkdir(output, { recursive: true });
 const fixture = await mkdtemp(path.join(output, "run-"));
@@ -99,7 +100,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { createPiRuntime } from "./tests/piTrustedRuntime"; export { WorkspaceTrustStore } from "./src/extension/security/trust/WorkspaceTrustStore"; export { evaluateTrust } from "./src/extension/security/trust/TrustGate";',
+				'export { createPiRuntime } from "./tests/piTrustedRuntime"; export { WorkspaceTrustStore } from "./apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore"; export { evaluateTrust } from "./apps/vscode-nerita/src/extension/security/trust/TrustGate";',
 			resolveDir: extensionPath,
 		},
 		bundle: true,

@@ -1,9 +1,9 @@
 // 承認の表示内容が通信境界を通り、実行条件を欠落させないことを確認する。
 import { expect, it } from "vitest";
 import { validStateField } from "@nerita/shared/stateFieldValidation";
-import { toolApprovalPresentation } from "../../src/extension/security/toolApprovalPresentation";
-import { parseApproval } from "../../src/extension/backends/codex/interaction/Approvals";
-import type { ToolCall } from "../../src/extension/security/ApprovedToolCall";
+import { toolApprovalPresentation } from "../../apps/vscode-nerita/src/extension/security/toolApprovalPresentation";
+import { parseApproval } from "../../apps/vscode-nerita/src/extension/backends/codex/interaction/Approvals";
+import type { ToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
 
 const call: ToolCall = {
 	tool: "powershell",

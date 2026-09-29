@@ -20,7 +20,7 @@ export default defineConfig([
 		"coverage/**",
 		"**/dist/**",
 		"out/**",
-		"src/extension/backends/codex/codex-app-server/**",
+		"apps/vscode-nerita/src/extension/backends/codex/codex-app-server/**",
 	]),
 	js.configs.recommended,
 	prettier,
@@ -211,7 +211,7 @@ export default defineConfig([
 		},
 	},
 	{
-		files: ["src/extension/**/*.ts"],
+		files: ["apps/vscode-nerita/src/extension/**/*.ts"],
 		rules: {
 			"no-restricted-imports": [
 				"error",

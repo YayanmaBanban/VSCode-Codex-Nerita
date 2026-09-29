@@ -1,7 +1,7 @@
 // ページ境界・復元失敗・接続切替を含め、履歴操作が別の会話へ漏れないことを確認する。
 import { afterEach, expect, it } from "vitest";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
-import type { HistoryTurn } from "../../src/extension/backends/codex/protocol/history";
+import type { HistoryTurn } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/history";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 

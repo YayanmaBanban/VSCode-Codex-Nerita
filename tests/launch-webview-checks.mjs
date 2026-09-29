@@ -17,7 +17,13 @@ export async function checkLaunchWebview(chat, window, output) {
 		chat.getByRole("button", { name: "送信", exact: true }),
 	).toBeEnabled();
 	await chat.getByRole("textbox").fill("");
-	const model = chat.getByRole("combobox", { name: "Model", exact: true });
+	const card = chat.getByRole("button", {
+		name: "モデルと推論レベル",
+		exact: true,
+	});
+	await expect(card).toBeEnabled();
+	await card.click();
+	const model = chat.getByRole("combobox", { name: /^(?:Pi )?Model$/ });
 	await expect(model).toBeEnabled();
 	await model.click();
 	const popup = chat.getByRole("listbox");

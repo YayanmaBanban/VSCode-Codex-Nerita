@@ -18,7 +18,7 @@ async function main() {
 	const { guardrailsConfigSchema } = require(output);
 	const { z } = require("zod");
 	await writeFile(
-		"src/extension/backends/pi/guardrails/schema.json",
+		"apps/vscode-nerita/src/extension/backends/pi/guardrails/schema.json",
 		`${JSON.stringify(z.toJSONSchema(guardrailsConfigSchema), null, 2)}\n`,
 	);
 }

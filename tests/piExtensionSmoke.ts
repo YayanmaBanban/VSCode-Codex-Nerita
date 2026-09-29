@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, basename, join } from "node:path";
-import { PiSessionController } from "../src/extension/backends/pi/PiSessionController";
+import { PiSessionController } from "../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import { createPiRuntime } from "./piTrustedRuntime";
 
 /** Extension Host 上でも ESM の動的ロードとストリーム中断が成立することを確認する。 */

@@ -13,7 +13,7 @@ vi.mock("vscode", () => ({
 	},
 	workspace: { fs: { stat: api.stat } },
 }));
-import { resolvePath } from "../../src/extension/webview/resolvePath";
+import { resolvePath } from "../../apps/vscode-nerita/src/extension/webview/resolvePath";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 beforeEach(() => vi.clearAllMocks());

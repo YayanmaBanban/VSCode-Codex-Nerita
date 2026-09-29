@@ -9,7 +9,7 @@ import { StepSlider } from "../ui/StepSlider";
 import { ConfigControl } from "../chat/composer/ConfigControl";
 import { FastModeButton } from "./FastModeButton";
 import type { ConfigOption } from "@nerita/shared/composer";
-import fastModeOn from "../../../../media/icons/fastmode-on.svg?raw";
+import fastModeOn from "../../media/icons/fastmode-on.svg?raw";
 import { useState } from "react";
 
 const reasoningDescriptions: Record<string, string> = {

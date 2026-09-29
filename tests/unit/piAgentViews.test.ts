@@ -1,6 +1,6 @@
 // Pi の子の会話取得を Controller 経由で検証し、別会話からの参照を拒否する。
 import { expect, it } from "vitest";
-import { PiAgentViews } from "../../src/extension/backends/pi/PiAgentViews";
+import { PiAgentViews } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAgentViews";
 import { assistant, piHarness } from "./piHarness";
 
 it("実行中の子をカードへ通知し、終了後もViewer用に本文を返す", async () => {

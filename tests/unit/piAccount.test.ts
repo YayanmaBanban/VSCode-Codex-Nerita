@@ -4,7 +4,7 @@ import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import { PiAccount } from "../../src/extension/backends/pi/PiAccount";
+import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { piHarness, pending } from "./piHarness";
 
 describe("Piの認証・モデル", () => {

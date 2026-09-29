@@ -1,5 +1,5 @@
 // ストーリーと回帰テスト用の公開済みカタログ。実通信・実アカウントは使用しない。
-import type { PiCatalogModel } from "../../src/extension/backends/pi/PiModelCatalog";
+import type { PiCatalogModel } from "../../apps/vscode-nerita/src/extension/backends/pi/PiModelCatalog";
 
 export const piLiveCatalog: PiCatalogModel[] = [
 	{

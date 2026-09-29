@@ -1,13 +1,13 @@
 // 単一子の変換、承認前の拒否、入力の固定、取消しと回収を検証する。
 import { afterEach, expect, it, vi } from "vitest";
-import { createPiSubagentTool } from "../../src/extension/backends/pi/PiSubagentTool";
-import type { PiSubagentDefinition } from "../../src/extension/backends/pi/PiSubagentDefinitions";
-import type { PiChildRuntimes } from "../../src/extension/backends/pi/PiChildRuntimes";
-import type { PiRuntimeSession } from "../../src/extension/backends/pi/PiRuntime";
+import { createPiSubagentTool } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSubagentTool";
+import type { PiSubagentDefinition } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSubagentDefinitions";
+import type { PiChildRuntimes } from "../../apps/vscode-nerita/src/extension/backends/pi/PiChildRuntimes";
+import type { PiRuntimeSession } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
-import { guardrailRegistry } from "../../src/extension/security/GuardrailRegistry";
+import { guardrailRegistry } from "../../apps/vscode-nerita/src/extension/security/GuardrailRegistry";
 import { defaultGuardrails } from "@nerita/shared/guardrails/config";
 
 const cleanups: (() => Promise<void>)[] = [];

@@ -1,17 +1,20 @@
 // エディタの要求待ち・文書競合・停止が、子の遅延起動を残さないことを確認する。
 import { beforeEach, expect, it, vi } from "vitest";
 import type { TextDocument, WebviewPanel } from "vscode";
-import type { BackendSession } from "../../src/extension/session/chatSession";
+import type { BackendSession } from "../../apps/vscode-nerita/src/extension/session/chatSession";
 import type { WorkflowReply } from "@nerita/shared/workflows/messages";
-import { WorkflowPanel } from "../../src/extension/backends/pi/workflows/WorkflowPanel";
+import { WorkflowPanel } from "../../apps/vscode-nerita/src/extension/backends/pi/workflows/WorkflowPanel";
 import { pending } from "./piHarness";
 
 const api = vi.hoisted(() => ({
 	resolve: vi.fn<() => Promise<{ root: string; file: string }>>(),
 }));
-vi.mock("../../src/extension/backends/pi/workflows/WorkflowDocument", () => ({
-	workflowDocument: api.resolve,
-}));
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/pi/workflows/WorkflowDocument",
+	() => ({
+		workflowDocument: api.resolve,
+	}),
+);
 vi.mock("vscode", () => ({
 	workspace: { asRelativePath: () => ".pi/workflows/test.toml" },
 	commands: { executeCommand: () => Promise.resolve() },

@@ -3,12 +3,12 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
 	generateHandoff,
 	type HandoffRequest,
-} from "../../src/extension/session/HandoffContext";
-import { buildSessionReferenceContext } from "../../src/extension/session/SessionReferenceContext";
+} from "../../apps/vscode-nerita/src/extension/session/HandoffContext";
+import { buildSessionReferenceContext } from "../../apps/vscode-nerita/src/extension/session/SessionReferenceContext";
 import {
 	handoffEntries,
 	piSessionContext,
-} from "../../src/extension/backends/pi/PiSessionContext";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionContext";
 import { defaultHandoff } from "@nerita/shared/agentManager/config";
 import {
 	isSessionReference,
@@ -17,9 +17,12 @@ import {
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 
 const read = vi.hoisted(() => vi.fn<() => Promise<string | undefined>>());
-vi.mock("../../src/extension/agentManager/WorkspaceFiles", () => ({
-	readWorkspaceFile: read,
-}));
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/agentManager/WorkspaceFiles",
+	() => ({
+		readWorkspaceFile: read,
+	}),
+);
 beforeEach(() => read.mockResolvedValue(undefined));
 afterEach(() => vi.useRealTimers());
 

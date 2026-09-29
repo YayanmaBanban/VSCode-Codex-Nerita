@@ -1,14 +1,17 @@
 // F5 と同じデバッグ開始操作でフォルダーが開かれ、Webview から接続できることを検証する。
+import { repoRoot } from "../config/workspace-paths.cjs";
 import { _electron as electron } from "playwright";
-import { mkdir } from "node:fs/promises";
+import { mkdir, mkdtemp } from "node:fs/promises";
 import path from "node:path";
 import { checkLaunchWebview } from "./launch-webview-checks.mjs";
+import { openCommand } from "./fixtures/openCommand.mjs";
 const executablePath = process.env.VSCODE_EXECUTABLE;
 if (!executablePath) {
 	throw new Error("VSCODE_EXECUTABLE is required");
 }
-const output = path.resolve("dist/launch-smoke");
-await mkdir(output, { recursive: true });
+const outputRoot = path.resolve("dist/launch-smoke");
+await mkdir(outputRoot, { recursive: true });
+const output = await mkdtemp(path.join(outputRoot, "run-"));
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 const app = await electron.launch({
@@ -23,7 +26,7 @@ const app = await electron.launch({
 		"--disable-workspace-trust",
 		"--disable-updates",
 		"--locale=en",
-		process.cwd(),
+		repoRoot,
 	],
 });
 try {
@@ -41,11 +44,7 @@ try {
 	const child = await opened;
 	await child.waitForSelector(".monaco-workbench", { timeout: 30000 });
 	await child.screenshot({ path: path.join(output, "opened.png") });
-	await child.keyboard.press("F1");
-	await child
-		.locator(".quick-input-widget input")
-		.fill(">Nerita for Codex: チャットを開く");
-	await child.keyboard.press("Enter");
+	await openCommand(child, "Nerita: チャットを開く");
 	let chat;
 	for (let attempt = 0; attempt < 100; attempt++) {
 		chat = await findChatFrame(child, chat);
@@ -57,7 +56,10 @@ try {
 	if (!chat) {
 		throw new Error("Chat view not found");
 	}
-	await chat.getByRole("button", { name: "接続する" }).click();
+	const connect = chat.getByRole("button", { name: "接続する", exact: true });
+	if (await connect.count()) {
+		await connect.click();
+	}
 	await chat
 		.getByText("接続済み", { exact: true })
 		.waitFor({ timeout: 60000 });
@@ -76,10 +78,14 @@ try {
 	await app.close();
 }
 
-/** デバッグ先の接続ボタンを持つフレームを探す。 */
+/** 自動接続の完了後も、入力欄からデバッグ先のフレームを見つける。 */
 async function findChatFrame(child, chat) {
 	for (const frame of child.frames()) {
-		if (await frame.getByRole("button", { name: "接続する" }).count()) {
+		if (
+			await frame
+				.getByRole("textbox", { name: /(?:Codex|Pi)へのメッセージ/ })
+				.count()
+		) {
 			chat = frame;
 			break;
 		}

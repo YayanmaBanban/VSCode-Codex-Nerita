@@ -32,8 +32,8 @@ vi.mock("vscode", () => ({
 	workspace: { fs: { stat: api.stat } },
 	commands: { executeCommand: api.executeCommand },
 }));
-import { openResource } from "../../src/extension/webview/openResource";
-import { attachmentService } from "../../src/extension/webview/attachments";
+import { openResource } from "../../apps/vscode-nerita/src/extension/webview/openResource";
+import { attachmentService } from "../../apps/vscode-nerita/src/extension/webview/attachments";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 
 beforeEach(() => {

@@ -9,7 +9,7 @@ import { join } from "node:path";
 import {
 	readChangeContext,
 	ChangeContextError,
-} from "../../src/extension/backends/codex/context/changeContext";
+} from "../../apps/vscode-nerita/src/extension/backends/codex/context/changeContext";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { isChangeReference } from "@nerita/shared/changeReferences";
 
@@ -19,7 +19,9 @@ vi.mock("vscode", () => ({
 	Uri: { file: (path: string) => ({ fsPath: path }) },
 	workspace: { getConfiguration: configuration.resolve },
 }));
-const manifest = JSON.parse(readFileSync("package.json", "utf8")) as {
+const manifest = JSON.parse(
+	readFileSync("apps/vscode-nerita/package.json", "utf8"),
+) as {
 	contributes: {
 		configuration: { properties: Record<string, { default: string[] }> };
 	};

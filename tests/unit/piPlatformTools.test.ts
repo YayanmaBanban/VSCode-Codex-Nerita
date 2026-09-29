@@ -4,9 +4,9 @@ import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { preparePiRuntimeTools } from "../../src/extension/backends/pi/PiRuntimeTools";
-import { loadPiResources } from "../../src/extension/backends/pi/PiResources";
-import type { PiRuntimeOptions } from "../../src/extension/backends/pi/PiRuntime";
+import { preparePiRuntimeTools } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntimeTools";
+import { loadPiResources } from "../../apps/vscode-nerita/src/extension/backends/pi/PiResources";
+import type { PiRuntimeOptions } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
 
@@ -14,7 +14,10 @@ const codex = vi.hoisted(() => ({
 	resolveWindowsSandbox: vi.fn(),
 	createCodexSandboxExecutor: vi.fn(),
 }));
-vi.mock("../../src/extension/backends/codex/CodexSandboxExecutor", () => codex);
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/codex/CodexSandboxExecutor",
+	() => codex,
+);
 const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];
 afterEach(async () => {
 	vi.unstubAllGlobals();

@@ -3,13 +3,10 @@ import * as assert from "node:assert/strict";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
-import {
-	createPiRuntime,
-	type PiRuntimeSession,
-} from "./piTrustedRuntime";
-import { guardrailRegistry } from "../src/extension/security/GuardrailRegistry";
+import { createPiRuntime, type PiRuntimeSession } from "./piTrustedRuntime";
+import { guardrailRegistry } from "../apps/vscode-nerita/src/extension/security/GuardrailRegistry";
 import { defaultGuardrails } from "@nerita/shared/guardrails/config";
-import type { PiAuthorize } from "../src/extension/backends/pi/PiApprovedTools";
+import type { PiAuthorize } from "../apps/vscode-nerita/src/extension/backends/pi/PiApprovedTools";
 import { guardrailsFixture } from "./piGuardrailsFixture";
 
 /** 子の操作をモデル応答から発行し、拒否・失効後の実ファイルが変わらないことを検証する。 */

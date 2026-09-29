@@ -324,18 +324,20 @@ export class ChatViewProvider
 		if (!this.panel) {
 			this.panel = vscode.window.createWebviewPanel(
 				"nerita.codex.editor",
-				"Nerita for Codex",
+				"Nerita",
 				vscode.ViewColumn.Active,
 				{ enableScripts: true, retainContextWhenHidden: true },
 			);
 			this.panel.iconPath = {
 				light: vscode.Uri.joinPath(
 					this.extensionUri,
+					"dist",
 					"media",
 					"nerita-24.svg",
 				),
 				dark: vscode.Uri.joinPath(
 					this.extensionUri,
+					"dist",
 					"media",
 					"nerita-24.svg",
 				),

@@ -1,8 +1,8 @@
 // 永続ストレージと `Controller` を通し、再起動・送信・履歴の設定を検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, historyThread } from "./codexHarness";
-import { codexSelectionStore } from "../../src/extension/backends/codex/settings/modelSelection";
-import type { ModelInfo } from "../../src/extension/backends/codex/protocol/account";
+import { codexSelectionStore } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/modelSelection";
+import type { ModelInfo } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/account";
 
 const sessions: ReturnType<typeof codexHarness>[] = [];
 afterEach(async () => {

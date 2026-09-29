@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./apps/vscode-nerita/src/*"]
 		},
 		// VS Code Extension は Node.js 上で動作するため、Node.js のモジュール解決規則に合わせる。
 		"module": "NodeNext",
@@ -50,9 +50,9 @@
 		// verbatimModuleSyntax は module / package.json の ESM・CJS 方針を整理した段階で導入する。
 	},
 	"include": [
-		"src/extension/**/*.ts",
+		"apps/vscode-nerita/src/extension/**/*.ts",
 		"packages/shared/src/**/*.ts",
-		"src/extension/backends/codex/codex-app-server/**/*.ts"
+		"apps/vscode-nerita/src/extension/backends/codex/codex-app-server/**/*.ts"
 	],
 	"exclude": ["tests", "node_modules"]
 }

@@ -4,26 +4,29 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WebviewPanel, WorkspaceFolder } from "vscode";
-import { AgentManagerPanel } from "../../src/extension/agentManager/AgentManagerPanel";
+import { AgentManagerPanel } from "../../apps/vscode-nerita/src/extension/agentManager/AgentManagerPanel";
 import { defaultHandoff } from "@nerita/shared/agentManager/config";
 import { initialState } from "@nerita/shared/chatState";
-import type { BackendSession } from "../../src/extension/session/chatSession";
+import type { BackendSession } from "../../apps/vscode-nerita/src/extension/session/chatSession";
 import type {
 	ManagerReply,
 	ManagerState,
 } from "@nerita/shared/agentManager/messages";
 
 const api = vi.hoisted(() => ({ trusted: true, dirty: false, present: true }));
-vi.mock("../../src/extension/agentManager/PiAgentSettings", () => ({
-	readPiAgents: () =>
-		Promise.resolve({
-			agents: [],
-			defaults: {},
-			userSettings: "{}",
-			modelScope: "{}",
-			fingerprint: "pi",
-		}),
-}));
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/agentManager/PiAgentSettings",
+	() => ({
+		readPiAgents: () =>
+			Promise.resolve({
+				agents: [],
+				defaults: {},
+				userSettings: "{}",
+				modelScope: "{}",
+				fingerprint: "pi",
+			}),
+	}),
+);
 vi.mock("vscode", () => ({
 	workspace: {
 		get isTrusted() {

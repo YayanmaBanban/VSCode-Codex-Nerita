@@ -5,8 +5,8 @@ import { initialState } from "@nerita/shared/chatState";
 import { type HostMessage } from "@nerita/shared/messages";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
-import { itemPatch } from "../../src/extension/backends/codex/items/chatItems";
-import { AgentRegistry } from "../../src/extension/backends/codex/agents/AgentRegistry";
+import { itemPatch } from "../../apps/vscode-nerita/src/extension/backends/codex/items/chatItems";
+import { AgentRegistry } from "../../apps/vscode-nerita/src/extension/backends/codex/agents/AgentRegistry";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
 
 const started = {

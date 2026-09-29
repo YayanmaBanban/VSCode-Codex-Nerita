@@ -12,12 +12,12 @@ import {
 import {
 	evaluateGuardrails,
 	guardrailWarnings,
-} from "../../src/extension/security/GuardrailEvaluator";
-import { matchPath } from "../../src/extension/security/GuardrailPaths";
-import { guardrailRegistry } from "../../src/extension/security/GuardrailRegistry";
-import { approveToolCall } from "../../src/extension/security/ApprovalGuard";
-import { consumeApprovedToolCall } from "../../src/extension/security/ApprovedToolCall";
-import { createPiReadTool } from "../../src/extension/backends/pi/guardrails/PiReadTools";
+} from "../../apps/vscode-nerita/src/extension/security/GuardrailEvaluator";
+import { matchPath } from "../../apps/vscode-nerita/src/extension/security/GuardrailPaths";
+import { guardrailRegistry } from "../../apps/vscode-nerita/src/extension/security/GuardrailRegistry";
+import { approveToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovalGuard";
+import { consumeApprovedToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
+import { createPiReadTool } from "../../apps/vscode-nerita/src/extension/backends/pi/guardrails/PiReadTools";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
 
@@ -38,7 +38,7 @@ it("配布スキーマが実行時定義と一致し、未知項目・重複ID�
 	expect(
 		JSON.parse(
 			await readFile(
-				"src/extension/backends/pi/guardrails/schema.json",
+				"apps/vscode-nerita/src/extension/backends/pi/guardrails/schema.json",
 				"utf8",
 			),
 		),

@@ -4,11 +4,11 @@ import { afterEach, expect, it, vi } from "vitest";
 import * as sdk from "@earendil-works/pi-coding-agent";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { createPiShellTools } from "../../src/extension/backends/pi/PiShellTools";
+import { createPiShellTools } from "../../apps/vscode-nerita/src/extension/backends/pi/PiShellTools";
 import {
 	consumeApprovedToolCall,
 	type ApprovedToolCall,
-} from "../../src/extension/security/ApprovedToolCall";
+} from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
 

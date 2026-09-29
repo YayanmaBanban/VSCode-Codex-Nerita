@@ -1,6 +1,7 @@
 // Pi を専用の ESM エントリーポイントと遅延読込用チャンクへまとめ、実行時にファイルとして読む資産を同梱する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { extensionRoot } = require("./workspace-paths.cjs");
 const { build } = require("esbuild");
 const { piBundlePlugin } = require("./pi-bundle-plugin.cjs");
 const { copyBundleLicenses } = require("./pi-bundle-licenses.cjs");
@@ -63,7 +64,10 @@ async function copyAssets(source, destination, manifest) {
 /** Host が SDK 内部の配置に依存せず読み込める、専用の ESM バンドルを生成する。 */
 async function bundlePi(projectRoot, target) {
 	const source = await fs.realpath(
-		path.join(projectRoot, "node_modules/@earendil-works/pi-coding-agent"),
+		path.join(
+			extensionRoot,
+			"node_modules/@earendil-works/pi-coding-agent",
+		),
 	);
 	const manifest = JSON.parse(
 		await fs.readFile(path.join(source, "package.json"), "utf8"),
@@ -75,8 +79,9 @@ async function bundlePi(projectRoot, target) {
 	if (
 		manifest.version !== SUPPORTED_PI_VERSION ||
 		aiManifest.version !== SUPPORTED_PI_VERSION ||
-		require("../package.json").dependencies[manifest.name] !==
-			manifest.version
+		require("../apps/vscode-nerita/package.json").dependencies[
+			manifest.name
+		] !== manifest.version
 	) {
 		throw new Error("Pi SDKのバージョンを完全固定してください。");
 	}
@@ -84,7 +89,12 @@ async function bundlePi(projectRoot, target) {
 	const destination = path.join(target, "pi");
 	const result = await build({
 		absWorkingDir: projectRoot,
+		nodePaths: [path.join(extensionRoot, "node_modules")],
 		alias: {
+			"@earendil-works/pi-coding-agent": path.join(
+				source,
+				"dist/index.js",
+			),
 			"@earendil-works/pi-ai/compat": path.join(aiRoot, "dist/compat.js"),
 		},
 		entryPoints: {

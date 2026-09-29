@@ -6,8 +6,8 @@ import { tmpdir } from "node:os";
 import {
 	createPiRuntime,
 	type PiRuntimeSession,
-} from "../src/extension/backends/pi/PiRuntime";
-import { WorkspaceTrustStore } from "../src/extension/security/trust/WorkspaceTrustStore";
+} from "../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
+import { WorkspaceTrustStore } from "../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 import { guardrailsFixture } from "./piGuardrailsFixture";
 
 /** モデルだけをローカルの固定応答に置き換え、製品 Runtime の既定拒否を使う。 */

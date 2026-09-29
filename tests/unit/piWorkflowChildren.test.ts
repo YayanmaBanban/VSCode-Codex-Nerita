@@ -1,18 +1,18 @@
 // 保持した SDK の再利用、完了時の Fork、取消し後の回収を検証する。
 import { expect, it, vi } from "vitest";
-import { PiWorkflowChildren } from "../../src/extension/backends/pi/workflows/PiWorkflowChildren";
+import { PiWorkflowChildren } from "../../apps/vscode-nerita/src/extension/backends/pi/workflows/PiWorkflowChildren";
 import { parseWorkflow } from "@nerita/shared/workflows/definition";
-import { PiAgentViews } from "../../src/extension/backends/pi/PiAgentViews";
-import { PiJobs } from "../../src/extension/backends/pi/PiJobs";
+import { PiAgentViews } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAgentViews";
+import { PiJobs } from "../../apps/vscode-nerita/src/extension/backends/pi/PiJobs";
 import type {
 	PiChildRuntimes,
 	PiChildOptions,
-} from "../../src/extension/backends/pi/PiChildRuntimes";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiChildRuntimes";
 import type {
 	PiRuntimeSession,
 	PiEvent,
-} from "../../src/extension/backends/pi/PiRuntime";
-import type { PiForkMessage } from "../../src/extension/backends/pi/PiForkContext";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
+import type { PiForkMessage } from "../../apps/vscode-nerita/src/extension/backends/pi/PiForkContext";
 import { sandboxFixture } from "./sandboxFixtures";
 import { assistant } from "./piHarness";
 import { readFile } from "node:fs/promises";

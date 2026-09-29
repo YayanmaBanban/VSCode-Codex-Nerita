@@ -1,13 +1,13 @@
 // 非公開 `usage` API の変化・失敗・取消がチャットや認証値の公開へ波及しないことを検証する。
-import { normalizeCodexQuota } from "../../src/extension/backends/pi/codex/CodexQuotaService";
+import { normalizeCodexQuota } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexQuotaService";
 import { describe, expect, it, vi } from "vitest";
 import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
-import { PiQuotaService } from "../../src/extension/backends/pi/PiQuotaService";
+import { PiQuotaService } from "../../apps/vscode-nerita/src/extension/backends/pi/PiQuotaService";
 import { piHarness, pending } from "./piHarness";
-import type { PiAccount } from "../../src/extension/backends/pi/PiAccount";
+import type { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 
 import { type HostMessage } from "@nerita/shared/messages";
 

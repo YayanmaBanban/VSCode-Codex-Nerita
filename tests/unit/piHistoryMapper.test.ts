@@ -1,7 +1,7 @@
 // 保存ブランチの表示順・同名ツール ID・停止状態を復元する。
 import type { SessionMessageEntry } from "@earendil-works/pi-coding-agent";
 import { expect, it } from "vitest";
-import { restorePiHistory } from "../../src/extension/backends/pi/PiHistoryMapper";
+import { restorePiHistory } from "../../apps/vscode-nerita/src/extension/backends/pi/PiHistoryMapper";
 import { assistant } from "./piHarness";
 
 /** 保存済み SDK メッセージへ安定した `entry` ID を付ける。 */

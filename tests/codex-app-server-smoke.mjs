@@ -1,4 +1,5 @@
 // 同梱バイナリで初期化と読み取り要求を検証する。モデル呼び出しや会話作成は行わない。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
@@ -8,15 +9,15 @@ import { promisify } from "node:util";
 import { build } from "esbuild";
 
 // 引数には展開済み VSIX の extension ディレクトリも指定できる。
-const extensionPath = path.resolve(process.argv[2] ?? ".");
+const extensionPath = path.resolve(process.argv[2] ?? extensionRoot);
 const cwd = path.resolve("dist/codex smoke workspace");
 const outfile = path.resolve("dist/codex-smoke/client.mjs");
 await mkdir(cwd, { recursive: true });
 await build({
 	stdin: {
 		contents:
-			'export { CodexClient } from "./src/extension/backends/codex/CodexClient"; export { resolveCodexExecutable } from "./src/extension/backends/codex/runtime/executable";',
-		resolveDir: process.cwd(),
+			'export { CodexClient } from "./apps/vscode-nerita/src/extension/backends/codex/CodexClient"; export { resolveCodexExecutable } from "./apps/vscode-nerita/src/extension/backends/codex/runtime/executable";',
+		resolveDir: repoRoot,
 		loader: "ts",
 	},
 	bundle: true,
@@ -35,7 +36,7 @@ const { stdout } = await promisify(execFile)(executable, ["--version"], {
 });
 const expected = JSON.parse(
 	await readFile(
-		"src/extension/backends/codex/codex-app-server/version.json",
+		"apps/vscode-nerita/src/extension/backends/codex/codex-app-server/version.json",
 		"utf8",
 	),
 );

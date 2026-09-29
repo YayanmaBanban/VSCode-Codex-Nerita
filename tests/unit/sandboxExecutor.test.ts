@@ -1,7 +1,7 @@
 // network=`false` の正常実行、準備失敗、`Stop` 競合、接続回収を検証する。OS 隔離は実機疎通テストで確認する。
 import { afterEach, expect, it, vi } from "vitest";
-import { CodexSandboxExecutor } from "../../src/extension/backends/codex/CodexSandboxExecutor";
-import { issueApprovedToolCall } from "../../src/extension/security/ApprovedToolCall";
+import { CodexSandboxExecutor } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSandboxExecutor";
+import { issueApprovedToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
 

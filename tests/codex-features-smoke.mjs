@@ -1,4 +1,5 @@
 // 隔離ワークスペースで実モデルの添付・設定・コマンド・編集通知を検証する。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -18,8 +19,8 @@ const bundle = path.join(root, "client.mjs");
 await build({
 	stdin: {
 		contents:
-			'export { CodexClient } from "./src/extension/backends/codex/CodexClient"; export { CodexSessionController } from "./src/extension/backends/codex/CodexSessionController";',
-		resolveDir: process.cwd(),
+			'export { CodexClient } from "./apps/vscode-nerita/src/extension/backends/codex/CodexClient"; export { CodexSessionController } from "./apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";',
+		resolveDir: repoRoot,
 		loader: "ts",
 	},
 	bundle: true,
@@ -35,7 +36,7 @@ const events = new Set();
 const session = new CodexSessionController(
 	async (callbacks, signal) => {
 		const client = await CodexClient.connect({
-			extensionPath: process.cwd(),
+			extensionPath: extensionRoot,
 			cwd: root,
 			signal,
 			clientInfo: {

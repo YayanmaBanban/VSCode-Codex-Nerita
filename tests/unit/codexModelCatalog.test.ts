@@ -1,6 +1,6 @@
 // 固定エンドポイント・OAuth 更新・account キャッシュと不正 HTTP 応答の公開境界を検証する。
 import { describe, expect, it, vi } from "vitest";
-import { CodexModelCatalogService } from "../../src/extension/backends/pi/codex/CodexModelCatalogService";
+import { CodexModelCatalogService } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexModelCatalogService";
 import { catalogHarness, oauthToken } from "./piCatalogHarness";
 
 describe("Codex OAuth live catalog transport", () => {

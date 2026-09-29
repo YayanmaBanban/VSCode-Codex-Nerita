@@ -2,7 +2,7 @@
 import { realpath } from "node:fs/promises";
 import { expect, it, vi } from "vitest";
 import { piHarness } from "./piHarness";
-import type { PiSession } from "../../src/extension/backends/pi/PiRuntime";
+import type { PiSession } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 
 /** 実在する作業ディレクトリだけを使い、モデルとファイル操作は模擬する。 */
 async function fixture() {

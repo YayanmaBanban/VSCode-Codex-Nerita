@@ -1,6 +1,6 @@
 // モデルカード内で速度設定を切り替え、状態に応じた同梱アイコンを表示する。
-import offIcon from "../../../../media/icons/fastmode-off.svg?raw";
-import onIcon from "../../../../media/icons/fastmode-on.svg?raw";
+import offIcon from "../../media/icons/fastmode-off.svg?raw";
+import onIcon from "../../media/icons/fastmode-on.svg?raw";
 import type { NeritaUiControl } from "@nerita/shared/uiContributions";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
 

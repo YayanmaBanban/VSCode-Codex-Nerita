@@ -1,16 +1,25 @@
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import { openCommand } from "./fixtures/openCommand.mjs";
 // 実際の VS Code 標準メニューから選択範囲を変換し、元に戻す操作と表示先を確認する。
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
-import { mkdir } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const executablePath = process.env.VSCODE_EXECUTABLE ?? process.argv[2];
 if (!executablePath) {
 	throw new Error("VSCODE_EXECUTABLE is required");
 }
-const output = path.resolve("dist/composer-context-menu-smoke");
-await mkdir(output, { recursive: true });
+const outputRoot = path.resolve("dist/composer-context-menu-smoke");
+await mkdir(outputRoot, { recursive: true });
+const output = await mkdtemp(path.join(outputRoot, "run-"));
+const extensionPath = process.env.NERITA_TEST_EXTENSION_PATH ?? extensionRoot;
+const manifest = JSON.parse(
+	await readFile(path.join(extensionPath, "package.json"), "utf8"),
+);
+const command = manifest.contributes.commands.find(
+	(item) => item.command === "nerita.codex.openChat",
+).title;
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 const app = await electron.launch({
@@ -20,19 +29,19 @@ const app = await electron.launch({
 	args: [
 		`--user-data-dir=${path.join(output, "profile")}`,
 		`--extensions-dir=${path.join(output, "extensions")}`,
-		`--extensionDevelopmentPath=${process.cwd()}`,
+		`--extensionDevelopmentPath=${extensionPath}`,
 		"--skip-welcome",
 		"--skip-release-notes",
 		"--disable-workspace-trust",
 		"--disable-updates",
 		"--locale=en",
-		process.cwd(),
+		repoRoot,
 	],
 });
 try {
 	const window = await app.firstWindow();
 	await window.waitForSelector(".monaco-workbench");
-	await openCommand(window, "Nerita for Codex: チャットを開く");
+	await openCommand(window, command);
 	let chat;
 	await expect
 		.poll(
@@ -55,6 +64,10 @@ try {
 			{ timeout: 30000 },
 		)
 		.toBe(true);
+	// 接続時の下書き復元が選択範囲を置き換える前に、入力操作を始めない。
+	await expect(chat.getByText("接続済み", { exact: true })).toBeVisible({
+		timeout: 30000,
+	});
 	const input = chat.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("前文選択する本文後文");
 	const position = await input.evaluate((node) => {

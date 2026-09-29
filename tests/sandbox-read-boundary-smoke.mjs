@@ -1,4 +1,5 @@
 // 有限読取りの実機検証。起動失敗を読取り拒否の成功として扱わない。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import {
 	mkdir,
@@ -25,8 +26,8 @@ assert.equal(process.arch, "x64");
 const out = path.resolve("dist/sandbox-read-boundary-smoke");
 await mkdir(out, { recursive: true });
 const runtime = await loadRuntime(out);
-const executable = await runtime.resolveCodexExecutable(process.cwd());
-const version = await runFile(executable, ["--version"], process.cwd());
+const executable = await runtime.resolveCodexExecutable(extensionRoot);
+const version = await runFile(executable, ["--version"], repoRoot);
 assert.equal(version.stdout.trim(), "codex-cli 0.157.0");
 const root = await realpath(
 	await mkdtemp(path.join(tmpdir(), "nerita-read-boundary-")),
@@ -44,7 +45,7 @@ const report = {
 		.update(await readFile(executable))
 		.digest("hex"),
 	binarySource:
-		"dist/runtime/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
+		"apps/vscode-nerita/dist/runtime/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
 	windows: release(),
 	node: process.version,
 	commit: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -81,7 +82,7 @@ async function test(id, operation) {
 		let message = error.message;
 		for (const [value, label] of [
 			[root, "<fixture>"],
-			[process.cwd(), "<repo>"],
+			[repoRoot, "<repo>"],
 			[process.env.USERPROFILE, "<user>"],
 			[process.env.SystemRoot, "<windows>"],
 		]) {

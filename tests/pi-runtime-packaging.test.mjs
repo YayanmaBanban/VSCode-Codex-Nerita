@@ -1,4 +1,5 @@
 // 開発ツリー外の実バンドルで、プロバイダー・動的読込み・相対資産の配布契約を検証する。
+import { repoRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import {
 	mkdtemp,
@@ -29,7 +30,7 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 		await rm(root, { recursive: true, force: true });
 	});
 	const target = path.join(root, "配布先 with spaces #");
-	const metadata = await packaging.bundlePi(process.cwd(), target);
+	const metadata = await packaging.bundlePi(repoRoot, target);
 	const sdk = await import(pathToFileURL(path.join(target, "pi.mjs")).href);
 	const runtime = await sdk.ModelRuntime.create({
 		authPath: path.join(root, "auth.json"),

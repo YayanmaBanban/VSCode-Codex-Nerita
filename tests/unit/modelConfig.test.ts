@@ -2,7 +2,7 @@
 import { afterEach, expect, it } from "vitest";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ModelConfig } from "../../src/extension/settings/ModelConfig";
+import { ModelConfig } from "../../apps/vscode-nerita/src/extension/settings/ModelConfig";
 import { sandboxFixture } from "./sandboxFixtures";
 
 const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];

@@ -12,7 +12,7 @@
 
 # プロジェクトの指示
 
-React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `src/extension/` にあります。共通の通信型・検証処理は `packages/shared/src/` に置きます。
+React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `apps/vscode-nerita/src/extension/` にあります。共通の通信型・検証処理は `packages/shared/src/` に置きます。
 
 開発中に互換性を考える必要はありません。
 
@@ -23,7 +23,7 @@ React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `src/e
 | 作業 | 参照先 |
 | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | コードの追加・変更 | [コード実装](.agents/docs/Code-Implementation.md) |
-| `apps/nerita-ui/src/`・`src/extension/`・`packages/shared/src/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
+| `apps/nerita-ui/src/`・`apps/vscode-nerita/src/extension/`・`packages/shared/src/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
 | 複数ファイルの依存調査・構造変更・コードレビュー | [コード調査・依存グラフ](.agents/docs/Code-Review-Graph.md) |
 | Webview UI の作成 | [UI 実装](.agents/docs/UI-Implementation.md) |
 | テスト作成 | [テストポリシー](.agents/docs/Testing-Policy.md) |

@@ -2,8 +2,8 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ExtensionContext } from "vscode";
 import { readFile } from "node:fs/promises";
-import { registerSandboxSetup } from "../../src/extension/backends/codex/settings/sandboxSetup";
-import type { CodexClientOptions } from "../../src/extension/backends/codex/CodexClient";
+import { registerSandboxSetup } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/sandboxSetup";
+import type { CodexClientOptions } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
 const api = vi.hoisted(() => ({
 	registerCommand: vi.fn(),
 	showErrorMessage: vi.fn(),
@@ -26,12 +26,18 @@ vi.mock("vscode", () => ({
 	env: {},
 	ProgressLocation: { Notification: 15 },
 }));
-vi.mock("../../src/extension/backends/codex/CodexClient", () => ({
-	CodexClient: { connect: api.connect },
-}));
-vi.mock("../../src/extension/backends/codex/CodexSandboxExecutor", () => ({
-	resolveWindowsSandbox: api.resolveWindowsSandbox,
-}));
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/codex/CodexClient",
+	() => ({
+		CodexClient: { connect: api.connect },
+	}),
+);
+vi.mock(
+	"../../apps/vscode-nerita/src/extension/backends/codex/CodexSandboxExecutor",
+	() => ({
+		resolveWindowsSandbox: api.resolveWindowsSandbox,
+	}),
+);
 beforeEach(() => {
 	api.get.mockReturnValue("pi");
 	api.resolveWindowsSandbox.mockResolvedValue("elevated");
@@ -74,7 +80,9 @@ it("WindowsのPiで新しいコマンドを登録し、表示・有効条件も�
 	);
 	expect(api.registerCommand).toHaveBeenCalledOnce();
 	expect(api.connect).not.toHaveBeenCalled();
-	const manifest = JSON.parse(await readFile("package.json", "utf8")) as {
+	const manifest = JSON.parse(
+		await readFile("apps/vscode-nerita/package.json", "utf8"),
+	) as {
 		contributes: {
 			commands: { command: string; enablement?: string }[];
 			menus: { commandPalette: { command: string; when: string }[] };

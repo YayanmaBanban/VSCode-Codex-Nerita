@@ -1,9 +1,9 @@
 // セッション参照の取得境界と、実際の送信先・追加コンテキストを検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { codexHarness, deferred, historyThread } from "./codexHarness";
-import type { HistoryTurn } from "../../src/extension/backends/codex/protocol/history";
+import type { HistoryTurn } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/history";
 import type { HostMessage } from "@nerita/shared/messages";
-import { readSessionContext } from "../../src/extension/backends/codex/context/sessionContext";
+import { readSessionContext } from "../../apps/vscode-nerita/src/extension/backends/codex/context/sessionContext";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { pathText, validReferences } from "@nerita/shared/composerReferences";

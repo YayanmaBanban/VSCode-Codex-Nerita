@@ -1,4 +1,5 @@
 // 実 App Server で返信・停止・同じ会話への再送を検証する。認証済み環境でモデルを呼び出す。
+import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -7,15 +8,15 @@ import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { vscodeBoundary } from "./fixtures/vscodeBoundary.mjs";
 
-const extensionPath = path.resolve(process.argv[2] ?? ".");
+const extensionPath = path.resolve(process.argv[2] ?? extensionRoot);
 const cwd = path.resolve("dist", "codex chat smoke", randomUUID());
 await mkdir(cwd, { recursive: true });
 const outfile = path.resolve("dist/codex-smoke/chat.mjs");
 await build({
 	stdin: {
 		contents:
-			'export { CodexClient } from "./src/extension/backends/codex/CodexClient"; export { CodexSessionController } from "./src/extension/backends/codex/CodexSessionController";',
-		resolveDir: process.cwd(),
+			'export { CodexClient } from "./apps/vscode-nerita/src/extension/backends/codex/CodexClient"; export { CodexSessionController } from "./apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";',
+		resolveDir: repoRoot,
 		loader: "ts",
 	},
 	bundle: true,

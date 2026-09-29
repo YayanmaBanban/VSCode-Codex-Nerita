@@ -1,26 +1,26 @@
 // 実パスと製品ガードで、信頼の正本・取消し・実行前拒否を検証する。
 import { afterEach, expect, it, vi } from "vitest";
 import { mkdir, writeFile, symlink, rename } from "node:fs/promises";
-import { preparePiWebTrust } from "../../src/extension/backends/pi/PiWebTrust";
+import { preparePiWebTrust } from "../../apps/vscode-nerita/src/extension/backends/pi/PiWebTrust";
 import { join } from "node:path";
 import {
 	WorkspaceTrustStore,
 	type TrustStorage,
-} from "../../src/extension/security/trust/WorkspaceTrustStore";
+} from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 import {
 	bindTrustContext,
 	evaluateTrust,
-} from "../../src/extension/security/trust/TrustGate";
-import { approveToolCall } from "../../src/extension/security/ApprovalGuard";
+} from "../../apps/vscode-nerita/src/extension/security/trust/TrustGate";
+import { approveToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovalGuard";
 import {
 	consumeApprovedToolCall,
 	type ToolCall,
-} from "../../src/extension/security/ApprovedToolCall";
-import { JevGuard } from "../../src/extension/security/JevGuard";
+} from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
+import { JevGuard } from "../../apps/vscode-nerita/src/extension/security/JevGuard";
 import { sandboxFixture } from "./sandboxFixtures";
 import { pending } from "./piHarness";
-import { preparePiTrust } from "../../src/extension/backends/pi/PiTrustAdapter";
-import { resolveTrustedExtensions } from "../../src/extension/backends/pi/PiExtensionTrust";
+import { preparePiTrust } from "../../apps/vscode-nerita/src/extension/backends/pi/PiTrustAdapter";
+import { resolveTrustedExtensions } from "../../apps/vscode-nerita/src/extension/backends/pi/PiExtensionTrust";
 
 const fixtures: Awaited<ReturnType<typeof sandboxFixture>>[] = [];
 const cleanup: (() => void)[] = [];

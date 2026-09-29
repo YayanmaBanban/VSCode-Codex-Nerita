@@ -1,8 +1,8 @@
 ﻿// バックエンドへのモデル・推論指定と、生成終了時の接続回収を確認する。
 import { expect, it, vi } from "vitest";
-import { generateCodexHandoff } from "../../src/extension/backends/codex/context/handoffGeneration";
-import { generatePiHandoff } from "../../src/extension/backends/pi/PiHandoffGeneration";
-import type { HandoffRequest } from "../../src/extension/session/HandoffContext";
+import { generateCodexHandoff } from "../../apps/vscode-nerita/src/extension/backends/codex/context/handoffGeneration";
+import { generatePiHandoff } from "../../apps/vscode-nerita/src/extension/backends/pi/PiHandoffGeneration";
+import type { HandoffRequest } from "../../apps/vscode-nerita/src/extension/session/HandoffContext";
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { codexHarness } from "./codexHarness";
 import { assistant } from "./piHarness";
