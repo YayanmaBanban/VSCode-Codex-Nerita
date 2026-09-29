@@ -94,7 +94,7 @@ it("preflight前のStopは受付せず下書きを残す", async () => {
 	vi.mocked(h.runtime.prompt).mockImplementationOnce(
 		async (_text, options) => {
 			await preflight.promise;
-			options?.preflightResult?.(true);
+			options?.preflightResult?.("started");
 		},
 	);
 	await h.send();
@@ -177,7 +177,7 @@ it("初回送信前の保存先変更はreadyを維持して接続を更新し�
 	await h.send("duplicate");
 	expect(h.runtime.prompt).not.toHaveBeenCalled();
 	const prompt = vi.fn<typeof h.runtime.prompt>((_text, options) => {
-		options?.preflightResult?.(true);
+		options?.preflightResult?.("started");
 		return Promise.resolve();
 	});
 	opening.resolve({

@@ -39,7 +39,7 @@ it("追加指示は同じrunへ入り、重複要求を再送しない", async (
 
 it("Steer受付中の連打を拒否し、受付後は次の追加指示を送れる", async () => {
 	const h = await running();
-	const gate = pending<void>();
+	const gate = pending<Awaited<ReturnType<typeof h.runtime.steer>>>();
 	vi.mocked(h.runtime.steer).mockReturnValueOnce(gate.promise);
 	await h.send("追加", "a");
 	await h.send("連打", "b");
@@ -47,7 +47,7 @@ it("Steer受付中の連打を拒否し、受付後は次の追加指示を送�
 	expect(h.events).toContainEqual(
 		expect.objectContaining({ type: "request/failed", requestId: "b" }),
 	);
-	gate.resolve();
+	gate.resolve("queued");
 	await vi.waitFor(() =>
 		expect(h.events).toContainEqual({
 			type: "prompt/accepted",
@@ -63,7 +63,7 @@ it.each(["stop", "complete", "disconnect"] as const)(
 	"Steer処理中の%sでは遅れたキューを破棄する",
 	async (action) => {
 		const h = await running();
-		const gate = pending<void>();
+		const gate = pending<Awaited<ReturnType<typeof h.runtime.steer>>>();
 		vi.mocked(h.runtime.steer).mockReturnValueOnce(gate.promise);
 		await h.send("遅延", "late");
 		if (action === "stop") {
@@ -78,7 +78,7 @@ it.each(["stop", "complete", "disconnect"] as const)(
 			await h.send("競合", "race");
 			expect(h.runtime.prompt).toHaveBeenCalledTimes(1);
 		}
-		gate.resolve();
+		gate.resolve("queued");
 		await vi.waitFor(() => expect(h.runtime.clearQueue).toHaveBeenCalled());
 		if (action === "disconnect") {
 			await h.controller.connect();
@@ -152,7 +152,7 @@ it("開始受付前の連打はSteerとして扱わない", async () => {
 	vi.mocked(h.runtime.prompt).mockImplementationOnce(
 		async (_text, options) => {
 			await gate.promise;
-			options?.preflightResult?.(true);
+			options?.preflightResult?.("started");
 		},
 	);
 	await h.send("first");

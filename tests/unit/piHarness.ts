@@ -60,7 +60,7 @@ export function piHarness() {
 		getContextUsage: vi.fn<PiSession["getContextUsage"]>(),
 		model: undefined,
 		isStreaming: true,
-		steer: vi.fn<PiSession["steer"]>().mockResolvedValue(undefined),
+		steer: vi.fn<PiSession["steer"]>().mockResolvedValue("queued"),
 		clearQueue: vi.fn(() => ({ steering: [], followUp: [] })),
 		subscribe: (listener) => {
 			listeners.add(listener);
@@ -70,7 +70,7 @@ export function piHarness() {
 		},
 		prompt: vi.fn<PiSession["prompt"]>((_text, options) => {
 			run = pending<void>();
-			options?.preflightResult?.(true);
+			options?.preflightResult?.("started");
 			return run.promise;
 		}),
 		abort: vi.fn(() => {

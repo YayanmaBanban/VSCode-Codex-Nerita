@@ -91,13 +91,13 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 				catalogs.map((file) => path.basename(file, ".json")).sort(),
 				providers,
 			);
-			assert.equal(
-				inputs.some((file) =>
-					/(?:@aws-sdk|@smithy|models\.generated|bedrock-converse|google-vertex|mistral-conversations)/.test(
+			assert.deepEqual(
+				inputs.filter((file) =>
+					/(?:node_modules\/(?:@aws-sdk|@smithy)\/|models\.generated|bedrock-converse|google-vertex|mistral-conversations)/.test(
 						file,
 					),
 				),
-				false,
+				[],
 			);
 			for (const api of plugin.supportedApis) {
 				const entry = Object.entries(metadata.outputs).find(
