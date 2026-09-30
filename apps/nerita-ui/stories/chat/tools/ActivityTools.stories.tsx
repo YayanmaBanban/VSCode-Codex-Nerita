@@ -80,12 +80,26 @@ const tools: ToolSummary[] = [
 	},
 ];
 
+/** 固定の完了通知を注入し、一覧カードの初期表示と手動開閉を確認する。 */
 function ActivityToolsStory() {
 	const [request, setRequest] = useState<UiMessage>();
+	const [completed, setCompleted] = useState(false);
 	return (
 		<main className="p-4">
+			<button type="button" onClick={() => setCompleted(true)}>
+				完了通知を受信
+			</button>
 			<Activity
-				state={{ ...initialState(), cwd: "D:/workspace", tools }}
+				state={{
+					...initialState(),
+					cwd: "D:/workspace",
+					tools: completed
+						? tools.map((tool) => ({
+								...tool,
+								status: "completed",
+							}))
+						: tools,
+				}}
 				send={setRequest}
 			/>
 			<output

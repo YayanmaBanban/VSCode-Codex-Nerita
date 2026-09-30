@@ -42,14 +42,15 @@ export function ToolCard({
 } & Pick<ActivityToolProps, "send" | "cwd">) {
 	const bodyId = useId();
 	const status = cardStatus(tool, task);
-	const [state, setState] = useCardState(status);
 	const executing = tool.kind === "execute";
 	const { cwd, command } = toolCommandDetails(tool);
 	const active = cardActive(status);
 	const renderer = toolRenderer(tool);
 	const Icon = renderer.Icon;
 	const Body = tool.summaryOnly ? ToolHistoryContent : renderer.Body;
-	if (usesComboList(tool, Body)) {
+	const comboList = usesComboList(tool, Body);
+	const [state, setState] = useCardState(status, !comboList);
+	if (comboList) {
 		return (
 			<ComboListCard
 				tool={{ ...tool, status }}
@@ -145,11 +146,12 @@ function renderHistoryNotice(tool: ToolSummary) {
 	);
 }
 
-/** 完了への状態遷移で一度だけ閉じ、手動の開閉状態を保持する。 */
-function useCardState(status: ToolSummary["status"]) {
+/** 初期の開閉状態を設定し、完了への遷移で一度だけ閉じる。 */
+function useCardState(status: ToolSummary["status"], initiallyOpen: boolean) {
 	const [state, setState] = useState({
 		status,
-		open: status !== "completed",
+		// 短時間で完了する一覧カードが一瞬だけ開くのを防ぐ。
+		open: initiallyOpen && status !== "completed",
 	});
 	if (state.status !== status) {
 		setState({ status, open: status === "completed" ? false : state.open });

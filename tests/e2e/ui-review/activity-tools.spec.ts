@@ -17,13 +17,29 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.goto(
 			`/iframe.html?id=chat-activity-tools--all&viewMode=story&globals=theme:${colorScheme === "light" ? "light" : "dark2026"}`,
 		);
+		const cards = page.locator(".combo-list-card");
+		await expect(cards).toHaveCount(5);
+		for (const card of await cards.all()) {
+			await expect(card.getByRole("button")).toHaveAttribute(
+				"aria-expanded",
+				"false",
+			);
+			await expect(card.locator(".combo-list-collapse")).toHaveCSS(
+				"visibility",
+				"hidden",
+			);
+		}
+		await page.screenshot({
+			path: info.outputPath("initially-closed.png"),
+		});
+		const think = page.locator('.combo-list-card[data-kind="think"]');
+		const heading = think.getByRole("button");
+		const collapse = think.locator(".combo-list-collapse");
+		await heading.click();
 		await expect(page.locator(".message-markdown strong")).toHaveText([
 			"Implementing file move mapping",
 			"Moving files with mappings",
 		]);
-		const think = page.locator('.combo-list-card[data-kind="think"]');
-		const heading = think.getByRole("button");
-		const collapse = think.locator(".combo-list-collapse");
 		await heading.click();
 		await expect(heading).toHaveAttribute("aria-expanded", "false");
 		await expect(collapse).toHaveCSS("visibility", "hidden");
@@ -54,15 +70,17 @@ for (const colorScheme of ["dark", "light"] as const) {
 			"Web検索（URL）",
 			"Web検索（正規化後）",
 		]) {
-			const card = page
-				.locator(".combo-list-card")
-				.filter({
-					has: page.getByRole("button", {
-						name: `${title} 実行中`,
-						exact: true,
-					}),
-				});
+			const card = page.locator(".combo-list-card").filter({
+				has: page.getByRole("button", {
+					name: `${title} 実行中`,
+					exact: true,
+				}),
+			});
 			const toggle = card.getByRole("button");
+			await expect(toggle).toHaveAttribute("aria-expanded", "false");
+			await toggle.click();
+			await expect(toggle).toHaveAttribute("aria-expanded", "true");
+			await expect(card.getByRole("link").first()).toBeVisible();
 			await toggle.click();
 			await expect(toggle).toHaveAttribute("aria-expanded", "false");
 			await expect(card.getByRole("link").first()).not.toBeVisible();
@@ -130,6 +148,42 @@ for (const colorScheme of ["dark", "light"] as const) {
 			}),
 			contentType: "image/png",
 		});
+		await page.getByRole("button", { name: "完了通知を受信" }).click();
+		for (const card of await cards.all()) {
+			await expect(card.getByRole("button")).toHaveAttribute(
+				"aria-expanded",
+				"false",
+			);
+		}
+		await heading.click();
+		await expect(heading).toHaveAttribute("aria-expanded", "true");
+		await expect(collapse).toHaveCSS("visibility", "visible");
+		await page.getByRole("button", { name: "完了通知を受信" }).click();
+		await expect(heading).toHaveAttribute("aria-expanded", "true");
 		expect(errors).toEqual([]);
 	});
 }
+
+test("短時間で完了しても一覧カードを自動展開しない", async ({ page }, info) => {
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	page.on("console", (message) => {
+		if (message.type() === "error") {
+			errors.push(message.text());
+		}
+	});
+	await page.goto("/iframe.html?id=chat-activity-tools--all&viewMode=story");
+	const cards = page.locator(".combo-list-card");
+	await expect(cards).toHaveCount(5);
+	const closedHeadings = cards.locator(
+		'.tool-heading[aria-expanded="false"]',
+	);
+	await expect(closedHeadings).toHaveCount(5);
+	await page.getByRole("button", { name: "完了通知を受信" }).click();
+	await expect(closedHeadings).toHaveCount(5);
+	await expect(
+		page.locator('.combo-list-card[data-status="completed"]'),
+	).toHaveCount(5);
+	await page.screenshot({ path: info.outputPath("completed-closed.png") });
+	expect(errors).toEqual([]);
+});
