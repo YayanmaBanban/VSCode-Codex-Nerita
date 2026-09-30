@@ -9,6 +9,7 @@ const statusLabels = {
 	in_progress: "実行中",
 	completed: "",
 	cancelled: "停止",
+	unfinished: "未完了",
 	failed: "失敗",
 };
 

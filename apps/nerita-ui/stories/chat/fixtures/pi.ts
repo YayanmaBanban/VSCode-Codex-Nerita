@@ -95,3 +95,73 @@ export function piState(
 	}
 	return state;
 }
+
+/** 同じ親子関係の実行通知と、結果本文を持たない保存要約を再現する。 */
+export function piNestedState(summaryOnly = false): ChatState {
+	const state = piState(summaryOnly ? "completed" : "running");
+	const status = summaryOnly ? "completed" : "in_progress";
+	state.messages = [state.messages[0]!];
+	state.tools = [
+		{
+			id: "outer",
+			runId: "pi-story-run",
+			order: 2,
+			title: "複数のファイルを確認",
+			kind: "list",
+			paths: [],
+			status,
+			...(summaryOnly ? { nestedCallsIncomplete: true } : {}),
+		},
+		{
+			id: "outer/1",
+			parentToolCallId: "outer",
+			runId: "pi-story-run",
+			order: 3,
+			title: "ファイルを読む: src/長い名前のフォルダー/child.txt",
+			kind: "read",
+			paths: ["src/長い名前のフォルダー/child.txt"],
+			status,
+			rawInput: { path: "src/長い名前のフォルダー/child.txt" },
+			...(summaryOnly ? { summaryOnly: true } : {}),
+			content: summaryOnly
+				? []
+				: [
+						{
+							type: "content",
+							content: { type: "text", text: "LIVE_ONLY_RESULT" },
+						},
+					],
+		},
+		{
+			id: "outer/1/1",
+			parentToolCallId: "outer/1",
+			runId: "pi-story-run",
+			order: 4,
+			title: "ファイルを書き込む: child.txt",
+			kind: "edit",
+			paths: [],
+			status: "failed",
+			...(summaryOnly
+				? { summaryOnly: true, omittedArgumentBytes: 8193 }
+				: { rawInput: { path: "child.txt" } }),
+			content: [
+				{
+					type: "content",
+					content: { type: "text", text: "操作が拒否されました。" },
+				},
+			],
+		},
+		{
+			id: "outer/2",
+			parentToolCallId: "outer",
+			runId: "pi-story-run",
+			order: 5,
+			title: "未完了の読み取り",
+			kind: "read",
+			paths: [],
+			status: summaryOnly ? "unfinished" : "in_progress",
+			...(summaryOnly ? { summaryOnly: true } : {}),
+		},
+	];
+	return state;
+}

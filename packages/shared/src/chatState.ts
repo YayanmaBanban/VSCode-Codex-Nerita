@@ -47,8 +47,20 @@ export type ToolSummary = {
 	backgrounded?: boolean;
 	order?: number;
 	runId?: string;
+	/** 同じ実行内で、このツールを呼び出した親の ID。 */
+	parentToolCallId?: string;
+	/** 子ツールの保存履歴は結果本文を持たず、要約だけを復元する。 */
+	summaryOnly?: boolean;
+	omittedArgumentBytes?: number;
+	nestedCallsIncomplete?: boolean;
 	title: string;
-	status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+	status:
+		| "pending"
+		| "in_progress"
+		| "completed"
+		| "failed"
+		| "cancelled"
+		| "unfinished";
 	paths: string[];
 	kind?: string;
 	content?: unknown[];

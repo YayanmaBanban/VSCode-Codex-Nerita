@@ -21,6 +21,7 @@ import {
 } from "./ActivityToolContent";
 import { toolRenderer } from "./toolRenderers";
 import { ComboListCard } from "./ComboListCard";
+import { GenericTool } from "./ToolContent";
 
 /** 開閉状態と直前の実行状態を保持する。 */
 type CardState = { status: ToolSummary["status"]; open: boolean };
@@ -45,7 +46,9 @@ export function ToolCard({
 	const executing = tool.kind === "execute";
 	const { cwd, command } = toolCommandDetails(tool);
 	const active = cardActive(status);
-	const { Icon, Body } = toolRenderer(tool);
+	const renderer = toolRenderer(tool);
+	const Icon = renderer.Icon;
+	const Body = tool.summaryOnly ? ToolHistoryContent : renderer.Body;
 	if (usesComboList(tool, Body)) {
 		return (
 			<ComboListCard
@@ -101,8 +104,43 @@ export function ToolCard({
 					active &&
 					renderStopButton(tool, onStop, cancelTurn, task)}
 			</div>
+			{renderHistoryNotice(tool)}
 			{Body &&
 				renderToolBody(bodyId, state, Body, tool, send, workspaceCwd)}
+		</div>
+	);
+}
+
+/** 保存済みの入力とエラーだけを表示し、存在しない結果本文を補わない。 */
+function ToolHistoryContent({ tool }: { tool: ToolSummary }) {
+	return tool.rawInput !== undefined || tool.content?.length ? (
+		<GenericTool tool={tool} />
+	) : null;
+}
+
+/** 保存されない本文や入力、省略された子の記録を明示する。 */
+function renderHistoryNotice(tool: ToolSummary) {
+	if (!tool.summaryOnly && !tool.nestedCallsIncomplete) {
+		return null;
+	}
+	return (
+		<div className="px-[10px] pb-[8px] text-[12px] text-muted [overflow-wrap:anywhere]">
+			{tool.summaryOnly && (
+				<p className="m-0">
+					保存された要約です。結果本文は保存されていません。
+				</p>
+			)}
+			{tool.omittedArgumentBytes !== undefined && (
+				<p className="m-0">
+					入力はサイズ制限により省略されています（
+					{tool.omittedArgumentBytes} バイト）。
+				</p>
+			)}
+			{tool.nestedCallsIncomplete && (
+				<p className="m-0">
+					入れ子のツール履歴は一部省略されています。
+				</p>
+			)}
 		</div>
 	);
 }
@@ -224,11 +262,7 @@ function renderToolHeading(
 			</span>
 			{renderExecutionProgress(executing, active)}
 			{renderNonExecutionStatus(executing, active, tool)}
-			{status === "cancelled" && (
-				<span className="tool-status text-[12px] whitespace-nowrap text-muted">
-					停止
-				</span>
-			)}
+			{renderInactiveStatus(status)}
 			{Body && (
 				<ChevronDown
 					size={14}
@@ -242,6 +276,18 @@ function renderToolHeading(
 				/>
 			)}
 		</Heading>
+	);
+}
+
+/** 停止済みと、履歴の完了状態が不明な項目を区別する。 */
+function renderInactiveStatus(status: ToolSummary["status"]) {
+	if (status !== "cancelled" && status !== "unfinished") {
+		return null;
+	}
+	return (
+		<span className="tool-status text-[12px] whitespace-nowrap text-muted">
+			{status === "cancelled" ? "停止" : "未完了"}
+		</span>
 	);
 }
 

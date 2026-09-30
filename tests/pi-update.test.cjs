@@ -7,11 +7,15 @@ const { test } = require("node:test");
 const { tmpdir } = require("node:os");
 
 /** 検証工程の失敗と、一時展開先の後片付けを隔離環境で確認する。 */
-async function verify(failAt) {
+async function verify(
+	failAt,
+	{ missingTar = false, extractionFails = false } = {},
+) {
 	const directory = path.resolve(__dirname, "../config");
 	const temporary = path.join(tmpdir(), "nerita-pi-verify-fixture");
 	const commands = [];
 	const removed = [];
+	const archiveCommands = [];
 	const cliProcess = {
 		argv: ["node", "verify-pi.cjs"],
 		platform: "win32",
@@ -37,8 +41,16 @@ async function verify(failAt) {
 				}
 				if (name === "node:child_process") {
 					return {
-						spawnSync() {
-							return { status: 0 };
+						spawnSync(executable, args) {
+							archiveCommands.push([executable, ...args]);
+							return missingTar
+								? { error: new Error("ENOENT") }
+								: {
+										status:
+											extractionFails && args[0] === "-xf"
+												? 1
+												: 0,
+									};
 						},
 					};
 				}
@@ -63,8 +75,38 @@ async function verify(failAt) {
 			},
 		},
 	);
-	return { commands, removed, exitCode: cliProcess.exitCode, temporary };
+	return {
+		commands,
+		archiveCommands,
+		removed,
+		exitCode: cliProcess.exitCode,
+		temporary,
+	};
 }
+
+test("展開コマンドの欠落はビルド前に止め、展開失敗でも一時ディレクトリを削除する", async () => {
+	const missing = await verify(() => false, { missingTar: true });
+	assert.equal(missing.exitCode, 1);
+	assert.deepEqual(missing.commands, []);
+	assert.deepEqual(missing.removed, []);
+	const failed = await verify(() => false, { extractionFails: true });
+	assert.equal(failed.exitCode, 1);
+	assert.deepEqual(failed.removed, [failed.temporary]);
+	assert.equal(failed.commands.at(-1).length, 2);
+	const success = await verify(() => false);
+	assert.equal(success.exitCode, undefined);
+	assert.deepEqual(success.archiveCommands, [
+		["tar.exe", "--version"],
+		[
+			"tar.exe",
+			"-xf",
+			path.resolve(__dirname, "../apps/vscode-nerita/dist/nerita.vsix"),
+			"-C",
+			success.temporary,
+		],
+	]);
+	assert.deepEqual(success.removed, [success.temporary]);
+});
 
 test("検証失敗で後続を停止し、展開後の失敗でも一時ディレクトリを削除する", async () => {
 	const early = await verify((command) => command.includes("check"));

@@ -5,6 +5,22 @@ const { tmpdir } = require("node:os");
 const { spawnSync } = require("node:child_process");
 const { runPnpm } = require("./run-pnpm.cjs");
 
+/** Windows 標準の展開コマンドを実行し、欠落や失敗をその工程で報告する。 */
+function runTar(args) {
+	const result = spawnSync("tar.exe", args, {
+		stdio: "inherit",
+		windowsHide: true,
+	});
+	if (result.error) {
+		throw new Error("VSIXの検証に必要なtar.exeを起動できません。", {
+			cause: result.error,
+		});
+	}
+	if (result.status !== 0) {
+		throw new Error("VSIXの展開コマンドが失敗しました。");
+	}
+}
+
 /** 検証専用の一時ディレクトリであることを確認して削除する。 */
 async function removeTemporary(temporary) {
 	if (
@@ -25,6 +41,8 @@ async function main() {
 	if (process.platform !== "win32" || process.arch !== "x64") {
 		throw new Error("Piの配布検証にはWindows x64が必要です。");
 	}
+	// ビルド後に展開コマンドの欠落で失敗しないよう、検証前に確認する。
+	runTar(["--version"]);
 	for (const script of [
 		"check",
 		"test:host",
@@ -38,33 +56,12 @@ async function main() {
 		path.join(tmpdir(), "nerita-pi-verify-"),
 	);
 	try {
-		const result = spawnSync(
-			"pwsh",
-			[
-				"-NoProfile",
-				"-NonInteractive",
-				"-Command",
-				"$ErrorActionPreference = 'Stop'; [System.IO.Compression.ZipFile]::ExtractToDirectory($env:NERITA_VERIFY_VSIX, $env:NERITA_VERIFY_DIRECTORY)",
-			],
-			{
-				stdio: "inherit",
-				windowsHide: true,
-				env: {
-					...process.env,
-					NERITA_VERIFY_VSIX: path.resolve(
-						__dirname,
-						"../apps/vscode-nerita/dist/nerita.vsix",
-					),
-					NERITA_VERIFY_DIRECTORY: temporary,
-				},
-			},
-		);
-		if (result.error) {
-			throw result.error;
-		}
-		if (result.status !== 0) {
-			throw new Error("VSIXの展開に失敗しました。");
-		}
+		runTar([
+			"-xf",
+			path.resolve(__dirname, "../apps/vscode-nerita/dist/nerita.vsix"),
+			"-C",
+			temporary,
+		]);
 		runPnpm(["run", "test:pi:chat", path.join(temporary, "extension")]);
 	} finally {
 		await removeTemporary(temporary);

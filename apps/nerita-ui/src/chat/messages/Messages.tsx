@@ -101,7 +101,7 @@ export function Messages({
 			return renderAgent?.(agent);
 		}
 		if (tool) {
-			return renderTool?.(tool);
+			return renderTimelineTool(tool, tools, renderTool);
 		}
 		if (!message) {
 			return null;
@@ -164,6 +164,32 @@ export function Messages({
 			</article>
 		);
 	});
+}
+
+/** 子カードに親の名前を添え、実行中と復元した履歴を同じ配置で表示する。 */
+function renderTimelineTool(
+	tool: ToolSummary,
+	tools: ToolSummary[],
+	renderTool: ((tool: ToolSummary) => ReactNode) | undefined,
+) {
+	if (!tool.parentToolCallId) {
+		return renderTool?.(tool);
+	}
+	const parent = tools.find(
+		(item) =>
+			item.id === tool.parentToolCallId && item.runId === tool.runId,
+	);
+	return (
+		<div
+			key={`${tool.runId}:${tool.id}`}
+			className="nested-tool my-[8px] border-0 border-l border-solid border-panel-border pl-[12px]"
+		>
+			<div className="text-[12px] text-muted [overflow-wrap:anywhere]">
+				{parent ? `親ツール: ${parent.title}` : "入れ子のツール"}
+			</div>
+			{renderTool?.(tool)}
+		</div>
+	);
 }
 
 /** 最後のユーザー発言への回答待ちを判定する。 */

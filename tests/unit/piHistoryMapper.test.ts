@@ -18,6 +18,88 @@ function entry(
 	};
 }
 
+it("親の結果へ保存された多段の要約を復元し、省略・未完了を完了と扱わない", () => {
+	const restored = restorePiHistory(
+		[
+			entry("u", { role: "user", content: "nested", timestamp: 1 }),
+			entry("a", {
+				...assistant(""),
+				content: [
+					{
+						type: "toolCall",
+						id: "outer",
+						name: "outer",
+						arguments: {},
+					},
+				],
+			}),
+			entry("r", {
+				role: "toolResult",
+				toolCallId: "outer",
+				toolName: "outer",
+				content: [{ type: "text", text: "parent result" }],
+				isError: false,
+				timestamp: 2,
+				nestedCalls: {
+					complete: false,
+					calls: [
+						{
+							id: "outer/1",
+							name: "read",
+							arguments: { path: "child.txt" },
+							status: "ok",
+						},
+						{
+							id: "outer/1/1",
+							name: "write",
+							argumentsBytes: 8193,
+							status: "error",
+							error: "denied",
+						},
+						{ id: "outer/2", name: "custom", status: "unfinished" },
+					],
+				},
+			}),
+			entry("answer", assistant("done")),
+		],
+		"workspace",
+	);
+	expect(restored.tools).toMatchObject([
+		{
+			id: "outer",
+			nestedCallsIncomplete: true,
+			status: "completed",
+			content: [{ content: { text: "parent result" } }],
+		},
+		{
+			id: "outer/1",
+			parentToolCallId: "outer",
+			summaryOnly: true,
+			rawInput: { path: "child.txt" },
+			status: "completed",
+			content: [],
+		},
+		{
+			id: "outer/1/1",
+			parentToolCallId: "outer/1",
+			summaryOnly: true,
+			omittedArgumentBytes: 8193,
+			status: "failed",
+			content: [{ content: { text: "denied" } }],
+		},
+		{
+			id: "outer/2",
+			parentToolCallId: "outer",
+			summaryOnly: true,
+			status: "unfinished",
+			content: [],
+		},
+	]);
+	expect(restored.tools.map((tool) => tool.order)).toEqual([2, 3, 4, 5]);
+	expect(restored.tools[3]!.order).toBeLessThan(restored.messages[1]!.order!);
+	expect(restored.tools[2]!.rawInput).toBeUndefined();
+});
+
 it("同じツールIDを別ターンで使っても結果と表示順が混ざらない", () => {
 	const restored = restorePiHistory(
 		[

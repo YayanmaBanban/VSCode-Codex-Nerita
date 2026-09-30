@@ -16,6 +16,100 @@ async function running() {
 	return h;
 }
 
+it("拡張が開始入力を処理したら下書きを解放し、会話本文へ追加しない", async () => {
+	const h = piHarness();
+	harnesses.push(h);
+	vi.mocked(h.runtime.prompt).mockImplementationOnce((_text, options) => {
+		options?.preflightResult?.("handled");
+		return Promise.resolve();
+	});
+	await h.controller.connect();
+	await h.send("拡張入力", "handled-start");
+	await vi.waitFor(() =>
+		expect(h.controller.snapshot().run).toBe("completed"),
+	);
+	expect(h.controller.snapshot().messages).toEqual([]);
+	expect(h.events).toContainEqual({
+		type: "prompt/accepted",
+		requestId: "handled-start",
+		mode: "start",
+	});
+	expect(h.events.some((event) => event.type === "request/failed")).toBe(
+		false,
+	);
+	await h.send("通常入力", "next");
+	expect(
+		h.controller.snapshot().messages.map((message) => message.text),
+	).toEqual(["通常入力"]);
+	h.complete();
+});
+
+it.each(["running", "complete", "stop", "disconnect"] as const)(
+	"拡張が追加指示を処理した後の%sでも会話本文やキュー登録と混同しない",
+	async (action) => {
+		const h = await running();
+		const gate = pending<Awaited<ReturnType<typeof h.runtime.steer>>>();
+		vi.mocked(h.runtime.steer).mockReturnValueOnce(gate.promise);
+		await h.send("拡張入力", "handled-steer");
+		if (action === "complete") {
+			h.complete();
+		}
+		if (action === "stop") {
+			await h.stop();
+		}
+		if (action === "disconnect") {
+			h.controller.invalidate();
+		}
+		await Promise.resolve();
+		gate.resolve("handled");
+		if (action === "running" || action === "complete") {
+			await vi.waitFor(() =>
+				expect(h.events).toContainEqual({
+					type: "prompt/accepted",
+					requestId: "handled-steer",
+					mode: "steer",
+				}),
+			);
+			expect(h.events).not.toContainEqual(
+				expect.objectContaining({
+					type: "request/failed",
+					requestId: "handled-steer",
+				}),
+			);
+		} else if (action === "stop") {
+			await vi.waitFor(() =>
+				expect(h.events).toContainEqual(
+					expect.objectContaining({
+						type: "request/failed",
+						requestId: "handled-steer",
+					}),
+				),
+			);
+		} else {
+			await h.controller.connect();
+			expect(h.events).not.toContainEqual(
+				expect.objectContaining({
+					type: "prompt/accepted",
+					requestId: "handled-steer",
+				}),
+			);
+		}
+		expect(
+			h.controller
+				.snapshot()
+				.messages.some((message) => message.text === "拡張入力"),
+		).toBe(false);
+		if (action === "complete") {
+			await vi.waitFor(() =>
+				expect(h.controller.snapshot().run).toBe("completed"),
+			);
+			await h.send("通常入力", "next");
+			expect(h.runtime.prompt).toHaveBeenCalledTimes(2);
+		}
+		h.complete();
+	},
+);
+
 it("追加指示は同じrunへ入り、重複要求を再送しない", async () => {
 	const h = await running();
 	const runId = h.controller.snapshot().runId;

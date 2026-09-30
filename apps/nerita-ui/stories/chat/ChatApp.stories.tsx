@@ -17,6 +17,7 @@ function ChatStory({
 	appServer = false,
 	pi = false,
 	piTools = false,
+	piNestedTools = false,
 	piApprovals = false,
 	piHistory = false,
 	piRun = "idle",
@@ -26,6 +27,7 @@ function ChatStory({
 	appServer?: boolean;
 	pi?: boolean;
 	piTools?: boolean;
+	piNestedTools?: boolean;
 	piApprovals?: boolean;
 	piHistory?: boolean;
 	piRun?: ChatState["run"];
@@ -38,8 +40,8 @@ function ChatStory({
 		if (piApprovals) {
 			return createPiApprovalBridge(approvalTool);
 		}
-		if (pi || piTools) {
-			return createPiBridge(piTools, piRun);
+		if (pi || piTools || piNestedTools) {
+			return createPiBridge(piTools, piRun, piNestedTools);
 		}
 		if (appServer) {
 			return createAppServerBridge(scenario);
@@ -56,6 +58,7 @@ function ChatStory({
 		appServer,
 		pi,
 		piTools,
+		piNestedTools,
 		piApprovals,
 		piHistory,
 		piRun,
@@ -75,6 +78,12 @@ type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 export const Pi: Story = { args: { pi: true } };
 export const PiTools: Story = { args: { piTools: true, piRun: "completed" } };
+export const PiNestedTools: Story = {
+	args: { piNestedTools: true, piRun: "running" },
+};
+export const PiNestedHistory: Story = {
+	args: { piNestedTools: true, piRun: "completed" },
+};
 export const PiApprovals: Story = { args: { piApprovals: true } };
 export const PiHistory: Story = { args: { piHistory: true } };
 export const AppServer: Story = { args: { appServer: true } };

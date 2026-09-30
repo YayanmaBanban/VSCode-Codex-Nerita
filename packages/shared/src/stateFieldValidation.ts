@@ -98,6 +98,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				(item) =>
 					isId(item.id) &&
 					typeof item.title === "string" &&
+					validToolHistory(item) &&
 					(item.kind === undefined ||
 						typeof item.kind === "string") &&
 					(item.content === undefined ||
@@ -108,6 +109,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 						"completed",
 						"failed",
 						"cancelled",
+						"unfinished",
 					].includes(String(item.status)) &&
 					Array.isArray(item.paths) &&
 					item.paths.every((p: unknown) => typeof p === "string"),
@@ -139,3 +141,23 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 		attachmentsSupported: (value) => typeof value === "boolean",
 	} satisfies Record<string, (value: unknown) => boolean>),
 );
+
+/** 子の親 ID と、保存された要約の任意情報を検証する。 */
+function validToolHistory(item: Record<string, unknown>) {
+	return (
+		(item.parentToolCallId === undefined || isId(item.parentToolCallId)) &&
+		(item.summaryOnly === undefined ||
+			typeof item.summaryOnly === "boolean") &&
+		(item.nestedCallsIncomplete === undefined ||
+			typeof item.nestedCallsIncomplete === "boolean") &&
+		validOmittedArgumentBytes(item.omittedArgumentBytes)
+	);
+}
+
+/** 省略サイズは非負の整数だけを受理する。 */
+function validOmittedArgumentBytes(value: unknown) {
+	return (
+		value === undefined ||
+		(typeof value === "number" && Number.isSafeInteger(value) && value >= 0)
+	);
+}

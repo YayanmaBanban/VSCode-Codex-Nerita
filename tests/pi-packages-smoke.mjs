@@ -12,6 +12,7 @@ import path from "node:path";
 /** ユーザーの設定には触れず、隔離した `global/project` パッケージを読み込む。 */
 export async function piPackagesSmoke({
 	createPiRuntime,
+	restorePiHistory,
 	sdk,
 	extensionPath,
 	cwd,
@@ -49,9 +50,14 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 export default function(pi) {
   pi.on("session_start", () => { pi.appendEntry("package-started", { loaded: true }); });
+  pi.on("input", (event) => event.text === "package-handled" ? { action: "handled" } : { action: "continue" });
   pi.registerTool({ name: "package_tool", label: "Package", description: "Package test", parameters: { type: "object", properties: {} }, async execute(id, params, signal, update, ctx) {
     await writeFile(join(ctx.cwd, "package-tool.txt"), "executed");
     return { content: [{ type: "text", text: "package done" }], details: {} };
+  }});
+  pi.registerTool({ name: "package_nested", label: "Nested", description: "Nested test", parameters: { type: "object", properties: {} }, async execute(id, params, signal, update, ctx) {
+    const outcome = await ctx.executeTool("write", { path: "nested-package-tool.txt", content: "nested executed" });
+    return outcome.result;
   }});
 }`,
 	);
@@ -81,6 +87,7 @@ export default function(pi) {
 	);
 	let allowed = false;
 	let approvals = 0;
+	let denyNested = false;
 	const abort = new AbortController();
 	const catalogRequests = [];
 	const session = await createPiRuntime({
@@ -135,8 +142,14 @@ export default function(pi) {
 				],
 			});
 		},
-		authorize: () => {
+		authorize: (title) => {
 			approvals++;
+			if (
+				denyNested &&
+				JSON.stringify(title).includes("nested-package-tool.txt")
+			) {
+				return Promise.reject(new Error("nested denied"));
+			}
 			return allowed
 				? Promise.resolve(abort.signal)
 				: Promise.reject(new Error("denied"));
@@ -210,6 +223,80 @@ export default function(pi) {
 			"executed",
 		);
 		assert.equal(approvals, 2);
+		// 実 SDK の入力処理が通常送信と追加指示を引き受け、履歴へ追加しないことを確認する。
+		const messageCount = session.sessionManager.getEntries().length;
+		const requestCount = requests.length;
+		const dispositions = [];
+		await session.prompt("package-handled", {
+			preflightResult: (result) => dispositions.push(result),
+		});
+		assert.deepEqual(dispositions, ["handled"]);
+		assert.equal(await session.steer("package-handled"), "handled");
+		assert.equal(session.sessionManager.getEntries().length, messageCount);
+		assert.equal(requests.length, requestCount);
+		assert.deepEqual(session.clearQueue(), { steering: [], followUp: [] });
+
+		// 子の SDK 呼び出しも Host の承認を通し、拒否では書き込まず、許可後だけ実行する。
+		const nestedEvents = [];
+		const unsubscribeNested = session.subscribe((event) => {
+			if (event.type.startsWith("tool_execution_")) {
+				nestedEvents.push(event);
+			}
+		});
+		const nestedPrompt = `policy:${JSON.stringify({ name: "package_nested", args: {} })}`;
+		const beforeNested = approvals;
+		denyNested = true;
+		await session.prompt(nestedPrompt);
+		assert.equal(approvals - beforeNested, 2);
+		await assert.rejects(
+			readFile(path.join(cwd, "nested-package-tool.txt")),
+			{ code: "ENOENT" },
+		);
+		const denied = nestedEvents.find(
+			(event) =>
+				event.type === "tool_execution_end" && event.parentToolCallId,
+		);
+		assert.equal(denied.isError, true);
+		denyNested = false;
+		nestedEvents.length = 0;
+		await session.prompt(nestedPrompt);
+		unsubscribeNested();
+		assert.equal(approvals - beforeNested, 4);
+		assert.equal(
+			await readFile(path.join(cwd, "nested-package-tool.txt"), "utf8"),
+			"nested executed",
+		);
+		const child = nestedEvents.find(
+			(event) =>
+				event.type === "tool_execution_end" && event.parentToolCallId,
+		);
+		assert.equal(child.isError, false);
+		const saved = sdk.SessionManager.open(
+			session.sessionManager.getSessionFile(),
+		).getBranch();
+		const parent = saved.findLast(
+			(entry) =>
+				entry.type === "message" && entry.message.role === "toolResult",
+		).message;
+		assert.equal(parent.nestedCalls.complete, true);
+		assert.deepEqual(
+			parent.nestedCalls.calls.map((call) => [
+				call.id,
+				call.name,
+				call.status,
+			]),
+			[[child.toolCallId, "write", "ok"]],
+		);
+		const restored = restorePiHistory(saved, cwd);
+		const restoredChild = restored.tools.findLast(
+			(tool) => tool.id === child.toolCallId,
+		);
+		assert.equal(restoredChild.parentToolCallId, child.parentToolCallId);
+		assert.equal(restoredChild.summaryOnly, true);
+		assert.equal(restoredChild.status, "completed");
+		assert.deepEqual(restoredChild.content, []);
+		assert.equal(restoredChild.rawInput.content, "nested executed");
+
 		assert.ok(
 			session.resourceLoader
 				.getPrompts()

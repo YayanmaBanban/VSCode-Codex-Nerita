@@ -3,7 +3,7 @@
 	"private": true,
 	"version": "0.0.1",
 	"engines": {
-		"node": ">=22"
+		"node": ">=22.19.0"
 	},
 	"scripts": {
 		"handoff:generate": "node scripts/generate-handoff-schema.cjs",

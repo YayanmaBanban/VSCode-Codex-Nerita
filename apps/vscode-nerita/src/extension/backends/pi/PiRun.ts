@@ -162,30 +162,25 @@ export abstract class PiRun extends PiLifecycle {
 		const start = (text: string) =>
 			runtime.prompt(text, {
 				expandPromptTemplates: false,
-				preflightResult: (accepted) => {
+				preflightResult: (disposition) => {
 					if (!current() || submission.cancelled) {
 						throw new Error("送信を停止しました。");
 					}
-					if (accepted) {
-						submission.accepted = true;
-						this.patch({
-							messages: [
-								...this.state.messages,
-								{
-									id: randomUUID(),
-									role: "user",
-									text: message.text,
-									references: message.references ?? [],
-									order: nextTimelineOrder(this.state),
-								},
-							],
-						});
-						this.emit({
-							type: "prompt/accepted",
-							requestId: message.requestId,
-							mode: "start",
-						});
+					// 拡張が処理した入力も下書きを解放するが、通常の会話本文には追加しない。
+					switch (disposition) {
+						case "started":
+						case "queued":
+							this.appendUserMessage(message);
+							break;
+						case "handled":
+							break;
 					}
+					submission.accepted = true;
+					this.emit({
+						type: "prompt/accepted",
+						requestId: message.requestId,
+						mode: disposition === "queued" ? "steer" : "start",
+					});
 				},
 			});
 		const check = () => {
@@ -299,7 +294,22 @@ export abstract class PiRun extends PiLifecycle {
 						}
 					},
 				);
-				await runtime.steer(text);
+				const disposition = await runtime.steer(text);
+				if (disposition === "handled") {
+					// 実行が直後に終わっても、拡張が引き受けた入力を再送させない。
+					if (this.epoch !== epoch) {
+						return;
+					}
+					if (submission.cancelled) {
+						throw new Error("追加指示の受付を停止しました。");
+					}
+					this.emit({
+						type: "prompt/accepted",
+						requestId: message.requestId,
+						mode: "steer",
+					});
+					return;
+				}
 
 				if (
 					this.staleSubmission(submission, epoch) ||
@@ -310,18 +320,7 @@ export abstract class PiRun extends PiLifecycle {
 						"追加指示の対象の実行は終了しました。再送してください。",
 					);
 				}
-				this.patch({
-					messages: [
-						...this.state.messages,
-						{
-							id: randomUUID(),
-							role: "user",
-							text: message.text,
-							references: message.references ?? [],
-							order: nextTimelineOrder(this.state),
-						},
-					],
-				});
+				this.appendUserMessage(message);
 				this.emit({
 					type: "prompt/accepted",
 					requestId: message.requestId,
@@ -335,6 +334,24 @@ export abstract class PiRun extends PiLifecycle {
 		});
 		submission.steering = operation;
 		this.track(operation);
+	}
+
+	/** 通常送信またはキュー登録された入力だけを会話本文へ追加する。 */
+	private appendUserMessage(
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+	) {
+		this.patch({
+			messages: [
+				...this.state.messages,
+				{
+					id: randomUUID(),
+					role: "user",
+					text: message.text,
+					references: message.references ?? [],
+					order: nextTimelineOrder(this.state),
+				},
+			],
+		});
 	}
 
 	/** 停止・完了または接続変更で追加指示が無効になったか確認する。 */

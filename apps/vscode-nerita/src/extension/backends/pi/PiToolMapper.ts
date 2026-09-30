@@ -92,6 +92,7 @@ function piToolSummary(
 	return {
 		id: event.toolCallId,
 		...(state.runId ? { runId: state.runId } : {}),
+		...toolParent(event, existing),
 		...(state.cwd ? { cwd: state.cwd } : {}),
 		order: existing?.order ?? nextTimelineOrder(state),
 		title: toolTitle(existing, file, label),
@@ -104,6 +105,23 @@ function piToolSummary(
 				? (existing?.content ?? [])
 				: resultContent(result),
 	};
+}
+
+/** 終了通知で親 ID が省略された場合も、開始時の親子関係を保持する。 */
+function toolParent(
+	event: Extract<
+		PiEvent,
+		{
+			type:
+				| "tool_execution_start"
+				| "tool_execution_update"
+				| "tool_execution_end";
+		}
+	>,
+	existing: ToolSummary | undefined,
+) {
+	const id = event.parentToolCallId ?? existing?.parentToolCallId;
+	return id ? { parentToolCallId: id } : {};
 }
 
 /** 既存の対象パスを保持し、新規ツールのパスを補う。 */

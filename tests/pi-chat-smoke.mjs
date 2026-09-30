@@ -155,7 +155,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				'export { PiSessionController } from "./apps/vscode-nerita/src/extension/backends/pi/PiSessionController"; export { createPiRuntime } from "./tests/piTrustedRuntime"; export { isHostMessage } from "./packages/shared/src/hostMessageValidation";',
+				'export { PiSessionController } from "./apps/vscode-nerita/src/extension/backends/pi/PiSessionController"; export { restorePiHistory } from "./apps/vscode-nerita/src/extension/backends/pi/PiHistoryMapper"; export { createPiRuntime } from "./tests/piTrustedRuntime"; export { isHostMessage } from "./packages/shared/src/hostMessageValidation";',
 			resolveDir: projectRoot,
 		},
 		bundle: true,
@@ -165,10 +165,14 @@ try {
 		outfile: "dist/pi-smoke/host.cjs",
 		plugins: [vscodeBoundary],
 	});
-	const { PiSessionController, createPiRuntime, isHostMessage } =
-		createRequire(import.meta.url)(
-			path.join(projectRoot, "dist/pi-smoke/host.cjs"),
-		);
+	const {
+		PiSessionController,
+		createPiRuntime,
+		isHostMessage,
+		restorePiHistory,
+	} = createRequire(import.meta.url)(
+		path.join(projectRoot, "dist/pi-smoke/host.cjs"),
+	);
 	controller = new PiSessionController(async (signal, authorize, resume) => ({
 		cwd,
 		session: await createPiRuntime({
@@ -527,6 +531,7 @@ try {
 	});
 	await piPackagesSmoke({
 		PiSessionController,
+		restorePiHistory,
 		createPiRuntime,
 		sdk,
 		extensionPath: fixture,

@@ -27,6 +27,60 @@ const result = (text: string) => ({
 	details: {},
 });
 
+it("多段の子ツール通知で親ID・入力・結果と表示順を保持する", async () => {
+	const h = await connected();
+	for (const [id, parentToolCallId] of [
+		["outer", undefined],
+		["outer/1", "outer"],
+		["outer/1/1", "outer/1"],
+	] as const) {
+		h.emit({
+			type: "tool_execution_start",
+			toolCallId: id,
+			toolName: "read",
+			args: { path: `${id}.txt` },
+			...(parentToolCallId ? { parentToolCallId } : {}),
+		});
+	}
+	h.emit({
+		type: "tool_execution_update",
+		toolCallId: "outer/1/1",
+		toolName: "read",
+		args: { path: "outer/1/1.txt" },
+		parentToolCallId: "outer/1",
+		partialResult: result("partial"),
+	});
+	h.emit({
+		type: "tool_execution_end",
+		toolCallId: "outer/1/1",
+		toolName: "read",
+		parentToolCallId: "outer/1",
+		result: result("child result"),
+		isError: false,
+	});
+	expect(h.controller.snapshot().tools).toMatchObject([
+		{ id: "outer" },
+		{
+			id: "outer/1",
+			parentToolCallId: "outer",
+			rawInput: { path: "outer/1.txt" },
+		},
+		{
+			id: "outer/1/1",
+			parentToolCallId: "outer/1",
+			content: [{ content: { text: "child result" } }],
+			status: "completed",
+		},
+	]);
+	const orders = h.controller.snapshot().tools.map((tool) => tool.order!);
+	expect(orders[0]).toBeGreaterThan(
+		h.controller.snapshot().messages[0]!.order!,
+	);
+	expect(orders[1]).toBeGreaterThan(orders[0]!);
+	expect(orders[2]).toBeGreaterThan(orders[1]!);
+	h.complete();
+});
+
 it.each(["powershell", "pwsh", "bash"])(
 	"%sをShell実行カードとして表示する",
 	async (name) => {

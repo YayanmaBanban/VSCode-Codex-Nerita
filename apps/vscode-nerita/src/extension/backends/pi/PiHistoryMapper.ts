@@ -3,6 +3,7 @@ import type { SessionEntry } from "@earendil-works/pi-coding-agent";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { mapPiTool, finishPiTools } from "./PiToolMapper";
+import { restorePiNestedTools } from "./PiNestedHistory";
 
 /** 保存履歴の本文とツール結果を表す。 */
 type HistoryMessage = Extract<SessionEntry, { type: "message" }>["message"];
@@ -80,6 +81,7 @@ function restoreToolResult(
 			{ ...state, run: cancelled ? "cancelling" : "idle" },
 		),
 	);
+	restorePiNestedTools(message, state);
 }
 
 /** 保存本文とツール呼び出しを順序どおり復元する。 */

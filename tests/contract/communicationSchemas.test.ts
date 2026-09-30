@@ -5,6 +5,7 @@ import { validComposerField } from "@nerita/shared/composerValidation";
 import { isUiContributions } from "@nerita/shared/uiContributionValidation";
 import { isState } from "@nerita/shared/stateValidation";
 import { initialState } from "@nerita/shared/chatState";
+import { validStateField } from "@nerita/shared/stateFieldValidation";
 
 const choice = { value: "model", name: "Model", description: "choice" };
 const option = {
@@ -34,6 +35,36 @@ function contribution(control: unknown, change: Record<string, unknown> = {}) {
 }
 
 describe("Composer / UI contribution contract", () => {
+	it("子ツールの要約・親ID・省略サイズを検証して元の記録を保持する", () => {
+		const tool = {
+			id: "outer/1",
+			parentToolCallId: "outer",
+			title: "read",
+			status: "unfinished",
+			paths: [],
+			summaryOnly: true,
+			nestedCallsIncomplete: false,
+			omittedArgumentBytes: 8193,
+		};
+		const before = structuredClone(tool);
+		expect(validStateField("tools", [tool])).toBe(true);
+		expect(tool).toEqual(before);
+		for (const change of [
+			{ parentToolCallId: "" },
+			{ parentToolCallId: 1 },
+			{ summaryOnly: "true" },
+			{ nestedCallsIncomplete: 0 },
+			{ omittedArgumentBytes: -1 },
+			{ omittedArgumentBytes: Infinity },
+			{ omittedArgumentBytes: 1.5 },
+			{ status: "unknown" },
+		]) {
+			expect(validStateField("tools", [{ ...tool, ...change }])).toBe(
+				false,
+			);
+		}
+	});
+
 	it("通信用 ID は UTF-16 の 1〜256 単位だけを受理する", () => {
 		for (const [value, accepted] of [
 			["a", true],
