@@ -26,7 +26,7 @@ React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `apps/
 | `apps/nerita-ui/src/`・`apps/vscode-nerita/src/extension/`・`packages/shared/src/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
 | 複数ファイルの依存調査・構造変更・コードレビュー | [コード調査・依存グラフ](.agents/docs/Code-Review-Graph.md) |
 | Webview UI の作成 | [UI 実装](.agents/docs/UI-Implementation.md) |
-| テスト作成 | [テストポリシー](.agents/docs/Testing-Policy.md) |
+| 検証方針の決定、テストの追加・変更・削除・レビュー | [テストポリシー](.agents/docs/Testing-Policy.md) |
 | Webview UI の表示・操作・アニメーションの変更、UI レビュー | [UI レビュー](.agents/docs/UI-Review-Guide.md) |
 
 対象が明確な局所修正や文書のみの変更では、無関係なガイドや全体の依存グラフを読み込む必要はありません。
