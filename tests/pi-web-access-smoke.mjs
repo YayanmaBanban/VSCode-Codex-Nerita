@@ -1,5 +1,5 @@
 // 導入済みの実拡張を隔離した設定で読み込み、Host HTTP と承認境界を検証する。
-import { extensionRoot } from "../config/workspace-paths.cjs";
+import { extensionRoot, repoRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { execFileSync } from "node:child_process";
@@ -26,7 +26,10 @@ await mkdir(cwd);
 await mkdir(agentDir);
 const installedAgent =
 	process.env.PI_CODING_AGENT_DIR ?? path.join(homedir(), ".pi/agent");
-const packageDir = path.join(installedAgent, "npm/node_modules/pi-web-access");
+const packageDir = path.resolve(
+	process.env.NERITA_WEB_ACCESS_PACKAGE ??
+		path.join(installedAgent, "npm/node_modules/pi-web-access"),
+);
 const manifest = JSON.parse(
 	await readFile(path.join(packageDir, "package.json"), "utf8"),
 );
@@ -101,7 +104,7 @@ try {
 		stdin: {
 			contents:
 				'export { createPiRuntime } from "./tests/piTrustedRuntime"; export { WorkspaceTrustStore } from "./apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore"; export { evaluateTrust } from "./apps/vscode-nerita/src/extension/security/trust/TrustGate";',
-			resolveDir: extensionPath,
+			resolveDir: repoRoot,
 		},
 		bundle: true,
 		platform: "node",

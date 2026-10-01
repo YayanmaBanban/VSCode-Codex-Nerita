@@ -347,6 +347,28 @@ it("一覧に未反映のForkをフィルター切替とアーカイブ解除で
 	expect(h.session.snapshot().sessions).toHaveLength(0);
 });
 
+it("アーカイブ一覧で確認済みの会話も解除直後の一覧反映まで保持する", async () => {
+	const h = await connected();
+	await action(h, "session/fork");
+	await action(h, "session/archive", { sessionId: "forked" });
+	h.client.listThreads.mockResolvedValue({
+		data: [historyThread("forked")],
+		nextCursor: null,
+	});
+	await action(h, "session/list", { archived: true });
+	expect(
+		h.session.snapshot().sessions.find((row) => row.sessionId === "forked")
+			?.archived,
+	).toBe(true);
+	h.client.listThreads.mockResolvedValue({ data: [], nextCursor: null });
+	await action(h, "session/unarchive", { sessionId: "forked" });
+	await action(h, "session/list", { archived: false });
+	expect(
+		h.session.snapshot().sessions.find((row) => row.sessionId === "forked")
+			?.archived,
+	).toBe(false);
+});
+
 it("復元中の二重操作と外部ターン開始を拒否する", async () => {
 	const h = await connected();
 	const response =

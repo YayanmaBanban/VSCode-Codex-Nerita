@@ -93,11 +93,14 @@ it("モデルとUltraを保存し、独立した起動後の送信に復元す�
 	);
 });
 
-it.each(["max", "high"])(
-	"モデル変更でUltraを対応上限%sへ下げ、保存と送信へ反映する",
-	async (maximum) => {
+it.each([
+	{ supported: ["low", "ultra"], expected: "ultra" },
+	{ supported: ["max", "low"], expected: "max" },
+])(
+	"モデル変更で推論量を $expected に決め、直後の送信と再起動へ反映する",
+	async ({ supported, expected }) => {
 		const f = fixture();
-		f.models[1]!.supportedReasoningEfforts = [maximum, "low"].map(
+		f.models[1]!.supportedReasoningEfforts = supported.map(
 			(reasoningEffort) => ({
 				reasoningEffort,
 				description: reasoningEffort,
@@ -108,19 +111,23 @@ it.each(["max", "high"])(
 		await configure(h, "model", "chosen");
 		expect(f.storage.update).toHaveBeenLastCalledWith({
 			model: "chosen",
-			reasoning: maximum,
+			reasoning: expected,
 		});
-		await configure(h, "model", "test-model");
-		await configure(h, "reasoning_effort", "low");
-		await configure(h, "model", "chosen");
-		expect(f.storage.update).toHaveBeenLastCalledWith({
-			model: "chosen",
-			reasoning: "low",
-		});
-		await configure(h, "reasoning_effort", maximum);
+		expect(h.session.snapshot().configOptions).toContainEqual(
+			expect.objectContaining({
+				id: "reasoning_effort",
+				currentValue: expected,
+			}),
+		);
 		await h.send();
 		expect(h.client.startTurn).toHaveBeenCalledWith(
-			expect.objectContaining({ model: "chosen", effort: maximum }),
+			expect.objectContaining({ model: "chosen", effort: expected }),
+		);
+		await h.session.dispose();
+		const restarted = await f.create();
+		await restarted.send();
+		expect(restarted.client.startTurn).toHaveBeenCalledWith(
+			expect.objectContaining({ model: "chosen", effort: expected }),
 		);
 	},
 );

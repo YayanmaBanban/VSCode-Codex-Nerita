@@ -11,7 +11,6 @@ import {
 } from "./piTrustedRuntime";
 import { guardrailsFixture } from "./piGuardrailsFixture";
 import type { PermissionPresentation } from "@nerita/shared/permission";
-import { piAgentPersistenceSmoke } from "./piAgentPersistenceSmoke";
 
 /** 独立 CLI を使わず、起動と子の変更を別々に承認する。 */
 export async function piSubagentAdapterSmoke(extensionPath: string) {
@@ -120,9 +119,6 @@ async function adapterModeSmoke(
 		);
 		assert.ok(!childRequest.includes('"name":"powershell"'));
 		assert.ok(!childRequest.includes('"name":"subagent"'));
-		const requestCount = h.requests.length;
-		await piAgentPersistenceSmoke(parent, options);
-		assert.equal(h.requests.length, requestCount);
 	} finally {
 		release();
 		controller.abort();

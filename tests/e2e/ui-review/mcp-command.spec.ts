@@ -1,4 +1,5 @@
 // スラッシュ候補から MCP 一覧を表示し、狭い画面と明暗テーマの表示を確認する。
+import { openStory } from "../storyPage";
 import { expectSent, showState, acceptPrompt } from "../storyBridge";
 import { mcpServersFixture } from "../../fixtures/mcpStatusFixture";
 import { mcpSummaryText } from "@nerita/shared/mcp";
@@ -19,7 +20,7 @@ for (const variant of ["dark", "light", "reduced"] as const) {
 			reducedMotion: variant === "reduced" ? "reduce" : "no-preference",
 		});
 		await page.clock.install();
-		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+		await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",
 		});

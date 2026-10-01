@@ -43,7 +43,7 @@ export async function piHttpMcpFixture() {
 			request.headers.authorization !== `Bearer ${token}` ||
 			unauthorized
 		) {
-			response.writeHead(401).end();
+			response.writeHead(401).end(`Authentication failed: ${token}`);
 			return;
 		}
 		if (request.method === "GET") {

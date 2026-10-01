@@ -99,7 +99,7 @@ it("復元失敗後も現在の会話とその承認コールバックを使え�
 	await h.controller.dispose();
 });
 
-it("切断後に完了した一覧と復元を新しい画面へ反映しない", async () => {
+it("切断後に完了した一覧を新しい画面へ反映しない", async () => {
 	const h = await setup();
 	const deferred = pending<SessionSummary[]>();
 	h.runtime.history!.list = () => deferred.promise;
@@ -108,6 +108,26 @@ it("切断後に完了した一覧と復元を新しい画面へ反映しない"
 	deferred.resolve([{ sessionId: "stale", cwd: "old" }]);
 	await listing;
 	expect(h.controller.snapshot().sessions).toEqual([]);
+	await h.controller.dispose();
+});
+
+it("切断後に完了した復元を適用せず、生成した接続を回収する", async () => {
+	const h = await setup();
+	const deferred = pending<Awaited<ReturnType<typeof h.factory>>>();
+	h.factory.mockReturnValueOnce(deferred.promise);
+	const loading = h.load();
+	await vi.waitFor(() => expect(h.factory).toHaveBeenCalledTimes(2));
+	h.controller.invalidate();
+	const restored = {
+		...h.runtime,
+		sessionId: "stale",
+		abort: vi.fn(async () => {}),
+		dispose: vi.fn(),
+	};
+	deferred.resolve({ session: restored, cwd: "fixture-workspace" });
+	await loading;
+	expect(h.controller.snapshot().sessionId).toBeNull();
+	expect(restored.dispose).toHaveBeenCalledOnce();
 	await h.controller.dispose();
 });
 

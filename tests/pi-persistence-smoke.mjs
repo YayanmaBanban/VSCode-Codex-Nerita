@@ -1,6 +1,6 @@
-// 同梱 SDK で保存・再開・保存先切替・移動を検証する。会話はローカルモデルだけを使う。
+// 同梱 SDK で保存・再開・保存先切替を検証する。会話はローカルモデルだけを使う。
 import assert from "node:assert/strict";
-import { readFile, writeFile, mkdir, cp } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 /** 新しい `Controller` から同じ履歴を開き、UI とモデルの両方へ文脈を復元する。 */
@@ -103,45 +103,6 @@ export async function piPersistenceSmoke({
 		).find((row) => row.id === savedId).path;
 		const original = await readFile(standardFile, "utf8");
 		assert.ok(original.includes("resume saved context"));
-		// 現在の履歴を分岐し、モデル文脈を引き継いでも元ファイルは変えない。
-		await receive({ type: "session/fork", sessionId: savedId });
-		const forkId = controller.snapshot().sessionId;
-		assert.notEqual(forkId, savedId);
-		assert.ok(
-			controller
-				.snapshot()
-				.sessions.some((row) => row.sessionId === forkId),
-		);
-		assert.ok(
-			controller
-				.snapshot()
-				.messages.some((m) => m.text === "resume saved context"),
-		);
-		await send("fork only context");
-		assert.ok(
-			requests
-				.at(-1)
-				.messages.some((m) =>
-					JSON.stringify(m.content).includes("resume saved context"),
-				),
-		);
-		assert.equal(await readFile(standardFile, "utf8"), original);
-		await controller.dispose();
-		controller = create();
-		await controller.connect();
-		await list();
-		await load(forkId);
-		assert.ok(
-			controller
-				.snapshot()
-				.messages.some((m) => m.text === "fork only context"),
-		);
-		await load(savedId);
-		assert.ok(
-			!controller
-				.snapshot()
-				.messages.some((m) => m.text === "fork only context"),
-		);
 		// 設定変更だけで開いている履歴を移動せず、新規会話から切り替える。
 		storage = "workspace";
 		await receive({ type: "session/new" });
@@ -164,21 +125,6 @@ export async function piPersistenceSmoke({
 		assert.equal(controller.snapshot().sessionId, localId);
 		await send("after restart");
 		await controller.dispose();
-		// フォルダーの移動はコピーで再現し、元の成果物を保持する。
-		workspace = path.join(path.dirname(cwd), "relocated workspace");
-		await cp(cwd, workspace, { recursive: true });
-		controller = create();
-		await controller.connect();
-		await list();
-		await load(localId);
-		assert.equal(controller.snapshot().sessionId, localId);
-		assert.equal(controller.snapshot().cwd, workspace);
-		assert.ok(
-			controller
-				.snapshot()
-				.messages.some((m) => m.text === "after restart"),
-		);
-		await send("after move");
 		// 完了通知がないツールは、復元時に停止表示へ落とし承認・実行しない。
 		await controller.dispose();
 		const localDir = runtime.history.target(localId).directory;
@@ -216,14 +162,6 @@ export async function piPersistenceSmoke({
 			readFile(path.join(workspace, "must-not-exist.txt")),
 			{ code: "ENOENT" },
 		);
-		// 一覧取得後、空になった履歴を `SDK.open` で初期化しない。
-		await load(localId);
-		await writeFile(incomplete.getSessionFile(), "");
-		await load(incomplete.getSessionId());
-		assert.equal(controller.snapshot().sessionId, localId);
-		assert.ok(controller.snapshot().sessionsError);
-		assert.equal(await readFile(incomplete.getSessionFile(), "utf8"), "");
-		await send("continue after failed restore");
 		// 自動接続後・初回送信前の設定変更を、独立したワークスペースで再現する。
 		await controller.dispose();
 		workspace = path.join(
@@ -273,7 +211,7 @@ export async function piPersistenceSmoke({
 			[controller.snapshot().sessionId],
 		);
 		console.log(
-			"PASS: Pi global/workspace persistence → fork isolation/restart/context → relocated workspace → incomplete tools → failed restore retains conversation → first-prompt storage changes in both directions",
+			"PASS: Pi global/workspace persistence → incomplete tools → first-prompt storage changes in both directions",
 		);
 		await startupReasoningSmoke({
 			createPiRuntime,

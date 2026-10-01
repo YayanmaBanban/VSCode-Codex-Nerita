@@ -1,4 +1,5 @@
 // セッション候補・復元・クリップボードと送信する参照 ID を確認する。
+import { openStory } from "../storyPage";
 import { expectSent, restoreDraft } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
@@ -15,7 +16,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-sessions--references&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -85,7 +87,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			.grantPermissions(["clipboard-read", "clipboard-write"]);
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-sessions--references&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -148,7 +151,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 test("検索・失敗・再送・取り外しを行い参照解除後はIDを送らない", async ({
 	page,
 }, info) => {
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-composer-sessions--references&viewMode=story",
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
@@ -193,7 +197,8 @@ test("検索・失敗・再送・取り外しを行い参照解除後はIDを送
 test("ページ送り後に検索語を戻しても先頭ページから表示する", async ({
 	page,
 }) => {
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-composer-sessions--references&viewMode=story",
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });

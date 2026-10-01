@@ -219,7 +219,7 @@ it("公式API契約で送信し、認証はヘッダーだけに付ける", asyn
 	expect(transport.mock.calls[0]?.[1]?.body).not.toContain("test-key");
 });
 
-it.each(["http", "code", "invalid", "large"])(
+it.each(["http", "code", "invalid"])(
 	"APIの%sエラーを拒否する",
 	async (kind) => {
 		let response = Response.json({
@@ -232,9 +232,6 @@ it.each(["http", "code", "invalid", "large"])(
 		if (kind === "invalid") {
 			response = new Response("not json");
 		}
-		if (kind === "large") {
-			response = new Response("x".repeat(32769));
-		}
 		const reviewer = createJevReviewer("test-key", () =>
 			Promise.resolve(response),
 		);
@@ -243,3 +240,39 @@ it.each(["http", "code", "invalid", "large"])(
 		).rejects.toThrow();
 	},
 );
+
+it("有効な多バイト応答を32KiBまで受け入れ、分割受信でも超過を拒否する", async () => {
+	const body = JSON.stringify({
+		code: 0,
+		data: { decision: "allow", guidance: "確認" },
+	});
+	const bytes = Buffer.from(
+		body + " ".repeat(32768 - Buffer.byteLength(body)),
+	);
+	const response = (extra: boolean) =>
+		new Response(
+			new ReadableStream({
+				start(controller) {
+					controller.enqueue(bytes.subarray(0, 53));
+					controller.enqueue(bytes.subarray(53));
+					if (extra) {
+						controller.enqueue(new Uint8Array([32]));
+					}
+					controller.close();
+				},
+			}),
+		);
+	const reviewer = (extra: boolean) =>
+		createJevReviewer("test-key", () => Promise.resolve(response(extra)));
+	const input = summarizeJevCall(call);
+	const signal = new AbortController().signal;
+	expect(await reviewer(false)(input, signal)).toEqual({
+		decision: "allow",
+		guidance: "確認",
+	});
+	const outcome = await reviewer(true)(input, signal).then(
+		() => "accepted",
+		(error: unknown) => (error instanceof Error ? error.message : error),
+	);
+	expect(outcome).toBe("Jevの応答が上限を超えています。");
+});

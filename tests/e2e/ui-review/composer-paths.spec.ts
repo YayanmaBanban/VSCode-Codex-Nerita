@@ -1,4 +1,5 @@
 // ワークスペースの階層選択から本文のパス挿入・送信まで確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -14,7 +15,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -91,7 +93,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 test("階層を戻り、読み込み失敗から復帰してキャンセルする", async ({
 	page,
 }, info) => {
-	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("#");
 	await page

@@ -1,4 +1,5 @@
 // 認証先の検索・展開・キー入力・OAuth・取消を明暗と幅別に検証する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -13,7 +14,8 @@ for (const theme of ["dark", "light"] as const) {
 			});
 			await page.setViewportSize({ width, height: 850 });
 			await page.emulateMedia({ colorScheme: theme });
-			await page.goto(
+			await openStory(
+				page,
 				"/iframe.html?id=chat-piautheditor--providers&viewMode=story",
 			);
 			await expect(page.getByRole("listitem")).toHaveCount(3);

@@ -102,7 +102,7 @@ it("未信頼workspaceを読まず、信頼後に壊れた上位設定があれ�
 	expect(JSON.stringify(trusted)).not.toContain("malformed-private-text");
 });
 
-it("承認外のコマンド補間と巨大なファイルを拒否し、秘密値をエラーへ複製しない", async () => {
+it("承認外のコマンド補間を拒否し、秘密値をエラーへ複製しない", async () => {
 	const h = await fixture();
 	await h.write(false, {
 		server: {
@@ -114,9 +114,22 @@ it("承認外のコマンド補間と巨大なファイルを拒否し、秘密�
 	const result = await h.load();
 	expect(result.entries[0]?.config).toBeUndefined();
 	expect(JSON.stringify(result)).not.toContain("private-token");
-	await writeFile(join(h.cwd, ".pi/mcp.json"), "private-data".repeat(30000));
+});
+
+it("正常な設定を256KiBまで受け入れ、超過時は下位設定にも戻らない", async () => {
+	const h = await fixture();
+	await h.write(false, { server: { command: "global", enabled: true } });
+	const body = JSON.stringify({
+		mcpServers: { server: { command: "project", enabled: true } },
+	}).padEnd(256 * 1024, " ");
+	await writeFile(join(h.cwd, ".pi/mcp.json"), body);
+	const valid = await h.load();
+	expect(valid.errors).toEqual([]);
+	expect(valid.entries).toMatchObject([
+		{ scope: "project", config: { command: "project", enabled: true } },
+	]);
+	await writeFile(join(h.cwd, ".pi/mcp.json"), `${body} `);
 	const large = await h.load();
 	expect(large.entries).toEqual([]);
 	expect(large.errors).toHaveLength(1);
-	expect(JSON.stringify(large)).not.toContain("private-data");
 });

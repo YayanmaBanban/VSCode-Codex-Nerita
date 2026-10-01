@@ -1,4 +1,5 @@
 // status Contribution の時間枠別残率・詳細・非表示を明暗テーマで撮影する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -15,7 +16,8 @@ for (const theme of ["dark", "light"] as const) {
 			colorScheme: theme,
 			reducedMotion: "no-preference",
 		});
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
 		);
 		const bar = page.getByRole("progressbar", {

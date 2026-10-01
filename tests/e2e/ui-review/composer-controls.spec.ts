@@ -1,4 +1,5 @@
 // ブロックのホイール境界と削除ボタンを、実際のスクロール・履歴で検証する。
+import { openStory } from "../storyPage";
 import { expectSent } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 import { select, paste } from "./composerHelpers";
@@ -16,7 +17,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+		await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",
 		});
@@ -58,7 +59,7 @@ test("ホイールでブロック内部から全体へ上下にスクロール�
 }, info) => {
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
-	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	const before = "前の文章\n".repeat(20);
 	await input.fill(before + "後の文章\n".repeat(30));

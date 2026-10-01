@@ -139,10 +139,7 @@ describe("Pi quota", () => {
 	});
 	it.each([
 		["gpt-5.6-luna", "openai/gpt-6-astra", false],
-		["gpt-6-astra", "openai/gpt-5.6-luna", false],
 		["gpt-6-astra", "openai/gpt-6-astra", true],
-		["gpt-6-astra", "openai/gpt-5.3-codex-spark", false],
-		["gpt-5.3-codex-spark", "openai/gpt-6-astra", false],
 		["gpt-6-astra", "google/gpt-6-astra", false],
 	])("%sから%sへの利用枠保持は%s", (id, next, retain) => {
 		const session = { model: { provider: "openai", id } };

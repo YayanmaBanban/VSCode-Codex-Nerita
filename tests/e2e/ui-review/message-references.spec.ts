@@ -1,4 +1,5 @@
 // ユーザー限定の参照チップが明暗・狭幅・Markdown 内で表示されることを確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -12,7 +13,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-messages--references&viewMode=story",
 		);
 		const user = page.locator(".message.user");

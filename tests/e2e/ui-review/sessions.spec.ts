@@ -1,4 +1,5 @@
 // 履歴ペインの取得表示・各操作・明暗テーマと狭い幅を実画面で確認する。
+import { openStory } from "../storyPage";
 import { expectSent, showState } from "../storyBridge";
 import { sessionRows } from "../../../apps/nerita-ui/stories/chat/fixtures/sessions";
 import { expect, test, type Page } from "@playwright/test";
@@ -24,7 +25,8 @@ for (const theme of ["dark", "light"] as const) {
 	}, info) => {
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme: theme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-sessions--history&viewMode=story",
 		);
 		await page
@@ -94,7 +96,10 @@ for (const theme of ["dark", "light"] as const) {
 }
 
 test("次ページの取得と名前変更の取消", async ({ page }, info) => {
-	await page.goto("/iframe.html?id=chat-sessions--paginated&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-sessions--paginated&viewMode=story",
+	);
 	await page
 		.getByRole("button", { name: "セッション一覧", exact: true })
 		.click();
@@ -125,7 +130,10 @@ test("取得・再取得・選択・名前ボタン・フォーク・アーカ�
 }, info) => {
 	await page.clock.install();
 	await page.setViewportSize({ width: 1000, height: 820 });
-	await page.goto("/iframe.html?id=chat-sessions--history&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-sessions--history&viewMode=story",
+	);
 	await page
 		.getByRole("button", { name: "セッション一覧", exact: true })
 		.click();
@@ -209,7 +217,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		}, info) => {
 			await page.setViewportSize({ width, height: 820 });
 			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-			await page.goto(
+			await openStory(
+				page,
 				"/iframe.html?id=chat-sessions--history&viewMode=story",
 			);
 			await page
@@ -235,7 +244,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 }
 for (const scenario of ["empty", "error", "unsupported"]) {
 	test(`履歴の状態: ${scenario}`, async ({ page }, info) => {
-		await page.goto(
+		await openStory(
+			page,
 			`/iframe.html?id=chat-sessions--${scenario}&viewMode=story`,
 		);
 		if (scenario === "unsupported") {

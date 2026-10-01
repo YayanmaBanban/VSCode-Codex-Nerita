@@ -1,4 +1,5 @@
 // バックエンドの選択・配置・キーボード操作を明暗と狭幅で確認する。
+import { openStory } from "../storyPage";
 import { expectSent, emitHost } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
@@ -11,7 +12,10 @@ test("Piでは認証管理の上にバックエンドを表示する", async ({ 
 		}
 	});
 	await page.setViewportSize({ width: 320, height: 760 });
-	await page.goto("/iframe.html?id=chat-header--pi-backend&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-header--pi-backend&viewMode=story",
+	);
 	await page.getByRole("button", { name: "オプション" }).click();
 	const items = await page.getByRole("menuitem").allTextContents();
 	expect(items.indexOf("バックエンド")).toBe(
@@ -46,7 +50,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			});
 			await page.setViewportSize({ width, height: 760 });
 			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-			await page.goto(
+			await openStory(
+				page,
 				"/iframe.html?id=chat-header--untitled&viewMode=story",
 			);
 			const options = page.getByRole("button", { name: "オプション" });

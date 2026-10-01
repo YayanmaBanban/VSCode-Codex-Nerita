@@ -110,7 +110,7 @@ it("Web拡張のロード前に取得先を未信頼登録し、設定変更を�
 	await mkdir(join(packageRoot, "dist"), { recursive: true });
 	await writeFile(
 		join(packageRoot, "package.json"),
-		JSON.stringify({ name: "pi-web-access", version: "0.30.0" }),
+		JSON.stringify({ name: "pi-web-access" }),
 	);
 	const config = join(h.outside, "web-search.json");
 	const cache = join(h.cwd, "cache");

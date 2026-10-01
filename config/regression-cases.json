@@ -1,0 +1,215 @@
+[
+	{
+		"id": "unarchive-loses-thread",
+		"file": "apps/vscode-nerita/src/extension/backends/codex/CodexHistory.ts",
+		"changes": [
+			[
+				"this.pendingThreads.remember(epoch, thread);",
+				"this.pendingThreads.update(epoch, threadId, { archived: false });"
+			]
+		],
+		"test": "tests/unit/codexHistory.test.ts",
+		"name": "アーカイブ一覧で確認済みの会話も解除直後"
+	},
+	{
+		"id": "auth-stale-answer",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/PiAuthService.ts",
+		"changes": [["requestId !== id ||", "false ||"]],
+		"test": "tests/unit/piAuthPanel.test.ts",
+		"name": "エディターで入力を受け付け、秘密値を通知せず"
+	},
+	{
+		"id": "child-history-messages",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/PiAgentHistory.ts",
+		"changes": [
+			[
+				"structuredClone({ ...record, messages, tools })",
+				"structuredClone({ ...record, messages: [], tools })"
+			]
+		],
+		"test": "tests/integration/piDelegationLifecycle.test.ts",
+		"name": "子の実結果と親子関係を保存し"
+	},
+	{
+		"id": "workflow-fork-context",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/workflows/PiWorkflowChildren.ts",
+		"changes": [
+			[
+				"initialMessages: initialMessages(source),",
+				"initialMessages: [],"
+			]
+		],
+		"test": "tests/integration/piWorkflowLifecycle.test.ts",
+		"name": "ワークフローの実会話を継続・Forkし"
+	},
+	{
+		"id": "subagent-unknown-input",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/PiSubagentInput.ts",
+		"changes": [[".strict();", ".strip();"]],
+		"test": "tests/unit/piSubagentAdapter.test.ts",
+		"name": "workflowScript"
+	},
+	{
+		"id": "fork-reuses-original",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/PiSessionStore.ts",
+		"changes": [["manager.createBranchedSession(leaf);", "void leaf;"]],
+		"test": "tests/integration/piStorageLifecycle.test.ts",
+		"name": "Forkを別ファイルへ保存し"
+	},
+	{
+		"id": "failed-restore-clears-conversation",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/PiLifecycle.ts",
+		"changes": [
+			[
+				"connection: previous ? \"ready\" : \"error\",",
+				"connection: previous ? \"ready\" : \"error\", messages: [],"
+			]
+		],
+		"test": "tests/integration/piStorageLifecycle.test.ts",
+		"name": "破損した保存履歴を初期化せず"
+	},
+	{
+		"id": "mcp-display-metadata",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/results/PiResultDisplay.ts",
+		"changes": [
+			[
+				"return { ...body, ...savedDisplay(result, options) };",
+				"return body;"
+			]
+		],
+		"test": "tests/integration/piHttpMcp.test.ts",
+		"name": "MCP結果の表示元と省略を保存・復元する"
+	},
+	{
+		"id": "mcp-uncertain-result",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/mcp/PiMcpServer.ts",
+		"changes": [
+			[
+				"MCP の実行結果を確認できません。操作が反映されている可能性があります。再実行する前に対象の状態を確認してください。",
+				"MCP 操作に失敗しました。"
+			]
+		],
+		"test": "tests/integration/piHttpMcp.test.ts",
+		"name": "HTTP 404で結果を確定できない操作"
+	},
+	{
+		"id": "mcp-resend",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/mcp/PiMcpServer.ts",
+		"changes": [
+			[
+				"abortableFeatureApproval(request(), signal)",
+				"abortableFeatureApproval(request().catch(() => request()), signal)"
+			]
+		],
+		"test": "tests/integration/piHttpMcp.test.ts",
+		"name": "HTTP 404で結果を確定できない操作"
+	},
+	{
+		"id": "model-reasoning-reset",
+		"file": "apps/vscode-nerita/src/extension/backends/codex/settings/modelSelection.ts",
+		"changes": [
+			[
+				"const supported =",
+				"if (model.model === \"chosen\") return model.defaultReasoningEffort; const supported ="
+			]
+		],
+		"test": "tests/unit/codexSelection.test.ts",
+		"name": "モデル変更で推論量を"
+	},
+	{
+		"id": "storage-fallback",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/PiSessionStore.ts",
+		"changes": [
+			["const directory =", "let directory ="],
+			[
+				"await preparePiSessionDirectory(directory, storage);",
+				"try { await preparePiSessionDirectory(directory, storage); } catch { directory = piSessionDirectory(cwd, agentDir, \"global\"); await preparePiSessionDirectory(directory, \"global\"); }"
+			]
+		],
+		"test": "tests/integration/piStorageLifecycle.test.ts",
+		"name": "保存先の衝突を通知し、元データと会話を保持して修復後だけ再送する"
+	},
+	{
+		"id": "plan-completion-leak",
+		"file": "apps/nerita-ui/src/chat/composer/completionItems.ts",
+		"changes": [
+			[
+				"return items.filter((item) =>",
+				"if (!collaborationModes && marker === \"/\") items.push({ id: \"plan\", label: \"/plan\" }); return items.filter((item) =>"
+			]
+		],
+		"test": "tests/unit/codexCollaboration.test.ts",
+		"name": "Codexの補完にだけplanとgoalを追加する"
+	},
+	{
+		"id": "goal-completion-leak",
+		"file": "apps/nerita-ui/src/chat/composer/completionItems.ts",
+		"changes": [
+			[
+				"return items.filter((item) =>",
+				"if (!collaborationModes && marker === \"/\") items.push({ id: \"goal\", label: \"/goal\" }); return items.filter((item) =>"
+			]
+		],
+		"test": "tests/unit/codexCollaboration.test.ts",
+		"name": "Codexの補完にだけplanとgoalを追加する"
+	},
+	{
+		"id": "large-tool-result",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/PiFeatureSafety.ts",
+		"changes": [
+			["let redacted = json;", "let redacted = json.slice(0, 262144);"]
+		],
+		"test": "tests/integration/piToolResults.test.ts",
+		"name": "通常結果を保持する: code=true search=true"
+	},
+	{
+		"id": "missing-plan-diff",
+		"file": "apps/vscode-nerita/src/extension/backends/codex/items/activityEvents.ts",
+		"changes": [
+			[
+				"const synthetic = method.startsWith(\"turn/\");",
+				"if (method.startsWith(\"turn/\")) return {}; const synthetic = method.startsWith(\"turn/\");"
+			]
+		],
+		"test": "tests/unit/codexFeatures.test.ts",
+		"name": "推論の複数パート・計画・ファイル差分を保存する"
+	},
+	{
+		"id": "setup-without-completion",
+		"file": "apps/vscode-nerita/src/extension/backends/codex/settings/sandboxSetup.ts",
+		"changes": [["await finished;", "void finished;"]],
+		"test": "tests/unit/sandboxSetup.test.ts",
+		"name": "開始受付後も完了通知を待ち"
+	},
+	{
+		"id": "clipboard-limit",
+		"file": "apps/nerita-ui/src/chat/composer/referenceClipboard.ts",
+		"changes": [["raw.length > 4000000", "false"]],
+		"test": "tests/unit/referenceClipboard.test.ts",
+		"name": "コピー本文と一致する参照だけを受け入れる"
+	},
+	{
+		"id": "catalog-limit",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/openai/OpenAIResponseBody.ts",
+		"changes": [["size > 2 * 1024 * 1024", "false"]],
+		"test": "tests/unit/openAIModelCatalog.test.ts",
+		"name": "有効なモデル一覧を受信上限まで読み込み"
+	},
+	{
+		"id": "jev-limit",
+		"file": "apps/vscode-nerita/src/extension/security/JevClient.ts",
+		"changes": [["size > 32768", "false"]],
+		"test": "tests/unit/jevGuard.test.ts",
+		"name": "有効な多バイト応答を32KiBまで受け入れ"
+	},
+	{
+		"id": "mcp-config-limit",
+		"file": "apps/vscode-nerita/src/extension/backends/pi/mcp/PiMcpConfig.ts",
+		"changes": [
+			["stat.size > 256 * 1024", "false"],
+			["bytesRead > 256 * 1024", "false"]
+		],
+		"test": "tests/unit/piMcpConfig.test.ts",
+		"name": "正常な設定を256KiBまで受け入れ"
+	}
+]

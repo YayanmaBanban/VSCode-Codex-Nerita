@@ -1,4 +1,5 @@
 // ファイル・URI のドロップ、重複、無効状態を実際の入力欄で確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -12,7 +13,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 900 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
 		);
 		const input = page.getByRole("textbox");

@@ -7,6 +7,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { _electron as electron } from "playwright";
 import { expect } from "@playwright/test";
+import { checkPiAuthCancellation } from "./fixtures/piAuthWebview.mjs";
 
 /** エディターに開いた Trust 管理画面の読み込みを待つ。 */
 async function trustFrame(page) {
@@ -150,7 +151,6 @@ try {
 			`--user-data-dir=${userData}`,
 			`--extensions-dir=${path.join(fixture, "extensions")}`,
 			`--extensionDevelopmentPath=${extensionRoot}`,
-			"--disable-extensions",
 			"--skip-welcome",
 			"--skip-release-notes",
 			cwd,
@@ -331,6 +331,8 @@ try {
 	).toBeVisible();
 	await page.screenshot({ path: path.join(fixture, "reconnected.png") });
 	report.cases.push({ id: "window-reload-reconnect", status: "pass" });
+	await checkPiAuthCancellation(page, frame, fixture);
+	report.cases.push({ id: "auth-input-close-and-cancel", status: "pass" });
 	await page.getByText("Nerita Trust 1/1", { exact: true }).click();
 	const reloadedTrustView = await trustFrame(page);
 	await reloadedTrustView
@@ -340,6 +342,13 @@ try {
 		.click();
 	await expect(
 		page.getByText("Nerita Trust 0/1", { exact: true }),
+	).toBeVisible();
+	// 取消し開始時のバッジ更新だけで進めず、保存後の管理画面の状態を待つ。
+	await expect(
+		reloadedTrustView
+			.getByRole("article")
+			.filter({ hasText: cwd })
+			.getByRole("button", { name: "信頼する", exact: true }),
 	).toBeVisible();
 	await frame
 		.getByRole("button", { name: "未接続：接続する", exact: true })

@@ -1,4 +1,5 @@
 // 標準メニューへ渡す条件と、Host 通知後の選択保持・変換・履歴を検証する。
+import { openStory } from "../storyPage";
 import { test, expect, type Locator } from "@playwright/test";
 import { select, paste } from "./composerHelpers";
 
@@ -23,7 +24,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			}
 		});
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-code-block--selection&viewMode=story",
 		);
 		const input = page.getByRole("textbox");
@@ -64,7 +66,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 }
 
 test("未選択・参照・ロック・変更済みの選択は変換しない", async ({ page }) => {
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-composer-code-block--selection&viewMode=story",
 	);
 	const input = page.getByRole("textbox");

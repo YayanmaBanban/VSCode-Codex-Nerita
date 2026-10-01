@@ -21,21 +21,16 @@ export async function preparePiWebTrust(
 ): Promise<PiWebTrust[]> {
 	const result: PiWebTrust[] = [];
 	for (const entry of entries) {
-		let manifest: { name?: string; version?: string };
+		let manifest: { name?: string };
 		try {
 			manifest = JSON.parse(
 				await readFile(join(dirname(entry), "../package.json"), "utf8"),
-			) as { name?: string; version?: string };
+			) as { name?: string };
 		} catch {
 			continue;
 		}
 		if (manifest.name !== "pi-web-access") {
 			continue;
-		}
-		if (manifest.version !== "0.30.0") {
-			throw new Error(
-				"このpi-web-accessの取得先規則は未検証です。対応版は0.30.0です。",
-			);
 		}
 		const configPath = webConfigPath();
 		const initial = await readWebConfig(configPath);
@@ -66,7 +61,7 @@ export async function preparePiWebTrust(
 	return result;
 }
 
-/** 対応版が使用する設定探索順と一致させる。 */
+/** 拡張の設定探索順に合わせ、明示された設定ディレクトリを優先する。 */
 function webConfigPath(): string {
 	if (process.env.PI_CODING_AGENT_DIR) {
 		return join(process.env.PI_CODING_AGENT_DIR, "web-search.json");

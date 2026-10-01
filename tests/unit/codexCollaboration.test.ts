@@ -300,9 +300,11 @@ it("Codexの補完にだけplanとgoalを追加する", () => {
 	expect(
 		completionItems("/", "", "", [], [], true).map((item) => item.id),
 	).toEqual(expect.arrayContaining(["plan", "goal"]));
-	expect(
-		completionItems("/", "", "", [], [], false).map((item) => item.id),
-	).not.toEqual(expect.arrayContaining(["plan", "goal"]));
+	const other = completionItems("/", "", "", [], [], false).map(
+		(item) => item.id,
+	);
+	expect(other).not.toContain("plan");
+	expect(other).not.toContain("goal");
 });
 
 it("Goalのフォローアップでも接頭辞を重ねずに同じターンへ送信する", async () => {

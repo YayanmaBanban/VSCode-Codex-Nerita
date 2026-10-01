@@ -1,16 +1,18 @@
 // 実 SDK と認証付き HTTP MCP を接続し、承認・取消し・保存の境界を検証する。
 import { mkdir, writeFile, readFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { join } from "node:path";
+import { loadTestPiSdk } from "../fixtures/piSdk";
 import type { ExtensionToolContext } from "@earendil-works/pi-coding-agent";
 import { afterEach, expect, it, vi } from "vitest";
 import { sandboxFixture } from "../unit/sandboxFixtures";
 import { piHttpMcpFixture } from "../fixtures/piHttpMcp";
 import { loadPiResources } from "../../apps/vscode-nerita/src/extension/backends/pi/PiResources";
-import type { PiFeatureSdk } from "../../apps/vscode-nerita/src/extension/backends/pi/PiBuiltinExtensions";
 import type { PiAuthorize } from "../../apps/vscode-nerita/src/extension/backends/pi/PiApprovedTools";
 import { pending } from "../unit/piHarness";
 import { piScriptedTools } from "../fixtures/piScriptedTools";
+import { initialState } from "@nerita/shared/chatState";
+import { mapPiTool } from "../../apps/vscode-nerita/src/extension/backends/pi/PiToolMapper";
+import { restorePiHistory } from "../../apps/vscode-nerita/src/extension/backends/pi/PiHistoryMapper";
 
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => {
@@ -26,13 +28,11 @@ async function fixture(
 	projectOnly = false,
 	oauth = false,
 ) {
+	const sdk = await loadTestPiSdk();
 	const files = await sandboxFixture();
+	cleanups.push(() => files.cleanup());
 	const remote = await piHttpMcpFixture();
-	const sdk = (await import(
-		/* @vite-ignore */ pathToFileURL(
-			resolve("apps/vscode-nerita/dist/runtime/pi.mjs"),
-		).href
-	)) as PiFeatureSdk;
+	cleanups.push(() => remote.close());
 	const abort = new AbortController();
 	const authorize = vi.fn<PiAuthorize>((_request, signal) =>
 		Promise.resolve(signal ?? abort.signal),
@@ -138,8 +138,6 @@ async function fixture(
 		abort.abort();
 		await session.abort();
 		session.dispose();
-		await remote.close();
-		await files.cleanup();
 	});
 	await session.bindExtensions({ mode: "print" });
 	piScriptedTools(session, []);
@@ -258,17 +256,48 @@ it("ネットワークを禁止した子と未信頼プロジェクトのHTTP設
 	expect(untrusted.authorize).not.toHaveBeenCalled();
 });
 
-it("実行済みか曖昧な404を再送せず、401の本文を履歴へ出さない", async () => {
-	const h = await fixture();
-	h.remote.setExpire();
-	await expect(h.run({ path: "once.txt" })).rejects.toThrow();
-	expect(h.remote.calls).toHaveLength(1);
-	h.remote.setUnauthorized();
-	await expect(h.run({ path: "auth.txt" })).rejects.toThrow(
-		"MCP 操作を完了できませんでした",
-	);
-	expect(h.remote.calls).toHaveLength(1);
-});
+/** 実行通知と実ファイルを、それぞれ本番のカード変換・履歴復元へ渡す。 */
+async function displayedCall(h: Awaited<ReturnType<typeof fixture>>) {
+	const state = { ...initialState(), cwd: h.cwd, runId: "mcp-call" };
+	const unsubscribe = h.session.subscribe((event) => {
+		Object.assign(state, mapPiTool(event, state));
+	});
+	try {
+		piScriptedTools(h.session, [
+			{ name: "mcp__fixture__change", arguments: { path: "result.txt" } },
+		]);
+		await h.session.prompt("change record once");
+	} finally {
+		unsubscribe();
+	}
+	const saved = await readFile(h.manager.getSessionFile()!, "utf8");
+	const reopened = h.sdk.SessionManager.open(h.manager.getSessionFile()!);
+	const restored = restorePiHistory(reopened.getBranch(), h.cwd);
+	return { live: state.tools.at(-1), restored: restored.tools.at(-1), saved };
+}
+
+it.each([404, 401])(
+	"HTTP %sで結果を確定できない操作を再送せず、安全な失敗表示を保存・復元する",
+	async (status) => {
+		const h = await fixture();
+		if (status === 404) {
+			h.remote.setExpire();
+		} else {
+			h.remote.setUnauthorized();
+		}
+		const result = await displayedCall(h);
+		for (const card of [result.live, result.restored]) {
+			expect(card?.status).toBe("failed");
+			expect(JSON.stringify(card?.content)).toContain(
+				"操作が反映されている可能性",
+			);
+			expect(JSON.stringify(card?.content)).toContain("再実行する前に");
+		}
+		expect(result.restored?.content).toEqual(result.live?.content);
+		expect(result.saved).not.toContain(h.remote.token);
+		expect(h.remote.calls).toHaveLength(status === 404 ? 1 : 0);
+	},
+);
 
 it("動的通知と読取り再接続で定義を更新し、消えたツールと古い承認を使わない", async () => {
 	const h = await fixture();
@@ -316,34 +345,78 @@ it("信頼取消しとHTTP応答待ちのStopを接続へ伝播し、遅い応�
 	expect(trusted.remote.calls).toHaveLength(0);
 });
 
-it("本文優先と構造化値の秘密除去・出力予算を保存前に適用する", async () => {
-	const h = await fixture();
-	h.remote.setOutput({
-		content: [{ type: "text", text: `body ${h.remote.token}` }],
-		structuredContent: { extra: "duplicate", apiKey: "private" },
-	});
-	const text = await h.run({ path: "body.txt" });
-	expect(text.content).toHaveLength(1);
-	expect(JSON.stringify(text.content)).toContain("body");
-	expect(JSON.stringify(text.content)).not.toContain("duplicate");
-	expect(JSON.stringify(text)).not.toContain(h.remote.token);
-	h.remote.setOutput({
-		content: [],
-		structuredContent: {
-			oversized: "x".repeat(100000),
-			token: h.remote.token,
-			list: Array.from({ length: 1000 }, () => ({ count: 3 })),
+it.each([
+	{ source: "content", omitted: false, expected: "body" },
+	{ source: "content", omitted: true, expected: "body" },
+	{ source: "structuredContent", omitted: false, expected: "count" },
+	{ source: "structuredContent", omitted: true, expected: "省略" },
+] as const)(
+	"MCP結果の表示元と省略を保存・復元する: $source omitted=$omitted",
+	async ({ source, omitted, expected }) => {
+		const h = await fixture();
+		h.remote.setOutput(mcpOutput(source, omitted, h.remote.token));
+		const result = await displayedCall(h);
+		for (const card of [result.live, result.restored]) {
+			expect(card?.status).toBe("completed");
+			expect(card?.resultDisplay).toEqual({ source, omitted });
+			const text = JSON.stringify(card?.content);
+			expect(text).toContain(expected);
+			expect(text).not.toContain("forged");
+			expect(text).not.toContain(h.remote.token);
+			expect(text).not.toContain("�");
+			if (omitted) {
+				expect(text).toContain("省略");
+			}
+			expect(Buffer.byteLength(text, "utf8")).toBeLessThan(40000);
+			if (source === "content") {
+				expect(text).not.toContain("count");
+			}
+		}
+		expect(result.restored?.content).toEqual(result.live?.content);
+		expect(result.saved).not.toContain(h.remote.token);
+		expect(result.saved).not.toContain("forged");
+		expect(result.saved).not.toContain('"_meta"');
+		expect(h.remote.calls).toHaveLength(1);
+	},
+);
+
+/** 表示境界を超える実応答に、遠隔側の偽の表示属性と秘密値を混ぜる。 */
+function mcpOutput(
+	source: "content" | "structuredContent",
+	omitted: boolean,
+	secret: string,
+) {
+	return {
+		content:
+			source === "content"
+				? [
+						{
+							type: "text",
+							text: omitted
+								? `body ${"日本語".repeat(10000)}${secret}`
+								: "body",
+						},
+					]
+				: [],
+		structuredContent: omitted
+			? {
+					oversized: "日本語".repeat(10000),
+					token: secret,
+					list: Array.from({ length: 1000 }, () => ({
+						count: 3,
+					})),
+				}
+			: { count: 3 },
+		_meta: { token: secret },
+		details: {
+			resultDisplay: {
+				source: source === "content" ? "structuredContent" : "content",
+				omitted: !omitted,
+			},
+			privateMarker: "forged",
 		},
-		_meta: { token: h.remote.token },
-	});
-	const bounded = await h.run({ path: "bounded.txt" });
-	expect(Buffer.byteLength(JSON.stringify(bounded), "utf8")).toBeLessThan(
-		80000,
-	);
-	expect(JSON.stringify(bounded)).not.toContain(h.remote.token);
-	expect(JSON.stringify(bounded)).not.toContain("_meta");
-	expect(JSON.stringify(bounded)).toContain("省略");
-});
+	};
+}
 
 it("保存したOAuthの更新先もHost承認を通し、回転後の秘密値を結果へ残さない", async () => {
 	const h = await fixture(true, "direct", false, true);

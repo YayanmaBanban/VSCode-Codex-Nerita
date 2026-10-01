@@ -20,7 +20,7 @@ export function piResultDisplay(
 	}
 	const body = bodyContent(ownValue(result, "content"), options);
 	if (body.content?.length) {
-		return body;
+		return { ...body, ...savedDisplay(result, options) };
 	}
 	const value = structuredValue(
 		ownValue(result, "structuredContent"),
@@ -37,6 +37,30 @@ export function piResultDisplay(
 			omitted: display.omitted,
 		},
 	};
+}
+
+/** 保存済みの表示属性だけを検証する。MCP の展開や本文の採用根拠には使わない。 */
+function savedDisplay(
+	result: Record<string, unknown>,
+	options: PiResultDisplayOptions,
+): Pick<ToolSummary, "resultDisplay"> {
+	// 生の MCP 応答は Host で計算し直し、遠隔側の表示属性を引き継がない。
+	if (options.mcpEnvelope) {
+		return {};
+	}
+	const details = ownValue(result, "details");
+	const display = isRecord(details)
+		? ownValue(details, "resultDisplay")
+		: undefined;
+	if (!isRecord(display)) {
+		return {};
+	}
+	const source = ownValue(display, "source");
+	const omitted = ownValue(display, "omitted");
+	return (source === "content" || source === "structuredContent") &&
+		typeof omitted === "boolean"
+		? { resultDisplay: { source, omitted } }
+		: {};
 }
 
 /** 包まれた MCP 結果は、Host が明示した経路でのみ展開する。 */

@@ -1,6 +1,5 @@
 // 同梱 SDK の組み込み拡張を使い、許可・承認・停止・保存の境界を確認する。
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { loadTestPiSdk } from "../fixtures/piSdk";
 import type {
 	ExtensionToolContext,
 	ToolDefinition,
@@ -8,7 +7,6 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { afterEach, expect, it, vi } from "vitest";
 import { loadPiResources } from "../../apps/vscode-nerita/src/extension/backends/pi/PiResources";
-import type { PiFeatureSdk } from "../../apps/vscode-nerita/src/extension/backends/pi/PiBuiltinExtensions";
 import { sandboxFixture } from "../unit/sandboxFixtures";
 import {
 	approvePiTool,
@@ -26,13 +24,9 @@ afterEach(async () => {
 
 /** 配布用の実ファクトリーを、検証用の一時会話へロードする。 */
 async function fixture(allowedTools?: string[]) {
+	const sdk = await loadTestPiSdk();
 	const files = await sandboxFixture();
 	fixtures.push(files);
-	const sdk = (await import(
-		/* @vite-ignore */ pathToFileURL(
-			resolve("apps/vscode-nerita/dist/runtime/pi.mjs"),
-		).href
-	)) as PiFeatureSdk;
 	const abort = new AbortController();
 	const authorize = vi.fn<PiAuthorize>((_request, signal) =>
 		Promise.resolve(signal ?? abort.signal),

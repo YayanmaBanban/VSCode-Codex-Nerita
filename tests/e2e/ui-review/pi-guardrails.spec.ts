@@ -1,4 +1,5 @@
 // 新規エディターの明暗・狭幅表示と、編集から検査・保存・適用までを確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -13,7 +14,8 @@ for (const theme of ["dark", "light"] as const) {
 			});
 			await page.setViewportSize({ width, height: 900 });
 			await page.emulateMedia({ colorScheme: theme });
-			await page.goto(
+			await openStory(
+				page,
 				"/iframe.html?id=pi-guardrails--editor&viewMode=story",
 			);
 			await expect(

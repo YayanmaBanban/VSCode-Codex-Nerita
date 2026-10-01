@@ -4,10 +4,10 @@ import {
 	createPiRuntime,
 	type PiRuntimeOptions,
 	type PiRuntimeSession,
-} from "./piTrustedRuntime";
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 
 /** 保存済みの子を読み直してもモデルや承認を呼び出さない。 */
-export async function piAgentPersistenceSmoke(
+export async function verifyPiAgentPersistence(
 	parent: PiRuntimeSession,
 	options: PiRuntimeOptions,
 ) {

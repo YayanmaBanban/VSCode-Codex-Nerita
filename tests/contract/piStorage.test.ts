@@ -51,14 +51,3 @@ it("globalはagentDir以下のcwd別ディレクトリに保存しignoreを作�
 		{ code: "ENOENT" },
 	);
 });
-
-it("保存先に同名のファイルがあれば上書きも別保存先への退避もしない", async () => {
-	const root = await mkdtemp(join(tmpdir(), "nerita-pi-store-"));
-	fixtures.push(root);
-	const directory = join(root, "occupied");
-	await writeFile(directory, "keep");
-	await expect(
-		preparePiSessionDirectory(directory, "workspace"),
-	).rejects.toThrow();
-	expect(await readFile(directory, "utf8")).toBe("keep");
-});

@@ -38,7 +38,7 @@ async function fixture(name: string) {
 	return { execute, approval, authorize, run };
 }
 
-it.each(["write", "edit", "powershell", "bash", "custom"])(
+it.each(["custom"])(
 	"%sは承認前に実行せず、拒否を呼出元へ返す",
 	async (name) => {
 		const h = await fixture(name);

@@ -1,4 +1,5 @@
 // 配置選択のホバー待機・チェック・移動後の入力維持を検証する。
+import { openStory } from "../storyPage";
 import { expectSent, emitHost } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
@@ -15,7 +16,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-header--long-title&viewMode=story",
 		);
 		await page.getByRole("textbox").fill("移動しても残る下書き");

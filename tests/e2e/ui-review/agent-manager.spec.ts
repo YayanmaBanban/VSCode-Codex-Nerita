@@ -1,10 +1,14 @@
 // 実フォームで Pi・Codex・ハンドオフの保存操作と狭幅表示を確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 test("handoff keeps all models visible after selection and uses SDK thinking for Pi and provider effort for Codex", async ({
 	page,
 }, info) => {
-	await page.goto("/iframe.html?id=agent-manager--settings&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=agent-manager--settings&viewMode=story",
+	);
 	await page.getByRole("button", { name: "ハンドオフ", exact: true }).click();
 	for (const backend of ["pi", "codex"] as const) {
 		await page.getByLabel(`${backend} Strategy`).selectOption("fixed");
@@ -58,7 +62,8 @@ for (const theme of ["dark", "light"] as const) {
 			});
 			await page.setViewportSize({ width, height: 1000 });
 			await page.emulateMedia({ colorScheme: theme });
-			await page.goto(
+			await openStory(
+				page,
 				"/iframe.html?id=agent-manager--settings&viewMode=story",
 			);
 			await expect(
@@ -198,12 +203,18 @@ for (const theme of ["dark", "light"] as const) {
 test("agent manager retains inputs on conflict and repairs malformed handoff explicitly", async ({
 	page,
 }, info) => {
-	await page.goto("/iframe.html?id=agent-manager--conflict&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=agent-manager--conflict&viewMode=story",
+	);
 	await page.getByLabel("セッション内の起動上限").fill("17");
 	await page.getByRole("button", { name: "既定値を保存" }).click();
 	await expect(page.getByRole("alert")).toContainText("再読み込み");
 	await expect(page.getByLabel("セッション内の起動上限")).toHaveValue("17");
-	await page.goto("/iframe.html?id=agent-manager--invalid&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=agent-manager--invalid&viewMode=story",
+	);
 	await page.getByRole("button", { name: "ハンドオフ", exact: true }).click();
 	await expect(
 		page.getByRole("button", { name: "ハンドオフ設定を保存" }),
@@ -220,7 +231,10 @@ test("agent manager retains inputs on conflict and repairs malformed handoff exp
 });
 
 test("agent manager handles empty definitions", async ({ page }, info) => {
-	await page.goto("/iframe.html?id=agent-manager--empty&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=agent-manager--empty&viewMode=story",
+	);
 	await page.getByRole("button", { name: "Codex", exact: true }).click();
 	await expect(page.getByLabel("編集対象")).toHaveValue("");
 	await expect(

@@ -1,4 +1,5 @@
 // 候補の検索・カーソル位置への挿入と Tab キーの優先順位を検証する。
+import { openStory } from "../storyPage";
 import { expectSent, acceptPrompt } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
@@ -7,7 +8,10 @@ test("候補のキーボード選択・検索・送信とTabの2スペース", a
 }, info) => {
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
-	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("前文後文");
 	await input.press("Home");
@@ -70,7 +74,8 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 900 });
 		await page.emulateMedia({ colorScheme: theme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -101,7 +106,10 @@ for (const theme of ["dark", "light"] as const) {
 }
 
 test("行頭の判定・クリック挿入・Esc後の再表示・IME確定", async ({ page }) => {
-	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("文中/");
 	await expect(page.getByRole("listbox")).toHaveCount(0);
@@ -143,7 +151,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 	test(`添付参照の取り外しとUndo: ${colorScheme}`, async ({ page }, info) => {
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -174,7 +183,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 	}, info) => {
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {

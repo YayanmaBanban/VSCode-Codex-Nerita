@@ -1,4 +1,5 @@
 // 専用本文・アイコンと、画像リンクが既存の Host 通信を使うことを検証する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -168,7 +169,10 @@ test("短時間で完了しても一覧カードを自動展開しない", async
 			errors.push(message.text());
 		}
 	});
-	await page.goto("/iframe.html?id=chat-activity-tools--all&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-activity-tools--all&viewMode=story",
+	);
 	const cards = page.locator(".combo-list-card");
 	await expect(cards).toHaveCount(5);
 	const closedHeadings = cards.locator(

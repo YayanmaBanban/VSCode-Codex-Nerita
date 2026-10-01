@@ -35,10 +35,12 @@ it("コピー本文と一致する参照だけを受け入れる", () => {
 	expect(
 		readClipboardReferences({ getData: () => "{" }, payload.text),
 	).toBeNull();
+	// JSON と参照は正常なまま、付加情報だけを上限の前後へ揃える。
+	const valid = JSON.stringify(payload).padEnd(4_000_000, " ");
 	expect(
-		readClipboardReferences(
-			{ getData: () => "x".repeat(4_000_001) },
-			payload.text,
-		),
+		readClipboardReferences({ getData: () => valid }, payload.text),
+	).toEqual(payload.references);
+	expect(
+		readClipboardReferences({ getData: () => `${valid} ` }, payload.text),
 	).toBeNull();
 });

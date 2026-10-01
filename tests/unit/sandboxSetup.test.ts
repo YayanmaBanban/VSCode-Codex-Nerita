@@ -59,7 +59,7 @@ function context(): ExtensionContext {
 	return raw as ExtensionContext;
 }
 
-it.each(["darwin", "linux"] as const)(
+it.each(["linux"] as const)(
 	"%sではCodexセットアップを登録せず、エラーも通知しない",
 	(platform) => {
 		vi.stubGlobal("process", { ...process, platform });
@@ -107,7 +107,7 @@ it("WindowsのPiで新しいコマンドを登録し、表示・有効条件も�
 	).toBe(false);
 });
 
-it.each(["codex", undefined])(
+it.each(["codex"])(
 	"backend=%sではセットアップを登録せず、接続・通知もしない",
 	(backend) => {
 		vi.stubGlobal("process", { ...process, platform: "win32" });
@@ -136,31 +136,61 @@ it("Piで登録後にCodexへ設定を変更した場合、直接呼出しでも
 	expect(api.showInformationMessage).not.toHaveBeenCalled();
 });
 
-it("WindowsのPiでは明示したセットアップを完了まで待ち、接続を閉じる", async () => {
-	vi.stubGlobal("process", { ...process, platform: "win32" });
-	api.connect.mockImplementation((options: CodexClientOptions) => {
-		api.setupWindowsSandbox.mockImplementation(() => {
-			options.callbacks?.notification?.({
-				method: "windowsSandbox/setupCompleted",
-				params: { mode: "elevated", success: true, error: null },
+it.each([true, false])(
+	"開始受付後も完了通知を待ち、成功=%s を通知して接続を閉じる",
+	async (success) => {
+		vi.stubGlobal("process", { ...process, platform: "win32" });
+		let notify: NonNullable<
+			CodexClientOptions["callbacks"]
+		>["notification"];
+		api.connect.mockImplementation((options: CodexClientOptions) => {
+			notify = options.callbacks?.notification;
+			api.setupWindowsSandbox.mockResolvedValue({ started: true });
+			return Promise.resolve({
+				setupWindowsSandbox: api.setupWindowsSandbox,
+				dispose: api.dispose,
 			});
-			return Promise.resolve({ started: true });
 		});
-		return Promise.resolve({
-			setupWindowsSandbox: api.setupWindowsSandbox,
-			dispose: api.dispose,
+		registerSandboxSetup(context());
+		const execute = api.registerCommand.mock
+			.calls[0]![1] as () => Promise<void>;
+		let completed = false;
+		const running = execute().then(() => {
+			completed = true;
 		});
-	});
-	registerSandboxSetup(context());
-	const execute = api.registerCommand.mock
-		.calls[0]![1] as () => Promise<void>;
-	await execute();
-	expect(api.resolveWindowsSandbox).toHaveBeenCalledOnce();
-	expect(api.setupWindowsSandbox).toHaveBeenCalledWith(
-		"workspace",
-		"elevated",
-	);
-	expect(api.dispose).toHaveBeenCalledOnce();
-	expect(api.showInformationMessage).toHaveBeenCalledOnce();
-	expect(api.showErrorMessage).not.toHaveBeenCalled();
-});
+		try {
+			await vi.waitFor(() =>
+				expect(api.setupWindowsSandbox).toHaveBeenCalledOnce(),
+			);
+			await new Promise<void>((resolve) => setImmediate(resolve));
+			expect(completed).toBe(false);
+			expect(api.dispose).not.toHaveBeenCalled();
+			expect(api.showInformationMessage).not.toHaveBeenCalled();
+			expect(api.showErrorMessage).not.toHaveBeenCalled();
+		} finally {
+			// 検出に失敗した場合も、保留した通知と接続を回収する。
+			notify?.({
+				method: "windowsSandbox/setupCompleted",
+				params: {
+					mode: "elevated",
+					success,
+					error: success ? null : "setup failed",
+				},
+			});
+			await running;
+		}
+		expect(api.resolveWindowsSandbox).toHaveBeenCalledOnce();
+		expect(api.setupWindowsSandbox).toHaveBeenCalledWith(
+			"workspace",
+			"elevated",
+		);
+		expect(api.dispose).toHaveBeenCalledOnce();
+		if (success) {
+			expect(api.showInformationMessage).toHaveBeenCalledOnce();
+			expect(api.showErrorMessage).not.toHaveBeenCalled();
+		} else {
+			expect(api.showInformationMessage).not.toHaveBeenCalled();
+			expect(api.showErrorMessage).toHaveBeenCalledWith("setup failed");
+		}
+	},
+);

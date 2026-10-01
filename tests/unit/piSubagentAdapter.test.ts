@@ -73,19 +73,30 @@ it("readonly定義を権限と公開Toolへ変換し、完了した子を回収�
 	expect(h.session.close).toHaveBeenCalledOnce();
 });
 it.each([
-	{ tasks: [{ agent: "reviewer", task: "x" }] },
-	{ chain: [{ agent: "reviewer", task: "x" }] },
 	{ agent: "missing", task: "x" },
-	{ agent: "reviewer", task: "x", extra: true },
 	{ agent: "reviewer", task: "x", async: "yes" },
-	{ agent: "reviewer", task: "x", context: "fork" },
 	{
+		agent: "reviewer",
+		task: "x",
 		workflowScript:
 			"return runs.run('x', { agent: 'reviewer', task: 'x' });",
 	},
 ])("未対応入力で子を起動しない: %j", async (params) => {
 	const h = await fixture();
-	await expect(h.run(params)).rejects.toThrow();
+	const error: unknown = await h.run(params).then(
+		() => undefined,
+		(reason: unknown) => reason,
+	);
+	expect(error).toBeInstanceOf(Error);
+	expect(h.authorize).not.toHaveBeenCalled();
+	expect(h.open).not.toHaveBeenCalled();
+});
+
+it("親の文脈を持たない接続ではForkを開始しない", async () => {
+	const h = await fixture();
+	await expect(
+		h.run({ agent: "reviewer", task: "x", context: "fork" }),
+	).rejects.toThrow("親の会話を複製できません");
 	expect(h.authorize).not.toHaveBeenCalled();
 	expect(h.open).not.toHaveBeenCalled();
 });

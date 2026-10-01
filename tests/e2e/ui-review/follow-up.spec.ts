@@ -1,4 +1,5 @@
 // 入力保持・ロック・受付通知と残り時間の表示を実際のブラウザーで確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -15,7 +16,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
 		await page.clock.install();
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-followup--failure&viewMode=story",
 		);
 		await expect(
@@ -72,7 +74,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 	});
 }
 test("通常送信も失敗時は下書きを保持する", async ({ page }) => {
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-followup--normal-failure&viewMode=story",
 	);
 	const input = page.getByRole("textbox");
@@ -88,7 +91,8 @@ test("通知バーの初期・途中・終了と背景色", async ({ page }, inf
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	await page.clock.install();
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-notificationcard--custom-background&viewMode=story",
 	);
 	await expect(page.locator(".notification-card")).toBeVisible();

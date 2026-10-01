@@ -1,4 +1,5 @@
 // 停止中・停止済み・失敗時の文言と猫アイコンを明暗テーマで確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -19,7 +20,8 @@ for (const theme of ["dark", "light"] as const) {
 			["cancelled", "停止しました", "cat-loaf-glasses-48", 2800],
 			["failed", "実行に失敗しました", "cat-startled-fixed-48", 5600],
 		] as const) {
-			await page.goto(
+			await openStory(
+				page,
 				`/iframe.html?id=chat-app--${story}&viewMode=story`,
 			);
 			const status = page.locator(".run-status");

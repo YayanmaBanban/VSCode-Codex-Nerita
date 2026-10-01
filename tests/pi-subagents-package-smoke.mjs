@@ -1,5 +1,5 @@
 // 導入済み pi-subagents の定義と承認境界を検証し、外部コードの起動を防ぐ。
-import { extensionRoot } from "../config/workspace-paths.cjs";
+import { extensionRoot, repoRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
@@ -31,7 +31,7 @@ await build({
 			'export { loadSubagentDefinitions } from "./apps/vscode-nerita/src/extension/backends/pi/PiSubagentDefinitions";',
 			'export { createPiSubagentTool } from "./apps/vscode-nerita/src/extension/backends/pi/PiSubagentTool";',
 		].join("\n"),
-		resolveDir: extensionPath,
+		resolveDir: repoRoot,
 	},
 	bundle: true,
 	platform: "node",

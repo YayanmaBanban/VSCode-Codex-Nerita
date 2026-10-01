@@ -1,5 +1,4 @@
 // 検索・コード実行の結果を伏字にし、承認の取消しを返答待ちから独立させる。
-import { privateDisplayText } from "./results/PiDisplayText";
 
 const sensitiveKey =
 	/authorization|headers|cookie|password|secret|token|credential|api[_-]?key|private[_-]?key/i;
@@ -17,8 +16,15 @@ export function privateFeatureValue<T>(
 		const escaped = JSON.stringify(secret).slice(1, -1);
 		return [secret, escaped, JSON.stringify(escaped).slice(1, -1)];
 	});
-	const hidden = privateDisplayText(json, 262144, encodedSecrets)
-		.text.replace(/(?:Bearer\s+|sk-)[A-Za-z0-9._-]+/g, "[非公開]")
+	// 保存用の JSON は切り詰めない。表示とコード実行の出力予算は各境界で適用する。
+	let redacted = json;
+	for (const secret of encodedSecrets) {
+		if (secret) {
+			redacted = redacted.replaceAll(secret, "[非公開]");
+		}
+	}
+	const hidden = redacted
+		.replace(/(?:Bearer\s+|sk-)[A-Za-z0-9._-]+/g, "[非公開]")
 		.replace(
 			/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
 			"[非公開]",

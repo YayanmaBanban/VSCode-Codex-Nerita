@@ -1,4 +1,5 @@
 // 入力欄の拡張・復帰で、下書きと編集状態を保ちつつ上方向へ広がることを確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 import { paste, select } from "./composerHelpers";
 
@@ -15,7 +16,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+		await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",
 		});
@@ -41,7 +42,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(help).toBeVisible();
 		const footer = page.locator(".composer-footer");
 		await expect(
-			footer.getByRole("button", { name: "コンテキストを追加", exact: true }),
+			footer.getByRole("button", {
+				name: "コンテキストを追加",
+				exact: true,
+			}),
 		).toBeVisible();
 		await expect(
 			footer.getByRole("button", { name: "送信", exact: true }),
@@ -96,7 +100,7 @@ test("低い画面でも拡張ボタンをキーボードで切り替えられ�
 	page,
 }, info) => {
 	await page.setViewportSize({ width: 320, height: 480 });
-	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("入力内容を保持");
 	const expand = page.getByRole("button", {

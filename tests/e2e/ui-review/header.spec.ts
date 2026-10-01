@@ -1,4 +1,5 @@
 // ヘッダーの省略表示・操作・接続演出を実コンポーネントで検証する。
+import { openStory } from "../storyPage";
 import { expectSent, emitHost, showState } from "../storyBridge";
 import { test, expect, type Page } from "@playwright/test";
 import { codexConnectionText } from "@nerita/shared/codexConnection";
@@ -6,7 +7,8 @@ const errors = new Map<Page, string[]>();
 
 test("認証失敗の通知を閉じ、再試行時に再表示する", async ({ page }, info) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-header--authentication-failure&viewMode=story",
 	);
 	const login = page.getByRole("button", {
@@ -40,7 +42,8 @@ test("認証失敗の通知を閉じ、再試行時に再表示する", async ({
 
 test("認証成功は待機を経て接続済みへ進む", async ({ page }, info) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-header--authentication-success&viewMode=story",
 	);
 	await page
@@ -83,7 +86,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 	}, info) => {
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-header--long-title&viewMode=story",
 		);
 		const title = page.locator(".chat-header h1");
@@ -123,7 +127,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 }
 test("表示先操作で下書きとスクロールを保持する", async ({ page }, info) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto("/iframe.html?id=chat-header--long-title&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-header--long-title&viewMode=story",
+	);
 	await page.getByRole("textbox").fill("まだ送信していない下書き");
 	await page.locator(".conversation").evaluate((node) => {
 		node.scrollTop = 50;
@@ -170,7 +177,10 @@ test("表示先操作で下書きとスクロールを保持する", async ({ pa
 });
 test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) => {
 	await page.clock.install();
-	await page.goto("/iframe.html?id=chat-header--reconnect&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-header--reconnect&viewMode=story",
+	);
 	await expect(page.locator(".connection-beam")).toBeVisible();
 	await page.clock.runFor(750);
 	await info.attach("reconnect-initial", {
@@ -223,7 +233,10 @@ test("再接続の境界線と接続成功の紙吹雪", async ({ page }, info) 
 });
 test("動きを減らす設定では接続演出を抑止する", async ({ page }, info) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto("/iframe.html?id=chat-header--reconnect&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-header--reconnect&viewMode=story",
+	);
 	await expect(
 		page.getByRole("button", {
 			name: "接続エラー：アカウントを再認証して接続します",
@@ -249,7 +262,10 @@ test("動きを減らす設定では接続演出を抑止する", async ({ page 
 });
 
 test("接続カーテンと待機中の境界線・エラーの案内", async ({ page }, info) => {
-	await page.goto("/iframe.html?id=chat-header--transitions&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-header--transitions&viewMode=story",
+	);
 	const button = page.locator(".connection-button");
 	// 新しく現れる段階も停止し、撮影中に次の段階へ進むのを防ぐ。
 	await page.addStyleTag({

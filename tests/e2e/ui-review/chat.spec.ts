@@ -1,4 +1,5 @@
 // 実際のチャットストーリーを操作し、画像・動画・トレースとブラウザエラーを保存する。
+import { openStory } from "../storyPage";
 import { expectSent, showState, acceptPrompt } from "../storyBridge";
 import { test, expect, type Page } from "@playwright/test";
 const pageErrors = new Map<Page, string[]>();
@@ -22,7 +23,7 @@ test.afterEach(async ({ page }, info) => {
 	expect(errors).toEqual([]);
 });
 test("送信と新規会話の要求", async ({ page }, info) => {
-	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 	await page.getByRole("textbox").fill("設定を確認してください");
 	await page.getByRole("button", { name: "送信", exact: true }).click();
 	await expectSent(page, {
@@ -44,7 +45,10 @@ for (const [label, optionId] of [
 	["拒否", "reject"],
 ]) {
 	test(`承認要求の送信: ${label}`, async ({ page }, info) => {
-		await page.goto("/iframe.html?id=chat-app--permission&viewMode=story");
+		await openStory(
+			page,
+			"/iframe.html?id=chat-app--permission&viewMode=story",
+		);
 		await info.attach("permission", {
 			body: await page.screenshot(),
 			contentType: "image/png",
@@ -60,7 +64,7 @@ for (const [label, optionId] of [
 	});
 }
 test("停止要求と停止済み状態の表示", async ({ page }, info) => {
-	await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--streaming&viewMode=story");
 	await page.getByRole("button", { name: "停止", exact: true }).click();
 	await expectSent(page, {
 		type: "prompt/cancel",
@@ -75,7 +79,7 @@ test("停止要求と停止済み状態の表示", async ({ page }, info) => {
 	});
 });
 test("IME確定・改行・キーボード送信", async ({ page }) => {
-	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 	const input = page.getByRole("textbox");
 	await input.fill("日本語の入力");
 	await input.dispatchEvent("compositionstart");
@@ -106,7 +110,7 @@ test("回答コピー・対応する送信文と返信末尾へ移動", async ({
 }) => {
 	await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto("/iframe.html?id=chat-app--completed&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--completed&viewMode=story");
 	await page.getByRole("button", { name: "回答をコピー" }).click();
 	await expect(page.locator(".message").getByRole("status")).toHaveText(
 		"コピーしました",
@@ -135,7 +139,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 	}, info) => {
 		await page.setViewportSize({ width: 520, height: 820 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+		await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 		const empty = page.locator(".empty-state");
 		await expect(empty).toHaveText(
 			"このワークスペースで作業しますworkspace/project",
@@ -176,7 +180,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 	test(`狭い幅・長文・コード: ${colorScheme}`, async ({ page }, info) => {
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-app--completed&viewMode=story");
+		await openStory(
+			page,
+			"/iframe.html?id=chat-app--completed&viewMode=story",
+		);
 		await expect(page.getByText(/const config/)).toBeVisible();
 		await page.evaluate(() => document.fonts.ready);
 		expect(

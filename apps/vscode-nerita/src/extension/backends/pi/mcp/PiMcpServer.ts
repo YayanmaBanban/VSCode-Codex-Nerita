@@ -291,7 +291,9 @@ export class PiMcpServer {
 				: safeMcpResult(result, secrets);
 		} catch {
 			throw new Error(
-				"MCP 操作を完了できませんでした。接続・認証・取消し状態を確認してください。",
+				resource
+					? "MCP 操作を完了できませんでした。接続・認証・取消し状態を確認してください。"
+					: "MCP の実行結果を確認できません。操作が反映されている可能性があります。再実行する前に対象の状態を確認してください。",
 			);
 		} finally {
 			signal.removeEventListener("abort", cancel);

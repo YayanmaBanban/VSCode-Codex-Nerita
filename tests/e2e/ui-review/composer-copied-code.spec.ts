@@ -1,4 +1,5 @@
 // 複数行コードの参照化・クリック・送信と、遅い応答による上書き防止を確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 import { paste } from "./composerHelpers";
 
@@ -18,7 +19,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-copied-code--ready&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -67,7 +69,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 test("照合できない本文を残し、Undoした貼り付けを遅い応答で復活させない", async ({
 	page,
 }) => {
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-composer-copied-code--ready&viewMode=story",
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });

@@ -1,4 +1,5 @@
 // 1つの編集領域で貼り付け・コード編集・境界移動・履歴・送信を検証する。
+import { openStory } from "../storyPage";
 import { expectSent, acceptPrompt } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
@@ -17,7 +18,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+		await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",
 		});
@@ -111,7 +112,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 }
 
 test("短文ペースト・Undo/Redo・複数ブロック・全選択削除", async ({ page }) => {
-	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 	const input = page.getByRole("textbox");
 	await input.fill("前後");
 	await select(input, 1);
@@ -142,7 +143,7 @@ test("短文ペースト・Undo/Redo・複数ブロック・全選択削除", as
 });
 
 test("全体の文字数制限", async ({ page }) => {
-	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 	const input = page.getByRole("textbox");
 	await input.fill("前後");
 	await select(input, 1);
@@ -166,7 +167,7 @@ test("コード判定と通常テキストの5行境界", async ({ page }, info)
 			errors.push(message.text());
 		}
 	});
-	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 	const input = page.getByRole("textbox");
 	const samples: [string, boolean][] = [
 		["通常の文章です。".repeat(200), false],

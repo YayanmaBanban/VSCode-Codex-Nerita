@@ -1,4 +1,5 @@
 // 専用・汎用カードの内容、完了時の自動折り畳みと再展開を検証する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 test("大量出力の描画量を制限して完了後もページを読める", async ({
@@ -12,7 +13,8 @@ test("大量出力の描画量を制限して完了後もページを読める",
 		}
 	});
 	await page.setViewportSize({ width: 320, height: 900 });
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-tool-cards--large-output&viewMode=story",
 	);
 	const output = page.locator(".tool-body pre");
@@ -42,7 +44,8 @@ test("ターン完了後のAIRタスクを既存カードから停止する", as
 }, info) => {
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-tool-cards--background&viewMode=story",
 	);
 	const card = page.locator(".tool-card");
@@ -111,7 +114,8 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		await page.emulateMedia({ colorScheme: theme });
 		await page.setViewportSize({ width: 320, height: 900 });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-tool-cards--running&viewMode=story",
 		);
 		const guardian = page.getByRole("button", {
@@ -196,7 +200,10 @@ for (const theme of ["dark", "light"] as const) {
 test("execute の停止要求と失敗アイコン、think の種別判定", async ({
 	page,
 }, info) => {
-	await page.goto("/iframe.html?id=chat-tool-cards--running&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-tool-cards--running&viewMode=story",
+	);
 	const execute = page.locator('.tool-card[data-kind="execute"]').first();
 	await expect(execute.locator(".tool-progress")).toBeVisible();
 	const spinner = execute.locator(".tool-progress");

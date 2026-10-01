@@ -1,5 +1,5 @@
 // 実 SDK のシェル定義と本番サンドボックスで、選択・承認・UTF-8 入出力を検証する。
-import { extensionRoot } from "../config/workspace-paths.cjs";
+import { extensionRoot, repoRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { createRequire } from "node:module";
@@ -28,7 +28,7 @@ await build({
 			'export { WorkspacePathPolicy } from "./apps/vscode-nerita/src/extension/security/WorkspacePathPolicy";',
 			'export { trustedPolicy } from "./tests/fixtures/trustedPolicy";',
 		].join("\n"),
-		resolveDir: extensionPath,
+		resolveDir: repoRoot,
 	},
 	bundle: true,
 	platform: "node",

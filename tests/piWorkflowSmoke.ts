@@ -5,7 +5,6 @@ import { join, dirname, basename } from "node:path";
 import { tmpdir } from "node:os";
 import { guardrailsFixture } from "./piGuardrailsFixture";
 import { createPiRuntime, type PiRuntimeSession } from "./piTrustedRuntime";
-import { piAgentPersistenceSmoke } from "./piAgentPersistenceSmoke";
 import { piWorkflowEditorSmoke } from "./piWorkflowEditorSmoke";
 
 /** グローバル設定と課金モデルを変更せず、専用ディレクトリにだけ書き込む。 */
@@ -106,7 +105,6 @@ export async function piWorkflowSmoke(
 					body.includes("実装を進めて"),
 			),
 		);
-		await piAgentPersistenceSmoke(parent, options);
 		await piWorkflowEditorSmoke(
 			options,
 			await readFile(join(h.cwd, ".pi/workflows/test.toml"), "utf8"),

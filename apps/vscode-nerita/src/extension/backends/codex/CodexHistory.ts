@@ -250,9 +250,8 @@ export abstract class CodexHistory extends CodexCatalog {
 		} else if (action === "unarchive") {
 			await client.unarchiveThread(threadId);
 			if (current()) {
-				this.pendingThreads.update(epoch, threadId, {
-					archived: false,
-				});
+				// アーカイブ一覧で補完情報を回収済みでも、解除後の一覧反映までは表示を保つ。
+				this.pendingThreads.remember(epoch, thread);
 			}
 		} else if (action === "delete" || action === "archive") {
 			await this.removeHistoryThread(

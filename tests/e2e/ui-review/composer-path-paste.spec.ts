@@ -1,4 +1,5 @@
 // フルパス貼り付けのチップ化と、通常テキストへのフォールバックを確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 import { paste } from "./composerHelpers";
 
@@ -7,7 +8,10 @@ test("パス確認の応答より先に本文を編集した場合は変換し�
 }) => {
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
-	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await expect(input).toBeVisible();
 	await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
@@ -33,7 +37,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			}
 		});
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -73,7 +78,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 test("存在しないパスと#のない貼り付けは本文を維持する", async ({
 	page,
 }, info) => {
-	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("#");
 	await paste(input, "D:\\missing.txt");

@@ -13,9 +13,17 @@ test("App Serverの推論・端末出力・差分と実行中の設定", async (
 		}
 	});
 	await page.setViewportSize({ width: 320, height: 900 });
+	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto(
 		"/iframe.html?id=chat-app--app-server-streaming&viewMode=story",
 	);
+	const reasoning = page.getByRole("button", {
+		name: "推論 実行中",
+		exact: true,
+	});
+	await expect(reasoning).toHaveAttribute("aria-expanded", "false");
+	await reasoning.click();
+	await expect(reasoning).toHaveAttribute("aria-expanded", "true");
 	await expect(
 		page.getByText("設定の依存関係を確認しています。", { exact: false }),
 	).toBeVisible();

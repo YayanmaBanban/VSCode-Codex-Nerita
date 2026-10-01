@@ -1,4 +1,5 @@
 // ローダーの途中フレームと動きの抑制設定、停止後の除去を確認する。
+import { openStory } from "../storyPage";
 import { expectSent, showState } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
@@ -15,7 +16,10 @@ for (const theme of ["dark", "light"] as const) {
 			colorScheme: theme,
 			reducedMotion: "no-preference",
 		});
-		await page.goto("/iframe.html?id=chat-app--streaming&viewMode=story");
+		await openStory(
+			page,
+			"/iframe.html?id=chat-app--streaming&viewMode=story",
+		);
 		await expect(
 			page.getByRole("status", { name: "思考中...", exact: true }),
 		).toBeVisible();

@@ -1,4 +1,5 @@
 // Pi の履歴復元・失敗・継続送信を、明暗テーマと狭幅で確認する。
+import { openStory } from "../storyPage";
 import { expectSent, showState } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 
@@ -13,7 +14,10 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 900 });
 		await page.emulateMedia({ colorScheme: theme });
-		await page.goto("/iframe.html?id=chat-app--pi-history&viewMode=story");
+		await openStory(
+			page,
+			"/iframe.html?id=chat-app--pi-history&viewMode=story",
+		);
 		await page
 			.getByRole("button", { name: "セッション一覧", exact: true })
 			.click();

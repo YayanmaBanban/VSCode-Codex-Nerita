@@ -1,4 +1,5 @@
 // Markdown の構造・安全な表示・コピー・狭幅での表示を実ブラウザーで検証する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -16,7 +17,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-markdown--preview&viewMode=story",
 		);
 		const answer = page.locator(".message.assistant");

@@ -1,4 +1,5 @@
 // 同じ Renderer でプロバイダー差分・操作・無効化を狭幅の明暗テーマで確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -22,7 +23,8 @@ for (const theme of ["dark", "light"] as const) {
 			"pi-google",
 			"pi-local",
 		]) {
-			await page.goto(
+			await openStory(
+				page,
 				`/iframe.html?id=chat-contributions--${story}&viewMode=story`,
 			);
 			await expect(
@@ -63,7 +65,8 @@ for (const theme of ["dark", "light"] as const) {
 					.evaluate((element) => element.scrollWidth),
 			).toBe(320);
 		}
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-contributions--pi-codex&viewMode=story",
 		);
 		await page.getByRole("switch", { name: "拡張設定の例" }).focus();

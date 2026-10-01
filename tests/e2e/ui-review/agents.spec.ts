@@ -1,4 +1,5 @@
 // Agent 専用カードの状態、幅、読み取りビューと親への復帰を実画面で確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -14,7 +15,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 720, height: 720 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-agents--icons&viewMode=story");
+		await openStory(
+			page,
+			"/iframe.html?id=chat-agents--icons&viewMode=story",
+		);
 		const icons = page.locator(".agent-card span[aria-hidden] > svg");
 		await expect(icons).toHaveCount(14);
 		for (const icon of await icons.all()) {
@@ -44,7 +48,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 1000 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-agents--states&viewMode=story");
+		await openStory(
+			page,
+			"/iframe.html?id=chat-agents--states&viewMode=story",
+		);
 		await expect(page.locator(".agent-card")).toHaveCount(9);
 		await expect(page.locator(".agent-card .tool-progress")).toHaveCount(1);
 		await expect(page.locator(".tool-progress")).toHaveCSS(
@@ -69,7 +76,7 @@ test("子と孫の閲覧から戻っても親の下書きが残る", async ({ pa
 		}
 	});
 	await page.setViewportSize({ width: 420, height: 820 });
-	await page.goto("/iframe.html?id=chat-agents--viewer&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-agents--viewer&viewMode=story");
 	await page
 		.getByRole("textbox", { name: "Codexへのメッセージ" })
 		.fill("親への続きの指示");

@@ -89,6 +89,8 @@ async function action(type, fields = {}) {
 		}
 	});
 	await session.receive({ type, requestId: randomUUID(), ...fields });
+	// サーバー通知が開始した一覧再取得も完了してから、利用者へ公開する履歴を確認する。
+	await waitFor((state) => !state.sessionsLoading);
 	unsubscribe();
 	assert.equal(error, undefined, error);
 	assert.equal(
@@ -144,7 +146,7 @@ try {
 	assert.notEqual(fork, id);
 	created.add(fork);
 	assert.ok(session.snapshot().messages.length >= 2);
-	await action("session/delete", { sessionId: fork });
+	await action("session/archive", { sessionId: fork });
 	assert.equal(session.snapshot().sessionId, null);
 	await action("session/list", { archived: true });
 	assert.ok(session.snapshot().sessions.some((s) => s.sessionId === fork));

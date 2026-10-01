@@ -1,4 +1,5 @@
 // 会話検索の条件・一致移動・ハイライトと、明暗テーマの狭い表示を検証する。
+import { openStory } from "../storyPage";
 import { expectSent, acceptPrompt, showState } from "../storyBridge";
 import { searchMessages } from "../../../apps/nerita-ui/stories/chat/fixtures/search";
 import { test, expect } from "@playwright/test";
@@ -16,7 +17,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-search--ready&viewMode=story");
+		await openStory(
+			page,
+			"/iframe.html?id=chat-search--ready&viewMode=story",
+		);
 		const composer = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",
 		});
@@ -132,7 +136,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 test("連続入力の検索をまとめ、クリアと終了で予約を取り消す", async ({
 	page,
 }) => {
-	await page.goto("/iframe.html?id=chat-search--ready&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-search--ready&viewMode=story");
 	await page
 		.getByRole("textbox", { name: "Codexへのメッセージ" })
 		.press("Control+f");
@@ -172,7 +176,7 @@ test("連続入力の検索をまとめ、クリアと終了で予約を取り�
 });
 
 test("検索中の追加メッセージと再表示・F3での一致移動", async ({ page }) => {
-	await page.goto("/iframe.html?id=chat-search--ready&viewMode=story");
+	await openStory(page, "/iframe.html?id=chat-search--ready&viewMode=story");
 	const composer = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await composer.fill("追加した検索語");
 	await composer.press("Control+f");

@@ -5,7 +5,9 @@ test("複数行の入力を順にUndoしRedoで復元できる", async ({ page }
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	page.on("console", (message) => {
-		if (message.type() === "error") {errors.push(message.text());}
+		if (message.type() === "error") {
+			errors.push(message.text());
+		}
 	});
 	await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
 	// VS Code が外側で受け取ったキーを標準編集コマンドへ転送する経路を再現する。
@@ -20,7 +22,9 @@ test("複数行の入力を順にUndoしRedoで復元できる", async ({ page }
 	await input.click();
 	const cdp = await page.context().newCDPSession(page);
 	for (const character of ["あ", "い", "う", "え", "お"]) {
-		if (character !== "あ") {await input.press("Enter");}
+		if (character !== "あ") {
+			await input.press("Enter");
+		}
 		await cdp.send("Input.imeSetComposition", {
 			text: character,
 			selectionStart: 1,

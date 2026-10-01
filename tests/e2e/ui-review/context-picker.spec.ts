@@ -1,10 +1,12 @@
 // ＋と # が同じ検索・参照挿入・最近使用を共有することを確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 import { expectSent, sentMessages, showState } from "../storyBridge";
 
 for (const key of ["Escape", "Alt+ArrowLeft"]) {
 	test(`${key}で1階層ずつ戻りルートのEscで閉じる`, async ({ page }) => {
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -56,7 +58,10 @@ test("パンくずから祖先フォルダー・カテゴリ・入口へ戻る",
 	page,
 }, info) => {
 	await page.setViewportSize({ width: 320, height: 820 });
-	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await input.fill("#");
 	await page
@@ -193,9 +198,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await page
 			.getByRole("button", { name: "alpha.ts", exact: true })
 			.hover();
-		await expect(
-			page.getByRole("tooltip", { name: /alpha.ts/ }),
-		).toHaveCSS("opacity", "1");
+		await expect(page.getByRole("tooltip", { name: /alpha.ts/ })).toHaveCSS(
+			"opacity",
+			"1",
+		);
 		await info.attach("recent-narrow", {
 			body: await page.screenshot({
 				path: info.outputPath("recent-narrow.png"),
@@ -218,7 +224,10 @@ for (const colorScheme of ["dark", "light"] as const) {
 test("添付が使えない状態でも参照を選択でき、外側クリックで閉じる", async ({
 	page,
 }) => {
-	await page.goto("/iframe.html?id=chat-composer-menu--ready&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=chat-composer-menu--ready&viewMode=story",
+	);
 	await showState(page, { attachmentsSupported: false });
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });
 	await page

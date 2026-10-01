@@ -114,12 +114,31 @@ it("推論の複数パート・計画・ファイル差分を保存する", asyn
 		path: "a.ts",
 		diff: "@@ -1 +1 @@\n-old\n+new",
 	});
-	expect(
-		h.session
-			.snapshot()
-			.tools.filter((t) => t.id.startsWith("turn:"))
-			.every((t) => t.status === "completed"),
-	).toBe(true);
+	expect(h.session.snapshot().tools).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({
+				id: "turn:turn/plan/updated",
+				status: "completed",
+				content: [
+					{
+						type: "content",
+						content: { type: "text", text: "inProgress: 変更する" },
+					},
+				],
+			}),
+			expect.objectContaining({
+				id: "turn:turn/diff/updated",
+				status: "completed",
+				content: [
+					{
+						type: "unifiedDiff",
+						path: "変更全体",
+						diff: "diff --git a/a.ts b/a.ts",
+					},
+				],
+			}),
+		]),
+	);
 });
 it("別のturnのツール通知を適用しない", async () => {
 	const h = await ready();

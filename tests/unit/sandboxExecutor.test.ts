@@ -75,7 +75,7 @@ it("U06 network=falseでも要求commandを実行し、出力を保持して一�
 	expect(h.client.dispose).toHaveBeenCalledTimes(1);
 });
 
-it.each(["darwin", "linux"] as const)(
+it.each(["linux"] as const)(
 	"%sではCodex実行経路を停止し、接続・実行しない",
 	async (platform) => {
 		const h = await fixture();

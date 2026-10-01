@@ -1,4 +1,5 @@
 // 新規 Workflow エディタの明暗・狭幅表示と、編集・検証・停止を確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -13,7 +14,8 @@ for (const theme of ["dark", "light"] as const) {
 			});
 			await page.setViewportSize({ width, height: 950 });
 			await page.emulateMedia({ colorScheme: theme });
-			await page.goto(
+			await openStory(
+				page,
 				"/iframe.html?id=pi-workflow--editor&viewMode=story",
 			);
 			await expect(
@@ -84,7 +86,10 @@ for (const theme of ["dark", "light"] as const) {
 }
 
 test("workflow invalid TOML recovery", async ({ page }, info) => {
-	await page.goto("/iframe.html?id=pi-workflow--invalid&viewMode=story");
+	await openStory(
+		page,
+		"/iframe.html?id=pi-workflow--invalid&viewMode=story",
+	);
 	await expect(page.getByLabel("Workflow TOML")).toHaveValue("version = [");
 	await page.getByRole("button", { name: "検証", exact: true }).click();
 	await expect(page.getByRole("alert")).toBeVisible();
@@ -101,7 +106,7 @@ test("workflow invalid TOML recovery", async ({ page }, info) => {
 
 test("workflow canvas connections and deletion", async ({ page }, info) => {
 	await page.setViewportSize({ width: 1280, height: 950 });
-	await page.goto("/iframe.html?id=pi-workflow--editor&viewMode=story");
+	await openStory(page, "/iframe.html?id=pi-workflow--editor&viewMode=story");
 	const source = page.locator('[data-nodeid="tests"].source');
 	const target = page.locator('[data-nodeid="review"].target');
 	await source.dragTo(target);

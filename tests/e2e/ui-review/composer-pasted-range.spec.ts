@@ -1,4 +1,5 @@
 // 行番号付きパスを貼り付け、範囲を指定した開く要求と送信本文を確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 import { paste } from "./composerHelpers";
 
@@ -15,7 +16,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-symbols--search&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {

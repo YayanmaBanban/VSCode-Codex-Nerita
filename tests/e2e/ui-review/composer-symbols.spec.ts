@@ -1,4 +1,5 @@
 // シンボルの検索・位置付きチップ・コピー復元・送信をブラウザで確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const colorScheme of ["dark", "light"] as const) {
@@ -17,7 +18,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			.grantPermissions(["clipboard-read", "clipboard-write"]);
 		await page.setViewportSize({ width: 320, height: 820 });
 		await page.emulateMedia({ colorScheme });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-symbols--search&viewMode=story",
 		);
 		const input = page.getByRole("textbox", {
@@ -69,7 +71,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 }
 
 test("空結果・失敗から再検索し、古い応答を無視する", async ({ page }) => {
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-composer-symbols--search&viewMode=story",
 	);
 	const input = page.getByRole("textbox", { name: "Codexへのメッセージ" });

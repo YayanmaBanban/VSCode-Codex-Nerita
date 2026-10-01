@@ -1,4 +1,5 @@
 // コマンド全文を保持しながら、狭い画面でも承認操作に到達できることを確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 
 for (const theme of ["dark", "light"] as const) {
@@ -15,7 +16,8 @@ for (const theme of ["dark", "light"] as const) {
 			colorScheme: theme,
 			reducedMotion: "reduce",
 		});
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-permission--long-command&viewMode=story",
 		);
 		const approval = page.getByRole("region", { name: "承認要求" });

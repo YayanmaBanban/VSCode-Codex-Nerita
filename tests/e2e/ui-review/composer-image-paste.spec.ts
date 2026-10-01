@@ -1,4 +1,5 @@
 // 画像ペーストの添付・容量制限と通常テキストへの影響を確認する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 import { paste } from "./composerHelpers";
 
@@ -12,7 +13,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 			}
 		});
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-composer-settings--connected&viewMode=story",
 		);
 		const input = page.getByRole("textbox");

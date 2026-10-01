@@ -1,4 +1,5 @@
 // 性格設定のメニュー、保存・更新、固定状態を狭い明暗画面で検証する。
+import { openStory } from "../storyPage";
 import { test, expect } from "@playwright/test";
 for (const colorScheme of ["dark", "light"] as const) {
 	test(`性格設定の編集・保存・キーボード操作: ${colorScheme}`, async ({
@@ -13,7 +14,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto(
+		await openStory(
+			page,
 			"/iframe.html?id=chat-personality--editable&viewMode=story",
 		);
 		await page
@@ -103,7 +105,8 @@ for (const colorScheme of ["dark", "light"] as const) {
 	});
 }
 test("config.toml の指示は表示して編集を禁止する", async ({ page }, info) => {
-	await page.goto(
+	await openStory(
+		page,
 		"/iframe.html?id=chat-personality--configured&viewMode=story",
 	);
 	await page.getByRole("button", { name: "オプション", exact: true }).click();

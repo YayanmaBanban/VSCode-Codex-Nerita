@@ -1,4 +1,5 @@
 // 両方のログアウト入口と再ログイン、入力の改行・送信を実 UI で検証する。
+import { openStory } from "../storyPage";
 import { expectSent, showState, acceptPrompt } from "../storyBridge";
 import { test, expect } from "@playwright/test";
 import {
@@ -19,7 +20,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 		});
 		await page.setViewportSize({ width: 320, height: 760 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/iframe.html?id=chat-app--empty&viewMode=story");
+		await openStory(page, "/iframe.html?id=chat-app--empty&viewMode=story");
 		const input = page.getByRole("textbox", {
 			name: "Codexへのメッセージ",
 		});

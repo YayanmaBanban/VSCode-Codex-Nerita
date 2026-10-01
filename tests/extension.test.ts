@@ -53,8 +53,9 @@ suite("Nerita Extension", () => {
 		try {
 			await access(join(root, "package.json"));
 		} catch {
-			this.skip();
-			return;
+			assert.fail(
+				"Workflow の受入には pi-subagents が必要です。NERITA_SUBAGENTS_PACKAGE で配置先を指定してください。",
+			);
 		}
 		await piWorkflowSmoke(
 			vscode.extensions.getExtension("nerita-local.nerita")!.extensionUri
@@ -84,7 +85,7 @@ suite("Nerita Extension", () => {
 		)!;
 		await piGuardrailsSmoke(extension.extensionUri.fsPath);
 	});
-	test("Pi認証管理をエディターグループに開き、取消で閉じる", async () => {
+	test("Pi認証管理の実タブを閉じると、親の取消しなしで管理処理が終了する", async () => {
 		const extension = vscode.extensions.getExtension(
 			"nerita-local.nerita",
 		)!;
@@ -112,6 +113,15 @@ suite("Nerita Extension", () => {
 				.flatMap((group) => group.tabs)
 				.find((tab) => tab.label === "Pi 認証情報")!;
 			assert.ok(tab.input instanceof vscode.TabInputWebview);
+			assert.equal(await vscode.window.tabGroups.close(tab, true), true);
+			await done;
+			assert.equal(abort.signal.aborted, false);
+			assert.equal(
+				vscode.window.tabGroups.all.some((group) =>
+					group.tabs.some((item) => item.label === "Pi 認証情報"),
+				),
+				false,
+			);
 		} finally {
 			abort.abort();
 			await done;

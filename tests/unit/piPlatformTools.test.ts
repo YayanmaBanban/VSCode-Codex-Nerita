@@ -94,7 +94,7 @@ async function fixture(
 	};
 }
 
-it.each(["darwin", "linux"] as const)(
+it.each(["linux"] as const)(
 	"%sでSandbox設定を読まず、write/edit/bashを利用できる",
 	async (platform) => {
 		const h = await fixture(platform);

@@ -1,12 +1,11 @@
 // 実 SDK の会話ループで検索・子呼出し・履歴保存を確認し、通信だけを模擬する。
-import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { join } from "node:path";
+import { loadTestPiSdk } from "../fixtures/piSdk";
 import type {
 	AgentSession,
 	ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
 import { expect, it } from "vitest";
-import type { PiFeatureSdk } from "../../apps/vscode-nerita/src/extension/backends/pi/PiBuiltinExtensions";
 import { loadPiResources } from "../../apps/vscode-nerita/src/extension/backends/pi/PiResources";
 import { approvePiTool } from "../../apps/vscode-nerita/src/extension/backends/pi/PiApprovedTools";
 import { piToolExposure } from "../../apps/vscode-nerita/src/extension/backends/pi/PiToolFeatures";
@@ -72,13 +71,9 @@ function scriptedStream(session: AgentSession) {
 }
 
 it("検索したHostツールの実引数を承認し、子の親IDと要約を保存して復元する", async () => {
+	const sdk = await loadTestPiSdk();
 	const files = await sandboxFixture();
 	const directory = files.cwd;
-	const sdk = (await import(
-		/* @vite-ignore */ pathToFileURL(
-			resolve("apps/vscode-nerita/dist/runtime/pi.mjs"),
-		).href
-	)) as PiFeatureSdk;
 	let session: AgentSession | undefined;
 	let executed = 0;
 	const approvals: string[] = [];

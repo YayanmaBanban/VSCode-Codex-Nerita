@@ -31,7 +31,7 @@ describe("Codex OAuth live catalog transport", () => {
 		expect(await reader.read(h.signal)).toBeNull();
 	});
 
-	it.each(["redirect", "json", "schema", "size", "unauthorized"])(
+	it.each(["redirect", "json", "schema", "unauthorized"])(
 		"%s失敗は安全なnullへ変換する",
 		async (failure) => {
 			const h = catalogHarness();
@@ -42,7 +42,6 @@ describe("Codex OAuth live catalog transport", () => {
 				}),
 				json: new Response("private-invalid-body"),
 				schema: Response.json({ message: "private-response" }),
-				size: new Response(" ".repeat(2 * 1024 * 1024 + 1)),
 				unauthorized: new Response("secret", { status: 401 }),
 			};
 			h.request.mockResolvedValue(
@@ -56,6 +55,23 @@ describe("Codex OAuth live catalog transport", () => {
 			).toBeNull();
 		},
 	);
+	it("有効なモデル一覧を受信上限まで読み込み、超過だけを拒否する", async () => {
+		const h = catalogHarness();
+		const body = JSON.stringify(h.payload).padEnd(2 * 1024 * 1024, " ");
+		h.request.mockResolvedValueOnce(new Response(body));
+		expect(
+			await new OpenAIModelCatalogService(h.sdkModels, h.request).read(
+				h.signal,
+			),
+		).not.toBeNull();
+		h.request.mockResolvedValueOnce(new Response(`${body} `));
+		// キャッシュの代替応答で拒否を隠さないよう、独立した取得から観測する。
+		expect(
+			await new OpenAIModelCatalogService(h.sdkModels, h.request).read(
+				h.signal,
+			),
+		).toBeNull();
+	});
 
 	it("5秒timeoutで要求を取り消す", async () => {
 		vi.useFakeTimers();
