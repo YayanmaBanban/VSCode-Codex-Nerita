@@ -9,7 +9,7 @@ import { ComposerSettings } from "../../src/chat/composer/ComposerSettings";
 import "../../src/chat/chat.css";
 
 const models = [
-	{ value: "openai-codex/demo", name: "OpenAI Codex" },
+	{ value: "openai/demo", name: "OpenAI" },
 	{ value: "anthropic/demo", name: "Anthropic Claude" },
 	{ value: "google/demo", name: "Google Gemini" },
 	{ value: "local/demo", name: "Local model" },
@@ -31,7 +31,7 @@ function ContributionStory({
 				slot: "settings.advanced",
 				when: {
 					backend: "pi",
-					provider: "openai-codex",
+					provider: "openai",
 					capability: "preview",
 				},
 				control: {
@@ -50,7 +50,7 @@ function ContributionStory({
 			{
 				id: "progress-example",
 				slot: "status",
-				when: { provider: "openai-codex", capability: "preview" },
+				when: { provider: "openai", capability: "preview" },
 				control: {
 					type: "progress",
 					label: "タスク進捗の表示例",
@@ -194,7 +194,7 @@ const meta = {
 	title: "Chat/Contributions",
 	component: ContributionStory,
 	parameters: { layout: "fullscreen" },
-	args: { backend: "pi", provider: "openai-codex" },
+	args: { backend: "pi", provider: "openai" },
 } satisfies Meta<typeof ContributionStory>;
 export default meta;
 type Story = StoryObj<typeof meta>;

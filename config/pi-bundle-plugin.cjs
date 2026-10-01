@@ -5,7 +5,6 @@ const path = require("node:path");
 const supportedApis = new Set([
 	"anthropic-messages",
 	"google-generative-ai",
-	"openai-codex-responses",
 	"openai-completions",
 	"openai-responses",
 ]);
@@ -22,12 +21,12 @@ function replaceRequired(source, before, after) {
 function providerCatalog() {
 	return `
 import { createModels } from "../models.js";
-import { openaiCodexProvider } from "./openai-codex.js";
+import { openaiProvider } from "./openai.js";
 import { anthropicProvider } from "./anthropic.js";
 import { googleProvider } from "./google.js";
 import manifest from "./data/.manifest.json" with { type: "json" };
-export { openaiCodexProvider, anthropicProvider, googleProvider };
-export function builtinProviders() { return [openaiCodexProvider(), anthropicProvider(), googleProvider()]; }
+export { openaiProvider, anthropicProvider, googleProvider };
+export function builtinProviders() { return [openaiProvider(), anthropicProvider(), googleProvider()]; }
 const catalog = new Map(builtinProviders().map(p => [p.id, p.getModels()]));
 export function getBuiltinModelDataGeneratedAt() { const value = Date.parse(manifest.generatedAt); return Number.isNaN(value) ? undefined : value; }
 export function getBuiltinProviders() { return [...catalog.keys()]; }
@@ -58,6 +57,30 @@ function limitCompat(source) {
 		.join("\n");
 }
 
+/** MCP の再送と OAuth 更新を、固定 SDK の Host 境界へ接続する。 */
+async function mcpHostContents(file, sdkFile) {
+	let contents = await fs.readFile(file, "utf8");
+	if (sdkFile === "dist/extensions/mcp/runtime.js") {
+		contents = replaceRequired(
+			contents,
+			"if (error instanceof McpSessionExpiredError && attempt === 1)",
+			"if (readOnly && error instanceof McpSessionExpiredError && attempt === 1)",
+		);
+		contents = replaceRequired(
+			contents,
+			"serverUrl: url,",
+			"serverUrl: url, fetch: options.oauthFetch,",
+		);
+	} else if (sdkFile === "dist/extensions/mcp/oauth.js") {
+		contents = replaceRequired(
+			contents,
+			"fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(REFRESH_REQUEST_TIMEOUT_MS) }),",
+			"fetch: (input, init) => (options.fetch ?? fetch)(input, { ...init, signal: AbortSignal.timeout(REFRESH_REQUEST_TIMEOUT_MS) }),",
+		);
+	}
+	return contents;
+}
+
 /** バンドルで追跡できない参照だけを固定 SDK に対する小さな変換で補う。 */
 function piBundlePlugin(sdkRoot, aiRoot) {
 	return {
@@ -70,7 +93,12 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 				const aiFile = path
 					.relative(aiRoot, args.path)
 					.replaceAll("\\", "/");
-				let contents;
+				const codemodeLimits = require("./pi-codemode-limits.cjs");
+				let contents = await codemodeLimits.codemodeContents(
+					args.path,
+					sdkFile,
+					aiFile,
+				);
 				if (aiFile === "dist/providers/all.js") {
 					contents = providerCatalog();
 				} else if (aiFile === "dist/compat.js") {
@@ -83,7 +111,7 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 						.split("\n")
 						.filter(
 							(line) =>
-								!/azureOpenAIResponses|googleVertex|mistralConversations/.test(
+								!/azureOpenAIResponses|googleVertex|mistralConversations|openAICodex|OpenAICodex|openai-codex/.test(
 									line,
 								),
 						)
@@ -91,7 +119,7 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 				} else if (aiFile === "dist/auth/oauth/load.js") {
 					// OAuth の認証処理も ESM チャンクへ分離する。変数を使うインポートを固定パスに変え、ビルド時の追跡漏れを防ぐ。
 					contents = `export const loadAnthropicOAuth = async () => (await import("./anthropic.js")).anthropicOAuth;
-export const loadOpenAICodexOAuth = async () => (await import("./openai-codex.js")).openaiCodexOAuth;`;
+export const loadOpenAIChatGPTOAuth = async () => (await import("./openai-chatgpt.js")).openaiChatGPTOAuth;`;
 				} else if (sdkFile === "dist/index.js") {
 					// `Extensions` 用名前空間から CLI 起動・対話モードを到達不能にする。
 					contents = (await fs.readFile(args.path, "utf8"))
@@ -103,6 +131,19 @@ export const loadOpenAICodexOAuth = async () => (await import("./openai-codex.js
 								),
 						)
 						.join("\n");
+				} else if (sdkFile.startsWith("dist/extensions/mcp/")) {
+					contents = await mcpHostContents(args.path, sdkFile);
+				} else if (sdkFile === "dist/config.js") {
+					contents = replaceRequired(
+						await fs.readFile(args.path, "utf8"),
+						'createRequire(import.meta.url).resolve("quickjs-wasi/quickjs.wasm")',
+						'fileURLToPath(new URL("./quickjs.wasm", import.meta.url))',
+					);
+					contents = replaceRequired(
+						contents,
+						'"./codemode-worker.js"',
+						'"./codemode-worker.mjs"',
+					);
 				} else if (sdkFile === "dist/utils/image-resize.js") {
 					contents = replaceRequired(
 						await fs.readFile(args.path, "utf8"),

@@ -22,10 +22,14 @@ function matches(
 }
 
 it("通常検索では記号をそのまま扱い、大文字小文字を切り替える", () => {
-	expect(matches("Power power POWER", "power")).toHaveLength(3);
+	expect(matches("Power power POWER", "power")).toEqual([
+		{ start: 0, end: 5 },
+		{ start: 6, end: 11 },
+		{ start: 12, end: 17 },
+	]);
 	expect(
 		matches("Power power POWER", "power", { caseSensitive: true }),
-	).toHaveLength(1);
+	).toEqual([{ start: 6, end: 11 }]);
 	expect(matches("power[1] power1", "power[1]")).toEqual([
 		{ start: 0, end: 8 },
 	]);
@@ -34,15 +38,28 @@ it("通常検索では記号をそのまま扱い、大文字小文字を切り�
 it("単語単位はUnicodeとアンダースコアを含む境界を判定する", () => {
 	expect(
 		matches("power powerful power_1 Power", "power", { wholeWord: true }),
-	).toHaveLength(2);
-	expect(matches("猫 猫舌 子猫", "猫", { wholeWord: true })).toHaveLength(1);
-	expect(matches("e e\u0301", "e", { wholeWord: true })).toHaveLength(1);
+	).toEqual([
+		{ start: 0, end: 5 },
+		{ start: 23, end: 28 },
+	]);
+	expect(matches("猫 猫舌 子猫", "猫", { wholeWord: true })).toEqual([
+		{ start: 0, end: 1 },
+	]);
+	expect(matches("e e\u0301", "e", { wholeWord: true })).toEqual([
+		{ start: 0, end: 1 },
+	]);
 });
 it("正規表現の範囲・無効な式・空一致・件数上限を扱う", () => {
-	expect(
-		matches("power1 POWER2 power", "power\\d", { regex: true }),
-	).toHaveLength(2);
+	expect(matches("power1 POWER2 power", "power\\d", { regex: true })).toEqual(
+		[
+			{ start: 0, end: 6 },
+			{ start: 7, end: 13 },
+		],
+	);
 	expect(() => matches("text", "[", { regex: true })).toThrow();
 	expect(matches("abc", "^|$", { regex: true })).toEqual([]);
-	expect(findMatches("aaa", /a/gu, 2)).toHaveLength(2);
+	expect(findMatches("aaa", /a/gu, 2)).toEqual([
+		{ start: 0, end: 1 },
+		{ start: 1, end: 2 },
+	]);
 });

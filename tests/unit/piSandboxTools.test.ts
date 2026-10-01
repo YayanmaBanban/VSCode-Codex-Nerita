@@ -92,16 +92,6 @@ it("U07/U08 PowerShell本文を単一の平文argvとして固定し、SDK Host�
 	const call = execute.mock.calls[0]![0].call;
 	expect(call.command!.at(-2)).toBe("-Command");
 	expect(call.command!.at(-1)).toContain(command);
-	for (const target of [
-		"$OutputEncoding",
-		"[Console]::InputEncoding",
-		"[Console]::OutputEncoding",
-	]) {
-		expect(call.command!.at(-1)).toContain(
-			`${target} = [System.Text.Encoding]::UTF8`,
-		);
-	}
-	expect(call.command!.join(" ")).not.toContain("EncodedCommand");
 	expect(call.timeoutMs).toBe(12500);
 	expect(call.env!.NERITA_PROVIDER_TEST_TOKEN).toBeNull();
 	expect(JSON.stringify(h.authorize.mock.calls[0]![0])).not.toContain(

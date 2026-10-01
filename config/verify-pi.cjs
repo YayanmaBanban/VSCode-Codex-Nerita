@@ -3,6 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { tmpdir } = require("node:os");
 const { spawnSync } = require("node:child_process");
+const { repoRoot, extensionRoot } = require("./workspace-paths.cjs");
 const { runPnpm } = require("./run-pnpm.cjs");
 
 /** Windows 標準の展開コマンドを実行し、欠落や失敗をその工程で報告する。 */
@@ -18,6 +19,20 @@ function runTar(args) {
 	}
 	if (result.status !== 0) {
 		throw new Error("VSIXの展開コマンドが失敗しました。");
+	}
+}
+
+/** 実認証と区別した配布ファクトリーの検査を、開発時と VSIX 内で共通に実行する。 */
+function runFeatureSmoke(extensionPath, script) {
+	const result = spawnSync(
+		process.execPath,
+		[path.join(repoRoot, "tests", script), extensionPath],
+		{ stdio: "inherit", windowsHide: true },
+	);
+	if (result.error || result.status !== 0) {
+		throw new Error("Pi の新機能に必要な配布 runtime を検証できません。", {
+			cause: result.error,
+		});
 	}
 }
 
@@ -52,6 +67,8 @@ async function main() {
 	]) {
 		runPnpm(["run", script]);
 	}
+	runFeatureSmoke(extensionRoot, "pi-feature-runtime-smoke.mjs");
+	runFeatureSmoke(extensionRoot, "pi-mcp-smoke.mjs");
 	const temporary = await fs.mkdtemp(
 		path.join(tmpdir(), "nerita-pi-verify-"),
 	);
@@ -63,6 +80,11 @@ async function main() {
 			temporary,
 		]);
 		runPnpm(["run", "test:pi:chat", path.join(temporary, "extension")]);
+		runFeatureSmoke(
+			path.join(temporary, "extension"),
+			"pi-feature-runtime-smoke.mjs",
+		);
+		runFeatureSmoke(path.join(temporary, "extension"), "pi-mcp-smoke.mjs");
 	} finally {
 		await removeTemporary(temporary);
 	}

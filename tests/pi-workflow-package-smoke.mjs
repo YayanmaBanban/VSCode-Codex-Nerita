@@ -79,6 +79,8 @@ const slow = new Promise((resolve) => {
 	release = resolve;
 });
 const order = [];
+let slowCompleted = false;
+let nextBeforeSlowCompleted = false;
 await engine.runWorkflowScript({
 	script: dag,
 	timeoutMs: 5000,
@@ -87,8 +89,10 @@ await engine.runWorkflowScript({
 		order.push(key);
 		if (key === "slow") {
 			await slow;
+			slowCompleted = true;
 		}
 		if (key === "next") {
+			nextBeforeSlowCompleted = !slowCompleted;
 			release();
 		}
 		return { key, runId: key, ok: true, output: key, artifactPaths: [] };
@@ -97,7 +101,8 @@ await engine.runWorkflowScript({
 		throw new Error("unexpected status");
 	},
 });
-assert.deepEqual(order, ["slow", "fast", "next"]);
+assert.equal(nextBeforeSlowCompleted, true);
+assert.ok(order.indexOf("fast") < order.indexOf("next"));
 
 // 失敗したステップの後続は起動せず、Worker の取消しも Host の起動へ伝える。
 const failure = compileWorkflow({

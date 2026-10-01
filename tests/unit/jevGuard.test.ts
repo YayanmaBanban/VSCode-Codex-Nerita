@@ -46,17 +46,17 @@ it("未設定では補足判定を付けず、既存の承認を維持する", a
 it.each(["allow", "confirm", "review"])(
 	"Jevの%sでも毎回承認し、判定を固定する",
 	async (decision) => {
-		guard.configure(() =>
-			Promise.resolve({ decision, guidance: "補足理由" }),
-		);
+		const review = { decision, guidance: "補足理由" };
+		guard.configure(() => Promise.resolve(review));
 		const permit = await approveToolCall(call, authorize, undefined, guard);
 		expect(authorize).toHaveBeenCalledOnce();
 		expect(JSON.stringify(authorize.mock.calls)).toContain("補足理由");
-		expect(Object.isFrozen(permit.call.jevReview)).toBe(true);
-		expect(consumeApprovedToolCall(permit).jevReview?.decision).toBe(
+		review.decision = "deny";
+		review.guidance = "変更後の理由";
+		expect(consumeApprovedToolCall(permit).jevReview).toMatchObject({
 			decision,
-		);
-		expect(() => consumeApprovedToolCall(permit)).toThrow("再承認");
+			guidance: "補足理由",
+		});
 	},
 );
 

@@ -49,9 +49,11 @@ it("未完了のツール呼出しを除き、完了した交換と本文をコ�
 		incomplete,
 	];
 	const snapshot = forkContext(source(messages), parent, target);
-	expect(snapshot).toHaveLength(3);
-	messages[0] = { role: "user", content: "changed", timestamp: 3 };
-	expect(snapshot[0]).toMatchObject({ content: "parent text" });
+	const expected = structuredClone(messages.slice(0, 3));
+	expect(snapshot).toEqual(expected);
+	(messages[0] as { content: string }).content = "changed";
+	complete.content[0]!.arguments = { path: "changed.txt" };
+	expect(snapshot).toEqual(expected);
 });
 
 it("モデル変更と過大な会話を複製しない", () => {

@@ -18,6 +18,38 @@ function entry(
 	};
 }
 
+it("SDK内部のdetailsから結果を推測せず、空の履歴を再実行や補完で埋めない", () => {
+	const restored = restorePiHistory(
+		[
+			entry("u", { role: "user", content: "structured", timestamp: 1 }),
+			entry("r", {
+				role: "toolResult",
+				toolCallId: "structured",
+				toolName: "count",
+				content: [],
+				details: {
+					structuredContent: { count: 3, apiKey: "never-send" },
+				},
+				isError: false,
+				timestamp: 2,
+			}),
+			entry("empty", {
+				role: "toolResult",
+				toolCallId: "empty",
+				toolName: "count",
+				content: [],
+				isError: false,
+				timestamp: 3,
+			}),
+		],
+		"workspace",
+	);
+	expect(restored.tools[0]?.resultDisplay).toBeUndefined();
+	expect(restored.tools[0]?.content).toEqual([]);
+	expect(JSON.stringify(restored.tools)).not.toContain("never-send");
+	expect(restored.tools[1]?.content).toEqual([]);
+});
+
 it("親の結果へ保存された多段の要約を復元し、省略・未完了を完了と扱わない", () => {
 	const restored = restorePiHistory(
 		[
@@ -95,7 +127,12 @@ it("親の結果へ保存された多段の要約を復元し、省略・未完�
 			content: [],
 		},
 	]);
-	expect(restored.tools.map((tool) => tool.order)).toEqual([2, 3, 4, 5]);
+	const orders = restored.tools.map((tool) => tool.order!);
+	expect(
+		orders.every(
+			(order, index) => index === 0 || order > orders[index - 1]!,
+		),
+	).toBe(true);
 	expect(restored.tools[3]!.order).toBeLessThan(restored.messages[1]!.order!);
 	expect(restored.tools[2]!.rawInput).toBeUndefined();
 });

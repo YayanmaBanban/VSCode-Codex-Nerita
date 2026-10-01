@@ -24,6 +24,14 @@ export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
 							{window.detail && <div>{window.detail}</div>}
 						</div>
 					))}
+					{windows.some(
+						(window) => window.source === "codex-login",
+					) && (
+						<>
+							<hr />
+							<div>Codexのログイン情報から取得中</div>
+						</>
+					)}
 				</>
 			}
 		>

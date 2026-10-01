@@ -21,8 +21,8 @@ export const codexReasoningSchema = z.enum([
 	"ultra",
 ]);
 
-/** 管理・保存では、プロバイダー固有の Ultra も扱う。実行時の変換はバックエンド側の責務。 */
-export const piEffortSchema = piThinkingSchema.or(z.literal("ultra"));
+/** 子起動機構のない Pi 管理・ハンドオフ設定には SDK の通常推論だけを保存する。 */
+export const piEffortSchema = piThinkingSchema;
 
 /** 未指定はバックエンド既定値へ戻す操作として扱う。 */
 export const agentEditSchema = z.strictObject({

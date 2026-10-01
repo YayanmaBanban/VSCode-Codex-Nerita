@@ -62,15 +62,27 @@ it.each(["host", "sdk", "host-only"])(
 	"承認後も%sの取消を実ツールへ伝える",
 	async (source) => {
 		const h = await fixture("powershell");
+		const executing = pending<void>();
+		h.execute.mockImplementation(
+			(_id, _params, signal) =>
+				new Promise((resolve, reject) => {
+					signal!.addEventListener(
+						"abort",
+						() => reject(new Error("tool stopped")),
+						{ once: true },
+					);
+					executing.resolve();
+				}),
+		);
 		const host = new AbortController();
 		const sdk = new AbortController();
 		const result = h.run(source === "host-only" ? undefined : sdk.signal);
+		const stopped = expect(result).rejects.toThrow("tool stopped");
 		h.approval.resolve(host.signal);
-		await result;
-		const received = h.execute.mock.calls[0]![2]!;
-		expect(received.aborted).toBe(false);
+		await executing.promise;
+		expect(h.execute).toHaveBeenCalledOnce();
 		(source === "sdk" ? sdk : host).abort();
-		expect(received.aborted).toBe(true);
+		await stopped;
 	},
 );
 

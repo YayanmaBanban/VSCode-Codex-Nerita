@@ -27,7 +27,7 @@ for (const theme of ["dark", "light"] as const) {
 			.getByRole("button", { name: "利用枠取得", exact: true })
 			.click();
 		await expect(bar).toHaveAttribute("aria-valuenow", "60");
-		await expect(bar).toHaveClass(/quota-bar/);
+		await expect(bar).toBeVisible();
 		await bar.hover();
 		await expect(page.getByRole("tooltip")).toContainText(
 			"codex 5h limit: 60%",

@@ -1,5 +1,6 @@
 // TOML の依存関係とコンパイル結果を検証し、本文からのコード混入を防ぐ。
 import { expect, it } from "vitest";
+import { runInNewContext } from "node:vm";
 import {
 	validateWorkflow,
 	parseWorkflow,
@@ -9,14 +10,40 @@ import { compileWorkflow } from "@nerita/shared/workflows/compiler";
 const step = { id: "start", agent: "worker", task: "task" };
 const base = { version: 1, name: "test", outputs: ["start"], steps: [step] };
 
-it("TOML を解析し、依存順へ正規化する", () => {
+/** 生成コードを実行し、子起動の入力と最終結果を観測する。 */
+async function execute(value: unknown) {
+	const calls: { key: string; params: Record<string, unknown> }[] = [];
+	const result: unknown = await runInNewContext(
+		`(async () => { ${compileWorkflow(value)} })()`,
+		{
+			runs: {
+				run: (key: string, params: Record<string, unknown>) => {
+					calls.push({ key, params });
+					return Promise.resolve({
+						ok: true,
+						runId: `run-${key}`,
+						output: `output-${key}`,
+					});
+				},
+			},
+		},
+		{ timeout: 1000 },
+	);
+	return { calls, result };
+}
+
+it("後置した依存ステップを先に実行し、その出力と継続 ID を次の子へ渡す", async () => {
 	const definition = parseWorkflow(
 		'version = 1\nname = "test"\noutputs = ["fix"]\n[[steps]]\nid = "fix"\nresume = "start"\ndepends_on = ["start"]\ntask = "{{ start.output }}"\n[[steps]]\nid = "start"\nagent = "worker"\ntask = "begin"',
 	);
-	expect(definition.steps.map((item) => item.id)).toEqual(["start", "fix"]);
-	expect(compileWorkflow(definition)).toContain(
-		'resume: results["start"].runId',
-	);
+	const execution = await execute(definition);
+	expect(execution.calls).toEqual([
+		{ key: "start", params: { task: "begin", agent: "worker" } },
+		{ key: "fix", params: { task: "output-start", resume: "run-start" } },
+	]);
+	expect(execution.result).toEqual({
+		fix: { ok: true, runId: "run-fix", output: "output-fix" },
+	});
 });
 
 it.each([
@@ -41,17 +68,19 @@ it.each([
 	expect(() => validateWorkflow(value)).toThrow();
 });
 
-it("本文は引用されたデータとして生成し、表示グループで実行順を変えない", () => {
+it("本文のコードを実行せず、そのまま子へ渡し、表示グループでも結果を変えない", async () => {
 	const text = '${process.exit()} ` " \\ \n';
-	const script = compileWorkflow({
+	const execution = await execute({
 		...base,
 		steps: [{ ...step, task: text }],
 	});
-	expect(script).toContain(`task: ${JSON.stringify(text)}`);
+	expect(execution.calls).toEqual([
+		{ key: "start", params: { task: text, agent: "worker" } },
+	]);
 	expect(
-		compileWorkflow({
+		await execute({
 			...base,
 			steps: [{ ...step, task: text, group: "display" }],
 		}),
-	).toBe(script);
+	).toEqual(execution);
 });

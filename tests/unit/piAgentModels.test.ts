@@ -1,44 +1,29 @@
-// 親モデルの推論候補を他モデルへ流用せず、モデル ID ごとの能力を公開する。
+// 子起動機構のない管理・ハンドオフ候補は SDK の通常推論だけを公開する。
 import { expect, it } from "vitest";
 import { catalogHarness, liveModel } from "./piCatalogHarness";
 
-it("filters each Pi model with its own catalog entry without changing the parent", async () => {
+it("各モデル自身の SDK 候補を使い、live の Ultra・Fast 情報を推論へ追加しない", async () => {
 	const h = catalogHarness();
 	h.payload.models.push(
 		liveModel("spark", {
-			supported_reasoning_levels: [{ effort: "medium" }],
+			supported_reasoning_levels: [{ effort: "ultra" }],
+			service_tiers: [{ id: "priority" }],
 		}),
 	);
-	await h.catalog.refresh("openai-codex", h.signal);
+	await h.catalog.refresh("openai", h.signal);
 	const models = h.account.agentModels();
-	expect(
-		models.find((model) => model.value === "openai-codex/astra")?.efforts,
-	).toEqual(["low", "high", "max", "ultra"]);
-	expect(
-		models.find((model) => model.value === "openai-codex/spark")?.efforts,
-	).toEqual(["medium"]);
-	expect(
-		models.find((model) => model.value === "openai-codex/small")?.efforts,
-	).toEqual(["low"]);
-	expect(
-		models.find((model) => model.value === "local/local")?.efforts,
-	).toEqual(["off"]);
+	expect(models.find((m) => m.value === "openai/astra")?.efforts).toEqual(
+		h.all[0]!.levels,
+	);
+	expect(models.find((m) => m.value === "openai/small")?.efforts).toEqual([
+		"low",
+	]);
+	expect(models.find((m) => m.value === "local/local")?.efforts).toEqual([
+		"off",
+	]);
+	for (const model of models) {
+		expect(model.efforts).not.toContain("ultra");
+	}
 	expect(h.session.setModel).not.toHaveBeenCalled();
 	expect(h.session.setThinkingLevel).not.toHaveBeenCalled();
-});
-
-it("retains Ultra for multiple models even when the SDK standard list lacks it", async () => {
-	const h = catalogHarness();
-	h.payload.models.push(liveModel("spark"));
-	await h.catalog.refresh("openai-codex", h.signal);
-	const models = h.account.agentModels();
-	for (const id of ["astra", "spark"]) {
-		expect(
-			models.find((model) => model.value === `openai-codex/${id}`)
-				?.efforts,
-		).toContain("ultra");
-	}
-	expect(
-		models.find((model) => model.value === "openai-codex/small")?.efforts,
-	).not.toContain("ultra");
 });

@@ -119,18 +119,18 @@ it("UTF-8添付・画像参照を変換し、バイナリと容量超過を拒�
 		]);
 		await expect(
 			attachmentInput([file("test.png")], false),
-		).rejects.toThrow();
-		await writeFile(join(dir, "binary.bin"), Buffer.from([0, 255]));
+		).rejects.toThrow("Image input unavailable");
+		await writeFile(join(dir, "binary.bin"), Buffer.from([0, 1]));
 		await expect(
 			attachmentInput([file("binary.bin")], false),
-		).rejects.toThrow();
+		).rejects.toThrow("Binary attachment");
 		await writeFile(
 			join(dir, "large.txt"),
-			Buffer.alloc(2 * 1024 * 1024 + 1),
+			Buffer.alloc(2 * 1024 * 1024 + 1, 65),
 		);
 		await expect(
 			attachmentInput([file("large.txt")], false),
-		).rejects.toThrow();
+		).rejects.toThrow("Attachment too large");
 	} finally {
 		await rm(dir, { recursive: true, force: true });
 	}

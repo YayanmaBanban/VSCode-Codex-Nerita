@@ -1,4 +1,4 @@
-// OAuth の認証情報取得とカタログの HTTP 通信を模擬し、Host の候補・設定処理を検証する。
+// SDK の認証・モデル切替と、公開 API の応答を模擬する。
 import { vi } from "vitest";
 import type {
 	AgentSession,
@@ -7,44 +7,36 @@ import type {
 import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { PiModelCatalogService } from "../../apps/vscode-nerita/src/extension/backends/pi/PiModelCatalogService";
 
-/** 取得するカタログと同じ形式のモデル情報。未使用項目も含め、候補から除外する条件を検証する。 */
+/** サーバーの配列順を維持する公開モデル情報。 */
 export function liveModel(slug = "astra", extra: Record<string, unknown> = {}) {
-	return {
-		slug,
-		display_name: `Live ${slug}`,
-		priority: 1,
-		visibility: "list",
-		default_reasoning_level: "high",
-		supported_reasoning_levels: ["low", "high", "max", "ultra"].map(
-			(effort) => ({ effort, description: effort }),
-		),
-		service_tiers: [
-			{
-				id: "priority",
-				name: "Fast",
-				description: "Live priority description",
-			},
-		],
-		supported_in_api: false,
-		...extra,
-	};
+	return { slug, display_name: `Live ${slug}`, visibility: "list", ...extra };
 }
-
-/** 実認証情報を読まず、SDK の `getAuth` が返す形式だけを再現する。 */
+/** 実トークンを読み込まず、SDK に返す OAuth 形式だけを模擬する。 */
 export function oauthToken(account = "fixture-account") {
-	return `header.${Buffer.from(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: account } })).toString("base64url")}.test-secret`;
+	return `header.${Buffer.from(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: account }, scope: "chatgpt.tokens.use.direct" })).toString("base64url")}.test-secret`;
 }
-
-/** SDK のモデル切替・推論適用と OAuth アカウント変更を操作可能にする。 */
+/** 現在モデルとは別に、各モデルの SDK 推論候補を保持する。 */
 export function catalogHarness() {
 	const all = ["astra", "spark", "hidden", "small"].map((id) => ({
-		provider: "openai-codex",
+		provider: "openai",
 		id,
 		name: `Static ${id}`,
-		api: "openai-codex-responses",
-		levels: ["off", "minimal", "low", "medium", "high", "max"],
+		api: "openai-responses",
+		baseUrl: "https://api.openai.com/v1",
+		thinkingLevelMap: {
+			low: "low",
+			medium: "medium",
+			high: "high",
+			xhigh: "xhigh",
+			max: "max",
+		},
+		levels:
+			id === "small"
+				? ["low"]
+				: ["off", "minimal", "low", "medium", "high", "xhigh", "max"],
 	}));
 	all.push({
+		...all[0]!,
 		provider: "local",
 		id: "local",
 		name: "Local",
@@ -70,8 +62,7 @@ export function catalogHarness() {
 		getAvailable: vi.fn(() => Promise.resolve(all)),
 		getAvailableSnapshot: () => all,
 		getProviderAuthStatus: () => ({ configured: true }),
-		isUsingOAuth: (provider: string): boolean =>
-			provider === "openai-codex",
+		isUsingOAuth: (provider: string): boolean => provider === "openai",
 		getAuth: vi.fn(() =>
 			Promise.resolve({ auth: { apiKey: oauthToken() } }),
 		),
@@ -79,14 +70,9 @@ export function catalogHarness() {
 	};
 	const payload = {
 		models: [
+			liveModel("small"),
 			liveModel(),
 			liveModel("hidden", { visibility: "hide" }),
-			liveModel("small", {
-				priority: 0,
-				default_reasoning_level: "low",
-				supported_reasoning_levels: [{ effort: "low" }],
-				service_tiers: [],
-			}),
 			liveModel("not-in-pi"),
 		],
 	};

@@ -29,6 +29,7 @@ export const QuotaWindowSchema = z.object({
 	label: z.string(),
 	remaining: z.number().min(0).max(100),
 	detail: z.string(),
+	source: z.literal("codex-login").optional(),
 });
 
 /** Composer 境界では従来未検証だった `description` を未知キーとして扱う。 */

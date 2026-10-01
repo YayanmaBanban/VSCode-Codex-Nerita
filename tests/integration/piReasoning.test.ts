@@ -15,19 +15,44 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { PiProviderControls } from "../../apps/vscode-nerita/src/extension/backends/pi/PiProviderControls";
 import { neritaExtensionFactories } from "../../apps/vscode-nerita/src/extension/backends/pi/PiBuiltinExtensions";
-import { normalizeCodexModels } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexModelCatalog";
-import { liveModel, oauthToken } from "../unit/piCatalogHarness";
+import { oauthToken } from "../unit/piCatalogHarness";
+import { normalizeOpenAIModels } from "../../apps/vscode-nerita/src/extension/backends/pi/openai/OpenAIModelCatalog";
 
 /** HTTP で受け取った要求の検証対象。 */
 type WireRequest = {
 	reasoning: { effort: string };
-	input: { type?: string; reasoning?: { effort: string } }[];
+	input: {
+		type?: string;
+		role?: string;
+		content?: string | { type: string; text?: string }[];
+		reasoning?: { effort: string };
+	}[];
 	service_tier?: string;
 	metadata?: unknown;
+	instructions?: string;
+	multi_agent?: unknown;
 };
 
+/** 新 OAuth の developer 入力へ移されたシステム指示も、実送信の内容として検証する。 */
+function instructions(wire: WireRequest): string {
+	return [
+		wire.instructions ?? "",
+		...wire.input
+			.filter(
+				(item) => item.role === "developer" || item.role === "system",
+			)
+			.map((item) =>
+				typeof item.content === "string"
+					? item.content
+					: (item.content ?? [])
+							.map((part) => part.text ?? "")
+							.join("\n"),
+			),
+	].join("\n");
+}
+
 it.each(["gpt-6-astra", "gpt-6-sol"])(
-	"実SDKの%sで更新の許可と通常effortへの復帰を検証する",
+	"実 SDK の %s で通常推論・カタログ由来の Ultra・履歴復元を検証する",
 	async (modelId) => {
 		const directory = await mkdtemp(join(tmpdir(), "nerita-reasoning-"));
 		const requests: WireRequest[] = [];
@@ -143,7 +168,7 @@ it.each(["gpt-6-astra", "gpt-6-sol"])(
 			"fetch",
 			(url: string | URL | Request, init?: RequestInit) => {
 				expect(url instanceof Request ? url.url : url.toString()).toBe(
-					"https://chatgpt.com/backend-api/codex/responses",
+					"https://api.openai.com/v1/responses",
 				);
 				return realFetch(
 					`http://127.0.0.1:${address.port}/responses`,
@@ -166,15 +191,22 @@ it.each(["gpt-6-astra", "gpt-6-sol"])(
 				modelsStorePath: join(directory, "models-store.json"),
 				refreshOnCreate: false,
 			});
-			runtime.registerProvider("openai-codex", {
-				baseUrl: "https://chatgpt.com/backend-api",
-				api: "openai-codex-responses",
+			runtime.registerProvider("openai", {
+				baseUrl: "https://api.openai.com/v1",
+				api: "openai-responses",
 				apiKey: oauthToken(),
 				models: [
 					{
 						id: modelId,
 						name: "Fixture",
 						reasoning: true,
+						thinkingLevelMap: {
+							low: "low",
+							medium: "medium",
+							high: "high",
+							xhigh: "xhigh",
+							max: "max",
+						},
 						input: ["text"],
 						contextWindow: 128000,
 						maxTokens: 1024,
@@ -187,7 +219,7 @@ it.each(["gpt-6-astra", "gpt-6-sol"])(
 					},
 				],
 			});
-			const model = runtime.getModel("openai-codex", modelId)!;
+			const model = runtime.getModel("openai", modelId)!;
 			const settings = SettingsManager.inMemory({
 				transport: "sse",
 				cacheWarming: "off",
@@ -198,22 +230,32 @@ it.each(["gpt-6-astra", "gpt-6-sol"])(
 				},
 				retry: { enabled: false, provider: { maxRetries: 0 } },
 			});
-			const catalog = normalizeCodexModels({
-				models: [
-					liveModel(modelId, {
-						supports_reasoning_effort_updates: true,
-						supported_reasoning_levels: [
-							"low",
-							"medium",
-							"high",
-						].map((effort) => ({ effort })),
-					}),
-				],
-			});
+
 			/** 新しい `controls` を生成し、メモリー上の状態なしで既存履歴を復元する。 */
 			const open = async (store: SessionManager) => {
 				const controls = new PiProviderControls();
-				controls.bindCatalog(() => catalog);
+				controls.bindDelegation(() => true);
+				controls.bindCatalog(() =>
+					normalizeOpenAIModels({
+						models: [
+							{
+								slug: modelId,
+								display_name: "Fixture",
+								visibility: "list",
+								service_tiers: [{ id: "priority" }],
+								supported_reasoning_levels: [
+									"low",
+									"high",
+									"xhigh",
+									"max",
+									"ultra",
+								].map((effort) => ({ effort })),
+								multi_agent_reasoning_effort:
+									modelId === "gpt-6-astra" ? "xhigh" : null,
+							},
+						],
+					}),
+				);
 				const loader = new DefaultResourceLoader({
 					cwd: directory,
 					agentDir: join(directory, "agent"),
@@ -260,7 +302,7 @@ it.each(["gpt-6-astra", "gpt-6-sol"])(
 				});
 				return requests.at(-1)!;
 			};
-			if (modelId !== "gpt-6-astra") {
+			{
 				for (const level of ["low", "high", "low"]) {
 					const wire = await send(level, `request-level ${level}`);
 					expect(wire.reasoning.effort).toBe(level);
@@ -270,6 +312,29 @@ it.each(["gpt-6-astra", "gpt-6-sol"])(
 						),
 					).toBe(false);
 				}
+				current.controls.configure(
+					"fast-mode",
+					"on",
+					new AbortController().signal,
+				);
+				const ultra = await send("ultra", "request ultra");
+				expect(ultra.service_tier).toBe("priority");
+				expect(ultra.reasoning.effort).toBe(
+					modelId === "gpt-6-astra" ? "xhigh" : "max",
+				);
+				expect(ultra.multi_agent).toBeUndefined();
+				expect(instructions(ultra)).toContain("Ultra mode is enabled");
+				current.controls.configure(
+					"fast-mode",
+					"off",
+					new AbortController().signal,
+				);
+				const normal = await send("low", "return to normal");
+				expect(normal.service_tier).toBeUndefined();
+				expect(normal.reasoning.effort).toBe("low");
+				expect(instructions(normal)).not.toContain(
+					"Ultra mode is enabled",
+				);
 				const file = session.sessionManager.getSessionFile()!;
 				session.dispose();
 				current = await open(SessionManager.open(file));
@@ -283,61 +348,6 @@ it.each(["gpt-6-astra", "gpt-6-sol"])(
 				).toBe(false);
 				return;
 			}
-			expect((await send("medium", "one")).reasoning.effort).toBe(
-				"medium",
-			);
-			await send("high", "two");
-			const third = await send("low", "three");
-			expect(third.reasoning.effort).toBe("medium");
-			const efforts = (wire: WireRequest) =>
-				wire.input
-					.filter((item) => item.type === "configuration_update")
-					.map((item) => item.reasoning?.effort);
-			expect(efforts(third)).toEqual(["high", "low"]);
-			expect(third.metadata).toEqual({ localExtension: "yes" });
-			const file = session.sessionManager.getSessionFile()!;
-			session.dispose();
-			current = await open(SessionManager.open(file));
-			session = current.session;
-			expect(efforts(await send("low", "resumed"))).toEqual([
-				"high",
-				"low",
-			]);
-			session.dispose();
-			current = await open(
-				SessionManager.forkFrom(
-					file,
-					directory,
-					join(directory, "forks"),
-				),
-			);
-			session = current.session;
-			const fork = await send("high", "forked");
-			expect(fork.reasoning.effort).toBe("medium");
-			expect(efforts(fork)).toEqual(["high", "low", "high"]);
-			failNextResponse = true;
-			await expect(session.compact()).rejects.toThrow();
-			expect(efforts(requests.at(-1)!)).toEqual([]);
-			const afterFailure = await send("high", "after failed compaction");
-			expect(afterFailure.reasoning.effort).toBe("medium");
-			expect(efforts(afterFailure)).toEqual(["high", "low", "high"]);
-			await session.compact();
-			const compacted = await send("low", "after compaction");
-			expect(compacted.reasoning.effort).toBe("low");
-			expect(efforts(compacted)).toEqual([]);
-			current.controls.configure(
-				"fast-mode",
-				"on",
-				new AbortController().signal,
-			);
-			const fast = await send("high", "fast");
-			expect(fast.service_tier).toBe("priority");
-			expect(fast.reasoning.effort).toBe("low");
-			expect(efforts(fast)).toEqual(["high"]);
-			catalog![0]!.supportsReasoningEffortUpdates = false;
-			const unsupported = await send("medium", "unsupported capability");
-			expect(unsupported.reasoning.effort).toBe("medium");
-			expect(efforts(unsupported)).toEqual([]);
 		} finally {
 			session?.dispose();
 			vi.unstubAllGlobals();

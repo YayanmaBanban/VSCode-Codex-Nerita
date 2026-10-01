@@ -27,6 +27,29 @@ const result = (text: string) => ({
 	details: {},
 });
 
+it("構造化結果だけの通知を安全な本文へ変換し、共有通信の検証へ通す", async () => {
+	const h = await connected();
+	h.emit({
+		type: "tool_execution_end",
+		toolCallId: "structured",
+		toolName: "count",
+		result: {
+			content: [],
+			details: {},
+			structuredContent: { count: 3, apiKey: "never-send" },
+		},
+		isError: false,
+	});
+	const tool = h.controller.snapshot().tools.at(-1);
+	expect(tool?.resultDisplay).toEqual({
+		source: "structuredContent",
+		omitted: true,
+	});
+	expect(JSON.stringify(tool)).toContain("count");
+	expect(JSON.stringify(tool)).not.toContain("never-send");
+	h.complete();
+});
+
 it("多段の子ツール通知で親ID・入力・結果と表示順を保持する", async () => {
 	const h = await connected();
 	for (const [id, parentToolCallId] of [

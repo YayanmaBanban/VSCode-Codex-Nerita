@@ -64,7 +64,7 @@ export class PiModelCatalogService {
 		}
 	}
 
-	/** カタログの取得成功時は公開候補に絞り、未取得なら Pi の候補を維持する。 */
+	/** 取得済みのライブカタログと SDK の両方にある公開モデルだけを選択候補にする。 */
 	available(available = this.models.getAvailableSnapshot()) {
 		const result = available.filter((model) => {
 			const catalog = this.snapshot(model.provider);

@@ -15,6 +15,8 @@ import type { PiCatalogSnapshot, PiModelCatalogReader } from "./PiModelCatalog";
 export type PiModelControls = {
 	bind: (session: AgentSession) => void;
 	setCatalog?: (catalog: PiCatalogSnapshot) => void;
+	bindDelegation?: (read: () => boolean) => void;
+	delegationPrompt?: () => string | undefined;
 	reset: () => void;
 	snapshot: () => PiProviderControls;
 	readonly reasoningOptions: ConfigChoice[];
@@ -43,6 +45,7 @@ export type PiProvider = {
 		models: ModelRuntime,
 		session: AgentSession,
 		request: typeof fetch,
+		codexQuota?: PiQuotaReader,
 	) => PiQuotaReader;
 };
 

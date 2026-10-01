@@ -36,23 +36,15 @@
 									"maxLength": 300
 								},
 								"thinking": {
-									"anyOf": [
-										{
-											"type": "string",
-											"enum": [
-												"off",
-												"minimal",
-												"low",
-												"medium",
-												"high",
-												"xhigh",
-												"max"
-											]
-										},
-										{
-											"type": "string",
-											"const": "ultra"
-										}
+									"type": "string",
+									"enum": [
+										"off",
+										"minimal",
+										"low",
+										"medium",
+										"high",
+										"xhigh",
+										"max"
 									]
 								}
 							},
@@ -67,23 +59,15 @@
 									"const": "current"
 								},
 								"thinking": {
-									"anyOf": [
-										{
-											"type": "string",
-											"enum": [
-												"off",
-												"minimal",
-												"low",
-												"medium",
-												"high",
-												"xhigh",
-												"max"
-											]
-										},
-										{
-											"type": "string",
-											"const": "ultra"
-										}
+									"type": "string",
+									"enum": [
+										"off",
+										"minimal",
+										"low",
+										"medium",
+										"high",
+										"xhigh",
+										"max"
 									]
 								}
 							},

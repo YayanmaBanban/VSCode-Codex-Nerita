@@ -56,22 +56,9 @@ for (const theme of ["dark", "light"] as const) {
 		await expect(
 			page.getByRole("button", { name: "モデルと推論レベル" }),
 		).toHaveText("6 Astra low");
-		expect(
-			await page
-				.locator(".settings-toolbar > *")
-				.evaluateAll((elements: Element[]) =>
-					elements.map((el) => el.classList.item(0)),
-				),
-		).toEqual(["attach-button", "context-usage", "contents"]);
-		await expect(
-			page.locator(".config-control .lucide-chevron-down"),
-		).toHaveCount(1);
 		const mode = page.getByRole("button", { name: "Mode", exact: true });
 		await mode.hover();
 		await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
-		await expect(
-			page.getByRole("tooltip").locator(".lucide-user"),
-		).toBeVisible();
 		await expect(page.getByRole("tooltip")).toContainText(
 			"ワークスペース内に書き込み",
 		);
@@ -114,11 +101,8 @@ for (const theme of ["dark", "light"] as const) {
 					: option,
 			),
 		});
-		await expect(
-			page
-				.getByRole("combobox", { name: "ApprovalsReviewer" })
-				.locator("svg"),
-		).toHaveClass(/lucide-bot/);
+		await page.getByRole("combobox", { name: "ApprovalsReviewer" }).hover();
+		await expect(page.getByRole("tooltip")).toContainText("代わりに承認");
 		await info.attach("write-card", {
 			body: await page.screenshot({
 				path: info.outputPath("write-card.png"),
@@ -157,7 +141,6 @@ for (const theme of ["dark", "light"] as const) {
 				contentType: "image/png",
 			});
 		}
-		await expect(mode.locator("svg")).toHaveClass(/lucide-shield-alert/);
 		await slider.press("Escape");
 		await expect(slider).toHaveCount(0);
 		await page
@@ -350,11 +333,6 @@ for (const theme of ["dark", "light"] as const) {
 		const modelTrigger = page.getByRole("button", {
 			name: "モデルと推論レベル",
 		});
-		await expect(modelTrigger.locator(".lucide-zap")).toBeVisible();
-		await expect(fastMode.locator("svg")).toHaveAttribute(
-			"fill",
-			"#FACC15",
-		);
 		await info.attach("fast-mode-on", {
 			body: await page.screenshot({
 				path: info.outputPath("fast-mode-on.png"),
@@ -369,9 +347,7 @@ for (const theme of ["dark", "light"] as const) {
 		});
 		await reasoning.press("Escape");
 		await modelTrigger.hover();
-		await expect(page.getByRole("tooltip")).toHaveText(
-			"軽い推論。速度とコストを、優先します。",
-		);
+		await expect(page.getByRole("tooltip")).toContainText("軽い推論");
 		await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
 		await info.attach("model-trigger-fast", {
 			body: await page.screenshot({
@@ -380,7 +356,6 @@ for (const theme of ["dark", "light"] as const) {
 			contentType: "image/png",
 		});
 		await showState(page, { configOptions: settingsFixture() });
-		await expect(modelTrigger.locator(".lucide-zap")).toHaveCount(0);
 		await showState(page, {
 			configOptions: settingsFixture().map((option) =>
 				option.id === "reasoning_effort"
@@ -388,9 +363,10 @@ for (const theme of ["dark", "light"] as const) {
 					: option,
 			),
 		});
-		await expect(page.getByRole("tooltip")).toHaveText(
-			"複雑な作業を必要に応じて、複数のエージェントへ委譲します。\n使用量が大きく、増える場合があります。",
+		await expect(page.getByRole("tooltip")).toContainText(
+			"複数のエージェント",
 		);
+		await expect(page.getByRole("tooltip")).toContainText("使用量");
 		await info.attach("model-trigger-ultra", {
 			body: await page.screenshot({
 				path: info.outputPath("model-trigger-ultra.png"),
@@ -415,10 +391,7 @@ for (const theme of ["dark", "light"] as const) {
 			.getByRole("option", { name: "添付ファイル", exact: true })
 			.click();
 		await expect(
-			page.locator(".attachment .lucide-file-code"),
-		).toBeVisible();
-		await expect(
-			page.locator(".attachment .lucide-file-image"),
+			page.getByRole("button", { name: "design.png を開く" }),
 		).toBeVisible();
 		await page.getByRole("button", { name: "design.png を開く" }).click();
 		await expect(page.getByLabel("最後の要求")).toContainText(

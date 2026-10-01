@@ -1,6 +1,22 @@
 // Host の色変数がない環境の配色と、body へのテーマ注入・切替を確認する。
 import { test, expect } from "@playwright/test";
 
+/** 配色の数値を固定せず、背景の明暗と前景の読みやすさを確認する。 */
+function luminance(color: string) {
+	const channels = color
+		.match(/[\d.]+/g)!
+		.slice(0, 3)
+		.map((value) => {
+			const channel = Number(value) / 255;
+			return channel <= 0.04045
+				? channel / 12.92
+				: ((channel + 0.055) / 1.055) ** 2.4;
+		});
+	return (
+		channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722
+	);
+}
+
 for (const scheme of ["light", "dark"] as const) {
 	for (const story of ["pi-guardrails--editor", "pi-workflow--editor"]) {
 		test(`テーマ変数なしの独立画面: ${story} ${scheme}`, async ({
@@ -19,10 +35,10 @@ for (const scheme of ["light", "dark"] as const) {
 			await expect(page.locator("html")).not.toHaveAttribute(
 				"data-storybook-theme",
 			);
-			await expect(page.locator("body")).toHaveCSS(
-				"background-color",
-				scheme === "light" ? "rgb(247, 249, 249)" : "rgb(22, 25, 29)",
-			);
+			const background = await page
+				.locator("body")
+				.evaluate((body) => getComputedStyle(body).backgroundColor);
+			expect(luminance(background) > 0.5).toBe(scheme === "light");
 			await info.attach(`fallback-${story}-${scheme}`, {
 				body: await page.screenshot({
 					path: info.outputPath(`fallback-${scheme}.png`),
@@ -56,18 +72,22 @@ for (const scheme of ["light", "dark"] as const) {
 			"data-storybook-theme",
 		);
 		const actions = page.locator(".message-actions > div").last();
-		await expect(actions.getByRole("button").first()).toHaveCSS(
-			"color",
-			scheme === "light" ? "rgb(36, 46, 54)" : "rgb(223, 228, 233)",
+		const background = luminance(
+			await actions.evaluate(
+				(element) => getComputedStyle(element).backgroundColor,
+			),
 		);
-		await expect(actions).toHaveCSS(
-			"background-color",
-			scheme === "light" ? "rgb(234, 240, 241)" : "rgb(32, 37, 43)",
+		const foreground = luminance(
+			await actions
+				.getByRole("button")
+				.first()
+				.evaluate((element) => getComputedStyle(element).color),
 		);
-		await expect(actions).toHaveCSS(
-			"border-top-color",
-			scheme === "light" ? "rgb(203, 211, 218)" : "rgb(42, 43, 44)",
-		);
+		expect(background > 0.5).toBe(scheme === "light");
+		expect(
+			(Math.max(background, foreground) + 0.05) /
+				(Math.min(background, foreground) + 0.05),
+		).toBeGreaterThanOrEqual(4.5);
 		expect(
 			await page
 				.locator("body")

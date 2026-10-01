@@ -14,6 +14,7 @@ export class PiQuotaService implements PiQuotaReader {
 		private session: AgentSession,
 		private request: typeof fetch = fetch,
 		private providers: PiProviders = piProviders,
+		private codexQuota?: PiQuotaReader,
 	) {}
 
 	/** プロバイダーをまたぐ保持は禁止し、モデル間の共有関係だけ登録先に委譲する。 */
@@ -46,6 +47,7 @@ export class PiQuotaService implements PiQuotaReader {
 				this.models,
 				this.session,
 				this.request,
+				this.codexQuota,
 			).read(signal);
 			signal.throwIfAborted();
 			return this.session.model?.provider === model.provider &&

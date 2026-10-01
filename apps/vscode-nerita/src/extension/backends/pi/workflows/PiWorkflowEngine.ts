@@ -1,4 +1,4 @@
-// 導入済みの対応版からスクリプト実行部だけを読み込み、子起動は Host へ戻す。
+// 導入済みパッケージの実行 API を検証し、子起動は Host へ戻す。
 import { readFile, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -30,7 +30,7 @@ export type PiWorkflowEngine = {
 	}): Promise<{ value: unknown }>;
 };
 
-/** 任意パスや別バージョンへフォールバックしない。拡張の index は実行しない。 */
+/** 指定パッケージ内の実行部だけを読み込む。拡張の index は実行しない。 */
 export async function loadWorkflowEngine(
 	directory: string,
 ): Promise<PiWorkflowEngine> {
@@ -38,12 +38,8 @@ export async function loadWorkflowEngine(
 	const metadata: unknown = JSON.parse(
 		await readFile(join(root, "package.json"), "utf8"),
 	);
-	if (
-		!isRecord(metadata) ||
-		metadata.name !== "pi-subagents" ||
-		metadata.version !== "0.71.0"
-	) {
-		throw new Error("ワークフローには pi-subagents 0.71.0 が必要です。");
+	if (!isRecord(metadata) || metadata.name !== "pi-subagents") {
+		throw new Error("ワークフローには pi-subagents が必要です。");
 	}
 	const path = await realpath(
 		join(root, "src/workflows/scripted-workflow.js"),

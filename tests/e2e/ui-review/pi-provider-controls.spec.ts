@@ -38,11 +38,11 @@ for (const theme of ["dark", "light"] as const) {
 		await reasoning.press("End");
 		await expect(request).toContainText('"configId":"reasoning_effort"');
 		await expect(request).toContainText('"value":"ultra"');
+		await expect(fast).not.toBeChecked();
 		await fast.focus();
-		await page.keyboard.press("Space");
-		await expect(request).toContainText('"configId":"fast-mode"');
-		await expect(request).toContainText('"value":"on"');
+		await fast.press("Space");
 		await expect(fast).toBeChecked();
+		await expect(request).toContainText('"configId":"fast-mode"');
 		await expect(reasoning).toHaveAttribute("aria-valuetext", "Ultra");
 		await info.attach("model-card", {
 			body: await page.screenshot({
@@ -51,20 +51,30 @@ for (const theme of ["dark", "light"] as const) {
 			contentType: "image/png",
 		});
 		await reasoning.press("Escape");
-		await expect(trigger.locator(".lucide-zap")).toBeVisible();
 		await trigger.hover();
 		await expect(page.getByRole("tooltip")).toContainText(
 			"複雑な作業を必要に応じて、複数のエージェントへ委譲します。",
 		);
+		await page.getByRole("progressbar", { name: "利用枠の残量" }).focus();
 		await page.getByRole("progressbar", { name: "利用枠の残量" }).hover();
 		await expect(
 			page.getByRole("tooltip", { name: /利用枠の残量/ }),
-		).toContainText("5h: 68%");
+		).toContainText("Weekly: 82%");
 		await expect(
 			page.getByRole("tooltip", { name: /利用枠の残量/ }),
-		).toContainText("Weekly: 82%");
-		await info.attach("ultra-fast-quota", {
-			body: await page.screenshot({ fullPage: true }),
+		).toContainText("Codexのログイン情報から取得中");
+		const quotaTooltip = page.getByRole("tooltip", {
+			name: /利用枠の残量/,
+		});
+		await expect(quotaTooltip.locator("hr")).toHaveCount(2);
+		await expect(quotaTooltip).toHaveText(
+			/利用枠の残量Weekly: 82%リセット: .*Codexのログイン情報から取得中/,
+		);
+		await info.attach("ultra-quota", {
+			body: await page.screenshot({
+				fullPage: true,
+				path: info.outputPath("quota-source.png"),
+			}),
 			contentType: "image/png",
 		});
 		await provider.click();
@@ -81,9 +91,7 @@ for (const theme of ["dark", "light"] as const) {
 			page.getByRole("progressbar", { name: "利用枠の残量" }),
 		).toHaveCount(0);
 		await provider.click();
-		await page
-			.getByRole("option", { name: "openai-codex", exact: true })
-			.click();
+		await page.getByRole("option", { name: "openai", exact: true }).click();
 		await trigger.click();
 		await expect(fast).not.toBeChecked();
 		await reasoning.press("Escape");
@@ -98,8 +106,13 @@ for (const theme of ["dark", "light"] as const) {
 		await page.goto(
 			`/iframe.html?id=chat-pi-provider-controls--no-metadata&viewMode=story&globals=theme:${theme === "light" ? "light" : "dark2026"}`,
 		);
-		await expect(trigger).toHaveText("Codex Max Model high");
+		await expect(trigger).toHaveText("GPT-6.1-Sol high");
 		await trigger.click();
+		await reasoning.focus();
+		await reasoning.press("End");
+		await expect(reasoning).toHaveAttribute("aria-valuetext", "max");
+		await expect(request).toContainText('"value":"max"');
+		await expect(page.getByText("Ultra", { exact: true })).toHaveCount(0);
 		await expect(fast).toHaveCount(0);
 		expect(
 			await page

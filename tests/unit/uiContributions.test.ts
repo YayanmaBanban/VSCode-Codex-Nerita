@@ -12,18 +12,18 @@ import { piHarness } from "./piHarness";
 
 const context: ContributionContext = {
 	backend: "pi",
-	provider: "openai-codex",
+	provider: "openai",
 	capabilities: ["quota"],
 };
 const item: NeritaUiContribution = {
 	id: "quota",
 	slot: "status",
 	control: { type: "progress", label: "Quota", value: 68 },
-	when: { backend: "pi", provider: "openai-codex", capability: "quota" },
+	when: { backend: "pi", provider: "openai", capability: "quota" },
 };
 
 describe("UI Contribution Registry", () => {
-	it.each(["openai", "openai-codex", "anthropic"])(
+	it.each(["openai", "anthropic"])(
 		"Piの%sはプロバイダーに応じたモデル設定を公開する",
 		(provider) => {
 			const state = initialState();
@@ -180,7 +180,7 @@ describe("UI Contribution Registry", () => {
 describe("UI Contribution通信", () => {
 	it("Pi Controllerが実行中モデルのproviderで解決し、再接続・無効化で再評価する", async () => {
 		const h = piHarness();
-		let provider = "openai-codex";
+		let provider = "openai";
 		Object.defineProperty(h.runtime, "model", {
 			get: () => ({ provider, id: "demo" }),
 		});
@@ -192,7 +192,7 @@ describe("UI Contribution通信", () => {
 						...item,
 						when: {
 							backend: "pi",
-							provider: "openai-codex",
+							provider: "openai",
 							capability: "model",
 						},
 					},

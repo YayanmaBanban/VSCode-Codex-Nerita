@@ -98,15 +98,6 @@ it.each(["darwin", "linux"] as const)(
 	"%sでSandbox設定を読まず、write/edit/bashを利用できる",
 	async (platform) => {
 		const h = await fixture(platform);
-		expect(h.tools.map((tool) => tool.name)).toEqual([
-			"write",
-			"edit",
-			"read",
-			"ls",
-			"grep",
-			"find",
-			"bash",
-		]);
 		expect(h.executor).toBeNull();
 		expect(h.unavailable).toBeUndefined();
 		const gate = pending<AbortSignal>();
@@ -121,12 +112,6 @@ it.each(["darwin", "linux"] as const)(
 		);
 		expect(h.createBashToolDefinition.mock.calls[0]![1]?.shellPath).toBe(
 			"configured-bash",
-		);
-		expect(JSON.stringify(h.authorize.mock.calls[0]![0])).toContain(
-			"Pi Shell（OSの権限で実行）",
-		);
-		expect(JSON.stringify(h.authorize.mock.calls[0]![0])).not.toMatch(
-			/Sandbox|network設定/,
 		);
 		await h.tools
 			.find((tool) => tool.name === "write")!

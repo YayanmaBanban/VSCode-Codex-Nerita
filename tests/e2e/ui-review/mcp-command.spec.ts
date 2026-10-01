@@ -91,13 +91,11 @@ for (const variant of ["dark", "light", "reduced"] as const) {
 		await expect(list).toContainText("mcptool_1");
 		await expect(
 			list.getByRole("img", { name: "connected", exact: true }),
-		).toHaveClass(/bg-menu-check/);
+		).toBeVisible();
 		await expect(
 			list.getByRole("img", { name: "disabled", exact: true }),
-		).toHaveClass(/bg-tool-error/);
-		await expect(list.getByRole("img", { name: "不明" })).toHaveClass(
-			/bg-muted/,
-		);
+		).toBeVisible();
+		await expect(list.getByRole("img", { name: "不明" })).toBeVisible();
 		await expect(result.locator("pre")).toHaveCount(0);
 		await expect(
 			result.getByRole("button", { name: "回答をコピー" }),

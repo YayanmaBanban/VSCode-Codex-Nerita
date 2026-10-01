@@ -81,7 +81,7 @@ function models() {
 	const model = {
 		provider: "provider",
 		id: "chosen",
-		api: "openai-codex-responses",
+		api: "openai-responses",
 	};
 	const completeSimple = vi.fn().mockResolvedValue(assistant("summary"));
 	return {
@@ -104,29 +104,31 @@ it("Pi は選択モデルの生成 API に推論とプロンプトを渡す", as
 	).resolves.toBe("summary");
 	expect(m.completeSimple).toHaveBeenCalledWith(
 		m.model,
-		expect.objectContaining({ systemPrompt: "summarize" }),
+		expect.objectContaining({
+			systemPrompt: "summarize",
+			messages: [
+				expect.objectContaining({
+					role: "user",
+					content: [{ type: "text", text: "source" }],
+				}),
+			],
+		}),
 		expect.objectContaining({
 			reasoning: "high",
 			signal: expect.any(AbortSignal) as unknown,
 		}),
 	);
 });
-it("Pi の Ultra は Responses の payload に反映する", async () => {
+it("子起動機構のないハンドオフでは Ultra を要求へ送信しない", async () => {
 	const m = models();
-	await generatePiHandoff(
-		m.runtime,
-		{ ...request(), model: "provider/chosen", effort: "ultra" },
-		["ultra"],
-	);
-	const options = m.completeSimple.mock.calls[0]![2] as {
-		onPayload: (value: unknown) => unknown;
-	};
-	expect(
-		options.onPayload({ model: "chosen", reasoning: { summary: "auto" } }),
-	).toEqual({
-		model: "chosen",
-		reasoning: { summary: "auto", effort: "ultra" },
-	});
+	await expect(
+		generatePiHandoff(
+			m.runtime,
+			{ ...request(), model: "provider/chosen", effort: "ultra" },
+			["ultra"],
+		),
+	).rejects.toThrow("Ultra");
+	expect(m.completeSimple).not.toHaveBeenCalled();
 });
 it("Pi の未対応推論指定は生成前に拒否する", async () => {
 	const m = models();

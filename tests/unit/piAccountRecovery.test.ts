@@ -82,7 +82,7 @@ it.each([false, true])(
 			sessionPending: false,
 			sessionId: "pi-1",
 		});
-		expect(f.session.model).toBe(validCurrent ? f.old : f.model);
+		expect(f.session.model).toEqual(validCurrent ? f.old : f.model);
 		await h.controller.dispose();
 	},
 );
@@ -103,7 +103,7 @@ it("保存直後に画面を閉じて操作が中断しても、利用可能モ�
 	f.getAvailable.mockImplementationOnce(() => gate.promise);
 	await f.account.authenticate(false, new AbortController().signal);
 	expect(f.account.snapshot().connection).toBe("ready");
-	expect(f.session.model).toBe(f.model);
+	expect(f.session.model).toEqual(f.model);
 });
 
 it("ログアウトから開いて削除しても、同じ画面でAPIキーとOAuthを選べる", async () => {

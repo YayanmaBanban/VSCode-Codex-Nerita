@@ -1,7 +1,6 @@
 // 現在の認証とモデル一覧を利用し、会話やツールを作らず要約だけを生成する。
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { HandoffRequest } from "../../session/HandoffContext";
-import { isRecord } from "@nerita/shared/validation";
 
 /** 選択されたモデルへ推論指定と取消を渡し、異常終了を要約として採用しない。 */
 export async function generatePiHandoff(
@@ -30,7 +29,7 @@ export async function generatePiHandoff(
 				},
 			],
 		},
-		piHandoffOptions(model.api, request),
+		piHandoffOptions(request),
 	);
 	if (response.stopReason !== "stop") {
 		throw new Error("ハンドオフ生成が完了しませんでした。");
@@ -41,16 +40,16 @@ export async function generatePiHandoff(
 		.join("\n");
 }
 
-/** Ultra は対応する `Responses` 要求だけに適用し、標準推論と区別する。 */
+/** ハンドオフは委譲せず、SDK の通常推論だけをモデルへ指定する。 */
 function piHandoffOptions(
-	api: string,
 	request: HandoffRequest,
 ): NonNullable<Parameters<ModelRuntime["completeSimple"]>[2]> {
-	const ultra = request.effort === "ultra";
-	if (ultra && api !== "openai-codex-responses") {
-		throw new Error("このモデルでは Ultra を指定できません。");
+	if (request.effort === "ultra") {
+		throw new Error(
+			"子起動ツールのないハンドオフ生成では Ultra を指定できません。",
+		);
 	}
-	const reasoning = ultra ? "high" : request.effort;
+	const reasoning = request.effort;
 	return {
 		signal: request.signal,
 		...(reasoning && reasoning !== "off"
@@ -60,24 +59,6 @@ function piHandoffOptions(
 							Parameters<ModelRuntime["completeSimple"]>[2]
 						>["reasoning"]
 					>,
-				}
-			: {}),
-		...(ultra
-			? {
-					onPayload: (payload: unknown) => {
-						if (!isRecord(payload)) {
-							throw new Error("Invalid handoff payload");
-						}
-						return {
-							...payload,
-							reasoning: {
-								...(isRecord(payload.reasoning)
-									? payload.reasoning
-									: {}),
-								effort: "ultra",
-							},
-						};
-					},
 				}
 			: {}),
 		cacheRetention: "none",

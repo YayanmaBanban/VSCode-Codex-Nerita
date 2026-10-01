@@ -125,6 +125,16 @@ describe("Composer / UI contribution contract", () => {
 	it("利用枠と進捗は有限の 0〜100 を受理し、未取得と空配列を区別する", () => {
 		expect(validComposerField("quota", null)).toBe(true);
 		expect(validComposerField("quota", [])).toBe(false);
+		for (const [source, accepted] of [
+			["codex-login", true],
+			["unknown", false],
+		] as const) {
+			const windows = [{ ...window, source }];
+			expect(validComposerField("quota", windows)).toBe(accepted);
+			expect(
+				isUiContributions(contribution({ type: "quota", windows })),
+			).toBe(accepted);
+		}
 		for (const [value, accepted] of [
 			[0, true],
 			[0.5, true],

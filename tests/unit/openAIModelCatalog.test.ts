@@ -1,6 +1,6 @@
 // 固定エンドポイント・OAuth 更新・account キャッシュと不正 HTTP 応答の公開境界を検証する。
 import { describe, expect, it, vi } from "vitest";
-import { CodexModelCatalogService } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexModelCatalogService";
+import { OpenAIModelCatalogService } from "../../apps/vscode-nerita/src/extension/backends/pi/openai/OpenAIModelCatalogService";
 import { catalogHarness, oauthToken } from "./piCatalogHarness";
 
 describe("Codex OAuth live catalog transport", () => {
@@ -9,33 +9,20 @@ describe("Codex OAuth live catalog transport", () => {
 		await h.account.refreshCatalog(h.signal);
 		expect(h.models.getAuth).toHaveBeenCalled();
 		expect(h.request).toHaveBeenCalledWith(
-			`https://chatgpt.com/backend-api/codex/models?client_version=0.999.0`,
+			`https://api.openai.com/v1/models?client_version=0.999.0`,
 			expect.objectContaining({
 				redirect: "error",
 				headers: {
 					Authorization: `Bearer ${oauthToken()}`,
-					"ChatGPT-Account-Id": "fixture-account",
 					Accept: "application/json",
 				},
 			}),
 		);
 	});
 
-	it("同期OAuth snapshotが古くても非同期認証結果でmetadataを取得する", async () => {
-		const h = catalogHarness();
-		h.models.isUsingOAuth = () => false;
-		await h.account.refreshCatalog(h.signal);
-		expect(h.models.getAuth).toHaveBeenCalled();
-		expect(h.models.checkAuth).toHaveBeenCalled();
-		expect(h.request).toHaveBeenCalledOnce();
-		expect(h.account.snapshot().configOptions![0]!.options[0]?.name).toBe(
-			"Live small",
-		);
-	});
-
 	it("account変更後は前accountのcacheを返さない", async () => {
 		const h = catalogHarness();
-		const reader = new CodexModelCatalogService(h.sdkModels, h.request);
+		const reader = new OpenAIModelCatalogService(h.sdkModels, h.request);
 		expect(await reader.read(h.signal)).not.toBeNull();
 		h.models.getAuth.mockResolvedValue({
 			auth: { apiKey: oauthToken("another-account") },
@@ -62,9 +49,10 @@ describe("Codex OAuth live catalog transport", () => {
 				responses[failure as keyof typeof responses],
 			);
 			expect(
-				await new CodexModelCatalogService(h.sdkModels, h.request).read(
-					h.signal,
-				),
+				await new OpenAIModelCatalogService(
+					h.sdkModels,
+					h.request,
+				).read(h.signal),
 			).toBeNull();
 		},
 	);
@@ -91,7 +79,7 @@ describe("Codex OAuth live catalog transport", () => {
 						),
 					),
 			);
-			const reading = new CodexModelCatalogService(
+			const reading = new OpenAIModelCatalogService(
 				h.sdkModels,
 				h.request,
 			).read(h.signal);
@@ -104,16 +92,17 @@ describe("Codex OAuth live catalog transport", () => {
 		}
 	});
 
-	it("OAuthでない認証・不正JWT・取消では取得しない", async () => {
+	it("APIキーと取消では取得せず、opaque OAuth tokenは公開APIで使える", async () => {
 		const h = catalogHarness();
 		h.models.checkAuth.mockResolvedValue({ type: "api_key" });
-		const reader = new CodexModelCatalogService(h.sdkModels, h.request);
+		const reader = new OpenAIModelCatalogService(h.sdkModels, h.request);
 		expect(await reader.read(h.signal)).toBeNull();
 		h.models.checkAuth.mockResolvedValue({ type: "oauth" });
 		h.models.getAuth.mockResolvedValue({
 			auth: { apiKey: "invalid-secret-token" },
 		});
-		expect(await reader.read(h.signal)).toBeNull();
+		expect(await reader.read(h.signal)).not.toBeNull();
+		h.request.mockClear();
 		expect(await reader.read(AbortSignal.abort())).toBeNull();
 		expect(h.request).not.toHaveBeenCalled();
 	});

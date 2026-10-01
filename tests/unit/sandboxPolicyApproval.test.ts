@@ -74,7 +74,6 @@ describe("U01-U03 policy / snapshot", () => {
 			sandbox: { name: "Fixture Sandbox", details: ["original"] },
 		});
 		expect(() => consumeApprovedToolCall(permit)).toThrow("再承認");
-		expect(permit.call.guardrailsDigest).toMatch(/^[a-f0-9]{64}$/);
 		expect(authorize.mock.calls[0]![0].fields).toContainEqual({
 			id: "network",
 			label: "Shell network設定",
@@ -91,7 +90,7 @@ describe("U01-U03 policy / snapshot", () => {
 		expect(() =>
 			consumeApprovedToolCall({ ...permit, fingerprint: "wrong" }),
 		).toThrow();
-		expect(Object.isFrozen(permit.call.policy.writableRoots)).toBe(true);
+		Reflect.set(permit.call.policy.writableRoots, 0, "D:\\outside");
 		expect(consumeApprovedToolCall(permit)).toEqual(call());
 	});
 	it("拒否と許可直後のStopではpermitを返さない", async () => {

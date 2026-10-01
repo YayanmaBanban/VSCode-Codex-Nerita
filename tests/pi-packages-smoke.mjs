@@ -105,17 +105,12 @@ export default function(pi) {
 		request: async (url, options) => {
 			catalogRequests.push(String(url));
 			assert.equal(options.redirect, "error");
-			assert.equal(
-				options.headers["ChatGPT-Account-Id"],
-				"smoke-account",
-			);
+			assert.ok(options.headers.Authorization.startsWith("Bearer "));
 			if (String(url).includes("/wham/usage")) {
 				return new Response(null, { status: 503 });
 			}
 			assert.ok(
-				String(url).startsWith(
-					"https://chatgpt.com/backend-api/codex/models?client_version=",
-				),
+				String(url).startsWith("https://api.openai.com/v1/models"),
 			);
 			return Response.json({
 				models: [
@@ -124,20 +119,6 @@ export default function(pi) {
 						display_name: "Live Controls",
 						priority: 0,
 						visibility: "list",
-						default_reasoning_level: "high",
-						supported_reasoning_levels: [
-							"low",
-							"high",
-							"max",
-							"ultra",
-						].map((effort) => ({ effort })),
-						service_tiers: [
-							{
-								id: "priority",
-								name: "Fast",
-								description: "Smoke priority",
-							},
-						],
 					},
 				],
 			});
@@ -339,10 +320,10 @@ export default function(pi) {
 				max: "max",
 			},
 		};
-		session.modelRuntime.registerProvider("openai-codex", {
-			api: "openai-codex-responses",
+		session.modelRuntime.registerProvider("openai", {
+			api: "openai-responses",
 			apiKey: "isolated-controls-key",
-			baseUrl: "https://example.invalid",
+			baseUrl: "https://api.openai.com/v1",
 			models: [
 				controlsModel,
 				{ ...controlsModel, id: "controls-new", name: "New Pi model" },
@@ -358,19 +339,17 @@ export default function(pi) {
 		);
 		const token = `header.${Buffer.from(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "smoke-account" } })).toString("base64url")}.smoke`;
 		session.modelRuntime.isUsingOAuth = (provider) =>
-			provider === "openai-codex" || isUsingOAuth(provider);
+			provider === "openai" || isUsingOAuth(provider);
 		session.modelRuntime.getAuth = (provider, options) =>
-			provider === "openai-codex"
+			provider === "openai"
 				? Promise.resolve({ auth: { apiKey: token } })
 				: getAuth(provider, options);
 		session.modelRuntime.checkAuth = (provider, options) =>
-			provider === "openai-codex"
+			provider === "openai"
 				? Promise.resolve({ type: "oauth" })
 				: checkAuth(provider, options);
-		await session.account.selectModel(
-			"openai-codex/controls-test",
-			abort.signal,
-		);
+		await session.account.selectModel("openai/controls-test", abort.signal);
+		await session.account.refreshCatalog(abort.signal);
 		assert.deepEqual(session.getAvailableThinkingLevels(), [
 			"low",
 			"high",
@@ -384,7 +363,7 @@ export default function(pi) {
 			!session.account
 				.snapshot()
 				.configOptions[0].options.some(
-					(option) => option.value === "openai-codex/controls-new",
+					(option) => option.value === "openai/controls-new",
 				),
 		);
 		assert.equal(await session.quota.read(abort.signal), null);
@@ -393,36 +372,33 @@ export default function(pi) {
 			"Live Controls",
 		);
 		assert.equal(catalogRequests.length, 2);
+		await assert.rejects(
+			session.account.configure(
+				"reasoning_effort",
+				"ultra",
+				abort.signal,
+			),
+		);
+		await assert.rejects(
+			session.account.configure("fast-mode", "on", abort.signal),
+		);
 		await session.account.configure(
 			"reasoning_effort",
-			"ultra",
+			"max",
 			abort.signal,
 		);
-		await session.account.configure("fast-mode", "on", abort.signal);
 		assert.equal(session.thinkingLevel, "max");
-		assert.equal(
-			session.account.snapshot().piProviderControls.effectiveReasoning,
-			"ultra",
-		);
 		const rewritten =
 			await session.extensionRunner.emitBeforeProviderRequest({
 				reasoning: { effort: "max", summary: "auto" },
 				input: [],
 			});
-		assert.equal(rewritten.reasoning.effort, "ultra");
-		assert.equal(rewritten.reasoning.summary, "auto");
-		assert.equal(rewritten.service_tier, "priority");
+		assert.equal(rewritten.reasoning.effort, "max");
+		assert.equal(rewritten.service_tier, undefined);
+		assert.equal(rewritten.multi_agent, undefined);
 		assert.equal(rewritten.neritaLocalSmoke, true);
-		await session.account.configure("fast-mode", "off", abort.signal);
-		assert.equal(
-			session.account.snapshot().piProviderControls.effectiveReasoning,
-			"ultra",
-		);
 		await assert.rejects(
-			session.account.selectModel(
-				"openai-codex/controls-new",
-				abort.signal,
-			),
+			session.account.selectModel("openai/controls-new", abort.signal),
 		);
 		assert.equal(session.model.id, "controls-test");
 		await session.account.selectModel("local/smoke", abort.signal);

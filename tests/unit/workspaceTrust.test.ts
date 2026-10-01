@@ -309,10 +309,19 @@ it("子は親コンテキストを差し替えられず、新規rootを自動昇
 		parentPolicy: h.call.policy,
 	});
 	cleanup.push(child.dispose);
-	expect(child.options.trustContextId).toBe(h.call.policy.trustContextId);
-	await expect(evaluateTrust({ ...h.call, cwd: h.outside })).rejects.toThrow(
-		"未信頼",
-	);
+	const childCall = {
+		...h.call,
+		cwd: child.options.cwd,
+		policy: {
+			...h.call.policy,
+			trustContextId: child.options.trustContextId,
+		},
+	};
+	await expect(evaluateTrust(childCall)).rejects.toThrow("未信頼");
+	await h.store.setUserTrust(h.outside, true);
+	await expect(evaluateTrust(childCall)).resolves.toBeDefined();
+	await h.store.setUserTrust(h.cwd, false);
+	await expect(evaluateTrust(childCall)).rejects.toThrow("未信頼");
 });
 
 it("未信頼rootの拡張をロード候補から除外する", async () => {

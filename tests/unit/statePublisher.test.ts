@@ -53,7 +53,7 @@ test("連続出力を最新のカード差分へ集約し完了は即配信す�
 	expect(delta.toolUpdates).toHaveLength(1);
 	const restored = applyToolUpdates([tool, other], delta.toolUpdates!);
 	expect(restored[0]!.rawOutput).toEqual({ formatted_output: "100" });
-	expect(restored[1]).toBe(other);
+	expect(restored[1]).toEqual(other);
 	publisher.publish({
 		type: "state/patch",
 		revision: 101,

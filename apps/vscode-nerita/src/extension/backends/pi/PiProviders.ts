@@ -1,17 +1,15 @@
 // 組み込みプロバイダー固有機能の登録一覧。共通処理にプロバイダー名の分岐を追加しない。
 import type { PiProviders } from "./PiProvider";
-import { CodexProviderControls } from "./codex/CodexProviderControls";
-import { CodexQuotaService } from "./codex/CodexQuotaService";
-import { codexQuotaGroup } from "./codex/CodexQuotaGroup";
-import { CodexModelCatalogService } from "./codex/CodexModelCatalogService";
+import { OpenAIProviderControls } from "./openai/OpenAIProviderControls";
+import { OpenAIQuotaService } from "./openai/OpenAIQuotaService";
+import { OpenAIModelCatalogService } from "./openai/OpenAIModelCatalogService";
 
 export const piProviders: PiProviders = {
-	"openai-codex": {
+	openai: {
 		createCatalog: (models, request) =>
-			new CodexModelCatalogService(models, request),
-		quotaGroup: codexQuotaGroup,
-		createControls: () => new CodexProviderControls(),
-		createQuota: (models, session, request) =>
-			new CodexQuotaService(models, session, request),
+			new OpenAIModelCatalogService(models, request),
+		createControls: () => new OpenAIProviderControls(),
+		createQuota: (models, session, request, codexQuota) =>
+			new OpenAIQuotaService(models, session, request, codexQuota),
 	},
 };

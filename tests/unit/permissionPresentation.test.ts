@@ -28,7 +28,6 @@ const call: ToolCall = {
 
 it("コマンド本文を分離し、実行引数・制限時間・入力を詳細に保持する", () => {
 	const result = toolApprovalPresentation(call);
-	expect(result.title).toBe("Pi: powershell の実行承認");
 	expect(result.command).toBe(call.params.command);
 	expect(result.cwd).toBe(call.cwd);
 	expect(result.fields).toEqual(

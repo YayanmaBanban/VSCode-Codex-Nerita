@@ -46,6 +46,7 @@ export class PiAccount {
 		private supportedThinking?: (
 			model: NonNullable<AgentSession["model"]>,
 		) => string[],
+		private deviceId?: () => Promise<string>,
 	) {
 		controls.bind(session);
 		controls.bindCatalog((provider) => catalog.snapshot(provider));
@@ -126,15 +127,9 @@ export class PiAccount {
 		};
 	}
 
-	/** Pi の利用可能モデルから選ぶ。カタログを取得済みの場合は、その公開候補にも含まれるモデルに限定する。 */
+	/** 表示済みの候補で切り替え、操作の完了をモデル一覧の外部再取得で待たせない。 */
 	async selectModel(value: string, signal: AbortSignal): Promise<void> {
-		const available = await this.models.getAvailable(undefined, { signal });
-		const target = available.find(
-			(item) => `${item.provider}/${item.id}` === value,
-		);
-		if (target) {
-			await this.catalog.refresh(target.provider, signal);
-		}
+		const available = this.models.getAvailableSnapshot();
 		const model = this.catalog
 			.available(available)
 			.find((item) => `${item.provider}/${item.id}` === value);
@@ -229,10 +224,18 @@ export class PiAccount {
 							signal: operationSignal,
 						});
 					} else {
+						const deviceId =
+							type === "oauth" && provider === "openai"
+								? await this.deviceId?.()
+								: undefined;
+						operationSignal.throwIfAborted();
 						await this.models.login(
 							provider,
 							type,
 							this.service!.interaction(operationSignal),
+							deviceId
+								? { getDeviceId: () => deviceId }
+								: undefined,
 						);
 						authenticatedProvider = provider;
 					}
@@ -274,7 +277,12 @@ export class PiAccount {
 		}
 		const model =
 			candidates.find(
-				(model) => model.provider === (provider ?? current?.provider),
+				(model) =>
+					model.provider ===
+					(provider ??
+						(current?.provider === "openai-codex"
+							? "openai"
+							: current?.provider)),
 			) ?? candidates[0];
 		if (model) {
 			await this.session.setModel(model);

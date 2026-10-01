@@ -82,6 +82,9 @@ it("resume は同じ SDK を使い、fork は完了時の会話を独立して�
 			{ agent: "worker", task: definition.steps[0]!.task },
 			abort.signal,
 		);
+		const forkContext = structuredClone(
+			sessions[0]!.contextSource!.buildSessionContext().messages,
+		);
 		const review = await group.launch(
 			"review",
 			{
@@ -109,12 +112,7 @@ it("resume は同じ SDK を使い、fork は完了時の会話を独立して�
 		);
 		expect(open).toHaveBeenCalledTimes(3);
 		expect(sessions[0]!.prompt).toHaveBeenCalledTimes(2);
-		expect(options[1]!.initialMessages).toHaveLength(2);
-		expect(
-			options[1]!.initialMessages?.some((message) =>
-				JSON.stringify(message).includes("レビュー結果を反映"),
-			),
-		).toBe(false);
+		expect(options[1]!.initialMessages).toEqual(forkContext);
 		await expect(
 			group.launch(
 				"fix",

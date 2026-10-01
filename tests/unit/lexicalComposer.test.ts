@@ -13,7 +13,6 @@ import { pathText } from "@nerita/shared/composerReferences";
 import {
 	$readParts,
 	$writeParts,
-	contentKey,
 } from "../../apps/nerita-ui/src/chat/composer/content";
 import {
 	validDraftParts,
@@ -55,8 +54,8 @@ describe("Lexical下書きの変換", () => {
 			},
 		});
 		editor.update(() => $writeParts(parts), { discrete: true });
-		expect(contentKey(editor.getEditorState().read($readParts))).toBe(
-			contentKey(parts),
+		expect(editor.getEditorState().read($readParts)).toMatchObject(
+			parts.map(({ id: _id, ...part }) => part),
 		);
 		expect(
 			validDraftParts(
@@ -67,8 +66,8 @@ describe("Lexical下書きの変換", () => {
 		editor.setEditorState(
 			editor.parseEditorState(JSON.stringify(editor.getEditorState())),
 		);
-		expect(contentKey(editor.getEditorState().read($readParts))).toBe(
-			contentKey(parts),
+		expect(editor.getEditorState().read($readParts)).toMatchObject(
+			parts.map(({ id: _id, ...part }) => part),
 		);
 	});
 	it("空の前後・複数ブロック・改行・タブを保存と復元で保持する", () => {
@@ -88,15 +87,17 @@ describe("Lexical下書きの変換", () => {
 		];
 		editor.update(() => $writeParts(parts), { discrete: true });
 		const restored = editor.getEditorState().read($readParts);
-		expect(contentKey(restored)).toBe(contentKey(parts));
+		expect(restored).toMatchObject(
+			parts.map(({ id: _id, ...part }) => part),
+		);
 		expect(
 			validDraftParts(parts.map((part) => part.text).join(""), restored),
 		).toBe(true);
 		const json = JSON.stringify(editor.getEditorState());
 		editor.setEditorState(editor.parseEditorState(json));
-		expect(
-			editor.getEditorState().read(() => contentKey($readParts())),
-		).toBe(contentKey(parts));
+		expect(editor.getEditorState().read($readParts)).toMatchObject(
+			parts.map(({ id: _id, ...part }) => part),
+		);
 	});
 	it("通常段落が複数ある場合は改行でまとめる", () => {
 		const editor = createEditor({

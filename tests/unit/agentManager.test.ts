@@ -49,14 +49,17 @@ function store(efforts = ["low", "medium", "high"]) {
 						editable: true,
 					},
 				],
-				defaults: {},
+				defaults: {
+					defaultModel: settings.defaultModel,
+					defaultThinking: settings.defaultThinking,
+				},
 				userSettings: "{}",
 				modelScope: "{}",
 				fingerprint: "definition",
 			};
 		},
 		() =>
-			["new", "gpt-6-sol", "openai-codex/gpt-6-sol"].map((value) => ({
+			["new", "gpt-6-sol", "openai/gpt-6-sol"].map((value) => ({
 				name: value,
 				value,
 				efforts,
@@ -72,28 +75,28 @@ afterEach(async () => {
 });
 
 describe("Agent Manager persistence", () => {
-	it("saves and reloads provider-supported Ultra in Pi agent, defaults and handoff settings", async () => {
-		const manager = store(["low", "high", "ultra"]);
+	it("saves and reloads SDK max in Pi agent, defaults and handoff settings", async () => {
+		const manager = store(["low", "high", "max"]);
 		const base = { id: 1, workspace: "test" };
 		await manager.save({
 			...base,
 			type: "agent",
 			generation: (await manager.read()).generation,
 			agentId: "pi:reviewer",
-			edit: { model: "new", thinking: "ultra" },
+			edit: { model: "new", thinking: "max" },
 		});
-		expect((await manager.read()).agents[0]?.edit.thinking).toBe("ultra");
+		expect((await manager.read()).agents[0]?.edit.thinking).toBe("max");
 		await manager.save({
 			...base,
 			type: "defaults",
 			generation: (await manager.read()).generation,
-			defaults: { defaultModel: "new", defaultThinking: "ultra" },
+			defaults: { defaultModel: "new", defaultThinking: "max" },
 		});
 		const config = defaultHandoff();
 		config.backends.pi = {
 			strategy: "fixed",
-			model: "openai-codex/gpt-6-sol",
-			thinking: "ultra",
+			model: "openai/gpt-6-sol",
+			thinking: "max",
 		};
 		await manager.save({
 			...base,
@@ -101,7 +104,16 @@ describe("Agent Manager persistence", () => {
 			generation: (await manager.read()).generation,
 			config,
 		});
-		expect((await manager.read()).handoff).toEqual(config);
+		const restored = await store(["low", "high", "max"]).read();
+		expect(restored.agents[0]?.edit).toEqual({
+			model: "new",
+			thinking: "max",
+		});
+		expect(restored.piDefaults).toEqual({
+			defaultModel: "new",
+			defaultThinking: "max",
+		});
+		expect(restored.handoff).toEqual(config);
 	});
 	it("rejects unsupported efforts in agent, defaults and fixed handoff saves", async () => {
 		const manager = store();
@@ -271,7 +283,7 @@ describe("Agent Manager persistence", () => {
 			backends: {
 				pi: {
 					strategy: "fixed",
-					model: "openai-codex/gpt-6-sol",
+					model: "openai/gpt-6-sol",
 					thinking: "high",
 				},
 				codex: {
@@ -413,14 +425,23 @@ describe("configuration validation", () => {
 		}
 	});
 	it("requires workspace and generation and rejects arbitrary file paths in payloads", () => {
-		expect(
-			managerRequestSchema.safeParse({
-				type: "agent",
-				id: 1,
-				agentId: "x",
-				edit: {},
-			}).success,
-		).toBe(false);
+		const request = {
+			type: "agent",
+			id: 1,
+			workspace: "workspace",
+			generation: "generation",
+			agentId: "x",
+			edit: {},
+		};
+		expect(managerRequestSchema.safeParse(request).success).toBe(true);
+		for (const field of ["workspace", "generation"]) {
+			expect(
+				managerRequestSchema.safeParse({
+					...request,
+					[field]: undefined,
+				}).success,
+			).toBe(false);
+		}
 		expect(
 			managerRequestSchema.safeParse({
 				type: "handoff",

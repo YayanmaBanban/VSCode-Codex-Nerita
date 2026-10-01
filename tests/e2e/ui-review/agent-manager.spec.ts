@@ -1,7 +1,7 @@
 // 実フォームで Pi・Codex・ハンドオフの保存操作と狭幅表示を確認する。
 import { test, expect } from "@playwright/test";
 
-test("handoff keeps all models visible after selection and offers Ultra for every supported model", async ({
+test("handoff keeps all models visible after selection and uses SDK thinking for Pi and provider effort for Codex", async ({
 	page,
 }, info) => {
 	await page.goto("/iframe.html?id=agent-manager--settings&viewMode=story");
@@ -13,7 +13,7 @@ test("handoff keeps all models visible after selection and offers Ultra for ever
 			backend === "pi" ? "Thinking" : "Reasoning effort",
 			{ exact: true },
 		);
-		const prefix = backend === "pi" ? "openai-codex/" : "";
+		const prefix = backend === "pi" ? "openai/" : "";
 		await model.selectOption(`${prefix}gpt-6-luna`);
 		await expect(
 			model.locator(`option[value="${prefix}gpt-6-astra"]`),
@@ -24,8 +24,15 @@ test("handoff keeps all models visible after selection and offers Ultra for ever
 		await expect(effort.locator('option[value="ultra"]')).toHaveCount(0);
 		for (const id of ["gpt-6-astra", "gpt-6-sol", "gpt-5.6-sol"]) {
 			await model.selectOption(`${prefix}${id}`);
-			await effort.selectOption("ultra");
-			await expect(effort).toHaveValue("ultra");
+			await effort.selectOption(backend === "pi" ? "max" : "ultra");
+			await expect(effort).toHaveValue(
+				backend === "pi" ? "max" : "ultra",
+			);
+			if (backend === "pi") {
+				await expect(
+					effort.locator('option[value="ultra"]'),
+				).toHaveCount(0);
+			}
 		}
 	}
 	await page.getByRole("button", { name: "ハンドオフ設定を保存" }).click();
@@ -60,7 +67,7 @@ for (const theme of ["dark", "light"] as const) {
 			await page.getByLabel("セッション内の起動上限").fill("5");
 			await page
 				.getByLabel("モデル", { exact: true })
-				.selectOption("openai-codex/gpt-6-sol");
+				.selectOption("openai/gpt-6-sol");
 			await page
 				.getByLabel("Default thinking", { exact: true })
 				.selectOption("low");
@@ -80,7 +87,7 @@ for (const theme of ["dark", "light"] as const) {
 			await page.getByLabel("有効／無効").selectOption("disabled");
 			await page
 				.getByLabel("モデル", { exact: true })
-				.selectOption("openai-codex/gpt-6-sol");
+				.selectOption("openai/gpt-6-sol");
 			await page
 				.getByLabel("Thinking", { exact: true })
 				.selectOption("low");
@@ -141,9 +148,7 @@ for (const theme of ["dark", "light"] as const) {
 				.getByRole("button", { name: "ハンドオフ", exact: true })
 				.click();
 			await page.getByLabel("pi Strategy").selectOption("fixed");
-			await page
-				.getByLabel("pi Model")
-				.selectOption("openai-codex/gpt-6-sol");
+			await page.getByLabel("pi Model").selectOption("openai/gpt-6-sol");
 			await page.getByLabel("codex Strategy").selectOption("fixed");
 			await page.getByLabel("codex Model").selectOption("gpt-6-sol");
 			await page
@@ -154,7 +159,7 @@ for (const theme of ["dark", "light"] as const) {
 				.getByRole("button", { name: "ハンドオフ設定を保存" })
 				.click();
 			await expect(page.getByLabel("pi Model")).toHaveValue(
-				"openai-codex/gpt-6-sol",
+				"openai/gpt-6-sol",
 			);
 			await page.getByText("出力 JSON", { exact: true }).click();
 			await expect(page.locator("main pre")).toContainText(
@@ -175,7 +180,7 @@ for (const theme of ["dark", "light"] as const) {
 					.locator('option[value="off"]'),
 			).toHaveCount(0);
 			await expect(page.locator("main pre")).not.toContainText(
-				"openai-codex/gpt-6-sol",
+				"openai/gpt-6-sol",
 			);
 			await page.getByLabel("codex Strategy").focus();
 			await page.keyboard.press("Tab");

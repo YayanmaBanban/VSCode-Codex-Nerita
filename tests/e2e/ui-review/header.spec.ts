@@ -248,7 +248,7 @@ test("動きを減らす設定では接続演出を抑止する", async ({ page 
 	await expect(page.locator(".connection-confetti")).toHaveCount(0);
 });
 
-test("接続カーテンと待機中の境界線・エラー色", async ({ page }, info) => {
+test("接続カーテンと待機中の境界線・エラーの案内", async ({ page }, info) => {
 	await page.goto("/iframe.html?id=chat-header--transitions&viewMode=story");
 	const button = page.locator(".connection-button");
 	// 新しく現れる段階も停止し、撮影中に次の段階へ進むのを防ぐ。
@@ -302,10 +302,7 @@ test("接続カーテンと待機中の境界線・エラー色", async ({ page 
 			await expect(page.locator(".connection-beam")).toBeVisible();
 			await expect(button).toBeDisabled();
 		} else {
-			await expect(button.locator(".status-dot")).toHaveCSS(
-				"background-color",
-				"rgb(244, 135, 113)",
-			);
+			await expect(button).toHaveAccessibleName(/接続エラー.*再認証/);
 			for (const time of [0, 72, 180, 288, 360]) {
 				await button.evaluate((node, currentTime) => {
 					for (const animation of node.getAnimations()) {

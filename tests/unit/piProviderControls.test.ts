@@ -1,257 +1,204 @@
-// 実効推論・要求変換・モデル切替と通信検証の境界を検証する。
+// Ultra の Host 委譲・通常推論・権限失効と、通信の拒否境界を検証する。
 import { describe, expect, it } from "vitest";
-import type {
-	AgentSession,
-	ModelRuntime,
-} from "@earendil-works/pi-coding-agent";
 import { PiProviderControls } from "../../apps/vscode-nerita/src/extension/backends/pi/PiProviderControls";
-import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { isPiProviderControls } from "@nerita/shared/piProviderControls";
-import { createBuiltinUiRegistry } from "../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
-import { initialState } from "@nerita/shared/chatState";
+import { catalogHarness, liveModel } from "./piCatalogHarness";
 import { piHarness } from "./piHarness";
-import { piLiveCatalog } from "../fixtures/piLiveCatalog";
 
-/** モデル変更時に推論レベルを対応範囲内へ補正する、SDK の動作を模したセッションを用意する。 */
-function fixture() {
-	const models = [
-		{
-			provider: "openai-codex",
-			id: "max-model",
-			api: "openai-codex-responses",
-			name: "Codex",
-			levels: ["low", "high", "max"],
-		},
-		{
-			provider: "openai-codex",
-			id: "small",
-			api: "openai-codex-responses",
-			name: "Small",
-			levels: ["low", "high"],
-		},
-		{
-			provider: "anthropic",
-			id: "claude",
-			api: "anthropic-messages",
-			name: "Claude",
-			levels: ["low", "high"],
-		},
-	];
-	const session = {
-		model: models[0]!,
-		thinkingLevel: "high",
-		getAvailableThinkingLevels: () => session.model.levels,
-		setThinkingLevel: (level: string) => {
-			session.thinkingLevel = level;
-		},
-		setModel: (model: (typeof models)[number]) => {
-			session.model = model;
-			if (!model.levels.includes(session.thinkingLevel)) {
-				session.thinkingLevel = "high";
-			}
-			return Promise.resolve();
+/** 子起動が利用できる Host を模擬し、実行途中の失効も再現する。 */
+async function fixture() {
+	const h = catalogHarness();
+	h.payload.models[1] = liveModel("astra", {
+		supported_reasoning_levels: [
+			"low",
+			"high",
+			"xhigh",
+			"max",
+			"ultra",
+		].map((effort) => ({ effort })),
+		multi_agent_reasoning_effort: "xhigh",
+	});
+	let enabled = true;
+	h.account.controls.bindDelegation(() => enabled);
+	await h.account.refreshCatalog(h.signal);
+	return {
+		...h,
+		controls: h.account.controls,
+		disable: () => {
+			enabled = false;
 		},
 	};
-	const controls = new PiProviderControls();
-	const account = new PiAccount(
-		{
-			getAvailableSnapshot: () => models,
-			getAvailable: () => Promise.resolve(models),
-			getProviderAuthStatus: () => ({ configured: true }),
-			isUsingOAuth: () => false,
-		} as unknown as ModelRuntime,
-		session as unknown as AgentSession,
-		undefined,
-		controls,
-	);
-	account.catalog.snapshot = (provider) =>
-		provider === "openai-codex" ? piLiveCatalog : undefined;
-	account.catalog.refresh = () => Promise.resolve();
-	return { session, controls, account, signal: new AbortController().signal };
 }
-
-describe("Pi provider controls", () => {
-	it("Ultra対応モデル間はoverrideを維持し、SDK側の通常推論変更では解除する", () => {
-		const h = fixture();
-		h.controls.selectReasoning("ultra", h.signal);
-		h.session.model = { ...h.session.model, id: "another-max-model" };
-		h.session.thinkingLevel = "high";
-		expect(h.controls.snapshot()).toMatchObject({
-			thinkingLevel: "max",
-			effectiveReasoning: "ultra",
+describe("OpenAI provider controls", () => {
+	it("Fast は対応モデルへ priority を送り、能力の失効で解除する", async () => {
+		const h = await fixture();
+		h.payload.models[1] = liveModel("astra", {
+			service_tiers: [{ id: "priority" }],
 		});
-		h.session.setThinkingLevel("low");
-		expect(h.controls.snapshot()).toMatchObject({
-			thinkingLevel: "low",
-			reasoningOverride: null,
-		});
-	});
-	it("Ultraの標準基底をmaxに保ち、Fast Modeと独立して要求へ適用する", () => {
-		const h = fixture();
-		h.controls.selectReasoning("ultra", h.signal);
+		await h.account.refreshCatalog(h.signal);
 		h.controls.configure("fast-mode", "on", h.signal);
-		expect(h.controls.snapshot()).toMatchObject({
-			thinkingLevel: "max",
-			effectiveReasoning: "ultra",
-			reasoningOverride: "ultra",
-			fastMode: true,
-		});
-		const original = {
-			input: [],
-			reasoning: { effort: "max", summary: "auto" },
-			userExtension: true,
-		};
-		expect(
-			h.controls.rewrite(
-				original,
-				h.session.model as unknown as AgentSession["model"],
-			),
-		).toEqual({
-			...original,
-			reasoning: { effort: "ultra", summary: "auto" },
+		const payload = { model: "astra", input: [] };
+		expect(h.controls.rewrite(payload, h.sdkSession.model)).toEqual({
+			...payload,
 			service_tier: "priority",
 		});
-		expect(original.reasoning.effort).toBe("max");
-		h.controls.selectReasoning("low", h.signal);
+		expect(payload).not.toHaveProperty("service_tier");
+		expect(
+			h.controls.rewrite({ model: "another" }, h.sdkSession.model),
+		).toBeUndefined();
+		expect(
+			h.controls.rewrite(payload, {
+				...h.sdkSession.model!,
+				baseUrl: "https://example.invalid/v1",
+			}),
+		).toBeUndefined();
+		h.catalog.invalidate();
+		expect(h.controls.snapshot().fastMode).toBe(false);
+		expect(h.controls.configOptions).toEqual([]);
+		expect(h.controls.rewrite(payload, h.sdkSession.model)).toBeUndefined();
+	});
+	it("Ultra の対応と実推論値はライブカタログから取得し、通常推論は SDK に従う", async () => {
+		const h = await fixture();
+		expect(h.controls.reasoningOptions.map((o) => o.value)).toEqual([
+			...h.all[0]!.levels,
+			"ultra",
+		]);
+		h.controls.selectReasoning("ultra", h.signal);
 		expect(h.controls.snapshot()).toMatchObject({
-			effectiveReasoning: "low",
-			reasoningOverride: null,
-			fastMode: true,
+			thinkingLevel: "xhigh",
+			effectiveReasoning: "ultra",
+			fastMode: false,
 		});
-		h.controls.configure("fast-mode", "off", h.signal);
+		expect(h.controls.delegationPrompt()).toContain("subagent");
 		expect(
 			h.controls.rewrite(
-				original,
-				h.session.model as unknown as AgentSession["model"],
+				{ reasoning: { effort: "max" } },
+				h.sdkSession.model,
 			),
 		).toBeUndefined();
-	});
-	it("provider変更でclamp・固有設定解除・候補再生成を同時に公開する", async () => {
-		const h = fixture();
-		h.controls.selectReasoning("ultra", h.signal);
-		h.controls.configure("fast-mode", "on", h.signal);
-		await h.account.selectProvider("anthropic", h.signal);
-		const snapshot = h.account.snapshot();
-		expect(snapshot.piProviderControls).toMatchObject({
-			provider: "anthropic",
-			modelId: "claude",
-			effectiveReasoning: "high",
-			fastMode: false,
-			reasoningOverride: null,
-		});
-		expect(
-			snapshot.configOptions!.find((item) => item.id === "fast-mode"),
-		).toBeUndefined();
-		expect(
-			snapshot.configOptions!.find((item) => item.id === "model")!
-				.options,
-		).toHaveLength(1);
-		expect(() => h.controls.selectReasoning("ultra", h.signal)).toThrow();
+		expect(h.controls.configOptions).toEqual([]);
 		expect(() =>
 			h.controls.configure("fast-mode", "on", h.signal),
 		).toThrow();
-		await h.account.selectProvider("openai-codex", h.signal);
-		expect(h.controls.snapshot()).toMatchObject({
-			fastMode: false,
-			reasoningOverride: null,
-		});
+		h.controls.selectReasoning("low", h.signal);
+		expect(h.controls.delegationPrompt()).toBeUndefined();
 	});
-	it("低い推論上限・不正値・取消・別モデルへの要求ではoverrideしない", async () => {
-		const h = fixture();
-		h.controls.selectReasoning("ultra", h.signal);
-		expect(
-			h.controls.rewrite({}, {
-				provider: "anthropic",
-				id: "claude",
-			} as unknown as AgentSession["model"]),
-		).toBeUndefined();
-		await h.account.selectModel("openai-codex/small", h.signal);
-		expect(
-			h.controls.reasoningOptions.some((item) => item.value === "ultra"),
-		).toBe(false);
-		expect(h.controls.snapshot().effectiveReasoning).toBe("high");
+	it.each(["tool", "model", "provider", "effort", "endpoint"] as const)(
+		"変化 %s で Ultra を解除する",
+		async (change) => {
+			const h = await fixture();
+			h.controls.selectReasoning("ultra", h.signal);
+			if (change === "tool") {
+				h.disable();
+			}
+			if (change === "model") {
+				h.session.model = { ...h.session.model, id: "another" };
+			}
+			if (change === "provider") {
+				h.session.model = { ...h.session.model, provider: "local" };
+			}
+			if (change === "effort") {
+				h.session.setThinkingLevel("high");
+			}
+			if (change === "endpoint") {
+				h.session.model = {
+					...h.session.model,
+					baseUrl: "https://example.invalid/v1",
+				};
+			}
+			expect(h.controls.snapshot().reasoningOverride).toBeNull();
+			expect(h.controls.delegationPrompt()).toBeUndefined();
+		},
+	);
+	it("未対応モデル・子起動無効・取消・未知値では Ultra を有効化しない", async () => {
+		const h = await fixture();
+		h.disable();
 		expect(() => h.controls.selectReasoning("ultra", h.signal)).toThrow();
+		const next = await fixture();
+		next.session.model = next.all[3]!;
 		expect(() =>
-			h.controls.configure("fast-mode", "priority", h.signal),
+			next.controls.selectReasoning("ultra", next.signal),
 		).toThrow();
 		expect(() =>
-			h.controls.configure("fast-mode", "on", AbortSignal.abort()),
+			next.controls.selectReasoning("low", AbortSignal.abort()),
 		).toThrow();
-		await expect(
-			h.account.selectProvider("missing", h.signal),
-		).rejects.toThrow();
+		expect(() =>
+			next.controls.selectReasoning("persistent", next.signal),
+		).toThrow();
 	});
-	it("状態検証は不整合・秘密値の追加・未知レベルを拒否する", () => {
-		const value = fixture().controls.snapshot();
+	it("max に対応してもカタログ未取得・Ultra なしでは公開せず、認証変更で解除する", async () => {
+		const h = await fixture();
+		h.controls.selectReasoning("ultra", h.signal);
+		h.catalog.invalidate();
+		expect(h.controls.snapshot().reasoningOverride).toBeNull();
+		expect(
+			h.controls.reasoningOptions.map((option) => option.value),
+		).toEqual(h.all[0]!.levels);
+		expect(() => h.controls.selectReasoning("ultra", h.signal)).toThrow();
+		h.payload.models[1] = liveModel("astra", {
+			supported_reasoning_levels: [{ effort: "max" }],
+		});
+		await h.account.refreshCatalog(h.signal);
+		expect(
+			h.controls.reasoningOptions.map((option) => option.value),
+		).toEqual(h.all[0]!.levels);
+	});
+	it("カタログの effort が変わると解除し、新しい実推論値で再選択する", async () => {
+		const h = await fixture();
+		h.controls.selectReasoning("ultra", h.signal);
+		h.payload.models[1] = liveModel("astra", {
+			...h.payload.models[1],
+			multi_agent_reasoning_effort: "high",
+		});
+		await h.account.refreshCatalog(h.signal);
+		expect(h.controls.snapshot().reasoningOverride).toBeNull();
+		h.controls.selectReasoning("ultra", h.signal);
+		expect(h.session.thinkingLevel).toBe("high");
+		h.session.model = {
+			...h.session.model,
+			thinkingLevelMap: {
+				...h.session.model.thinkingLevelMap,
+				high: "unsupported",
+			},
+		};
+		expect(h.controls.snapshot().reasoningOverride).toBeNull();
+		expect(() => h.controls.selectReasoning("ultra", h.signal)).toThrow();
+	});
+	it("状態検証は実効値の不整合と秘密値を拒否する", () => {
+		const value = new PiProviderControls().snapshot();
 		expect(isPiProviderControls(value)).toBe(true);
-		for (const invalid of [
+		for (const bad of [
 			{ ...value, token: "secret" },
 			{ ...value, thinkingLevel: "ultra" },
 			{ ...value, effectiveReasoning: "ultra" },
 		]) {
-			expect(isPiProviderControls(invalid)).toBe(false);
+			expect(isPiProviderControls(bad)).toBe(false);
 		}
 	});
-	it("Controllerのconfig/set経由で固有設定を公開し、実行中と旧会話を拒否する", async () => {
-		const h = piHarness();
-		const setup = fixture();
-		h.runtime.account = setup.account;
+	it("Controller から変更でき、旧会話や実行中の変更は拒否する", async () => {
+		const f = await fixture(),
+			h = piHarness();
+		h.runtime.account = f.account;
 		await h.controller.connect();
-		const send = (configId: string, value: string, sessionId = "pi-1") =>
+		const send = (value: string, sessionId = "pi-1") =>
 			h.controller.receive({
 				type: "config/set",
 				requestId: crypto.randomUUID(),
 				sessionId,
-				configId,
+				configId: "reasoning_effort",
 				value,
 			});
-		await send("reasoning_effort", "ultra");
-		await send("fast-mode", "on");
-		expect(h.controller.snapshot().piProviderControls).toMatchObject({
-			effectiveReasoning: "ultra",
-			fastMode: true,
-		});
-		await send("fast-mode", "off", "old");
-		await h.send();
-		await send("provider", "anthropic");
-		expect(h.controller.snapshot().piProviderControls?.provider).toBe(
-			"openai-codex",
-		);
+		await send("ultra");
 		expect(
-			h.events.filter((event) => event.type === "request/failed"),
+			h.controller.snapshot().piProviderControls?.effectiveReasoning,
+		).toBe("ultra");
+		await send("low", "old");
+		await h.send();
+		await send("high");
+		expect(f.controls.snapshot().effectiveReasoning).toBe("ultra");
+		expect(
+			h.events.filter((e) => e.type === "request/failed"),
 		).toHaveLength(2);
 		await h.controller.dispose();
-	});
-	it("正規化済み利用枠をprovider名に依存せず登録し、切断時は公開しない", () => {
-		const registry = createBuiltinUiRegistry();
-		const state = {
-			...initialState(),
-			connection: "ready" as const,
-			quota: [{ label: "5h", remaining: 68, detail: "reset" }],
-		};
-		for (const backend of ["pi", "codex"] as const) {
-			const context = {
-				backend,
-				provider: "openai-codex",
-				capabilities: [],
-			};
-			expect(
-				registry
-					.resolve(state, context)
-					.items.filter((item) => item.slot === "status"),
-			).toMatchObject([
-				{ control: { type: "quota", windows: state.quota } },
-			]);
-			expect(
-				registry
-					.resolve(state, { ...context, provider: "google" })
-					.items.some((item) => item.slot === "status"),
-			).toBe(true);
-			expect(
-				registry
-					.resolve({ ...state, connection: "disconnected" }, context)
-					.items.some((item) => item.slot === "status"),
-			).toBe(false);
-		}
 	});
 });

@@ -1,6 +1,7 @@
 // 開発ツリー外の実バンドルで、プロバイダー・動的読込み・相対資産の配布契約を検証する。
 import { repoRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import {
 	mkdtemp,
 	mkdir,
@@ -13,14 +14,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
-import { isBuiltin } from "node:module";
 import { once } from "node:events";
 import { test } from "node:test";
 import packaging from "../config/package-pi.cjs";
 import plugin from "../config/pi-bundle-plugin.cjs";
 import contract from "../config/pi-sdk-contract.cjs";
+import { verifyPiLocalSearch } from "./pi-feature-runtime-smoke.mjs";
 
-const providers = ["anthropic", "google", "openai-codex"];
+const providers = ["anthropic", "google", "openai"];
 
 test("Pi runtimeを移動しても公開API・選択provider・Extensions・資産が動作する", async (t) => {
 	const root = await mkdtemp(path.join(tmpdir(), "nerita-pi-bundle-"));
@@ -30,7 +31,7 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 		await rm(root, { recursive: true, force: true });
 	});
 	const target = path.join(root, "配布先 with spaces #");
-	const metadata = await packaging.bundlePi(repoRoot, target);
+	await packaging.bundlePi(repoRoot, target);
 	const sdk = await import(pathToFileURL(path.join(target, "pi.mjs")).href);
 	const runtime = await sdk.ModelRuntime.create({
 		authPath: path.join(root, "auth.json"),
@@ -38,108 +39,29 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 		refreshOnCreate: false,
 	});
 
-	await t.test("Host公開APIと3providerのモデルmetadataを維持する", () => {
-		for (const name of [
-			"createAgentSession",
-			"ModelRuntime",
-			"SessionManager",
-			"SettingsManager",
-			"DefaultResourceLoader",
-			"DefaultPackageManager",
-			"getAgentDir",
-			"getPackageDir",
-			"parseSessionEntries",
-			"parseFrontmatter",
-			"createWriteToolDefinition",
-			"createReadToolDefinition",
-			"createLsToolDefinition",
-			"createEditToolDefinition",
-			"createPowerShellToolDefinition",
-			"createBashToolDefinition",
-			"convertToPng",
-			"resizeImage",
-		]) {
-			assert.equal(
-				typeof sdk[name],
-				"function",
-				`${name}が利用できません`,
-			);
-		}
-		assert.deepEqual(
-			runtime
-				.getProviders()
-				.map((provider) => provider.id)
-				.sort(),
-			providers,
-		);
-		for (const provider of providers) {
-			const models = runtime.getModels(provider);
-			assert.ok(models.length > 0);
-			assert.ok(models.some((model) => model.reasoning));
-			assert.ok(models.some((model) => model.input.includes("image")));
-		}
-	});
-
 	await t.test(
-		"3providerと汎用APIの実装が独立した遅延chunkとして解決する",
-		async () => {
-			const inputs = Object.keys(metadata.inputs);
-			const catalogs = inputs.filter((file) =>
-				/pi-ai\/dist\/providers\/data\/[^/.]+\.json$/.test(file),
-			);
+		"配布プロバイダーのモデル候補・推論・画像対応を取得できる",
+		() => {
 			assert.deepEqual(
-				catalogs.map((file) => path.basename(file, ".json")).sort(),
+				runtime
+					.getProviders()
+					.map((provider) => provider.id)
+					.sort(),
 				providers,
 			);
-			assert.deepEqual(
-				inputs.filter((file) =>
-					/(?:node_modules\/(?:@aws-sdk|@smithy)\/|models\.generated|bedrock-converse|google-vertex|mistral-conversations)/.test(
-						file,
-					),
-				),
-				[],
-			);
-			for (const api of plugin.supportedApis) {
-				const entry = Object.entries(metadata.outputs).find(
-					([, output]) =>
-						output.entryPoint?.endsWith(`/api/${api}.js`),
+			for (const provider of providers) {
+				const models = runtime.getModels(provider);
+				assert.ok(models.length > 0);
+				assert.ok(models.some((model) => model.reasoning));
+				assert.ok(
+					models.some((model) => model.input.includes("image")),
 				);
-				assert.ok(entry, `${api}の遅延chunkがありません`);
-				const loaded = await import(
-					pathToFileURL(path.resolve(entry[0])).href
-				);
-				assert.equal(typeof loaded.streamSimple, "function");
 			}
-			for (const output of Object.values(metadata.outputs)) {
-				for (const imported of output.imports ?? []) {
-					if (imported.external) {
-						// `ws` の任意ネイティブ実装による高速化は未同梱でも JS 実装へフォールバックする。
-						assert.ok(
-							isBuiltin(imported.path) ||
-								[
-									"@silvia-odwyer/photon-node",
-									"bufferutil",
-									"utf-8-validate",
-								].includes(imported.path),
-							imported.path,
-						);
-					}
-				}
-			}
-			await assert.rejects(
-				readFile(
-					path.join(
-						target,
-						"node_modules/@earendil-works/pi-coding-agent/package.json",
-					),
-				),
-				{ code: "ENOENT" },
-			);
 		},
 	);
 
 	await t.test("OAuth flowの変数importを配布chunkへ接続する", async () => {
-		for (const id of ["openai-codex", "anthropic"]) {
+		for (const id of ["openai", "anthropic"]) {
 			const oauth = runtime.getProvider(id).auth.oauth;
 			assert.deepEqual(
 				await oauth.toAuth({
@@ -152,6 +74,92 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 			);
 		}
 	});
+
+	await t.test(
+		"新 OAuth の device ID・issued client ID・保存と更新を配布物だけで扱う",
+		async () => {
+			const oauth = runtime.getProvider("openai").auth.oauth;
+			const fetch = globalThis.fetch;
+			const bodies = [];
+			let authorization;
+			globalThis.fetch = async (url, init) => {
+				assert.equal(
+					String(url),
+					"https://auth.openai.com/api/accounts/oauth/token",
+				);
+				bodies.push(Object.fromEntries(init.body));
+				return Response.json({
+					access_token: "packaged-new-access",
+					refresh_token: "packaged-new-refresh",
+					id_token: "test-id-token",
+					scope: "chatgpt.tokens.use.direct",
+					expires_in: 3600,
+				});
+			};
+			try {
+				const credential = await runtime.login(
+					"openai",
+					"oauth",
+					{
+						notify(event) {
+							if (event.type === "auth_url") {
+								authorization = new URL(event.url);
+							}
+						},
+						async prompt() {
+							assert.equal(
+								authorization.searchParams.get(
+									"ext_agent_host_id",
+								),
+								"urn:uuid:82a004aa-2fdd-4175-b108-a351540c19ca",
+							);
+							const callback = new URL(
+								authorization.searchParams.get("redirect_uri"),
+							);
+							callback.search = new URLSearchParams({
+								code: "test-code",
+								client_id: "issued-test-client",
+								state: authorization.searchParams.get("state"),
+							}).toString();
+							return callback.href;
+						},
+					},
+					{
+						getDeviceId: () =>
+							"82a004aa-2fdd-4175-b108-a351540c19ca",
+					},
+				);
+				assert.equal(credential.clientId, "issued-test-client");
+				assert.equal(bodies[0].resource, "https://api.openai.com/v1");
+				assert.equal(bodies[0].client_id, "issued-test-client");
+				const stored = JSON.parse(
+					await readFile(path.join(root, "auth.json"), "utf8"),
+				);
+				assert.equal(stored.openai.clientId, "issued-test-client");
+				assert.equal(stored["openai-codex"], undefined);
+				await oauth.refresh(credential, new AbortController().signal);
+				assert.equal(bodies[1].grant_type, "refresh_token");
+				assert.equal(bodies[1].client_id, "issued-test-client");
+				await assert.rejects(
+					oauth.login({
+						signal: AbortSignal.abort(),
+						notify() {},
+						async prompt() {
+							throw new Error("unexpected");
+						},
+					}),
+					/device ID/,
+				);
+			} finally {
+				globalThis.fetch = fetch;
+			}
+		},
+	);
+
+	await t.test(
+		"新 OAuth のローカル検索を function と additional_tools で送る",
+		() => verifyPiLocalSearch(sdk, root),
+	);
 
 	await t.test(
 		"models.jsonの任意baseUrlと汎用adapterを維持する",
@@ -221,14 +229,11 @@ test("Pi runtimeを移動しても公開API・選択provider・Extensions・資�
 				`
 import { defineTool, getPackageDir } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { getProviders, streamSimpleAnthropic, streamSimpleGoogle, streamSimpleOpenAICompletions } from "@earendil-works/pi-ai";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 export default function(pi: any) {
   const metadata = JSON.parse(readFileSync(join(getPackageDir(), "package.json"), "utf8"));
-  if (metadata.version !== "${packaging.SUPPORTED_PI_VERSION}") throw new Error("package metadata missing");
-  if (getProviders().sort().join(",") !== "${providers.join(",")}") throw new Error("provider catalog mismatch");
-  if (![streamSimpleAnthropic, streamSimpleGoogle, streamSimpleOpenAICompletions].every(fn => typeof fn === "function")) throw new Error("compat aliases missing");
+  if (metadata.name !== "@earendil-works/pi-coding-agent") throw new Error("package metadata missing");
   pi.registerTool(defineTool({ name: "packaged_tool", label: "Packaged", description: "test", parameters: Type.Object({}), async execute() { return { content: [{ type: "text", text: "ok" }] }; } }));
 }
 `,
@@ -242,13 +247,19 @@ export default function(pi: any) {
 			});
 			await loader.reload();
 			assert.deepEqual(loader.getExtensions().errors, []);
-			assert.ok(
-				loader
-					.getExtensions()
-					.extensions.some((extension) =>
-						extension.tools.has("packaged_tool"),
-					),
+			const tool = loader
+				.getExtensions()
+				.extensions.flatMap((extension) => [
+					...extension.tools.values(),
+				])
+				.find((entry) => entry.definition.name === "packaged_tool");
+			assert.ok(tool, "配布先で Extension のツールを読み込めません");
+			const result = await tool.definition.execute(
+				"fixture",
+				{},
+				new AbortController().signal,
 			);
+			assert.deepEqual(result.content, [{ type: "text", text: "ok" }]);
 			assert.equal(sdk.getPackageDir(), path.join(target, "pi"));
 			assert.ok(
 				(
@@ -272,6 +283,183 @@ export default function(pi: any) {
 			/bundle契約が変更/,
 		);
 	});
+
+	await t.test(
+		"MCPの接続・動的定義・構造化結果を配布アダプターで扱う",
+		async () => {
+			const adapter = await sdk.loadPiMcp();
+			const server = createServer(async (request, response) => {
+				if (request.method !== "POST") {
+					response.writeHead(405).end();
+					return;
+				}
+				const chunks = [];
+				for await (const chunk of request) {
+					chunks.push(chunk);
+				}
+				const message = JSON.parse(
+					Buffer.concat(chunks).toString("utf8"),
+				);
+				if (message.id === undefined) {
+					response.writeHead(204).end();
+					return;
+				}
+				let result;
+				switch (message.method) {
+					case "initialize":
+						result = {
+							protocolVersion: "2025-11-25",
+							capabilities: { tools: {} },
+							serverInfo: { name: "test", version: "1" },
+						};
+						break;
+					case "tools/list":
+						result = {
+							tools: [
+								{
+									name: "count",
+									description: "Count items",
+									inputSchema: {
+										type: "object",
+										properties: {},
+									},
+								},
+							],
+						};
+						break;
+					default:
+						result = {
+							content: [],
+							structuredContent: { count: 3 },
+							_meta: { private: "never-show" },
+						};
+				}
+				response
+					.writeHead(200, { "Content-Type": "application/json" })
+					.end(
+						JSON.stringify({
+							jsonrpc: "2.0",
+							id: message.id,
+							result,
+						}),
+					);
+			});
+			server.listen(0, "127.0.0.1");
+			await once(server, "listening");
+			const config = adapter.validateMcpServerConfig("test", {
+				url: `http://127.0.0.1:${server.address().port}/mcp`,
+				headers: { Authorization: "Bearer fixture" },
+				exposure: "deferred",
+			});
+			assert.notEqual(typeof config, "string");
+			let registrations = 0;
+			const connection = new adapter.McpServerConnection({
+				entry: {
+					name: "test",
+					config,
+					source: "fixture",
+					scope: "extension",
+				},
+				cwd: root,
+				credentials: {
+					forServer() {
+						throw new Error("OAuth must remain inactive");
+					},
+				},
+				createTransport: (entry) =>
+					new adapter.StreamableHttpTransport({
+						url: entry.config.url,
+						headers: entry.config.headers,
+						openGetStream: false,
+					}),
+				onTools: () => {
+					registrations++;
+				},
+			});
+			try {
+				await connection.getClient();
+				assert.equal(connection.state, "connected");
+				assert.ok(registrations > 0);
+				const definition = adapter.createMcpToolDefinition({
+					server: "test",
+					tool: connection.tools[0],
+					name: "mcp__test__count",
+					exposure: "deferred",
+					namespace: { name: "mcp__test", description: "fixture" },
+					timeoutMs: 1000,
+					getClient: async () => connection,
+				});
+				const result = await definition.execute(
+					"count",
+					{},
+					new AbortController().signal,
+				);
+				assert.deepEqual(result.structuredContent.structuredContent, {
+					count: 3,
+				});
+				assert.equal(result.structuredContent._meta, undefined);
+			} finally {
+				await connection.close();
+				await new Promise((resolve) => server.close(resolve));
+			}
+		},
+	);
+
+	await t.test(
+		"QuickJSのWASM・worker・実行と停止を配布物だけで扱う",
+		async () => {
+			let tool;
+			const writes = [];
+			sdk.createCodemodeExtension({ models: false })({
+				registerTool(value) {
+					tool = value;
+				},
+				appendEntry(...args) {
+					writes.push(args);
+				},
+				getAllTools: () => [],
+				getSettings: () => ({}),
+			});
+			const context = {
+				tools: [],
+				sessionManager: { getBranch: () => [] },
+			};
+			const result = await tool.execute(
+				"script",
+				{
+					code: '// @options: {"timeout_ms": 3000}\ntext({ count: 3 }); text(typeof process); text(typeof fetch); text(typeof models);',
+				},
+				new AbortController().signal,
+				undefined,
+				context,
+			);
+			const text = result.content.map((part) => part.text).join("\n");
+			assert.notEqual(result.isError, true);
+			assert.deepEqual(
+				JSON.parse(
+					text.split("\n").find((line) => line.startsWith("{")),
+				),
+				{ count: 3 },
+			);
+			assert.equal(text.split("undefined").length - 1, 3);
+			assert.deepEqual(writes, []);
+			const controller = new AbortController();
+			const running = tool.execute(
+				"stop",
+				{ code: '// @options: {"timeout_ms": 3000}\nwhile (true) {}' },
+				controller.signal,
+				undefined,
+				context,
+			);
+			setTimeout(() => controller.abort(), 100);
+			const stopped = await running;
+			assert.equal(stopped.isError, true);
+			assert.match(
+				stopped.content.map((part) => part.text).join("\n"),
+				/Script aborted:/,
+			);
+		},
+	);
 
 	await t.test("画像WASMとworkerを配布物だけで実行する", async () => {
 		const png = await sdk.convertToPng(

@@ -1,5 +1,5 @@
 // 非公開 `usage` API の変化・失敗・取消がチャットや認証値の公開へ波及しないことを検証する。
-import { normalizeCodexQuota } from "../../apps/vscode-nerita/src/extension/backends/pi/codex/CodexQuotaService";
+import { normalizeOpenAIQuota } from "../../apps/vscode-nerita/src/extension/backends/pi/openai/OpenAIQuotaService";
 import { describe, expect, it, vi } from "vitest";
 import type {
 	AgentSession,
@@ -10,6 +10,9 @@ import { piHarness, pending } from "./piHarness";
 import type { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 
 import { type HostMessage } from "@nerita/shared/messages";
+import { piProviders } from "../../apps/vscode-nerita/src/extension/backends/pi/PiProviders";
+import { openAICodexQuota } from "../../apps/vscode-nerita/src/extension/backends/pi/openai/OpenAICodexQuota";
+import { CodexClient } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
 
 const payload = {
 	rate_limit: {
@@ -33,7 +36,11 @@ function fixture() {
 		checkAuth: vi.fn(() => Promise.resolve({ type: "oauth" })),
 	};
 	const session = {
-		model: { provider: "openai-codex", api: "openai-codex-responses" },
+		model: {
+			provider: "openai",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+		},
 	};
 	const request = vi.fn<typeof fetch>(() =>
 		Promise.resolve(Response.json(payload)),
@@ -47,14 +54,98 @@ function fixture() {
 }
 
 describe("Pi quota", () => {
+	it.each(["success", "signed-out", "failure"])(
+		"Codex 補助取得 %s で接続を回収し、出所を保持する",
+		async (mode) => {
+			const dispose = vi.fn(() => Promise.resolve());
+			const readRateLimits = vi.fn(() =>
+				mode === "failure"
+					? Promise.reject(new Error("private"))
+					: Promise.resolve([
+							{ label: "Weekly", remaining: 43, detail: "reset" },
+						]),
+			);
+			const connect = vi.spyOn(CodexClient, "connect").mockResolvedValue({
+				readAccount: () =>
+					Promise.resolve({
+						authenticated: mode !== "signed-out",
+						requiresOpenaiAuth: true,
+					}),
+				readRateLimits,
+				dispose,
+			} as unknown as CodexClient);
+			try {
+				const signal = new AbortController().signal;
+				const result = await openAICodexQuota(
+					"fixture-extension",
+					"fixture-workspace",
+					signal,
+				).read(signal);
+				if (mode === "success") {
+					expect(result?.[0]).toMatchObject({
+						remaining: 43,
+						detail: "reset",
+						source: "codex-login",
+					});
+				} else {
+					expect(result).toBeNull();
+				}
+				expect(readRateLimits).toHaveBeenCalledTimes(
+					mode === "signed-out" ? 0 : 1,
+				);
+				expect(dispose).toHaveBeenCalledTimes(1);
+			} finally {
+				connect.mockRestore();
+			}
+		},
+	);
+	it("新 OAuth が拒否された場合は注入した Codex 取得元を使い、遅い応答を破棄する", async () => {
+		const h = fixture();
+		h.request.mockResolvedValue(new Response(null, { status: 401 }));
+		const windows = [
+			{
+				label: "Weekly",
+				remaining: 43,
+				detail: "Codex ログインから取得",
+			},
+		];
+		const read = vi.fn(() => Promise.resolve(windows));
+		const service = new PiQuotaService(
+			h.models as unknown as ModelRuntime,
+			h.session as unknown as AgentSession,
+			h.request,
+			piProviders,
+			{ read },
+		);
+		expect(await service.read(new AbortController().signal)).toEqual(
+			windows,
+		);
+		h.models.isUsingOAuth.mockReturnValue(false);
+		expect(await service.read(new AbortController().signal)).toBeNull();
+		expect(read).toHaveBeenCalledTimes(1);
+		h.models.isUsingOAuth.mockReturnValue(true);
+		read.mockImplementationOnce(() => {
+			h.session.model.provider = "google";
+			return Promise.resolve(windows);
+		});
+		expect(await service.read(new AbortController().signal)).toBeNull();
+		h.session.model.provider = "openai";
+		const abort = new AbortController();
+		read.mockImplementationOnce(() => {
+			abort.abort();
+			return Promise.resolve(windows);
+		});
+		expect(await service.read(abort.signal)).toBeNull();
+	});
 	it.each([
-		["gpt-5.6-luna", "openai-codex/gpt-6-astra", true],
-		["gpt-6-astra", "openai-codex/gpt-5.6-luna", true],
-		["gpt-6-astra", "openai-codex/gpt-5.3-codex-spark", false],
-		["gpt-5.3-codex-spark", "openai-codex/gpt-6-astra", false],
+		["gpt-5.6-luna", "openai/gpt-6-astra", false],
+		["gpt-6-astra", "openai/gpt-5.6-luna", false],
+		["gpt-6-astra", "openai/gpt-6-astra", true],
+		["gpt-6-astra", "openai/gpt-5.3-codex-spark", false],
+		["gpt-5.3-codex-spark", "openai/gpt-6-astra", false],
 		["gpt-6-astra", "google/gpt-6-astra", false],
 	])("%sから%sへの利用枠保持は%s", (id, next, retain) => {
-		const session = { model: { provider: "openai-codex", id } };
+		const session = { model: { provider: "openai", id } };
 		const service = new PiQuotaService(
 			{} as unknown as ModelRuntime,
 			session as unknown as AgentSession,
@@ -84,7 +175,7 @@ describe("Pi quota", () => {
 		"%s変更中と再取得待ちの利用枠を取得元に応じて保持する",
 		async (configId, keep) => {
 			const h = piHarness();
-			const quota = normalizeCodexQuota(payload);
+			const quota = normalizeOpenAIQuota(payload);
 			const update = pending<void>();
 			const refresh = pending<typeof quota>();
 			const read = vi
@@ -144,20 +235,21 @@ describe("Pi quota", () => {
 			h.session.model = {
 				provider: "google",
 				api: "google-generative-ai",
+				baseUrl: "https://example.invalid",
 			};
 			return Promise.resolve(Response.json(payload));
 		});
 		expect(await h.service.read(new AbortController().signal)).toBeNull();
 	});
 	it("時間枠を検証し残率へ変換、秘密値・creditsの生データは除外する", () => {
-		const result = normalizeCodexQuota(payload);
+		const result = normalizeOpenAIQuota(payload);
 		expect(result).toMatchObject([
 			{ label: "5h", remaining: 68 },
 			{ label: "Weekly", remaining: 82 },
 		]);
 		expect(JSON.stringify(result)).not.toMatch(/never-publish|secret-data/);
 		expect(
-			normalizeCodexQuota({
+			normalizeOpenAIQuota({
 				rate_limit: {
 					primary_window: {
 						used_percent: NaN,
@@ -167,7 +259,7 @@ describe("Pi quota", () => {
 			}),
 		).toBeNull();
 		expect(
-			normalizeCodexQuota({
+			normalizeOpenAIQuota({
 				rate_limit: {
 					primary_window: {
 						used_percent: 120,
@@ -176,7 +268,7 @@ describe("Pi quota", () => {
 				},
 			})![0]!.remaining,
 		).toBe(0);
-		expect(normalizeCodexQuota({ unknown: true })).toBeNull();
+		expect(normalizeOpenAIQuota({ unknown: true })).toBeNull();
 	});
 	it("OAuthをSDKで解決し固定宛先・redirect禁止・Host限定headerで取得する", async () => {
 		const h = fixture();
@@ -212,8 +304,20 @@ describe("Pi quota", () => {
 		async (kind) => {
 			const h = fixture();
 			if (kind === "http") {
+				h.models.getAuth.mockResolvedValue({
+					auth: { apiKey: "opaque-new-oauth" },
+				});
 				h.request.mockResolvedValue(
-					new Response(h.token, { status: 401 }),
+					Response.json(
+						{
+							error: {
+								code: "no_matching_rule",
+								type: "rejected_by_access_enforcement",
+								message: h.token,
+							},
+						},
+						{ status: 401 },
+					),
 				);
 			}
 			if (kind === "json") {
@@ -229,11 +333,23 @@ describe("Pi quota", () => {
 						: new AbortController().signal,
 				),
 			).toBeNull();
+			if (kind === "http") {
+				expect(h.request).toHaveBeenCalledTimes(1);
+				expect(h.request.mock.calls[0]![1]?.headers).toEqual({
+					Authorization: "Bearer opaque-new-oauth",
+					Accept: "application/json",
+				});
+				expect(h.models.getAuth).toHaveBeenCalledTimes(1);
+				expect(h.models.getAuth).toHaveBeenCalledWith(
+					"openai",
+					expect.any(Object),
+				);
+			}
 		},
 	);
 	it("切断後に遅れて到着した利用枠を新しい画面へ公開しない", async () => {
 		const h = piHarness();
-		const wait = pending<ReturnType<typeof normalizeCodexQuota>>();
+		const wait = pending<ReturnType<typeof normalizeOpenAIQuota>>();
 		let signal: AbortSignal | undefined;
 		h.runtime.quota = {
 			read: (incoming: AbortSignal) => {
@@ -243,7 +359,7 @@ describe("Pi quota", () => {
 		} as unknown as PiQuotaService;
 		await h.controller.connect();
 		h.controller.invalidate();
-		wait.resolve(normalizeCodexQuota(payload));
+		wait.resolve(normalizeOpenAIQuota(payload));
 		await Promise.resolve();
 		expect(signal?.aborted).toBe(true);
 		expect(h.controller.snapshot().quota).toBeNull();

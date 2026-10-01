@@ -88,6 +88,18 @@
 					],
 					"markdownDescription": "Piの新規会話の保存先。未送信の新規会話では初回送信時にも設定変更を反映します。送信済み・復元済みの会話は元の保存先を維持します。workspaceでは会話の保存領域に `.gitignore` を内容 `*` で初回生成します。既存ファイルは上書きしません。"
 				},
+				"nerita.pi.codemode": {
+					"type": "boolean",
+					"default": false,
+					"scope": "application",
+					"markdownDescription": "Piのcodemodeを有効にします。許可されたツールをJavaScriptで組み合わせて実行します。子ツールには個別の承認と権限制限が適用されます。承認待ちを含めて60秒で停止します。変更はPiへの再接続後に反映されます。"
+				},
+				"nerita.pi.toolSearch": {
+					"type": "boolean",
+					"default": false,
+					"scope": "application",
+					"markdownDescription": "Piのtool_searchを有効にします。許可されたツールをローカルで検索し、必要な定義を会話へ追加します。MCP未接続でもHostのツールに使用できます。変更はPiへの再接続後に反映されます。"
+				},
 				"nerita.pi.trustedExtensionPaths": {
 					"type": "array",
 					"items": {

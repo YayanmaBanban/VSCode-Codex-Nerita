@@ -73,6 +73,7 @@ async function bundlePi(projectRoot, target) {
 		await fs.readFile(path.join(source, "package.json"), "utf8"),
 	);
 	const aiRoot = await fs.realpath(path.join(source, "../pi-ai"));
+	const mcpRoot = await fs.realpath(path.join(source, "../pi-mcp"));
 	const aiManifest = JSON.parse(
 		await fs.readFile(path.join(aiRoot, "package.json"), "utf8"),
 	);
@@ -91,6 +92,27 @@ async function bundlePi(projectRoot, target) {
 		absWorkingDir: projectRoot,
 		nodePaths: [path.join(extensionRoot, "node_modules")],
 		alias: {
+			"@nerita/pi-tool-search": path.join(
+				source,
+				"dist/extensions/tool-search/index.js",
+			),
+			"@nerita/pi-mcp-config": path.join(
+				source,
+				"dist/core/mcp-servers.js",
+			),
+			"@nerita/pi-mcp-runtime": path.join(
+				source,
+				"dist/extensions/mcp/runtime.js",
+			),
+			"@nerita/pi-mcp-tools": path.join(
+				source,
+				"dist/extensions/mcp/tools.js",
+			),
+			"@nerita/pi-mcp": path.join(mcpRoot, "dist/index.js"),
+			"@nerita/pi-auth-storage": path.join(
+				source,
+				"dist/core/auth-storage.js",
+			),
 			"@earendil-works/pi-coding-agent": path.join(
 				source,
 				"dist/index.js",
@@ -99,6 +121,10 @@ async function bundlePi(projectRoot, target) {
 		},
 		entryPoints: {
 			core: path.join(__dirname, "runtime/pi-entry.mjs"),
+			"codemode-worker": path.join(
+				source,
+				"dist/extensions/codemode/worker.js",
+			),
 			"image-resize-worker": path.join(
 				source,
 				"dist/utils/image-resize-worker.js",
@@ -124,6 +150,13 @@ async function bundlePi(projectRoot, target) {
 		plugins: [piBundlePlugin(source, aiRoot)],
 	});
 	await copyAssets(source, destination, manifest);
+	await fs.copyFile(
+		path.join(
+			await fs.realpath(path.join(source, "../../quickjs-wasi")),
+			"quickjs.wasm",
+		),
+		path.join(destination, "quickjs.wasm"),
+	);
 	const photonRoot = await copyPhoton(source, target);
 	await copyBundleLicenses(
 		projectRoot,

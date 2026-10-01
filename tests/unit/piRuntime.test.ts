@@ -9,7 +9,7 @@ import {
 /** 初期選択に必要な利用可能候補だけを用意する。 */
 function fixture() {
 	const models = [
-		{ provider: "openai-codex", id: "astra" },
+		{ provider: "openai", id: "astra" },
 		{ provider: "local", id: "test" },
 	];
 	const runtime = {
@@ -24,6 +24,19 @@ function fixture() {
 }
 
 describe("Piの起動モデル", () => {
+	it("旧providerの保存値は別providerの同名モデルに読み替えず、OpenAI候補を優先する", () => {
+		const h = fixture();
+		h.models.reverse();
+		expect(
+			resolvePiInitialModel(
+				{
+					...h.options,
+					preferredModel: { provider: "openai-codex", model: "test" },
+				},
+				h.runtime,
+			),
+		).toEqual(h.models[1]);
+	});
 	it("最後に選択したモデルを使う", () => {
 		const h = fixture();
 		expect(
@@ -34,7 +47,7 @@ describe("Piの起動モデル", () => {
 				},
 				h.runtime,
 			),
-		).toBe(h.models[1]);
+		).toEqual(h.models[1]);
 	});
 	it("保存値がなければSDKの初期選択を使う", () => {
 		const h = fixture();
@@ -52,7 +65,7 @@ describe("Piの起動モデル", () => {
 					},
 					h.runtime,
 				),
-			).toBe(h.models[1]);
+			).toEqual(h.models[1]);
 		},
 	);
 	it("providerが消えた場合は利用可能な候補へ戻す", () => {
@@ -65,7 +78,7 @@ describe("Piの起動モデル", () => {
 				},
 				h.runtime,
 			),
-		).toBe(h.models[0]);
+		).toEqual(h.models[0]);
 	});
 	it("利用可能モデルがなくても起動エラーにしない", () => {
 		const h = fixture();

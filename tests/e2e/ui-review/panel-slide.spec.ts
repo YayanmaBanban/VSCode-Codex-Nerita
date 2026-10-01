@@ -77,7 +77,7 @@ for (const width of [320, 1000]) {
 		});
 		await toggle.click();
 		const panel = page.locator("#session-panel");
-		await expect(panel).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+		await expect(panel).toBeInViewport();
 		await page.screenshot({ path: info.outputPath("opened.png") });
 		await panel
 			.getByRole("button", { name: "セッション一覧を閉じる" })

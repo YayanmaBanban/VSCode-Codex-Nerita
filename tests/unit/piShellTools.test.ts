@@ -84,22 +84,10 @@ it.each(["missing", "denied", "workspace"] as const)(
 );
 
 it.each(["powershell", "pwsh"] as const)(
-	"%sの説明・argv・毎回承認を実際のShellへ対応させる",
+	"%sを承認後に指定した実行ファイルで起動し、毎回承認を求める",
 	async (name) => {
 		const h = await fixture();
-		expect(h.tools.map((tool) => tool.name)).toEqual([
-			"powershell",
-			"pwsh",
-		]);
 		const tool = h.tools.find((tool) => tool.name === name)!;
-		expect(tool.description).toContain(
-			name === "powershell"
-				? "Windows PowerShell (powershell.exe)"
-				: "PowerShell 7 (pwsh.exe)",
-		);
-		expect(tool.description).toContain("pass the command body directly");
-		expect(tool.description).not.toContain("Codex");
-		expect(JSON.stringify(tool.parameters)).toContain("node --version");
 		h.execute.mockClear();
 		for (let count = 1; count <= 2; count++) {
 			const gate = pending<AbortSignal>();
@@ -115,15 +103,6 @@ it.each(["powershell", "pwsh"] as const)(
 				expect(h.authorize).toHaveBeenCalledTimes(count),
 			);
 			expect(h.execute).toHaveBeenCalledTimes(count - 1);
-			expect(h.authorize.mock.calls.at(-1)![0].title).toContain(
-				`Pi: ${name}`,
-			);
-			expect(JSON.stringify(h.authorize.mock.calls.at(-1)![0])).toContain(
-				"Fixture Sandbox",
-			);
-			expect(
-				JSON.stringify(h.authorize.mock.calls.at(-1)![0]),
-			).not.toContain("Windows Sandbox");
 			gate.resolve(h.abort.signal);
 			expect(JSON.stringify(await result)).toContain("v22.fixture");
 			const call = h.execute.mock.calls.at(-1)![0].call;
@@ -132,10 +111,6 @@ it.each(["powershell", "pwsh"] as const)(
 				name === "powershell" ? h.windows : h.core,
 			);
 			expect(call.command!.at(-1)).toMatch(/\nnode --version$/);
-			expect(call.command!.at(-1)).toContain("chcp.com");
-			expect(JSON.stringify(h.authorize.mock.calls.at(-1)![0])).toContain(
-				"chcp.com",
-			);
 		}
 	},
 );

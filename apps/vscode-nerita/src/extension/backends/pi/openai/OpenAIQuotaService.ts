@@ -1,11 +1,13 @@
-// 非公開の Codex 利用枠 API を隔離し、失敗・認証情報をチャット状態へ漏らさない。
+// 新しい ChatGPT OAuth の取得を試し、アクセス拒否時は出所を明示する Codex 取得へ委譲する。
 import type {
 	AgentSession,
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
 import type { QuotaWindow } from "@nerita/shared/composer";
 import { isRecord } from "@nerita/shared/validation";
-import { codexOAuth } from "./CodexOAuth";
+import { openAIOAuth, openAIAccountId, isOpenAIEndpoint } from "./OpenAIOAuth";
+import { readOpenAIResponse } from "./OpenAIResponseBody";
+import type { PiQuotaReader } from "../PiProvider";
 
 /** UNIX 秒を、現地時刻の表示に使う `Date` へ変換する。 */
 function getIsoDate(resetAt: number): Date {
@@ -15,7 +17,7 @@ function getIsoDate(resetAt: number): Date {
 }
 
 /** 未知の応答項目は捨て、検証できる時間枠と残率だけ公開する。 */
-export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
+export function normalizeOpenAIQuota(payload: unknown): QuotaWindow[] | null {
 	if (!isRecord(payload) || !isRecord(payload.rate_limit)) {
 		return null;
 	}
@@ -43,60 +45,93 @@ export function normalizeCodexQuota(payload: unknown): QuotaWindow[] | null {
 }
 
 /** SDK による OAuth 更新を利用し、接続・設定変更・実行後だけ取得する。 */
-export class CodexQuotaService {
+export class OpenAIQuotaService {
 	constructor(
 		private models: ModelRuntime,
 		private session: AgentSession,
 		private request: typeof fetch = fetch,
+		private codexQuota?: PiQuotaReader,
 	) {}
 
 	/** 固定した HTTPS 宛先だけへ送信し、リダイレクトで認証が流出する経路を閉じる。 */
 	async read(caller: AbortSignal): Promise<QuotaWindow[] | null> {
 		try {
 			const model = this.session.model;
-			if (
-				model?.provider !== "openai-codex" ||
-				model.api !== "openai-codex-responses" ||
-				!this.models.isUsingOAuth(model.provider)
-			) {
+			if (!model || !this.canFetch(model)) {
 				return null;
 			}
+			const startedModel = { ...model };
 			const signal = AbortSignal.any([
 				caller,
 				AbortSignal.timeout(10_000),
 			]);
-			const auth = await codexOAuth(this.models, signal);
+			const auth = await openAIOAuth(this.models, signal);
 			signal.throwIfAborted();
 			if (!auth) {
 				return null;
 			}
+			const account = openAIAccountId(auth.token);
 			const response = await this.request(
 				"https://chatgpt.com/backend-api/wham/usage",
 				{
 					signal,
 					redirect: "error",
-					headers: auth.headers,
+					headers: {
+						...auth.headers,
+						...(account ? { "ChatGPT-Account-Id": account } : {}),
+					},
 				},
 			);
 			if (!response.ok) {
-				return null;
+				return await this.deniedQuota(response, startedModel, signal);
 			}
-			const payload: unknown = await response.json();
+			const payload: unknown = await readOpenAIResponse(response, signal);
 			signal.throwIfAborted();
-			if (this.modelChanged(model)) {
+			if (this.modelChanged(startedModel)) {
 				return null;
 			}
-			return normalizeCodexQuota(payload);
+			return normalizeOpenAIQuota(payload);
 		} catch {
 			return null;
 		}
 	}
 
+	/** 新認証の利用枠アクセスが拒否された場合だけ、出所を明示する CLI 取得へ委譲する。 */
+	private async deniedQuota(
+		response: Response,
+		model: NonNullable<AgentSession["model"]>,
+		signal: AbortSignal,
+	) {
+		await response.body?.cancel();
+		if (response.status !== 401 && response.status !== 403) {
+			return null;
+		}
+		const quota = await this.codexQuota?.read(signal);
+		signal.throwIfAborted();
+		return this.modelChanged(model) ? null : (quota ?? null);
+	}
+
+	/** API キーや独自宛先のモデルから利用枠の認証を流用しない。 */
+	private canFetch(model: NonNullable<AgentSession["model"]>): boolean {
+		return (
+			model.provider === "openai" &&
+			model.api === "openai-responses" &&
+			isOpenAIEndpoint(model.baseUrl) &&
+			this.models.isUsingOAuth(model.provider)
+		);
+	}
+
 	/** 取得開始時と現在のモデルが一致するか照合する。 */
 	private modelChanged(model: NonNullable<AgentSession["model"]>): boolean {
+		const current = this.session.model;
+		if (!current || !this.canFetch(current)) {
+			return true;
+		}
 		return (
-			this.session.model?.provider !== model.provider ||
-			this.session.model?.id !== model.id
+			current.provider !== model.provider ||
+			current.id !== model.id ||
+			current.api !== model.api ||
+			current.baseUrl !== model.baseUrl
 		);
 	}
 }

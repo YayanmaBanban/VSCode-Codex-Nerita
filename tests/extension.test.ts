@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { access, readFile } from "node:fs/promises";
 import { CodexClient } from "../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
 import { piExtensionSmoke } from "./piExtensionSmoke";
+import { piMcpSmoke } from "./piMcpSmoke";
 import { piGuardrailsSmoke } from "./piGuardrailsSmoke";
 import { piTrustSmoke } from "./piTrustSmoke";
 import { piSubagentAdapterSmoke } from "./piSubagentAdapterSmoke";
@@ -18,6 +19,13 @@ import {
 } from "../apps/vscode-nerita/src/extension/webview/sidebarLocation";
 
 suite("Nerita Extension", () => {
+	test("HTTP MCP と codemode の接続・承認・拒否・Stop が実 Extension Host で動く", async function () {
+		this.timeout(60000);
+		await piMcpSmoke(
+			vscode.extensions.getExtension("nerita-local.nerita")!.extensionUri
+				.fsPath,
+		);
+	});
 	test("Agent Manager が同梱 SDK の定義を読み、設定を保存する", async () => {
 		const extension = vscode.extensions.getExtension(
 			"nerita-local.nerita",

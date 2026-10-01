@@ -25,7 +25,7 @@ export type ConnectionStatus =
 	| "authenticating"
 	| "error";
 
-/** 1つのプロンプトの実行状態。 */
+/** 1 つのプロンプトの実行状態。 */
 export type RunStatus =
 	"idle" | "running" | "cancelling" | "completed" | "cancelled" | "failed";
 
@@ -64,6 +64,11 @@ export type ToolSummary = {
 	paths: string[];
 	kind?: string;
 	content?: unknown[];
+	/** Host が生成した構造化結果の要約と、省略の有無。 */
+	resultDisplay?: {
+		source: "content" | "structuredContent";
+		omitted: boolean;
+	};
 	rawInput?: unknown;
 	rawOutput?: unknown;
 	/** 正規化で省略されるフィールドも調査できるよう、受信項目を保持する。 */

@@ -142,9 +142,23 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 	} satisfies Record<string, (value: unknown) => boolean>),
 );
 
+/** 表示用メタデータには、生の結果や任意フィールドを許可しない。 */
+function validResultDisplay(value: unknown): boolean {
+	return (
+		value === undefined ||
+		(isRecord(value) &&
+			["content", "structuredContent"].includes(String(value.source)) &&
+			typeof value.omitted === "boolean" &&
+			Object.keys(value).every(
+				(key) => key === "source" || key === "omitted",
+			))
+	);
+}
+
 /** 子の親 ID と、保存された要約の任意情報を検証する。 */
 function validToolHistory(item: Record<string, unknown>) {
 	return (
+		validResultDisplay(item.resultDisplay) &&
 		(item.parentToolCallId === undefined || isId(item.parentToolCallId)) &&
 		(item.summaryOnly === undefined ||
 			typeof item.summaryOnly === "boolean") &&

@@ -34,7 +34,7 @@ it("旧接続の終了を待ち、購読を保持して古い通知を破棄す�
 	runtime.subscribe(sidebar);
 	runtime.subscribe(panel);
 	const switching = runtime.restart();
-	expect(runtime.restart()).toBe(switching);
+	const concurrent = runtime.restart();
 	expect(factory).toHaveBeenCalledOnce();
 	const count = sidebar.mock.calls.length;
 	old.emit({
@@ -44,7 +44,8 @@ it("旧接続の終了を待ち、購読を保持して古い通知を破棄す�
 	});
 	expect(sidebar).toHaveBeenCalledTimes(count);
 	ending.resolve();
-	await switching;
+	await Promise.all([switching, concurrent]);
+	expect(factory).toHaveBeenCalledTimes(2);
 	expect(next.receive).toHaveBeenCalledWith(
 		expect.objectContaining({ type: "connection/retry" }),
 	);

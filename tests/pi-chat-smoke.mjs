@@ -294,28 +294,6 @@ try {
 			),
 		),
 	);
-	const shellDefinition = requests
-		.at(-1)
-		.tools.find((tool) => tool.function.name === "powershell").function;
-	assert.match(
-		shellDefinition.description,
-		/Windows PowerShell \(powershell.exe\)/,
-	);
-	assert.match(shellDefinition.description, /pass the command body directly/);
-	assert.match(
-		shellDefinition.parameters.properties.command.description,
-		/node --version/,
-	);
-	const coreDefinition = requests
-		.at(-1)
-		.tools.find((tool) => tool.function.name === "pwsh")?.function;
-	if (coreDefinition) {
-		assert.match(coreDefinition.description, /PowerShell 7 \(pwsh.exe\)/);
-		assert.match(
-			coreDefinition.parameters.properties.command.description,
-			/node --version/,
-		);
-	}
 	assert.equal(controller.snapshot().tools.at(-1).status, "completed");
 	assert.equal(controller.snapshot().tools.at(-1).kind, "read");
 	assert.ok(

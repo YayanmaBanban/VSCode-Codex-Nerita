@@ -3,20 +3,7 @@ import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
-
-/** 本文だけを表示用へ渡し、画像の base64 や SDK 内部情報をカードへ露出しない。 */
-function resultContent(result: unknown): unknown[] {
-	if (!isRecord(result) || !Array.isArray(result.content)) {
-		return [];
-	}
-	return result.content.flatMap((part: unknown) => {
-		if (!isRecord(part)) {
-			return [];
-		}
-		const text = resultText(part);
-		return text === undefined ? [] : [textContent(text)];
-	});
-}
+import { piResultDisplay } from "./results/PiResultDisplay";
 
 /** SDK の出力を、共通のテキスト表示形式へ揃える。 */
 function textContent(text: string) {
@@ -100,10 +87,14 @@ function piToolSummary(
 		status: toolStatus(event, state.run),
 		paths: toolPaths(existing, file),
 		rawInput: input,
-		content:
-			result === undefined
-				? (existing?.content ?? [])
-				: resultContent(result),
+		...(result === undefined
+			? {
+					content: existing?.content ?? [],
+					...(existing?.resultDisplay
+						? { resultDisplay: existing.resultDisplay }
+						: {}),
+				}
+			: piResultDisplay(result)),
 	};
 }
 
@@ -166,17 +157,6 @@ export function finishPiTools(
 				}
 			: tool,
 	);
-}
-
-/** テキストを取り出し、画像は内容を露出しない説明へ置き換える。 */
-function resultText(part: Record<string, unknown>) {
-	if (part.type === "text" && typeof part.text === "string") {
-		return part.text;
-	}
-	if (part.type === "image") {
-		return "画像を読み取りました。";
-	}
-	return undefined;
 }
 
 /** 明示パスを優先し、一覧ツールだけ現在のフォルダーを補う。 */

@@ -11,6 +11,17 @@ export class PiProviderControls {
 	private provider: string | undefined;
 	private active: PiModelControls | undefined;
 	private catalog: (provider: string) => PiCatalogSnapshot = () => undefined;
+	private canDelegate = () => false;
+
+	/** 子起動の可否は Host が管理し、設定や要求の直前にも確認する。 */
+	bindDelegation(read: () => boolean): void {
+		this.canDelegate = read;
+	}
+
+	/** 要求の値ではなく、モデルへの委譲方針として Ultra を適用する。 */
+	delegationPrompt(): string | undefined {
+		return this.resolve()?.delegationPrompt?.();
+	}
 
 	/** プロバイダーごとの最新メタデータを設定処理・要求フックの両方で参照する。 */
 	bindCatalog(read: (provider: string) => PiCatalogSnapshot): void {
@@ -33,6 +44,7 @@ export class PiProviderControls {
 	private resolve(): PiModelControls | undefined {
 		const provider = this.session?.model?.provider;
 		this.bindProviderControls(provider);
+		this.active?.bindDelegation?.(() => this.canDelegate());
 		if (provider) {
 			this.active?.setCatalog?.(this.catalog(provider));
 		}

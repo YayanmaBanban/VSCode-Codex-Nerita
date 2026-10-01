@@ -73,8 +73,6 @@ test("子と孫の閲覧から戻っても親の下書きが残る", async ({ pa
 	await page
 		.getByRole("textbox", { name: "Codexへのメッセージ" })
 		.fill("親への続きの指示");
-	const entries = page.locator(".message, .agent-card");
-	await expect(entries.nth(1)).toHaveClass(/agent-card/);
 	await page
 		.getByRole("button", { name: "swift-cheetahの会話を表示 · 実行中" })
 		.focus();

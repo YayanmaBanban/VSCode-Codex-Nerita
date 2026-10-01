@@ -68,6 +68,39 @@ test("ターン完了後のAIRタスクを既存カードから停止する", as
 });
 
 for (const theme of ["dark", "light"] as const) {
+	test(`構造化結果をプレーンテキストとして表示: ${theme}`, async ({
+		page,
+	}, info) => {
+		await page.setViewportSize({ width: 320, height: 650 });
+		await page.emulateMedia({ colorScheme: theme });
+		await page.goto(
+			`/iframe.html?id=chat-tool-cards--structured-result&viewMode=story&globals=theme:${theme === "light" ? "light" : "dark2026"}`,
+		);
+		await page
+			.getByRole("button", { name: "項目数を取得", exact: true })
+			.click();
+		const output = page.locator(".tool-body pre");
+		await expect(
+			page.getByText("構造化結果", { exact: true }),
+		).toBeVisible();
+		await expect(output).toContainText('"count": 3');
+		await expect(output).toContainText(
+			"<script>window.unsafeResult = true</script>",
+		);
+		await expect(output).toContainText("一部を省略");
+		expect(
+			await page.evaluate(() => Object.hasOwn(window, "unsafeResult")),
+		).toBe(false);
+		expect(
+			await page
+				.locator("body")
+				.evaluate((element) => element.scrollWidth),
+		).toBe(320);
+		await page.screenshot({
+			path: info.outputPath("structured-result.png"),
+			fullPage: true,
+		});
+	});
 	test(`ツールカードの開閉と表示: ${theme}`, async ({ page }, info) => {
 		const errors: string[] = [];
 		page.on("pageerror", (error) => errors.push(error.message));
@@ -180,12 +213,12 @@ test("execute の停止要求と失敗アイコン、think の種別判定", asy
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await expect(spinner).toHaveCSS("animation-name", "none");
 	await expect(
-		page.locator('.tool-card[data-kind="think"] .lucide-sprout'),
-	).toHaveCount(1);
-	await expect(
 		page
-			.getByRole("button", { name: "Guardian Review", exact: true })
-			.locator(".lucide-shield-check"),
+			.locator('.tool-card[data-kind="think"]')
+			.filter({ hasText: "コマンドの安全性を確認" }),
+	).toBeVisible();
+	await expect(
+		page.getByRole("button", { name: "Guardian Review", exact: true }),
 	).toBeVisible();
 	await expect(
 		page.getByRole("button", { name: "端末を準備 を停止" }),

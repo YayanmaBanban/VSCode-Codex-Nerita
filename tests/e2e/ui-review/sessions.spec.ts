@@ -159,7 +159,7 @@ test("取得・再取得・選択・名前ボタン・フォーク・アーカ�
 	await expect(panel.getByText("更新日時不明")).toBeVisible();
 	const row = panel.getByRole("listitem").first();
 	await row.hover();
-	await expect(row).toHaveCSS("filter", "brightness(1.1)");
+	await expect(row.getByRole("button", { name: /名前を変更/ })).toBeVisible();
 	await page.screenshot({ path: info.outputPath("hover.png") });
 	await row.getByRole("button", { name: /名前を変更/ }).click();
 	await row

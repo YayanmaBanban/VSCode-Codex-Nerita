@@ -9,17 +9,23 @@ const { tmpdir } = require("node:os");
 /** 検証工程の失敗と、一時展開先の後片付けを隔離環境で確認する。 */
 async function verify(
 	failAt,
-	{ missingTar = false, extractionFails = false } = {},
+	{
+		missingTar = false,
+		extractionFails = false,
+		featureFailsAfterExtract = false,
+	} = {},
 ) {
 	const directory = path.resolve(__dirname, "../config");
 	const temporary = path.join(tmpdir(), "nerita-pi-verify-fixture");
 	const commands = [];
 	const removed = [];
 	const archiveCommands = [];
+	const featureCommands = [];
 	const cliProcess = {
 		argv: ["node", "verify-pi.cjs"],
 		platform: "win32",
 		arch: "x64",
+		execPath: process.execPath,
 		env: {},
 	};
 	await vm.runInNewContext(
@@ -29,6 +35,9 @@ async function verify(
 			process: cliProcess,
 			console: { log() {}, error() {} },
 			require(name) {
+				if (name === "./workspace-paths.cjs") {
+					return require("../config/workspace-paths.cjs");
+				}
 				if (name === "./run-pnpm.cjs") {
 					return {
 						runPnpm(command) {
@@ -42,6 +51,17 @@ async function verify(
 				if (name === "node:child_process") {
 					return {
 						spawnSync(executable, args) {
+							if (executable !== "tar.exe") {
+								featureCommands.push([executable, ...args]);
+								return {
+									status:
+										featureFailsAfterExtract &&
+										args[1] ===
+											path.join(temporary, "extension")
+											? 1
+											: 0,
+								};
+							}
 							archiveCommands.push([executable, ...args]);
 							return missingTar
 								? { error: new Error("ENOENT") }
@@ -78,6 +98,7 @@ async function verify(
 	return {
 		commands,
 		archiveCommands,
+		featureCommands,
 		removed,
 		exitCode: cliProcess.exitCode,
 		temporary,
@@ -92,7 +113,6 @@ test("展開コマンドの欠落はビルド前に止め、展開失敗でも�
 	const failed = await verify(() => false, { extractionFails: true });
 	assert.equal(failed.exitCode, 1);
 	assert.deepEqual(failed.removed, [failed.temporary]);
-	assert.equal(failed.commands.at(-1).length, 2);
 	const success = await verify(() => false);
 	assert.equal(success.exitCode, undefined);
 	assert.deepEqual(success.archiveCommands, [
@@ -123,6 +143,11 @@ test("検証失敗で後続を停止し、展開後の失敗でも一時ディ�
 		path.join(extracted.temporary, "extension"),
 	]);
 	assert.deepEqual(extracted.removed, [extracted.temporary]);
+	const featureFailure = await verify(() => false, {
+		featureFailsAfterExtract: true,
+	});
+	assert.equal(featureFailure.exitCode, 1);
+	assert.deepEqual(featureFailure.removed, [featureFailure.temporary]);
 });
 
 /** 依存更新・ネットワーク・書込を記録して、CLI を隔離環境で実行する。 */

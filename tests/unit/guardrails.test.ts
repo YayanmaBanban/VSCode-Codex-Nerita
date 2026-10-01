@@ -281,9 +281,17 @@ it("設定ファイルを直接書き換えても実効設定は変わらない"
 			pathAccess: { outsideRead: "allow", outsideWrite: "deny" },
 		}),
 	);
-	expect(guardrailRegistry.snapshot(h.cwd, [h.cwd]).digest).toBe(
-		before.digest,
-	);
+	const after = guardrailRegistry.snapshot(h.cwd, [h.cwd]);
+	expect(after.config).toEqual(before.config);
+	expect(
+		(
+			await evaluateGuardrails(after.config, h.cwd, [h.cwd], {
+				tool: "read",
+				cwd: ".",
+				input: join(h.outside, "secret.txt"),
+			})
+		).action,
+	).toBe("deny");
 });
 
 it("子がcwdを別ルートへ移しても親のガードレールを維持する", async () => {

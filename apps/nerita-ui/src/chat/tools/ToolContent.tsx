@@ -93,6 +93,13 @@ function isFileDiffContent(value: Record<string, unknown>): value is Record<
 	);
 }
 
+/** Host が作った要約には、表示元の説明を添える。 */
+function StructuredResultLabel({ tool }: { tool: ToolSummary }) {
+	return tool.resultDisplay?.source === "structuredContent" ? (
+		<div className={toolLabelClass}>構造化結果</div>
+	) : null;
+}
+
 /** 共通表示では本文・対象パス・入出力を表示し、未知の形式も扱う。 */
 export function GenericTool({
 	tool,
@@ -112,6 +119,7 @@ export function GenericTool({
 					{path}
 				</div>
 			))}
+			<StructuredResultLabel tool={tool} />
 			{tool.content?.map((value, index) => (
 				<Content key={index} value={value} paged={paged} />
 			))}

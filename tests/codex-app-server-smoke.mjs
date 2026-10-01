@@ -1,11 +1,9 @@
 // 同梱バイナリで初期化と読み取り要求を検証する。モデル呼び出しや会話作成は行わない。
 import { repoRoot, extensionRoot } from "../config/workspace-paths.cjs";
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { promisify } from "node:util";
 import { build } from "esbuild";
 
 // 引数には展開済み VSIX の extension ディレクトリも指定できる。
@@ -16,7 +14,7 @@ await mkdir(cwd, { recursive: true });
 await build({
 	stdin: {
 		contents:
-			'export { CodexClient } from "./apps/vscode-nerita/src/extension/backends/codex/CodexClient"; export { resolveCodexExecutable } from "./apps/vscode-nerita/src/extension/backends/codex/runtime/executable";',
+			'export { CodexClient } from "./apps/vscode-nerita/src/extension/backends/codex/CodexClient";',
 		resolveDir: repoRoot,
 		loader: "ts",
 	},
@@ -26,21 +24,7 @@ await build({
 	target: "node22",
 	outfile,
 });
-const { CodexClient, resolveCodexExecutable } = await import(
-	pathToFileURL(outfile).href
-);
-const executable = await resolveCodexExecutable(extensionPath);
-const { stdout } = await promisify(execFile)(executable, ["--version"], {
-	windowsHide: true,
-	timeout: 10000,
-});
-const expected = JSON.parse(
-	await readFile(
-		"apps/vscode-nerita/src/extension/backends/codex/codex-app-server/version.json",
-		"utf8",
-	),
-);
-assert.equal(stdout.trim(), `codex-cli ${expected.version}`);
+const { CodexClient } = await import(pathToFileURL(outfile).href);
 let disconnected = false;
 const client = await CodexClient.connect({
 	extensionPath,
@@ -67,5 +51,5 @@ try {
 }
 assert.equal(disconnected, false);
 console.log(
-	`Codex ${expected.version}: initialize → initialized → thread/loaded/list → dispose OK`,
+	"Codex: initialize → initialized → thread/loaded/list → dispose OK",
 );

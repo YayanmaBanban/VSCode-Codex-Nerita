@@ -219,3 +219,33 @@ function LargeOutputStory() {
 }
 
 export const LargeOutput: Story = { render: () => <LargeOutputStory /> };
+
+/** Host が生成した構造化結果を、秘密値を含まない共有 DTO として表示する。 */
+export const StructuredResult: Story = {
+	render: () => (
+		<main style={{ padding: 16 }}>
+			<ToolCard
+				tool={{
+					id: "structured",
+					title: "項目数を取得",
+					kind: "other",
+					status: "completed",
+					paths: [],
+					resultDisplay: {
+						source: "structuredContent",
+						omitted: true,
+					},
+					content: [
+						{
+							type: "content",
+							content: {
+								type: "text",
+								text: '{\n  "count": 3,\n  "html": "<script>window.unsafeResult = true</script>",\n  "private": "[非公開]"\n}\n[表示上限または非公開情報のため、一部を省略しました。]',
+							},
+						},
+					],
+				}}
+			/>
+		</main>
+	),
+};

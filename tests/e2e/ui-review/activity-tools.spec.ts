@@ -93,10 +93,6 @@ for (const colorScheme of ["dark", "light"] as const) {
 		await expect(collapse).toHaveCSS("visibility", "hidden");
 		await heading.press("Space");
 		await expect(collapse).toHaveCSS("opacity", "1");
-		for (const icon of ["image", "plug-zap", "shelving-unit"]) {
-			await expect(page.locator(`.lucide-${icon}`)).toHaveCount(1);
-		}
-		await expect(page.locator(".lucide-signal")).toHaveCount(3);
 		for (const title of ["server / tool", "コンテキスト圧縮"]) {
 			const card = page.locator(".tool-card").filter({ hasText: title });
 			await expect(

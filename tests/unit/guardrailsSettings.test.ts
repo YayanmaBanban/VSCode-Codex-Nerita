@@ -104,8 +104,8 @@ it("設定適用の保存待ちで文書が変わったら以前の永続値を�
 	gate.resolve();
 	await expect(operation).rejects.toThrow("適用中");
 	expect(h.values.get(`guardrails.v1:${h.cwd}`)).toBe(original);
-	expect(guardrailRegistry.snapshot(h.cwd, [h.cwd]).digest).toBe(
-		before.digest,
+	expect(guardrailRegistry.snapshot(h.cwd, [h.cwd]).config).toEqual(
+		before.config,
 	);
 });
 

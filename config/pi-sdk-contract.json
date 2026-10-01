@@ -5,12 +5,25 @@
 		"dist/core/model-runtime.js": "3bd00aec50bd73c6cd6814c45fbc3fa586026d6f9ab052ff5be018faa5873eb7",
 		"dist/core/extensions/loader.js": "83f5bd84e867be32258f01f2f6f0efc4cff1c8f05e46651a414a91f3ca4998b7",
 		"dist/core/extensions/virtual-modules.js": "099cb8e4a65666df1d072381f7c61a1e46cc0001b8441365d94ba1004c34efa0",
-		"dist/utils/image-resize.js": "87a8f1d940612932991b122b66b47cef13a981744b837f738d00c7ccf46aa20b"
+		"dist/utils/image-resize.js": "87a8f1d940612932991b122b66b47cef13a981744b837f738d00c7ccf46aa20b",
+		"dist/core/mcp-servers.js": "98599a627f0c80a82588a4e3c8bd48eff1bcb6a4a20d145b27af448642788cbf",
+		"dist/extensions/mcp/runtime.js": "3cd63444bf79334bc379435d38616357ac405e43ac157e70526ca4fad101a580",
+		"dist/extensions/mcp/tools.js": "8bd2f327294af473c5081725a0a50ad66e4f5e997244c96d902416e99925111c",
+		"dist/extensions/mcp/oauth.js": "40ffe540c914de9b2fec850bd82ff9842a6cf99619de95d49eef487182fb1b9d",
+		"dist/extensions/codemode/index.js": "ca9e7ee5789a96960e6d26e2aaf6b0472c29f24974c7e1a127f670fa991f4b8b",
+		"dist/extensions/codemode/tool.js": "418a4d207d5f0b45355eafb8a3a7e20b9856ae6913090bab0e62dc76dbb86b09",
+		"dist/extensions/codemode/execute.js": "e03a1ba0ee8edaecdc64524c5aca69be5fa54c1c9d1f498c25686e52f7c1a73b",
+		"dist/extensions/tool-search/index.js": "1b989bcfd70485fc71535c33b3c1d02e12ec7450589e5b9da3fccbdf7f8451d7",
+		"dist/extensions/tool-search/tool.js": "3006734e9bca9608bbbad807be5d36219886b766576bf598ed759115cb3218c5"
 	},
 	"ai": {
 		"dist/providers/all.js": "3435bd777ed87f7271503c40eb81196f3db388a87b47c5b8bffa0618d18edc41",
 		"dist/compat.js": "df55dca273cb2a7053187b7b29d0fe5b91966a5099ab02d2efe38bb31c3f9738",
 		"dist/auth/oauth/load.js": "fb73105e414825e6c599ed8c00783fbd597fea1913e5625cc56910e27b761182",
-		"dist/legacy-api-aliases.js": "1b0f1077431ce2d8eeea25172e721c58e6fc1c1a396a731ffb62f2b54672bd12"
+		"dist/legacy-api-aliases.js": "1b0f1077431ce2d8eeea25172e721c58e6fc1c1a396a731ffb62f2b54672bd12",
+		"dist/providers/openai.js": "0b5ce81ec2e4838ac3ac362c2bcd1c68f07f7aa30b198163d9c05e7cd3d6b0f8",
+		"dist/auth/oauth/openai-chatgpt.js": "b8d3c0513eb9e3879714be046968b1ec443ee9d8f02d3248ce2181911b88d1fa",
+		"dist/api/openai-responses.js": "8a294f760ea70459c6d41c83878a8d0cda5dd4780c46b490c85e0d3495471e3e",
+		"dist/api/openai-responses-shared.js": "2eb01d2e82737150f582e78ebcda2dc0cf1083bf83e98432f97d9f3a80ff3f2f"
 	}
 }

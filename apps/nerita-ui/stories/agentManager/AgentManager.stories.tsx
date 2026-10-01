@@ -26,7 +26,7 @@ function sampleState(): ManagerState {
 				source: "extension",
 				aliases: ["review"],
 				tools: ["read", "ls"],
-				definitionModel: "openai-codex/gpt-6-sol",
+				definitionModel: "openai/gpt-6-sol",
 				definitionThinking: "high",
 				edit: {},
 				editable: true,
@@ -66,22 +66,22 @@ function sampleState(): ManagerState {
 		models: {
 			pi: [
 				{
-					value: "openai-codex/gpt-6-sol",
-					name: "OpenAI Codex / GPT-6 Sol",
-					efforts: ["low", "medium", "high", "ultra"],
+					value: "openai/gpt-6-sol",
+					name: "OpenAI / GPT-6 Sol",
+					efforts: ["low", "medium", "high", "max"],
 				},
 				{
-					value: "openai-codex/gpt-6-astra",
+					value: "openai/gpt-6-astra",
 					name: "GPT-6 Astra",
-					efforts: ["low", "medium", "high", "ultra"],
+					efforts: ["low", "medium", "high", "max"],
 				},
 				{
-					value: "openai-codex/gpt-5.6-sol",
+					value: "openai/gpt-5.6-sol",
 					name: "GPT-5.6 Sol",
-					efforts: ["low", "medium", "high", "ultra"],
+					efforts: ["low", "medium", "high", "max"],
 				},
 				{
-					value: "openai-codex/gpt-6-luna",
+					value: "openai/gpt-6-luna",
 					name: "GPT-6 Luna",
 					efforts: ["low", "medium", "high"],
 				},
@@ -115,7 +115,7 @@ function sampleState(): ManagerState {
 			],
 		},
 		activeBackend: "pi",
-		currentModels: { pi: "openai-codex/gpt-6-sol" },
+		currentModels: { pi: "openai/gpt-6-sol" },
 		running: 1,
 		spawned: 3,
 		errors: [],

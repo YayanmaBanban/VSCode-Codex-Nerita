@@ -65,6 +65,8 @@ for (const theme of ["dark2026", "light"]) {
 			name: "Mode: 3",
 			exact: true,
 		});
+		const thumbWidth = (await thumb.boundingBox())!.width;
+		const pointWidth = (await point.locator("span").boundingBox())!.width;
 		// 自動撮影が始まる前に遷移が完了しないよう、捕捉までの時間だけ延ばす。
 		const captureStyle = await page.addStyleTag({
 			content:
@@ -72,24 +74,20 @@ for (const theme of ["dark2026", "light"]) {
 		});
 		await slider.hover();
 		await captureZoom(page, thumb, "thumb-in", info);
-		await expect(thumb).toHaveCSS(
-			"transform",
-			"matrix(1.12, 0, 0, 1.12, 0, 0)",
-		);
+		expect((await thumb.boundingBox())!.width).toBeGreaterThan(thumbWidth);
 		await page.mouse.move(0, 0);
 		await captureZoom(page, thumb, "thumb-out", info);
-		await expect(thumb).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+		expect((await thumb.boundingBox())!.width).toBeCloseTo(thumbWidth, 1);
 		await point.hover();
 		await captureZoom(page, point.locator("span"), "point-in", info);
-		await expect(point.locator("span")).toHaveCSS(
-			"transform",
-			"matrix(2, 0, 0, 2, 0, 0)",
-		);
+		expect(
+			(await point.locator("span").boundingBox())!.width,
+		).toBeGreaterThan(pointWidth);
 		await page.mouse.move(0, 0);
 		await captureZoom(page, point.locator("span"), "point-out", info);
-		await expect(point.locator("span")).toHaveCSS(
-			"transform",
-			"matrix(1, 0, 0, 1, 0, 0)",
+		expect((await point.locator("span").boundingBox())!.width).toBeCloseTo(
+			pointWidth,
+			1,
 		);
 		for (const [index, value] of [
 			[3, "danger-full-access"],
@@ -119,10 +117,7 @@ for (const theme of ["dark2026", "light"]) {
 		});
 		await expect(thumb).toHaveCSS("transition-duration", "0s");
 		await slider.hover();
-		await expect(thumb).toHaveCSS(
-			"transform",
-			"matrix(1.12, 0, 0, 1.12, 0, 0)",
-		);
+		expect((await thumb.boundingBox())!.width).toBeGreaterThan(thumbWidth);
 		await showState(page, { connection: "disconnected" });
 		await expect(slider).toBeDisabled();
 		await expect(point).toBeDisabled();

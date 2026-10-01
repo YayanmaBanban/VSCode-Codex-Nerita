@@ -1,58 +1,53 @@
-// 保存した推論設定をカタログの候補と照合し、起動時に一度だけ復元することを確認する。
+// 新プロバイダーの SDK 推論を復元し、旧選択の Ultra は流用しない。
 import { describe, expect, it, vi } from "vitest";
 import { PiAccount } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccount";
 import { catalogHarness } from "./piCatalogHarness";
 
-describe("Piの推論復元", () => {
-	it.each(["high", "ultra"])(
-		"%sを復元し、その後の変更を保存する",
+describe("Pi 推論の復元", () => {
+	it("SDK の保存候補を復元して以後の変更を保存する", async () => {
+		const h = catalogHarness(),
+			save = vi.fn(() => Promise.resolve());
+		const account = new PiAccount(
+			h.sdkModels,
+			h.sdkSession,
+			undefined,
+			undefined,
+			h.catalog,
+			save,
+			{ provider: "openai", model: "astra", reasoning: "high" },
+		);
+		await account.refreshCatalog(h.signal);
+		expect(account.controls.snapshot().effectiveReasoning).toBe("high");
+		await account.configure("reasoning_effort", "low", h.signal);
+		expect(save).toHaveBeenLastCalledWith({
+			provider: "openai",
+			model: "astra",
+			reasoning: "low",
+		});
+		await account.refreshCatalog(h.signal);
+		expect(account.controls.snapshot().effectiveReasoning).toBe("low");
+	});
+	it.each(["ultra", "unknown"])(
+		"子起動なしの保存値 %s は SDK の通常値へ戻す",
 		async (reasoning) => {
 			const h = catalogHarness();
-			const save = vi.fn(() => Promise.resolve());
 			const account = new PiAccount(
 				h.sdkModels,
 				h.sdkSession,
 				undefined,
 				undefined,
 				h.catalog,
-				save,
-				{ provider: "openai-codex", model: "astra", reasoning },
+				undefined,
+				{ provider: "openai", model: "astra", reasoning },
 			);
 			await account.refreshCatalog(h.signal);
 			expect(account.controls.snapshot().effectiveReasoning).toBe(
-				reasoning,
+				"minimal",
 			);
-			await account.configure("reasoning_effort", "low", h.signal);
-			expect(save).toHaveBeenLastCalledWith({
-				provider: "openai-codex",
-				model: "astra",
-				reasoning: "low",
-			});
-			await account.refreshCatalog(h.signal);
-			expect(account.controls.snapshot().effectiveReasoning).toBe("low");
 		},
 	);
-	it.each(["off", "unknown"])(
-		"対応しない保存値%sから利用可能な推論へ戻す",
-		async (reasoning) => {
-			const h = catalogHarness();
-			const account = new PiAccount(
-				h.sdkModels,
-				h.sdkSession,
-				undefined,
-				undefined,
-				h.catalog,
-				undefined,
-				{ provider: "openai-codex", model: "astra", reasoning },
-			);
-			await account.refreshCatalog(h.signal);
-			expect(account.controls.snapshot().effectiveReasoning).toBe("low");
-			expect(account.snapshot().connection).toBe("ready");
-		},
-	);
-	it("削除されたモデルから復帰し、旧モデルのultraを適用しない", async () => {
+	it("旧プロバイダーの同名モデルと Ultra を新選択として解釈しない", async () => {
 		const h = catalogHarness();
-		h.session.model = h.all[1]!;
 		const account = new PiAccount(
 			h.sdkModels,
 			h.sdkSession,
@@ -60,11 +55,13 @@ describe("Piの推論復元", () => {
 			undefined,
 			h.catalog,
 			undefined,
-			{ provider: "openai-codex", model: "spark", reasoning: "ultra" },
+			{ provider: "openai-codex", model: "astra", reasoning: "ultra" },
 		);
 		await account.refreshCatalog(h.signal);
-		expect(h.session.model.id).toBe("small");
-		expect(account.controls.snapshot().effectiveReasoning).toBe("low");
-		expect(account.snapshot().connection).toBe("ready");
+		expect(account.controls.snapshot()).toMatchObject({
+			provider: "openai",
+			effectiveReasoning: "minimal",
+			reasoningOverride: null,
+		});
 	});
 });

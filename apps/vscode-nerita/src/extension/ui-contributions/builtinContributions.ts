@@ -69,7 +69,7 @@ const configContributions: UiContributionSource = (state, context) => {
 	function usesModelCard(): boolean {
 		return (
 			context.backend === "codex" ||
-			(["openai", "openai-codex"].includes(context.provider ?? "") &&
+			(context.provider === "openai" &&
 				options.some((option) => option.id === "model") &&
 				options.some((option) => option.id === "reasoning_effort"))
 		);

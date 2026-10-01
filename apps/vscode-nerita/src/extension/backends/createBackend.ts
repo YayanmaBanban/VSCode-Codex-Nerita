@@ -68,6 +68,12 @@ export function createBackend(
 						.getConfiguration("nerita.pi")
 						.inspect<string[]>("trustedExtensionPaths"),
 				),
+				codemode: vscode.workspace
+					.getConfiguration("nerita.pi")
+					.get<boolean>("codemode", false),
+				toolSearch: vscode.workspace
+					.getConfiguration("nerita.pi")
+					.get<boolean>("toolSearch", false),
 				signal,
 				authorize,
 				authService: createPiAuthService(context.extensionUri),

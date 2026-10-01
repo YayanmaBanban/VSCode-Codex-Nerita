@@ -11,17 +11,17 @@ import "../../src/chat/chat.css";
 const provider: ConfigOption = {
 	id: "provider",
 	name: "Provider",
-	currentValue: "openai-codex",
+	currentValue: "openai",
 	options: [
-		{ value: "openai-codex", name: "openai-codex" },
+		{ value: "openai", name: "openai" },
 		{ value: "anthropic", name: "anthropic" },
 	],
 };
 const model: ConfigOption = {
 	id: "model",
 	name: "Pi Model",
-	currentValue: "openai-codex/max-model",
-	options: [{ value: "openai-codex/max-model", name: "GPT-6-Astra" }],
+	currentValue: "openai/max-model",
+	options: [{ value: "openai/max-model", name: "GPT-6-Astra" }],
 };
 const reasoning: ConfigOption = {
 	id: "reasoning_effort",
@@ -32,6 +32,7 @@ const reasoning: ConfigOption = {
 		{ value: "ultra", name: "Ultra" },
 	],
 };
+// 候補の計算・除外・推論補正は Host テストの責任とし、ここでは受信済みの例だけを持つ。
 const fast: ConfigOption = {
 	id: "fast-mode",
 	name: "Fast mode",
@@ -41,15 +42,21 @@ const fast: ConfigOption = {
 		{ value: "off", name: "Off" },
 	],
 };
-// 候補の計算・除外・推論補正は Host テストの責任とし、ここでは受信済みの例だけを持つ。
 const connected = [provider, model, reasoning, fast];
 const fallback = [
 	provider,
 	{
 		...model,
-		options: [{ value: "openai-codex/max-model", name: "Codex Max Model" }],
+		currentValue: "openai/gpt-6.1-sol",
+		options: [{ value: "openai/gpt-6.1-sol", name: "GPT-6.1-Sol" }],
 	},
-	{ ...reasoning, options: [{ value: "high", name: "high" }] },
+	{
+		...reasoning,
+		options: [
+			{ value: "high", name: "high" },
+			{ value: "max", name: "max" },
+		],
+	},
 ];
 const anthropic = [
 	{ ...provider, currentValue: "anthropic" },
@@ -75,14 +82,10 @@ function ProviderControlsStory({
 		configOptions: noMetadata ? fallback : connected,
 		quota: [
 			{
-				label: "5h",
-				remaining: 68,
-				detail: "リセット: 2026-09-22T10:00:00Z",
-			},
-			{
 				label: "Weekly",
 				remaining: 82,
 				detail: "リセット: 2026-09-28T10:00:00Z",
+				source: "codex-login",
 			},
 		],
 	}));

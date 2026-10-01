@@ -1,12 +1,15 @@
 // Pi 標準のパッケージ解決を利用し、登録ツールを Host の承認へ接続する。
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
-import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
+import { type PiAuthorize } from "./PiApprovedTools";
 import { neritaExtensionFactories } from "./PiBuiltinExtensions";
 import type { PiProviderControls } from "./PiProviderControls";
 import { localResourceSettings } from "./PiResourceSettings";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
-import { createPiHostShellTool } from "./PiHostShellTool";
 import type { PiWebTrust } from "./PiWebTrust";
+import type { PiToolFeatures } from "./PiToolFeatures";
+import { guardPiExtensionTools } from "./PiExtensionTools";
+import { neritaMcpExtension } from "./mcp/PiMcpExtension";
+import type { PiMcpSdk } from "./mcp/PiMcpSdk";
 
 /** 本文をファイルパスと解釈させず、定義の指定どおり基底プロンプトへ反映する。 */
 function agentPromptOverride(
@@ -38,7 +41,11 @@ export async function loadPiResources(
 	appendPrompt?: string,
 	promptMode: "append" | "replace" = "append",
 	webTrust: PiWebTrust[] = [],
+	features: PiToolFeatures = {},
 ): Promise<PiSdk.DefaultResourceLoader> {
+	const mcpSdk = sdk as typeof PiSdk & {
+		loadPiMcp?: () => Promise<PiMcpSdk>;
+	};
 	const loader = new sdk.DefaultResourceLoader({
 		cwd,
 		agentDir,
@@ -51,64 +58,49 @@ export async function loadPiResources(
 		// SDK の自動発見したコードはロードせず、明示 Trust を通った単一 `entry` と `builtin` を使う。
 		noExtensions: true,
 		additionalExtensionPaths: trustedExtensionPaths,
-		extensionFactories: neritaExtensionFactories(controls),
+		extensionFactories: [
+			...neritaExtensionFactories(controls, {
+				sdk,
+				features,
+				cwd,
+				authorize,
+				signal,
+				...(policy ? { policy } : {}),
+			}),
+			...(mcpSdk.loadPiMcp && policy
+				? [
+						{
+							name: "nerita-mcp",
+							factory: neritaMcpExtension({
+								load: mcpSdk.loadPiMcp,
+								cwd,
+								agentDir,
+								policy,
+								authorize,
+								signal,
+								features,
+								projectTrusted: () =>
+									settingsManager.isProjectTrusted(),
+								trustedExtensionPaths,
+							}),
+						},
+					]
+				: []),
+		],
 		// ターミナル用のテーマは VS Code Webview には適用しない。
 		noThemes: true,
 		...agentPromptOverride(appendPrompt, promptMode),
 		extensionsOverride(result) {
 			for (const extension of result.extensions) {
-				for (const [name, tool] of extension.tools) {
-					if (
-						process.platform !== "win32" &&
-						name === "bash" &&
-						policy
-					) {
-						extension.tools.set(name, {
-							...tool,
-							definition: createPiHostShellTool(
-								tool.definition,
-								cwd,
-								authorize,
-								policy,
-								signal,
-							),
-						});
-						continue;
-					}
-					if (
-						[
-							"read",
-							"ls",
-							"write",
-							"edit",
-							"powershell",
-							"pwsh",
-							"bash",
-							"grep",
-							"find",
-							"subagent",
-							"subagent_job",
-							"subagent_workflow",
-						].includes(name)
-					) {
-						throw new Error(
-							`Pi拡張による組み込みToolの上書きは拒否されました: ${name}`,
-						);
-					}
-					extension.tools.set(name, {
-						...tool,
-						definition: approvePiTool(
-							tool.definition,
-							cwd,
-							authorize,
-							policy,
-							signal,
-							webTrust.find(
-								(item) => item.entry === extension.path,
-							)?.check,
-						),
-					});
-				}
+				guardPiExtensionTools(
+					extension,
+					cwd,
+					authorize,
+					policy,
+					signal,
+					features,
+					webTrust,
+				);
 			}
 			return result;
 		},

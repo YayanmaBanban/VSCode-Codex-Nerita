@@ -26,6 +26,17 @@ import { GenericTool } from "./ToolContent";
 /** 開閉状態と直前の実行状態を保持する。 */
 type CardState = { status: ToolSummary["status"]; open: boolean };
 
+/** 保存要約と Host で変換した本文は、汎用のテキスト表示へ渡す。 */
+function toolBody(
+	tool: ToolSummary,
+	renderer: ReturnType<typeof toolRenderer>,
+) {
+	if (tool.summaryOnly) {
+		return ToolHistoryContent;
+	}
+	return tool.resultDisplay ? GenericTool : renderer.Body;
+}
+
 /** 完了への遷移で一度だけ閉じ、完了後の手動展開も許可する。 */
 export function ToolCard({
 	tool,
@@ -47,7 +58,7 @@ export function ToolCard({
 	const active = cardActive(status);
 	const renderer = toolRenderer(tool);
 	const Icon = renderer.Icon;
-	const Body = tool.summaryOnly ? ToolHistoryContent : renderer.Body;
+	const Body = toolBody(tool, renderer);
 	const comboList = usesComboList(tool, Body);
 	const [state, setState] = useCardState(status, !comboList);
 	if (comboList) {

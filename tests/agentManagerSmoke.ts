@@ -43,7 +43,7 @@ export async function agentManagerSmoke(extensionPath: string) {
 		await mkdir(join(agentDir, "agents"), { recursive: true });
 		await mkdir(join(root, ".pi/agents"), { recursive: true });
 		const prompt =
-			"---\nname: reviewer\ndescription: Review changes\nmodel: openai-codex/gpt-6-sol\nthinking: high\n---\nReview the source.\n";
+			"---\nname: reviewer\ndescription: Review changes\nmodel: openai/gpt-6-sol\nthinking: high\n---\nReview the source.\n";
 		await writeFile(join(root, ".pi/agents/reviewer.md"), prompt);
 		await writeFile(
 			join(agentDir, "settings.json"),
@@ -60,7 +60,7 @@ export async function agentManagerSmoke(extensionPath: string) {
 				),
 			() => [
 				{
-					value: "openai-codex/gpt-6-sol",
+					value: "openai/gpt-6-sol",
 					name: "Model",
 					efforts: sdk.getSupportedThinkingLevels({
 						reasoning: true,
@@ -80,7 +80,7 @@ export async function agentManagerSmoke(extensionPath: string) {
 			agentId: "pi:reviewer",
 			edit: {
 				disabled: true,
-				model: "openai-codex/gpt-6-sol",
+				model: "openai/gpt-6-sol",
 				thinking: "medium",
 			},
 		});

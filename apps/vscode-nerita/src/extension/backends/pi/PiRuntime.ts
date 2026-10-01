@@ -39,10 +39,16 @@ import {
 } from "./workflows/PiWorkflowTool";
 import { bindPiRuntimeLifetime } from "./PiRuntimeLifetime";
 import { PiAccount, type PiAuthService } from "./PiAccount";
+import { getPiDeviceId } from "./PiDeviceId";
 import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
 import { PiQuotaService } from "./PiQuotaService";
+import { openAICodexQuota } from "./openai/OpenAICodexQuota";
 import { PiModelCatalogService } from "./PiModelCatalogService";
+import { piFeatureSecrets } from "./PiFeatureSecrets";
+import { piToolExposure } from "./PiToolFeatures";
+import { abortableFeatureApproval } from "./PiFeatureSafety";
+import { protectPiFeatureTool } from "./PiFeatureToolResults";
 import type { SkillSummary } from "@nerita/shared/skills";
 import {
 	openPiSessionStore,
@@ -130,6 +136,8 @@ export type PiRuntimeOptions = {
 	/** 実行基盤の利用不能も子へ継承し、フォールバックによる有効化を防ぐ。 */
 	sandboxUnavailable?: string;
 	allowedTools?: string[];
+	codemode?: boolean;
+	toolSearch?: boolean;
 	subagentPrompt?: string;
 	subagentPromptMode?: "append" | "replace";
 	strictModel?: boolean;
@@ -222,9 +230,10 @@ async function openPiRuntime(
 		retry: { enabled: false, provider: { maxRetries: 0 } },
 		cacheWarming: "off",
 	});
-	const authorize: PiAuthorize =
+	const originalAuthorize: PiAuthorize =
 		options.authorize ??
 		(() => Promise.reject(new Error("Piの実行承認が接続されていません。")));
+	const authorize = runtimeAuthorizer(originalAuthorize, options.codemode);
 	const runtimeTools = await preparePiRuntimeTools(
 		sdk,
 		options,
@@ -245,6 +254,7 @@ async function openPiRuntime(
 		trustedExtensions,
 	);
 	const controls = new PiProviderControls();
+	const toolRegistry = new Set<string>();
 	const resourceLoader = await loadPiResources(
 		sdk,
 		options.cwd,
@@ -258,6 +268,13 @@ async function openPiRuntime(
 		options.subagentPrompt,
 		options.subagentPromptMode,
 		options.webTrust,
+		{
+			registry: toolRegistry,
+			codemode: options.codemode,
+			toolSearch: options.toolSearch,
+			allowedTools: options.allowedTools,
+			secrets: () => piFeatureSecrets(agentDir),
+		},
 	);
 	options.signal.throwIfAborted();
 	const modelRuntime = await sdk.ModelRuntime.create({
@@ -315,33 +332,59 @@ async function openPiRuntime(
 	jobs.restore(manager.getBranch(), manager.getSessionId());
 	const children = createChildren(options, runtimeTools, jobs);
 	customTools.push(
-		...createPiSubagentTools(
-			subagents.definitions,
-			children,
-			runtimeTools.paths.policy,
-			options.cwd,
-			authorize,
-			options.signal,
-			agentViews,
-			jobs,
-			manager,
+		...permittedTools(
+			createPiSubagentTools(
+				subagents.definitions,
+				children,
+				runtimeTools.paths.policy,
+				options.cwd,
+				authorize,
+				options.signal,
+				agentViews,
+				jobs,
+				manager,
+			),
+			options.allowedTools,
 		),
 	);
 	customTools.push(
-		...createPiWorkflowTools(
-			subagents.workflowPackage,
-			subagents.definitions,
-			children,
-			runtimeTools.paths.policy,
-			options.cwd,
-			authorize,
-			options.signal,
-			agentViews,
-			jobs,
-			manager,
+		...permittedTools(
+			createPiWorkflowTools(
+				subagents.workflowPackage,
+				subagents.definitions,
+				children,
+				runtimeTools.paths.policy,
+				options.cwd,
+				authorize,
+				options.signal,
+				agentViews,
+				jobs,
+				manager,
+			),
+			options.allowedTools,
 		),
 	);
-	const { session } = await sdk.createAgentSession({
+	const features = {
+		codemode: options.codemode,
+		toolSearch: options.toolSearch,
+		secrets: () => piFeatureSecrets(agentDir),
+	};
+	const exposedTools = customTools.map((tool) =>
+		protectPiFeatureTool(piToolExposure(tool, features), features),
+	);
+	const activeExtensions = resourceLoader
+		.getExtensions()
+		.extensions.flatMap((extension) =>
+			[...extension.tools.values()]
+				.filter(
+					(tool) =>
+						tool.definition.exposure !== "deferred" &&
+						tool.definition.exposure !== "codemode",
+				)
+				.map((tool) => tool.definition.name),
+		);
+	exposedTools.forEach((tool) => toolRegistry.add(tool.name));
+	const sessionOptions = {
 		cwd: options.cwd,
 		agentDir,
 		settingsManager,
@@ -349,11 +392,30 @@ async function openPiRuntime(
 		modelRuntime,
 		...(model && !options.resume ? { model } : {}),
 		sessionManager: manager,
-		tools: [...customTools.map((tool) => tool.name), ...extensionTools],
-		customTools,
-	});
+		tools: [...exposedTools.map((tool) => tool.name), ...extensionTools],
+		neritaAllowedToolNames: toolRegistry,
+		neritaActiveToolNames: [
+			...exposedTools
+				.filter(
+					(tool) =>
+						tool.exposure !== "deferred" &&
+						tool.exposure !== "codemode",
+				)
+				.map((tool) => tool.name),
+			...activeExtensions,
+		],
+		customTools: exposedTools,
+	};
+	const { session } = await sdk.createAgentSession(sessionOptions);
 	agentViews.parentId = session.sessionId;
 	controls.bind(session);
+	controls.bindDelegation(
+		() =>
+			!options.signal.aborted &&
+			modelRuntime.hasConfiguredAuth("openai") &&
+			subagents.definitions.length > 0 &&
+			session.getActiveToolNames().includes("subagent"),
+	);
 	const account = new PiAccount(
 		modelRuntime,
 		session,
@@ -363,6 +425,7 @@ async function openPiRuntime(
 		options.saveModel,
 		options.resume ? undefined : options.preferredModel,
 		(model) => sdk.getSupportedThinkingLevels(model),
+		() => getPiDeviceId(agentDir),
 	);
 	try {
 		await session.bindExtensions({ mode: "print" });
@@ -444,13 +507,34 @@ async function openPiRuntime(
 			!!options.getStorage &&
 			options.getStorage() !== storage,
 		account,
-		quota: new PiQuotaService(modelRuntime, session, options.request),
+		quota: new PiQuotaService(
+			modelRuntime,
+			session,
+			options.request,
+			undefined,
+			openAICodexQuota(
+				options.extensionPath,
+				options.cwd,
+				options.signal,
+			),
+		),
 		skills: resourceLoader.getSkills().skills.map((skill) => ({
 			name: skill.name,
 			description: skill.description,
 			path: skill.filePath,
 		})),
 	});
+}
+
+/** コード実行の子も、UI の返答より先に停止できる承認口へ接続する。 */
+function runtimeAuthorizer(
+	authorize: PiAuthorize,
+	codemode?: boolean,
+): PiAuthorize {
+	return codemode
+		? (request, signal) =>
+				abortableFeatureApproval(authorize(request, signal), signal)
+		: authorize;
 }
 
 /** 親の実行基盤と利用不能理由も子の起動条件へ固定する。 */
@@ -532,12 +616,18 @@ export function resolvePiInitialModel(
 	return (
 		resolvePreferredModel(options.preferredModel, modelRuntime) ??
 		(options.preferredModel
-			? (modelRuntime
+			? ((options.preferredModel.provider === "openai-codex"
+					? modelRuntime
+							.getAvailableSnapshot()
+							.find((model) => model.provider === "openai")
+					: undefined) ??
+				modelRuntime
 					.getAvailableSnapshot()
 					.find(
 						(model) =>
 							model.provider === options.preferredModel?.provider,
-					) ?? modelRuntime.getAvailableSnapshot()[0])
+					) ??
+				modelRuntime.getAvailableSnapshot()[0])
 			: undefined)
 	);
 }

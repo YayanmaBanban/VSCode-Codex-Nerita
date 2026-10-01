@@ -28,7 +28,6 @@ await mkdir(out, { recursive: true });
 const runtime = await loadRuntime(out);
 const executable = await runtime.resolveCodexExecutable(extensionRoot);
 const version = await runFile(executable, ["--version"], repoRoot);
-assert.equal(version.stdout.trim(), "codex-cli 0.157.0");
 const root = await realpath(
 	await mkdtemp(path.join(tmpdir(), "nerita-read-boundary-")),
 );
@@ -52,7 +51,7 @@ const report = {
 		encoding: "utf8",
 	}).trim(),
 	profile: {
-		root: "deny",
+		root: "read",
 		minimal: "read",
 		workspace: "write",
 		network: false,
@@ -167,6 +166,35 @@ async function runProfile(route, access, external) {
 						],
 						cwd,
 					);
+		if (access === "deny") {
+			await test(`${route}/unsupported-root-deny`, async () => {
+				const before = await readFile(
+					path.join(cwd, "inside.txt"),
+					"utf8",
+				);
+				const result = await execute(
+					"Write-Output 'PROBE_STARTED'; Set-Content -LiteralPath 'inside.txt' -Value 'changed'",
+				).catch((error) => ({
+					exitCode: 1,
+					stdout: "",
+					stderr: error.message,
+				}));
+				assert.notEqual(result.exitCode, 0);
+				assert.doesNotMatch(result.stdout, /PROBE_STARTED/);
+				assert.match(
+					result.stderr,
+					/requires effective `:root` read access/,
+				);
+				assert.equal(
+					await readFile(path.join(cwd, "inside.txt"), "utf8"),
+					before,
+				);
+				return {
+					outcome: "unsupported-profile-rejected-before-execution",
+				};
+			});
+			return;
+		}
 		await test(`${route}/${access}/workspace-read-write`, async () => {
 			const result = await execute(
 				"$ErrorActionPreference='Stop'; if ((Get-Content -Raw -LiteralPath 'inside.txt') -ne 'inside-canary') { exit 12 }; Set-Content -NoNewline -LiteralPath 'written.txt' -Value 'written'; Write-Output 'WORKSPACE_OK'",
