@@ -64,7 +64,7 @@ export async function resolveTextlintTargets(root, rawTargets) {
 	const seen = new Set();
 
 	for (const rawTarget of rawTargets) {
-		// pnpm の `--` はスクリプト引数と対象パスを分ける区切りなので、検査対象には含めない。
+		// 引数の区切りとして渡された `--` は、検査対象に含めない。
 		if (rawTarget === "--") {
 			continue;
 		}

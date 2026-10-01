@@ -5,7 +5,7 @@ const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 /**
- * 監査用の JSON ファイルへ保存するコメント本文を整形する。
+ * レビュー用の JSONL ファイルに保存するコメント本文を整形する。
  */
 function normalizeCommentText(text, block) {
 	if (!block) {
@@ -128,4 +128,44 @@ export function extractSourceComments(source, filePath) {
 		lintText,
 		items,
 	};
+}
+
+/**
+ * 日本語の文中でバッククォート不足を検査する識別子の形式を判定する。
+ *
+ * 単語1個の PascalCase は製品名や一般的なラベルと衝突しやすいため対象外。
+ */
+function isIdentifierLike(name) {
+	return (
+		/^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(name) ||
+		/^[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+$/.test(name) ||
+		/^[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+$/.test(name)
+	);
+}
+
+/**
+ * TypeScript / JavaScript の構文木に実在する識別子を抽出する。
+ *
+ * コメントや文字列の単語は AST の Identifier ではないため語彙へ混入しない。
+ */
+export function extractSourceIdentifiers(source, filePath) {
+	const sourceFile = ts.createSourceFile(
+		filePath,
+		source,
+		ts.ScriptTarget.Latest,
+		true,
+	);
+	const identifiers = new Set();
+
+	function visit(node) {
+		if (ts.isIdentifier(node) && isIdentifierLike(node.text)) {
+			identifiers.add(node.text);
+		}
+
+		ts.forEachChild(node, visit);
+	}
+
+	visit(sourceFile);
+
+	return identifiers;
 }

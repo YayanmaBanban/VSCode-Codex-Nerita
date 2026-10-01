@@ -5,7 +5,11 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import ignore from "ignore";
-import { extractSourceComments } from "./textlint-comments.mjs";
+import {
+	extractSourceComments,
+	extractSourceIdentifiers,
+	SOURCE_EXTENSIONS,
+} from "./extractors/index.mjs";
 import {
 	cleanTextlintCache,
 	clearTextlintCacheForScope,
@@ -21,7 +25,6 @@ import {
 } from "./textlint-targets.mjs";
 import {
 	extractReferencedPackageTerms,
-	extractSourceIdentifiers,
 	loadAutomaticEnglishTerms,
 } from "./textlint-dictionary.mjs";
 import { findEnglishTermIssues } from "./textlint-terms.mjs";
@@ -86,22 +89,6 @@ if (!mode) {
  * textlint で本文全体を検査するファイルの拡張子。
  */
 const DOCUMENT_EXTENSIONS = new Set([".md", ".markdown", ".txt", ".text"]);
-
-/**
- * コメントだけ抽出して検査するソースコード。
- *
- * TypeScript の構文解析を利用するため、JavaScript・TypeScript のファイルに限定する。
- */
-const SOURCE_EXTENSIONS = new Set([
-	".ts",
-	".tsx",
-	".mts",
-	".cts",
-	".js",
-	".jsx",
-	".mjs",
-	".cjs",
-]);
 
 const TARGET_EXTENSIONS = new Set([
 	...DOCUMENT_EXTENSIONS,
@@ -405,7 +392,7 @@ for (const file of files) {
 	}
 
 	/**
-	 * JavaScript・TypeScript ではコメントだけを抽出する。
+	 * 対応する言語の抽出処理でコメントだけを取り出す。
 	 */
 	if (SOURCE_EXTENSIONS.has(extension)) {
 		const extracted = extractSourceComments(source, file);

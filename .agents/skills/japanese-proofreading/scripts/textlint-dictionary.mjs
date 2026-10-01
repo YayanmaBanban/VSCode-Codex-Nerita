@@ -1,8 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import ts from "typescript";
-
 const CACHE_VERSION = 1;
 const CACHE_FILE = "technical-terms.json";
 const CSPELL_RAW_BASE =
@@ -41,8 +39,8 @@ function addPackageName(terms, packageName) {
  * ソースや文書内でパッケージ名として明示されている語を抽出する。
  *
  * `npm:`、`node_modules`、`manifest.name` / `metadata.name` から抽出する。
- * scoped package と semver に隣接する名前も対象にする。
- * 単なるハイフン語は対象にしない。
+ * スコープ付きパッケージ名と、バージョン番号に隣接する名前も対象にする。
+ * 単なるハイフンを含む語は対象にしない。
  */
 export function extractReferencedPackageTerms(source) {
 	const terms = new Set();
@@ -65,46 +63,6 @@ export function extractReferencedPackageTerms(source) {
 	);
 
 	return terms;
-}
-
-/**
- * 日本語文中で裸ならコード表記を促したい識別子の形だけを対象にする。
- *
- * 単語1個の PascalCase は製品名や一般的なラベルと衝突しやすいため対象外。
- */
-function isIdentifierLike(name) {
-	return (
-		/^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(name) ||
-		/^[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+$/.test(name) ||
-		/^[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+$/.test(name)
-	);
-}
-
-/**
- * TypeScript / JavaScript の構文木に実在する識別子を抽出する。
- *
- * コメントや文字列の単語は AST の Identifier ではないため語彙へ混入しない。
- */
-export function extractSourceIdentifiers(source, filePath) {
-	const sourceFile = ts.createSourceFile(
-		filePath,
-		source,
-		ts.ScriptTarget.Latest,
-		true,
-	);
-	const identifiers = new Set();
-
-	function visit(node) {
-		if (ts.isIdentifier(node) && isIdentifierLike(node.text)) {
-			identifiers.add(node.text);
-		}
-
-		ts.forEachChild(node, visit);
-	}
-
-	visit(sourceFile);
-
-	return identifiers;
 }
 
 /**
@@ -245,9 +203,9 @@ function isDictionaryConfigured(dictionaryConfig) {
 }
 
 /**
- * SHA 固定した CSpell 技術辞書をローカルキャッシュへ取得する。
+ * リビジョンを固定した CSpell の技術辞書を読み込み、取得結果をキャッシュに保存する。
  *
- * 取得できない場合は lint 自体を止めず、空辞書へフォールバックする。
+ * 取得できない場合は検査を止めず、空の語彙を返す。
  */
 export async function loadExternalTechnicalTerms({
 	root,
@@ -313,7 +271,7 @@ export async function loadAutomaticEnglishTerms({
 			await fs.readFile(path.join(root, "package.json"), "utf8"),
 		);
 	} catch (error) {
-		// 文書だけのリポジトリでは、依存パッケージ由来の語彙を追加しない。
+		// package.json がない場合は、依存パッケージ由来の語彙を追加しない。
 		if (error?.code !== "ENOENT") {
 			throw error;
 		}

@@ -7,7 +7,7 @@ const IGNORE_START = /^<!--\s*texlint-ignore-start\s*-->$/u;
 const IGNORE_END = /^<!--\s*texlint-ignore-end\s*-->$/u;
 
 /**
- * 文書の無効化範囲を、診断行番号が変わらないよう改行以外の空白へ置き換える。
+ * 文書の検査対象外の範囲を、診断行番号が変わらないよう改行を残して空白に置き換える。
  */
 export function maskIgnoredDocument(source, filePath) {
 	let ignored = false;
@@ -153,7 +153,7 @@ export async function clearTextlintCacheForScope({ root, scope }) {
 }
 
 /**
- * textlint の一時監査ファイルをすべて削除する。
+ * 検査結果・レビュー用データ・取得済みの技術辞書を含むキャッシュをすべて削除する。
  */
 export async function cleanTextlintCache(root) {
 	await fs.rm(path.join(root, ".textlint-cache"), {
@@ -267,7 +267,7 @@ export async function writeTextlintIssues({ root, scope, issues }) {
 }
 
 /**
- * 明示的な LLM レビュー時だけ、全日本語文章を JSONL で保存する。
+ * 明示的な LLM レビュー時だけ、抽出した日本語の文章を JSONL で保存する。
  * 1項目1行にして、巨大な整形済み JSON を避ける。
  */
 export async function writeTextlintReview({ root, scope, items }) {
