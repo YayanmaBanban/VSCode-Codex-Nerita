@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 
 import ignore from "ignore";
 import { extractSourceComments } from "./textlint-comments.mjs";
@@ -26,7 +28,27 @@ import { findEnglishTermIssues } from "./textlint-terms.mjs";
 
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
 
-const ROOT = process.cwd();
+const SKILL_ROOT = fileURLToPath(new URL("../", import.meta.url));
+const { values, positionals } = parseArgs({
+	options: {
+		root: { type: "string" },
+		all: { type: "boolean" },
+		changed: { type: "boolean" },
+		"review-all": { type: "boolean" },
+		"review-changed": { type: "boolean" },
+		clean: { type: "boolean" },
+	},
+	allowPositionals: true,
+});
+
+// 実行場所から対象を推測せず、校正対象を明示させる。
+if (!values.root) {
+	throw new Error("--root <repository-directory> is required");
+}
+const ROOT = await fs.realpath(path.resolve(values.root));
+if (!(await fs.stat(ROOT)).isDirectory()) {
+	throw new Error("--root must be a directory");
+}
 
 const MODE_OPTIONS = new Map([
 	["--all", { scope: "all", changed: false, review: false }],
@@ -35,7 +57,15 @@ const MODE_OPTIONS = new Map([
 	["--review-changed", { scope: "changed", changed: true, review: true }],
 ]);
 
-const rawMode = process.argv[2] ?? "--all";
+const selectedModes = Object.keys(values).filter(
+	(key) => key !== "root" && values[key],
+);
+if (selectedModes.length !== 1 || (values.clean && positionals.length > 0)) {
+	throw new Error(
+		"Specify exactly one mode; --clean does not accept targets",
+	);
+}
+const rawMode = `--${selectedModes[0]}`;
 
 if (rawMode === "--clean") {
 	await cleanTextlintCache(ROOT);
@@ -47,7 +77,7 @@ const mode = MODE_OPTIONS.get(rawMode);
 
 if (!mode) {
 	console.error(
-		"Usage: node scripts/textlint.mjs --all|--changed|--review-all|--review-changed|--clean [file-or-directory ...]",
+		"Usage: node scripts/textlint.mjs --root <directory> --all|--changed|--review-all|--review-changed|--clean [file-or-directory ...]",
 	);
 	process.exit(2);
 }
@@ -92,7 +122,11 @@ function normalizePath(filePath) {
  * `.textlintignore` を読み込む。
  */
 async function loadTextlintIgnore() {
-	const matcher = ignore();
+	const matcher = ignore().add([
+		".git/",
+		"node_modules/",
+		".textlint-cache/",
+	]);
 	const ignorePath = path.join(ROOT, ".textlintignore");
 
 	try {
@@ -109,7 +143,7 @@ async function loadTextlintIgnore() {
 }
 
 async function loadTextlintTerms() {
-	const configPath = path.join(ROOT, "config", "textlint-terms.json");
+	const configPath = path.join(SKILL_ROOT, "config", "textlint-terms.json");
 	const content = await fs.readFile(configPath, "utf8");
 
 	return JSON.parse(content);
@@ -287,7 +321,7 @@ function printTermIssues(issues) {
 	return deterministic.length;
 }
 
-const targetSpecs = await resolveTextlintTargets(ROOT, process.argv.slice(3));
+const targetSpecs = await resolveTextlintTargets(ROOT, positionals);
 const ignoreMatcher = await loadTextlintIgnore();
 
 await clearTextlintCacheForScope({
@@ -329,7 +363,10 @@ for (const file of repositoryFiles) {
 /**
  * `.textlintrc.json` を読み込む。
  */
-const descriptor = await loadTextlintrc();
+const descriptor = await loadTextlintrc({
+	configFilePath: path.join(SKILL_ROOT, "config", ".textlintrc.json"),
+	node_modulesDir: path.join(SKILL_ROOT, "node_modules"),
+});
 
 const linter = createLinter({
 	descriptor,

@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StoryChat as ChatApp } from "../StoryChat";
 import { createChatStoryBridge } from "../mocks/mockBridge";
 import type { UiMessage } from "@nerita/shared/messages";
-import { settingsFixture } from "../../../../../tests/fixtures/settingsFixture";
+import { settingsFixture } from "../fixtures/settingsFixture";
 
 /** テスト操作で通知を注入し、送信された要求も表示する。 */
 function SettingsStory({

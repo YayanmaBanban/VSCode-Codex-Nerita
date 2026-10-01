@@ -1,20 +1,20 @@
 ## 日本語 textlint
 
-日本語のコメント、JSDoc、Markdown、テキスト文書を
-作成または変更した場合は、作業完了前に textlint を実行する。
+まとまった変更の校正を依頼されたときに、日本語のコメント、JSDoc、Markdown、テキスト文書を確認する。
+通常の実装作業では、この手順の実行を必須にしない。
 
-通常の作業では次を使用する。
+以下のコマンドは対象リポジトリのルートで実行する。変更ファイルの静的検査には次を使用する。
 
-    pnpm textlint:changed
+    pnpm --dir .agents/skills/japanese-proofreading textlint:changed --root ../../..
 
 検査対象をファイルやフォルダに限定できる。
 
-    pnpm textlint:changed -- .agents/docs/Testing-Policy.md
-    pnpm textlint:changed -- apps/vscode-nerita/src/extension packages/shared/src
+    pnpm --dir .agents/skills/japanese-proofreading textlint:changed --root ../../.. .agents/docs/Testing-Policy.md
+    pnpm --dir .agents/skills/japanese-proofreading textlint:changed --root ../../.. apps/vscode-nerita/src/extension packages/shared/src
 
 リポジトリ全体を確認する場合のみ次を使用する。
 
-    pnpm textlint
+    pnpm --dir .agents/skills/japanese-proofreading textlint --root ../../..
 
 `textlint` と `textlint:changed` のどちらも、引数を複数指定できる。
 `textlint:changed` にファイルやフォルダを明示した場合は、Git の変更状態に関係なく指定対象を検査する。
@@ -66,7 +66,7 @@ textlint の警告を機械的に修正しない。
 ### 静的な英単語チェック
 
 日本語文章に裸で混在する英単語も、通常の textlint 実行時に確認する。
-設定は `config/textlint-terms.json` に置く。
+設定はスキル内の `config/textlint-terms.json` に置く。
 
 - `preferredJapanese`: 一般的な日本語表現へ置き換えたい語と推奨表記。最優先で判定する。
 - `technicalDictionary`: SHA を固定した CSpell の技術辞書ソース。一般英語辞書は使わない。
@@ -98,22 +98,22 @@ TypeScript / JavaScript の構文木に実在する識別子が裸で出た場�
 
 ### コメントの意味レビュー
 
-通常の `pnpm textlint` / `pnpm textlint:changed` では、
+静的検査の `textlint` / `textlint:changed` では、
 全日本語文章のレビュー用ファイルを生成しない。
 
 変更した文章を LLM で意味レビューする場合は次を使用する。
 引数を明示した `textlint:review:changed` も、Git の変更状態に関係なく指定対象をレビューする。
 
-    pnpm textlint:review:changed
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review:changed --root ../../..
 
 ファイルやフォルダへ限定する場合は次のように指定する。
 
-    pnpm textlint:review:changed -- .agents/docs/Testing-Policy.md
-    pnpm textlint:review -- .agents/docs
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review:changed --root ../../.. .agents/docs/Testing-Policy.md
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review --root ../../.. .agents/docs
 
 リポジトリ全体を意味レビューする場合だけ次を使用する。
 
-    pnpm textlint:review
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review --root ../../..
 
 レビュー用の全文は `.textlint-cache/review-changed.jsonl` または
 `.textlint-cache/review-all.jsonl` に1項目1行で一時保存する。
@@ -125,7 +125,7 @@ TypeScript / JavaScript の構文木に実在する識別子が裸で出た場�
 
 一時ファイルをまとめて削除する場合は次を使用する。
 
-    pnpm textlint:clean
+    pnpm --dir .agents/skills/japanese-proofreading textlint:clean --root ../../..
 
 textlint で警告されなかった文章も含めて、
 意味レビューでは変更した日本語コメントを周囲のコードと照合する。

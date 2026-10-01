@@ -4,7 +4,7 @@ import {
 	codexAuthMethods,
 	codexConnectionText,
 } from "@nerita/shared/codexConnection";
-import { settingsFixture } from "../../../../../tests/fixtures/settingsFixture";
+import { settingsFixture } from "./settingsFixture";
 /** ストーリーの開始状態。 */
 export type Scenario =
 	| "empty"

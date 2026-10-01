@@ -17,7 +17,12 @@ export function privateFeatureValue<T>(
 		const escaped = JSON.stringify(secret).slice(1, -1);
 		return [secret, escaped, JSON.stringify(escaped).slice(1, -1)];
 	});
-	const hidden = privateDisplayText(json, 262144, encodedSecrets)
+	// JSON 全体の途中切断は構文を壊す。表示とコード実行の上限は各出力境界で適用する。
+	const hidden = privateDisplayText(
+		json,
+		Number.POSITIVE_INFINITY,
+		encodedSecrets,
+	)
 		.text.replace(/(?:Bearer\s+|sk-)[A-Za-z0-9._-]+/g, "[非公開]")
 		.replace(
 			/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,

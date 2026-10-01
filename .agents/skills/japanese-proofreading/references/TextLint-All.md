@@ -1,19 +1,20 @@
 ### リポジトリ全体の日本語レビュー
 
-`pnpm textlint` は通常の静的検査だけを実行し、全日本語文章の監査ファイルは生成しない。
+`textlint` は静的検査だけを実行し、全日本語文章の監査ファイルは生成しない。
+以下のコマンドは対象リポジトリのルートで実行する。
 
 リポジトリ全体を LLM で意味レビューする場合は次を使用する。
 
-    pnpm textlint:review
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review --root ../../..
 
 対象を限定する場合は、ファイルやフォルダを引数に渡す。
 
-    pnpm textlint:review -- .agents/docs
-    pnpm textlint:review -- .agents/docs/Testing-Policy.md apps/vscode-nerita/src/extension
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review --root ../../.. .agents/docs
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review --root ../../.. .agents/docs/Testing-Policy.md apps/vscode-nerita/src/extension
 
 変更ファイルだけを対象にする場合は次を使用する。
 
-    pnpm textlint:review:changed
+    pnpm --dir .agents/skills/japanese-proofreading textlint:review:changed --root ../../..
 
 レビュー対象は `.textlint-cache/review-all.jsonl` または
 `.textlint-cache/review-changed.jsonl` に1項目1行で保存する。

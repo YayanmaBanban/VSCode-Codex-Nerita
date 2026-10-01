@@ -2,7 +2,9 @@
 import { useMemo, useState } from "react";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { StoryChat as ChatApp } from "../StoryChat";
+import { expect, userEvent, within, waitFor } from "storybook/test";
+import { StoryChat as ChatApp, storyBridge } from "../StoryChat";
+import { scenarioState } from "../fixtures/chatState";
 import { createChatStoryBridge } from "../mocks/mockBridge";
 
 /** 実接続を使わず、Host が渡す一覧を再現する。 */
@@ -64,4 +66,43 @@ const meta = {
 export default meta;
 /** 入力候補を操作できるストーリー。 */
 type Story = StoryObj<typeof meta>;
-export const Ready: Story = {};
+export const Ready: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		const input = canvas.getByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		await userEvent.click(input);
+		await userEvent.type(input, "/");
+		await expect(
+			await canvas.findByRole("option", { name: /\/plan/ }),
+		).toBeVisible();
+		await expect(
+			canvas.getByRole("option", { name: /\/goal/ }),
+		).toBeVisible();
+		// Host から Pi の状態が届いたとき、開いた候補にも切替を反映する。
+		const state = scenarioState("empty");
+		state.revision = 100;
+		state.uiContributions = { surface: "pi", items: [] };
+		bridge.emit({ type: "state/snapshot", state });
+		bridge.emit({ type: "ui/backendState", backend: "pi" });
+		await waitFor(async () => {
+			await expect(
+				canvas.queryByRole("option", { name: /\/plan/ }),
+			).not.toBeInTheDocument();
+			await expect(
+				canvas.queryByRole("option", { name: /\/goal/ }),
+			).not.toBeInTheDocument();
+		});
+		await userEvent.clear(input);
+		await userEvent.type(input, "/");
+		await userEvent.click(
+			await canvas.findByRole("option", { name: /\/new/ }),
+		);
+		await userEvent.click(canvas.getByRole("button", { name: "送信" }));
+		await expect(bridge.sent).toContainEqual(
+			expect.objectContaining({ type: "prompt/send", text: "/new" }),
+		);
+	},
+};

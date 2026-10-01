@@ -4,6 +4,6 @@
 	"compilerOptions": {
 		"rootDir": "../../.."
 	},
-	"include": ["**/*.ts", "**/*.tsx", "../../../tests/fixtures/**/*.ts"],
+	"include": ["**/*.ts", "**/*.tsx"],
 	"exclude": []
 }

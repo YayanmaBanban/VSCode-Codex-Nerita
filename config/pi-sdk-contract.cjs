@@ -12,7 +12,7 @@ async function verifyPiSources(roots) {
 			const actual = createHash("sha256").update(source).digest("hex");
 			if (actual !== expected) {
 				throw new Error(
-					`Pi SDKのbundle契約が変更されています: ${name}/${file}。互換処理とtest:runtimeを確認してください。`,
+					`Pi SDKのbundle契約が変更されています: ${name}/${file}。互換処理とtest:distributionを確認してください。`,
 				);
 			}
 		}

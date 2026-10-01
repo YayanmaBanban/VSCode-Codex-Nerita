@@ -1,0 +1,237 @@
+// 実 Webview の操作を Host・SDK・ファイルへ通し、表示だけの成功にしない。
+const assert = require("node:assert/strict");
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const { chromium, expect } = require("@playwright/test");
+const vscode = require("vscode");
+
+/** 実画面を意味のある要素で見つけ、未生成のフレームを成功扱いにしない。 */
+async function findFrame(page, selector) {
+	let found;
+	await expect
+		.poll(
+			async () => {
+				for (const frame of page.frames()) {
+					if (await frame.locator(selector).count()) {
+						found = frame;
+						return true;
+					}
+				}
+				return false;
+			},
+			{ timeout: 20000 },
+		)
+		.toBe(true);
+	return found;
+}
+
+/** 認証情報を持たないローカルモデルを設定する。 */
+async function prepareModel(url, cwd) {
+	const agent = process.env.PI_CODING_AGENT_DIR;
+	await fs.mkdir(agent, { recursive: true });
+	await fs.writeFile(
+		path.join(agent, "models.json"),
+		JSON.stringify({
+			providers: {
+				local: {
+					baseUrl: url,
+					api: "openai-completions",
+					apiKey: "local-test-key",
+					models: [
+						{
+							id: "test-model",
+							reasoning: false,
+							input: ["text"],
+							contextWindow: 100000,
+							maxTokens: 128,
+						},
+					],
+				},
+			},
+		}),
+	);
+	await fs.mkdir(path.join(cwd, ".nerita"), { recursive: true });
+	await fs.writeFile(
+		path.join(cwd, ".nerita/config.toml"),
+		'[pi]\nprovider="local"\nmodel="test-model"\n',
+	);
+}
+
+/** 専用プロファイルのテーマを選び、実 Webview に届いた色と幅を記録する。 */
+async function reviewViewport(page, chat, themeKind) {
+	const themes = vscode.extensions.getExtension("vscode.theme-defaults")
+		.packageJSON.contributes.themes;
+	const theme = themes.find((entry) => entry.uiTheme === themeKind);
+	assert.ok(theme);
+	await vscode.workspace
+		.getConfiguration("workbench")
+		.update(
+			"colorTheme",
+			theme.id ?? theme.label,
+			vscode.ConfigurationTarget.Global,
+		);
+	await page.setViewportSize({ width: 1000, height: 800 });
+	await expect(chat.locator("body")).toHaveClass(
+		new RegExp(themeKind === "vs" ? "vscode-light" : "vscode-dark"),
+	);
+	const applied = await chat.evaluate(() => ({
+		width: globalThis.innerWidth,
+		theme: globalThis.document.body.dataset.vscodeThemeKind,
+		background: globalThis.getComputedStyle(globalThis.document.body)
+			.backgroundColor,
+		foreground: globalThis.getComputedStyle(globalThis.document.body).color,
+	}));
+	assert.ok(
+		applied.width > 0 && applied.width <= 420,
+		JSON.stringify(applied),
+	);
+	assert.notEqual(applied.background, applied.foreground);
+	await fs.writeFile(
+		path.join(
+			process.env.NERITA_UI_ARTIFACTS,
+			`viewport-${themeKind}.json`,
+		),
+		JSON.stringify(applied, null, 2),
+	);
+	return applied;
+}
+
+/** 信頼操作・再接続・承認・停止を、配布物の UI と公開コマンドで行う。 */
+async function run() {
+	const model = await require(process.env.NERITA_UI_MODEL).modelServer();
+	let browser;
+	let page;
+	const errors = [];
+	try {
+		const cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
+		await prepareModel(model.url, cwd);
+		const port = (
+			await fs.readFile(
+				path.join(process.env.NERITA_UI_PROFILE, "DevToolsActivePort"),
+				"utf8",
+			)
+		).split("\n")[0];
+		browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+		page = browser.contexts()[0].pages()[0];
+		await page
+			.context()
+			.tracing.start({ screenshots: true, snapshots: true });
+		page.on("pageerror", (error) => errors.push(String(error)));
+		page.on("console", (message) => {
+			if (
+				message.type() === "error" &&
+				message.location().url.startsWith("vscode-webview:")
+			) {
+				errors.push(message.text());
+			}
+		});
+		page.setDefaultTimeout(15000);
+		await vscode.commands.executeCommand("nerita.trust.manage");
+		// Trust 管理画面は独立した Webview として表示される。
+		const manager = await findFrame(
+			page,
+			'input[placeholder="名前またはパスで検索"]',
+		);
+		await manager
+			.getByRole("button", { name: "信頼する", exact: true })
+			.click();
+		await page
+			.getByRole("button", { name: "Trust this root", exact: true })
+			.click();
+		await vscode.commands.executeCommand("nerita.codex.openChat");
+		const chat = await findFrame(
+			page,
+			'[aria-label="Codexへのメッセージ"]',
+		);
+		await chat.locator("button[data-connection]").click();
+		await expect(
+			chat.getByRole("button", { name: "接続済み", exact: true }),
+		).toBeVisible();
+		model.replies.push(
+			{
+				name: "write",
+				arguments: { path: "ui.txt", content: "approved" },
+			},
+			"画面からの承認を受領しました",
+		);
+		await chat
+			.getByRole("textbox", { name: "Codexへのメッセージ" })
+			.fill("ファイルを作成");
+		await chat.getByRole("button", { name: "送信", exact: true }).click();
+		await expect(chat.getByLabel("承認要求")).toBeVisible();
+		const light = await reviewViewport(page, chat, "vs");
+		await expect(
+			chat.getByRole("button", { name: "今回のみ許可", exact: true }),
+		).toBeInViewport();
+		await expect(
+			chat.getByRole("button", { name: "停止", exact: true }),
+		).toBeInViewport();
+		await assert.rejects(fs.access(path.join(cwd, "ui.txt")), {
+			code: "ENOENT",
+		});
+		await page.screenshot({
+			path: path.join(process.env.NERITA_UI_ARTIFACTS, "approval.png"),
+		});
+		await chat
+			.getByLabel("承認要求")
+			.getByRole("button", { name: "今回のみ許可", exact: true })
+			.click();
+		await expect(
+			chat.getByText("画面からの承認を受領しました", { exact: true }),
+		).toBeVisible();
+		assert.equal(
+			await fs.readFile(path.join(cwd, "ui.txt"), "utf8"),
+			"approved",
+		);
+		model.replies.push({
+			name: "write",
+			arguments: { path: "stopped.txt", content: "blocked" },
+		});
+		await chat
+			.getByRole("textbox", { name: "Codexへのメッセージ" })
+			.fill("次の書込みを停止");
+		await chat.getByRole("button", { name: "送信", exact: true }).click();
+		await expect(chat.getByLabel("承認要求")).toBeVisible();
+		const dark = await reviewViewport(page, chat, "vs-dark");
+		assert.notEqual(light.background, dark.background);
+		await expect(
+			chat.getByRole("button", { name: "停止", exact: true }),
+		).toBeInViewport();
+		await chat.getByRole("button", { name: "停止", exact: true }).click();
+		await expect(chat.getByLabel("承認要求")).toHaveCount(0);
+		await expect(
+			chat.getByRole("button", { name: "停止", exact: true }),
+		).toHaveCount(0);
+		await assert.rejects(fs.access(path.join(cwd, "stopped.txt")), {
+			code: "ENOENT",
+		});
+		await page.screenshot({
+			path: path.join(process.env.NERITA_UI_ARTIFACTS, "stopped.png"),
+		});
+		console.log(
+			"実 Webview: 信頼操作・再接続・承認付き書込み・停止に成功",
+			process.env.NERITA_UI_ARTIFACTS,
+		);
+		assert.deepEqual(errors, []);
+		await require("./account.cjs").verifyAccount(
+			page,
+			chat,
+			model,
+			findFrame,
+		);
+		assert.deepEqual(errors, []);
+	} finally {
+		if (page) {
+			await page.screenshot({
+				path: path.join(process.env.NERITA_UI_ARTIFACTS, "last.png"),
+			});
+			await page.context().tracing.stop({
+				path: path.join(process.env.NERITA_UI_ARTIFACTS, "trace.zip"),
+			});
+		}
+		await browser?.close();
+		await model.close();
+	}
+}
+
+module.exports = { run };

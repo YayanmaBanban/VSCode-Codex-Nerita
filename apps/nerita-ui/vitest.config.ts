@@ -1,4 +1,4 @@
-// Storybook のブラウザテストを実行し、生成物を dist 配下に集約する。
+// Storybook の描画と操作を Chromium で検証する。
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,15 +13,10 @@ const dirname =
 		? __dirname
 		: path.dirname(fileURLToPath(import.meta.url));
 
-const repoRoot = path.resolve(dirname, "../..");
-
-// Storybook アドオンからの起動時も、リポジトリルートを基準に解決する。
+// Storybook アドオンからの起動時も、UI パッケージを基準に解決する。
 export default defineConfig({
 	root: dirname,
 	test: {
-		coverage: {
-			reportsDirectory: path.join(repoRoot, "dist/vitest/coverage"),
-		},
 		projects: [
 			{
 				extends: true,

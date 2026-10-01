@@ -208,8 +208,9 @@ function groupIssues(issues) {
 		const preferredTerm =
 			group.type === "unquoted-identifier"
 				? group.term
-				: variants.find((variant) => variant === group.normalizedTerm) ??
-					group.term;
+				: (variants.find(
+						(variant) => variant === group.normalizedTerm,
+					) ?? group.term);
 		const output = {
 			type: group.type,
 			term: preferredTerm,

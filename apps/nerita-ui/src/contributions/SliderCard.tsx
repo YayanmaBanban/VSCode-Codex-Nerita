@@ -125,7 +125,10 @@ function cardTrigger(control: CardProps["control"], disabled: boolean) {
 			{model ? (
 				<>
 					<span className="truncate">
-						{optionLabel(model)} {option.currentValue}
+						<span className={cn(!control.warning && "text-foreground")}>
+							{optionLabel(model)}
+						</span>{" "}
+						{option.currentValue}
 					</span>
 					{control.fastMode?.checked && (
 						<span

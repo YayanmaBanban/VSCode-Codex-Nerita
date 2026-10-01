@@ -146,10 +146,8 @@ export default defineConfig([
 	{
 		// ツールが要求する default export を設定ファイルで許可する。
 		files: [
-			"config/**/*.{ts,tsx}",
 			"apps/nerita-ui/.storybook/**/*.{ts,tsx}",
 			"apps/nerita-ui/vitest.config.ts",
-			"tests/e2e/config/*.ts",
 			"**/*.stories.tsx",
 		],
 		rules: { "no-restricted-syntax": "off" },

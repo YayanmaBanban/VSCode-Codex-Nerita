@@ -1,6 +1,7 @@
 packages:
     - "apps/*"
     - "packages/*"
+    - ".agents/skills/japanese-proofreading"
 allowBuilds:
     "@google/genai": false
     "@vscode/vsce-sign": false

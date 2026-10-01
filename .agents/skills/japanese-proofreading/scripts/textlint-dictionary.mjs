@@ -123,10 +123,7 @@ export function parseCspellWordList(source) {
 			continue;
 		}
 
-		if (
-			line.length >= 2 &&
-			/^[A-Za-z0-9][A-Za-z0-9._+#:@-]*$/.test(line)
-		) {
+		if (line.length >= 2 && /^[A-Za-z0-9][A-Za-z0-9._+#:@-]*$/.test(line)) {
 			terms.add(line.toLowerCase());
 		}
 	}
@@ -310,9 +307,17 @@ export async function loadAutomaticEnglishTerms({
 	dictionaryConfig,
 	fetchImpl = globalThis.fetch,
 }) {
-	const packageJson = JSON.parse(
-		await fs.readFile(path.join(root, "package.json"), "utf8"),
-	);
+	let packageJson = {};
+	try {
+		packageJson = JSON.parse(
+			await fs.readFile(path.join(root, "package.json"), "utf8"),
+		);
+	} catch (error) {
+		// 文書だけのリポジトリでは、依存パッケージ由来の語彙を追加しない。
+		if (error?.code !== "ENOENT") {
+			throw error;
+		}
+	}
 	const projectTerms = extractProjectTerms(packageJson);
 	const external = await loadExternalTechnicalTerms({
 		root,

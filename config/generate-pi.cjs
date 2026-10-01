@@ -4,6 +4,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { runPnpm } = require("./run-pnpm.cjs");
 const { cleanupLicenses } = require("./cleanup-licenses.cjs");
+const { readRequestedVersion } = require("./generate-version.cjs");
 
 /** JSON を `require` キャッシュに依存せず読み込む。 */
 async function readJson(file) {
@@ -12,7 +13,10 @@ async function readJson(file) {
 
 /** 全入力を確認してから、バージョン・ライセンス・ソースのハッシュを書き出す。 */
 async function main() {
-	const requested = readRequestedVersion();
+	const requested = readRequestedVersion(
+		"@earendil-works/pi-coding-agent",
+		"pi:generate",
+	);
 	const root = path.resolve(__dirname, "../apps/vscode-nerita");
 	if (requested !== undefined) {
 		runPnpm([
@@ -81,20 +85,6 @@ main().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;
 });
-
-/** 生成コマンドのバージョン引数を検証する。 */
-function readRequestedVersion() {
-	const args = process.argv.slice(2);
-	const requested = args[0];
-	if (
-		args.length > 1 ||
-		(requested !== undefined &&
-			!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(requested))
-	) {
-		throw new Error("使い方: pnpm pi:generate [バージョン（例: 0.86.1）]");
-	}
-	return requested;
-}
 
 /** SDK の互換性を確認する対象ファイルの SHA-256 ハッシュを生成する。 */
 async function readSdkContract(contractPath, sdk, ai) {

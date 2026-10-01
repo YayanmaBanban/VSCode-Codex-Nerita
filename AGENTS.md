@@ -2,13 +2,12 @@
 
 - notion のリンクをファイル内に残さない
 - ローカルの絶対パスをファイル内に残さない。相対パスで扱う
-- ユーザの指示なく、`./README.md` を更新しない
-    - 作業内容を残したい場合は、./docs/working_memory/内に残す
-    - `working_memory` には、対応を見送った要素や今後の対応、レビュー結果など価値のあるものを残し、Notion を見るだけで済むものや単純な作業内容などで無駄に増やさない
-
-# 文章のルール
-
-[日本語コメントの校正](.agents/docs/Japanese-Comments.md)
+- ユーザの許可なしに、`./README.md` と `./CHANGELOG.md` を更新しない
+- 作業記録が必要な場合は `docs/working_memory/` に残す
+    - 未解決の課題、見送った対応とその理由、今後の対応条件、設計判断の背景など、次の作業に必要な情報を記録する
+    - レビュー結果は、未対応の指摘や継続して注意すべき点がある場合に記録する
+    - 完了した作業の羅列、コマンドの実行履歴、既存の文書や Notion と重複する内容だけの記録は作成しない
+    - 同じ話題の記録がある場合は既存ファイルを更新し、作業ごとにファイルを増やさない
 
 # プロジェクトの指示
 
@@ -26,7 +25,7 @@ React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `apps/
 | `apps/nerita-ui/src/`・`apps/vscode-nerita/src/extension/`・`packages/shared/src/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
 | 複数ファイルの依存調査・構造変更・コードレビュー | [コード調査・依存グラフ](.agents/docs/Code-Review-Graph.md) |
 | Webview UI の作成 | [UI 実装](.agents/docs/UI-Implementation.md) |
-| 検証方針の決定、テストの追加・変更・削除・レビュー | [テストポリシー](.agents/docs/Testing-Policy.md) |
+| 検証方針の決定、テストの追加・変更・削除・レビュー、UI テストの実装・実行環境の変更 | [テストポリシー](.agents/docs/Testing-Policy.md) |
 | Webview UI の表示・操作・アニメーションの変更、UI レビュー | [UI レビュー](.agents/docs/UI-Review-Guide.md) |
 
 対象が明確な局所修正や文書のみの変更では、無関係なガイドや全体の依存グラフを読み込む必要はありません。
@@ -41,4 +40,4 @@ UI ライブラリや Web 向けアニメーションは Webview に使用しま
 
 ### pnpm
 
-ルートで `pnpm watch`、`pnpm check`（Lint・型チェック）、`pnpm test`（拡張機能の結合テスト）を実行できます。`pnpm compile` は開発ビルド、`pnpm package` は本番ビルドです。検証は変更の影響に合わせて選び、UI の検証は該当ガイドに従います。Windows で PowerShell の実行ポリシーにより起動できない場合は `pnpm.cmd` を使ってください。
+ルートで `pnpm watch`、`pnpm check`（Lint・型チェック）、`pnpm test`（製品経路のローカル検証）を実行できます。`pnpm test:distribution` は展開 VSIX と実 Extension Host の検証です。`pnpm compile` は開発ビルド、`pnpm package` は本番ビルドです。検証は変更の影響に合わせて選び、UI の検証は該当ガイドに従います。Windows で PowerShell の実行ポリシーにより起動できない場合は `pnpm.cmd` を使ってください。
