@@ -17,18 +17,12 @@ React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `apps/
 
 ## 作業に応じた参照先
 
-該当する作業を始める際に、対応するガイドを参照してください。
+コードの追加・変更、依存調査・構造変更・コードレビュー、検証方針の決定やテスト作業、UI の変更・レビューでは [開発ガイドライン](.agents/skills/development-guidelines/SKILL.md) スキルを使用してください。作業に該当するリファレンスだけを読んでください。
 
-| 作業 | 参照先 |
-| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| コードの追加・変更 | [コード実装](.agents/docs/Code-Implementation.md) |
-| `apps/nerita-ui/src/`・`apps/vscode-nerita/src/extension/`・`packages/shared/src/` のファイル追加・分割・移動・フォルダ整理 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
-| 複数ファイルの依存調査・構造変更・コードレビュー | [コード調査・依存グラフ](.agents/docs/Code-Review-Graph.md) |
-| Webview UI の作成 | [UI 実装](.agents/docs/UI-Implementation.md) |
-| 検証方針の決定、テストの追加・変更・削除・レビュー、UI テストの実装・実行環境の変更 | [テストポリシー](.agents/docs/Testing-Policy.md) |
-| Webview UI の表示・操作・アニメーションの変更、UI レビュー | [UI レビュー](.agents/docs/UI-Review-Guide.md) |
+- ソースファイルの追加・分割・移動・フォルダ整理では [ディレクトリ構成](.agents/docs/Directory-Structure.md) を参照してください。
+- 検証方針の決定、テストや Webview UI の変更・レビューでは [プロジェクト固有の検証環境](.agents/docs/Project-Verification.md) も参照してください。
 
-対象が明確な局所修正や文書のみの変更では、無関係なガイドや全体の依存グラフを読み込む必要はありません。
+Webview の色は既存のテーマ定義を使い、VS Code のテーマ変数への追従を維持してください。
 
 ## Webview UI と Extension Host の境界
 

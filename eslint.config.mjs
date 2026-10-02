@@ -7,6 +7,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import typescriptEslint from "typescript-eslint";
 import { builtinModules } from "node:module";
+import betterTailwindcss from "eslint-plugin-better-tailwindcss";
 
 const platformImports = [
 	"vscode",
@@ -44,6 +45,23 @@ export default defineConfig([
 			"prefer-template": "error",
 			complexity: ["error", 10],
 			"max-depth": ["error", 3],
+			// コールバックの入れ子を2段までに制限する。
+			"max-nested-callbacks": [
+				"error",
+				{
+					max: 2,
+					checkConstructorCallCallbacks: true,
+				},
+			],
+			// 空行とコメントを除き、関数あたりの行数を80行までに制限する。
+			"max-lines-per-function": [
+				"error",
+				{
+					max: 80,
+					skipBlankLines: true,
+					skipComments: true,
+				},
+			],
 		},
 	},
 	{
@@ -221,5 +239,15 @@ export default defineConfig([
 		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
 		ignores: ["apps/nerita-ui/src/bridge/vscodeBridge.ts"],
 		rules: { "no-restricted-globals": ["error", "acquireVsCodeApi"] },
+	},
+	{
+		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
+		plugins: {
+			"better-tailwindcss": betterTailwindcss,
+		},
+		rules: {
+			"better-tailwindcss/enforce-consistent-line-wrapping": "warn",
+			"better-tailwindcss/enforce-consistent-class-order": "warn",
+		},
 	},
 ]);
