@@ -1,3 +1,5 @@
+<!-- textlint-disable ja-technical-writing/no-mix-dearu-desumasu -->
+
 # Nerita
 
 VS Code 上で Codex と Pi を利用する拡張機能です。開発には Windows x64 と Node.js 22 以降、pnpm を使用します。
@@ -33,3 +35,5 @@ runtime とスキーマも VS Code app の `dist/` に集約します。配布�
 `pnpm test:host` は単体・契約・結合テスト、`pnpm test:runtime` は runtime の配布検証、`pnpm test` は実際の Extension Host での検証です。
 UI は `pnpm storybook`、`pnpm test:storybook`、`pnpm ui-review` で確認します。
 ルートの開発依存には、テストが直接利用する Pi SDK や TOML・スキーマ処理も含みます。配布用 runtime は VS Code app の依存から解決します。
+
+<!-- textlint-enable ja-technical-writing/no-mix-dearu-desumasu -->
