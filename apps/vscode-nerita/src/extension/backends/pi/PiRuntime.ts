@@ -1,4 +1,5 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
+
 import { randomUUID } from "node:crypto";
 import type { HandoffGenerator } from "../../session/HandoffContext";
 import { generatePiHandoff } from "./PiHandoffGeneration";
@@ -96,7 +97,7 @@ export type PiRuntimeSession = PiSession & {
 };
 export type { AgentSessionEvent as PiEvent };
 
-/** 実 SDK とテスト接続を同じ寿命管理で扱う。 */
+/** SDK 本体とテスト用の接続に共通する、起動・中断のインターフェース。 */
 export type PiFactory = (
 	signal: AbortSignal,
 	authorize: PiAuthorize,
@@ -131,7 +132,7 @@ export type PiRuntimeOptions = {
 	executor?: SandboxCommandExecutor | null;
 	parentPolicy?: AgentAccessPolicy;
 	role?: AgentRole;
-	/** 共通子 Runtime の内部履歴を親の履歴一覧へ保存しない。 */
+	/** 子の実行環境で使う内部履歴を、親の履歴一覧へ保存しない。 */
 	ephemeral?: boolean;
 	/** 実行基盤の利用不能も子へ継承し、フォールバックによる有効化を防ぐ。 */
 	sandboxUnavailable?: string;
@@ -212,19 +213,370 @@ async function openPiRuntime(
 		...options,
 		signal: AbortSignal.any([parentSignal, lifetime.signal]),
 	};
-	const sdkUrl = pathToFileURL(
-		join(options.extensionPath, "dist/runtime/pi.mjs"),
-	).href;
-	const sdk = (await import(sdkUrl)) as typeof PiSdk & {
-		getSupportedThinkingLevels(
-			model: NonNullable<AgentSession["model"]>,
-		): string[];
-	};
+	const sdk = await loadPiSdk(options.extensionPath);
 	options.signal.throwIfAborted();
+	const resources = await prepareRuntimeResources(options, sdk);
+	options = resources.options;
+	const { agentDir, resourceLoader, runtimeTools } = resources;
+	options.signal.throwIfAborted();
+	const { storage, modelRuntime, model } = await prepareRuntimeModel(
+		sdk,
+		resources,
+	);
+	const { manager, history } = await openRuntimeSessionStore(
+		options,
+		sdk,
+		agentDir,
+		storage,
+	);
+	const { customTools, extensionTools } = runtimeCustomTools(
+		resourceLoader,
+		runtimeTools,
+		options,
+	);
+	seedChildContext(manager, options.initialMessages);
+	const { agentViews, jobs, children } = prepareRuntimeDelegation(
+		manager,
+		resources,
+		customTools,
+	);
+	const { session } = await createConfiguredPiSession(
+		resources,
+		customTools,
+		modelRuntime,
+		model,
+		manager,
+		extensionTools,
+		sdk,
+	);
+	agentViews.parentId = session.sessionId;
+	const account = await bindRuntimeAccount(
+		resources,
+		session,
+		modelRuntime,
+		sdk,
+	);
+	const stopJobs = session.abort.bind(session);
+	session.abort = async () => {
+		await Promise.all([jobs.stop(), stopJobs()]);
+	};
+	const close = bindPiRuntimeLifetime(
+		session,
+		children,
+		lifetime,
+		parentSignal,
+	);
+	return runtimeSessionFacade(
+		session,
+		modelRuntime,
+		account,
+		resources,
+		children,
+		agentViews,
+		jobs,
+		manager,
+		close,
+		history,
+		storage,
+	);
+}
+
+/** 一時セッションと永続履歴の保存先を選ぶ。 */
+async function openRuntimeSessionStore(
+	options: PiRuntimeOptions,
+	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
+	agentDir: string,
+	storage: PiSessionStorage,
+) {
+	return options.ephemeral
+		? {
+				manager: sdk.SessionManager.inMemory(options.cwd),
+				history: undefined,
+			}
+		: await openPiSessionStore(
+				sdk,
+				options.cwd,
+				agentDir,
+				storage,
+				options.signal,
+				options.resume,
+			);
+}
+
+/** Host が利用する履歴・ワークフロー・利用量の入口をセッションへ接続する。 */
+function runtimeSessionFacade(
+	session: AgentSession,
+	modelRuntime: PiSdk.ModelRuntime,
+	account: PiAccount,
+	resources: Awaited<ReturnType<typeof prepareRuntimeResources>>,
+	children: PiChildRuntimes,
+	agentViews: PiAgentViews,
+	jobs: PiJobs,
+	manager: PiSdk.SessionManager,
+	close: () => Promise<void>,
+	history: PiHistoryAccess | undefined,
+	storage: PiSessionStorage,
+): PiRuntimeSession | PromiseLike<PiRuntimeSession> {
+	const { subagents, runtimeTools, options, resourceLoader } = resources;
+
+	return Object.assign(session, {
+		generateHandoff: (request: Parameters<HandoffGenerator>[0]) =>
+			generatePiHandoff(
+				modelRuntime,
+				request,
+				account
+					.agentModels()
+					.find((item) => item.value === request.model)?.efforts,
+			),
+		workflow: createRuntimeWorkflow(
+			subagents,
+			children,
+			runtimeTools,
+			options,
+			agentViews,
+			jobs,
+			manager,
+			session,
+		),
+		accessPolicy: runtimeTools.paths.policy,
+		contextSource: manager,
+		agentViews,
+		jobs,
+		children,
+		close,
+		...(history ? { history } : {}),
+		storageChanged: () =>
+			!options.resume &&
+			session.messages.length === 0 &&
+			jobs.list().length === 0 &&
+			!!options.getStorage &&
+			options.getStorage() !== storage,
+		account,
+		quota: new PiQuotaService(
+			modelRuntime,
+			session,
+			options.request,
+			undefined,
+			openAICodexQuota(
+				options.extensionPath,
+				options.cwd,
+				options.signal,
+			),
+		),
+		skills: resourceLoader.getSkills().skills.map((skill) => ({
+			name: skill.name,
+			description: skill.description,
+			path: skill.filePath,
+		})),
+	});
+}
+
+/** 親の許可と履歴を接続してワークフローを実行する。 */
+function createRuntimeWorkflow(
+	subagents: Awaited<ReturnType<typeof runtimeSubagents>>,
+	children: PiChildRuntimes,
+	runtimeTools: Awaited<ReturnType<typeof preparePiRuntimeTools>>,
+	options: PiRuntimeOptions,
+	agentViews: PiAgentViews,
+	jobs: PiJobs,
+	manager: PiSdk.SessionManager,
+	session: AgentSession,
+): (
+	request: WorkflowExecution,
+	signal: AbortSignal,
+	directAuthorize: PiAuthorize,
+) => Promise<string> {
+	return async (
+		request: WorkflowExecution,
+		signal: AbortSignal,
+		directAuthorize: PiAuthorize,
+	) => {
+		const run = createPiWorkflowRunner(
+			subagents.workflowPackage,
+			subagents.definitions,
+			children,
+			runtimeTools.paths.policy,
+			options.cwd,
+			directAuthorize,
+			options.signal,
+			agentViews,
+			jobs,
+			manager,
+		);
+		if (!run) {
+			throw new Error(
+				"pi-subagents が未導入です。ユーザー設定へ登録して再接続してください。",
+			);
+		}
+		const result = await run(
+			randomUUID(),
+			{ action: "run", file: request.file, async: false },
+			signal,
+			session.model,
+			request.text,
+		);
+		return result.content.map((item) => item.text).join("\n");
+	};
+}
+
+/** 拡張接続とカタログ更新に失敗した場合はセッションを破棄する。 */
+async function bindRuntimeAccount(
+	resources: Awaited<ReturnType<typeof prepareRuntimeResources>>,
+	session: AgentSession,
+	modelRuntime: PiSdk.ModelRuntime,
+	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
+) {
+	const { controls, options, subagents, agentDir } = resources;
+
+	controls.bind(session);
+	controls.bindDelegation(
+		() =>
+			!options.signal.aborted &&
+			modelRuntime.hasConfiguredAuth("openai") &&
+			subagents.definitions.length > 0 &&
+			session.getActiveToolNames().includes("subagent"),
+	);
+	const account = new PiAccount(
+		modelRuntime,
+		session,
+		options.authService,
+		controls,
+		new PiModelCatalogService(modelRuntime, session, options.request),
+		options.saveModel,
+		options.resume ? undefined : options.preferredModel,
+		(model) => sdk.getSupportedThinkingLevels(model),
+		() => getPiDeviceId(agentDir),
+	);
+	try {
+		await session.bindExtensions({ mode: "print" });
+		// 起動処理の完了前に取得したカタログの候補と保存推論を適用し、SDK 既定値を公開しない。
+		await account.refreshCatalog(options.signal);
+		options.signal.throwIfAborted();
+	} catch (error) {
+		session.dispose();
+		throw error;
+	}
+	if (options.signal.aborted) {
+		session.dispose();
+		options.signal.throwIfAborted();
+		throw new Error(
+			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
+		);
+	}
+	return account;
+}
+
+/** 子とジョブの履歴を復元し、許可した委譲ツールだけを追加する。 */
+function prepareRuntimeDelegation(
+	manager: PiSdk.SessionManager,
+	resources: Awaited<ReturnType<typeof prepareRuntimeResources>>,
+	customTools: PiSdk.ToolDefinition[],
+) {
+	const { options, runtimeTools, subagents, authorize } = resources;
+
+	const agentHistory = new PiAgentHistory(manager);
+	const agentViews = new PiAgentViews((record) => agentHistory.write(record));
+	agentViews.restore(
+		restorePiAgentRecords(manager.getBranch()),
+		manager.getSessionId(),
+		options.cwd,
+	);
+	const jobs = new PiJobs(agentViews, manager);
+	jobs.restore(manager.getBranch(), manager.getSessionId());
+	const children = createChildren(options, runtimeTools, jobs);
+	customTools.push(
+		...permittedTools(
+			createPiSubagentTools(
+				subagents.definitions,
+				children,
+				runtimeTools.paths.policy,
+				options.cwd,
+				authorize,
+				options.signal,
+				agentViews,
+				jobs,
+				manager,
+			),
+			options.allowedTools,
+		),
+	);
+	customTools.push(
+		...permittedTools(
+			createPiWorkflowTools(
+				subagents.workflowPackage,
+				subagents.definitions,
+				children,
+				runtimeTools.paths.policy,
+				options.cwd,
+				authorize,
+				options.signal,
+				agentViews,
+				jobs,
+				manager,
+			),
+			options.allowedTools,
+		),
+	);
+	return { agentViews, jobs, children };
+}
+
+/** 信頼した拡張による `bash` の置き換えと、子のツール許可リストを反映する。 */
+function runtimeCustomTools(
+	resourceLoader: PiSdk.DefaultResourceLoader,
+	runtimeTools: Awaited<ReturnType<typeof preparePiRuntimeTools>>,
+	options: PiRuntimeOptions,
+) {
+	const extensionTools = resourceLoader
+		.getExtensions()
+		.extensions.flatMap((extension) => [...extension.tools.keys()]);
+	// 非 Windows では、明示的に信頼した `bash` 拡張が SDK 標準ツールを置き換えられる。
+	const customTools = permittedTools(
+		runtimeTools.tools,
+		options.allowedTools,
+	).filter(
+		(tool) =>
+			!(
+				process.platform !== "win32" &&
+				tool.name === "bash" &&
+				extensionTools.includes("bash")
+			),
+	);
+	return { customTools, extensionTools };
+}
+
+/** 拡張由来のプロバイダーを登録してから初期モデルを検証する。 */
+async function prepareRuntimeModel(
+	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
+	resources: Awaited<ReturnType<typeof prepareRuntimeResources>>,
+) {
+	const { agentDir, options, resourceLoader } = resources;
+	const modelRuntime = await sdk.ModelRuntime.create({
+		authPath: join(agentDir, "auth.json"),
+		modelsPath: join(agentDir, "models.json"),
+		modelsStorePath: join(agentDir, "models-store.json"),
+		allowModelNetwork: true,
+		modelRefreshTimeoutMs: 15000,
+		signal: options.signal,
+	});
+	// SDK が初期モデルを選ぶ前に、パッケージ由来プロバイダーも候補へ登録する。
+	registerExtensionProviders(resourceLoader, modelRuntime);
+	await modelRuntime.getAvailable(undefined, { signal: options.signal });
+	const model = resolvePiInitialModel(options, modelRuntime);
+	validateChildModel(options, model);
+	options.signal.throwIfAborted();
+	const storage = await trustedSessionStorage(options);
+	return { storage, modelRuntime, model };
+}
+
+/** 信頼・承認・ツールの準備を終えてから拡張資源を読み込む。 */
+async function prepareRuntimeResources(
+	options: PiRuntimeOptions,
+	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
+) {
 	const agentDir = options.agentDir || sdk.getAgentDir();
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
 	settingsManager.setProjectTrusted(await piWorkspaceTrusted(options));
-	// 会話の自動再実行は Host 側の停止・承認の寿命と分離して無効化する。
+	// Host 側の停止・承認管理を経ずに会話を再実行しないよう、SDK の自動再試行などを無効化する。
 	settingsManager.applyOverrides({
 		compaction: { enabled: false },
 		retry: { enabled: false, provider: { maxRetries: 0 } },
@@ -276,257 +628,32 @@ async function openPiRuntime(
 			secrets: () => piFeatureSecrets(agentDir),
 		},
 	);
-	options.signal.throwIfAborted();
-	const modelRuntime = await sdk.ModelRuntime.create({
-		authPath: join(agentDir, "auth.json"),
-		modelsPath: join(agentDir, "models.json"),
-		modelsStorePath: join(agentDir, "models-store.json"),
-		allowModelNetwork: true,
-		modelRefreshTimeoutMs: 15_000,
-		signal: options.signal,
-	});
-	// SDK が初期モデルを選ぶ前に、パッケージ由来プロバイダーも候補へ登録する。
-	registerExtensionProviders(resourceLoader, modelRuntime);
-	await modelRuntime.getAvailable(undefined, { signal: options.signal });
-	const model = resolvePiInitialModel(options, modelRuntime);
-	validateChildModel(options, model);
-	options.signal.throwIfAborted();
-	const storage = await trustedSessionStorage(options);
-	const { manager, history } = options.ephemeral
-		? {
-				manager: sdk.SessionManager.inMemory(options.cwd),
-				history: undefined,
-			}
-		: await openPiSessionStore(
-				sdk,
-				options.cwd,
-				agentDir,
-				storage,
-				options.signal,
-				options.resume,
-			);
-	const extensionTools = resourceLoader
-		.getExtensions()
-		.extensions.flatMap((extension) => [...extension.tools.keys()]);
-	// 非 Windows では、明示的に信頼した `bash` 拡張が SDK 標準ツールを置き換えられる。
-	const customTools = permittedTools(
-		runtimeTools.tools,
-		options.allowedTools,
-	).filter(
-		(tool) =>
-			!(
-				process.platform !== "win32" &&
-				tool.name === "bash" &&
-				extensionTools.includes("bash")
-			),
-	);
-	seedChildContext(manager, options.initialMessages);
-	const agentHistory = new PiAgentHistory(manager);
-	const agentViews = new PiAgentViews((record) => agentHistory.write(record));
-	agentViews.restore(
-		restorePiAgentRecords(manager.getBranch()),
-		manager.getSessionId(),
-		options.cwd,
-	);
-	const jobs = new PiJobs(agentViews, manager);
-	jobs.restore(manager.getBranch(), manager.getSessionId());
-	const children = createChildren(options, runtimeTools, jobs);
-	customTools.push(
-		...permittedTools(
-			createPiSubagentTools(
-				subagents.definitions,
-				children,
-				runtimeTools.paths.policy,
-				options.cwd,
-				authorize,
-				options.signal,
-				agentViews,
-				jobs,
-				manager,
-			),
-			options.allowedTools,
-		),
-	);
-	customTools.push(
-		...permittedTools(
-			createPiWorkflowTools(
-				subagents.workflowPackage,
-				subagents.definitions,
-				children,
-				runtimeTools.paths.policy,
-				options.cwd,
-				authorize,
-				options.signal,
-				agentViews,
-				jobs,
-				manager,
-			),
-			options.allowedTools,
-		),
-	);
-	const features = {
-		codemode: options.codemode,
-		toolSearch: options.toolSearch,
-		secrets: () => piFeatureSecrets(agentDir),
-	};
-	const exposedTools = customTools.map((tool) =>
-		protectPiFeatureTool(piToolExposure(tool, features), features),
-	);
-	const activeExtensions = resourceLoader
-		.getExtensions()
-		.extensions.flatMap((extension) =>
-			[...extension.tools.values()]
-				.filter(
-					(tool) =>
-						tool.definition.exposure !== "deferred" &&
-						tool.definition.exposure !== "codemode",
-				)
-				.map((tool) => tool.definition.name),
-		);
-	exposedTools.forEach((tool) => toolRegistry.add(tool.name));
-	const sessionOptions = {
-		cwd: options.cwd,
+	return {
 		agentDir,
-		settingsManager,
 		resourceLoader,
-		modelRuntime,
-		...(model && !options.resume ? { model } : {}),
-		sessionManager: manager,
-		tools: [...exposedTools.map((tool) => tool.name), ...extensionTools],
-		neritaAllowedToolNames: toolRegistry,
-		neritaActiveToolNames: [
-			...exposedTools
-				.filter(
-					(tool) =>
-						tool.exposure !== "deferred" &&
-						tool.exposure !== "codemode",
-				)
-				.map((tool) => tool.name),
-			...activeExtensions,
-		],
-		customTools: exposedTools,
-	};
-	const { session } = await sdk.createAgentSession(sessionOptions);
-	agentViews.parentId = session.sessionId;
-	controls.bind(session);
-	controls.bindDelegation(
-		() =>
-			!options.signal.aborted &&
-			modelRuntime.hasConfiguredAuth("openai") &&
-			subagents.definitions.length > 0 &&
-			session.getActiveToolNames().includes("subagent"),
-	);
-	const account = new PiAccount(
-		modelRuntime,
-		session,
-		options.authService,
+		runtimeTools,
+		subagents,
+		authorize,
+		toolRegistry,
+		settingsManager,
 		controls,
-		new PiModelCatalogService(modelRuntime, session, options.request),
-		options.saveModel,
-		options.resume ? undefined : options.preferredModel,
-		(model) => sdk.getSupportedThinkingLevels(model),
-		() => getPiDeviceId(agentDir),
-	);
-	try {
-		await session.bindExtensions({ mode: "print" });
-		// 起動処理の完了前に取得したカタログの候補と保存推論を適用し、SDK 既定値を公開しない。
-		await account.refreshCatalog(options.signal);
-		options.signal.throwIfAborted();
-	} catch (error) {
-		session.dispose();
-		throw error;
-	}
-	if (options.signal.aborted) {
-		session.dispose();
-		options.signal.throwIfAborted();
-		throw new Error(
-			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
-		);
-	}
-	const stopJobs = session.abort.bind(session);
-	session.abort = async () => {
-		await Promise.all([jobs.stop(), stopJobs()]);
+		options,
 	};
-	const close = bindPiRuntimeLifetime(
-		session,
-		children,
-		lifetime,
-		parentSignal,
-	);
-	return Object.assign(session, {
-		generateHandoff: (request: Parameters<HandoffGenerator>[0]) =>
-			generatePiHandoff(
-				modelRuntime,
-				request,
-				account
-					.agentModels()
-					.find((item) => item.value === request.model)?.efforts,
-			),
-		workflow: async (
-			request: WorkflowExecution,
-			signal: AbortSignal,
-			directAuthorize: PiAuthorize,
-		) => {
-			const run = createPiWorkflowRunner(
-				subagents.workflowPackage,
-				subagents.definitions,
-				children,
-				runtimeTools.paths.policy,
-				options.cwd,
-				directAuthorize,
-				options.signal,
-				agentViews,
-				jobs,
-				manager,
-			);
-			if (!run) {
-				throw new Error(
-					"pi-subagents が未導入です。ユーザー設定へ登録して再接続してください。",
-				);
-			}
-			const result = await run(
-				randomUUID(),
-				{ action: "run", file: request.file, async: false },
-				signal,
-				session.model,
-				request.text,
-			);
-			return result.content.map((item) => item.text).join("\n");
-		},
-		accessPolicy: runtimeTools.paths.policy,
-		contextSource: manager,
-		agentViews,
-		jobs,
-		children,
-		close,
-		...(history ? { history } : {}),
-		storageChanged: () =>
-			!options.resume &&
-			session.messages.length === 0 &&
-			jobs.list().length === 0 &&
-			!!options.getStorage &&
-			options.getStorage() !== storage,
-		account,
-		quota: new PiQuotaService(
-			modelRuntime,
-			session,
-			options.request,
-			undefined,
-			openAICodexQuota(
-				options.extensionPath,
-				options.cwd,
-				options.signal,
-			),
-		),
-		skills: resourceLoader.getSkills().skills.map((skill) => ({
-			name: skill.name,
-			description: skill.description,
-			path: skill.filePath,
-		})),
-	});
 }
 
-/** コード実行の子も、UI の返答より先に停止できる承認口へ接続する。 */
+/** 配布済みの ESM エントリーポイントから SDK を読み込み、Host で使用する API の型を付ける。 */
+async function loadPiSdk(extensionPath: string) {
+	const sdkUrl = pathToFileURL(
+		join(extensionPath, "dist/runtime/pi.mjs"),
+	).href;
+	return (await import(sdkUrl)) as typeof PiSdk & {
+		getSupportedThinkingLevels(
+			model: NonNullable<AgentSession["model"]>,
+		): string[];
+	};
+}
+
+/** コード経由のツール実行でも、UI の承認応答を待つ間は中断を受け付ける。 */
 function runtimeAuthorizer(
 	authorize: PiAuthorize,
 	codemode?: boolean,
@@ -650,7 +777,7 @@ function resolvePreferredModel(
 }
 /** 子には定義探索と再委譲用ツールを公開しない。 */
 async function runtimeSubagents(
-	sdk: typeof PiSdk,
+	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
 	options: PiRuntimeOptions,
 	agentDir: string,
 	settings: PiSdk.SettingsManager,
@@ -686,4 +813,63 @@ function permittedTools(
 	allowed: string[] | undefined,
 ) {
 	return tools.filter((tool) => !allowed || allowed.includes(tool.name));
+}
+
+/** 公開できるツールの設定を確定してから SDK のセッションへ渡す。 */
+async function createConfiguredPiSession(
+	resources: Awaited<ReturnType<typeof prepareRuntimeResources>>,
+	customTools: PiSdk.ToolDefinition[],
+	modelRuntime: PiSdk.ModelRuntime,
+	model: ReturnType<typeof resolvePiInitialModel>,
+	manager: PiSdk.SessionManager,
+	extensionTools: string[],
+	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
+) {
+	const { options, agentDir, resourceLoader, toolRegistry, settingsManager } =
+		resources;
+
+	const features = {
+		codemode: options.codemode,
+		toolSearch: options.toolSearch,
+		secrets: () => piFeatureSecrets(agentDir),
+	};
+	const exposedTools = customTools.map((tool) =>
+		protectPiFeatureTool(piToolExposure(tool, features), features),
+	);
+	const activeExtensions = resourceLoader
+		.getExtensions()
+		.extensions.flatMap((extension) =>
+			[...extension.tools.values()]
+				.filter(
+					(tool) =>
+						tool.definition.exposure !== "deferred" &&
+						tool.definition.exposure !== "codemode",
+				)
+				.map((tool) => tool.definition.name),
+		);
+	exposedTools.forEach((tool) => toolRegistry.add(tool.name));
+	const sessionOptions = {
+		cwd: options.cwd,
+		agentDir,
+		settingsManager,
+		resourceLoader,
+		modelRuntime,
+		...(model && !options.resume ? { model } : {}),
+		sessionManager: manager,
+		tools: [...exposedTools.map((tool) => tool.name), ...extensionTools],
+		neritaAllowedToolNames: toolRegistry,
+		neritaActiveToolNames: [
+			...exposedTools
+				.filter(
+					(tool) =>
+						tool.exposure !== "deferred" &&
+						tool.exposure !== "codemode",
+				)
+				.map((tool) => tool.name),
+			...activeExtensions,
+		],
+		customTools: exposedTools,
+	};
+	const { session } = await sdk.createAgentSession(sessionOptions);
+	return { session };
 }

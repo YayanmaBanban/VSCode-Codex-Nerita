@@ -1,27 +1,33 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
-import { useRef, useState } from "react";
-import { cn } from "cnfast";
-import { useFollowConversation } from "./messages/useFollowConversation";
-import { AnimatePresence } from "motion/react";
+
 import type { Bridge } from "@nerita/shared/bridge";
-import { ChatConversation } from "./ChatConversation";
-import { useChat } from "./useChat";
-import { useChatView } from "./useChatView";
-import { ConnectionHeader } from "./connection/ConnectionHeader";
-import { Composer } from "./composer/Composer";
-import { NotificationCard } from "./NotificationCard";
-import { usePromptSubmission } from "./composer/usePromptSubmission";
-import "./chat.css";
-import { SessionPanel } from "./sessions/SessionPanel";
-import { useSessionPanel } from "./sessions/useSessionPanel";
-import { ChatSearchBar } from "./search/ChatSearchBar";
-import { useChatSearch } from "./search/useChatSearch";
+import { type ChatState } from "@nerita/shared/chatState";
+import { type ComposerPart } from "@nerita/shared/composerContent";
+import { type UiMessage } from "@nerita/shared/messages";
+import { cn } from "cnfast";
+import { AnimatePresence } from "motion/react";
+import { useRef, useState, type RefObject } from "react";
 import { AgentViewer } from "./agents/AgentViewer";
 import { useAgentViewer } from "./agents/useAgentViewer";
-import { type ChatState } from "@nerita/shared/chatState";
+import "./chat.css";
+import { ChatConversation } from "./ChatConversation";
+import { Composer } from "./composer/Composer";
+import { usePromptSubmission } from "./composer/usePromptSubmission";
+import { ConnectionHeader } from "./connection/ConnectionHeader";
+import { useFollowConversation } from "./messages/useFollowConversation";
+import { NotificationCard } from "./NotificationCard";
+import { ChatSearchBar } from "./search/ChatSearchBar";
+import { useChatSearch } from "./search/useChatSearch";
+import { SessionPanel } from "./sessions/SessionPanel";
+import { useSessionPanel } from "./sessions/useSessionPanel";
+import { useChat } from "./useChat";
+import { useChatView } from "./useChatView";
 
-/** 差し替え可能な Bridge を使って実環境と Storybook で同じ UI を動かす。 */
-export function ChatApp({ bridge }: { bridge: Bridge }) {
+/** Host とのメッセージ送受信に使うブリッジ。 */
+type ChatAppProps = { bridge: Bridge };
+
+/** 差し替え可能なブリッジを使って実環境と Storybook で同じ UI を動かす。 */
+export function ChatApp({ bridge }: ChatAppProps) {
 	const {
 		backend,
 		draft,
@@ -68,76 +74,111 @@ export function ChatApp({ bridge }: { bridge: Bridge }) {
 				sessionsOpen={sessionPanel.open}
 				onToggleSessions={sessionPanel.toggle}
 			/>
-			<div className="relative flex min-h-0 flex-1 overflow-x-clip">
-				{agentViewer.agent && (
-					<AgentViewer
-						viewer={agentViewer}
-						state={state}
-						send={send}
-					/>
-				)}
-				<div
-					className={cn(
-						agentViewer.agent
-							? "hidden"
-							: "flex min-w-0 flex-1 flex-col",
-					)}
-					inert={sessionPanel.open && sessionPanel.compact}
-				>
-					<ChatSearchBar search={search} />
-					<ChatConversation
-						state={state}
-						busy={busy}
-						send={send}
-						conversation={conversation}
-						bottom={bottom}
-						onOpenAgent={agentViewer.open}
-					/>
-					{state.connection === "auth-required" && state.error && (
-						<AuthenticationFailureNotification
-							key={state.error}
-							message={state.error}
-						/>
-					)}
-					{submission.notice && (
-						<NotificationCard
-							key={submission.notice.id}
-							onClose={submission.dismissNotice}
-							backgroundColor="var(--nerita-input-validation-error-background)"
-						>
-							{submission.notice.text}
-						</NotificationCard>
-					)}
-					<Composer
-						bridge={bridge}
-						parts={draftParts}
-						setDraft={setDraft}
-						submit={submission.submit}
-						locked={submission.locked}
-						busy={busy}
-						available={submission.available}
-						state={state}
-						send={send}
-					/>
-				</div>
-				<AnimatePresence initial={false}>
-					{sessionPanel.open && (
-						<SessionPanel
-							key="sessions"
-							compact={sessionPanel.compact}
-							state={state}
-							send={send}
-							onClose={sessionPanel.close}
-						/>
-					)}
-				</AnimatePresence>
-			</div>
+			<ChatWorkspace
+				agentViewer={agentViewer}
+				state={state}
+				send={send}
+				sessionPanel={sessionPanel}
+				search={search}
+				busy={busy}
+				conversation={conversation}
+				bottom={bottom}
+				submission={submission}
+				bridge={bridge}
+				draftParts={draftParts}
+				setDraft={setDraft}
+			/>
 		</main>
 	);
 }
 
+/** 会話・検索・履歴・下書きの状態と、表示や送信に使う操作・DOM 参照。 */
+type ChatWorkspaceProps = {
+	agentViewer: ReturnType<typeof useAgentViewer>;
+	state: ChatState;
+	send: (message: UiMessage) => void;
+	sessionPanel: ReturnType<typeof useSessionPanel>;
+	search: ReturnType<typeof useChatSearch>;
+	busy: boolean;
+	conversation: RefObject<HTMLElement | null>;
+	bottom: RefObject<HTMLDivElement | null>;
+	submission: ReturnType<typeof usePromptSubmission>;
+	bridge: Bridge;
+	draftParts: ComposerPart[];
+	setDraft: (value: string | ComposerPart[]) => void;
+};
+
+/** 会話・子スレッド・入力欄と履歴パネルを配置する。 */
+function ChatWorkspace(props: ChatWorkspaceProps) {
+	const {
+		agentViewer,
+		state,
+		send,
+		sessionPanel,
+		search,
+		submission,
+		draftParts,
+	} = props;
+	return (
+		<div className="relative flex min-h-0 flex-1 overflow-x-clip">
+			{agentViewer.agent && (
+				<AgentViewer viewer={agentViewer} state={state} send={send} />
+			)}
+			<div
+				className={cn(
+					agentViewer.agent
+						? "hidden"
+						: "flex min-w-0 flex-1 flex-col",
+				)}
+				inert={sessionPanel.open && sessionPanel.compact}
+			>
+				<ChatSearchBar search={search} />
+				<ChatConversation {...props} onOpenAgent={agentViewer.open} />
+				{state.connection === "auth-required" && state.error && (
+					<AuthenticationFailureNotification
+						key={state.error}
+						message={state.error}
+					/>
+				)}
+				{submission.notice && (
+					<NotificationCard
+						key={submission.notice.id}
+						onClose={submission.dismissNotice}
+						backgroundColor="var(--nerita-input-validation-error-background)"
+					>
+						{submission.notice.text}
+					</NotificationCard>
+				)}
+				<Composer
+					{...props}
+					parts={draftParts}
+					submit={submission.submit}
+					locked={submission.locked}
+					available={submission.available}
+				/>
+			</div>
+			<AnimatePresence initial={false}>
+				{sessionPanel.open && (
+					<SessionPanel
+						key="sessions"
+						compact={sessionPanel.compact}
+						state={state}
+						send={send}
+						onClose={sessionPanel.close}
+					/>
+				)}
+			</AnimatePresence>
+		</div>
+	);
+}
+
+/** 認証失敗の通知に表示する文言。 */
+type AuthenticationFailureNotificationProps = { message: string };
+
 /** 認証の再試行で取り外し、同じ失敗でも次回は通知を表示する。 */
-function AuthenticationFailureNotification({ message }: { message: string }) {
+function AuthenticationFailureNotification({
+	message,
+}: AuthenticationFailureNotificationProps) {
 	const [dismissed, setDismissed] = useState(false);
 	return dismissed ? null : (
 		<NotificationCard
@@ -154,13 +195,7 @@ function AuthenticationFailureNotification({ message }: { message: string }) {
 function chatAvailable(
 	state: ChatState,
 	busy: boolean,
-	submission: {
-		locked: boolean;
-		available: boolean;
-		submit: () => void;
-		notice: { id: string; text: string } | null;
-		dismissNotice: () => void;
-	},
+	submission: ReturnType<typeof usePromptSubmission>,
 ) {
 	return (
 		state.connection === "ready" &&

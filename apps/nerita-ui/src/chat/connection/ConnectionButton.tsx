@@ -1,9 +1,19 @@
 // 接続状態を操作可能なボタンで示し、再接続の誘導と成功演出を表示する。
-import { cn } from "cnfast";
-import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
+
+import {
+	type ReactNode,
+	type Dispatch,
+	type SetStateAction,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
+import { cn } from "cnfast";
+import { useReducedMotion } from "motion/react";
+
 import { BorderBeam } from "../../ui/BorderBeam";
 import { ShinyText } from "../../ui/ShinyText";
 import { SettingsTooltip } from "../SettingsTooltip";
@@ -18,14 +28,14 @@ const labels = {
 	error: "接続エラー",
 };
 
-/** 状態の切り替えをカーテンで覆い、接続結果に応じた演出を表示する。 */
-export function ConnectionButton({
-	state,
-	send,
-}: {
+/** 接続状態と、再接続要求を送る関数。 */
+type ConnectionButtonProps = {
 	state: ChatState;
 	send: (message: UiMessage) => void;
-}) {
+};
+
+/** 状態の切り替えをカーテンで覆い、接続結果に応じた演出を表示する。 */
+export function ConnectionButton({ state, send }: ConnectionButtonProps) {
 	const reduced = useReducedMotion();
 	const previous = useRef(state.connection);
 	const [celebrating, setCelebrating] = useState(false);
@@ -70,94 +80,18 @@ export function ConnectionButton({
 	}, [state.connection, reduced]);
 	return (
 		<div className="connection-control relative shrink-0">
-			<SettingsTooltip
-				content={reconnectable ? action : labels[state.connection]}
-			>
-				<button
-					type="button"
-					className={cn(
-						"connection-button relative flex h-[28px] items-center gap-[5px] whitespace-nowrap px-[7px] py-0",
-						"text-[12px] enabled:hover:border-[color-mix(in_srgb,var(--nerita-button-border)_55%,white)] disabled:opacity-100",
-						connectionMouseCursor(displayed),
-						connectionBgColor(displayed),
-					)}
-					data-connection={state.connection}
-					disabled={disabled}
-					aria-label={
-						reconnectable
-							? `${labels[state.connection]}：${action}`
-							: labels[state.connection]
-					}
-					onClick={() =>
-						send({
-							type: "connection/retry",
-							requestId: crypto.randomUUID(),
-						})
-					}
-				>
-					<span
-						aria-hidden="true"
-						className={cn(
-							"status-dot size-[5px] rounded-full",
-							connectionColor(displayed),
-						)}
-					/>
-					<span role="status" className="font-medium">
-						<ConnectionLabel
-							connection={displayed}
-							reduced={reduced === true}
-						/>
-					</span>
-					{curtain && (
-						<span
-							aria-hidden="true"
-							className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
-						>
-							<span
-								key={`${curtain.target}-${curtain.phase}`}
-								className={cn(
-									"connection-curtain absolute inset-0",
-									connectionColor(curtain.target),
-								)}
-								data-phase={curtain.phase}
-								data-target={curtain.target}
-								onAnimationEnd={() => {
-									if (curtain.target !== state.connection) {
-										return;
-									}
-									if (curtain.phase === "cover") {
-										setDisplayed(curtain.target);
-										setCurtain({
-											...curtain,
-											phase: "reveal",
-										});
-									} else {
-										setCurtain(null);
-									}
-								}}
-							/>
-						</span>
-					)}
-					{!reduced &&
-						showConnectionBeam(
-							state.connection,
-							reconnectable,
-							disabled,
-						) && (
-							<span
-								aria-hidden="true"
-								className="connection-beam pointer-events-none absolute inset-0 rounded-[inherit]"
-							>
-								<BorderBeam
-									size={22}
-									duration={3}
-									colorFrom="var(--nerita-focus-border)"
-									colorTo="var(--nerita-editor-warning-foreground)"
-								/>
-							</span>
-						)}
-				</button>
-			</SettingsTooltip>
+			<ConnectionTrigger
+				reconnectable={reconnectable}
+				action={action}
+				state={state}
+				displayed={displayed}
+				disabled={disabled}
+				send={send}
+				reduced={reduced}
+				curtain={curtain}
+				setDisplayed={setDisplayed}
+				setCurtain={setCurtain}
+			/>
 			{celebrating && (
 				<span
 					className="connection-confetti pointer-events-none absolute inset-0 z-20"
@@ -175,6 +109,185 @@ export function ConnectionButton({
 	);
 }
 
+/** 再接続の可否・表示文言と、接続状態の遷移に使う演出の状態。 */
+type ConnectionTriggerProps = {
+	reconnectable: boolean;
+	action:
+		| "接続する"
+		| "ログインを中止して再接続"
+		| "アカウントを再認証して接続します";
+	state: ChatState;
+	displayed:
+		| "disconnected"
+		| "connecting"
+		| "ready"
+		| "auth-required"
+		| "authenticating"
+		| "error";
+	disabled: boolean;
+	send: (message: UiMessage) => void;
+	reduced: null | false | true;
+	curtain: null | {
+		target: ChatState["connection"];
+		phase: "cover" | "reveal";
+	};
+	setDisplayed: Dispatch<
+		SetStateAction<
+			| "disconnected"
+			| "connecting"
+			| "ready"
+			| "auth-required"
+			| "authenticating"
+			| "error"
+		>
+	>;
+	setCurtain: Dispatch<
+		SetStateAction<{
+			target: ChatState["connection"];
+			phase: "cover" | "reveal";
+		} | null>
+	>;
+};
+
+/** 接続状態と遷移の演出を再接続ボタンへ表示する。 */
+function ConnectionTrigger(props: ConnectionTriggerProps) {
+	const {
+		reconnectable,
+		action,
+		state,
+		displayed,
+		disabled,
+		send,
+		reduced,
+		curtain,
+	} = props;
+	return (
+		<SettingsTooltip
+			content={reconnectable ? action : labels[state.connection]}
+		>
+			<button
+				type="button"
+				className={cn(
+					"connection-button relative flex h-[28px] items-center gap-[5px] whitespace-nowrap px-[7px] py-0",
+					"text-[12px] enabled:hover:border-[color-mix(in_srgb,var(--nerita-button-border)_55%,white)] disabled:opacity-100",
+					connectionMouseCursor(displayed),
+					connectionBgColor(displayed),
+				)}
+				data-connection={state.connection}
+				disabled={disabled}
+				aria-label={
+					reconnectable
+						? `${labels[state.connection]}：${action}`
+						: labels[state.connection]
+				}
+				onClick={() =>
+					send({
+						type: "connection/retry",
+						requestId: crypto.randomUUID(),
+					})
+				}
+			>
+				<span
+					aria-hidden="true"
+					className={cn(
+						"status-dot size-[5px] rounded-full",
+						connectionColor(displayed),
+					)}
+				/>
+				<span role="status" className="font-medium">
+					<ConnectionLabel
+						connection={displayed}
+						reduced={reduced === true}
+					/>
+				</span>
+				{curtain && <ConnectionCurtain {...props} curtain={curtain} />}
+				{!reduced &&
+					showConnectionBeam(
+						state.connection,
+						reconnectable,
+						disabled,
+					) && (
+						<span
+							aria-hidden="true"
+							className="connection-beam pointer-events-none absolute inset-0 rounded-[inherit]"
+						>
+							<BorderBeam
+								size={22}
+								duration={3}
+								colorFrom="var(--nerita-focus-border)"
+								colorTo="var(--nerita-editor-warning-foreground)"
+							/>
+						</span>
+					)}
+			</button>
+		</SettingsTooltip>
+	);
+}
+
+/** 接続状態を切り替えるカーテンの進行状態と、表示状態の更新操作。 */
+type ConnectionCurtainProps = {
+	curtain: {
+		target: ChatState["connection"];
+		phase: "cover" | "reveal";
+	};
+	state: ChatState;
+	setDisplayed: Dispatch<
+		SetStateAction<
+			| "disconnected"
+			| "connecting"
+			| "ready"
+			| "auth-required"
+			| "authenticating"
+			| "error"
+		>
+	>;
+	setCurtain: Dispatch<
+		SetStateAction<{
+			target: ChatState["connection"];
+			phase: "cover" | "reveal";
+		} | null>
+	>;
+};
+
+/** 最新の接続状態に一致する演出だけを完了させる。 */
+function ConnectionCurtain({
+	curtain,
+	state,
+	setDisplayed,
+	setCurtain,
+}: ConnectionCurtainProps): ReactNode {
+	return (
+		<span
+			aria-hidden="true"
+			className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
+		>
+			<span
+				key={`${curtain.target}-${curtain.phase}`}
+				className={cn(
+					"connection-curtain absolute inset-0",
+					connectionColor(curtain.target),
+				)}
+				data-phase={curtain.phase}
+				data-target={curtain.target}
+				onAnimationEnd={() => {
+					if (curtain.target !== state.connection) {
+						return;
+					}
+					if (curtain.phase === "cover") {
+						setDisplayed(curtain.target);
+						setCurtain({
+							...curtain,
+							phase: "reveal",
+						});
+					} else {
+						setCurtain(null);
+					}
+				}}
+			/>
+		</span>
+	);
+}
+
 /** 待機中は操作の可否にかかわらず、境界線の演出を表示する。 */
 function showConnectionBeam(
 	connection: ChatState["connection"],
@@ -187,14 +300,14 @@ function showConnectionBeam(
 	);
 }
 
-/** 接続処理中の文言だけに青い光沢を付ける。 */
-function ConnectionLabel({
-	connection,
-	reduced,
-}: {
+/** 接続状態と、光沢の動きを抑制するかどうかの指定。 */
+type ConnectionLabelProps = {
 	connection: ChatState["connection"];
 	reduced: boolean;
-}) {
+};
+
+/** 接続処理中の文言だけに青い光沢を付ける。 */
+function ConnectionLabel({ connection, reduced }: ConnectionLabelProps) {
 	if (connection !== "connecting") {
 		return labels[connection];
 	}
@@ -236,7 +349,7 @@ function connectionColor(connection: ChatState["connection"]) {
 	return "bg-[var(--nerita-editor-info-foreground)]";
 }
 
-/** 接続成功とそれ以外を背景色で区別する。 */
+/** 接続済み・接続中・認証中は背景を透明にし、それ以外には背景色を付ける。 */
 function connectionBgColor(connection: ChatState["connection"]) {
 	if (
 		connection === "ready" ||
@@ -248,7 +361,7 @@ function connectionBgColor(connection: ChatState["connection"]) {
 	return "bg-message-user";
 }
 
-/** 接続成功とそれ以外のマウスカーソルの状態。 */
+/** 接続済み・接続中・認証中以外では、マウスカーソルを操作可能な形にする。 */
 function connectionMouseCursor(connection: ChatState["connection"]) {
 	return connection === "ready" ||
 		connection === "connecting" ||

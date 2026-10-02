@@ -1,5 +1,6 @@
 // Host から届く設定 DTO を固定し、ブラウザーでは描画と設定要求だけを再現する。
-import { useMemo, useState } from "react";
+
+import { type SetStateAction, type Dispatch, useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createBuiltinUiRegistry } from "../../../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
@@ -68,12 +69,15 @@ const anthropic = [
 	{ ...reasoning, options: [{ value: "high", name: "high" }] },
 ];
 
+/** モデルのメタデータを取得できない状態を再現するかどうかの指定。 */
+type ProviderControlsStoryProps = {
+	noMetadata?: boolean;
+};
+
 /** 設定要求へ固定の応答を返し、実サービスや SDK を起動しない。 */
 function ProviderControlsStory({
 	noMetadata = false,
-}: {
-	noMetadata?: boolean;
-}) {
+}: ProviderControlsStoryProps) {
 	const registry = useMemo(createBuiltinUiRegistry, []);
 	const [state, setState] = useState<ChatState>(() => ({
 		...initialState(),
@@ -91,26 +95,7 @@ function ProviderControlsStory({
 	}));
 	const [requests, setRequests] = useState<UiMessage[]>([]);
 	/** UI が送った値を記録し、次の状態通知を模擬する。 */
-	const send = (message: UiMessage) => {
-		setRequests((previous) => [...previous, message]);
-		if (message.type !== "config/set") {
-			return;
-		}
-		const providerOptions =
-			message.value === "anthropic" ? anthropic : connected;
-		setState((current) => ({
-			...current,
-			quota: message.configId === "provider" ? null : current.quota,
-			configOptions:
-				message.configId === "provider"
-					? providerOptions
-					: current.configOptions.map((option) =>
-							option.id === message.configId
-								? { ...option, currentValue: message.value }
-								: option,
-						),
-		}));
-	};
+	const send = createProviderControlsSender(setRequests, setState);
 	const contributions = registry.resolve(state, {
 		backend: "pi",
 		provider:
@@ -174,3 +159,30 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Connected: Story = {};
 export const NoMetadata: Story = { args: { noMetadata: true } };
+
+/** 送信要求を記録し、プロバイダー変更の応答を模擬する。 */
+function createProviderControlsSender(
+	setRequests: Dispatch<SetStateAction<UiMessage[]>>,
+	setState: Dispatch<SetStateAction<ChatState>>,
+) {
+	return (message: UiMessage) => {
+		setRequests((previous) => [...previous, message]);
+		if (message.type !== "config/set") {
+			return;
+		}
+		const providerOptions =
+			message.value === "anthropic" ? anthropic : connected;
+		setState((current) => ({
+			...current,
+			quota: message.configId === "provider" ? null : current.quota,
+			configOptions:
+				message.configId === "provider"
+					? providerOptions
+					: current.configOptions.map((option) =>
+							option.id === message.configId
+								? { ...option, currentValue: message.value }
+								: option,
+						),
+		}));
+	};
+}

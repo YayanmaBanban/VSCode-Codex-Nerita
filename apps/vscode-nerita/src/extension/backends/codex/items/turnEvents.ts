@@ -1,4 +1,5 @@
 // ターン処理で使う通知を検証し、会話・ターン・項目の識別子を共通の形式で取り出す。
+
 import { isRecord } from "@nerita/shared/validation";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import { parseTurn, type TurnInfo } from "../protocol/turn";
@@ -45,26 +46,7 @@ function text(value: unknown): string {
 export function parseTurnEvent(
 	message: AppServerNotification,
 ): TurnEvent | null {
-	if (
-		![
-			"turn/started",
-			"turn/completed",
-			"item/started",
-			"item/completed",
-			"item/agentMessage/delta",
-			"item/commandExecution/outputDelta",
-			"item/commandExecution/terminalInteraction",
-			"item/fileChange/outputDelta",
-			"item/fileChange/patchUpdated",
-			"item/reasoning/summaryTextDelta",
-			"item/reasoning/summaryPartAdded",
-			"item/reasoning/textDelta",
-			"item/plan/delta",
-			"item/mcpToolCall/progress",
-			"turn/plan/updated",
-			"turn/diff/updated",
-		].includes(message.method)
-	) {
+	if (!supportedTurnMethods().includes(message.method)) {
 		return null;
 	}
 	const params = message.params;
@@ -130,6 +112,28 @@ export function parseTurnEvent(
 		item: params.item,
 		completed: message.method === "item/completed",
 	};
+}
+
+/** ターン状態へ適用できる通知の種類を定義する。 */
+function supportedTurnMethods() {
+	return [
+		"turn/started",
+		"turn/completed",
+		"item/started",
+		"item/completed",
+		"item/agentMessage/delta",
+		"item/commandExecution/outputDelta",
+		"item/commandExecution/terminalInteraction",
+		"item/fileChange/outputDelta",
+		"item/fileChange/patchUpdated",
+		"item/reasoning/summaryTextDelta",
+		"item/reasoning/summaryPartAdded",
+		"item/reasoning/textDelta",
+		"item/plan/delta",
+		"item/mcpToolCall/progress",
+		"turn/plan/updated",
+		"turn/diff/updated",
+	];
 }
 
 /** 完了通知の項目配列を取得する。 */

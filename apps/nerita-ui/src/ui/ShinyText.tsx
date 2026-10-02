@@ -1,4 +1,5 @@
 // 文字に光沢を流し、速度・方向・一時停止を制御する。
+
 import { cn } from "cnfast";
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
@@ -45,7 +46,72 @@ export const ShinyText: React.FC<ShinyTextProps> = (props) => {
 	const animationDuration = speed * 1000;
 	const delayDuration = delay * 1000;
 
-	useAnimationFrame((time) => {
+	useAnimationFrame(
+		createShineFrame(
+			disabled,
+			isPaused,
+			lastTimeRef,
+			elapsedRef,
+			yoyo,
+			animationDuration,
+			delayDuration,
+			progress,
+			directionRef,
+		),
+	);
+
+	useEffect(() => {
+		directionRef.current = direction === "left" ? 1 : -1;
+		elapsedRef.current = 0;
+		progress.set(0);
+	}, [direction, progress]);
+
+	// 進行度を、文字の右外側から左外側へ移動する背景位置に変換する。
+	const backgroundPosition = useTransform(
+		progress,
+		[0, 100],
+		["150% center", "-50% center"],
+	);
+
+	const handleMouseEnter = useCallback(() => {
+		if (pauseOnHover) {
+			setIsPaused(true);
+		}
+	}, [pauseOnHover]);
+
+	const handleMouseLeave = useCallback(() => {
+		if (pauseOnHover) {
+			setIsPaused(false);
+		}
+	}, [pauseOnHover]);
+
+	const gradientStyle = shineAppearance(props);
+
+	return (
+		<motion.span
+			className={cn("inline-block", className)}
+			style={{ ...gradientStyle, backgroundPosition }}
+			onMouseEnter={handleMouseEnter}
+			onMouseLeave={handleMouseLeave}
+		>
+			{text}
+		</motion.span>
+	);
+};
+
+/** 一時停止中は経過時間を加算せず、再開後も同じ進行度から光沢位置を更新する。 */
+function createShineFrame(
+	disabled: boolean,
+	isPaused: boolean,
+	lastTimeRef: React.RefObject<number | null>,
+	elapsedRef: React.RefObject<number>,
+	yoyo: boolean,
+	animationDuration: number,
+	delayDuration: number,
+	progress: MotionValue<number>,
+	directionRef: React.RefObject<number>,
+): (timestamp: number, delta: number) => void {
+	return (time) => {
 		if (disabled || isPaused) {
 			lastTimeRef.current = null;
 			return;
@@ -83,46 +149,8 @@ export const ShinyText: React.FC<ShinyTextProps> = (props) => {
 				progress.set(directionRef.current === 1 ? 100 : 0);
 			}
 		}
-	});
-
-	useEffect(() => {
-		directionRef.current = direction === "left" ? 1 : -1;
-		elapsedRef.current = 0;
-		progress.set(0);
-	}, [direction, progress]);
-
-	// 進行度を、文字の右外側から左外側へ抜ける背景位置に変換する。
-	const backgroundPosition = useTransform(
-		progress,
-		[0, 100],
-		["150% center", "-50% center"],
-	);
-
-	const handleMouseEnter = useCallback(() => {
-		if (pauseOnHover) {
-			setIsPaused(true);
-		}
-	}, [pauseOnHover]);
-
-	const handleMouseLeave = useCallback(() => {
-		if (pauseOnHover) {
-			setIsPaused(false);
-		}
-	}, [pauseOnHover]);
-
-	const gradientStyle = shineAppearance(props);
-
-	return (
-		<motion.span
-			className={cn("inline-block", className)}
-			style={{ ...gradientStyle, backgroundPosition }}
-			onMouseEnter={handleMouseEnter}
-			onMouseLeave={handleMouseLeave}
-		>
-			{text}
-		</motion.span>
-	);
-};
+	};
+}
 
 /** 往復と両端の待機を含む光沢の進行度を更新する。 */
 function updateYoyoProgress(
@@ -154,7 +182,7 @@ function updateYoyoProgress(
 	}
 }
 
-/** 光沢の色と広がりをグラデーションへ変換する。 */
+/** 文字色・光沢色・グラデーションの角度から表示スタイルを作る。 */
 function shineAppearance({
 	color = "#b5b5b5",
 	shineColor = "#ffffff",

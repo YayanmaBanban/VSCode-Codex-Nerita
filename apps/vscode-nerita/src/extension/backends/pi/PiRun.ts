@@ -1,4 +1,7 @@
-// `prompt` の受付と実行を分け、開始直前の `Stop`・旧接続の完了を安全に扱う。
+// `prompt` の受付と実行を分け、開始直前の停止や旧接続の完了が現在の実行に反映されるのを防ぐ。
+
+import type { ChatState } from "@nerita/shared/chatState";
+
 import { realpath } from "node:fs/promises";
 import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
 import { randomUUID } from "node:crypto";
@@ -113,7 +116,7 @@ export abstract class PiRun extends PiLifecycle {
 		this.track(operation);
 		return operation;
 	}
-	/** SDK の事前検証が終わった時点で Composer の下書きを解放する。 */
+	/** SDK の事前検証が終わった時点で送信受付を通知し、入力欄の下書きを消せるようにする。 */
 	protected submit(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): void {
@@ -142,47 +145,19 @@ export abstract class PiRun extends PiLifecycle {
 		const current = () =>
 			this.epoch === epoch && this.submission === submission;
 		const mapper = new PiEventMapper();
-		const unsubscribeEvents = runtime.subscribe((event) => {
-			if (!current()) {
-				return;
-			}
-			const patch = mapper.apply(event, this.state);
-			if (patch) {
-				this.patch(patch);
-			}
-			// `message_end` の通知時点では SDK の履歴保存が終わっていない。
-			if (event.type === "turn_end" || event.type === "compaction_end") {
-				this.patch({ usage: this.contextUsage() });
-			}
-		});
+		const unsubscribeEvents = runtime.subscribe(
+			this.createRunEventListener(current, mapper),
+		);
 		submission.unsubscribe = () => {
 			unsubscribeEvents();
 		};
 		this.patch({ run: "running", runId: submission.id, error: null });
-		const start = (text: string) =>
-			runtime.prompt(text, {
-				expandPromptTemplates: false,
-				preflightResult: (disposition) => {
-					if (!current() || submission.cancelled) {
-						throw new Error("送信を停止しました。");
-					}
-					// 拡張が処理した入力も下書きを解放するが、通常の会話本文には追加しない。
-					switch (disposition) {
-						case "started":
-						case "queued":
-							this.appendUserMessage(message);
-							break;
-						case "handled":
-							break;
-					}
-					submission.accepted = true;
-					this.emit({
-						type: "prompt/accepted",
-						requestId: message.requestId,
-						mode: disposition === "queued" ? "steer" : "start",
-					});
-				},
-			});
+		const start = this.createPromptStarter(
+			runtime,
+			current,
+			submission,
+			message,
+		);
 		const check = () => {
 			if (!current() || submission.cancelled) {
 				throw new Error("送信を停止しました。");
@@ -200,40 +175,7 @@ export abstract class PiRun extends PiLifecycle {
 					).then(start)
 				: start(message.text);
 
-		const operation = input
-			.then(
-				async () => {
-					submission.ended = true;
-					if (submission.steering) {
-						await submission.steering;
-					}
-					if (current()) {
-						this.finish(submission, mapper.error, mapper.aborted);
-					}
-				},
-				async (error: unknown) => {
-					submission.ended = true;
-					if (submission.steering) {
-						await submission.steering;
-					}
-					if (current()) {
-						const detail =
-							error instanceof Error
-								? error.message
-								: "Piへの送信に失敗しました。";
-						if (!submission.accepted) {
-							this.emit({
-								type: "request/failed",
-								requestId: message.requestId,
-								error: detail,
-							});
-						}
-						this.finish(submission, detail);
-					}
-				},
-			)
-			.finally(() => submission.unsubscribe());
-		this.track(operation);
+		this.trackSubmission(input, submission, mapper, current, message);
 	}
 
 	/** 現在の親へ子のカードを追加し、以後は表示順を固定する。 */
@@ -243,13 +185,9 @@ export abstract class PiRun extends PiLifecycle {
 				if (this.runtime !== runtime) {
 					return;
 				}
-				const agents = runtime.agentViews!.list().map((agent) => ({
-					...agent,
-					order:
-						this.state.agents.find(
-							(item) => item.threadId === agent.threadId,
-						)?.order ?? nextTimelineOrder(this.state),
-				}));
+				const agents = runtime
+					.agentViews!.list()
+					.map(this.createAgentTimelineEntry());
 				this.patch({ agents });
 			}) ?? (() => {})
 		);
@@ -451,6 +389,116 @@ export abstract class PiRun extends PiLifecycle {
 			this.submission.unsubscribe();
 			this.submission = undefined;
 		}
+	}
+
+	/** 現在の送信が受理された場合だけ下書きを解放する。 */
+	private createPromptStarter(
+		runtime: PiSession,
+		current: () => boolean,
+		submission: Submission,
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+	) {
+		return (text: string) =>
+			runtime.prompt(text, {
+				expandPromptTemplates: false,
+				preflightResult: (disposition) => {
+					if (!current() || submission.cancelled) {
+						throw new Error("送信を停止しました。");
+					}
+					// 拡張が処理した入力も下書きを解放するが、通常の会話本文には追加しない。
+					switch (disposition) {
+						case "started":
+						case "queued":
+							this.appendUserMessage(message);
+							break;
+						case "handled":
+							break;
+					}
+					submission.accepted = true;
+					this.emit({
+						type: "prompt/accepted",
+						requestId: message.requestId,
+						mode: disposition === "queued" ? "steer" : "start",
+					});
+				},
+			});
+	}
+
+	/** 現在の送信だけへ SDK のイベントと利用量を反映する。 */
+	private createRunEventListener(
+		current: () => boolean,
+		mapper: PiEventMapper,
+	): Parameters<PiSession["subscribe"]>[0] {
+		return (event) => {
+			if (!current()) {
+				return;
+			}
+			const patch = mapper.apply(event, this.state);
+			if (patch) {
+				this.patch(patch);
+			}
+			// `message_end` の通知時点では SDK の履歴保存が終わっていない。
+			if (event.type === "turn_end" || event.type === "compaction_end") {
+				this.patch({ usage: this.contextUsage() });
+			}
+		};
+	}
+
+	/** 保存済みの表示順を維持して子エージェントを追加する。 */
+	private createAgentTimelineEntry(): (
+		agent: ChatState["agents"][number],
+	) => ChatState["agents"][number] {
+		return (agent) => ({
+			...agent,
+			order:
+				this.state.agents.find(
+					(item) => item.threadId === agent.threadId,
+				)?.order ?? nextTimelineOrder(this.state),
+		});
+	}
+
+	/** 追加指示を待ってから送信を完了し、購読を必ず回収する。 */
+	private trackSubmission(
+		input: Promise<void>,
+		submission: Submission,
+		mapper: PiEventMapper,
+		current: () => boolean,
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+	) {
+		const operation = input
+			.then(
+				async () => {
+					submission.ended = true;
+					if (submission.steering) {
+						await submission.steering;
+					}
+					if (current()) {
+						this.finish(submission, mapper.error, mapper.aborted);
+					}
+				},
+				async (error: unknown) => {
+					submission.ended = true;
+					if (submission.steering) {
+						await submission.steering;
+					}
+					if (current()) {
+						const detail =
+							error instanceof Error
+								? error.message
+								: "Piへの送信に失敗しました。";
+						if (!submission.accepted) {
+							this.emit({
+								type: "request/failed",
+								requestId: message.requestId,
+								error: detail,
+							});
+						}
+						this.finish(submission, detail);
+					}
+				},
+			)
+			.finally(() => submission.unsubscribe());
+		this.track(operation);
 	}
 }
 

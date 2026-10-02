@@ -1,10 +1,19 @@
 // セッション候補を履歴パネルと独立して検索し、次ページを明示操作で取得する。
-import { useEffect, useState } from "react";
+
+import {
+	type EffectCallback,
+	type Dispatch,
+	type SetStateAction,
+	useEffect,
+	useState,
+} from "react";
+
 import type { Bridge } from "@nerita/shared/bridge";
 import type {
 	SessionReference,
 	SessionReferencesResult,
 } from "@nerita/shared/sessionReferences";
+
 import { sessionCompletionItems } from "./completionItems";
 
 /** 検索語ごとの候補と、重複取得を防ぐページ履歴を保持する。 */
@@ -34,7 +43,52 @@ export function useSessionReferences(
 	useEffect(() => {
 		setPage({ query: term });
 	}, [term, active]);
-	useEffect(() => {
+	useEffect(
+		createSessionReferenceSearch(
+			active,
+			setPage,
+			setResult,
+			setLoading,
+			bridge,
+			term,
+			cursor,
+		),
+		[bridge, active, term, cursor],
+	);
+	const data = result?.query === term ? result : null;
+	const items = sessionCompletionItems(
+		(data?.entries ?? []).map((entry) => ({ ...entry, mode })),
+	);
+	if (data?.nextCursor && !loading) {
+		items.push({
+			id: "load-more-sessions",
+			label: "さらに読み込む",
+			more: true,
+		});
+	}
+	return {
+		items,
+		empty: emptySessionMessage(bridge, term, loading, data),
+		notice: sessionReferenceNotice(data, loading),
+		more: () => {
+			if (data?.nextCursor && !loading) {
+				setPage({ query: term, cursor: data.nextCursor });
+			}
+		},
+	};
+}
+
+/** 検索の終了時に購読を解除し、遅延実行とタイムアウトのタイマーを取り消す。 */
+function createSessionReferenceSearch(
+	active: boolean,
+	setPage: Dispatch<SetStateAction<{ query: string; cursor?: string }>>,
+	setResult: Dispatch<SetStateAction<SessionReferencePage | null>>,
+	setLoading: Dispatch<SetStateAction<boolean>>,
+	bridge: undefined | Bridge,
+	term: string,
+	cursor: undefined | string,
+): EffectCallback {
+	return () => {
 		if (!active) {
 			setPage({ query: "" });
 			setResult(null);
@@ -58,24 +112,7 @@ export function useSessionReferences(
 			}
 			finished = true;
 			setLoading(false);
-			setResult((previous) => {
-				const old =
-					cursor && previous?.query === term ? previous : null;
-				const repeated = repeatedSessionCursor(message, cursor, old);
-				return {
-					query: term,
-					entries: mergeSessionEntries(old, message),
-					nextCursor: repeated ? null : message.nextCursor,
-					seen: nextSeenCursors(old, cursor),
-					...(message.error || repeated
-						? {
-								error:
-									message.error ||
-									"一覧を続けて取得できませんでした。検索し直してください。",
-							}
-						: {}),
-				};
-			});
+			setResult(mergeSessionReferencePage(cursor, term, message));
 		};
 		const unsubscribe = bridge.subscribe((message) => {
 			if ("requestId" in message && message.requestId === requestId) {
@@ -111,7 +148,7 @@ export function useSessionReferences(
 					nextCursor: null,
 					error: "検索がタイムアウトしました。検索し直してください。",
 				}),
-			15_000,
+			15000,
 		);
 		return () => {
 			finished = true;
@@ -119,27 +156,31 @@ export function useSessionReferences(
 			clearTimeout(timeout);
 			unsubscribe();
 		};
-	}, [bridge, active, term, cursor]);
-	const data = result?.query === term ? result : null;
-	const items = sessionCompletionItems(
-		(data?.entries ?? []).map((entry) => ({ ...entry, mode })),
-	);
-	if (data?.nextCursor && !loading) {
-		items.push({
-			id: "load-more-sessions",
-			label: "さらに読み込む",
-			more: true,
-		});
-	}
-	return {
-		items,
-		empty: emptySessionMessage(bridge, term, loading, data),
-		notice: sessionReferenceNotice(data, loading),
-		more: () => {
-			if (data?.nextCursor && !loading) {
-				setPage({ query: term, cursor: data.nextCursor });
-			}
-		},
+	};
+}
+
+/** 同じ検索語の追加ページだけを以前の結果に統合する。 */
+function mergeSessionReferencePage(
+	cursor: string | undefined,
+	term: string,
+	message: SessionReferencesResult,
+): SetStateAction<SessionReferencePage | null> {
+	return (previous) => {
+		const old = cursor && previous?.query === term ? previous : null;
+		const repeated = repeatedSessionCursor(message, cursor, old);
+		return {
+			query: term,
+			entries: mergeSessionEntries(old, message),
+			nextCursor: repeated ? null : message.nextCursor,
+			seen: nextSeenCursors(old, cursor),
+			...(message.error || repeated
+				? {
+						error:
+							message.error ||
+							"一覧を続けて取得できませんでした。検索し直してください。",
+					}
+				: {}),
+		};
 	};
 }
 

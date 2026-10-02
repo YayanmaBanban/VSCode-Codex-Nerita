@@ -1,21 +1,28 @@
 // 起動時の設定に従い、共通の寿命管理を持つバックエンドを組み立てる。
+
+import {
+	type PiFactory,
+	createPiRuntime,
+	type PiModelSelection,
+} from "./pi/PiRuntime";
+
 import * as vscode from "vscode";
+import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
 import type { BackendSession } from "../session/chatSession";
-import { requireLocalWorkspace } from "../workspace";
+import { ModelConfig } from "../settings/ModelConfig";
 import { attachmentService } from "../webview/attachments";
+import { requireLocalWorkspace } from "../workspace";
 import { CodexClient } from "./codex/CodexClient";
 import { CodexSessionController } from "./codex/CodexSessionController";
 import {
 	authService,
 	interactionService,
 } from "./codex/interaction/vscodeServices";
-import { PiSessionController } from "./pi/PiSessionController";
-import { createPiRuntime, type PiModelSelection } from "./pi/PiRuntime";
-import { createPiAuthService } from "./pi/PiAuthService";
 import { codexSelectionStore } from "./codex/settings/modelSelection";
+import { createPiAuthService } from "./pi/PiAuthService";
 import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
-import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
-import { ModelConfig } from "../settings/ModelConfig";
+
+import { PiSessionController } from "./pi/PiSessionController";
 
 /** Codex の接続先に VS Code 標準のワークスペース条件を適用する。 */
 function workspaceDirectory(): string {
@@ -36,59 +43,7 @@ export function createBackend(
 			.getConfiguration("nerita")
 			.get<string>("backend", "codex") === "pi"
 	) {
-		return new PiSessionController(async (signal, authorize, resume) => {
-			const folders = vscode.workspace.workspaceFolders;
-			let folder = folders?.[0];
-			if (folders && folders.length > 1) {
-				folder = await vscode.window.showWorkspaceFolderPick({
-					placeHolder: "この会話の作業rootを選択してください",
-				});
-				if (!folder) {
-					throw new Error("作業rootの選択を取り消しました。");
-				}
-			}
-			const cwd = requireLocalWorkspace(
-				folder ? [folder] : undefined,
-				true,
-				vscode.env.remoteName,
-			);
-			const config = modelConfig(cwd);
-			const preferredModel = storedPiModel(await config.read("pi"));
-			const session = await createPiRuntime({
-				extensionPath: context.extensionUri.fsPath,
-				cwd,
-				workspaceRoots: (vscode.workspace.workspaceFolders ?? []).map(
-					(folder) => folder.uri.fsPath,
-				),
-				workspaceTrusted: vscode.workspace.isTrusted,
-				...(trustStore ? { trustStore } : {}),
-				trustEnabled: () => vscode.workspace.isTrusted,
-				trustedExtensionPaths: userTrustedExtensionPaths(
-					vscode.workspace
-						.getConfiguration("nerita.pi")
-						.inspect<string[]>("trustedExtensionPaths"),
-				),
-				codemode: vscode.workspace
-					.getConfiguration("nerita.pi")
-					.get<boolean>("codemode", false),
-				toolSearch: vscode.workspace
-					.getConfiguration("nerita.pi")
-					.get<boolean>("toolSearch", false),
-				signal,
-				authorize,
-				authService: createPiAuthService(context.extensionUri),
-				getStorage: () =>
-					vscode.workspace
-						.getConfiguration("nerita.pi")
-						.get<string>("sessionStorage", "global") === "workspace"
-						? "workspace"
-						: "global",
-				...(resume ? { resume } : {}),
-				...(preferredModel ? { preferredModel } : {}),
-				saveModel: (selection) => config.write("pi", selection),
-			});
-			return { session, cwd };
-		});
+		return new PiSessionController(createPiFactory(context, trustStore));
 	}
 	return new CodexSessionController(
 		async (callbacks, signal) => {
@@ -115,6 +70,66 @@ export function createBackend(
 				modelConfig(workspaceDirectory()).write("codex", selection),
 		}),
 	);
+}
+
+/** 最新の作業ルートと設定から Pi の会話を起動する。 */
+function createPiFactory(
+	context: vscode.ExtensionContext,
+	trustStore: WorkspaceTrustStore | undefined,
+): PiFactory {
+	return async (signal, authorize, resume) => {
+		const folders = vscode.workspace.workspaceFolders;
+		let folder = folders?.[0];
+		if (folders && folders.length > 1) {
+			folder = await vscode.window.showWorkspaceFolderPick({
+				placeHolder: "この会話の作業rootを選択してください",
+			});
+			if (!folder) {
+				throw new Error("作業rootの選択を取り消しました。");
+			}
+		}
+		const cwd = requireLocalWorkspace(
+			folder ? [folder] : undefined,
+			true,
+			vscode.env.remoteName,
+		);
+		const config = modelConfig(cwd);
+		const preferredModel = storedPiModel(await config.read("pi"));
+		const session = await createPiRuntime({
+			extensionPath: context.extensionUri.fsPath,
+			cwd,
+			workspaceRoots: (vscode.workspace.workspaceFolders ?? []).map(
+				(folder) => folder.uri.fsPath,
+			),
+			workspaceTrusted: vscode.workspace.isTrusted,
+			...(trustStore ? { trustStore } : {}),
+			trustEnabled: () => vscode.workspace.isTrusted,
+			trustedExtensionPaths: userTrustedExtensionPaths(
+				vscode.workspace
+					.getConfiguration("nerita.pi")
+					.inspect<string[]>("trustedExtensionPaths"),
+			),
+			codemode: vscode.workspace
+				.getConfiguration("nerita.pi")
+				.get<boolean>("codemode", false),
+			toolSearch: vscode.workspace
+				.getConfiguration("nerita.pi")
+				.get<boolean>("toolSearch", false),
+			signal,
+			authorize,
+			authService: createPiAuthService(context.extensionUri),
+			getStorage: () =>
+				vscode.workspace
+					.getConfiguration("nerita.pi")
+					.get<string>("sessionStorage", "global") === "workspace"
+					? "workspace"
+					: "global",
+			...(resume ? { resume } : {}),
+			...(preferredModel ? { preferredModel } : {}),
+			saveModel: (selection) => config.write("pi", selection),
+		});
+		return { session, cwd };
+	};
 }
 
 /** Pi の接続に必要なプロバイダーとモデルが揃っている場合だけ復元する。 */
@@ -155,7 +170,7 @@ function modelConfig(root: string): ModelConfig {
 	});
 }
 
-/** 未知の保存値は候補照合へ渡し、型が壊れた推論値だけを除外する。 */
+/** 未対応の推論値は候補との照合へ渡し、文字列以外の値は除外する。 */
 function storedReasoning(value: object): { reasoning?: string } {
 	return "reasoning" in value && typeof value.reasoning === "string"
 		? { reasoning: value.reasoning }

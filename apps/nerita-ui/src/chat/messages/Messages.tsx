@@ -1,7 +1,10 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
+
+import { type ReactNode, type RefObject, useRef, useState } from "react";
+
 import { SettingsTooltip } from "../SettingsTooltip";
 import { cn } from "cnfast";
-import { type ReactNode, type RefObject, useRef, useState } from "react";
+
 import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { ChatMessage, ToolSummary } from "@nerita/shared/chatState";
@@ -10,16 +13,19 @@ import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 import type { SubAgentSummary } from "@nerita/shared/subAgents";
 
+/** 表示するメッセージ、ユーザー発言かどうかの指定と操作要求の送信関数。 */
+type MessageContentProps = {
+	message: ChatMessage;
+	user: boolean;
+	send?: ((message: UiMessage) => void) | undefined;
+};
+
 /** メッセージのテキストを表示するコンポーネント。 */
 function MessageContent({
 	message,
 	user,
 	send,
-}: {
-	message: ChatMessage;
-	user: boolean;
-	send?: ((message: UiMessage) => void) | undefined;
-}): React.JSX.Element {
+}: MessageContentProps): React.JSX.Element {
 	if (message.mcp) {
 		return <McpMessage content={message.mcp} text={message.text} />;
 	}
@@ -32,6 +38,17 @@ function MessageContent({
 	);
 }
 
+/** メッセージ・ツール・子スレッドの一覧と、それぞれの描画・操作。 */
+type MessagesProps = {
+	messages: ChatMessage[];
+	busy: boolean;
+	send?: ((message: UiMessage) => void) | undefined;
+	tools?: ToolSummary[];
+	renderTool?: (tool: ToolSummary) => ReactNode;
+	agents?: SubAgentSummary[];
+	renderAgent?: (agent: SubAgentSummary) => ReactNode;
+};
+
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
 export function Messages({
 	messages,
@@ -41,15 +58,7 @@ export function Messages({
 	renderTool,
 	agents = [],
 	renderAgent,
-}: {
-	messages: ChatMessage[];
-	busy: boolean;
-	send?: ((message: UiMessage) => void) | undefined;
-	tools?: ToolSummary[];
-	renderTool?: (tool: ToolSummary) => ReactNode;
-	agents?: SubAgentSummary[];
-	renderAgent?: (agent: SubAgentSummary) => ReactNode;
-}) {
+}: MessagesProps) {
 	const elements = useRef(new Map<string, HTMLElement>());
 	const [copyStatus, setCopyStatus] = useState<{
 		id: string;
@@ -76,26 +85,7 @@ export function Messages({
 			});
 		}
 	};
-	const entries = [
-		...messages.map((message, index) => ({
-			order: message.order ?? index,
-			message,
-			tool: undefined,
-			agent: undefined,
-		})),
-		...tools.map((tool, index) => ({
-			order: tool.order ?? messages.length + index,
-			message: undefined,
-			tool,
-			agent: undefined,
-		})),
-		...agents.map((agent) => ({
-			order: agent.order,
-			agent,
-			message: undefined,
-			tool: undefined,
-		})),
-	].sort((a, b) => a.order - b.order);
+	const entries = messageTimeline(messages, tools, agents);
 	return entries.map(({ message, tool, agent }) => {
 		if (agent) {
 			return renderAgent?.(agent);
@@ -120,50 +110,116 @@ export function Messages({
 		const target = turnNavigationTarget(user, reply, previousUser);
 		const replyPending = isReplyPending(user, nextUser, busy);
 		return (
-			<article
-				className={cn(
-					"message",
-					message.role,
-					"mb-[24px] min-w-0 p-[14px]",
-					"rounded-[9px] border border-solid",
-					messageFocusClass,
-					user
-						? "bg-message-user border-message-border"
-						: "bg-transparent border-transparent",
-				)}
+			<MessageEntry
 				key={message.id}
-				tabIndex={-1}
-				ref={(element) => {
-					if (element) {
-						elements.current.set(message.id, element);
-					} else {
-						elements.current.delete(message.id);
-					}
-				}}
-			>
-				<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
-					<MessageContent message={message} user={user} send={send} />
-				</div>
-				{renderMessageActions(
-					elements,
-					message,
-					user,
-					copy,
-					target,
-					replyPending,
-					jump,
-				)}
-				{copyStatus?.id === message.id && (
-					<span
-						role="status"
-						className="muted text-[12px] text-muted"
-					>
-						{copyStatus.text}
-					</span>
-				)}
-			</article>
+				message={message}
+				user={user}
+				elements={elements}
+				send={send}
+				copy={copy}
+				target={target}
+				replyPending={replyPending}
+				jump={jump}
+				copyStatus={copyStatus}
+			/>
 		);
 	});
+}
+
+/** メッセージの表示状態と、ターン移動・コピーの操作や結果。 */
+type MessageEntryProps = {
+	message: ChatMessage;
+	user: boolean;
+	elements: RefObject<Map<string, HTMLElement>>;
+	send: ((message: UiMessage) => void) | undefined;
+	copy: (message: ChatMessage) => Promise<void>;
+	target: undefined | ChatMessage;
+	replyPending: boolean;
+	jump: (id: string, end: boolean) => void;
+	copyStatus: null | { id: string; text: string };
+};
+
+/** 発言・ツール・子の結果を共通の順序で並べる。 */
+function messageTimeline(
+	messages: ChatMessage[],
+	tools: ToolSummary[],
+	agents: SubAgentSummary[],
+) {
+	return [
+		...messages.map((message, index) => ({
+			order: message.order ?? index,
+			message,
+			tool: undefined,
+			agent: undefined,
+		})),
+		...tools.map((tool, index) => ({
+			order: tool.order ?? messages.length + index,
+			message: undefined,
+			tool,
+			agent: undefined,
+		})),
+		...agents.map((agent) => ({
+			order: agent.order,
+			agent,
+			message: undefined,
+			tool: undefined,
+		})),
+	].sort((a, b) => a.order - b.order);
+}
+
+/** 本文・ターン移動・コピー結果を同じメッセージに表示する。 */
+function MessageEntry(props: MessageEntryProps) {
+	const {
+		message,
+		user,
+		elements,
+		copy,
+		target,
+		replyPending,
+		jump,
+		copyStatus,
+	} = props;
+	return (
+		<article
+			className={cn(
+				"message",
+				message.role,
+				"mb-[24px] min-w-0 p-[14px]",
+				"rounded-[9px] border border-solid",
+				messageFocusClass,
+				user
+					? "bg-message-user border-message-border"
+					: "bg-transparent border-transparent",
+			)}
+			key={message.id}
+			tabIndex={-1}
+			ref={(element) => {
+				if (element) {
+					elements.current.set(message.id, element);
+				} else {
+					elements.current.delete(message.id);
+				}
+			}}
+		>
+			<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
+				<MessageContent {...props} />
+			</div>
+			{renderMessageActions(
+				elements,
+				message,
+				user,
+				copy,
+				target,
+				replyPending,
+				jump,
+			)}
+			{copyStatus?.id === message.id && (
+				<span role="status" className="muted text-[12px] text-muted">
+					{copyStatus.text}
+				</span>
+			)}
+		</article>
+	);
 }
 
 /** 子カードに親の名前を添え、実行中と復元した履歴を同じ配置で表示する。 */
@@ -232,22 +288,7 @@ function renderMessageActions(
 				)}
 			>
 				{!user && message.mcp?.status !== "loading" && (
-					<SettingsTooltip content="回答をコピー">
-						<button
-							type="button"
-							className={cn(
-								messageIconButtonClass,
-								"rounded-md",
-								"size-7",
-								"bg-transparent",
-								"hover:bg-settings-hover",
-							)}
-							aria-label="回答をコピー"
-							onClick={() => void copy(message)}
-						>
-							<Copy size={16} aria-hidden="true" />
-						</button>
-					</SettingsTooltip>
+					<CopyAnswerButton copy={copy} message={message} />
 				)}
 				<SettingsTooltip
 					content={user ? "回答の末尾へ移動" : "送信メッセージへ移動"}
@@ -280,6 +321,34 @@ function renderMessageActions(
 				</SettingsTooltip>
 			</div>
 		</div>
+	);
+}
+
+/** コピーする回答と、コピー処理を実行する関数。 */
+type CopyAnswerButtonProps = {
+	copy: (message: ChatMessage) => Promise<void>;
+	message: ChatMessage;
+};
+
+/** 回答のコピー操作を支援技術向けの文言とともに表示する。 */
+function CopyAnswerButton({ copy, message }: CopyAnswerButtonProps): ReactNode {
+	return (
+		<SettingsTooltip content="回答をコピー">
+			<button
+				type="button"
+				className={cn(
+					messageIconButtonClass,
+					"rounded-md",
+					"size-7",
+					"bg-transparent",
+					"hover:bg-settings-hover",
+				)}
+				aria-label="回答をコピー"
+				onClick={() => void copy(message)}
+			>
+				<Copy size={16} aria-hidden="true" />
+			</button>
+		</SettingsTooltip>
 	);
 }
 

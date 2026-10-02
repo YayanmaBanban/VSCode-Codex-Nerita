@@ -1,4 +1,5 @@
 // 認証の秘密値を Host 内に留め、モデル選択と公開状態をまとめる。
+
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -207,11 +208,7 @@ export class PiAccount {
 				() => this.items(signal),
 				async (id, operationSignal) => {
 					const items = await this.items(operationSignal);
-					if (
-						!items.some((item) =>
-							item.methods.some((method) => method.id === id),
-						)
-					) {
+					if (!supportsAuthOperation(items, id)) {
 						throw new Error("未対応の認証操作です。");
 					}
 					const [provider, type] = JSON.parse(id) as [
@@ -337,6 +334,13 @@ export class PiAccount {
 			],
 		}));
 	}
+}
+
+/** 現在の認証候補に含まれる操作だけを受け付ける。 */
+function supportsAuthOperation(items: PiAuthItem[], id: string) {
+	return items.some((item) =>
+		item.methods.some((method) => method.id === id),
+	);
 }
 
 /** 認証済みの場合だけ方式を調べ、秘密値を含まない状態名を返す。 */

@@ -1,4 +1,7 @@
 // 外部 MCP の HTTP 境界を提供し、承認前の通信と副作用の再送を観測する。
+
+import type { RequestListener, IncomingMessage, ServerResponse } from "http";
+
 import { createServer } from "node:http";
 import { once } from "node:events";
 
@@ -11,7 +14,38 @@ export async function mcpServer() {
 		outcome: "success",
 		result: {},
 	};
-	const server = createServer((request, response) => {
+	const server = createServer(
+		createMcpFixtureHandler(token, methods, calls, state),
+	);
+	server.listen(0, "127.0.0.1");
+	await once(server, "listening");
+	const address = server.address();
+	if (!address || typeof address === "string") {
+		throw new Error("MCP の起動に失敗しました。");
+	}
+	return {
+		url: `http://127.0.0.1:${address.port}/mcp`,
+		token,
+		calls,
+		methods,
+		state,
+		close: async () => {
+			server.closeAllConnections();
+			await new Promise<void>((resolve, reject) =>
+				server.close((error) => (error ? reject(error) : resolve())),
+			);
+		},
+	};
+}
+
+/** 承認後の通信・副作用・応答喪失を外部サーバー境界で観測する。 */
+function createMcpFixtureHandler(
+	token: string,
+	methods: string[],
+	calls: unknown[],
+	state: { outcome: string; result: Record<string, unknown> },
+): RequestListener<typeof IncomingMessage, typeof ServerResponse> | undefined {
+	return (request, response) => {
 		if (request.headers.authorization !== `Bearer ${token}`) {
 			response.writeHead(401).end();
 			return;
@@ -64,25 +98,6 @@ export async function mcpServer() {
 				JSON.stringify({ jsonrpc: "2.0", id: message.id, result }),
 			);
 		});
-	});
-	server.listen(0, "127.0.0.1");
-	await once(server, "listening");
-	const address = server.address();
-	if (!address || typeof address === "string") {
-		throw new Error("MCP の起動に失敗しました。");
-	}
-	return {
-		url: `http://127.0.0.1:${address.port}/mcp`,
-		token,
-		calls,
-		methods,
-		state,
-		close: async () => {
-			server.closeAllConnections();
-			await new Promise<void>((resolve, reject) =>
-				server.close((error) => (error ? reject(error) : resolve())),
-			);
-		},
 	};
 }
 

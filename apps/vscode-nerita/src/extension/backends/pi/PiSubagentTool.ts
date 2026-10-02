@@ -1,4 +1,5 @@
 // 単一の `subagent` 要求を Host 管理の子へ変換し、結果を親へ返す。
+
 import { resolve } from "node:path";
 import { z } from "zod";
 import { subagentInputSchema } from "./PiSubagentInput";
@@ -11,6 +12,7 @@ import { subagentAuthorizer } from "./PiChildSettings";
 import type {
 	ToolDefinition,
 	SessionManager,
+	ExtensionToolContext,
 } from "@earendil-works/pi-coding-agent";
 import type { PiChildRuntimes } from "./PiChildRuntimes";
 import type { PiSubagentDefinition } from "./PiSubagentDefinitions";
@@ -104,145 +106,29 @@ export function createPiSubagentTool(
 				withModel(definition, input.model),
 				context.model,
 			);
-			const initialMessages =
-				input.context === "fork"
-					? forkContext(
-							requireContextSource(contextSource),
-							context.model!,
-							preferredModel,
-						)
-					: [];
+			const initialMessages = subagentInitialMessages(
+				input,
+				contextSource,
+				context,
+				preferredModel,
+			);
 			const viewId = views.start(_id, input.agent, input.task, targetCwd);
-			const execute = async (
-				combined: AbortSignal,
-			): ReturnType<ToolDefinition["execute"]> => {
-				const jobAuthorize = jobs.authorizer(viewId, authorize);
-				try {
-					const tools = (definition.tools ?? supportedTools).filter(
-						(tool) => supportedTools.includes(tool),
-					);
-					const permit = await approveToolCall(
-						{
-							tool: "extension:subagent",
-							cwd: targetCwd,
-							policy,
-							params: {
-								...input,
-								definition,
-								tools,
-								preferredModel,
-							},
-						},
-						subagentAuthorizer(jobAuthorize, {
-							agent: definition.name,
-							task: input.task,
-						}),
-						combined,
-					);
-					consumeApprovedToolCall(permit);
-					const child = await children.open({
-						initialMessages,
-						jobId: viewId,
-						cwd: targetCwd,
-						signal: permit.signal,
-						role: {
-							...(!tools.some((tool) =>
-								["write", "edit"].includes(tool),
-							)
-								? { writableRoots: [] }
-								: {}),
-							shell: tools.some((tool) =>
-								["powershell", "pwsh", "bash"].includes(tool),
-							),
-						},
-						allowedTools: tools,
-						systemPrompt: definition.prompt,
-						...promptMode(definition),
-						preferredModel,
-						approvalContext: {
-							agent: definition.name,
-							task: input.task,
-						},
-					});
-					views.status(viewId, "running");
-					let output = "";
-					let failed = false;
-					const unsubscribe = child.subscribe((event) => {
-						views.event(viewId, event);
-						if (
-							event.type === "tool_execution_end" &&
-							event.isError
-						) {
-							failed = true;
-						}
-						if (
-							event.type === "message_end" &&
-							event.message.role === "assistant"
-						) {
-							output = event.message.content
-								.filter((part) => part.type === "text")
-								.map((part) => part.text)
-								.join("\n")
-								.slice(0, 32768);
-							failed ||= ["error", "aborted"].includes(
-								event.message.stopReason,
-							);
-						}
-					});
-					try {
-						update?.({
-							content: [
-								{
-									type: "text",
-									text: `${definition.name} を実行中`,
-								},
-							],
-							details: { agent: definition.name },
-						});
-						await child.prompt(input.task);
-						permit.signal.throwIfAborted();
-						if (failed) {
-							throw new Error(
-								output ||
-									"サブエージェントの実行に失敗しました。",
-							);
-						}
-						views.status(viewId, "completed");
-						return {
-							content: [
-								{
-									type: "text",
-									text:
-										output ||
-										"子から本文の応答がありませんでした。",
-								},
-							],
-							details: {
-								agent: definition.name,
-								source: definition.source,
-								tools,
-							},
-						};
-					} finally {
-						unsubscribe();
-						await child.close();
-					}
-				} catch (error) {
-					views.status(
-						viewId,
-						combined.aborted ? "interrupted" : "errored",
-					);
-					throw error;
-				}
-			};
+			const execute = createSubagentExecution(
+				jobs,
+				viewId,
+				authorize,
+				definition,
+				targetCwd,
+				policy,
+				input,
+				preferredModel,
+				children,
+				initialMessages,
+				views,
+				update,
+			);
 			const done = jobs.submit(
-				{
-					id: viewId,
-					parentId: views.parentId,
-					status: "queued",
-					background: input.async ?? false,
-					context: input.context ?? "fresh",
-				},
+				subagentJobMetadata(viewId, views, input),
 				combined,
 				execute,
 			);
@@ -259,6 +145,140 @@ export function createPiSubagentTool(
 			}
 			return done;
 		},
+	};
+}
+
+/** バックグラウンド実行と文脈の指定をジョブ記録へ固定する。 */
+function subagentJobMetadata(
+	viewId: string,
+	views: PiAgentViews,
+	input: {
+		agent: string;
+		task: string;
+		agentScope: "user" | "project" | "both";
+		cwd?: string | undefined;
+		model?: string | undefined;
+		context?: "fresh" | "fork" | undefined;
+		async?: boolean | undefined;
+	},
+): {
+	id: string;
+	parentId: string;
+	status:
+		| "queued"
+		| "running"
+		| "approval"
+		| "completed"
+		| "failed"
+		| "cancelled"
+		| "interrupted";
+	background: boolean;
+	context: "fresh" | "fork";
+	result?: string | undefined;
+} {
+	return {
+		id: viewId,
+		parentId: views.parentId,
+		status: "queued",
+		background: input.async ?? false,
+		context: input.context ?? "fresh",
+	};
+}
+
+/** 明示した親の履歴だけを子へ複製する。 */
+function subagentInitialMessages(
+	input: z.infer<typeof subagentInputSchema>,
+	contextSource: Pick<SessionManager, "buildSessionContext"> | undefined,
+	context: ExtensionToolContext,
+	preferredModel: PiModelSelection,
+) {
+	return input.context === "fork"
+		? forkContext(
+				requireContextSource(contextSource),
+				context.model!,
+				preferredModel,
+			)
+		: [];
+}
+
+/** 承認した設定だけを子に渡し、失敗時に表示を更新する。 */
+function createSubagentExecution(
+	jobs: PiJobs,
+	viewId: string,
+	authorize: ToolAuthorizer,
+	definition: PiSubagentDefinition,
+	targetCwd: string,
+	policy: AgentAccessPolicy,
+	input: z.infer<typeof subagentInputSchema>,
+	preferredModel: PiModelSelection,
+	children: PiChildRuntimes,
+	initialMessages: ReturnType<typeof forkContext>,
+	views: PiAgentViews,
+	update: Parameters<ToolDefinition["execute"]>[3],
+) {
+	return async (
+		combined: AbortSignal,
+	): ReturnType<ToolDefinition["execute"]> => {
+		const jobAuthorize = jobs.authorizer(viewId, authorize);
+		try {
+			const tools = (definition.tools ?? supportedTools).filter((tool) =>
+				supportedTools.includes(tool),
+			);
+			const permit = await approveToolCall(
+				{
+					tool: "extension:subagent",
+					cwd: targetCwd,
+					policy,
+					params: {
+						...input,
+						definition,
+						tools,
+						preferredModel,
+					},
+				},
+				subagentAuthorizer(jobAuthorize, {
+					agent: definition.name,
+					task: input.task,
+				}),
+				combined,
+			);
+			consumeApprovedToolCall(permit);
+			const child = await children.open({
+				initialMessages,
+				jobId: viewId,
+				cwd: targetCwd,
+				signal: permit.signal,
+				role: {
+					...(!tools.some((tool) => ["write", "edit"].includes(tool))
+						? { writableRoots: [] }
+						: {}),
+					shell: tools.some((tool) =>
+						["powershell", "pwsh", "bash"].includes(tool),
+					),
+				},
+				allowedTools: tools,
+				systemPrompt: definition.prompt,
+				...promptMode(definition),
+				preferredModel,
+				approvalContext: {
+					agent: definition.name,
+					task: input.task,
+				},
+			});
+			return await runChildPrompt(
+				views,
+				viewId,
+				child,
+				input,
+				definition,
+				tools,
+				permit,
+				update,
+			);
+		} catch (error) {
+			views.status(viewId, combined.aborted ? "interrupted" : "errored");
+			throw error;
+		}
 	};
 }
 
@@ -285,7 +305,7 @@ export function selectAgent(
 	return agent;
 }
 
-/** 未指定モデルは呼出時の親モデルを使い、定義のモデル指定は厳密に解決する。 */
+/** 定義のモデル指定からプロバイダー・モデル・推論レベルを取り出す。モデル未指定なら呼び出し時の親モデルを使う。 */
 export function agentModel(
 	definition: PiSubagentDefinition,
 	parent: { provider: string; id: string } | undefined,
@@ -320,7 +340,7 @@ function promptMode(definition: PiSubagentDefinition) {
 	};
 }
 
-/** 親が所有する会話だけを複製元として使う。 */
+/** 複製元となる親の会話履歴が渡されていることを確認する。 */
 function requireContextSource(
 	source: Pick<SessionManager, "buildSessionContext"> | undefined,
 ) {
@@ -330,7 +350,7 @@ function requireContextSource(
 	return source;
 }
 
-/** 未対応の外部実行定義は候補に宣伝せず、明示指定時には選択処理で拒否する。 */
+/** 未対応の外部実行定義は候補に表示せず、明示指定時には選択処理で拒否する。 */
 function availableAgentNames(agents: PiSubagentDefinition[]) {
 	return [
 		...new Set(
@@ -339,4 +359,70 @@ function availableAgentNames(agents: PiSubagentDefinition[]) {
 				.flatMap((agent) => [agent.name, ...(agent.aliases ?? [])]),
 		),
 	].join(", ");
+}
+
+/** 子の購読を終了まで維持し、応答の失敗と中断を成功として返さない。 */
+async function runChildPrompt(
+	views: PiAgentViews,
+	viewId: string,
+	child: Awaited<ReturnType<PiChildRuntimes["open"]>>,
+	input: z.infer<typeof subagentInputSchema>,
+	definition: PiSubagentDefinition,
+	tools: string[],
+	permit: Awaited<ReturnType<typeof approveToolCall>>,
+	update: Parameters<ToolDefinition["execute"]>[3],
+): ReturnType<ToolDefinition["execute"]> {
+	views.status(viewId, "running");
+	let output = "";
+	let failed = false;
+	const unsubscribe = child.subscribe((event) => {
+		views.event(viewId, event);
+		if (event.type === "tool_execution_end" && event.isError) {
+			failed = true;
+		}
+		if (
+			event.type === "message_end" &&
+			event.message.role === "assistant"
+		) {
+			output = event.message.content
+				.filter((part) => part.type === "text")
+				.map((part) => part.text)
+				.join("\n")
+				.slice(0, 32768);
+			failed ||= ["error", "aborted"].includes(event.message.stopReason);
+		}
+	});
+	try {
+		update?.({
+			content: [
+				{
+					type: "text",
+					text: `${definition.name} を実行中`,
+				},
+			],
+			details: { agent: definition.name },
+		});
+		await child.prompt(input.task);
+		permit.signal.throwIfAborted();
+		if (failed) {
+			throw new Error(output || "サブエージェントの実行に失敗しました。");
+		}
+		views.status(viewId, "completed");
+		return {
+			content: [
+				{
+					type: "text",
+					text: output || "子から本文の応答がありませんでした。",
+				},
+			],
+			details: {
+				agent: definition.name,
+				source: definition.source,
+				tools,
+			},
+		};
+	} finally {
+		unsubscribe();
+		await child.close();
+	}
 }

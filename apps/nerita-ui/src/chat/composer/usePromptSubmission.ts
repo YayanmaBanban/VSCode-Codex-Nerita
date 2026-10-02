@@ -1,14 +1,22 @@
-// 送信受付だけで入力ロックを解除し、失敗した下書きは編集可能なまま残す。
-import { useEffect, useRef, useState } from "react";
-import type { ChatState } from "@nerita/shared/chatState";
-import type { UiMessage } from "@nerita/shared/messages";
+// 送信の受付・失敗・切断で入力ロックを解除し、失敗した下書きは編集可能なまま残す。
+
 import type { Bridge } from "@nerita/shared/bridge";
+import type { ChatState } from "@nerita/shared/chatState";
 import {
 	promptContent,
 	type ComposerPart,
 } from "@nerita/shared/composerContent";
+import type { UiMessage } from "@nerita/shared/messages";
+import {
+	useEffect,
+	useRef,
+	useState,
+	type Dispatch,
+	type RefObject,
+	type SetStateAction,
+} from "react";
 
-/** 個別要求の結果と短時間の通知を入力欄へ接続する。 */
+/** 送信結果に応じて入力ロック・下書き・エラー通知を更新する。 */
 export function usePromptSubmission(
 	bridge: Bridge,
 	state: ChatState,
@@ -66,8 +74,38 @@ export function usePromptSubmission(
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending;
-	/** 同一イベント内での連打も参照値で防ぐ。下書きは受付後だけ消す。 */
-	const submit = () => {
+	/** 待機中の要求 ID を参照して連打を防ぐ。下書きは受付後だけ消す。 */
+	const submit = createPromptSubmitter(
+		available,
+		pending,
+		draft,
+		state,
+		parts,
+		setNotice,
+		setLocked,
+		send,
+	);
+	return {
+		locked,
+		available,
+		submit,
+		notice,
+		dismissNotice: () => setNotice(null),
+	};
+}
+
+/** 連打を防ぎ、送信が受け付けられるまで下書きを保持する。 */
+function createPromptSubmitter(
+	available: boolean,
+	pending: RefObject<string | null>,
+	draft: string,
+	state: ChatState,
+	parts: ComposerPart[],
+	setNotice: Dispatch<SetStateAction<{ id: string; text: string } | null>>,
+	setLocked: Dispatch<SetStateAction<boolean>>,
+	send: (message: UiMessage) => void,
+) {
+	return () => {
 		if (
 			!available ||
 			pending.current ||
@@ -77,20 +115,7 @@ export function usePromptSubmission(
 			return;
 		}
 		const requestId = crypto.randomUUID();
-		const codeReferences = [
-			...new Map(
-				parts
-					.flatMap(
-						(part) =>
-							part.references?.flatMap(({ path }) =>
-								path.kind === "file" && path.range
-									? [{ uri: path.uri, range: path.range }]
-									: [],
-							) ?? [],
-					)
-					.map((reference) => [JSON.stringify(reference), reference]),
-			).values(),
-		];
+		const codeReferences = promptCodeReferences(parts);
 		if (codeReferences.length > 20) {
 			setNotice({
 				id: requestId,
@@ -108,28 +133,7 @@ export function usePromptSubmission(
 				),
 			),
 		];
-		const sessionReferences = [
-			...new Map(
-				parts
-					.flatMap(
-						(part) =>
-							part.references?.flatMap(({ path }) =>
-								path.kind === "session"
-									? [
-											{
-												sessionId: path.sessionId,
-												mode: path.mode,
-											},
-										]
-									: [],
-							) ?? [],
-					)
-					.map((ref) => [
-						JSON.stringify([ref.sessionId, ref.mode]),
-						ref,
-					]),
-			).values(),
-		];
+		const sessionReferences = promptSessionReferences(parts);
 		if (sessionReferences.length > 5) {
 			setNotice({
 				id: requestId,
@@ -150,11 +154,45 @@ export function usePromptSubmission(
 			...(codeReferences.length ? { codeReferences } : {}),
 		});
 	};
-	return {
-		locked,
-		available,
-		submit,
-		notice,
-		dismissNotice: () => setNotice(null),
-	};
+}
+
+/** 参照する会話と参照方式の重複を取り除く。 */
+function promptSessionReferences(parts: ComposerPart[]) {
+	return [
+		...new Map(
+			parts
+				.flatMap(
+					(part) =>
+						part.references?.flatMap(({ path }) =>
+							path.kind === "session"
+								? [
+										{
+											sessionId: path.sessionId,
+											mode: path.mode,
+										},
+									]
+								: [],
+						) ?? [],
+				)
+				.map((ref) => [JSON.stringify([ref.sessionId, ref.mode]), ref]),
+		).values(),
+	];
+}
+
+/** コード参照を位置ごとに重複なく収集する。 */
+function promptCodeReferences(parts: ComposerPart[]) {
+	return [
+		...new Map(
+			parts
+				.flatMap(
+					(part) =>
+						part.references?.flatMap(({ path }) =>
+							path.kind === "file" && path.range
+								? [{ uri: path.uri, range: path.range }]
+								: [],
+						) ?? [],
+				)
+				.map((reference) => [JSON.stringify(reference), reference]),
+		).values(),
+	];
 }

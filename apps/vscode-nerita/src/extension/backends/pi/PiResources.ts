@@ -1,4 +1,5 @@
 // Pi 標準のパッケージ解決を利用し、登録ツールを Host の承認へ接続する。
+
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { type PiAuthorize } from "./PiApprovedTools";
 import { neritaExtensionFactories } from "./PiBuiltinExtensions";
@@ -55,38 +56,22 @@ export async function loadPiResources(
 			agentDir,
 			settingsManager,
 		),
-		// SDK の自動発見したコードはロードせず、明示 Trust を通った単一 `entry` と `builtin` を使う。
+		// SDK が自動発見したコードはロードせず、明示的に信頼した各拡張の単一のエントリーポイントと組み込み拡張を使う。
 		noExtensions: true,
 		additionalExtensionPaths: trustedExtensionPaths,
-		extensionFactories: [
-			...neritaExtensionFactories(controls, {
-				sdk,
-				features,
-				cwd,
-				authorize,
-				signal,
-				...(policy ? { policy } : {}),
-			}),
-			...(mcpSdk.loadPiMcp && policy
-				? [
-						{
-							name: "nerita-mcp",
-							factory: neritaMcpExtension({
-								load: mcpSdk.loadPiMcp,
-								cwd,
-								agentDir,
-								policy,
-								authorize,
-								signal,
-								features,
-								projectTrusted: () =>
-									settingsManager.isProjectTrusted(),
-								trustedExtensionPaths,
-							}),
-						},
-					]
-				: []),
-		],
+		extensionFactories: resourceExtensionFactories(
+			controls,
+			sdk,
+			features,
+			cwd,
+			authorize,
+			signal,
+			policy,
+			mcpSdk,
+			agentDir,
+			settingsManager,
+			trustedExtensionPaths,
+		),
 		// ターミナル用のテーマは VS Code Webview には適用しない。
 		noThemes: true,
 		...agentPromptOverride(appendPrompt, promptMode),
@@ -114,4 +99,49 @@ export async function loadPiResources(
 		);
 	}
 	return loader;
+}
+
+/** 承認と寿命を接続した組込み拡張のファクトリーを構成する。 */
+function resourceExtensionFactories(
+	controls: PiProviderControls | undefined,
+	sdk: typeof PiSdk,
+	features: PiToolFeatures,
+	cwd: string,
+	authorize: PiAuthorize,
+	signal: AbortSignal,
+	policy: AgentAccessPolicy | undefined,
+	mcpSdk: typeof PiSdk & { loadPiMcp?: () => Promise<PiMcpSdk> },
+	agentDir: string,
+	settingsManager: PiSdk.SettingsManager,
+	trustedExtensionPaths: string[],
+): PiSdk.InlineExtension[] {
+	return [
+		...neritaExtensionFactories(controls, {
+			sdk,
+			features,
+			cwd,
+			authorize,
+			signal,
+			...(policy ? { policy } : {}),
+		}),
+		...(mcpSdk.loadPiMcp && policy
+			? [
+					{
+						name: "nerita-mcp",
+						factory: neritaMcpExtension({
+							load: mcpSdk.loadPiMcp,
+							cwd,
+							agentDir,
+							policy,
+							authorize,
+							signal,
+							features,
+							projectTrusted: () =>
+								settingsManager.isProjectTrusted(),
+							trustedExtensionPaths,
+						}),
+					},
+				]
+			: []),
+	];
 }

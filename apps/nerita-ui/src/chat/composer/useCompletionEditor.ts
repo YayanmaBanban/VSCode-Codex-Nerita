@@ -1,16 +1,17 @@
-// 候補表示の検出と Tab 操作を Lexical へ登録し、解除時に購読を回収する。
-import { useEffect, useRef, type RefObject } from "react";
+// 候補表示の検出と Tab 操作を Lexical へ登録し、解除時に購読も解除する。
+
 import {
+	$getNodeByKey,
 	$getSelection,
 	$isRangeSelection,
-	$getNodeByKey,
 	COMMAND_PRIORITY_CRITICAL,
 	KEY_DOWN_COMMAND,
 	mergeRegister,
 	type LexicalEditor,
 } from "lexical";
-import { $pointOffset } from "./content";
+import { useEffect, useRef, type RefObject } from "react";
 import { $completion, $insertCompletion, type Completion } from "./completions";
+import { $pointOffset } from "./content";
 
 /** 本文のカーソル直前に2スペースを挿入、または最大2スペースを削除する。 */
 function $indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
@@ -76,51 +77,7 @@ export function useCompletionEditor(
 ) {
 	const latest = useRef(options);
 	latest.current = options;
-	useEffect(
-		() =>
-			mergeRegister(
-				editor.registerUpdateListener(({ editorState }) => {
-					const current = latest.current;
-					if (
-						current.match &&
-						!editorState.read(() =>
-							$getNodeByKey(current.match!.key),
-						)
-					) {
-						current.onMatch(null);
-						return;
-					}
-					if (
-						!editor
-							.getRootElement()
-							?.contains(document.activeElement) ||
-						editor.isComposing()
-					) {
-						return;
-					}
-					const next = editorState.read($completion);
-					if (!next) {
-						current.dismissed.current = "";
-					}
-					if (
-						JSON.stringify(next) === current.dismissed.current ||
-						JSON.stringify(next) === JSON.stringify(current.match)
-					) {
-						return;
-					}
-					current.dismissed.current = "";
-					current.onMatch(next);
-				}),
-				editor.registerCommand(
-					KEY_DOWN_COMMAND,
-					(event) =>
-						latest.current.handleKey(event) ||
-						$indent(event, editor),
-					COMMAND_PRIORITY_CRITICAL,
-				),
-			),
-		[editor],
-	);
+	useEffect(() => registerCompletionCommands(editor, latest), [editor]);
 	useEffect(() => {
 		const outside = (event: Event) => {
 			// 初回表示中の検索欄へのフォーカスを、パネル外への移動と判定しない。
@@ -162,4 +119,55 @@ export function useCompletionEditor(
 			}
 		};
 	}, [editor, options.match, options.id, options.selected]);
+}
+
+/** 本文の補完検出とキー操作を登録し、それらをまとめて解除する関数を返す。 */
+function registerCompletionCommands(
+	editor: LexicalEditor,
+	latest: RefObject<{
+		match: Completion | null;
+		dismissed: RefObject<string>;
+		container: RefObject<HTMLDivElement | null>;
+		onMatch: (match: Completion | null) => void;
+		handleKey: (event: KeyboardEvent) => boolean;
+		id: string;
+		selected: number | null;
+	}>,
+): () => void {
+	return mergeRegister(
+		editor.registerUpdateListener(({ editorState }) => {
+			const current = latest.current;
+			if (
+				current.match &&
+				!editorState.read(() => $getNodeByKey(current.match!.key))
+			) {
+				current.onMatch(null);
+				return;
+			}
+			if (
+				!editor.getRootElement()?.contains(document.activeElement) ||
+				editor.isComposing()
+			) {
+				return;
+			}
+			const next = editorState.read($completion);
+			if (!next) {
+				current.dismissed.current = "";
+			}
+			if (
+				JSON.stringify(next) === current.dismissed.current ||
+				JSON.stringify(next) === JSON.stringify(current.match)
+			) {
+				return;
+			}
+			current.dismissed.current = "";
+			current.onMatch(next);
+		}),
+		editor.registerCommand(
+			KEY_DOWN_COMMAND,
+			(event) =>
+				latest.current.handleKey(event) || $indent(event, editor),
+			COMMAND_PRIORITY_CRITICAL,
+		),
+	);
 }

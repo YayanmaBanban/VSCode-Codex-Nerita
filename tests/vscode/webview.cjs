@@ -1,4 +1,5 @@
-// 実 Webview の操作を Host・SDK・ファイルへ通し、表示だけの成功にしない。
+// VS Code 上の Webview を操作し、Host・SDK を経由したファイルへの反映を確認する。
+
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -57,7 +58,7 @@ async function prepareModel(url, cwd) {
 	);
 }
 
-/** 専用プロファイルのテーマを選び、実 Webview に届いた色と幅を記録する。 */
+/** 専用プロファイルのテーマを選び、VS Code 上の Webview に届いた色と幅を記録する。 */
 async function reviewViewport(page, chat, themeKind) {
 	const themes = vscode.extensions.getExtension("vscode.theme-defaults")
 		.packageJSON.contributes.themes;
@@ -127,7 +128,7 @@ async function run() {
 		});
 		page.setDefaultTimeout(15000);
 		await vscode.commands.executeCommand("nerita.trust.manage");
-		// Trust 管理画面は独立した Webview として表示される。
+		// 信頼管理画面は独立した Webview として表示される。
 		const manager = await findFrame(
 			page,
 			'input[placeholder="名前またはパスで検索"]',
@@ -147,67 +148,8 @@ async function run() {
 		await expect(
 			chat.getByRole("button", { name: "接続済み", exact: true }),
 		).toBeVisible();
-		model.replies.push(
-			{
-				name: "write",
-				arguments: { path: "ui.txt", content: "approved" },
-			},
-			"画面からの承認を受領しました",
-		);
-		await chat
-			.getByRole("textbox", { name: "Codexへのメッセージ" })
-			.fill("ファイルを作成");
-		await chat.getByRole("button", { name: "送信", exact: true }).click();
-		await expect(chat.getByLabel("承認要求")).toBeVisible();
-		const light = await reviewViewport(page, chat, "vs");
-		await expect(
-			chat.getByRole("button", { name: "今回のみ許可", exact: true }),
-		).toBeInViewport();
-		await expect(
-			chat.getByRole("button", { name: "停止", exact: true }),
-		).toBeInViewport();
-		await assert.rejects(fs.access(path.join(cwd, "ui.txt")), {
-			code: "ENOENT",
-		});
-		await page.screenshot({
-			path: path.join(process.env.NERITA_UI_ARTIFACTS, "approval.png"),
-		});
-		await chat
-			.getByLabel("承認要求")
-			.getByRole("button", { name: "今回のみ許可", exact: true })
-			.click();
-		await expect(
-			chat.getByText("画面からの承認を受領しました", { exact: true }),
-		).toBeVisible();
-		assert.equal(
-			await fs.readFile(path.join(cwd, "ui.txt"), "utf8"),
-			"approved",
-		);
-		model.replies.push({
-			name: "write",
-			arguments: { path: "stopped.txt", content: "blocked" },
-		});
-		await chat
-			.getByRole("textbox", { name: "Codexへのメッセージ" })
-			.fill("次の書込みを停止");
-		await chat.getByRole("button", { name: "送信", exact: true }).click();
-		await expect(chat.getByLabel("承認要求")).toBeVisible();
-		const dark = await reviewViewport(page, chat, "vs-dark");
-		assert.notEqual(light.background, dark.background);
-		await expect(
-			chat.getByRole("button", { name: "停止", exact: true }),
-		).toBeInViewport();
-		await chat.getByRole("button", { name: "停止", exact: true }).click();
-		await expect(chat.getByLabel("承認要求")).toHaveCount(0);
-		await expect(
-			chat.getByRole("button", { name: "停止", exact: true }),
-		).toHaveCount(0);
-		await assert.rejects(fs.access(path.join(cwd, "stopped.txt")), {
-			code: "ENOENT",
-		});
-		await page.screenshot({
-			path: path.join(process.env.NERITA_UI_ARTIFACTS, "stopped.png"),
-		});
+		const { light } = await verifyApprovedWrite(model, page, chat, cwd);
+		await verifyStoppedWrite(model, page, chat, cwd, light);
 		console.log(
 			"実 Webview: 信頼操作・再接続・承認付き書込み・停止に成功",
 			process.env.NERITA_UI_ARTIFACTS,
@@ -235,3 +177,73 @@ async function run() {
 }
 
 module.exports = { run };
+
+/** 承認前の未書込みと、画面から承認した後のファイル内容を確認する。 */
+async function verifyApprovedWrite(model, page, chat, cwd) {
+	model.replies.push(
+		{
+			name: "write",
+			arguments: { path: "ui.txt", content: "approved" },
+		},
+		"画面からの承認を受領しました",
+	);
+	await chat
+		.getByRole("textbox", { name: "Codexへのメッセージ" })
+		.fill("ファイルを作成");
+	await chat.getByRole("button", { name: "送信", exact: true }).click();
+	await expect(chat.getByLabel("承認要求")).toBeVisible();
+	const light = await reviewViewport(page, chat, "vs");
+	await expect(
+		chat.getByRole("button", { name: "今回のみ許可", exact: true }),
+	).toBeInViewport();
+	await expect(
+		chat.getByRole("button", { name: "停止", exact: true }),
+	).toBeInViewport();
+	await assert.rejects(fs.access(path.join(cwd, "ui.txt")), {
+		code: "ENOENT",
+	});
+	await page.screenshot({
+		path: path.join(process.env.NERITA_UI_ARTIFACTS, "approval.png"),
+	});
+	await chat
+		.getByLabel("承認要求")
+		.getByRole("button", { name: "今回のみ許可", exact: true })
+		.click();
+	await expect(
+		chat.getByText("画面からの承認を受領しました", { exact: true }),
+	).toBeVisible();
+	assert.equal(
+		await fs.readFile(path.join(cwd, "ui.txt"), "utf8"),
+		"approved",
+	);
+	return { light };
+}
+
+/** 暗いテーマで停止を操作し、承認待ちの書込みが実行されないことを確認する。 */
+async function verifyStoppedWrite(model, page, chat, cwd, light) {
+	model.replies.push({
+		name: "write",
+		arguments: { path: "stopped.txt", content: "blocked" },
+	});
+	await chat
+		.getByRole("textbox", { name: "Codexへのメッセージ" })
+		.fill("次の書込みを停止");
+	await chat.getByRole("button", { name: "送信", exact: true }).click();
+	await expect(chat.getByLabel("承認要求")).toBeVisible();
+	const dark = await reviewViewport(page, chat, "vs-dark");
+	assert.notEqual(light.background, dark.background);
+	await expect(
+		chat.getByRole("button", { name: "停止", exact: true }),
+	).toBeInViewport();
+	await chat.getByRole("button", { name: "停止", exact: true }).click();
+	await expect(chat.getByLabel("承認要求")).toHaveCount(0);
+	await expect(
+		chat.getByRole("button", { name: "停止", exact: true }),
+	).toHaveCount(0);
+	await assert.rejects(fs.access(path.join(cwd, "stopped.txt")), {
+		code: "ENOENT",
+	});
+	await page.screenshot({
+		path: path.join(process.env.NERITA_UI_ARTIFACTS, "stopped.png"),
+	});
+}

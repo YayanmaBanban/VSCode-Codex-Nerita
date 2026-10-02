@@ -1,7 +1,16 @@
 // ファイルドロップと画像ペーストを、会話を固定した添付要求へ変換する。
-import { useRef, useState, type ClipboardEvent, type DragEvent } from "react";
+
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
+import {
+	useRef,
+	useState,
+	type ClipboardEvent,
+	type Dispatch,
+	type DragEvent,
+	type RefObject,
+	type SetStateAction,
+} from "react";
 import { readDroppedAttachments } from "./readDroppedAttachments";
 
 /** 文字列だけの通常ドラッグを、添付操作から区別する。 */
@@ -11,7 +20,7 @@ function hasFiles(transfer: DataTransfer): boolean {
 	);
 }
 
-/** 添付ボタンと同じ利用条件を適用し、非同期読み込み中の会話切り替えを排除する。 */
+/** 添付ボタンと同じ利用条件を適用し、読み込み中に会話が切り替わった場合は添付しない。 */
 export function useAttachmentDrop(
 	state: ChatState,
 	locked: boolean,
@@ -43,7 +52,107 @@ export function useAttachmentDrop(
 	};
 
 	/** ドロップとペーストの読み込み・会話確認を共通化する。 */
-	const attach = async (transfer: DataTransfer) => {
+	const attach = createAttachmentReader(
+		enabled,
+		pending,
+		setReading,
+		setError,
+		current,
+		scope,
+		send,
+		state,
+	);
+
+	return {
+		active: active && enabled,
+		reading,
+		error,
+		handlers: attachmentDropHandlers(
+			stop,
+			attach,
+			depth,
+			setActive,
+			enabled,
+			pending,
+		),
+	};
+}
+
+/** ドラッグの入れ子を数え、ドロップと画像ペーストを同じ添付処理へ渡す。 */
+function attachmentDropHandlers(
+	stop: (event: DragEvent | ClipboardEvent) => void,
+	attach: (transfer: DataTransfer) => Promise<void>,
+	depth: RefObject<number>,
+	setActive: Dispatch<SetStateAction<boolean>>,
+	enabled: boolean,
+	pending: RefObject<boolean>,
+) {
+	return {
+		onPasteCapture(event: ClipboardEvent) {
+			const images = Array.from(event.clipboardData.files).filter(
+				(file) => file.type.startsWith("image/"),
+			);
+			if (!images.length) {
+				return;
+			}
+			stop(event);
+			// コピー元の URL や HTML ではなく、クリップボード内の画像実体を添付する。
+			const transfer = new DataTransfer();
+			for (const file of images) {
+				transfer.items.add(file);
+			}
+			void attach(transfer);
+		},
+		onDragEnterCapture(event: DragEvent) {
+			if (!hasFiles(event.dataTransfer)) {
+				return;
+			}
+			stop(event);
+			depth.current++;
+			setActive(true);
+		},
+		onDragOverCapture(event: DragEvent) {
+			if (!hasFiles(event.dataTransfer)) {
+				return;
+			}
+			stop(event);
+			event.dataTransfer.dropEffect =
+				enabled && !pending.current ? "copy" : "none";
+		},
+		onDragLeaveCapture(event: DragEvent) {
+			if (!hasFiles(event.dataTransfer)) {
+				return;
+			}
+			stop(event);
+			depth.current = Math.max(0, depth.current - 1);
+			if (!depth.current) {
+				setActive(false);
+			}
+		},
+		async onDropCapture(event: DragEvent) {
+			if (!hasFiles(event.dataTransfer)) {
+				return;
+			}
+			stop(event);
+			depth.current = 0;
+			setActive(false);
+			await attach(event.dataTransfer);
+		},
+	};
+}
+
+/** 読み取り中に会話が切り替わった場合は添付要求を送らない。 */
+function createAttachmentReader(
+	enabled: boolean,
+	pending: RefObject<boolean>,
+	setReading: Dispatch<SetStateAction<boolean>>,
+	setError: Dispatch<SetStateAction<string>>,
+	current: RefObject<{ scope: string; enabled: boolean }>,
+	scope: string,
+	send: (message: UiMessage) => void,
+	state: ChatState,
+) {
+	return async (transfer: DataTransfer) => {
 		if (!enabled || pending.current) {
 			return;
 		}
@@ -75,63 +184,5 @@ export function useAttachmentDrop(
 			pending.current = false;
 			setReading(false);
 		}
-	};
-
-	return {
-		active: active && enabled,
-		reading,
-		error,
-		handlers: {
-			onPasteCapture(event: ClipboardEvent) {
-				const images = Array.from(event.clipboardData.files).filter(
-					(file) => file.type.startsWith("image/"),
-				);
-				if (!images.length) {
-					return;
-				}
-				stop(event);
-				// コピー元の URL や HTML ではなく、クリップボード内の画像実体を添付する。
-				const transfer = new DataTransfer();
-				for (const file of images) {
-					transfer.items.add(file);
-				}
-				void attach(transfer);
-			},
-			onDragEnterCapture(event: DragEvent) {
-				if (!hasFiles(event.dataTransfer)) {
-					return;
-				}
-				stop(event);
-				depth.current++;
-				setActive(true);
-			},
-			onDragOverCapture(event: DragEvent) {
-				if (!hasFiles(event.dataTransfer)) {
-					return;
-				}
-				stop(event);
-				event.dataTransfer.dropEffect =
-					enabled && !pending.current ? "copy" : "none";
-			},
-			onDragLeaveCapture(event: DragEvent) {
-				if (!hasFiles(event.dataTransfer)) {
-					return;
-				}
-				stop(event);
-				depth.current = Math.max(0, depth.current - 1);
-				if (!depth.current) {
-					setActive(false);
-				}
-			},
-			async onDropCapture(event: DragEvent) {
-				if (!hasFiles(event.dataTransfer)) {
-					return;
-				}
-				stop(event);
-				depth.current = 0;
-				setActive(false);
-				await attach(event.dataTransfer);
-			},
-		},
 	};
 }

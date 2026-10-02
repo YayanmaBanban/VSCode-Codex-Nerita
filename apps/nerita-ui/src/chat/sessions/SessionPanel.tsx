@@ -1,13 +1,25 @@
 // 右ペインに作業フォルダとセッション履歴を表示する。
-import { cn } from "cnfast";
-import { useEffect, useRef, useState } from "react";
-import { motion, useIsPresent, useReducedMotion } from "motion/react";
-import { Archive, List } from "lucide-react";
+
+import { type ReactNode, useEffect, useRef, useState } from "react";
+
+import { taskActive } from "@nerita/shared/asyncTask";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
-import { taskActive } from "@nerita/shared/asyncTask";
-import { SessionPanelHeader } from "./SessionPanelHeader";
+import { type SessionCapabilities } from "@nerita/shared/sessionHistory";
+import { cn } from "cnfast";
+import { Archive, List } from "lucide-react";
+import { motion, useIsPresent, useReducedMotion } from "motion/react";
+
 import { SessionItem } from "./SessionItem";
+import { SessionPanelHeader } from "./SessionPanelHeader";
+
+/** 履歴の表示状態、表示幅の指定と要求の送信・パネルを閉じる操作。 */
+type SessionPanelProps = {
+	state: ChatState;
+	send: (message: UiMessage) => void;
+	onClose: () => void;
+	compact: boolean;
+};
 
 /** 一覧を開いた時だけ相対時刻を更新し、閉じる操作へフォーカスする。 */
 export function SessionPanel({
@@ -15,12 +27,7 @@ export function SessionPanel({
 	send,
 	onClose,
 	compact,
-}: {
-	state: ChatState;
-	send: (message: UiMessage) => void;
-	onClose: () => void;
-	compact: boolean;
-}) {
+}: SessionPanelProps) {
 	const present = useIsPresent();
 	const reduceMotion = useReducedMotion();
 	// 広い画面では会話欄の幅も追従させ、狭い画面では重ねたままスライドする。
@@ -64,113 +71,155 @@ export function SessionPanel({
 		>
 			<SessionPanelHeader state={state} close={close} onClose={onClose} />
 			{capabilities.unarchive && (
-				<div
-					className="flex gap-[8px] px-[12px] py-[8px]"
-					role="group"
-					aria-label="履歴の表示範囲"
-				>
-					{[false, true].map((archived) => (
-						<button
-							key={String(archived)}
-							type="button"
-							className={cn(
-								"inline-flex items-center gap-[6px] text-[12px]",
-								"aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4",
-							)}
-							aria-pressed={state.sessionsArchived === archived}
-							disabled={
-								state.sessionPending ||
-								state.connection !== "ready"
-							}
-							onClick={() =>
-								send({
-									type: "session/list",
-									archived,
-									requestId: crypto.randomUUID(),
-								})
-							}
-						>
-							{archived ? (
-								<Archive size={14} aria-hidden="true" />
-							) : (
-								<List size={14} aria-hidden="true" />
-							)}
-							{archived ? "アーカイブ" : "履歴"}
-						</button>
-					))}
-				</div>
+				<SessionArchiveFilter state={state} send={send} />
 			)}
-			<div className="min-h-0 flex-1 overflow-y-auto p-[8px] [scrollbar-width:thin]">
-				{state.sessionsError && (
-					<div
-						role="alert"
-						className="m-[4px] rounded-[6px] border border-solid border-alert-border bg-alert p-[10px] text-[12px] leading-[1.7]"
-					>
-						{state.sessionsError}
-						{capabilities.list && (
-							<button
-								type="button"
-								className="mt-[8px] block text-[12px]"
-								disabled={
-									state.sessionsLoading ||
-									state.sessionPending
-								}
-								onClick={() =>
-									send({
-										type: "session/list",
-										requestId: crypto.randomUUID(),
-									})
-								}
-							>
-								再試行
-							</button>
-						)}
-					</div>
-				)}
-				{state.sessionPending && (
-					<p
-						role="status"
-						className="mx-[8px] text-[12px] text-muted"
-					>
-						セッションを更新しています…
-					</p>
-				)}
-				{emptySessionList(state) && (
-					<p className="px-[12px] py-[24px] text-center text-[12px] text-muted">
-						このフォルダのセッションはありません
-					</p>
-				)}
-				<ul className="m-0 list-none p-0" aria-label="セッション履歴">
-					{state.sessions.map((session) => (
-						<SessionItem
-							key={session.sessionId}
-							session={session}
-							selected={session.sessionId === state.sessionId}
-							now={now}
-							disabled={disabled}
-							capabilities={capabilities}
-							send={send}
-						/>
-					))}
-				</ul>
-				{state.sessionsNextCursor !== null && (
-					<button
-						type="button"
-						className="mx-[12px] my-[8px] text-[12px]"
-						disabled={sessionListPending(state)}
-						onClick={() =>
-							send({
-								type: "session/list",
-								more: true,
-								requestId: crypto.randomUUID(),
-							})
-						}
-					>
-						さらに読み込む
-					</button>
-				)}
-			</div>
+			<SessionPanelList
+				state={state}
+				capabilities={capabilities}
+				send={send}
+				now={now}
+				disabled={disabled}
+			/>
 		</motion.aside>
+	);
+}
+
+/** 履歴の表示範囲と、アーカイブの切り替え要求を送る関数。 */
+type SessionArchiveFilterProps = {
+	state: ChatState;
+	send: (message: UiMessage) => void;
+};
+
+/** 通常の履歴とアーカイブの表示を切り替える。 */
+function SessionArchiveFilter({ state, send }: SessionArchiveFilterProps) {
+	return (
+		<div
+			className="flex gap-[8px] px-[12px] py-[8px]"
+			role="group"
+			aria-label="履歴の表示範囲"
+		>
+			{[false, true].map((archived) => (
+				<button
+					key={String(archived)}
+					type="button"
+					className={cn(
+						"inline-flex items-center gap-[6px] text-[12px]",
+						"aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4",
+					)}
+					aria-pressed={state.sessionsArchived === archived}
+					disabled={
+						state.sessionPending || state.connection !== "ready"
+					}
+					onClick={() =>
+						send({
+							type: "session/list",
+							archived,
+							requestId: crypto.randomUUID(),
+						})
+					}
+				>
+					{archived ? (
+						<Archive size={14} aria-hidden="true" />
+					) : (
+						<List size={14} aria-hidden="true" />
+					)}
+					{archived ? "アーカイブ" : "履歴"}
+				</button>
+			))}
+		</div>
+	);
+}
+
+/** セッション一覧と操作可能な機能、相対時刻の基準と操作の無効化状態。 */
+type SessionPanelListProps = {
+	state: ChatState;
+	capabilities: SessionCapabilities;
+	send: (message: UiMessage) => void;
+	now: number;
+	disabled: boolean;
+};
+
+/** 履歴の読み込み状態とセッション一覧を表示する。 */
+function SessionPanelList(props: SessionPanelListProps) {
+	const { state, send } = props;
+	return (
+		<div className="min-h-0 flex-1 overflow-y-auto p-[8px] [scrollbar-width:thin]">
+			{state.sessionsError && <SessionListError {...props} />}
+			{state.sessionPending && (
+				<p role="status" className="mx-[8px] text-[12px] text-muted">
+					セッションを更新しています…
+				</p>
+			)}
+			{emptySessionList(state) && (
+				<p className="px-[12px] py-[24px] text-center text-[12px] text-muted">
+					このフォルダのセッションはありません
+				</p>
+			)}
+			<ul className="m-0 list-none p-0" aria-label="セッション履歴">
+				{state.sessions.map((session) => (
+					<SessionItem
+						key={session.sessionId}
+						session={session}
+						selected={session.sessionId === state.sessionId}
+						{...props}
+					/>
+				))}
+			</ul>
+			{state.sessionsNextCursor !== null && (
+				<button
+					type="button"
+					className="mx-[12px] my-[8px] text-[12px]"
+					disabled={sessionListPending(state)}
+					onClick={() =>
+						send({
+							type: "session/list",
+							more: true,
+							requestId: crypto.randomUUID(),
+						})
+					}
+				>
+					さらに読み込む
+				</button>
+			)}
+		</div>
+	);
+}
+
+/** 履歴の取得エラー、再取得の対応状況と要求の送信関数。 */
+type SessionListErrorProps = {
+	state: ChatState;
+	capabilities: SessionCapabilities;
+	send: (message: UiMessage) => void;
+};
+
+/** 履歴の取得エラーと再試行操作を表示する。 */
+function SessionListError({
+	state,
+	capabilities,
+	send,
+}: SessionListErrorProps): ReactNode {
+	return (
+		<div
+			role="alert"
+			className="m-[4px] rounded-[6px] border border-solid border-alert-border bg-alert p-[10px] text-[12px] leading-[1.7]"
+		>
+			{state.sessionsError}
+			{capabilities.list && (
+				<button
+					type="button"
+					className="mt-[8px] block text-[12px]"
+					disabled={state.sessionsLoading || state.sessionPending}
+					onClick={() =>
+						send({
+							type: "session/list",
+							requestId: crypto.randomUUID(),
+						})
+					}
+				>
+					再試行
+				</button>
+			)}
+		</div>
 	);
 }
 

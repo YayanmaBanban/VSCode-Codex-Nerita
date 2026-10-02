@@ -1,8 +1,11 @@
-// モデル変更・追加指示を実 SDK の次の HTTP 要求へ反映し、保存した選択を再起動で使う。
+// モデル変更・追加指示を SDK 本体の次の HTTP 要求へ反映し、保存した選択を再起動で使う。
+
+import { type TestContext, test } from "node:test";
+
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { test } from "node:test";
+
 import { setImmediate } from "node:timers/promises";
 import {
 	piFixture,
@@ -14,63 +17,69 @@ import {
 } from "../support/pi";
 import type { PiModelSelection } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 
-void test("利用枠を実サービス経路で取得し、プロバイダー変更と接続破棄後の遅い応答を公開しない", async (t) => {
+void test(
+	"利用枠を実サービス経路で取得し、プロバイダー変更と接続破棄後の遅い応答を公開しない",
+	verifyPiQuotaLifetime,
+);
+
+void test(
+	"保存した会話の原文とハンドオフを参照し、要約失敗では親へ送信しない",
+	verifyPiSessionReferences,
+);
+
+void test("起動中に無効化した Pi 接続の遅い完了を公開せず、次の接続だけへ送信する", async (t) => {
 	const f = await piFixture(t);
-	await writeFile(
-		join(f.agentDir, "auth.json"),
-		JSON.stringify({
-			openai: {
-				type: "oauth",
-				access: "local-quota-token",
-				refresh: "local-refresh-token",
-				expires: Date.now() + 3600000,
-			},
-		}),
+	let created!: () => void;
+	let release!: () => void;
+	const createdPromise = new Promise<void>((resolve) => {
+		created = resolve;
+	});
+	const releasePromise = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	const controller = f.controller(async () => {
+		created();
+		await releasePromise;
+	});
+	// 途中のアサーションに失敗しても、接続の回収待ちを残さない。
+	const opening = controller.connect();
+	try {
+		await createdPromise;
+		controller.invalidate();
+		assert.equal(controller.snapshot().connection, "disconnected");
+	} finally {
+		release();
+		await opening;
+	}
+	assert.equal(controller.snapshot().connection, "disconnected");
+	assert.equal(controller.snapshot().sessionId, null);
+	assert.deepEqual(controller.snapshot().messages, []);
+	await controller.receive({ type: "connection/retry", requestId: "retry" });
+	assert.equal(controller.snapshot().connection, "ready");
+	f.model.replies.push("新しい接続の回答");
+	await send(controller, "有効な接続だけを使用");
+	assert.equal((await finished(controller)).run, "completed");
+	assert.equal(f.model.requests.length, 1);
+	assert.equal(
+		controller.snapshot().messages.at(-1)?.text,
+		"新しい接続の回答",
 	);
-	const configured = JSON.parse(
-		await readFile(join(f.agentDir, "models.json"), "utf8"),
-	) as { providers: Record<string, unknown> };
-	configured.providers.openai = {
-		baseUrl: "https://api.openai.com/v1",
-		api: "openai-responses",
-		models: [
-			{
-				id: "quota-model",
-				reasoning: false,
-				input: ["text"],
-				contextWindow: 100000,
-				maxTokens: 128,
-			},
-		],
-	};
-	await writeFile(
-		join(f.agentDir, "models.json"),
-		JSON.stringify(configured),
-	);
+});
+
+void test(
+	"Pi のモデル・推論変更と追加指示を送信し、保存した選択を新しい接続で使う",
+	verifyPiModelPersistence,
+);
+
+/** プロバイダー変更と接続破棄後の遅い利用枠応答を公開しない。 */
+async function verifyPiQuotaLifetime(t: TestContext) {
+	const f = await piFixture(t);
+	await prepareQuotaModel(f);
 	const pending: {
 		signal: AbortSignal;
 		reply: (response: Response) => void;
 	}[] = [];
-	f.options.request = async (input, init) => {
-		const url = input instanceof Request ? input.url : String(input);
-		if (url.startsWith("https://api.openai.com/v1/models?")) {
-			return Response.json({
-				models: [
-					{
-						slug: "quota-model",
-						display_name: "Quota fixture",
-						visibility: "list",
-					},
-				],
-			});
-		}
-		assert.equal(url, "https://chatgpt.com/backend-api/wham/usage");
-		assert.equal(init?.redirect, "error");
-		assert.ok(init?.signal);
-		return new Promise<Response>((reply) =>
-			pending.push({ signal: init.signal!, reply }),
-		);
-	};
+	f.options.request = createQuotaRequest(pending);
 	const controller = f.controller();
 	try {
 		await controller.connect();
@@ -137,9 +146,36 @@ void test("利用枠を実サービス経路で取得し、プロバイダー変
 			request.reply(Response.json({}));
 		}
 	}
-});
+}
 
-void test("保存した会話の原文とハンドオフを参照し、要約失敗では親へ送信しない", async (t) => {
+/** カタログと保留中の利用枠応答をモデル境界で再現する。 */
+function createQuotaRequest(
+	pending: { signal: AbortSignal; reply: (response: Response) => void }[],
+): (input: string | URL | Request, init?: RequestInit) => Promise<Response> {
+	return async (input, init) => {
+		const url = input instanceof Request ? input.url : String(input);
+		if (url.startsWith("https://api.openai.com/v1/models?")) {
+			return Response.json({
+				models: [
+					{
+						slug: "quota-model",
+						display_name: "Quota fixture",
+						visibility: "list",
+					},
+				],
+			});
+		}
+		assert.equal(url, "https://chatgpt.com/backend-api/wham/usage");
+		assert.equal(init?.redirect, "error");
+		assert.ok(init?.signal);
+		return new Promise<Response>((reply) =>
+			pending.push({ signal: init.signal!, reply }),
+		);
+	};
+}
+
+/** 原文とハンドオフの参照後も履歴を保持し、要約失敗時は親へ送信しない。 */
+async function verifyPiSessionReferences(t: TestContext) {
 	const f = await piFixture(t);
 	const controller = f.controller();
 	await controller.connect();
@@ -180,19 +216,7 @@ void test("保存した会話の原文とハンドオフを参照し、要約失
 		sessionReferences: [{ sessionId: source.sessionId, mode: "handoff" }],
 	});
 	assert.equal((await finished(controller)).run, "completed");
-	const summary = JSON.parse(f.model.requests[2]!) as {
-		tools?: unknown[];
-		messages: unknown[];
-	};
-	assert.equal(
-		summary.tools?.length ?? 0,
-		0,
-		"要約生成へ副作用ツールを渡さない",
-	);
-	assert.ok(JSON.stringify(summary.messages).includes("参照元の作業記録"));
-	assert.ok(
-		JSON.stringify(summary.messages).includes("untrusted_conversation"),
-	);
+	verifyHandoffIsolation(f);
 	assert.ok(f.model.requests[3]!.includes("引継ぎ用の要約"));
 	assert.ok(
 		f.model.requests[3]!.includes(`referenced_handoff:${source.sessionId}`),
@@ -222,68 +246,12 @@ void test("保存した会話の原文とハンドオフを参照し、要約失
 		code: "ENOENT",
 	});
 	assert.equal(await readFile(saved.path, "utf8"), saved.text);
-});
+}
 
-void test("起動中に無効化した Pi 接続の遅い完了を公開せず、次の接続だけへ送信する", async (t) => {
+/** 追加指示を受け付け、モデルと推論設定を保存して新しい接続で使う。 */
+async function verifyPiModelPersistence(t: TestContext) {
 	const f = await piFixture(t);
-	let created!: () => void;
-	let release!: () => void;
-	const createdPromise = new Promise<void>((resolve) => {
-		created = resolve;
-	});
-	const releasePromise = new Promise<void>((resolve) => {
-		release = resolve;
-	});
-	const controller = f.controller(async () => {
-		created();
-		await releasePromise;
-	});
-	// 途中のアサーションに失敗しても、接続の回収待ちを残さない。
-	const opening = controller.connect();
-	try {
-		await createdPromise;
-		controller.invalidate();
-		assert.equal(controller.snapshot().connection, "disconnected");
-	} finally {
-		release();
-		await opening;
-	}
-	assert.equal(controller.snapshot().connection, "disconnected");
-	assert.equal(controller.snapshot().sessionId, null);
-	assert.deepEqual(controller.snapshot().messages, []);
-	await controller.receive({ type: "connection/retry", requestId: "retry" });
-	assert.equal(controller.snapshot().connection, "ready");
-	f.model.replies.push("新しい接続の回答");
-	await send(controller, "有効な接続だけを使用");
-	assert.equal((await finished(controller)).run, "completed");
-	assert.equal(f.model.requests.length, 1);
-	assert.equal(
-		controller.snapshot().messages.at(-1)?.text,
-		"新しい接続の回答",
-	);
-});
-
-void test("Pi のモデル・推論変更と追加指示を送信し、保存した選択を新しい接続で使う", async (t) => {
-	const f = await piFixture(t);
-	await writeFile(
-		join(f.agentDir, "models.json"),
-		JSON.stringify({
-			providers: {
-				local: {
-					baseUrl: f.model.url,
-					api: "openai-completions",
-					apiKey: "local-test-key",
-					models: ["test-model", "other-model"].map((id) => ({
-						id,
-						reasoning: true,
-						input: ["text"],
-						contextWindow: 1000000,
-						maxTokens: 128,
-					})),
-				},
-			},
-		}),
-	);
+	await prepareConversationModels(f);
 	const selection = join(f.root, "selection.json");
 	f.options.saveModel = async (value) => {
 		await writeFile(selection, JSON.stringify(value));
@@ -345,4 +313,81 @@ void test("Pi のモデル・推論変更と追加指示を送信し、保存し
 	const next = JSON.parse(f.model.requests[2]!) as Record<string, unknown>;
 	assert.equal(next.model, "other-model");
 	assert.equal(next.reasoning_effort, "high");
-});
+}
+
+/** OAuth とカタログをローカル応答へ固定して利用枠の競合を再現する。 */
+async function prepareQuotaModel(f: Awaited<ReturnType<typeof piFixture>>) {
+	await writeFile(
+		join(f.agentDir, "auth.json"),
+		JSON.stringify({
+			openai: {
+				type: "oauth",
+				access: "local-quota-token",
+				refresh: "local-refresh-token",
+				expires: Date.now() + 3600000,
+			},
+		}),
+	);
+	const configured = JSON.parse(
+		await readFile(join(f.agentDir, "models.json"), "utf8"),
+	) as { providers: Record<string, unknown> };
+	configured.providers.openai = {
+		baseUrl: "https://api.openai.com/v1",
+		api: "openai-responses",
+		models: [
+			{
+				id: "quota-model",
+				reasoning: false,
+				input: ["text"],
+				contextWindow: 100000,
+				maxTokens: 128,
+			},
+		],
+	};
+	await writeFile(
+		join(f.agentDir, "models.json"),
+		JSON.stringify(configured),
+	);
+}
+
+/** 要約用の送信には副作用ツールを含めず、参照履歴を未信頼として扱う。 */
+function verifyHandoffIsolation(f: Awaited<ReturnType<typeof piFixture>>) {
+	const summary = JSON.parse(f.model.requests[2]!) as {
+		tools?: unknown[];
+		messages: unknown[];
+	};
+	assert.equal(
+		summary.tools?.length ?? 0,
+		0,
+		"要約生成へ副作用ツールを渡さない",
+	);
+	assert.ok(JSON.stringify(summary.messages).includes("参照元の作業記録"));
+	assert.ok(
+		JSON.stringify(summary.messages).includes("untrusted_conversation"),
+	);
+}
+
+/** モデル変更と推論設定の保存を同じローカルプロバイダーで検証する。 */
+async function prepareConversationModels(
+	f: Awaited<ReturnType<typeof piFixture>>,
+) {
+	await writeFile(
+		join(f.agentDir, "models.json"),
+		JSON.stringify({
+			providers: {
+				local: {
+					baseUrl: f.model.url,
+					api: "openai-completions",
+					apiKey: "local-test-key",
+					models: ["test-model", "other-model"].map((id) => ({
+						id,
+						reasoning: true,
+						input: ["text"],
+						contextWindow: 1000000,
+						maxTokens: 128,
+					})),
+				},
+			},
+		}),
+	);
+}

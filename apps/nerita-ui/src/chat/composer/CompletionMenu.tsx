@@ -1,6 +1,8 @@
 // 検索ペインと候補ペインを持ち、選択中の行を見える範囲に保つ。
+
 import { cn } from "cnfast";
 import {
+	type RefObject,
 	useEffect,
 	useLayoutEffect,
 	useRef,
@@ -11,23 +13,8 @@ import {
 import type { CompletionItem } from "./completionItems";
 import { CompletionOption } from "./CompletionOption";
 
-/** 検索中も本文の選択範囲を保持し、キーボードとクリックを共通化する。 */
-export function CompletionMenu({
-	id,
-	title,
-	query,
-	items,
-	selected,
-	empty,
-	onQuery,
-	onKeyDown,
-	onPick,
-	location,
-	notice,
-	header,
-	context,
-	autoFocus,
-}: {
+/** 補完候補・検索語・選択位置と、検索や候補選択の操作。 */
+type CompletionMenuProps = {
 	id: string;
 	title: string;
 	query: string;
@@ -42,7 +29,11 @@ export function CompletionMenu({
 	header?: ReactNode;
 	context?: boolean;
 	autoFocus?: boolean;
-}) {
+};
+
+/** 検索中も本文の選択範囲を保持し、キーボードとクリックを共通化する。 */
+export function CompletionMenu(props: CompletionMenuProps) {
+	const { title, items, selected, location, notice, header, context } = props;
 	const list = useRef<HTMLDivElement>(null);
 	const panel = useRef<HTMLDivElement>(null);
 	const [above, setAbove] = useState(true);
@@ -76,30 +67,7 @@ export function CompletionMenu({
 			aria-label={title}
 		>
 			{header}
-			<div
-				className={cn(
-					"flex shrink-0 items-center gap-2",
-					context
-						? "order-last mt-2 border-t border-panel-border pt-2"
-						: "mb-2 border-b border-panel-border pb-2",
-				)}
-			>
-				<input
-					autoFocus={autoFocus}
-					aria-label={`${title}を検索`}
-					role="combobox"
-					aria-expanded="true"
-					aria-controls={id}
-					aria-activedescendant={
-						items[selected] ? `${id}-${selected}` : undefined
-					}
-					value={query}
-					onChange={(event) => onQuery(event.target.value)}
-					onKeyDown={onKeyDown}
-					placeholder={location ? "この階層を検索" : `${title}を検索`}
-					className="min-w-0 w-full rounded border border-input-border bg-input p-2 text-input-text focus:outline-2 focus:outline-focus"
-				/>
-			</div>
+			<CompletionSearchInput {...props} />
 			{location && (
 				<p className="mb-2 break-all text-[12px] text-muted">
 					{location}
@@ -110,29 +78,112 @@ export function CompletionMenu({
 					{notice}
 				</p>
 			)}
-			<div
-				ref={list}
-				id={id}
-				role="listbox"
-				aria-label={title}
-				className="max-h-[min(240px,35vh)] overflow-y-auto"
-			>
-				{items.map((item, index) => (
-					<CompletionOption
-						key={item.id}
-						id={`${id}-${index}`}
-						item={item}
-						selected={index === selected}
-						context={Boolean(context)}
-						onPick={onPick}
-					/>
-				))}
-				{!items.length && (
-					<p className="p-2 text-[12px] text-muted" role="status">
-						{empty}
-					</p>
-				)}
-			</div>
+			<CompletionList list={list} {...props} />
+		</div>
+	);
+}
+
+/** 補完の検索語、選択中の候補と検索欄のキー操作。 */
+type CompletionSearchInputProps = {
+	context?: undefined | false | true;
+	autoFocus?: undefined | false | true;
+	title: string;
+	id: string;
+	items: CompletionItem[];
+	selected: number;
+	query: string;
+	onQuery: (text: string) => void;
+	onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+	location?: undefined | string;
+};
+
+/** 補完候補と選択位置、空の一覧に表示する文言と候補を選ぶ操作。 */
+type CompletionListProps = {
+	list: RefObject<HTMLDivElement | null>;
+	id: string;
+	title: string;
+	items: CompletionItem[];
+	selected: number;
+	context?: boolean | undefined;
+	onPick: (item: CompletionItem) => void;
+	empty: string;
+};
+
+/** 候補一覧の選択状態と空の表示を揃える。 */
+function CompletionList({
+	list,
+	id,
+	title,
+	items,
+	selected,
+	context,
+	onPick,
+	empty,
+}: CompletionListProps) {
+	return (
+		<div
+			ref={list}
+			id={id}
+			role="listbox"
+			aria-label={title}
+			className="max-h-[min(240px,35vh)] overflow-y-auto"
+		>
+			{items.map((item, index) => (
+				<CompletionOption
+					key={item.id}
+					id={`${id}-${index}`}
+					item={item}
+					selected={index === selected}
+					context={Boolean(context)}
+					onPick={onPick}
+				/>
+			))}
+			{!items.length && (
+				<p className="p-2 text-[12px] text-muted" role="status">
+					{empty}
+				</p>
+			)}
+		</div>
+	);
+}
+
+/** 本文の選択を保持したまま補完候補を検索する。 */
+function CompletionSearchInput({
+	context,
+	autoFocus,
+	title,
+	id,
+	items,
+	selected,
+	query,
+	onQuery,
+	onKeyDown,
+	location,
+}: CompletionSearchInputProps) {
+	return (
+		<div
+			className={cn(
+				"flex shrink-0 items-center gap-2",
+				context
+					? "order-last mt-2 border-t border-panel-border pt-2"
+					: "mb-2 border-b border-panel-border pb-2",
+			)}
+		>
+			<input
+				autoFocus={autoFocus}
+				aria-label={`${title}を検索`}
+				role="combobox"
+				aria-expanded="true"
+				aria-controls={id}
+				aria-activedescendant={
+					items[selected] ? `${id}-${selected}` : undefined
+				}
+				value={query}
+				onChange={(event) => onQuery(event.target.value)}
+				onKeyDown={onKeyDown}
+				placeholder={location ? "この階層を検索" : `${title}を検索`}
+				className="min-w-0 w-full rounded border border-input-border bg-input p-2 text-input-text focus:outline-2 focus:outline-focus"
+			/>
 		</div>
 	);
 }

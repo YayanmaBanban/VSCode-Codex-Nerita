@@ -1,4 +1,5 @@
-// 今回生成した VSIX を一時領域へ展開し、同梱 SDK と実 Extension Host を検証する。
+// 今回生成した VSIX を一時領域へ展開し、同梱 SDK と VS Code 上の Extension Host を検証する。
+
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
@@ -32,27 +33,7 @@ async function main() {
 		path.join(os.tmpdir(), "nerita-distribution-"),
 	);
 	try {
-		const archive = path.join(root, "extension.zip");
-		const extracted = path.join(root, "package");
-		await fs.copyFile(
-			path.join(extensionRoot, "dist/nerita.vsix"),
-			archive,
-		);
-		run(
-			"powershell.exe",
-			[
-				"-NoProfile",
-				"-NonInteractive",
-				"-Command",
-				"Expand-Archive -LiteralPath $env:NERITA_TEST_ARCHIVE -DestinationPath $env:NERITA_TEST_EXTRACTED",
-			],
-			{
-				...process.env,
-				NERITA_TEST_ARCHIVE: archive,
-				NERITA_TEST_EXTRACTED: extracted,
-			},
-		);
-		const extension = path.join(extracted, "extension");
+		const { extension } = await extractDistribution(root);
 		if (process.argv.includes("--sandbox")) {
 			await verifySandbox(extension, root);
 			return;
@@ -112,7 +93,7 @@ async function main() {
 	}
 }
 
-/** 実 Webview でもモデル境界だけを代替し、設定と画像を実行ごとに分離する。 */
+/** VS Code 上の Webview でもモデルとの通信だけを代替し、設定と画像を実行ごとに分離する。 */
 async function prepareWebview(root) {
 	run("git", ["init", "--quiet", root], process.env);
 	const home = path.join(root, "home");
@@ -145,7 +126,7 @@ async function prepareWebview(root) {
 	};
 }
 
-/** 準備済みの実 Windows Sandbox を使用し、未準備を成功やスキップへ変換しない。 */
+/** 準備済みの Windows Sandbox を実際に使用し、未準備を成功やスキップへ変換しない。 */
 async function verifySandbox(extension, root) {
 	const script = path.join(root, "sandbox.cjs");
 	const fixture = path.join(root, "sandbox");
@@ -181,4 +162,27 @@ async function removeRun(root) {
 		throw new Error("一時展開先を確認できません。");
 	}
 	await fs.rm(root, { recursive: true, force: true });
+}
+
+/** 今回生成した VSIX を検証用の一時領域へ展開する。 */
+async function extractDistribution(root) {
+	const archive = path.join(root, "extension.zip");
+	const extracted = path.join(root, "package");
+	await fs.copyFile(path.join(extensionRoot, "dist/nerita.vsix"), archive);
+	run(
+		"powershell.exe",
+		[
+			"-NoProfile",
+			"-NonInteractive",
+			"-Command",
+			"Expand-Archive -LiteralPath $env:NERITA_TEST_ARCHIVE -DestinationPath $env:NERITA_TEST_EXTRACTED",
+		],
+		{
+			...process.env,
+			NERITA_TEST_ARCHIVE: archive,
+			NERITA_TEST_EXTRACTED: extracted,
+		},
+	);
+	const extension = path.join(extracted, "extension");
+	return { extension };
 }

@@ -1,4 +1,5 @@
 // 通信境界だけを差し替え、実際の管理画面で保存・競合・入力エラーを確認する。
+
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AgentManager } from "../../src/agentManager/AgentManager";
@@ -17,103 +18,14 @@ function sampleState(): ManagerState {
 		workspace: "workspace-id",
 		label: "example-workspace",
 		generation: "1",
-		agents: [
-			{
-				id: "pi:reviewer",
-				backend: "pi",
-				name: "reviewer",
-				description: "変更内容と関連テストを確認する Agent。",
-				source: "extension",
-				aliases: ["review"],
-				tools: ["read", "ls"],
-				definitionModel: "openai/gpt-6-sol",
-				definitionThinking: "high",
-				edit: {},
-				editable: true,
-			},
-			{
-				id: "pi:unsupported",
-				backend: "pi",
-				name: "external-runner",
-				description: "外部実行の定義",
-				source: "user",
-				aliases: [],
-				tools: [],
-				edit: { disabled: true },
-				editable: true,
-				unavailableReason: "外部 runner は Nerita では非対応です。",
-			},
-			{
-				id: ".codex/agents/reviewer.toml",
-				backend: "codex",
-				name: "codex-reviewer",
-				description: "Codex の標準定義",
-				source: "project",
-				aliases: [],
-				tools: [],
-				edit: { model: "gpt-6-sol", reasoningEffort: "high" },
-				definitionModel: "gpt-6-sol",
-				definitionThinking: "high",
-				editable: true,
-			},
-		],
+		agents: structuredClone(sampleAgents),
 		piDefaults: {},
 		piUserSettings: '{"defaultThinking":"high"}',
 		modelScope: "{}",
 		handoff: defaultHandoff(),
 		handoffExists: false,
 		handoffError: null,
-		models: {
-			pi: [
-				{
-					value: "openai/gpt-6-sol",
-					name: "OpenAI / GPT-6 Sol",
-					efforts: ["low", "medium", "high", "max"],
-				},
-				{
-					value: "openai/gpt-6-astra",
-					name: "GPT-6 Astra",
-					efforts: ["low", "medium", "high", "max"],
-				},
-				{
-					value: "openai/gpt-5.6-sol",
-					name: "GPT-5.6 Sol",
-					efforts: ["low", "medium", "high", "max"],
-				},
-				{
-					value: "openai/gpt-6-luna",
-					name: "GPT-6 Luna",
-					efforts: ["low", "medium", "high"],
-				},
-			],
-			codex: [
-				{
-					value: "gpt-6-sol",
-					name: "GPT-6 Sol",
-					efforts: ["low", "medium", "high", "ultra"],
-				},
-				{
-					value: "gpt-6-astra",
-					name: "GPT-6 Astra",
-					efforts: ["low", "medium", "high", "ultra"],
-				},
-				{
-					value: "gpt-5.6-sol",
-					name: "GPT-5.6 Sol",
-					efforts: ["low", "medium", "high", "ultra"],
-				},
-				{
-					value: "gpt-6-luna",
-					name: "GPT-6 Luna",
-					efforts: ["low", "medium", "high"],
-				},
-				{
-					value: "limited-model",
-					name: "Limited model",
-					efforts: ["low"],
-				},
-			],
-		},
+		models: structuredClone(sampleModels),
 		activeBackend: "pi",
 		currentModels: { pi: "openai/gpt-6-sol" },
 		running: 1,
@@ -189,8 +101,11 @@ function mockBridge(mode: string): ManagerBridge {
 	};
 }
 
+/** 管理画面のストーリーで再現する状態の指定。 */
+type PreviewProps = { mode: string };
+
 /** ストーリーの再描画で通信状態を作り直さない。 */
-function Preview({ mode }: { mode: string }) {
+function Preview({ mode }: PreviewProps) {
 	const bridge = useMemo(() => mockBridge(mode), [mode]);
 	return <AgentManager bridge={bridge} />;
 }
@@ -206,3 +121,98 @@ export const Settings: Story = {};
 export const Conflict: Story = { args: { mode: "conflict" } };
 export const Invalid: Story = { args: { mode: "invalid" } };
 export const Empty: Story = { args: { mode: "empty" } };
+
+/** ストーリー間で編集内容を共有しないため、使用時に複製する。 */
+const sampleAgents: ManagerState["agents"] = [
+	{
+		id: "pi:reviewer",
+		backend: "pi",
+		name: "reviewer",
+		description: "変更内容と関連テストを確認する Agent。",
+		source: "extension",
+		aliases: ["review"],
+		tools: ["read", "ls"],
+		definitionModel: "openai/gpt-6-sol",
+		definitionThinking: "high",
+		edit: {},
+		editable: true,
+	},
+	{
+		id: "pi:unsupported",
+		backend: "pi",
+		name: "external-runner",
+		description: "外部実行の定義",
+		source: "user",
+		aliases: [],
+		tools: [],
+		edit: { disabled: true },
+		editable: true,
+		unavailableReason: "外部 runner は Nerita では非対応です。",
+	},
+	{
+		id: ".codex/agents/reviewer.toml",
+		backend: "codex",
+		name: "codex-reviewer",
+		description: "Codex の標準定義",
+		source: "project",
+		aliases: [],
+		tools: [],
+		edit: { model: "gpt-6-sol", reasoningEffort: "high" },
+		definitionModel: "gpt-6-sol",
+		definitionThinking: "high",
+		editable: true,
+	},
+];
+
+/** バックエンドごとの選択可能なモデルを示す固定データ。 */
+const sampleModels: ManagerState["models"] = {
+	pi: [
+		{
+			value: "openai/gpt-6-sol",
+			name: "OpenAI / GPT-6 Sol",
+			efforts: ["low", "medium", "high", "max"],
+		},
+		{
+			value: "openai/gpt-6-astra",
+			name: "GPT-6 Astra",
+			efforts: ["low", "medium", "high", "max"],
+		},
+		{
+			value: "openai/gpt-5.6-sol",
+			name: "GPT-5.6 Sol",
+			efforts: ["low", "medium", "high", "max"],
+		},
+		{
+			value: "openai/gpt-6-luna",
+			name: "GPT-6 Luna",
+			efforts: ["low", "medium", "high"],
+		},
+	],
+	codex: [
+		{
+			value: "gpt-6-sol",
+			name: "GPT-6 Sol",
+			efforts: ["low", "medium", "high", "ultra"],
+		},
+		{
+			value: "gpt-6-astra",
+			name: "GPT-6 Astra",
+			efforts: ["low", "medium", "high", "ultra"],
+		},
+		{
+			value: "gpt-5.6-sol",
+			name: "GPT-5.6 Sol",
+			efforts: ["low", "medium", "high", "ultra"],
+		},
+		{
+			value: "gpt-6-luna",
+			name: "GPT-6 Luna",
+			efforts: ["low", "medium", "high"],
+		},
+		{
+			value: "limited-model",
+			name: "Limited model",
+			efforts: ["low"],
+		},
+	],
+};

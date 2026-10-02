@@ -1,4 +1,5 @@
 // 検索は Host の読取りだけで行い、ワークスペース内の検索プログラムを起動しない。
+
 import { lstat, readdir, realpath } from "node:fs/promises";
 import { join, relative } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
@@ -34,15 +35,7 @@ export function createPiSearchTools(
 			kind === "grep"
 				? "Search for a literal string using Host read operations. Does not execute commands. Skips links and files larger than 1 MB. Scans at most 200 files; results may be partial."
 				: "Find file paths by glob using Host read operations. Skips links, .git and node_modules. Scans at most 200 files; results may be partial.",
-		parameters: {
-			type: "object",
-			properties: {
-				pattern: { type: "string" },
-				path: { type: "string" },
-				limit: { type: "number" },
-			},
-			required: ["pattern"],
-		},
+		parameters: structuredClone(searchParameters),
 		async execute(id, raw, signal, update, context) {
 			const input = inputSchema.parse(raw);
 			const combined = AbortSignal.any([
@@ -181,3 +174,14 @@ function matchingLines(
 		)
 		.slice(0, limit);
 }
+
+/** Host 検索に必要なパターン・対象・結果数だけを入力に公開する。 */
+const searchParameters: PiSdk.ToolDefinition["parameters"] = {
+	type: "object",
+	properties: {
+		pattern: { type: "string" },
+		path: { type: "string" },
+		limit: { type: "number" },
+	},
+	required: ["pattern"],
+};

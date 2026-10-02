@@ -1,9 +1,19 @@
 // サイドバーとエディタの下書き・スクロール位置を Host 経由で引き継ぐ。
-import { useEffect, useRef, useState } from "react";
+
+import {
+	type EffectCallback,
+	type Dispatch,
+	type RefObject,
+	type SetStateAction,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+
+import type { BackendId } from "@nerita/shared/backend";
 import type { Bridge } from "@nerita/shared/bridge";
 import type { ComposerPart } from "@nerita/shared/composerContent";
 import type { SidebarLocation } from "@nerita/shared/sidebar";
-import type { BackendId } from "@nerita/shared/backend";
 
 /** 空の入力にも編集可能な通常文を1つ用意する。 */
 const textPart = (text: string): ComposerPart => ({
@@ -25,25 +35,14 @@ export function useChatView(bridge: Bridge) {
 	const [restore, setRestore] = useState<{ scrollTop: number } | null>(null);
 	const conversation = useRef<HTMLElement>(null);
 	useEffect(
-		() =>
-			bridge.subscribe((message) => {
-				if (message.type === "ui/backendState") {
-					setBackend(message.backend);
-					return;
-				}
-				if (message.type === "ui/sidebarState") {
-					setSidebarLocation(message.location);
-					return;
-				}
-				if (message.type !== "ui/viewState") {
-					return;
-				}
-				updateDraft(message.draftParts ?? [textPart(message.draft)]);
-				setEditor(message.editor);
-				if (message.restoreScroll) {
-					setRestore({ scrollTop: message.scrollTop });
-				}
-			}),
+		createViewStateEffect(
+			bridge,
+			setBackend,
+			setSidebarLocation,
+			updateDraft,
+			setEditor,
+			setRestore,
+		),
 		[bridge],
 	);
 	useEffect(() => {
@@ -82,7 +81,61 @@ export function useChatView(bridge: Bridge) {
 		});
 	};
 	/** 配置変更にも移動直前のスクロール位置を引き継ぐ。 */
-	const selectSidebar = (location: SidebarLocation) => {
+	const selectSidebar = createSidebarSelector(
+		sidebarLocation,
+		bridge,
+		conversation,
+	);
+	return {
+		backend,
+		draft,
+		draftParts,
+		setDraft,
+		editor,
+		toggleEditor,
+		conversation,
+		sidebarLocation,
+		selectSidebar,
+	};
+}
+
+/** 表示先間で共有した下書きとスクロール位置を購読する。 */
+function createViewStateEffect(
+	bridge: Bridge,
+	setBackend: Dispatch<SetStateAction<BackendId | undefined>>,
+	setSidebarLocation: Dispatch<SetStateAction<SidebarLocation>>,
+	updateDraft: Dispatch<SetStateAction<ComposerPart[]>>,
+	setEditor: Dispatch<SetStateAction<boolean>>,
+	setRestore: Dispatch<SetStateAction<{ scrollTop: number } | null>>,
+): EffectCallback {
+	return () =>
+		bridge.subscribe((message) => {
+			if (message.type === "ui/backendState") {
+				setBackend(message.backend);
+				return;
+			}
+			if (message.type === "ui/sidebarState") {
+				setSidebarLocation(message.location);
+				return;
+			}
+			if (message.type !== "ui/viewState") {
+				return;
+			}
+			updateDraft(message.draftParts ?? [textPart(message.draft)]);
+			setEditor(message.editor);
+			if (message.restoreScroll) {
+				setRestore({ scrollTop: message.scrollTop });
+			}
+		});
+}
+
+/** 表示先の移動前にスクロール位置を保存する。 */
+function createSidebarSelector(
+	sidebarLocation: SidebarLocation,
+	bridge: Bridge,
+	conversation: RefObject<HTMLElement | null>,
+) {
+	return (location: SidebarLocation) => {
 		if (location === sidebarLocation) {
 			return;
 		}
@@ -96,16 +149,5 @@ export function useChatView(bridge: Bridge) {
 			requestId: crypto.randomUUID(),
 			location,
 		});
-	};
-	return {
-		backend,
-		draft,
-		draftParts,
-		setDraft,
-		editor,
-		toggleEditor,
-		conversation,
-		sidebarLocation,
-		selectSidebar,
 	};
 }

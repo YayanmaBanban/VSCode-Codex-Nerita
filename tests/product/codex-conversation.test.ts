@@ -1,6 +1,9 @@
-// UI の送信・設定・停止を実 JSONL 境界へ通し、共有状態への到達を確認する。
+// UI の送信・設定・停止要求を子プロセスとの JSONL 通信で処理し、共有状態への反映を確認する。
+
+import { type TestContext, test } from "node:test";
+
 import assert from "node:assert/strict";
-import { test } from "node:test";
+
 import { randomUUID } from "node:crypto";
 import { setTimeout } from "node:timers/promises";
 import * as vscode from "vscode";
@@ -9,54 +12,99 @@ import { codexFixture } from "../support/codex";
 import { until } from "../support/pi";
 import type { CodexSessionController } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";
 
-void test("Sandbox の開始受付を完了と扱わず、完了通知・失敗・接続取消しを区別する", async (t) => {
+void test(
+	"Sandbox の開始受付を完了と扱わず、完了通知・失敗・接続取消しを区別する",
+	verifySandboxSetupNotifications,
+);
+
+/** 公開メッセージの現在の会話情報を埋めて操作する。 */
+async function action(
+	controller: CodexSessionController,
+	type: string,
+	fields: Record<string, unknown> = {},
+) {
+	await controller.receive({
+		type,
+		requestId: randomUUID(),
+		sessionId: controller.snapshot().sessionId,
+		runId: controller.snapshot().runId,
+		...fields,
+	});
+}
+
+void test(
+	"Codex の設定を次の要求と再接続へ反映し、追加指示・計画・差分・停止を届ける",
+	verifyCodexConfigAndRun,
+);
+
+void test("Codex の追加指示が受付不明でも自動再送しない", async (t) => {
 	const f = await codexFixture(t);
-	let command!: () => Promise<void>;
-	const info: string[] = [];
-	const errors: string[] = [];
-	const subscriptions: { dispose(): unknown }[] = [];
-	Object.assign(vscode.workspace, {
-		workspaceFolders: [{ uri: { scheme: "file", fsPath: f.cwd } }],
-		isTrusted: true,
-		getConfiguration: () => ({ get: () => "pi" }),
+	f.state.failSteer = true;
+	const controller = f.controller();
+	await controller.connect();
+	await action(controller, "prompt/send", { text: "開始" });
+	f.notify("turn/started", {
+		threadId: controller.snapshot().sessionId,
+		turn: { id: "turn-1", status: "inProgress", items: [] },
 	});
-	Object.assign(vscode.ProgressLocation, { Notification: 15 });
-	Object.assign(vscode.commands, {
-		registerCommand: (_name: string, callback: () => Promise<void>) => {
-			command = callback;
-			return { dispose() {} };
-		},
-	});
-	Object.assign(vscode.window, {
-		withProgress: (_options: unknown, task: () => Promise<void>) => task(),
-		showInformationMessage: (message: string) => {
-			info.push(message);
+	await action(controller, "prompt/send", { text: "受付不明の追加" });
+	assert.equal(
+		f.requests.filter((request) => request.method === "turn/steer").length,
+		1,
+	);
+	assert.equal(
+		f.requests.filter((request) => request.method === "turn/start").length,
+		1,
+	);
+	assert.ok(
+		!controller
+			.snapshot()
+			.messages.some((message) => message.text === "受付不明の追加"),
+	);
+	f.disconnect();
+	await until(() => controller.snapshot().connection === "error");
+	assert.equal(controller.snapshot().run, "failed");
+	await action(controller, "connection/retry");
+	assert.equal(controller.snapshot().connection, "ready");
+});
+
+void test("Codex の認証中に接続を破棄した後、遅い成功通知で会話を開始しない", async (t) => {
+	const f = await codexFixture(t);
+	f.state.authenticated = false;
+	const urls: string[] = [];
+	const controller = f.controller({
+		open: (url) => {
+			urls.push(url);
 			return Promise.resolve();
 		},
-		showErrorMessage: (message: string) => {
-			errors.push(message);
-			return Promise.resolve();
-		},
+		apiKey: () => undefined,
 	});
-	t.after(() => {
-		for (const subscription of subscriptions) {
-			subscription.dispose();
-		}
-		for (const boundary of [
-			vscode.workspace,
-			vscode.window,
-			vscode.commands,
-			vscode.ProgressLocation,
-		]) {
-			for (const key of Object.keys(boundary)) {
-				Reflect.deleteProperty(boundary, key);
-			}
-		}
-	});
-	registerSandboxSetup({
-		extensionUri: { fsPath: f.extensionPath },
-		subscriptions,
-	} as unknown as vscode.ExtensionContext);
+	await controller.connect();
+	assert.equal(controller.snapshot().connection, "auth-required");
+	const login = action(controller, "auth/start", { methodId: "chatgpt" });
+	await until(() => urls.length === 1);
+	controller.invalidate();
+	await login;
+	await controller.connect();
+	const revision = controller.snapshot().revision;
+	f.notify("account/login/completed", { loginId: "login-1", success: true });
+	f.notify("account/rateLimits/updated", { rateLimits: {} });
+	await until(() => controller.snapshot().revision > revision);
+	assert.equal(controller.snapshot().connection, "auth-required");
+	assert.equal(
+		f.requests.filter((request) => request.method === "thread/start")
+			.length,
+		0,
+	);
+});
+
+/** 開始受付と完了通知を区別し、失敗と接続破棄でも待機を解除する。 */
+async function verifySandboxSetupNotifications(t: TestContext) {
+	const f = await codexFixture(t);
+	const { command, info, errors, subscriptions } = prepareSandboxSetupUi(
+		f,
+		t,
+	);
 	for (const result of ["success", "failure", "cancel"] as const) {
 		const previous = f.requests.filter(
 			(request) => request.method === "windowsSandbox/setupStart",
@@ -104,24 +152,10 @@ void test("Sandbox の開始受付を完了と扱わず、完了通知・失敗�
 	assert.equal(errors.length, 2);
 	assert.match(errors[0]!, /setup failed/);
 	assert.match(errors[1]!, /終了/);
-});
-
-/** 公開メッセージの現在の会話情報を埋めて操作する。 */
-async function action(
-	controller: CodexSessionController,
-	type: string,
-	fields: Record<string, unknown> = {},
-) {
-	await controller.receive({
-		type,
-		requestId: randomUUID(),
-		sessionId: controller.snapshot().sessionId,
-		runId: controller.snapshot().runId,
-		...fields,
-	});
 }
 
-void test("Codex の設定を次の要求と再接続へ反映し、追加指示・計画・差分・停止を届ける", async (t) => {
+/** 再接続へモデル設定を引き継ぎ、追加指示と停止を現在のターンへ届ける。 */
+async function verifyCodexConfigAndRun(t: TestContext) {
 	const f = await codexFixture(t);
 	const controller = f.controller();
 	await controller.connect();
@@ -191,6 +225,72 @@ void test("Codex の設定を次の要求と再接続へ反映し、追加指示
 			.snapshot()
 			.tools.every((tool) => tool.status !== "in_progress"),
 	);
+	await verifyCodexReconnection(f, controller, threadId, turnId);
+}
+
+/** セットアップの通知とコマンドを記録し、テスト終了時に登録を回収する。 */
+function prepareSandboxSetupUi(
+	f: Awaited<ReturnType<typeof codexFixture>>,
+	t: TestContext,
+) {
+	let command!: () => Promise<void>;
+	const info: string[] = [];
+	const errors: string[] = [];
+	const subscriptions: { dispose(): unknown }[] = [];
+	Object.assign(vscode.workspace, {
+		workspaceFolders: [{ uri: { scheme: "file", fsPath: f.cwd } }],
+		isTrusted: true,
+		getConfiguration: () => ({ get: () => "pi" }),
+	});
+	Object.assign(vscode.ProgressLocation, { Notification: 15 });
+	Object.assign(vscode.commands, {
+		registerCommand: (_name: string, callback: () => Promise<void>) => {
+			command = callback;
+			return { dispose() {} };
+		},
+	});
+	Object.assign(vscode.window, {
+		withProgress: (_options: unknown, task: () => Promise<void>) => task(),
+		showInformationMessage: (message: string) => {
+			info.push(message);
+			return Promise.resolve();
+		},
+		showErrorMessage: (message: string) => {
+			errors.push(message);
+			return Promise.resolve();
+		},
+	});
+	t.after(() => {
+		for (const subscription of subscriptions) {
+			subscription.dispose();
+		}
+		for (const boundary of [
+			vscode.workspace,
+			vscode.window,
+			vscode.commands,
+			vscode.ProgressLocation,
+		]) {
+			for (const key of Object.keys(boundary)) {
+				Reflect.deleteProperty(boundary, key);
+			}
+		}
+	});
+	registerSandboxSetup({
+		extensionUri: { fsPath: f.extensionPath },
+		subscriptions,
+	} as unknown as vscode.ExtensionContext);
+	return { command, info, errors, subscriptions };
+}
+
+/** 再接続後のモデル設定を検査し、古いターンの通知が反映されないことを確認する。 */
+async function verifyCodexReconnection(
+	f: Awaited<ReturnType<typeof codexFixture>>,
+	controller: ReturnType<
+		Awaited<ReturnType<typeof codexFixture>>["controller"]
+	>,
+	threadId: string | null,
+	turnId: string,
+) {
 	await controller.dispose();
 	const restored = f.controller();
 	await restored.connect();
@@ -228,65 +328,4 @@ void test("Codex の設定を次の要求と再接続へ反映し、追加指示
 	);
 	assert.ok(JSON.stringify(restored.snapshot().tools).includes("新しい計画"));
 	assert.ok(!JSON.stringify(restored.snapshot().tools).includes("古い計画"));
-});
-
-void test("Codex の追加指示が受付不明でも自動再送しない", async (t) => {
-	const f = await codexFixture(t);
-	f.state.failSteer = true;
-	const controller = f.controller();
-	await controller.connect();
-	await action(controller, "prompt/send", { text: "開始" });
-	f.notify("turn/started", {
-		threadId: controller.snapshot().sessionId,
-		turn: { id: "turn-1", status: "inProgress", items: [] },
-	});
-	await action(controller, "prompt/send", { text: "受付不明の追加" });
-	assert.equal(
-		f.requests.filter((request) => request.method === "turn/steer").length,
-		1,
-	);
-	assert.equal(
-		f.requests.filter((request) => request.method === "turn/start").length,
-		1,
-	);
-	assert.ok(
-		!controller
-			.snapshot()
-			.messages.some((message) => message.text === "受付不明の追加"),
-	);
-	f.disconnect();
-	await until(() => controller.snapshot().connection === "error");
-	assert.equal(controller.snapshot().run, "failed");
-	await action(controller, "connection/retry");
-	assert.equal(controller.snapshot().connection, "ready");
-});
-
-void test("Codex の認証中に接続を破棄した後、遅い成功通知で会話を開始しない", async (t) => {
-	const f = await codexFixture(t);
-	f.state.authenticated = false;
-	const urls: string[] = [];
-	const controller = f.controller({
-		open: (url) => {
-			urls.push(url);
-			return Promise.resolve();
-		},
-		apiKey: () => undefined,
-	});
-	await controller.connect();
-	assert.equal(controller.snapshot().connection, "auth-required");
-	const login = action(controller, "auth/start", { methodId: "chatgpt" });
-	await until(() => urls.length === 1);
-	controller.invalidate();
-	await login;
-	await controller.connect();
-	const revision = controller.snapshot().revision;
-	f.notify("account/login/completed", { loginId: "login-1", success: true });
-	f.notify("account/rateLimits/updated", { rateLimits: {} });
-	await until(() => controller.snapshot().revision > revision);
-	assert.equal(controller.snapshot().connection, "auth-required");
-	assert.equal(
-		f.requests.filter((request) => request.method === "thread/start")
-			.length,
-		0,
-	);
-});
+}

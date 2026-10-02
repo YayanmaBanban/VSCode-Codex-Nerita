@@ -1,19 +1,22 @@
 // 会話内検索の入力・一致条件・前後移動をコンパクトなバーにまとめる。
+
 import { cn } from "cnfast";
-import { SettingsTooltip } from "../SettingsTooltip";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import type { useChatSearch } from "./useChatSearch";
+import { SettingsTooltip } from "../SettingsTooltip";
 import "./chatSearch.css";
+import { type FindOptions } from "./findMatches";
+import type { useChatSearch } from "./useChatSearch";
 
 const buttonClass =
 	"chat-search-button inline-grid h-6 w-[22px] shrink-0 place-items-center rounded-[3px] border border-solid border-transparent bg-transparent p-0 text-[12px]";
 
-/** ショートカットと読み上げ名を備えた、会話専用の検索バー。 */
-export function ChatSearchBar({
-	search,
-}: {
+/** 会話内検索の表示状態、検索条件・結果と移動操作。 */
+type ChatSearchBarProps = {
 	search: ReturnType<typeof useChatSearch>;
-}) {
+};
+
+/** ショートカットと読み上げ名を備えた、会話専用の検索バー。 */
+export function ChatSearchBar({ search }: ChatSearchBarProps) {
 	if (!search.open) {
 		return null;
 	}
@@ -46,62 +49,12 @@ export function ChatSearchBar({
 					}
 				}}
 			>
-				<div className="flex min-w-0 flex-1 items-center rounded border border-solid border-input-border bg-input focus-within:border-focus">
-					<input
-						ref={search.input}
-						aria-label="会話を検索"
-						aria-invalid={!!result.error}
-						title="会話を検索 (Ctrl+F)"
-						className="min-w-0 w-full border-0 bg-transparent px-2 py-1 text-[12px] text-input-text outline-none"
-						placeholder="検索"
-						autoComplete="off"
-						spellCheck={false}
-						value={search.query}
-						onChange={(event) =>
-							search.setQuery(event.target.value)
-						}
-					/>
-					{(
-						[
-							["caseSensitive", "大文字と小文字を区別", "Aa"],
-							["wholeWord", "単語単位", "ab"],
-							["regex", "正規表現", ".*"],
-						] as const
-					).map(([key, label, icon]) => (
-						<SettingsTooltip content={label} key={key}>
-							<button
-								type="button"
-								className={cn(
-									buttonClass,
-									key === "wholeWord"
-										? "underline underline-offset-2"
-										: "",
-								)}
-								aria-label={label}
-								aria-pressed={options[key]}
-								onClick={() =>
-									search.setOptions({
-										...options,
-										[key]: !options[key],
-									})
-								}
-							>
-								{icon}
-							</button>
-						</SettingsTooltip>
-					))}
-				</div>
-				<SettingsTooltip content="前の一致 (Shift+Enter)">
-					<button
-						type="button"
-						className={buttonClass}
-						aria-label="前の一致"
-						disabled={!result.count}
-						onClick={() => search.move(-1)}
-					>
-						<ChevronLeft size={14} />
-					</button>
-				</SettingsTooltip>
+				<ChatSearchInput
+					search={search}
+					result={result}
+					options={options}
+				/>
+				<SearchPreviousButton result={result} search={search} />
 				<SettingsTooltip content="次の一致 (Enter)">
 					<button
 						type="button"
@@ -136,6 +89,85 @@ export function ChatSearchBar({
 					{result.error}
 				</p>
 			)}
+		</div>
+	);
+}
+
+/** 検索語・一致条件と、検索結果や入力エラーの表示状態。 */
+type ChatSearchInputProps = {
+	search: ReturnType<typeof useChatSearch>;
+	result: { count: number; index: number; limited: boolean; error: string };
+	options: FindOptions;
+};
+
+/** 前の一致へ移動する操作と、移動可否を判定する検索結果。 */
+type SearchPreviousButtonProps = {
+	result: { count: number; index: number; limited: boolean; error: string };
+	search: ReturnType<typeof useChatSearch>;
+};
+
+/** 検索条件を保持したまま前の一致へ移動する。 */
+function SearchPreviousButton({ result, search }: SearchPreviousButtonProps) {
+	return (
+		<SettingsTooltip content="前の一致 (Shift+Enter)">
+			<button
+				type="button"
+				className={buttonClass}
+				aria-label="前の一致"
+				disabled={!result.count}
+				onClick={() => search.move(-1)}
+			>
+				<ChevronLeft size={14} />
+			</button>
+		</SettingsTooltip>
+	);
+}
+
+/** 検索語と一致条件を同じ入力領域で編集する。 */
+function ChatSearchInput({ search, result, options }: ChatSearchInputProps) {
+	return (
+		<div className="flex min-w-0 flex-1 items-center rounded border border-solid border-input-border bg-input focus-within:border-focus">
+			<input
+				ref={search.input}
+				aria-label="会話を検索"
+				aria-invalid={!!result.error}
+				title="会話を検索 (Ctrl+F)"
+				className="min-w-0 w-full border-0 bg-transparent px-2 py-1 text-[12px] text-input-text outline-none"
+				placeholder="検索"
+				autoComplete="off"
+				spellCheck={false}
+				value={search.query}
+				onChange={(event) => search.setQuery(event.target.value)}
+			/>
+			{(
+				[
+					["caseSensitive", "大文字と小文字を区別", "Aa"],
+					["wholeWord", "単語単位", "ab"],
+					["regex", "正規表現", ".*"],
+				] as const
+			).map(([key, label, icon]) => (
+				<SettingsTooltip content={label} key={key}>
+					<button
+						type="button"
+						className={cn(
+							buttonClass,
+							key === "wholeWord"
+								? "underline underline-offset-2"
+								: "",
+						)}
+						aria-label={label}
+						aria-pressed={options[key]}
+						onClick={() =>
+							search.setOptions({
+								...options,
+								[key]: !options[key],
+							})
+						}
+					>
+						{icon}
+					</button>
+				</SettingsTooltip>
+			))}
 		</div>
 	);
 }

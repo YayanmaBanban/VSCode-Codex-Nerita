@@ -1,4 +1,5 @@
-// TOML と将来のエディタが共有する定義を検証し、依存順へ正規化する。
+// TOML とエディターが共有する定義を検証し、依存順に並べ替える。
+
 import { z } from "zod";
 import { parse } from "smol-toml";
 
@@ -74,11 +75,7 @@ export function validateWorkflow(value: unknown): Workflow {
 	const ordered: WorkflowStep[] = [];
 	while (ordered.length < steps.size) {
 		const ready = [...steps.values()].filter(
-			(step) =>
-				!ordered.includes(step) &&
-				step.depends_on.every((dep) =>
-					ordered.some((item) => item.id === dep),
-				),
+			createReadyStepFilter(ordered),
 		);
 		if (!ready.length) {
 			throw new Error("依存関係が循環しています。");
@@ -86,6 +83,15 @@ export function validateWorkflow(value: unknown): Workflow {
 		ordered.push(...ready);
 	}
 	return { ...definition, steps: ordered };
+}
+
+/** 依存先がすべて先に並んでいる、未配置のステップを選ぶ。 */
+function createReadyStepFilter(
+	ordered: WorkflowStep[],
+): (step: WorkflowStep) => boolean {
+	return (step) =>
+		!ordered.includes(step) &&
+		step.depends_on.every((dep) => ordered.some((item) => item.id === dep));
 }
 
 /** 継続元は先行する依存先とし、同じ完了時点からの二重再開を禁止する。 */

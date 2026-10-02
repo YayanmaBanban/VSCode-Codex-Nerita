@@ -1,4 +1,5 @@
 // Pi を専用の ESM エントリーポイントと遅延読込用チャンクへまとめ、実行時にファイルとして読む資産を同梱する。
+
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { extensionRoot } = require("./workspace-paths.cjs");
@@ -91,34 +92,7 @@ async function bundlePi(projectRoot, target) {
 	const result = await build({
 		absWorkingDir: projectRoot,
 		nodePaths: [path.join(extensionRoot, "node_modules")],
-		alias: {
-			"@nerita/pi-tool-search": path.join(
-				source,
-				"dist/extensions/tool-search/index.js",
-			),
-			"@nerita/pi-mcp-config": path.join(
-				source,
-				"dist/core/mcp-servers.js",
-			),
-			"@nerita/pi-mcp-runtime": path.join(
-				source,
-				"dist/extensions/mcp/runtime.js",
-			),
-			"@nerita/pi-mcp-tools": path.join(
-				source,
-				"dist/extensions/mcp/tools.js",
-			),
-			"@nerita/pi-mcp": path.join(mcpRoot, "dist/index.js"),
-			"@nerita/pi-auth-storage": path.join(
-				source,
-				"dist/core/auth-storage.js",
-			),
-			"@earendil-works/pi-coding-agent": path.join(
-				source,
-				"dist/index.js",
-			),
-			"@earendil-works/pi-ai/compat": path.join(aiRoot, "dist/compat.js"),
-		},
+		alias: piBundleAliases(source, aiRoot, mcpRoot),
 		entryPoints: {
 			core: path.join(__dirname, "runtime/pi-entry.mjs"),
 			"codemode-worker": path.join(
@@ -149,6 +123,27 @@ async function bundlePi(projectRoot, target) {
 		external: ["@silvia-odwyer/photon-node"],
 		plugins: [piBundlePlugin(source, aiRoot)],
 	});
+	await copyPiDistribution(
+		source,
+		destination,
+		manifest,
+		target,
+		projectRoot,
+		result,
+	);
+	return result.metafile;
+}
+module.exports = { bundlePi, SUPPORTED_PI_VERSION };
+
+/** SDK と依存資産を同じ配布先へ保存する。 */
+async function copyPiDistribution(
+	source,
+	destination,
+	manifest,
+	target,
+	projectRoot,
+	result,
+) {
 	await copyAssets(source, destination, manifest);
 	await fs.copyFile(
 		path.join(
@@ -172,6 +167,30 @@ async function bundlePi(projectRoot, target) {
 		path.join(destination, "bundle-meta.json"),
 		JSON.stringify(result.metafile),
 	);
-	return result.metafile;
 }
-module.exports = { bundlePi, SUPPORTED_PI_VERSION };
+
+/** SDK 内部の実装参照を配布バンドルの入口へ固定する。 */
+function piBundleAliases(source, aiRoot, mcpRoot) {
+	return {
+		"@nerita/pi-tool-search": path.join(
+			source,
+			"dist/extensions/tool-search/index.js",
+		),
+		"@nerita/pi-mcp-config": path.join(source, "dist/core/mcp-servers.js"),
+		"@nerita/pi-mcp-runtime": path.join(
+			source,
+			"dist/extensions/mcp/runtime.js",
+		),
+		"@nerita/pi-mcp-tools": path.join(
+			source,
+			"dist/extensions/mcp/tools.js",
+		),
+		"@nerita/pi-mcp": path.join(mcpRoot, "dist/index.js"),
+		"@nerita/pi-auth-storage": path.join(
+			source,
+			"dist/core/auth-storage.js",
+		),
+		"@earendil-works/pi-coding-agent": path.join(source, "dist/index.js"),
+		"@earendil-works/pi-ai/compat": path.join(aiRoot, "dist/compat.js"),
+	};
+}

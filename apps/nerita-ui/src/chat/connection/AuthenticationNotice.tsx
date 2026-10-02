@@ -1,20 +1,24 @@
 // 未認証時と認証待ちの案内・操作を共通の配置で表示する。
+
+import type { ChatState } from "@nerita/shared/chatState";
+import type { UiMessage } from "@nerita/shared/messages";
 import { cn } from "cnfast";
 import { Info } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import type { ChatState } from "@nerita/shared/chatState";
-import type { UiMessage } from "@nerita/shared/messages";
+
+/** 認証状態、認証要求の送信関数と案内領域のスタイル。 */
+type AuthenticationNoticeProps = {
+	state: ChatState;
+	send: (message: UiMessage) => void;
+	noticeClass: string;
+};
 
 /** 認証状態に応じて説明と右上の操作ボタンを切り替える。 */
 export function AuthenticationNotice({
 	state,
 	send,
 	noticeClass,
-}: {
-	state: ChatState;
-	send: (message: UiMessage) => void;
-	noticeClass: string;
-}) {
+}: AuthenticationNoticeProps) {
 	const reducedMotion = useReducedMotion();
 	const authenticating = state.connection === "authenticating";
 	let actions = state.authMethods;
@@ -68,43 +72,56 @@ export function AuthenticationNotice({
 							: "認証が必要です"}
 					</h2>
 				</div>
-				<div className="ml-auto flex gap-[4px] shrink-0 items-center justify-end">
-					{actions.map((method) => (
-						<button
-							key={method.id}
-							type="button"
-							className={cn(
-								"group relative isolate m-0 h-8 shrink-0 overflow-hidden rounded-md border px-3",
-								"bg-message-user text-[12px] font-medium leading-2",
-								"[border-color:color-mix(in_srgb,var(--nerita-button-border)_75%,transparent)]",
-								"transition-colors duration-100 hover:[border-color:var(--nerita-focus-border)]",
-								"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--nerita-focus-border)]",
-							)}
-							onClick={() =>
-								send({
-									type: "auth/start",
-									requestId: crypto.randomUUID(),
-									methodId: method.id,
-								})
-							}
-						>
-							{method.name}
-							<span
-								aria-hidden="true"
-								className={cn(
-									"pointer-events-none absolute inset-0 flex items-center justify-center",
-									"bg-sky-300 text-black [clip-path:polygon(0_0,0_0,0_0)]",
-									"transition-[clip-path] duration-300 ease-out motion-reduce:transition-none",
-									"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)] group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
-								)}
-							>
-								{method.name}
-							</span>
-						</button>
-					))}
-				</div>
+				<AuthenticationActions actions={actions} send={send} />
 			</div>
 			<p className="mb-0 mt-2 pl-6 text-[12px]">{description}</p>
 		</motion.section>
+	);
+}
+
+/** 利用可能な認証操作と、対応する要求の送信関数。 */
+type AuthenticationActionsProps = {
+	actions: ChatState["authMethods"][number][];
+	send: (message: UiMessage) => void;
+};
+
+/** 利用可能な認証方式とキャンセル操作を要求へ接続する。 */
+function AuthenticationActions({ actions, send }: AuthenticationActionsProps) {
+	return (
+		<div className="ml-auto flex gap-[4px] shrink-0 items-center justify-end">
+			{actions.map((method) => (
+				<button
+					key={method.id}
+					type="button"
+					className={cn(
+						"group relative isolate m-0 h-8 shrink-0 overflow-hidden rounded-md border px-3",
+						"bg-message-user text-[12px] font-medium leading-2",
+						"[border-color:color-mix(in_srgb,var(--nerita-button-border)_75%,transparent)]",
+						"transition-colors duration-100 hover:[border-color:var(--nerita-focus-border)]",
+						"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--nerita-focus-border)]",
+					)}
+					onClick={() =>
+						send({
+							type: "auth/start",
+							requestId: crypto.randomUUID(),
+							methodId: method.id,
+						})
+					}
+				>
+					{method.name}
+					<span
+						aria-hidden="true"
+						className={cn(
+							"pointer-events-none absolute inset-0 flex items-center justify-center",
+							"bg-sky-300 text-black [clip-path:polygon(0_0,0_0,0_0)]",
+							"transition-[clip-path] duration-300 ease-out motion-reduce:transition-none",
+							"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)] group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
+						)}
+					>
+						{method.name}
+					</span>
+				</button>
+			))}
+		</div>
 	);
 }

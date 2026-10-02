@@ -1,7 +1,9 @@
 // 組み込みの検索・コード実行を、会話の許可済みツールと Host の寿命へ限定する。
+
 import type {
 	ExtensionAPI,
 	ExtensionFactory,
+	ExtensionToolContext,
 	ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
@@ -20,7 +22,7 @@ export type PiToolFeatures = {
 	secrets?: () => Promise<readonly string[]>;
 };
 
-/** 許可されていない名前は、定義・検索・活性化のいずれにも公開しない。 */
+/** 許可されていないツールは、定義の登録・検索・有効化のいずれでも公開しない。 */
 export function piToolPermitted(
 	name: string,
 	features: PiToolFeatures,
@@ -33,7 +35,7 @@ export function piToolExposure(
 	tool: ToolDefinition,
 	features: PiToolFeatures,
 ): ToolDefinition {
-	// 委譲用の操作は常に提示し、検索待ちだけを理由に Ultra の能力を失わせない。
+	// 委譲用ツールは常に提示し、ツール検索を待たずに子の実行や管理を行えるようにする。
 	if (["subagent", "subagent_job", "subagent_workflow"].includes(tool.name)) {
 		return tool;
 	}
@@ -144,48 +146,12 @@ function guardFeatureTool(
 			try {
 				checkFeatureInput(tool.name, params);
 				const secrets = (await features.secrets?.()) ?? [];
-				const ctx = {
-					...context,
-					tools: context.tools.filter((item) =>
-						piToolPermitted(item.name, features),
-					),
-					executeTool: async (
-						name: string,
-						args: unknown,
-						options?: Parameters<typeof context.executeTool>[2],
-					) => {
-						combined.throwIfAborted();
-						if (!piToolPermitted(name, features)) {
-							throw new Error("許可されていないツールです。");
-						}
-						const serialized = JSON.stringify(args) ?? "";
-						if (
-							secrets.some(
-								(secret) =>
-									!!secret && serialized.includes(secret),
-							) ||
-							/"(?:authorization|password|secret|token|credential|api[_-]?key|private[_-]?key)"\s*:/i.test(
-								serialized,
-							)
-						) {
-							throw new Error(
-								"認証値を含む引数はコード実行から渡せません。",
-							);
-						}
-						return privateFeatureValue(
-							await context.executeTool(name, args, {
-								...options,
-								signal: AbortSignal.any([
-									combined,
-									...(options?.signal
-										? [options.signal]
-										: []),
-								]),
-							}),
-							secrets,
-						);
-					},
-				};
+				const ctx = guardFeatureContext(
+					context,
+					features,
+					combined,
+					secrets,
+				);
 				return privateFeatureValue(
 					await approved.execute(
 						id,
@@ -202,6 +168,52 @@ function guardFeatureTool(
 			} finally {
 				clearTimeout(timer);
 			}
+		},
+	};
+}
+
+/** 許可リストと秘密値の検査をコードからの個別ツール実行にも適用する。 */
+function guardFeatureContext(
+	context: ExtensionToolContext,
+	features: PiToolFeatures,
+	combined: AbortSignal,
+	secrets: readonly string[],
+) {
+	return {
+		...context,
+		tools: context.tools.filter((item) =>
+			piToolPermitted(item.name, features),
+		),
+		executeTool: async (
+			name: string,
+			args: unknown,
+			options?: Parameters<typeof context.executeTool>[2],
+		) => {
+			combined.throwIfAborted();
+			if (!piToolPermitted(name, features)) {
+				throw new Error("許可されていないツールです。");
+			}
+			const serialized = JSON.stringify(args) ?? "";
+			if (
+				secrets.some(
+					(secret) => !!secret && serialized.includes(secret),
+				) ||
+				/"(?:authorization|password|secret|token|credential|api[_-]?key|private[_-]?key)"\s*:/i.test(
+					serialized,
+				)
+			) {
+				throw new Error("認証値を含む引数はコード実行から渡せません。");
+			}
+			return privateFeatureValue(
+				await context.executeTool(name, args, {
+					...options,
+					signal: AbortSignal.any([
+						combined,
+						...(options?.signal ? [options.signal] : []),
+					]),
+				}),
+				secrets,
+			);
 		},
 	};
 }

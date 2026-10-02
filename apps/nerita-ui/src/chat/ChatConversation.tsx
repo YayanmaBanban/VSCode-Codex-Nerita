@@ -1,14 +1,15 @@
 // 会話ログ・ツール・承認と実行状態を1つのスクロール領域に配置する。
-import type { RefObject } from "react";
+
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { SubAgentSummary } from "@nerita/shared/subAgents";
+import type { RefObject } from "react";
 import { Activity } from "./Activity";
-import { Messages } from "./messages/Messages";
 import { AgentCard } from "./agents/AgentCard";
-import { ThinkingIndicator } from "./ThinkingIndicator";
-import { RunStatusIcon } from "./RunStatusIcon";
+import { Messages } from "./messages/Messages";
 import { PlanDecisionCard } from "./PlanDecisionCard";
+import { RunStatusIcon } from "./RunStatusIcon";
+import { ThinkingIndicator } from "./ThinkingIndicator";
 
 const runLabels = {
 	idle: "",
@@ -19,22 +20,19 @@ const runLabels = {
 	failed: "実行に失敗しました",
 };
 
-/** スクロール参照は親が保持し、表示先の復元と新着への追従に共用する。 */
-export function ChatConversation({
-	state,
-	busy,
-	send,
-	conversation,
-	bottom,
-	onOpenAgent,
-}: {
+/** 会話の表示状態、スクロール用の DOM 参照と子スレッドを開く操作。 */
+type ChatConversationProps = {
 	state: ChatState;
 	busy: boolean;
 	send: (message: UiMessage) => void;
 	conversation: RefObject<HTMLElement | null>;
 	bottom: RefObject<HTMLDivElement | null>;
 	onOpenAgent: (agent: SubAgentSummary) => void;
-}) {
+};
+
+/** スクロール参照は親が保持し、表示先の復元と新着への追従に共用する。 */
+export function ChatConversation(props: ChatConversationProps) {
+	const { state, send, conversation, bottom } = props;
 	return (
 		<section
 			ref={conversation}
@@ -51,40 +49,7 @@ export function ChatConversation({
 					</p>
 				</div>
 			)}
-			<div
-				role="log"
-				aria-label="メッセージ"
-				aria-live="polite"
-				aria-relevant="additions text"
-			>
-				<Messages
-					send={send}
-					messages={state.messages}
-					busy={busy}
-					tools={state.tools}
-					agents={state.agents.filter(
-						(agent) => agent.parentThreadId === state.sessionId,
-					)}
-					renderAgent={(agent) => (
-						<AgentCard
-							key={agent.threadId}
-							agent={agent}
-							onOpen={onOpenAgent}
-						/>
-					)}
-					renderTool={(tool) => (
-						<Activity
-							key={String(tool.runId) + tool.id}
-							state={{
-								...state,
-								tools: [tool],
-								permissions: [],
-							}}
-							send={send}
-						/>
-					)}
-				/>
-			</div>
+			<ConversationMessages {...props} />
 			<Activity state={{ ...state, tools: [] }} send={send} />
 			<PlanDecisionCard state={state} send={send} />
 			{state.run === "running" && <ThinkingIndicator />}
@@ -101,5 +66,58 @@ export function ChatConversation({
 			)}
 			<div ref={bottom} />
 		</section>
+	);
+}
+
+/** 会話に属するメッセージ・ツール・子スレッドの状態と操作。 */
+type ConversationMessagesProps = {
+	send: (message: UiMessage) => void;
+	state: ChatState;
+	busy: boolean;
+	onOpenAgent: (agent: SubAgentSummary) => void;
+};
+
+/** 会話に属するツールと子スレッドをメッセージへ対応付ける。 */
+function ConversationMessages({
+	send,
+	state,
+	busy,
+	onOpenAgent,
+}: ConversationMessagesProps) {
+	return (
+		<div
+			role="log"
+			aria-label="メッセージ"
+			aria-live="polite"
+			aria-relevant="additions text"
+		>
+			<Messages
+				send={send}
+				messages={state.messages}
+				busy={busy}
+				tools={state.tools}
+				agents={state.agents.filter(
+					(agent) => agent.parentThreadId === state.sessionId,
+				)}
+				renderAgent={(agent) => (
+					<AgentCard
+						key={agent.threadId}
+						agent={agent}
+						onOpen={onOpenAgent}
+					/>
+				)}
+				renderTool={(tool) => (
+					<Activity
+						key={String(tool.runId) + tool.id}
+						state={{
+							...state,
+							tools: [tool],
+							permissions: [],
+						}}
+						send={send}
+					/>
+				)}
+			/>
+		</div>
 	);
 }

@@ -1,4 +1,5 @@
 // SDK の `read` / `ls` に共通ガードを挟み、承認した実体だけを読み取る。
+
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { open, realpath, readdir, lstat } from "node:fs/promises";
 import { join, relative } from "node:path";
@@ -33,115 +34,156 @@ export function createPiReadTool(
 	return {
 		...definition,
 		async execute(id, params, signal, update, context) {
-			const input = freezeToolCall(
-				z.record(z.string(), z.unknown()).parse(params),
-			);
-			const requested = z
-				.string()
-				.min(1)
-				.parse(input.path ?? (kind === "ls" ? "." : undefined));
-			const target = await paths.resolve(requested, "read");
-			const permit = await approveToolCall(
-				{
-					tool: kind,
-					params: { ...input, path: requested },
-					cwd: paths.cwd,
-					policy: paths.policy,
-				},
+			return await executePiReadTool(
+				params,
+				kind,
+				paths,
 				authorize,
-				AbortSignal.any([lifetime, ...(signal ? [signal] : [])]),
-			);
-			const approved = consumeApprovedToolCall(permit);
-			if (approved.guardrailsPaths?.[0] !== target) {
-				throw new Error(
-					"検査中に読取り対象が変更されました。再承認が必要です。",
-				);
-			}
-			const check = async () => {
-				permit.signal.throwIfAborted();
-				if (
-					(await paths.resolve(requested, "read")) !== target ||
-					(await realpath(target)) !== target
-				) {
-					throw new Error(
-						"読取り対象が変更されました。再承認が必要です。",
-					);
-				}
-				permit.signal.throwIfAborted();
-			};
-			await check();
-			let tool:
-				| ReturnType<typeof sdk.createReadToolDefinition>
-				| ReturnType<typeof sdk.createLsToolDefinition>;
-			if (kind === "read") {
-				const handle = await open(target, "r");
-				let content: Buffer;
-				try {
-					await check();
-					const actual = await handle.stat();
-					const expected = await lstat(target);
-					if (
-						!actual.isFile() ||
-						actual.ino !== expected.ino ||
-						actual.dev !== expected.dev
-					) {
-						throw new Error("読取り対象が差し替えられました。");
-					}
-					content = await handle.readFile();
-				} finally {
-					await handle.close();
-				}
-				tool = sdk.createReadToolDefinition(paths.cwd, {
-					operations: {
-						access: () => {
-							permit.signal.throwIfAborted();
-							return Promise.resolve();
-						},
-						readFile: () => Promise.resolve(content),
-						detectImageMimeType: () =>
-							Promise.resolve(imageMime(content)),
-					},
-				});
-			} else {
-				tool = sdk.createLsToolDefinition(paths.cwd, {
-					operations: {
-						exists: async () => {
-							await check();
-							return true;
-						},
-						stat: async (path) => {
-							await check();
-							const child = relative(target, path);
-							if (
-								child &&
-								(child.includes("/") ||
-									child.includes("\\") ||
-									child === "..")
-							) {
-								throw new Error("一覧の対象外です。");
-							}
-							// 子のリンク先へ追従せず、ディレクトリ項目自体の情報だけを使用する。
-							return lstat(join(target, child));
-						},
-						readdir: async () => {
-							await check();
-							return readdir(target);
-						},
-					},
-				});
-			}
-			permit.signal.throwIfAborted();
-			const result = await (tool as PiSdk.ToolDefinition).execute(
+				lifetime,
+				signal,
+				sdk,
 				id,
-				{ ...input, path: target },
-				permit.signal,
 				update,
 				context,
 			);
-			permit.signal.throwIfAborted();
-			return result;
 		},
 	};
+}
+
+/** 読取りの承認対象と SDK に渡す対象を一致させる。 */
+async function executePiReadTool(
+	params: Parameters<PiSdk.ToolDefinition["execute"]>[1],
+	kind: "read" | "ls",
+	paths: WorkspacePathPolicy,
+	authorize: ToolAuthorizer,
+	lifetime: AbortSignal,
+	signal: AbortSignal | undefined,
+	sdk: typeof PiSdk,
+	id: string,
+	update: Parameters<PiSdk.ToolDefinition["execute"]>[3],
+	context: PiSdk.ExtensionToolContext,
+) {
+	const input = freezeToolCall(
+		z.record(z.string(), z.unknown()).parse(params),
+	);
+	const requested = z
+		.string()
+		.min(1)
+		.parse(input.path ?? (kind === "ls" ? "." : undefined));
+	const target = await paths.resolve(requested, "read");
+	const permit = await approveToolCall(
+		{
+			tool: kind,
+			params: { ...input, path: requested },
+			cwd: paths.cwd,
+			policy: paths.policy,
+		},
+		authorize,
+		AbortSignal.any([lifetime, ...(signal ? [signal] : [])]),
+	);
+	const approved = consumeApprovedToolCall(permit);
+	if (approved.guardrailsPaths?.[0] !== target) {
+		throw new Error(
+			"検査中に読取り対象が変更されました。再承認が必要です。",
+		);
+	}
+	const check = async () => {
+		permit.signal.throwIfAborted();
+		if (
+			(await paths.resolve(requested, "read")) !== target ||
+			(await realpath(target)) !== target
+		) {
+			throw new Error("読取り対象が変更されました。再承認が必要です。");
+		}
+		permit.signal.throwIfAborted();
+	};
+	await check();
+	let tool:
+		| ReturnType<typeof sdk.createReadToolDefinition>
+		| ReturnType<typeof sdk.createLsToolDefinition>;
+	if (kind === "read") {
+		const content: Buffer = await readApprovedFile(target, check);
+		tool = sdk.createReadToolDefinition(paths.cwd, {
+			operations: {
+				access: () => {
+					permit.signal.throwIfAborted();
+					return Promise.resolve();
+				},
+				readFile: () => Promise.resolve(content),
+				detectImageMimeType: () => Promise.resolve(imageMime(content)),
+			},
+		});
+	} else {
+		tool = sdk.createLsToolDefinition(
+			paths.cwd,
+			approvedLsOperations(check, target),
+		);
+	}
+	permit.signal.throwIfAborted();
+	const result = await (tool as PiSdk.ToolDefinition).execute(
+		id,
+		{ ...input, path: target },
+		permit.signal,
+		update,
+		context,
+	);
+	permit.signal.throwIfAborted();
+	return result;
+}
+
+/** 一覧の対象を承認したディレクトリの直下に限定する。 */
+function approvedLsOperations(
+	check: () => Promise<void>,
+	target: string,
+): PiSdk.LsToolOptions | undefined {
+	return {
+		operations: {
+			exists: async () => {
+				await check();
+				return true;
+			},
+			stat: async (path) => {
+				await check();
+				const child = relative(target, path);
+				if (
+					child &&
+					(child.includes("/") ||
+						child.includes("\\") ||
+						child === "..")
+				) {
+					throw new Error("一覧の対象外です。");
+				}
+				// 子のリンク先へ追従せず、ディレクトリ項目自体の情報だけを使用する。
+				return lstat(join(target, child));
+			},
+			readdir: async () => {
+				await check();
+				return readdir(target);
+			},
+		},
+	};
+}
+
+/** 開いたファイルの同一性を確認してから内容を読み取り、必ずハンドルを閉じる。 */
+async function readApprovedFile(target: string, check: () => Promise<void>) {
+	const handle = await open(target, "r");
+	let content: Buffer;
+	try {
+		await check();
+		const actual = await handle.stat();
+		const expected = await lstat(target);
+		if (
+			!actual.isFile() ||
+			actual.ino !== expected.ino ||
+			actual.dev !== expected.dev
+		) {
+			throw new Error("読取り対象が差し替えられました。");
+		}
+		content = await handle.readFile();
+	} finally {
+		await handle.close();
+	}
+	return content;
 }
 
 /** SDK の画像読取りを保ち、拡張子の偽装では画像扱いしない。 */

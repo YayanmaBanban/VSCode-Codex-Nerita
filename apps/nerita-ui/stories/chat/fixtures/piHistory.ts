@@ -1,4 +1,5 @@
 // Pi の復元済み会話と一覧の固定データ。
+
 import type { ChatState } from "@nerita/shared/chatState";
 import { piState } from "./pi";
 /** 読み込まれた会話の表示を作る。永続化や分岐は扱わない。 */
@@ -43,43 +44,46 @@ export function piHistoryState(): ChatState {
 				order: 3,
 			},
 		],
-		tools: [
-			{
-				id: "saved-read",
-				runId: "saved-run",
-				title: "ファイルを読む: config.json",
-				kind: "read",
-				status: "completed",
-				paths: ["config.json"],
-				order: 2,
-				content: [
-					{
-						type: "content",
-						content: {
-							type: "text",
-							text: '{ "enabled": true }',
-						},
-					},
-				],
-			},
-			{
-				id: "saved-write",
-				runId: "saved-run",
-				title: "ファイルを書き込む: config.json",
-				kind: "edit",
-				status: "cancelled",
-				paths: ["config.json"],
-				order: 4,
-				content: [
-					{
-						type: "content",
-						content: {
-							type: "text",
-							text: "処理を停止しました。",
-						},
-					},
-				],
-			},
-		],
+		tools: structuredClone(savedPiTools),
 	};
 }
+
+/** 復元された読取り結果とキャンセルした変更を示す。 */
+const savedPiTools: ChatState["tools"] = [
+	{
+		id: "saved-read",
+		runId: "saved-run",
+		title: "ファイルを読む: config.json",
+		kind: "read",
+		status: "completed",
+		paths: ["config.json"],
+		order: 2,
+		content: [
+			{
+				type: "content",
+				content: {
+					type: "text",
+					text: '{ "enabled": true }',
+				},
+			},
+		],
+	},
+	{
+		id: "saved-write",
+		runId: "saved-run",
+		title: "ファイルを書き込む: config.json",
+		kind: "edit",
+		status: "cancelled",
+		paths: ["config.json"],
+		order: 4,
+		content: [
+			{
+				type: "content",
+				content: {
+					type: "text",
+					text: "処理を停止しました。",
+				},
+			},
+		],
+	},
+];

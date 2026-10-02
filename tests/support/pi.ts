@@ -1,11 +1,12 @@
-// 実 Controller・配布用 SDK・専用保存領域を接続し、操作と後片付けだけを共通化する。
+// 本番のコントローラー・配布用 SDK・専用保存領域を接続し、操作と後片付けだけを共通化する。
+
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { setTimeout } from "node:timers/promises";
 import type { TestContext } from "node:test";
-import { modelServer } from "./modelServer";
+import { type ModelReply, modelServer } from "./modelServer";
 import { PiSessionController } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import {
 	createPiRuntime,
@@ -38,27 +39,7 @@ export async function piFixture(t: TestContext) {
 	await Promise.all([mkdir(cwd), mkdir(agentDir)]);
 	const model = await modelServer();
 	t.after(() => model.close());
-	await writeFile(
-		join(agentDir, "models.json"),
-		JSON.stringify({
-			providers: {
-				local: {
-					baseUrl: model.url,
-					api: "openai-completions",
-					apiKey: "local-test-key",
-					models: [
-						{
-							id: "test-model",
-							reasoning: false,
-							input: ["text", "image"],
-							contextWindow: 1000000,
-							maxTokens: 128,
-						},
-					],
-				},
-			},
-		}),
-	);
+	await writeFixturePiModel(agentDir, model);
 	const trust = new WorkspaceTrustStore({
 		read: () => undefined,
 		write: () => Promise.resolve(),
@@ -111,6 +92,39 @@ export async function piFixture(t: TestContext) {
 			return controller;
 		},
 	};
+}
+
+/** ユーザーのモデル設定に触れず、ローカルの HTTP 境界だけを登録する。 */
+function writeFixturePiModel(
+	agentDir: string,
+	model: {
+		url: string;
+		requests: string[];
+		replies: ModelReply[];
+		close: () => Promise<void>;
+	},
+) {
+	return writeFile(
+		join(agentDir, "models.json"),
+		JSON.stringify({
+			providers: {
+				local: {
+					baseUrl: model.url,
+					api: "openai-completions",
+					apiKey: "local-test-key",
+					models: [
+						{
+							id: "test-model",
+							reasoning: false,
+							input: ["text", "image"],
+							contextWindow: 1000000,
+							maxTokens: 128,
+						},
+					],
+				},
+			},
+		}),
+	);
 }
 
 /** 画面と同じ検証済みメッセージで送信する。 */

@@ -1,4 +1,5 @@
 // Pi の会話とツールの表示状態。送信内容や承認結果から状態を導出しない。
+
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { createBuiltinUiRegistry } from "../../../../../apps/vscode-nerita/src/extension/ui-contributions/builtinContributions";
 
@@ -51,47 +52,7 @@ export function piState(
 		state.usage = { used: 60000, size: 200000 };
 	}
 	if (showTools) {
-		state.tools = [
-			{
-				id: "pi-list",
-				runId: "pi-story-run",
-				order: 2,
-				title: "フォルダーを確認: src",
-				kind: "list",
-				status: "completed",
-				paths: ["src"],
-				content: [
-					{
-						type: "content",
-						content: {
-							type: "text",
-							text: "extension/\nshared/\nwebview/",
-						},
-					},
-				],
-			},
-			{
-				id: "pi-read",
-				runId: "pi-story-run",
-				order: 3,
-				title: "ファイルを読む: src/長いディレクトリ名の折り返しを確認するためのフォルダー/README.md",
-				kind: "read",
-				status: "completed",
-				rawInput: { offset: 1, limit: 20 },
-				paths: [
-					"src/長いディレクトリ名の折り返しを確認するためのフォルダー/README.md",
-				],
-				content: [
-					{
-						type: "content",
-						content: {
-							type: "text",
-							text: "# Piツール表示\n本文の表示を確認しました。\n<script>これはファイルの内容です</script>",
-						},
-					},
-				],
-			},
-		];
+		state.tools = structuredClone(samplePiTools);
 	}
 	return state;
 }
@@ -165,3 +126,46 @@ export function piNestedState(summaryOnly = false): ChatState {
 	];
 	return state;
 }
+
+/** 完了した一覧・読取りツールの表示を再現する。 */
+const samplePiTools: ChatState["tools"] = [
+	{
+		id: "pi-list",
+		runId: "pi-story-run",
+		order: 2,
+		title: "フォルダーを確認: src",
+		kind: "list",
+		status: "completed",
+		paths: ["src"],
+		content: [
+			{
+				type: "content",
+				content: {
+					type: "text",
+					text: "extension/\nshared/\nwebview/",
+				},
+			},
+		],
+	},
+	{
+		id: "pi-read",
+		runId: "pi-story-run",
+		order: 3,
+		title: "ファイルを読む: src/長いディレクトリ名の折り返しを確認するためのフォルダー/README.md",
+		kind: "read",
+		status: "completed",
+		rawInput: { offset: 1, limit: 20 },
+		paths: [
+			"src/長いディレクトリ名の折り返しを確認するためのフォルダー/README.md",
+		],
+		content: [
+			{
+				type: "content",
+				content: {
+					type: "text",
+					text: "# Piツール表示\n本文の表示を確認しました。\n<script>これはファイルの内容です</script>",
+				},
+			},
+		],
+	},
+];

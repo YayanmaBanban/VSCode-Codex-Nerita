@@ -1,22 +1,26 @@
-// 入力欄の下に添付・使用量・接続中の設定を指定順で配置する。
-import { ContextPickerTrigger } from "./ContextPickerTrigger";
+// 入力欄の下に添付・使用量・接続中の設定を順に配置する。
+
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
-import { ContextUsage } from "./ContextUsage";
-import { Attachments } from "./Attachments";
-import { ContributionSlot } from "../../contributions/ContributionSlot";
 import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurface";
+import { ContributionSlot } from "../../contributions/ContributionSlot";
+import { Attachments } from "./Attachments";
+import { ContextPickerTrigger } from "./ContextPickerTrigger";
+import { ContextUsage } from "./ContextUsage";
+
+/** 設定・使用量・添付の表示状態と、設定要求の送信・参照メニューを開く操作。 */
+type ComposerSettingsProps = {
+	state: ChatState;
+	send: (message: UiMessage) => void;
+	onOpenContext?: (() => void) | undefined;
+};
 
 /** 設定項目を Host から受け取り、変更要求を検証済みのメッセージで送る。 */
 export function ComposerSettings({
 	state,
 	send,
 	onOpenContext,
-}: {
-	state: ChatState;
-	send: (message: UiMessage) => void;
-	onOpenContext?: (() => void) | undefined;
-}) {
+}: ComposerSettingsProps) {
 	const connected = settingsConnected(state);
 	const disabled =
 		!connected ||
@@ -47,25 +51,10 @@ export function ComposerSettings({
 					/>
 				</div>
 			)}
-			<Attachments
-				files={state.attachments}
+			<ComposerAttachments
+				state={state}
 				disabled={disabled}
-				onOpen={(attachmentId) =>
-					send({
-						type: "attachment/open",
-						requestId: crypto.randomUUID(),
-						sessionId: state.sessionId!,
-						attachmentId,
-					})
-				}
-				onRemove={(attachmentId) =>
-					send({
-						type: "attachment/remove",
-						requestId: crypto.randomUUID(),
-						sessionId: state.sessionId!,
-						attachmentId,
-					})
-				}
+				send={send}
 			/>
 			<div
 				className="settings-toolbar flex flex-wrap items-center gap-x-[6px] gap-y-[4px]"
@@ -102,6 +91,43 @@ export function ComposerSettings({
 				)}
 			</div>
 		</div>
+	);
+}
+
+/** 添付を含むチャット状態と、操作の無効化・要求の送信。 */
+type ComposerAttachmentsProps = {
+	state: ChatState;
+	disabled: boolean;
+	send: (message: UiMessage) => void;
+};
+
+/** 添付を表示し、開く・削除する操作に対応した要求を Host へ送る。 */
+function ComposerAttachments({
+	state,
+	disabled,
+	send,
+}: ComposerAttachmentsProps) {
+	return (
+		<Attachments
+			files={state.attachments}
+			disabled={disabled}
+			onOpen={(attachmentId) =>
+				send({
+					type: "attachment/open",
+					requestId: crypto.randomUUID(),
+					sessionId: state.sessionId!,
+					attachmentId,
+				})
+			}
+			onRemove={(attachmentId) =>
+				send({
+					type: "attachment/remove",
+					requestId: crypto.randomUUID(),
+					sessionId: state.sessionId!,
+					attachmentId,
+				})
+			}
+		/>
 	);
 }
 

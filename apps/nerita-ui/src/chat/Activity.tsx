@@ -1,63 +1,24 @@
 // ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
-import { useReducedMotion } from "motion/react";
-import { cn } from "cnfast";
-import { BorderBeam } from "../ui/BorderBeam";
+
+import { type AsyncTask, taskActive } from "@nerita/shared/asyncTask";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
-import { ToolCard } from "./tools/ToolCard";
+import { cn } from "cnfast";
+import { useReducedMotion } from "motion/react";
+import { BorderBeam } from "../ui/BorderBeam";
 import { PermissionContent } from "./PermissionContent";
-import { type AsyncTask, taskActive } from "@nerita/shared/asyncTask";
+import { ToolCard } from "./tools/ToolCard";
+
+/** ツール・承認の表示に使うチャット状態と、操作要求の送信関数。 */
+type ActivityProps = { state: ChatState; send: (message: UiMessage) => void };
 
 /** 現在の実行の作業状況と承認操作を表示する。 */
-export function Activity({
-	state,
-	send,
-}: {
-	state: ChatState;
-	send: (message: UiMessage) => void;
-}) {
+export function Activity({ state, send }: ActivityProps) {
 	const reduced = useReducedMotion();
 	return (
 		<>
 			{state.tools.length > 0 && (
-				<section aria-label="ツール実行">
-					{state.tools.map((tool) => {
-						const task = state.asyncTasks.find(
-							(item) => item.toolCallId === tool.id,
-						);
-						const cancelTurn =
-							!task &&
-							tool.runId === state.runId &&
-							state.run === "running";
-						return (
-							<ToolCard
-								key={`${tool.runId ?? ""}:${tool.id}`}
-								tool={tool}
-								send={send}
-								cwd={state.cwd}
-								task={task}
-								cancelTurn={cancelTurn}
-								onStop={
-									(cancelTurn || canStopTask(task)) &&
-									state.sessionId &&
-									(tool.runId || state.runId) &&
-									state.connection === "ready"
-										? () =>
-												send({
-													type: "execution/stop",
-													toolId: tool.id,
-													requestId:
-														crypto.randomUUID(),
-													sessionId: state.sessionId!,
-													runId: (tool.runId ??
-														state.runId)!,
-												})
-										: undefined
-								}
-							/>
-						);
-					})}
-				</section>
+				<ToolActivity state={state} send={send} />
 			)}
 			{state.permissions.map((permission) => (
 				<section
@@ -112,6 +73,51 @@ export function Activity({
 				</section>
 			))}
 		</>
+	);
+}
+
+/** ツールと非同期タスクの表示に使う状態と、停止要求の送信関数。 */
+type ToolActivityProps = ActivityProps;
+
+/** 実行中ツールと停止可能な非同期タスクを対応付ける。 */
+function ToolActivity({ state, send }: ToolActivityProps) {
+	return (
+		<section aria-label="ツール実行">
+			{state.tools.map((tool) => {
+				const task = state.asyncTasks.find(
+					(item) => item.toolCallId === tool.id,
+				);
+				const cancelTurn =
+					!task &&
+					tool.runId === state.runId &&
+					state.run === "running";
+				return (
+					<ToolCard
+						key={`${tool.runId ?? ""}:${tool.id}`}
+						tool={tool}
+						send={send}
+						cwd={state.cwd}
+						task={task}
+						cancelTurn={cancelTurn}
+						onStop={
+							(cancelTurn || canStopTask(task)) &&
+							state.sessionId &&
+							(tool.runId || state.runId) &&
+							state.connection === "ready"
+								? () =>
+										send({
+											type: "execution/stop",
+											toolId: tool.id,
+											requestId: crypto.randomUUID(),
+											sessionId: state.sessionId!,
+											runId: (tool.runId ?? state.runId)!,
+										})
+								: undefined
+						}
+					/>
+				);
+			})}
+		</section>
 	);
 }
 

@@ -1,9 +1,12 @@
 // コード本文の照合応答と、URI・範囲だけの送信を観察する。
-import { useMemo, useState } from "react";
+
+import { type SetStateAction, type Dispatch, useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { Bridge } from "@nerita/shared/bridge";
 import { StoryChat as ChatApp } from "../StoryChat";
 import { createChatStoryBridge } from "../mocks/mockBridge";
+import { type ChatState } from "@nerita/shared/chatState";
+import { type UiMessage, type HostMessage } from "@nerita/shared/messages";
 
 /** コピー通知は Host のテストで検証し、ここでは照合済み応答を再現する。 */
 function CopiedCodeStory() {
@@ -17,31 +20,10 @@ function CopiedCodeStory() {
 			subscribe: mock.subscribe,
 			postMessage(message) {
 				if (message.type === "workspace/resolveCode") {
-					setTimeout(() => {
-						mock.emit({
-							type: "workspace/resolvedPath",
-							requestId: message.requestId,
-							entry: message.text.startsWith("let controller:")
-								? {
-										uri: "file:///D:/workspace/project/src/extension.ts",
-										path: "D:\\workspace\\project\\src\\extension.ts",
-										name: "extension.ts",
-										kind: "file",
-										range: {
-											start: {
-												line: 8,
-												character: 0,
-											},
-											end: {
-												line: 11,
-												character: 40,
-											},
-										},
-									}
-								: null,
-						});
-						setResolved((previous) => previous + 1);
-					}, 100);
+					setTimeout(
+						createCopiedCodeReply(mock, message, setResolved),
+						100,
+					);
 					return;
 				}
 				if (message.type === "reference/open") {
@@ -80,3 +62,42 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 /** 通常のコピーで記録したコードの貼り付けを再現する。 */
 export const Ready: Story = {};
+
+/** コピーしたコードの照合結果を遅延通知する。 */
+function createCopiedCodeReply(
+	mock: {
+		patchState(patch: Partial<ChatState>): void;
+		postMessage(message: Parameters<(message: UiMessage) => void>[0]): void;
+		subscribe: (listener: (message: HostMessage) => void) => () => void;
+		sent: UiMessage[];
+		emit(message: HostMessage): void;
+	},
+	message: { type: "workspace/resolveCode"; requestId: string; text: string },
+	setResolved: Dispatch<SetStateAction<number>>,
+): () => void {
+	return () => {
+		mock.emit({
+			type: "workspace/resolvedPath",
+			requestId: message.requestId,
+			entry: message.text.startsWith("let controller:")
+				? {
+						uri: "file:///D:/workspace/project/src/extension.ts",
+						path: "D:\\workspace\\project\\src\\extension.ts",
+						name: "extension.ts",
+						kind: "file",
+						range: {
+							start: {
+								line: 8,
+								character: 0,
+							},
+							end: {
+								line: 11,
+								character: 40,
+							},
+						},
+					}
+				: null,
+		});
+		setResolved((previous) => previous + 1);
+	};
+}

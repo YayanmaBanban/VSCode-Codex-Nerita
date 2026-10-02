@@ -1,4 +1,5 @@
 // モデルの対応能力から表示候補を生成し、会話状態の更新とは分離する。
+
 import type { ConfigOption } from "@nerita/shared/composer";
 import type { ModelInfo } from "../protocol/account";
 import { reasoningLevels } from "./modelSelection";
@@ -35,42 +36,8 @@ export function modelOptions(
 				name: item.displayName,
 			})),
 		},
-		{
-			id: "reasoning_effort",
-			name: "Reasoning effort",
-			currentValue: effort,
-			options:
-				selected?.supportedReasoningEfforts
-					.filter((item) =>
-						reasoningLevels.includes(item.reasoningEffort),
-					)
-					.sort(
-						(a, b) =>
-							reasoningLevels.indexOf(a.reasoningEffort) -
-							reasoningLevels.indexOf(b.reasoningEffort),
-					)
-					.map((item) => ({
-						value: item.reasoningEffort,
-						name:
-							item.reasoningEffort.charAt(0).toUpperCase() +
-							item.reasoningEffort.slice(1),
-						description: item.description,
-					})) ?? [],
-		},
-		{
-			id: "service_tier",
-			name: "Service tier",
-			currentValue: tier,
-			options: [
-				{ value: "inherit", name: "設定を引き継ぐ" },
-				{ value: "default", name: "Standard" },
-				...(selected?.serviceTiers.map((item) => ({
-					value: item.id,
-					name: item.name,
-					description: item.description,
-				})) ?? []),
-			],
-		},
+		reasoningOption(effort, selected),
+		serviceTierOption(tier, selected),
 		{
 			id: "mode",
 			name: "Mode",
@@ -113,6 +80,56 @@ export function modelOptions(
 		});
 	}
 	return options;
+}
+
+/** 利用可能なサービス階層を選択肢として表示する。 */
+function serviceTierOption(
+	tier: string,
+	selected: ModelInfo | undefined,
+): ConfigOption {
+	return {
+		id: "service_tier",
+		name: "Service tier",
+		currentValue: tier,
+		options: [
+			{ value: "inherit", name: "設定を引き継ぐ" },
+			{ value: "default", name: "Standard" },
+			...(selected?.serviceTiers.map((item) => ({
+				value: item.id,
+				name: item.name,
+				description: item.description,
+			})) ?? []),
+		],
+	};
+}
+
+/** 選択したモデルが対応する推論候補を順序付きで生成する。 */
+function reasoningOption(
+	effort: string,
+	selected: ModelInfo | undefined,
+): ConfigOption {
+	return {
+		id: "reasoning_effort",
+		name: "Reasoning effort",
+		currentValue: effort,
+		options:
+			selected?.supportedReasoningEfforts
+				.filter((item) =>
+					reasoningLevels.includes(item.reasoningEffort),
+				)
+				.sort(
+					(a, b) =>
+						reasoningLevels.indexOf(a.reasoningEffort) -
+						reasoningLevels.indexOf(b.reasoningEffort),
+				)
+				.map((item) => ({
+					value: item.reasoningEffort,
+					name:
+						item.reasoningEffort.charAt(0).toUpperCase() +
+						item.reasoningEffort.slice(1),
+					description: item.description,
+				})) ?? [],
+	};
 }
 
 /** サーバーから受け取った追加の承認者も選択表示を保つ。 */

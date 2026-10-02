@@ -1,17 +1,18 @@
 // 補完候補の生成と絞り込みを、Lexical の選択範囲や編集処理から分離する。
-import type { Attachment } from "@nerita/shared/composer";
-import { contextCategories } from "./contextCategories";
-import type { SkillSummary } from "@nerita/shared/skills";
-import type { WorkspacePath } from "@nerita/shared/workspacePaths";
-import type { ComposerTarget } from "@nerita/shared/composerTargets";
-import type { SessionReference } from "@nerita/shared/sessionReferences";
-import { symbolKindName } from "@nerita/shared/workspaceSymbols";
-import { pathText } from "@nerita/shared/composerReferences";
+
 import {
 	changeScopes,
-	type ChangeScope,
 	type ChangeReference,
+	type ChangeScope,
 } from "@nerita/shared/changeReferences";
+import type { Attachment } from "@nerita/shared/composer";
+import { pathText } from "@nerita/shared/composerReferences";
+import type { ComposerTarget } from "@nerita/shared/composerTargets";
+import type { SessionReference } from "@nerita/shared/sessionReferences";
+import type { SkillSummary } from "@nerita/shared/skills";
+import type { WorkspacePath } from "@nerita/shared/workspacePaths";
+import { symbolKindName } from "@nerita/shared/workspaceSymbols";
+import { contextCategories } from "./contextCategories";
 
 /** 選択可能な候補。`category` は次の一覧を開く入口。 */
 export type CompletionItem = {
@@ -74,26 +75,7 @@ export function completionItems(
 ): CompletionItem[] {
 	let items: CompletionItem[];
 	if (marker === "/") {
-		items = [
-			{
-				id: "new",
-				label: "/new",
-				description: "新しい会話を開始",
-				text: "/new ",
-			},
-			{
-				id: "mcp",
-				label: "/mcp",
-				description: "MCPサーバーの接続状態を表示",
-				text: "/mcp ",
-			},
-			{
-				id: "logout",
-				label: "/logout",
-				description: "Codexからログアウト",
-				text: "/logout ",
-			},
-		];
+		items = slashCompletionItems();
 		if (collaborationModes) {
 			items.push(
 				{
@@ -158,4 +140,28 @@ export function completionItems(
 			.toLocaleLowerCase()
 			.includes(query.toLocaleLowerCase()),
 	);
+}
+
+/** 利用可能なスラッシュコマンドの候補を生成する。 */
+function slashCompletionItems(): CompletionItem[] {
+	return [
+		{
+			id: "new",
+			label: "/new",
+			description: "新しい会話を開始",
+			text: "/new ",
+		},
+		{
+			id: "mcp",
+			label: "/mcp",
+			description: "MCPサーバーの接続状態を表示",
+			text: "/mcp ",
+		},
+		{
+			id: "logout",
+			label: "/logout",
+			description: "Codexからログアウト",
+			text: "/logout ",
+		},
+	];
 }

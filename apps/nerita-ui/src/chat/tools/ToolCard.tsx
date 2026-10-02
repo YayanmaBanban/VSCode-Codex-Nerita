@@ -1,27 +1,28 @@
 // ツールの種別に応じた本文・状態アイコン・停止操作と開閉を表示する。
+
+import { taskActive, type AsyncTask } from "@nerita/shared/asyncTask";
+import type { ToolSummary } from "@nerita/shared/chatState";
+import { isRecord } from "@nerita/shared/validation";
 import { cn } from "cnfast";
-import { SettingsTooltip } from "../SettingsTooltip";
-import { type SetStateAction, type Dispatch, useId, useState } from "react";
 import {
 	ChevronDown,
 	LoaderCircle,
-	type LucideIcon,
 	Square,
 	X,
+	type LucideIcon,
 } from "lucide-react";
-import type { ToolSummary } from "@nerita/shared/chatState";
-import { isRecord } from "@nerita/shared/validation";
-import { taskActive, type AsyncTask } from "@nerita/shared/asyncTask";
+import { useId, useState, type Dispatch, type SetStateAction } from "react";
 import "../loaders.css";
+import { SettingsTooltip } from "../SettingsTooltip";
 import {
-	ThinkTool,
 	ImageViewTool,
+	ThinkTool,
 	WebSearchTool,
 	type ActivityToolProps,
 } from "./ActivityToolContent";
-import { toolRenderer } from "./toolRenderers";
 import { ComboListCard } from "./ComboListCard";
 import { GenericTool } from "./ToolContent";
+import { toolRenderer } from "./toolRenderers";
 
 /** 開閉状態と直前の実行状態を保持する。 */
 type CardState = { status: ToolSummary["status"]; open: boolean };
@@ -89,33 +90,22 @@ export function ToolCard({
 					{cwd}
 				</div>
 			)}
-			<div className="tool-header relative flex items-center">
-				{renderToolHeading(
-					Heading,
-					Body,
-					state,
-					bodyId,
-					setState,
-					status,
-					Icon,
-					executing,
-					command,
-					tool,
-					active,
-				)}
-				{status === "failed" && (
-					<span
-						className="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
-						role="img"
-						aria-label="失敗"
-					>
-						<X size={16} aria-hidden="true" />
-					</span>
-				)}
-				{executing &&
-					active &&
-					renderStopButton(tool, onStop, cancelTurn, task)}
-			</div>
+			<ToolCardHeader
+				Heading={Heading}
+				Body={Body}
+				state={state}
+				bodyId={bodyId}
+				setState={setState}
+				status={status}
+				Icon={Icon}
+				executing={executing}
+				command={command}
+				tool={tool}
+				active={active}
+				onStop={onStop}
+				cancelTurn={cancelTurn}
+				task={task}
+			/>
 			{renderHistoryNotice(tool)}
 			{Body &&
 				renderToolBody(bodyId, state, Body, tool, send, workspaceCwd)}
@@ -123,8 +113,84 @@ export function ToolCard({
 	);
 }
 
+/** ツールの実行・開閉状態、見出し・本文の描画と停止操作。 */
+type ToolCardHeaderProps = {
+	Heading: "button" | "div";
+	Body: ReturnType<typeof toolRenderer>["Body"];
+	state: CardState;
+	bodyId: string;
+	setState: Dispatch<SetStateAction<CardState>>;
+	status:
+		| "pending"
+		| "in_progress"
+		| "completed"
+		| "failed"
+		| "cancelled"
+		| "unfinished";
+	Icon: LucideIcon;
+	executing: boolean;
+	command: string;
+	tool: ToolSummary;
+	active: boolean;
+	onStop: (() => void) | undefined;
+	cancelTurn: boolean;
+	task: undefined | AsyncTask;
+};
+
+/** ツールの見出し・失敗状態と停止操作を表示する。 */
+function ToolCardHeader(props: ToolCardHeaderProps) {
+	const {
+		Heading,
+		Body,
+		state,
+		bodyId,
+		setState,
+		status,
+		Icon,
+		executing,
+		command,
+		tool,
+		active,
+		onStop,
+		cancelTurn,
+		task,
+	} = props;
+	return (
+		<div className="tool-header relative flex items-center">
+			{renderToolHeading(
+				Heading,
+				Body,
+				state,
+				bodyId,
+				setState,
+				status,
+				Icon,
+				executing,
+				command,
+				tool,
+				active,
+			)}
+			{status === "failed" && (
+				<span
+					className="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
+					role="img"
+					aria-label="失敗"
+				>
+					<X size={16} aria-hidden="true" />
+				</span>
+			)}
+			{executing &&
+				active &&
+				renderStopButton(tool, onStop, cancelTurn, task)}
+		</div>
+	);
+}
+
+/** 保存要約に残っている入力・本文を持つツール情報。 */
+type ToolHistoryContentProps = { tool: ToolSummary };
+
 /** 保存済みの入力とエラーだけを表示し、存在しない結果本文を補わない。 */
-function ToolHistoryContent({ tool }: { tool: ToolSummary }) {
+function ToolHistoryContent({ tool }: ToolHistoryContentProps) {
 	return tool.rawInput !== undefined || tool.content?.length ? (
 		<GenericTool tool={tool} />
 	) : null;

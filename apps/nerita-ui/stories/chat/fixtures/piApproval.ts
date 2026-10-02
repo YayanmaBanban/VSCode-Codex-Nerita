@@ -1,6 +1,9 @@
 // 承認待ちの表示データを操作から独立して生成する。
+
+import { type ChatState } from "@nerita/shared/chatState";
+
 import { toolApprovalPresentation } from "../../../../../apps/vscode-nerita/src/extension/security/toolApprovalPresentation";
-import type { ChatState } from "@nerita/shared/chatState";
+
 /** ツール別の表示を選ぶ。承認の結果は計算しない。 */
 export function piApprovalState(name: string): Partial<ChatState> {
 	const shell = ["powershell", "pwsh", "bash"].includes(name);
@@ -46,41 +49,7 @@ export function piApprovalState(name: string): Partial<ChatState> {
 		permissions: [
 			{
 				id: "pi-approval",
-				...toolApprovalPresentation({
-					tool: name,
-					params: input,
-					cwd: "workspace with spaces/project",
-					policy: {
-						workspaceRoots: ["workspace with spaces/project"],
-						writableRoots: ["workspace with spaces/project"],
-						shell: true,
-						networkAccess: false,
-						windowsSandbox: "elevated",
-					},
-					...(shell
-						? {
-								hostShell: name === "bash",
-								command: [
-									`${name}.exe`,
-									"-NoLogo",
-									"-NoProfile",
-									"-NonInteractive",
-									"-ExecutionPolicy",
-									"Bypass",
-									"-Command",
-									input.command!,
-								],
-								timeoutMs: 30000,
-								sandbox: {
-									name: "Codex",
-									details: [
-										"Windows Sandbox: elevated",
-										"workspace外もOS権限に従う / temp書込み例外: 無効",
-									],
-								},
-							}
-						: {}),
-				}),
+				...approvalStoryPresentation(name, input, shell),
 				options: [
 					{
 						id: "accept",
@@ -101,4 +70,49 @@ export function piApprovalState(name: string): Partial<ChatState> {
 			},
 		],
 	};
+}
+
+/** ツールと実行基盤に応じた承認表示を固定データから作る。 */
+function approvalStoryPresentation(
+	name: string,
+	input:
+		| { command: string; timeout: number; path?: never; content?: never }
+		| { path: string; content: string; command?: never; timeout?: never },
+	shell: boolean,
+): ReturnType<typeof toolApprovalPresentation> {
+	return toolApprovalPresentation({
+		tool: name,
+		params: input,
+		cwd: "workspace with spaces/project",
+		policy: {
+			workspaceRoots: ["workspace with spaces/project"],
+			writableRoots: ["workspace with spaces/project"],
+			shell: true,
+			networkAccess: false,
+			windowsSandbox: "elevated",
+		},
+		...(shell
+			? {
+					hostShell: name === "bash",
+					command: [
+						`${name}.exe`,
+						"-NoLogo",
+						"-NoProfile",
+						"-NonInteractive",
+						"-ExecutionPolicy",
+						"Bypass",
+						"-Command",
+						input.command!,
+					],
+					timeoutMs: 30000,
+					sandbox: {
+						name: "Codex",
+						details: [
+							"Windows Sandbox: elevated",
+							"workspace外もOS権限に従う / temp書込み例外: 無効",
+						],
+					},
+				}
+			: {}),
+	});
 }

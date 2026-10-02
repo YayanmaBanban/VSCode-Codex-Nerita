@@ -1,4 +1,5 @@
 // 認証パネルの閉鎖とバックエンド切替が、会話の受付と保存設定へ反映されることを確認する。
+
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -41,36 +42,12 @@ async function selectBackend(chat, name, id) {
 
 /** 実際の入力待ちを閉じた後にも送信でき、切替前の会話が新しい接続へ混入しない。 */
 async function verifyAccount(page, chat, model, findFrame) {
-	const before = await credentials();
-	const requests = model.requests.length;
-	await chat.getByRole("button", { name: "オプション", exact: true }).click();
-	await chat
-		.getByRole("menuitem", { name: "認証情報を管理", exact: true })
-		.click();
-	const auth = await findFrame(page, '[aria-label="認証先を検索"]');
-	await auth
-		.getByRole("searchbox", { name: "認証先を検索" })
-		.fill("anthropic");
-	await auth.getByRole("button", { name: "Anthropic", exact: true }).click();
-	await auth
-		.getByRole("button", { name: "APIキーを設定", exact: true })
-		.click();
-	await auth
-		.locator('input[type="password"]')
-		.fill("unsaved-acceptance-value");
-	await page.screenshot({
-		path: path.join(process.env.NERITA_UI_ARTIFACTS, "auth-pending.png"),
-	});
-	assert.equal(
-		vscode.window.tabGroups.activeTabGroup.activeTab.label,
-		"Pi 認証情報",
+	const { before, requests } = await verifyAuthClose(
+		page,
+		chat,
+		model,
+		findFrame,
 	);
-	await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-	await expect(
-		chat.getByRole("button", { name: "接続済み", exact: true }),
-	).toBeVisible();
-	assert.equal(await credentials(), before);
-	assert.equal(model.requests.length, requests);
 	model.replies.push("認証画面の閉鎖後も送信できました");
 	await chat
 		.getByRole("textbox", { name: "Codexへのメッセージ" })
@@ -139,3 +116,38 @@ async function verifyAccount(page, chat, model, findFrame) {
 }
 
 module.exports = { verifyAccount };
+
+/** 認証の未保存入力を閉じても資格情報とモデル送信が変わらないことを確認する。 */
+async function verifyAuthClose(page, chat, model, findFrame) {
+	const before = await credentials();
+	const requests = model.requests.length;
+	await chat.getByRole("button", { name: "オプション", exact: true }).click();
+	await chat
+		.getByRole("menuitem", { name: "認証情報を管理", exact: true })
+		.click();
+	const auth = await findFrame(page, '[aria-label="認証先を検索"]');
+	await auth
+		.getByRole("searchbox", { name: "認証先を検索" })
+		.fill("anthropic");
+	await auth.getByRole("button", { name: "Anthropic", exact: true }).click();
+	await auth
+		.getByRole("button", { name: "APIキーを設定", exact: true })
+		.click();
+	await auth
+		.locator('input[type="password"]')
+		.fill("unsaved-acceptance-value");
+	await page.screenshot({
+		path: path.join(process.env.NERITA_UI_ARTIFACTS, "auth-pending.png"),
+	});
+	assert.equal(
+		vscode.window.tabGroups.activeTabGroup.activeTab.label,
+		"Pi 認証情報",
+	);
+	await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+	await expect(
+		chat.getByRole("button", { name: "接続済み", exact: true }),
+	).toBeVisible();
+	assert.equal(await credentials(), before);
+	assert.equal(model.requests.length, requests);
+	return { before, requests };
+}

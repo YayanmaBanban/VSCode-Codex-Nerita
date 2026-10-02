@@ -1,4 +1,7 @@
-// 外部 App Server だけを子プロセスで代替し、本番 Client・通信・Controller を接続する。
+// 外部 App Server だけを子プロセスで代替し、本番のクライアント・通信・コントローラーを接続する。
+
+import { type RequestListener, type IncomingMessage } from "http";
+
 import assert from "node:assert/strict";
 import { createServer, type ServerResponse } from "node:http";
 import { once } from "node:events";
@@ -48,46 +51,14 @@ export async function codexFixture(t: TestContext) {
 	const streams: ServerResponse[] = [];
 	const unexpected: string[] = [];
 	const state = { authenticated: true, thread: 0, turn: 0, failSteer: false };
-	const server = createServer((request, response) => {
-		if (request.url === "/events") {
-			streams.push(response);
-			response.writeHead(200, { "content-type": "text/plain" });
-			response.flushHeaders();
-			return;
-		}
-		let body = "";
-		request.setEncoding("utf8");
-		request.on("data", (chunk: string) => {
-			body += chunk;
-		});
-		request.on("end", () => {
-			const message = JSON.parse(body) as Rpc;
-			requests.push(message);
-			if (message.id === undefined) {
-				response.end();
-				return;
-			}
-			try {
-				const result = reply(message, cwd, state);
-				response.end(`${JSON.stringify({ id: message.id, result })}\n`);
-			} catch {
-				if (!(state.failSteer && message.method === "turn/steer")) {
-					unexpected.push(message.method);
-				}
-				response.end(
-					`${JSON.stringify({
-						id: message.id,
-						error: { code: -32000, message: "fixture failure" },
-					})}\n`,
-				);
-			}
-		});
-	});
+	const server = createServer(
+		createCodexRelayHandler(streams, requests, cwd, state, unexpected),
+	);
 	server.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	t.after(async () => {
 		server.closeAllConnections();
-		await new Promise<void>((resolve) => server.close(() => resolve()));
+		await closeCodexRelay(server);
 		assert.deepEqual(unexpected, []);
 	});
 	const address = server.address();
@@ -131,43 +102,108 @@ export async function codexFixture(t: TestContext) {
 		notify: (method: string, params: unknown) => {
 			streams.at(-1)!.write(`${JSON.stringify({ method, params })}\n`);
 		},
-		controller: (auth?: AuthService) => {
-			const controller = new CodexSessionController(
-				async (callbacks, signal) => ({
+		controller: createCodexControllerFactory(
+			cwd,
+			root,
+			selectionPath,
+			controllers,
+		),
+	};
+}
+
+/** 本番のクライアントを使うコントローラーを生成し、テスト終了時に破棄する対象として登録する。 */
+function createCodexControllerFactory(
+	cwd: string,
+	root: string,
+	selectionPath: string,
+	controllers: CodexSessionController[],
+) {
+	return (auth?: AuthService) => {
+		const controller = new CodexSessionController(
+			async (callbacks, signal) => ({
+				cwd,
+				client: await CodexClient.connect({
+					extensionPath: root,
 					cwd,
-					client: await CodexClient.connect({
-						extensionPath: root,
-						cwd,
-						clientInfo: {
-							title: null,
-							name: "fixture",
-							version: "1",
-						},
-						callbacks,
-						signal,
-					}),
-				}),
-				undefined,
-				auth,
-				undefined,
-				codexSelectionStore({
-					read: async () => {
-						try {
-							return JSON.parse(
-								await readFile(selectionPath, "utf8"),
-							) as unknown;
-						} catch {
-							return undefined;
-						}
+					clientInfo: {
+						title: null,
+						name: "fixture",
+						version: "1",
 					},
-					write: async (value) => {
-						await writeFile(selectionPath, JSON.stringify(value));
-					},
+					callbacks,
+					signal,
 				}),
-			);
-			controllers.push(controller);
-			return controller;
-		},
+			}),
+			undefined,
+			auth,
+			undefined,
+			codexSelectionStore({
+				read: async () => {
+					try {
+						return JSON.parse(
+							await readFile(selectionPath, "utf8"),
+						) as unknown;
+					} catch {
+						return undefined;
+					}
+				},
+				write: async (value) => {
+					await writeFile(selectionPath, JSON.stringify(value));
+				},
+			}),
+		);
+		controllers.push(controller);
+		return controller;
+	};
+}
+
+/** 子プロセスの JSONL 要求をローカル HTTP 境界へ中継する。 */
+function createCodexRelayHandler(
+	streams: ServerResponse<IncomingMessage>[],
+	requests: Rpc[],
+	cwd: string,
+	state: {
+		authenticated: boolean;
+		thread: number;
+		turn: number;
+		failSteer: boolean;
+	},
+	unexpected: string[],
+): RequestListener<typeof IncomingMessage, typeof ServerResponse> | undefined {
+	return (request, response) => {
+		if (request.url === "/events") {
+			streams.push(response);
+			response.writeHead(200, { "content-type": "text/plain" });
+			response.flushHeaders();
+			return;
+		}
+		let body = "";
+		request.setEncoding("utf8");
+		request.on("data", (chunk: string) => {
+			body += chunk;
+		});
+		request.on("end", () => {
+			const message = JSON.parse(body) as Rpc;
+			requests.push(message);
+			if (message.id === undefined) {
+				response.end();
+				return;
+			}
+			try {
+				const result = reply(message, cwd, state);
+				response.end(`${JSON.stringify({ id: message.id, result })}\n`);
+			} catch {
+				if (!(state.failSteer && message.method === "turn/steer")) {
+					unexpected.push(message.method);
+				}
+				response.end(
+					`${JSON.stringify({
+						id: message.id,
+						error: { code: -32000, message: "fixture failure" },
+					})}\n`,
+				);
+			}
+		});
 	};
 }
 
@@ -248,4 +284,9 @@ function reply(
 		default:
 			throw new Error(`予定外の RPC: ${message.method}`);
 	}
+}
+
+/** 接続を閉じた後、サーバーの終了通知を待つ。 */
+function closeCodexRelay(server: ReturnType<typeof createServer>) {
+	return new Promise<void>((resolve) => server.close(() => resolve()));
 }

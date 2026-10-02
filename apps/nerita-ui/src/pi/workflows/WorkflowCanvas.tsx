@@ -1,20 +1,22 @@
 // React Flow の配置は表示だけに使い、接続線を `depends_on` として扱う。
-import { useEffect, useState } from "react";
+
+import type { Workflow } from "@nerita/shared/workflows/definition";
 import {
-	ReactFlow,
 	Background,
 	Controls,
-	applyNodeChanges,
-	applyEdgeChanges,
-	type Node,
-	type Edge,
-	type Connection,
 	Position,
-	useReactFlow,
+	ReactFlow,
+	applyEdgeChanges,
+	applyNodeChanges,
 	useNodesInitialized,
+	useReactFlow,
+	type Connection,
+	type Edge,
+	type Node,
+	type NodeChange,
 } from "@xyflow/react";
-import type { Workflow } from "@nerita/shared/workflows/definition";
 import "@xyflow/react/dist/style.css";
+import { useEffect, useState } from "react";
 
 /** 会話の扱いをノード内の短い表記にする。 */
 function contextLabel(step: Workflow["steps"][number]) {
@@ -74,6 +76,15 @@ function nodesFor(workflow: Workflow): Node[] {
 	});
 }
 
+/** ワークフロー定義と選択中のステップ、ノード選択・線の接続や削除の操作。 */
+type WorkflowCanvasProps = {
+	workflow: Workflow;
+	selected: string;
+	select: (id: string) => void;
+	connect: (connection: Connection) => void;
+	disconnect: (edges: Edge[]) => void;
+};
+
 /** ノードの選択・接続・線の削除をフォームと同じ編集経路へ返す。 */
 export function WorkflowCanvas({
 	workflow,
@@ -81,36 +92,16 @@ export function WorkflowCanvas({
 	select,
 	connect,
 	disconnect,
-}: {
-	workflow: Workflow;
-	selected: string;
-	select: (id: string) => void;
-	connect: (connection: Connection) => void;
-	disconnect: (edges: Edge[]) => void;
-}) {
+}: WorkflowCanvasProps) {
 	const [nodes, setNodes] = useState(() => nodesFor(workflow));
 	useEffect(() => {
 		setNodes((previous) =>
-			nodesFor(workflow).map((node) => ({
-				...node,
-				position:
-					previous.find((item) => item.id === node.id)?.position ??
-					node.position,
-				selected: node.id === selected,
-			})),
+			positionWorkflowNodes(workflow, previous, selected),
 		);
 	}, [workflow, selected]);
 	const [edges, setEdges] = useState<Edge[]>([]);
 	useEffect(() => {
-		setEdges(
-			workflow.steps.flatMap((step) =>
-				step.depends_on.map((dep) => ({
-					id: `${dep}:${step.id}`,
-					source: dep,
-					target: step.id,
-				})),
-			),
-		);
+		setEdges(workflowEdges(workflow));
 	}, [workflow]);
 	return (
 		<div
@@ -122,12 +113,7 @@ export function WorkflowCanvas({
 				edges={edges}
 				onNodesChange={(changes) =>
 					setNodes((current) =>
-						applyNodeChanges(
-							changes.filter(
-								(change) => change.type !== "remove",
-							),
-							current,
-						),
+						applyEditableNodeChanges(changes, current),
 					)
 				}
 				onNodeClick={(_event, node) => select(node.id)}
@@ -150,8 +136,48 @@ export function WorkflowCanvas({
 	);
 }
 
+/** ノードの削除を除き、グラフ上の配置変更を反映する。 */
+function applyEditableNodeChanges(
+	changes: NodeChange<Node>[],
+	current: Node[],
+): Node[] {
+	return applyNodeChanges(
+		changes.filter((change) => change.type !== "remove"),
+		current,
+	);
+}
+
+/** 依存先からグラフの接続線を生成する。 */
+function workflowEdges(workflow: Workflow): Edge[] {
+	return workflow.steps.flatMap((step) =>
+		step.depends_on.map((dep) => ({
+			id: `${dep}:${step.id}`,
+			source: dep,
+			target: step.id,
+		})),
+	);
+}
+
+/** 再描画時も既存ノードの手動配置を保つ。 */
+function positionWorkflowNodes(
+	workflow: Workflow,
+	previous: Node[],
+	selected: string,
+): Node[] {
+	return nodesFor(workflow).map((node) => ({
+		...node,
+		position:
+			previous.find((item) => item.id === node.id)?.position ??
+			node.position,
+		selected: node.id === selected,
+	}));
+}
+
+/** 狭いパネルで中央に表示するステップの識別子。 */
+type NarrowFocusProps = { selected: string };
+
 /** 狭いパネルでは選択したノードを読める倍率で中央へ表示する。 */
-function NarrowFocus({ selected }: { selected: string }) {
+function NarrowFocus({ selected }: NarrowFocusProps) {
 	const { fitView } = useReactFlow();
 	const initialized = useNodesInitialized();
 	useEffect(() => {

@@ -1,7 +1,10 @@
 // 認証専用エディターを外部ログインなしで操作確認する。
+
+import { type PiAuthItem, type PiAuthState } from "@nerita/shared/piAuth";
+
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { PiAuthState } from "@nerita/shared/piAuth";
+
 import { PiAuthEditor } from "../../src/pi/PiAuthEditor";
 
 /** Host 同様に認証先ごとの通知を保持する。 */
@@ -19,38 +22,9 @@ function feedback(
 
 /** 認証入力・OAuth・取消後の表示を再現する。 */
 function EditorStory() {
-	const [state, setState] = useState<PiAuthState>({
-		items: [
-			{
-				id: "anthropic",
-				name: "Anthropic",
-				configured: true,
-				methods: [
-					{ id: "anthropic-key", name: "APIキーを設定" },
-					{ id: "anthropic-oauth", name: "OAuthでログイン" },
-				],
-			},
-			{
-				id: "openai",
-				name: "OpenAI",
-				configured: false,
-				methods: [
-					{ id: "openai-key", name: "APIキーを設定" },
-					{ id: "openai-oauth", name: "OAuthでログイン" },
-				],
-			},
-			{
-				id: "google",
-				name: "Google",
-				configured: false,
-				methods: [{ id: "google-key", name: "APIキーを設定" }],
-			},
-		],
-		active: null,
-		prompt: null,
-		notice: "",
-		error: null,
-	});
+	const [state, setState] = useState<PiAuthState>(
+		structuredClone(authInitialState),
+	);
 	return (
 		<PiAuthEditor
 			state={state}
@@ -108,13 +82,7 @@ function EditorStory() {
 							null,
 						),
 						error: null,
-						items: current.items.map((item) =>
-							item.methods.some(
-								(method) => method.id === request.id,
-							)
-								? { ...item, configured: true }
-								: item,
-						),
+						items: configuredAuthItems(current, request),
 					}));
 				}
 			}}
@@ -130,3 +98,49 @@ export default meta;
 /** 一覧表示から認証処理へ進む開始状態。 */
 type Story = StoryObj<typeof meta>;
 export const Providers: Story = {};
+
+/** プロバイダー一覧をストーリーごとの初期状態へ複製する。 */
+const authInitialState: PiAuthState = {
+	items: [
+		{
+			id: "anthropic",
+			name: "Anthropic",
+			configured: true,
+			methods: [
+				{ id: "anthropic-key", name: "APIキーを設定" },
+				{ id: "anthropic-oauth", name: "OAuthでログイン" },
+			],
+		},
+		{
+			id: "openai",
+			name: "OpenAI",
+			configured: false,
+			methods: [
+				{ id: "openai-key", name: "APIキーを設定" },
+				{ id: "openai-oauth", name: "OAuthでログイン" },
+			],
+		},
+		{
+			id: "google",
+			name: "Google",
+			configured: false,
+			methods: [{ id: "google-key", name: "APIキーを設定" }],
+		},
+	],
+	active: null,
+	prompt: null,
+	notice: "",
+	error: null,
+};
+
+/** 認証操作に対応するプロバイダーだけを設定済みにする。 */
+function configuredAuthItems(
+	current: PiAuthState,
+	request: { type: "answer"; id: string; value: string },
+): PiAuthItem[] {
+	return current.items.map((item) =>
+		item.methods.some((method) => method.id === request.id)
+			? { ...item, configured: true }
+			: item,
+	);
+}

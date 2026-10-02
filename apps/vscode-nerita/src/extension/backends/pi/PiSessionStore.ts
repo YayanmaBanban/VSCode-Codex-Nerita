@@ -1,4 +1,5 @@
 // Pi 標準の JSONL を保存し、選択した保存先の履歴だけを公開する。
+
 import {
 	mkdir,
 	readFile,
@@ -94,7 +95,103 @@ export async function openPiSessionStore(
 	signal.throwIfAborted();
 	const root = await realpath(directory);
 	/** ディレクトリ移動に追従しつつ、外部ファイルへのリンクは履歴に含めない。 */
-	const list = async (listSignal: AbortSignal) => {
+	const list = createPiHistoryListing(directory, storage, sdk, cwd, root);
+	let manager: PiSdk.SessionManager;
+	if (resume) {
+		const matches = (await list(signal)).filter(
+			(row) => row.id === resume.id,
+		);
+		if (matches.length !== 1) {
+			throw new Error(
+				"Piの履歴が見つからないか、IDが重複しています。一覧を更新してください。",
+			);
+		}
+		const path = matches[0]!.path;
+		// `SessionManager.open` は空ファイルを初期化するため、読み込み前に有効なヘッダーを確認する。
+		const header = sdk.parseSessionEntries(await readFile(path, "utf8"))[0];
+		if (header?.type !== "session" || header.id !== resume.id) {
+			throw new Error("Piの履歴ファイルが変更されています。");
+		}
+		signal.throwIfAborted();
+		manager = sdk.SessionManager.open(path, directory, cwd);
+		forkSessionStore(resume, manager);
+	} else {
+		manager = sdk.SessionManager.create(cwd, directory);
+	}
+	const history: PiHistoryAccess = {
+		readContext: createPiContextReader(list, cwd, manager, sdk, directory),
+		entries: manager.getBranch(),
+		target: (id) => ({ id, directory, storage }),
+		list: async (listSignal, referencesOnly = false) =>
+			(await list(listSignal))
+				.filter((row) => !referencesOnly || sameCwd(row.cwd, cwd))
+				.map((row) => ({
+					sessionId: row.id,
+					cwd,
+					title:
+						row.name?.trim() ||
+						row.firstMessage.trim().slice(0, 120) ||
+						"Piの会話",
+					updatedAt: row.modified.toISOString(),
+				})),
+	};
+	return { manager, history };
+}
+
+/** 参照前後のファイルと実行状態を照合し、他の会話の安全な資料だけを返す。 */
+function createPiContextReader(
+	list: (listSignal: AbortSignal) => Promise<PiSdk.SessionInfo[]>,
+	cwd: string,
+	manager: PiSdk.SessionManager,
+	sdk: typeof PiSdk,
+	directory: string,
+): (
+	id: string,
+	mode: "transcript" | "handoff",
+	signal: AbortSignal,
+) => Promise<string> {
+	return async (id, mode, readSignal) => {
+		assertPiReferenceIdle(id);
+		const matches = (await list(readSignal)).filter(
+			(row) => row.id === id && sameCwd(row.cwd, cwd),
+		);
+		if (matches.length !== 1 || id === manager.getSessionId()) {
+			throw new Error("参照セッションを選び直してください。");
+		}
+		const file = matches[0]!.path;
+		const before = await readFile(file, "utf8");
+		if (Buffer.byteLength(before) > 2000000) {
+			throw new Error("参照セッションが大きすぎます。");
+		}
+		const header = sdk.parseSessionEntries(before)[0];
+		if (
+			header?.type !== "session" ||
+			header.id !== id ||
+			!sameCwd(header.cwd, cwd)
+		) {
+			throw new Error("参照セッションが変更されています。");
+		}
+		readSignal.throwIfAborted();
+		const source = sdk.SessionManager.open(file, directory);
+		const context = piSessionContext(sdk, source.getBranch(), mode);
+		if ((await readFile(file, "utf8")) !== before) {
+			throw new Error("参照セッションが変更されています。");
+		}
+		readSignal.throwIfAborted();
+		assertPiReferenceIdle(id);
+		return context;
+	};
+}
+
+/** 現在の保存ディレクトリ内に実体がある履歴だけを一覧に含める。 */
+function createPiHistoryListing(
+	directory: string,
+	storage: PiSessionStorage,
+	sdk: typeof PiSdk,
+	cwd: string,
+	root: string,
+) {
+	return async (listSignal: AbortSignal) => {
 		await readdir(directory);
 		const rows =
 			storage === "workspace"
@@ -122,76 +219,6 @@ export async function openPiSessionStore(
 		}
 		return safe;
 	};
-	let manager: PiSdk.SessionManager;
-	if (resume) {
-		const matches = (await list(signal)).filter(
-			(row) => row.id === resume.id,
-		);
-		if (matches.length !== 1) {
-			throw new Error(
-				"Piの履歴が見つからないか、IDが重複しています。一覧を更新してください。",
-			);
-		}
-		const path = matches[0]!.path;
-		// `SDK.open` は空ファイルを初期化するため、読込前に有効なヘッダーを確認する。
-		const header = sdk.parseSessionEntries(await readFile(path, "utf8"))[0];
-		if (header?.type !== "session" || header.id !== resume.id) {
-			throw new Error("Piの履歴ファイルが変更されています。");
-		}
-		signal.throwIfAborted();
-		manager = sdk.SessionManager.open(path, directory, cwd);
-		forkSessionStore(resume, manager);
-	} else {
-		manager = sdk.SessionManager.create(cwd, directory);
-	}
-	const history: PiHistoryAccess = {
-		readContext: async (id, mode, readSignal) => {
-			assertPiReferenceIdle(id);
-			const matches = (await list(readSignal)).filter(
-				(row) => row.id === id && sameCwd(row.cwd, cwd),
-			);
-			if (matches.length !== 1 || id === manager.getSessionId()) {
-				throw new Error("参照セッションを選び直してください。");
-			}
-			const file = matches[0]!.path;
-			const before = await readFile(file, "utf8");
-			if (Buffer.byteLength(before) > 2_000_000) {
-				throw new Error("参照セッションが大きすぎます。");
-			}
-			const header = sdk.parseSessionEntries(before)[0];
-			if (
-				header?.type !== "session" ||
-				header.id !== id ||
-				!sameCwd(header.cwd, cwd)
-			) {
-				throw new Error("参照セッションが変更されています。");
-			}
-			readSignal.throwIfAborted();
-			const source = sdk.SessionManager.open(file, directory);
-			const context = piSessionContext(sdk, source.getBranch(), mode);
-			if ((await readFile(file, "utf8")) !== before) {
-				throw new Error("参照セッションが変更されています。");
-			}
-			readSignal.throwIfAborted();
-			assertPiReferenceIdle(id);
-			return context;
-		},
-		entries: manager.getBranch(),
-		target: (id) => ({ id, directory, storage }),
-		list: async (listSignal, referencesOnly = false) =>
-			(await list(listSignal))
-				.filter((row) => !referencesOnly || sameCwd(row.cwd, cwd))
-				.map((row) => ({
-					sessionId: row.id,
-					cwd,
-					title:
-						row.name?.trim() ||
-						row.firstMessage.trim().slice(0, 120) ||
-						"Piの会話",
-					updatedAt: row.modified.toISOString(),
-				})),
-	};
-	return { manager, history };
 }
 
 /** 別パネルで処理中の会話を参照資料として読み込まない。 */

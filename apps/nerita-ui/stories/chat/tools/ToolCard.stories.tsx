@@ -1,5 +1,6 @@
 // ツールの専用表示と完了時の開閉を、実コンポーネントで再現する。
-import { useState } from "react";
+
+import { type SetStateAction, type Dispatch, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { initialState, type ToolSummary } from "@nerita/shared/chatState";
 import { type UiMessage } from "@nerita/shared/messages";
@@ -109,43 +110,7 @@ function ToolCardsStory({ background = false }: { background?: boolean }) {
 	const [request, setRequest] = useState<UiMessage>();
 	return (
 		<main style={{ padding: 16 }}>
-			<button
-				onClick={() => {
-					setTasks((tasks) =>
-						tasks.map((task) => ({
-							...task,
-							state: "completed",
-							canStop: false,
-						})),
-					);
-					setTools((current) =>
-						current.map((tool) =>
-							tool.status === "failed"
-								? tool
-								: {
-										...tool,
-										status: "completed",
-										...(tool.id === "guardian"
-											? {
-													rawOutput: {
-														review: {
-															status: "approved",
-															riskLevel: "low",
-															userAuthorization:
-																"high",
-															rationale:
-																"バージョン確認のため承認しました。",
-														},
-													},
-												}
-											: {}),
-									},
-						),
-					);
-				}}
-			>
-				完了通知を受信
-			</button>
+			{<CompleteToolsButton setTasks={setTasks} setTools={setTools} />}
 			<Activity
 				state={{
 					...initialState(),
@@ -195,6 +160,55 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Running: Story = {};
 export const Background: Story = { args: { background: true } };
+
+/** 完了通知によるツールと非同期タスクの状態変化を再現する。 */
+function CompleteToolsButton({
+	setTasks,
+	setTools,
+}: {
+	setTasks: Dispatch<SetStateAction<AsyncTask[]>>;
+	setTools: Dispatch<SetStateAction<ToolSummary[]>>;
+}) {
+	return (
+		<button
+			onClick={() => {
+				setTasks((tasks) =>
+					tasks.map((task) => ({
+						...task,
+						state: "completed",
+						canStop: false,
+					})),
+				);
+				setTools((current) =>
+					current.map((tool) =>
+						tool.status === "failed"
+							? tool
+							: {
+									...tool,
+									status: "completed",
+									...(tool.id === "guardian"
+										? {
+												rawOutput: {
+													review: {
+														status: "approved",
+														riskLevel: "low",
+														userAuthorization:
+															"high",
+														rationale:
+															"バージョン確認のため承認しました。",
+													},
+												},
+											}
+										: {}),
+								},
+					),
+				);
+			}}
+		>
+			完了通知を受信
+		</button>
+	);
+}
 
 /** 大量出力のページ切り替えと完了後の再展開を確認する。 */
 function LargeOutputStory() {

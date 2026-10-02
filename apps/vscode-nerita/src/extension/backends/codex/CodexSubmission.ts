@@ -1,24 +1,25 @@
 // 追加指示の待機・送信を管理し、受付が確定するまで二重送信を防ぐ。
+
+import type { ChangeScope } from "@nerita/shared/changeReferences";
+import type { CodeReference } from "@nerita/shared/codeReferences";
+import { type Attachment } from "@nerita/shared/composer";
+import type { ComposerReference } from "@nerita/shared/composerReferences";
+import { mcpSummaryText } from "@nerita/shared/mcp";
 import type { SessionContextReference } from "@nerita/shared/sessionReferences";
 import { randomUUID } from "node:crypto";
-import type { ComposerReference } from "@nerita/shared/composerReferences";
-import { CodexHistory } from "./CodexHistory";
-import { attachmentInput } from "./context/attachmentInput";
-import { skillInput } from "./context/skillInput";
-import { nextTimelineOrder } from "../../session/timelineOrder";
-import { readSessionContext } from "./context/sessionContext";
-import { buildSessionReferenceContext } from "../../session/SessionReferenceContext";
-import { generateCodexHandoff } from "./context/handoffGeneration";
-import { changeContext } from "./context/changeContext";
-import type { ChangeScope } from "@nerita/shared/changeReferences";
-import { listMcpServers } from "./mcpStatus";
-import { mcpSummaryText } from "@nerita/shared/mcp";
-import type { CodeReference } from "@nerita/shared/codeReferences";
 import { readCodeReferenceContext } from "../../session/codeReferenceContext";
-import { type Attachment } from "@nerita/shared/composer";
+import { buildSessionReferenceContext } from "../../session/SessionReferenceContext";
+import { nextTimelineOrder } from "../../session/timelineOrder";
 import { type ActiveTurn } from "./ActiveTurn";
 import { type UserInput } from "./codex-app-server/v2/UserInput";
+import { CodexHistory } from "./CodexHistory";
 import { type AdditionalContext } from "./context/additionalContext";
+import { attachmentInput } from "./context/attachmentInput";
+import { changeContext } from "./context/changeContext";
+import { generateCodexHandoff } from "./context/handoffGeneration";
+import { readSessionContext } from "./context/sessionContext";
+import { skillInput } from "./context/skillInput";
+import { listMcpServers } from "./mcpStatus";
 import { type CodexConnection } from "./runtime/connection";
 
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
@@ -138,14 +139,7 @@ export abstract class CodexSubmission extends CodexHistory {
 			sessionId,
 		);
 		/** 明示的な停止や失敗の後に、待機中の指示で実行を再開しない。 */
-		const checkWaitingRun = () => {
-			if (
-				waitingRun?.abort.signal.aborted &&
-				this.state.run !== "completed"
-			) {
-				throw new Error("Pending submission cancelled");
-			}
-		};
+		const checkWaitingRun = this.createWaitingRunCheck(waitingRun);
 		try {
 			this.checkSubmission(epoch, sessionId);
 			// `Goal` は API のモードではなく、送信する指示の接頭辞として扱う。
@@ -204,6 +198,18 @@ export abstract class CodexSubmission extends CodexHistory {
 			preparation.finish();
 			this.submissionPending = false;
 		}
+	}
+
+	/** 停止や失敗の後に待機中の指示で実行を再開しない。 */
+	private createWaitingRunCheck(waitingRun: ActiveTurn | undefined) {
+		return () => {
+			if (
+				waitingRun?.abort.signal.aborted &&
+				this.state.run !== "completed"
+			) {
+				throw new Error("Pending submission cancelled");
+			}
+		};
 	}
 
 	/** 生成待ちの停止ボタンと取消を、通常ターンから分離する。 */
@@ -334,41 +340,15 @@ export abstract class CodexSubmission extends CodexHistory {
 		let context: AdditionalContext | undefined;
 		try {
 			context = sessionReferences.length
-				? await buildSessionReferenceContext({
-						references: sessionReferences,
-						currentId: sessionId,
-						cwd: this.state.cwd!,
-						backend: "codex",
-						model:
-							this.turnOptions.model ??
-							this.state.configOptions.find(
-								(item) => item.id === "model",
-							)?.currentValue ??
-							"",
+				? await this.buildSubmissionReferences(
+						sessionReferences,
+						sessionId,
 						goal,
-						signal: AbortSignal.any([
-							abort.signal,
-							this.contextAbort!.signal,
-						]),
-						check: () => {
-							this.checkSubmission(epoch, sessionId);
-							checkWaitingRun();
-						},
-						read: (ref) =>
-							readSessionContext(
-								this.client!,
-								ref.sessionId,
-								this.state.cwd!,
-								current,
-								ref.mode,
-							),
-						generate: (request) =>
-							generateCodexHandoff(
-								this.factory,
-								this.state.cwd!,
-								request,
-							),
-					})
+						abort,
+						epoch,
+						checkWaitingRun,
+						current,
+					)
 				: undefined;
 		} finally {
 			clearInterval(monitor);
@@ -394,6 +374,48 @@ export abstract class CodexSubmission extends CodexHistory {
 			};
 		}
 		return context;
+	}
+
+	/** 送信する会話参照を同じ接続世代と停止条件で準備する。 */
+	private buildSubmissionReferences(
+		sessionReferences: SessionContextReference[],
+		sessionId: string,
+		goal: string,
+		abort: AbortController,
+		epoch: number,
+		checkWaitingRun: () => void,
+		current: () => boolean,
+	):
+		| AdditionalContext
+		| PromiseLike<AdditionalContext | undefined>
+		| undefined {
+		return buildSessionReferenceContext({
+			references: sessionReferences,
+			currentId: sessionId,
+			cwd: this.state.cwd!,
+			backend: "codex",
+			model:
+				this.turnOptions.model ??
+				this.state.configOptions.find((item) => item.id === "model")
+					?.currentValue ??
+				"",
+			goal,
+			signal: AbortSignal.any([abort.signal, this.contextAbort!.signal]),
+			check: () => {
+				this.checkSubmission(epoch, sessionId);
+				checkWaitingRun();
+			},
+			read: (ref) =>
+				readSessionContext(
+					this.client!,
+					ref.sessionId,
+					this.state.cwd!,
+					current,
+					ref.mode,
+				),
+			generate: (request) =>
+				generateCodexHandoff(this.factory, this.state.cwd!, request),
+		});
 	}
 
 	/** 追加入力に添えるファイルをモデルの対応形式で読み込む。 */

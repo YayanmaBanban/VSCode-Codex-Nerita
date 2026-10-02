@@ -1,23 +1,26 @@
 // 検索可能な認証先一覧と、SDK から要求された入力をエディター内に表示する。
-import { cn } from "cnfast";
-import { useState } from "react";
-import "../chat/chat.css";
-import { Check, ChevronRight, ChevronDown, Search } from "lucide-react";
-import type {
-	PiAuthState,
-	PiAuthRequest,
-	PiAuthPrompt,
-	PiAuthItem,
-} from "@nerita/shared/piAuth";
 
-/** 入力値は送信時・アンマウント時に破棄し、永続化しない。 */
-function AuthInput({
-	prompt,
-	send,
-}: {
+import { type JSX, type Dispatch, type SetStateAction, useState } from "react";
+
+import type {
+	PiAuthItem,
+	PiAuthPrompt,
+	PiAuthRequest,
+	PiAuthState,
+} from "@nerita/shared/piAuth";
+import { cn } from "cnfast";
+import { Check, ChevronDown, ChevronRight, Search } from "lucide-react";
+
+import "../chat/chat.css";
+
+/** SDK が要求した認証入力と、入力値を送信する関数。 */
+type AuthInputProps = {
 	prompt: PiAuthPrompt;
 	send: (request: PiAuthRequest) => void;
-}) {
+};
+
+/** 入力値は送信時・アンマウント時に破棄し、永続化しない。 */
+function AuthInput({ prompt, send }: AuthInputProps) {
 	const [value, setValue] = useState("");
 	return (
 		<form
@@ -75,14 +78,14 @@ function AuthInput({
 	);
 }
 
-/** プロバイダーの認証方式をアコーディオンとして並べる。 */
-export function PiAuthEditor({
-	state,
-	send,
-}: {
+/** Pi の認証先一覧・進行状態と、認証要求を送信する関数。 */
+type PiAuthEditorProps = {
 	state: PiAuthState;
 	send: (request: PiAuthRequest) => void;
-}) {
+};
+
+/** プロバイダーの認証方式をアコーディオンとして並べる。 */
+export function PiAuthEditor({ state, send }: PiAuthEditorProps) {
 	const [query, setQuery] = useState("");
 	const [expanded, setExpanded] = useState<string | null>(null);
 	const filtered = state.items.filter((item) =>
@@ -115,88 +118,16 @@ export function PiAuthEditor({
 					const open = expanded === item.id || active;
 					const feedback = state.feedback?.[item.id];
 					return (
-						<li
+						<AuthProviderItem
 							key={item.id}
-							className="border-0 border-b border-solid border-message-border"
-						>
-							<button
-								type="button"
-								aria-expanded={open}
-								aria-controls={`provider-${item.id}`}
-								onClick={() =>
-									setExpanded(open ? null : item.id)
-								}
-								className="flex w-full items-center gap-[12px] rounded-none border-0 bg-transparent px-[8px] py-[16px] text-left hover:bg-settings-hover"
-							>
-								{open ? (
-									<ChevronDown size={18} aria-hidden="true" />
-								) : (
-									<ChevronRight
-										size={18}
-										aria-hidden="true"
-									/>
-								)}
-								<span className="min-w-0 flex-1 break-words font-medium">
-									{item.name}
-								</span>
-								{item.configured && (
-									<Check
-										size={18}
-										className="shrink-0 text-menu-check"
-										aria-label="設定済み"
-									/>
-								)}
-							</button>
-							{/* 閉じる間も内容を保持し、高さを補間する。閉じた内容は操作対象から外す。 */}
-							<div
-								id={`provider-${item.id}`}
-								inert={!open}
-								aria-hidden={!open}
-								className={cn(
-									"grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
-									open
-										? "grid-rows-[1fr]"
-										: "grid-rows-[0fr]",
-								)}
-							>
-								<div className="min-h-0 overflow-hidden">
-									<div className="pb-[20px] pl-[38px] pr-[8px]">
-										{/* 通知領域の高さを確保し、表示・消去・折り返しで操作位置を動かさない。 */}
-										{renderProviderFeedback(item, feedback)}
-										<div className="flex flex-wrap gap-[8px]">
-											{!active &&
-												item.methods.map((method) => (
-													<button
-														key={method.id}
-														type="button"
-														disabled={
-															state.active !==
-															null
-														}
-														onClick={() =>
-															send({
-																type: "start",
-																id: method.id,
-															})
-														}
-													>
-														{method.name}
-													</button>
-												))}
-										</div>
-										{active && state.prompt && (
-											<div>
-												<AuthInput
-													key={state.prompt.id}
-													prompt={state.prompt}
-													send={send}
-												/>
-											</div>
-										)}
-									</div>
-								</div>
-							</div>
-						</li>
+							item={item}
+							open={open}
+							setExpanded={setExpanded}
+							feedback={feedback}
+							active={active}
+							state={state}
+							send={send}
+						/>
 					);
 				})}
 			</ul>
@@ -206,6 +137,118 @@ export function PiAuthEditor({
 				</p>
 			)}
 		</main>
+	);
+}
+
+/** 認証先の情報・通知・展開状態と、認証や展開を操作する関数。 */
+type AuthProviderItemProps = {
+	item: PiAuthItem;
+	open: boolean;
+	setExpanded: Dispatch<SetStateAction<string | null>>;
+	feedback: undefined | { notice: string; error: string | null };
+	active: boolean;
+	state: PiAuthState;
+	send: (request: PiAuthRequest) => void;
+};
+
+/** 認証先ごとの展開状態と認証操作を表示する。 */
+function AuthProviderItem(props: AuthProviderItemProps): JSX.Element {
+	const { item, open, setExpanded } = props;
+	return (
+		<li
+			key={item.id}
+			className="border-0 border-b border-solid border-message-border"
+		>
+			<button
+				type="button"
+				aria-expanded={open}
+				aria-controls={`provider-${item.id}`}
+				onClick={() => setExpanded(open ? null : item.id)}
+				className="flex w-full items-center gap-[12px] rounded-none border-0 bg-transparent px-[8px] py-[16px] text-left hover:bg-settings-hover"
+			>
+				{open ? (
+					<ChevronDown size={18} aria-hidden="true" />
+				) : (
+					<ChevronRight size={18} aria-hidden="true" />
+				)}
+				<span className="min-w-0 flex-1 break-words font-medium">
+					{item.name}
+				</span>
+				{item.configured && (
+					<Check
+						size={18}
+						className="shrink-0 text-menu-check"
+						aria-label="設定済み"
+					/>
+				)}
+			</button>
+			{/* 閉じる間も内容を保持し、高さを補間する。閉じた内容は操作対象から外す。 */}
+			<div
+				id={`provider-${item.id}`}
+				inert={!open}
+				aria-hidden={!open}
+				className={cn(
+					"grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+					open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+				)}
+			>
+				<div className="min-h-0 overflow-hidden">
+					<AuthProviderContent {...props} />
+				</div>
+			</div>
+		</li>
+	);
+}
+
+/** 認証先の方式・通知・進行状態と、認証要求を送信する関数。 */
+type AuthProviderContentProps = {
+	item: PiAuthItem;
+	feedback: undefined | { notice: string; error: string | null };
+	active: boolean;
+	state: PiAuthState;
+	send: (request: PiAuthRequest) => void;
+};
+
+/** 認証方式の選択と進行中の入力・通知を表示する。 */
+function AuthProviderContent({
+	item,
+	feedback,
+	active,
+	state,
+	send,
+}: AuthProviderContentProps) {
+	return (
+		<div className="pb-[20px] pl-[38px] pr-[8px]">
+			{/* 通知領域の高さを確保し、表示・消去・折り返しで操作位置を動かさない。 */}
+			{renderProviderFeedback(item, feedback)}
+			<div className="flex flex-wrap gap-[8px]">
+				{!active &&
+					item.methods.map((method) => (
+						<button
+							key={method.id}
+							type="button"
+							disabled={state.active !== null}
+							onClick={() =>
+								send({
+									type: "start",
+									id: method.id,
+								})
+							}
+						>
+							{method.name}
+						</button>
+					))}
+			</div>
+			{active && state.prompt && (
+				<div>
+					<AuthInput
+						key={state.prompt.id}
+						prompt={state.prompt}
+						send={send}
+					/>
+				</div>
+			)}
+		</div>
 	);
 }
 

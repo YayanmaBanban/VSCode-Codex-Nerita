@@ -1,27 +1,27 @@
 // 保存先ごとのプリセット選択・名前変更・指示文編集をまとめる。
-import { cn } from "cnfast";
-import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+
 import type {
-	PersonalityScope,
 	PersonalityMessage,
 	PersonalityPreset,
+	PersonalityScope,
 } from "@nerita/shared/personality";
+import { cn } from "cnfast";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import { ConfigControl } from "../composer/ConfigControl";
 import { InstructionEditor } from "./InstructionEditor";
 
-/** 名前を変えた保存は複製、本文だけの変更は既存プリセットの更新として扱う。 */
-export function PersonalityPane({
-	scope,
-	settings,
-	pending,
-	send,
-}: {
+/** 保存先ごとの性格設定、処理中の状態と設定要求の送信関数。 */
+type PersonalityPaneProps = {
 	scope: "global" | "workspace";
 	settings: PersonalityScope;
 	pending: boolean;
 	send: (message: PersonalityMessage) => void;
-}) {
+};
+
+/** 名前を変えた保存は複製、本文だけの変更は既存プリセットの更新として扱う。 */
+export function PersonalityPane(props: PersonalityPaneProps) {
+	const { scope, settings } = props;
 	const title = scope === "global" ? "グローバル" : "ワークスペース";
 	const [expanded, setExpanded] = useState(true);
 	return (
@@ -52,10 +52,7 @@ export function PersonalityPane({
 				<div className="min-h-0 overflow-hidden">
 					<PaneEditor
 						key={JSON.stringify(settings)}
-						scope={scope}
-						settings={settings}
-						pending={pending}
-						send={send}
+						{...props}
 						title={title}
 					/>
 				</div>
@@ -64,20 +61,18 @@ export function PersonalityPane({
 	);
 }
 
-/** 保存済み設定が変わる時だけ編集状態を初期化する。 */
-function PaneEditor({
-	scope,
-	settings,
-	pending,
-	send,
-	title,
-}: {
+/** 保存先の性格設定、見出しと編集中の設定を送る関数。 */
+type PaneEditorProps = {
 	scope: "global" | "workspace";
 	settings: PersonalityScope;
 	pending: boolean;
 	send: (message: PersonalityMessage) => void;
 	title: string;
-}) {
+};
+
+/** 保存済み設定が変わる時だけ編集状態を初期化する。 */
+function PaneEditor(props: PaneEditorProps) {
+	const { scope, settings, pending, send, title } = props;
 	const selected = settings.presets.find(
 		(preset) => preset.name === settings.selected,
 	);
@@ -92,29 +87,12 @@ function PaneEditor({
 		settings.presets.some((preset) => preset.name === name.trim());
 	return (
 		<div className="flex min-w-0 flex-col gap-[10px] pt-[8px]">
-			<ConfigControl
-				inDialog
-				option={{
-					id: scope,
-					name: `${title}のプリセット`,
-					currentValue: settings.selected,
-					options: [
-						{ name: "なし", value: "" },
-						...settings.presets.map((preset) => ({
-							name: preset.name,
-							value: preset.name,
-						})),
-					],
-				}}
-				disabled={inputDisabled}
-				onChange={(name) =>
-					send({
-						type: "personality/select",
-						scope,
-						name,
-						requestId: crypto.randomUUID(),
-					})
-				}
+			<PersonalityPresetSelector
+				scope={scope}
+				title={title}
+				settings={settings}
+				inputDisabled={inputDisabled}
+				send={send}
 			/>
 			<label className="flex flex-col gap-[5px] text-[12px]">
 				プリセット名
@@ -147,32 +125,118 @@ function PaneEditor({
 			{text.length > 100_000 && (
 				<p role="alert">指示は100,000文字以内にしてください。</p>
 			)}
-			<div className="flex justify-end">
-				<button
-					type="button"
-					disabled={savePresetDisabled(
-						locked,
-						pending,
-						name,
-						collision,
+			<SavePersonalityPreset
+				locked={locked}
+				{...props}
+				name={name}
+				collision={collision}
+				text={text}
+				changedName={changedName}
+				initialText={initialText}
+				selected={selected}
+			/>
+		</div>
+	);
+}
+
+/** プリセットの編集前後の内容、名前の重複・保存可否と保存要求の送信関数。 */
+type SavePersonalityPresetProps = {
+	locked: boolean;
+	pending: boolean;
+	name: string;
+	collision: boolean;
+	text: string;
+	changedName: boolean;
+	initialText: string;
+	send: (message: PersonalityMessage) => void;
+	scope: "global" | "workspace";
+	selected: undefined | PersonalityPreset;
+};
+
+/** 保存先のプリセット一覧と、選択要求の送信・入力制限の状態。 */
+type PersonalityPresetSelectorProps = {
+	scope: "global" | "workspace";
+	title: string;
+	settings: PersonalityScope;
+	inputDisabled: boolean;
+	send: (message: PersonalityMessage) => void;
+};
+
+/** 保存先のプリセット一覧から選択要求を送る。 */
+function PersonalityPresetSelector({
+	scope,
+	title,
+	settings,
+	inputDisabled,
+	send,
+}: PersonalityPresetSelectorProps) {
+	return (
+		<ConfigControl
+			inDialog
+			option={{
+				id: scope,
+				name: `${title}のプリセット`,
+				currentValue: settings.selected,
+				options: [
+					{ name: "なし", value: "" },
+					...settings.presets.map((preset) => ({
+						name: preset.name,
+						value: preset.name,
+					})),
+				],
+			}}
+			disabled={inputDisabled}
+			onChange={(name) =>
+				send({
+					type: "personality/select",
+					scope,
+					name,
+					requestId: crypto.randomUUID(),
+				})
+			}
+		/>
+	);
+}
+
+/** 名前の変更と本文の更新を区別して保存要求を送る。 */
+function SavePersonalityPreset({
+	locked,
+	pending,
+	name,
+	collision,
+	text,
+	changedName,
+	initialText,
+	send,
+	scope,
+	selected,
+}: SavePersonalityPresetProps) {
+	return (
+		<div className="flex justify-end">
+			<button
+				type="button"
+				disabled={savePresetDisabled(
+					locked,
+					pending,
+					name,
+					collision,
+					text,
+					changedName,
+					initialText,
+				)}
+				onClick={() =>
+					send({
+						type: "personality/save",
+						scope,
+						name: name.trim(),
 						text,
-						changedName,
-						initialText,
-					)}
-					onClick={() =>
-						send({
-							type: "personality/save",
-							scope,
-							name: name.trim(),
-							text,
-							originalName: selected?.name ?? "",
-							requestId: crypto.randomUUID(),
-						})
-					}
-				>
-					{changedName ? "保存" : "更新"}
-				</button>
-			</div>
+						originalName: selected?.name ?? "",
+						requestId: crypto.randomUUID(),
+					})
+				}
+			>
+				{changedName ? "保存" : "更新"}
+			</button>
 		</div>
 	);
 }

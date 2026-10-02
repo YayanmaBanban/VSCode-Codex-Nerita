@@ -1,10 +1,20 @@
-// 閲覧スタックと要求 ID で遅い応答を隔離し、親のチャット状態を保つ。
-import { useEffect, useRef, useState } from "react";
+// 閲覧スタックと要求 ID で古い要求への応答を除外し、親のチャット状態を保つ。
+
+import {
+	type EffectCallback,
+	type Dispatch,
+	type RefObject,
+	type SetStateAction,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+
+import type { Bridge } from "@nerita/shared/bridge";
 import type {
 	AgentThreadView,
 	SubAgentSummary,
 } from "@nerita/shared/subAgents";
-import type { Bridge } from "@nerita/shared/bridge";
 
 /** 子・孫の閲覧だけを切り替え、表示中は読み取りを直列で更新する。 */
 export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
@@ -19,7 +29,47 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 		setStack([]);
 		setView(null);
 	}, [sessionId]);
-	useEffect(() => {
+	useEffect(
+		createAgentViewPolling(
+			setView,
+			setError,
+			agent,
+			sessionId,
+			setLoading,
+			opener,
+			bridge,
+			reload,
+		),
+		[bridge, sessionId, agent?.threadId],
+	);
+	return {
+		agent,
+		view,
+		error,
+		loading,
+		open: (next: SubAgentSummary) => {
+			if (!agent && document.activeElement instanceof HTMLElement) {
+				opener.current = document.activeElement;
+			}
+			setStack((current) => [...current, next]);
+		},
+		back: () => setStack((current) => current.slice(0, -1)),
+		retry: () => reload.current(),
+	};
+}
+
+/** 閲覧要求を1件ずつ送り、要求 ID の照合とタイムアウトで古い応答を除外する。 */
+function createAgentViewPolling(
+	setView: Dispatch<SetStateAction<AgentThreadView | null>>,
+	setError: Dispatch<SetStateAction<string | null>>,
+	agent: undefined | SubAgentSummary,
+	sessionId: null | string,
+	setLoading: Dispatch<SetStateAction<boolean>>,
+	opener: RefObject<HTMLElement | null>,
+	bridge: Bridge,
+	reload: RefObject<() => void>,
+): EffectCallback {
+	return () => {
 		setView(null);
 		setError(null);
 		if (!agent || !sessionId) {
@@ -32,7 +82,7 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		let timeout: ReturnType<typeof setTimeout> | undefined;
 		let disposed = false;
-		/** 同時取得を避け、前の読み取り終了後に次を予約する。 */
+		/** 取得中の追加要求を防ぎ、要求 ID を付けて会話を読み込む。 */
 		const read = () => {
 			if (requestId || disposed) {
 				return;
@@ -47,7 +97,7 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 				setError(
 					"会話の取得がタイムアウトしました。再試行してください。",
 				);
-			}, 30_000);
+			}, 30000);
 			bridge.postMessage({
 				type: "agent/read",
 				requestId,
@@ -87,19 +137,5 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 			clearTimeout(timeout);
 			unsubscribe();
 		};
-	}, [bridge, sessionId, agent?.threadId]);
-	return {
-		agent,
-		view,
-		error,
-		loading,
-		open: (next: SubAgentSummary) => {
-			if (!agent && document.activeElement instanceof HTMLElement) {
-				opener.current = document.activeElement;
-			}
-			setStack((current) => [...current, next]);
-		},
-		back: () => setStack((current) => current.slice(0, -1)),
-		retry: () => reload.current(),
 	};
 }

@@ -1,4 +1,5 @@
 // Custom Text Editor を通常のエディタグループへ登録し、検査・保存・適用を分離する。
+
 import * as vscode from "vscode";
 import { realpath } from "node:fs/promises";
 import {
@@ -76,43 +77,15 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 					return;
 				}
 				queue = queue
-					.then(async () => {
-						const message = parsed.data;
-						if (message.type === "ready") {
-							publish();
-							return;
-						}
-						try {
-							await this.settings.rootFor(document.uri);
-							if (message.version !== document.version) {
-								throw new Error(
-									"別の編集が反映されています。最新の内容を確認してください。",
-								);
-							}
-							await this.handle(
-								message,
-								document,
-								root,
-								(reply) => {
-									publish();
-									post(reply);
-								},
-							);
-						} catch (error) {
-							publish();
-							post({
-								type: "reply",
-								id: message.id,
-								error:
-									error instanceof Error
-										? error.message
-										: "操作に失敗しました。",
-								notice: "",
-								result: null,
-								warnings: [],
-							});
-						}
-					})
+					.then(
+						this.createRequestHandler(
+							parsed,
+							document,
+							root,
+							publish,
+							post,
+						),
+					)
 					.catch(() => undefined);
 			}),
 		];
@@ -187,6 +160,48 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 			result,
 			warnings,
 		});
+	}
+
+	/** 文書の版を検査し、直列化した操作の結果を通知する。 */
+	private createRequestHandler(
+		parsed: { data: GuardRequest },
+		document: vscode.TextDocument,
+		root: string,
+		publish: () => void,
+		post: (message: GuardReply) => void,
+	) {
+		return async () => {
+			const message = parsed.data;
+			if (message.type === "ready") {
+				publish();
+				return;
+			}
+			try {
+				await this.settings.rootFor(document.uri);
+				if (message.version !== document.version) {
+					throw new Error(
+						"別の編集が反映されています。最新の内容を確認してください。",
+					);
+				}
+				await this.handle(message, document, root, (reply) => {
+					publish();
+					post(reply);
+				});
+			} catch (error) {
+				publish();
+				post({
+					type: "reply",
+					id: message.id,
+					error:
+						error instanceof Error
+							? error.message
+							: "操作に失敗しました。",
+					notice: "",
+					result: null,
+					warnings: [],
+				});
+			}
+		};
 	}
 }
 
