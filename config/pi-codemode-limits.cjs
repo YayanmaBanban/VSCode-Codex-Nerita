@@ -186,17 +186,12 @@ function limitSessionRegistry(source) {
 	);
 }
 
-/** モデルにも固定上限を伝え、上流の無制限という説明を残さない。 */
+/** Pi 1.0 の短縮された説明にも、Host が強制する固定上限を明記する。 */
 function limitDocumentation(source) {
-	let result = replaceRequired(
-		source,
-		"Defaults to 10000 tokens.",
-		"Defaults to 8192 tokens and cannot exceed 8192 tokens or 32768 output characters.",
-	);
 	return replaceRequired(
-		result,
-		"By default there is none.",
-		"The Host enforces a 60000 ms deadline including approval. At most 32 calls, 4 concurrent calls, 65536 input bytes, 128 output items and 65536 stored JSON characters are allowed. Stored values are limited to 16384 characters and 128 keys. Options cannot raise these limits.",
+		source,
+		'// @options: {"max_output_tokens": 10000, "timeout_ms": 60000}\\`',
+		'// @options: {"max_output_tokens": 8192, "timeout_ms": 60000}\\`\n- Output defaults to 8192 tokens and cannot exceed 8192 tokens or 32768 output characters. The Host enforces a 60000 ms deadline including approval. At most 32 calls, 4 concurrent calls, 65536 input bytes, 128 output items and 65536 stored JSON characters are allowed. Stored values are limited to 16384 characters and 128 keys. Options cannot raise these limits.',
 	);
 }
 module.exports = { limitHost, limitPrelude, limitExecutor, codemodeContents };

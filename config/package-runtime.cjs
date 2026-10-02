@@ -44,12 +44,12 @@ async function resetRuntime(projectRoot) {
 		path.relative(projectRoot, target) !== path.join("dist", "runtime")
 	) {
 		throw new Error(
-			"runtimeの出力先がプロジェクト内の生成先ではありません。",
+			"runtime の出力先がプロジェクト内の生成先ではありません。",
 		);
 	}
 	try {
 		if ((await fs.lstat(target)).isSymbolicLink()) {
-			throw new Error("runtimeにリンクは使用できません。");
+			throw new Error("runtime にリンクは使用できません。");
 		}
 	} catch (error) {
 		if (error.code !== "ENOENT") {

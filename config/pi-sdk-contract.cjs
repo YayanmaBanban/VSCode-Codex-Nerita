@@ -4,7 +4,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const contract = require("./pi-sdk-contract.json");
 
-/** SDK 更新時は差分を確認してから、記録したソースのハッシュと配布テストを更新する。 */
+/** SDK 更新時は差分を確認し、記録したソースのハッシュを更新して配布テストを実行する。 */
 async function verifyPiSources(roots) {
 	for (const [name, files] of Object.entries(contract)) {
 		for (const [file, expected] of Object.entries(files)) {
@@ -12,7 +12,7 @@ async function verifyPiSources(roots) {
 			const actual = createHash("sha256").update(source).digest("hex");
 			if (actual !== expected) {
 				throw new Error(
-					`Pi SDKのbundle契約が変更されています: ${name}/${file}。互換処理とtest:distributionを確認してください。`,
+					`Pi SDK のバンドル契約が変更されています: ${name}/${file}。互換処理と pnpm test:distribution を確認してください。`,
 				);
 			}
 		}

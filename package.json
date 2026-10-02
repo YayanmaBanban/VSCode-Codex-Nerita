@@ -43,7 +43,7 @@
 		"verify": "pnpm test:local && pnpm test:distribution"
 	},
 	"devDependencies": {
-		"@earendil-works/pi-coding-agent": "0.99.1",
+		"@earendil-works/pi-coding-agent": "1.0.0",
 		"@eslint/js": "^10.0.1",
 		"@nerita/shared": "workspace:*",
 		"@playwright/test": "^1.63.0",

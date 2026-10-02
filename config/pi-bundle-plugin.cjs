@@ -17,7 +17,7 @@ function replaceRequired(source, before, after) {
 	return source.replace(before, after);
 }
 
-/** 上流と同じ同期カタログ API を、選択した3プロバイダーのメタデータから構成する。 */
+/** 上流と同じ同期カタログ API を、選択した 3 プロバイダーのメタデータから構成する。 */
 function providerCatalog() {
 	return `
 import { createModels } from "../models.js";
@@ -33,7 +33,7 @@ export function getBuiltinProviders() { return [...catalog.keys()]; }
 export function getBuiltinModels(provider) { return catalog.get(provider) ?? []; }
 export function getBuiltinModel(provider, id) { return getBuiltinModels(provider).find(m => m.id === id); }
 export function builtinModels(options) { const models = createModels(options); for (const provider of builtinProviders()) models.setProvider(provider); return models; }
-export function radiusProvider() { throw new Error("Neritaの同梱Pi runtimeはRadius OAuthに対応していません。custom providerのAPI設定を使用してください。"); }
+export function radiusProvider() { throw new Error("Nerita に同梱された Pi runtime は Radius OAuth に対応していません。custom provider の API 設定を使用してください。"); }
 `;
 }
 

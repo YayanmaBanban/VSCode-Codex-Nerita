@@ -247,6 +247,28 @@ export default defineConfig([
 		plugins: {
 			"better-tailwindcss": betterTailwindcss,
 		},
+		settings: {
+			"better-tailwindcss": {
+				cwd: "./apps/nerita-ui",
+				entryPoint: "src/chat/tailwind.css",
+			},
+		},
+		rules: {
+			"better-tailwindcss/enforce-consistent-line-wrapping": "warn",
+			"better-tailwindcss/enforce-consistent-class-order": "warn",
+		},
+	},
+	{
+		files: ["apps/nerita-ui/stories/**/*.{ts,tsx}"],
+		plugins: {
+			"better-tailwindcss": betterTailwindcss,
+		},
+		settings: {
+			"better-tailwindcss": {
+				cwd: "./apps/nerita-ui",
+				entryPoint: ".storybook/tailwind.css",
+			},
+		},
 		rules: {
 			"better-tailwindcss/enforce-consistent-line-wrapping": "warn",
 			"better-tailwindcss/enforce-consistent-class-order": "warn",

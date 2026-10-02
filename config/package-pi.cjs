@@ -85,7 +85,7 @@ async function bundlePi(projectRoot, target) {
 			manifest.name
 		] !== manifest.version
 	) {
-		throw new Error("Pi SDKのバージョンを完全固定してください。");
+		throw new Error("Pi SDK のバージョンを完全固定してください。");
 	}
 	await verifyPiSources({ sdk: source, ai: aiRoot });
 	const destination = path.join(target, "pi");

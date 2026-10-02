@@ -1,30 +1,42 @@
-# Codexの配布用ライセンス表記
+# 配布用ライセンスと更新手順
 
-`codex-0.156.0/LICENSE` と `codex-0.156.0/NOTICE` は、同梱バージョンに対応する公式リポジトリのファイルを変更せずに保存したものです。
+同梱する Codex と Pi のライセンスは、各バージョンに対応するリリースから取得し、内容を変更せずに保存しています。現在の保存先と取得元は次のとおりです。
 
-- [LICENSE（rust-v0.156.0）](https://raw.githubusercontent.com/openai/codex/rust-v0.156.0/LICENSE)
-- [NOTICE（rust-v0.156.0）](https://raw.githubusercontent.com/openai/codex/rust-v0.156.0/NOTICE)
+| 製品 | 保存先 | 取得元 |
+| --- | --- | --- |
+| Codex 0.160.0 | `codex-0.160.0/LICENSE`、`codex-0.160.0/NOTICE` | [LICENSE](https://raw.githubusercontent.com/openai/codex/rust-v0.160.0/LICENSE)、[NOTICE](https://raw.githubusercontent.com/openai/codex/rust-v0.160.0/NOTICE) |
+| Pi 1.0.0 | `pi-1.0.0/LICENSE` | [LICENSE](https://raw.githubusercontent.com/earendil-works/pi/v1.0.0/LICENSE) |
 
-`package-runtime.cjs` が `dist/runtime/node_modules/@openai/codex/` にコピーします。Codexのバージョン更新時は対応するリリースの表記も更新してください。
+更新コマンドはプロジェクトのルートで実行します。以下のバージョンは現在の同梱版の例です。別の版へ更新する場合は、変数の値を更新先のバージョンに置き換えてください。
 
-## 更新手順（Windows PowerShell）
-
-プロジェクトのルートで実行します。`$codexVersion` は更新先のバージョンに置き換えてください。
+## Codex を更新する
 
 ```powershell
-$codexVersion = "0.156.0"
+$codexVersion = "0.160.0"
 pnpm codex:generate $codexVersion
-
 pnpm check
 pnpm package:vsix
 ```
 
-各コマンドの成功を確認してから次へ進んでください。生成型に変更があれば利用側を修正します。取得したファイルは編集せず、この文書のバージョンと取得元リンクも更新してください。
+最新版へ更新する場合は、バージョンを指定する代わりに `pnpm codex:generate --latest` を実行します。生成した通信型に変更があれば、利用側を修正してから検証してください。
 
-バージョンを指定すると、内部で `pnpm add --save-exact @openai/codex@<バージョン>` を実行してから通信型を生成します。引数を省略した `pnpm codex:generate` は依存を更新せず、現在の固定バージョンで再生成します。依存の更新に失敗した場合は後続処理を実行しません。
+## Pi を更新する
 
-`pnpm codex:generate` は、固定した依存と同じ公式リリースタグから `LICENSE` と `NOTICE` を取得し、`config/licenses/codex-<バージョン>/` に保存します。実行にはネットワーク接続が必要です。取得に失敗した場合は通信型の生成前に停止します。リリースタグや接続を確認し、旧版のファイルで代用しないでください。
+```powershell
+$piVersion = "1.0.0"
+pnpm pi:generate $piVersion
+pnpm pi:verify
+pnpm package:vsix
+```
 
-`pnpm package:vsix` は本番ビルドも実行し、`dist/nerita.vsix` を生成します。`pnpm package` は本番ビルドのみです。依存とロックファイル、生成型、ライセンスを一緒にバージョン管理してください。
+最新版へ更新する場合は、バージョンを指定する代わりに `pnpm pi:generate --latest` を実行します。生成後は互換処理と差分を確認してください。
 
-生成と保存が成功した後、`codex:generate` は現在版以外の `codex-<バージョン>/`、`pi:generate` は現在版以外の `pi-<バージョン>/` を削除します。取得・生成・保存の失敗時は旧版を残します。他製品・依存ライブラリのライセンスとリンクは削除しません。
+## 生成コマンドの動作
+
+バージョンを指定した場合、生成コマンドは対象の依存を固定版へ更新します。`pnpm codex:generate` または `pnpm pi:generate` を引数なしで実行した場合は、依存を更新せずに現在の固定版で再生成します。`--latest` を指定した場合は、レジストリの latest タグから版を取得します。
+
+`codex:generate` は公式リリースから `LICENSE` と `NOTICE` を取得して通信型を生成します。`pi:generate` は公式リリースから `LICENSE` を取得し、バンドル対象ソースのハッシュを更新します。取得にはネットワーク接続が必要です。取得に失敗した場合は旧版のファイルで代用せず、リリースタグと接続を確認してください。
+
+`pnpm package:vsix` は本番ビルドを実行し、`dist/nerita.vsix` を生成します。`pnpm package` は本番ビルドのみです。依存、ロックファイル、生成型、ハッシュ、ライセンスを一緒にバージョン管理してください。
+
+生成と保存が成功すると、各生成コマンドは対応する製品の旧版ライセンスを削除します。取得・生成・保存に失敗した場合は旧版を残し、他製品や依存ライブラリのライセンスは削除しません。更新後は、この文書の版と取得元リンクも合わせて更新してください。

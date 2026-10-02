@@ -251,9 +251,9 @@
 		"typescript": "^6.0.3"
 	},
 	"dependencies": {
-		"@earendil-works/pi-coding-agent": "0.99.1",
+		"@earendil-works/pi-coding-agent": "1.0.0",
 		"@nerita/shared": "workspace:*",
-		"@openai/codex": "0.159.1",
+		"@openai/codex": "0.160.0",
 		"diff": "8.0.4",
 		"jsonc-parser": "^3.3.1",
 		"smol-toml": "^1.8.0",

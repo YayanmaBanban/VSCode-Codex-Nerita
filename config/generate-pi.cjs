@@ -26,7 +26,7 @@ async function main() {
 			"--save-exact",
 			`@earendil-works/pi-coding-agent@${requested}`,
 		]);
-		// 実 SDK を直接使うルートのテストも、配布版と同じバージョンへ揃える。
+		// インストール済みの SDK を直接使うリポジトリ直下のテストも、配布版と同じバージョンへ揃える。
 		runPnpm([
 			"add",
 			"--workspace-root",
@@ -48,7 +48,7 @@ async function main() {
 		(requested !== undefined && requested !== version)
 	) {
 		throw new Error(
-			"指定版・固定依存・インストール済みPi SDK・pi-aiのバージョンを揃えてください。",
+			"指定版・固定依存・インストール済みの Pi SDK・pi-ai のバージョンを揃えてください。",
 		);
 	}
 	const contractPath = path.join(__dirname, "pi-sdk-contract.json");
@@ -57,12 +57,12 @@ async function main() {
 	const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
 	if (!response.ok) {
 		throw new Error(
-			`Pi LICENSEの取得に失敗しました: HTTP ${response.status} (${url})`,
+			`Pi の LICENSE の取得に失敗しました: HTTP ${response.status} (${url})`,
 		);
 	}
 	const license = Buffer.from(await response.arrayBuffer());
 	if (license.length === 0) {
-		throw new Error(`Pi LICENSEが空です: ${url}`);
+		throw new Error(`Pi の LICENSE が空です: ${url}`);
 	}
 	const directory = path.join(__dirname, "licenses", `pi-${version}`);
 	await fs.mkdir(directory, { recursive: true });
