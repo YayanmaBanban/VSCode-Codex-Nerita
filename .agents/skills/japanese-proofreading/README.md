@@ -1,3 +1,5 @@
+<!-- textlint-disable ja-technical-writing/no-mix-dearu-desumasu -->
+
 # 日本語校正スキル
 
 コメント・JSDoc・README・Markdown の日本語を、まとまった変更の後に校正するスキルです。
@@ -47,7 +49,7 @@ $japanese-proofreading でリポジトリ全体の日本語を校正してくだ
 ## コマンドで使う
 
 以下はすべて対象リポジトリのルートから実行する例です。
-コマンドは静的検査やレビュー用データの生成を担当します。文章の意味の確認・修正には、エージェントによる校正が必要です。
+コマンドの役割は、静的検査とレビュー用データの生成です。文章の意味の確認・修正には、エージェントによる校正が必要です。
 
 対象ファイル・フォルダを指定しない場合、各コマンドは次の処理を実行します。
 
@@ -87,6 +89,8 @@ pnpm --dir .agents/skills/japanese-proofreading textlint --root ../../.. README.
 
 Markdown・テキスト文書の本文と、JavaScript・TypeScript・Rust のコメントに対応しています。
 
+箇条書きの文体は常体に固定せず、文書内での文体の混在を検査します。
+
 検査対象からの除外は次のように扱います。
 
 - 除外するファイルは対象リポジトリの `.textlintignore` に記述してください。ビルド成果物や自動生成ファイルを校正対象に含めたくない場合も、ここに記述します。
@@ -101,8 +105,8 @@ Markdown・テキスト文書の本文と、JavaScript・TypeScript・Rust の�
 | `issues-changed.json` / `issues-all.json` | 用語の指摘がある場合に生成される候補一覧 |
 | `technical-terms.json` | 取得済みの技術辞書 |
 
-変更ファイル用と全体用では保存先が異なります。校正後は、変更ファイル用なら `textlint:changed`、全体用なら `textlint` で同じ対象を静的に検査してください。対応する古いレビュー用ファイルは検査前に削除されます。
-同じ種類のコマンドでは出力先が共通なので、複数の校正を同時に実行しないでください。
+変更ファイル用（`changed`）と全体用（`all`）では保存先が異なります。校正後は、変更ファイル用なら `textlint:changed`、全体用なら `textlint` で同じ対象を静的に検査してください。対応する古い指摘・レビュー用ファイルは検査前に削除されます。
+対象ファイル・フォルダを変えても、同じ保存区分では出力先が共通なので、複数の校正を同時に実行しないでください。
 
 終了コードは次のように確認してください。
 
@@ -132,7 +136,7 @@ pnpm --dir .agents/skills/japanese-proofreading textlint:clean --root ../../..
 - `extractSourceComments(source, filePath)`
 - `extractSourceIdentifiers(source, filePath)`
 
-コメント抽出は元の行・列を保つ `lintText` と、本文・ファイル名・行番号を持つ `items` を返します。識別子の収集結果は `Set` で返します。
+`extractSourceComments()` は元の行・列を保つ `lintText` と、本文・ファイル名・行番号を持つ `items` を返します。`extractSourceIdentifiers()` は識別子の収集結果を `Set` で返します。
 
 - `typeScript.mjs`：TypeScript の構文木を使い、JavaScript・TypeScript・JSX・TSX を扱います。
 - `rust.mjs`：`.rs` の字句を走査し、通常コメント・ドキュメントコメント・入れ子のブロックコメントを抽出します。
@@ -163,3 +167,5 @@ Rust の抽出処理では、次のように字句を扱います。
 ```sh
 node --test .agents/skills/japanese-proofreading/tests/extractors.test.mjs
 ```
+
+<!-- textlint-enable ja-technical-writing/no-mix-dearu-desumasu -->

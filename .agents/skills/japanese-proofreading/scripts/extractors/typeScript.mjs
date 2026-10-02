@@ -23,7 +23,7 @@ function normalizeCommentText(text, block) {
  * 日本語コメントを抽出する。
  *
  * `lintText` は元ソースのコメントの行・列を維持した textlint 用の文字列。
- * `items` は LLM による意味レビュー用の全日本語コメント。
+ * `items` は LLM が意味を確認するための、日本語を含むすべてのコメント。
  */
 export function extractSourceComments(source, filePath) {
 	const file = ts.createSourceFile(

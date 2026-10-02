@@ -143,7 +143,7 @@ async function removeIfExists(filePath) {
 }
 
 /**
- * 同じ範囲の古い監査結果を消し、校正前の内容が次回へ残らないようにする。
+ * 保存区分（`changed` / `all`）が同じ古い指摘・レビュー用データを削除する。
  */
 export async function clearTextlintCacheForScope({ root, scope }) {
 	await Promise.all([
@@ -236,8 +236,8 @@ function groupIssues(issues) {
 }
 
 /**
- * 静的チェックで見つけた候補だけを、小さな JSON として保存する。
- * 同じ英単語はまとめ、保存する出現例は最大20件に抑える。
+ * 静的チェックで見つけた指摘を、種類・語・推奨表記でまとめて JSON に保存する。
+ * 出現例は候補ごとに最大20件まで保存する。
  */
 export async function writeTextlintIssues({ root, scope, issues }) {
 	if (issues.length === 0) {

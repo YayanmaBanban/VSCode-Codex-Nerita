@@ -15,7 +15,7 @@ pnpm --dir .agents/skills/japanese-proofreading textlint:review --root ../../..
 pnpm --dir .agents/skills/japanese-proofreading textlint:review --root ../../.. .agents/docs packages/shared/src
 ```
 
-本文・ファイル名・行番号は `.textlint-cache/review-all.jsonl` に1項目1行で保存する。
+本文・ファイル名・行番号を `.textlint-cache/review-all.jsonl` に1項目1行で保存する。
 用語の指摘がある場合は `.textlint-cache/issues-all.json` も生成する。
 
 ## 静的検査と校正後の確認
@@ -32,4 +32,4 @@ pnpm --dir .agents/skills/japanese-proofreading textlint --root ../../.. .agents
 
 このコマンドはレビュー用データを生成しない。
 検査前に `all` 用の古い指摘・レビュー用ファイルを削除し、現在の指摘だけを保存する。
-対象を変えても保存先は共通なので、複数の校正を同時に実行しない。
+対象ファイル・フォルダを変えても `all` 用の保存先は共通なので、複数の校正を同時に実行しない。

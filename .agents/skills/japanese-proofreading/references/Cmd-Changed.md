@@ -16,7 +16,7 @@ pnpm --dir .agents/skills/japanese-proofreading textlint:review:changed --root .
 pnpm --dir .agents/skills/japanese-proofreading textlint:review:changed --root ../../.. AGENTS.md apps/nerita-ui/src
 ```
 
-本文・ファイル名・行番号は `.textlint-cache/review-changed.jsonl` に1項目1行で保存する。
+本文・ファイル名・行番号を `.textlint-cache/review-changed.jsonl` に1項目1行で保存する。
 用語の指摘がある場合は `.textlint-cache/issues-changed.json` も生成する。
 
 ## 静的検査と校正後の確認
@@ -33,4 +33,4 @@ pnpm --dir .agents/skills/japanese-proofreading textlint:changed --root ../../..
 
 このコマンドはレビュー用データを生成しない。
 検査前に `changed` 用の古い指摘・レビュー用ファイルを削除し、現在の指摘だけを保存する。
-対象を変えても保存先は共通なので、複数の校正を同時に実行しない。
+対象ファイル・フォルダを変えても `changed` 用の保存先は共通なので、複数の校正を同時に実行しない。

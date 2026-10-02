@@ -1,6 +1,13 @@
 {
+	"filters": {
+		"comments": true
+	},
 	"rules": {
-		"preset-ja-technical-writing": true,
+		"preset-ja-technical-writing": {
+			"no-mix-dearu-desumasu": {
+				"preferInList": ""
+			}
+		},
 
 		"@textlint-ja/preset-ai-writing": {
 			"ai-tech-writing-guideline": {
