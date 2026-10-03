@@ -1,4 +1,4 @@
-// 専用エディタの文書更新と実行要求を、文書の版と要求番号で照合する。
+// 専用エディターの文書更新と実行要求を、文書の版と要求番号で照合する。
 import { z } from "zod";
 
 export const workflowFileSchema = z

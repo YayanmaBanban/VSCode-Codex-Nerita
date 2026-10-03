@@ -16,7 +16,7 @@ function getIsoDate(resetAt: number): Date {
 	return data;
 }
 
-/** 未知の応答項目は捨て、検証できる時間枠と残率だけ公開する。 */
+/** 未知の応答項目は捨て、検証できた利用枠の期間・残量の割合・リセット時刻だけを公開する。 */
 export function normalizeOpenAIQuota(payload: unknown): QuotaWindow[] | null {
 	if (!isRecord(payload) || !isRecord(payload.rate_limit)) {
 		return null;

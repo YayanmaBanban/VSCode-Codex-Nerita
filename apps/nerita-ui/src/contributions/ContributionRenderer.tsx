@@ -6,7 +6,7 @@ import { ConfigControl } from "../chat/composer/ConfigControl";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
 import { QuotaBar } from "../chat/composer/QuotaBar";
 
-/** select / `toggle` の操作値は Host が渡した候補に限定する。 */
+/** 選択メニューとスイッチの操作値は Host が渡した候補に限定する。 */
 export function ContributionRenderer({
 	control,
 	disabled,

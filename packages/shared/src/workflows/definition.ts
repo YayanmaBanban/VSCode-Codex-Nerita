@@ -49,7 +49,7 @@ export function outputReferences(task: string) {
 	return refs;
 }
 
-/** 未知の項目や式を黙って無視せず、実行前に拒否する。 */
+/** 未知の設定項目や未対応の結果参照構文を、実行前の検証で拒否する。 */
 export function parseWorkflow(text: string): Workflow {
 	if (text.length > 262144) {
 		throw new Error("ワークフロー定義が上限を超えています。");
@@ -57,7 +57,7 @@ export function parseWorkflow(text: string): Workflow {
 	return validateWorkflow(parse(text));
 }
 
-/** 全ステップを検証してから並び替え、ファイル記述順への依存をなくす。 */
+/** 全ステップを検証してから依存順に並べ替える。ファイル内の記述順は問わない。 */
 export function validateWorkflow(value: unknown): Workflow {
 	const definition = workflowSchema.parse(value);
 	const steps = new Map(definition.steps.map((step) => [step.id, step]));

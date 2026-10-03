@@ -27,7 +27,7 @@ export function useFollowConversation(
 			}
 		};
 		const scroll = () => {
-			// サブエージェント表示中の非表示化による位置変化は手動操作と扱わない。
+			// サブエージェントの表示中に会話欄が隠れたことによる位置変化は、手動操作として扱わない。
 			if (!element.clientHeight) {
 				return;
 			}

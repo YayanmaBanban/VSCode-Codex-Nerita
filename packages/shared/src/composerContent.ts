@@ -63,7 +63,7 @@ export function promptReferences(
 	return validReferences(draft.trim(), references) ? references : [];
 }
 
-/** 旧形式を許容しつつ、本文との一致と交互配置を両側で検証する。 */
+/** 構成要素が未指定の場合も受け付ける。指定時は本文との一致と、通常文・貼り付けブロックの交互配置を検証する。 */
 export function validDraftParts(draft: string, parts: unknown): boolean {
 	if (parts === undefined) {
 		return true;

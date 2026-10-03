@@ -1,4 +1,4 @@
-// Composer と宣言型 UI で共有する通信 DTO の構造を定義する。
+// チャット入力欄と宣言型 UI で共有する通信データの構造を定義する。
 import * as z from "zod";
 
 /** 既存 `isId` と同じ UTF-16 コード単位で通信用識別子を制限する。 */
@@ -24,7 +24,7 @@ export const ConfigOptionSchema = z.object({
 	options: z.array(ConfigChoiceSchema),
 });
 
-/** 利用枠の残率と表示用のリセット情報。 */
+/** 利用枠の残量の割合と、表示用のリセット情報。 */
 export const QuotaWindowSchema = z.object({
 	label: z.string(),
 	remaining: z.number().min(0).max(100),
@@ -32,7 +32,7 @@ export const QuotaWindowSchema = z.object({
 	source: z.literal("codex-login").optional(),
 });
 
-/** Composer 境界では従来未検証だった `description` を未知キーとして扱う。 */
+/** チャット入力欄の設定検証では、設定と選択肢の `description` を検証対象に含めない。 */
 export const ComposerConfigOptionsSchema = z.array(
 	ConfigOptionSchema.omit({ description: true }).extend({
 		options: z.array(ConfigChoiceSchema.omit({ description: true })),

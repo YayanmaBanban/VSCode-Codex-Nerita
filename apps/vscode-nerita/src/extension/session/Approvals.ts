@@ -10,7 +10,7 @@ export class Approvals {
 		string,
 		{ permission: Permission; finish: (decision: Decision) => void }
 	>();
-	/** 表示が変わるたびに UI の正本を更新する。 */
+	/** 承認一覧が変わるたびに、呼び出し側へ表示状態の更新を通知する。 */
 	constructor(private readonly changed: () => void) {}
 	/** UI が描画する承認だけを返す。 */
 	list(): Permission[] {

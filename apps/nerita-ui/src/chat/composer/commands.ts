@@ -90,7 +90,7 @@ function pasteAsText(inBlock: boolean, editor: LexicalEditor, text: string) {
 	return inBlock || editor.isComposing() || !shouldPasteAsBlock(text);
 }
 
-/** 既存の通常入力・IME を残し、Composer 固有の操作だけを優先処理する。 */
+/** 通常入力や IME による入力を保ち、チャット入力欄固有の操作だけを優先処理する。 */
 export function registerComposerCommands(
 	editor: LexicalEditor,
 	submit: () => void,

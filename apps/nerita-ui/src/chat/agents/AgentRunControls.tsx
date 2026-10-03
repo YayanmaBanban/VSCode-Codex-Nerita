@@ -3,7 +3,7 @@ import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import { Activity } from "../Activity";
 
-/** 並列の他の子も承認待ちになり得るため、親の承認一覧を表示する。 */
+/** 閲覧中以外の子エージェントも承認待ちになり得るため、親の承認一覧を表示する。 */
 export function AgentRunControls({
 	state,
 	send,

@@ -26,7 +26,7 @@ function contextLabel(step: Workflow["steps"][number]) {
 	return step.resume ? "Resume" : "Fresh";
 }
 
-/** 依存段数に沿って配置し、循環した編集中の定義でも有限回で終える。 */
+/** 依存関係の段数に沿って配置し、編集中の定義に循環があっても配置計算を終了する。 */
 function nodesFor(workflow: Workflow): Node[] {
 	const levels = new Map<string, number>();
 	for (let pass = 0; pass < workflow.steps.length; pass++) {

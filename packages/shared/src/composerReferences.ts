@@ -1,10 +1,10 @@
-// インライン表示するパスと、送信本文内の位置を共有する。
+// 入力文中に表示する参照先と、送信本文内の位置を共有する。
 import { isComposerTarget, type ComposerTarget } from "./composerTargets";
 
-/** 通常文の中でチップ表示するパスの開始位置。 */
+/** 通常文の中でチップ表示する参照の開始位置。 */
 export type ComposerReference = { offset: number; path: ComposerTarget };
 
-/** 空白を含むパスを引用符で囲み、送信・コピー時の本文を統一する。 */
+/** 参照先を送信・コピー用の文字列に変換し、空白を含むパスは引用符で囲む。 */
 export function pathText(path: ComposerTarget): string {
 	if (path.kind === "changes") {
 		return `[Changes: ${path.name}]`;
@@ -23,7 +23,7 @@ export function pathText(path: ComposerTarget): string {
 		: file;
 }
 
-/** 本文と一致する、重ならないパス参照だけを復元可能にする。 */
+/** 本文と一致し、位置が重ならない参照だけを復元可能にする。 */
 export function validReferences(text: string, value: unknown): boolean {
 	if (value === undefined) {
 		return true;

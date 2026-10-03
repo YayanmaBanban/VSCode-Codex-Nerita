@@ -87,7 +87,7 @@ function bodyContent(
 	return boundedBody(value, options.secrets ?? []);
 }
 
-/** MCP 本文の件数・文字列・全体予算を、構造化結果と同じ上限で管理する。 */
+/** MCP 本文の件数・各文字列の長さ・全体の出力サイズを、構造化結果と同じ上限で管理する。 */
 function boundedBody(
 	value: unknown[],
 	secrets: readonly string[],
@@ -142,7 +142,7 @@ function textContent(text: string) {
 	return { type: "content", content: { type: "text", text } };
 }
 
-/** 結果の getter や不正な Proxy を呼び出して表示処理を停止しない。 */
+/** ゲッターを呼び出さずに値を取得し、不正な Proxy による例外で表示処理を止めない。 */
 function ownValue(value: object, key: string): unknown {
 	try {
 		return Object.getOwnPropertyDescriptor(value, key)?.value;

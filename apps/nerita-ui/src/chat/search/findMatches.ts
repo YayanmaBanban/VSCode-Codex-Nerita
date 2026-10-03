@@ -27,7 +27,7 @@ export function searchPattern(
 	return new RegExp(source, options.caseSensitive ? "gu" : "giu");
 }
 
-/** 空一致を飛ばし、大量の一致で描画が膨らまないよう上限まで返す。 */
+/** 空文字列への一致を除外し、大量の一致で描画量が増えすぎないよう件数を上限までに制限する。 */
 export function findMatches(
 	text: string,
 	pattern: RegExp,

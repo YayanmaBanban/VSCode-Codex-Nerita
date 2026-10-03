@@ -68,7 +68,7 @@ export function CodeBlockMenuPlugin({ bridge }: CodeBlockMenuPluginProps) {
 			return;
 		}
 		let pending: { id: string; selection: RangeSelection } | undefined;
-		/** メニューから戻る間のフォーカス移動では選択を破棄しない。 */
+		/** 保持した選択とメニュー条件を解除する。フォーカス移動だけでは呼び出さない。 */
 		const clear = () => {
 			pending = undefined;
 			const root = editor.getRootElement();

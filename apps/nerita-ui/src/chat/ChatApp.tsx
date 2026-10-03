@@ -178,7 +178,7 @@ function ChatWorkspace(props: ChatWorkspaceProps) {
 /** 認証失敗の通知に表示する文言。 */
 type AuthenticationFailureNotificationProps = { message: string };
 
-/** 認証の再試行で取り外し、同じ失敗でも次回は通知を表示する。 */
+/** 認証の再試行時に通知を画面から外し、同じエラーでも次回の失敗時には表示する。 */
 function AuthenticationFailureNotification({
 	message,
 }: AuthenticationFailureNotificationProps) {

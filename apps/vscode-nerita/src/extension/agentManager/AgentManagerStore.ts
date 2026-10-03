@@ -271,7 +271,7 @@ export class AgentManagerStore {
 
 /** JSON 全体を再生成せず、対象のプロパティだけを変更する。 */
 function editJson(text: string, path: string[], value: unknown) {
-	// 不在の設定を解除する操作では、中間のオブジェクトも作らない。
+	// 存在しない設定を削除する場合は、その設定を格納するオブジェクトも作らない。
 	if (value === undefined && !findNodeAtLocation(parseTree(text)!, path)) {
 		return text;
 	}

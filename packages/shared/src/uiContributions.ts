@@ -8,7 +8,7 @@ import type {
 	UiContributionsSchema,
 } from "./uiContributionSchemas";
 
-/** 初期版で配置できる表示領域。 */
+/** UI の追加項目を配置できる表示領域。 */
 export type NeritaUiSlot = z.infer<typeof UiSlotSchema>;
 
 /** バックエンドとプロバイダーを独立に指定し、すべての条件を Host で照合する。 */

@@ -1,10 +1,10 @@
-// 性格設定のプリセットと、両端で検証する通信契約を定義する。
+// 性格設定のプリセットと、Host と Webview で検証する通信契約を定義する。
 import { isRecord } from "./validation";
 
 /** 指示文を名前で保存するプリセット。 */
 export type PersonalityPreset = { name: string; text: string };
 
-/** 1つの保存先と設定ファイルによる固定状態。 */
+/** 保存先ごとのプリセット一覧・選択状態と、設定ファイルで指定された指示文。 */
 export type PersonalityScope = {
 	presets: PersonalityPreset[];
 	selected: string;

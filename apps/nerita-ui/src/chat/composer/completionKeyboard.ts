@@ -43,7 +43,7 @@ export function handleCompletionKey(
 	return handleCompletionSelection(event, options);
 }
 
-/** Esc は親階層へ戻り、ルートでのみ閉じる。Alt + ← はルートでも履歴移動を防ぐ。 */
+/** Escape は親階層へ戻り、最上位でのみ一覧を閉じる。Alt + ← は最上位でもブラウザの履歴移動を防ぐ。 */
 function handleBackKey(
 	event: KeyboardEvent,
 	options: CompletionKeyboardOptions,

@@ -1,5 +1,5 @@
 // 最終更新日時を現在からの経過時間として表示する。
-/** 日付が省略・不正な場合も安全な表示を返す。 */
+/** 更新日時が未指定または不正な場合は、日時が不明であることを示す。 */
 export function relativeTime(
 	updatedAt: string | undefined,
 	now: number,

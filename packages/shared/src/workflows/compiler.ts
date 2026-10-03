@@ -5,7 +5,7 @@ import {
 	type WorkflowStep,
 } from "./definition";
 
-/** 各ステップの依存だけを待ち、無関係な枝をまとめて待たない。 */
+/** 各ステップは依存先の完了だけを待ち、依存関係のないステップを待たない。 */
 export function compileWorkflow(value: unknown): string {
 	const definition = validateWorkflow(value);
 	const names = new Map(

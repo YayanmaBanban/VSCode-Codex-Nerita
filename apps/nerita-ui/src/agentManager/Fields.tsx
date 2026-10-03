@@ -23,7 +23,7 @@ export function Field({
 	);
 }
 
-/** 不在の保存値も表示し、利用者が変更するまで保持する。 */
+/** モデル一覧にない保存済みの値も表示し、利用者が変更するまで保持する。 */
 export function ModelField({
 	value,
 	models,

@@ -17,7 +17,7 @@ export async function getPiDeviceId(agentDir: string): Promise<string> {
 	const temporary = join(agentDir, `nerita-device-id-${randomUUID()}.tmp`);
 	await writeFile(temporary, randomUUID(), { flag: "wx", mode: 0o600 });
 	try {
-		// 書込み済みのファイルを公開し、別の Host が途中の空ファイルを読むのを防ぐ。
+		// 書込み済みの一時ファイルから保存先へのリンクを作り、別の Host が書込み途中のファイルを読むのを防ぐ。
 		await link(temporary, file);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "EEXIST") {

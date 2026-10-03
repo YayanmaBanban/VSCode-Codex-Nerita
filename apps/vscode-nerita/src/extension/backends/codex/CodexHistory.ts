@@ -1,4 +1,4 @@
-// 履歴操作は Codex を正とし、復元の成功まで現在の会話を保持する。
+// Codex に保存された履歴を操作し、復元が成功するまで現在の会話を保持する。
 import { sameCwd } from "../../workspace";
 import { CodexCatalog } from "./CodexCatalog";
 import { restoreDisplayHistory } from "./history/restoreHistory";

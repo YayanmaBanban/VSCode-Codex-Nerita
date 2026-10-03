@@ -31,7 +31,7 @@ export function isUiMessage(value: unknown): value is UiMessage {
 	return validator ? validator(value) : false;
 }
 
-/** 各フィールドの検証を独立させ、未知のキーは受け付けない。 */
+/** 要求の種類ごとに検証処理を定義し、未知の要求は受け付けない。 */
 const uiMessageValidators = new Map<
 	unknown,
 	(value: Record<string, unknown>) => boolean

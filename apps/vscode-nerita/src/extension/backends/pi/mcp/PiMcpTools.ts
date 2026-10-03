@@ -1,4 +1,4 @@
-// MCP 操作を個別承認へ通し、生結果を保存前に有限の安全な本文へ変換する。
+// MCP 操作ごとに承認を求め、保存前に結果から秘密値を除去して出力サイズを制限する。
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { isRecord } from "@nerita/shared/validation";
 import { approvePiTool, type PiAuthorize } from "../PiApprovedTools";
@@ -53,7 +53,7 @@ export function approvedMcpTool(
 	};
 }
 
-/** 本文優先と出力予算を適用し、SDK の一時ファイル保存を使わない。 */
+/** 結果の本文を優先して出力サイズを制限し、SDK の一時ファイル保存を使わない。 */
 export function safeMcpResult(result: unknown, secrets: readonly string[]) {
 	const raw = isRecord(result) ? result : {};
 	const display = piResultDisplay(

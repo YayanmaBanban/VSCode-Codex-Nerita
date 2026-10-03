@@ -6,7 +6,7 @@ import { toolKey } from "@nerita/shared/toolUpdates";
 /** 集約前の順序番号を保持する状態通知。 */
 type PatchMessage = Extract<HostMessage, { type: "state/patch" }>;
 
-/** 正本の更新頻度と UI への配信頻度を分離する。 */
+/** Host 内の状態更新を集約し、UI への配信頻度を抑える。 */
 export class StatePublisher {
 	private tools: ToolSummary[] = [];
 	private pending: PatchMessage | undefined;

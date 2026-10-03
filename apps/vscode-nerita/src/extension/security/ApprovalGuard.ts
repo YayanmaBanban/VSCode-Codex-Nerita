@@ -21,7 +21,7 @@ export type ToolAuthorizer = (
 	signal?: AbortSignal,
 ) => Promise<AbortSignal>;
 
-/** Phase 11では毎回承認を基準とし、詳細解析の追加先を分離する。 */
+/** シェル実行の可否を確認し、Host の読取り・一覧操作以外は承認を求める。 */
 export function assessToolCall(call: ToolCall): "allow" | "ask" {
 	if ((call.command || call.hostShell) && !call.policy.shell) {
 		throw new Error("このroleではShell実行が禁止されています。");

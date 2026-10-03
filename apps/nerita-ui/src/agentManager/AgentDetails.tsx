@@ -25,7 +25,7 @@ export function AgentDetails({ agent }: { agent: ManagedAgent }) {
 	);
 }
 
-/** 未指定は false と区別し、保存キーを削除する。 */
+/** 未指定は無効化しない指定と区別し、保存側が設定キーを削除できるようにする。 */
 export function EnabledField({
 	value,
 	onChange,

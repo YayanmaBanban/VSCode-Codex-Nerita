@@ -8,7 +8,7 @@ import { stat } from "node:fs/promises";
 import { configuredBackend } from "../../webview/backendSettings";
 import { trustPanel } from "./TrustPanel";
 
-/** 正本は `globalState` に保存し、ワークスペース設定による信頼の注入を防ぐ。 */
+/** 信頼記録は `globalState` に保存し、ワークスペース設定で信頼済みと指定させない。 */
 export function registerTrustCommands(context: vscode.ExtensionContext) {
 	const key = "nerita.workspaceTrust.v1";
 	const log = vscode.window.createOutputChannel("Nerita Trust", {

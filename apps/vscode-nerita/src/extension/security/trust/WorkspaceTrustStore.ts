@@ -82,7 +82,7 @@ export class WorkspaceTrustStore {
 	get signal(): AbortSignal {
 		return this.controller.signal;
 	}
-	/** 表示用コピーの変更は正本へ影響しない。 */
+	/** 表示用に返した記録を変更しても、Host 内の信頼記録には影響しない。 */
 	list(): TrustRecord[] {
 		return [...this.records.values()].map((record) => ({ ...record }));
 	}
@@ -97,7 +97,7 @@ export class WorkspaceTrustStore {
 			listener();
 		}
 	}
-	/** UI の表示とセッションの取消しを正本に追従させる。 */
+	/** 信頼状態の変更を購読し、UI の表示更新とセッションの取り消しに使う。 */
 	onChange(listener: () => void): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);

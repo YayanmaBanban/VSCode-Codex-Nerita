@@ -19,9 +19,9 @@ import { EditingFiles, ExecuteTool, RawTool } from "./ToolContent";
 import { ReadTool } from "./ReadTool";
 import { ImageViewTool, ThinkTool, WebSearchTool } from "./ActivityToolContent";
 
-/** Guardian Review、専用項目、一般のツール種別の順に表示を選ぶ。 */
+/** Guardian の審査結果、App Server 項目の専用表示、ツール種別による表示の順に選ぶ。 */
 export function toolRenderer(tool: ToolSummary) {
-	// Guardian Review は `think` の場合も専用の盾アイコンを維持する。
+	// Guardian の審査結果は `think` の場合も専用の盾アイコンを維持する。
 	if (tool.title.trim().toLowerCase() === "guardian review") {
 		return { Icon: ShieldCheck, Body: GuardianReview };
 	}

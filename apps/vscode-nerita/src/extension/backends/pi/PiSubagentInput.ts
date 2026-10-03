@@ -1,4 +1,4 @@
-// ガード付きの単一子起動に対応する入力だけを受け付ける。
+// 子エージェント1つの起動に使う入力を検証し、未対応の項目は拒否する。
 import { z } from "zod";
 
 export const subagentInputSchema = z

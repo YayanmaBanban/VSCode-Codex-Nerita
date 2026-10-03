@@ -68,7 +68,7 @@ export function defaultGuardrails(): GuardrailsConfig {
 	};
 }
 
-/** 未知の項目・重複 ID を黙って無視せず、保存前に利用者へ返す。 */
+/** 未知の項目や重複したルール ID を検出し、呼び出し側へ検証エラーを返す。 */
 export function parseGuardrails(text: string): GuardrailsConfig {
 	if (text.length > 131072) {
 		throw new Error("設定は128 Ki文字以内にしてください。");

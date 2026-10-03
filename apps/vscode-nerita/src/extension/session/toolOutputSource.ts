@@ -1,7 +1,7 @@
 // バックエンドから状態同期へ出力の更新方法を渡す。内部参照は DTO に含めない。
 import type { ToolSummary } from "@nerita/shared/chatState";
 
-/** delta は Codex の追記、text は Pi の累積結果や保存イベントの確定本文。 */
+/** `delta` は本文を追記するかどうかを示す。`text` は追記する差分、累積結果、保存時の確定本文を保持する。 */
 export type ToolOutputSource = {
 	text: string;
 	delta?: boolean;

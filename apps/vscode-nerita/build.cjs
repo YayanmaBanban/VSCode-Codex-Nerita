@@ -29,7 +29,7 @@ async function collectUiArtifacts() {
 	}
 }
 
-/** 正本を増やさず、スキーマと配布文書を拡張機能の配置へ反映する。 */
+/** ソース内のスキーマとルートの配布文書を、拡張機能の配布先へコピーする。 */
 async function collectPackageFiles() {
 	await mkdir(dist, { recursive: true });
 	await copyFile(

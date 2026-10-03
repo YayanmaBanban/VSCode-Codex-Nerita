@@ -1,4 +1,4 @@
-// 会話を再開せず、Composer の参照候補と原文表示だけを提供する。
+// 会話を再開せず、チャット入力欄の参照候補と原文表示だけを提供する。
 import type { PiSession } from "./PiRuntime";
 import type {
 	SessionReferencesRequest,

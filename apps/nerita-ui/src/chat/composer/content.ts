@@ -23,7 +23,7 @@ export function contentKey(parts: ComposerPart[]): string {
 	);
 }
 
-/** ブロック境界に余分な改行を加えず、既存の交互配置へ正規化する。 */
+/** ブロック境界に余分な改行を加えず、通常文と貼り付けブロックが交互に並ぶ保存形式へ変換する。 */
 export function $readParts(): ComposerPart[] {
 	const parts: ComposerPart[] = [
 		{ id: "text-start", type: "text", text: "" },

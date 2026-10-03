@@ -146,7 +146,7 @@ export function GenericTool({
 	);
 }
 
-/** 編集ツールはファイルごとの差分を優先し、形式が異なる場合は共通表示に戻す。 */
+/** ファイルごとの差分にパスが表示される場合は、共通表示のパス一覧を省く。 */
 export function EditingFiles({ tool }: { tool: ToolSummary }) {
 	return (
 		<GenericTool
@@ -164,7 +164,7 @@ export function EditingFiles({ tool }: { tool: ToolSummary }) {
 	);
 }
 
-/** 実行カードは停止用の端末参照を隠し、コマンドの入出力を表示する。 */
+/** 整形済みの出力があれば単独で表示し、それ以外では入力と停止用の端末参照を隠す。 */
 export function ExecuteTool({ tool }: { tool: ToolSummary }) {
 	const output = isRecord(tool.rawOutput)
 		? tool.rawOutput.formatted_output

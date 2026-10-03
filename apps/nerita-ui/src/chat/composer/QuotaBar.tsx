@@ -1,4 +1,4 @@
-// 利用枠の最小残率と、枠ごとの詳細を入力欄に表示する。
+// 利用枠のうち最も低い残量の割合と、枠ごとの詳細を入力欄に表示する。
 import type { QuotaWindow } from "@nerita/shared/composer";
 import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";

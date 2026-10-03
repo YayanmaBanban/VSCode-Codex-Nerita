@@ -1,4 +1,4 @@
-// ファイル・シンボル・セッションを共通のインライン参照として扱う。
+// ファイル・シンボル・セッション・Git 差分を共通のインライン参照として扱う。
 import { isWorkspacePath, type WorkspacePath } from "./workspacePaths";
 import { isSessionReference, type SessionReference } from "./sessionReferences";
 import { isChangeReference, type ChangeReference } from "./changeReferences";

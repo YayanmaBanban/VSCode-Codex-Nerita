@@ -20,7 +20,7 @@ export type ToolOutputRequest = {
 	limit: number;
 };
 
-/** 文字途中の `offset` は次の文字境界へ進める。`text` は文字が途中で切れない文字列。 */
+/** UTF-8 文字の途中を指す `offset` は次の文字境界へ進める。`text` は文字が途中で切れない文字列。 */
 export type ToolOutputResponse = {
 	type: "tool/outputResult";
 	requestId: string;
@@ -43,7 +43,7 @@ export function validToolOutputRequest(value: Record<string, unknown>) {
 	);
 }
 
-/** 読み込み応答のサイズと前向きのカーソルを検証する。 */
+/** 読み込み応答の文字数と、バイト位置が戻らないことを検証する。 */
 export function validToolOutputResponse(value: Record<string, unknown>) {
 	return (
 		isId(value.requestId) &&

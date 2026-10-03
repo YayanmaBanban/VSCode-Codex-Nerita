@@ -73,7 +73,7 @@ function jobAuthorizer(
 	return authorize && id && jobs ? jobs.authorizer(id, authorize) : authorize;
 }
 
-/** 同名の並列の子もタスクを常時表示して承認先を区別する。 */
+/** 同名の子エージェントが並列実行されていても、タスクを表示して承認対象を区別する。 */
 export function subagentAuthorizer(
 	authorize: ToolAuthorizer,
 	{ agent, task }: { agent: string; task: string },

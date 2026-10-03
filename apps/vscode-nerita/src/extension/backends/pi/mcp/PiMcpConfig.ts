@@ -8,7 +8,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { isRecord } from "@nerita/shared/validation";
 
-/** 秘密値を含む設定の正本は Host 内にだけ保持する。 */
+/** 接続に使う設定は秘密値を含むため、Host 内にだけ保持する。 */
 export type PiMcpEntry = {
 	name: string;
 	scope: "global" | "project" | "extension";
@@ -199,7 +199,7 @@ function hasCommandInterpolation(config: McpServerConfig): boolean {
 	return values.some((value) => value.trimStart().startsWith("!"));
 }
 
-/** 設定内容を公開せず、承認後の同一性を確認できる改訂番号にする。 */
+/** 設定内容を公開せず、承認後に内容が変わっていないか確認できるハッシュ値にする。 */
 function digest(value: string): string {
 	return createHash("sha256").update(value).digest("hex");
 }

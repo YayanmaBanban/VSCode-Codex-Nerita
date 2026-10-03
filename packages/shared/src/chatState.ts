@@ -50,7 +50,7 @@ export type ToolSummary = {
 	backgrounded?: boolean;
 	order?: number;
 	runId?: string;
-	/** 同じ実行内で、このツールを呼び出した親の ID。 */
+	/** このツールを呼び出した、同じ実行内の親ツールの ID。 */
 	parentToolCallId?: string;
 	/** 子ツールの保存履歴は結果本文を持たず、要約だけを復元する。 */
 	summaryOnly?: boolean;
@@ -67,7 +67,7 @@ export type ToolSummary = {
 	paths: string[];
 	kind?: string;
 	content?: unknown[];
-	/** Host が生成した構造化結果の要約と、省略の有無。 */
+	/** Host が整形した結果の表示元と、省略の有無。 */
 	resultDisplay?: {
 		source: "content" | "structuredContent";
 		omitted: boolean;

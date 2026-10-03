@@ -1,4 +1,4 @@
-// コードブロックの装飾操作を編集本文から分離し、削除の取り消しを可能にする。
+// コードブロックの削除操作を本文の編集から分離し、削除を取り消せるようにする。
 import {
 	$addUpdateTag,
 	$createParagraphNode,
@@ -73,7 +73,7 @@ export function createBlockControls(
 	return controls;
 }
 
-/** ホイールがブロックの端に達したら、残りの縦移動を Composer 全体へ渡す。 */
+/** ホイール操作でブロックのスクロール端に達したら、残りの縦移動を入力欄全体へ渡す。 */
 export function connectBlockScroll(
 	element: HTMLElement,
 	editor: LexicalEditor,

@@ -23,7 +23,7 @@ class StructuredDisplay {
 	private ancestors = new Set<object>();
 	private nodes = 0;
 
-	/** 結果ごとに独立した出力予算と Host の秘密値を使う。 */
+	/** 結果ごとに出力サイズを制限し、Host が把握する秘密値を除去する。 */
 	constructor(
 		private output: PiDisplayText,
 		private secrets: readonly string[],
