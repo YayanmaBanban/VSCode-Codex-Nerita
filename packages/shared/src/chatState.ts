@@ -1,5 +1,6 @@
 // Host が保持し Webview へ同期する会話状態と、両側で使う初期値を定義する。
 import type { McpMessageContent } from "./mcp";
+import type { ToolOutputPreview } from "./toolOutput";
 import type { PermissionPresentation } from "./permission";
 import type { ComposerReference } from "./composerReferences";
 import type { PiProviderControls } from "./piProviderControls";
@@ -42,6 +43,8 @@ export type ChatMessage = {
 
 /** ツール実行・変更ファイルの概要。 */
 export type ToolSummary = {
+	output?: ToolOutputPreview;
+	exitCode?: number;
 	id: string;
 	cwd?: string;
 	backgrounded?: boolean;
@@ -88,7 +91,7 @@ export type Permission = PermissionPresentation & {
 	options: PermissionOption[];
 };
 
-/** Host が保持する現在の会話の正本。 */
+/** Host が管理し、Webview へ同期する現在の会話状態。 */
 export type ChatState = {
 	/** `null` は Host から定義を受信する前。両バックエンドとも解決済み定義を公開する。 */
 	uiContributions: UiContributions | null;

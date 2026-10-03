@@ -12,6 +12,43 @@ import { join, dirname } from "node:path";
 import { test } from "node:test";
 import { piFixture, send, finished, sessionFiles } from "../support/pi";
 import { restoredState } from "../support/restoredState";
+import { readPiSessionHeader } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionHeader";
+
+void test("PiのヘッダーをUTF-8境界越しに読み、空・別種・上限超過・取消しを拒否する", async (t) => {
+	const f = await piFixture(t);
+	const file = join(f.root, "header.jsonl");
+	const signal = new AbortController().signal;
+	const header = {
+		type: "session",
+		id: "header-id",
+		cwd: "日本語🐈".repeat(2000),
+	};
+	await writeFile(
+		file,
+		`\ninvalid\n${JSON.stringify(header)}\n${"本文".repeat(1000000)}`,
+	);
+	assert.deepEqual(await readPiSessionHeader(file, signal), {
+		id: "header-id",
+	});
+	await writeFile(file, JSON.stringify(header));
+	assert.deepEqual(await readPiSessionHeader(file, signal), {
+		id: "header-id",
+	});
+	for (const invalid of [
+		"",
+		'{"type":"message"}\n',
+		" ".repeat(1024 * 1024) + JSON.stringify(header),
+	]) {
+		await writeFile(file, invalid);
+		await assert.rejects(readPiSessionHeader(file, signal));
+		assert.equal(await readFile(file, "utf8"), invalid);
+	}
+	const cancelled = new AbortController();
+	cancelled.abort();
+	await assert.rejects(readPiSessionHeader(file, cancelled.signal), {
+		name: "AbortError",
+	});
+});
 void test("送信した会話を別接続で復元し、Fork 後の送信で元ファイルを変更しない", async (t) => {
 	const f = await piFixture(t);
 	f.model.replies.push("最初の回答", "分岐先の回答");

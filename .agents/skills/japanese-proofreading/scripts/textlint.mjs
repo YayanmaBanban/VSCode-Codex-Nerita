@@ -28,6 +28,7 @@ import {
 	loadAutomaticEnglishTerms,
 } from "./textlint-dictionary.mjs";
 import { findEnglishTermIssues } from "./textlint-terms.mjs";
+import { findSlopIssues } from "./textlint-slop.mjs";
 
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
 
@@ -271,9 +272,19 @@ function printTermIssues(issues) {
 	const deterministic = issues.filter(
 		(issue) =>
 			issue.type === "preferred-japanese" ||
-			issue.type === "unquoted-identifier",
+			issue.type === "unquoted-identifier" ||
+			issue.type === "ai-slop-pattern",
 	);
 	const unknown = issues.filter((issue) => issue.type === "unknown-english");
+	const slopReview = issues.filter((issue) => issue.type === "ai-slop");
+	if (slopReview.length > 0) {
+		console.log(
+			`textlint slop: ${slopReview.length} occurrence(s) require review.`,
+		);
+		for (const issue of slopReview.slice(0, 20)) {
+			console.log(`${issue.file}:${issue.line}  review  ${issue.term}`);
+		}
+	}
 
 	if (deterministic.length > 0) {
 		console.log("\ntextlint terms:");
@@ -438,6 +449,13 @@ const termIssues = findEnglishTermIssues(
 	automaticAllowed,
 	sourceIdentifiers,
 );
+const slopConfig = JSON.parse(
+	await fs.readFile(
+		path.join(SKILL_ROOT, "config", "textlint-slop.json"),
+		"utf8",
+	),
+);
+termIssues.push(...findSlopIssues(auditItems, slopConfig));
 const issuePath = await writeTextlintIssues({
 	root: ROOT,
 	scope: mode.scope,

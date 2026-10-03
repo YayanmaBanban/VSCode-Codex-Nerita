@@ -50,6 +50,10 @@ export class CodexSessionController extends CodexSubmission {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
+		if (message.type === "tool/output") {
+			await this.readToolOutput(message);
+			return;
+		}
 		if (message.type === "agent/read") {
 			await this.readAgent(message);
 			return;

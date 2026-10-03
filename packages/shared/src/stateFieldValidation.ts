@@ -1,5 +1,6 @@
 // スナップショット・差分・子エージェント表示で同じ状態フィールドの検証を使う。
 import { isId, isRecord, everyRecord } from "./validation";
+import { validToolOutputPreview } from "./toolOutput";
 import { isMcpMessageContent } from "./mcp";
 import { isPersonalitySettings } from "./personality";
 import { validComposerField } from "./composerValidation";
@@ -158,6 +159,7 @@ function validResultDisplay(value: unknown): boolean {
 /** 子の親 ID と、保存された要約の任意情報を検証する。 */
 function validToolHistory(item: Record<string, unknown>) {
 	return (
+		validToolOutput(item) &&
 		validResultDisplay(item.resultDisplay) &&
 		(item.parentToolCallId === undefined || isId(item.parentToolCallId)) &&
 		(item.summaryOnly === undefined ||
@@ -165,6 +167,14 @@ function validToolHistory(item: Record<string, unknown>) {
 		(item.nestedCallsIncomplete === undefined ||
 			typeof item.nestedCallsIncomplete === "boolean") &&
 		validOmittedArgumentBytes(item.omittedArgumentBytes)
+	);
+}
+
+/** 出力本文とは独立した終了コードも共有境界で検証する。 */
+function validToolOutput(item: Record<string, unknown>) {
+	return (
+		validToolOutputPreview(item.output) &&
+		(item.exitCode === undefined || Number.isSafeInteger(item.exitCode))
 	);
 }
 

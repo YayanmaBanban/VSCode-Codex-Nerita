@@ -6,6 +6,7 @@ import { isRecord } from "@nerita/shared/validation";
 import { cn } from "cnfast";
 import {
 	ChevronDown,
+	Check,
 	LoaderCircle,
 	Square,
 	X,
@@ -23,6 +24,8 @@ import {
 import { ComboListCard } from "./ComboListCard";
 import { GenericTool } from "./ToolContent";
 import { toolRenderer } from "./toolRenderers";
+import { ToolOutputView } from "./ToolOutputView";
+import { toolLabelClass } from "./toolStyles";
 
 /** 開閉状態と直前の実行状態を保持する。 */
 type CardState = { status: ToolSummary["status"]; open: boolean };
@@ -32,6 +35,9 @@ function toolBody(
 	tool: ToolSummary,
 	renderer: ReturnType<typeof toolRenderer>,
 ) {
+	if (tool.output) {
+		return OutputBody;
+	}
 	if (tool.summaryOnly) {
 		return ToolHistoryContent;
 	}
@@ -55,13 +61,13 @@ export function ToolCard({
 	const bodyId = useId();
 	const status = cardStatus(tool, task);
 	const executing = tool.kind === "execute";
-	const { cwd, command } = toolCommandDetails(tool);
+	const { command } = toolCommandDetails(tool);
 	const active = cardActive(status);
 	const renderer = toolRenderer(tool);
 	const Icon = renderer.Icon;
 	const Body = toolBody(tool, renderer);
 	const comboList = usesComboList(tool, Body);
-	const [state, setState] = useCardState(status, !comboList);
+	const [state, setState] = useCardState(status, false);
 	if (comboList) {
 		return (
 			<ComboListCard
@@ -82,14 +88,6 @@ export function ToolCard({
 			data-status={status}
 			data-kind={tool.kind}
 		>
-			{cwd && (
-				<div
-					className="tool-cwd px-[10px] pt-[8px] text-[12px] text-muted [overflow-wrap:anywhere]"
-					title={cwd}
-				>
-					{cwd}
-				</div>
-			)}
 			<ToolCardHeader
 				Heading={Heading}
 				Body={Body}
@@ -106,7 +104,7 @@ export function ToolCard({
 				cancelTurn={cancelTurn}
 				task={task}
 			/>
-			{renderHistoryNotice(tool)}
+			{state.open && renderHistoryNotice(tool)}
 			{Body &&
 				renderToolBody(bodyId, state, Body, tool, send, workspaceCwd)}
 		</div>
@@ -262,13 +260,29 @@ function renderToolBody(
 	workspaceCwd: ActivityToolProps["cwd"],
 ) {
 	const Body = body;
+	const { cwd, command } = toolCommandDetails(tool);
 	return (
 		<div
 			id={bodyId}
 			className="tool-body border-0 border-t border-solid border-panel-border p-[12px] [&_section+section]:mt-[14px]"
 			hidden={!state.open}
 		>
-			{state.open && <Body tool={tool} send={send} cwd={workspaceCwd} />}
+			{state.open && (
+				<>
+					{cwd && (
+						<div className="tool-cwd mb-[8px] text-[12px] text-muted [overflow-wrap:anywhere]">
+							<span className={toolLabelClass}>CWD</span>
+							<div>{cwd}</div>
+						</div>
+					)}
+					{tool.kind === "execute" && (
+						<pre className="tool-command m-0 mb-[12px] font-mono text-[12px] whitespace-pre-wrap [overflow-wrap:anywhere]">
+							{command}
+						</pre>
+					)}
+					<Body tool={tool} send={send} cwd={workspaceCwd} />
+				</>
+			)}
 		</div>
 	);
 }
@@ -322,6 +336,7 @@ function renderToolHeading(
 	const Heading = heading;
 	const Body = body;
 	const Icon = icon;
+	const title = executing ? command : tool.title;
 	return (
 		<Heading
 			className={cn(
@@ -336,12 +351,15 @@ function renderToolHeading(
 			}
 		>
 			<Icon size={16} aria-hidden="true" />
-			<span className="tool-title min-w-0 flex-1 [overflow-wrap:anywhere]">
-				{executing ? command : tool.title}
+			<span className="tool-title min-w-0 flex-1 truncate" title={title}>
+				{title}
 			</span>
 			{renderExecutionProgress(executing, active)}
 			{renderNonExecutionStatus(executing, active, tool)}
 			{renderInactiveStatus(status)}
+			{status === "completed" && (
+				<Check size={16} role="img" aria-label="完了" />
+			)}
 			{Body && (
 				<ChevronDown
 					size={14}
@@ -356,6 +374,23 @@ function renderToolHeading(
 			)}
 		</Heading>
 	);
+}
+
+/** Host で制限された出力だけを本文に渡す。 */
+function OutputBody({ tool }: ActivityToolProps) {
+	return tool.output ? (
+		<>
+			{tool.kind !== "execute" && tool.rawInput !== undefined && (
+				<GenericTool tool={tool} />
+			)}
+			<ToolOutputView output={tool.output} />
+			{tool.exitCode !== undefined && (
+				<p className="text-[12px] text-muted">
+					終了コード: {tool.exitCode}
+				</p>
+			)}
+		</>
+	) : null;
 }
 
 /** 停止済みと、履歴の完了状態が不明な項目を区別する。 */

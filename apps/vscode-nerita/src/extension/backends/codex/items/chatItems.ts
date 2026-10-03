@@ -97,11 +97,26 @@ function toolPatch(
 		Object.assign(tool, activity);
 	}
 	updateCommandOrFiles(value, tool);
+	retainStreamingOutput(tool, previous);
 	return {
 		tools: previous
 			? state.tools.map((entry) => (entry === previous ? tool : entry))
 			: [...state.tools, tool],
 	};
+}
+
+/** 最終通知に本文がない場合も、停止直前までに受信した出力を保持する。 */
+function retainStreamingOutput(
+	tool: ToolSummary,
+	previous: ToolSummary | undefined,
+) {
+	if (
+		tool.kind === "execute" &&
+		tool.rawOutput === undefined &&
+		previous?.output
+	) {
+		tool.output = previous.output;
+	}
 }
 
 /** コマンドとファイル変更の詳細をカードへ反映する。 */
@@ -119,6 +134,9 @@ function updateCommandOrFiles(
 		tool.title = value.command;
 		tool.cwd = value.cwd;
 		tool.kind = "execute";
+		if (typeof value.exitCode === "number") {
+			tool.exitCode = value.exitCode;
+		}
 		if (typeof value.aggregatedOutput === "string") {
 			tool.rawOutput = { formatted_output: value.aggregatedOutput };
 		}

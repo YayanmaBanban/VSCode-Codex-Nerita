@@ -1,14 +1,21 @@
-﻿// 会話の正本と UI 購読を保持し、単調に増加する番号付きの差分を配信する。
+﻿// Host が管理する会話状態と UI 購読を保持し、単調に増加する番号付きの差分を配信する。
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { type HostMessage } from "@nerita/shared/messages";
 import { createBuiltinUiRegistry } from "../ui-contributions/builtinContributions";
 import type { ContributionContext } from "../ui-contributions/contributionConditions";
 import { StatePublisher } from "./statePublisher";
+import { ToolOutputStore } from "./ToolOutputStore";
+import type { ToolOutputRequest } from "@nerita/shared/toolOutput";
 /** 接続と実行が共有する状態・承認管理。 */
 export class SessionState {
+	private outputs = new ToolOutputStore();
+	/** 出力取得は実行状態から独立させ、失効した参照も通常の応答として返す。 */
+	protected async readToolOutput(request: ToolOutputRequest): Promise<void> {
+		this.emit(await this.outputs.read(request));
+	}
 	protected state = initialState();
 	protected readonly uiRegistry = createBuiltinUiRegistry();
-	/** Pi は実 SDK の現在のプロバイダーで上書きする。 */
+	/** Pi は SDK セッションの現在のプロバイダーに合わせて、このメソッドを上書きする。 */
 	protected contributionContext(): ContributionContext {
 		return {
 			backend: "codex",
@@ -22,7 +29,7 @@ export class SessionState {
 			listener(event);
 		}
 	});
-	/** 外部から正本を変更できないスナップショットを返す。 */
+	/** 呼び出し側で変更しても Host 内の会話状態に影響しないスナップショットを返す。 */
 	snapshot(): ChatState {
 		this.publisher.flush();
 		return structuredClone({
@@ -41,12 +48,29 @@ export class SessionState {
 		};
 	}
 	/** 全購読先へ通知する。 */
-	protected emit(event: HostMessage): void {
+	protected emit(event: HostMessage, outputs?: ToolOutputStore): void {
+		if (event.type === "agent/view") {
+			if (outputs) {
+				this.outputs.adopt(event.view.threadId, outputs);
+			}
+			event = {
+				...event,
+				view: {
+					...event.view,
+					tools: event.view.tools.map((tool) =>
+						this.outputs.project(tool),
+					),
+				},
+			};
+		}
 		this.publisher.publish(event);
 	}
-	/** 正本を更新して番号付きの差分を配信する。 */
-	protected patch(patch: Partial<Omit<ChatState, "revision">>): void {
-		// 一覧の絞り込みや再取得で現在のタイトルを失わないよう、正本に保持する。
+	/** Host 内の会話状態を更新して番号付きの差分を配信する。 */
+	protected patch(
+		patch: Partial<Omit<ChatState, "revision">>,
+		outputs?: ToolOutputStore,
+	): void {
+		// 一覧の絞り込みや再取得で現在のタイトルを失わないよう、会話状態に保持する。
 		const sessionId =
 			patch.sessionId === undefined
 				? this.state.sessionId
@@ -54,6 +78,18 @@ export class SessionState {
 		const row = patch.sessions?.find(
 			(item) => item.sessionId === sessionId,
 		);
+		if (sessionId !== this.state.sessionId || outputs) {
+			this.outputs.dispose();
+		}
+		if (outputs) {
+			this.outputs = outputs;
+		}
+		if (patch.tools) {
+			patch = {
+				...patch,
+				tools: patch.tools.map((tool) => this.outputs.project(tool)),
+			};
+		}
 		patch = {
 			...(sessionId !== this.state.sessionId ? { agents: [] } : {}),
 			...patch,
@@ -87,6 +123,7 @@ export class SessionState {
 	}
 	/** 終了時に UI 購読を解放する。 */
 	protected clearListeners(): void {
+		this.outputs.dispose();
 		this.publisher.dispose();
 		this.listeners.clear();
 	}

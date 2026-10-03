@@ -337,8 +337,8 @@ export abstract class PiRun extends PiLifecycle {
 		this.cancelQuota();
 		this.patch({
 			run: finishedRunStatus(cancelled, error),
-			error: cancelled ? null : (error ?? null),
-			tools: finishPiTools(this.state, cancelled, error),
+			error: this.finishedError(cancelled, error),
+			tools: this.finishedTools(cancelled, error),
 			messages: this.state.messages.map((message) => ({
 				...message,
 				streaming: false,
@@ -347,6 +347,23 @@ export abstract class PiRun extends PiLifecycle {
 			usage: this.contextUsage(),
 		});
 		this.refreshQuota();
+	}
+
+	/** ユーザーの停止とは別に起きた保存失敗を隠さない。 */
+	private finishedError(cancelled: boolean, error: string | undefined) {
+		return (
+			this.runtime?.history?.outputs?.error ??
+			(cancelled ? null : (error ?? null))
+		);
+	}
+
+	/** 保存が完了した本文だけを永続ファイルの参照へ切り替える。 */
+	private finishedTools(cancelled: boolean, error: string | undefined) {
+		const tools = finishPiTools(this.state, cancelled, error);
+		return (
+			this.runtime?.history?.outputs?.project(tools, this.state.runId) ??
+			tools
+		);
 	}
 
 	/** 実行前なら `preflight` で遮断し、実行中なら SDK の `abort` へ渡す。 */

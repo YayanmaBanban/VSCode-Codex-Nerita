@@ -13,6 +13,8 @@ import type { SessionSummary } from "@nerita/shared/sessionHistory";
 import { sameCwd } from "../../workspace";
 import { piSessionContext } from "./PiSessionContext";
 import { isPiSessionRunning } from "./PiSessionActivity";
+import { PiOutputArchive } from "./results/PiOutputArchive";
+import { readPiSessionHeader } from "./PiSessionHeader";
 
 /** 保存先の設定値。任意パスは Webview から受け取らない。 */
 export type PiSessionStorage = "global" | "workspace";
@@ -26,6 +28,7 @@ export type PiResumeTarget = {
 };
 /** SDK から独立した履歴一覧と初期表示の境界。 */
 export type PiHistoryAccess = {
+	outputs?: PiOutputArchive;
 	entries: PiSdk.SessionEntry[];
 	list: (
 		signal: AbortSignal,
@@ -108,8 +111,8 @@ export async function openPiSessionStore(
 		}
 		const path = matches[0]!.path;
 		// `SessionManager.open` は空ファイルを初期化するため、読み込み前に有効なヘッダーを確認する。
-		const header = sdk.parseSessionEntries(await readFile(path, "utf8"))[0];
-		if (header?.type !== "session" || header.id !== resume.id) {
+		const header = await readPiSessionHeader(path, signal);
+		if (header.id !== resume.id) {
 			throw new Error("Piの履歴ファイルが変更されています。");
 		}
 		signal.throwIfAborted();
@@ -119,6 +122,7 @@ export async function openPiSessionStore(
 		manager = sdk.SessionManager.create(cwd, directory);
 	}
 	const history: PiHistoryAccess = {
+		outputs: new PiOutputArchive(manager, root),
 		readContext: createPiContextReader(list, cwd, manager, sdk, directory),
 		entries: manager.getBranch(),
 		target: (id) => ({ id, directory, storage }),

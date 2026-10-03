@@ -1,6 +1,6 @@
 // 双方向 JSONL を処理し、保留 RPC・切断・未対応のサーバー要求を管理する。
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import { createInterface, type Interface } from "node:readline";
+import { AppServerJsonReader } from "./AppServerJsonReader";
 import type { RequestId } from "../codex-app-server/RequestId";
 import type { ClientNotification } from "../codex-app-server/ClientNotification";
 import { stopAppServerProcess } from "./AppServerProcess";
@@ -32,7 +32,7 @@ export type AppServerCallbacks = {
 export class AppServerTransport {
 	private nextId = 1;
 	private readonly pending = new Map<RequestId, Pending>();
-	private readonly lines: Interface;
+	private readonly reader: AppServerJsonReader;
 	private readonly serverRequests: ServerRequests;
 	private closed = false;
 	private stopping: Promise<void> | undefined;
@@ -50,28 +50,15 @@ export class AppServerTransport {
 				this.fail(new Error("Codex App Server へ回答できません。"));
 			}
 		}, callbacks.request);
-		this.lines = createInterface({ input: child.stdout });
-		this.lines.on("line", (line) => {
-			if (this.closed) {
-				return;
-			}
-			try {
-				this.receive(JSON.parse(line));
-			} catch {
-				this.fail(
-					new Error("Codex App Server の受信データが不正です。"),
-				);
-			}
-		});
-		this.lines.on("close", () =>
-			this.fail(new Error("Codex App Server の出力が終了しました。")),
+		this.reader = new AppServerJsonReader(
+			child.stdout,
+			(value) => this.receive(value),
+			(error) => this.fail(error),
 		);
 		child.on("error", () =>
 			this.fail(new Error("Codex App Server を起動できません。")),
 		);
-		child.on("exit", () =>
-			this.fail(new Error("Codex App Server が終了しました。")),
-		);
+		// exit 時に先回りして破棄せず、stdout の最終応答を Reader が読み終えてから終了する。
 		child.stdin.on("error", () =>
 			this.fail(new Error("Codex App Server へ送信できません。")),
 		);
@@ -183,8 +170,10 @@ export class AppServerTransport {
 			pending.reject(error);
 		}
 		this.pending.clear();
-		this.lines.close();
-		this.stopping = stopAppServerProcess(this.child);
+		this.stopping = Promise.all([
+			this.reader.dispose(),
+			stopAppServerProcess(this.child),
+		]).then(() => undefined);
 		return this.stopping;
 	}
 }

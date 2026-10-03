@@ -7,7 +7,7 @@ import type { PiResumeTarget } from "./PiSessionStore";
 import { restorePiHistory } from "./PiHistoryMapper";
 import type { ContributionContext } from "../../ui-contributions/contributionConditions";
 
-/** 実 Runtime はシェル・子 Runtime まで回収し、テスト接続は従来の SDK 契約を使う。 */
+/** 本番の Runtime はシェルと子の Runtime も回収し、テスト接続は従来の SDK 契約を使う。 */
 async function closePiSession(session: PiSession): Promise<void> {
 	if (session.close) {
 		await session.close();
@@ -272,6 +272,10 @@ export abstract class PiLifecycle extends SessionState {
 		let restored: ReturnType<typeof restorePiHistory>;
 		try {
 			restored = restorePiHistory(session.history?.entries ?? [], cwd);
+			session.history?.outputs?.restore(
+				restored.tools,
+				session.history.entries,
+			);
 		} catch (error) {
 			this.track(closePiSession(session));
 			throw error;

@@ -36,7 +36,8 @@ export function extractSourceComments(source, filePath) {
 				(source.slice(start, Math.max(start, end - 1)).match(/\n/g)
 					?.length ?? 0),
 			kind: doc ? "rustdoc" : "comment",
-			text: body.trim(),
+			// 先頭の改行を残し、本文の診断を元の行へ対応させる。
+			text: body.replace(/^[^\S\r\n]+/, "").trimEnd(),
 		});
 	}
 	return { lintText: output.join("").replace(/[^\S\r\n]+$/gm, ""), items };

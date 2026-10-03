@@ -22,6 +22,7 @@ import { SessionPanel } from "./sessions/SessionPanel";
 import { useSessionPanel } from "./sessions/useSessionPanel";
 import { useChat } from "./useChat";
 import { useChatView } from "./useChatView";
+import { ToolOutputBridge } from "./tools/ToolOutputView";
 
 /** Host とのメッセージ送受信に使うブリッジ。 */
 type ChatAppProps = { bridge: Bridge };
@@ -60,35 +61,37 @@ export function ChatApp({ bridge }: ChatAppProps) {
 		search.open || !!agentViewer.agent,
 	);
 	return (
-		<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
-			<ConnectionHeader
-				backend={backend}
-				sidebarLocation={sidebarLocation}
-				onSelectSidebar={selectSidebar}
-				state={state}
-				editor={editor}
-				onToggleEditor={toggleEditor}
-				requestError={requestError}
-				available={available}
-				send={send}
-				sessionsOpen={sessionPanel.open}
-				onToggleSessions={sessionPanel.toggle}
-			/>
-			<ChatWorkspace
-				agentViewer={agentViewer}
-				state={state}
-				send={send}
-				sessionPanel={sessionPanel}
-				search={search}
-				busy={busy}
-				conversation={conversation}
-				bottom={bottom}
-				submission={submission}
-				bridge={bridge}
-				draftParts={draftParts}
-				setDraft={setDraft}
-			/>
-		</main>
+		<ToolOutputBridge value={bridge}>
+			<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
+				<ConnectionHeader
+					backend={backend}
+					sidebarLocation={sidebarLocation}
+					onSelectSidebar={selectSidebar}
+					state={state}
+					editor={editor}
+					onToggleEditor={toggleEditor}
+					requestError={requestError}
+					available={available}
+					send={send}
+					sessionsOpen={sessionPanel.open}
+					onToggleSessions={sessionPanel.toggle}
+				/>
+				<ChatWorkspace
+					agentViewer={agentViewer}
+					state={state}
+					send={send}
+					sessionPanel={sessionPanel}
+					search={search}
+					busy={busy}
+					conversation={conversation}
+					bottom={bottom}
+					submission={submission}
+					bridge={bridge}
+					draftParts={draftParts}
+					setDraft={setDraft}
+				/>
+			</main>
+		</ToolOutputBridge>
 	);
 }
 

@@ -10,12 +10,12 @@ import { CommandOutput } from "./CommandOutput";
 /** 構造が未知の値も欠落させずに表示する。 */
 export function Value({
 	value,
-	paged = false,
+	scrollable = false,
 }: {
 	value: unknown;
-	paged?: boolean;
+	scrollable?: boolean;
 }) {
-	if (paged) {
+	if (scrollable) {
 		return (
 			<CommandOutput
 				text={
@@ -36,18 +36,24 @@ export function Value({
 /** 専用カードがない項目は、元の構造を省略せず JSON として表示する。 */
 export function RawTool({
 	tool,
-	paged = false,
+	scrollable = false,
 }: {
 	tool: ToolSummary;
-	paged?: boolean;
+	scrollable?: boolean;
 }) {
-	return <Value value={tool.rawItem ?? tool} paged={paged} />;
+	return <Value value={tool.rawItem ?? tool} scrollable={scrollable} />;
 }
 
 /** ツールの差分と本文を、それぞれ専用の表示に振り分ける。 */
-function Content({ value, paged }: { value: unknown; paged: boolean }) {
+function Content({
+	value,
+	scrollable,
+}: {
+	value: unknown;
+	scrollable: boolean;
+}) {
 	if (!isRecord(value)) {
-		return <Value value={value} paged={paged} />;
+		return <Value value={value} scrollable={scrollable} />;
 	}
 	if (
 		value.type === "unifiedDiff" &&
@@ -71,9 +77,9 @@ function Content({ value, paged }: { value: unknown; paged: boolean }) {
 		value.content.type === "text" &&
 		typeof value.content.text === "string"
 	) {
-		return <Value value={value.content.text} paged={paged} />;
+		return <Value value={value.content.text} scrollable={scrollable} />;
 	}
-	return <Value value={value} paged={paged} />;
+	return <Value value={value} scrollable={scrollable} />;
 }
 
 /** ファイル差分の本文と対象パスを検証する。 */
@@ -103,10 +109,10 @@ function StructuredResultLabel({ tool }: { tool: ToolSummary }) {
 /** 共通表示では本文・対象パス・入出力を表示し、未知の形式も扱う。 */
 export function GenericTool({
 	tool,
-	paged = false,
+	scrollable = false,
 }: {
 	tool: ToolSummary;
-	paged?: boolean;
+	scrollable?: boolean;
 }) {
 	const hasDetails =
 		!!tool.content?.length ||
@@ -121,21 +127,21 @@ export function GenericTool({
 			))}
 			<StructuredResultLabel tool={tool} />
 			{tool.content?.map((value, index) => (
-				<Content key={index} value={value} paged={paged} />
+				<Content key={index} value={value} scrollable={scrollable} />
 			))}
 			{tool.rawInput !== undefined && (
 				<section>
 					<h3 className={toolLabelClass}>入力</h3>
-					<Value value={tool.rawInput} paged={paged} />
+					<Value value={tool.rawInput} scrollable={scrollable} />
 				</section>
 			)}
 			{tool.rawOutput !== undefined && (
 				<section>
 					<h3 className={toolLabelClass}>出力</h3>
-					<Value value={tool.rawOutput} paged={paged} />
+					<Value value={tool.rawOutput} scrollable={scrollable} />
 				</section>
 			)}
-			{!hasDetails && <RawTool tool={tool} paged={paged} />}
+			{!hasDetails && <RawTool tool={tool} scrollable={scrollable} />}
 		</>
 	);
 }
@@ -175,7 +181,7 @@ export function ExecuteTool({ tool }: { tool: ToolSummary }) {
 					(value) => !isRecord(value) || value.type !== "terminal",
 				),
 			}}
-			paged
+			scrollable
 		/>
 	);
 }

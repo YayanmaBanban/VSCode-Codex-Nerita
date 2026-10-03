@@ -1,6 +1,7 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
 
 import { randomUUID } from "node:crypto";
+import { bindPiOutputArchive } from "./results/PiOutputArchive";
 import type { HandoffGenerator } from "../../session/HandoffContext";
 import { generatePiHandoff } from "./PiHandoffGeneration";
 import type { WorkspaceTrustStore } from "../../security/trust/WorkspaceTrustStore";
@@ -260,6 +261,7 @@ async function openPiRuntime(
 	session.abort = async () => {
 		await Promise.all([jobs.stop(), stopJobs()]);
 	};
+	bindPiOutputArchive(session, history?.outputs);
 	const close = bindPiRuntimeLifetime(
 		session,
 		children,

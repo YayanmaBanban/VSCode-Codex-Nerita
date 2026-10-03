@@ -53,6 +53,10 @@ pnpm --dir .agents/skills/japanese-proofreading install
 
 - `unknown-english` と `preferred-japanese`：語全体の大文字・小文字を区別せず、同じ語として集約する。複数の表記がある場合は `variants` に保存する。
 - `unquoted-identifier`：大文字・小文字を区別して集約する。
+- `ai-slop-pattern`：高確度の不自然な表現。通常の静的検査も失敗させる。`suggestion` は置換文字列ではなく、具体化する対象の案内として読む。
+- `ai-slop`：文脈確認が必要な表現。単独では静的検査を失敗させない。元ファイルと周辺コードを確認し、正当な用語なら維持する。
+
+スロップの2分類は、種類・検出表現・診断メッセージで集約する。英字部分の大文字・小文字は区別せず、異なる表記は `variants` に保存する。警告を消すこと自体を目的にせず、[校正ルール](references/Proofreading.md)に従って意味を確認する。
 
 いずれも、保存する出現例は候補ごとに最大20件とする。
 

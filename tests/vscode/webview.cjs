@@ -5,6 +5,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { chromium, expect } = require("@playwright/test");
 const vscode = require("vscode");
+const { verifyToolOutput } = require("./tool-output.cjs");
 
 /** 実画面を意味のある要素で見つけ、未生成のフレームを成功扱いにしない。 */
 async function findFrame(page, selector) {
@@ -161,6 +162,7 @@ async function run() {
 			model,
 			findFrame,
 		);
+		await verifyToolOutput(page, chat, model, cwd);
 		assert.deepEqual(errors, []);
 	} finally {
 		if (page) {

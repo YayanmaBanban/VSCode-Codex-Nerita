@@ -1,5 +1,6 @@
 // Host から届く通知を検証してから、Webview の状態や描画に反映する。
 import type { HostMessage } from "./messages";
+import { validToolOutputResponse } from "./toolOutput";
 import { isBackendId } from "./backend";
 import { isId, isRecord, isRevision } from "./validation";
 import { isState } from "./stateValidation";
@@ -24,6 +25,7 @@ const hostMessageValidators = new Map<
 	(value: Record<string, unknown>) => boolean
 >(
 	Object.entries({
+		"tool/outputResult": validToolOutputResponse,
 		"ui/codeBlock": (value) => {
 			return isId(value.requestId);
 		},

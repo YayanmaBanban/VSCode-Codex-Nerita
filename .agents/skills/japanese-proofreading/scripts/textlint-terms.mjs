@@ -1,85 +1,10 @@
+// 抽出済みの日本語から英単語と識別子の表記を検査する。
+import { maskHtmlComments, maskProtectedText } from "./textlint-protected.mjs";
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 const ENGLISH_TOKEN_PATTERN =
 	/(?:[A-Za-z][A-Za-z0-9]*(?:[._+#:@-][A-Za-z0-9]+)*|[0-9]+[A-Za-z][A-Za-z0-9]*(?:[._+#:@-][A-Za-z0-9]+)*)/g;
-
-function maskWithSpaces(text, pattern) {
-	return text.replace(pattern, (value) => " ".repeat(value.length));
-}
-
-/** HTML コメントを、改行位置を保ったまま空白化する。 */
-function maskHtmlComments(text) {
-	return text.replace(/<!--[\s\S]*?-->/g, (value) =>
-		value.replace(/[^\r\n]/g, " "),
-	);
-}
-
-/** 対応する数のバッククォートで囲まれたインラインコードを空白化する。 */
-function maskInlineCode(text) {
-	const runs = [...text.matchAll(/`+/g)];
-	let masked = text;
-
-	for (let index = 0; index < runs.length; index += 1) {
-		const opening = runs[index];
-		const closingIndex = runs.findIndex(
-			(run, candidateIndex) =>
-				candidateIndex > index && run[0].length === opening[0].length,
-		);
-
-		if (closingIndex < 0) {
-			continue;
-		}
-
-		const end = runs[closingIndex].index + runs[closingIndex][0].length;
-		masked =
-			masked.slice(0, opening.index) +
-			" ".repeat(end - opening.index) +
-			masked.slice(end);
-		index = closingIndex;
-	}
-
-	return masked;
-}
-
-/**
- * 識別子・URL・Markdown のリンク先など、英単語チェックの対象外を空白化する。
- */
-function maskProtectedText(text) {
-	let masked = maskInlineCode(text);
-
-	masked = maskWithSpaces(masked, /https?:\/\/[^\s<>)\]}]+/gi);
-	masked = maskWithSpaces(masked, /\]\([^)]+\)/g);
-	masked = maskWithSpaces(
-		masked,
-		/(?:\.{1,2}[\\/])(?:[A-Za-z0-9_.@*+-]+[\\/])+[A-Za-z0-9_.@*+-]*/g,
-	);
-	masked = maskWithSpaces(
-		masked,
-		/(?:[A-Za-z0-9_.@*+-]+[\\/])*[A-Za-z0-9_.@*+-]+\.(?:jsonl?|toml|ya?ml|md|markdown|txt|text|js|jsx|mjs|cjs|ts|tsx|mts|cts|css|scss|less|html?|svg|png|jpe?g|gif|webp|ico|wasm|xml|csv|lock|log|ini|cfg|conf|env)\b/gi,
-	);
-	masked = maskWithSpaces(
-		masked,
-		/(?:^|[\s"'(])\.(?:env|gitignore|npmrc|pnpmfile|prettierrc|textlintrc)\b/gi,
-	);
-	masked = maskWithSpaces(
-		masked,
-		/\b\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|vmin|vmax|KiB|MiB|GiB|TiB|B|KB|MB|GB|TB|ms|s|min|h|Hz|kHz|MHz|GHz|dpi|fps)\b/g,
-	);
-	masked = maskWithSpaces(
-		masked,
-		/\b(?:Ctrl|Alt|Shift|Meta|Cmd)(?:\+[A-Za-z0-9]+)+\b/g,
-	);
-	masked = maskWithSpaces(masked, /(?:^|[\s（(])\/[A-Za-z][A-Za-z0-9:_-]*/g);
-	masked = maskWithSpaces(masked, /\b[A-Z](?:\/[A-Z])+\b/g);
-	masked = maskWithSpaces(masked, /\b[A-Z]{2,}\([A-Z0-9]+\)/g);
-	masked = maskWithSpaces(
-		masked,
-		/\b(?:[A-Za-z][A-Za-z0-9-]*-)?v?\d+(?:\.\d+){1,3}\b/g,
-	);
-
-	return masked;
-}
 
 /** 許可語句が、元の文章で空白だけを挟んで連続しているか確認する。 */
 function matchesAllowedPhrase(matches, index, phrase, text) {

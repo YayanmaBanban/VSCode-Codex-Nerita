@@ -4,6 +4,7 @@ import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
 import { piResultDisplay } from "./results/PiResultDisplay";
+import { registerPiOutput } from "./results/PiToolOutput";
 
 /** SDK の出力を、共通のテキスト表示形式へ揃える。 */
 function textContent(text: string) {
@@ -41,6 +42,12 @@ export function mapPiTool(
 		label,
 		input,
 		result,
+	);
+	registerPiOutput(
+		tool,
+		event.toolName,
+		result,
+		String(state.runId).startsWith("history:"),
 	);
 	return {
 		tools: existing

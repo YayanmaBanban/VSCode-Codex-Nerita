@@ -3,11 +3,12 @@ import type { UiMessage } from "@nerita/shared/messages";
 import { CodexRequests } from "./CodexRequests";
 import { AgentRegistry, agentMetadata } from "./agents/AgentRegistry";
 import { threadAgentStatus, withThreadStatus } from "./items/agentItems";
-import { hydrateHistory, replayHistory } from "./history/restoreHistory";
+import { restoreDisplayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "@nerita/shared/validation";
 import { type SubAgentSummary } from "@nerita/shared/subAgents";
-import { type HistoryTurn, type HistoryThread } from "./protocol/history";
+import { type HistoryThread } from "./protocol/history";
+import type { CodexConnection } from "./runtime/connection";
 
 /** Agent 用の読み取りを接続世代と親セッションに限定する。 */
 export abstract class CodexAgents extends CodexRequests {
@@ -110,7 +111,11 @@ export abstract class CodexAgents extends CodexRequests {
 		}
 		const current = () =>
 			epoch === this.epoch && sessionId === this.state.sessionId;
-		const { thread } = await client.readThread(message.threadId, true);
+		const { thread } = await readAgentThread(
+			client,
+			message.threadId,
+			current,
+		);
 		if (!current()) {
 			return;
 		}
@@ -120,17 +125,23 @@ export abstract class CodexAgents extends CodexRequests {
 			throw new Error("Unexpected agent thread");
 		}
 		// 子が専用 `worktree` を使う場合もあるため、`cwd` ではなく既知の ID と親子関係で限定する。
-		const turns = await hydrateHistory(client, thread, current, true);
+		const restored = await restoreDisplayHistory(
+			client,
+			thread,
+			current,
+			true,
+		);
 		if (!current()) {
+			restored.outputs.dispose();
 			return;
 		}
 
-		this.publishAgentView(turns, thread, known, message);
+		this.publishAgentView(restored, thread, known, message);
 	}
 
 	/** 読み取り中の通知を優先しながらエージェント履歴を公開する。 */
 	private publishAgentView(
-		turns: HistoryTurn[],
+		restored: Awaited<ReturnType<typeof restoreDisplayHistory>>,
 		thread: HistoryThread,
 		known: SubAgentSummary,
 		message: {
@@ -140,7 +151,7 @@ export abstract class CodexAgents extends CodexRequests {
 			threadId: string;
 		},
 	) {
-		const view = replayHistory(turns, thread.id);
+		const { state: view, outputs } = restored;
 
 		const agents = new Map(
 			this.state.agents.map((agent) => [agent.threadId, agent]),
@@ -173,19 +184,40 @@ export abstract class CodexAgents extends CodexRequests {
 
 		this.synchronizeAgents();
 
-		this.emit({
-			type: "agent/view",
-			requestId: message.requestId,
-			view: {
-				...view,
-				agents: [...agents.values()].filter(
-					(agent) => agent.parentThreadId === thread.id,
-				),
-				threadId: thread.id,
-				parentThreadId: thread.parentThreadId ?? known.parentThreadId,
+		this.emit(
+			{
+				type: "agent/view",
+				requestId: message.requestId,
+				view: {
+					...view,
+					agents: [...agents.values()].filter(
+						(agent) => agent.parentThreadId === thread.id,
+					),
+					threadId: thread.id,
+					parentThreadId:
+						thread.parentThreadId ?? known.parentThreadId,
+				},
 			},
-		});
+			outputs,
+		);
 	}
+}
+
+/** ページ形式では本文の一括要求を避け、旧形式だけ本文付きで取得し直す。 */
+async function readAgentThread(
+	client: CodexConnection,
+	threadId: string,
+	current: () => boolean,
+) {
+	const result = await client.readThread(threadId);
+	if (
+		current() &&
+		result.thread.id === threadId &&
+		result.thread.historyMode === "legacy"
+	) {
+		return client.readThread(threadId, true);
+	}
+	return result;
 }
 
 /** 子スレッドの識別子と既知の親子関係を照合する。 */

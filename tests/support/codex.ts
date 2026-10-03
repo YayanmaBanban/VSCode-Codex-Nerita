@@ -48,11 +48,19 @@ export async function codexFixture(t: TestContext) {
 	const cwd = join(root, "workspace");
 	await mkdir(cwd);
 	const requests: Rpc[] = [];
+	const responses = new Map<string, (message: Rpc) => unknown>();
 	const streams: ServerResponse[] = [];
 	const unexpected: string[] = [];
 	const state = { authenticated: true, thread: 0, turn: 0, failSteer: false };
 	const server = createServer(
-		createCodexRelayHandler(streams, requests, cwd, state, unexpected),
+		createCodexRelayHandler(
+			streams,
+			requests,
+			cwd,
+			state,
+			unexpected,
+			responses,
+		),
 	);
 	server.listen(0, "127.0.0.1");
 	await once(server, "listening");
@@ -94,6 +102,7 @@ export async function codexFixture(t: TestContext) {
 	return {
 		state,
 		requests,
+		responses,
 		cwd,
 		extensionPath: root,
 		disconnect: () => {
@@ -169,6 +178,7 @@ function createCodexRelayHandler(
 		failSteer: boolean;
 	},
 	unexpected: string[],
+	responses: Map<string, (message: Rpc) => unknown>,
 ): RequestListener<typeof IncomingMessage, typeof ServerResponse> | undefined {
 	return (request, response) => {
 		if (request.url === "/events") {
@@ -190,7 +200,10 @@ function createCodexRelayHandler(
 				return;
 			}
 			try {
-				const result = reply(message, cwd, state);
+				const custom = responses.get(message.method);
+				const result = custom
+					? custom(message)
+					: reply(message, cwd, state);
 				response.end(`${JSON.stringify({ id: message.id, result })}\n`);
 			} catch {
 				if (!(state.failSteer && message.method === "turn/steer")) {

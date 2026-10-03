@@ -16,7 +16,10 @@ import {
 	AppServerTransport,
 	type AppServerCallbacks,
 } from "./runtime/AppServerTransport";
-import { startAppServerProcess } from "./runtime/AppServerProcess";
+import {
+	startAppServerProcess,
+	stopAppServerProcess,
+} from "./runtime/AppServerProcess";
 import { resolveCodexExecutable } from "./runtime/executable";
 import { PersonalityStore } from "./settings/PersonalityStore";
 import {
@@ -51,14 +54,19 @@ export class CodexClient {
 	static async connect(options: CodexClientOptions): Promise<CodexClient> {
 		const executable = await resolveCodexExecutable(options.extensionPath);
 		options.signal?.throwIfAborted();
-		const transport = new AppServerTransport(
-			startAppServerProcess(
-				executable,
-				options.cwd,
-				options.windowsSandbox,
-			),
-			options.callbacks,
+		const child = startAppServerProcess(
+			executable,
+			options.cwd,
+			options.windowsSandbox,
 		);
+		let transport: AppServerTransport;
+		try {
+			transport = new AppServerTransport(child, options.callbacks);
+		} catch (error) {
+			// Worker を生成できない場合も、先に起動した App Server を残さない。
+			await stopAppServerProcess(child);
+			throw error;
+		}
 		/** 初期化待ちでもワークスペース変更・拡張機能終了に追従する。 */
 		const abort = () => {
 			void transport.dispose();
@@ -162,11 +170,15 @@ export class CodexClient {
 		});
 	}
 	/** 古いターンから順に、全項目を指定して取得する。 */
-	listTurns(threadId: string, cursor?: string) {
+	listTurns(
+		threadId: string,
+		cursor?: string,
+		itemsView: "full" | "summary" = "full",
+	) {
 		return this.transport.request("thread/turns/list", {
 			threadId,
 			sortDirection: "asc",
-			itemsView: "full",
+			itemsView,
 			limit: 50,
 			...(cursor ? { cursor } : {}),
 		});

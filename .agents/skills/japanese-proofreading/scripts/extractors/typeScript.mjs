@@ -12,11 +12,15 @@ function normalizeCommentText(text, block) {
 		return text.trim();
 	}
 
-	return text
-		.split(/\r?\n/)
-		.map((line) => line.replace(/^\s*\*\s?/, ""))
-		.join("\n")
-		.trim();
+	return (
+		text
+			.split(/\r?\n/)
+			.map((line) => line.replace(/^\s*\*\s?/, ""))
+			.join("\n")
+			// 先頭の改行は診断行番号に必要なので残す。
+			.replace(/^[^\S\r\n]+/, "")
+			.trimEnd()
+	);
 }
 
 /**

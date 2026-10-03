@@ -1,5 +1,6 @@
 // Webview から届く操作要求を、副作用を実行する前に検証する。
 import type { UiMessage } from "./messages";
+import { validToolOutputRequest } from "./toolOutput";
 import { isBackendId } from "./backend";
 import { isId, isRecord } from "./validation";
 import { isSidebarLocation } from "./sidebar";
@@ -36,6 +37,7 @@ const uiMessageValidators = new Map<
 	(value: Record<string, unknown>) => boolean
 >(
 	Object.entries({
+		"tool/output": validToolOutputRequest,
 		"ui/setBackend": (value) => isBackendId(value.backend),
 		"agent/read": (value) => isId(value.sessionId) && isId(value.threadId),
 		"changes/open": (value) => isChangeScope(value.scope),

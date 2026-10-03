@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { maskHtmlComments } from "./textlint-protected.mjs";
 
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
@@ -56,7 +57,7 @@ export function maskIgnoredDocument(source, filePath) {
  * 空行を文章ブロックの境界として扱う。
  */
 export function extractDocumentAuditItems(source, filePath) {
-	const lines = source.split(/\r?\n/);
+	const lines = maskHtmlComments(source).split(/\r?\n/);
 	const markdown = /\.(?:md|markdown)$/i.test(filePath);
 
 	const items = [];
@@ -236,7 +237,7 @@ function groupIssues(issues) {
 }
 
 /**
- * 静的チェックで見つけた指摘を、種類・語・推奨表記でまとめて JSON に保存する。
+ * 静的チェックで見つけた指摘を、種類・語・推奨表記または診断メッセージでまとめて JSON に保存する。
  * 出現例は候補ごとに最大20件まで保存する。
  */
 export async function writeTextlintIssues({ root, scope, issues }) {

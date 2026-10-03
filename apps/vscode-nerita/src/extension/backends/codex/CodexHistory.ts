@@ -1,7 +1,7 @@
 // 履歴操作は Codex を正とし、復元の成功まで現在の会話を保持する。
 import { sameCwd } from "../../workspace";
 import { CodexCatalog } from "./CodexCatalog";
-import { hydrateHistory, replayHistory } from "./history/restoreHistory";
+import { restoreDisplayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { isRecord } from "@nerita/shared/validation";
 import { type CodexConnection } from "./runtime/connection";
@@ -187,33 +187,37 @@ export abstract class CodexHistory extends CodexCatalog {
 			this.pendingThreads.remember(epoch, result.thread);
 		}
 		restoring.id = result.thread.id;
-		const turns = await hydrateHistory(
+		const { state: restored, outputs } = await restoreDisplayHistory(
 			client,
 			result.thread,
 			() => current() && !restoring.changed,
 		);
-		const restored = replayHistory(turns, result.thread.id);
 		if (!current()) {
+			outputs.dispose();
 			return;
 		}
 		if (restoring.changed) {
+			outputs.dispose();
 			throw new Error("History changed during restore");
 		}
 		this.resetRun();
-		this.patch({
-			...restored,
-			sessionId: result.thread.id,
-			sessionTitle:
-				result.thread.name?.trim() || result.thread.preview || null,
-			runId: null,
-			run: "idle",
-			permissions: [],
-			asyncTasks: [],
-			attachments: [],
-			usage: null,
-			configOptions: [],
-			error: null,
-		});
+		this.patch(
+			{
+				...restored,
+				sessionId: result.thread.id,
+				sessionTitle:
+					result.thread.name?.trim() || result.thread.preview || null,
+				runId: null,
+				run: "idle",
+				permissions: [],
+				asyncTasks: [],
+				attachments: [],
+				usage: null,
+				configOptions: [],
+				error: null,
+			},
+			outputs,
+		);
 		await this.restoreThreadOptions(result);
 		this.synchronizeAgents();
 	}

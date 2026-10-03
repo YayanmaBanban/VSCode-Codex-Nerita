@@ -1,4 +1,4 @@
-// ツールの専用表示と完了時の開閉を、実コンポーネントで再現する。
+// 製品のコンポーネントを使い、ツールごとの表示と完了時の開閉を再現する。
 
 import { type SetStateAction, type Dispatch, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -7,6 +7,8 @@ import { type UiMessage } from "@nerita/shared/messages";
 import type { AsyncTask } from "@nerita/shared/asyncTask";
 import { Activity } from "../../../src/chat/Activity";
 import { ToolCard } from "../../../src/chat/tools/ToolCard";
+import { ToolOutputBridge } from "../../../src/chat/tools/ToolOutputView";
+import { createStoryBridge } from "../mocks/storyBridge";
 import "../../../src/chat/chat.css";
 
 const initialTools: ToolSummary[] = [
@@ -90,7 +92,7 @@ const initialTools: ToolSummary[] = [
 	},
 ];
 
-/** 同一 ID の完了通知を再現し、開閉状態の独立性を確認する。 */
+/** 同じ ID のツールを完了状態へ更新し、各カードの開閉が独立していることを確認する。 */
 function ToolCardsStory({ background = false }: { background?: boolean }) {
 	const [tools, setTools] = useState(() =>
 		background
@@ -156,7 +158,7 @@ const meta = {
 	parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof ToolCardsStory>;
 export default meta;
-/** 全種類のツールカードを表示するストーリー。 */
+/** ツールカードの表示と状態変化を確認するストーリーの型。 */
 type Story = StoryObj<typeof meta>;
 export const Running: Story = {};
 export const Background: Story = { args: { background: true } };
@@ -210,31 +212,65 @@ function CompleteToolsButton({
 	);
 }
 
-/** 大量出力のページ切り替えと完了後の再展開を確認する。 */
+/** 出力取得の要求に手動で応答し、取得待ちと取得後の表示を再現する。 */
 function LargeOutputStory() {
 	const [completed, setCompleted] = useState(false);
+	const [bridge] = useState(() => createStoryBridge(initialState()));
 	return (
 		<main style={{ padding: 16 }}>
 			<button onClick={() => setCompleted(true)}>完了通知を受信</button>
-			<ToolCard
-				tool={{
-					id: "large",
-					kind: "execute",
-					title: "Get-Content large.txt",
-					paths: [],
-					status: completed ? "completed" : "in_progress",
-					rawOutput: {
-						formatted_output: `出力開始\n${"long output line\n".repeat(100_000)}出力終了`,
-					},
+			<button
+				onClick={() => {
+					const request = [...bridge.sent]
+						.reverse()
+						.find((message) => message.type === "tool/output");
+					if (request?.type !== "tool/output") {
+						return;
+					}
+					bridge.emit({
+						type: "tool/outputResult",
+						requestId: request.requestId,
+						outputRef: request.outputRef,
+						text:
+							request.offset === 0
+								? "先頭の詳細出力\n日本語と絵文字 🐈\n".repeat(
+										1000,
+									)
+								: "次の詳細出力\nFAIL: 末尾エラー",
+						offset: request.offset,
+						nextOffset: request.offset === 0 ? 65535 : 65600,
+						eof: request.offset !== 0,
+					});
 				}}
-			/>
+			>
+				出力応答を受信
+			</button>
+			<ToolOutputBridge value={bridge}>
+				<ToolCard
+					tool={{
+						id: "large",
+						kind: "execute",
+						title: "Get-Content ./logs/very-long-directory-name/large-output-with-japanese-text.log",
+						cwd: "./workspace/project",
+						paths: [],
+						status: completed ? "completed" : "in_progress",
+						output: {
+							preview:
+								"出力開始\nChecking types...\n\n… 出力を省略 …\n\nFAIL: 末尾エラー",
+							truncated: true,
+							outputRef: "large-output",
+							totalBytes: 1600000,
+						},
+					}}
+				/>
+			</ToolOutputBridge>
 		</main>
 	);
 }
 
 export const LargeOutput: Story = { render: () => <LargeOutputStory /> };
 
-/** Host が生成した構造化結果を、秘密値を含まない共有 DTO として表示する。 */
+/** Host が非公開情報を除去した構造化結果を模したデータで、要約と省略表示を確認する。 */
 export const StructuredResult: Story = {
 	render: () => (
 		<main style={{ padding: 16 }}>

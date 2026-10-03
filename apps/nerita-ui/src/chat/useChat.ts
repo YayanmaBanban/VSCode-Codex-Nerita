@@ -82,6 +82,7 @@ function requiresSnapshot(
 /** 会話状態以外の専用購読へ渡す通知を識別する。 */
 function isAuxiliaryMessage(message: HostMessage) {
 	return (
+		message.type === "tool/outputResult" ||
 		message.type === "ui/codeBlock" ||
 		message.type === "ui/viewState" ||
 		message.type === "agent/view" ||

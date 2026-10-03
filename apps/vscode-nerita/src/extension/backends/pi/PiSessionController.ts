@@ -33,6 +33,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			this.emit({ type: "state/snapshot", state: this.snapshot() });
 			return;
 		}
+		if (value.type === "tool/output") {
+			await this.readToolOutput(value);
+			return;
+		}
 		if (this.seen.has(value.requestId)) {
 			return;
 		}

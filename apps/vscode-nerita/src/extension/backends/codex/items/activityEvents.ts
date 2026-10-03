@@ -3,6 +3,7 @@ import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";
 import { fileChanges, textContent } from "./activityItems";
+import { setToolOutputSource } from "../../../session/toolOutputSource";
 
 /** 分割された推論の各セクションを独立して蓄積する。 */
 export type ActivityStreams = Map<string, Map<string, string>>;
@@ -103,11 +104,11 @@ function updateActivityOutput(
 	method: string,
 	tool: ToolSummary,
 ) {
-	parts.set("text", (parts.get("text") ?? "") + text(p.delta));
 	if (method === "item/commandExecution/outputDelta") {
 		tool.kind = "execute";
-		tool.rawOutput = { formatted_output: parts.get("text") };
+		setToolOutputSource(tool, { text: text(p.delta), delta: true });
 	} else {
+		parts.set("text", (parts.get("text") ?? "") + text(p.delta));
 		tool.title = method === "item/plan/delta" ? "計画" : "ファイル変更";
 		tool.content = [textContent(parts.get("text")!)];
 	}
