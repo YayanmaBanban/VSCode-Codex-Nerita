@@ -43,7 +43,8 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 		>
 			<span
 				className={cn(
-					"context-usage inline-flex flex-[0_0_24px] text-muted data-[warning=true]:text-warning",
+					"context-usage inline-flex flex-[0_0_24px] text-muted",
+					"data-[warning=true]:text-warning",
 					"[&_circle]:fill-none [&_circle]:stroke-current [&_circle]:stroke-2",
 				)}
 				role="progressbar"
@@ -70,7 +71,10 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 						r={8}
 					/>
 					<motion.circle
-						className="context-fill origin-center [transform:rotate(-90deg)] [stroke-linecap:round]"
+						className={cn(
+							"context-fill origin-center [transform:rotate(-90deg)]",
+							"[stroke-linecap:round]",
+						)}
 						cx={12}
 						cy={12}
 						r={8}

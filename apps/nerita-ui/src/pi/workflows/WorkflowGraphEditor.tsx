@@ -1,5 +1,6 @@
 // グラフとフォームの編集内容を同じ定義に集約し、TOML へ変換する。
 
+import { cn } from "cnfast";
 import {
 	parseWorkflow,
 	validateWorkflow,
@@ -127,7 +128,12 @@ function WorkflowGraphPane({
 }: WorkflowGraphPaneProps) {
 	return (
 		<div className="flex min-h-0 flex-col">
-			<div className="flex flex-wrap items-center gap-3 border-b border-[var(--workflow-border)] p-3">
+			<div
+				className={cn(
+					"flex flex-wrap items-center gap-3 border-b border-[var(--workflow-border)]",
+					"p-3",
+				)}
+			>
 				<button
 					disabled={workflow.steps.length >= 32}
 					onClick={() => {
@@ -221,7 +227,12 @@ function WorkflowInspector({
 	validation,
 }: WorkflowInspectorProps) {
 	return (
-		<aside className="workflow-inspector min-h-0 overflow-auto border-l border-[var(--workflow-border)] p-4">
+		<aside
+			className={cn(
+				"workflow-inspector min-h-0 overflow-auto border-l",
+				"border-[var(--workflow-border)] p-4",
+			)}
+		>
 			<WorkflowSettings workflow={workflow} update={update} />
 			<WorkflowStepForm
 				key={step.id}
@@ -256,7 +267,7 @@ function WorkflowInspector({
 			{(error || validation) && (
 				<p
 					role="alert"
-					className="mt-4 whitespace-pre-wrap break-words text-tool-error"
+					className="mt-4 break-words whitespace-pre-wrap text-tool-error"
 				>
 					{error || validation}
 				</p>

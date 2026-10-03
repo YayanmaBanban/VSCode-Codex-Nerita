@@ -4,6 +4,14 @@ import { cn } from "cnfast";
 import { Check, ChevronRight, Cpu } from "lucide-react";
 import type { BackendId } from "@nerita/shared/backend";
 
+/** バックエンド候補の選択・無効状態を表示する。 */
+const backendOptionStyle = cn(
+	"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px]",
+	"text-[12px] outline-none",
+	"data-disabled:cursor-default data-disabled:opacity-50",
+	"data-highlighted:bg-menu-hover",
+);
+
 /** ホバー待機とキーボード操作を同じサブメニューで扱う。 */
 export function BackendMenu({
 	backend,
@@ -17,7 +25,11 @@ export function BackendMenu({
 			<Menu.SubmenuTrigger
 				openOnHover
 				delay={300}
-				className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover"
+				className={cn(
+					"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px]",
+					"py-[8px] text-[12px] outline-none",
+					"data-highlighted:bg-menu-hover",
+				)}
 			>
 				<Cpu size={16} aria-hidden="true" />
 				バックエンド
@@ -35,7 +47,12 @@ export function BackendMenu({
 					collisionPadding={8}
 					className="z-30"
 				>
-					<Menu.Popup className="min-w-[128px] rounded-[6px] border border-solid border-menu-border bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]">
+					<Menu.Popup
+						className={cn(
+							"min-w-[128px] rounded-[6px] border border-solid border-menu-border",
+							"bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]",
+						)}
+					>
 						<Menu.RadioGroup
 							value={backend ?? ""}
 							onValueChange={(value) =>
@@ -53,10 +70,7 @@ export function BackendMenu({
 									value={value}
 									disabled={backend === undefined}
 									closeOnClick
-									className={cn(
-										"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none",
-										"data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50",
-									)}
+									className={backendOptionStyle}
 								>
 									<span className="size-[16px] shrink-0">
 										<Menu.RadioItemIndicator>

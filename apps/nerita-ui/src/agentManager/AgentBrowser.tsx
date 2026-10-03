@@ -1,5 +1,6 @@
 // バックエンドと定義を選び、対応する設定フォームだけを表示する。
 
+import { cn } from "cnfast";
 import type {
 	ManagedAgent,
 	ManagerState,
@@ -48,7 +49,7 @@ export function AgentBrowser(props: Props) {
 			{state.errors.length > 0 && (
 				<div
 					role="alert"
-					className="break-words rounded-md border border-input-border p-3 text-sm"
+					className="rounded-md border border-input-border p-3 text-sm break-words"
 				>
 					{state.errors.map((error, index) => (
 						<p key={index}>{error}</p>
@@ -82,7 +83,12 @@ export function AgentBrowser(props: Props) {
 					{!agents.length && <option value="">Agent 定義なし</option>}
 				</select>
 			</Field>
-			<section className="min-w-0 rounded-lg border border-input-border p-4 sm:p-5">
+			<section
+				className={cn(
+					"min-w-0 rounded-lg border border-input-border p-4",
+					"sm:p-5",
+				)}
+			>
 				<SelectedSettings
 					{...props}
 					backend={backend}
@@ -186,7 +192,7 @@ function SelectedSettings(props: SelectedSettingsProps) {
 		);
 	}
 	return (
-		<p className="break-words text-sm text-muted">
+		<p className="text-sm break-words text-muted">
 			.codex/agents/*.toml にある Agent 定義を表示します。
 		</p>
 	);

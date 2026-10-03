@@ -93,15 +93,18 @@ export const BorderBeam = (props: BorderBeamProps) => {
 	return (
 		<div
 			className={cn(
-				"pointer-events-none absolute inset-0 rounded-[inherit] border border-solid border-transparent",
-				"[mask-clip:padding-box,border-box] [mask-composite:exclude] [mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]",
+				"pointer-events-none absolute inset-0 rounded-[inherit] border border-solid",
+				"border-transparent",
+				"[mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]",
+				"[mask-composite:exclude] [mask-clip:padding-box,border-box]",
 			)}
 			style={{ borderWidth: `${borderThickness}px` }}
 		>
 			<motion.div
 				className={cn(
 					"absolute aspect-square",
-					"bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)] to-transparent",
+					"bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)]",
+					"to-transparent",
 					pauseOnHover && "group-hover:animation-play-state-paused",
 					className,
 				)}

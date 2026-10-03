@@ -1,7 +1,15 @@
 // オプションの先頭からサイドバーの保存済み配置を選択する。
+import { cn } from "cnfast";
 import { Menu } from "@base-ui/react/menu";
 import { Check, ChevronRight, Columns2 } from "lucide-react";
 import type { SidebarLocation } from "@nerita/shared/sidebar";
+
+/** 配置選択のサブメニューを開くボタンの配置と選択状態。 */
+const sidebarTriggerStyle = cn(
+	"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px]",
+	"text-[12px] outline-none",
+	"data-highlighted:bg-menu-hover",
+);
 
 /** ホバー待機とキーボード操作を同じサブメニューで扱う。 */
 export function SidebarMenu({
@@ -16,7 +24,7 @@ export function SidebarMenu({
 			<Menu.SubmenuTrigger
 				openOnHover
 				delay={300}
-				className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover"
+				className={sidebarTriggerStyle}
 			>
 				<Columns2 size={16} aria-hidden="true" />
 				サイドバー
@@ -34,7 +42,12 @@ export function SidebarMenu({
 					collisionPadding={8}
 					className="z-30"
 				>
-					<Menu.Popup className="min-w-[128px] rounded-[6px] border border-solid border-menu-border bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]">
+					<Menu.Popup
+						className={cn(
+							"min-w-[128px] rounded-[6px] border border-solid border-menu-border",
+							"bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]",
+						)}
+					>
 						<Menu.RadioGroup
 							value={location}
 							onValueChange={(value) =>
@@ -51,7 +64,11 @@ export function SidebarMenu({
 									key={value}
 									value={value}
 									closeOnClick
-									className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover"
+									className={cn(
+										"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px]",
+										"py-[8px] text-[12px] outline-none",
+										"data-highlighted:bg-menu-hover",
+									)}
 								>
 									<span className="size-[16px] shrink-0">
 										<Menu.RadioItemIndicator>

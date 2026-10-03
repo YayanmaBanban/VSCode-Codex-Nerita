@@ -58,8 +58,10 @@ export function SessionPanel({
 			id="session-panel"
 			aria-label="セッション一覧"
 			className={cn(
-				"absolute inset-y-0 right-0 z-20 flex w-[350px] max-w-full shrink-0 flex-col",
-				"border-0 border-l border-solid border-panel-border bg-menu text-menu-text shadow-[-8px_0_24px_#0002]",
+				"absolute inset-y-0 right-0 z-20 flex w-[350px] max-w-full shrink-0",
+				"flex-col",
+				"border-0 border-l border-solid border-panel-border bg-menu text-menu-text",
+				"shadow-[-8px_0_24px_#0002]",
 				"[@media(min-width:760px)]:static [@media(min-width:760px)]:shadow-none",
 			)}
 			onKeyDown={(event) => {
@@ -104,7 +106,8 @@ function SessionArchiveFilter({ state, send }: SessionArchiveFilterProps) {
 					type="button"
 					className={cn(
 						"inline-flex items-center gap-[6px] text-[12px]",
-						"aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4",
+						"aria-pressed:border-focus aria-pressed:font-semibold",
+						"aria-pressed:underline aria-pressed:underline-offset-4",
 					)}
 					aria-pressed={state.sessionsArchived === archived}
 					disabled={
@@ -143,7 +146,7 @@ type SessionPanelListProps = {
 function SessionPanelList(props: SessionPanelListProps) {
 	const { state, send } = props;
 	return (
-		<div className="min-h-0 flex-1 overflow-y-auto p-[8px] [scrollbar-width:thin]">
+		<div className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-[8px]">
 			{state.sessionsError && <SessionListError {...props} />}
 			{state.sessionPending && (
 				<p role="status" className="mx-[8px] text-[12px] text-muted">
@@ -201,7 +204,10 @@ function SessionListError({
 	return (
 		<div
 			role="alert"
-			className="m-[4px] rounded-[6px] border border-solid border-alert-border bg-alert p-[10px] text-[12px] leading-[1.7]"
+			className={cn(
+				"m-[4px] rounded-[6px] border border-solid border-alert-border bg-alert",
+				"p-[10px] text-[12px] leading-[1.7]",
+			)}
 		>
 			{state.sessionsError}
 			{capabilities.list && (

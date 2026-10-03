@@ -62,7 +62,11 @@ export function ChatApp({ bridge }: ChatAppProps) {
 	);
 	return (
 		<ToolOutputBridge value={bridge}>
-			<main className="chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col">
+			<main
+				className={cn(
+					"chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col",
+				)}
+			>
 				<ConnectionHeader
 					backend={backend}
 					sidebarLocation={sidebarLocation}

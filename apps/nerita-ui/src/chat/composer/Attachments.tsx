@@ -1,4 +1,5 @@
 // 添付の種別・ファイル名と、エディターで開く・取り外す操作を表示する。
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { X } from "lucide-react";
 import type { Attachment } from "@nerita/shared/composer";
@@ -28,7 +29,11 @@ export function Attachments({
 				const Icon = fileIcon(file.name);
 				return (
 					<span
-						className="attachment inline-flex max-w-full rounded-[5px] border border-solid border-panel-border [&_svg]:shrink-0"
+						className={cn(
+							"attachment inline-flex max-w-full rounded-[5px] border border-solid",
+							"border-panel-border",
+							"[&_svg]:shrink-0",
+						)}
 						key={file.id}
 					>
 						<SettingsTooltip content={file.uri}>
@@ -36,7 +41,10 @@ export function Attachments({
 								type="button"
 								disabled={disabled}
 								aria-label={`${file.name} を開く`}
-								className="inline-flex min-w-0 flex-1 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[12px]"
+								className={cn(
+									"inline-flex min-w-0 flex-1 items-center gap-[5px] border-0",
+									"bg-transparent px-[5px] py-[4px] text-[12px]",
+								)}
 								onClick={() => onOpen(file.id)}
 							>
 								<Icon size={14} aria-hidden="true" />
@@ -47,7 +55,10 @@ export function Attachments({
 							type="button"
 							disabled={disabled}
 							aria-label={`${file.name} を取り外す`}
-							className="inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[12px]"
+							className={cn(
+								"inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent",
+								"px-[5px] py-[4px] text-[12px]",
+							)}
 							onClick={() => onRemove(file.id)}
 						>
 							<X size={12} aria-hidden="true" />

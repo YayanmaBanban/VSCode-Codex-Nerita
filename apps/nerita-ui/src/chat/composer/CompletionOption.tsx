@@ -42,11 +42,12 @@ export function CompletionOption({
 					}
 				}}
 				className={cn(
-					"cursor-pointer rounded border border-transparent p-2 [overflow-wrap:anywhere]",
+					"cursor-pointer rounded border border-transparent p-2",
+					"[overflow-wrap:anywhere]",
 					context && "flex items-center gap-2",
 					item.disabled && "cursor-not-allowed opacity-50",
 					selected
-						? "bg-settings-hover border-settings-focus"
+						? "border-settings-focus bg-settings-hover"
 						: "hover:bg-settings-hover",
 				)}
 			>
@@ -80,7 +81,7 @@ function CompletionOptionLabel({
 				<span
 					className={cn(
 						"text-[12px] text-muted",
-						context ? "min-w-0 truncate" : "block line-clamp-2",
+						context ? "min-w-0 truncate" : "line-clamp-2 block",
 					)}
 				>
 					{item.description}

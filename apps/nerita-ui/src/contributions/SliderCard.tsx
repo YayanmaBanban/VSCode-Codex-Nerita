@@ -77,7 +77,11 @@ export function SliderCard({ control, disabled, onChange }: CardProps) {
 					>
 						<Popover.Popup
 							aria-label={option.name}
-							className="w-[min(256px,calc(100vw-24px))] rounded-[18px] border border-solid border-menu-border bg-menu p-[12px] text-menu-text shadow-[0_6px_24px_#0003]"
+							className={cn(
+								"w-[min(256px,calc(100vw-24px))] rounded-[18px] border border-solid",
+								"border-menu-border bg-menu p-[12px] text-menu-text",
+								"shadow-[0_6px_24px_#0003]",
+							)}
 						>
 							<CardHeader
 								control={displayed}
@@ -115,7 +119,11 @@ function cardTrigger(control: CardProps["control"], disabled: boolean) {
 			aria-label={model ? "モデルと推論レベル" : option.name}
 			disabled={disabled}
 			className={cn(
-				"inline-flex h-[28px] min-w-0 shrink items-center justify-center rounded-[5px] border-0 bg-transparent enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-settings-focus disabled:opacity-50",
+				"inline-flex h-[28px] min-w-0 shrink items-center justify-center",
+				"rounded-[5px] border-0 bg-transparent",
+				"focus-visible:outline-1 focus-visible:outline-settings-focus",
+				"enabled:hover:bg-settings-hover",
+				"disabled:opacity-50",
 				model
 					? "gap-[6px] px-[5px] text-[12px] font-medium"
 					: "w-[28px] shrink-0 p-0",
@@ -125,7 +133,11 @@ function cardTrigger(control: CardProps["control"], disabled: boolean) {
 			{model ? (
 				<>
 					<span className="truncate">
-						<span className={cn(!control.warning && "text-foreground")}>
+						<span
+							className={cn(
+								!control.warning && "text-foreground",
+							)}
+						>
 							{optionLabel(model)}
 						</span>{" "}
 						{option.currentValue}
@@ -133,7 +145,10 @@ function cardTrigger(control: CardProps["control"], disabled: boolean) {
 					{control.fastMode?.checked && (
 						<span
 							aria-hidden="true"
-							className="inline-flex shrink-0 [&_svg]:size-[14px]"
+							className={cn(
+								"inline-flex shrink-0",
+								"[&_svg]:size-[14px]",
+							)}
 							dangerouslySetInnerHTML={{ __html: fastModeOn }}
 						/>
 					)}
@@ -154,7 +169,11 @@ function cardTrigger(control: CardProps["control"], disabled: boolean) {
 function CardHeader({ control, disabled, onChange }: CardProps) {
 	const { option, model, secondary, fastMode } = control;
 	return (
-		<div className="relative flex min-h-[36px] items-center justify-center pb-[8px]">
+		<div
+			className={cn(
+				"relative flex min-h-[36px] items-center justify-center pb-[8px]",
+			)}
+		>
 			{fastMode && (
 				<div className="absolute top-0 left-0">
 					<FastModeButton

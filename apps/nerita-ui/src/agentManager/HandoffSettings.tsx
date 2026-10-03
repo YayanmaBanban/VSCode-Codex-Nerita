@@ -60,7 +60,9 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 			{state.handoffError && (
 				<div
 					role="alert"
-					className="grid gap-3 break-words rounded-md border border-input-border p-3 text-sm"
+					className={cn(
+						"grid gap-3 rounded-md border border-input-border p-3 text-sm break-words",
+					)}
 				>
 					<span>{state.handoffError}</span>
 					<button
@@ -90,7 +92,11 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 			</p>
 			<details>
 				<summary className="cursor-pointer text-sm">出力 JSON</summary>
-				<pre className="overflow-auto rounded-md border border-input-border p-3 text-xs">
+				<pre
+					className={cn(
+						"overflow-auto rounded-md border border-input-border p-3 text-xs",
+					)}
+				>
 					{JSON.stringify(config, null, 2)}
 				</pre>
 			</details>
@@ -134,7 +140,7 @@ function HandoffFields(props: HandoffFieldsProps) {
 					}
 				/>
 			</Field>
-			<div className="grid gap-5 lg:grid-cols-2">
+			<div className={cn("grid gap-5", "lg:grid-cols-2")}>
 				{(["pi", "codex"] as const).map((backend) => {
 					const item = config.backends[backend];
 					const currentOptions = effortOptions(
@@ -234,7 +240,9 @@ function BackendHandoffSettings(
 	return (
 		<section
 			key={backend}
-			className="grid min-w-0 content-start gap-4 rounded-lg border border-input-border p-4"
+			className={cn(
+				"grid min-w-0 content-start gap-4 rounded-lg border border-input-border p-4",
+			)}
 			aria-label={`${backend} ハンドオフ`}
 		>
 			<h3 className="m-0 font-semibold">

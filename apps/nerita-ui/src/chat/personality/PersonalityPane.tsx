@@ -34,7 +34,10 @@ export function PersonalityPane(props: PersonalityPaneProps) {
 				aria-expanded={expanded}
 				aria-controls={`personality-${scope}`}
 				onClick={() => setExpanded(!expanded)}
-				className="flex w-full items-center justify-between border-0 bg-transparent px-0 py-[4px] text-inherit"
+				className={cn(
+					"flex w-full items-center justify-between border-0 bg-transparent px-0",
+					"py-[4px] text-inherit",
+				)}
 			>
 				<span>{title}</span>
 				{expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -45,7 +48,9 @@ export function PersonalityPane(props: PersonalityPaneProps) {
 				inert={!expanded}
 				aria-hidden={!expanded}
 				className={cn(
-					"grid transition-[grid-template-rows] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+					"grid transition-[grid-template-rows] duration-[220ms]",
+					"ease-[cubic-bezier(0.22,1,0.36,1)]",
+					"motion-reduce:transition-none",
 					expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
 				)}
 			>
@@ -102,7 +107,10 @@ function PaneEditor(props: PaneEditorProps) {
 					maxLength={200}
 					disabled={inputDisabled}
 					onChange={(event) => setName(event.target.value)}
-					className="min-w-0 rounded-[4px] border border-solid border-input-border bg-input px-[8px] py-[7px] text-input-text"
+					className={cn(
+						"min-w-0 rounded-[4px] border border-solid border-input-border bg-input",
+						"px-[8px] py-[7px] text-input-text",
+					)}
 				/>
 			</label>
 			{locked && (

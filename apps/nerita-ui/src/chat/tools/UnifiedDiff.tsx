@@ -10,7 +10,8 @@ export function UnifiedDiff({ path, diff }: { path: string; diff: string }) {
 				className={cn(
 					"file-diff-lines",
 					toolCodeClass,
-					"whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]",
+					"overflow-x-auto rounded-[4px] border border-solid border-panel-border",
+					"[overflow-wrap:normal] whitespace-pre",
 				)}
 				tabIndex={0}
 				aria-label="差分コード"

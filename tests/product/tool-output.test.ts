@@ -101,6 +101,61 @@ void test("大量の追記後も状態を小さく保ち、取得した出力に
 	assert.equal(result.eof, true);
 });
 
+void test("全文がある出力は省略文字数を表示し、絵文字を一文字として数える", (t) => {
+	const store = new ToolOutputStore();
+	t.after(() => store.dispose());
+	for (const [id, text, expected] of [
+		["ascii", "a".repeat(20420), "… 18,420文字を省略 …"],
+		["emoji", "🐈".repeat(1500), "… 500文字を省略 …"],
+	]) {
+		const output = store.project({
+			id: id!,
+			title: "command",
+			status: "completed",
+			paths: [],
+			rawOutput: { formatted_output: text },
+		}).output!;
+		assert.ok(output.preview.includes(expected!));
+	}
+	const streamed: ToolSummary = {
+		id: "streamed-count",
+		title: "command",
+		status: "in_progress",
+		paths: [],
+	};
+	setToolOutputSource(streamed, { text: "🐈".repeat(600), delta: true });
+	store.project(streamed);
+	const next = { ...streamed };
+	setToolOutputSource(next, { text: "猫".repeat(10000), delta: true });
+	assert.ok(
+		store.project(next).output!.preview.includes("… 9,200文字を省略 …"),
+	);
+});
+
+void test("省略済みの出力や全文を読まない外部ファイルでは省略文字数を推測しない", (t) => {
+	const store = new ToolOutputStore();
+	t.after(() => store.dispose());
+	const base: ToolSummary = {
+		id: "unknown-count",
+		title: "command",
+		status: "completed",
+		paths: [],
+	};
+	setToolOutputSource(base, { text: "先頭".repeat(1100), truncated: true });
+	assert.ok(store.project(base).output!.preview.includes("… 出力を省略 …"));
+	const path = join(
+		process.env.NERITA_TEST_ROOT!,
+		`output-count-${randomBytes(8).toString("hex")}.log`,
+	);
+	writeFileSync(path, "猫".repeat(10000), "utf8");
+	t.after(() => unlinkSync(path));
+	const external = { ...base, id: "external-count" };
+	setToolOutputSource(external, { text: "先頭…末尾", path });
+	assert.ok(
+		store.project(external).output!.preview.includes("… 出力を省略 …"),
+	);
+});
+
 void test("範囲要求は負数・小数・過大な取得量・任意パスを拒否する", async () => {
 	const request = {
 		type: "tool/output",

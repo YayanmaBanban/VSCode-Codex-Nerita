@@ -45,8 +45,10 @@ export function SessionRename({
 				autoFocus
 				aria-label="新しいセッション名"
 				className={cn(
-					"box-border min-w-0 w-full rounded-[4px] border border-solid border-input-border bg-input px-[8px] py-[6px]",
-					"text-[12px] text-input-text focus-visible:outline-2 focus-visible:outline-focus",
+					"box-border w-full min-w-0 rounded-[4px] border border-solid",
+					"border-input-border bg-input px-[8px] py-[6px]",
+					"text-[12px] text-input-text",
+					"focus-visible:outline-2 focus-visible:outline-focus",
 				)}
 				value={name}
 				maxLength={200}

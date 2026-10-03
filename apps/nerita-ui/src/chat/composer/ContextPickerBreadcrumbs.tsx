@@ -1,4 +1,5 @@
 // カテゴリと開いているフォルダーを、直接戻れるパンくずとして表示する。
+import { cn } from "cnfast";
 import { ChevronRight } from "lucide-react";
 import type { WorkspacePath } from "@nerita/shared/workspacePaths";
 
@@ -35,11 +36,15 @@ export function ContextPickerBreadcrumbs({
 	}
 	return (
 		<nav aria-label="コンテキストの階層" className="mb-1 min-w-0">
-			<ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0 text-[12px]">
+			<ol
+				className={cn(
+					"m-0 flex list-none flex-wrap items-center gap-1 p-0 text-[12px]",
+				)}
+			>
 				{crumbs.map((crumb, index) => (
 					<li
 						key={crumb.key}
-						className="flex min-w-0 max-w-full items-center gap-1"
+						className="flex max-w-full min-w-0 items-center gap-1"
 					>
 						{index > 0 && (
 							<ChevronRight
@@ -51,7 +56,7 @@ export function ContextPickerBreadcrumbs({
 						{index === crumbs.length - 1 ? (
 							<span
 								aria-current="location"
-								className="min-w-0 break-all px-1 py-2 text-input-text"
+								className="min-w-0 px-1 py-2 break-all text-input-text"
 							>
 								{crumb.label}
 							</span>
@@ -60,7 +65,12 @@ export function ContextPickerBreadcrumbs({
 								type="button"
 								onMouseDown={(event) => event.preventDefault()}
 								onClick={crumb.onClick}
-								className="min-w-0 break-all rounded border-0 bg-transparent px-1 py-2 text-left text-muted hover:bg-settings-hover hover:text-input-text focus-visible:outline-2 focus-visible:outline-focus"
+								className={cn(
+									"min-w-0 rounded border-0 bg-transparent px-1 py-2 text-left break-all",
+									"text-muted",
+									"hover:bg-settings-hover hover:text-input-text",
+									"focus-visible:outline-2 focus-visible:outline-focus",
+								)}
 							>
 								{crumb.label}
 							</button>

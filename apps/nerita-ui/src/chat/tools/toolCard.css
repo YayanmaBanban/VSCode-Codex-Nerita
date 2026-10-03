@@ -1,0 +1,29 @@
+/* 一覧カードと同じ時間と曲線で、本文の高さ・透明度と開閉アイコンの回転を変化させる。 */
+.tool-card-collapse {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		grid-template-rows 220ms ease-out,
+		opacity 220ms ease-out,
+		visibility 0s 220ms;
+}
+
+.tool-card[data-open="true"] > .tool-card-collapse {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	visibility: visible;
+	transition-delay: 0s;
+}
+
+.tool-chevron {
+	transition: transform 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tool-card-collapse,
+	.tool-chevron {
+		transition: none;
+	}
+}

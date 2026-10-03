@@ -31,6 +31,8 @@ type Entry = {
 	head: string;
 	tail: string;
 	chars: number;
+	/** 全文が手元にある場合だけ、コードポイント単位の文字数を保持する。 */
+	characters: number | undefined;
 	bytes: number;
 	truncated: boolean;
 };
@@ -86,6 +88,7 @@ export class ToolOutputStore {
 				head: "",
 				tail: "",
 				chars: 0,
+				characters: 0,
 				bytes: 0,
 				truncated: false,
 			};
@@ -196,6 +199,7 @@ export class ToolOutputStore {
 			800,
 		);
 		entry.chars = (source.delta ? entry.chars : 0) + source.text.length;
+		entry.characters = updatedCharacterCount(entry.characters, source);
 		entry.bytes =
 			(source.delta ? entry.bytes : 0) + Buffer.byteLength(source.text);
 		entry.truncated = source.truncated ?? false;
@@ -225,8 +229,9 @@ export class ToolOutputStore {
 			const tail = readRange(fd, size, Math.max(0, size - 3200), 3200);
 			entry.head = safeHead(head.text, 2000);
 			entry.tail = safeTail(tail.text, 800);
-			// 文字数は公開せず、プレビューの上限判定にだけ使う。
+			// 大きな外部ファイルは全文を読まないため、省略文字数を推測しない。
 			entry.chars = head.eof ? head.text.length : 2001;
+			entry.characters = head.eof ? characterCount(head.text) : undefined;
 			entry.bytes = size;
 			entry.truncated = false;
 		} catch {
@@ -319,15 +324,49 @@ function contentText(parts: unknown[] | undefined) {
 /** 正確なサイズが分かる出力だけにバイト数を付ける。 */
 function preview(entry: Entry, source: ToolOutputSource) {
 	const truncated = entry.truncated || entry.chars > 2000;
+	const head = safeHead(entry.head, 1200);
+	const tail = safeTail(entry.tail, 800);
+	const omitted =
+		entry.characters === undefined
+			? undefined
+			: entry.characters - characterCount(head) - characterCount(tail);
+	const omission =
+		omitted === undefined
+			? "… 出力を省略 …"
+			: `… ${omitted.toLocaleString("ja-JP")}文字を省略 …`;
 	return {
 		preview:
 			entry.chars > 2000
-				? `${safeHead(entry.head, 1200)}\n\n… 出力を省略 …\n\n${safeTail(entry.tail, 800)}`
+				? `${head}\n\n${omission}\n\n${tail}`
 				: entry.head,
 		truncated,
 		...(!entry.truncated || source.path ? { outputRef: entry.ref } : {}),
 		...(!entry.truncated ? { totalBytes: entry.bytes } : {}),
 	};
+}
+
+/** 未取得・省略済みの本文は数えず、完全な置換または追記だけから総文字数を求める。 */
+function updatedCharacterCount(
+	previous: number | undefined,
+	source: ToolOutputSource,
+): number | undefined {
+	if (
+		source.truncated ||
+		source.path ||
+		(source.delta && previous === undefined)
+	) {
+		return undefined;
+	}
+	return (source.delta ? previous! : 0) + characterCount(source.text);
+}
+
+/** 絵文字を UTF-16 の二文字として数えず、全文の配列化も避ける。 */
+function characterCount(text: string): number {
+	let count = 0;
+	for (const _character of text) {
+		count++;
+	}
+	return count;
 }
 
 /** UTF-16 のサロゲート対もプレビューの端で分断しない。 */

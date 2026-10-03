@@ -83,14 +83,15 @@ function piToolSummary(
 	input: unknown,
 	result: unknown,
 ): ToolSummary {
+	const kind = toolKind(event.toolName);
 	return {
 		id: event.toolCallId,
 		...(state.runId ? { runId: state.runId } : {}),
 		...toolParent(event, existing),
 		...(state.cwd ? { cwd: state.cwd } : {}),
 		order: existing?.order ?? nextTimelineOrder(state),
-		title: toolTitle(existing, file, label),
-		kind: toolKind(event.toolName),
+		title: toolTitle(existing, file, label, kind, input),
+		kind,
 		status: toolStatus(event, state.run),
 		paths: toolPaths(existing, file),
 		rawInput: input,
@@ -130,12 +131,21 @@ function toolPaths(
 	return existing?.paths ?? (file ? [file] : []);
 }
 
-/** 既存タイトルを優先し、パス付きの操作名を補う。 */
+/** 実行ツールは元のコマンドを見出しに使い、その他は既存の操作名を保持する。 */
 function toolTitle(
 	existing: ToolSummary | undefined,
 	file: string | undefined,
 	label: string,
+	kind: string,
+	input: unknown,
 ): string {
+	if (
+		kind === "execute" &&
+		isRecord(input) &&
+		typeof input.command === "string"
+	) {
+		return input.command;
+	}
 	return existing?.title ?? (file ? `${label}: ${file}` : label);
 }
 

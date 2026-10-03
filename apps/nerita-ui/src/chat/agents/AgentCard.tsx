@@ -35,7 +35,10 @@ export function AgentIcon({
 	return (
 		<span
 			aria-hidden="true"
-			className="block size-8 shrink-0 overflow-hidden rounded-[6px] [&>svg]:size-full"
+			className={cn(
+				"block size-8 shrink-0 overflow-hidden rounded-[6px]",
+				"[&>svg]:size-full",
+			)}
 			dangerouslySetInnerHTML={{
 				__html: icons[iconKey] ?? icons.cheetah,
 			}}
@@ -57,8 +60,11 @@ export function AgentCard({
 			type="button"
 			className={cn(
 				"agent-card mb-3 flex w-full min-w-0 items-center gap-3 px-[14px] py-3",
-				"rounded-[9px] border border-solid border-message-border bg-transparent text-left text-inherit",
-				"hover:bg-message-user focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+				"rounded-[9px] border border-solid border-message-border bg-transparent",
+				"text-left text-inherit",
+				"hover:bg-message-user",
+				"focus-visible:outline-2 focus-visible:outline-offset-2",
+				"focus-visible:outline-focus",
 			)}
 			onClick={() => onOpen(agent)}
 			aria-label={`${agentName(agent)}の会話を表示 · ${labels[agent.status]}`}
@@ -76,7 +82,7 @@ export function AgentCard({
 				<span className="block text-[13px] [overflow-wrap:anywhere]">
 					{agentName(agent)}
 				</span>
-				<span className="block text-[12px] text-muted [overflow-wrap:anywhere]">
+				<span className="block text-[12px] [overflow-wrap:anywhere] text-muted">
 					{[labels[agent.status], agent.role, agent.model]
 						.filter(Boolean)
 						.join(" · ")}

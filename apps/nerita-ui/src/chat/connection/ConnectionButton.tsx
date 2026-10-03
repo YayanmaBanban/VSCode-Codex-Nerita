@@ -100,7 +100,10 @@ export function ConnectionButton({ state, send }: ConnectionButtonProps) {
 					{Array.from({ length: 12 }, (_, index) => (
 						<i
 							key={index}
-							className={cn(`confetti-piece confetti-${index}`)}
+							className={cn(
+								"confetti-piece",
+								`confetti-${index}`,
+							)}
 						/>
 					))}
 				</span>
@@ -149,6 +152,15 @@ type ConnectionTriggerProps = {
 	>;
 };
 
+/** 再接続ボタンの配置・文字と、操作状態ごとの境界線を定義する。 */
+const connectionTriggerStyle = cn(
+	"connection-button relative flex h-[28px] items-center gap-[5px] px-[7px] py-0",
+	"whitespace-nowrap",
+	"text-[12px]",
+	"enabled:hover:border-[color-mix(in_srgb,var(--nerita-button-border)_55%,white)]",
+	"disabled:opacity-100",
+);
+
 /** 接続状態と遷移の演出を再接続ボタンへ表示する。 */
 function ConnectionTrigger(props: ConnectionTriggerProps) {
 	const {
@@ -168,8 +180,7 @@ function ConnectionTrigger(props: ConnectionTriggerProps) {
 			<button
 				type="button"
 				className={cn(
-					"connection-button relative flex h-[28px] items-center gap-[5px] whitespace-nowrap px-[7px] py-0",
-					"text-[12px] enabled:hover:border-[color-mix(in_srgb,var(--nerita-button-border)_55%,white)] disabled:opacity-100",
+					connectionTriggerStyle,
 					connectionMouseCursor(displayed),
 					connectionBgColor(displayed),
 				)}
@@ -209,7 +220,9 @@ function ConnectionTrigger(props: ConnectionTriggerProps) {
 					) && (
 						<span
 							aria-hidden="true"
-							className="connection-beam pointer-events-none absolute inset-0 rounded-[inherit]"
+							className={cn(
+								"connection-beam pointer-events-none absolute inset-0 rounded-[inherit]",
+							)}
 						>
 							<BorderBeam
 								size={22}
@@ -259,7 +272,9 @@ function ConnectionCurtain({
 	return (
 		<span
 			aria-hidden="true"
-			className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
+			className={cn(
+				"pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]",
+			)}
 		>
 			<span
 				key={`${curtain.target}-${curtain.phase}`}

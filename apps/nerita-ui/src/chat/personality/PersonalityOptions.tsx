@@ -61,7 +61,11 @@ export function PersonalityOptions(props: PersonalityOptionsProps) {
 					<Menu.Trigger
 						ref={trigger}
 						aria-label="オプション"
-						className="inline-flex size-[28px] shrink-0 items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover"
+						className={cn(
+							"inline-flex size-[28px] shrink-0 items-center justify-center border-0",
+							"bg-transparent p-0",
+							"hover:bg-settings-hover",
+						)}
 					>
 						<Ellipsis size={16} aria-hidden="true" />
 					</Menu.Trigger>
@@ -116,7 +120,12 @@ function ChatOptionsMenu({
 				collisionPadding={8}
 				className="z-30"
 			>
-				<Menu.Popup className="min-w-[180px] rounded-[6px] border border-solid border-menu-border bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]">
+				<Menu.Popup
+					className={cn(
+						"min-w-[180px] rounded-[6px] border border-solid border-menu-border",
+						"bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]",
+					)}
+				>
 					<SidebarMenu
 						location={sidebarLocation}
 						onSelect={
@@ -150,7 +159,11 @@ function ChatOptionsMenu({
 								requestId: crypto.randomUUID(),
 							});
 						}}
-						className="flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-highlighted:bg-menu-hover"
+						className={cn(
+							"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px]",
+							"py-[8px] text-[12px] outline-none",
+							"data-highlighted:bg-menu-hover",
+						)}
 					>
 						<FileUser size={16} aria-hidden="true" />
 						性格設定
@@ -191,8 +204,10 @@ function AuthManagementMenuItem({
 				})
 			}
 			className={cn(
-				"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none",
-				"data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50",
+				"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px]",
+				"py-[8px] text-[12px] outline-none",
+				"data-disabled:cursor-default data-disabled:opacity-50",
+				"data-highlighted:bg-menu-hover",
 			)}
 		>
 			<KeyRound size={16} aria-hidden="true" />
@@ -213,8 +228,10 @@ function LogoutMenuItem({ state, send }: LogoutMenuItemProps) {
 				})
 			}
 			className={cn(
-				"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none",
-				"data-highlighted:bg-menu-hover data-disabled:cursor-default data-disabled:opacity-50",
+				"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px]",
+				"py-[8px] text-[12px] outline-none",
+				"data-disabled:cursor-default data-disabled:opacity-50",
+				"data-highlighted:bg-menu-hover",
 			)}
 		>
 			<LogOut size={16} aria-hidden="true" />
@@ -251,8 +268,10 @@ function PersonalityDialog({
 				<Dialog.Popup
 					finalFocus={trigger}
 					className={cn(
-						"fixed inset-y-[12px] right-[12px] z-50 flex w-[min(460px,calc(100vw-24px))] flex-col",
-						"rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003] outline-none",
+						"fixed inset-y-[12px] right-[12px] z-50 flex",
+						"w-[min(460px,calc(100vw-24px))] flex-col",
+						"rounded-[8px] border border-solid border-menu-border bg-menu",
+						"text-menu-text shadow-[0_6px_24px_#0003] outline-none",
 					)}
 				>
 					<div className="flex items-center justify-between px-[16px] py-[12px]">
@@ -261,13 +280,17 @@ function PersonalityDialog({
 						</Dialog.Title>
 						<Dialog.Close
 							aria-label="性格設定を閉じる"
-							className="inline-flex size-[28px] items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover"
+							className={cn(
+								"inline-flex size-[28px] items-center justify-center border-0",
+								"bg-transparent p-0",
+								"hover:bg-settings-hover",
+							)}
 						>
 							<X size={16} />
 						</Dialog.Close>
 					</div>
 					<div className="min-h-0 flex-1 overflow-y-auto px-[16px] pb-[16px]">
-						<Dialog.Description className="mt-0 text-[11px] text-muted leading-[1.7]">
+						<Dialog.Description className="mt-0 text-[11px] leading-[1.7] text-muted">
 							グローバルとワークスペースの指示を、この順で結合します。変更は会話の開始・分岐・再開時に反映されます。
 						</Dialog.Description>
 						{error && (

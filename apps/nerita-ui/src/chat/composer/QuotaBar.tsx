@@ -38,7 +38,9 @@ export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
 			<span
 				className={cn(
 					"quota-bar inline-flex h-[24px] w-[76px] items-center rounded-[4px]",
-					"hover:brightness-[1.12] focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-quota-focus focus-visible:outline-offset-2",
+					"hover:brightness-[1.12]",
+					"focus-visible:outline-1 focus-visible:outline-offset-2",
+					"focus-visible:outline-quota-focus focus-visible:outline-solid",
 				)}
 				role="progressbar"
 				aria-label="利用枠の残量"
@@ -49,11 +51,16 @@ export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
 				tabIndex={0}
 			>
 				<span
-					className="quota-track h-[9px] w-full overflow-hidden rounded-[5px] bg-quota-track"
+					className={cn(
+						"quota-track h-[9px] w-full overflow-hidden rounded-[5px] bg-quota-track",
+					)}
 					aria-hidden="true"
 				>
 					<span
-						className="quota-fill relative block h-full overflow-hidden rounded-[inherit] bg-[#58bafa]"
+						className={cn(
+							"quota-fill relative block h-full overflow-hidden rounded-[inherit]",
+							"bg-[#58bafa]",
+						)}
 						style={{ width: `${remaining}%` }}
 					>
 						<svg

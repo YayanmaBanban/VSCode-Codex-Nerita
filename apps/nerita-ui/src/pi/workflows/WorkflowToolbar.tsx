@@ -27,7 +27,7 @@ export function WorkflowToolbar({
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="min-w-0">
 					<h1 className="text-base font-semibold">Pi Workflow</h1>
-					<p className="mt-1 break-all text-xs opacity-65">
+					<p className="mt-1 text-xs break-all opacity-65">
 						{editor.state?.file ?? "読み込み中…"}
 					</p>
 				</div>
@@ -127,7 +127,12 @@ export function WorkflowFeedback({ editor }: { editor: WorkflowEditorState }) {
 				</button>
 			</div>
 			{showScript && script && (
-				<pre className="mt-3 max-h-48 overflow-auto rounded border border-[var(--workflow-border)] p-3 text-xs">
+				<pre
+					className={cn(
+						"mt-3 max-h-48 overflow-auto rounded border",
+						"border-[var(--workflow-border)] p-3 text-xs",
+					)}
+				>
 					{script}
 				</pre>
 			)}
@@ -149,9 +154,12 @@ export function WorkflowError({
 	return (
 		<div
 			role="alert"
-			className="shrink-0 overflow-auto border-b border-[var(--workflow-border)] p-3 text-tool-error"
+			className={cn(
+				"shrink-0 overflow-auto border-b border-[var(--workflow-border)] p-3",
+				"text-tool-error",
+			)}
 		>
-			<p className="max-h-24 overflow-auto whitespace-pre-wrap break-words">
+			<p className="max-h-24 overflow-auto break-words whitespace-pre-wrap">
 				{error}
 			</p>
 			<button onClick={reload}>文書を再読み込み（入力を破棄）</button>

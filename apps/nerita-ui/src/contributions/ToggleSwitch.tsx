@@ -1,4 +1,5 @@
 // Host が解決した切替値を使い、汎用のスイッチを描画する。
+import { cn } from "cnfast";
 import type { NeritaUiControl } from "@nerita/shared/uiContributions";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
 
@@ -14,12 +15,21 @@ export function ToggleSwitch({
 }) {
 	return (
 		<SettingsTooltip content={control.description}>
-			<label className="toggle-switch inline-flex items-center gap-[5px] px-[5px] text-[12px] text-muted">
+			<label
+				className={cn(
+					"toggle-switch inline-flex items-center gap-[5px] px-[5px] text-[12px]",
+					"text-muted",
+				)}
+			>
 				<span>{control.label}</span>
 				<button
 					type="button"
 					role="switch"
-					className="group h-[15px] w-[26px] shrink-0 rounded-[12px] border-0 bg-switch-off p-[2px] aria-checked:bg-switch-on"
+					className={cn(
+						"group h-[15px] w-[26px] shrink-0 rounded-[12px] border-0 bg-switch-off",
+						"p-[2px]",
+						"aria-checked:bg-switch-on",
+					)}
 					aria-label={control.label}
 					aria-checked={control.checked}
 					disabled={disabled || !!control.disabled}
@@ -31,7 +41,12 @@ export function ToggleSwitch({
 						)
 					}
 				>
-					<span className="block size-[11px] rounded-full bg-foreground group-aria-checked:translate-x-[11px]" />
+					<span
+						className={cn(
+							"block size-[11px] rounded-full bg-foreground",
+							"group-aria-checked:translate-x-[11px]",
+						)}
+					/>
 				</button>
 			</label>
 		</SettingsTooltip>

@@ -188,8 +188,8 @@ function MessageEntry(props: MessageEntryProps) {
 				"rounded-[9px] border border-solid",
 				messageFocusClass,
 				user
-					? "bg-message-user border-message-border"
-					: "bg-transparent border-transparent",
+					? "border-message-border bg-message-user"
+					: "border-transparent bg-transparent",
 			)}
 			key={message.id}
 			tabIndex={-1}
@@ -238,9 +238,12 @@ function renderTimelineTool(
 	return (
 		<div
 			key={`${tool.runId}:${tool.id}`}
-			className="nested-tool my-[8px] border-0 border-l border-solid border-panel-border pl-[12px]"
+			className={cn(
+				"nested-tool my-[8px] border-0 border-l border-solid border-panel-border",
+				"pl-[12px]",
+			)}
 		>
-			<div className="text-[12px] text-muted [overflow-wrap:anywhere]">
+			<div className="text-[12px] [overflow-wrap:anywhere] text-muted">
 				{parent ? `親ツール: ${parent.title}` : "入れ子のツール"}
 			</div>
 			{renderTool?.(tool)}

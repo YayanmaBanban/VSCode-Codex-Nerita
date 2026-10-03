@@ -12,7 +12,14 @@ import type { ComposerPart } from "@nerita/shared/composerContent";
 import type { SkillSummary } from "@nerita/shared/skills";
 import { cn } from "cnfast";
 import { Maximize2, Minimize2 } from "lucide-react";
-import { type Dispatch, type SetStateAction, useId, useState } from "react";
+import {
+	type Dispatch,
+	type RefObject,
+	type SetStateAction,
+	useId,
+	useRef,
+	useState,
+} from "react";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { CodeBlockMenuPlugin } from "./CodeBlockMenuPlugin";
 import { CompletionPlugin } from "./CompletionPlugin";
@@ -54,6 +61,7 @@ export function ComposerInput(props: ComposerInputProps) {
 	const [error, setError] = useState("");
 	const [expanded, setExpanded] = useState(false);
 	const [showHelp, setShowHelp] = useState(false);
+	const inputRef = useRef<HTMLDivElement>(null);
 	const inputId = useId();
 	const helpId = `${inputId}-help`;
 	return (
@@ -87,6 +95,7 @@ export function ComposerInput(props: ComposerInputProps) {
 						skills={skills}
 					/>
 					<ComposerTextField
+						inputRef={inputRef}
 						inputId={inputId}
 						helpId={helpId}
 						setShowHelp={setShowHelp}
@@ -102,7 +111,15 @@ export function ComposerInput(props: ComposerInputProps) {
 			<ComposerLinksPlugin />
 			<CodeBlockMenuPlugin bridge={bridge} />
 			<ReferenceActionsPlugin bridge={bridge} />
-			<ComposerPlugin {...props} locked={locked} onError={setError} />
+			<ComposerPlugin
+				{...props}
+				onError={setError}
+				onSubmit={() => {
+					// 下書きの消去で操作案内が再表示されないよう、送信処理の前にフォーカスを外す。
+					inputRef.current?.blur();
+					props.onSubmit();
+				}}
+			/>
 			{error && (
 				<p role="alert" className="text-[12px] text-tool-error">
 					{error}
@@ -114,6 +131,7 @@ export function ComposerInput(props: ComposerInputProps) {
 
 /** 入力欄と操作案内の識別子、拡張・入力制限・追加指示の状態。 */
 type ComposerTextFieldProps = {
+	inputRef: RefObject<HTMLDivElement | null>;
 	inputId: string;
 	helpId: string;
 	setShowHelp: Dispatch<SetStateAction<boolean>>;
@@ -128,14 +146,18 @@ type ComposerHelpProps = {
 	showHelp: boolean;
 };
 
-/** 入力操作の案内をフォーカス中だけ表示する。 */
+/** フォーカス時に表示し、送信・フォーカス解除・Escape キーで閉じる案内。 */
 function ComposerHelp({ helpId, showHelp }: ComposerHelpProps) {
 	return (
 		<span
 			id={helpId}
 			role="tooltip"
 			hidden={!showHelp}
-			className="absolute bottom-full left-0 z-30 mb-2 w-max max-w-full rounded-[6px] border border-solid border-tooltip-border bg-tooltip px-3 py-2 text-[12px] leading-[1.5] text-tooltip-text shadow-[0_4px_16px_#0003]"
+			className={cn(
+				"absolute bottom-full left-0 z-30 mb-2 w-max max-w-full rounded-[6px] border",
+				"border-solid border-tooltip-border bg-tooltip px-3 py-2 text-[12px]",
+				"leading-[1.5] text-tooltip-text shadow-[0_4px_16px_#0003]",
+			)}
 		>
 			Ctrl+Enter で送信・Enter / Shift+Enter で改行・Shift +
 			ドロップでファイル添付
@@ -145,6 +167,7 @@ function ComposerHelp({ helpId, showHelp }: ComposerHelpProps) {
 
 /** 入力欄の拡張・操作案内と送信方式に応じた案内文を表示する。 */
 function ComposerTextField({
+	inputRef,
 	inputId,
 	helpId,
 	setShowHelp,
@@ -156,6 +179,7 @@ function ComposerTextField({
 		<PlainTextPlugin
 			contentEditable={
 				<ContentEditable
+					ref={inputRef}
 					id={inputId}
 					aria-label="Codexへのメッセージ"
 					aria-describedby={helpId}
@@ -170,7 +194,7 @@ function ComposerTextField({
 					spellCheck={false}
 					className={cn(
 						"composer-content min-h-[65px] overflow-y-auto overscroll-y-contain p-1",
-						"text-input-text leading-[1.7] [scrollbar-width:thin]",
+						"[scrollbar-width:thin] leading-[1.7] text-input-text",
 						"focus-visible:outline-2 focus-visible:outline-focus",
 						expanded
 							? "h-[min(65dvh,calc(100dvh-300px))]"
@@ -179,7 +203,11 @@ function ComposerTextField({
 				/>
 			}
 			placeholder={
-				<span className="pointer-events-none absolute top-1 left-1 text-input-placeholder">
+				<span
+					className={cn(
+						"pointer-events-none absolute top-1 left-1 text-input-placeholder",
+					)}
+				>
 					{followUp ? "フォローアップを送信" : "チャットを送信"}
 				</span>
 			}
@@ -202,7 +230,11 @@ function renderExpandButton(
 		>
 			<button
 				type="button"
-				className="flex h-7 w-7 shrink-0 items-center justify-center border-0 bg-transparent p-1 text-muted hover:text-input-text"
+				className={cn(
+					"flex h-7 w-7 shrink-0 items-center justify-center border-0 bg-transparent",
+					"p-1 text-muted",
+					"hover:text-input-text",
+				)}
 				aria-label={
 					expanded
 						? "入力エリアを元のサイズに戻す"

@@ -1,5 +1,6 @@
 // 読み取り専用の子スレッドと、親のスレッドへ戻るヘッダーを表示する。
 
+import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import {
@@ -38,7 +39,7 @@ export function AgentViewer({ viewer, state, send }: AgentViewerProps) {
 			aria-label="サブエージェントの会話"
 		>
 			<AgentViewerHeader viewer={viewer} current={current} />
-			<div className="min-h-0 flex-1 overflow-y-auto p-5 [scrollbar-width:thin]">
+			<div className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-5">
 				{viewer.error && (
 					<div role="alert" className="mb-3 text-[12px]">
 						{viewer.error}
@@ -96,14 +97,23 @@ type AgentViewerHeaderProps = {
 /** 閲覧スレッドを示し、親への移動と再読み込みを提供する。 */
 function AgentViewerHeader({ viewer, current }: AgentViewerHeaderProps) {
 	return (
-		<header className="flex min-w-0 items-center gap-3 border-b border-solid border-message-border p-3">
+		<header
+			className={cn(
+				"flex min-w-0 items-center gap-3 border-b border-solid border-message-border",
+				"p-3",
+			)}
+		>
 			<SettingsTooltip content="親へ戻る">
 				<button
 					autoFocus
 					type="button"
 					onClick={viewer.back}
 					aria-label="親へ戻る"
-					className="shrink-0 rounded p-2 hover:bg-message-user focus-visible:outline-2 focus-visible:outline-focus"
+					className={cn(
+						"shrink-0 rounded p-2",
+						"hover:bg-message-user",
+						"focus-visible:outline-2 focus-visible:outline-focus",
+					)}
 				>
 					<ArrowLeft size={18} />
 				</button>
@@ -120,7 +130,7 @@ function AgentViewerHeader({ viewer, current }: AgentViewerHeaderProps) {
 				onClick={viewer.retry}
 				disabled={viewer.loading}
 				aria-label="会話を更新"
-				className="shrink-0 rounded p-2 disabled:opacity-40"
+				className={cn("shrink-0 rounded p-2", "disabled:opacity-40")}
 			>
 				<RefreshCw size={16} />
 			</button>

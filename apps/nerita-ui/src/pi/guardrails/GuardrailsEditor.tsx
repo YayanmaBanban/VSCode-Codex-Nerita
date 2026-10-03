@@ -85,7 +85,7 @@ function GuardrailsEditorHeader({
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<h1 className="m-0 text-xl font-semibold">Pi ガードレール</h1>
 			</div>
-			<p className="mb-0 break-all text-[12px] text-muted">
+			<p className="mb-0 text-[12px] break-all text-muted">
 				{state.root} / .pi/guardrails.json
 			</p>
 
@@ -212,7 +212,7 @@ function GuardrailsProbeTarget({
 	setProbe,
 }: GuardrailsProbeTargetProps) {
 	return (
-		<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+		<div className={cn("grid grid-cols-1 gap-3", "sm:grid-cols-2")}>
 			<label>
 				Tool
 				<select

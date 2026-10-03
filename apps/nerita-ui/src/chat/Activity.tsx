@@ -22,7 +22,10 @@ export function Activity({ state, send }: ActivityProps) {
 			)}
 			{state.permissions.map((permission) => (
 				<section
-					className="permission-card relative my-[16px] rounded-[8px] border border-solid border-alert-border p-[16px]"
+					className={cn(
+						"permission-card relative my-[16px] rounded-[8px] border border-solid",
+						"border-alert-border p-[16px]",
+					)}
 					aria-label="承認要求"
 					key={permission.id}
 				>

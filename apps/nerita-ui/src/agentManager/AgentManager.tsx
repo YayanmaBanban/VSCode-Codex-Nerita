@@ -1,4 +1,5 @@
 // Agent の設定とハンドオフ設定を、バックエンド共通の管理画面で編集する。
+import { cn } from "cnfast";
 import { useState } from "react";
 import type { ManagerBridge } from "@nerita/shared/agentManager/messages";
 import { useAgentManager } from "./useAgentManager";
@@ -13,7 +14,12 @@ export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
 	const [tab, setTab] = useState<"agents" | "handoff">("agents");
 	const state = editor.state;
 	return (
-		<main className="mx-auto grid w-full max-w-5xl gap-6 p-4 text-foreground sm:p-6">
+		<main
+			className={cn(
+				"mx-auto grid w-full max-w-5xl gap-6 p-4 text-foreground",
+				"sm:p-6",
+			)}
+		>
 			<header className="grid gap-3">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<h1 className="m-0 text-xl font-semibold">Agent Manager</h1>
@@ -25,7 +31,7 @@ export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
 						再読み込み
 					</button>
 				</div>
-				<p className="m-0 break-words text-sm text-muted">
+				<p className="m-0 text-sm break-words text-muted">
 					{state?.label ?? "設定を読み込み中…"}
 				</p>
 				<nav aria-label="管理対象" className="flex flex-wrap gap-2">
@@ -50,13 +56,15 @@ export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
 			{editor.error && (
 				<p
 					role="alert"
-					className="m-0 break-words rounded-md border border-input-border p-3 text-sm"
+					className={cn(
+						"m-0 rounded-md border border-input-border p-3 text-sm break-words",
+					)}
 				>
 					{editor.error}
 				</p>
 			)}
 			{editor.notice && (
-				<p role="status" className="m-0 break-words text-sm">
+				<p role="status" className="m-0 text-sm break-words">
 					{editor.notice}
 				</p>
 			)}

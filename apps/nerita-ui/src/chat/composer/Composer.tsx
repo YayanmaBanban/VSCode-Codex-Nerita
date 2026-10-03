@@ -46,7 +46,8 @@ export function Composer(props: ComposerProps) {
 		<form
 			{...drop.handlers}
 			className={cn(
-				"composer relative mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border border-solid border-input-border bg-input p-[12px]",
+				"composer relative mx-[14px] mt-[8px] mb-[14px] rounded-[10px] border",
+				"border-solid border-input-border bg-input p-[12px]",
 				drop.active && "outline-2 outline-focus",
 			)}
 			onSubmit={(event) => {
@@ -58,7 +59,10 @@ export function Composer(props: ComposerProps) {
 		>
 			{drop.active && (
 				<div
-					className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[10px] bg-input p-3 text-center text-input-text"
+					className={cn(
+						"pointer-events-none absolute inset-0 z-20 flex items-center",
+						"justify-center rounded-[10px] bg-input p-3 text-center text-input-text",
+					)}
 					role="status"
 				>
 					ドロップしてファイルを添付
@@ -126,7 +130,11 @@ function ComposerFooter({
 	parts,
 }: ComposerFooterProps) {
 	return (
-		<div className="composer-footer mt-[12px] flex items-center justify-between gap-[10px]">
+		<div
+			className={cn(
+				"composer-footer mt-[12px] flex items-center justify-between gap-[10px]",
+			)}
+		>
 			<div className="min-w-0 flex-1" inert={inputLocked}>
 				<ComposerSettings
 					state={state}

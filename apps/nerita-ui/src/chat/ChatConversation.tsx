@@ -1,5 +1,6 @@
 // 会話ログ・ツール・承認と実行状態を1つのスクロール領域に配置する。
 
+import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { SubAgentSummary } from "@nerita/shared/subAgents";
@@ -36,7 +37,10 @@ export function ChatConversation(props: ChatConversationProps) {
 	return (
 		<section
 			ref={conversation}
-			className="conversation min-h-0 flex-1 overflow-y-auto px-[20px] py-[22px] [scrollbar-width:thin]"
+			className={cn(
+				"conversation min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto",
+				"px-[20px] py-[22px]",
+			)}
 			aria-label="会話"
 		>
 			{state.messages.length === 0 && (
@@ -44,7 +48,11 @@ export function ChatConversation(props: ChatConversationProps) {
 					<p className="text-[12px] text-muted">
 						このワークスペースで作業します
 					</p>
-					<p className="text-[12px] leading-[1.7] text-muted [overflow-wrap:anywhere]">
+					<p
+						className={cn(
+							"text-[12px] leading-[1.7] [overflow-wrap:anywhere] text-muted",
+						)}
+					>
 						{state.cwd}
 					</p>
 				</div>

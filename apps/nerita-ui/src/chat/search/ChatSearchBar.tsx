@@ -10,6 +10,12 @@ import type { useChatSearch } from "./useChatSearch";
 const buttonClass =
 	"chat-search-button inline-grid h-6 w-[22px] shrink-0 place-items-center rounded-[3px] border border-solid border-transparent bg-transparent p-0 text-[12px]";
 
+/** 会話内検索バーの配置・背景と下端の区切り線。 */
+const searchBarStyle = cn(
+	"chat-search shrink-0 border-0 border-b border-solid border-panel-border",
+	"bg-menu px-2 py-1",
+);
+
 /** 会話内検索の表示状態、検索条件・結果と移動操作。 */
 type ChatSearchBarProps = {
 	search: ReturnType<typeof useChatSearch>;
@@ -23,7 +29,7 @@ export function ChatSearchBar({ search }: ChatSearchBarProps) {
 	const { result, options } = search;
 	const counter = `${result.count ? result.index + 1 : 0}/${result.count}${result.limited ? "+" : ""}`;
 	return (
-		<div className="chat-search shrink-0 border-0 border-b border-solid border-panel-border bg-menu px-2 py-1">
+		<div className={searchBarStyle}>
 			<form
 				role="search"
 				aria-label="会話内検索"
@@ -69,7 +75,7 @@ export function ChatSearchBar({ search }: ChatSearchBarProps) {
 				<output
 					aria-label="検索結果"
 					aria-live="polite"
-					className="shrink-0 whitespace-nowrap text-[12px] tabular-nums"
+					className="shrink-0 text-[12px] whitespace-nowrap tabular-nums"
 				>
 					{counter}
 				</output>
@@ -126,13 +132,22 @@ function SearchPreviousButton({ result, search }: SearchPreviousButtonProps) {
 /** 検索語と一致条件を同じ入力領域で編集する。 */
 function ChatSearchInput({ search, result, options }: ChatSearchInputProps) {
 	return (
-		<div className="flex min-w-0 flex-1 items-center rounded border border-solid border-input-border bg-input focus-within:border-focus">
+		<div
+			className={cn(
+				"flex min-w-0 flex-1 items-center rounded border border-solid",
+				"border-input-border bg-input",
+				"focus-within:border-focus",
+			)}
+		>
 			<input
 				ref={search.input}
 				aria-label="会話を検索"
 				aria-invalid={!!result.error}
 				title="会話を検索 (Ctrl+F)"
-				className="min-w-0 w-full border-0 bg-transparent px-2 py-1 text-[12px] text-input-text outline-none"
+				className={cn(
+					"w-full min-w-0 border-0 bg-transparent px-2 py-1 text-[12px]",
+					"text-input-text outline-none",
+				)}
 				placeholder="検索"
 				autoComplete="off"
 				spellCheck={false}

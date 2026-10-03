@@ -5,6 +5,7 @@ import { test, type TestContext } from "node:test";
 import type { HostMessage } from "@nerita/shared/messages";
 import type { ToolOutputResponse } from "@nerita/shared/toolOutput";
 import { codexFixture } from "../support/codex";
+import { until } from "../support/pi";
 
 type Controller = ReturnType<
 	Awaited<ReturnType<typeof codexFixture>>["controller"]
@@ -107,6 +108,106 @@ async function historyAction(
 	type = "session/load",
 ) {
 	await controller.receive({ type, requestId: randomUUID(), sessionId });
+}
+
+void test("Codex の履歴再開応答に含まれるフルアクセス権限を設定表示へ反映する", async (t) => {
+	const f = await historyFixture(t);
+	f.responses.set("thread/resume", () => ({
+		thread: f.thread("saved"),
+		model: "model-a",
+		cwd: f.cwd,
+		sandbox: { type: "dangerFullAccess" },
+		approvalsReviewer: "user",
+	}));
+	await historyAction(f.controller, "saved");
+	assertPermissionDisplay(f.controller, "danger-full-access", true);
+});
+
+void test("Codex の履歴再開後の権限通知を表示と次の送信へ反映し、他スレッドの通知を混ぜない", async (t) => {
+	const f = await historyFixture(t);
+	await historyAction(f.controller, "saved");
+	const initialRevision = f.controller.snapshot().revision;
+	f.notify("thread/settings/updated", {
+		threadId: "saved",
+		threadSettings: {
+			sandboxPolicy: { type: "dangerFullAccess" },
+			approvalsReviewer: "user",
+		},
+	});
+	f.notify("account/rateLimits/updated", { rateLimits: {} });
+	await until(() => f.controller.snapshot().revision > initialRevision);
+	assertPermissionDisplay(f.controller, "danger-full-access", true);
+	await f.controller.receive({
+		type: "config/set",
+		requestId: randomUUID(),
+		sessionId: "saved",
+		configId: "mode",
+		value: "danger-full-access",
+	});
+	const sandboxPolicy = {
+		type: "workspaceWrite",
+		writableRoots: [f.cwd],
+		networkAccess: false,
+		excludeTmpdirEnvVar: false,
+		excludeSlashTmp: false,
+	};
+	const revision = f.controller.snapshot().revision;
+	f.notify("thread/settings/updated", {
+		threadId: "saved",
+		threadSettings: { sandboxPolicy, approvalsReviewer: "auto_review" },
+	});
+	f.notify("account/rateLimits/updated", { rateLimits: {} });
+	await until(() => f.controller.snapshot().revision > revision);
+	assertPermissionDisplay(f.controller, "workspace-write", false);
+	assert.equal(
+		f.controller
+			.snapshot()
+			.configOptions.find((option) => option.id === "approvals_reviewer")
+			?.currentValue,
+		"auto_review",
+	);
+	const nextRevision = f.controller.snapshot().revision;
+	f.notify("thread/settings/updated", {
+		threadId: "other",
+		threadSettings: {
+			sandboxPolicy: { type: "dangerFullAccess" },
+			approvalsReviewer: "user",
+		},
+	});
+	f.notify("account/rateLimits/updated", { rateLimits: {} });
+	await until(() => f.controller.snapshot().revision > nextRevision);
+	assertPermissionDisplay(f.controller, "workspace-write", false);
+	await f.controller.receive({
+		type: "prompt/send",
+		requestId: randomUUID(),
+		sessionId: "saved",
+		text: "続ける",
+	});
+	const start = [...f.requests]
+		.reverse()
+		.find((request) => request.method === "turn/start")!;
+	assert.equal(start.params?.sandboxPolicy, undefined);
+	assert.equal(start.params?.approvalsReviewer, "auto_review");
+});
+
+/** Host の現在値と、Webview へ渡す権限カードの値・警告表示を確認する。 */
+function assertPermissionDisplay(
+	controller: Controller,
+	mode: string,
+	warning: boolean,
+) {
+	const state = controller.snapshot();
+	assert.equal(
+		state.configOptions.find((option) => option.id === "mode")
+			?.currentValue,
+		mode,
+	);
+	const control = state.uiContributions?.items.find(
+		(item) => item.id === "config:mode",
+	)?.control;
+	assert.equal(control?.type, "slider-card");
+	assert.equal(control.option.currentValue, mode);
+	assert.equal(control.warning, warning);
 }
 
 void test("Codex の複数ページの履歴を復元・フォークし、ツールを再実行せず出力の末尾を取得する", async (t) => {

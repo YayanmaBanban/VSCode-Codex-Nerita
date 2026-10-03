@@ -10,6 +10,7 @@
 		"guardrails:generate": "node scripts/generate-guardrails-schema.cjs",
 		"codex:generate": "node config/generate-codex.cjs",
 		"pi:generate": "node config/generate-pi.cjs",
+		"pi:verify": "pnpm check && pnpm test:distribution",
 		"compile": "pnpm check-types && pnpm lint && pnpm build",
 		"package": "pnpm check-types && pnpm lint && pnpm build:shared && pnpm --filter @nerita/ui build --production && pnpm --filter nerita package",
 		"package:vsix": "pnpm --filter nerita package:vsix",
@@ -39,7 +40,6 @@
 		"test:distribution": "node config/test-distribution.cjs",
 		"test:windows": "node config/test-distribution.cjs --sandbox",
 		"test:webview": "node config/test-distribution.cjs --ui",
-		"pi:verify": "pnpm check && pnpm test:distribution",
 		"verify": "pnpm test:local && pnpm test:distribution"
 	},
 	"devDependencies": {

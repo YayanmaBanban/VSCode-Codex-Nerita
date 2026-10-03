@@ -78,7 +78,7 @@ function ContributionStory({ backend, provider }: ContributionStoryProps) {
 			/>
 			<output
 				aria-label="最後の要求"
-				className="block mt-[12px] text-[11px] [overflow-wrap:anywhere]"
+				className="mt-[12px] block text-[11px] [overflow-wrap:anywhere]"
 			>
 				{last ? JSON.stringify(last) : "未操作"}
 			</output>

@@ -13,6 +13,29 @@ import {
 } from "./referencePresentation";
 import { OPEN_REFERENCE_COMMAND } from "./ReferenceActionsPlugin";
 
+/** 参照チップ全体の配置と枠線を定義する。 */
+const referenceChipStyle = cn(
+	"inline-flex max-w-full items-center align-middle",
+	"[&_svg]:shrink-0",
+	"rounded-[5px] border border-solid border-panel-border bg-input text-[12px]",
+	"leading-normal",
+);
+
+/** 参照を開くボタンの配置と操作状態を定義する。 */
+const referenceOpenStyle = cn(
+	"inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px]",
+	"py-[4px]",
+	"hover:bg-settings-hover",
+	"focus-visible:outline-2 focus-visible:outline-focus",
+);
+
+/** 参照を取り外すボタンの配置と操作状態を定義する。 */
+const referenceRemoveStyle = cn(
+	`inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px]`,
+	"hover:bg-settings-hover",
+	"focus-visible:outline-2 focus-visible:outline-focus",
+);
+
 /** 省略した名前の全文とパスはホバーでも確認できる。 */
 export function PathReferenceChip({
 	nodeKey,
@@ -28,19 +51,13 @@ export function PathReferenceChip({
 		<span
 			title={pathText(path)}
 			aria-label={`${referenceKindLabel(path)}: ${pathText(path)}`}
-			className={cn(
-				"inline-flex max-w-full items-center align-middle [&_svg]:shrink-0",
-				"rounded-[5px] border border-solid border-panel-border bg-input text-[12px] leading-normal",
-			)}
+			className={referenceChipStyle}
 		>
 			<button
 				type="button"
 				disabled={!editable}
 				aria-label={referenceActionLabel(path)}
-				className={cn(
-					"inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px]",
-					"hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus",
-				)}
+				className={referenceOpenStyle}
 				onMouseDown={(event) => event.preventDefault()}
 				onKeyDown={(event) => event.stopPropagation()}
 				onKeyUp={(event) => event.stopPropagation()}
@@ -64,10 +81,7 @@ export function PathReferenceChip({
 				type="button"
 				disabled={!editable}
 				aria-label={`${path.name} の参照を取り外す`}
-				className={cn(
-					"inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px]",
-					"hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus",
-				)}
+				className={referenceRemoveStyle}
 				onMouseDown={(event) => event.preventDefault()}
 				onKeyDown={(event) => event.stopPropagation()}
 				onKeyUp={(event) => event.stopPropagation()}

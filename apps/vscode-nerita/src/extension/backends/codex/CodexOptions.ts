@@ -2,7 +2,7 @@
 import { modelOptions } from "./settings/modelOptions";
 import type { TurnStartParams } from "./codex-app-server/v2/TurnStartParams";
 import type { ModelInfo } from "./protocol/account";
-import type { StartedThread } from "./protocol/turn";
+import { parseThreadPermissions, type StartedThread } from "./protocol/turn";
 import { CodexAttachments } from "./CodexAttachments";
 import { isRecord } from "@nerita/shared/validation";
 import { parseQuota, parseUsage } from "./protocol/usage";
@@ -357,6 +357,12 @@ export abstract class CodexOptions extends CodexAttachments {
 		if (!isRecord(p)) {
 			return;
 		}
+		if (
+			message.method === "thread/settings/updated" &&
+			p.threadId === this.state.sessionId
+		) {
+			this.applyThreadPermissions(p.threadSettings);
+		}
 		if (message.method === "account/rateLimits/updated") {
 			this.patch({ quota: parseQuota(p.rateLimits) });
 		}
@@ -366,6 +372,31 @@ export abstract class CodexOptions extends CodexAttachments {
 		) {
 			this.patch({ usage: parseUsage(p.tokenUsage) });
 		}
+	}
+
+	/** サーバーの確定値を表示と次のターンへ反映し、古い権限の上書きを残さない。 */
+	private applyThreadPermissions(value: unknown): void {
+		const settings = parseThreadPermissions(value);
+		this.initialSandbox = settings.sandboxPolicy;
+		delete this.turnOptions.sandboxPolicy;
+		this.turnOptions.approvalsReviewer = settings.approvalsReviewer;
+		this.patch({
+			configOptions: this.state.configOptions.map((option) => {
+				if (option.id === "mode") {
+					return {
+						...option,
+						currentValue: sandboxMode(settings.sandboxPolicy),
+					};
+				}
+				if (option.id === "approvals_reviewer") {
+					return {
+						...option,
+						currentValue: settings.approvalsReviewer,
+					};
+				}
+				return option;
+			}),
+		});
 	}
 }
 

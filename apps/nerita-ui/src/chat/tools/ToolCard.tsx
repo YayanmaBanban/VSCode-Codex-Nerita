@@ -26,9 +26,10 @@ import { GenericTool } from "./ToolContent";
 import { toolRenderer } from "./toolRenderers";
 import { ToolOutputView } from "./ToolOutputView";
 import { toolLabelClass } from "./toolStyles";
+import "./toolCard.css";
 
-/** 開閉状態と直前の実行状態を保持する。 */
-type CardState = { status: ToolSummary["status"]; open: boolean };
+/** 実行状態にかかわらず、利用者が選んだ開閉状態を保持する。 */
+type CardState = { open: boolean };
 
 /** 保存要約と Host で変換した本文は、汎用のテキスト表示へ渡す。 */
 function toolBody(
@@ -44,7 +45,7 @@ function toolBody(
 	return tool.resultDisplay ? GenericTool : renderer.Body;
 }
 
-/** 完了への遷移で一度だけ閉じ、完了後の手動展開も許可する。 */
+/** 実行状態の更新でも手動の開閉状態を維持する。 */
 export function ToolCard({
 	tool,
 	task,
@@ -61,13 +62,12 @@ export function ToolCard({
 	const bodyId = useId();
 	const status = cardStatus(tool, task);
 	const executing = tool.kind === "execute";
-	const { command } = toolCommandDetails(tool);
 	const active = cardActive(status);
 	const renderer = toolRenderer(tool);
 	const Icon = renderer.Icon;
 	const Body = toolBody(tool, renderer);
 	const comboList = usesComboList(tool, Body);
-	const [state, setState] = useCardState(status, false);
+	const [state, setState] = useState<CardState>({ open: false });
 	if (comboList) {
 		return (
 			<ComboListCard
@@ -75,7 +75,7 @@ export function ToolCard({
 				icon={Icon}
 				open={state.open}
 				bodyId={bodyId}
-				onToggle={() => setState({ status, open: !state.open })}
+				onToggle={() => setState({ open: !state.open })}
 			>
 				<Body tool={tool} send={send} cwd={workspaceCwd} />
 			</ComboListCard>
@@ -84,9 +84,13 @@ export function ToolCard({
 	const Heading = Body ? "button" : "div";
 	return (
 		<div
-			className="tool-card my-[8px] overflow-hidden rounded-[6px] border border-solid border-panel-border"
+			className={cn(
+				"tool-card my-[8px] overflow-hidden rounded-[6px] border border-solid",
+				"border-panel-border",
+			)}
 			data-status={status}
 			data-kind={tool.kind}
+			data-open={state.open}
 		>
 			<ToolCardHeader
 				Heading={Heading}
@@ -97,16 +101,25 @@ export function ToolCard({
 				status={status}
 				Icon={Icon}
 				executing={executing}
-				command={command}
 				tool={tool}
 				active={active}
 				onStop={onStop}
 				cancelTurn={cancelTurn}
 				task={task}
 			/>
-			{state.open && renderHistoryNotice(tool)}
-			{Body &&
-				renderToolBody(bodyId, state, Body, tool, send, workspaceCwd)}
+			{Body && (
+				<div
+					id={bodyId}
+					className="tool-card-collapse"
+					inert={!state.open}
+					aria-hidden={!state.open}
+				>
+					<div className="min-h-0 overflow-hidden">
+						{renderHistoryNotice(tool)}
+						{renderToolBody(Body, tool, send, workspaceCwd)}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -127,7 +140,6 @@ type ToolCardHeaderProps = {
 		| "unfinished";
 	Icon: LucideIcon;
 	executing: boolean;
-	command: string;
 	tool: ToolSummary;
 	active: boolean;
 	onStop: (() => void) | undefined;
@@ -146,7 +158,6 @@ function ToolCardHeader(props: ToolCardHeaderProps) {
 		status,
 		Icon,
 		executing,
-		command,
 		tool,
 		active,
 		onStop,
@@ -164,13 +175,15 @@ function ToolCardHeader(props: ToolCardHeaderProps) {
 				status,
 				Icon,
 				executing,
-				command,
 				tool,
 				active,
 			)}
 			{status === "failed" && (
 				<span
-					className="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
+					className={cn(
+						"tool-result absolute right-[30px] inline-flex size-[26px] items-center",
+						"justify-center text-tool-error",
+					)}
 					role="img"
 					aria-label="失敗"
 				>
@@ -200,7 +213,11 @@ function renderHistoryNotice(tool: ToolSummary) {
 		return null;
 	}
 	return (
-		<div className="px-[10px] pb-[8px] text-[12px] text-muted [overflow-wrap:anywhere]">
+		<div
+			className={cn(
+				"px-[10px] pb-[8px] text-[12px] [overflow-wrap:anywhere] text-muted",
+			)}
+		>
 			{tool.summaryOnly && (
 				<p className="m-0">
 					保存された要約です。結果本文は保存されていません。
@@ -221,19 +238,6 @@ function renderHistoryNotice(tool: ToolSummary) {
 	);
 }
 
-/** 初期の開閉状態を設定し、完了への遷移で一度だけ閉じる。 */
-function useCardState(status: ToolSummary["status"], initiallyOpen: boolean) {
-	const [state, setState] = useState({
-		status,
-		// 短時間で完了する一覧カードが一瞬だけ開くのを防ぐ。
-		open: initiallyOpen && status !== "completed",
-	});
-	if (state.status !== status) {
-		setState({ status, open: status === "completed" ? false : state.open });
-	}
-	return [state, setState] as const;
-}
-
 /** 通常の推論・画像参照・ウェブ検索を縦線付きの開閉表示にまとめる。 */
 function usesComboList(
 	tool: ToolSummary,
@@ -250,10 +254,8 @@ function usesComboList(
 	);
 }
 
-/** 展開中だけツール本文を描画する。 */
+/** 閉じるアニメーション中に本文が消えないよう、開閉にかかわらず描画する。 */
 function renderToolBody(
-	bodyId: string,
-	state: CardState,
 	body: NonNullable<ReturnType<typeof toolRenderer>["Body"]>,
 	tool: ToolSummary,
 	send: ActivityToolProps["send"],
@@ -263,26 +265,32 @@ function renderToolBody(
 	const { cwd, command } = toolCommandDetails(tool);
 	return (
 		<div
-			id={bodyId}
-			className="tool-body border-0 border-t border-solid border-panel-border p-[12px] [&_section+section]:mt-[14px]"
-			hidden={!state.open}
-		>
-			{state.open && (
-				<>
-					{cwd && (
-						<div className="tool-cwd mb-[8px] text-[12px] text-muted [overflow-wrap:anywhere]">
-							<span className={toolLabelClass}>CWD</span>
-							<div>{cwd}</div>
-						</div>
-					)}
-					{tool.kind === "execute" && (
-						<pre className="tool-command m-0 mb-[12px] font-mono text-[12px] whitespace-pre-wrap [overflow-wrap:anywhere]">
-							{command}
-						</pre>
-					)}
-					<Body tool={tool} send={send} cwd={workspaceCwd} />
-				</>
+			className={cn(
+				"tool-body border-0 border-t border-solid border-panel-border p-[12px]",
+				"[&_section+section]:mt-[14px]",
 			)}
+		>
+			{cwd && (
+				<div
+					className={cn(
+						"tool-cwd mb-[8px] text-[12px] [overflow-wrap:anywhere] text-muted",
+					)}
+				>
+					<span className={toolLabelClass}>CWD</span>
+					<div>{cwd}</div>
+				</div>
+			)}
+			{tool.kind === "execute" && (
+				<pre
+					className={cn(
+						"tool-command m-0 mb-[12px] font-mono text-[12px] [overflow-wrap:anywhere]",
+						"whitespace-pre-wrap",
+					)}
+				>
+					{command}
+				</pre>
+			)}
+			<Body tool={tool} send={send} cwd={workspaceCwd} />
 		</div>
 	);
 }
@@ -306,8 +314,11 @@ function renderStopButton(
 			<button
 				type="button"
 				className={cn(
-					"tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center p-0",
-					"rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 text-tool-error enabled:hover:bg-tool-error/12",
+					"tool-stop absolute right-[30px] inline-flex size-[26px] items-center",
+					"justify-center p-0",
+					"rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14",
+					"text-tool-error",
+					"enabled:hover:bg-tool-error/12",
 				)}
 				aria-label={`${tool.title} を停止`}
 				disabled={!onStop}
@@ -329,50 +340,57 @@ function renderToolHeading(
 	status: ToolSummary["status"],
 	icon: LucideIcon,
 	executing: boolean,
-	command: string,
 	tool: ToolSummary,
 	active: boolean,
 ) {
 	const Heading = heading;
 	const Body = body;
 	const Icon = icon;
-	const title = executing ? command : tool.title;
+	const title = tool.title;
 	return (
-		<Heading
-			className={cn(
-				"tool-heading group flex w-full min-w-0 items-center gap-[8px] p-[10px] [&_svg]:shrink-0",
-				"rounded-none border-0 bg-transparent text-left focus-visible:outline-offset-[-3px]",
-				"hover:bg-menu-hover data-highlighted:bg-menu-hover",
-			)}
-			aria-expanded={Body ? state.open : undefined}
-			aria-controls={Body ? bodyId : undefined}
-			onClick={
-				Body ? () => setState({ status, open: !state.open }) : undefined
-			}
+		<SettingsTooltip
+			content={<span className="whitespace-pre-wrap">{title}</span>}
 		>
-			<Icon size={16} aria-hidden="true" />
-			<span className="tool-title min-w-0 flex-1 truncate" title={title}>
-				{title}
-			</span>
-			{renderExecutionProgress(executing, active)}
-			{renderNonExecutionStatus(executing, active, tool)}
-			{renderInactiveStatus(status)}
-			{status === "completed" && (
-				<Check size={16} role="img" aria-label="完了" />
-			)}
-			{Body && (
-				<ChevronDown
-					size={14}
-					className={cn(
-						"tool-chevron group-aria-[expanded=false]:-rotate-90",
-						status === "failed" || (executing && active)
-							? "ml-[26px]"
-							: "",
-					)}
-					aria-hidden="true"
-				/>
-			)}
-		</Heading>
+			<Heading
+				className={cn(
+					"tool-heading group flex w-full min-w-0 items-center gap-[8px] p-[10px]",
+					"[&_svg]:shrink-0",
+					"rounded-none border-0 bg-transparent text-left",
+					"focus-visible:outline-offset-[-3px]",
+					"hover:bg-menu-hover",
+					"data-highlighted:bg-menu-hover",
+				)}
+				aria-expanded={Body ? state.open : undefined}
+				aria-controls={Body ? bodyId : undefined}
+				onClick={
+					Body ? () => setState({ open: !state.open }) : undefined
+				}
+			>
+				<Icon size={16} aria-hidden="true" />
+				<span className="tool-title min-w-0 flex-1 truncate">
+					{title}
+				</span>
+				{renderExecutionProgress(executing, active)}
+				{renderNonExecutionStatus(executing, active, tool)}
+				{renderInactiveStatus(status)}
+				{status === "completed" && (
+					<Check size={16} role="img" aria-label="完了" />
+				)}
+				{Body && (
+					<ChevronDown
+						size={14}
+						className={cn(
+							"tool-chevron",
+							"group-aria-[expanded=false]:-rotate-90",
+							status === "failed" || (executing && active)
+								? "ml-[26px]"
+								: "",
+						)}
+						aria-hidden="true"
+					/>
+				)}
+			</Heading>
+		</SettingsTooltip>
 	);
 }
 

@@ -13,7 +13,12 @@ export function PermissionContent({
 }) {
 	return (
 		<div className="min-w-0 text-[13px] leading-[1.7]">
-			<h2 className="my-[12px] whitespace-pre-wrap text-[14px] font-semibold [overflow-wrap:anywhere]">
+			<h2
+				className={cn(
+					"my-[12px] text-[14px] font-semibold [overflow-wrap:anywhere]",
+					"whitespace-pre-wrap",
+				)}
+			>
 				{permission.title}
 			</h2>
 			{permission.cwd !== undefined && (
@@ -39,7 +44,12 @@ export function PermissionContent({
 			)}
 			<PermissionFields fields={permission.fields ?? []} />
 			{!!permission.details?.length && (
-				<details className="my-[12px] min-w-0 rounded-[6px] border border-solid border-panel-border p-[10px]">
+				<details
+					className={cn(
+						"my-[12px] min-w-0 rounded-[6px] border border-solid border-panel-border",
+						"p-[10px]",
+					)}
+				>
 					<summary className="cursor-pointer text-muted">
 						詳細 ({permission.details.length})
 					</summary>
@@ -56,7 +66,12 @@ function PermissionFields({ fields }: { fields: PermissionField[] }) {
 		return null;
 	}
 	return (
-		<dl className="my-[12px] grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-[12px] gap-y-[8px]">
+		<dl
+			className={cn(
+				"my-[12px] grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-[12px]",
+				"gap-y-[8px]",
+			)}
+		>
 			{fields.map((field) => (
 				<div
 					key={field.id}
@@ -66,10 +81,10 @@ function PermissionFields({ fields }: { fields: PermissionField[] }) {
 							: "contents",
 					)}
 				>
-					<dt className="text-muted [overflow-wrap:anywhere]">
+					<dt className="[overflow-wrap:anywhere] text-muted">
 						{field.label}
 					</dt>
-					<dd className="m-0 min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere]">
+					<dd className="m-0 min-w-0 [overflow-wrap:anywhere] whitespace-pre-wrap">
 						{field.display === "code" ? (
 							<PermissionCode
 								label={field.label}
@@ -92,9 +107,10 @@ function PermissionCode({ label, value }: { label: string; value: string }) {
 			aria-label={label}
 			tabIndex={0}
 			className={cn(
-				"m-0 max-h-[200px] min-w-0 max-w-full overflow-auto p-[10px]",
-				"rounded-[6px] border border-solid border-panel-border bg-input text-input-text",
-				"font-mono text-[12px] leading-[1.6] whitespace-pre [overflow-wrap:normal]",
+				"m-0 max-h-[200px] max-w-full min-w-0 overflow-auto p-[10px]",
+				"rounded-[6px] border border-solid border-panel-border bg-input",
+				"text-input-text",
+				"font-mono text-[12px] leading-[1.6] [overflow-wrap:normal] whitespace-pre",
 			)}
 		>
 			<code>{value}</code>

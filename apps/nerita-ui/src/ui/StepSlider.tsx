@@ -67,7 +67,10 @@ export function StepSlider(props: StepSliderProps) {
 			/>
 			<div
 				aria-hidden="true"
-				className="step-slider-thumb pointer-events-none absolute top-1/2 size-[36px] -translate-x-1/2 -translate-y-1/2"
+				className={cn(
+					"step-slider-thumb pointer-events-none absolute top-1/2 size-[36px]",
+					"-translate-x-1/2 -translate-y-1/2",
+				)}
 				style={{
 					left: `calc(${progress * 100}% + ${18 - progress * 36}px)`,
 				}}
@@ -129,7 +132,9 @@ function StepSliderPoints({
 					aria-label={`${label}: ${index + 1}`}
 					disabled={disabled || count < 2}
 					className={cn(
-						"step-slider-point absolute top-1/2 flex size-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-transparent p-0",
+						"step-slider-point absolute top-1/2 flex size-[28px] -translate-x-1/2",
+						"-translate-y-1/2 items-center justify-center rounded-full border-0",
+						"bg-transparent p-0",
 						index === selected
 							? "pointer-events-none invisible"
 							: "pointer-events-auto",
@@ -187,9 +192,16 @@ function StepSliderInput({
 			aria-valuetext={valueText}
 			disabled={disabled || count < 2}
 			className={cn(
-				"step-slider-input relative m-0 block h-[32px] w-full touch-none cursor-pointer appearance-none rounded-full bg-transparent p-0 accent-foreground",
-				"focus-visible:outline-1 focus-visible:outline-settings-focus focus-visible:outline-offset-[-1px] disabled:cursor-default",
-				"[&::-webkit-slider-thumb]:size-[36px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-transparent",
+				"step-slider-input relative m-0 block h-[32px] w-full cursor-pointer",
+				"touch-none appearance-none rounded-full bg-transparent p-0",
+				"accent-foreground",
+				"focus-visible:outline-1 focus-visible:outline-offset-[-1px]",
+				"focus-visible:outline-settings-focus",
+				"disabled:cursor-default",
+				"[&::-webkit-slider-thumb]:size-[36px]",
+				"[&::-webkit-slider-thumb]:appearance-none",
+				"[&::-webkit-slider-thumb]:rounded-full",
+				"[&::-webkit-slider-thumb]:bg-transparent",
 			)}
 			onPointerDown={(event) => {
 				if (event.button !== 0 || disabled || count < 2) {

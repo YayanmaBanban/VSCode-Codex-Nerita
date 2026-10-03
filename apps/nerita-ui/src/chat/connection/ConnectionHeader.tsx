@@ -39,8 +39,17 @@ export function ConnectionHeader(props: ConnectionHeaderProps) {
 	const viewLabel = editor ? "サイドバーへ戻る" : "エディタグループへ移動";
 	return (
 		<>
-			<header className="chat-header flex min-w-0 items-center gap-[6px] border-0 border-b border-solid border-message-border px-[12px] py-[10px]">
-				<h1 className="m-0 min-w-0 flex-1 truncate text-[12px] font-medium tracking-normal">
+			<header
+				className={cn(
+					"chat-header flex min-w-0 items-center gap-[6px] border-0 border-b",
+					"border-solid border-message-border px-[12px] py-[10px]",
+				)}
+			>
+				<h1
+					className={cn(
+						"m-0 min-w-0 flex-1 truncate text-[12px] font-medium tracking-normal",
+					)}
+				>
 					{title}
 				</h1>
 				<ConnectionButton state={state} send={send} />

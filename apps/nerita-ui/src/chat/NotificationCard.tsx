@@ -25,13 +25,19 @@ export function NotificationCard({
 	}, [duration]);
 	return (
 		<div
-			className="notification-card mx-[14px] mt-2 overflow-hidden rounded-md border border-input-border bg-input text-input-text"
+			className={cn(
+				"notification-card mx-[14px] mt-2 overflow-hidden rounded-md border",
+				"border-input-border bg-input text-input-text",
+			)}
 			style={{ backgroundColor }}
 		>
 			<div className="flex items-start gap-2 px-3 py-2">
 				<p
 					role="status"
-					className="m-0 line-clamp-2 min-w-0 flex-1 text-[12px] leading-[1.5] [overflow-wrap:anywhere]"
+					className={cn(
+						"m-0 line-clamp-2 min-w-0 flex-1 text-[12px] leading-[1.5]",
+						"[overflow-wrap:anywhere]",
+					)}
 					title={children}
 				>
 					{children}
@@ -41,8 +47,10 @@ export function NotificationCard({
 					aria-label="通知を閉じる"
 					onClick={onClose}
 					className={cn(
-						"flex h-5 w-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0 text-muted",
-						"hover:text-input-text focus-visible:outline-2 focus-visible:outline-focus",
+						"flex h-5 w-5 shrink-0 items-center justify-center rounded border-0",
+						"bg-transparent p-0 text-muted",
+						"hover:text-input-text",
+						"focus-visible:outline-2 focus-visible:outline-focus",
 					)}
 				>
 					<X size={14} aria-hidden="true" />

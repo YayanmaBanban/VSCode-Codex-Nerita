@@ -1,4 +1,5 @@
 // 履歴パネルの閉じる操作と作業フォルダ・取得状態を表示する。
+import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import type { RefObject } from "react";
 import { LoaderCircle, X } from "lucide-react";
@@ -16,7 +17,11 @@ export function SessionPanelHeader({
 	onClose: () => void;
 }) {
 	return (
-		<header className="border-0 border-b border-solid border-panel-border px-[16px] py-[14px]">
+		<header
+			className={cn(
+				"border-0 border-b border-solid border-panel-border px-[16px] py-[14px]",
+			)}
+		>
 			<div className="flex items-center justify-between gap-[8px]">
 				<h2 className="m-0 text-[13px] font-semibold">
 					セッション一覧
@@ -35,7 +40,9 @@ export function SessionPanelHeader({
 			</div>
 			<div className="mt-[8px] flex items-start gap-[8px]">
 				<span
-					className="min-w-0 flex-1 break-all font-editor text-[12px] leading-[1.6] text-muted"
+					className={cn(
+						"min-w-0 flex-1 font-editor text-[12px] leading-[1.6] break-all text-muted",
+					)}
 					title={state.cwd ?? undefined}
 				>
 					{state.cwd ?? "ワークスペース未接続"}

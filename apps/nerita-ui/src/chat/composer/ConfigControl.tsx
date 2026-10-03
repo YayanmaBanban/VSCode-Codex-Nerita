@@ -27,7 +27,11 @@ export function ConfigControl({
 	chevron = "down",
 }: ConfigControlProps) {
 	return (
-		<div className="config-control relative inline-flex min-w-0 max-w-full text-muted">
+		<div
+			className={cn(
+				"config-control relative inline-flex max-w-full min-w-0 text-muted",
+			)}
+		>
 			{/* Webview の CSP に合わせ、スタイルは同梱 CSS から適用する。 */}
 			<CSPProvider disableStyleElements>
 				<Select.Root
@@ -42,12 +46,16 @@ export function ConfigControl({
 					<SettingsTooltip content={controlTooltip(option, icon)}>
 						<Select.Trigger
 							className={cn(
-								"config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] [&_svg]:shrink-0",
+								"config-trigger inline-flex max-w-[170px] cursor-pointer items-center",
+								"gap-[6px] rounded-[4px]",
+								"[&_svg]:shrink-0",
 								icon
 									? "border border-solid border-input-border bg-input px-[4px] py-[5px]"
 									: "border-0 bg-transparent px-[5px] py-[6px]",
-								"text-[12px] text-ellipsis text-inherit enabled:hover:bg-settings-hover",
-								"focus-visible:outline-1 focus-visible:outline-solid focus-visible:outline-settings-focus focus-visible:outline-offset-1",
+								"text-[12px] text-ellipsis text-inherit",
+								"enabled:hover:bg-settings-hover",
+								"focus-visible:outline-1 focus-visible:outline-offset-1",
+								"focus-visible:outline-settings-focus focus-visible:outline-solid",
 							)}
 							aria-label={option.name}
 						>
@@ -85,12 +93,18 @@ function ConfigOptions({ inDialog, option }: ConfigOptionsProps) {
 			>
 				<Select.Popup
 					className={cn(
-						"config-popup w-[min(280px,calc(100vw-24px))] max-h-[min(340px,var(--available-height))] overflow-hidden",
-						"rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003]",
+						"config-popup max-h-[min(340px,var(--available-height))]",
+						"w-[min(280px,calc(100vw-24px))] overflow-hidden",
+						"rounded-[8px] border border-solid border-menu-border bg-menu",
+						"text-menu-text shadow-[0_6px_24px_#0003]",
 					)}
 					aria-label={option.name}
 				>
-					<Select.List className="config-list max-h-[inherit] scroll-p-[5px] overflow-y-auto p-[5px]">
+					<Select.List
+						className={cn(
+							"config-list max-h-[inherit] scroll-p-[5px] overflow-y-auto p-[5px]",
+						)}
+					>
 						{option.options.map((choice) => (
 							<SettingsTooltip
 								key={choice.value}
@@ -103,13 +117,19 @@ function ConfigOptions({ inDialog, option }: ConfigOptionsProps) {
 									value={choice.value}
 									label={choice.name}
 									className={cn(
-										"config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px] px-[10px] py-[8px]",
+										"config-item flex min-h-[36px] cursor-pointer items-center",
+										"justify-between gap-[12px] rounded-[5px] px-[10px] py-[8px]",
 										"text-[12px] leading-[1.5] [overflow-wrap:anywhere] [outline:none]",
-										"hover:bg-menu-hover data-highlighted:bg-menu-hover",
+										"hover:bg-menu-hover",
+										"data-highlighted:bg-menu-hover",
 									)}
 								>
 									<ChoiceLabel choice={choice} />
-									<Select.ItemIndicator className="config-check inline-flex flex-[0_0_15px] text-menu-check">
+									<Select.ItemIndicator
+										className={cn(
+											"config-check inline-flex flex-[0_0_15px] text-menu-check",
+										)}
+									>
 										<Check size={15} aria-hidden="true" />
 									</Select.ItemIndicator>
 								</Select.Item>
@@ -147,7 +167,7 @@ function ChoiceLabel({ choice }: ChoiceLabelProps) {
 			<Icon size={18} className="shrink-0" aria-hidden="true" />
 			<span className="flex min-w-0 flex-col gap-[3px]">
 				<Select.ItemText>{choice.name}</Select.ItemText>
-				<span className="whitespace-pre-line text-[11px] text-muted">
+				<span className="text-[11px] whitespace-pre-line text-muted">
 					{choice.description}
 				</span>
 			</span>

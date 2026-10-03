@@ -1,5 +1,6 @@
 // 保存済みワークスペースを検索し、信頼状態を変更したり記録を削除したりする。
 
+import { cn } from "cnfast";
 import { type JSX, useEffect, useState } from "react";
 
 import type {
@@ -43,12 +44,19 @@ export function TrustManager({ bridge }: TrustManagerProps) {
 			record.root.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
 		) ?? [];
 	return (
-		<main className="mx-auto grid w-full max-w-5xl gap-5 p-4 text-foreground sm:p-6">
+		<main
+			className={cn(
+				"mx-auto grid w-full max-w-5xl gap-5 p-4 text-foreground",
+				"sm:p-6",
+			)}
+		>
 			<TrustManagerHeader busy={busy} send={send} />
 			<label className="grid gap-2 text-sm">
 				フォルダーを検索
 				<input
-					className="w-full rounded border border-input-border bg-input p-2 text-foreground"
+					className={cn(
+						"w-full rounded border border-input-border bg-input p-2 text-foreground",
+					)}
 					type="search"
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
@@ -56,7 +64,7 @@ export function TrustManager({ bridge }: TrustManagerProps) {
 				/>
 			</label>
 			{state?.error && (
-				<p role="alert" className="m-0 break-words text-sm">
+				<p role="alert" className="m-0 text-sm break-words">
 					{state.error}
 				</p>
 			)}
@@ -146,7 +154,7 @@ function TrustRecord({ record, busy, send }: TrustRecordProps): JSX.Element {
 				</strong>
 				<span className="text-muted">{origins[record.origin]}</span>
 			</div>
-			<h2 className="m-0 break-all font-mono text-sm font-normal">
+			<h2 className="m-0 font-mono text-sm font-normal break-all">
 				{record.root}
 			</h2>
 			<p className="m-0 text-xs text-muted">

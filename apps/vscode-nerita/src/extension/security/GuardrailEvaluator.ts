@@ -1,6 +1,9 @@
 // エディターの検査と実際のツール呼び出しが同じ判定を使用する。
 import type { GuardrailsConfig } from "@nerita/shared/guardrails/config";
-import type { GuardProbe, GuardResult } from "@nerita/shared/guardrails/messages";
+import type {
+	GuardProbe,
+	GuardResult,
+} from "@nerita/shared/guardrails/messages";
 import { inspectGuardPath, addFinding } from "./GuardrailPaths";
 import { inspectGuardCommand } from "./GuardrailCommands";
 import { canonicalPath } from "./WorkspacePathPolicy";

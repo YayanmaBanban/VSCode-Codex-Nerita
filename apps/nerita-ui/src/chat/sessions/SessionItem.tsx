@@ -36,7 +36,9 @@ export function SessionItem({
 		<li
 			key={session.sessionId}
 			className={cn(
-				"session-item mb-[4px] rounded-[7px] border border-solid hover:bg-menu-hover hover:brightness-110 focus-within:bg-menu-hover",
+				"session-item mb-[4px] rounded-[7px] border border-solid",
+				"focus-within:bg-menu-hover",
+				"hover:bg-menu-hover hover:brightness-110",
 				selected
 					? "border-focus bg-menu-hover"
 					: "border-transparent bg-menu",
@@ -45,7 +47,11 @@ export function SessionItem({
 			<SettingsTooltip content={title}>
 				<button
 					type="button"
-					className="block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px] pb-[5px] text-left focus-visible:outline-offset-[-2px]"
+					className={cn(
+						"block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px]",
+						"pb-[5px] text-left",
+						"focus-visible:outline-offset-[-2px]",
+					)}
 					disabled={
 						disabled || !capabilities.load || session.archived
 					}

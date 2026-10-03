@@ -1,4 +1,5 @@
 // ツールの見出しと本文を、アイコンから続く縦線付きの開閉表示にまとめる。
+import { cn } from "cnfast";
 import type { ReactNode } from "react";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import type { ToolSummary } from "@nerita/shared/chatState";
@@ -13,7 +14,7 @@ const statusLabels = {
 	failed: "失敗",
 };
 
-/** 開閉状態は呼び出し側で管理し、完了時の自動折り畳みにも追従する。 */
+/** 呼び出し側の開閉状態を使い、実行状態の更新でも手動展開を維持する。 */
 export function ComboListCard({
 	tool,
 	icon,
@@ -39,7 +40,14 @@ export function ComboListCard({
 		>
 			<button
 				type="button"
-				className="tool-heading group flex w-full min-w-0 cursor-pointer items-center gap-[10px] rounded-[4px] border-0 bg-transparent px-0 py-[6px] text-left text-[12px] text-inherit focus-visible:outline-1 focus-visible:outline-focus hover:bg-menu-hover data-highlighted:bg-menu-hover"
+				className={cn(
+					"tool-heading group flex w-full min-w-0 cursor-pointer items-center",
+					"gap-[10px] rounded-[4px] border-0 bg-transparent px-0 py-[6px] text-left",
+					"text-[12px] text-inherit",
+					"hover:bg-menu-hover",
+					"focus-visible:outline-1 focus-visible:outline-focus",
+					"data-highlighted:bg-menu-hover",
+				)}
 				aria-expanded={open}
 				aria-controls={bodyId}
 				onClick={onToggle}
@@ -66,7 +74,13 @@ export function ComboListCard({
 				aria-hidden={!open}
 			>
 				<div className="min-h-0 overflow-hidden">
-					<div className="tool-body ml-[7px] flex flex-col gap-[12px] border-0 border-l border-solid border-panel-border py-[6px] pl-[18px] pr-[4px] text-[12px] leading-[1.65]">
+					<div
+						className={cn(
+							"tool-body ml-[7px] flex flex-col gap-[12px] border-0 border-l",
+							"border-solid border-panel-border py-[6px] pr-[4px] pl-[18px] text-[12px]",
+							"leading-[1.65]",
+						)}
+					>
 						{children}
 					</div>
 				</div>

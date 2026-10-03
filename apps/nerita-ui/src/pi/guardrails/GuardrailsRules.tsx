@@ -236,13 +236,16 @@ function CommandRuleCard({
 			style={{
 				backgroundColor: ruleBackground(index + 3),
 			}}
-			className="guardrails-rule-card m-0 min-w-0 shrink-0 rounded border border-panel-border"
+			className={cn(
+				"guardrails-rule-card m-0 min-w-0 shrink-0 rounded border",
+				"border-panel-border",
+			)}
 		>
 			<summary className="cursor-pointer p-3 text-[13px]">
 				コマンドルール {index + 1}
 			</summary>
 			<div className="p-3 pt-0">
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<div className={cn("grid grid-cols-1 gap-3", "sm:grid-cols-2")}>
 					<label>
 						ID
 						<input
@@ -356,6 +359,16 @@ type PathRuleCardProps = {
 	config: GuardrailsConfig;
 };
 
+/** パスルールのカードと、狭い表示幅で一列になる入力欄の配置。 */
+const pathRuleCardStyle = `
+     guardrails-rule-card m-0 min-w-0 shrink-0 rounded border
+     border-panel-border
+   `;
+const pathRuleFieldsStyle = `
+      grid grid-cols-1 gap-3
+      sm:grid-cols-2
+    `;
+
 /** パスルールの各項目と削除操作をまとめる。 */
 function PathRuleCard(props: PathRuleCardProps): JSX.Element {
 	const { index, rule, updatePath, onChange, config } = props;
@@ -364,13 +377,13 @@ function PathRuleCard(props: PathRuleCardProps): JSX.Element {
 			open
 			key={index}
 			style={{ backgroundColor: ruleBackground(index) }}
-			className="guardrails-rule-card m-0 min-w-0 shrink-0 rounded border border-panel-border"
+			className={pathRuleCardStyle}
 		>
 			<summary className="cursor-pointer p-3 text-[13px]">
 				パスルール {index + 1}
 			</summary>
 			<div className="p-3 pt-0">
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<div className={pathRuleFieldsStyle}>
 					<label>
 						ID
 						<input
@@ -529,7 +542,7 @@ type PathRuleExceptionsProps = PathRuleBaseProps;
 function PathRuleExceptions(props: PathRuleExceptionsProps) {
 	const { rule, updatePath, index } = props;
 	return (
-		<div className="flex flex-col gap-2 sm:col-span-2">
+		<div className={cn("flex flex-col gap-2", "sm:col-span-2")}>
 			{rule.exceptions.map((exception, entry) => (
 				<PathRuleException
 					key={entry}

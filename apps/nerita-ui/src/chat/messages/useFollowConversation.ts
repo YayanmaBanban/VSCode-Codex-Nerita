@@ -17,18 +17,21 @@ export function useFollowConversation(
 		}
 		let previousTop = element.scrollTop;
 		let frame = 0;
+		const toolScroll = registerToolCardScroll(element, () => {
+			following.current = false;
+		});
 		const atBottom = () =>
 			element.scrollHeight - element.clientHeight - element.scrollTop <=
 			4;
 		const follow = () => {
-			if (following.current && !paused) {
+			if (following.current && !paused && !toolScroll.active()) {
 				element.scrollTop = element.scrollHeight;
 				previousTop = element.scrollTop;
 			}
 		};
 		const scroll = () => {
 			// サブエージェントの表示中に会話欄が隠れたことによる位置変化は、手動操作として扱わない。
-			if (!element.clientHeight) {
+			if (!element.clientHeight || toolScroll.active()) {
 				return;
 			}
 			if (atBottom()) {
@@ -68,6 +71,7 @@ export function useFollowConversation(
 		observe();
 		follow();
 		return () => {
+			toolScroll.dispose();
 			cancelAnimationFrame(frame);
 			resize.disconnect();
 			mutation.disconnect();
@@ -75,4 +79,74 @@ export function useFollowConversation(
 			element.removeEventListener("wheel", wheel);
 		};
 	}, [container, sessionId, paused]);
+}
+
+/** カードを開く前の見出し位置を保ち、展開中は会話末尾への自動スクロールを止める。 */
+function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
+	let heading: HTMLElement | null = null;
+	let headingOffset = 0;
+	let frame = 0;
+	const cancel = () => {
+		cancelAnimationFrame(frame);
+		heading = null;
+	};
+	const align = () => {
+		if (
+			!heading?.isConnected ||
+			heading.getAttribute("aria-expanded") !== "true"
+		) {
+			cancel();
+			return;
+		}
+		container.scrollTop +=
+			heading.getBoundingClientRect().top -
+			container.getBoundingClientRect().top -
+			headingOffset;
+		const collapse = heading
+			.closest(".tool-card")
+			?.querySelector(".tool-card-collapse, .combo-list-collapse");
+		// スクロールの自動補正で見出しが動いても、展開完了まではクリック時の位置へ戻す。
+		if (
+			collapse
+				?.getAnimations()
+				.some((animation) => animation.playState !== "finished")
+		) {
+			frame = requestAnimationFrame(align);
+		} else {
+			heading = null;
+		}
+	};
+	const click = (event: MouseEvent) => {
+		const target =
+			event.target instanceof Element
+				? event.target.closest<HTMLElement>(
+						".tool-heading[aria-expanded='false']",
+					)
+				: null;
+		if (!target || !container.contains(target)) {
+			return;
+		}
+		cancel();
+		heading = target;
+		headingOffset =
+			target.getBoundingClientRect().top -
+			container.getBoundingClientRect().top;
+		onOpen();
+		frame = requestAnimationFrame(align);
+	};
+	// React の開閉処理より先に末尾への追従を止める。キーボード操作によるボタンの実行も対象とする。
+	container.addEventListener("click", click, true);
+	container.addEventListener("wheel", cancel, { passive: true });
+	container.addEventListener("pointerdown", cancel);
+	container.addEventListener("keydown", cancel);
+	return {
+		active: () => heading !== null,
+		dispose: () => {
+			cancel();
+			container.removeEventListener("click", click, true);
+			container.removeEventListener("wheel", cancel);
+			container.removeEventListener("pointerdown", cancel);
+			container.removeEventListener("keydown", cancel);
+		},
+	};
 }

@@ -54,7 +54,7 @@ async function inspectOutput(page, chat, screenshot) {
 		"false",
 	);
 	await card.locator(".tool-heading").click();
-	await card.getByRole("button", { name: "出力を表示", exact: true }).click();
+	await card.getByRole("button", { name: "詳細出力", exact: true }).click();
 	const detail = card.getByRole("region", { name: "詳細出力" });
 	await expect(detail).toHaveAttribute("aria-busy", "false");
 	await expect(detail).toContainText("出力の先頭🐈");
@@ -63,9 +63,7 @@ async function inspectOutput(page, chat, screenshot) {
 	await page.screenshot({
 		path: path.join(process.env.NERITA_UI_ARTIFACTS, screenshot),
 	});
-	await card
-		.getByRole("button", { name: "詳細出力を閉じる", exact: true })
-		.click();
+	await card.getByRole("button", { name: "詳細出力", exact: true }).click();
 	await expect(detail).toHaveCount(0);
 	await card.locator(".tool-heading").click();
 }

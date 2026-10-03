@@ -14,7 +14,7 @@ export function AgentDetails({ agent }: { agent: ManagedAgent }) {
 		values.push(["Tools", agent.tools.join(", ") || "未指定"]);
 	}
 	return (
-		<dl className="grid gap-2 break-words text-sm text-muted">
+		<dl className="grid gap-2 text-sm break-words text-muted">
 			{values.map(([label, value]) => (
 				<div key={label}>
 					<dt className="inline font-medium">{label}: </dt>

@@ -1,14 +1,17 @@
 // 製品のコンポーネントを使い、ツールごとの表示と完了時の開閉を再現する。
 
-import { type SetStateAction, type Dispatch, useState } from "react";
+import { type SetStateAction, type Dispatch, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, spyOn, userEvent, within, waitFor } from "storybook/test";
 import { initialState, type ToolSummary } from "@nerita/shared/chatState";
 import { type UiMessage } from "@nerita/shared/messages";
 import type { AsyncTask } from "@nerita/shared/asyncTask";
 import { Activity } from "../../../src/chat/Activity";
 import { ToolCard } from "../../../src/chat/tools/ToolCard";
+import { useFollowConversation } from "../../../src/chat/messages/useFollowConversation";
 import { ToolOutputBridge } from "../../../src/chat/tools/ToolOutputView";
 import { createStoryBridge } from "../mocks/storyBridge";
+import { commandTools } from "../fixtures/toolCommands";
 import "../../../src/chat/chat.css";
 
 const initialTools: ToolSummary[] = [
@@ -93,14 +96,22 @@ const initialTools: ToolSummary[] = [
 ];
 
 /** 同じ ID のツールを完了状態へ更新し、各カードの開閉が独立していることを確認する。 */
-function ToolCardsStory({ background = false }: { background?: boolean }) {
-	const [tools, setTools] = useState(() =>
-		background
-			? initialTools
-					.filter((tool) => tool.id === "execute")
-					.map((tool) => ({ ...tool, status: "completed" as const }))
-			: initialTools,
-	);
+function ToolCardsStory({
+	background = false,
+	commands = false,
+}: {
+	background?: boolean;
+	commands?: boolean;
+}) {
+	const [tools, setTools] = useState(() => {
+		const source = commands ? commandTools : initialTools;
+		if (!background) {
+			return source;
+		}
+		return source
+			.filter((tool) => tool.id === "execute")
+			.map((tool) => ({ ...tool, status: "completed" as const }));
+	});
 	const [asyncTasks, setTasks] = useState<AsyncTask[]>([
 		{
 			asyncTaskId: "different-task-id",
@@ -162,6 +173,89 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Running: Story = {};
 export const Background: Story = { args: { background: true } };
+export const CommandTitles: Story = { args: { commands: true } };
+
+/** 開いた実行カードだけを展開したまま保ち、閉じたカードは完了後も閉じておく。 */
+export const CompletionPreservesExpansion: Story = {
+	args: { commands: true },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const codex = canvas.getByRole("button", {
+			name: /^Get-Content/,
+			expanded: false,
+		});
+		const pi = canvas.getByRole("button", {
+			name: /^Get-Location/,
+			expanded: false,
+		});
+		const closed = canvas.getByRole("button", {
+			name: /^pnpm.cmd check/,
+			expanded: false,
+		});
+		await userEvent.click(codex);
+		await userEvent.click(pi);
+		await expect(codex).toHaveAttribute("aria-expanded", "true");
+		await expect(pi).toHaveAttribute("aria-expanded", "true");
+		await userEvent.click(
+			canvas.getByRole("button", { name: "完了通知を受信" }),
+		);
+		await waitFor(async () => {
+			await expect(codex).toHaveAttribute("aria-expanded", "true");
+			await expect(pi).toHaveAttribute("aria-expanded", "true");
+			await expect(closed).toHaveAttribute("aria-expanded", "false");
+		});
+		await expect(canvas.getAllByRole("img", { name: "完了" })).toHaveLength(
+			3,
+		);
+		await userEvent.click(codex);
+		await expect(codex).toHaveAttribute("aria-expanded", "false");
+	},
+};
+
+/** 会話末尾で長いカードを開き、展開前後の見出し位置を確認する。 */
+function ScrollExpansionStory() {
+	const container = useRef<HTMLDivElement>(null);
+	useFollowConversation(container, "tool-scroll", false);
+	return (
+		<div ref={container} className="h-[400px] overflow-y-auto px-5 py-4">
+			<div className="h-[480px]">過去の会話</div>
+			{Array.from({ length: 6 }, (_, index) => (
+				<ToolCard
+					key={index}
+					tool={{
+						id: `scroll-${index}`,
+						title: `スクロール確認 ${index + 1}`,
+						kind: index === 1 ? "think" : "execute",
+						status: "completed",
+						paths: [],
+						...(index === 1
+							? {
+									content: [
+										{
+											type: "content",
+											content: {
+												type: "text",
+												text: "推論の内容\n".repeat(40),
+											},
+										},
+									],
+								}
+							: {
+									output: {
+										preview: "実行結果\n".repeat(40),
+										truncated: false,
+									},
+								}),
+					}}
+				/>
+			))}
+		</div>
+	);
+}
+
+export const ScrollExpansion: Story = {
+	render: () => <ScrollExpansionStory />,
+};
 
 /** 完了通知によるツールと非同期タスクの状態変化を再現する。 */
 function CompleteToolsButton({
@@ -256,7 +350,7 @@ function LargeOutputStory() {
 						status: completed ? "completed" : "in_progress",
 						output: {
 							preview:
-								"出力開始\nChecking types...\n\n… 出力を省略 …\n\nFAIL: 末尾エラー",
+								"出力開始\nChecking types...\n\n… 18,420文字を省略 …\n\nFAIL: 末尾エラー",
 							truncated: true,
 							outputRef: "large-output",
 							totalBytes: 1600000,
@@ -269,6 +363,85 @@ function LargeOutputStory() {
 }
 
 export const LargeOutput: Story = { render: () => <LargeOutputStory /> };
+
+/** 詳細出力の開閉・範囲移動と、表示中の範囲だけをコピーする契約を確認する。 */
+export const OutputControls: Story = {
+	render: () => <LargeOutputStory />,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const copy = spyOn(navigator.clipboard, "writeText").mockResolvedValue(
+			undefined,
+		);
+		try {
+			await userEvent.click(
+				canvas.getByRole("button", {
+					name: /^Get-Content/,
+					expanded: false,
+				}),
+			);
+			await userEvent.click(
+				canvas.getByRole("button", { name: "出力をコピー" }),
+			);
+			await expect(copy).toHaveBeenLastCalledWith(
+				"出力開始\nChecking types...\n\n… 18,420文字を省略 …\n\nFAIL: 末尾エラー",
+			);
+			const disclosure = canvas.getByRole("button", { name: "詳細出力" });
+			await userEvent.click(disclosure);
+			const detail = await canvas.findByRole("region", {
+				name: "詳細出力",
+			});
+			const range = within(detail);
+			const copyButton = range.getByRole("button", {
+				name: "出力をコピー",
+			});
+			const previous = range.getByRole("button", {
+				name: "前の範囲を表示",
+			});
+			const next = range.getByRole("button", { name: "次の範囲を表示" });
+			await expect(copyButton).toBeDisabled();
+			await expect(previous).toBeDisabled();
+			await userEvent.click(
+				canvas.getByRole("button", { name: "出力応答を受信" }),
+			);
+			await userEvent.click(copyButton);
+			await expect(copy).toHaveBeenLastCalledWith(
+				"先頭の詳細出力\n日本語と絵文字 🐈\n".repeat(1000),
+			);
+			await userEvent.click(next);
+			await userEvent.click(
+				canvas.getByRole("button", { name: "出力応答を受信" }),
+			);
+			await expect(next).toBeDisabled();
+			await userEvent.click(copyButton);
+			await expect(copy).toHaveBeenLastCalledWith(
+				"次の詳細出力\nFAIL: 末尾エラー",
+			);
+			await userEvent.click(previous);
+			await userEvent.click(
+				canvas.getByRole("button", { name: "出力応答を受信" }),
+			);
+			await expect(previous).toBeDisabled();
+			copy.mockRejectedValueOnce(new Error("clipboard unavailable"));
+			await userEvent.click(copyButton);
+			await expect(copyButton).toHaveAttribute(
+				"data-copy-result",
+				"error",
+			);
+			await userEvent.click(copyButton);
+			await expect(copyButton).toHaveAttribute(
+				"data-copy-result",
+				"success",
+			);
+			await userEvent.click(disclosure);
+			await expect(
+				canvas.queryByRole("region", { name: "詳細出力" }),
+			).not.toBeInTheDocument();
+			await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+		} finally {
+			copy.mockRestore();
+		}
+	},
+};
 
 /** Host が非公開情報を除去した構造化結果を模したデータで、要約と省略表示を確認する。 */
 export const StructuredResult: Story = {

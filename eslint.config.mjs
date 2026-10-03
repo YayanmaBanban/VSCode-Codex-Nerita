@@ -254,7 +254,11 @@ export default defineConfig([
 			},
 		},
 		rules: {
-			"better-tailwindcss/enforce-consistent-line-wrapping": "warn",
+			// cn() の各引数は1行で記述し、呼び出し全体の改行は Prettier に任せる。
+			"better-tailwindcss/enforce-consistent-line-wrapping": [
+				"warn",
+				{ preferSingleLine: true, printWidth: 0 },
+			],
 			"better-tailwindcss/enforce-consistent-class-order": "warn",
 		},
 	},
@@ -270,7 +274,10 @@ export default defineConfig([
 			},
 		},
 		rules: {
-			"better-tailwindcss/enforce-consistent-line-wrapping": "warn",
+			"better-tailwindcss/enforce-consistent-line-wrapping": [
+				"warn",
+				{ preferSingleLine: true, printWidth: 0 },
+			],
 			"better-tailwindcss/enforce-consistent-class-order": "warn",
 		},
 	},

@@ -39,7 +39,9 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 					autoFocus
 					value={value}
 					onChange={(event) => setValue(event.target.value)}
-					className="rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text"
+					className={cn(
+						"rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text",
+					)}
 				>
 					<option value="">選択してください</option>
 					{prompt.options.map((option) => (
@@ -59,10 +61,13 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 					title={prompt.message}
 					placeholder={prompt.message}
 					onChange={(event) => setValue(event.target.value)}
-					className="min-w-0 rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
+					className={cn(
+						"min-w-0 rounded-[4px] border border-menu-border bg-menu p-[10px]",
+						"text-menu-text outline-settings-focus",
+					)}
 				/>
 			)}
-			<div className="flex flex-wrap items-baseline gap-[8px] mb-[16px]">
+			<div className="mb-[16px] flex flex-wrap items-baseline gap-[8px]">
 				<button type="submit" disabled={!value}>
 					送信
 				</button>
@@ -99,7 +104,12 @@ export function PiAuthEditor({ state, send }: PiAuthEditorProps) {
 			<p className="mb-[24px] text-muted">
 				認証先を選択して、APIキーやOAuthログインを設定します。
 			</p>
-			<label className="mb-[20px] flex items-center gap-[10px] rounded-[6px] border border-menu-border bg-menu px-[12px] text-menu-text">
+			<label
+				className={cn(
+					"mb-[20px] flex items-center gap-[10px] rounded-[6px] border",
+					"border-menu-border bg-menu px-[12px] text-menu-text",
+				)}
+			>
 				<Search size={16} aria-hidden="true" />
 				<input
 					aria-label="認証先を検索"
@@ -107,7 +117,10 @@ export function PiAuthEditor({ state, send }: PiAuthEditorProps) {
 					type="search"
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
-					className="min-w-0 flex-1 border-0 bg-transparent py-[12px] text-inherit outline-none"
+					className={cn(
+						"min-w-0 flex-1 border-0 bg-transparent py-[12px] text-inherit",
+						"outline-none",
+					)}
 				/>
 			</label>
 			<ul aria-label="認証先" className="m-0 list-none p-0">
@@ -164,14 +177,18 @@ function AuthProviderItem(props: AuthProviderItemProps): JSX.Element {
 				aria-expanded={open}
 				aria-controls={`provider-${item.id}`}
 				onClick={() => setExpanded(open ? null : item.id)}
-				className="flex w-full items-center gap-[12px] rounded-none border-0 bg-transparent px-[8px] py-[16px] text-left hover:bg-settings-hover"
+				className={cn(
+					"flex w-full items-center gap-[12px] rounded-none border-0 bg-transparent",
+					"px-[8px] py-[16px] text-left",
+					"hover:bg-settings-hover",
+				)}
 			>
 				{open ? (
 					<ChevronDown size={18} aria-hidden="true" />
 				) : (
 					<ChevronRight size={18} aria-hidden="true" />
 				)}
-				<span className="min-w-0 flex-1 break-words font-medium">
+				<span className="min-w-0 flex-1 font-medium break-words">
 					{item.name}
 				</span>
 				{item.configured && (
@@ -188,7 +205,8 @@ function AuthProviderItem(props: AuthProviderItemProps): JSX.Element {
 				inert={!open}
 				aria-hidden={!open}
 				className={cn(
-					"grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+					"grid transition-[grid-template-rows] duration-200 ease-out",
+					"motion-reduce:transition-none",
 					open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
 				)}
 			>
@@ -218,7 +236,7 @@ function AuthProviderContent({
 	send,
 }: AuthProviderContentProps) {
 	return (
-		<div className="pb-[20px] pl-[38px] pr-[8px]">
+		<div className="pr-[8px] pb-[20px] pl-[38px]">
 			{/* 通知領域の高さを確保し、表示・消去・折り返しで操作位置を動かさない。 */}
 			{renderProviderFeedback(item, feedback)}
 			<div className="flex flex-wrap gap-[8px]">
@@ -265,7 +283,10 @@ function renderProviderFeedback(
 			{feedback?.error && (
 				<p
 					role="alert"
-					className="m-0 break-words rounded-[6px] border border-alert-border bg-alert p-[12px] leading-[20px]"
+					className={cn(
+						"m-0 rounded-[6px] border border-alert-border bg-alert p-[12px]",
+						"leading-[20px] break-words",
+					)}
 				>
 					{feedback.error}
 				</p>
@@ -273,7 +294,10 @@ function renderProviderFeedback(
 			{feedback?.notice && (
 				<p
 					role="status"
-					className="m-0 break-words rounded-[6px] border border-tooltip-border bg-tooltip p-[12px] leading-[20px] gap-[8px]"
+					className={cn(
+						"m-0 gap-[8px] rounded-[6px] border border-tooltip-border bg-tooltip",
+						"p-[12px] leading-[20px] break-words",
+					)}
 				>
 					{feedback.notice}
 				</p>
@@ -281,7 +305,10 @@ function renderProviderFeedback(
 			{!feedback?.error && !feedback?.notice && (
 				<p
 					role="status"
-					className="m-0 break-words rounded-[6px] border border-tooltip-border bg-tooltip p-[12px] leading-[20px] h-[40px]"
+					className={cn(
+						"m-0 h-[40px] rounded-[6px] border border-tooltip-border bg-tooltip",
+						"p-[12px] leading-[20px] break-words",
+					)}
 				/>
 			)}
 		</div>

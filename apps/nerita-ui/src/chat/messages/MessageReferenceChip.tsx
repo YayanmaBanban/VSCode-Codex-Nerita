@@ -25,9 +25,13 @@ export function MessageReferenceChip({
 				aria-label={referenceActionLabel(path)}
 				disabled={!send}
 				className={cn(
-					"message-reference inline-flex max-w-full items-center gap-[5px] px-[5px] py-[4px] align-middle [&_svg]:shrink-0",
-					"rounded-[5px] border border-solid border-panel-border bg-input text-[12px] leading-normal",
-					"hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus",
+					"message-reference inline-flex max-w-full items-center gap-[5px] px-[5px]",
+					"py-[4px] align-middle",
+					"[&_svg]:shrink-0",
+					"rounded-[5px] border border-solid border-panel-border bg-input",
+					"text-[12px] leading-normal",
+					"hover:bg-settings-hover",
+					"focus-visible:outline-2 focus-visible:outline-focus",
 				)}
 				onClick={() => {
 					const requestId = crypto.randomUUID();

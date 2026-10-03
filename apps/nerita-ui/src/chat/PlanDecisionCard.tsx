@@ -1,4 +1,5 @@
 // `Plan` 完了後の実装先を選ぶカードを表示する。
+import { cn } from "cnfast";
 import { useReducedMotion } from "motion/react";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
@@ -33,7 +34,10 @@ export function PlanDecisionCard({
 	return (
 		<section
 			aria-label="Planの実装"
-			className="relative my-4 overflow-hidden rounded-lg border border-solid border-[var(--nerita-testing-icon-passed)] p-4"
+			className={cn(
+				"relative my-4 overflow-hidden rounded-lg border border-solid",
+				"border-[var(--nerita-testing-icon-passed)] p-4",
+			)}
 		>
 			{!reduced && (
 				<BorderBeam

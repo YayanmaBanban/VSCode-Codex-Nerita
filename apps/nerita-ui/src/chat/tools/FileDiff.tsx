@@ -88,7 +88,8 @@ function DiffBody({
 			className={cn(
 				"file-diff-lines",
 				toolCodeClass,
-				"whitespace-pre [overflow-wrap:normal] overflow-x-auto border border-solid border-panel-border rounded-[4px]",
+				"overflow-x-auto rounded-[4px] border border-solid border-panel-border",
+				"[overflow-wrap:normal] whitespace-pre",
 			)}
 			tabIndex={0}
 			aria-label="差分コード"
@@ -98,7 +99,7 @@ function DiffBody({
 					<span
 						className={cn(
 							diffLineClass,
-							"file-diff-hunk text-muted bg-diff-hunk",
+							"file-diff-hunk bg-diff-hunk text-muted",
 						)}
 					>{`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@\n`}</span>
 					{hunk.lines.map((line, lineIndex) => (

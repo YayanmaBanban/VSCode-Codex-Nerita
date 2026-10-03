@@ -1,5 +1,6 @@
 // 入力欄の下に添付・使用量・接続中の設定を順に配置する。
 
+import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurface";
@@ -57,7 +58,9 @@ export function ComposerSettings({
 				send={send}
 			/>
 			<div
-				className="settings-toolbar flex flex-wrap items-center gap-x-[6px] gap-y-[4px]"
+				className={cn(
+					"settings-toolbar flex flex-wrap items-center gap-x-[6px] gap-y-[4px]",
+				)}
 				aria-label="モデル設定"
 			>
 				<ContextPickerTrigger

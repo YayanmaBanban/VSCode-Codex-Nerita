@@ -66,10 +66,10 @@ export function AgentSettings({
 			}}
 		>
 			<div>
-				<h2 className="m-0 break-words text-lg font-semibold">
+				<h2 className="m-0 text-lg font-semibold break-words">
 					{agent.name}
 				</h2>
-				<p className="break-words text-sm text-muted">
+				<p className="text-sm break-words text-muted">
 					{agent.description}
 				</p>
 			</div>
@@ -80,7 +80,7 @@ export function AgentSettings({
 				</p>
 			)}
 			{AgentFields(busy, agent, pi, edit, setEdit, models, effort, error)}
-			<p className="m-0 break-all text-xs text-muted">
+			<p className="m-0 text-xs break-all text-muted">
 				保存先: {pi ? ".pi/settings.json" : agent.id}
 			</p>
 			{!pi && (

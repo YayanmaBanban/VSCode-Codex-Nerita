@@ -1,4 +1,5 @@
 // モデルカード内で速度設定を切り替え、状態に応じた同梱アイコンを表示する。
+import { cn } from "cnfast";
 import offIcon from "../../media/icons/fastmode-off.svg?raw";
 import onIcon from "../../media/icons/fastmode-on.svg?raw";
 import type { NeritaUiControl } from "@nerita/shared/uiContributions";
@@ -30,7 +31,13 @@ export function FastModeButton({
 				aria-label="ファストモード"
 				aria-checked={control.checked}
 				disabled={disabled || control.disabled}
-				className="inline-flex size-[28px] items-center justify-center rounded-[5px] border border-solid border-input-border bg-input p-0 text-muted enabled:hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-settings-focus disabled:opacity-50"
+				className={cn(
+					"inline-flex size-[28px] items-center justify-center rounded-[5px] border",
+					"border-solid border-input-border bg-input p-0 text-muted",
+					"focus-visible:outline-1 focus-visible:outline-settings-focus",
+					"enabled:hover:bg-settings-hover",
+					"disabled:opacity-50",
+				)}
 				onClick={() =>
 					onChange(
 						control.configId,
@@ -40,7 +47,7 @@ export function FastModeButton({
 			>
 				<span
 					aria-hidden="true"
-					className="inline-flex [&_svg]:size-[16px]"
+					className={cn("inline-flex", "[&_svg]:size-[16px]")}
 					dangerouslySetInnerHTML={{
 						__html: control.checked ? onIcon : offIcon,
 					}}

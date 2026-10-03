@@ -56,8 +56,10 @@ export function AuthenticationNotice({
 				<div
 					className={cn(
 						"flex items-center gap-2 py-[4px]",
-						"[.vscode-dark_&]:[color-scheme:dark] [.vscode-high-contrast_&]:[color-scheme:dark]",
-						"[.vscode-light_&]:[color-scheme:light] [.vscode-high-contrast-light_&]:[color-scheme:light]",
+						"[.vscode-dark_&]:[color-scheme:dark]",
+						"[.vscode-high-contrast_&]:[color-scheme:dark]",
+						"[.vscode-high-contrast-light_&]:[color-scheme:light]",
+						"[.vscode-light_&]:[color-scheme:light]",
 						"[color:light-dark(var(--nerita-foreground),color-mix(in_srgb,var(--nerita-foreground)_40%,white))]",
 					)}
 				>
@@ -66,7 +68,12 @@ export function AuthenticationNotice({
 						aria-hidden="true"
 						className="drop-shadow-[0_0_6px_var(--nerita-focus-border)]"
 					/>
-					<h2 className="m-0 text-[13px] font-medium text-4xl font-black [text-shadow:0_0_3px_var(--nerita-focus-border)]">
+					<h2
+						className={cn(
+							"m-0 text-4xl text-[13px] font-black font-medium",
+							"[text-shadow:0_0_3px_var(--nerita-focus-border)]",
+						)}
+					>
 						{authenticating
 							? "認証を待っています"
 							: "認証が必要です"}
@@ -74,7 +81,7 @@ export function AuthenticationNotice({
 				</div>
 				<AuthenticationActions actions={actions} send={send} />
 			</div>
-			<p className="mb-0 mt-2 pl-6 text-[12px]">{description}</p>
+			<p className="mt-2 mb-0 pl-6 text-[12px]">{description}</p>
 		</motion.section>
 	);
 }
@@ -88,17 +95,20 @@ type AuthenticationActionsProps = {
 /** 利用可能な認証方式とキャンセル操作を要求へ接続する。 */
 function AuthenticationActions({ actions, send }: AuthenticationActionsProps) {
 	return (
-		<div className="ml-auto flex gap-[4px] shrink-0 items-center justify-end">
+		<div className="ml-auto flex shrink-0 items-center justify-end gap-[4px]">
 			{actions.map((method) => (
 				<button
 					key={method.id}
 					type="button"
 					className={cn(
-						"group relative isolate m-0 h-8 shrink-0 overflow-hidden rounded-md border px-3",
-						"bg-message-user text-[12px] font-medium leading-2",
+						"group relative isolate m-0 h-8 shrink-0 overflow-hidden rounded-md",
+						"border px-3",
+						"bg-message-user text-[12px] leading-2 font-medium",
 						"[border-color:color-mix(in_srgb,var(--nerita-button-border)_75%,transparent)]",
-						"transition-colors duration-100 hover:[border-color:var(--nerita-focus-border)]",
-						"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--nerita-focus-border)]",
+						"transition-colors duration-100",
+						"hover:[border-color:var(--nerita-focus-border)]",
+						"focus-visible:ring-1 focus-visible:ring-[var(--nerita-focus-border)]",
+						"focus-visible:outline-none",
 					)}
 					onClick={() =>
 						send({
@@ -114,8 +124,10 @@ function AuthenticationActions({ actions, send }: AuthenticationActionsProps) {
 						className={cn(
 							"pointer-events-none absolute inset-0 flex items-center justify-center",
 							"bg-sky-300 text-black [clip-path:polygon(0_0,0_0,0_0)]",
-							"transition-[clip-path] duration-300 ease-out motion-reduce:transition-none",
-							"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)] group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
+							"transition-[clip-path] duration-300 ease-out",
+							"motion-reduce:transition-none",
+							"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)]",
+							"group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
 						)}
 					>
 						{method.name}

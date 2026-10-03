@@ -1,4 +1,5 @@
 // 設定検査のエラーと、判定理由・正規化後のパスを表示する。
+import { cn } from "cnfast";
 import type { GuardReply } from "@nerita/shared/guardrails/messages";
 
 /** 検査結果は実行結果と区別し、解析できない範囲も残す。 */
@@ -14,12 +15,15 @@ export function GuardrailsFeedback({
 	return (
 		<section
 			aria-live="polite"
-			className="flex flex-col gap-2 rounded border border-panel-border bg-input p-3 text-input-text"
+			className={cn(
+				"flex flex-col gap-2 rounded border border-panel-border bg-input p-3",
+				"text-input-text",
+			)}
 		>
 			{reply.error ? (
 				<p
 					role="alert"
-					className="m-0 whitespace-pre-wrap break-words text-tool-error"
+					className="m-0 break-words whitespace-pre-wrap text-tool-error"
 				>
 					{reply.error}
 				</p>
@@ -47,7 +51,7 @@ export function GuardrailsFeedback({
 					{result.paths.map((path) => (
 						<p
 							key={path}
-							className="m-0 break-all font-editor text-[12px]"
+							className="m-0 font-editor text-[12px] break-all"
 						>
 							正規化後: {path}
 						</p>

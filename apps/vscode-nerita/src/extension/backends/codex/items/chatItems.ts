@@ -131,7 +131,9 @@ function updateCommandOrFiles(
 		) {
 			throw new Error("Invalid command item");
 		}
-		tool.title = value.command;
+		tool.title = commandTitle(value.command, value.commandActions);
+		// 見出しを短縮しても、本文では実際の起動コマンドを確認できるようにする。
+		tool.rawInput = { command: value.command };
 		tool.cwd = value.cwd;
 		tool.kind = "execute";
 		if (typeof value.exitCode === "number") {
@@ -143,6 +145,41 @@ function updateCommandOrFiles(
 	} else if (value.type === "fileChange") {
 		Object.assign(tool, fileChanges(value.changes));
 	}
+}
+
+/** 解析済みの各操作を見出しへ使い、解析結果がない場合は起動コマンドから補う。 */
+function commandTitle(command: string, actions: unknown): string {
+	const commands = Array.isArray(actions)
+		? actions.flatMap((action: unknown) =>
+				isRecord(action) &&
+				typeof action.command === "string" &&
+				action.command.trim()
+					? [powerShellBody(action.command)]
+					: [],
+			)
+		: [];
+	return commands.length ? commands.join("; ") : powerShellBody(command);
+}
+
+/** PowerShell の起動引数を表示から外す。実行用のコマンドには変更を加えない。 */
+function powerShellBody(command: string): string {
+	const invocation = /^(?:&\s+)?("[^"]+"|'[^']+'|\S+)\s+([\s\S]*)$/u.exec(
+		command.trim(),
+	);
+	if (!invocation) {
+		return command;
+	}
+	const executable = invocation[1]!.replace(/^(['"])([\s\S]*)\1$/u, "$2");
+	if (!/(?:^|[\\/])(?:powershell|pwsh)(?:\.exe)?$/iu.test(executable)) {
+		return command;
+	}
+	const body = /(?:^|\s)-Command\s+([\s\S]+)$/iu
+		.exec(invocation[2]!)?.[1]
+		?.trim();
+	if (!body) {
+		return command;
+	}
+	return body.replace(/^(['"])([\s\S]*)\1$/u, "$2");
 }
 
 /** 完了通知でのみ成否を確定し、途中の項目は実行中として扱う。 */

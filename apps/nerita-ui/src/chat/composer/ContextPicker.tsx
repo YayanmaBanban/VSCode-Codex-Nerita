@@ -7,6 +7,15 @@ import type { CompletionItem } from "./completionItems";
 import { referenceIcon } from "./referencePresentation";
 import { SettingsTooltip } from "../SettingsTooltip";
 
+/** 最近使用した参照のボタンを折り返し可能な一覧に表示する。 */
+const recentReferenceStyle = `
+             inline-flex max-w-full items-center gap-1 rounded border
+             border-solid border-panel-border bg-transparent px-2 py-1
+             text-[12px] text-input-text
+             hover:bg-settings-hover
+             focus-visible:outline-2 focus-visible:outline-focus
+           `;
+
 /** 選択済みの参照をチップとして再利用できる共通ピッカー。 */
 export function ContextPicker({
 	recent,
@@ -50,7 +59,7 @@ export function ContextPicker({
 												event.preventDefault()
 											}
 											onClick={() => props.onPick(item)}
-											className="inline-flex max-w-full items-center gap-1 rounded border border-solid border-panel-border bg-transparent px-2 py-1 text-[12px] text-input-text hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus"
+											className={recentReferenceStyle}
 										>
 											{Icon && (
 												<Icon

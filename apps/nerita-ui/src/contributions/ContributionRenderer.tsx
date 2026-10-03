@@ -1,4 +1,5 @@
 // プロバイダーを判定せず、検証済みコントロールの種別だけで描画する。
+import { cn } from "cnfast";
 import { ToggleSwitch } from "./ToggleSwitch";
 import { SliderCard } from "./SliderCard";
 import type { NeritaUiControl } from "@nerita/shared/uiContributions";
@@ -48,7 +49,12 @@ export function ContributionRenderer({
 	}
 	return (
 		<SettingsTooltip content={control.description}>
-			<div className="inline-flex min-w-0 max-w-full items-center gap-[5px] px-[5px] text-[11px] text-muted">
+			<div
+				className={cn(
+					"inline-flex max-w-full min-w-0 items-center gap-[5px] px-[5px] text-[11px]",
+					"text-muted",
+				)}
+			>
 				<span className="truncate">{control.label}</span>
 				<progress
 					aria-label={control.label}

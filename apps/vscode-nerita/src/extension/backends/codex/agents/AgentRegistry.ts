@@ -1,9 +1,6 @@
 // 親ターンのフィルターより先に、子スレッドの状態と活動の重複を管理する。
 import type { ChatState } from "@nerita/shared/chatState";
-import type {
-	AgentStatus,
-	SubAgentSummary,
-} from "@nerita/shared/subAgents";
+import type { AgentStatus, SubAgentSummary } from "@nerita/shared/subAgents";
 import { isRecord } from "@nerita/shared/validation";
 import {
 	agentItemPatch,

@@ -61,8 +61,10 @@ export function InstructionEditor({
 							aria-describedby={helpId}
 							aria-readonly={disabled}
 							className={cn(
-								"min-h-[120px] max-h-[240px] overflow-y-auto rounded-[6px] border border-solid border-input-border bg-input p-[10px]",
-								"text-input-text leading-[1.7] focus-visible:outline-2 focus-visible:outline-focus",
+								"max-h-[240px] min-h-[120px] overflow-y-auto rounded-[6px] border",
+								"border-solid border-input-border bg-input p-[10px]",
+								"leading-[1.7] text-input-text",
+								"focus-visible:outline-2 focus-visible:outline-focus",
 							)}
 						/>
 					}
@@ -79,7 +81,7 @@ export function InstructionEditor({
 			</LexicalComposer>
 			<p
 				id={helpId}
-				className="mb-0 mt-[6px] text-[11px] text-muted leading-[1.7]"
+				className="mt-[6px] mb-0 text-[11px] leading-[1.7] text-muted"
 			>
 				ルールや性格を記載する場所です。使用させたいコマンドなどは、AGENTS.md
 				に記載してください。

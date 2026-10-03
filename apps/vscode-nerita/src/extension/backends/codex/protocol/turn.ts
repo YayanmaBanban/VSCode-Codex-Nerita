@@ -57,6 +57,21 @@ function parseReviewer(value: unknown): StartedThread["approvalsReviewer"] {
 	throw new Error("Invalid approvals reviewer");
 }
 
+/** 設定変更通知から、実効サンドボックスと承認者を検証して取り出す。 */
+export function parseThreadPermissions(value: unknown) {
+	if (!isRecord(value)) {
+		throw new Error("Invalid thread settings");
+	}
+	const approvalsReviewer = parseReviewer(value.approvalsReviewer);
+	if (approvalsReviewer === undefined) {
+		throw new Error("Missing approvals reviewer");
+	}
+	return {
+		sandboxPolicy: parseSandbox(value.sandboxPolicy),
+		approvalsReviewer,
+	};
+}
+
 /** サーバーが返す任意設定は文字列または未指定の `null` を保持する。 */
 function isOptionalSetting(value: unknown): value is string | null {
 	return typeof value === "string" || value === null;

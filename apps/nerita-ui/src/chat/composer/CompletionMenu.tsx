@@ -59,7 +59,9 @@ export function CompletionMenu(props: CompletionMenuProps) {
 		<div
 			ref={panel}
 			className={cn(
-				"absolute left-0 z-50 flex min-w-0 max-h-[min(560px,80dvh)] flex-col overflow-y-auto rounded-[6px] border border-panel-border bg-input p-2 shadow-lg",
+				"absolute left-0 z-50 flex max-h-[min(560px,80dvh)] min-w-0 flex-col",
+				"overflow-y-auto rounded-[6px] border border-panel-border bg-input p-2",
+				"shadow-lg",
 				context ? "w-[min(460px,calc(100vw-54px))]" : "w-full",
 				above ? "bottom-full mb-2" : "top-0",
 			)}
@@ -69,7 +71,7 @@ export function CompletionMenu(props: CompletionMenuProps) {
 			{header}
 			<CompletionSearchInput {...props} />
 			{location && (
-				<p className="mb-2 break-all text-[12px] text-muted">
+				<p className="mb-2 text-[12px] break-all text-muted">
 					{location}
 				</p>
 			)}
@@ -182,7 +184,11 @@ function CompletionSearchInput({
 				onChange={(event) => onQuery(event.target.value)}
 				onKeyDown={onKeyDown}
 				placeholder={location ? "この階層を検索" : `${title}を検索`}
-				className="min-w-0 w-full rounded border border-input-border bg-input p-2 text-input-text focus:outline-2 focus:outline-focus"
+				className={cn(
+					"w-full min-w-0 rounded border border-input-border bg-input p-2",
+					"text-input-text",
+					"focus:outline-2 focus:outline-focus",
+				)}
 			/>
 		</div>
 	);

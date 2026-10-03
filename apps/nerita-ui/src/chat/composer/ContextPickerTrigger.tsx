@@ -1,4 +1,5 @@
 // コンテキスト選択を開く入口。選択処理はピッカー側へ委ねる。
+import { cn } from "cnfast";
 import { Plus } from "lucide-react";
 import { SettingsTooltip } from "../SettingsTooltip";
 
@@ -14,7 +15,10 @@ export function ContextPickerTrigger({
 		<SettingsTooltip content="コンテキストを追加">
 			<button
 				type="button"
-				className="attach-button flex rounded-[5px] border-0 bg-transparent p-[5px] enabled:hover:bg-settings-hover"
+				className={cn(
+					"attach-button flex rounded-[5px] border-0 bg-transparent p-[5px]",
+					"enabled:hover:bg-settings-hover",
+				)}
 				aria-label="コンテキストを追加"
 				aria-haspopup="listbox"
 				disabled={disabled || !onOpen}
