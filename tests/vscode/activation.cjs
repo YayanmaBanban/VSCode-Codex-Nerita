@@ -1,4 +1,4 @@
-// 展開した配布物を実 Extension Host で有効化し、公開コマンドと遅延読込みを確認する。
+// 展開した配布物を実際の Extension Host で有効化し、公開コマンドと SDK の動的読み込みを確認する。
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");

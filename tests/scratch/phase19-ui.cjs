@@ -1,9 +1,9 @@
-// pnpm storybook の起動後に node tests/scratch/phase19-ui.cjs で出力カードの表示を確認する。
+// `pnpm storybook` の起動後に `node tests/scratch/phase19-ui.cjs` で出力カードの表示を確認する。
 const { chromium, expect } = require("@playwright/test");
 const { mkdir, writeFile } = require("node:fs/promises");
 const { join } = require("node:path");
 
-/** 幅とテーマを揃え、閉じた状態・展開・取得待ち・範囲移動を撮影する。 */
+/** 表示幅を揃えて明暗テーマを切り替え、カードの開閉・取得待ち・表示範囲の移動を確認し、画像を保存する。 */
 async function main() {
 	const directory = join("dist/ui-review", `phase19-after-${Date.now()}`);
 	await mkdir(directory, { recursive: true });

@@ -90,7 +90,7 @@ async function verifyPiWorkflowApproval(t: TestContext, outcome: string) {
 	assert.equal(f.model.requests.length, outcome === "stop" ? 3 : 5);
 }
 
-/** 二工程の実行と結果の引継ぎを順番に返す。 */
+/** 2つの工程の実行と結果の引き継ぎに合わせて、モデルの応答を順番に用意する。 */
 function queueWorkflowReplies(f: {
 	root: string;
 	cwd: string;
@@ -121,7 +121,7 @@ function queueWorkflowReplies(f: {
 	);
 }
 
-/** 導入済みワークフロー拡張と二工程の受け入れ定義を準備する。 */
+/** 導入済みワークフロー拡張と、2つの工程からなる受け入れ検証用の定義を準備する。 */
 async function prepareWorkflowFixture(
 	f: Awaited<ReturnType<typeof piFixture>>,
 ) {

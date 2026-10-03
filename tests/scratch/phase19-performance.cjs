@@ -1,5 +1,5 @@
 // 一時計測は `node tests/scratch/phase19-performance.cjs <結果ラベル>` で実行する。
-// 出力ストアの処理と SDK 本体による履歴読込みを別プロセスで測り、結果を dist に残す。
+// 出力ストアの処理と SDK 本体による履歴読み込みを別プロセスで測り、結果を `dist/` に残す。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -42,7 +42,7 @@ async function measure(name, operation) {
 	);
 }
 
-/** 製品のプレビュー化と範囲取得を、同じ出力量で比較する。 */
+/** 累積出力と差分出力について、プレビュー生成と範囲取得の性能を測る。 */
 async function stream(root, cumulative) {
 	const { ToolOutputStore } = require(path.join(root, "store.cjs"));
 	const { setToolOutputSource } = require(path.join(root, "source.cjs"));
@@ -105,7 +105,7 @@ async function stream(root, cumulative) {
 	}
 }
 
-/** SDK が通常保存する形式で、32 MiB の本文を含む履歴を用意する。 */
+/** SDK が通常保存する形式で、約32 MiB の本文を含む履歴を用意する。 */
 async function prepareHistory(root) {
 	const sdk = await import(
 		pathToFileURL(path.join(root, "runtime/pi.mjs")).href
@@ -163,7 +163,7 @@ async function prepareHistory(root) {
 	);
 }
 
-/** 読込み・表示変換・プレビュー化を分け、どの処理が Host を止めるか測る。 */
+/** 読み込み・表示形式への変換・プレビュー生成を分け、各処理で Host のイベントループに生じる遅延を測る。 */
 async function history(root) {
 	const sdk = await import(
 		pathToFileURL(path.join(root, "runtime/pi.mjs")).href
@@ -200,7 +200,7 @@ async function history(root) {
 	await store.dispose();
 }
 
-/** 元の入力を手放した後に、短いプレビューだけで巨大本文を保持していないか測る。 */
+/** 元の入力を手放した後に、短いプレビューの背後に巨大な本文がメモリに残っていないか測る。 */
 async function retained(root) {
 	const { ToolOutputStore } = require(path.join(root, "store.cjs"));
 	const store = new ToolOutputStore();

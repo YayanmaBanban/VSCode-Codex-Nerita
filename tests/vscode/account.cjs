@@ -1,4 +1,4 @@
-// 認証パネルの閉鎖とバックエンド切替が、会話の受付と保存設定へ反映されることを確認する。
+// 認証パネルを閉じた後も送信でき、バックエンドの切り替えが会話と保存設定へ反映されることを確認する。
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
@@ -6,7 +6,7 @@ const path = require("node:path");
 const { expect } = require("@playwright/test");
 const vscode = require("vscode");
 
-/** 未作成と空ファイルを区別し、認証取消しが保存内容を変更していないか比較する。 */
+/** 資格情報ファイルの未作成と空ファイルを区別し、比較用に保存内容を読み取る。 */
 async function credentials() {
 	try {
 		return await fs.readFile(
@@ -40,7 +40,7 @@ async function selectBackend(chat, name, id) {
 	assert.equal(settings["nerita.backend"], id);
 }
 
-/** 実際の入力待ちを閉じた後にも送信でき、切替前の会話が新しい接続へ混入しない。 */
+/** 認証入力画面を閉じた後にも送信でき、切り替え前の会話が新しい接続へ混入しないことを確認する。 */
 async function verifyAccount(page, chat, model, findFrame) {
 	const { before, requests } = await verifyAuthClose(
 		page,
@@ -117,7 +117,7 @@ async function verifyAccount(page, chat, model, findFrame) {
 
 module.exports = { verifyAccount };
 
-/** 認証の未保存入力を閉じても資格情報とモデル送信が変わらないことを確認する。 */
+/** 認証情報の入力を保存せずに画面を閉じても、資格情報とモデルへの要求数が変わらないことを確認する。 */
 async function verifyAuthClose(page, chat, model, findFrame) {
 	const before = await credentials();
 	const requests = model.requests.length;

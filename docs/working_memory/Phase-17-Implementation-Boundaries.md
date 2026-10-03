@@ -6,31 +6,31 @@
 ## 新しい ChatGPT OAuth
 
 Pi の `openai-codex` を配布対象から削除し、`openai` の新しい OAuth と API Key へ統一した。
-旧 credential のコピーや、保存済み旧モデル ID の読み替えは行わない。
+旧認証情報のコピーや、保存済み旧モデル ID の読み替えは行わない。
 インストールごとに安定した device ID を新しいログインへ渡す。
 
 ユーザーが新しい OAuth を設定し、モデルを利用できたことを確認した。
-同じ保存済みの新しい credential で `GET https://api.openai.com/v1/models` は200を返した。
-`gpt-6-astra` と `gpt-5.6-sol` の短い実要求も `response.completed` まで完了した。
-更新用トークンの実更新は未確認。認証値と応答本文は診断ログへ保存していない。
+同じ保存済みの新しい認証情報で `GET https://api.openai.com/v1/models` は200を返した。
+`gpt-6-astra` と `gpt-5.6-sol` へ短い要求を送信し、どちらも `response.completed` まで完了した。
+更新用トークンの実際の更新は未確認。認証値と応答本文は診断ログへ保存していない。
 
-同じ新しい credential で `GET https://chatgpt.com/backend-api/wham/usage` は401を返した。
+同じ新しい認証情報で `GET https://chatgpt.com/backend-api/wham/usage` は401を返した。
 エラーは `type: rejected_by_access_enforcement`、`code: no_matching_rule`。
-この token には `chatgpt_account_id` がなく、アカウントのヘッダーを推測していない。
-会話応答のヘッダーと使用量には、5h・週次の残率やリセット時刻を確認できなかった。
-`OpenAIQuotaService` は取得失敗を `null` へ変換し、旧 credential へ戻さない。
+このトークンには `chatgpt_account_id` がなく、アカウントのヘッダーを推測していない。
+会話応答のヘッダーと使用量には、5h・週次の残量の割合やリセット時刻を確認できなかった。
+`OpenAIQuotaService` は取得失敗を `null` へ変換し、旧認証情報へ戻さない。
 公式の新 OAuth ガイドは ChatGPT の設定内の Usage を案内している。
 公開されている組織の Usage API は管理者キーによる API 使用量の集計であり、ChatGPT の利用枠へ流用しない。
 新 OAuth で利用できる正式な代替取得 API は確認できていない。
 新 OAuth 自体の代替 API は未確認だが、以下の Codex ログイン経路で利用枠の取得と表示を確認した。
 Codex CLI の現在の取得実装も ChatGPT の接続先では `wham/usage` を使用する。
 通常ターミナルの Codex 0.159.0 と同梱 Codex 0.159.1 で、読取り専用の `account/read` と `account/rateLimits/read` が成功した。
-既存 CLI ログインでは週次の残率とリセット時刻を取得できた。同じ環境の新 Pi OAuth トークンによる401とは認証経路が異なる。
+既存 CLI ログインでは週次の残量の割合とリセット時刻を取得できた。同じ環境の新 Pi OAuth トークンによる401とは認証経路が異なる。
 診断では Host の変換後の応答型を使用する。アカウントは `authenticated`、利用枠はウィンドウ配列であり、生 RPC の `account`・`rateLimits` を再参照しない。
 利用枠を取得する追加依頼に合わせ、401・403の場合に既存 Codex ログインの利用枠を取得する補助経路を実装した。
 同梱 CLI の読取り RPC を使い、認証値を Pi へコピーしない。取得元は `source: codex-login` として共有契約へ渡す。
-表示は見出し、区切り線、時間枠と残率、リセット時刻、区切り線、`Codexのログイン情報から取得中` の順とする。
-未ログイン・失敗・取消では表示せず、取得用の接続は毎回回収する。本番サービスを使った実測でも週次の残率とリセット時刻を取得した。
+表示は見出し、区切り線、時間枠と残量の割合、リセット時刻、区切り線、`Codexのログイン情報から取得中` の順とする。
+未ログイン・失敗・取消では表示せず、取得用の接続は毎回回収する。本番サービスを使った実測でも週次の残量の割合とリセット時刻を取得した。
 この補助表示は、新 OAuth 自体での取得成功やアカウントの一致を意味しない。
 
 GPT-6.1-Sol がモデル一覧にない原因は、移行時に `client_version=0.999.0` の指定を落としたことだった。
@@ -39,11 +39,11 @@ GPT-6.1-Sol がモデル一覧にない原因は、移行時に `client_version=
 これにより GPT-6.1-Sol を維持し、GPT-4・Daybreak 系などライブ一覧にないモデルを除外する。
 初回の取得に失敗した場合は SDK 候補を維持し、同じ認証で取得成功後の通信失敗には成功キャッシュを使う。
 
-通常の推論は SDK の `thinkingLevelMap` と利用可能レベルへ従う。
+通常の推論は SDK の `thinkingLevelMap` と利用可能レベルに従う。
 Ultra はライブカタログが明示するモデルだけに公開する。
-実推論値は `multi_agent_reasoning_effort`、対応する `max`、最後の通常候補の順で解決し、SDK の対応レベルへ写す。
+実際の推論値は `multi_agent_reasoning_effort`、対応する `max`、最後の通常候補の順で解決し、SDK の対応レベルへ写す。
 利用できる子定義と子起動ツールがある場合の Host 委譲設定として扱う。
-`multi_agent` を API payload へ追加しない。
+`multi_agent` を API のペイロードへ追加しない。
 
 公開モデル一覧には `service_tiers: [{ id: "priority", ... }]` と `additional_speed_tiers: ["fast"]` がある。
 ただし、新 OAuth で `gpt-6-astra` へ `service_tier: "fast"` を送ると400と `Unsupported service_tier: fast` が返った。
@@ -54,13 +54,13 @@ Fast mode はライブカタログの `service_tiers` に `priority` がある�
 Codex CLI と同じ `service_tier: "priority"` を送る設定として実装した。
 応答の実処理区分が `default` だったことを理由に、要求する設定まで非公開にはしない。
 モデル・認証・能力の変更で解除し、別モデルや圧縮用要求へ流用しない。
-実 SDK の送信内容と解除、UI の表示とキーボード操作を検証した。実サービスでの高速処理は未確認。
+SDK 本体の送信内容と解除、UI の表示とキーボード操作を検証した。実サービスでの高速処理は未確認。
 根拠は OpenAI の[新 OAuth ガイド](https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions)、
 [Fast mode ガイド](https://developers.openai.com/api/docs/guides/fast-mode)、上記の実測結果。
 
 ## Windows Sandbox と stdio MCP
 
-`tests/sandbox-duplex-preflight.mjs` で実 App Server の設定と準備状態を確認した。
+`tests/sandbox-duplex-preflight.mjs` で App Server 本体の設定と準備状態を確認した。
 Sandbox 内の通常の `command/exec` は成功した。
 `streamStdin` と `streamStdoutStderr` を付けた要求は RPC エラー `-32600` で拒否された。
 エラーメッセージは次のとおり。
@@ -85,8 +85,8 @@ HTTP MCP の接続・動的登録・再接続を Host へ接続した。管理�
 設定・環境変数・信頼状態・ツール定義の変更で、古い接続と承認を失効させる。
 
 配布用の MCP アダプターは、SDK の設定検証・接続・動的定義・構造化結果を扱える。
-実 SDK の HTTP 接続・Bearer 認証・保存済み OAuth の更新をローカル検証サーバーで確認した。
-既存の新 OpenAI OAuth と GPT-6.1-Sol を使い、Bearer 認証を設定した実 CRG HTTP サーバーで検索とコード内の子呼出しを確認した。
+SDK 本体の HTTP 接続・Bearer 認証・保存済み OAuth の更新をローカル検証サーバーで確認した。
+既存の新 OpenAI OAuth と GPT-6.1-Sol を使い、Bearer 認証を設定した実際の CRG HTTP サーバーで検索とコード内の子呼出しを確認した。
 認証なしの CRG HTTP 要求は401となった。認証値は検証用で、ツールの出力やログへ保存していない。
 対話的な MCP ログインと管理操作は別フェーズに残す。
 副作用の有無が分からない MCP 呼び出しを、セッション期限切れだけで再送しないよう配布変換を追加した。
@@ -98,8 +98,8 @@ SDK の `MessageToolResult` は構造化フィールドを保存しないため�
 履歴の `details` から MCP の出所や構造化結果を推測しない。
 
 QuickJS の WASM・ワーカー・実行・Stop は配布アダプターで確認した。
-ローカル BM25 は新しい OAuth 形式の検証用 credential で送信 payload を捕捉した。
-通常の function ツールと `additional_tools` を使うことを確認した。
+ローカル BM25 は新しい OAuth 形式の検証用の認証情報で送信ペイロードを捕捉した。
+通常の `function` ツールと `additional_tools` を使うことを確認した。
 ネイティブ `Tool Search` と `defer_loading` は送信しない。
 この先行検証に加え、本番 Host の承認・拒否・Stop と実サービス接続を確認した。
 
@@ -120,10 +120,10 @@ SDK の登録許可集合と初期表示集合を分離し、検索で追加す�
 検索文字列は2,048文字、読み込む定義は16件までとする。
 既知の認証値と認証フィールドを、子の結果・更新イベント・親の結果・`store` の保存前に除去する。
 
-同梱の実 SDK で承認拒否・期限切れ・Stop・呼出し上限・出力と保存の超過を検証した。
+同梱 SDK 本体で承認拒否・期限切れ・Stop・呼出し上限・出力と保存の超過を検証した。
 実会話ループで Host ツールの検索、実引数による個別承認、`parentToolCallId` と要約の保存・復元を確認した。
-HTTP MCP の製品接続は、実 Extension Host、開発用と展開した VSIX、上記の認証付き CRG で確認した。
-MCP の管理操作の受入は含めない。
+HTTP MCP の製品接続は、実際の Extension Host、開発用と展開した VSIX、上記の認証付き CRG で確認した。
+MCP の管理操作の受け入れは含めない。
 
 ## 構造化結果の表示
 
@@ -139,7 +139,7 @@ MCP の包まれた結果は、Host 登録が確認した出所情報を渡す�
 Workflow は pi-subagents の固定バージョン判定を撤去し、導入済みの0.73.1で実行した。
 パッケージ名・実体パスの境界・必要な実行 API を検証し、バージョンだけで拒否しない。
 生成コードの引用形式を固定せず、実行して依存先の出力・継続 ID・本文のコード混入防止を検証する。
-単体テストは生成コードの振る舞い、実パッケージと Extension Host は SDK・Worker・子の権限の接続を担当する。
+単体テストは生成コードの振る舞い、実際のパッケージと Extension Host は SDK・Worker・子の権限の接続を担当する。
 
 配布テストのバージョン一致、公開関数の存在だけの検査、遅延チャンクの内部ファイル名・分割方法の固定を削除した。
 移動した配布先で拡張ツールを読み込み、実行結果を確認する。

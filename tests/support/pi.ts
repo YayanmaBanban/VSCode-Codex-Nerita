@@ -15,7 +15,7 @@ import {
 import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 import type { PiSessionStorage } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionStore";
 
-/** 期待する製品状態まで待ち、期限切れでは最後の状態も失敗として返す。 */
+/** 条件を満たすまで待ち、期限切れでは診断情報を付けてアサーションを失敗させる。 */
 export async function until(
 	condition: () => boolean,
 	detail: () => unknown = condition,
@@ -139,7 +139,7 @@ export async function send(controller: PiSessionController, text: string) {
 	return request;
 }
 
-/** 実際に表示された承認要求へ返答する。 */
+/** コントローラーの共有状態に登録された承認要求へ返答する。 */
 export async function permission(
 	controller: PiSessionController,
 	optionId: string,
@@ -159,7 +159,7 @@ export async function permission(
 	});
 }
 
-/** 完了待ちはエラーを握りつぶさず、後続のアサーションへ状態を返す。 */
+/** 実行が終了状態になるまで待ち、エラーを含む状態を後続のアサーションへ返す。 */
 export async function finished(controller: PiSessionController) {
 	await until(
 		() => !["running", "cancelling"].includes(controller.snapshot().run),

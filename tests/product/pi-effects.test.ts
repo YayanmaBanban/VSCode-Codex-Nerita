@@ -1,4 +1,4 @@
-// 承認・拒否・停止・信頼取消しを、実 SDK が要求したファイル書込みで検証する。
+// 承認・拒否・停止・信頼の取り消しを、SDK 本体によるファイル書き込みで検証する。
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { isState } from "@nerita/shared/stateValidation";
 
-/** 子の起動失敗・例外を成功した復元へ読み替えない。 */
+/** 復元用の子プロセスの起動失敗・例外を、復元成功として扱わない。 */
 export async function restoredState(
 	f: { root: string; cwd: string; agentDir: string },
 	sessionId: string,

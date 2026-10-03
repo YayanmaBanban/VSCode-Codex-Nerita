@@ -1,4 +1,4 @@
-// 本番の保存・履歴選択を通し、別 Controller の復元と失敗時のデータ保持を検証する。
+// 本番の保存・履歴選択を通し、別のコントローラーでの復元と失敗時のデータ保持を検証する。
 import assert from "node:assert/strict";
 import {
 	readFile,
@@ -14,7 +14,7 @@ import { piFixture, send, finished, sessionFiles } from "../support/pi";
 import { restoredState } from "../support/restoredState";
 import { readPiSessionHeader } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionHeader";
 
-void test("PiのヘッダーをUTF-8境界越しに読み、空・別種・上限超過・取消しを拒否する", async (t) => {
+void test("Pi の履歴ヘッダーを UTF-8 の分割位置をまたいで読み、空・別種・上限超過・取り消しを拒否する", async (t) => {
 	const f = await piFixture(t);
 	const file = join(f.root, "header.jsonl");
 	const signal = new AbortController().signal;
@@ -49,7 +49,7 @@ void test("PiのヘッダーをUTF-8境界越しに読み、空・別種・上�
 		name: "AbortError",
 	});
 });
-void test("送信した会話を別接続で復元し、Fork 後の送信で元ファイルを変更しない", async (t) => {
+void test("送信した会話を別接続で復元し、フォーク後の送信で元ファイルを変更しない", async (t) => {
 	const f = await piFixture(t);
 	f.model.replies.push("最初の回答", "分岐先の回答");
 	const first = f.controller();

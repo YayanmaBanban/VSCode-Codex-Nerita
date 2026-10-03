@@ -1,4 +1,4 @@
-// 保存したプロセスの状態を共有せず、本番 Controller から履歴を復元する。
+// 保存元のプロセスと状態を共有せず、本番のコントローラーで履歴を復元する。
 import { readFile, writeFile } from "node:fs/promises";
 import { PiSessionController } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import { createPiRuntime } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";

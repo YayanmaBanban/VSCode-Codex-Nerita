@@ -1,4 +1,4 @@
-// 実 Codex の OS 境界を確認する。承認 UI の担当とは分け、承認済みコマンドを入口にする。
+// Codex 本体の OS によるアクセス制限を確認する。承認 UI の検証とは分け、承認済みコマンドを使う。
 import assert from "node:assert/strict";
 import { mkdir, readFile, realpath, writeFile, access } from "node:fs/promises";
 import { join } from "node:path";
@@ -66,7 +66,7 @@ async function main() {
 			await readFile(join(cwd, "inside.txt"), "utf8"),
 			"allowed",
 		);
-		// 子プロセスにも同じ境界が適用され、拒否を catch して成功扱いにしていないことを確認する。
+		// 子プロセスにも同じ境界が適用され、拒否時の例外を捕捉して成功扱いにしていないことを確認する。
 		const denied = `require('node:fs').writeFileSync(${JSON.stringify(outside)}, 'changed')`;
 		await assert.rejects(
 			execute(
@@ -92,7 +92,7 @@ async function main() {
 	}
 }
 
-/** 稼働中の子孫が停止後に残らず、実ファイルへの追記も止まることを確認する。 */
+/** 稼働中の子孫プロセスが停止後に残らず、ファイルへの追記も止まることを確認する。 */
 async function verifyStopped(
 	cwd: string,
 	execute: (source: string, signal: AbortSignal) => Promise<unknown>,
@@ -161,7 +161,7 @@ async function verifyStopped(
 	}
 }
 
-/** 起動前の未作成だけを待機対象にし、その他の読取り失敗を隠さない。 */
+/** 起動を待つ間のファイル未作成だけを許容し、その他の読み取り失敗を隠さない。 */
 async function heartbeatStarted(cwd: string) {
 	try {
 		return (await readFile(join(cwd, "heartbeat.txt"), "utf8")).length >= 2;

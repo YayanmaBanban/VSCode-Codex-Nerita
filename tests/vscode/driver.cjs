@@ -1,4 +1,4 @@
-// 実画面の確認ダイアログを維持したまま受入を起動し、終了結果を親へ返す。
+// 画面の確認ダイアログを有効にしたまま受け入れ検証を起動し、終了結果を親プロセスへ返す。
 const fs = require("node:fs/promises");
 const vscode = require("vscode");
 

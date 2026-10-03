@@ -26,7 +26,7 @@ export type Rpc = {
 	params?: Record<string, unknown>;
 };
 
-/** テスト側が指定した応答を、実プロセスの標準出力へ運ぶだけの中継器。 */
+/** テスト側が指定した応答を、子プロセスの標準出力へ中継する。 */
 const relay = `
 const fs = require('node:fs');
 const readline = require('node:readline');
@@ -41,7 +41,7 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
 });
 `;
 
-/** 固定した実製品版や認証情報を使わず、通信先だけを専用領域へ閉じ込める。 */
+/** Codex の製品バイナリや認証情報を使わず、通信先をテスト専用領域に用意する。 */
 export async function codexFixture(t: TestContext) {
 	assert.ok(process.env.NERITA_TEST_ROOT);
 	const root = await mkdtemp(join(process.env.NERITA_TEST_ROOT, "codex-"));

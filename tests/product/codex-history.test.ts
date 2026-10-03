@@ -109,7 +109,7 @@ async function historyAction(
 	await controller.receive({ type, requestId: randomUUID(), sessionId });
 }
 
-void test("Codex の複数ページを復元・フォークし、全文を再実行せず取得する", async (t) => {
+void test("Codex の複数ページの履歴を復元・フォークし、ツールを再実行せず出力の末尾を取得する", async (t) => {
 	const f = await historyFixture(t);
 	await historyAction(f.controller, "saved");
 	const loaded = f.controller.snapshot();

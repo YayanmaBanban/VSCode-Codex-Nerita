@@ -7,7 +7,7 @@ const { chromium, expect } = require("@playwright/test");
 const vscode = require("vscode");
 const { verifyToolOutput } = require("./tool-output.cjs");
 
-/** 実画面を意味のある要素で見つけ、未生成のフレームを成功扱いにしない。 */
+/** 指定した要素のある Webview フレームを探し、見つからなければ検証を失敗させる。 */
 async function findFrame(page, selector) {
 	let found;
 	await expect
@@ -27,7 +27,7 @@ async function findFrame(page, selector) {
 	return found;
 }
 
-/** 認証情報を持たないローカルモデルを設定する。 */
+/** 実サービスの認証情報を使わず、ローカルモデルを設定する。 */
 async function prepareModel(url, cwd) {
 	const agent = process.env.PI_CODING_AGENT_DIR;
 	await fs.mkdir(agent, { recursive: true });
@@ -180,7 +180,7 @@ async function run() {
 
 module.exports = { run };
 
-/** 承認前の未書込みと、画面から承認した後のファイル内容を確認する。 */
+/** 承認前にファイルが作成されていないことと、画面から承認した後のファイル内容を確認する。 */
 async function verifyApprovedWrite(model, page, chat, cwd) {
 	model.replies.push(
 		{

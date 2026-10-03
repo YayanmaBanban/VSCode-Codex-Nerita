@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { AppServerJsonReader } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerJsonReader";
 import { AppServerTransport } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerTransport";
 
-void test("JSONL の文字途中と複数行を跨いでも、Worker が受信順に復元する", async (t) => {
+void test("JSONL を文字の途中や複数行にまたがる位置で分割しても、Worker が受信順に復元する", async (t) => {
 	const expected = ['日本語🐈\\"\n'.repeat(500000), "続き", "改行なし"];
 	const bytes = Buffer.from(
 		expected.map((value) => JSON.stringify({ value })).join("\r\n"),
@@ -16,7 +16,7 @@ void test("JSONL の文字途中と複数行を跨いでも、Worker が受信�
 	const done = new Promise<void>((resolve) => {
 		finish = resolve;
 	});
-	// 最初の日本語の途中で分割し、以降は一行より小さい任意長で渡す。
+	// 最初の日本語文字を UTF-8 の途中で分割し、以降は一定のバイト数で渡す。
 	const chunks = [bytes.subarray(0, 12)];
 	for (let offset = 12; offset < bytes.length; offset += 65531) {
 		chunks.push(bytes.subarray(offset, offset + 65531));
@@ -34,7 +34,7 @@ void test("JSONL の文字途中と複数行を跨いでも、Worker が受信�
 	);
 });
 
-void test("JSONL の不正行と不正UTF-8を拒否し、後続の通知を公開しない", async (t) => {
+void test("JSONL の不正な行と不正な UTF-8 を拒否し、後続の通知を公開しない", async (t) => {
 	for (const broken of [
 		Buffer.from('{"secret":bad}\n'),
 		Buffer.from([0x22, 0xff, 0x22, 0x0a]),
@@ -94,7 +94,7 @@ void test("巨大通知が続いても先読みを制限し、配信中の破棄
 	assert.ok(produced < 100);
 });
 
-void test("終了直前の巨大通知と改行なしの最終RPC応答を取りこぼさない", async (t) => {
+void test("終了直前の巨大通知と改行なしの最終 RPC 応答を取りこぼさない", async (t) => {
 	const child = spawn(
 		process.execPath,
 		[
@@ -130,7 +130,7 @@ require('node:readline').createInterface({input:process.stdin}).once('line', lin
 	);
 });
 
-void test("受信中の接続破棄でRPCを拒否し、Worker の遅い結果を配信しない", async (t) => {
+void test("受信中の接続破棄で RPC を拒否し、Worker の遅い結果を配信しない", async (t) => {
 	const child = spawn(
 		process.execPath,
 		[

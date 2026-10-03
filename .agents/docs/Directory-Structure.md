@@ -6,7 +6,7 @@
 
 ## 配置の判断
 
-リポジトリルートはワークスペース全体のコマンドの実行場所とする。VS Code のマニフェスト・Extension Host のビルド・VSIX の配布は `apps/vscode-nerita/` が担当する。画像・SVG の正本は `apps/nerita-ui/media/` に置く。VS Code が直接読む拡張機能のアイコンだけを、ビルド時に `apps/vscode-nerita/dist/media/` へコピーする。
+リポジトリルートはワークスペース全体のコマンドの実行場所とする。VS Code のマニフェスト・Extension Host のビルド・VSIX の配布は `apps/vscode-nerita/` が担当する。画像・SVG の編集元は `apps/nerita-ui/media/` に置く。VS Code が直接読む拡張機能のアイコンだけを、ビルド時に `apps/vscode-nerita/dist/media/` へコピーする。
 
 実行環境に応じて、Webview・Extension Host・共有領域から配置先を選ぶ。Webview はコンポーネント・フック・CSS、Extension Host は VS Code 連携・プロセス通信、共有領域は通信型・検証処理を担当する。
 
@@ -30,7 +30,7 @@
 
 Webview 側から `apps/vscode-nerita/src/extension/` や VS Code API・Node.js 専用モジュールをインポートしない。Extension Host 側も `apps/nerita-ui/src/` の UI 実装をインポートしない。通信は `apps/nerita-ui/src/bridge/vscodeBridge.ts` のメッセージ経由で行う。両側に必要な型・検証処理は `packages/shared/src/` に置く。共有領域を両領域の実装や React・DOM・VS Code API・Node.js 専用 API に依存させない。Webview 用と Extension Host 用のエクスポートを同じ公開ファイルにまとめない。
 
-共有する型・検証処理は `@nerita/shared/*` から参照する。`Bridge` 型の正本は `packages/shared/src/bridge.ts` とする。バンドラーは `nerita-source` 条件でソースを解決する。製品検証でも同じ条件でソースをバンドルして実行する。通常の Node.js のモジュール解決では、`pnpm build:shared` で生成した JavaScript を使う。
+共有する型・検証処理は `@nerita/shared/*` から参照する。`Bridge` 型は `packages/shared/src/bridge.ts` で定義する。バンドラーは `nerita-source` 条件でソースを解決する。製品検証でも同じ条件でソースをバンドルして実行する。通常の Node.js のモジュール解決では、`pnpm build:shared` で生成した JavaScript を使う。
 
 UI の色は `apps/nerita-ui/src/ui/theme.css` にまとめる。VS Code のテーマ変数がない場合も、明暗に応じた既定色を使う。TSX では用途別の色クラスや UI 用変数を参照する。
 

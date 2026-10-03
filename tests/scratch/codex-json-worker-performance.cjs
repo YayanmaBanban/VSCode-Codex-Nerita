@@ -5,7 +5,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { performance } = require("node:perf_hooks");
 
-/** 独立プロセスで同じ入力を読み、Host の停止時間とヒープだけを測る。 */
+/** 独立プロセスで同じ入力を読み、処理時間・イベントループの遅延・ヒープ使用量の増加を測る。 */
 async function measure(mode, root) {
 	global.gc();
 	const baseline = process.memoryUsage().heapUsed;

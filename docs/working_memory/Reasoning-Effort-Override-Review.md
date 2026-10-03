@@ -23,7 +23,7 @@
 - [プロトコルの定義](https://github.com/openai/codex/blob/rust-v0.157.0/codex-rs/protocol/src/openai_models.rs)：更新項目の受理能力であり、メタデータ欠落時は通常の要求パラメーターを使う。
 - [公式の推論ガイド](https://developers.openai.com/api/docs/guides/reasoning)：更新時に要求単位の推論レベルを維持する構成と、その利用条件を説明している。レスポンスの `reasoning.effort` は更新後の実効値を示す確認手段にはならない。
 
-提示された Phase 10 の仕様も参照した。`ModelRuntime` をモデル集合の正本とし、`live` カタログを補助情報とする責務は維持する。外部仕様ページは更新していない。
+提示された Phase 10 の仕様も参照した。モデル集合の判定を `ModelRuntime` に委ね、`live` カタログを補助情報とする責務は維持する。外部仕様ページは更新していない。
 
 同梱データと実行時データの両方で `true` でも意味的な正しさは保証されない。今回の条件は既知の懸念があるモデルと未確認モデルへの適用を防ぐ暫定策。拡張する際はバージョンを固定したメタデータの再確認と、下記の実サービス検証が必要となる。
 
@@ -33,7 +33,7 @@
 pnpm test:unit tests/unit/piReasoningOverride.test.ts tests/unit/piReasoningIntegration.test.ts
 ```
 
-25 件成功。実 Pi SDK とローカルの `Responses` サーバーで、次を確認した。
+25 件成功。Pi SDK 本体とローカルの `Responses` サーバーで、次を確認した。
 
 - Astra の `baseline` 維持、更新履歴、`resume` / `fork` / `compaction`。
 - `live=true` の Sol / Luna でも low → high → low を要求パラメーターへ直接反映し、更新項目を送信しない。
@@ -42,13 +42,13 @@ pnpm test:unit tests/unit/piReasoningOverride.test.ts tests/unit/piReasoningInte
 
 これは通信形式と通常の要求経路への復帰を検証したものであり、モデルの実際の推論量を検証したものではない。
 
-## 別枠の受入項目：実サービスでの semantic smoke
+## 別枠の受入項目：実サービスでの推論動作のスモークテスト
 
 **未実施。以下は実施手順と評価条件であり、自動テストの成功数に含めない。**
 
 1. モデル ID、実行日時、Pi / Nerita の版、`live` の `capability`、エンドポイントと通信方式を記録する。認証情報は保存しない。
-2. ツールなし、同一のシステムプロンプト、同一の二段階質問を用意する。初回は短い応答、2回目は推論が必要な固定問題を使う。
-3. 独立した会話で次の四条件を比較する。
+2. ツールなし、同一のシステムプロンプト、同一の2段階の質問を用意する。初回は短い応答、2回目は推論が必要な固定問題を使う。
+3. 独立した会話で次の4条件を比較する。
     - low → low。
     - low → high を要求単位の推論レベルで指定。
     - high → high。

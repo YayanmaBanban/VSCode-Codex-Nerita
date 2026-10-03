@@ -1,4 +1,4 @@
-// モデル変更・追加指示を SDK 本体の次の HTTP 要求へ反映し、保存した選択を再起動で使う。
+// モデル変更・追加指示を SDK 本体の次の HTTP 要求へ反映し、保存した選択を新しい接続で使う。
 
 import { type TestContext, test } from "node:test";
 
@@ -18,7 +18,7 @@ import {
 import type { PiModelSelection } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 
 void test(
-	"利用枠を実サービス経路で取得し、プロバイダー変更と接続破棄後の遅い応答を公開しない",
+	"利用枠の取得応答をローカルで再現し、プロバイダー変更と接続破棄後の遅い応答を公開しない",
 	verifyPiQuotaLifetime,
 );
 
@@ -88,7 +88,7 @@ async function verifyPiQuotaLifetime(t: TestContext) {
 			.snapshot()
 			.configOptions.find((option) => option.id === "provider")
 			?.options.find((option) => option.value === "openai")?.value;
-		assert.ok(model, "実 SDK の OpenAI モデル一覧を使う");
+		assert.ok(model, "SDK 本体の OpenAI モデル一覧を使う");
 		const select = (value: string, requestId: string) =>
 			controller.receive({
 				type: "config/set",
@@ -315,7 +315,7 @@ async function verifyPiModelPersistence(t: TestContext) {
 	assert.equal(next.reasoning_effort, "high");
 }
 
-/** OAuth とカタログをローカル応答へ固定して利用枠の競合を再現する。 */
+/** 検証用の OAuth 情報とモデル設定を用意し、利用枠の取得で起きる競合を再現する。 */
 async function prepareQuotaModel(f: Awaited<ReturnType<typeof piFixture>>) {
 	await writeFile(
 		join(f.agentDir, "auth.json"),
@@ -367,7 +367,7 @@ function verifyHandoffIsolation(f: Awaited<ReturnType<typeof piFixture>>) {
 	);
 }
 
-/** モデル変更と推論設定の保存を同じローカルプロバイダーで検証する。 */
+/** モデル変更と推論設定の保存を検証するため、同じローカルプロバイダーに2つのモデルを用意する。 */
 async function prepareConversationModels(
 	f: Awaited<ReturnType<typeof piFixture>>,
 ) {

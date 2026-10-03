@@ -4,7 +4,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { expect } = require("@playwright/test");
 
-/** モデルだけを代替し、本文は実ツールと保存済み履歴から取得する。 */
+/** モデルだけを代替し、本文は SDK 本体のツールと保存済み履歴から取得する。 */
 async function verifyToolOutput(page, chat, model, cwd) {
 	await fs.writeFile(
 		path.join(cwd, "perf-output.txt"),

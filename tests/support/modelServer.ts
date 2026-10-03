@@ -1,8 +1,8 @@
-// モデルの HTTP 境界だけを置き換え、要求とツール結果の実際の受渡しを観測する。
+// モデルの HTTP 境界だけを置き換え、要求とツール結果の実際の受け渡しを観測する。
 import { createServer } from "node:http";
 import { once } from "node:events";
 
-/** モデルから返すツール選択。製品の実行状態はここでは組み立てない。 */
+/** モデルから返す本文またはツール呼び出し。製品の実行状態はここでは組み立てない。 */
 export type ModelReply =
 	string | { name: string; arguments: Record<string, unknown> };
 

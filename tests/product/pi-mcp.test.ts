@@ -1,4 +1,4 @@
-// 実 HTTP MCP の結果と副作用を、承認・共有状態・保存・復元まで1つの担当で守る。
+// HTTP MCP サーバーの結果と副作用を、承認・共有状態・保存・復元の各段階で検証する。
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -13,7 +13,7 @@ import {
 	sessionFiles,
 } from "../support/pi";
 
-/** 通信を許可する役割と接続設定を準備し、承認は各操作で返す。 */
+/** ネットワーク通信を許可する方針と接続設定を準備し、承認への応答は各テストで行う。 */
 async function fixture(t: TestContext) {
 	const f = await piFixture(t);
 	f.options.parentPolicy = {
