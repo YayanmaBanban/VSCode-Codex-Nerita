@@ -34,8 +34,8 @@ export function piAgentState() {
 			},
 		],
 		options: [
-			{ id: "allow", name: "今回のみ許可", kind: "allow_once" },
-			{ id: "reject", name: "拒否", kind: "reject_once" },
+			{ id: "allow", name: "今回のみ許可", kind: "allow" },
+			{ id: "reject", name: "拒否", kind: "deny" },
 		],
 	}));
 

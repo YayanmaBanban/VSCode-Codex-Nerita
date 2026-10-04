@@ -54,9 +54,9 @@ const meta = {
 						{
 							id: "accept",
 							name: "今回のみ許可",
-							kind: "allow_once",
+							kind: "allow",
 						},
-						{ id: "decline", name: "拒否", kind: "reject_once" },
+						{ id: "decline", name: "拒否", kind: "deny" },
 					],
 				},
 			],

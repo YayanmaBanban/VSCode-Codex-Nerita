@@ -6,6 +6,7 @@ import type { UiMessage } from "@nerita/shared/messages";
 import { cn } from "cnfast";
 import { useReducedMotion } from "motion/react";
 import { BorderBeam } from "../ui/BorderBeam";
+import { ButtonCurtain } from "../ui/ButtonCurtain";
 import { PermissionContent } from "./PermissionContent";
 import { ToolCard } from "./tools/ToolCard";
 
@@ -43,18 +44,16 @@ export function Activity({ state, send }: ActivityProps) {
 							/>
 						</span>
 					)}
-					<span className="eyebrow text-[12px] tracking-[0.13em] text-muted">
-						確認が必要です
-					</span>
 					<PermissionContent permission={permission} />
 					<div className="permission-actions flex flex-wrap gap-[8px]">
 						{permission.options.map((option) => (
 							<button
 								key={option.id}
+								type="button"
 								className={cn(
-									option.kind.startsWith("allow")
+									option.kind === "allow"
 										? "primary border-transparent bg-primary text-primary-text"
-										: "quiet bg-transparent",
+										: "quiet group relative isolate overflow-hidden bg-transparent",
 								)}
 								onClick={() => {
 									if (state.sessionId && state.runId) {
@@ -70,6 +69,16 @@ export function Activity({ state, send }: ActivityProps) {
 								}}
 							>
 								{option.name}
+								{option.kind !== "allow" && (
+									<ButtonCurtain
+										name={option.name}
+										className={
+											option.kind === "deny"
+												? "bg-red-300"
+												: "bg-yellow-300"
+										}
+									/>
+								)}
 							</button>
 						))}
 					</div>

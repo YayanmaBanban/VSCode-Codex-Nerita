@@ -84,7 +84,8 @@ export type ToolSummary = {
 export type PermissionOption = {
 	id: string;
 	name: string;
-	kind: "allow_once" | "allow_always" | "reject_once" | "reject_always";
+	/** ボタンの表示分類。選択した `id` をバックエンドへ返して承認判断に使う。 */
+	kind: "allow" | "deny" | "abort";
 };
 
 /** 一度だけ回答できる承認要求。 */

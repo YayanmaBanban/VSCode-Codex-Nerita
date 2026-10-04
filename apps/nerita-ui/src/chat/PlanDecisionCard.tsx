@@ -4,6 +4,7 @@ import { useReducedMotion } from "motion/react";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import { BorderBeam } from "../ui/BorderBeam";
+import { ButtonCurtain } from "../ui/ButtonCurtain";
 
 /** 完了した `Plan` に対する1回限りの選択を Host へ送る。 */
 export function PlanDecisionCard({
@@ -62,16 +63,24 @@ export function PlanDecisionCard({
 				<button
 					disabled={disabled}
 					onClick={() => choose("new")}
-					className="quiet bg-transparent"
+					className="quiet group relative isolate overflow-hidden bg-transparent"
 				>
 					新規セッションで実装する
+					<ButtonCurtain
+						name="新規セッションで実装する"
+						className="bg-green-300"
+					/>
 				</button>
 				<button
 					disabled={disabled}
 					onClick={() => choose("continue")}
-					className="quiet bg-transparent"
+					className="quiet group relative isolate overflow-hidden bg-transparent"
 				>
 					プランを続ける
+					<ButtonCurtain
+						name="プランを続ける"
+						className="bg-green-300"
+					/>
 				</button>
 			</div>
 		</section>

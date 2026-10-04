@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { defaultGuardrails } from "@nerita/shared/guardrails/config";
+import { validStateField } from "@nerita/shared/stateFieldValidation";
 import { guardrailRegistry } from "../../apps/vscode-nerita/src/extension/security/GuardrailRegistry";
 import { piFixture, send, permission, finished, until } from "../support/pi";
 void test("許可前には書かず、許可後は一度だけ書く。重複要求を再実行しない", async (t) => {
@@ -24,6 +25,27 @@ void test("許可前には書かず、許可後は一度だけ書く。重複要
 	);
 	const request = await send(controller, "ファイルを作成");
 	await until(() => controller.snapshot().permissions.length === 1);
+	const permissions = controller.snapshot().permissions;
+	assert.deepEqual(
+		permissions[0]!.options.map(({ id, kind }) => ({ id, kind })),
+		[
+			{ id: "accept", kind: "allow" },
+			{ id: "decline", kind: "deny" },
+			{ id: "cancel", kind: "abort" },
+		],
+	);
+	assert.ok(validStateField("permissions", permissions));
+	assert.equal(
+		validStateField("permissions", [
+			{
+				...permissions[0],
+				options: [
+					{ id: "accept", name: "今回のみ許可", kind: "unknown" },
+				],
+			},
+		]),
+		false,
+	);
 	await assert.rejects(readFile(join(f.cwd, "result.txt")), {
 		code: "ENOENT",
 	});

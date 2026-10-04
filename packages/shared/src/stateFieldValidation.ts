@@ -128,12 +128,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 						(o) =>
 							isId(o.id) &&
 							typeof o.name === "string" &&
-							[
-								"allow_once",
-								"allow_always",
-								"reject_once",
-								"reject_always",
-							].includes(String(o.kind)),
+							["allow", "deny", "abort"].includes(String(o.kind)),
 					),
 			),
 		authMethods: (value) =>

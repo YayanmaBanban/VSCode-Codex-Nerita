@@ -80,8 +80,8 @@ export function scenarioState(scenario: Scenario): ChatState {
 				id: "permission",
 				title: "設定ファイルの変更を許可しますか？",
 				options: [
-					{ id: "allow", name: "今回のみ許可", kind: "allow_once" },
-					{ id: "reject", name: "拒否", kind: "reject_once" },
+					{ id: "allow", name: "今回のみ許可", kind: "allow" },
+					{ id: "reject", name: "拒否", kind: "deny" },
 				],
 			},
 		];

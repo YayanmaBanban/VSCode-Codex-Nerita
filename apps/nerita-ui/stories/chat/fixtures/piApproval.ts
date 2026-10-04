@@ -54,17 +54,17 @@ export function piApprovalState(name: string): Partial<ChatState> {
 					{
 						id: "accept",
 						name: "今回のみ許可",
-						kind: "allow_once",
+						kind: "allow",
 					},
 					{
 						id: "decline",
 						name: "拒否",
-						kind: "reject_once",
+						kind: "deny",
 					},
 					{
 						id: "cancel",
 						name: "ターンを中止",
-						kind: "reject_once",
+						kind: "abort",
 					},
 				],
 			},

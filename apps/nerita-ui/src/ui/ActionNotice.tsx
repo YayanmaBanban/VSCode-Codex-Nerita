@@ -2,6 +2,7 @@
 import { cn } from "cnfast";
 import { Info } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { ButtonCurtain } from "./ButtonCurtain";
 
 /** 認証や信頼の判断は利用側が担当し、ボタンの表示名とクリック時の処理を渡す。 */
 type NoticeAction = { id: string; name: string; onClick: () => void };
@@ -98,19 +99,7 @@ function NoticeActions({ actions }: NoticeActionsProps) {
 					onClick={method.onClick}
 				>
 					{method.name}
-					<span
-						aria-hidden="true"
-						className={cn(
-							"pointer-events-none absolute inset-0 flex items-center justify-center",
-							"bg-sky-300 text-black [clip-path:polygon(0_0,0_0,0_0)]",
-							"transition-[clip-path] duration-300 ease-out",
-							"motion-reduce:transition-none",
-							"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)]",
-							"group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
-						)}
-					>
-						{method.name}
-					</span>
+					<ButtonCurtain name={method.name} className="bg-sky-300" />
 				</button>
 			))}
 		</div>

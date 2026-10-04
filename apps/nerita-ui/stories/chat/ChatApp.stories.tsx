@@ -110,17 +110,34 @@ export const PiCancelled: Story = { args: { pi: true, piRun: "cancelled" } };
 /** 承認要求の ID を保ち、Host 応答が届くまで表示状態を確定しない。 */
 export const ApprovalRequest: Story = {
 	args: { scenario: "permission", appServer: true },
-	play: async ({ canvasElement }) => {
+	play: approvalPlay("今回のみ許可", "accept"),
+};
+
+/** カーテン付きの拒否ボタンから、拒否に対応する選択肢 ID を送信する。 */
+export const ApprovalDeclined: Story = {
+	args: { scenario: "permission", appServer: true },
+	play: approvalPlay("拒否", "decline"),
+};
+/** カーテン付きの中止ボタンから、ターン中止に対応する選択肢 ID を送信する。 */
+export const ApprovalCancelled: Story = {
+	args: { scenario: "permission", appServer: true },
+	play: approvalPlay("ターンを中止", "cancel"),
+};
+
+/** 要求と選択肢の ID を送信し、Host の応答まで承認カードが残ることを確認する。 */
+function approvalPlay(
+	name: string,
+	optionId: string,
+): NonNullable<Story["play"]> {
+	return async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const bridge = storyBridge(canvasElement);
-		await userEvent.click(
-			canvas.getByRole("button", { name: "今回のみ許可" }),
-		);
+		await userEvent.click(canvas.getByRole("button", { name }));
 		await expect(bridge.sent).toContainEqual(
 			expect.objectContaining({
 				type: "permission/respond",
 				permissionId: "permission",
-				optionId: "accept",
+				optionId,
 				sessionId: "story-session",
 				runId: "story-run",
 			}),
@@ -134,5 +151,5 @@ export const ApprovalRequest: Story = {
 				canvas.queryByRole("region", { name: "承認要求" }),
 			).not.toBeInTheDocument(),
 		);
-	},
-};
+	};
+}

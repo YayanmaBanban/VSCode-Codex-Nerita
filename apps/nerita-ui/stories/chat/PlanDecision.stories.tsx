@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { PlanDecisionCard } from "../../src/chat/PlanDecisionCard";
+import "../../src/chat/chat.css";
 
 /** 選択後にカードが閉じる状態を再現する。 */
 function PlanDecisionStory() {
