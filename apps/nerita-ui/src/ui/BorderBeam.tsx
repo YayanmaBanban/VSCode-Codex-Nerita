@@ -70,7 +70,7 @@ type BorderBeamProps = {
 	speedMultiplier?: number;
 };
 
-/** マスクで内側を抜き、光の軌道をボタンの外周に限定する。 */
+/** マスクで内側を抜き、親要素の外周に沿って動く光を表示する。 */
 export const BorderBeam = (props: BorderBeamProps) => {
 	const {
 		className,
@@ -90,37 +90,42 @@ export const BorderBeam = (props: BorderBeamProps) => {
 
 	const beamStyle = beamAppearance(props);
 
+	// マスク要素に `overflow-hidden` を指定すると、枠線上の光まで切り取られる。
+	// 外側の要素で光のはみ出しを切り取り、横スクロールを防ぐ。
 	return (
-		<div
-			className={cn(
-				"pointer-events-none absolute inset-0 rounded-[inherit] border border-solid",
-				"border-transparent",
-				"[mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]",
-				"[mask-composite:exclude] [mask-clip:padding-box,border-box]",
-			)}
-			style={{ borderWidth: `${borderThickness}px` }}
-		>
-			<motion.div
+		<div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+			<div
 				className={cn(
-					"absolute aspect-square",
-					"bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)]",
-					"to-transparent",
-					pauseOnHover && "group-hover:animation-play-state-paused",
-					className,
+					"absolute inset-0 rounded-[inherit] border border-solid",
+					"border-transparent",
+					"[mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000)]",
+					"[mask-composite:exclude] [mask-clip:padding-box,border-box]",
 				)}
-				style={beamStyle}
-				initial={{ offsetDistance: `${initialOffset}%` }}
-				animate={{
-					offsetDistance: beamOffsets(reverse, initialOffset),
-				}}
-				transition={{
-					repeat: Infinity,
-					ease: "linear",
-					duration: actualDuration,
-					delay: -delay,
-					...transition,
-				}}
-			/>
+				style={{ borderWidth: `${borderThickness}px` }}
+			>
+				<motion.div
+					className={cn(
+						"absolute aspect-square",
+						"bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)]",
+						"to-transparent",
+						pauseOnHover &&
+							"group-hover:animation-play-state-paused",
+						className,
+					)}
+					style={beamStyle}
+					initial={{ offsetDistance: `${initialOffset}%` }}
+					animate={{
+						offsetDistance: beamOffsets(reverse, initialOffset),
+					}}
+					transition={{
+						repeat: Infinity,
+						ease: "linear",
+						duration: actualDuration,
+						delay: -delay,
+						...transition,
+					}}
+				/>
+			</div>
 		</div>
 	);
 };

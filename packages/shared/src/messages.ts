@@ -32,6 +32,7 @@ import type { SessionHistoryMessage } from "./sessionHistory";
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
 	| ToolOutputRequest
+	| { type: "diff/open"; requestId: string; path: string }
 	| { type: "ui/setBackend"; requestId: string; backend: BackendId }
 	| {
 			type: "agent/read";

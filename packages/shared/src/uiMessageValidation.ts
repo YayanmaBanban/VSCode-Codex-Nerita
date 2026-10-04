@@ -38,6 +38,9 @@ const uiMessageValidators = new Map<
 >(
 	Object.entries({
 		"tool/output": validToolOutputRequest,
+		"diff/open": (value) =>
+			isPathString(value.path) &&
+			![...value.path].some((character) => character.charCodeAt(0) < 32),
 		"ui/setBackend": (value) => isBackendId(value.backend),
 		"agent/read": (value) => isId(value.sessionId) && isId(value.threadId),
 		"changes/open": (value) => isChangeScope(value.scope),

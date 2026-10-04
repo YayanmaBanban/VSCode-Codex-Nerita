@@ -198,12 +198,12 @@ function ToolCardHeader(props: ToolCardHeaderProps) {
 }
 
 /** 保存要約に残っている入力・本文を持つツール情報。 */
-type ToolHistoryContentProps = { tool: ToolSummary };
+type ToolHistoryContentProps = ActivityToolProps;
 
-/** 保存済みの入力とエラーだけを表示し、存在しない結果本文を補わない。 */
-function ToolHistoryContent({ tool }: ToolHistoryContentProps) {
+/** 保存された入力や本文があれば表示し、保存されていない結果本文は補わない。 */
+function ToolHistoryContent({ tool, send, cwd }: ToolHistoryContentProps) {
 	return tool.rawInput !== undefined || tool.content?.length ? (
-		<GenericTool tool={tool} />
+		<GenericTool tool={tool} send={send} cwd={cwd} />
 	) : null;
 }
 
@@ -395,11 +395,11 @@ function renderToolHeading(
 }
 
 /** Host で制限された出力だけを本文に渡す。 */
-function OutputBody({ tool }: ActivityToolProps) {
+function OutputBody({ tool, send, cwd }: ActivityToolProps) {
 	return tool.output ? (
 		<>
 			{tool.kind !== "execute" && tool.rawInput !== undefined && (
-				<GenericTool tool={tool} />
+				<GenericTool tool={tool} send={send} cwd={cwd} />
 			)}
 			<ToolOutputView output={tool.output} />
 			{tool.exitCode !== undefined && (

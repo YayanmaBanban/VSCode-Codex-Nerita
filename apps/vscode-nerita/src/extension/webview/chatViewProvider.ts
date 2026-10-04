@@ -12,6 +12,7 @@ import { listWorkspacePaths } from "./workspacePaths";
 import { resolvePath } from "./resolvePath";
 import { CopiedCode } from "./copiedCode";
 import { openResource } from "./openResource";
+import { WorkingTreeDiff } from "./workingTreeDiff";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";
 import { configuredBackend, saveBackend } from "./backendSettings";
 import {
@@ -38,6 +39,7 @@ export class ChatViewProvider
 	private backendSubscription: vscode.Disposable;
 	private backendPending = false;
 	private copiedCode = new CopiedCode();
+	private workingTreeDiff = new WorkingTreeDiff();
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
 		private extensionUri: vscode.Uri,
@@ -150,9 +152,10 @@ export class ChatViewProvider
 			}
 		}
 	}
-	/** Webview に属する購読だけを破棄する。 */
+	/** 表示に使うサービス・購読・Webview の登録を解放し、チャットのエディターパネルを閉じる。 */
 	dispose(): void {
 		this.copiedCode.dispose();
+		this.workingTreeDiff.dispose();
 		this.backendSubscription.dispose();
 		this.placement.dispose();
 		for (const view of [...this.views.values()]) {
@@ -186,6 +189,13 @@ export class ChatViewProvider
 		}
 		if (value.type === "reference/open") {
 			await openResource(value.uri, value.range);
+			return;
+		}
+		if (value.type === "diff/open") {
+			await this.workingTreeDiff.open(
+				value.path,
+				this.session.snapshot().cwd,
+			);
 			return;
 		}
 		if (value.type === "workspace/listPaths") {
@@ -371,6 +381,9 @@ export class ChatViewProvider
 
 /** 表示操作の失敗に対応した復旧方法を返す。 */
 function viewRequestError(type: string) {
+	if (type === "diff/open") {
+		return "差分を開けませんでした。信頼済みワークスペース内のファイルと Git の状態を確認してください。";
+	}
 	if (type === "ui/setBackend") {
 		return "バックエンドの切り替えを完了できませんでした。設定ファイルを確認し、再接続してください。";
 	}

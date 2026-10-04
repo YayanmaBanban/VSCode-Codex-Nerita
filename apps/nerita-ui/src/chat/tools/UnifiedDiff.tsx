@@ -1,45 +1,26 @@
-// App Server の unified diff を再計算せず、追加・削除の色で表示する。
-import { cn } from "cnfast";
-import { diffLineClass, toolCodeClass, toolLabelClass } from "./toolStyles";
-/** サーバーが返した差分をテキストとして描画する。 */
-export function UnifiedDiff({ path, diff }: { path: string; diff: string }) {
-	return (
-		<section className="tool-diff" aria-label={`${path} の差分`}>
-			<h3 className={toolLabelClass}>{path}</h3>
-			<pre
-				className={cn(
-					"file-diff-lines",
-					toolCodeClass,
-					"overflow-x-auto rounded-[4px] border border-solid border-panel-border",
-					"[overflow-wrap:normal] whitespace-pre",
-				)}
-				tabIndex={0}
-				aria-label="差分コード"
-			>
-				{diff.split("\n").map((line, index) => (
-					<span
-						key={index}
-						className={cn(diffLineClass, diffLineColor(line))}
-					>
-						{line}
-						{"\n"}
-					</span>
-				))}
-			</pre>
-		</section>
-	);
-}
+// App Server の unified diff を解析し、差分を再計算せずに行番号付きで表示する。
+import { parsePatch } from "diff";
+import { useMemo } from "react";
+import { DiffView, type DiffLocationProps } from "./DiffView";
+import { toolOutputClass } from "./toolStyles";
 
-/** ファイルヘッダーを除外し、差分の区切り・追加・削除を色分けする。 */
-function diffLineColor(line: string) {
-	if (line.startsWith("@@")) {
-		return "file-diff-hunk text-muted bg-diff-hunk";
-	}
-	if (line.startsWith("+") && !line.startsWith("+++")) {
-		return "file-diff-added bg-diff-added";
-	}
-	if (line.startsWith("-") && !line.startsWith("---")) {
-		return "file-diff-removed bg-diff-removed";
-	}
-	return "";
+/** 解釈できない差分でも元の本文を残し、ファイルを比較する操作を提供する。 */
+export function UnifiedDiff({
+	diff,
+	...location
+}: DiffLocationProps & { diff: string }) {
+	const hunks = useMemo(() => {
+		try {
+			return parsePatch(diff).flatMap((patch) => patch.hunks);
+		} catch {
+			return [];
+		}
+	}, [diff]);
+	return (
+		<DiffView {...location} hunks={hunks.length ? hunks : undefined}>
+			{hunks.length === 0 && (
+				<pre className={toolOutputClass}>{diff}</pre>
+			)}
+		</DiffView>
+	);
 }

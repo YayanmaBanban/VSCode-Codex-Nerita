@@ -6,6 +6,7 @@ import { FileDiff } from "./FileDiff";
 import { UnifiedDiff } from "./UnifiedDiff";
 import { toolLabelClass, toolOutputClass } from "./toolStyles";
 import { CommandOutput } from "./CommandOutput";
+import type { ActivityToolProps } from "./ActivityToolContent";
 
 /** 構造が未知の値も欠落させずに表示する。 */
 export function Value({
@@ -48,10 +49,12 @@ export function RawTool({
 function Content({
 	value,
 	scrollable,
+	send,
+	cwd,
 }: {
 	value: unknown;
 	scrollable: boolean;
-}) {
+} & Pick<ActivityToolProps, "send" | "cwd">) {
 	if (!isRecord(value)) {
 		return <Value value={value} scrollable={scrollable} />;
 	}
@@ -60,7 +63,14 @@ function Content({
 		typeof value.path === "string" &&
 		typeof value.diff === "string"
 	) {
-		return <UnifiedDiff path={value.path} diff={value.diff} />;
+		return (
+			<UnifiedDiff
+				path={value.path}
+				diff={value.diff}
+				send={send}
+				cwd={cwd}
+			/>
+		);
 	}
 	if (isFileDiffContent(value)) {
 		return (
@@ -68,6 +78,8 @@ function Content({
 				path={value.path}
 				oldText={value.oldText}
 				newText={value.newText}
+				send={send}
+				cwd={cwd}
 			/>
 		);
 	}
@@ -110,10 +122,12 @@ function StructuredResultLabel({ tool }: { tool: ToolSummary }) {
 export function GenericTool({
 	tool,
 	scrollable = false,
+	send,
+	cwd,
 }: {
 	tool: ToolSummary;
 	scrollable?: boolean;
-}) {
+} & Pick<ActivityToolProps, "send" | "cwd">) {
 	const hasDetails =
 		!!tool.content?.length ||
 		tool.rawInput !== undefined ||
@@ -127,7 +141,13 @@ export function GenericTool({
 			))}
 			<StructuredResultLabel tool={tool} />
 			{tool.content?.map((value, index) => (
-				<Content key={index} value={value} scrollable={scrollable} />
+				<Content
+					key={index}
+					value={value}
+					scrollable={scrollable}
+					send={send}
+					cwd={tool.cwd ?? cwd}
+				/>
 			))}
 			{tool.rawInput !== undefined && (
 				<section>
@@ -147,9 +167,11 @@ export function GenericTool({
 }
 
 /** ファイルごとの差分にパスが表示される場合は、共通表示のパス一覧を省く。 */
-export function EditingFiles({ tool }: { tool: ToolSummary }) {
+export function EditingFiles({ tool, send, cwd }: ActivityToolProps) {
 	return (
 		<GenericTool
+			send={send}
+			cwd={cwd}
 			tool={{
 				...tool,
 				paths: tool.content?.some(
