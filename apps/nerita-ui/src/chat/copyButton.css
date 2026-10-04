@@ -1,8 +1,8 @@
 /* 接続ボタンと同じく、左から覆って右へ抜ける二段階のカーテンでコピー結果を示す。 */
-.output-copy-curtain {
-	animation: output-copy-curtain 440ms ease-in-out both;
+.copy-curtain {
+	animation: copy-curtain 440ms ease-in-out both;
 }
-@keyframes output-copy-curtain {
+@keyframes copy-curtain {
 	0% {
 		transform: translateX(-100%);
 	}
@@ -15,7 +15,7 @@
 }
 /* 動きを減らす設定では、結果の色だけを一時的に表示する。 */
 @media (prefers-reduced-motion: reduce) {
-	.output-copy-curtain {
+	.copy-curtain {
 		display: none;
 		animation: none;
 	}

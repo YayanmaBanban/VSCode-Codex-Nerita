@@ -1,6 +1,8 @@
 // ページ応答を子プロセスとの JSONL 通信へ流し、履歴の公開・出力取得・失敗時の保持を確認する。
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { test, type TestContext } from "node:test";
 import type { HostMessage } from "@nerita/shared/messages";
 import type { ToolOutputResponse } from "@nerita/shared/toolOutput";
@@ -362,6 +364,8 @@ void test("Codex のページ取得中に切断した場合は遅い復元結果
 
 void test("Codex の本文を一括で返す旧形式も出力参照へ変換して復元する", async (t) => {
 	const f = await historyFixture(t);
+	const attachmentPath = join(f.cwd, "育成素材.txt");
+	const imagePath = join(f.cwd, "画像.png");
 	f.responses.set("thread/resume", () => ({
 		thread: {
 			...f.thread("saved"),
@@ -372,6 +376,21 @@ void test("Codex の本文を一括で返す旧形式も出力参照へ変換し
 					status: "completed",
 					itemsView: "full",
 					items: [
+						{
+							id: "user",
+							type: "userMessage",
+							content: [
+								{
+									type: "text",
+									text: "添付ファイル: この行はユーザー本文\n確認してください",
+								},
+								{
+									type: "text",
+									text: `添付ファイル: ${attachmentPath}\n大量の素材一覧`,
+								},
+								{ type: "localImage", path: imagePath },
+							],
+						},
 						{
 							id: "command",
 							type: "commandExecution",
@@ -390,6 +409,20 @@ void test("Codex の本文を一括で返す旧形式も出力参照へ変換し
 	}));
 	await historyAction(f.controller, "saved");
 	assert.equal(f.controller.snapshot().sessionId, "saved");
+	const user = f.controller
+		.snapshot()
+		.messages.find((message) => message.role === "user")!;
+	assert.equal(
+		user.text,
+		"添付ファイル: この行はユーザー本文\n確認してください",
+	);
+	assert.deepEqual(
+		user.attachments?.map(({ name, uri }) => ({ name, uri })),
+		[
+			{ name: "育成素材.txt", uri: pathToFileURL(attachmentPath).href },
+			{ name: "画像.png", uri: pathToFileURL(imagePath).href },
+		],
+	);
 	assert.equal(
 		(
 			await readTail(

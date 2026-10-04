@@ -21,6 +21,8 @@ import {
 	sidebarLocation,
 } from "./sidebarLocation";
 import { type SidebarLocation } from "@nerita/shared/sidebar";
+import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
+import { ChatTrustState } from "./ChatTrustState";
 
 /** UI を閉じても会話を保持し、再表示時の ready で状態を復元する。 */
 export class ChatViewProvider
@@ -40,12 +42,19 @@ export class ChatViewProvider
 	private backendPending = false;
 	private copiedCode = new CopiedCode();
 	private workingTreeDiff = new WorkingTreeDiff();
+	private trustState: ChatTrustState;
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
 		private extensionUri: vscode.Uri,
 		private session: ChatSession,
 		private restartBackend: () => Promise<void>,
+		trustStore?: WorkspaceTrustStore,
 	) {
+		this.trustState = new ChatTrustState(session, trustStore, (message) => {
+			for (const webview of this.views.keys()) {
+				void webview.postMessage(message);
+			}
+		});
 		this.backendSubscription = vscode.workspace.onDidChangeConfiguration(
 			(event) => {
 				if (event.affectsConfiguration("nerita.backend")) {
@@ -154,6 +163,7 @@ export class ChatViewProvider
 	}
 	/** 表示に使うサービス・購読・Webview の登録を解放し、チャットのエディターパネルを閉じる。 */
 	dispose(): void {
+		this.trustState.dispose();
 		this.copiedCode.dispose();
 		this.workingTreeDiff.dispose();
 		this.backendSubscription.dispose();
@@ -171,6 +181,10 @@ export class ChatViewProvider
 		webview: vscode.Webview,
 		value: UiMessage,
 	): Promise<void> {
+		if (value.type === "workspace/manageTrust") {
+			await vscode.commands.executeCommand("nerita.trust.manage");
+			return;
+		}
 		if (value.type === "ui/setBackend") {
 			await this.changeBackend(webview, value);
 			return;
@@ -299,6 +313,7 @@ export class ChatViewProvider
 
 	/** 要求元の Webview にだけ接続状態と保存済み表示を復元する。 */
 	private async initializeView(webview: vscode.Webview) {
+		await this.trustState.refresh();
 		void webview.postMessage({
 			type: "ui/backendState",
 			backend: configuredBackend(),
@@ -381,6 +396,9 @@ export class ChatViewProvider
 
 /** 表示操作の失敗に対応した復旧方法を返す。 */
 function viewRequestError(type: string) {
+	if (type === "workspace/manageTrust") {
+		return "ワークスペースの Trust 管理画面を開けませんでした。再試行してください。";
+	}
 	if (type === "diff/open") {
 		return "差分を開けませんでした。信頼済みワークスペース内のファイルと Git の状態を確認してください。";
 	}

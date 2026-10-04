@@ -1,13 +1,14 @@
-// Storybook 起動後、`node tests/scratch/output-copy-motion.cjs` でコピー結果のカーテンとシェイクを確認する。
+// Storybook 起動後、`node tests/scratch/output-copy-motion.cjs` で出力のコピー結果のカーテンとシェイクを確認する。回答を確認する場合は末尾に `answer` を付ける。
 const { chromium, expect } = require("@playwright/test");
 const { mkdir, writeFile } = require("node:fs/promises");
 const { join } = require("node:path");
 
 /** 明暗テーマでアニメーションの時刻を固定し、色・移動・連続実行と動きの抑制を確認する。 */
 async function main() {
+	const answer = process.argv[2] === "answer";
 	const directory = join(
 		"dist/ui-review",
-		`output-copy-motion-${Date.now()}`,
+		`${answer ? "answer" : "output"}-copy-motion-${Date.now()}`,
 	);
 	await mkdir(directory, { recursive: true });
 	const browser = await chromium.launch({ headless: true });
@@ -23,26 +24,18 @@ async function main() {
 					errors.push(message.text());
 				}
 			});
-			await page.addInitScript(() => {
-				globalThis.copyFails = false;
-				Object.defineProperty(navigator, "clipboard", {
-					value: {
-						writeText: async () => {
-							if (globalThis.copyFails) {
-								throw new Error("clipboard unavailable");
-							}
-						},
-					},
-				});
-			});
+			await page.addInitScript(configureClipboard);
 			await page.goto(
-				`http://localhost:6006/iframe.html?id=chat-tool-cards--large-output&viewMode=story&globals=theme:${theme}`,
+				`http://localhost:6006/iframe.html?id=${answer ? "chat-messages--answer-copy" : "chat-tool-cards--large-output"}&viewMode=story&globals=theme:${theme}`,
 			);
-			await page.locator(".tool-heading").click();
+			if (!answer) {
+				await page.locator(".tool-heading").click();
+			}
 			const button = page.getByRole("button", {
-				name: "出力をコピー",
+				name: answer ? "回答をコピー" : "出力をコピー",
 				exact: true,
 			});
+			await expect(button).toBeVisible({ timeout: 30000 });
 			await page.screenshot({
 				path: join(directory, `${theme}-initial.png`),
 				animations: "disabled",
@@ -84,6 +77,20 @@ async function main() {
 	}
 }
 
+/** OS のクリップボードだけを代替し、画面操作で成功・失敗を切り替えられるようにする。 */
+function configureClipboard() {
+	globalThis.copyFails = false;
+	Object.defineProperty(navigator, "clipboard", {
+		value: {
+			writeText: async () => {
+				if (globalThis.copyFails) {
+					throw new Error("clipboard unavailable");
+				}
+			},
+		},
+	});
+}
+
 /** 連続コピーで演出が再開し、動きの抑制設定では演出が表示されないことを確認する。 */
 async function verifyRepeatedCopyAndReducedMotion(
 	page,
@@ -93,14 +100,14 @@ async function verifyRepeatedCopyAndReducedMotion(
 ) {
 	await button.click();
 	await expect(button).toHaveAttribute("data-copy-result", "error");
-	await button.locator(".output-copy-curtain").evaluate((element) => {
+	await button.locator(".copy-curtain").evaluate((element) => {
 		globalThis.previousCurtain = element;
 	});
 	await button.click();
 	await expect
 		.poll(() =>
 			button
-				.locator(".output-copy-curtain")
+				.locator(".copy-curtain")
 				.evaluate((element) => element !== globalThis.previousCurtain),
 		)
 		.toBe(true);
@@ -108,7 +115,7 @@ async function verifyRepeatedCopyAndReducedMotion(
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await button.click();
 	await expect(button).toHaveAttribute("data-copy-result", "error");
-	await expect(button.locator(".output-copy-curtain")).toBeHidden();
+	await expect(button.locator(".copy-curtain")).toBeHidden();
 	await expect
 		.poll(() =>
 			button.evaluate(
@@ -145,7 +152,7 @@ async function captureFrames(page, button, directory, prefix, result) {
 				})) {
 					animation.currentTime = time;
 				}
-				const curtain = element.querySelector(".output-copy-curtain");
+				const curtain = element.querySelector(".copy-curtain");
 				return {
 					time,
 					x: new globalThis.DOMMatrix(

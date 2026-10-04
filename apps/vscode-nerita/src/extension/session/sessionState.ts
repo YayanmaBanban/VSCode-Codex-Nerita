@@ -70,6 +70,7 @@ export class SessionState {
 		patch: Partial<Omit<ChatState, "revision">>,
 		outputs?: ToolOutputStore,
 	): void {
+		patch = finalizeMessages(patch, this.state);
 		// 一覧の絞り込みや再取得で現在のタイトルを失わないよう、会話状態に保持する。
 		const sessionId =
 			patch.sessionId === undefined
@@ -127,6 +128,25 @@ export class SessionState {
 		this.publisher.dispose();
 		this.listeners.clear();
 	}
+}
+
+/** 停止・失敗で完了通知が届かなくても、受信済みの本文を失わない。 */
+function finalizeMessages(
+	patch: Partial<ChatState>,
+	state: ChatState,
+): Partial<ChatState> {
+	if (
+		!patch.run ||
+		!["completed", "cancelled", "failed"].includes(patch.run)
+	) {
+		return patch;
+	}
+	return {
+		...patch,
+		messages: (patch.messages ?? state.messages).map((message) =>
+			message.streaming ? { ...message, streaming: false } : message,
+		),
+	};
 }
 
 /** 明示タイトルと一覧を優先し、同じ会話では既存タイトルを保持する。 */

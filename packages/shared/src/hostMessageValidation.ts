@@ -25,6 +25,7 @@ const hostMessageValidators = new Map<
 	(value: Record<string, unknown>) => boolean
 >(
 	Object.entries({
+		"workspace/trustState": (value) => typeof value.untrusted === "boolean",
 		"tool/outputResult": validToolOutputResponse,
 		"ui/codeBlock": (value) => {
 			return isId(value.requestId);

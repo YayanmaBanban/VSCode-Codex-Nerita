@@ -31,6 +31,7 @@ import type { SessionHistoryMessage } from "./sessionHistory";
 
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| { type: "workspace/manageTrust"; requestId: string }
 	| ToolOutputRequest
 	| { type: "diff/open"; requestId: string; path: string }
 	| { type: "ui/setBackend"; requestId: string; backend: BackendId }
@@ -115,6 +116,7 @@ export type UiMessage =
 
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "workspace/trustState"; untrusted: boolean }
 	| ToolOutputResponse
 	| { type: "ui/backendState"; backend: BackendId }
 	| { type: "ui/codeBlock"; requestId: string }

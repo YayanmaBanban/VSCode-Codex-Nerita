@@ -1,5 +1,12 @@
 // 保存形式ごとの履歴を取得し、表示中の会話を変更せずに復元データを組み立てる。
-import { initialState, type ChatState } from "@nerita/shared/chatState";
+import {
+	initialState,
+	type ChatState,
+	type ChatMessage,
+} from "@nerita/shared/chatState";
+import type { Attachment } from "@nerita/shared/composer";
+import { win32 } from "node:path";
+import { pathToFileURL } from "node:url";
 import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";
 import type { CodexConnection } from "../runtime/connection";
@@ -189,15 +196,27 @@ export async function hydrateHistory(
 	}
 	return [...result.values()];
 }
-/** 添付バイナリを露出せずにユーザー入力を復元する。 */
-function userText(content: unknown): string {
+/** ユーザー本文を復元し、添付は内容を本文へ含めず、表示用の名前と URI に変換する。 */
+function userContent(
+	content: unknown,
+): Pick<ChatMessage, "text" | "attachments"> {
 	if (!Array.isArray(content)) {
 		throw new Error("Invalid user history");
 	}
-	return content
-		.map((part: unknown) => {
+	const attachments: Attachment[] = [];
+	const text = content
+		.map((part: unknown, index) => {
 			if (!isRecord(part)) {
 				throw new Error("Invalid user input");
+			}
+			const path = historyAttachmentPath(part, index);
+			if (path) {
+				attachments.push({
+					id: `attachment:${index}`,
+					name: win32.basename(path),
+					uri: pathToFileURL(path).href,
+				});
+				return "";
 			}
 			if (part.type === "text" && typeof part.text === "string") {
 				return part.text;
@@ -210,7 +229,23 @@ function userText(content: unknown): string {
 			}
 			return typeof part.name === "string" ? `@${part.name}` : "[添付]";
 		})
+		.filter(Boolean)
 		.join("\n\n");
+	return { text, attachments };
+}
+
+/** 通常のユーザー本文を添付と誤認しないよう、テキスト添付は2番目以降から取り出す。 */
+function historyAttachmentPath(
+	part: Record<string, unknown>,
+	index: number,
+): string | undefined {
+	if (part.type === "localImage" && typeof part.path === "string") {
+		return part.path;
+	}
+	if (index > 0 && part.type === "text" && typeof part.text === "string") {
+		return /^添付ファイル: ([^\r\n]+)\r?\n/.exec(part.text)?.[1];
+	}
+	return undefined;
 }
 /** 全項目の変換成功後にだけ公開できる表示スナップショットを作る。 */
 export function replayHistory(turns: HistoryTurn[], threadId = "history") {
@@ -243,12 +278,12 @@ function applyHistoryItems(
 				(message) => message.id === id,
 			);
 			if (previous) {
-				previous.text = userText(item.content);
+				Object.assign(previous, userContent(item.content));
 			} else {
 				state.messages.push({
 					id,
 					role: "user",
-					text: userText(item.content),
+					...userContent(item.content),
 					order: nextTimelineOrder(state),
 				});
 			}

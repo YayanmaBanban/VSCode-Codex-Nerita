@@ -51,8 +51,11 @@ export async function activate(
 	controller = session;
 	registerWorkflowEditor(context, session);
 	registerAgentManager(context, session);
-	const provider = new ChatViewProvider(context.extensionUri, session, () =>
-		session.restart(),
+	const provider = new ChatViewProvider(
+		context.extensionUri,
+		session,
+		() => session.restart(),
+		trust,
 	);
 	context.subscriptions.push(
 		provider,

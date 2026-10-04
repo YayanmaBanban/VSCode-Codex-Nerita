@@ -1,17 +1,20 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
 
-import { type ReactNode, type RefObject, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useRef } from "react";
 
 import { SettingsTooltip } from "../SettingsTooltip";
 import { cn } from "cnfast";
 
-import { ArrowDownToLine, ArrowUpToLine, Copy } from "lucide-react";
+import { ArrowUpToLine } from "lucide-react";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { ChatMessage, ToolSummary } from "@nerita/shared/chatState";
 import { MessageText } from "./MessageText";
 import { McpMessage } from "./McpMessage";
 import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 import type { SubAgentSummary } from "@nerita/shared/subAgents";
+import { CopyButton } from "../CopyButton";
+import { MessageReferenceChip } from "./MessageReferenceChip";
+import { useStreamingText } from "./useStreamingText";
 
 /** 表示するメッセージ、ユーザー発言かどうかの指定と操作要求の送信関数。 */
 type MessageContentProps = {
@@ -26,12 +29,16 @@ function MessageContent({
 	user,
 	send,
 }: MessageContentProps): React.JSX.Element {
+	const text = useStreamingText(
+		message.text,
+		!user && !message.mcp && message.streaming === true,
+	);
 	if (message.mcp) {
 		return <McpMessage content={message.mcp} text={message.text} />;
 	}
 	return (
 		<MessageText
-			text={message.text}
+			text={text}
 			send={send}
 			references={user ? message.references : undefined}
 		/>
@@ -52,7 +59,6 @@ type MessagesProps = {
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
 export function Messages({
 	messages,
-	busy,
 	send,
 	tools = [],
 	renderTool,
@@ -60,30 +66,14 @@ export function Messages({
 	renderAgent,
 }: MessagesProps) {
 	const elements = useRef(new Map<string, HTMLElement>());
-	const [copyStatus, setCopyStatus] = useState<{
-		id: string;
-		text: string;
-	} | null>(null);
-	/** 対象をフォーカスし、送信文の先頭か返信の末尾を表示する。 */
-	const jump = (id: string, end: boolean) => {
-		const element = elements.current.get(id + (end ? ":end" : ""));
+	/** 回答から対応する送信メッセージの先頭へ移動する。 */
+	const jump = (id: string) => {
+		const element = elements.current.get(id);
 		element?.focus({ preventScroll: true });
 		element?.scrollIntoView({
-			block: end ? "end" : "start",
+			block: "start",
 			behavior: "instant",
 		});
-	};
-	/** コピーの成功・失敗を支援技術にも通知する。 */
-	const copy = async (message: ChatMessage) => {
-		try {
-			await navigator.clipboard.writeText(message.text);
-			setCopyStatus({ id: message.id, text: "コピーしました" });
-		} catch {
-			setCopyStatus({
-				id: message.id,
-				text: "コピーできませんでした。本文を選択してコピーしてください。",
-			});
-		}
 	};
 	const entries = messageTimeline(messages, tools, agents);
 	return entries.map(({ message, tool, agent }) => {
@@ -102,13 +92,6 @@ export function Messages({
 			.slice(0, index)
 			.reverse()
 			.find((item) => item.role === "user");
-		const nextUser = messages.findIndex(
-			(item, position) => position > index && item.role === "user",
-		);
-		const endIndex = nextUser === -1 ? messages.length - 1 : nextUser - 1;
-		const reply = messages[endIndex];
-		const target = turnNavigationTarget(user, reply, previousUser);
-		const replyPending = isReplyPending(user, nextUser, busy);
 		return (
 			<MessageEntry
 				key={message.id}
@@ -116,27 +99,21 @@ export function Messages({
 				user={user}
 				elements={elements}
 				send={send}
-				copy={copy}
-				target={target}
-				replyPending={replyPending}
+				target={previousUser}
 				jump={jump}
-				copyStatus={copyStatus}
 			/>
 		);
 	});
 }
 
-/** メッセージの表示状態と、ターン移動・コピーの操作や結果。 */
+/** メッセージの表示状態と、同じターンの送信文への移動操作。 */
 type MessageEntryProps = {
 	message: ChatMessage;
 	user: boolean;
 	elements: RefObject<Map<string, HTMLElement>>;
 	send: ((message: UiMessage) => void) | undefined;
-	copy: (message: ChatMessage) => Promise<void>;
 	target: undefined | ChatMessage;
-	replyPending: boolean;
-	jump: (id: string, end: boolean) => void;
-	copyStatus: null | { id: string; text: string };
+	jump: (id: string) => void;
 };
 
 /** 発言・ツール・子の結果を共通の順序で並べる。 */
@@ -167,18 +144,9 @@ function messageTimeline(
 	].sort((a, b) => a.order - b.order);
 }
 
-/** 本文・ターン移動・コピー結果を同じメッセージに表示する。 */
+/** 本文・添付・ターン移動と回答コピーの操作を表示する。 */
 function MessageEntry(props: MessageEntryProps) {
-	const {
-		message,
-		user,
-		elements,
-		copy,
-		target,
-		replyPending,
-		jump,
-		copyStatus,
-	} = props;
+	const { message, user, elements, target, jump } = props;
 	return (
 		<article
 			className={cn(
@@ -204,20 +172,26 @@ function MessageEntry(props: MessageEntryProps) {
 			<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
 				<MessageContent {...props} />
 			</div>
-			{renderMessageActions(
-				elements,
-				message,
-				user,
-				copy,
-				target,
-				replyPending,
-				jump,
+			{user && !!message.attachments?.length && (
+				<div
+					className="mt-2 flex flex-wrap gap-1.5"
+					aria-label="添付ファイル"
+				>
+					{message.attachments.map((file) => (
+						<MessageReferenceChip
+							key={file.id}
+							path={{
+								kind: "file",
+								name: file.name,
+								path: file.uri,
+								uri: file.uri,
+							}}
+							send={props.send}
+						/>
+					))}
+				</div>
 			)}
-			{copyStatus?.id === message.id && (
-				<span role="status" className="muted text-[12px] text-muted">
-					{copyStatus.text}
-				</span>
-			)}
+			{!user && renderMessageActions(message, target, jump)}
 		</article>
 	);
 }
@@ -251,20 +225,11 @@ function renderTimelineTool(
 	);
 }
 
-/** 最後のユーザー発言への回答待ちを判定する。 */
-function isReplyPending(user: boolean, nextUser: number, busy: boolean) {
-	return user && nextUser === -1 && busy;
-}
-
 /** コピーと同じターンへの移動ボタンを表示する。 */
 function renderMessageActions(
-	elements: RefObject<Map<string, HTMLElement>>,
 	message: ChatMessage,
-	user: boolean,
-	copy: (message: ChatMessage) => Promise<void>,
 	target: ChatMessage | undefined,
-	replyPending: boolean,
-	jump: (id: string, end: boolean) => void,
+	jump: (id: string) => void,
 ) {
 	return (
 		<div
@@ -273,13 +238,6 @@ function renderMessageActions(
 				messageFocusClass,
 			)}
 			tabIndex={-1}
-			ref={(element) => {
-				if (element) {
-					elements.current.set(`${message.id}:end`, element);
-				} else {
-					elements.current.delete(`${message.id}:end`);
-				}
-			}}
 		>
 			<div
 				className={cn(
@@ -290,12 +248,15 @@ function renderMessageActions(
 					"p-0.5",
 				)}
 			>
-				{!user && message.mcp?.status !== "loading" && (
-					<CopyAnswerButton copy={copy} message={message} />
+				{message.mcp?.status !== "loading" && (
+					<CopyButton
+						text={message.text}
+						label="回答をコピー"
+						className="size-7 rounded-md"
+						iconSize={16}
+					/>
 				)}
-				<SettingsTooltip
-					content={user ? "回答の末尾へ移動" : "送信メッセージへ移動"}
-				>
+				<SettingsTooltip content="送信メッセージへ移動">
 					<button
 						type="button"
 						className={cn(
@@ -305,67 +266,18 @@ function renderMessageActions(
 							"bg-transparent",
 							"hover:bg-settings-hover",
 						)}
-						aria-label={
-							user ? "回答の末尾へ移動" : "送信メッセージへ移動"
-						}
-						disabled={!target || replyPending}
+						aria-label="送信メッセージへ移動"
+						disabled={!target}
 						onClick={() => {
 							if (target) {
-								jump(target.id, user);
+								jump(target.id);
 							}
 						}}
 					>
-						{user ? (
-							<ArrowDownToLine size={16} aria-hidden="true" />
-						) : (
-							<ArrowUpToLine size={16} aria-hidden="true" />
-						)}
+						<ArrowUpToLine size={16} aria-hidden="true" />
 					</button>
 				</SettingsTooltip>
 			</div>
 		</div>
 	);
-}
-
-/** コピーする回答と、コピー処理を実行する関数。 */
-type CopyAnswerButtonProps = {
-	copy: (message: ChatMessage) => Promise<void>;
-	message: ChatMessage;
-};
-
-/** 回答のコピー操作を支援技術向けの文言とともに表示する。 */
-function CopyAnswerButton({ copy, message }: CopyAnswerButtonProps): ReactNode {
-	return (
-		<SettingsTooltip content="回答をコピー">
-			<button
-				type="button"
-				className={cn(
-					messageIconButtonClass,
-					"rounded-md",
-					"size-7",
-					"bg-transparent",
-					"hover:bg-settings-hover",
-				)}
-				aria-label="回答をコピー"
-				onClick={() => void copy(message)}
-			>
-				<Copy size={16} aria-hidden="true" />
-			</button>
-		</SettingsTooltip>
-	);
-}
-
-/** ユーザー発言から回答へ、回答から直前のユーザー発言へ移動する。 */
-function turnNavigationTarget(
-	user: boolean,
-	reply: ChatMessage | undefined,
-	previousUser: ChatMessage | undefined,
-) {
-	if (user) {
-		if (reply?.role === "assistant") {
-			return reply;
-		}
-		return undefined;
-	}
-	return previousUser;
 }

@@ -91,6 +91,8 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 					(item.streaming === undefined ||
 						typeof item.streaming === "boolean") &&
 					(item.mcp === undefined || isMcpMessageContent(item.mcp)) &&
+					(item.attachments === undefined ||
+						validComposerField("attachments", item.attachments)) &&
 					typeof item.text === "string",
 			),
 		tools: (value) =>

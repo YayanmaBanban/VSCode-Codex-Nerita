@@ -24,6 +24,7 @@ const textPart = (text: string): ComposerPart => ({
 
 /** 表示先ごとの DOM と、全表示先で共有する下書きを接続する。 */
 export function useChatView(bridge: Bridge) {
+	const [untrusted, setUntrusted] = useState(false);
 	const [backend, setBackend] = useState<BackendId | undefined>();
 	const [draftParts, updateDraft] = useState<ComposerPart[]>(() => [
 		textPart(""),
@@ -38,6 +39,7 @@ export function useChatView(bridge: Bridge) {
 		createViewStateEffect(
 			bridge,
 			setBackend,
+			setUntrusted,
 			setSidebarLocation,
 			updateDraft,
 			setEditor,
@@ -87,6 +89,7 @@ export function useChatView(bridge: Bridge) {
 		conversation,
 	);
 	return {
+		untrusted,
 		backend,
 		draft,
 		draftParts,
@@ -103,6 +106,7 @@ export function useChatView(bridge: Bridge) {
 function createViewStateEffect(
 	bridge: Bridge,
 	setBackend: Dispatch<SetStateAction<BackendId | undefined>>,
+	setUntrusted: Dispatch<SetStateAction<boolean>>,
 	setSidebarLocation: Dispatch<SetStateAction<SidebarLocation>>,
 	updateDraft: Dispatch<SetStateAction<ComposerPart[]>>,
 	setEditor: Dispatch<SetStateAction<boolean>>,
@@ -110,6 +114,10 @@ function createViewStateEffect(
 ): EffectCallback {
 	return () =>
 		bridge.subscribe((message) => {
+			if (message.type === "workspace/trustState") {
+				setUntrusted(message.untrusted);
+				return;
+			}
 			if (message.type === "ui/backendState") {
 				setBackend(message.backend);
 				return;

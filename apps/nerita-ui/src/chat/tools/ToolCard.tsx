@@ -347,6 +347,8 @@ function renderToolHeading(
 	const Body = body;
 	const Icon = icon;
 	const title = tool.title;
+	// 圧縮はコマンド実行ではないため、停止ボタンを増やさず進行アイコンだけを共用する。
+	const progress = usesExecutionProgress(tool);
 	return (
 		<SettingsTooltip
 			content={<span className="whitespace-pre-wrap">{title}</span>}
@@ -370,8 +372,8 @@ function renderToolHeading(
 				<span className="tool-title min-w-0 flex-1 truncate">
 					{title}
 				</span>
-				{renderExecutionProgress(executing, active)}
-				{renderNonExecutionStatus(executing, active, tool)}
+				{renderExecutionProgress(progress, active)}
+				{renderNonExecutionStatus(progress, active, tool)}
 				{renderInactiveStatus(status)}
 				{status === "completed" && (
 					<Check size={16} role="img" aria-label="完了" />
@@ -439,7 +441,16 @@ function renderNonExecutionStatus(
 	);
 }
 
-/** 実行ツールの進行中アイコンを表示する。 */
+/** コマンド実行に加え、元種別または表示種別がコンテキスト圧縮のカードにも進行アイコンを使う。 */
+function usesExecutionProgress(tool: ToolSummary) {
+	return (
+		tool.kind === "execute" ||
+		tool.kind === "contextCompaction" ||
+		(isRecord(tool.rawItem) && tool.rawItem.type === "contextCompaction")
+	);
+}
+
+/** コマンド実行とコンテキスト圧縮の進行中アイコンを表示する。 */
 function renderExecutionProgress(executing: boolean, active: boolean) {
 	return (
 		executing &&

@@ -43,6 +43,7 @@ export abstract class CodexRun extends CodexAgents {
 		this.planText = null;
 		this.active = run;
 		const userId = randomUUID();
+		const files = [...this.state.attachments];
 		this.patch({
 			run: "running",
 			planDecision: null,
@@ -53,6 +54,7 @@ export abstract class CodexRun extends CodexAgents {
 				{
 					id: userId,
 					references,
+					attachments: files,
 					role: "user",
 					text,
 					order: nextTimelineOrder(this.state),
@@ -62,7 +64,6 @@ export abstract class CodexRun extends CodexAgents {
 
 		let prepared = false;
 		try {
-			const files = [...this.state.attachments];
 			const attachments = files.length
 				? await this.prepareAttachments(files)
 				: [];

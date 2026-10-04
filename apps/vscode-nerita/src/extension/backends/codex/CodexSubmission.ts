@@ -305,7 +305,14 @@ export abstract class CodexSubmission extends CodexHistory {
 		this.patch({
 			messages: [
 				...this.state.messages,
-				{ id, role: "user", text, order, references },
+				{
+					id,
+					role: "user",
+					text,
+					order,
+					references,
+					attachments: files,
+				},
 			],
 			attachments: this.state.attachments.filter(
 				(item) => !files.some((file) => file.id === item.id),

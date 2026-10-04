@@ -1,6 +1,7 @@
 // App Server の元種別と正規化済み入力を使い、専用カードとリンク要求を確認する。
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 import { initialState, type ToolSummary } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import { Activity } from "../../../src/chat/Activity";
@@ -75,7 +76,7 @@ const tools: ToolSummary[] = [
 		title: "コンテキスト圧縮",
 		kind: "think",
 		rawItem: { type: "contextCompaction" },
-		status: "completed",
+		status: "in_progress",
 		paths: [],
 	},
 ];
@@ -119,3 +120,24 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const All: Story = {};
+
+/** 圧縮の開始時には進行アイコンを表示し、完了時にはチェックへ切り替える。 */
+export const CompactionProgress: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const title = canvas.getByText("コンテキスト圧縮", { exact: true });
+		const card = within(title.closest<HTMLElement>(".tool-card")!);
+		await expect(card.getByRole("img", { name: "実行中" })).toBeVisible();
+		await expect(
+			card.queryByRole("img", { name: "完了" }),
+		).not.toBeInTheDocument();
+		await expect(card.queryByRole("button")).not.toBeInTheDocument();
+		await userEvent.click(
+			canvas.getByRole("button", { name: "完了通知を受信" }),
+		);
+		await expect(card.getByRole("img", { name: "完了" })).toBeVisible();
+		await expect(
+			card.queryByRole("img", { name: "実行中" }),
+		).not.toBeInTheDocument();
+	},
+};

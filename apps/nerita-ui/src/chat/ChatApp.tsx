@@ -30,6 +30,7 @@ type ChatAppProps = { bridge: Bridge };
 /** 差し替え可能なブリッジを使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: ChatAppProps) {
 	const {
+		untrusted,
 		backend,
 		draft,
 		draftParts,
@@ -68,6 +69,7 @@ export function ChatApp({ bridge }: ChatAppProps) {
 				)}
 			>
 				<ConnectionHeader
+					untrusted={untrusted}
 					backend={backend}
 					sidebarLocation={sidebarLocation}
 					onSelectSidebar={selectSidebar}

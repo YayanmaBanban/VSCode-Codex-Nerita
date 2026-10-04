@@ -80,17 +80,27 @@ function requiresSnapshot(
 }
 
 /** 会話状態以外の専用購読へ渡す通知を識別する。 */
-function isAuxiliaryMessage(message: HostMessage) {
-	return (
-		message.type === "tool/outputResult" ||
-		message.type === "ui/codeBlock" ||
-		message.type === "ui/viewState" ||
-		message.type === "agent/view" ||
-		message.type === "workspace/paths" ||
-		message.type === "workspace/resolvedPath" ||
-		message.type === "workspace/symbols" ||
-		message.type === "session/references" ||
-		message.type === "ui/sidebarState" ||
-		message.type === "ui/backendState"
-	);
+function isAuxiliaryMessage(message: HostMessage): message is Exclude<
+	HostMessage,
+	{
+		type:
+			| "state/snapshot"
+			| "state/patch"
+			| "request/failed"
+			| "prompt/accepted";
+	}
+> {
+	return [
+		"workspace/trustState",
+		"tool/outputResult",
+		"ui/codeBlock",
+		"ui/viewState",
+		"agent/view",
+		"workspace/paths",
+		"workspace/resolvedPath",
+		"workspace/symbols",
+		"session/references",
+		"ui/sidebarState",
+		"ui/backendState",
+	].includes(message.type);
 }

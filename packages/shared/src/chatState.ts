@@ -37,6 +37,8 @@ export type ChatMessage = {
 	role: "user" | "assistant";
 	text: string;
 	references?: ComposerReference[];
+	/** 送信後も表示する添付。入力欄の添付とは独立して保持する。 */
+	attachments?: Attachment[];
 	streaming?: boolean;
 	mcp?: McpMessageContent;
 };

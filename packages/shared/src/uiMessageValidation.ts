@@ -72,6 +72,7 @@ const uiMessageValidators = new Map<
 			typeof value.originalName === "string" &&
 			value.originalName.length <= 200 &&
 			isPersonalityPreset(value),
+		"workspace/manageTrust": () => true,
 		"ui/openEditor": () => true,
 		"ui/openSidebar": () => true,
 		"ui/saveDraft": (value) =>

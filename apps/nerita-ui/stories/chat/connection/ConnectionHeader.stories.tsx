@@ -4,7 +4,8 @@ import { initialState, type ConnectionStatus } from "@nerita/shared/chatState";
 import { createCodexLifecycleBridge } from "../mocks/codexLifecycleBridge";
 import { ConnectionButton } from "../../../src/chat/connection/ConnectionButton";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { StoryChat as ChatApp } from "../StoryChat";
+import { StoryChat as ChatApp, storyBridge } from "../StoryChat";
+import { expect, userEvent, within, waitFor } from "storybook/test";
 import { createChatStoryBridge } from "../mocks/mockBridge";
 import type { BackendId } from "@nerita/shared/backend";
 
@@ -15,12 +16,14 @@ function HeaderStory({
 	authFailure = false,
 	authSuccess = false,
 	backend = "codex",
+	untrusted = false,
 }: {
 	title?: string;
 	error?: boolean;
 	authFailure?: boolean;
 	authSuccess?: boolean;
 	backend?: BackendId;
+	untrusted?: boolean;
 }) {
 	const bridge = useMemo(() => {
 		if (error) {
@@ -50,10 +53,11 @@ function HeaderStory({
 				post(message);
 				if (message.type === "ui/ready") {
 					mock.emit({ type: "ui/backendState", backend });
+					mock.emit({ type: "workspace/trustState", untrusted });
 				}
 			},
 		};
-	}, [title, error, backend, authFailure, authSuccess]);
+	}, [title, error, backend, authFailure, authSuccess, untrusted]);
 	return <ChatApp bridge={bridge} />;
 }
 const meta = {
@@ -75,6 +79,44 @@ export const Reconnect: Story = {
 };
 export const PiBackend: Story = {
 	args: { backend: "pi" },
+};
+export const UntrustedWorkspace: Story = {
+	args: { backend: "pi", untrusted: true },
+};
+/** クリックだけでは信頼済みにせず、Host の通知で表示を切り替える。 */
+export const TrustTransition: Story = {
+	args: { backend: "pi", untrusted: true },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: "信頼する" }));
+		const requests = bridge.sent.filter(
+			(message) => message.type === "workspace/manageTrust",
+		);
+		await expect(requests).toHaveLength(1);
+		await expect(requests[0]?.requestId).toMatch(/^[0-9a-f-]{36}$/);
+		await expect(
+			canvas.getByRole("region", { name: "ワークスペースの信頼" }),
+		).toBeVisible();
+		bridge.emit({ type: "workspace/trustState", untrusted: false });
+		await waitFor(() =>
+			expect(
+				canvas.queryByRole("region", { name: "ワークスペースの信頼" }),
+			).not.toBeInTheDocument(),
+		);
+		bridge.emit({ type: "workspace/trustState", untrusted: true });
+		await waitFor(() =>
+			expect(
+				canvas.getByRole("region", { name: "ワークスペースの信頼" }),
+			).toBeVisible(),
+		);
+		bridge.emit({ type: "ui/backendState", backend: "codex" });
+		await waitFor(() =>
+			expect(
+				canvas.queryByRole("region", { name: "ワークスペースの信頼" }),
+			).not.toBeInTheDocument(),
+		);
+	},
 };
 export const AuthenticationFailure: Story = {
 	args: { authFailure: true },

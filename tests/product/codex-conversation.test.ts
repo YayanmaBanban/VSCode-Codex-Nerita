@@ -68,6 +68,49 @@ void test("Codex の追加指示が受付不明でも自動再送しない", asy
 	assert.equal(controller.snapshot().connection, "ready");
 });
 
+void test(
+	"コンテキスト圧縮の開始・完了通知で同じカードの状態を更新する",
+	verifyCompactionNotifications,
+);
+
+/** 開始と完了を実際の通知経路に流し、同じ項目 ID のカードが重複せず更新されることを確認する。 */
+async function verifyCompactionNotifications(t: TestContext) {
+	const f = await codexFixture(t);
+	const controller = f.controller();
+	await controller.connect();
+	await action(controller, "prompt/send", { text: "開始" });
+	const threadId = controller.snapshot().sessionId;
+	f.notify("turn/started", {
+		threadId,
+		turn: { id: "turn-1", status: "inProgress", items: [] },
+	});
+	const params = {
+		threadId,
+		turnId: "turn-1",
+		item: { id: "compact", type: "contextCompaction" },
+	};
+	f.notify("item/started", params);
+	await until(() =>
+		controller.snapshot().tools.some((tool) => tool.id === "compact"),
+	);
+	assert.equal(
+		controller.snapshot().tools.find((tool) => tool.id === "compact")!
+			.status,
+		"in_progress",
+	);
+	f.notify("item/completed", params);
+	await until(
+		() =>
+			controller.snapshot().tools.find((tool) => tool.id === "compact")
+				?.status === "completed",
+	);
+	assert.equal(
+		controller.snapshot().tools.filter((tool) => tool.id === "compact")
+			.length,
+		1,
+	);
+}
+
 void test("Codex の認証中に接続を破棄した後、遅い成功通知で会話を開始しない", async (t) => {
 	const f = await codexFixture(t);
 	f.state.authenticated = false;

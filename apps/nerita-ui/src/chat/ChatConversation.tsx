@@ -4,7 +4,10 @@ import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { SubAgentSummary } from "@nerita/shared/subAgents";
-import type { RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
+import { ArrowDown } from "lucide-react";
+import { SettingsTooltip } from "./SettingsTooltip";
+import { messageIconButtonClass } from "./messages/messageStyles";
 import { Activity } from "./Activity";
 import { AgentCard } from "./agents/AgentCard";
 import { Messages } from "./messages/Messages";
@@ -34,46 +37,122 @@ type ChatConversationProps = {
 /** スクロール参照は親が保持し、表示先の復元と新着への追従に共用する。 */
 export function ChatConversation(props: ChatConversationProps) {
 	const { state, send, conversation, bottom } = props;
+
 	return (
-		<section
-			ref={conversation}
-			className={cn(
-				"conversation min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto",
-				"px-[20px] py-[22px]",
-			)}
-			aria-label="会話"
-		>
-			{state.messages.length === 0 && (
-				<div className="empty-state px-0 pt-[10vh] pb-[30px] text-center">
-					<p className="text-[12px] text-muted">
-						このワークスペースで作業します
-					</p>
+		<div className="relative flex min-h-0 flex-1 flex-col">
+			<section
+				ref={conversation}
+				className={cn(
+					"conversation min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto",
+					"px-[20px] py-[22px]",
+				)}
+				aria-label="会話"
+				tabIndex={-1}
+			>
+				{state.messages.length === 0 && (
+					<div className="empty-state px-0 pt-[10vh] pb-[30px] text-center">
+						<p className="text-[12px] text-muted">
+							このワークスペースで作業します
+						</p>
+						<p
+							className={cn(
+								"text-[12px] leading-[1.7] [overflow-wrap:anywhere] text-muted",
+							)}
+						>
+							{state.cwd}
+						</p>
+					</div>
+				)}
+				<ConversationMessages {...props} />
+				<Activity state={{ ...state, tools: [] }} send={send} />
+				<PlanDecisionCard state={state} send={send} />
+				{state.run === "running" && <ThinkingIndicator />}
+				{runLabels[state.run] && (
 					<p
-						className={cn(
-							"text-[12px] leading-[1.7] [overflow-wrap:anywhere] text-muted",
-						)}
+						className="run-status my-2 flex items-center gap-1 text-[12px] text-muted"
+						role="status"
 					>
-						{state.cwd}
+						{runLabels[state.run]}
+						<RunStatusIcon
+							kind={state.run === "failed" ? "startled" : "loaf"}
+						/>
 					</p>
+				)}
+				<div ref={bottom} />
+			</section>
+			<ConversationScrollButton
+				conversation={conversation}
+				sessionId={state.sessionId}
+			/>
+		</div>
+	);
+}
+
+/** 会話領域の末尾から離れている間だけ、画面下部に戻る操作を表示する。 */
+function ConversationScrollButton({
+	conversation,
+	sessionId,
+}: {
+	conversation: RefObject<HTMLElement | null>;
+	sessionId: string | null;
+}) {
+	const [awayFromBottom, setAwayFromBottom] = useState(false);
+	useEffect(() => {
+		const element = conversation.current;
+		if (!element) {
+			return;
+		}
+		const update = () => {
+			setAwayFromBottom(
+				element.clientHeight > 0 &&
+					element.scrollHeight -
+						element.clientHeight -
+						element.scrollTop >
+						4,
+			);
+		};
+		const resize = new ResizeObserver(update);
+		resize.observe(element);
+		element.addEventListener("scroll", update);
+		update();
+		return () => {
+			resize.disconnect();
+			element.removeEventListener("scroll", update);
+		};
+	}, [conversation, sessionId]);
+
+	return (
+		<>
+			{awayFromBottom && (
+				<div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2">
+					<SettingsTooltip content="メッセージの末尾へ移動">
+						<button
+							type="button"
+							aria-label="メッセージの末尾へ移動"
+							className={cn(
+								messageIconButtonClass,
+								"size-9 rounded-full border border-solid border-panel-border bg-secondary",
+								"hover:bg-settings-hover",
+							)}
+							onClick={() => {
+								const element = conversation.current;
+								if (!element) {
+									return;
+								}
+								element.scrollTo({
+									top: element.scrollHeight,
+									behavior: "instant",
+								});
+								element.focus({ preventScroll: true });
+								setAwayFromBottom(false);
+							}}
+						>
+							<ArrowDown size={18} aria-hidden="true" />
+						</button>
+					</SettingsTooltip>
 				</div>
 			)}
-			<ConversationMessages {...props} />
-			<Activity state={{ ...state, tools: [] }} send={send} />
-			<PlanDecisionCard state={state} send={send} />
-			{state.run === "running" && <ThinkingIndicator />}
-			{runLabels[state.run] && (
-				<p
-					className="run-status my-2 flex items-center gap-1 text-[12px] text-muted"
-					role="status"
-				>
-					{runLabels[state.run]}
-					<RunStatusIcon
-						kind={state.run === "failed" ? "startled" : "loaf"}
-					/>
-				</p>
-			)}
-			<div ref={bottom} />
-		</section>
+		</>
 	);
 }
 

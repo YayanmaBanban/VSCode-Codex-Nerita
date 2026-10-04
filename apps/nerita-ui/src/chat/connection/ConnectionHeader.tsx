@@ -10,15 +10,14 @@ import { SettingsTooltip } from "../SettingsTooltip";
 import { PersonalityOptions } from "../personality/PersonalityOptions";
 import { AuthenticationNotice } from "./AuthenticationNotice";
 import { ConnectionButton } from "./ConnectionButton";
+import { ActionNotice, noticeClass } from "../../ui/ActionNotice";
 
-/** 認証案内とエラー通知に共通する枠・色・余白。 */
-const noticeClass =
-	"mx-[14px] mt-[12px] mb-0 rounded-[8px] border border-solid border-alert-border bg-alert p-[12px] leading-[1.7]";
 const iconClass =
 	"inline-flex size-[28px] shrink-0 items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover";
 
 /** 接続・エラー・履歴の表示状態と、会話や表示先を切り替える操作。 */
 type ConnectionHeaderProps = {
+	untrusted?: boolean;
 	backend?: BackendId | undefined;
 	state: ChatState;
 	requestError: string | null;
@@ -67,7 +66,26 @@ export function ConnectionHeader(props: ConnectionHeaderProps) {
 					key={state.connection}
 					state={state}
 					send={send}
-					noticeClass={noticeClass}
+				/>
+			)}
+			{props.backend === "pi" && props.untrusted && (
+				<ActionNotice
+					label="ワークスペースの信頼"
+					title="ワークスペースが未信頼"
+					description={
+						"セッションは、グローバル領域（.pi\\agent\\sessions）に保存されます"
+					}
+					actions={[
+						{
+							id: "trust",
+							name: "信頼する",
+							onClick: () =>
+								send({
+									type: "workspace/manageTrust",
+									requestId: crypto.randomUUID(),
+								}),
+						},
+					]}
 				/>
 			)}
 		</>
