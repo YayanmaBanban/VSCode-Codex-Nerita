@@ -1,6 +1,6 @@
 // 外部パッケージのコードを実行せず、エージェント定義だけを読み込む。
 import { readFile, realpath, stat } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { z } from "zod";
 import { containsPath } from "../../security/AgentAccessPolicy";
@@ -27,6 +27,7 @@ export type PiSubagentDefinition = Omit<
 	aliases?: string[];
 	unavailableReason?: string;
 	prompt: string;
+	definitionPath?: string | undefined;
 	source: "extension" | "user" | "project";
 };
 
@@ -166,6 +167,7 @@ async function readDefinitions(
 		const { tools, aliases, runner, ...rest } = metadata;
 		definitions.push({
 			...rest,
+			definitionPath: projectDefinitionPath(source, base, file),
 			prompt: parsed.body,
 			source,
 			...(aliases === undefined ? {} : { aliases: words(aliases) }),
@@ -225,4 +227,15 @@ function words(value: string | string[]) {
 	return (typeof value === "string" ? value.split(",") : value)
 		.map((word) => word.trim())
 		.filter(Boolean);
+}
+
+/** プロジェクト定義だけをワークスペース相対の編集対象として公開する。 */
+function projectDefinitionPath(
+	source: PiSubagentDefinition["source"],
+	base: string,
+	file: string,
+) {
+	return source === "project"
+		? relative(base, file).replaceAll("\\", "/")
+		: undefined;
 }

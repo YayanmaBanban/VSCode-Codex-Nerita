@@ -30,7 +30,12 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 	const [repair, setRepair] = useState(false);
 	const [error, setError] = useState<string>();
 	const locked = busy || (!!state.handoffError && !repair);
-	const effortError = handoffEffortError(config, state.handoff, state.models);
+	const effortError = handoffEffortError(
+		config,
+		state.handoff,
+		state.models,
+		state.activeBackend,
+	);
 	return (
 		<form
 			className="grid gap-5"
@@ -47,7 +52,11 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 					return;
 				}
 				setError(undefined);
-				save({ type: "handoff", config: parsed.data });
+				save({
+					type: "handoff",
+					backend: state.activeBackend,
+					config: parsed.data,
+				});
 			}}
 		>
 			<div>
@@ -90,16 +99,6 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 			<p className="m-0 text-xs text-muted">
 				保存先: .nerita/handoff.json
 			</p>
-			<details>
-				<summary className="cursor-pointer text-sm">出力 JSON</summary>
-				<pre
-					className={cn(
-						"overflow-auto rounded-md border border-input-border p-3 text-xs",
-					)}
-				>
-					{JSON.stringify(config, null, 2)}
-				</pre>
-			</details>
 		</form>
 	);
 }
@@ -140,8 +139,8 @@ function HandoffFields(props: HandoffFieldsProps) {
 					}
 				/>
 			</Field>
-			<div className={cn("grid gap-5", "lg:grid-cols-2")}>
-				{(["pi", "codex"] as const).map((backend) => {
+			<div className="grid gap-5">
+				{[state.activeBackend].map((backend) => {
 					const item = config.backends[backend];
 					const currentOptions = effortOptions(
 						state.models[backend],

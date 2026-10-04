@@ -1,5 +1,5 @@
 // 保存要求の応答を待ち、失敗した入力を画面に残す。
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import type {
 	ManagerBridge,
 	ManagerRequest,
@@ -18,6 +18,10 @@ export type ManagerSave = (
 /** 再読込を保存から分離し、古い世代を自動的に上書きしない。 */
 export function useAgentManager(bridge: ManagerBridge) {
 	const [state, setState] = useState<ManagerState>();
+	const [revision, refreshRevision] = useReducer(
+		(value: number) => value + 1,
+		0,
+	);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [notice, setNotice] = useState("");
@@ -26,6 +30,7 @@ export function useAgentManager(bridge: ManagerBridge) {
 		const unsubscribe = bridge.subscribe((message) => {
 			if (message.type === "state") {
 				setState(message);
+				refreshRevision();
 				setBusy(false);
 			} else if (message.id === 0 || message.id === sequence.current) {
 				setError(message.error);
@@ -52,6 +57,7 @@ export function useAgentManager(bridge: ManagerBridge) {
 	};
 	return {
 		state,
+		revision,
 		busy,
 		error,
 		notice,

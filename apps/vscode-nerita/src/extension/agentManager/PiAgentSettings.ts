@@ -9,6 +9,7 @@ import {
 	piDefaultsSchema,
 } from "@nerita/shared/agentManager/config";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
+import { readWorkspaceFile } from "./WorkspaceFiles";
 
 const settingsSchema = z.object({
 	subagents: z
@@ -65,27 +66,14 @@ export async function readPiAgents(
 	);
 	const project = piSettings(projectText);
 	const user = piSettings(JSON.stringify(settings.getGlobalSettings()));
-	const agents = new Map<string, ManagedAgent>();
-	for (const definition of definitions.definitions) {
-		agents.set(definition.name, {
-			id: `pi:${definition.name}`,
-			backend: "pi",
-			name: definition.name,
-			description: definition.description,
-			source: definition.source,
-			aliases: definition.aliases ?? [],
-			tools: definition.tools ?? [],
-			definitionModel: definition.model,
-			definitionThinking: definition.thinking,
-			edit: agentEditSchema.parse(
-				project.agentOverrides?.[definition.name] ?? {},
-			),
-			editable: true,
-			unavailableReason: definition.unavailableReason,
-		});
-	}
+	const { agents, files } = await managedPiAgents(
+		root,
+		definitions.definitions,
+		project,
+	);
 	return {
-		agents: [...agents.values()],
+		files,
+		agents,
 		defaults: piDefaultsSchema.parse(
 			Object.fromEntries(
 				Object.keys(piDefaultsSchema.shape).map((key) => [
@@ -108,4 +96,54 @@ export async function readPiAgents(
 			user,
 		}),
 	};
+}
+
+/** 定義本文とプロジェクトの上書き設定を、編集用の状態へ変換する。 */
+async function managedPiAgents(
+	root: string,
+	definitions: Awaited<
+		ReturnType<typeof loadSubagentDefinitions>
+	>["definitions"],
+	project: ReturnType<typeof piSettings>,
+) {
+	const agents = new Map<string, ManagedAgent>();
+	const files: Record<string, string> = {};
+	for (const definition of definitions) {
+		if (definition.definitionPath) {
+			const text = await readWorkspaceFile(
+				root,
+				definition.definitionPath,
+			);
+			if (text !== undefined) {
+				files[definition.definitionPath] = text;
+			}
+		}
+		agents.set(definition.name, {
+			id: `pi:${definition.name}`,
+			definitionPath: definition.definitionPath,
+			backend: "pi",
+			name: definition.name,
+			description: definition.description,
+			source: definition.source,
+			aliases: definition.aliases ?? [],
+			tools: definition.tools ?? [],
+			definitionModel: definition.model,
+			definitionThinking: definition.thinking,
+			edit: agentEditSchema.parse({
+				...(project.agentOverrides?.[definition.name] ?? {}),
+				...(definition.definitionPath
+					? {
+							definition: {
+								name: definition.name,
+								description: definition.description,
+								prompt: definition.prompt,
+							},
+						}
+					: {}),
+			}),
+			editable: true,
+			unavailableReason: definition.unavailableReason,
+		});
+	}
+	return { agents: [...agents.values()], files };
 }

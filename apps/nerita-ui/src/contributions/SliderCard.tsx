@@ -26,6 +26,7 @@ type CardProps = {
 	control: Extract<NeritaUiControl, { type: "slider-card" }>;
 	disabled: boolean;
 	onChange: (configId: string, value: string) => void;
+	outlined?: boolean;
 };
 
 /** 未取得の選択値には設定名を表示する。 */
@@ -39,7 +40,12 @@ function optionLabel(option: ConfigOption) {
 }
 
 /** 候補の並び順をスライダーの段階として扱い、選択値だけを Host へ送る。 */
-export function SliderCard({ control, disabled, onChange }: CardProps) {
+export function SliderCard({
+	control,
+	disabled,
+	onChange,
+	outlined = false,
+}: CardProps) {
 	const [preview, setPreview] = useState<number | null>(null);
 	const { option, model } = control;
 	const displayed =
@@ -65,7 +71,7 @@ export function SliderCard({ control, disabled, onChange }: CardProps) {
 				<SettingsTooltip
 					content={<CardTooltip label={label} control={control} />}
 				>
-					{cardTrigger(control, unavailable)}
+					{cardTrigger(control, unavailable, outlined)}
 				</SettingsTooltip>
 				<Popover.Portal>
 					<Popover.Positioner
@@ -111,7 +117,11 @@ export function SliderCard({ control, disabled, onChange }: CardProps) {
 }
 
 /** モデルカードは選択値を、権限カードはアイコンを入口に表示する。 */
-function cardTrigger(control: CardProps["control"], disabled: boolean) {
+function cardTrigger(
+	control: CardProps["control"],
+	disabled: boolean,
+	outlined: boolean,
+) {
 	const { model, option } = control;
 	const Icon = control.icon === "shield-alert" ? ShieldAlert : Shield;
 	return (
@@ -120,7 +130,10 @@ function cardTrigger(control: CardProps["control"], disabled: boolean) {
 			disabled={disabled}
 			className={cn(
 				"inline-flex h-[28px] min-w-0 shrink items-center justify-center",
-				"rounded-[5px] border-0 bg-transparent",
+				"rounded-[5px] bg-transparent",
+				outlined
+					? "border border-solid border-input-border"
+					: "border-0",
 				"focus-visible:outline-1 focus-visible:outline-settings-focus",
 				"enabled:hover:bg-settings-hover",
 				"disabled:opacity-50",
@@ -140,7 +153,7 @@ function cardTrigger(control: CardProps["control"], disabled: boolean) {
 						>
 							{optionLabel(model)}
 						</span>{" "}
-						{option.currentValue}
+						{optionLabel(option)}
 					</span>
 					{control.fastMode?.checked && (
 						<span

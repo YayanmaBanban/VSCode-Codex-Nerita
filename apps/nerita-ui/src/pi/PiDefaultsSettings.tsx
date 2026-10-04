@@ -15,8 +15,8 @@ import {
 	Field,
 	inputStyle,
 	ModelField,
-} from "./Fields";
-import type { ManagerSave } from "./useAgentManager";
+} from "../agentManager/Fields";
+import type { ManagerSave } from "../agentManager/useAgentManager";
 
 /** Pi のプロジェクト既定値、モデル候補と保存操作。 */
 type PiDefaultsSettingsProps = {

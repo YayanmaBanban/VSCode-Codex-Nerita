@@ -1,40 +1,175 @@
-// Agent の設定とハンドオフ設定を、バックエンド共通の管理画面で編集する。
-import { cn } from "cnfast";
-import { useState } from "react";
+// バックエンドに応じて管理画面を選び、タブ・選択・未保存入力を管理する。
+import { useEffect, useRef, useState } from "react";
+import { Plus, RotateCw } from "lucide-react";
 import type { ManagerBridge } from "@nerita/shared/agentManager/messages";
-import { useAgentManager } from "./useAgentManager";
-import { AgentBrowser } from "./AgentBrowser";
+import { useAgentManager, type ManagerSave } from "./useAgentManager";
 import { HandoffSettings } from "./HandoffSettings";
+import { CodexAgentManager } from "../codex/CodexAgentManager";
+import { PiAgentManager } from "../pi/PiAgentManager";
+import { SettingsTooltip } from "../chat/SettingsTooltip";
 import { buttonStyle } from "./Fields";
 import "../chat/chat.css";
 
-/** 読込エラーがある場合も、再読込と他の設定への移動を残す。 */
+/** 保存失敗時は入力を維持し、破棄する移動だけを画面内で確認する。 */
 export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
 	const editor = useAgentManager(bridge);
-	const [tab, setTab] = useState<"agents" | "handoff">("agents");
+	const {
+		tab,
+		selected,
+		pending,
+		setPending,
+		setDirty,
+		navigate,
+		save,
+		setTab,
+		setSelected,
+	} = useManagerNavigation(editor);
 	const state = editor.state;
+	const BackendManager = backendManager(state);
 	return (
-		<main
-			className={cn(
-				"mx-auto grid w-full max-w-5xl gap-6 p-4 text-foreground",
-				"sm:p-6",
+		<main className="mx-auto grid w-full max-w-5xl gap-6 p-4 text-foreground sm:p-6">
+			<ManagerHeader
+				editor={editor}
+				tab={tab}
+				setTab={setTab}
+				navigate={navigate}
+				setSelected={setSelected}
+				selected={selected}
+			/>
+			{pending && (
+				<DiscardChanges
+					onCancel={() => setPending(null)}
+					onDiscard={() => {
+						setDirty(false);
+						pending();
+						setPending(null);
+					}}
+				/>
 			)}
-		>
-			<header className="grid gap-3">
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<h1 className="m-0 text-xl font-semibold">Agent Manager</h1>
-					<button
-						className={buttonStyle}
-						disabled={editor.busy}
-						onClick={editor.reload}
-					>
-						再読み込み
-					</button>
-				</div>
-				<p className="m-0 text-sm break-words text-muted">
-					{state?.label ?? "設定を読み込み中…"}
+			{editor.error && (
+				<p role="alert" className="m-0 text-sm break-words">
+					{editor.error}
 				</p>
-				<nav aria-label="管理対象" className="flex flex-wrap gap-2">
+			)}
+			{editor.notice && (
+				<p role="status" className="m-0 text-sm">
+					{editor.notice}
+				</p>
+			)}
+			{state?.errors.map((error, index) => (
+				<p role="alert" key={index} className="m-0 text-sm break-words">
+					{error}
+				</p>
+			))}
+			{state && tab === "handoff" && (
+				<div onChangeCapture={() => setDirty(true)}>
+					<HandoffSettings
+						key={`${state.activeBackend}:${editor.revision}`}
+						state={state}
+						busy={editor.busy}
+						save={save}
+					/>
+				</div>
+			)}
+			{state && tab === "agents" && (
+				<BackendManager
+					key={`${state.activeBackend}:${editor.revision}`}
+					state={state}
+					busy={editor.busy}
+					save={save}
+					selected={selected}
+					onSelect={(id) => {
+						if (id !== selected) {
+							navigate(() => setSelected(id));
+						}
+					}}
+					onDirty={() => setDirty(true)}
+				/>
+			)}
+		</main>
+	);
+}
+
+/** 使用中のバックエンドに対応する管理画面のコンポーネントを選ぶ。 */
+function backendManager(state: ReturnType<typeof useAgentManager>["state"]) {
+	return state?.activeBackend === "pi" ? PiAgentManager : CodexAgentManager;
+}
+
+/** 選択と破棄確認を保存結果に同期する。 */
+function useManagerNavigation(editor: ReturnType<typeof useAgentManager>) {
+	const [tab, setTab] = useState<"agents" | "handoff">("agents");
+	const [selected, setSelected] = useState("");
+	const [dirty, setDirty] = useState(false);
+	const [pending, setPending] = useState<(() => void) | null>(null);
+	const savedSelection = useRef<string | undefined>(undefined);
+	const state = editor.state;
+	useEffect(() => {
+		if (state) {
+			setDirty(false);
+			const saved = savedSelection.current;
+			setSelected((current) => loadedSelection(state, saved ?? current));
+			savedSelection.current = undefined;
+		}
+	}, [state]);
+	const navigate = (action: () => void) => {
+		if (dirty) {
+			setPending(() => action);
+		} else {
+			action();
+		}
+	};
+	const save: ManagerSave = (change) => {
+		if (change.type === "createAgent") {
+			savedSelection.current =
+				change.backend === "codex"
+					? `.codex/agents/${change.filename}.toml`
+					: `pi:${change.edit.definition?.name}`;
+		} else if (
+			change.type === "agent" &&
+			change.agentId.startsWith("pi:") &&
+			change.edit.definition
+		) {
+			savedSelection.current = `pi:${change.edit.definition.name}`;
+		}
+		editor.save(change);
+	};
+	return {
+		tab,
+		selected,
+		pending,
+		setPending,
+		setDirty,
+		navigate,
+		save,
+		setTab,
+		setSelected,
+	};
+}
+
+/** バックエンドに依存しない基本操作を上部にまとめる。 */
+function ManagerHeader({
+	editor,
+	tab,
+	setTab,
+	navigate,
+	setSelected,
+	selected,
+}: {
+	editor: ReturnType<typeof useAgentManager>;
+	tab: "agents" | "handoff";
+	setTab: (tab: "agents" | "handoff") => void;
+	navigate: (action: () => void) => void;
+	setSelected: (id: string) => void;
+	selected: string;
+}) {
+	return (
+		<header className="grid gap-3 border-b border-input-border pb-4">
+			<h1 className="m-0 text-xl font-semibold">Agent Manager</h1>
+			<p className="m-0 text-sm break-words text-muted">
+				{editor.state?.label ?? "設定を読み込み中…"}
+			</p>
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<nav aria-label="管理対象" className="flex gap-2">
 					{(
 						[
 							["agents", "Agents"],
@@ -46,44 +181,91 @@ export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
 							className={buttonStyle}
 							aria-pressed={tab === id}
 							disabled={editor.busy}
-							onClick={() => setTab(id)}
+							onClick={() => {
+								if (id !== tab) {
+									navigate(() => setTab(id));
+								}
+							}}
 						>
 							{label}
 						</button>
 					))}
 				</nav>
-			</header>
-			{editor.error && (
-				<p
-					role="alert"
-					className={cn(
-						"m-0 rounded-md border border-input-border p-3 text-sm break-words",
+				<div className="flex items-center gap-2">
+					<SettingsTooltip content="再読み込み">
+						<button
+							className={buttonStyle}
+							aria-label="再読み込み"
+							disabled={editor.busy}
+							onClick={() => navigate(editor.reload)}
+						>
+							<RotateCw size={16} aria-hidden="true" />
+						</button>
+					</SettingsTooltip>
+					{tab === "agents" && (
+						<button
+							className={`${buttonStyle} inline-flex items-center gap-2`}
+							disabled={
+								editor.busy ||
+								!editor.state ||
+								selected === "new"
+							}
+							onClick={() => navigate(() => setSelected("new"))}
+						>
+							<Plus size={16} aria-hidden="true" />
+							新しい Agent
+						</button>
 					)}
-				>
-					{editor.error}
-				</p>
-			)}
-			{editor.notice && (
-				<p role="status" className="m-0 text-sm break-words">
-					{editor.notice}
-				</p>
-			)}
-			{state && tab === "handoff" && (
-				<HandoffSettings
-					key={state.generation}
-					state={state}
-					busy={editor.busy}
-					save={editor.save}
-				/>
-			)}
-			{state && tab === "agents" && (
-				<AgentBrowser
-					state={state}
-					busy={editor.busy}
-					save={editor.save}
-					viewer={() => bridge.postMessage({ type: "viewer" })}
-				/>
-			)}
-		</main>
+				</div>
+			</div>
+		</header>
+	);
+}
+
+/** 読み込み後も選択中の項目を維持し、見つからない場合は先頭の Agent を選ぶ。 */
+function loadedSelection(
+	state: NonNullable<ReturnType<typeof useAgentManager>["state"]>,
+	selected: string,
+) {
+	if (
+		selected === "new" ||
+		(selected === "defaults" && state.activeBackend === "pi")
+	) {
+		return selected;
+	}
+	const agents = state.agents.filter(
+		(agent) => agent.backend === state.activeBackend,
+	);
+	return (
+		agents.find((agent) => agent.id === selected)?.id ??
+		agents[0]?.id ??
+		"defaults"
+	);
+}
+
+/** Webview 内で未保存入力を破棄する操作を確認する。 */
+function DiscardChanges({
+	onCancel,
+	onDiscard,
+}: {
+	onCancel: () => void;
+	onDiscard: () => void;
+}) {
+	return (
+		<div
+			role="alertdialog"
+			aria-label="未保存の変更"
+			className="grid gap-3 rounded-md border border-input-border p-4"
+		>
+			<p className="m-0 text-sm">未保存の変更を破棄して移動しますか？</p>
+			<div className="flex gap-2">
+				<button className={buttonStyle} onClick={onCancel}>
+					編集を続ける
+				</button>
+				<button className={buttonStyle} onClick={onDiscard}>
+					変更を破棄
+				</button>
+			</div>
+		</div>
 	);
 }

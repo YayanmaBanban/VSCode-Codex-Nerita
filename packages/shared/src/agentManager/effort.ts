@@ -18,8 +18,12 @@ export function handoffEffortError(
 	config: HandoffConfig,
 	previous: HandoffConfig,
 	models: Record<"pi" | "codex", ManagerModel[]>,
+	selectedBackend?: "pi" | "codex",
 ): string | undefined {
 	for (const backend of ["pi", "codex"] as const) {
+		if (selectedBackend && backend !== selectedBackend) {
+			continue;
+		}
 		const item = config.backends[backend];
 		const old = previous.backends[backend];
 		if (item.strategy !== "fixed") {

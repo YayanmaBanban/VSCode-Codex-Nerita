@@ -1,5 +1,9 @@
 // 既存 `ConfigOption` を宣言型 UI へ変換し、バックエンド固有の既定表示を Host に閉じ込める。
 import { fastModeControl, fastModeConfigIds as tiers } from "./fastModeControl";
+import {
+	modelControl as sharedModelControl,
+	permissionControl,
+} from "@nerita/shared/settingsCards";
 import type { ConfigOption } from "@nerita/shared/composer";
 import type {
 	NeritaUiContribution,
@@ -91,36 +95,10 @@ function modelControl(
 	model: ConfigOption,
 	options: ConfigOption[],
 ): NeritaUiControl {
-	const effort = options.find((option) => option.id === "reasoning_effort")!;
 	const tier = options.find((option) => tiers.includes(option.id));
 	return {
-		type: "slider-card",
-		icon: "model",
-		model,
-		option: effort,
+		...sharedModelControl(model, options),
 		fastMode: tier ? fastModeControl(tier) : undefined,
-	};
-}
-
-/** 権限の表示と、書き込み時だけ見せる承認者を解決する。 */
-function permissionControl(
-	option: ConfigOption,
-	options: ConfigOption[],
-): NeritaUiControl {
-	const reviewer = options.find((item) => item.id === "approvals_reviewer");
-	const warning = option.currentValue === "danger-full-access";
-	return {
-		type: "slider-card",
-		option,
-		icon: warning ? "shield-alert" : "shield",
-		warning,
-		secondary:
-			option.currentValue === "workspace-write" && reviewer
-				? {
-						option: reviewer,
-						icon: reviewer.currentValue === "user" ? "user" : "bot",
-					}
-				: undefined,
 	};
 }
 

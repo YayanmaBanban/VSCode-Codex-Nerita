@@ -32,6 +32,9 @@ async function execute(root, files, environment, regression) {
 		target: "node22",
 		conditions: ["nerita-source"],
 		alias: {
+			"jsonc-parser": require.resolve("jsonc-parser/lib/esm/main.js", {
+				paths: [path.join(repoRoot, "apps/vscode-nerita")],
+			}),
 			vscode: path.join(repoRoot, "tests/support/vscode-boundary.cjs"),
 		},
 		plugins: regression ? [regressionPlugin(regression)] : [],

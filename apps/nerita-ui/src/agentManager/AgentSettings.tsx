@@ -1,159 +1,210 @@
-// Pi の `Workspace override` と Codex の標準 TOML を、同じフォームから編集する。
-
+// バックエンド別の設定を受け取り、名前・説明・本文と保存操作を共通化する。
+import type { ReactNode } from "react";
 import {
 	agentEditSchema,
 	type AgentEdit,
 } from "@nerita/shared/agentManager/config";
-import { effortError, effortOptions } from "@nerita/shared/agentManager/effort";
 import type {
 	ManagedAgent,
 	ManagerModel,
 } from "@nerita/shared/agentManager/messages";
-import { cn } from "cnfast";
-import { useState, type Dispatch, type SetStateAction } from "react";
-import { AgentDetails, EnabledField } from "./AgentDetails";
-import { EffortField, ModelField, buttonStyle } from "./Fields";
-import type { ManagerSave } from "./useAgentManager";
+import { reasoningLabel } from "@nerita/shared/settingsCards";
+import { Field, inputStyle, buttonStyle } from "./Fields";
 
-/** 編集するエージェント定義、モデル候補、保存操作と処理中の状態。 */
+/** 保存形式と固有の検証はバックエンド別画面が担当する。 */
 type AgentSettingsProps = {
-	agent: ManagedAgent;
+	agent?: ManagedAgent | undefined;
 	models: ManagerModel[];
+	edit: AgentEdit;
+	onChange: (edit: AgentEdit) => void;
 	busy: boolean;
-	save: ManagerSave;
+	onSubmit: () => void;
+	children: ReactNode;
+	error?: string | undefined;
+	filename?: string | undefined;
+	onFilenameChange?: ((name: string) => void) | undefined;
 };
 
-/** モデル・推論などの設定だけを保存し、定義の本文を保存要求に含めない。 */
-export function AgentSettings({
-	agent,
-	models,
-	busy,
-	save,
-}: AgentSettingsProps) {
-	const [edit, setEdit] = useState<AgentEdit>(agent.edit);
-	const pi = agent.backend === "pi";
-	const effort = pi
-		? {
-				key: "thinking" as const,
-				label: "Thinking",
-				options: effortOptions(models, edit.model),
-			}
-		: {
-				key: "reasoningEffort" as const,
-				label: "Reasoning effort",
-				options: effortOptions(models, edit.model),
-			};
-	const error = effortError(
-		models,
-		edit.model,
-		edit[effort.key],
-		agent.edit.model,
-		agent.edit[effort.key],
-	);
+/** 入力中は空の名前を許し、保存時にはスキーマを満たす値だけを送る。 */
+export function AgentSettings(props: AgentSettingsProps) {
+	const { agent, edit, busy, onSubmit, children, onChange } = props;
+	const error =
+		props.error ??
+		(agentEditSchema.safeParse(edit).success
+			? undefined
+			: "名前と入力内容を確認してください。");
 	return (
 		<form
 			className="grid gap-5"
 			onSubmit={(event) => {
 				event.preventDefault();
-				if (error) {
-					return;
+				if (!error) {
+					onSubmit();
 				}
-				save({
-					type: "agent",
-					agentId: agent.id,
-					edit: agentEditSchema.parse(edit),
-				});
 			}}
 		>
-			<div>
-				<h2 className="m-0 text-lg font-semibold break-words">
-					{agent.name}
-				</h2>
-				<p className="text-sm break-words text-muted">
-					{agent.description}
-				</p>
-			</div>
-			<AgentDetails agent={agent} />
-			{agent.unavailableReason && (
-				<p role="status" className="text-sm text-muted">
-					Unsupported: {agent.unavailableReason}
-				</p>
-			)}
-			{AgentFields(busy, agent, pi, edit, setEdit, models, effort, error)}
-			<p className="m-0 text-xs break-all text-muted">
-				保存先: {pi ? ".pi/settings.json" : agent.id}
-			</p>
-			{!pi && (
-				<p className="m-0 text-xs text-muted">
-					Codex の個別 Agent
-					の有効／無効は、この画面では変更しません。
-				</p>
-			)}
+			<fieldset
+				disabled={busy || agent?.editable === false}
+				className="m-0 grid min-w-0 gap-5 border-0 p-0"
+			>
+				<AgentIdentityFields {...props} />
+				<section className="grid gap-4 border-t border-input-border pt-4">
+					<h3 className="m-0 text-sm font-semibold">Agent 設定</h3>
+					{children}
+				</section>
+				<DefinitionField
+					edit={edit}
+					onChange={onChange}
+					field="prompt"
+					label="システムプロンプト"
+					rows={10}
+					limit={60000}
+				/>
+				{error && (
+					<p role="alert" className="text-sm">
+						{error}
+					</p>
+				)}
+				<button
+					type="submit"
+					className={`${buttonStyle} justify-self-end`}
+					disabled={!!error}
+				>
+					変更を保存
+				</button>
+			</fieldset>
 		</form>
 	);
 }
 
-function AgentFields(
-	busy: boolean,
-	agent: ManagedAgent,
-	pi: boolean,
-	edit: AgentEdit,
-	setEdit: Dispatch<SetStateAction<AgentEdit>>,
-	models: ManagerModel[],
-	effort:
-		| { key: "thinking"; label: string; options: string[] }
-		| { key: "reasoningEffort"; label: string; options: string[] },
-	error: string | undefined,
-) {
+/** 定義の出所と編集できるメタデータを表示する。 */
+function AgentIdentityFields({
+	agent,
+	models,
+	edit,
+	onChange,
+	filename,
+	onFilenameChange,
+}: AgentSettingsProps) {
 	return (
-		<fieldset
-			disabled={busy || !agent.editable}
-			className="m-0 grid min-w-0 gap-4 border-0 p-0"
-		>
-			<legend className="mb-3 text-sm font-semibold">
-				{pi ? "Workspace override" : "Agent 設定"}
-			</legend>
-			{pi && (
-				<EnabledField
-					value={edit.disabled}
-					onChange={(disabled) => setEdit({ ...edit, disabled })}
+		<>
+			{edit.definition ? (
+				<DefinitionField
+					edit={edit}
+					onChange={onChange}
+					field="name"
+					label="名前"
+					limit={80}
 				/>
+			) : (
+				<h2 className="m-0 text-lg font-semibold">{agent?.name}</h2>
 			)}
-			<ModelField
-				value={edit.model}
-				models={models}
-				onChange={(model) => setEdit({ ...edit, model })}
-			/>
-			<EffortField
-				label={effort.label}
-				value={edit[effort.key]}
-				options={effort.options}
-				onChange={(value) =>
-					setEdit(
-						agentEditSchema.parse({
-							...edit,
-							[effort.key]: value,
-						}),
-					)
-				}
-			/>
-			{models.length === 0 && (
-				<p className="m-0 text-xs text-muted">
-					モデル一覧がありません。認証設定を確認して再読み込みしてください。
+			{onFilenameChange && (
+				<Field label="ファイル名">
+					<input
+						className={inputStyle}
+						required
+						pattern="[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}"
+						value={filename}
+						onChange={(event) =>
+							onFilenameChange(event.target.value)
+						}
+					/>
+				</Field>
+			)}
+			{agent?.definitionPath && (
+				<p className="m-0 text-xs break-all text-muted">
+					{agent.definitionPath}
 				</p>
 			)}
-			<button
-				disabled={!!error}
-				className={cn(buttonStyle, "justify-self-start")}
-				type="submit"
-			>
-				Agent 設定を保存
-			</button>
-			{error && (
-				<p role="alert" className="text-sm">
-					{error}
+			<DefinitionBadges agent={agent} models={models} />
+			{edit.definition ? (
+				<DefinitionField
+					edit={edit}
+					onChange={onChange}
+					field="description"
+					label="説明"
+					rows={3}
+					limit={2000}
+				/>
+			) : (
+				<p className="m-0 text-sm text-muted">{agent?.description}</p>
+			)}
+			{agent?.unavailableReason && (
+				<p role="status" className="text-sm text-muted">
+					{agent.unavailableReason}
 				</p>
 			)}
-		</fieldset>
+		</>
+	);
+}
+
+/** バッジは編集中の値ではなく、読み込んだ定義値を示す。 */
+function DefinitionBadges({
+	agent,
+	models,
+}: Pick<AgentSettingsProps, "agent" | "models">) {
+	const model = agent?.definitionModel;
+	const values = [
+		agent?.source ?? "project",
+		models.find((item) => item.value === model)?.name ??
+			model ??
+			"モデル未指定",
+		agent?.definitionThinking
+			? reasoningLabel(agent.definitionThinking)
+			: "推論未指定",
+	];
+	return (
+		<div className="flex flex-wrap gap-2 text-xs text-muted">
+			{values.map((value, index) => (
+				<span
+					key={index}
+					className="rounded border border-input-border px-2 py-1"
+				>
+					{value}
+				</span>
+			))}
+		</div>
+	);
+}
+
+/** 定義を持たないパッケージ・ユーザー由来の Agent には入力欄を作らない。 */
+function DefinitionField({
+	edit,
+	onChange,
+	field,
+	label,
+	rows,
+	limit,
+}: Pick<AgentSettingsProps, "edit" | "onChange"> & {
+	field: "name" | "description" | "prompt";
+	label: string;
+	rows?: number;
+	limit: number;
+}) {
+	const definition = edit.definition;
+	if (!definition) {
+		return null;
+	}
+	const input = {
+		className: inputStyle,
+		maxLength: limit,
+		value: definition[field],
+		onChange: (
+			event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+		) =>
+			onChange({
+				...edit,
+				definition: { ...definition, [field]: event.target.value },
+			}),
+	};
+	return (
+		<Field label={label}>
+			{rows ? (
+				<textarea {...input} rows={rows} />
+			) : (
+				<input {...input} required />
+			)}
+		</Field>
 	);
 }

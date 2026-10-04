@@ -400,15 +400,11 @@ export abstract class CodexOptions extends CodexAttachments {
 	}
 }
 
-/** 候補検証に加え、送信型が許可する承認者だけを返す。 */
+/** 選択候補の検証に加え、対応する承認者の値だけを返す。 */
 function reviewerValue(
 	value: string,
 ): NonNullable<TurnStartParams["approvalsReviewer"]> {
-	if (
-		value === "user" ||
-		value === "auto_review" ||
-		value === "guardian_subagent"
-	) {
+	if (value === "user" || value === "auto_review") {
 		return value;
 	}
 	throw new Error("Invalid approvals reviewer");

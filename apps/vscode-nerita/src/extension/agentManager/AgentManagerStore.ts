@@ -4,20 +4,24 @@ import {
 	modify,
 	parseTree,
 	findNodeAtLocation,
+	getNodeValue,
 } from "jsonc-parser";
 import {
 	agentEditSchema,
+	type AgentEdit,
 	handoffSchema,
 	defaultHandoff,
 	piDefaultsSchema,
 } from "@nerita/shared/agentManager/config";
-import type {
-	ManagedAgent,
-	ManagerModel,
-	ManagerRequest,
+import {
+	managerRequestSchema,
+	type ManagedAgent,
+	type ManagerModel,
+	type ManagerRequest,
 } from "@nerita/shared/agentManager/messages";
 import { codexAgentFiles } from "./CodexAgentFiles";
 import { editCodexAgent } from "./CodexAgentEdit";
+import { editPiAgent, assertPiEdit } from "./PiAgentEdit";
 import {
 	generation,
 	readWorkspaceFile,
@@ -35,12 +39,13 @@ export type PiAgentReader = () => Promise<
 >;
 export type ManagerMutation = Extract<ManagerRequest, { generation: string }>;
 
-/** Host のモデル候補は保存直前にも取得し、切断後の候補を使わない。 */
+/** 保存時点のモデル候補で、新しく指定したモデルと推論レベルを検証する。 */
 export class AgentManagerStore {
 	constructor(
 		readonly root: string,
 		private pi: PiAgentReader,
 		private models: (backend: "pi" | "codex") => ManagerModel[],
+		private activeBackend?: () => "pi" | "codex",
 	) {}
 	async read() {
 		const errors: string[] = [];
@@ -52,17 +57,20 @@ export class AgentManagerStore {
 				return undefined;
 			}
 		};
-		const piText = await read(".pi/settings.json");
+		const piText =
+			this.activeBackend?.() === "codex"
+				? undefined
+				: await read(".pi/settings.json");
 		const handoffText = await read(".nerita/handoff.json");
-		const codex = await codexAgentFiles(this.root).catch(
-			(error: unknown) => {
-				errors.push(String(error));
-				return { agents: [], files: {}, errors: [] };
-			},
-		);
-		const pi = await this.pi().catch((error: unknown) => {
+		const codex = await this.readCodex().catch((error: unknown) => {
+			errors.push(String(error));
+			return { agents: [], files: {}, errors: [] };
+		});
+		const pi = await this.readPi().catch((error: unknown) => {
+			const files: Record<string, string> = {};
 			errors.push(`Pi: ${String(error)}`);
 			return {
+				files,
 				agents: [],
 				defaults: {},
 				userSettings: "{}",
@@ -104,10 +112,12 @@ export class AgentManagerStore {
 				handoffText,
 				codex: codex.files,
 				pi: pi.fingerprint,
+				piAgents: pi.files,
 				errors,
 				codexErrors: codex.errors,
 			}),
 			files: {
+				piAgents: pi.files,
 				piText,
 				handoffText,
 				codex: codex.files as Record<string, string>,
@@ -115,9 +125,33 @@ export class AgentManagerStore {
 		};
 	}
 
+	/** Codex の画面を開くために Pi SDK を起動しない。 */
+	private readPi(): ReturnType<PiAgentReader> {
+		if (this.activeBackend?.() === "codex") {
+			return Promise.resolve({
+				agents: [],
+				files: {},
+				defaults: {},
+				userSettings: "{}",
+				modelScope: "{}",
+				fingerprint: "",
+			});
+		}
+		return this.pi();
+	}
+
+	/** Pi の画面には Codex 定義の読込みエラーを混ぜない。 */
+	private readCodex(): ReturnType<typeof codexAgentFiles> {
+		if (this.activeBackend?.() === "pi") {
+			return Promise.resolve({ agents: [], files: {}, errors: [] });
+		}
+		return codexAgentFiles(this.root);
+	}
+
 	/** 古い画面や外部編集との競合は、書き込む前にエラーとして返す。 */
 	save(request: ManagerMutation, assertWritable: () => void = () => {}) {
 		return serialized(this.root, async () => {
+			managerRequestSchema.parse(request);
 			assertWritable();
 			const state = await this.read();
 			if (request.generation !== state.generation) {
@@ -126,12 +160,26 @@ export class AgentManagerStore {
 				);
 			}
 			assertWritable();
+			if (request.type === "createAgent") {
+				await this.createAgent(request, state);
+				return;
+			}
 			if (request.type === "handoff") {
 				const config = handoffSchema.parse(request.config);
-				const error = handoffEffortError(config, state.handoff, {
-					pi: this.models("pi"),
-					codex: this.models("codex"),
-				});
+				const other = request.backend === "pi" ? "codex" : "pi";
+				config.backends = {
+					...config.backends,
+					[other]: state.handoff.backends[other],
+				};
+				const error = handoffEffortError(
+					config,
+					state.handoff,
+					{
+						pi: this.models("pi"),
+						codex: this.models("codex"),
+					},
+					request.backend,
+				);
 				if (error) {
 					throw new Error(error);
 				}
@@ -176,6 +224,37 @@ export class AgentManagerStore {
 		});
 	}
 
+	/** 新規作成は既存ファイルと同名の定義を上書きしない。 */
+	private async createAgent(
+		request: Extract<ManagerMutation, { type: "createAgent" }>,
+		state: Awaited<ReturnType<AgentManagerStore["read"]>>,
+	) {
+		const edit = agentEditSchema.parse(request.edit);
+		if (!edit.definition) {
+			throw new Error("Agent 定義を入力してください。");
+		}
+		this.assertUniqueName(
+			state.agents,
+			request.backend,
+			edit.definition.name,
+		);
+		this.validateModel(request.backend, edit.model);
+		this.validateEffort(
+			request.backend,
+			edit.model,
+			request.backend === "pi" ? edit.thinking : edit.reasoningEffort,
+		);
+		const file =
+			request.backend === "codex"
+				? `.codex/agents/${request.filename}.toml`
+				: `.pi/agents/${request.filename}.md`;
+		const text =
+			request.backend === "codex"
+				? editCodexAgent("", edit)
+				: editPiAgent(undefined, edit);
+		await writeWorkspaceFile(this.root, file, undefined, text);
+	}
+
 	/** 保存するバックエンドに応じて、定義と上書き設定の書込み先を分ける。 */
 	private async saveAgent(
 		request: Extract<ManagerMutation, { type: "agent" }>,
@@ -186,6 +265,14 @@ export class AgentManagerStore {
 			throw new Error("この Agent は編集できません。");
 		}
 		const edit = agentEditSchema.parse(request.edit);
+		if (edit.definition) {
+			this.assertUniqueName(
+				state.agents,
+				agent.backend,
+				edit.definition.name,
+				agent.id,
+			);
+		}
 		this.validateEffort(
 			agent.backend,
 			edit.model,
@@ -208,26 +295,58 @@ export class AgentManagerStore {
 				editCodexAgent(old, edit),
 			);
 		} else {
-			if (edit.reasoningEffort !== undefined) {
-				throw new Error(
-					"Pi の設定に Codex の推論指定は保存できません。",
-				);
-			}
-			piSettings(state.files.piText);
-			let text = state.files.piText ?? "{}\n";
-			for (const key of ["model", "thinking", "disabled"] as const) {
-				text = editJson(
-					text,
-					["subagents", "agentOverrides", agent.name, key],
-					edit[key],
-				);
-			}
+			await this.savePiAgent(agent, edit, state);
+		}
+	}
+
+	/** Pi の名前変更では上書き設定も移し、設定の保存失敗時は定義を戻す。 */
+	private async savePiAgent(
+		agent: ManagedAgent,
+		edit: AgentEdit,
+		state: Awaited<ReturnType<AgentManagerStore["read"]>>,
+	) {
+		assertPiEdit(edit);
+		piSettings(state.files.piText);
+		if (edit.definition && !agent.definitionPath) {
+			throw new Error("プロジェクト定義だけを編集できます。");
+		}
+		const text = piOverrideText(state.files.piText, agent, edit);
+		const rollback = await savePiDefinition(
+			this.root,
+			agent,
+			edit,
+			state.files.piAgents,
+		);
+		try {
 			await writeWorkspaceFile(
 				this.root,
 				".pi/settings.json",
 				state.files.piText,
 				text,
 			);
+		} catch (error) {
+			// 上書き設定が保存できなければ定義も戻す。外部編集との競合は上書きしない。
+			await rollback();
+			throw error;
+		}
+	}
+
+	/** 新規作成や名前変更で、同じバックエンド内の名前が重複する場合は拒否する。 */
+	private assertUniqueName(
+		agents: ManagedAgent[],
+		backend: "pi" | "codex",
+		name: string,
+		id?: string,
+	) {
+		if (
+			agents.some(
+				(agent) =>
+					agent.backend === backend &&
+					agent.name === name &&
+					agent.id !== id,
+			)
+		) {
+			throw new Error("同名の Agent が存在します。");
 		}
 	}
 
@@ -255,7 +374,7 @@ export class AgentManagerStore {
 	private validateModel(
 		backend: "pi" | "codex",
 		model: string | undefined,
-		previous: string | undefined,
+		previous?: string,
 	) {
 		if (
 			model &&
@@ -285,4 +404,65 @@ function editJson(text: string, path: string[], value: unknown) {
 			},
 		}),
 	);
+}
+
+/** 上書き設定の保存失敗時に、外部変更を検査して定義を元へ戻す。 */
+async function savePiDefinition(
+	root: string,
+	agent: ManagedAgent,
+	edit: AgentEdit,
+	files: Record<string, string>,
+) {
+	const file = agent.definitionPath;
+	if (!file || !edit.definition) {
+		return () => Promise.resolve();
+	}
+	const old = files[file];
+	if (old === undefined) {
+		throw new Error("Agent 定義がありません。");
+	}
+	const next = editPiAgent(old, edit);
+	await writeWorkspaceFile(root, file, old, next);
+	return () => writeWorkspaceFile(root, file, next, old);
+}
+
+/** 名前変更では既存の上書き先との衝突を拒否し、設定を移す。 */
+function piOverrideText(
+	previous: string | undefined,
+	agent: ManagedAgent,
+	edit: AgentEdit,
+) {
+	let text = previous ?? "{}\n";
+	const name = edit.definition?.name ?? agent.name;
+	if (name !== agent.name) {
+		const overrides = piSettings(previous).agentOverrides;
+		if (overrides?.[name]) {
+			throw new Error("変更先の名前には既存の上書き設定があります。");
+		}
+		const oldOverride = findNodeAtLocation(parseTree(text)!, [
+			"subagents",
+			"agentOverrides",
+			agent.name,
+		]);
+		if (oldOverride) {
+			text = editJson(
+				text,
+				["subagents", "agentOverrides", name],
+				getNodeValue(oldOverride),
+			);
+		}
+		text = editJson(
+			text,
+			["subagents", "agentOverrides", agent.name],
+			undefined,
+		);
+	}
+	for (const key of ["model", "thinking", "disabled"] as const) {
+		text = editJson(
+			text,
+			["subagents", "agentOverrides", name, key],
+			edit[key],
+		);
+	}
+	return text;
 }

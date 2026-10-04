@@ -1,8 +1,11 @@
-// Codex 標準の直下 TOML を読み、モデル設定以外の本文・コメントを保持して編集する。
+// `.codex/agents` 直下の TOML を読み、定義・モデル・承認設定を編集用の状態へ変換する。
 import { readdir } from "node:fs/promises";
 import { parse } from "smol-toml";
 import { z } from "zod";
-import { codexReasoningSchema } from "@nerita/shared/agentManager/config";
+import {
+	codexReasoningSchema,
+	agentEditSchema,
+} from "@nerita/shared/agentManager/config";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import { readWorkspaceFile, workspaceFile } from "./WorkspaceFiles";
 
@@ -12,6 +15,9 @@ const definitionSchema = z.object({
 	developer_instructions: z.string(),
 	model: z.string().optional(),
 	model_reasoning_effort: z.string().optional(),
+	sandbox_mode: agentEditSchema.shape.sandboxMode,
+	approvals_reviewer: agentEditSchema.shape.approvalsReviewer,
+	approval_policy: agentEditSchema.shape.approvalPolicy,
 });
 /** ワークスペースの Agent だけを編集対象として返す。 */
 export async function codexAgentFiles(root: string) {
@@ -51,7 +57,7 @@ export async function codexAgentFiles(root: string) {
 	return { agents, files, errors };
 }
 
-/** 未知の推論指定を無意識に削除しないよう、編集不可として表示する。 */
+/** 未対応の推論指定がある定義を編集不可にし、保存による削除を防ぐ。 */
 function agentView(
 	file: string,
 	data: z.infer<typeof definitionSchema>,
@@ -61,6 +67,7 @@ function agentView(
 	);
 	return {
 		id: file,
+		definitionPath: file,
 		backend: "codex",
 		name: data.name,
 		description: data.description,
@@ -72,6 +79,14 @@ function agentView(
 		definitionModel: data.model,
 		definitionThinking: data.model_reasoning_effort,
 		edit: {
+			definition: {
+				name: data.name,
+				description: data.description,
+				prompt: data.developer_instructions,
+			},
+			sandboxMode: data.sandbox_mode,
+			approvalsReviewer: data.approvals_reviewer,
+			approvalPolicy: data.approval_policy,
 			model: data.model,
 			reasoningEffort: reasoning.success ? reasoning.data : undefined,
 		},

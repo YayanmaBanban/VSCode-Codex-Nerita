@@ -9,6 +9,7 @@ import {
 
 export const managedAgentSchema = z.strictObject({
 	id: z.string(),
+	definitionPath: z.string().optional(),
 	backend: backendSchema,
 	name: z.string(),
 	description: z.string(),
@@ -62,6 +63,13 @@ const mutation = {
 	generation: z.string(),
 };
 export const managerRequestSchema = z.discriminatedUnion("type", [
+	z.strictObject({
+		type: z.literal("createAgent"),
+		...mutation,
+		backend: backendSchema,
+		filename: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/),
+		edit: agentEditSchema,
+	}),
 	z.strictObject({ type: z.literal("ready") }),
 	z.strictObject({ type: z.literal("reload") }),
 	z.strictObject({ type: z.literal("viewer") }),
@@ -79,6 +87,7 @@ export const managerRequestSchema = z.discriminatedUnion("type", [
 	z.strictObject({
 		type: z.literal("handoff"),
 		...mutation,
+		backend: backendSchema,
 		config: handoffSchema,
 	}),
 ]);

@@ -46,12 +46,7 @@ export function parseStartedThread(value: unknown): StartedThread {
 
 /** 未指定は保持し、不正な承認者を既定値へ置き換えない。 */
 function parseReviewer(value: unknown): StartedThread["approvalsReviewer"] {
-	if (
-		value === undefined ||
-		value === "user" ||
-		value === "auto_review" ||
-		value === "guardian_subagent"
-	) {
+	if (value === undefined || value === "user" || value === "auto_review") {
 		return value;
 	}
 	throw new Error("Invalid approvals reviewer");

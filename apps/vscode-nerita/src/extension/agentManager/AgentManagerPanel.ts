@@ -49,6 +49,7 @@ export class AgentManagerPanel {
 					await readWorkspaceFile(root, ".pi/settings.json"),
 				),
 			(id) => this.models(id),
+			configuredBackend,
 		);
 	}
 	private liveModels(id: "pi" | "codex") {
@@ -57,11 +58,11 @@ export class AgentManagerPanel {
 			? (this.backend.agentModels?.() ?? [])
 			: [];
 	}
-	/** 表示と保存検証に同じ候補を渡し、未接続側もカタログを利用する。 */
+	/** 取得済みのモデル候補を、表示と保存時の検証で共用する。 */
 	private models(id: "pi" | "codex") {
 		return this.catalogs[id];
 	}
-	/** 片側の取得失敗で、もう片側の候補まで消さない。 */
+	/** 使用中のバックエンドのモデル候補を取得し、失敗した場合はエラーを表示する。 */
 	private async refreshModels() {
 		this.modelErrors = [];
 		if (!vscode.workspace.isTrusted) {
@@ -69,7 +70,7 @@ export class AgentManagerPanel {
 			return;
 		}
 		await Promise.all(
-			(["pi", "codex"] as const).map(async (id) => {
+			[configuredBackend()].map(async (id) => {
 				try {
 					const live = this.liveModels(id);
 					this.catalogs[id] =
@@ -114,7 +115,7 @@ export class AgentManagerPanel {
 			errors: [...data.errors, ...this.modelErrors],
 			type: "state",
 			workspace: this.workspace,
-			label: this.folder.name,
+			label: this.store.root,
 			activeBackend: configuredBackend(),
 			currentModels: {
 				[configuredBackend()]: state.configOptions.find(
@@ -203,7 +204,7 @@ export class AgentManagerPanel {
 				.asRelativePath(document.uri, false)
 				.replaceAll("\\", "/");
 			if (
-				/^(?:\.pi\/settings\.json|\.codex\/agents\/[^/]+\.toml|\.nerita\/handoff(?:\.schema)?\.json)$/.test(
+				/^(?:\.pi\/settings\.json|\.pi\/agents\/.+\.md|\.codex\/agents\/[^/]+\.toml|\.nerita\/handoff(?:\.schema)?\.json)$/.test(
 					relative,
 				)
 			) {

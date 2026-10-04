@@ -1,6 +1,11 @@
 // モデルの対応能力から表示候補を生成し、会話状態の更新とは分離する。
 
 import type { ConfigOption } from "@nerita/shared/composer";
+import {
+	codexSandboxChoices,
+	codexReviewerChoices,
+	reasoningLabel,
+} from "@nerita/shared/settingsCards";
 import type { ModelInfo } from "../protocol/account";
 import { reasoningLevels } from "./modelSelection";
 
@@ -43,20 +48,13 @@ export function modelOptions(
 			name: "Mode",
 			currentValue: mode,
 			currentLabel: "権限は未取得または外部管理です",
-			options: [
-				{ value: "read-only", name: "読み取り専用" },
-				{
-					value: "workspace-write",
-					name: "ワークスペース内に書き込み",
-				},
-				{ value: "danger-full-access", name: "フルアクセス" },
-			],
+			options: codexSandboxChoices,
 		},
 		{
 			id: "approvals_reviewer",
 			name: "ApprovalsReviewer",
 			currentValue: approvalsReviewer,
-			options: reviewerChoices(approvalsReviewer),
+			options: codexReviewerChoices,
 		},
 	];
 	if (selected?.serviceTiers.some((item) => item.id === "priority")) {
@@ -124,33 +122,8 @@ function reasoningOption(
 				)
 				.map((item) => ({
 					value: item.reasoningEffort,
-					name:
-						item.reasoningEffort.charAt(0).toUpperCase() +
-						item.reasoningEffort.slice(1),
+					name: reasoningLabel(item.reasoningEffort),
 					description: item.description,
 				})) ?? [],
 	};
-}
-
-/** サーバーから受け取った追加の承認者も選択表示を保つ。 */
-function reviewerChoices(current: string): ConfigOption["options"] {
-	const choices: ConfigOption["options"] = [
-		{
-			value: "user",
-			icon: "user",
-			name: "ユーザが承認",
-			description: "追加の権限が必要な操作は、実行前に確認します。",
-		},
-		{
-			value: "auto_review",
-			icon: "bot",
-			name: "代わりに承認",
-			description:
-				"操作を自動レビューし、リスクに応じて承認します。\n追加のトークンを使用します。",
-		},
-	];
-	if (current === "guardian_subagent") {
-		choices.push({ value: current, name: current, icon: "bot" });
-	}
-	return choices;
 }

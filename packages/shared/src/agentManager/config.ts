@@ -24,12 +24,37 @@ export const codexReasoningSchema = z.enum([
 /** Pi の管理画面とハンドオフ設定には、SDK の通常推論レベルだけを保存する。 */
 export const piEffortSchema = piThinkingSchema;
 
+/** Codex の承認要求を種類ごとに許可する保存形式。 */
+export const granularApprovalSchema = z.strictObject({
+	sandbox_approval: z.boolean(),
+	rules: z.boolean(),
+	skill_approval: z.boolean(),
+	request_permissions: z.boolean(),
+	mcp_elicitations: z.boolean(),
+});
+export const approvalPolicySchema = z.union([
+	z.enum(["on-request", "never", "untrusted"]),
+	z.strictObject({ granular: granularApprovalSchema }),
+]);
+/** 名前は定義内の識別子で、ファイル名とは独立して変更できる。 */
+export const agentIdentitySchema = z.strictObject({
+	name: z.string().trim().min(1).max(80),
+	description: z.string().max(2000),
+	prompt: z.string().max(60000),
+});
+
 /** 未指定はバックエンド既定値へ戻す操作として扱う。 */
 export const agentEditSchema = z.strictObject({
+	definition: agentIdentitySchema.optional(),
 	model: modelSchema.optional(),
 	thinking: piEffortSchema.optional(),
 	reasoningEffort: codexReasoningSchema.optional(),
 	disabled: z.boolean().optional(),
+	sandboxMode: z
+		.enum(["read-only", "workspace-write", "danger-full-access"])
+		.optional(),
+	approvalsReviewer: z.enum(["user", "auto_review"]).optional(),
+	approvalPolicy: approvalPolicySchema.optional(),
 });
 export type AgentEdit = z.infer<typeof agentEditSchema>;
 export const piDefaultsSchema = z.strictObject({
