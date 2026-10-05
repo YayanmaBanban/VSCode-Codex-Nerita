@@ -68,7 +68,7 @@ export async function readMxcDenials(
 	};
 }
 
-/** 既知のリソース以外は未分類のまま提示する。推定を実行許可に変換しない。 */
+/** 既知のリソース以外は未分類のまま提示する。推定した分類を根拠に実行を許可しない。 */
 function classifyDenial(
 	denial: z.infer<typeof reportSchema>["denials"][number],
 	policy: DevToolPolicy,

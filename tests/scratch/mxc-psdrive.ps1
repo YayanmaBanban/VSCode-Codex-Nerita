@@ -5,7 +5,7 @@ $ProgressPreference = 'SilentlyContinue'
 $workspace = [Environment]::CurrentDirectory
 $script:probeResults = @()
 
-# 一つの失敗で後続の切り分けを省略せず、失敗を成功扱いにしない。
+# 1つの失敗で後続の切り分けを省略せず、失敗を成功扱いにしない。
 function Invoke-Probe([string]$Name, [scriptblock]$Action) {
     try {
         $text = (& $Action | Out-String).Trim()

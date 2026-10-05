@@ -6,7 +6,7 @@ import type { DevToolPolicy } from "./DevToolPolicy";
 import { toolResource } from "./DevToolDiscovery";
 import { sanitizedNpmConfig } from "./DevToolConfig";
 
-/** managedRoot は Host 組み立て側だけが決める。キャッシュは workspace ごとに分離して永続化する。 */
+/** `managedRoot` は Host 組み立て側だけが決める。キャッシュはワークスペースごとに分離して永続化する。 */
 export async function prepareDevToolStorage(
 	policy: DevToolPolicy,
 	managedRoot: string,

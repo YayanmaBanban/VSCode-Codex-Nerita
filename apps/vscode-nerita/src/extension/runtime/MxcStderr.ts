@@ -8,7 +8,7 @@ const pointerSchema = z.object({
 	outputPath: z.string(),
 });
 
-/** チャンク境界をまたぐ JSON を処理する。通常の出力は marker 長の末尾だけを保留する。 */
+/** チャンク境界をまたぐ JSON を処理する。通常の出力は、診断情報の開始マーカーより短い末尾だけを保留する。 */
 export class MxcStderr {
 	private pending = "";
 	constructor(

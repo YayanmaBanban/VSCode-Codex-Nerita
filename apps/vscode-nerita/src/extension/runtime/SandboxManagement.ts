@@ -40,7 +40,7 @@ export class SandboxManagement {
 		this.report = structuredClone(report);
 		this.changed();
 	};
-	/** 保存先の変更後にパネルが再取得するための通知。 */
+	/** 管理状態の変更後に、パネルが最新の状態を再取得するための通知。 */
 	changed() {
 		for (const listener of this.listeners) {
 			listener();

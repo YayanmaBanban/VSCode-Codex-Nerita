@@ -1,4 +1,4 @@
-// 一時 PSDrive の回避策を現行ポリシーで確認する。実行: node tests/scratch/mxc-psdrive.cjs
+// 一時 PSDrive の回避策を現行ポリシーで確認する。`node tests/scratch/mxc-psdrive.cjs` で実行する。
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { build } = require("esbuild");

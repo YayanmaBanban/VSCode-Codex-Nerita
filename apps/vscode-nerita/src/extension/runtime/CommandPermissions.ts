@@ -35,7 +35,7 @@ export class CommandPermissions {
 		return structuredClone([...this.grants.values()]);
 	}
 
-	/** 一致する許可だけを参照し、別 route・workspace・tool・class へ拡張しない。 */
+	/** 一致する許可だけを参照し、別の実行経路・ワークスペース・ツール・コマンドクラスへ拡張しない。 */
 	has(permission: CommandPermissionKey): boolean {
 		return this.grants.has(permissionKey(permission));
 	}

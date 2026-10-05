@@ -1,7 +1,7 @@
-// 開発ツールの権限を Workspace・Network・UI から分離し、MXC 固有情報を外へ漏らさない。
+// 開発ツールの権限をワークスペース・ネットワーク・UI の権限から分離し、MXC 固有情報を外へ漏らさない。
 import type { ResourcePolicy } from "@nerita/shared/sandboxPolicy";
 
-/** 環境値と実体パスは Host 専用。管理画面には resources だけを通知する。 */
+/** 環境値と実体パスは Host 専用。管理画面には `resources` だけを通知する。 */
 export type DevToolPolicy = {
 	resources: ResourcePolicy[];
 	environment: Record<string, string>;

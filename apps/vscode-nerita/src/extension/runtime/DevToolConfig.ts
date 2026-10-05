@@ -18,7 +18,7 @@ export async function sanitizedNpmConfig(path: string): Promise<string> {
 	}
 }
 
-/** 認証、proxy、スクリプト、include、任意パスをホストから持ち込まない。 */
+/** 認証、プロキシー、スクリプト、外部設定の読み込み、任意パスをホストから持ち込まない。 */
 function sanitizeNpmText(text: string): string {
 	const output: string[] = [];
 	for (const line of text.split(/\r?\n/)) {
@@ -44,7 +44,7 @@ function sanitizeNpmText(text: string): string {
 	return output.length ? `${output.join("\n")}\n` : "";
 }
 
-/** URL の認証情報・query・fragment・環境変数補間を秘密として扱う。 */
+/** URL の認証情報・クエリー・フラグメント・環境変数補間は秘密情報を含み得るため除外する。 */
 function safeRegistry(value: string): boolean {
 	try {
 		const url = new URL(value);

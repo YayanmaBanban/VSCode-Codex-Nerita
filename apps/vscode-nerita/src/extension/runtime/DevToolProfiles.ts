@@ -1,4 +1,4 @@
-// 最初の4ツールの依存を ResourcePolicy へ変換する。shim は実行せず限定した形式だけを読む。
+// 初期対応する4ツールの依存を `ResourcePolicy` へ変換する。起動用ラッパーは実行せず、限定した形式だけを読む。
 import { readFile, realpath, stat } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import type { DevToolProfile } from "./DevToolPolicy";
@@ -62,7 +62,7 @@ async function gitResources(executable: string) {
 	return resources;
 }
 
-/** pnpm setup の exe shim と npm の pnpm.cjs shim を固定パターンで解決する。 */
+/** `pnpm setup` の実行ファイルと npm の `pnpm.cjs` を、起動用ラッパーの固定パターンから解決する。 */
 async function pnpmResources(executable: string) {
 	if (!executable.toLowerCase().endsWith(".cmd")) {
 		return [toolResource("install", executable, "pnpm", "profile")];

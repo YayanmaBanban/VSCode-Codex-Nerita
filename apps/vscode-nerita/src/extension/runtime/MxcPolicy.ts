@@ -11,7 +11,7 @@ function quoteWindowsArgument(value: string): string {
 	return `"${value.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, "$1$1")}"`;
 }
 
-/** tools の補助書込み許可は採用しない。temp は呼出しごとの専用領域だけを許可する。 */
+/** ツールの補助書込み許可は採用しない。一時領域は呼出しごとの専用領域だけを許可する。 */
 export function createMxcConfig(
 	sdk: MxcSdk,
 	call: ToolCall,

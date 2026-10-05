@@ -18,7 +18,7 @@ export class ResourceApprovalStore {
 	private readonly events = new Map<string, DenialEvent>();
 	constructor(private readonly context: ResourceApproval["context"]) {}
 
-	/** 拒否の登録だけでは権限も承認も発行しない。 */
+	/** 拒否イベントを登録するだけで、権限や承認を発行しない。 */
 	record(events: readonly DenialEvent[]): void {
 		for (const event of events) {
 			this.events.set(event.id, structuredClone(event));

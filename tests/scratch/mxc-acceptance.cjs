@@ -1,4 +1,4 @@
-// 実 MXC の通信・書込み境界・停止を検証する。実行: node tests/scratch/mxc-acceptance.cjs
+// MXC 本体の通信・書込み境界・停止を検証する。`node tests/scratch/mxc-acceptance.cjs` で実行する。
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");

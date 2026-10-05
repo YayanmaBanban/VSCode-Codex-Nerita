@@ -34,7 +34,7 @@ const parameters = {
 	additionalProperties: false,
 } as const;
 
-/** モデルが指定できるのは引数だけ。起動ファイルは Host が PATH と既知 profile から解決する。 */
+/** モデルが指定できるのは引数だけ。起動ファイルは Host が PATH と既知のプロファイルから解決する。 */
 export function createPiPnpmTool(
 	paths: WorkspacePathPolicy,
 	authorize: ToolAuthorizer,
@@ -126,7 +126,7 @@ function pnpmResult(result: {
 	};
 }
 
-/** shim 自体は起動せず、profile が検出した native / JavaScript エントリーを使う。 */
+/** 起動用ラッパー自体は起動せず、プロファイルが検出した実行ファイルか JavaScript のエントリーポイントを使う。 */
 async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 	const tools = await discoverDevTools(
 		commandEnvironment(),

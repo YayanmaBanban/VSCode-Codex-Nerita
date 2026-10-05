@@ -1,4 +1,4 @@
-// SDK の拒否記録を権限を緩和せず検証する。実行: node tests/scratch/mxc-denials.cjs
+// SDK の拒否記録を権限を緩和せず検証する。`node tests/scratch/mxc-denials.cjs` で実行する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");

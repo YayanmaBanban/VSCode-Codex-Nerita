@@ -1,4 +1,4 @@
-// 実 SDK と実 pnpm で承認前の副作用禁止とコマンドクラスごとの再承認を検証する。
+// SDK 本体と pnpm 本体で、承認前の副作用禁止とコマンドクラスごとの再承認を検証する。
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile, writeFile, symlink, mkdir } from "node:fs/promises";

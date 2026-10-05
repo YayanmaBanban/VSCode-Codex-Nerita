@@ -4,7 +4,7 @@ const path = require("node:path");
 const { createRequire } = require("node:module");
 const { extensionRequire } = require("./workspace-paths.cjs");
 
-/** ネイティブモジュールは bundle せず、固定済みの依存ツリーをコピーする。 */
+/** ネイティブモジュールはバンドルせず、固定済みの依存ツリーをコピーする。 */
 async function packageMxc(target) {
 	const copied = new Set();
 	async function copyPackage(json) {
@@ -56,7 +56,7 @@ async function packageMxc(target) {
 
 module.exports = { packageMxc };
 
-/** 対象は Windows x64。SDK の署名検証用 manifest と動的 import 先は残す。 */
+/** 対象は Windows x64。SDK の署名検証用マニフェストと動的インポート先は残す。 */
 function runtimeAsset(name, relative) {
 	const parts = relative.split(path.sep);
 	if (parts.includes("node_modules")) {

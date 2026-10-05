@@ -1,4 +1,4 @@
-// 実 SDK の変換で権限上限と環境変数を確認し、承認境界を迂回した起動を拒否する。
+// SDK 本体の変換で権限上限と環境変数を確認し、承認境界を迂回した起動を拒否する。
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { realpath } from "node:fs/promises";

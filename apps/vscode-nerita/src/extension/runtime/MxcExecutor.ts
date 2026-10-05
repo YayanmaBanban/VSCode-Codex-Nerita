@@ -138,7 +138,7 @@ export async function executeMxcCommand(
 	}
 }
 
-/** workspace が temp の祖先だった場合も、子からレポートを改変できる構成を起動しない。 */
+/** ワークスペースが一時領域の祖先だった場合も、子からレポートを改変できる構成を起動しない。 */
 function assertPrivateReport(config: ContainerConfig, directory: string): void {
 	const roots = [
 		...(config.filesystem?.readonlyPaths ?? []).filter(
@@ -159,7 +159,7 @@ async function validateMxcCall(call: ToolCall) {
 	await validateRoots(call);
 }
 
-/** SDK に渡す前に承認済み argv と実行時間の範囲を確認する。 */
+/** SDK へ渡す前に、承認済みの引数と実行時間が許容範囲内か確認する。 */
 function validateCommand(call: ToolCall) {
 	if (
 		!call.policy.shell ||

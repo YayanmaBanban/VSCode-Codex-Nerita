@@ -1,7 +1,6 @@
 // Git / pnpm の cwd 依存を、PowerShell / PSDrive を介さず MXC 上で比較する。
-// 実行:
-//   pnpm exec node tests/scratch/mxc-devtools.cjs
-// pnpm 単体実行ファイルを明示する場合は環境変数 PNPM_EXE を使う。
+// `pnpm exec node tests/scratch/mxc-devtools.cjs` で実行する。
+// pnpm 単体実行ファイルを明示する場合は環境変数 `PNPM_EXE` を使う。
 
 const fs = require("node:fs/promises");
 const os = require("node:os");
@@ -11,7 +10,7 @@ const { build } = require("esbuild");
 const { packageMxc } = require("../../config/package-mxc.cjs");
 
 /**
- * 製品の MxcExecutor と同梱 MXC SDK を読み込む。
+ * 製品の `MxcExecutor` と同梱 MXC SDK を読み込む。
  */
 async function loadRuntime(root) {
 	const extension = path.join(root, "apps/vscode-nerita");
@@ -47,8 +46,7 @@ async function loadRuntime(root) {
 }
 
 /**
- * Host の秘密を持ち込まず、現在の製品実装が必要とする
- * OS / tool discovery 用環境だけ渡す。
+ * Host の秘密を持ち込まず、OS の起動とツールの検出に必要な環境変数だけを渡す。
  */
 function commandEnvironment() {
 	const allowed =
@@ -65,16 +63,9 @@ function commandEnvironment() {
 }
 
 /**
- * MXC を一回起動する。
- *
- * workspace:
- *   実際の Nerita repository。
- *
- * cwd:
- *   プロセス起動時に MXC が設定する native cwd。
- *
- * workspace は read-only、
- * test cwd だけ read-write とする。
+ * MXC を1回起動する。
+ * `workspace` は Nerita のリポジトリ、`cwd` は MXC がプロセス起動時に設定する作業ディレクトリを指定する。
+ * この比較試験では、リポジトリとテスト用の作業ディレクトリに書込みを許可する。
  */
 async function runMxc({ executeMxcCommand, sdk, workspace, cwd, command }) {
 	const report = [];
@@ -93,8 +84,8 @@ async function runMxc({ executeMxcCommand, sdk, workspace, cwd, command }) {
 					workspace,
 					cwd,
 
-					// BaseContainer の path traversal 検証用。
-					// Volume root grant は子孫へ連鎖しない。
+					// BaseContainer でドライブ直下を経由するパス解決を検証する。
+					// ドライブ直下の許可は配下のディレクトリやファイルへ継承されない。
 					workspaceDrive,
 				],
 
@@ -125,7 +116,7 @@ async function runMxc({ executeMxcCommand, sdk, workspace, cwd, command }) {
 }
 
 /**
- * 一つのテストを実行して、失敗しても後続を続行する。
+ * 1つのテストを実行して、失敗しても後続を続行する。
  */
 async function probe(name, action) {
 	console.log("");
@@ -181,11 +172,8 @@ async function main() {
 	console.log(sdk.getPlatformSupport());
 
 	/*
-	 * workspace とは別の専用 cwd。
-	 *
-	 * SUBST や PSDrive は使わない。
-	 * 通常の Host temp directory を MXC policy に
-	 * 明示的に追加するだけ。
+	 * ワークスペースとは別に専用の作業ディレクトリを作る。
+	 * SUBST や PSDrive は使わず、Host の通常の一時ディレクトリを MXC の許可範囲へ明示的に追加する。
 	 */
 	const tempRoot = await fs.mkdtemp(
 		path.join(os.tmpdir(), "nerita-mxc-devtools-"),
@@ -243,14 +231,8 @@ async function probeGit(context, safeCwd) {
 	 */
 
 	/*
-	 * 対照:
-	 *
-	 * MXC cwd = workspace
-	 * git status
-	 *
-	 * 現在の症状:
-	 * fatal: Unable to read current working directory:
-	 * Permission denied
+	 * 対照として、ワークスペースを作業ディレクトリにして `git status` を実行する。
+	 * 調査対象は、現在の作業ディレクトリを読み取れず `Permission denied` となる症状。
 	 */
 	results.push(
 		await probe("Git / workspace cwd", () =>
@@ -268,14 +250,8 @@ async function probeGit(context, safeCwd) {
 	);
 
 	/*
-	 * 本命:
-	 *
-	 * MXC cwd = safe temp
-	 * git -C <workspace> status
-	 *
-	 * これだけ成功するなら、
-	 * workspace自体のread権限ではなく
-	 * Git起動直後の getcwd() が原因と判断できる。
+	 * 一時ディレクトリを作業ディレクトリにして、`git -C <workspace> status` を実行する。
+	 * こちらだけ成功する場合は、ワークスペースの読取り権限よりも、Git 起動直後の `getcwd()` が原因の候補となる。
 	 */
 	results.push(
 		await probe("Git / temp cwd + -C workspace", () =>
@@ -302,14 +278,8 @@ async function probePnpm(context, safeCwd) {
 	const root = context.workspace;
 	const results = [];
 	/*
-	 * --------------------------------------------------
-	 * pnpm
-	 * --------------------------------------------------
-	 *
-	 * pnpm.cmd は CreateProcess の直接実行対象ではないので、
-	 * cmd.exe だけをシェルとして使用する。
-	 *
-	 * PowerShell / PSDrive は使用しない。
+	 * pnpm 単体実行ファイルと、Node.js 経由の JavaScript エントリーポイントを比較する。
+	 * `pnpm.cmd` やシェルは起動せず、PSDrive も使用しない。
 	 */
 	const pnpmExe = process.env.PNPM_EXE ?? process.env.npm_execpath;
 	if (!pnpmExe || path.extname(pnpmExe).toLowerCase() !== ".exe") {
@@ -319,14 +289,8 @@ async function probePnpm(context, safeCwd) {
 	}
 	const pnpmCjs = path.join(root, "config/run-pnpm.cjs");
 	/*
-	 * 対照:
-	 *
-	 * cwd = workspace
-	 * pnpm --version
-	 *
-	 * 現在は pnpm 内部の
-	 * canonicalize("--dir" = ".")
-	 * で os error 5 が出る想定。
+	 * 対照として、ワークスペースを作業ディレクトリにして `pnpm --version` を実行する。
+	 * pnpm 内部で `--dir` の既定値 `.` を正規化するときに、`os error 5` が出ると想定している。
 	 */
 	results.push(
 		await probe("pnpm / workspace cwd", () =>
@@ -339,17 +303,9 @@ async function probePnpm(context, safeCwd) {
 	);
 
 	/*
-	 * 本命:
-	 *
-	 * cwd = safe temp
-	 * pnpm --dir <workspace> --version
-	 *
-	 * これが成功すれば、
-	 * pnpmも "." のcanonicalizeだけが問題。
-	 *
-	 * これでも os error 5 なら、
-	 * pnpmが明示workspace path自体をcanonicalize
-	 * できていないことが分かる。
+	 * 一時ディレクトリを作業ディレクトリにして、`pnpm --dir <workspace> --version` を実行する。
+	 * こちらだけ成功する場合は、`.` の正規化が原因の候補となる。
+	 * こちらでも `os error 5` が出る場合は、明示したワークスペースのパスを正規化できているかを調べる。
 	 */
 	results.push(
 		await probe("pnpm / temp cwd + --dir workspace", () =>

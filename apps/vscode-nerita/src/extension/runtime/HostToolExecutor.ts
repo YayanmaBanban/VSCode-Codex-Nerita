@@ -50,7 +50,7 @@ export class HostToolExecutor implements SandboxCommandExecutor {
 	}
 }
 
-/** 保存済み権限だけで起動せず、毎回発行された一回限りの permit と分類を照合する。 */
+/** 保存済み権限だけで起動せず、1回限りの実行許可を消費した要求の分類と承認キーを照合する。 */
 function validateHostCall(call: ToolCall) {
 	const permission = call.compatibility?.permission;
 	if (

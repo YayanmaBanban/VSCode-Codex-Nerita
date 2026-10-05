@@ -4,7 +4,7 @@ import { requireLocalWorkspace } from "../workspace";
 import { probeMxc } from "./MxcAvailability";
 import { dockerAvailability, type SandboxAvailability } from "./SandboxBackend";
 
-/** 固定 probe のみを実行する。Workspace 内のスクリプトや設定を読み込まない。 */
+/** 固定の起動検査のみを実行する。ワークスペース内のスクリプトや設定を読み込まない。 */
 export function registerMxcDiagnostics(context: vscode.ExtensionContext): void {
 	const lifetime = new AbortController();
 	const output = vscode.window.createOutputChannel("Nerita Sandbox");

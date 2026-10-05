@@ -4,7 +4,7 @@ import type { SandboxPolicy } from "../backends/codex/codex-app-server/v2/Sandbo
 
 /** Windows 実装は親から継承し、`role` から変更できない。 */
 export type WindowsSandboxImplementation = "elevated" | "unelevated";
-/** Pi は readableRoots を指定する。未指定の既存バックエンドは OS の読取り権限に従う。 */
+/** Pi は `readableRoots` を指定する。未指定の既存バックエンドは OS の読取り権限に従う。 */
 export type AgentAccessPolicy = {
 	workspaceRoots: string[];
 	readableRoots?: string[];
