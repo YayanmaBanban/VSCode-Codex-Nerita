@@ -13,7 +13,10 @@ export function registerPiOutput(
 	result: unknown,
 	history: boolean,
 ) {
-	if (!["bash", "powershell", "pwsh"].includes(name) || !isRecord(result)) {
+	if (
+		!["bash", "powershell", "pwsh", "pnpm"].includes(name) ||
+		!isRecord(result)
+	) {
 		return;
 	}
 	const structured = result.structuredContent;

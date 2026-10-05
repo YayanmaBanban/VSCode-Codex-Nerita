@@ -12,6 +12,7 @@ import {
 	type ToolAuthorizer,
 } from "../../security/ApprovalGuard";
 import { type WorkspacePathPolicy } from "../../security/WorkspacePathPolicy";
+import { streamPiCommand } from "./PiCommandOutput";
 
 const powerShellInput = z.object({
 	command: z.string().refine((value) => value.trim().length > 0),
@@ -30,7 +31,7 @@ export function createPiSandboxPowerShellTool(
 	return {
 		...definition,
 		executionMode: "sequential",
-		async execute(_id, params, signal) {
+		async execute(_id, params, signal, update) {
 			if (!paths.policy.shell) {
 				throw new Error("このroleではShell実行が禁止されています。");
 			}
@@ -71,7 +72,7 @@ export function createPiSandboxPowerShellTool(
 				authorize,
 				executionSignal,
 			);
-			const result = await executor.execute(approved);
+			const result = await streamPiCommand(executor, approved, update);
 			const text = [
 				result.stdout,
 				result.stderr,

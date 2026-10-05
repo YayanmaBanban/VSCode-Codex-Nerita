@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { realpath } from "node:fs/promises";
-import { join } from "node:path";
+import { join, parse } from "node:path";
 import { loadMxcSdk } from "../../apps/vscode-nerita/src/extension/runtime/MxcSdk";
 import { createMxcConfig } from "../../apps/vscode-nerita/src/extension/runtime/MxcPolicy";
 import { MxcExecutor } from "../../apps/vscode-nerita/src/extension/runtime/MxcExecutor";
@@ -49,6 +49,10 @@ void test("MXC は既定で通信・Clipboard・入力注入を拒否し、明�
 		ingress: { default: "deny", hostLoopback: "deny" },
 	});
 	assert.deepEqual(config.filesystem!.readwritePaths, [call.cwd, temporary]);
+	assert.ok(config.filesystem!.readonlyPaths!.includes(parse(call.cwd).root));
+	assert.ok(
+		!config.filesystem!.readonlyPaths!.includes(join(call.cwd, "..")),
+	);
 	assert.ok(
 		!config.filesystem!.readonlyPaths!.includes(call.cwd),
 		"同じ root を readonly に重複登録して書込みを妨げない",

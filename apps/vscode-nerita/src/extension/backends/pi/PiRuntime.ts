@@ -49,6 +49,8 @@ import { openAICodexQuota } from "./openai/OpenAICodexQuota";
 import { PiModelCatalogService } from "./PiModelCatalogService";
 import { piFeatureSecrets } from "./PiFeatureSecrets";
 import { piToolExposure } from "./PiToolFeatures";
+import type { CommandPermissions } from "../../runtime/CommandPermissions";
+import type { SandboxManagement } from "../../runtime/SandboxManagement";
 import { abortableFeatureApproval } from "./PiFeatureSafety";
 import { protectPiFeatureTool } from "./PiFeatureToolResults";
 import type { SkillSummary } from "@nerita/shared/skills";
@@ -73,6 +75,7 @@ export type PiSession = Pick<
 	| "abort"
 	| "dispose"
 > & {
+	commandPermissions?: CommandPermissions;
 	workflow?: (
 		request: WorkflowExecution,
 		signal: AbortSignal,
@@ -107,6 +110,8 @@ export type PiFactory = (
 
 /** 通常実行と隔離した疎通テストで使う起動条件。 */
 export type PiRuntimeOptions = {
+	sandboxManagement?: SandboxManagement;
+	commandPermissions?: CommandPermissions;
 	extensionPath: string;
 	cwd: string;
 	agentDir?: string;
@@ -341,6 +346,9 @@ function runtimeSessionFacade(
 			session,
 		),
 		accessPolicy: runtimeTools.paths.policy,
+		...(options.commandPermissions
+			? { commandPermissions: options.commandPermissions }
+			: {}),
 		contextSource: manager,
 		agentViews,
 		jobs,

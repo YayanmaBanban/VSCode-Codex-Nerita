@@ -20,12 +20,13 @@ import type {
 	SandboxCommandOutput,
 } from "./SandboxCommandExecutor";
 import type { MxcSdk } from "./MxcSdk";
-import { createMxcConfig } from "./MxcPolicy";
+import { createMxcConfig, isVolumeRoot } from "./MxcPolicy";
 import { discoverDevTools } from "./DevToolDiscovery";
 import { initialDevToolProfiles } from "./DevToolProfiles";
 import { prepareDevToolStorage } from "./DevToolStorage";
 import { readMxcDenials, type DenialReport } from "./MxcDenials";
 import { MxcStderr } from "./MxcStderr";
+import type { ResourcePolicy } from "@nerita/shared/sandboxPolicy";
 
 /** SDK のロードと probe に成功した組み立て側だけが生成する。 */
 export class MxcExecutor implements SandboxCommandExecutor {
@@ -33,6 +34,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 		private readonly sdk: MxcSdk,
 		private readonly isolationTier: string,
 		private readonly onDenials?: (report: DenialReport) => void,
+		private readonly onPolicy?: (resources: ResourcePolicy[]) => void,
 	) {}
 
 	describe(policy: AgentAccessPolicy) {
@@ -63,6 +65,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 			signal,
 			onOutput,
 			this.onDenials,
+			this.onPolicy,
 		);
 	}
 }
@@ -74,6 +77,7 @@ export async function executeMxcCommand(
 	signal: AbortSignal,
 	onOutput?: SandboxCommandOutput,
 	onDenials?: (report: DenialReport) => void,
+	onPolicy?: (resources: ResourcePolicy[]) => void,
 ): Promise<SandboxCommandResult> {
 	signal.throwIfAborted();
 	if (!process.env.SystemRoot) {
@@ -102,6 +106,7 @@ export async function executeMxcCommand(
 				: undefined,
 		);
 		const config = createMxcConfig(sdk, call, temporary, devTools);
+		onPolicy?.(structuredClone(devTools.resources));
 		assertPrivateReport(config, hostTemporary);
 		config.processContainer = {
 			...config.processContainer,
@@ -136,7 +141,9 @@ export async function executeMxcCommand(
 /** workspace が temp の祖先だった場合も、子からレポートを改変できる構成を起動しない。 */
 function assertPrivateReport(config: ContainerConfig, directory: string): void {
 	const roots = [
-		...(config.filesystem?.readonlyPaths ?? []),
+		...(config.filesystem?.readonlyPaths ?? []).filter(
+			(root) => !isVolumeRoot(root),
+		),
 		...(config.filesystem?.readwritePaths ?? []),
 	];
 	if (roots.some((root) => containsPath(root, directory))) {

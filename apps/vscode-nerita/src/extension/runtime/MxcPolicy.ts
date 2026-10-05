@@ -1,5 +1,6 @@
 // 承認済み要求を MXC ポリシーへ変換し、Host 環境の秘密や暗黙の書込み許可を持ち込まない。
 import type { ContainerConfig } from "@microsoft/mxc-sdk";
+import { win32 } from "node:path";
 import type { ToolCall } from "../security/ApprovedToolCall";
 import type { MxcSdk } from "./MxcSdk";
 import type { DevToolPolicy, SandboxPolicy } from "./DevToolPolicy";
@@ -40,6 +41,7 @@ export function createMxcConfig(
 					...new Set([
 						...readonly,
 						...policy.workspace.readonlyRoots,
+						...workspaceVolumeRoots(call.policy.workspaceRoots),
 					]),
 				].filter(
 					(root) => !policy.workspace.writableRoots.includes(root),
@@ -79,6 +81,18 @@ export function createMxcConfig(
 		),
 	};
 	return config;
+}
+
+/** BaseContainer のドライブ直下 RO は非再帰。cwd 解決に必要な volume handle だけを許可する。 */
+export function workspaceVolumeRoots(roots: readonly string[]): string[] {
+	return [...new Set(roots.map((root) => win32.parse(root).root))].filter(
+		(root) => /^[a-z]:\\$/i.test(root),
+	);
+}
+
+/** MXC が非再帰で扱うドライブ直下の RO と、通常の再帰的なディレクトリ許可を区別する。 */
+export function isVolumeRoot(path: string): boolean {
+	return /^[a-z]:[\\/]$/i.test(path);
 }
 
 /** 承認済みのワークスペース・通信権限と Host が検出したツール権限を合成する。 */

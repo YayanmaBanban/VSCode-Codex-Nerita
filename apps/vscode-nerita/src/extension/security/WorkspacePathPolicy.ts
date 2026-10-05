@@ -91,7 +91,7 @@ export async function createWorkspaceAccessPolicy(
 	});
 }
 
-/** `read` は外部も許可し、`write` には正規化したワークスペース上限を適用する。 */
+/** 指定された読取り範囲と書込み範囲を、リンク解決後の実体パスへ適用する。 */
 export class WorkspacePathPolicy {
 	readonly policy: AgentAccessPolicy;
 	constructor(
@@ -115,6 +115,9 @@ export class WorkspacePathPolicy {
 	/** 検査済みの実体 `path` そのものを SDK `operations` へ渡す。 */
 	async resolve(input: string, operation: "read" | "write"): Promise<string> {
 		const target = await canonicalPath(input, this.cwd);
+		if (operation === "read" && !readablePath(this.policy, target)) {
+			throw new Error(`読取り許可の範囲外です: ${input}`);
+		}
 		if (operation === "write") {
 			if (
 				!this.policy.writableRoots.some((root) =>
@@ -141,4 +144,12 @@ export class WorkspacePathPolicy {
 		}
 		return target;
 	}
+}
+
+/** 読取り境界を明示した Pi のポリシーだけを制限する。 */
+function readablePath(policy: AgentAccessPolicy, target: string): boolean {
+	return (
+		!policy.readableRoots ||
+		policy.readableRoots.some((root) => containsPath(root, target))
+	);
 }

@@ -35,8 +35,14 @@ export abstract class PiRun extends PiLifecycle {
 		this.patch({ permissions: this.approvals.list() }),
 	);
 
+	/** 接続中の会話に属する承認ストアだけを使う。 */
+	private get commandPermissions() {
+		return this.runtime?.commandPermissions;
+	}
+
 	/** 拒否はツールエラーとして返し、中止はターン全体を停止する。 */
 	protected authorize: PiAuthorize = async (title, signal) => {
+		const commandPermissions = this.commandPermissions;
 		const jobId =
 			typeof title === "string"
 				? undefined
@@ -54,6 +60,7 @@ export abstract class PiRun extends PiLifecycle {
 					},
 				},
 				signal,
+				commandPermissions,
 			);
 		}
 		const submission = this.submission;
@@ -71,6 +78,7 @@ export abstract class PiRun extends PiLifecycle {
 				},
 			},
 			signal,
+			commandPermissions,
 		);
 	};
 
@@ -111,6 +119,7 @@ export abstract class PiRun extends PiLifecycle {
 					title,
 					{ signal: combined, cancel: () => abort.abort() },
 					toolSignal,
+					this.runtime?.commandPermissions,
 				),
 		);
 		this.track(operation);

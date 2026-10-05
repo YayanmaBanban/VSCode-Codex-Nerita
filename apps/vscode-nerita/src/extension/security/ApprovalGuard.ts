@@ -104,8 +104,15 @@ function probeFor(call: ToolCall) {
 	if (typeof call.params.command === "string") {
 		input = call.params.command;
 	}
+	let tool = call.tool;
+	if (tool === "pnpm") {
+		tool = "powershell";
+	}
+	if (tool.startsWith("extension:")) {
+		tool = "extension";
+	}
 	return guardProbeSchema.parse({
-		tool: call.tool.startsWith("extension:") ? "extension" : call.tool,
+		tool,
 		input,
 		cwd: call.cwd,
 	});

@@ -2,6 +2,11 @@
 import type { UiMessage } from "@nerita/shared/messages";
 import type { Bridge } from "@nerita/shared/bridge";
 import {
+	sandboxReplySchema,
+	type SandboxBridge,
+	type SandboxRequest,
+} from "@nerita/shared/sandboxManagement";
+import {
 	trustReplySchema,
 	type TrustBridge,
 	type TrustRequest,
@@ -28,6 +33,7 @@ type VsCodeApi = {
 	postMessage: (
 		message:
 			| UiMessage
+			| SandboxRequest
 			| TrustRequest
 			| PiAuthRequest
 			| GuardRequest
@@ -37,6 +43,23 @@ type VsCodeApi = {
 };
 declare function acquireVsCodeApi(): VsCodeApi;
 let api: VsCodeApi | undefined;
+/** Sandbox 管理画面でも Host の通知を共有スキーマで検証する。 */
+export function createSandboxBridge(): SandboxBridge {
+	api ??= acquireVsCodeApi();
+	return {
+		postMessage: (message) => api?.postMessage(message),
+		subscribe(listener) {
+			const receive = (event: MessageEvent<unknown>) => {
+				const parsed = sandboxReplySchema.safeParse(event.data);
+				if (parsed.success) {
+					listener(parsed.data);
+				}
+			};
+			window.addEventListener("message", receive);
+			return () => window.removeEventListener("message", receive);
+		},
+	};
+}
 /** Trust 管理画面の受信データも共有スキーマで検証する。 */
 export function createTrustBridge(): TrustBridge {
 	api ??= acquireVsCodeApi();

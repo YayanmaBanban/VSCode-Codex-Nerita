@@ -16,6 +16,30 @@ export function toolApprovalPresentation(
 	const fields: PermissionField[] = [];
 	const details: PermissionField[] = [];
 	executionFields(call, fields, details);
+	if (call.compatibility) {
+		fields.push(
+			field(
+				"logical-tool",
+				"論理ツール",
+				call.compatibility.permission.tool,
+			),
+			field(
+				"command-class",
+				"コマンドクラス",
+				call.compatibility.permission.commandClass,
+			),
+			field(
+				"compatibility",
+				"ホスト実行が必要な理由",
+				call.compatibility.reason,
+			),
+			field(
+				"host-route",
+				"実行経路",
+				"ホスト（Sandbox 外）。ファイルと通信は OS ユーザーの権限で実行されます。",
+			),
+		);
+	}
 	// コマンド以外の入力も省略せず、ファイル本文などは常時表示する。
 	const params = Object.fromEntries(
 		Object.entries(call.params).filter(
@@ -38,6 +62,9 @@ export function toolApprovalPresentation(
 		...(command !== undefined && { command }),
 		fields,
 		details,
+		...(call.compatibility
+			? { commandPermission: call.compatibility.permission }
+			: {}),
 	};
 }
 

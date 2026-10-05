@@ -147,6 +147,10 @@
 		},
 		"commands": [
 			{
+				"command": "nerita.pi.sandboxSettings",
+				"title": "Nerita: Sandbox 設定を開く"
+			},
+			{
 				"command": "nerita.pi.checkMxcSandbox",
 				"title": "Nerita: Microsoft MXC Sandbox の起動を確認",
 				"enablement": "isWindows && isWorkspaceTrusted"

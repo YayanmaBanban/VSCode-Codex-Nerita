@@ -23,6 +23,7 @@ import { createPiAuthService } from "./pi/PiAuthService";
 import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
 
 import { PiSessionController } from "./pi/PiSessionController";
+import { sandboxManagement } from "../runtime/SandboxPanel";
 
 /** Codex の接続先に VS Code 標準のワークスペース条件を適用する。 */
 function workspaceDirectory(): string {
@@ -77,7 +78,10 @@ function createPiFactory(
 	context: vscode.ExtensionContext,
 	trustStore: WorkspaceTrustStore | undefined,
 ): PiFactory {
+	const sandbox = sandboxManagement(context);
+	const commandPermissions = sandbox.commands;
 	return async (signal, authorize, resume) => {
+		await commandPermissions.clearSession();
 		const folders = vscode.workspace.workspaceFolders;
 		let folder = folders?.[0];
 		if (folders && folders.length > 1) {
@@ -96,6 +100,8 @@ function createPiFactory(
 		const config = modelConfig(cwd);
 		const preferredModel = storedPiModel(await config.read("pi"));
 		const session = await createPiRuntime({
+			commandPermissions,
+			sandboxManagement: sandbox,
 			extensionPath: context.extensionUri.fsPath,
 			cwd,
 			workspaceRoots: (vscode.workspace.workspaceFolders ?? []).map(

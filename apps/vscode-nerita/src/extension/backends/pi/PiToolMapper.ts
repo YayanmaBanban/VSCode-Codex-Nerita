@@ -226,6 +226,7 @@ function toolKind(toolName: string): NonNullable<ToolSummary["kind"]> {
 	if (
 		toolName === "powershell" ||
 		toolName === "pwsh" ||
+		toolName === "pnpm" ||
 		toolName === "bash"
 	) {
 		return "execute";
