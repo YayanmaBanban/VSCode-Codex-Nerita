@@ -252,25 +252,35 @@ function readRange(
 	limit: number,
 ) {
 	const offset = Math.min(requestedOffset, size);
-	const bytes = Buffer.alloc(Math.min(limit + 4, size - offset));
-	const count = readSync(fd, bytes, 0, bytes.length, offset);
-	let start = 0;
-	while (start < count && continuation(bytes[start]!)) {
-		start++;
+	const base = Math.max(0, offset - 3);
+	const bytes = Buffer.alloc(
+		Math.min(offset - base + limit + 4, size - base),
+	);
+	const count = readSync(fd, bytes, 0, bytes.length, base);
+	let start = offset - base;
+	const decoder = new TextDecoder("utf-8", { fatal: true });
+	if (start < count && continuation(bytes[start]!)) {
+		let lead = start;
+		while (lead > 0 && continuation(bytes[lead]!)) {
+			lead--;
+		}
+		while (start < count && continuation(bytes[start]!)) {
+			start++;
+		}
+		// 孤立した継続バイトは除外せず、文字全体の検証で拒否する。
+		decoder.decode(bytes.subarray(lead, start));
 	}
-	let end = Math.min(count, limit);
-	if (offset + end < size) {
+	let end = Math.min(count, offset - base + limit);
+	if (base + end < size) {
 		while (end > start && continuation(bytes[end]!)) {
 			end--;
 		}
 	}
 	return {
-		text: new TextDecoder("utf-8", { fatal: true }).decode(
-			bytes.subarray(start, end),
-		),
-		offset: offset + start,
-		nextOffset: offset + end,
-		eof: offset + end >= size,
+		text: decoder.decode(bytes.subarray(start, end)),
+		offset: base + start,
+		nextOffset: base + end,
+		eof: base + end >= size,
 	};
 }
 

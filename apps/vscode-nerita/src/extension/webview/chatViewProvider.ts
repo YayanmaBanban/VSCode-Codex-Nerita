@@ -293,6 +293,16 @@ export class ChatViewProvider
 			await this.initializeView(webview);
 			return;
 		}
+		if (this.backendPending && value.type !== "prompt/cancel") {
+			if ("requestId" in value) {
+				await webview.postMessage({
+					type: "request/failed",
+					requestId: value.requestId,
+					error: "バックエンドの切替が終わってから操作してください。",
+				} satisfies HostMessage);
+			}
+			return;
+		}
 		await this.session.receive(value);
 	}
 

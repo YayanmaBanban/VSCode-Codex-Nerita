@@ -3,7 +3,7 @@ import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import type { PiEvent } from "./PiRuntime";
-import { piResultDisplay } from "./results/PiResultDisplay";
+import { piResultDisplay, piResultUnknown } from "./results/PiResultDisplay";
 import { registerPiOutput } from "./results/PiToolOutput";
 
 /** SDK の出力を、共通のテキスト表示形式へ揃える。 */
@@ -242,6 +242,9 @@ function toolStatus(
 	run: ChatState["run"],
 ): ToolSummary["status"] {
 	if (event.type === "tool_execution_end") {
+		if (piResultUnknown(event.result)) {
+			return "unknown";
+		}
 		if (event.isError) {
 			if (run === "cancelling") {
 				return "cancelled";

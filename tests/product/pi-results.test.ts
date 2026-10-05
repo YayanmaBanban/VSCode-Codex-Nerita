@@ -80,7 +80,7 @@ async function verifyNestedOutputArchive(t: TestContext) {
 	const child = state.tools.find((tool) => tool.parentToolCallId);
 	assert.ok(child);
 	const output = await readOutput(controller, child);
-	assert.match(output, /末尾$/u);
+	assert.match(output, /末尾$/u, "子の大きな結果を JSON の途中で切断しない");
 	assert.ok(!output.includes("sk-rebuild-secret"));
 	const folder = join(f.cwd, ".pi", "sessions", state.sessionId!, "outputs");
 	const files = await readdir(folder);
@@ -226,7 +226,10 @@ async function verifyPiResultHistory(
 	const result = state.tools.find((tool) => tool.title === "large_result");
 	assert.ok(result);
 	assert.ok(result.output);
-	assert.ok(result.output.truncated);
+	assert.ok(
+		result.output.truncated,
+		"大きなツール結果の本文を切断せず範囲取得へ渡す",
+	);
 	assert.ok(result.output.preview.length < 2200);
 	assert.match(result.output.preview, /末尾/u);
 	const liveOutput = await readOutput(controller, result);

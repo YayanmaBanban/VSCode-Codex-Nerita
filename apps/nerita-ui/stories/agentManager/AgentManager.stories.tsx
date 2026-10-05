@@ -311,7 +311,7 @@ export const NewCodex: Story = {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("textbox", { name: "名前" });
 		await userEvent.click(
-			canvas.getByRole("button", { name: "新しい Agent" }),
+			canvas.getByRole("button", { name: "新しいエージェントを追加" }),
 		);
 		await userEvent.type(
 			canvas.getByRole("textbox", { name: "名前" }),
@@ -363,7 +363,9 @@ export const UnsavedChanges: Story = {
 		await userEvent.click(
 			canvas.getByRole("button", { name: "ハンドオフ" }),
 		);
-		await expect(canvas.getByRole("alertdialog")).toBeInTheDocument();
+		await expect(
+			canvas.getByRole("region", { name: "未保存の変更" }),
+		).toBeInTheDocument();
 		await userEvent.click(
 			canvas.getByRole("button", { name: "編集を続ける" }),
 		);

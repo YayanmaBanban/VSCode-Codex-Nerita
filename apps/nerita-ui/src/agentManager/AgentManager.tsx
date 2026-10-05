@@ -1,14 +1,23 @@
 // バックエンドに応じて管理画面を選び、タブ・選択・未保存入力を管理する。
 import { useEffect, useRef, useState } from "react";
-import { Plus, RotateCw } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import { RotateCw, UserPlus } from "lucide-react";
+import { cn } from "cnfast";
 import type { ManagerBridge } from "@nerita/shared/agentManager/messages";
 import { useAgentManager, type ManagerSave } from "./useAgentManager";
 import { HandoffSettings } from "./HandoffSettings";
 import { CodexAgentManager } from "../codex/CodexAgentManager";
 import { PiAgentManager } from "../pi/PiAgentManager";
 import { SettingsTooltip } from "../chat/SettingsTooltip";
+import { ActionNotice } from "../ui/ActionNotice";
 import { buttonStyle } from "./Fields";
 import "../chat/chat.css";
+
+const headerActionStyle = cn(
+	"inline-flex size-8 items-center justify-center rounded-md border-0 bg-transparent p-0",
+	"focus-visible:outline-2 focus-visible:outline-focus enabled:hover:bg-settings-hover",
+	"disabled:cursor-not-allowed disabled:opacity-50",
+);
 
 /** 保存失敗時は入力を維持し、破棄する移動だけを画面内で確認する。 */
 export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
@@ -36,16 +45,15 @@ export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
 				setSelected={setSelected}
 				selected={selected}
 			/>
-			{pending && (
-				<DiscardChanges
-					onCancel={() => setPending(null)}
-					onDiscard={() => {
-						setDirty(false);
-						pending();
-						setPending(null);
-					}}
-				/>
-			)}
+			<DiscardChanges
+				visible={!!pending}
+				onCancel={() => setPending(null)}
+				onDiscard={() => {
+					setDirty(false);
+					pending?.();
+					setPending(null);
+				}}
+			/>
 			{editor.error && (
 				<p role="alert" className="m-0 text-sm break-words">
 					{editor.error}
@@ -194,7 +202,7 @@ function ManagerHeader({
 				<div className="flex items-center gap-2">
 					<SettingsTooltip content="再読み込み">
 						<button
-							className={buttonStyle}
+							className={headerActionStyle}
 							aria-label="再読み込み"
 							disabled={editor.busy}
 							onClick={() => navigate(editor.reload)}
@@ -203,18 +211,22 @@ function ManagerHeader({
 						</button>
 					</SettingsTooltip>
 					{tab === "agents" && (
-						<button
-							className={`${buttonStyle} inline-flex items-center gap-2`}
-							disabled={
-								editor.busy ||
-								!editor.state ||
-								selected === "new"
-							}
-							onClick={() => navigate(() => setSelected("new"))}
-						>
-							<Plus size={16} aria-hidden="true" />
-							新しい Agent
-						</button>
+						<SettingsTooltip content="新しいエージェントを追加">
+							<button
+								className={headerActionStyle}
+								aria-label="新しいエージェントを追加"
+								disabled={
+									editor.busy ||
+									!editor.state ||
+									selected === "new"
+								}
+								onClick={() =>
+									navigate(() => setSelected("new"))
+								}
+							>
+								<UserPlus size={16} aria-hidden="true" />
+							</button>
+						</SettingsTooltip>
 					)}
 				</div>
 			</div>
@@ -245,27 +257,36 @@ function loadedSelection(
 
 /** Webview 内で未保存入力を破棄する操作を確認する。 */
 function DiscardChanges({
+	visible,
 	onCancel,
 	onDiscard,
 }: {
+	visible: boolean;
 	onCancel: () => void;
 	onDiscard: () => void;
 }) {
 	return (
-		<div
-			role="alertdialog"
-			aria-label="未保存の変更"
-			className="grid gap-3 rounded-md border border-input-border p-4"
-		>
-			<p className="m-0 text-sm">未保存の変更を破棄して移動しますか？</p>
-			<div className="flex gap-2">
-				<button className={buttonStyle} onClick={onCancel}>
-					編集を続ける
-				</button>
-				<button className={buttonStyle} onClick={onDiscard}>
-					変更を破棄
-				</button>
-			</div>
-		</div>
+		<AnimatePresence>
+			{visible && (
+				<ActionNotice
+					key="discard-changes"
+					label="未保存の変更"
+					title="未保存の変更"
+					description="未保存の変更を破棄して移動しますか？"
+					actions={[
+						{
+							id: "continue",
+							name: "編集を続ける",
+							onClick: onCancel,
+						},
+						{
+							id: "discard",
+							name: "変更を破棄",
+							onClick: onDiscard,
+						},
+					]}
+				/>
+			)}
+		</AnimatePresence>
 	);
 }

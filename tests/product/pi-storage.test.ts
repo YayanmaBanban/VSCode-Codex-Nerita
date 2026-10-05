@@ -5,6 +5,7 @@ import {
 	writeFile,
 	mkdir,
 	readdir,
+	unlink,
 	rename,
 	access,
 } from "node:fs/promises";
@@ -88,7 +89,11 @@ void test("送信した会話を別接続で復元し、フォーク後の送信
 		requestId: "fork",
 		sessionId: original.sessionId,
 	});
-	assert.notEqual(second.snapshot().sessionId, original.sessionId);
+	assert.notEqual(
+		second.snapshot().sessionId,
+		original.sessionId,
+		"フォークは元と別の履歴 ID を使う",
+	);
 	await send(second, "分岐先だけの質問");
 	const forked = await finished(second);
 	assert.equal(forked.error, null);
@@ -144,10 +149,15 @@ void test("初回送信前の保存先衝突を通知し、元ファイルと下
 			JSON.stringify(event).includes('"type":"prompt/accepted"'),
 		),
 	);
+	await unlink(collision);
+	f.model.replies.push("復旧後の回答");
+	await send(controller, "再送する下書き");
+	assert.equal((await finished(controller)).error, null);
+	assert.equal(f.model.requests.length, 1);
 });
 void test("一覧取得後に履歴が破損しても現在の会話と元ファイルを保持する", async (t) => {
 	const f = await piFixture(t);
-	f.model.replies.push("保存する回答", "現在の回答");
+	f.model.replies.push("保存する回答", "現在の回答", "切替失敗後の回答");
 	const controller = f.controller();
 	await controller.connect();
 	await send(controller, "過去の質問");
@@ -169,4 +179,17 @@ void test("一覧取得後に履歴が破損しても現在の会話と元ファ
 	assert.ok(controller.snapshot().sessionsError);
 	assert.equal(await readFile(saved.path, "utf8"), "broken");
 	assert.equal(f.model.requests.length, 2);
+	await send(controller, "切替失敗後も続行する");
+	const continued = await finished(controller);
+	assert.equal(
+		continued.error,
+		null,
+		"履歴切替に失敗した元会話でも送信を続行できる",
+	);
+	assert.equal(continued.sessionId, current.sessionId);
+	assert.equal(
+		continued.messages.at(-1)?.text,
+		"切替失敗後の回答",
+		"履歴切替に失敗した元会話でも送信を続行できる",
+	);
 });

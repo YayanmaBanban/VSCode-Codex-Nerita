@@ -95,9 +95,11 @@ export const TrustTransition: Story = {
 		);
 		await expect(requests).toHaveLength(1);
 		await expect(requests[0]?.requestId).toMatch(/^[0-9a-f-]{36}$/);
-		await expect(
-			canvas.getByRole("region", { name: "ワークスペースの信頼" }),
-		).toBeVisible();
+		await waitFor(() =>
+			expect(
+				canvas.getByRole("region", { name: "ワークスペースの信頼" }),
+			).toBeVisible(),
+		);
 		bridge.emit({ type: "workspace/trustState", untrusted: false });
 		await waitFor(() =>
 			expect(

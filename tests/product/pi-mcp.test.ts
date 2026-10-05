@@ -14,8 +14,9 @@ import {
 } from "../support/pi";
 
 /** ネットワーク通信を許可する方針と接続設定を準備し、承認への応答は各テストで行う。 */
-async function fixture(t: TestContext) {
+async function fixture(t: TestContext, codemode = false) {
 	const f = await piFixture(t);
+	f.options.codemode = codemode;
 	f.options.parentPolicy = {
 		workspaceRoots: [f.cwd],
 		writableRoots: [f.cwd],
@@ -84,10 +85,14 @@ for (const source of ["structuredContent", "content"] as const) {
 		const tool = state.tools[0]!;
 		assert.equal(tool.status, "completed", JSON.stringify(tool));
 		assert.ok(JSON.stringify(tool).includes("日本語の結果"));
-		assert.deepEqual(tool.resultDisplay, {
-			source,
-			omitted: true,
-		});
+		assert.deepEqual(
+			tool.resultDisplay,
+			{
+				source,
+				omitted: true,
+			},
+			"MCP の表示元と省略情報を維持する",
+		);
 		const saved = await sessionFiles(f.cwd);
 		for (const value of [
 			JSON.stringify(state),
@@ -133,11 +138,73 @@ for (const outcome of ["deny", "error", "lost"]) {
 		assert.equal(state.tools.length, 1);
 		assert.equal(
 			state.tools[0]!.status,
-			"failed",
+			outcome === "lost" ? "unknown" : "failed",
 			JSON.stringify(state.tools),
 		);
+		const id = state.sessionId!;
+		if (outcome === "lost") {
+			await f.controller.receive({
+				type: "session/list",
+				requestId: "list",
+			});
+			await f.controller.receive({
+				type: "session/fork",
+				requestId: "fork",
+				sessionId: id,
+			});
+			assert.notEqual(f.controller.snapshot().sessionId, id);
+			assert.equal(f.controller.snapshot().tools[0]!.status, "unknown");
+		}
 		await f.controller.dispose();
+		const restored = await restoredState(f, id);
+		assert.equal(
+			restored.tools[0]!.status,
+			outcome === "lost" ? "unknown" : "failed",
+		);
 		assert.equal(f.mcp.calls.length, outcome === "deny" ? 0 : 1);
 		assert.equal(f.model.requests.length, 2);
 	});
 }
+
+void test("コード実行内の MCP 応答喪失を、子の保存・復元・フォークでも結果不明とする", async (t) => {
+	const f = await fixture(t, true);
+	f.mcp.state.outcome = "lost";
+	f.model.replies.push(
+		{
+			name: "codemode",
+			arguments: { code: "text(await tools.mcp__fixture__change({}));" },
+		},
+		"確認が必要",
+	);
+	await send(f.controller, "コードから遠隔更新");
+	await permission(f.controller, "accept");
+	await permission(f.controller, "accept");
+	await permission(f.controller, "accept");
+	const state = await finished(f.controller);
+	const child = state.tools.find((tool) => tool.parentToolCallId);
+	assert.equal(child?.status, "unknown", JSON.stringify(state.tools));
+	await f.controller.receive({
+		type: "session/list",
+		requestId: "list-nested",
+	});
+	await f.controller.receive({
+		type: "session/fork",
+		requestId: "fork-nested",
+		sessionId: state.sessionId!,
+	});
+	assert.notEqual(f.controller.snapshot().sessionId, state.sessionId);
+	assert.equal(
+		f.controller.snapshot().tools.find((tool) => tool.id === child.id)
+			?.status,
+		"unknown",
+	);
+	await f.controller.dispose();
+	const restored = await restoredState(f, state.sessionId!);
+	assert.equal(
+		restored.tools.find((tool) => tool.id === child.id)?.status,
+		"unknown",
+		JSON.stringify(restored.tools),
+	);
+	assert.equal(f.mcp.calls.length, 1);
+	assert.equal(f.model.requests.length, 2);
+});

@@ -5,6 +5,7 @@ import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { SidebarLocation } from "@nerita/shared/sidebar";
 import { cn } from "cnfast";
+import { AnimatePresence } from "motion/react";
 import { List, Maximize2, MessageSquareText, Minimize2 } from "lucide-react";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { PersonalityOptions } from "../personality/PersonalityOptions";
@@ -60,34 +61,37 @@ export function ConnectionHeader(props: ConnectionHeaderProps) {
 					{requestError || state.error}
 				</div>
 			)}
-			{(state.connection === "auth-required" ||
-				state.connection === "authenticating") && (
-				<AuthenticationNotice
-					key={state.connection}
-					state={state}
-					send={send}
-				/>
-			)}
-			{props.backend === "pi" && props.untrusted && (
-				<ActionNotice
-					label="ワークスペースの信頼"
-					title="ワークスペースが未信頼"
-					description={
-						"セッションは、グローバル領域（.pi\\agent\\sessions）に保存されます"
-					}
-					actions={[
-						{
-							id: "trust",
-							name: "信頼する",
-							onClick: () =>
-								send({
-									type: "workspace/manageTrust",
-									requestId: crypto.randomUUID(),
-								}),
-						},
-					]}
-				/>
-			)}
+			<AnimatePresence>
+				{(state.connection === "auth-required" ||
+					state.connection === "authenticating") && (
+					<AuthenticationNotice
+						key="authentication"
+						state={state}
+						send={send}
+					/>
+				)}
+				{props.backend === "pi" && props.untrusted && (
+					<ActionNotice
+						key="trust"
+						label="ワークスペースの信頼"
+						title="ワークスペースが未信頼"
+						description={
+							"セッションは、グローバル領域（.pi\\agent\\sessions）に保存されます"
+						}
+						actions={[
+							{
+								id: "trust",
+								name: "信頼する",
+								onClick: () =>
+									send({
+										type: "workspace/manageTrust",
+										requestId: crypto.randomUUID(),
+									}),
+							},
+						]}
+					/>
+				)}
+			</AnimatePresence>
 		</>
 	);
 }

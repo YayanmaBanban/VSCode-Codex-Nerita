@@ -1,105 +1,9 @@
-// 認証専用エディターを外部ログインなしで操作確認する。
-
-import { type PiAuthItem, type PiAuthState } from "@nerita/shared/piAuth";
-
-import { useState } from "react";
+// Host の固定 DTO と送信記録を使い、認証の完了をストーリー内では導出しない。
+import type { PiAuthState } from "@nerita/shared/piAuth";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-
+import { fn, expect, userEvent, within } from "storybook/test";
 import { PiAuthEditor } from "../../src/pi/PiAuthEditor";
 
-/** Host 同様に認証先ごとの通知を保持する。 */
-function feedback(
-	state: PiAuthState,
-	methodId: string,
-	notice: string,
-	error: string | null,
-) {
-	const owner = state.items.find((item) =>
-		item.methods.some((method) => method.id === methodId),
-	)!.id;
-	return { ...state.feedback, [owner]: { notice, error } };
-}
-
-/** 認証入力・OAuth・取消後の表示を再現する。 */
-function EditorStory() {
-	const [state, setState] = useState<PiAuthState>(
-		structuredClone(authInitialState),
-	);
-	return (
-		<PiAuthEditor
-			state={state}
-			send={(request) => {
-				if (request.type === "start") {
-					setState((current) => ({
-						...current,
-						active: request.id,
-						feedback: feedback(
-							current,
-							request.id,
-							request.id.endsWith("oauth")
-								? "ブラウザで認証を完了してください。"
-								: "",
-							null,
-						),
-						prompt: {
-							id: request.id,
-							message: request.id.endsWith("oauth")
-								? "確認コードを入力してください"
-								: "APIキーを入力してください",
-							secret: true,
-						},
-						notice: request.id.endsWith("oauth")
-							? "ブラウザで認証を完了してください。"
-							: "",
-						error: null,
-					}));
-				}
-				if (request.type === "cancel") {
-					setState((current) => ({
-						...current,
-						active: null,
-						prompt: null,
-						notice: "",
-						error: "認証をキャンセルしました。",
-						feedback: feedback(
-							current,
-							current.active!,
-							"",
-							"認証をキャンセルしました。",
-						),
-					}));
-				}
-				if (request.type === "answer") {
-					setState((current) => ({
-						...current,
-						active: null,
-						prompt: null,
-						notice: "認証情報を更新しました。",
-						feedback: feedback(
-							current,
-							request.id,
-							"認証情報を更新しました。",
-							null,
-						),
-						error: null,
-						items: configuredAuthItems(current, request),
-					}));
-				}
-			}}
-		/>
-	);
-}
-const meta = {
-	title: "Chat/PiAuthEditor",
-	component: EditorStory,
-	parameters: { layout: "fullscreen" },
-} satisfies Meta<typeof EditorStory>;
-export default meta;
-/** 一覧表示から認証処理へ進む開始状態。 */
-type Story = StoryObj<typeof meta>;
-export const Providers: Story = {};
-
-/** プロバイダー一覧をストーリーごとの初期状態へ複製する。 */
 const authInitialState: PiAuthState = {
 	items: [
 		{
@@ -133,14 +37,86 @@ const authInitialState: PiAuthState = {
 	error: null,
 };
 
-/** 認証操作に対応するプロバイダーだけを設定済みにする。 */
-function configuredAuthItems(
-	current: PiAuthState,
-	request: { type: "answer"; id: string; value: string },
-): PiAuthItem[] {
-	return current.items.map((item) =>
-		item.methods.some((method) => method.id === request.id)
-			? { ...item, configured: true }
-			: item,
-	);
-}
+const meta = {
+	title: "Chat/PiAuthEditor",
+	component: PiAuthEditor,
+	parameters: { layout: "fullscreen" },
+	args: { state: authInitialState, send: fn() },
+} satisfies Meta<typeof PiAuthEditor>;
+export default meta;
+/** 通信結果ごとに明示的な表示状態を指定する。 */
+type Story = StoryObj<typeof meta>;
+export const Providers: Story = {};
+export const InputPending: Story = {
+	args: {
+		state: {
+			...authInitialState,
+			active: "openai-key",
+			prompt: {
+				id: "openai-key",
+				message: "APIキーを入力してください",
+				secret: true,
+			},
+		},
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		await userEvent.type(
+			canvas.getByPlaceholderText("APIキーを入力してください"),
+			"fixture-key",
+		);
+		await userEvent.click(canvas.getByRole("button", { name: "送信" }));
+		await expect(args.send).toHaveBeenLastCalledWith({
+			type: "answer",
+			id: "openai-key",
+			value: "fixture-key",
+		});
+		await expect(
+			canvas.getByPlaceholderText("APIキーを入力してください"),
+		).toHaveValue("");
+	},
+};
+export const OAuthPending: Story = {
+	args: {
+		state: {
+			...authInitialState,
+			active: "openai-oauth",
+			prompt: {
+				id: "openai-oauth",
+				message: "確認コードを入力してください",
+				secret: true,
+			},
+			feedback: {
+				openai: {
+					notice: "ブラウザで認証を完了してください。",
+					error: null,
+				},
+			},
+		},
+	},
+};
+export const Configured: Story = {
+	args: {
+		state: {
+			...authInitialState,
+			items: [
+				authInitialState.items[0]!,
+				{ ...authInitialState.items[1]!, configured: true },
+				authInitialState.items[2]!,
+			],
+			feedback: {
+				openai: { notice: "認証情報を更新しました。", error: null },
+			},
+		},
+	},
+};
+export const Cancelled: Story = {
+	args: {
+		state: {
+			...authInitialState,
+			feedback: {
+				openai: { notice: "", error: "認証をキャンセルしました。" },
+			},
+		},
+	},
+};

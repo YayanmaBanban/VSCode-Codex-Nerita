@@ -205,41 +205,46 @@ export class WorkspaceTrustStore {
 			this.pendingRestrictions++;
 			this.invalidate();
 		}
-		const action = this.queue.then(async () => {
-			const canonical = await canonicalPath(root, process.cwd());
-			const identity = await validateTrustRoot(
-				canonical,
-				trusted,
-				this.records.get(trustKey(canonical)),
-				expected,
-			);
-			const records = new Map(this.records);
-			records.set(trustKey(canonical), {
-				root: canonical,
-				trust: trusted ? "trusted" : "untrusted",
-				origin: recordOrigin(canonical, records, origin),
-				updatedAt: Date.now(),
-				identity,
-			});
-			try {
-				await this.storage.write({
-					version: 1,
-					records: [...records.values()],
+		const action = this.queue
+			.then(async () => {
+				const canonical = await canonicalPath(root, process.cwd());
+				const identity = await validateTrustRoot(
+					canonical,
+					trusted,
+					this.records.get(trustKey(canonical)),
+					expected,
+				);
+				const records = new Map(this.records);
+				records.set(trustKey(canonical), {
+					root: canonical,
+					trust: trusted ? "trusted" : "untrusted",
+					origin: recordOrigin(canonical, records, origin),
+					updatedAt: Date.now(),
+					identity,
 				});
-			} catch (error) {
-				this.failed = true;
+				try {
+					await this.storage.write({
+						version: 1,
+						records: [...records.values()],
+					});
+				} catch (error) {
+					this.failed = true;
+					this.invalidate();
+					throw error;
+				}
+				this.records = records;
+				this.failed = false;
+				const event = trusted ? "user-trusted" : "user-revoked";
+				this.audit(registrationEvent(origin, event), canonical);
 				this.invalidate();
-				throw error;
-			}
-			this.records = records;
-			this.failed = false;
-			if (!trusted) {
-				this.pendingRestrictions--;
-			}
-			const event = trusted ? "user-trusted" : "user-revoked";
-			this.audit(registrationEvent(origin, event), canonical);
-			this.invalidate();
-		});
+			})
+			.finally(() => {
+				// 保存失敗による拒否は `failed` で維持し、保存待ちの制限カウンターだけを減らす。
+				if (!trusted) {
+					this.pendingRestrictions--;
+					this.invalidate();
+				}
+			});
 		this.queue = action.catch(() => {});
 		return action;
 	}

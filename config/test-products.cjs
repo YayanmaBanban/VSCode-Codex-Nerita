@@ -2,6 +2,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
+const { pathToFileURL } = require("node:url");
 const { spawnSync } = require("node:child_process");
 const { build } = require("esbuild");
 const { bundlePi } = require("./package-pi.cjs");
@@ -44,7 +45,7 @@ async function execute(root, files, environment, regression) {
 		[
 			"--test",
 			"--test-timeout=90000",
-			`--test-reporter=${regression ? "tap" : "spec"}`,
+			`--test-reporter=${regression ? pathToFileURL(path.join(repoRoot, "config/product-regression-reporter.cjs")).href : "spec"}`,
 			...files.map((name) =>
 				path.join(output, name.replace(/\.ts$/, ".cjs")),
 			),
@@ -73,11 +74,21 @@ async function execute(root, files, environment, regression) {
 
 /** 読込み失敗や後片付け失敗を、製品回帰の検出に数えない。 */
 function verifyRegression(result, regression) {
+	const failures = result.stdout
+		.trim()
+		.split(/\r?\n/)
+		.filter(Boolean)
+		.map((line) => JSON.parse(line));
+	const expected = regressions[regression].expected;
 	if (
 		result.status === 0 ||
-		!result.stdout.includes("ERR_ASSERTION") ||
-		result.stdout.includes("hookFailed") ||
-		result.stdout.includes("MODULE_NOT_FOUND")
+		result.status === null ||
+		(result.signal !== null && result.signal !== undefined) ||
+		failures.length === 0 ||
+		result.stderr.trim() ||
+		failures.some(
+			(failure) => !expectedRegressionFailure(failure, expected),
+		)
 	) {
 		console.error(result.stdout, result.stderr);
 		throw new Error(
@@ -85,6 +96,21 @@ function verifyRegression(result, regression) {
 		);
 	}
 	console.log(`回帰検出: ${regression}（通常版成功 → アサーション失敗）`);
+}
+
+/** 同じテストの準備失敗も、狙った仕様のアサーションとは区別する。 */
+function expectedRegressionFailure(failure, expected) {
+	return (
+		failure.code === "ERR_ASSERTION" &&
+		failure.type === "testCodeFailure" &&
+		expected.some(
+			(entry) =>
+				entry.test === failure.name &&
+				entry.messages.some((message) =>
+					failure.message.includes(message),
+				),
+		)
+	);
 }
 
 /** 選んだ領域の回帰だけを、個別のプロセスで確認する。 */
@@ -159,6 +185,7 @@ async function main() {
 			CODEX_HOME: path.join(home, ".codex"),
 			NERITA_TEST_EXTENSION: extensionPath,
 			NERITA_TEST_ROOT: root,
+			NERITA_TEST_REPO_ROOT: repoRoot,
 			NERITA_EXTERNAL_AGENT_DIR: externalAgentDir,
 		};
 		if (!(await execute(root, files, environment))) {

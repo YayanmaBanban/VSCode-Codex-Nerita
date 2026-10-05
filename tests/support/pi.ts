@@ -11,6 +11,7 @@ import { PiSessionController } from "../../apps/vscode-nerita/src/extension/back
 import {
 	createPiRuntime,
 	type PiRuntimeOptions,
+	type PiSession,
 } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 import type { PiSessionStorage } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionStore";
@@ -63,7 +64,9 @@ export async function piFixture(t: TestContext) {
 		storage: (next: PiSessionStorage) => {
 			storage = next;
 		},
-		controller: (afterCreate?: () => Promise<void>) => {
+		controller: (
+			afterCreate?: (session: PiSession) => Promise<void> | void,
+		) => {
 			const controller = new PiSessionController(
 				async (signal, authorize, resume) => {
 					const session = await createPiRuntime({
@@ -84,7 +87,7 @@ export async function piFixture(t: TestContext) {
 						authorize,
 						...(resume ? { resume } : {}),
 					});
-					await afterCreate?.();
+					await afterCreate?.(session);
 					return { cwd, session };
 				},
 			);

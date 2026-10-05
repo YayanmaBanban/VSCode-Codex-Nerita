@@ -51,6 +51,9 @@ function maskInlineCode(text, preserveRealTarget) {
  */
 export function maskProtectedText(text, { preserveRealTarget = false } = {}) {
 	let masked = maskInlineCode(text, preserveRealTarget);
+	// リンクの参照定義全体と非表示の参照識別子を保護し、表示ラベルは検査対象に残す。
+	masked = maskWithSpaces(masked, /^ {0,3}\[[^\]\r\n]+\]:[^\r\n]*(?:\r?\n[ \t]+(?:"[^"\r\n]*"|'[^'\r\n]*'|\([^)\r\n]*\))[ \t]*)?/gm);
+	masked = masked.replace(/(\[[^\]\r\n]+\])\[([^\]\r\n]*)\]/g, (value, label) => label + " ".repeat(value.length - label.length));
 
 	masked = maskWithSpaces(masked, /https?:\/\/[^\s<>)\]}]+/gi);
 	masked = maskWithSpaces(masked, /\]\([^)]+\)/g);

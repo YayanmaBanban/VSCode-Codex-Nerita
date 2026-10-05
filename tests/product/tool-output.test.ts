@@ -101,6 +101,49 @@ void test("大量の追記後も状態を小さく保ち、取得した出力に
 	assert.equal(result.eof, true);
 });
 
+void test("範囲取得は不正 UTF-8 を拒否し、有効な文字の途中だけ次の境界へ進める", async (t) => {
+	const store = new ToolOutputStore();
+	t.after(() => store.dispose());
+	const path = join(process.env.NERITA_TEST_ROOT!, "invalid-output.log");
+	const tool: ToolSummary = {
+		id: "invalid",
+		title: "output",
+		status: "completed",
+		paths: [],
+	};
+	writeFileSync(path, Buffer.from([0x80, 0x61]));
+	setToolOutputSource(tool, { text: "preview", path });
+	const output = store.project(tool).output!;
+	const request = {
+		type: "tool/output" as const,
+		requestId: "read",
+		outputRef: output.outputRef!,
+		offset: 0,
+		limit: 64,
+	};
+	assert.ok(
+		(await store.read(request)).error,
+		"孤立した先頭バイトを除外しない",
+	);
+	writeFileSync(path, Buffer.from([0x61, 0x80, 0x62]));
+	assert.ok(
+		(await store.read({ ...request, offset: 1 })).error,
+		"ASCII の後の孤立した継続バイトを除外しない",
+	);
+	writeFileSync(path, "🐈日本語", "utf8");
+	for (const offset of [1, 2, 3]) {
+		const result = await store.read({ ...request, offset });
+		assert.equal(result.error, undefined);
+		assert.equal(result.offset, 4);
+		assert.equal(result.text, "日本語");
+	}
+	writeFileSync(path, Buffer.from([0xf0, 0x80, 0x80, 0x80, 0x61]));
+	assert.ok(
+		(await store.read({ ...request, offset: 2 })).error,
+		"不正な文字全体を検証する",
+	);
+});
+
 void test("全文がある出力は省略文字数を表示し、絵文字を一文字として数える", (t) => {
 	const store = new ToolOutputStore();
 	t.after(() => store.dispose());

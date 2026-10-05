@@ -66,6 +66,7 @@ export function extractDocumentAuditItems(source, filePath) {
 	let startLine = null;
 	let inCodeFence = false;
 	let fenceMarker = null;
+	let fenceLength = 0;
 
 	function flush(endLine) {
 		if (buffer.length === 0 || startLine === null) {
@@ -91,21 +92,23 @@ export function extractDocumentAuditItems(source, filePath) {
 	for (let index = 0; index < lines.length; index += 1) {
 		const line = lines[index];
 		const trimmed = line.trim();
-		const fenceMatch = markdown ? trimmed.match(/^(```+|~~~+)/) : null;
+		const fenceMatch = markdown ? line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/) : null;
 
 		if (fenceMatch) {
 			const marker = fenceMatch[1][0];
 
-			if (!inCodeFence) {
+			if (!inCodeFence && validFenceOpening(marker, fenceMatch[2])) {
 				flush(index);
 				inCodeFence = true;
 				fenceMarker = marker;
-			} else if (marker === fenceMarker) {
+				fenceLength = fenceMatch[1].length;
+				continue;
+			} else if (closesFence(fenceMatch, fenceMarker, fenceLength)) {
 				inCodeFence = false;
 				fenceMarker = null;
+				fenceLength = 0;
+				continue;
 			}
-
-			continue;
 		}
 
 		if (inCodeFence) {
@@ -127,6 +130,16 @@ export function extractDocumentAuditItems(source, filePath) {
 	flush(lines.length);
 
 	return items;
+}
+
+/** バッククォートの開始フェンスでは、後続の情報文字列にバッククォートを含められない。 */
+function validFenceOpening(marker, info) {
+	return marker !== "`" || !info.includes("`");
+}
+
+/** 開始フェンスと同じ記号が同数以上続き、後ろに空白以外がないことを確認する。 */
+function closesFence(match, marker, length) {
+	return match[1][0] === marker && match[1].length >= length && !match[2].trim();
 }
 
 function cachePath(root, type, scope, extension) {

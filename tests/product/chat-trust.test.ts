@@ -61,6 +61,34 @@ void test("信頼通知は真偽値だけを受け付け、管理操作には要
 	);
 });
 
+void test("信頼取消しの保存失敗中は全ルートを拒否し、明示的な再保存後に復旧する", async () => {
+	const root = join(process.env.NERITA_TEST_ROOT!, "trust-recovery");
+	const other = join(process.env.NERITA_TEST_ROOT!, "trust-recovery-other");
+	await mkdir(root);
+	await mkdir(other);
+	let fail = false;
+	const store = new WorkspaceTrustStore({
+		read: () => undefined,
+		write: () =>
+			fail
+				? Promise.reject(new Error("storage unavailable"))
+				: Promise.resolve(),
+	});
+	await store.setUserTrust(root, true);
+	await store.setUserTrust(other, true);
+	fail = true;
+	await assert.rejects(
+		store.setUserTrust(root, false),
+		/storage unavailable/,
+	);
+	assert.equal(await store.trusted(root), false);
+	assert.equal(await store.trusted(other), false);
+	fail = false;
+	await store.setUserTrust(root, true);
+	assert.equal(await store.trusted(root), true);
+	assert.equal(await store.trusted(other), true);
+});
+
 /** VS Code の設定・イベントだけを代替し、信頼の照合は実装を通す。 */
 function prepareHost(root: string, store: WorkspaceTrustStore) {
 	let backend = "pi";

@@ -2,6 +2,7 @@
 import type { SessionMessageEntry } from "@earendil-works/pi-coding-agent";
 import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { mapPiTool } from "./PiToolMapper";
+import { MCP_RESULT_UNKNOWN_TEXT } from "./results/PiResultDisplay";
 
 const nestedStatuses = {
 	ok: "completed",
@@ -47,7 +48,9 @@ export function restorePiNestedTools(
 			tool.id === call.id && tool.runId === state.runId
 				? {
 						...tool,
-						status: nestedStatuses[call.status],
+						status: call.error?.includes(MCP_RESULT_UNKNOWN_TEXT)
+							? "unknown"
+							: nestedStatuses[call.status],
 						summaryOnly: true,
 						...(call.argumentsBytes === undefined
 							? {}

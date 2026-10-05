@@ -45,10 +45,8 @@ export function approvedMcpTool(
 				AbortSignal.timeout(options.timeoutMs),
 				...(signal ? [signal] : []),
 			]);
-			return abortableFeatureApproval(
-				approved.execute(id, params, combined, update, context),
-				combined,
-			);
+			// 承認待ちと要求自体はそれぞれ取り消せる。実行全体を中止と競合させると、送信後に返る結果不明の状態を受け取れない。
+			return approved.execute(id, params, combined, update, context);
 		},
 	};
 }

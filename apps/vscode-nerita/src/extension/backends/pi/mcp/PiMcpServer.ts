@@ -7,6 +7,7 @@ import type { PiMcpEntry } from "./PiMcpConfig";
 import type { PiMcpSdk, PiMcpConnection } from "./PiMcpSdk";
 import { PiMcpGate, resolvedMcpHeaders, mcpHttpUrl } from "./PiMcpGate";
 import { approvedMcpTool, safeMcpResult, safeMcpResource } from "./PiMcpTools";
+import { MCP_RESULT_UNKNOWN_TEXT } from "../results/PiResultDisplay";
 import type { PiAuthorize } from "../PiApprovedTools";
 import { piToolPermitted, type PiToolFeatures } from "../PiToolFeatures";
 import { piFeatureSecrets } from "../PiFeatureSecrets";
@@ -178,20 +179,23 @@ export class PiMcpServer {
 				if (!signal) {
 					throw new Error("MCP 実行の取消しが接続されていません。");
 				}
-				return this.run(name, signal, async () => {
-					await this.connection.getClient();
-					const current = this.connection.tools.find(
-						(item) => item.name === tool.name,
-					);
-					if (JSON.stringify(current) !== JSON.stringify(tool)) {
-						throw new Error("MCP のツール定義が変更されました。");
-					}
-					return this.connection.callTool(
+				await abortableFeatureApproval(
+					this.connection.getClient(),
+					signal,
+				);
+				const current = this.connection.tools.find(
+					(item) => item.name === tool.name,
+				);
+				if (JSON.stringify(current) !== JSON.stringify(tool)) {
+					throw new Error("MCP のツール定義が変更されました。");
+				}
+				return this.run(name, signal, () =>
+					this.connection.callTool(
 						tool.name,
 						args as Record<string, unknown>,
 						{ signal, timeoutMs: this.timeoutMs },
-					);
-				});
+					),
+				);
 			},
 		};
 	}
@@ -290,9 +294,18 @@ export class PiMcpServer {
 				? safeMcpResource(result, secrets)
 				: safeMcpResult(result, secrets);
 		} catch {
-			throw new Error(
-				"MCP 操作を完了できませんでした。接続・認証・取消し状態を確認してください。",
+			// 要求開始後の切断・期限・取消しでは、遠隔側の副作用を取り消せたとは判断できない。
+			const result = safeMcpResult(
+				{
+					content: [{ type: "text", text: MCP_RESULT_UNKNOWN_TEXT }],
+					isError: true,
+				},
+				[],
 			);
+			return {
+				...result,
+				details: { ...result.details, outcome: "unknown" },
+			};
 		} finally {
 			signal.removeEventListener("abort", cancel);
 			this.operation = this.lifetime;

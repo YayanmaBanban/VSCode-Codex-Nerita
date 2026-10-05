@@ -1,6 +1,13 @@
 // 承認・拒否・停止・信頼の取り消しを、SDK 本体によるファイル書き込みで検証する。
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import {
+	readFile,
+	writeFile,
+	mkdir,
+	link,
+	rename,
+	symlink,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { defaultGuardrails } from "@nerita/shared/guardrails/config";
@@ -58,7 +65,7 @@ void test("許可前には書かず、許可後は一度だけ書く。重複要
 	assert.equal(state.tools[0]!.status, "completed");
 	await controller.receive(request);
 	await finished(controller);
-	assert.equal(f.model.requests.length, 2);
+	assert.equal(f.model.requests.length, 2, "同じ要求 ID を再実行しない");
 });
 
 for (const action of ["deny", "stop", "revoke", "settings"] as const) {
@@ -118,10 +125,80 @@ for (const action of ["deny", "stop", "revoke", "settings"] as const) {
 		await controller.receive(reply);
 		await finished(controller);
 		await controller.dispose();
-		await assert.rejects(readFile(join(f.cwd, "forbidden.txt")), {
-			code: "ENOENT",
-		});
+		await assert.rejects(
+			readFile(join(f.cwd, "forbidden.txt")),
+			{
+				code: "ENOENT",
+			},
+			"取消し後の古い許可では書き込まない",
+		);
 		assert.equal(controller.snapshot().permissions.length, 0);
 		assert.ok(f.model.requests.length <= 2);
+	});
+}
+
+for (const change of ["content", "hardlink", "ancestor", "junction"] as const) {
+	void test(`承認待ちの ${change} 変更を拒否し、他の編集とリンク先の本文を保持する`, async (t) => {
+		const f = await piFixture(t);
+		const folder = join(f.cwd, "target");
+		const file = join(folder, "result.txt");
+		const preserved = join(f.cwd, "preserved");
+		await mkdir(folder);
+		await writeFile(file, "original");
+		f.model.replies.push(
+			{
+				name: "write",
+				arguments: {
+					path: "target/result.txt",
+					content: "stale overwrite",
+				},
+			},
+			"拒否を確認",
+		);
+		const controller = f.controller();
+		await controller.connect();
+		await send(controller, "既存ファイルを更新");
+		await until(() => controller.snapshot().permissions.length === 1);
+		if (change === "content") {
+			await writeFile(file, "concurrent edit");
+		}
+		if (change === "hardlink") {
+			await link(file, join(f.cwd, "linked.txt"));
+		}
+		if (change === "ancestor" || change === "junction") {
+			await rename(folder, preserved);
+			if (change === "ancestor") {
+				await mkdir(folder);
+			} else {
+				const outside = join(f.root, "outside");
+				await mkdir(outside);
+				await symlink(outside, folder, "junction");
+			}
+			await writeFile(file, "replacement");
+		}
+		await permission(controller, "accept");
+		const state = await finished(controller);
+		assert.equal(
+			state.tools[0]!.status,
+			"failed",
+			"承認待ちの変更後は古い許可を拒否する",
+		);
+		const expected = {
+			content: "concurrent edit",
+			hardlink: "original",
+			ancestor: "replacement",
+			junction: "replacement",
+		}[change];
+		assert.equal(
+			await readFile(file, "utf8"),
+			expected,
+			"承認した対象と異なる本文を上書きしない",
+		);
+		if (change === "ancestor" || change === "junction") {
+			assert.equal(
+				await readFile(join(preserved, "result.txt"), "utf8"),
+				"original",
+			);
+		}
 	});
 }

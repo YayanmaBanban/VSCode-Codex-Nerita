@@ -190,7 +190,11 @@ async function verifySandboxSetupNotifications(t: TestContext) {
 			}
 		}
 	}
-	assert.equal(info.length, 1);
+	assert.equal(
+		info.length,
+		1,
+		"成功したセットアップの完了通知だけを表示する",
+	);
 	assert.match(info[0]!, /完了/);
 	assert.equal(errors.length, 2);
 	assert.match(errors[0]!, /setup failed/);
@@ -267,6 +271,7 @@ async function verifyCodexConfigAndRun(t: TestContext) {
 		controller
 			.snapshot()
 			.tools.every((tool) => tool.status !== "in_progress"),
+		"終了済みターンの計画カードを実行中にしない",
 	);
 	await verifyCodexReconnection(f, controller, threadId, turnId);
 }
@@ -368,6 +373,7 @@ async function verifyCodexReconnection(
 	assert.equal(restored.snapshot().tools.length, 2);
 	assert.ok(
 		restored.snapshot().tools.every((tool) => tool.status === "completed"),
+		"終了済みターンの計画カードを実行中にしない",
 	);
 	assert.ok(JSON.stringify(restored.snapshot().tools).includes("新しい計画"));
 	assert.ok(!JSON.stringify(restored.snapshot().tools).includes("古い計画"));

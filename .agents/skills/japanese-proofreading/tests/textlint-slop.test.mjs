@@ -108,6 +108,12 @@ test("protected Markdown and ignored ranges do not produce issues or shift lines
 	);
 	assert.deepEqual(inspect("`実 VS Code` と `実 foo` を示す。"), []);
 	assert.equal(inspect("[正本](./example.md)")[0].term, "正本");
+	assert.deepEqual(inspect("参照 [リンク][正本]\n\n[正本]: ./example.md"), []);
+	assert.equal(inspect("[正本][参照]\n\n[参照]: ./example.md")[0].term, "正本");
+	for (const marker of ["`", "~"]) {
+		const fenced = [`${marker.repeat(4)}text`, marker.repeat(3), "設定の正本を更新する", marker.repeat(4), "設計の土台にする。"].join("\n");
+		assert.deepEqual(inspect(fenced).map(({ term, line }) => [term, line]), [["土台", 5]]);
+	}
 	assert.throws(
 		() => inspect("<!-- texlint-ignore-start -->\n正本"),
 		/unclosed/,

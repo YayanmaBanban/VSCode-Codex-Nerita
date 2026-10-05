@@ -1,7 +1,7 @@
 // 説明と操作ボタンを持つ固定通知の見た目を共有する。
 import { cn } from "cnfast";
 import { Info } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useIsPresent, useReducedMotion } from "motion/react";
 import { ButtonCurtain } from "./ButtonCurtain";
 
 /** 認証や信頼の判断は利用側が担当し、ボタンの表示名とクリック時の処理を渡す。 */
@@ -24,16 +24,29 @@ export function ActionNotice({
 	className?: string;
 }) {
 	const reducedMotion = useReducedMotion();
+	const present = useIsPresent();
 	return (
 		<motion.section
 			className={cn(noticeClass, "shrink-0", className)}
 			aria-label={label}
+			aria-hidden={!present}
+			inert={!present}
 			initial={
 				reducedMotion
 					? false
 					: { opacity: 0, transform: "translateY(-20px)" }
 			}
 			animate={{ opacity: 1, transform: "translateY(0px)" }}
+			exit={{
+				opacity: 0,
+				transform: reducedMotion
+					? "translateY(0px)"
+					: "translateY(-12px)",
+				transition: {
+					duration: reducedMotion ? 0 : 0.2,
+					ease: "easeOut",
+				},
+			}}
 			transition={{
 				opacity: { duration: 0.3, ease: "easeOut" },
 				transform: { duration: 0.2, ease: "easeOut" },

@@ -65,7 +65,8 @@ export type ToolSummary = {
 		| "completed"
 		| "failed"
 		| "cancelled"
-		| "unfinished";
+		| "unfinished"
+		| "unknown";
 	paths: string[];
 	kind?: string;
 	content?: unknown[];

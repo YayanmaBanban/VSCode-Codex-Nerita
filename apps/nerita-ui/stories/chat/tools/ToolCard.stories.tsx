@@ -472,3 +472,50 @@ export const StructuredResult: Story = {
 		</main>
 	),
 };
+
+/** 遠隔処理の応答喪失は結果不明と表示し、再実行を促す操作を置かない。 */
+export const UnknownResult: Story = {
+	render: () => (
+		<main style={{ padding: 16 }}>
+			<ToolCard
+				tool={{
+					id: "unknown-result",
+					title: "遠隔の項目を更新",
+					kind: "other",
+					status: "unknown",
+					paths: [],
+					resultDisplay: { source: "content", omitted: false },
+					content: [
+						{
+							type: "content",
+							content: {
+								type: "text",
+								text: "MCP 操作の結果は不明です。遠隔処理が完了した可能性があるため、再実行前に結果を確認してください。",
+							},
+						},
+					],
+				}}
+			/>
+		</main>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(
+			canvas.getByText("結果不明", { exact: true }),
+		).toBeVisible();
+		await userEvent.click(
+			canvas.getByRole("button", {
+				name: /^遠隔の項目を更新/,
+				expanded: false,
+			}),
+		);
+		await waitFor(async () => {
+			await expect(
+				canvas.getByText(/遠隔処理が完了した可能性/),
+			).toBeVisible();
+		});
+		await expect(
+			canvas.queryByRole("button", { name: /再実行|停止/ }),
+		).not.toBeInTheDocument();
+	},
+};

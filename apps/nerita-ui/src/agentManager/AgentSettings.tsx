@@ -1,5 +1,6 @@
 // バックエンド別の設定を受け取り、名前・説明・本文と保存操作を共通化する。
 import type { ReactNode } from "react";
+import { cn } from "cnfast";
 import {
 	agentEditSchema,
 	type AgentEdit,
@@ -201,7 +202,11 @@ function DefinitionField({
 	return (
 		<Field label={label}>
 			{rows ? (
-				<textarea {...input} rows={rows} />
+				<textarea
+					{...input}
+					className={cn(inputStyle, "resize-none")}
+					rows={rows}
+				/>
 			) : (
 				<input {...input} required />
 			)}

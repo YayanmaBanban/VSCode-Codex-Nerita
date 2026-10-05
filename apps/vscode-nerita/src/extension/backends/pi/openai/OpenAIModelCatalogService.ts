@@ -46,7 +46,7 @@ export class OpenAIModelCatalogService implements PiModelCatalogReader {
 			}
 			return this.cached;
 		} catch {
-			return !verified || signal.aborted ? null : this.cached;
+			return !verified || caller.aborted ? null : this.cached;
 		}
 	}
 

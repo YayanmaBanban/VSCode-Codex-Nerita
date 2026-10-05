@@ -131,13 +131,7 @@ type ToolCardHeaderProps = {
 	state: CardState;
 	bodyId: string;
 	setState: Dispatch<SetStateAction<CardState>>;
-	status:
-		| "pending"
-		| "in_progress"
-		| "completed"
-		| "failed"
-		| "cancelled"
-		| "unfinished";
+	status: ToolSummary["status"];
 	Icon: LucideIcon;
 	executing: boolean;
 	tool: ToolSummary;
@@ -415,12 +409,22 @@ function OutputBody({ tool, send, cwd }: ActivityToolProps) {
 
 /** 停止済みと、履歴の完了状態が不明な項目を区別する。 */
 function renderInactiveStatus(status: ToolSummary["status"]) {
-	if (status !== "cancelled" && status !== "unfinished") {
+	if (
+		status !== "cancelled" &&
+		status !== "unfinished" &&
+		status !== "unknown"
+	) {
 		return null;
 	}
 	return (
 		<span className="tool-status text-[12px] whitespace-nowrap text-muted">
-			{status === "cancelled" ? "停止" : "未完了"}
+			{
+				{
+					cancelled: "停止",
+					unknown: "結果不明",
+					unfinished: "未完了",
+				}[status]
+			}
 		</span>
 	);
 }

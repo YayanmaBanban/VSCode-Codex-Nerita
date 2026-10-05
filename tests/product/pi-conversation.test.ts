@@ -51,7 +51,11 @@ void test("起動中に無効化した Pi 接続の遅い完了を公開せず�
 		release();
 		await opening;
 	}
-	assert.equal(controller.snapshot().connection, "disconnected");
+	assert.equal(
+		controller.snapshot().connection,
+		"disconnected",
+		"無効化後の遅い接続を公開しない",
+	);
 	assert.equal(controller.snapshot().sessionId, null);
 	assert.deepEqual(controller.snapshot().messages, []);
 	await controller.receive({ type: "connection/retry", requestId: "retry" });
@@ -235,7 +239,11 @@ async function verifyPiSessionReferences(t: TestContext) {
 		sessionReferences: [{ sessionId: source.sessionId, mode: "handoff" }],
 	});
 	const failed = await finished(controller);
-	assert.match(failed.error ?? "", /ハンドオフ/);
+	assert.match(
+		failed.error ?? "",
+		/ハンドオフ/,
+		"要約失敗は原文へ代替せず通知する",
+	);
 	assert.deepEqual(failed.messages, before);
 	assert.equal(
 		f.model.requests.length,

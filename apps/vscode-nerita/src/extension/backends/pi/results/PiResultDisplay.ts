@@ -4,6 +4,19 @@ import { isRecord } from "@nerita/shared/validation";
 import { PiDisplayText } from "./PiDisplayText";
 import { piStructuredDisplay } from "./PiStructuredDisplay";
 
+/** SDK による子の要約で `details` が省略されても、結果不明を確定した失敗と区別するための固定本文。 */
+export const MCP_RESULT_UNKNOWN_TEXT =
+	"MCP 操作の結果は不明です。遠隔処理が完了した可能性があるため、再実行前に結果を確認してください。";
+
+/** Host が送信後の通信障害に付けた最小限のメタデータだけを読む。 */
+export function piResultUnknown(result: unknown): boolean {
+	return (
+		isRecord(result) &&
+		isRecord(result.details) &&
+		result.details.outcome === "unknown"
+	);
+}
+
 /** MCP の出所は Host の登録情報から渡し、結果自身の自己申告では判定しない。 */
 export type PiResultDisplayOptions = {
 	mcpEnvelope?: boolean;

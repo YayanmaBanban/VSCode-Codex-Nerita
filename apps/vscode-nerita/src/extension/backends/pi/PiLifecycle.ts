@@ -104,6 +104,7 @@ export abstract class PiLifecycle extends SessionState {
 		preserveCurrent = false,
 	): Promise<void> {
 		this.assertCanConnect();
+		const previousOpening = this.opening;
 		// 初回送信前の保存先変更も、失敗時は元の接続と下書きを維持する。
 		const previous = this.prepareConnection(resume, preserveCurrent);
 		const epoch = this.epoch;
@@ -120,6 +121,7 @@ export abstract class PiLifecycle extends SessionState {
 		if (epoch !== this.epoch) {
 			return;
 		}
+		let candidate: PiSession | undefined;
 		try {
 			const operation = this.factory(
 				opening.signal,
@@ -140,16 +142,12 @@ export abstract class PiLifecycle extends SessionState {
 			});
 			this.track(operation);
 			const { session, cwd } = await operation;
+			candidate = session;
 			if (epoch !== this.epoch) {
 				return;
 			}
 			const restored: ReturnType<typeof restorePiHistory> =
 				this.restoreSessionHistory(session, cwd);
-			this.runtime = session;
-			this.runtimeEpoch = epoch;
-			if (previous) {
-				this.track(closePiSession(previous));
-			}
 			if (session.account) {
 				const refresh = session.account.refreshCatalog(opening.signal);
 				this.track(refresh);
@@ -158,10 +156,43 @@ export abstract class PiLifecycle extends SessionState {
 					return;
 				}
 			}
+			// 履歴とカタログの準備が完了してから接続を切り替え、元のセッションを終了する。
+			this.runtime = session;
+			this.runtimeEpoch = epoch;
 			this.publishConnectedSession(restored, cwd, session, resume);
+			if (previous) {
+				previousOpening?.abort();
+				this.track(closePiSession(previous));
+			}
 		} catch (error) {
-			this.reportConnectionFailure(epoch, previous, error);
+			this.recoverConnection(
+				epoch,
+				previous,
+				previousOpening,
+				opening,
+				candidate,
+				error,
+			);
 		}
+	}
+
+	/** 接続に失敗した新セッションだけを終了し、元ランタイムの中止用コントローラーを復元する。 */
+	private recoverConnection(
+		epoch: number,
+		previous: PiSession | undefined,
+		previousOpening: AbortController | undefined,
+		opening: AbortController,
+		candidate: PiSession | undefined,
+		error: unknown,
+	) {
+		opening.abort();
+		if (candidate) {
+			this.track(closePiSession(candidate));
+		}
+		if (epoch === this.epoch && previous) {
+			this.opening = previousOpening;
+		}
+		this.reportConnectionFailure(epoch, previous, error);
 	}
 
 	/** 必要な場合は元のセッションを保持して接続世代を進める。 */
@@ -172,7 +203,6 @@ export abstract class PiLifecycle extends SessionState {
 		const previous = resume || preserveCurrent ? this.runtime : undefined;
 		if (previous) {
 			this.epoch++;
-			this.opening?.abort();
 		} else {
 			this.disconnect();
 		}

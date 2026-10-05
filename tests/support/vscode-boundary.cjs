@@ -6,4 +6,6 @@ module.exports = {
 	commands: {},
 	env: {},
 	ProgressLocation: {},
+	languages: {},
+	ConfigurationTarget: {},
 };

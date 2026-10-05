@@ -113,6 +113,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 						"failed",
 						"cancelled",
 						"unfinished",
+						"unknown",
 					].includes(String(item.status)) &&
 					Array.isArray(item.paths) &&
 					item.paths.every((p: unknown) => typeof p === "string"),

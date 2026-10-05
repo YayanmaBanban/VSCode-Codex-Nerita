@@ -38,7 +38,11 @@ export async function restoredState(
 	assert.equal(code, 0, error);
 	const state: unknown = JSON.parse(await readFile(output, "utf8"));
 	assert.ok(isState(state));
-	assert.equal(state.sessionId, sessionId);
+	assert.equal(
+		state.sessionId,
+		sessionId,
+		"指定した保存履歴の ID で復元する",
+	);
 	assert.equal(state.sessionsError, null);
 	return state;
 }

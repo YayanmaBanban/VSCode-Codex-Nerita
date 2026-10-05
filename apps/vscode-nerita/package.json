@@ -147,10 +147,6 @@
 		},
 		"commands": [
 			{
-				"command": "nerita.trust.manage",
-				"title": "Nerita: Pi のワークスペース Trust を管理"
-			},
-			{
 				"command": "nerita.agents.manage",
 				"title": "Nerita: Agent Manager を開く"
 			},

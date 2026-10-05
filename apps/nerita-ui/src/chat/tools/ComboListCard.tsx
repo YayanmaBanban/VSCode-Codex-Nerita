@@ -12,6 +12,7 @@ const statusLabels = {
 	cancelled: "停止",
 	unfinished: "未完了",
 	failed: "失敗",
+	unknown: "結果不明",
 };
 
 /** 呼び出し側の開閉状態を使い、実行状態の更新でも手動展開を維持する。 */
