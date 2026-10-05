@@ -11,8 +11,16 @@ export type SandboxCommandResult = {
 	stderr: string;
 	exitCode: number;
 };
+/** 全出力は結果で保持し、途中経過は呼出し側が必要な場合だけ受け取る。 */
+export type SandboxCommandOutput = (
+	stream: "stdout" | "stderr",
+	text: string,
+) => void;
 /** 未承認の文字列を受け付けない実行境界。 */
 export type SandboxCommandExecutor = {
 	describe?(policy: AgentAccessPolicy): SandboxExecutionInfo;
-	execute(approved: ApprovedToolCall): Promise<SandboxCommandResult>;
+	execute(
+		approved: ApprovedToolCall,
+		onOutput?: SandboxCommandOutput,
+	): Promise<SandboxCommandResult>;
 };

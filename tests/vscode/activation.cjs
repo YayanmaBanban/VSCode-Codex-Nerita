@@ -30,6 +30,7 @@ async function run() {
 		pathToFileURL(path.join(root, "dist/runtime/pi.mjs")).href
 	);
 	assert.equal(typeof sdk.createAgentSession, "function");
+	await verifyMxcRuntime(root);
 	for (const asset of ["dist/webview/index.js", "dist/webview/index.css"]) {
 		assert.ok((await fs.stat(path.join(root, asset))).size > 0);
 	}
@@ -40,3 +41,34 @@ async function run() {
 }
 
 module.exports = { run };
+
+/** 開発端末の Node ではなく、配布先の Extension Host とネイティブ依存の互換性を確認する。 */
+async function verifyMxcRuntime(root) {
+	assert.ok(
+		Number(process.versions.node.split(".")[0]) >= 24,
+		`MXC requires Node 24; Extension Host: ${process.versions.node}`,
+	);
+	const mxc = await import(
+		pathToFileURL(
+			path.join(
+				root,
+				"dist/runtime/node_modules/@microsoft/mxc-sdk/dist/index.js",
+			),
+		).href
+	);
+	assert.equal(typeof mxc.spawnSandboxFromConfig, "function");
+	const support = mxc.getPlatformSupport();
+	assert.equal(typeof support.isSupported, "boolean");
+	const diagnosis = await vscode.commands.executeCommand(
+		"nerita.pi.checkMxcSandbox",
+	);
+	assert.equal(diagnosis.id, "mxc");
+	assert.equal(typeof diagnosis.available, "boolean");
+	if (!diagnosis.available) {
+		assert.ok(diagnosis.reason);
+	}
+	console.log(`MXC 実起動診断: ${JSON.stringify(diagnosis)}`);
+	console.log(
+		`MXC SDK 読込み: Node ${process.versions.node}, isolation ${support.isolationTier ?? "unavailable"}`,
+	);
+}

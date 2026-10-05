@@ -6,6 +6,7 @@ const { pathToFileURL } = require("node:url");
 const { spawnSync } = require("node:child_process");
 const { build } = require("esbuild");
 const { bundlePi } = require("./package-pi.cjs");
+const { packageMxc } = require("./package-mxc.cjs");
 const { repoRoot } = require("./workspace-paths.cjs");
 const { regressions, regressionPlugin } = require("./product-regressions.cjs");
 const externalAgentDir =
@@ -173,6 +174,9 @@ async function main() {
 			path.join(root, "extension");
 		if (!process.env.NERITA_DISTRIBUTION_TEST_EXTENSION) {
 			await bundlePi(repoRoot, path.join(extensionPath, "dist/runtime"));
+			if (files.some((name) => name.startsWith("mxc-"))) {
+				await packageMxc(path.join(extensionPath, "dist/runtime"));
+			}
 		}
 		const environment = {
 			...process.env,
