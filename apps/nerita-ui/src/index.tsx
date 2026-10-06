@@ -8,6 +8,7 @@ import {
 	createAgentManagerBridge,
 	createTrustBridge,
 	createSandboxBridge,
+	createCredentialBridge,
 } from "./bridge/vscodeBridge";
 import { ChatApp } from "./chat/ChatApp";
 import { PiAuthPage } from "./pi/PiAuthPage";
@@ -16,10 +17,15 @@ import { WorkflowEditor } from "./pi/workflows/WorkflowEditor";
 import { AgentManager } from "./agentManager/AgentManager";
 import { TrustManager } from "./trust/TrustManager";
 import { SandboxSettings } from "./pi/SandboxSettings";
+import { CredentialSettings } from "./pi/CredentialSettings";
 import "./chat/tailwind.css";
 const root = document.getElementById("root");
 if (root) {
-	if (root.dataset.page === "sandbox") {
+	if (root.dataset.page === "credentials") {
+		createRoot(root).render(
+			<CredentialSettings bridge={createCredentialBridge()} />,
+		);
+	} else if (root.dataset.page === "sandbox") {
 		createRoot(root).render(
 			<SandboxSettings bridge={createSandboxBridge()} />,
 		);

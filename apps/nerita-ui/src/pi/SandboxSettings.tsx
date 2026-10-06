@@ -1,10 +1,13 @@
 // Sandbox の検査結果・権限・拒否を表示する。設定値や資格情報の中身は受け取らない。
+import {
+	commandPermissionLabel,
+	type CommandPermissionKey,
+} from "@nerita/shared/commandPermission";
 import { useEffect, useState } from "react";
 import type {
 	SandboxBridge,
 	SandboxSnapshot,
 } from "@nerita/shared/sandboxManagement";
-import type { CommandPermissionKey } from "@nerita/shared/commandPermission";
 import { buttonStyle, inputStyle } from "../agentManager/Fields";
 
 /** 状態は Host の応答で確定し、取消操作が失敗したときに表示だけ消さない。 */
@@ -88,7 +91,7 @@ function CommandGrants({
 					className="grid gap-2 rounded border border-input-border p-3 text-sm"
 				>
 					<strong>
-						{grant.permission.tool} ·{" "}
+						{commandPermissionLabel(grant.permission)} ·{" "}
 						{grant.permission.commandClass}
 					</strong>
 					<span>

@@ -14,6 +14,11 @@ import { mcpIdentity } from "./PiMcpGate";
 import type { AgentAccessPolicy } from "../../../security/AgentAccessPolicy";
 import type { PiAuthorize } from "../PiApprovedTools";
 import type { PiToolFeatures } from "../PiToolFeatures";
+import { SecretAuthBackend } from "../../../credentials/SecretAuthBackend";
+import {
+	SessionMemoryCredentialStore,
+	SecretRedactor,
+} from "../../../credentials/CredentialStore";
 
 /** 設定の有効化、認証、接続を自動実行する拡張コードから分離する。 */
 export function neritaMcpExtension(options: McpOptions): ExtensionFactory {
@@ -22,10 +27,12 @@ export function neritaMcpExtension(options: McpOptions): ExtensionFactory {
 		const connection: {
 			sdk: PiMcpSdk | undefined;
 			credentials: unknown;
+			backend: SecretAuthBackend | undefined;
 			queue: Promise<void>;
 		} = {
 			sdk: undefined,
 			credentials: undefined,
+			backend: undefined,
 			queue: Promise.resolve(),
 		};
 		const paths = [
@@ -142,6 +149,7 @@ function createMcpSynchronizer(
 	connection: {
 		sdk: PiMcpSdk | undefined;
 		credentials: unknown;
+		backend: SecretAuthBackend | undefined;
 		queue: Promise<void>;
 	},
 	options: McpOptions,
@@ -174,19 +182,24 @@ function createMcpSynchronizer(
 						continue;
 					}
 					try {
-						connection.credentials ??=
-							new connection.sdk!.McpOAuthCredentialStore(
-								new connection.sdk!.FileAuthStorageBackend(
-									join(options.agentDir, "mcp-auth.json"),
-								),
-								options.agentDir,
-							);
+						const backend = (connection.backend ??= options.features
+							.mcpBackend
+							? await options.features.mcpBackend()
+							: await SecretAuthBackend.create(
+									new SessionMemoryCredentialStore(),
+									new SecretRedactor(),
+								));
+						connection.credentials ??= lockedMcpCredentials(
+							connection.sdk!,
+							backend,
+						);
 						const server = new PiMcpServer({
 							...options,
 							entry,
 							sdk: connection.sdk!,
 							pi,
 							credentials: connection.credentials,
+							flushCredentials: () => backend.flush(),
 							current: async () =>
 								(await config()).entries.find(
 									(item) => item.name === entry.name,
@@ -213,6 +226,7 @@ function createMcpConfigLoader(
 	connection: {
 		sdk: PiMcpSdk | undefined;
 		credentials: unknown;
+		backend: SecretAuthBackend | undefined;
 		queue: Promise<void>;
 	},
 ) {
@@ -239,6 +253,7 @@ function createMcpSdkLoader(
 	connection: {
 		sdk: PiMcpSdk | undefined;
 		credentials: unknown;
+		backend: SecretAuthBackend | undefined;
 		queue: Promise<void>;
 	},
 	paths: string[],
@@ -277,3 +292,20 @@ type McpOptions = {
 	signal: AbortSignal;
 	features: PiToolFeatures;
 };
+/** ファイルロックを作らず、Host 共通バックエンドで認証更新を直列化する。 */
+function lockedMcpCredentials(sdk: PiMcpSdk, backend: SecretAuthBackend) {
+	const credentials = new sdk.McpOAuthCredentialStore(backend);
+	return {
+		forServer: (name: string, url: string) => {
+			const server = credentials.forServer(name, url);
+			return {
+				...server,
+				withRefreshLock: <T>(operation: () => Promise<T>) =>
+					backend.withRefreshLock(
+						JSON.stringify([name, url]),
+						operation,
+					),
+			};
+		},
+	};
+}

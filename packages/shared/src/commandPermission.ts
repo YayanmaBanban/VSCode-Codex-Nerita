@@ -41,3 +41,22 @@ export const commandGrantSchema = z
 	})
 	.strict();
 export type CommandGrant = z.infer<typeof commandGrantSchema>;
+
+/** 資格情報の保存キーを、その取得先が分かる名称で表示する。 */
+export function commandPermissionLabel(
+	permission: CommandPermissionKey,
+): string {
+	if (!permission.tool.startsWith("credential:")) {
+		return permission.tool;
+	}
+	try {
+		const tuple = z
+			.tuple([z.string(), z.string(), z.string(), z.string(), z.string()])
+			.safeParse(JSON.parse(permission.tool.slice("credential:".length)));
+		return tuple.success
+			? `資格情報 · ${tuple.data[3]} · ${tuple.data[0]}`
+			: permission.tool;
+	} catch {
+		return permission.tool;
+	}
+}

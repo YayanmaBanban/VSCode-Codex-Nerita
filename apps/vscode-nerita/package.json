@@ -147,6 +147,10 @@
 		},
 		"commands": [
 			{
+				"command": "nerita.credentials.manage",
+				"title": "Nerita: 資格情報を管理"
+			},
+			{
 				"command": "nerita.pi.sandboxSettings",
 				"title": "Nerita: Sandbox 設定を開く"
 			},

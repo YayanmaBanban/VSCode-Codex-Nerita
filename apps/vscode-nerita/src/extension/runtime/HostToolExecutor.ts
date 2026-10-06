@@ -10,6 +10,7 @@ import {
 import { evaluateTrust } from "../security/trust/TrustGate";
 import { containsPath } from "../security/AgentAccessPolicy";
 import { classifyToolCommand } from "./LogicalToolCommand";
+import type { CredentialInjection } from "../credentials/CredentialInjection";
 import type {
 	SandboxCommandExecutor,
 	SandboxCommandOutput,
@@ -21,6 +22,7 @@ export class HostToolExecutor implements SandboxCommandExecutor {
 	async execute(
 		approved: ApprovedToolCall,
 		output?: SandboxCommandOutput,
+		injection?: CredentialInjection,
 	): Promise<SandboxCommandResult> {
 		const call = consumeApprovedToolCall(approved);
 		validateHostCall(call);
@@ -30,9 +32,12 @@ export class HostToolExecutor implements SandboxCommandExecutor {
 			}
 		}
 		const trust = await evaluateTrust(call);
-		const signal = trust
+		const trustedSignal = trust
 			? AbortSignal.any([approved.signal, trust])
 			: approved.signal;
+		const signal = injection
+			? AbortSignal.any([trustedSignal, injection.signal])
+			: trustedSignal;
 		signal.throwIfAborted();
 		const env = Object.fromEntries(
 			Object.entries(call.env ?? {}).filter(
@@ -41,7 +46,7 @@ export class HostToolExecutor implements SandboxCommandExecutor {
 		);
 		const child = spawn(call.command![0]!, call.command!.slice(1), {
 			cwd: call.cwd,
-			env,
+			env: { ...env, ...injection?.env },
 			shell: false,
 			windowsHide: true,
 			stdio: "pipe",

@@ -14,6 +14,7 @@ import { AgentManagerStore } from "./AgentManagerStore";
 import { readPiAgents } from "./PiAgentSettings";
 import { generation, readWorkspaceFile } from "./WorkspaceFiles";
 import { agentModelReader, type AgentModelReader } from "./AgentModelCatalog";
+import { credentialService } from "../credentials/CredentialService";
 
 /** パネルを閉じた後のキューは保存しない。 */
 export class AgentManagerPanel {
@@ -260,6 +261,11 @@ export function registerAgentManager(
 					panel,
 					backend,
 					context.extensionPath,
+					agentModelReader(
+						context.extensionPath,
+						root,
+						credentialService(context).piStore(),
+					),
 				);
 				const receive = panel.webview.onDidReceiveMessage(
 					(value: unknown) => host.receive(value),

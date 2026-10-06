@@ -64,6 +64,12 @@ async function verifyMxcRuntime(root) {
 	);
 	assert.equal(diagnosis.id, "mxc");
 	assert.equal(typeof diagnosis.available, "boolean");
+	if (
+		support.isSupported &&
+		support.availableMethods.includes("processcontainer")
+	) {
+		assert.equal(diagnosis.available, true, diagnosis.reason);
+	}
 	if (!diagnosis.available) {
 		assert.ok(diagnosis.reason);
 	}

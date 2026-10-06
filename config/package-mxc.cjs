@@ -2,7 +2,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createRequire } = require("node:module");
-const { extensionRequire } = require("./workspace-paths.cjs");
+const { extensionRequire, repoRoot } = require("./workspace-paths.cjs");
 
 /** ネイティブモジュールはバンドルせず、固定済みの依存ツリーをコピーする。 */
 async function packageMxc(target) {
@@ -51,6 +51,18 @@ async function packageMxc(target) {
 	}
 	await copyPackage(
 		extensionRequire.resolve("@microsoft/mxc-sdk/package.json"),
+	);
+	// Windows PowerShell 5.1 も日本語の診断を読めるよう UTF-8 BOM を付けて配布する。
+	const launcher = await fs.readFile(
+		path.join(
+			repoRoot,
+			"apps/vscode-nerita/src/extension/runtime/MxcLauncher.ps1",
+		),
+		"utf8",
+	);
+	await fs.writeFile(
+		path.join(target, "nerita-mxc-launcher.ps1"),
+		`\uFEFF${launcher}`,
 	);
 }
 

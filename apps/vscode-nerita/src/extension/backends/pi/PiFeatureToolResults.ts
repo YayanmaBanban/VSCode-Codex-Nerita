@@ -8,7 +8,7 @@ export function protectPiFeatureTool(
 	tool: ToolDefinition,
 	features: PiToolFeatures,
 ): ToolDefinition {
-	if (!features.codemode && !features.toolSearch) {
+	if (!features.codemode && !features.toolSearch && !features.protect) {
 		return tool;
 	}
 	return {
@@ -16,22 +16,36 @@ export function protectPiFeatureTool(
 		async execute(id, params, signal, update, context) {
 			const secrets = (await features.secrets?.()) ?? [];
 			try {
-				return privateFeatureValue(
+				const result = privateFeatureValue(
 					await tool.execute(
 						id,
 						params,
 						signal,
 						update
 							? (result) =>
-									update(privateFeatureValue(result, secrets))
+									update(
+										features.protect?.(
+											privateFeatureValue(
+												result,
+												secrets,
+											),
+										) ??
+											privateFeatureValue(
+												result,
+												secrets,
+											),
+									)
 							: undefined,
 						context,
 					),
 					secrets,
 				);
+				return features.protect?.(result) ?? result;
 			} catch (error) {
 				if (error instanceof Error) {
 					error.message = privateFeatureValue(error.message, secrets);
+					error.message =
+						features.protect?.(error.message) ?? error.message;
 					error.stack = `${error.name}: ${error.message}`;
 				}
 				throw error;

@@ -34,6 +34,7 @@ type VsCodeApi = {
 		message:
 			| UiMessage
 			| SandboxRequest
+			| CredentialRequest
 			| TrustRequest
 			| PiAuthRequest
 			| GuardRequest
@@ -42,7 +43,30 @@ type VsCodeApi = {
 	) => void;
 };
 declare function acquireVsCodeApi(): VsCodeApi;
+import {
+	credentialReplySchema,
+	type CredentialBridge,
+	type CredentialRequest,
+} from "@nerita/shared/credentials";
 let api: VsCodeApi | undefined;
+
+/** 資格情報管理では秘密値を含まない専用契約で通信する。 */
+export function createCredentialBridge(): CredentialBridge {
+	api ??= acquireVsCodeApi();
+	return {
+		postMessage: (message) => api?.postMessage(message),
+		subscribe(listener) {
+			const receive = (event: MessageEvent<unknown>) => {
+				const parsed = credentialReplySchema.safeParse(event.data);
+				if (parsed.success) {
+					listener(parsed.data);
+				}
+			};
+			window.addEventListener("message", receive);
+			return () => window.removeEventListener("message", receive);
+		},
+	};
+}
 /** Sandbox 管理画面でも Host の通知を共有スキーマで検証する。 */
 export function createSandboxBridge(): SandboxBridge {
 	api ??= acquireVsCodeApi();

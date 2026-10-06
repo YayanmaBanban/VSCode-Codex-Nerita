@@ -11,6 +11,8 @@ export class PiEventMapper {
 	error: string | undefined;
 	aborted = false;
 
+	constructor(private readonly protect = (value: string) => value) {}
+
 	/** 差分通知の累積本文を使い、確定通知との重複を避ける。 */
 	apply(event: PiEvent, state: ChatState): Partial<ChatState> | undefined {
 		const tools = mapPiTool(event, state);
@@ -29,10 +31,12 @@ export class PiEventMapper {
 		if (event.type === "message_start" || !this.messageId) {
 			this.messageId = randomUUID();
 		}
-		const text = event.message.content
-			.filter((part) => part.type === "text")
-			.map((part) => part.text)
-			.join("");
+		const text = this.protect(
+			event.message.content
+				.filter((part) => part.type === "text")
+				.map((part) => part.text)
+				.join(""),
+		);
 		const finished = event.type === "message_end";
 		const id = this.messageId;
 		const existing = state.messages.find((message) => message.id === id);
@@ -66,8 +70,9 @@ export class PiEventMapper {
 	): void {
 		if (finished) {
 			if (message.stopReason === "error") {
-				this.error =
-					message.errorMessage || "Piの応答取得に失敗しました。";
+				this.error = this.protect(
+					message.errorMessage || "Piの応答取得に失敗しました。",
+				);
 			}
 			this.aborted ||= message.stopReason === "aborted";
 			this.messageId = undefined;

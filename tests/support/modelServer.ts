@@ -4,12 +4,15 @@ import { once } from "node:events";
 
 /** モデルから返す本文またはツール呼び出し。製品の実行状態はここでは組み立てない。 */
 export type ModelReply =
-	string | { name: string; arguments: Record<string, unknown> };
+	| string
+	| { name: string; arguments: Record<string, unknown> }
+	| { error: { status: number; message: string } };
 
 /** 応答順をテスト側で指定できる、ローカルのストリーミング API を起動する。 */
 export async function modelServer() {
 	const requests: string[] = [];
 	const replies: ModelReply[] = [];
+	const authorizations: (string | undefined)[] = [];
 	const server = createServer((request, response) => {
 		let body = "";
 		request.setEncoding("utf8");
@@ -18,10 +21,25 @@ export async function modelServer() {
 		});
 		request.on("end", () => {
 			requests.push(body);
+			authorizations.push(request.headers.authorization);
 			const reply = replies.shift();
 			if (reply === undefined) {
 				response.writeHead(500);
 				response.end("予定外のモデル要求");
+				return;
+			}
+			if (typeof reply !== "string" && "error" in reply) {
+				response.writeHead(reply.error.status, {
+					"content-type": "application/json",
+				});
+				response.end(
+					JSON.stringify({
+						error: {
+							message: reply.error.message,
+							type: "invalid_request_error",
+						},
+					}),
+				);
 				return;
 			}
 			const text = typeof reply === "string";
@@ -58,6 +76,7 @@ export async function modelServer() {
 	return {
 		url: `http://127.0.0.1:${address.port}/v1`,
 		requests,
+		authorizations,
 		replies,
 		close: async () => {
 			server.closeAllConnections();

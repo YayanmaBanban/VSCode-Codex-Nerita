@@ -20,6 +20,7 @@ import type {
 	SandboxCommandOutput,
 } from "./SandboxCommandExecutor";
 import type { MxcSdk } from "./MxcSdk";
+import { spawnMxcLauncher } from "./MxcLauncher";
 import { createMxcConfig, isVolumeRoot } from "./MxcPolicy";
 import { discoverDevTools } from "./DevToolDiscovery";
 import { initialDevToolProfiles } from "./DevToolProfiles";
@@ -27,6 +28,10 @@ import { prepareDevToolStorage } from "./DevToolStorage";
 import { readMxcDenials, type DenialReport } from "./MxcDenials";
 import { MxcStderr } from "./MxcStderr";
 import type { ResourcePolicy } from "@nerita/shared/sandboxPolicy";
+import {
+	applyCredentialInjection,
+	type CredentialInjection,
+} from "../credentials/CredentialInjection";
 
 /** SDK のロードと probe に成功した組み立て側だけが生成する。 */
 export class MxcExecutor implements SandboxCommandExecutor {
@@ -51,6 +56,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 	async execute(
 		approved: ApprovedToolCall,
 		onOutput?: SandboxCommandOutput,
+		injection?: CredentialInjection,
 	): Promise<SandboxCommandResult> {
 		const call = consumeApprovedToolCall(approved);
 		await validateMxcCall(call);
@@ -66,6 +72,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 			onOutput,
 			this.onDenials,
 			this.onPolicy,
+			injection,
 		);
 	}
 }
@@ -78,6 +85,7 @@ export async function executeMxcCommand(
 	onOutput?: SandboxCommandOutput,
 	onDenials?: (report: DenialReport) => void,
 	onPolicy?: (resources: ResourcePolicy[]) => void,
+	injection?: CredentialInjection,
 ): Promise<SandboxCommandResult> {
 	signal.throwIfAborted();
 	if (!process.env.SystemRoot) {
@@ -87,25 +95,13 @@ export async function executeMxcCommand(
 	const temporary = join(hostTemporary, "sandbox");
 	try {
 		await mkdir(temporary);
-		const discovered = await discoverDevTools(
-			call.env ?? {},
-			initialDevToolProfiles,
-			call.command?.[0],
-		);
-		const managedRoot = process.env.LOCALAPPDATA;
-		if (!managedRoot) {
-			throw new Error("Sandbox キャッシュの保存先を取得できません。");
-		}
-		const devTools = await prepareDevToolStorage(
-			discovered,
-			join(managedRoot, "Nerita", "sandbox-cache"),
-			call.policy.workspaceRoots[0]!,
-			temporary,
-			process.env.USERPROFILE
-				? join(process.env.USERPROFILE, ".npmrc")
-				: undefined,
-		);
+		const devTools = await prepareMxcDevTools(call, temporary);
 		const config = createMxcConfig(sdk, call, temporary, devTools);
+		applyCredentialInjection(config, injection);
+		signal = AbortSignal.any([
+			signal,
+			...(injection ? [injection.signal] : []),
+		]);
 		onPolicy?.(structuredClone(devTools.resources));
 		assertPrivateReport(config, hostTemporary);
 		config.processContainer = {
@@ -117,13 +113,8 @@ export async function executeMxcCommand(
 			},
 		};
 		signal.throwIfAborted();
-		const child = sdk.spawnSandboxFromConfig(
-			config,
-			{ usePty: false },
-			call.cwd,
-		);
 		const result = await collectOutput(
-			child,
+			spawnMxcLauncher(sdk, config, call.cwd),
 			signal,
 			call.timeoutMs!,
 			hostTemporary,
@@ -274,10 +265,30 @@ function collectOutput(
 				resolve({ stdout, stderr, exitCode });
 			}
 		});
-		child.stdin?.end();
 		signal.addEventListener("abort", abort, { once: true });
 		if (signal.aborted) {
 			abort();
 		}
 	});
+}
+/** 通常の開発ツール設定を秘密値の注入より先に用意する。 */
+async function prepareMxcDevTools(call: ToolCall, temporary: string) {
+	const discovered = await discoverDevTools(
+		call.env ?? {},
+		initialDevToolProfiles,
+		call.command?.[0],
+	);
+	const managedRoot = process.env.LOCALAPPDATA;
+	if (!managedRoot) {
+		throw new Error("Sandbox キャッシュの保存先を取得できません。");
+	}
+	return prepareDevToolStorage(
+		discovered,
+		join(managedRoot, "Nerita", "sandbox-cache"),
+		call.policy.workspaceRoots[0]!,
+		temporary,
+		process.env.USERPROFILE
+			? join(process.env.USERPROFILE, ".npmrc")
+			: undefined,
+	);
 }

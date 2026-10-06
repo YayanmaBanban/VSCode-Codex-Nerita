@@ -11,6 +11,8 @@ import { piModelOptions } from "./PiModelOptions";
 import { PiModelCatalogService } from "./PiModelCatalogService";
 import type { PiModelSelection } from "./PiRuntime";
 import { piAgentModel } from "./PiAgentModels";
+import type { PiCredentialStore } from "../../credentials/PiCredentialStore";
+import { credentialStorageModeSchema } from "@nerita/shared/credentials";
 
 /** SDK の認証対話を VS Code とテストで差し替える。 */
 export type PiAuthService = {
@@ -48,6 +50,7 @@ export class PiAccount {
 			model: NonNullable<AgentSession["model"]>,
 		) => string[],
 		private deviceId?: () => Promise<string>,
+		private credentials?: PiCredentialStore,
 	) {
 		controls.bind(session);
 		controls.bindCatalog((provider) => catalog.snapshot(provider));
@@ -197,60 +200,116 @@ export class PiAccount {
 		}
 	}
 
-	/** 保存認証だけを変更し、環境変数や `models.json` は保持する。 */
+	/** 認証の管理操作は一覧で提示した ID だけを受け付ける。 */
 	async authenticate(_logout: boolean, signal: AbortSignal): Promise<void> {
 		if (!this.service) {
 			throw new Error("Piの認証画面が接続されていません。");
 		}
-		let authenticatedProvider: string | undefined;
-		if (this.service.manage) {
-			await this.service.manage(
-				() => this.items(signal),
-				async (id, operationSignal) => {
-					const items = await this.items(operationSignal);
-					if (!supportsAuthOperation(items, id)) {
-						throw new Error("未対応の認証操作です。");
-					}
-					const [provider, type] = JSON.parse(id) as [
-						string,
-						"oauth" | "api_key" | "logout",
-					];
-					this.catalog.invalidate();
-					if (type === "logout") {
-						await this.models.logout(provider, {
-							signal: operationSignal,
-						});
-					} else {
-						const deviceId =
-							type === "oauth" && provider === "openai"
-								? await this.deviceId?.()
-								: undefined;
-						operationSignal.throwIfAborted();
-						await this.models.login(
-							provider,
-							type,
-							this.service!.interaction(operationSignal),
-							deviceId
-								? { getDeviceId: () => deviceId }
-								: undefined,
-						);
-						authenticatedProvider = provider;
-					}
-					operationSignal.throwIfAborted();
-					await this.catalog.refresh(provider, operationSignal);
-					await this.reconcileModel(
-						operationSignal,
-						authenticatedProvider,
-					);
-				},
-				signal,
-			);
-			// 認証の保存直後に画面が閉じられても、操作の取消とは別に接続状態を確定する。
-			if (!signal.aborted) {
-				await this.reconcileModel(signal, authenticatedProvider);
+		await this.service.manage(
+			() => this.items(signal),
+			(id, operationSignal) =>
+				this.executeAuthOperation(id, operationSignal),
+			signal,
+		);
+		if (!signal.aborted) {
+			await this.reconcileModel(signal);
+		}
+	}
+
+	/** アカウントの選択と削除にも、モデル・カタログの再同期を適用する。 */
+	private async executeAuthOperation(id: string, signal: AbortSignal) {
+		if (!supportsAuthOperation(await this.items(signal), id)) {
+			throw new Error("未対応の認証操作です。");
+		}
+		const [provider, type, accountId] = JSON.parse(id) as [
+			string,
+			"api_key" | "oauth" | "logout" | "select" | "delete",
+			string?,
+		];
+		this.catalog.invalidate();
+		if (type === "select" || type === "delete") {
+			if (!this.credentials || !accountId) {
+				throw new Error("認証アカウントが指定されていません。");
 			}
+			if (type === "select") {
+				await this.credentials.vault.select(provider, accountId);
+			} else {
+				await this.credentials.vault.remove(
+					this.credentials.vault
+						.list(provider)
+						.find((account) => account.id === accountId),
+					{ signal },
+				);
+			}
+			await this.models.refresh({ signal });
+		} else if (type === "logout") {
+			await this.models.logout(provider, { signal });
+		} else {
+			await this.loginAccount(provider, type, signal);
+		}
+		signal.throwIfAborted();
+		await this.catalog.refresh(provider, signal);
+		await this.reconcileModel(signal, provider);
+	}
+
+	/** 新規ログインでは既存アカウントを上書きせず、保存先を対話で確定する。 */
+	private async loginAccount(
+		provider: string,
+		type: "api_key" | "oauth",
+		signal: AbortSignal,
+	) {
+		const deviceId =
+			type === "oauth" && provider === "openai"
+				? await this.deviceId?.()
+				: undefined;
+		const interaction = this.authInteraction(signal);
+		const login = () =>
+			this.models.login(
+				provider,
+				type,
+				interaction,
+				deviceId ? { getDeviceId: () => deviceId } : undefined,
+			);
+		if (!this.credentials) {
+			await login();
 			return;
 		}
+		const mode = credentialStorageModeSchema.parse(
+			await interaction.prompt({
+				type: "select",
+				message: "保存方法",
+				options: [
+					{ id: "session", label: "このセッションのみ" },
+					{ id: "secret-storage", label: "VS Code に保存" },
+				],
+			}),
+		);
+		const name = await interaction.prompt({
+			type: "text",
+			message: "アカウント名（秘密情報は入力しないでください）",
+		});
+		signal.throwIfAborted();
+		await this.credentials.login(provider, type, mode, name, login);
+	}
+
+	/** 認証対話で入力した秘密値を、SDK の通知を公開する前に出力保護へ登録する。 */
+	private authInteraction(
+		signal: AbortSignal,
+	): ReturnType<PiAuthService["interaction"]> {
+		const interaction = this.service!.interaction(signal);
+		const redactor = this.credentials?.vault.stores.redactor;
+		return {
+			...interaction,
+			prompt: async (prompt) => {
+				const value = await interaction.prompt(prompt);
+				if (prompt.type === "secret" || prompt.type === "manual_code") {
+					redactor?.protect(value);
+				}
+				return value;
+			},
+			notify: (event) =>
+				interaction.notify(redactor?.value(event) ?? event),
+		};
 	}
 
 	/** 認証切れの旧モデルを保持せず、Pi の利用可能候補へ復帰する。 */
@@ -306,7 +365,36 @@ export class PiAccount {
 			name: provider.name,
 			configured: this.models.getProviderAuthStatus(provider.id)
 				.configured,
+			accounts:
+				this.credentials?.vault.list(provider.id).map((account) => ({
+					id: account.id,
+					name: account.name,
+					mode: account.mode,
+					active:
+						this.credentials?.vault.selected(provider.id)?.id ===
+						account.id,
+				})) ?? [],
 			methods: [
+				...(this.credentials?.vault
+					.list(provider.id)
+					.flatMap((account) => [
+						{
+							id: JSON.stringify([
+								provider.id,
+								"select",
+								account.id,
+							]),
+							name: `使用: ${account.name}`,
+						},
+						{
+							id: JSON.stringify([
+								provider.id,
+								"delete",
+								account.id,
+							]),
+							name: `削除: ${account.name}`,
+						},
+					]) ?? []),
 				...(provider.auth.apiKey?.login
 					? [
 							{

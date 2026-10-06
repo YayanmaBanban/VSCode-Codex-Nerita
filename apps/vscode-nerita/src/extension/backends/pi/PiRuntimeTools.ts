@@ -20,6 +20,8 @@ import { createPiReadTool } from "./guardrails/PiReadTools";
 import { piWorkspaceTrusted } from "./PiTrustAdapter";
 import { createPiSearchTools } from "./guardrails/PiSearchTools";
 import { createPiPnpmTool } from "./PiPnpmTool";
+import { CredentialExecutor } from "../../credentials/CredentialExecutor";
+import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 
 /** SDK のシェル設定だけを実行ツールへ引き継ぐ。 */
 type ShellSettings = Pick<
@@ -82,7 +84,13 @@ export async function preparePiRuntimeTools(
 			(!executor ? "Sandbox Executorが接続されていません。" : undefined));
 	if (executor && !reason) {
 		tools.push(
-			createPiPnpmTool(paths, authorize, executor, options.signal),
+			createPiPnpmTool(
+				paths,
+				authorize,
+				executor,
+				options.signal,
+				options.credentialBroker,
+			),
 		);
 	}
 	tools.push(
@@ -90,13 +98,24 @@ export async function preparePiRuntimeTools(
 			sdk,
 			paths,
 			authorize,
-			executor,
+			withCredentials(executor, options, authorize),
 			options.signal,
 			reason,
 			trustDeniedReporter(options, trusted),
 		)),
 	);
 	return { paths, tools, executor, unavailable: reason };
+}
+
+/** 子 Runtime には元の Executor を渡し、その Runtime の承認関数で包み直す。 */
+function withCredentials(
+	executor: SandboxCommandExecutor | null,
+	options: PiRuntimeOptions,
+	authorize: PiAuthorize,
+) {
+	return executor && options.credentialBroker
+		? new CredentialExecutor(executor, options.credentialBroker, authorize)
+		: executor;
 }
 
 /** 起動準備を省いた未信頼の Shell の拒否も監査へ残す。 */

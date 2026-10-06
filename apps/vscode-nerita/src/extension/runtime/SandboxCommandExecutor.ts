@@ -4,6 +4,7 @@ import type {
 	SandboxExecutionInfo,
 } from "../security/ApprovedToolCall";
 import type { AgentAccessPolicy } from "../security/AgentAccessPolicy";
+import type { CredentialInjection } from "../credentials/CredentialInjection";
 
 /** 実行基盤が返す標準出力・標準エラー・終了コードを保持する。 */
 export type SandboxCommandResult = {
@@ -22,5 +23,6 @@ export type SandboxCommandExecutor = {
 	execute(
 		approved: ApprovedToolCall,
 		onOutput?: SandboxCommandOutput,
+		injection?: CredentialInjection,
 	): Promise<SandboxCommandResult>;
 };

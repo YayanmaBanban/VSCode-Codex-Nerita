@@ -87,6 +87,12 @@ export async function loadPiResources(
 					webTrust,
 				);
 			}
+			// 外部拡張が確定メッセージを変更した場合も、公開・保存直前の最後のハンドラーで保護する。
+			result.extensions.sort(
+				(a, b) =>
+					Number(a.path === "<inline:nerita-secret-protection>") -
+					Number(b.path === "<inline:nerita-secret-protection>"),
+			);
 			return result;
 		},
 	});
@@ -143,5 +149,14 @@ function resourceExtensionFactories(
 					},
 				]
 			: []),
+		{
+			name: "nerita-secret-protection",
+			hidden: true,
+			factory(api) {
+				api.on("message_end", (event) => ({
+					message: features.protect?.(event.message) ?? event.message,
+				}));
+			},
+		},
 	];
 }

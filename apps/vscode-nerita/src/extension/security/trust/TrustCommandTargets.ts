@@ -50,7 +50,8 @@ function checkedCommand(command: unknown): string {
 
 /** 明示パス、スクリプト、作業先を指定する引数を対象にする。 */
 function isPathArgument(token: string, previous: string): boolean {
-	if (/^-/.test(token)) {
+	// HTTP の接続先はローカルの実行パスではない。通信と資格情報の承認は別途行う。
+	if (/^(?:-|https?:\/\/)/i.test(token)) {
 		return false;
 	}
 	return (

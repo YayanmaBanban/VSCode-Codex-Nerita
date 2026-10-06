@@ -16,6 +16,8 @@ import { containsPath } from "../../security/AgentAccessPolicy";
 import type { WorkspacePathPolicy } from "../../security/WorkspacePathPolicy";
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import { streamPiCommand } from "./PiCommandOutput";
+import type { CredentialBroker } from "../../credentials/CredentialBroker";
+import { CredentialExecutor } from "../../credentials/CredentialExecutor";
 
 const input = z
 	.object({
@@ -40,6 +42,7 @@ export function createPiPnpmTool(
 	authorize: ToolAuthorizer,
 	sandbox: SandboxCommandExecutor,
 	lifetime: AbortSignal,
+	broker?: CredentialBroker,
 ): ToolDefinition {
 	return {
 		name: "pnpm",
@@ -93,8 +96,11 @@ export function createPiPnpmTool(
 				authorize,
 				combined,
 			);
+			const executor = host ? new HostToolExecutor() : sandbox;
 			const result = await streamPiCommand(
-				host ? new HostToolExecutor() : sandbox,
+				broker
+					? new CredentialExecutor(executor, broker, authorize)
+					: executor,
 				approved,
 				update,
 			);

@@ -3,7 +3,13 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type * as Sdk from "@microsoft/mxc-sdk";
 
-export type MxcSdk = typeof Sdk;
+export type MxcSdk = typeof Sdk & {
+	launcherPath: string;
+	resolveLaunch: (config: Sdk.ContainerConfig) => {
+		executablePath: string;
+		args: string[];
+	};
+};
 
 /** Node の要件不足を、App Server や非 Sandbox 実行へ切り替えずに通知する。 */
 export async function loadMxcSdk(extensionPath: string): Promise<MxcSdk> {
@@ -21,5 +27,16 @@ export async function loadMxcSdk(extensionPath: string): Promise<MxcSdk> {
 			"dist/runtime/node_modules/@microsoft/mxc-sdk/dist/index.js",
 		),
 	);
-	return import(url.href) as Promise<MxcSdk>;
+	const sdk = (await import(url.href)) as typeof Sdk;
+	const helper = (await import(new URL("./helper.js", url).href)) as {
+		resolveExecutableAndArgs: MxcSdk["resolveLaunch"];
+	};
+	return {
+		...sdk,
+		launcherPath: join(
+			extensionPath,
+			"dist/runtime/nerita-mxc-launcher.ps1",
+		),
+		resolveLaunch: helper.resolveExecutableAndArgs,
+	};
 }

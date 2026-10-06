@@ -9,6 +9,7 @@ export function webviewHtml(
 	page:
 		| "chat"
 		| "sandbox"
+		| "credentials"
 		| "pi-auth"
 		| "pi-guardrails"
 		| "pi-workflow"
