@@ -92,7 +92,6 @@ function classifyDenial(
 			? {
 					resource: {
 						...known,
-						target: denial.resource,
 						access: "deny",
 						source: "denial",
 					},

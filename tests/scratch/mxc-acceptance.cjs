@@ -3,9 +3,9 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
-const { pathToFileURL } = require("node:url");
 const { build } = require("esbuild");
 const { packageMxc } = require("../../config/package-mxc.cjs");
+const { createServer } = require("node:http");
 
 async function prepare() {
 	const repo = path.resolve(__dirname, "../..");
@@ -13,23 +13,20 @@ async function prepare() {
 	const output = path.join(repo, "dist/mxc-acceptance.cjs");
 	await packageMxc(path.join(extension, "dist/runtime"));
 	await build({
-		entryPoints: [
-			path.join(extension, "src/extension/runtime/MxcExecutor.ts"),
-		],
+		stdin: {
+			contents:
+				"export { executeMxcCommand } from './apps/vscode-nerita/src/extension/runtime/MxcExecutor'; export { loadMxcSdk } from './apps/vscode-nerita/src/extension/runtime/MxcSdk';",
+			resolveDir: repo,
+			sourcefile: "mxc-acceptance.ts",
+		},
 		outfile: output,
 		bundle: true,
 		platform: "node",
 		format: "cjs",
+		conditions: ["nerita-source"],
 	});
-	const { executeMxcCommand } = require(output);
-	const sdk = await import(
-		pathToFileURL(
-			path.join(
-				extension,
-				"dist/runtime/node_modules/@microsoft/mxc-sdk/dist/index.js",
-			),
-		).href
-	);
+	const { executeMxcCommand, loadMxcSdk } = require(output);
+	const sdk = await loadMxcSdk(extension);
 	console.log(sdk.getPlatformSupport());
 	const root = await fs.mkdtemp(
 		path.join(os.tmpdir(), "nerita-mxc-acceptance-"),
@@ -47,11 +44,23 @@ async function prepare() {
 			),
 		),
 	);
-	async function run(
+	return {
+		run: createRun(sdk, executeMxcCommand, workspace, shell, env),
+		root,
+		workspace,
+		shell,
+	};
+}
+
+/** 本番の実行関数を固定した検証用呼出しを作る。 */
+function createRun(sdk, executeMxcCommand, workspace, shell, env) {
+	return async function run(
 		body,
 		networkAccess = false,
 		signal = new AbortController().signal,
 		onOutput,
+		hostLoopbackAccess = false,
+		timeoutMs = 15_000,
 	) {
 		body = `$ProgressPreference = 'SilentlyContinue'; [Console]::OutputEncoding = [Text.Encoding]::UTF8; ${body}`;
 		const result = await executeMxcCommand(
@@ -65,6 +74,7 @@ async function prepare() {
 					writableRoots: [workspace],
 					shell: true,
 					networkAccess,
+					hostLoopbackAccess,
 					windowsSandbox: "elevated",
 				},
 				command: [
@@ -75,15 +85,20 @@ async function prepare() {
 					Buffer.from(body, "utf16le").toString("base64"),
 				],
 				env,
-				timeoutMs: 15_000,
+				timeoutMs,
 			},
 			signal,
 			onOutput,
 		);
-		console.log(result);
+		console.log({
+			exitCode: result.exitCode,
+			stdoutBytes: Buffer.byteLength(result.stdout),
+			stderrBytes: Buffer.byteLength(result.stderr),
+			preview: result.stdout.slice(0, 200),
+			error: result.stderr.slice(0, 1200),
+		});
 		return result;
-	}
-	return { run, root, workspace, shell };
+	};
 }
 
 async function main() {
@@ -99,10 +114,12 @@ async function main() {
 			"inside",
 		);
 		await assert.rejects(fs.access(path.join(root, "denied.txt")));
+		await observeOutsideRead(run, root);
 		const tcp =
 			"$client = New-Object Net.Sockets.TcpClient; try { $pending = $client.ConnectAsync('1.1.1.1', 443); if ($pending.Wait(4000) -and $client.Connected) { Write-Output 'CONNECTED' } else { Write-Output 'BLOCKED' } } catch { Write-Output 'BLOCKED' } finally { $client.Dispose() }";
 		assert.match((await run(tcp)).stdout, /BLOCKED/);
 		assert.match((await run(tcp, true)).stdout, /CONNECTED/);
+		const networkComplete = await verifyNetwork(run);
 		const failure = await run(
 			"[Console]::Out.Write('stdout'); [Console]::Error.Write('stderr'); exit 7",
 		);
@@ -110,6 +127,7 @@ async function main() {
 		assert.equal(failure.stdout, "stdout");
 		assert.equal(failure.stderr, "stderr");
 		await verifyStop(run, workspace, shell);
+		await verifyLargeOutput(run);
 		console.log("MXC filesystem / raw TCP / output / Stop probes passed");
 		const cwd = await run(
 			"if ((Get-Location).Path -ne [Environment]::CurrentDirectory) { [Console]::Error.Write('PowerShell cwd mismatch'); exit 1 }; Write-Output 'CWD_OK'",
@@ -119,9 +137,123 @@ async function main() {
 			0,
 			"PowerShell が指定した cwd で実行できる必要があります",
 		);
+		assert.equal(
+			networkComplete,
+			true,
+			"Host loopback allow の受け入れ条件が未達です。native ProcessContainer 対応 Windows が必要です。",
+		);
 	} finally {
 		await cleanup(root);
 	}
+}
+
+/** 書込み拒否とは別に、下位 isolation tier でのワークスペース外読取りを観測する。 */
+async function observeOutsideRead(run, root) {
+	const probe = path.join(root, "outside-read.txt");
+	await fs.writeFile(probe, "diagnostic fixture");
+	const result = await run(
+		`try { [void][IO.File]::ReadAllText('${probe.replaceAll("'", "''")}'); Write-Output 'OUTSIDE_READ_VISIBLE' } catch { Write-Output 'OUTSIDE_READ_DENIED' }`,
+	);
+	assert.match(result.stdout, /OUTSIDE_READ_(VISIBLE|DENIED)/);
+	console.log(`MXC outside-read observation: ${result.stdout.trim()}`);
+}
+
+/** DNS・HTTPS・Host loopback を別々に検証し、外部通信許可が loopback 許可を兼ねないことも確認する。 */
+async function verifyNetwork(run) {
+	const dns =
+		"try { $addresses = [Net.Dns]::GetHostAddresses('example.com'); if ($addresses.Length -gt 0) { Write-Output 'DNS_OK' } else { Write-Output 'DNS_BLOCKED' } } catch { Write-Output 'DNS_BLOCKED' }";
+	assert.match((await run(dns, false)).stdout, /DNS_BLOCKED/);
+	assert.match((await run(dns, true)).stdout, /DNS_OK/);
+	const https =
+		"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $client = New-Object Net.WebClient; $body = $client.DownloadString('https://example.com/'); if ($body.Contains('Example Domain')) { Write-Output 'HTTPS_OK' } else { exit 3 } } catch { Write-Output 'HTTPS_BLOCKED' } finally { if ($client) { $client.Dispose() } }";
+	assert.match((await run(https, false)).stdout, /HTTPS_BLOCKED/);
+	assert.match((await run(https, true)).stdout, /HTTPS_OK/);
+	const server = createServer((_req, res) => res.end("HOST_LOOPBACK_OK"));
+	await new Promise((resolve, reject) => {
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", resolve);
+	});
+	try {
+		const port = server.address().port;
+		const loopback = `try { $request = [Net.HttpWebRequest]::Create('http://127.0.0.1:${port}/'); $request.Timeout = 3000; $response = $request.GetResponse(); $reader = New-Object IO.StreamReader($response.GetResponseStream()); Write-Output ($reader.ReadToEnd()) } catch { Write-Output 'LOOPBACK_BLOCKED' } finally { if ($reader) { $reader.Dispose() }; if ($response) { $response.Dispose() } }`;
+		assert.match((await run(loopback, false)).stdout, /LOOPBACK_BLOCKED/);
+		assert.match((await run(loopback, true)).stdout, /LOOPBACK_BLOCKED/);
+		const allowed = await run(
+			loopback,
+			false,
+			new AbortController().signal,
+			undefined,
+			true,
+		);
+		if (
+			allowed.exitCode !== 0 &&
+			allowed.stderr.includes(
+				"host-loopback ingress requires native ProcessContainer support",
+			)
+		) {
+			console.error(
+				"MXC ACCEPTANCE INCOMPLETE: Host loopback allow requires native ProcessContainer support on this Windows version.",
+			);
+			return false;
+		}
+		assert.match(allowed.stdout, /HOST_LOOPBACK_OK/);
+		assert.match(
+			(
+				await run(
+					dns,
+					false,
+					new AbortController().signal,
+					undefined,
+					true,
+				)
+			).stdout,
+			/DNS_BLOCKED/,
+		);
+		console.log("MXC DNS / HTTPS / independent host loopback passed");
+		return true;
+	} finally {
+		server.closeAllConnections();
+		await new Promise((resolve) => server.close(resolve));
+	}
+}
+
+/** 出力のストリーム区分・逐次性と出力中の timeout を MXC 本体で確認する。 */
+async function verifyLargeOutput(run) {
+	const chunks = { stdout: 0, stderr: 0 };
+	const body =
+		"$line = 'x' * 1024; for ($i = 0; $i -lt 2048; $i++) { [Console]::Out.WriteLine('OUT:' + $line); [Console]::Error.WriteLine('ERR:' + $line) }; exit 7";
+	const result = await run(
+		body,
+		false,
+		new AbortController().signal,
+		(stream, text) => {
+			chunks[stream]++;
+			assert.ok(text.length);
+		},
+	);
+	assert.equal(result.exitCode, 7);
+	assert.ok(result.stdout.length > 2_000_000);
+	assert.ok(result.stderr.length > 2_000_000);
+	assert.ok(chunks.stdout > 1 && chunks.stderr > 1);
+	assert.ok(
+		!result.stdout.includes("ERR:") && !result.stderr.includes("OUT:"),
+	);
+	let delivered = false;
+	await assert.rejects(
+		run(
+			"while ($true) { [Console]::Out.WriteLine('TIMEOUT_OUTPUT'); Start-Sleep -Milliseconds 20 }",
+			false,
+			new AbortController().signal,
+			() => {
+				delivered = true;
+			},
+			false,
+			2000,
+		),
+		/タイムアウト/,
+	);
+	assert.equal(delivered, true, "起動前失敗を timeout 検証の成功にしない");
+	console.log("MXC large stdout / stderr / timeout passed");
 }
 
 /** 中止なしの対照実行で書込みを確認し、開始通知を受けてから同じ処理を止める。 */

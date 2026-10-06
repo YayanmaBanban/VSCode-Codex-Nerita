@@ -191,8 +191,9 @@ async function executionMode(options: PiRuntimeOptions) {
 		options.extensionPath,
 		options.cwd,
 		options.signal,
-		options.sandboxManagement?.denials,
-		options.sandboxManagement?.policy,
+		undefined,
+		undefined,
+		options.sandboxManagement,
 	);
 	options.sandboxManagement?.availability(result.availability);
 	return {

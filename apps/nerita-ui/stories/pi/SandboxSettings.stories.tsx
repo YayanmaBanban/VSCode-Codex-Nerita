@@ -63,8 +63,69 @@ const snapshot: SandboxSnapshot = {
 			scope: "workspace",
 		},
 	],
-	denials: [],
-	reportStatus: "empty",
+	resourceGrants: [
+		{
+			id: "grant",
+			resource: {
+				kind: "helper",
+				target: "tools/node/helper.exe",
+				tool: "node",
+				profileTarget: "tools/node",
+			},
+			access: "read",
+			scope: "workspace",
+			source: "denial",
+			workspace: "projects/workspace",
+			denialEventId: "old",
+			operationId: "previous",
+		},
+	],
+	cacheSwitches: [
+		{ id: "cache-switch", workspace: "projects/workspace", tool: "pnpm" },
+	],
+	denials: [
+		{
+			id: "helper-denial",
+			target: "tools/node/日本語と長い名前の補助プログラム/helper.exe",
+			resourceType: "file",
+			requestedAccess: "read",
+			resource: {
+				id: "helper",
+				kind: "helper",
+				target: "tools/node",
+				access: "deny",
+				source: "denial",
+				tool: "node",
+				scope: "process",
+			},
+			estimatedTool: "node",
+			actions: ["allow", "deny"],
+		},
+		{
+			id: "cache-denial",
+			target: "host-cache/pnpm/store",
+			resourceType: "file",
+			requestedAccess: "write",
+			resource: {
+				id: "host-cache",
+				kind: "cache",
+				target: "host-cache/pnpm",
+				access: "deny",
+				source: "denial",
+				tool: "pnpm",
+				scope: "process",
+			},
+			actions: ["use-sandbox-cache", "deny"],
+		},
+		{
+			id: "diagnostic",
+			target: "Object Manager diagnostic",
+			resourceType: "other",
+			requestedAccess: "unknown",
+			actions: [],
+		},
+	],
+	reportStatus: "reported",
 };
 
 /** 操作の送信後も Host 応答まで状態を保持する通信境界だけを用意する。 */
@@ -87,7 +148,7 @@ function Preview({ unavailable = false }: { unavailable?: boolean }) {
 				};
 			},
 			postMessage: (message) => {
-				if (message.type === "revoke") {
+				if (message.type !== "ready" && message.type !== "probe") {
 					listener?.({
 						type: "error",
 						message: "保存に失敗しました。承認は保持されています。",

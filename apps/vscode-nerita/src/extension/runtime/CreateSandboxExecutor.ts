@@ -5,6 +5,7 @@ import { MxcExecutor } from "./MxcExecutor";
 import { dockerAvailability } from "./SandboxBackend";
 import type { DenialReport } from "./MxcDenials";
 import type { ResourcePolicy } from "@nerita/shared/sandboxPolicy";
+import type { SandboxManagement } from "./SandboxManagement";
 
 /** 起動検査に失敗した場合は理由を返し、別バックエンドや Host を起動しない。 */
 export async function createSandboxExecutor(
@@ -14,6 +15,7 @@ export async function createSandboxExecutor(
 	signal: AbortSignal,
 	onDenials?: (report: DenialReport) => void,
 	onPolicy?: (resources: ResourcePolicy[]) => void,
+	management?: SandboxManagement,
 ) {
 	const availability =
 		backend === "docker"
@@ -26,6 +28,7 @@ export async function createSandboxExecutor(
 				availability.isolationTier ?? "processcontainer",
 				onDenials,
 				onPolicy,
+				management,
 			)
 		: null;
 	return { executor, availability };

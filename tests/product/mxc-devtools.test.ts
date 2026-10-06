@@ -1,4 +1,4 @@
-// 開発ツールの検出から MXC 変換まで、秘密情報・書込み上限・拒否記録の承認境界を検証する。
+﻿// 開発ツールの検出から MXC 変換まで、秘密情報・書込み上限・拒否記録の承認境界を検証する。
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
@@ -19,10 +19,8 @@ import {
 import { initialDevToolProfiles } from "../../apps/vscode-nerita/src/extension/runtime/DevToolProfiles";
 import { prepareDevToolStorage } from "../../apps/vscode-nerita/src/extension/runtime/DevToolStorage";
 import { readMxcDenials } from "../../apps/vscode-nerita/src/extension/runtime/MxcDenials";
-import { ResourceApprovalStore } from "../../apps/vscode-nerita/src/extension/runtime/ResourceApproval";
 import { sanitizedNpmConfig } from "../../apps/vscode-nerita/src/extension/runtime/DevToolConfig";
 import type { DevToolPolicy } from "../../apps/vscode-nerita/src/extension/runtime/DevToolPolicy";
-import type { DenialEvent } from "@nerita/shared/sandboxPolicy";
 
 void test("実体 PATH を再構築し API キー・Node 起動フック・相対 PATH を継承しない", async () => {
 	const executable = await realpath(process.execPath);
@@ -166,65 +164,6 @@ void test("拒否レポートは既知リソースだけを分類し、登録だ
 	} finally {
 		await rm(root, { recursive: true, force: true });
 	}
-});
-
-void test("UI の承認は Host のイベント ID に限定し、資格情報・任意パス・再使用を拒否する", () => {
-	const store = new ResourceApprovalStore({
-		processId: "process",
-		sessionId: "session",
-		workspaceId: "workspace",
-	});
-	const event: DenialEvent = {
-		id: "event",
-		target: process.execPath,
-		resourceType: "file",
-		requestedAccess: "execute",
-		resource: toolResource("helper", process.execPath, "node"),
-	};
-	store.record([event]);
-	assert.throws(() =>
-		store.decide({
-			eventId: "event",
-			action: "allow",
-			scope: "workspace",
-			target: "arbitrary",
-		}),
-	);
-	const approved = store.decide({
-		eventId: "event",
-		action: "allow",
-		scope: "session",
-	});
-	assert.equal(approved.context.sessionId, "session");
-	assert.equal(approved.decision.action, "allow");
-	assert.throws(
-		() =>
-			store.decide({
-				eventId: "event",
-				action: "allow",
-				scope: "session",
-			}),
-		/見つかりません/,
-	);
-	store.record([
-		{
-			...event,
-			resource: toolResource("credential", process.execPath, "node"),
-		},
-	]);
-	assert.throws(
-		() =>
-			store.decide({
-				eventId: "event",
-				action: "allow",
-				scope: "process",
-			}),
-		/専用/,
-	);
-	assert.equal(
-		store.decide({ eventId: "event", action: "deny" }).decision.action,
-		"deny",
-	);
 });
 
 void test("npm 設定は認証情報と起動フックを除き、公開 registry 設定だけを残す", async () => {

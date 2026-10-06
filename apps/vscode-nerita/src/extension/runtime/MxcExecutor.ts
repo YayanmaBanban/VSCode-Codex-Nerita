@@ -6,6 +6,7 @@ import { execFile, type ChildProcess } from "node:child_process";
 import type { ContainerConfig } from "@microsoft/mxc-sdk";
 import {
 	consumeApprovedToolCall,
+	toolCallFingerprint,
 	type ApprovedToolCall,
 	type ToolCall,
 } from "../security/ApprovedToolCall";
@@ -22,12 +23,15 @@ import type {
 import type { MxcSdk } from "./MxcSdk";
 import { spawnMxcLauncher } from "./MxcLauncher";
 import { createMxcConfig, isVolumeRoot } from "./MxcPolicy";
-import { discoverDevTools } from "./DevToolDiscovery";
+import { discoverDevTools, toolResource } from "./DevToolDiscovery";
 import { initialDevToolProfiles } from "./DevToolProfiles";
 import { prepareDevToolStorage } from "./DevToolStorage";
 import { readMxcDenials, type DenialReport } from "./MxcDenials";
 import { MxcStderr } from "./MxcStderr";
 import type { ResourcePolicy } from "@nerita/shared/sandboxPolicy";
+import { randomUUID } from "node:crypto";
+import type { SandboxManagement } from "./SandboxManagement";
+import { workspaceFor } from "./ResourceGrantStore";
 import {
 	applyCredentialInjection,
 	type CredentialInjection,
@@ -40,6 +44,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 		private readonly isolationTier: string,
 		private readonly onDenials?: (report: DenialReport) => void,
 		private readonly onPolicy?: (resources: ResourcePolicy[]) => void,
+		private readonly management?: SandboxManagement,
 	) {}
 
 	describe(policy: AgentAccessPolicy) {
@@ -47,7 +52,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 			name: "Microsoft MXC",
 			details: [
 				this.isolationTier,
-				`Network: ${policy.networkAccess ? "allow" : "deny"} / host loopback: deny`,
+				`Network: ${policy.networkAccess ? "allow" : "deny"} / host loopback: ${policy.hostLoopbackAccess ? "allow" : "deny"}`,
 				"Clipboard / input injection: deny",
 			],
 		};
@@ -65,15 +70,64 @@ export class MxcExecutor implements SandboxCommandExecutor {
 		const signal = trust
 			? AbortSignal.any([approved.signal, trust])
 			: approved.signal;
-		return executeMxcCommand(
-			this.sdk,
-			call,
-			signal,
-			onOutput,
-			this.onDenials,
-			this.onPolicy,
-			injection,
-		);
+		const operationId = randomUUID();
+		const fingerprint = approved.fingerprint;
+		let stdout = "";
+		let stderr = "";
+		try {
+			for (let attempt = 0; ; attempt++) {
+				await validateMxcCall(call);
+				await evaluateTrust(call);
+				signal.throwIfAborted();
+				if (toolCallFingerprint(call) !== fingerprint) {
+					throw new Error("再実行の承認内容が一致しません。");
+				}
+				let report: DenialReport | undefined;
+				const result = await executeMxcCommand(
+					this.sdk,
+					call,
+					signal,
+					onOutput,
+					(value) => {
+						report = value;
+						this.onDenials?.(value);
+						this.management?.denials(value);
+					},
+					this.onPolicy,
+					injection,
+					this.management,
+					operationId,
+				);
+				stdout += result.stdout;
+				stderr += result.stderr;
+				if (
+					!this.management ||
+					!report ||
+					result.exitCode === 0 ||
+					attempt >= 3
+				) {
+					return { ...result, stdout, stderr };
+				}
+				if (
+					!(await this.management.waitForDecision(
+						report,
+						call,
+						operationId,
+						signal,
+						() =>
+							onOutput?.(
+								"stderr",
+								"\nSandbox の拒否を確認しました。Sandbox 管理画面で許可・キャッシュ切替・拒否を選択してください。\n",
+							),
+					))
+				) {
+					signal.throwIfAborted();
+					return { ...result, stdout, stderr };
+				}
+			}
+		} finally {
+			await this.management?.resourceGrants.finish(operationId);
+		}
 	}
 }
 
@@ -86,6 +140,8 @@ export async function executeMxcCommand(
 	onDenials?: (report: DenialReport) => void,
 	onPolicy?: (resources: ResourcePolicy[]) => void,
 	injection?: CredentialInjection,
+	management?: SandboxManagement,
+	operationId = randomUUID(),
 ): Promise<SandboxCommandResult> {
 	signal.throwIfAborted();
 	if (!process.env.SystemRoot) {
@@ -95,7 +151,14 @@ export async function executeMxcCommand(
 	const temporary = join(hostTemporary, "sandbox");
 	try {
 		await mkdir(temporary);
-		const devTools = await prepareMxcDevTools(call, temporary);
+		let devTools = await prepareMxcDevTools(call, temporary, management);
+		if (management) {
+			devTools = await management.resourceGrants.apply(
+				devTools,
+				call,
+				operationId,
+			);
+		}
 		const config = createMxcConfig(sdk, call, temporary, devTools);
 		applyCredentialInjection(config, injection);
 		signal = AbortSignal.any([
@@ -103,6 +166,7 @@ export async function executeMxcCommand(
 			...(injection ? [injection.signal] : []),
 		]);
 		onPolicy?.(structuredClone(devTools.resources));
+		management?.policy(devTools.resources);
 		assertPrivateReport(config, hostTemporary);
 		config.processContainer = {
 			...config.processContainer,
@@ -120,6 +184,20 @@ export async function executeMxcCommand(
 			hostTemporary,
 			onOutput,
 		);
+		// MXC 本体が先に timeout すると launcher は終了コードと構造化エラーを返す。
+		// Host 側のタイマーより先に close しても、通常の終了結果として扱わない。
+		const timeoutError = JSON.stringify({
+			error: {
+				code: "backend_error",
+				message: `script timed out after ${call.timeoutMs}ms`,
+			},
+		});
+		if (
+			result.exitCode === 0xffff_ffff &&
+			result.stderr.trimEnd().endsWith(timeoutError)
+		) {
+			throw new Error("Sandbox 実行がタイムアウトしました。");
+		}
 		const report = await readMxcDenials(hostTemporary, devTools);
 		onDenials?.(report);
 		return result;
@@ -272,7 +350,11 @@ function collectOutput(
 	});
 }
 /** 通常の開発ツール設定を秘密値の注入より先に用意する。 */
-async function prepareMxcDevTools(call: ToolCall, temporary: string) {
+async function prepareMxcDevTools(
+	call: ToolCall,
+	temporary: string,
+	management?: SandboxManagement,
+) {
 	const discovered = await discoverDevTools(
 		call.env ?? {},
 		initialDevToolProfiles,
@@ -282,13 +364,24 @@ async function prepareMxcDevTools(call: ToolCall, temporary: string) {
 	if (!managedRoot) {
 		throw new Error("Sandbox キャッシュの保存先を取得できません。");
 	}
+	// 拒否されたホストキャッシュを分類する候補。検出しても読み書きは許可しない。
+	for (const [tool, target] of [
+		["pnpm", join(managedRoot, "pnpm", "store")],
+		["pnpm", join(managedRoot, "pnpm-cache")],
+		["node", join(managedRoot, "npm-cache")],
+	] as const) {
+		discovered.resources.push(
+			toolResource("cache", target, tool, "profile"),
+		);
+	}
 	return prepareDevToolStorage(
 		discovered,
 		join(managedRoot, "Nerita", "sandbox-cache"),
-		call.policy.workspaceRoots[0]!,
+		workspaceFor(call),
 		temporary,
 		process.env.USERPROFILE
 			? join(process.env.USERPROFILE, ".npmrc")
 			: undefined,
+		management ? management.resourceGrants.usesCache(call) : true,
 	);
 }

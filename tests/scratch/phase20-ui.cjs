@@ -1,4 +1,5 @@
 // Storybook 起動後に node tests/scratch/phase20-ui.cjs <port> で Sandbox と承認画面を撮影する。
+/* global document, window */
 const { chromium, expect } = require("@playwright/test");
 const { mkdir, writeFile } = require("node:fs/promises");
 const { join } = require("node:path");
@@ -77,6 +78,7 @@ async function review(page, theme, width, directory) {
 	await page.getByRole("button", { name: "承認を取り消す" }).click();
 	await expect(page.getByRole("alert")).toContainText("保存に失敗");
 	await expect(page.getByText("pnpm · read-only-ish")).toBeVisible();
+	await reviewResources(page);
 	await page.screenshot({
 		path: join(directory, `${theme}-${width}-settings.png`),
 		fullPage: true,
@@ -91,6 +93,82 @@ async function review(page, theme, width, directory) {
 		path: join(directory, `${theme}-${width}-unavailable.png`),
 		fullPage: true,
 	});
+	await reviewLargeOutput(page, url, theme, width, directory);
+}
+
+/** 大量出力はプレビューから明示的に範囲取得し、次の範囲へ置き換えて表示する。 */
+async function reviewLargeOutput(page, url, theme, width, directory) {
+	await page.goto(url("chat-tool-cards--large-output"));
+	await page
+		.getByRole("button", { name: /^Get-Content/, expanded: false })
+		.click();
+	await expect(page.getByText("先頭の詳細出力", { exact: true })).toHaveCount(
+		0,
+	);
+	await page.getByRole("button", { name: "詳細出力", exact: true }).click();
+	const detail = page.getByRole("region", { name: "詳細出力", exact: true });
+	await expect(
+		detail.getByRole("button", { name: "次の範囲を表示" }),
+	).toBeDisabled();
+	await page
+		.getByRole("button", { name: "出力応答を受信", exact: true })
+		.click();
+	await expect(detail).toContainText("先頭の詳細出力");
+	await page.screenshot({
+		path: join(directory, `${theme}-${width}-large-output.png`),
+		fullPage: true,
+	});
+	await detail.getByRole("button", { name: "次の範囲を表示" }).click();
+	await page
+		.getByRole("button", { name: "出力応答を受信", exact: true })
+		.click();
+	await expect(detail).toContainText("次の詳細出力");
+	await expect(detail).not.toContainText("先頭の詳細出力");
+	await expect(
+		detail.getByRole("button", { name: "次の範囲を表示" }),
+	).toBeDisabled();
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= window.innerWidth,
+		),
+	).toBe(true);
+}
+
+/** 許可・キャッシュ切替・取消しの失敗で、Host の状態を表示から消さない。 */
+async function reviewResources(page) {
+	for (const name of [
+		"今回だけ許可して再実行",
+		"セッション中許可して再実行",
+		"このワークスペースで許可して再実行",
+		"Sandbox キャッシュを使用して再実行",
+	]) {
+		const button = page.getByRole("button", { name, exact: true });
+		await expect(button).toBeVisible();
+		await button.click();
+		await expect(page.getByRole("alert")).toContainText("保存に失敗");
+		await expect(button).toBeEnabled();
+	}
+	await page
+		.getByRole("button", { name: "リソース権限を取り消す", exact: true })
+		.click();
+	await expect(
+		page.getByText("tools/node/helper.exe", { exact: true }),
+	).toBeVisible();
+	await page
+		.getByRole("button", { name: "キャッシュ切替を取り消す", exact: true })
+		.click();
+	await expect(
+		page.getByText("pnpm · Sandbox キャッシュ", { exact: true }),
+	).toBeVisible();
+	const diagnostic = page
+		.getByText("Object Manager diagnostic", { exact: true })
+		.locator("..");
+	await expect(diagnostic.getByRole("button")).toHaveCount(0);
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= window.innerWidth,
+		),
+	).toBe(true);
 }
 main().catch((error) => {
 	console.error(error);

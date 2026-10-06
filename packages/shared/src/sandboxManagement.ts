@@ -4,7 +4,13 @@ import {
 	commandGrantSchema,
 	commandPermissionKeySchema,
 } from "./commandPermission";
-import { resourceKindSchema, resourceScopeSchema } from "./sandboxPolicy";
+import {
+	resourceKindSchema,
+	resourceScopeSchema,
+	resourceGrantSchema,
+	sandboxCacheSchema,
+	resourceDecisionSchema,
+} from "./sandboxPolicy";
 
 export const sandboxAvailabilitySchema = z.object({
 	id: z.enum(["mxc", "docker"]),
@@ -31,11 +37,16 @@ export const sandboxDenialSchema = z.object({
 	resource: sandboxResourceSchema.optional(),
 	requestedAccess: z.string(),
 	estimatedTool: z.string().optional(),
+	actions: z
+		.array(z.enum(["allow", "use-sandbox-cache", "deny"]))
+		.default([]),
 });
 export const sandboxSnapshotSchema = z.object({
 	selected: z.literal("mxc"),
 	availability: z.array(sandboxAvailabilitySchema),
 	grants: z.array(commandGrantSchema),
+	resourceGrants: z.array(resourceGrantSchema),
+	cacheSwitches: z.array(sandboxCacheSchema),
 	resources: z.array(sandboxResourceSchema),
 	denials: z.array(sandboxDenialSchema),
 	reportStatus: z.enum(["not-run", "reported", "empty", "unavailable"]),
@@ -44,6 +55,18 @@ export type SandboxSnapshot = z.infer<typeof sandboxSnapshotSchema>;
 export const sandboxRequestSchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("ready") }).strict(),
 	z.object({ type: z.literal("probe") }).strict(),
+	z
+		.object({
+			type: z.literal("denial-action"),
+			decision: resourceDecisionSchema,
+		})
+		.strict(),
+	z
+		.object({ type: z.literal("revoke-resource"), id: z.string().min(1) })
+		.strict(),
+	z
+		.object({ type: z.literal("revoke-cache"), id: z.string().min(1) })
+		.strict(),
 	z
 		.object({
 			type: z.literal("revoke"),

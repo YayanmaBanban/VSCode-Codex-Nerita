@@ -184,40 +184,59 @@ void test("Pi の MXC シェルは cwd と出力更新を維持し、途中出�
 	});
 });
 
-void test("Pi の Host pnpm を停止すると配下の Node も止まり、遅れた書込みが起きない", async (t) => {
-	const f = await piFixture(t);
-	f.options.executor = new MxcExecutor(
-		await loadMxcSdk(process.env.NERITA_TEST_EXTENSION!),
-		"base-container",
-	);
-	await writeFile(
-		join(f.cwd, "package.json"),
-		JSON.stringify({ scripts: { probe: "node child.cjs" } }),
-	);
-	await writeFile(
-		join(f.cwd, "child.cjs"),
-		"console.log('HOST_CHILD_READY'); setTimeout(() => require('node:fs').writeFileSync('late.txt','forbidden'), 3000);",
-	);
-	const controller = f.controller();
-	await controller.connect();
-	f.model.replies.push(
-		{ name: "pnpm", arguments: { args: ["run", "probe"] } },
-		"停止済み",
-	);
-	await send(controller, "ホスト実行の停止を確認");
-	await permission(controller, "accept");
-	await until(
-		() => hasRunningOutput(controller.snapshot().tools, "HOST_CHILD_READY"),
-		() => controller.snapshot(),
-	);
-	const state = controller.snapshot();
-	await controller.receive({
-		type: "prompt/cancel",
-		requestId: "stop-host",
-		sessionId: state.sessionId,
-		runId: state.runId,
+for (const stop of ["cancel", "timeout"]) {
+	void test(`Pi の Host pnpm を停止すると配下の Node も止まり、遅れた書込みが起きない（${stop}）`, async (t) => {
+		const f = await piFixture(t);
+		f.options.executor = new MxcExecutor(
+			await loadMxcSdk(process.env.NERITA_TEST_EXTENSION!),
+			"base-container",
+		);
+		await writeFile(
+			join(f.cwd, "package.json"),
+			JSON.stringify({ scripts: { probe: "node child.cjs" } }),
+		);
+		await writeFile(
+			join(f.cwd, "child.cjs"),
+			"console.log('HOST_CHILD_READY'); setTimeout(() => require('node:fs').writeFileSync('late.txt','forbidden'), 3000);",
+		);
+		const controller = f.controller();
+		await controller.connect();
+		f.model.replies.push(
+			{
+				name: "pnpm",
+				arguments: {
+					args: ["run", "probe"],
+					timeout: stop === "timeout" ? 1 : 60,
+				},
+			},
+			"停止済み",
+		);
+		await send(controller, "ホスト実行の停止を確認");
+		await permission(controller, "accept");
+		await until(
+			() =>
+				hasRunningOutput(
+					controller.snapshot().tools,
+					"HOST_CHILD_READY",
+				),
+			() => controller.snapshot(),
+		);
+		if (stop === "cancel") {
+			const state = controller.snapshot();
+			await controller.receive({
+				type: "prompt/cancel",
+				requestId: "stop-host",
+				sessionId: state.sessionId,
+				runId: state.runId,
+			});
+		}
+		const final = await finished(controller);
+		if (stop === "timeout") {
+			assert.ok(JSON.stringify(final.tools).includes("タイムアウト"));
+		}
+		await setTimeout(3500);
+		await assert.rejects(readFile(join(f.cwd, "late.txt")), {
+			code: "ENOENT",
+		});
 	});
-	await finished(controller);
-	await setTimeout(3500);
-	await assert.rejects(readFile(join(f.cwd, "late.txt")), { code: "ENOENT" });
-});
+}

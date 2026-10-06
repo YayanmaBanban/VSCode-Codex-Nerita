@@ -13,6 +13,32 @@ export type ResourceKind = z.infer<typeof resourceKindSchema>;
 export const resourceScopeSchema = z.enum(["process", "session", "workspace"]);
 export type ResourceScope = z.infer<typeof resourceScopeSchema>;
 
+/** 拒否イベントの明示操作で追加した権限。実行・保存先は Host が決める。 */
+export const resourceGrantSchema = z.object({
+	id: z.string().min(1),
+	resource: z.object({
+		kind: z.enum(["install", "helper", "config"]),
+		target: z.string().min(1),
+		tool: z.string().min(1),
+		profileTarget: z.string().min(1),
+	}),
+	access: z.literal("read"),
+	scope: resourceScopeSchema,
+	source: z.literal("denial"),
+	workspace: z.string().min(1),
+	denialEventId: z.string().min(1),
+	operationId: z.string().min(1),
+});
+export type ResourceGrant = z.infer<typeof resourceGrantSchema>;
+
+/** キャッシュ切替はファイル権限とは別のワークスペース設定として保存する。 */
+export const sandboxCacheSchema = z.object({
+	id: z.string().min(1),
+	workspace: z.string().min(1),
+	tool: z.string().min(1),
+});
+export type SandboxCache = z.infer<typeof sandboxCacheSchema>;
+
 /** 検出元は説明に使い、検出された事実だけで追加権限を承認しない。 */
 export type ResourcePolicy = {
 	id: string;
@@ -37,18 +63,18 @@ export type DenialEvent = {
 /** Host が持つイベント ID を選択する。Webview から任意のパスを許可させない。 */
 export const resourceDecisionSchema = z.discriminatedUnion("action", [
 	z
-		.object({ eventId: z.string().min(1), action: z.literal("deny") })
+		.object({ denialEventId: z.string().min(1), action: z.literal("deny") })
 		.strict(),
 	z
 		.object({
-			eventId: z.string().min(1),
+			denialEventId: z.string().min(1),
 			action: z.literal("allow"),
 			scope: resourceScopeSchema,
 		})
 		.strict(),
 	z
 		.object({
-			eventId: z.string().min(1),
+			denialEventId: z.string().min(1),
 			action: z.literal("use-sandbox-cache"),
 		})
 		.strict(),

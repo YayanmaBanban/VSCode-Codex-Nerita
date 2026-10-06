@@ -13,13 +13,16 @@ export async function prepareDevToolStorage(
 	workspace: string,
 	temporary: string,
 	npmConfigSource?: string,
+	persistentCache = true,
 ): Promise<DevToolPolicy> {
 	await mkdir(managedRoot, { recursive: true });
 	const root = await realpath(managedRoot);
 	const workspaceId = createHash("sha256")
 		.update(workspace.toLowerCase())
 		.digest("hex");
-	const cache = await managedDirectory(root, workspaceId);
+	const cache = persistentCache
+		? await managedDirectory(root, workspaceId)
+		: await managedDirectory(temporary, "cache");
 	const home = await managedDirectory(temporary, "home");
 	const npmConfig = join(home, ".npmrc");
 	const gitConfig = join(home, ".gitconfig");
@@ -35,7 +38,9 @@ export async function prepareDevToolStorage(
 		{
 			...toolResource("cache", cache, "development", "profile"),
 			access: "readwrite" as const,
-			scope: "workspace" as const,
+			scope: persistentCache
+				? ("workspace" as const)
+				: ("process" as const),
 		},
 		{
 			...toolResource("config", npmConfig, "pnpm", "profile"),

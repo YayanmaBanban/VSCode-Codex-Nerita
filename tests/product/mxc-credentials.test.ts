@@ -43,7 +43,7 @@ async function verifyInjection(t: TestContext, route: string) {
 		"base-container",
 	);
 	const acquired = await configureBroker(f, storage);
-	const command = `Write-Output 'https://api.example.test'; Write-Output ('TOKEN_PRESENT=' + [bool]$env:FIXTURE_API_TOKEN); Write-Output ('BWS_PRESENT=' + [bool]$env:BWS_ACCESS_TOKEN); Write-Output $env:FIXTURE_API_TOKEN${route === "mxc" ? "; Start-Sleep -Seconds 2" : ""}`;
+	const command = `Write-Output 'https://api.example.test'; Write-Output ('TOKEN_PRESENT=' + [bool]$env:FIXTURE_API_TOKEN); Write-Output ('BWS_PRESENT=' + [bool]$env:BWS_ACCESS_TOKEN); Write-Output $env:FIXTURE_API_TOKEN${route === "mxc" ? "; $line = 'x' * 1024; for ($i=0; $i -lt 2048; $i++) { [Console]::Out.WriteLine($line + $env:FIXTURE_API_TOKEN); [Console]::Error.WriteLine($line + $env:FIXTURE_API_TOKEN) }; Start-Sleep -Seconds 2" : ""}`;
 	await queueExecution(f, route, command);
 	const controller = f.controller();
 	await controller.connect();
@@ -59,6 +59,11 @@ async function verifyInjection(t: TestContext, route: string) {
 	const state = await finished(controller);
 	assert.equal(state.error, null, JSON.stringify(state));
 	assert.equal(acquired(), 1);
+	if (route === "mxc") {
+		assert.equal(state.tools[0]!.output!.truncated, true);
+		assert.ok(state.tools[0]!.output!.preview.length < 30000);
+		assert.ok(state.tools[0]!.output!.totalBytes! > 4_000_000);
+	}
 	const combined = JSON.stringify(state) + f.model.requests.join("\n");
 	assert.ok(
 		combined.includes("TOKEN_PRESENT=True") ||

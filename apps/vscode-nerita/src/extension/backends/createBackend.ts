@@ -82,7 +82,7 @@ function createPiFactory(
 	const sandbox = sandboxManagement(context);
 	const commandPermissions = sandbox.commands;
 	return async (signal, authorize, resume) => {
-		await commandPermissions.clearSession();
+		await sandbox.startSession(signal);
 		const folders = vscode.workspace.workspaceFolders;
 		let folder = folders?.[0];
 		if (folders && folders.length > 1) {

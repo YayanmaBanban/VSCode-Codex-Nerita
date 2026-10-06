@@ -10,6 +10,8 @@ export type AgentAccessPolicy = {
 	readableRoots?: string[];
 	writableRoots: string[];
 	networkAccess: boolean;
+	/** Host のネットワーク設定だけが指定し、子 role は変更できない。 */
+	hostLoopbackAccess?: boolean;
 	shell: boolean;
 	windowsSandbox: WindowsSandboxImplementation;
 	guardrailsRoot?: string;

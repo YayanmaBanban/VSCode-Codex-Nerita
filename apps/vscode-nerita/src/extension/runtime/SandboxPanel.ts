@@ -1,4 +1,4 @@
-// Sandbox 管理パネルを登録し、Host が保持する権限の取消しと起動検査だけを受け付ける。
+// Sandbox 管理パネルを登録し、Host の拒否イベントへの操作・権限取消し・起動検査を受け付ける。
 import * as vscode from "vscode";
 import {
 	sandboxRequestSchema,
@@ -17,15 +17,27 @@ export function sandboxManagement(
 ): SandboxManagement {
 	let manager = managers.get(context);
 	if (!manager) {
-		manager = new SandboxManagement({
-			read: () => context.workspaceState.get("nerita.commandPermissions"),
-			write: async (grants) => {
-				await context.workspaceState.update(
-					"nerita.commandPermissions",
-					grants,
-				);
+		manager = new SandboxManagement(
+			{
+				read: () =>
+					context.workspaceState.get("nerita.commandPermissions"),
+				write: async (grants) => {
+					await context.workspaceState.update(
+						"nerita.commandPermissions",
+						grants,
+					);
+				},
 			},
-		});
+			{
+				read: () => context.workspaceState.get("nerita.resourceGrants"),
+				write: async (state) => {
+					await context.workspaceState.update(
+						"nerita.resourceGrants",
+						state,
+					);
+				},
+			},
+		);
 		managers.set(context, manager);
 	}
 	return manager;
@@ -50,6 +62,17 @@ async function handleSandboxRequest(
 ) {
 	if (request.type === "revoke") {
 		await manager.commands.revoke(request.permission);
+		return;
+	}
+	if (request.type === "revoke-resource" || request.type === "revoke-cache") {
+		await manager.resourceGrants.revoke(
+			request.id,
+			request.type === "revoke-cache",
+		);
+		return;
+	}
+	if (request.type === "denial-action") {
+		await manager.decide(request.decision);
 		return;
 	}
 	const folder = vscode.workspace.workspaceFolders?.[0];

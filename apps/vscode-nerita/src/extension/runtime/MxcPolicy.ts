@@ -107,7 +107,7 @@ function resolveSandboxPolicy(
 		},
 		network: {
 			internet: call.policy.networkAccess ? "allow" : "deny",
-			localhost: "deny",
+			localhost: call.policy.hostLoopbackAccess ? "allow" : "deny",
 		},
 		ui: { allowWindows: true, clipboard: "deny", inputInjection: "deny" },
 		devTools: devTools ?? {
