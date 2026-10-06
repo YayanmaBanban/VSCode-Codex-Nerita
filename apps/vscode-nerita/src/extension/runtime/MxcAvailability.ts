@@ -43,7 +43,6 @@ export async function probeMxc(
 					writableRoots: [],
 					shell: true,
 					networkAccess: false,
-					windowsSandbox: "elevated",
 				},
 				command: [
 					join(

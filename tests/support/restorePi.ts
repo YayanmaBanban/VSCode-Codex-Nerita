@@ -29,7 +29,6 @@ async function main() {
 				authorize,
 				...(resume ? { resume } : {}),
 				executor: null,
-				windowsSandbox: "elevated",
 				workspaceRoots: [input.cwd],
 				workspaceTrusted: true,
 				trustStore,

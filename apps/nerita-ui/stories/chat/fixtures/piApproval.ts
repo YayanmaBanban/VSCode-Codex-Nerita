@@ -89,7 +89,6 @@ function approvalStoryPresentation(
 			writableRoots: ["workspace with spaces/project"],
 			shell: true,
 			networkAccess: false,
-			windowsSandbox: "elevated",
 		},
 		...(shell
 			? {

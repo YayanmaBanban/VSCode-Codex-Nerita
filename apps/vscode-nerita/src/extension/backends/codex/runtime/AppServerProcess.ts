@@ -1,13 +1,13 @@
 // シェルを介さず App Server を起動し、接続終了時にプロセスツリーを解放する。
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import type { WindowsSandboxImplementation } from "../../../security/AgentAccessPolicy";
+import type { WindowsSandboxSetupMode } from "../codex-app-server/v2/WindowsSandboxSetupMode";
 import { sandboxServerEnvironment } from "../../../runtime/CommandEnvironment";
 
 /** 認証・`CODEX_HOME`・設定を継承し、同梱ネイティブ実行ファイルを起動する。 */
 export function startAppServerProcess(
 	executable: string,
 	cwd: string,
-	windowsSandbox?: WindowsSandboxImplementation,
+	windowsSandbox?: WindowsSandboxSetupMode,
 ): ChildProcessWithoutNullStreams {
 	const env = windowsSandbox
 		? sandboxServerEnvironment()

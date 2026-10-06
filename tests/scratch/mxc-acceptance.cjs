@@ -75,7 +75,6 @@ function createRun(sdk, executeMxcCommand, workspace, shell, env) {
 					shell: true,
 					networkAccess,
 					hostLoopbackAccess,
-					windowsSandbox: "elevated",
 				},
 				command: [
 					shell,

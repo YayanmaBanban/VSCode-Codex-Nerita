@@ -22,7 +22,6 @@ export function approvePiTool(
 		writableRoots: [cwd],
 		shell: true,
 		networkAccess: false,
-		windowsSandbox: "elevated",
 	},
 	lifetime?: AbortSignal,
 	checkOrigin?: () => Promise<void>,

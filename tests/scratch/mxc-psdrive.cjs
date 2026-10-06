@@ -49,7 +49,6 @@ async function main() {
 				writableRoots: [root],
 				shell: true,
 				networkAccess: false,
-				windowsSandbox: "elevated",
 			},
 			command: [
 				path.join(

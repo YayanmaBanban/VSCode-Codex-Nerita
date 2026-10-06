@@ -136,7 +136,6 @@ async function prepareWebExtension(f: Awaited<ReturnType<typeof piFixture>>) {
 		writableRoots: [f.cwd],
 		networkAccess: true,
 		shell: false,
-		windowsSandbox: "elevated",
 	};
 	return { cache };
 }

@@ -115,7 +115,6 @@ async function verifyBoundaries(
 			writableRoots: [cwd],
 			shell: true,
 			networkAccess: network,
-			windowsSandbox: "elevated",
 		};
 	}
 	await writeFile(

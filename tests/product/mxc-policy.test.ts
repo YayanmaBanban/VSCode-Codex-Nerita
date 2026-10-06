@@ -27,7 +27,6 @@ async function fixture() {
 			writableRoots: [cwd],
 			shell: true,
 			networkAccess: false,
-			windowsSandbox: "elevated",
 		},
 		command: ["tool.exe", "with spaces", 'a"b', "trailing\\"],
 		env: commandEnvironment({

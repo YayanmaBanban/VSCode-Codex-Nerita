@@ -1,13 +1,12 @@
-// Windows の Pi 利用時に、明示的なコマンドから Codex Sandbox をセットアップする。
+// VS Code のコマンドから Codex バックエンドの Windows Sandbox をセットアップする。
 
 import type { AppServerNotification } from "../protocol/rpcMessage";
 
 import * as vscode from "vscode";
 import { z } from "zod";
 import { CodexClient } from "../CodexClient";
-import { resolveWindowsSandbox } from "../CodexSandboxExecutor";
 import { requireLocalWorkspace } from "../../../workspace";
-import type { WindowsSandboxImplementation } from "../../../security/AgentAccessPolicy";
+import type { WindowsSandboxSetupMode } from "../codex-app-server/v2/WindowsSandboxSetupMode";
 
 const completionSchema = z.object({
 	mode: z.enum(["elevated", "unelevated"]),
@@ -17,7 +16,7 @@ const completionSchema = z.object({
 
 /** セットアップ受付と完了を区別し、完了通知まで接続を保持する。 */
 export function registerSandboxSetup(context: vscode.ExtensionContext): void {
-	if (!canSetupPiSandbox()) {
+	if (process.platform !== "win32") {
 		return;
 	}
 	const lifetime = new AbortController();
@@ -25,9 +24,9 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(
 		{ dispose: () => lifetime.abort() },
 		vscode.commands.registerCommand(
-			"nerita.pi.setupCodexWindowsSandbox",
+			"nerita.codex.setupWindowsSandbox",
 			async () => {
-				if (running || !canSetupPiSandbox()) {
+				if (running || !canSetupCodexSandbox()) {
 					return;
 				}
 				running = true;
@@ -50,7 +49,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 						createSandboxSetupTask(lifetime, context, cwd, mode),
 					);
 					void vscode.window.showInformationMessage(
-						"Windows Sandbox のセットアップが完了しました。Piへ再接続してください。",
+						"Windows Sandbox のセットアップが完了しました。Codexへ再接続してください。",
 					);
 				} catch (error) {
 					void vscode.window.showErrorMessage(
@@ -69,7 +68,7 @@ function createSandboxSetupTask(
 	lifetime: AbortController,
 	context: vscode.ExtensionContext,
 	cwd: string,
-	mode: WindowsSandboxImplementation,
+	mode: WindowsSandboxSetupMode,
 ): (
 	progress: vscode.Progress<{ message?: string; increment?: number }>,
 	token: vscode.CancellationToken,
@@ -157,12 +156,42 @@ function createSandboxCompletionHandler(
 	};
 }
 
-/** 設定変更後の直接呼出しでも、Codex バックエンドからは開始させない。 */
-function canSetupPiSandbox(): boolean {
+/** Pi へ切り替えた後は、コマンドを直接呼び出しても App Server を起動しない。 */
+function canSetupCodexSandbox(): boolean {
 	return (
 		process.platform === "win32" &&
 		vscode.workspace
 			.getConfiguration("nerita")
-			.get<string>("backend", "codex") === "pi"
+			.get<string>("backend", "codex") === "codex"
 	);
+}
+
+/** Codex の既存設定を読み、Windows Sandbox のモードが未指定の場合だけ `elevated` を使う。 */
+async function resolveWindowsSandbox(
+	extensionPath: string,
+	cwd: string,
+	signal: AbortSignal,
+): Promise<WindowsSandboxSetupMode> {
+	const client = await CodexClient.connect({
+		extensionPath,
+		cwd,
+		signal,
+		clientInfo: {
+			name: "nerita_codex_sandbox_config",
+			title: "Nerita Codex Sandbox",
+			version: "0.0.1",
+		},
+	});
+	try {
+		const { sandbox } = await client.readSandboxConfig(cwd);
+		if (sandbox === null) {
+			return "elevated";
+		}
+		if (sandbox === "elevated" || sandbox === "unelevated") {
+			return sandbox;
+		}
+		throw new Error(`Windows Sandboxの設定に対応していません: ${sandbox}`);
+	} finally {
+		await client.dispose();
+	}
 }

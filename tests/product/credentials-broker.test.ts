@@ -366,7 +366,7 @@ void test("Git remote の固定 URL を要求へ解決し、ヘルパーは承�
 			tool: "powershell",
 			params: { command: "git fetch origin" },
 			cwd: f.cwd,
-			policy: await createWorkspaceAccessPolicy([f.cwd], "elevated"),
+			policy: await createWorkspaceAccessPolicy([f.cwd]),
 		},
 		[gitBinding],
 		f.cwd,

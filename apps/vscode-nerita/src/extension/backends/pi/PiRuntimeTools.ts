@@ -8,7 +8,6 @@ import {
 import {
 	intersectPolicy,
 	containsPath,
-	type WindowsSandboxImplementation,
 } from "../../security/AgentAccessPolicy";
 import { createSandboxExecutor } from "../../runtime/CreateSandboxExecutor";
 import { createPiShellTools } from "./PiShellTools";
@@ -139,15 +138,11 @@ function hostShellOptions(settings?: ShellSettings): PiSdk.BashToolOptions {
 }
 
 /** ファイル操作と子の `role` の範囲は OS に依存せず確認する。 */
-async function runtimePaths(
-	options: PiRuntimeOptions,
-	mode?: WindowsSandboxImplementation,
-) {
+async function runtimePaths(options: PiRuntimeOptions) {
 	const base =
 		options.parentPolicy ??
 		(await createWorkspaceAccessPolicy(
 			options.workspaceRoots ?? [options.cwd],
-			mode ?? "elevated",
 		));
 	const role = { ...options.role };
 	if (role.writableRoots) {

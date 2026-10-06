@@ -144,10 +144,18 @@ void test("Codex の認証中に接続を破棄した後、遅い成功通知で
 /** 開始受付と完了通知を区別し、失敗と接続破棄でも待機を解除する。 */
 async function verifySandboxSetupNotifications(t: TestContext) {
 	const f = await codexFixture(t);
-	const { command, info, errors, subscriptions } = prepareSandboxSetupUi(
-		f,
-		t,
+	const { command, info, errors, subscriptions, setBackend } =
+		prepareSandboxSetupUi(f, t);
+	const initialRequests = f.requests.length;
+	setBackend("pi");
+	await command();
+	assert.equal(
+		f.requests.length,
+		initialRequests,
+		"PiではApp Serverを起動しない",
 	);
+	assert.equal(info.length, 0);
+	setBackend("codex");
 	for (const result of ["success", "failure", "cancel"] as const) {
 		const previous = f.requests.filter(
 			(request) => request.method === "windowsSandbox/setupStart",
@@ -285,14 +293,16 @@ function prepareSandboxSetupUi(
 	const info: string[] = [];
 	const errors: string[] = [];
 	const subscriptions: { dispose(): unknown }[] = [];
+	let backend = "codex";
 	Object.assign(vscode.workspace, {
 		workspaceFolders: [{ uri: { scheme: "file", fsPath: f.cwd } }],
 		isTrusted: true,
-		getConfiguration: () => ({ get: () => "pi" }),
+		getConfiguration: () => ({ get: () => backend }),
 	});
 	Object.assign(vscode.ProgressLocation, { Notification: 15 });
 	Object.assign(vscode.commands, {
-		registerCommand: (_name: string, callback: () => Promise<void>) => {
+		registerCommand: (name: string, callback: () => Promise<void>) => {
+			assert.equal(name, "nerita.codex.setupWindowsSandbox");
 			command = callback;
 			return { dispose() {} };
 		},
@@ -327,7 +337,15 @@ function prepareSandboxSetupUi(
 		extensionUri: { fsPath: f.extensionPath },
 		subscriptions,
 	} as unknown as vscode.ExtensionContext);
-	return { command, info, errors, subscriptions };
+	return {
+		command,
+		info,
+		errors,
+		subscriptions,
+		setBackend: (value: string) => {
+			backend = value;
+		},
+	};
 }
 
 /** 再接続後のモデル設定を検査し、古いターンの通知が反映されないことを確認する。 */

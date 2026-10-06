@@ -1,7 +1,7 @@
 // App Server の起動・初期化をまとめ、初期化済み接続だけを呼び出し側へ渡す。
 import type { ClientInfo } from "./codex-app-server/ClientInfo";
 import type { CommandExecParams } from "./codex-app-server/v2/CommandExecParams";
-import type { WindowsSandboxImplementation } from "../../security/AgentAccessPolicy";
+import type { WindowsSandboxSetupMode } from "./codex-app-server/v2/WindowsSandboxSetupMode";
 import type { InitializeResponse } from "./codex-app-server/InitializeResponse";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
 import type { ThreadLoadedListParams } from "./codex-app-server/v2/ThreadLoadedListParams";
@@ -34,10 +34,8 @@ export type CodexClientOptions = {
 	clientInfo: ClientInfo;
 	callbacks?: AppServerCallbacks;
 	signal?: AbortSignal;
-	/** 専用シェル接続だけが指定し、既存 Codex バックエンドの設定継承は維持する。 */
-	windowsSandbox?: WindowsSandboxImplementation;
-	/** 実行側で停止・終了を管理する場合は、初期化後に接続用の取消リスナーを外す。 */
-	connectAbortOnly?: boolean;
+	/** 指定時は Windows Sandbox の設定を上書きし、未指定時は既存設定を継承する。 */
+	windowsSandbox?: WindowsSandboxSetupMode;
 };
 
 /** 初期化済みの型付き RPC を、機能別の操作として提供する。 */
@@ -85,9 +83,6 @@ export class CodexClient {
 			});
 			transport.notify({ method: "initialized" });
 			options.signal?.throwIfAborted();
-			if (options.connectAbortOnly) {
-				detachAbort();
-			}
 			return new CodexClient(
 				transport,
 				response,
@@ -112,7 +107,7 @@ export class CodexClient {
 		return this.transport.request("windowsSandbox/readiness", undefined);
 	}
 	/** 明示的な VS Code コマンドからだけセットアップを開始する。 */
-	setupWindowsSandbox(cwd: string, mode: WindowsSandboxImplementation) {
+	setupWindowsSandbox(cwd: string, mode: WindowsSandboxSetupMode) {
 		return this.transport.request("windowsSandbox/setupStart", {
 			cwd,
 			mode,

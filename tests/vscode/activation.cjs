@@ -23,6 +23,7 @@ async function run() {
 	await extension.activate();
 	assert.equal(extension.isActive, true);
 	const commands = await vscode.commands.getCommands(true);
+	assert.ok(!commands.includes("nerita.pi.setupCodexWindowsSandbox"));
 	for (const command of manifest.contributes.commands) {
 		assert.ok(commands.includes(command.command), command.command);
 	}

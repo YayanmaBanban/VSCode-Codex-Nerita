@@ -127,15 +127,7 @@ async function run() {
 		await page
 			.context()
 			.tracing.start({ screenshots: true, snapshots: true });
-		page.on("pageerror", (error) => errors.push(String(error)));
-		page.on("console", (message) => {
-			if (
-				message.type() === "error" &&
-				message.location().url.startsWith("vscode-webview:")
-			) {
-				errors.push(message.text());
-			}
-		});
+		collectWebviewErrors(page, errors);
 		page.setDefaultTimeout(15000);
 		await vscode.commands.executeCommand("nerita.trust.manage");
 		// 信頼管理画面は独立した Webview として表示される。
@@ -172,6 +164,13 @@ async function run() {
 			findFrame,
 		);
 		await verifyToolOutput(page, chat, model, cwd);
+		await require("./sandbox-management.cjs").verifySandboxManagement(
+			page,
+			chat,
+			model,
+			cwd,
+			findFrame,
+		);
 		assert.deepEqual(errors, []);
 	} finally {
 		if (page) {
@@ -188,6 +187,19 @@ async function run() {
 }
 
 module.exports = { run };
+
+/** VS Code 自体の診断と区別し、Webview の例外とコンソールエラーを収集する。 */
+function collectWebviewErrors(page, errors) {
+	page.on("pageerror", (error) => errors.push(String(error)));
+	page.on("console", (message) => {
+		if (
+			message.type() === "error" &&
+			message.location().url.startsWith("vscode-webview:")
+		) {
+			errors.push(message.text());
+		}
+	});
+}
 
 /** 承認前にファイルが作成されていないことと、画面から承認した後のファイル内容を確認する。 */
 async function verifyApprovedWrite(model, page, chat, cwd) {

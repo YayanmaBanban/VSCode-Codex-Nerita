@@ -93,7 +93,6 @@ async function runMxc({ executeMxcCommand, sdk, workspace, cwd, command }) {
 
 				shell: true,
 				networkAccess: false,
-				windowsSandbox: "elevated",
 			},
 
 			command,

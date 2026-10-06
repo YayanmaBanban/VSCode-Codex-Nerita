@@ -435,7 +435,6 @@ function fixtureCall(workspace: string): ToolCall {
 			writableRoots: [workspace],
 			shell: true,
 			networkAccess: false,
-			windowsSandbox: "elevated",
 		},
 	});
 }

@@ -23,7 +23,6 @@ import { type PiAuthorize } from "./PiApprovedTools";
 import type {
 	AgentAccessPolicy,
 	AgentRole,
-	WindowsSandboxImplementation,
 } from "../../security/AgentAccessPolicy";
 import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 import { preparePiRuntimeTools } from "./PiRuntimeTools";
@@ -149,7 +148,6 @@ export type PiRuntimeOptions = {
 	trustContextId?: string;
 	webTrust?: PiWebTrust[];
 	trustedExtensionPaths?: string[];
-	windowsSandbox?: WindowsSandboxImplementation;
 	executor?: SandboxCommandExecutor | null;
 	parentPolicy?: AgentAccessPolicy;
 	role?: AgentRole;

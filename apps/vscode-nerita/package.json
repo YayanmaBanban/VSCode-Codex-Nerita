@@ -176,9 +176,9 @@
 				"title": "Nerita: Pi ガードレールを編集"
 			},
 			{
-				"command": "nerita.pi.setupCodexWindowsSandbox",
-				"title": "Nerita: Pi用のCodex Windows Sandboxをセットアップ",
-				"enablement": "isWindows && config.nerita.backend == pi"
+				"command": "nerita.codex.setupWindowsSandbox",
+				"title": "Nerita: Codex Windows Sandboxをセットアップ",
+				"enablement": "isWindows && config.nerita.backend == codex"
 			},
 			{
 				"command": "nerita.codex.codeBlock",
@@ -207,8 +207,8 @@
 			],
 			"commandPalette": [
 				{
-					"command": "nerita.pi.setupCodexWindowsSandbox",
-					"when": "isWindows && config.nerita.backend == pi"
+					"command": "nerita.codex.setupWindowsSandbox",
+					"when": "isWindows && config.nerita.backend == codex"
 				},
 				{
 					"command": "nerita.codex.codeBlock",

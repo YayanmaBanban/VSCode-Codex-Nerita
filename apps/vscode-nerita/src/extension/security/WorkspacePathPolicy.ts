@@ -1,11 +1,7 @@
 // 実在する祖先と正規化されたパスを確認し、Host ファイルツールの書込み境界を検査する。
 import { lstat, realpath, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
-import {
-	containsPath,
-	type AgentAccessPolicy,
-	type WindowsSandboxImplementation,
-} from "./AgentAccessPolicy";
+import { containsPath, type AgentAccessPolicy } from "./AgentAccessPolicy";
 import { freezeToolCall } from "./ApprovedToolCall";
 
 /** デバイス名前空間・ADS・ドライブ相対名などの別解釈を許さない。 */
@@ -68,7 +64,6 @@ export async function canonicalPath(
 /** `Workspace Trust` を通過した Host の `roots` をコピーして固定する。 */
 export async function createWorkspaceAccessPolicy(
 	roots: readonly string[],
-	windowsSandbox: WindowsSandboxImplementation = "elevated",
 ): Promise<AgentAccessPolicy> {
 	if (!roots.length) {
 		throw new Error("workspace rootsを解決できません。");
@@ -87,7 +82,6 @@ export async function createWorkspaceAccessPolicy(
 		writableRoots: [...new Set(canonical)],
 		shell: true,
 		networkAccess: false,
-		windowsSandbox,
 	});
 }
 

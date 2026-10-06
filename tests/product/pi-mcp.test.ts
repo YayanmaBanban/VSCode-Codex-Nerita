@@ -22,7 +22,6 @@ async function fixture(t: TestContext, codemode = false) {
 		writableRoots: [f.cwd],
 		shell: false,
 		networkAccess: true,
-		windowsSandbox: "elevated",
 	};
 	const mcp = await mcpServer();
 	t.after(() => mcp.close());

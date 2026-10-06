@@ -1,9 +1,5 @@
 // シェルの権限上限と、Host ファイルツールの書込み範囲を保持する。
 import { isAbsolute, relative, sep } from "node:path";
-import type { SandboxPolicy } from "../backends/codex/codex-app-server/v2/SandboxPolicy";
-
-/** Windows 実装は親から継承し、`role` から変更できない。 */
-export type WindowsSandboxImplementation = "elevated" | "unelevated";
 /** Pi は `readableRoots` を指定する。未指定の既存バックエンドは OS の読取り権限に従う。 */
 export type AgentAccessPolicy = {
 	workspaceRoots: string[];
@@ -13,7 +9,6 @@ export type AgentAccessPolicy = {
 	/** Host のネットワーク設定だけが指定し、子 role は変更できない。 */
 	hostLoopbackAccess?: boolean;
 	shell: boolean;
-	windowsSandbox: WindowsSandboxImplementation;
 	guardrailsRoot?: string;
 	trustContextId?: string | undefined;
 };
@@ -59,17 +54,4 @@ function intersectRoot(root: string, requested: string): string[] {
 		return [requested];
 	}
 	return containsPath(requested, root) ? [root] : [];
-}
-
-/** 一時ディレクトリへの書込み例外を無効にする。cwd が書込み範囲を広げないかの検査は実行側で行う。 */
-export function toSandboxPolicy(policy: AgentAccessPolicy): SandboxPolicy {
-	return policy.writableRoots.length
-		? {
-				type: "workspaceWrite",
-				writableRoots: [...policy.writableRoots],
-				networkAccess: policy.networkAccess,
-				excludeTmpdirEnvVar: true,
-				excludeSlashTmp: true,
-			}
-		: { type: "readOnly", networkAccess: policy.networkAccess };
 }

@@ -1,14 +1,12 @@
-// Codex 本体の OS によるアクセス制限を確認する。承認 UI の検証とは分け、承認済みコマンドを使う。
+// 書込み範囲を指定して Codex 本体の OS によるアクセス制限を確認する。承認 UI は別のテストで検証する。
 import assert from "node:assert/strict";
 import { mkdir, readFile, realpath, writeFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { createCodexSandboxExecutor } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSandboxExecutor";
-import { issueApprovedToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
-import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
-import { bindTrustContext } from "../../apps/vscode-nerita/src/extension/security/trust/TrustGate";
+import { CodexClient } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
+import { randomUUID } from "node:crypto";
 import { commandEnvironment } from "../../apps/vscode-nerita/src/extension/runtime/CommandEnvironment";
 
 /** 準備失敗ではなく、同じ実行経路での書込み成功と OS 拒否を対にして観測する。 */
@@ -21,13 +19,6 @@ async function main() {
 	await mkdir(workspace);
 	await writeFile(outside, "original");
 	const cwd = await realpath(workspace);
-	const trust = new WorkspaceTrustStore({
-		read: () => undefined,
-		write: () => Promise.resolve(),
-	});
-	await trust.setUserTrust(cwd, true);
-	const context = bindTrustContext(trust, [cwd], () => true);
-	const executor = createCodexSandboxExecutor(extension);
 	/** スクリプトは新しい領域に置き、引数をシェルの文字列展開へ渡さない。 */
 	const execute = async (
 		source: string,
@@ -35,60 +26,102 @@ async function main() {
 	) => {
 		const script = join(cwd, "command.cjs");
 		await writeFile(script, source);
-		return executor.execute(
-			issueApprovedToolCall(
-				{
-					tool: "bash",
-					params: { command: "node ./command.cjs" },
-					cwd,
-					command: [process.execPath, script],
-					env: commandEnvironment(),
-					timeoutMs: 15000,
-					policy: {
-						workspaceRoots: [cwd],
-						writableRoots: [cwd],
-						networkAccess: false,
-						shell: true,
-						windowsSandbox: "elevated",
-						trustContextId: context.id,
-					},
-				},
-				signal,
-			),
-		);
+		return executeSandboxCommand(extension, cwd, script, signal);
 	};
+	const allowed = await execute(
+		"require('node:fs').writeFileSync('inside.txt', 'allowed')",
+	);
+	assert.equal(allowed.exitCode, 0);
+	assert.equal(await readFile(join(cwd, "inside.txt"), "utf8"), "allowed");
+	// 子プロセスにも同じ境界が適用され、拒否時の例外を捕捉して成功扱いにしていないことを確認する。
+	const denied = `require('node:fs').writeFileSync(${JSON.stringify(outside)}, 'changed')`;
+	await assert.rejects(
+		execute(
+			`const r = require('node:child_process').spawnSync(process.execPath, ['-e', ${JSON.stringify(denied)}], {encoding:'utf8'}); process.stderr.write(r.stderr); process.exit(r.status ?? 1);`,
+		),
+		/sandbox denied.*|EPERM|EACCES/i,
+	);
+	assert.equal(await readFile(outside, "utf8"), "original");
+	const created = join(root, "created.txt");
+	await assert.rejects(
+		execute(
+			`require('node:fs').writeFileSync(${JSON.stringify(created)}, 'outside')`,
+		),
+		/sandbox denied.*|EPERM|EACCES/i,
+	);
+	await assert.rejects(access(created), { code: "ENOENT" });
+	await verifyStopped(cwd, execute);
+	console.log(
+		"実 Windows Sandbox: 許可領域の書込み成功、領域外の書込み拒否、停止時に子孫を回収",
+	);
+}
+
+/** 配布物に含まれる Codex の RPC を直接呼び出し、OS によるアクセス制限を検証する。 */
+async function executeSandboxCommand(
+	extensionPath: string,
+	cwd: string,
+	script: string,
+	signal: AbortSignal,
+) {
+	signal.throwIfAborted();
+	const client = await CodexClient.connect({
+		extensionPath,
+		cwd,
+		windowsSandbox: "elevated",
+		clientInfo: {
+			name: "nerita_codex_acceptance",
+			title: null,
+			version: "0.0.1",
+		},
+	});
+	const processId = randomUUID();
+	let started = false;
+	let closing: Promise<void> | undefined;
+	const close = () => (closing ??= closeCommand(client, processId, started));
+	const abort = () => void close().catch(() => undefined);
+	signal.addEventListener("abort", abort, { once: true });
 	try {
-		const allowed = await execute(
-			"require('node:fs').writeFileSync('inside.txt', 'allowed')",
-		);
-		assert.equal(allowed.exitCode, 0);
-		assert.equal(
-			await readFile(join(cwd, "inside.txt"), "utf8"),
-			"allowed",
-		);
-		// 子プロセスにも同じ境界が適用され、拒否時の例外を捕捉して成功扱いにしていないことを確認する。
-		const denied = `require('node:fs').writeFileSync(${JSON.stringify(outside)}, 'changed')`;
-		await assert.rejects(
-			execute(
-				`const r = require('node:child_process').spawnSync(process.execPath, ['-e', ${JSON.stringify(denied)}], {encoding:'utf8'}); process.stderr.write(r.stderr); process.exit(r.status ?? 1);`,
-			),
-			/sandbox denied.*|EPERM|EACCES/i,
-		);
-		assert.equal(await readFile(outside, "utf8"), "original");
-		const created = join(root, "created.txt");
-		await assert.rejects(
-			execute(
-				`require('node:fs').writeFileSync(${JSON.stringify(created)}, 'outside')`,
-			),
-			/sandbox denied.*|EPERM|EACCES/i,
-		);
-		await assert.rejects(access(created), { code: "ENOENT" });
-		await verifyStopped(cwd, execute);
-		console.log(
-			"実 Windows Sandbox: 許可領域の書込み成功、領域外の書込み拒否、停止時に子孫を回収",
-		);
+		signal.throwIfAborted();
+		assert.equal((await client.readSandboxConfig(cwd)).sandbox, "elevated");
+		assert.equal((await client.readSandboxReadiness()).status, "ready");
+		signal.throwIfAborted();
+		started = true;
+		const result = await client.executeCommand({
+			command: [process.execPath, script],
+			cwd,
+			env: commandEnvironment(),
+			processId,
+			timeoutMs: 15000,
+			sandboxPolicy: {
+				type: "workspaceWrite",
+				writableRoots: [cwd],
+				networkAccess: false,
+				excludeTmpdirEnvVar: true,
+				excludeSlashTmp: true,
+			},
+		});
+		signal.throwIfAborted();
+		return result;
 	} finally {
-		context.dispose();
+		signal.removeEventListener("abort", abort);
+		await close();
+	}
+}
+
+/** 停止要求が失敗しても、この検証が起動した App Server を回収する。 */
+async function closeCommand(
+	client: CodexClient,
+	processId: string,
+	started: boolean,
+) {
+	try {
+		if (started) {
+			await client.terminateCommand(processId);
+		}
+	} catch {
+		/* 終了済みのコマンドや通信断でも、元の実行結果・例外を維持する。 */
+	} finally {
+		await client.dispose();
 	}
 }
 

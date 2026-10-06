@@ -57,7 +57,6 @@ async function capture(root, createMxcConfig, sdk) {
 					writableRoots: [],
 					shell: true,
 					networkAccess: false,
-					windowsSandbox: "elevated",
 				},
 				command: [
 					path.join(

@@ -53,7 +53,6 @@ async function verifyRetry(t: TestContext, outcome: "retry" | "cancel") {
 				writableRoots: [cwd],
 				shell: true,
 				networkAccess: false,
-				windowsSandbox: "elevated",
 				trustContextId: trust.id,
 			},
 		},
