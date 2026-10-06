@@ -1,4 +1,5 @@
 // 能力検出に加えて固定コマンドを起動し、DLL の存在だけで利用可能と判定しない。
+import { errorText } from "@nerita/shared/errorText";
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -81,7 +82,7 @@ export async function probeMxc(
 		return {
 			...status,
 			available: false,
-			reason: error instanceof Error ? error.message : String(error),
+			reason: error instanceof Error ? error.message : errorText(error),
 		};
 	}
 }

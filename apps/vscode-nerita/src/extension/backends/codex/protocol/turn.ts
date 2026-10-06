@@ -123,8 +123,9 @@ export function parseAccount(value: unknown): {
 		!(
 			value.account === null ||
 			(isRecord(value.account) &&
+				typeof value.account.type === "string" &&
 				["apiKey", "chatgpt", "amazonBedrock"].includes(
-					String(value.account.type),
+					value.account.type,
 				))
 		)
 	) {

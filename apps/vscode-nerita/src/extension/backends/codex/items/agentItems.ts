@@ -159,8 +159,9 @@ function isActivityIdentity(item: Record<string, unknown>): item is Record<
 		typeof item.agentPath === "string" &&
 		item.agentPath.length > 0 &&
 		typeof item.id === "string" &&
+		typeof item.kind === "string" &&
 		["started", "interacted", "interrupted", "completed"].includes(
-			String(item.kind),
+			item.kind,
 		)
 	);
 }

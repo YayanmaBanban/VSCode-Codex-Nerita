@@ -1,5 +1,6 @@
 ﻿// 拡張機能のサービスを組み立て、VS Code の起動条件と終了処理を管理する。
 import * as vscode from "vscode";
+import { errorText } from "@nerita/shared/errorText";
 import { randomUUID } from "node:crypto";
 import { createBackend } from "./backends/createBackend";
 import type { BackendSession } from "./session/chatSession";
@@ -85,7 +86,7 @@ export async function activate(
 				.restore()
 				.catch((error: unknown) =>
 					vscode.window.showErrorMessage(
-						`ガードレールを復元できません: ${String(error)}`,
+						`ガードレールを復元できません: ${errorText(error)}`,
 					),
 				);
 		}),

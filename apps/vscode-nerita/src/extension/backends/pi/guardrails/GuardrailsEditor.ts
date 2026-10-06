@@ -1,4 +1,5 @@
 // Custom Text Editor を通常のエディタグループへ登録し、検査・保存・適用を分離する。
+import { errorText } from "@nerita/shared/errorText";
 
 import * as vscode from "vscode";
 import { realpath } from "node:fs/promises";
@@ -263,7 +264,7 @@ export async function registerGuardrailsEditor(
 					guardrailsViewType,
 				);
 			} catch (error) {
-				void vscode.window.showErrorMessage(String(error));
+				void vscode.window.showErrorMessage(errorText(error));
 			}
 		}),
 		{ dispose: () => guardrailRegistry.dispose() },

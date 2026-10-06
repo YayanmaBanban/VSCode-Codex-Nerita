@@ -88,9 +88,8 @@ function invalidNumber(number: number, field: Record<string, unknown>) {
 function supportedField(field: unknown): field is Record<string, unknown> {
 	return (
 		isRecord(field) &&
-		["string", "number", "integer", "boolean"].includes(
-			String(field.type),
-		) &&
+		typeof field.type === "string" &&
+		["string", "number", "integer", "boolean"].includes(field.type) &&
 		!Boolean(field.format) &&
 		!Boolean(field.oneOf) &&
 		!Boolean(field.anyOf) &&

@@ -73,9 +73,8 @@ function completeTurn(
 	for (const item of event.items) {
 		if (
 			isRecord(item) &&
-			["subAgentActivity", "collabAgentToolCall"].includes(
-				String(item.type),
-			)
+			typeof item.type === "string" &&
+			["subAgentActivity", "collabAgentToolCall"].includes(item.type)
 		) {
 			target.agentNotification({
 				method: "item/completed",
@@ -104,11 +103,13 @@ function applyItemEvent(
 	target: TurnTarget,
 	run: ActiveTurn,
 ) {
-	const id = String(event.item.id);
+	const id = event.item.id;
+	if (typeof id !== "string") {
+		throw new Error("Invalid event item ID");
+	}
 	if (
-		["subAgentActivity", "collabAgentToolCall"].includes(
-			String(event.item.type),
-		)
+		typeof event.item.type === "string" &&
+		["subAgentActivity", "collabAgentToolCall"].includes(event.item.type)
 	) {
 		target.agentNotification({
 			method: event.completed ? "item/completed" : "item/started",
@@ -121,8 +122,11 @@ function applyItemEvent(
 	}
 	if (
 		!run.completedItems.has(id) &&
-		!["subAgentActivity", "collabAgentToolCall"].includes(
-			String(event.item.type),
+		!(
+			typeof event.item.type === "string" &&
+			["subAgentActivity", "collabAgentToolCall"].includes(
+				event.item.type,
+			)
 		)
 	) {
 		target.patch(itemPatch(target.snapshot(), event.item, event.completed));

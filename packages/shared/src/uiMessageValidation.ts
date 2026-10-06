@@ -89,7 +89,8 @@ const uiMessageValidators = new Map<
 		"plan/decide": (value) =>
 			isId(value.sessionId) &&
 			isId(value.runId) &&
-			["current", "new", "continue"].includes(String(value.action)),
+			typeof value.action === "string" &&
+			["current", "new", "continue"].includes(value.action),
 		"session/list": (value) =>
 			(value.archived === undefined ||
 				typeof value.archived === "boolean") &&

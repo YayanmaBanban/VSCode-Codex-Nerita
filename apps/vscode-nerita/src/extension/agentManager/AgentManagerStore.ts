@@ -1,4 +1,5 @@
 // 読み取った世代を照合し、設定ごとの保存先へ必要なキーだけを書き込む。
+import { errorText } from "@nerita/shared/errorText";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	applyEdits,
@@ -54,7 +55,7 @@ export class AgentManagerStore {
 			try {
 				return await readWorkspaceFile(this.root, file);
 			} catch (error) {
-				errors.push(`${file}: ${String(error)}`);
+				errors.push(`${file}: ${errorText(error)}`);
 				return undefined;
 			}
 		};
@@ -64,19 +65,19 @@ export class AgentManagerStore {
 				: await read(".pi/settings.json");
 		const handoffText = await read(".nerita/handoff.json");
 		const codex = await this.readCodex().catch((error: unknown) => {
-			errors.push(String(error));
+			errors.push(errorText(error));
 			return { agents: [], files: {}, errors: [] };
 		});
 		const pi = await this.readPi().catch((error: unknown) => {
 			const files: Record<string, string> = {};
-			errors.push(`Pi: ${String(error)}`);
+			errors.push(`Pi: ${errorText(error)}`);
 			return {
 				files,
 				agents: [],
 				defaults: {},
 				userSettings: "{}",
 				modelScope: "{}",
-				fingerprint: String(error),
+				fingerprint: errorText(error),
 			};
 		});
 		let handoff = defaultHandoff();
@@ -96,7 +97,7 @@ export class AgentManagerStore {
 				handoff = handoffSchema.parse(value);
 			}
 		} catch (error) {
-			handoffError = `handoff.json の形式が不正です: ${String(error)}`;
+			handoffError = `handoff.json の形式が不正です: ${errorText(error)}`;
 		}
 		const agents: ManagedAgent[] = [...pi.agents, ...codex.agents];
 		return {

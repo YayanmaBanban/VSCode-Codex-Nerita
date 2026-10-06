@@ -1,4 +1,5 @@
 // 実際のエディタを、文書とジョブだけを模した通信境界で確認する。
+import { errorText } from "@nerita/shared/errorText";
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { stringify } from "smol-toml";
@@ -90,7 +91,7 @@ function mockBridge(invalid: boolean): WorkflowBridge {
 				}
 			}
 		} catch (error) {
-			reply.error = String(error);
+			reply.error = errorText(error);
 		}
 		post(state);
 		post(reply);

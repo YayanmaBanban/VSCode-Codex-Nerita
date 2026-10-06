@@ -107,16 +107,10 @@ export const UiSlotSchema = z.enum([
 	"status",
 ]);
 
-/** 旧検証処理と同じく、`slot` を `String(slot)` で文字列化して判定する。呼び出し側の値は変更しない。 */
-const compatibleSlotSchema = z.preprocess(
-	(value) => String(value),
-	UiSlotSchema,
-);
-
 /** `when` は省略または `undefined` だけを許可し、未解決条件を拒否する。 */
 export const ResolvedUiContributionSchema = z.object({
 	id: IdSchema,
-	slot: compatibleSlotSchema,
+	slot: UiSlotSchema,
 	order: z.number().optional(),
 	when: z.never().optional(),
 	control: UiControlSchema,

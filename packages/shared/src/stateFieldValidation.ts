@@ -57,6 +57,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 			),
 		asyncTasks: (value) => Array.isArray(value) && value.every(isAsyncTask),
 		connection: (value) =>
+			typeof value === "string" &&
 			[
 				"disconnected",
 				"connecting",
@@ -64,8 +65,9 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				"auth-required",
 				"authenticating",
 				"error",
-			].includes(String(value)),
+			].includes(value),
 		run: (value) =>
+			typeof value === "string" &&
 			[
 				"idle",
 				"running",
@@ -73,7 +75,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				"completed",
 				"cancelled",
 				"failed",
-			].includes(String(value)),
+			].includes(value),
 		sessionId: (value) => value === null || isId(value),
 		runId: (value) => value === null || isId(value),
 		planDecision: (value) =>
@@ -87,7 +89,8 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				value,
 				(item) =>
 					isId(item.id) &&
-					["user", "assistant"].includes(String(item.role)) &&
+					typeof item.role === "string" &&
+					["user", "assistant"].includes(item.role) &&
 					(item.streaming === undefined ||
 						typeof item.streaming === "boolean") &&
 					(item.mcp === undefined || isMcpMessageContent(item.mcp)) &&
@@ -114,7 +117,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 						"cancelled",
 						"unfinished",
 						"unknown",
-					].includes(String(item.status)) &&
+					].some((status) => status === item.status) &&
 					Array.isArray(item.paths) &&
 					item.paths.every((p: unknown) => typeof p === "string"),
 			),
@@ -129,7 +132,8 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 						(o) =>
 							isId(o.id) &&
 							typeof o.name === "string" &&
-							["allow", "deny", "abort"].includes(String(o.kind)),
+							typeof o.kind === "string" &&
+							["allow", "deny", "abort"].includes(o.kind),
 					),
 			),
 		authMethods: (value) =>
@@ -146,7 +150,8 @@ function validResultDisplay(value: unknown): boolean {
 	return (
 		value === undefined ||
 		(isRecord(value) &&
-			["content", "structuredContent"].includes(String(value.source)) &&
+			typeof value.source === "string" &&
+			["content", "structuredContent"].includes(value.source) &&
 			typeof value.omitted === "boolean" &&
 			Object.keys(value).every(
 				(key) => key === "source" || key === "omitted",

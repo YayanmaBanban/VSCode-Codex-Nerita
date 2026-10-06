@@ -190,7 +190,8 @@ function itemStatus(
 ): ToolSummary["status"] {
 	if (completed) {
 		if (
-			["failed", "declined"].includes(String(value.status)) ||
+			(typeof value.status === "string" &&
+				["failed", "declined"].includes(value.status)) ||
 			value.success === false
 		) {
 			return "failed";

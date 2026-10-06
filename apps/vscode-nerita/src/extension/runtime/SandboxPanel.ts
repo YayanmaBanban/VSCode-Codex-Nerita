@@ -1,4 +1,5 @@
 // Sandbox 管理パネルを登録し、Host の拒否イベントへの操作・権限取消し・起動検査を受け付ける。
+import { errorText } from "@nerita/shared/errorText";
 import * as vscode from "vscode";
 import {
 	sandboxRequestSchema,
@@ -140,7 +141,9 @@ function openSandboxPanel(
 				post({
 					type: "error",
 					message:
-						error instanceof Error ? error.message : String(error),
+						error instanceof Error
+							? error.message
+							: errorText(error),
 				}),
 			)
 			.finally(() => {

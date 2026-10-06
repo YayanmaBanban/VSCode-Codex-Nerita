@@ -1,4 +1,5 @@
 // VS Code のコマンドから Codex バックエンドの Windows Sandbox をセットアップする。
+import { errorText } from "@nerita/shared/errorText";
 
 import type { AppServerNotification } from "../protocol/rpcMessage";
 
@@ -53,7 +54,9 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 					);
 				} catch (error) {
 					void vscode.window.showErrorMessage(
-						error instanceof Error ? error.message : String(error),
+						error instanceof Error
+							? error.message
+							: errorText(error),
 					);
 				} finally {
 					running = false;

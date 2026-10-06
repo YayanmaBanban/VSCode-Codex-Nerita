@@ -13,7 +13,7 @@ export function GuardianReview({ tool }: { tool: ToolSummary }) {
 	if (!isRecord(review)) {
 		return <GenericTool tool={tool} />;
 	}
-	const fields = [
+	const fields: [string, unknown][] = [
 		["判断", review.status],
 		["リスク", review.riskLevel],
 		["ユーザーの承認", review.userAuthorization],
@@ -27,10 +27,8 @@ export function GuardianReview({ tool }: { tool: ToolSummary }) {
 						([, value]) => value !== null && value !== undefined,
 					)
 					.map(([label, value]) => (
-						<div key={String(label)}>
-							<dt className="text-[12px] text-muted">
-								{String(label)}
-							</dt>
+						<div key={label}>
+							<dt className="text-[12px] text-muted">{label}</dt>
 							<dd className="m-0 mb-[10px]">
 								<Value value={value} />
 							</dd>

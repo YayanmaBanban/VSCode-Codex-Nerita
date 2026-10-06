@@ -69,7 +69,7 @@ export function parseHistoryThread(value: unknown): HistoryThread {
 		!isRecord(value) ||
 		!isRecord(value.status) ||
 		!["idle", "active", "notLoaded", "systemError"].includes(
-			String(value.status.type),
+			text(value.status.type),
 		) ||
 		!Array.isArray(value.turns) ||
 		typeof value.updatedAt !== "number" ||
@@ -95,7 +95,7 @@ export function parseHistoryThread(value: unknown): HistoryThread {
 				return [[key, text(value[key])]];
 			}),
 		),
-		status: String(value.status.type),
+		status: text(value.status.type),
 		cwd: text(value.cwd),
 		name: value.name,
 		preview: text(value.preview),

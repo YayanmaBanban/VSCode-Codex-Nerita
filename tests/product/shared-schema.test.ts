@@ -5,6 +5,10 @@ import { isUiContributions } from "@nerita/shared/uiContributionValidation";
 import { validComposerField } from "@nerita/shared/composerValidation";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isPiAuthState } from "@nerita/shared/piAuth";
+import { errorText } from "@nerita/shared/errorText";
+import { validStateField } from "@nerita/shared/stateFieldValidation";
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import { isAsyncTask } from "@nerita/shared/asyncTask";
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
@@ -64,6 +68,7 @@ void test("宣言型 UI は ID・重複・未解決条件・同値切替・非�
 	}
 	for (const invalid of [
 		{ ...item, id: "" },
+		{ ...item, slot: ["model.header"] },
 		{ ...item, id: "🐈".repeat(129) },
 		{ ...item, when: { backend: "pi" } },
 		{ ...item, control: { type: "unknown" } },
@@ -100,6 +105,47 @@ void test("宣言型 UI は ID・重複・未解決条件・同値切替・非�
 		);
 	}
 	assert.equal(isUiContributions({ ...value, items: [item, item] }), false);
+});
+
+void test("通信の状態と操作種別は文字列だけを受理し、同じ文字列に変換できる配列を拒否する", () => {
+	assert.equal(validStateField("connection", "ready"), true);
+	assert.equal(validStateField("run", "running"), true);
+	assert.equal(validStateField("connection", ["ready"]), false);
+	assert.equal(validStateField("run", ["running"]), false);
+	const decision = {
+		type: "plan/decide",
+		requestId: "decision",
+		sessionId: "session",
+		runId: "run",
+		action: "continue",
+	};
+	assert.equal(isUiMessage(decision), true);
+	assert.equal(isUiMessage({ ...decision, action: ["continue"] }), false);
+	const task = { asyncTaskId: "task", state: "running", canStop: true };
+	assert.equal(isAsyncTask(task), true);
+	assert.equal(isAsyncTask({ ...task, state: ["running"] }), false);
+});
+
+void test("エラー表示は名前と本文を保持し、未知のオブジェクト全体や任意の文字列化処理を使わない", () => {
+	assert.equal(
+		errorText(new TypeError("invalid input")),
+		"TypeError: invalid input",
+	);
+	assert.equal(errorText("cancelled"), "cancelled");
+	assert.equal(
+		errorText({ message: "remote error", privateValue: "secret" }),
+		"remote error",
+	);
+	assert.equal(errorText(42), "42");
+	assert.equal(errorText(null), "不明なエラー");
+	assert.equal(errorText(undefined), "不明なエラー");
+	const error = {
+		privateValue: "secret",
+		toString() {
+			throw new Error("文字列化してはいけない");
+		},
+	};
+	assert.equal(errorText(error), "不明なエラー");
 });
 
 void test("Composer の既存の緩い条件を維持する", () => {

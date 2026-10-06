@@ -1,4 +1,5 @@
 // `.codex/agents` 直下の TOML を読み、定義・モデル・承認設定を編集用の状態へ変換する。
+import { errorText } from "@nerita/shared/errorText";
 import { fsErrorCode } from "../runtime/FsError";
 import { readdir } from "node:fs/promises";
 import { parse } from "smol-toml";
@@ -51,7 +52,7 @@ export async function codexAgentFiles(root: string) {
 			const data = definitionSchema.parse(parse(text));
 			agents.push(agentView(file, data));
 		} catch (error) {
-			errors.push(`${file}: ${String(error)}`);
+			errors.push(`${file}: ${errorText(error)}`);
 		}
 	}
 	markDuplicates(agents);

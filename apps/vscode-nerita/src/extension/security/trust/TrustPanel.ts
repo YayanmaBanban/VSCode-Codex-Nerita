@@ -1,4 +1,5 @@
 // 保存済みの信頼記録をエディターで管理し、操作は Host で検証する。
+import { errorText } from "@nerita/shared/errorText";
 
 import * as vscode from "vscode";
 import {
@@ -112,7 +113,7 @@ function createTrustRequestListener(
 				}
 				publish();
 			})
-			.catch((error: unknown) => publish(String(error)));
+			.catch((error: unknown) => publish(errorText(error)));
 	};
 }
 

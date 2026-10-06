@@ -89,8 +89,8 @@ export class AgentRegistry {
 		for (const item of items) {
 			if (
 				!isRecord(item) ||
-				!["subAgentActivity", "collabAgentToolCall"].includes(
-					String(item.type),
+				!["subAgentActivity", "collabAgentToolCall"].some(
+					(type) => type === item.type,
 				)
 			) {
 				continue;
@@ -153,7 +153,14 @@ function notificationKey(
 	message: AppServerNotification,
 ) {
 	const turnId = p.turnId ?? (isRecord(p.turn) ? p.turn.id : "");
-	const key = `${String(p.threadId)}:${String(turnId)}:${String(item.id)}:${activityEventKey(item, message.method)}`;
+	if (
+		typeof p.threadId !== "string" ||
+		typeof turnId !== "string" ||
+		typeof item.id !== "string"
+	) {
+		throw new Error("Invalid agent notification ID");
+	}
+	const key = `${p.threadId}:${turnId}:${item.id}:${activityEventKey(item, message.method)}`;
 	return key;
 }
 
@@ -196,7 +203,10 @@ function notificationItems(
 /** 活動の種類と開始・完了を重複検出キーへ反映する。 */
 function activityEventKey(item: Record<string, unknown>, method: string) {
 	if (item.type === "subAgentActivity") {
-		return String(item.kind);
+		if (typeof item.kind !== "string") {
+			throw new Error("Invalid agent activity kind");
+		}
+		return item.kind;
 	}
 	if (method === "item/started") {
 		return "started";

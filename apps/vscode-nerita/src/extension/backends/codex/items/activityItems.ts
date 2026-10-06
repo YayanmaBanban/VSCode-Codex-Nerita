@@ -25,7 +25,7 @@ export function activityItem(
 	) {
 		return null;
 	}
-	const title = typeof value.tool === "string" ? value.tool : String(type);
+	const title = typeof value.tool === "string" ? value.tool : string(type);
 	const base: Partial<ToolSummary> = { title, kind: "other" };
 	if (type === "reasoning") {
 		const summary = strings(value.summary),
@@ -111,7 +111,7 @@ function otherActivity(
 		};
 	}
 	if (type === "functionCallOutput") {
-		return { ...base, title: String(value.name), rawOutput: value.output };
+		return { ...base, title: string(value.name), rawOutput: value.output };
 	}
 	if (type === "sleep") {
 		return {

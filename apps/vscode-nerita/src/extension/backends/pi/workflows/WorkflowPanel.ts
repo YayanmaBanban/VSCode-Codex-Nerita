@@ -1,4 +1,5 @@
 // 文書更新を直列化し、パネルごとの実行・停止・破棄を管理する。
+import { errorText } from "@nerita/shared/errorText";
 import * as vscode from "vscode";
 import type { BackendSession } from "../../../session/chatSession";
 import { parseWorkflow } from "@nerita/shared/workflows/definition";
@@ -69,7 +70,7 @@ export class WorkflowPanel {
 				this.post({
 					type: "reply",
 					id: "id" in message ? message.id : 0,
-					error: String(error),
+					error: errorText(error),
 					notice: "",
 				});
 			}
@@ -168,7 +169,7 @@ export class WorkflowPanel {
 					this.post({
 						type: "reply",
 						id: 0,
-						error: abort.signal.aborted ? null : String(error),
+						error: abort.signal.aborted ? null : errorText(error),
 						notice: abort.signal.aborted
 							? "実行を停止しました。"
 							: "",

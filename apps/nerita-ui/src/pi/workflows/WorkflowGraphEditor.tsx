@@ -1,4 +1,5 @@
 // グラフとフォームの編集内容を同じ定義に集約し、TOML へ変換する。
+import { errorText } from "@nerita/shared/errorText";
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -71,7 +72,7 @@ export function WorkflowGraphEditor({
 		try {
 			operation();
 		} catch (error) {
-			setError(String(error));
+			setError(errorText(error));
 		}
 	};
 	const step =
@@ -81,7 +82,7 @@ export function WorkflowGraphEditor({
 	try {
 		validateWorkflow(workflow);
 	} catch (error) {
-		validation = String(error);
+		validation = errorText(error);
 	}
 	if (externalInvalid) {
 		return (

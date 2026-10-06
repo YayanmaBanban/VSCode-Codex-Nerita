@@ -1,4 +1,5 @@
 // 専用パネルを1つのワークスペースへ固定し、保存前に信頼・文書・世代を再確認する。
+import { errorText } from "@nerita/shared/errorText";
 import * as vscode from "vscode";
 import { realpath } from "node:fs/promises";
 import {
@@ -176,7 +177,7 @@ export class AgentManagerPanel {
 				this.post({
 					type: "reply",
 					id: "id" in request ? request.id : 0,
-					error: String(error),
+					error: errorText(error),
 					notice: "",
 				});
 			}
@@ -282,7 +283,7 @@ export function registerAgentManager(
 				);
 				context.subscriptions.push(panel);
 			} catch (error) {
-				void vscode.window.showErrorMessage(String(error));
+				void vscode.window.showErrorMessage(errorText(error));
 			}
 		}),
 	);

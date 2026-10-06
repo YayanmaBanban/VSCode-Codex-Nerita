@@ -1,4 +1,5 @@
 // 会話を起動せず、実際の Extension Host から MXC の能力と起動結果を確認する。
+import { errorText } from "@nerita/shared/errorText";
 import * as vscode from "vscode";
 import { requireLocalWorkspace } from "../workspace";
 import { probeMxc } from "./MxcAvailability";
@@ -42,7 +43,9 @@ export function registerMxcDiagnostics(context: vscode.ExtensionContext): void {
 					);
 				} catch (error) {
 					void vscode.window.showErrorMessage(
-						error instanceof Error ? error.message : String(error),
+						error instanceof Error
+							? error.message
+							: errorText(error),
 					);
 					return undefined;
 				} finally {

@@ -1,4 +1,5 @@
 // 新規定義を作る際も既存ファイルを上書きせず、専用エディタへ開く。
+import { errorText } from "@nerita/shared/errorText";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { stringify } from "smol-toml";
@@ -45,7 +46,7 @@ export function registerWorkflowCommand(
 					viewType,
 				);
 			} catch (error) {
-				void vscode.window.showErrorMessage(String(error));
+				void vscode.window.showErrorMessage(errorText(error));
 			}
 		}),
 	);

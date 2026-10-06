@@ -1,4 +1,5 @@
 // 子の待機列・承認・取消しを親の応答期間から分離し、表示用の結果を保存する。
+import { errorText } from "@nerita/shared/errorText";
 import { z } from "zod";
 import type {
 	SessionEntry,
@@ -120,7 +121,7 @@ export class PiJobs {
 			this.update(
 				id,
 				signal.aborted ? "cancelled" : "failed",
-				String(error).slice(0, 32768),
+				errorText(error).slice(0, 32768),
 			);
 			throw error;
 		} finally {

@@ -1,4 +1,5 @@
 // 承認済みコマンドを MXC に渡し、停止・タイムアウト・出力回収を同じプロセス寿命で管理する。
+import { errorText } from "@nerita/shared/errorText";
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
@@ -302,7 +303,9 @@ function collectOutput(
 				onOutput?.(stream, chunk);
 			} catch (error) {
 				failure =
-					error instanceof Error ? error : new Error(String(error));
+					error instanceof Error
+						? error
+						: new Error(errorText(error));
 				stop();
 			}
 		};

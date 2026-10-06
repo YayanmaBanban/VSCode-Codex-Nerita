@@ -273,8 +273,11 @@ function applyHistoryItems(
 	for (const item of new Map(
 		items.map((entry) => [entry.id, entry]),
 	).values()) {
+		if (typeof item.id !== "string") {
+			throw new Error("Invalid history item ID");
+		}
 		if (item.type === "userMessage") {
-			const id = `${state.runId}:${String(item.id)}`;
+			const id = `${state.runId}:${item.id}`;
 			const previous = state.messages.find(
 				(message) => message.id === id,
 			);
@@ -291,8 +294,9 @@ function applyHistoryItems(
 		} else {
 			const completed =
 				turn.status !== "inProgress" ||
-				!["inProgress", "running", "pending"].includes(
-					String(item.status),
+				!(
+					typeof item.status === "string" &&
+					["inProgress", "running", "pending"].includes(item.status)
 				);
 			const patch = itemPatch(state, item, completed);
 			if (outputs && patch.tools) {

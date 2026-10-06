@@ -1,4 +1,5 @@
 // `powershell` と `pwsh` を別々に登録し、モデルに渡す説明を実際のシェルと揃える。
+import { errorText } from "@nerita/shared/errorText";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { containsPath } from "../../security/AgentAccessPolicy";
@@ -71,7 +72,9 @@ export async function createPiShellTools(
 				tools.push(
 					unavailableTool(
 						definition,
-						error instanceof Error ? error.message : String(error),
+						error instanceof Error
+							? error.message
+							: errorText(error),
 						onUnavailable,
 					),
 				);

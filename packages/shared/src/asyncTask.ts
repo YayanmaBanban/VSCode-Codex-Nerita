@@ -23,8 +23,9 @@ export function isAsyncTask(value: unknown): value is AsyncTask {
 		value.asyncTaskId.length > 0 &&
 		(value.toolCallId === undefined ||
 			typeof value.toolCallId === "string") &&
+		typeof value.state === "string" &&
 		["running", "paused", "completed", "failed", "stopped"].includes(
-			String(value.state),
+			value.state,
 		) &&
 		typeof value.canStop === "boolean" &&
 		(value.stopPending === undefined ||

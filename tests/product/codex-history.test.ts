@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { test, type TestContext } from "node:test";
+import * as z from "zod";
 import type { HostMessage } from "@nerita/shared/messages";
 import type { ToolOutputResponse } from "@nerita/shared/toolOutput";
 import { codexFixture } from "../support/codex";
@@ -33,12 +34,14 @@ async function historyFixture(t: TestContext) {
 		nextCursor: null,
 	}));
 	f.responses.set("thread/read", ({ params }) => ({
-		thread: thread(String(params!.threadId)),
+		thread: thread(z.string().parse(params!.threadId)),
 	}));
 	for (const method of ["thread/resume", "thread/fork"]) {
 		f.responses.set(method, ({ params }) => ({
 			thread: thread(
-				method === "thread/fork" ? "forked" : String(params!.threadId),
+				method === "thread/fork"
+					? "forked"
+					: z.string().parse(params!.threadId),
 			),
 			model: "model-a",
 			cwd: f.cwd,
