@@ -1,5 +1,9 @@
 // 承認の見出し・実行条件・詳細を、バックエンド共通の表示形式で定義する。
 import { everyRecord, isId, isRecord } from "./validation";
+import {
+	commandPermissionKeySchema,
+	type CommandPermissionKey,
+} from "./commandPermission";
 
 /** 値の表示方法を指定する承認項目。 */
 export type PermissionField = {
@@ -16,6 +20,7 @@ export type PermissionPresentation = {
 	command?: string;
 	fields?: PermissionField[];
 	details?: PermissionField[];
+	commandPermission?: CommandPermissionKey;
 };
 
 /** 受信した表示情報の任意項目も、描画前に検証する。 */
@@ -23,6 +28,9 @@ export function isPermissionPresentation(value: unknown): boolean {
 	return (
 		isRecord(value) &&
 		typeof value.title === "string" &&
+		(value.commandPermission === undefined ||
+			commandPermissionKeySchema.safeParse(value.commandPermission)
+				.success) &&
 		["cwd", "command"].every(
 			(key) => value[key] === undefined || typeof value[key] === "string",
 		) &&

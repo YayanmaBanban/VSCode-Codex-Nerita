@@ -47,6 +47,53 @@ export default meta;
 /** 通信結果ごとに明示的な表示状態を指定する。 */
 type Story = StoryObj<typeof meta>;
 export const Providers: Story = {};
+export const Accounts: Story = {
+	args: {
+		state: {
+			...authInitialState,
+			items: [
+				{
+					id: "google",
+					name: "Google",
+					configured: true,
+					accounts: [
+						{
+							id: "work",
+							name: "仕事用",
+							mode: "secret-storage",
+							active: true,
+						},
+						{
+							id: "personal",
+							name: "個人用",
+							mode: "session",
+							active: false,
+						},
+					],
+					methods: [
+						{ id: "google-add", name: "OAuthでログイン" },
+						{ id: "google-personal", name: "使用: 個人用" },
+						{ id: "google-delete", name: "削除: 個人用" },
+					],
+				},
+			],
+		},
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: /^Google/ }));
+		await expect(
+			canvas.getByText("使用中 · 仕事用 · VS Code に保存"),
+		).toBeVisible();
+		await userEvent.click(
+			canvas.getByRole("button", { name: "使用: 個人用" }),
+		);
+		await expect(args.send).toHaveBeenLastCalledWith({
+			type: "start",
+			id: "google-personal",
+		});
+	},
+};
 export const InputPending: Story = {
 	args: {
 		state: {

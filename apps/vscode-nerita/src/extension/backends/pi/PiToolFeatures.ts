@@ -7,6 +7,7 @@ import type {
 	ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
+import type { SecretAuthBackend } from "../../credentials/SecretAuthBackend";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import {
 	privateFeatureValue,
@@ -20,6 +21,8 @@ export type PiToolFeatures = {
 	allowedTools?: string[] | undefined;
 	registry?: Set<string>;
 	secrets?: () => Promise<readonly string[]>;
+	protect?: <T>(value: T) => T;
+	mcpBackend?: () => Promise<SecretAuthBackend>;
 };
 
 /** 許可されていないツールは、定義の登録・検索・有効化のいずれでも公開しない。 */
@@ -84,7 +87,10 @@ export function guardedPiFeature(
 					names.filter((name) => piToolPermitted(name, features)),
 				),
 			appendEntry: (type, data) =>
-				pi.appendEntry(type, privateFeatureValue(data, secrets)),
+				pi.appendEntry(
+					type,
+					privateFeatureValue(data, secrets, features.protect),
+				),
 			registerTool: (tool) => {
 				if (piToolPermitted(tool.name, features)) {
 					pi.registerTool(
@@ -159,11 +165,18 @@ function guardFeatureTool(
 						combined,
 						update
 							? (result) =>
-									update(privateFeatureValue(result, secrets))
+									update(
+										privateFeatureValue(
+											result,
+											secrets,
+											features.protect,
+										),
+									)
 							: undefined,
 						ctx,
 					),
 					secrets,
+					features.protect,
 				);
 			} finally {
 				clearTimeout(timer);
@@ -195,6 +208,8 @@ function guardFeatureContext(
 			}
 			const serialized = JSON.stringify(args) ?? "";
 			if (
+				(features.protect?.(serialized) !== undefined &&
+					features.protect(serialized) !== serialized) ||
 				secrets.some(
 					(secret) => !!secret && serialized.includes(secret),
 				) ||
@@ -213,6 +228,7 @@ function guardFeatureContext(
 					]),
 				}),
 				secrets,
+				features.protect,
 			);
 		},
 	};

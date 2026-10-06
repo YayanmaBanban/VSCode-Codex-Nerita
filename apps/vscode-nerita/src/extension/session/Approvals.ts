@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import type { Permission } from "@nerita/shared/chatState";
 import type { PermissionPresentation } from "@nerita/shared/permission";
 /** 1回の操作に適用する判断。 */
-type Decision = "accept" | "decline" | "cancel";
+type Decision =
+	"accept" | "decline" | "cancel" | "accept-session" | "accept-workspace";
 /** 承認ごとの UUID を作り、取消・解決済み通知でも待機を終了する。 */
 export class Approvals {
 	private pending = new Map<
@@ -20,6 +21,7 @@ export class Approvals {
 	ask(
 		presentation: string | PermissionPresentation,
 		signals: AbortSignal[],
+		scoped = false,
 	): Promise<{ decision: Decision }> {
 		if (signals.some((signal) => signal.aborted)) {
 			return Promise.resolve({ decision: "cancel" });
@@ -45,19 +47,42 @@ export class Approvals {
 						? { title: presentation }
 						: presentation),
 					id,
-					options: [
-						{
-							id: "accept",
-							name: "今回のみ許可",
-							kind: "allow",
-						},
-						{ id: "decline", name: "拒否", kind: "deny" },
-						{
-							id: "cancel",
-							name: "ターンを中止",
-							kind: "abort",
-						},
-					],
+					options: scoped
+						? [
+								{
+									id: "accept",
+									name: "今回だけ",
+									kind: "allow",
+								},
+								{
+									id: "accept-session",
+									name: "セッション中",
+									kind: "allow",
+								},
+								{
+									id: "accept-workspace",
+									name: "このワークスペース",
+									kind: "allow",
+								},
+								{
+									id: "cancel",
+									name: "キャンセル",
+									kind: "abort",
+								},
+							]
+						: [
+								{
+									id: "accept",
+									name: "今回のみ許可",
+									kind: "allow",
+								},
+								{ id: "decline", name: "拒否", kind: "deny" },
+								{
+									id: "cancel",
+									name: "ターンを中止",
+									kind: "abort",
+								},
+							],
 				},
 			});
 			for (const signal of signals) {
@@ -71,13 +96,11 @@ export class Approvals {
 		const entry = this.pending.get(id);
 		if (
 			!entry ||
-			(decision !== "accept" &&
-				decision !== "decline" &&
-				decision !== "cancel")
+			!entry.permission.options.some((option) => option.id === decision)
 		) {
 			return false;
 		}
-		entry.finish(decision);
+		entry.finish(decision as Decision);
 		return true;
 	}
 }

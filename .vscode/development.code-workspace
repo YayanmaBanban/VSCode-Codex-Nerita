@@ -2,7 +2,7 @@
 {
 	"folders": [{ "path": ".." }],
 	"settings": {
-		"nerita.backend": "codex",
+		"nerita.backend": "pi",
 		"nerita.pi.sessionStorage": "workspace",
 	},
 }

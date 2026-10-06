@@ -8,6 +8,7 @@ const sensitiveKey =
 export function privateFeatureValue<T>(
 	value: T,
 	secrets: readonly string[] = [],
+	protect?: <TValue>(value: TValue) => TValue,
 ): T {
 	const json = JSON.stringify(value);
 	if (json === undefined) {
@@ -28,7 +29,8 @@ export function privateFeatureValue<T>(
 			/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
 			"[非公開]",
 		);
-	return JSON.parse(hidden, privateValue) as T;
+	const result = JSON.parse(hidden, privateValue) as T;
+	return protect?.(result) ?? result;
 }
 
 /** SDK が text に入れる JSON 文字列も、オブジェクトと同じ基準で伏字にする。 */

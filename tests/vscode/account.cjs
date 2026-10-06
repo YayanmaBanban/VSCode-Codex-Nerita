@@ -133,6 +133,10 @@ async function verifyAuthClose(page, chat, model, findFrame) {
 	await auth
 		.getByRole("button", { name: "APIキーを設定", exact: true })
 		.click();
+	await auth.locator("select#auth-input").selectOption("session");
+	await auth.getByRole("button", { name: "送信", exact: true }).click();
+	await auth.locator('input[type="text"]').fill("取消しの試験");
+	await auth.getByRole("button", { name: "送信", exact: true }).click();
 	await auth
 		.locator('input[type="password"]')
 		.fill("unsaved-acceptance-value");
@@ -149,5 +153,10 @@ async function verifyAuthClose(page, chat, model, findFrame) {
 	).toBeVisible();
 	assert.equal(await credentials(), before);
 	assert.equal(model.requests.length, requests);
+	await require("./credentials.cjs").verifyCredentials(
+		page,
+		vscode.workspace.workspaceFolders[0].uri.fsPath,
+		findFrame,
+	);
 	return { before, requests };
 }

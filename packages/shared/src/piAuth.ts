@@ -3,6 +3,12 @@ export type PiAuthItem = {
 	id: string;
 	name: string;
 	configured: boolean;
+	accounts?: {
+		id: string;
+		name: string;
+		mode: "session" | "secret-storage";
+		active: boolean;
+	}[];
 	methods: { id: string; name: string }[];
 };
 /** 保存済みの秘密値は含めず、SDK が現在要求する入力だけを公開する。 */
@@ -57,6 +63,16 @@ export function isPiAuthState(value: unknown): value is PiAuthState {
 				typeof item.id === "string" &&
 				typeof item.name === "string" &&
 				typeof item.configured === "boolean" &&
+				(item.accounts === undefined ||
+					(Array.isArray(item.accounts) &&
+						item.accounts.every(
+							(account) =>
+								typeof account.id === "string" &&
+								typeof account.name === "string" &&
+								(account.mode === "session" ||
+									account.mode === "secret-storage") &&
+								typeof account.active === "boolean",
+						))) &&
 				Array.isArray(item.methods) &&
 				item.methods.every(
 					(method) =>

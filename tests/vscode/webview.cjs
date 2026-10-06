@@ -14,9 +14,18 @@ async function findFrame(page, selector) {
 		.poll(
 			async () => {
 				for (const frame of page.frames()) {
-					if (await frame.locator(selector).count()) {
-						found = frame;
-						return true;
+					try {
+						if (
+							!frame.isDetached() &&
+							(await frame.locator(selector).count())
+						) {
+							found = frame;
+							return true;
+						}
+					} catch (error) {
+						if (!frame.isDetached()) {
+							throw error;
+						}
 					}
 				}
 				return false;

@@ -68,3 +68,62 @@ export default meta;
 /** 長文のスクロールと詳細の開閉を確認する状態。 */
 type Story = StoryObj<typeof meta>;
 export const LongCommand: Story = {};
+
+/** MXC 非互換時の Host 実行を、論理クラスと4つの承認範囲で表示する。 */
+export const NativePnpm: Story = {
+	args: {
+		state: {
+			...initialState(),
+			sessionId: "session",
+			runId: "run",
+			permissions: [
+				{
+					id: "native-pnpm",
+					title: "Pi: pnpm の実行承認",
+					cwd: "projects/current",
+					command: "pnpm install",
+					fields: [
+						{
+							id: "tool",
+							label: "論理ツール",
+							value: "pnpm",
+							display: "text",
+						},
+						{
+							id: "class",
+							label: "コマンドクラス",
+							value: "installation-network",
+							display: "text",
+						},
+						{
+							id: "reason",
+							label: "ホスト実行が必要な理由",
+							value: "ネイティブ版 pnpm は MXC 内の DOS パス正規化に対応していません。",
+							display: "text",
+						},
+						{
+							id: "route",
+							label: "実行経路",
+							value: "ホスト（Sandbox 外）。ファイルと通信は OS ユーザーの権限で実行されます。",
+							display: "text",
+						},
+					],
+					options: [
+						{ id: "accept", name: "今回だけ", kind: "allow" },
+						{
+							id: "accept-session",
+							name: "セッション中",
+							kind: "allow",
+						},
+						{
+							id: "accept-workspace",
+							name: "このワークスペース",
+							kind: "allow",
+						},
+						{ id: "cancel", name: "キャンセル", kind: "abort" },
+					],
+				},
+			],
+		},
+	},
+};

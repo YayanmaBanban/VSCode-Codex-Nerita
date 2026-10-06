@@ -7,6 +7,8 @@ allowBuilds:
     "@vscode/vsce-sign": false
     esbuild: true
     keytar: false
+    koffi: true
+    node-pty: true
     protobufjs: false
 minimumReleaseAgeExclude:
     - "@earendil-works/chord@0.86.1 || 0.87.1 || 0.99.1 || 1.0.0"

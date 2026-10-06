@@ -26,6 +26,7 @@ export type PiMcpServerOptions = {
 	signal: AbortSignal;
 	features: PiToolFeatures;
 	credentials: unknown;
+	flushCredentials?: () => Promise<void>;
 	current: () => Promise<PiMcpEntry | undefined>;
 };
 
@@ -90,6 +91,7 @@ export class PiMcpServer {
 		this.operation = signal;
 		try {
 			await abortableFeatureApproval(this.connection.getClient(), signal);
+			await this.options.flushCredentials?.();
 		} catch {
 			await this.close();
 			throw new Error(
@@ -282,17 +284,19 @@ export class PiMcpServer {
 		signal.addEventListener("abort", cancel, { once: true });
 		try {
 			const result = await abortableFeatureApproval(request(), signal);
+			await this.options.flushCredentials?.();
 			await this.gate.check();
 			signal.throwIfAborted();
 			const secrets = [
 				...Object.values(
 					resolvedMcpHeaders(this.options.entry),
 				).flatMap((value) => [value, value.replace(/^Bearer\s+/i, "")]),
-				...(await piFeatureSecrets(this.options.agentDir)),
+				...(await piFeatureSecrets()),
 			];
-			return resource
+			const safe = resource
 				? safeMcpResource(result, secrets)
 				: safeMcpResult(result, secrets);
+			return this.options.features.protect?.(safe) ?? safe;
 		} catch {
 			// 要求開始後の切断・期限・取消しでは、遠隔側の副作用を取り消せたとは判断できない。
 			const result = safeMcpResult(

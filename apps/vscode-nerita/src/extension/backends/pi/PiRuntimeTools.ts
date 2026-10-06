@@ -10,10 +10,7 @@ import {
 	containsPath,
 	type WindowsSandboxImplementation,
 } from "../../security/AgentAccessPolicy";
-import {
-	createCodexSandboxExecutor,
-	resolveWindowsSandbox,
-} from "../codex/CodexSandboxExecutor";
+import { createSandboxExecutor } from "../../runtime/CreateSandboxExecutor";
 import { createPiShellTools } from "./PiShellTools";
 import { createPiFileTool } from "./PiFileTools";
 import { createPiHostShellTool } from "./PiHostShellTool";
@@ -22,6 +19,9 @@ import type { PiAuthorize } from "./PiApprovedTools";
 import { createPiReadTool } from "./guardrails/PiReadTools";
 import { piWorkspaceTrusted } from "./PiTrustAdapter";
 import { createPiSearchTools } from "./guardrails/PiSearchTools";
+import { createPiPnpmTool } from "./PiPnpmTool";
+import { CredentialExecutor } from "../../credentials/CredentialExecutor";
+import type { SandboxCommandExecutor } from "../../runtime/SandboxCommandExecutor";
 
 /** SDK のシェル設定だけを実行ツールへ引き継ぐ。 */
 type ShellSettings = Pick<
@@ -38,17 +38,17 @@ export async function preparePiRuntimeTools(
 ) {
 	const windows = process.platform === "win32";
 	const trusted = await piWorkspaceTrusted(options);
-	const { mode, unavailable } =
+	const { executor, unavailable } =
 		windows && trusted
 			? await executionMode(options)
 			: {
-					mode: undefined,
+					executor: null,
 					unavailable: trusted
 						? undefined
 						: "未信頼のWorkspaceではShellを実行できません。",
 				};
 	options.signal.throwIfAborted();
-	const paths = await runtimePaths(options, mode);
+	const paths = await runtimePaths(options);
 	const { cwd, policy } = paths;
 	const tools = ["write", "edit"].map((kind) =>
 		createPiFileTool(
@@ -78,26 +78,44 @@ export async function preparePiRuntimeTools(
 		);
 		return { paths, tools, executor: null, unavailable: undefined };
 	}
-	const executor =
-		options.executor === undefined
-			? createCodexSandboxExecutor(options.extensionPath)
-			: options.executor;
 	const reason = !policy.shell
 		? "このroleではShell実行が禁止されています。"
 		: (unavailable ??
 			(!executor ? "Sandbox Executorが接続されていません。" : undefined));
+	if (executor && !reason) {
+		tools.push(
+			createPiPnpmTool(
+				paths,
+				authorize,
+				executor,
+				options.signal,
+				options.credentialBroker,
+			),
+		);
+	}
 	tools.push(
 		...(await createPiShellTools(
 			sdk,
 			paths,
 			authorize,
-			executor,
+			withCredentials(executor, options, authorize),
 			options.signal,
 			reason,
 			trustDeniedReporter(options, trusted),
 		)),
 	);
 	return { paths, tools, executor, unavailable: reason };
+}
+
+/** 子 Runtime には元の Executor を渡し、その Runtime の承認関数で包み直す。 */
+function withCredentials(
+	executor: SandboxCommandExecutor | null,
+	options: PiRuntimeOptions,
+	authorize: PiAuthorize,
+) {
+	return executor && options.credentialBroker
+		? new CredentialExecutor(executor, options.credentialBroker, authorize)
+		: executor;
 }
 
 /** 起動準備を省いた未信頼の Shell の拒否も監査へ残す。 */
@@ -148,6 +166,7 @@ async function runtimePaths(
 		intersectPolicy(
 			{
 				...base,
+				readableRoots: base.readableRoots ?? base.workspaceRoots,
 				guardrailsRoot,
 				trustContextId: options.trustContextId ?? base.trustContextId,
 			},
@@ -161,26 +180,24 @@ async function runtimePaths(
 
 /** 設定取得の失敗をシェル固有の利用不能理由にし、`read` やモデル接続は維持する。 */
 async function executionMode(options: PiRuntimeOptions) {
-	const mode = options.parentPolicy?.windowsSandbox ?? options.windowsSandbox;
 	if (options.sandboxUnavailable) {
-		return { mode, unavailable: options.sandboxUnavailable };
+		return { executor: null, unavailable: options.sandboxUnavailable };
 	}
-	if (mode) {
-		return { mode, unavailable: undefined };
+	if (options.executor !== undefined) {
+		return { executor: options.executor, unavailable: undefined };
 	}
-	try {
-		return {
-			mode: await resolveWindowsSandbox(
-				options.extensionPath,
-				options.cwd,
-				options.signal,
-			),
-			unavailable: undefined,
-		};
-	} catch (error) {
-		return {
-			mode: undefined,
-			unavailable: `Shell実行基盤の設定を取得できません: ${error instanceof Error ? error.message : String(error)}`,
-		};
-	}
+	const result = await createSandboxExecutor(
+		"mxc",
+		options.extensionPath,
+		options.cwd,
+		options.signal,
+		undefined,
+		undefined,
+		options.sandboxManagement,
+	);
+	options.sandboxManagement?.availability(result.availability);
+	return {
+		executor: result.executor,
+		unavailable: result.availability.reason,
+	};
 }

@@ -48,7 +48,19 @@ import { PiQuotaService } from "./PiQuotaService";
 import { openAICodexQuota } from "./openai/OpenAICodexQuota";
 import { PiModelCatalogService } from "./PiModelCatalogService";
 import { piFeatureSecrets } from "./PiFeatureSecrets";
+import {
+	PiCredentialStore,
+	PiCredentialVault,
+} from "../../credentials/PiCredentialStore";
+import {
+	CredentialStores,
+	SessionMemoryCredentialStore,
+} from "../../credentials/CredentialStore";
+import { SecretAuthBackend } from "../../credentials/SecretAuthBackend";
+import type { CredentialBroker } from "../../credentials/CredentialBroker";
 import { piToolExposure } from "./PiToolFeatures";
+import type { CommandPermissions } from "../../runtime/CommandPermissions";
+import type { SandboxManagement } from "../../runtime/SandboxManagement";
 import { abortableFeatureApproval } from "./PiFeatureSafety";
 import { protectPiFeatureTool } from "./PiFeatureToolResults";
 import type { SkillSummary } from "@nerita/shared/skills";
@@ -73,6 +85,9 @@ export type PiSession = Pick<
 	| "abort"
 	| "dispose"
 > & {
+	/** SDK 外から届く例外も、会話と同じ伏字辞書で公開前に保護する。 */
+	protect?: <T>(value: T) => T;
+	commandPermissions?: CommandPermissions;
 	workflow?: (
 		request: WorkflowExecution,
 		signal: AbortSignal,
@@ -107,6 +122,11 @@ export type PiFactory = (
 
 /** 通常実行と隔離した疎通テストで使う起動条件。 */
 export type PiRuntimeOptions = {
+	credentials?: PiCredentialStore;
+	credentialBroker?: CredentialBroker;
+	mcpBackend?: () => Promise<SecretAuthBackend>;
+	sandboxManagement?: SandboxManagement;
+	commandPermissions?: CommandPermissions;
 	extensionPath: string;
 	cwd: string;
 	agentDir?: string;
@@ -167,6 +187,7 @@ export type PiModelSelection = {
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
 ): Promise<PiRuntimeSession> {
+	options = credentialRuntimeOptions(options);
 	if (options.trustStore) {
 		options = {
 			...options,
@@ -322,6 +343,8 @@ function runtimeSessionFacade(
 	const { subagents, runtimeTools, options, resourceLoader } = resources;
 
 	return Object.assign(session, {
+		protect: <T>(value: T) =>
+			options.credentials!.vault.stores.redactor.value(value),
 		generateHandoff: (request: Parameters<HandoffGenerator>[0]) =>
 			generatePiHandoff(
 				modelRuntime,
@@ -341,6 +364,9 @@ function runtimeSessionFacade(
 			session,
 		),
 		accessPolicy: runtimeTools.paths.policy,
+		...(options.commandPermissions
+			? { commandPermissions: options.commandPermissions }
+			: {}),
 		contextSource: manager,
 		agentViews,
 		jobs,
@@ -448,6 +474,7 @@ async function bindRuntimeAccount(
 		options.resume ? undefined : options.preferredModel,
 		(model) => sdk.getSupportedThinkingLevels(model),
 		() => getPiDeviceId(agentDir),
+		options.credentials,
 	);
 	try {
 		await session.bindExtensions({ mode: "print" });
@@ -553,7 +580,7 @@ async function prepareRuntimeModel(
 ) {
 	const { agentDir, options, resourceLoader } = resources;
 	const modelRuntime = await sdk.ModelRuntime.create({
-		authPath: join(agentDir, "auth.json"),
+		credentials: options.credentials!,
 		modelsPath: join(agentDir, "models.json"),
 		modelsStorePath: join(agentDir, "models-store.json"),
 		allowModelNetwork: true,
@@ -624,10 +651,13 @@ async function prepareRuntimeResources(
 		options.webTrust,
 		{
 			registry: toolRegistry,
+			...(options.mcpBackend ? { mcpBackend: options.mcpBackend } : {}),
 			codemode: options.codemode,
 			toolSearch: options.toolSearch,
 			allowedTools: options.allowedTools,
-			secrets: () => piFeatureSecrets(agentDir),
+			secrets: () => piFeatureSecrets(),
+			protect: <T>(value: T) =>
+				options.credentials!.vault.stores.redactor.value(value),
 		},
 	);
 	return {
@@ -833,7 +863,9 @@ async function createConfiguredPiSession(
 	const features = {
 		codemode: options.codemode,
 		toolSearch: options.toolSearch,
-		secrets: () => piFeatureSecrets(agentDir),
+		secrets: () => piFeatureSecrets(),
+		protect: <T>(value: T) =>
+			options.credentials!.vault.stores.redactor.value(value),
 	};
 	const exposedTools = customTools.map((tool) =>
 		protectPiFeatureTool(piToolExposure(tool, features), features),
@@ -874,4 +906,30 @@ async function createConfiguredPiSession(
 	};
 	const { session } = await sdk.createAgentSession(sessionOptions);
 	return { session };
+}
+/** 認証と MCP 保存の境界を子 Runtime と共有し、SDK の既定ファイルへ戻さない。 */
+function credentialRuntimeOptions(options: PiRuntimeOptions): PiRuntimeOptions {
+	options = {
+		...options,
+		credentials:
+			options.credentials ??
+			new PiCredentialStore(
+				new PiCredentialVault(
+					new CredentialStores(new SessionMemoryCredentialStore()),
+					{ read: () => undefined, write: async () => {} },
+				),
+			),
+	};
+	const stores = options.credentials!.vault.stores;
+	let backend: Promise<SecretAuthBackend> | undefined;
+	return {
+		...options,
+		mcpBackend:
+			options.mcpBackend ??
+			(() =>
+				(backend ??= SecretAuthBackend.create(
+					stores.memory,
+					stores.redactor,
+				))),
+	};
 }

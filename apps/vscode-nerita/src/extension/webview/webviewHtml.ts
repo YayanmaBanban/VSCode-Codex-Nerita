@@ -8,6 +8,8 @@ export function webviewHtml(
 	extensionUri: vscode.Uri,
 	page:
 		| "chat"
+		| "sandbox"
+		| "credentials"
 		| "pi-auth"
 		| "pi-guardrails"
 		| "pi-workflow"

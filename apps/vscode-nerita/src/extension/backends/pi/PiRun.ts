@@ -35,8 +35,14 @@ export abstract class PiRun extends PiLifecycle {
 		this.patch({ permissions: this.approvals.list() }),
 	);
 
+	/** 接続中の会話に属する承認ストアだけを使う。 */
+	private get commandPermissions() {
+		return this.runtime?.commandPermissions;
+	}
+
 	/** 拒否はツールエラーとして返し、中止はターン全体を停止する。 */
 	protected authorize: PiAuthorize = async (title, signal) => {
+		const commandPermissions = this.commandPermissions;
 		const jobId =
 			typeof title === "string"
 				? undefined
@@ -54,6 +60,7 @@ export abstract class PiRun extends PiLifecycle {
 					},
 				},
 				signal,
+				commandPermissions,
 			);
 		}
 		const submission = this.submission;
@@ -71,6 +78,7 @@ export abstract class PiRun extends PiLifecycle {
 				},
 			},
 			signal,
+			commandPermissions,
 		);
 	};
 
@@ -111,6 +119,7 @@ export abstract class PiRun extends PiLifecycle {
 					title,
 					{ signal: combined, cancel: () => abort.abort() },
 					toolSignal,
+					this.runtime?.commandPermissions,
 				),
 		);
 		this.track(operation);
@@ -144,7 +153,7 @@ export abstract class PiRun extends PiLifecycle {
 		setPiSessionRunning(runtime.sessionId, true);
 		const current = () =>
 			this.epoch === epoch && this.submission === submission;
-		const mapper = new PiEventMapper();
+		const mapper = new PiEventMapper(runtime.protect);
 		const unsubscribeEvents = runtime.subscribe(
 			this.createRunEventListener(current, mapper),
 		);
@@ -314,7 +323,7 @@ export abstract class PiRun extends PiLifecycle {
 				requestId: message.requestId,
 				error:
 					error instanceof Error
-						? error.message
+						? (runtime.protect?.(error.message) ?? error.message)
 						: "Piへの追加指示に失敗しました。",
 			});
 		}
@@ -326,6 +335,7 @@ export abstract class PiRun extends PiLifecycle {
 		error?: string,
 		aborted = false,
 	): void {
+		error = this.runtime?.protect?.(error) ?? error;
 		const cancelled = submission.cancelled || aborted;
 		if (this.runtime) {
 			setPiSessionRunning(this.runtime.sessionId, false);
@@ -351,10 +361,10 @@ export abstract class PiRun extends PiLifecycle {
 
 	/** ユーザーの停止とは別に起きた保存失敗を隠さない。 */
 	private finishedError(cancelled: boolean, error: string | undefined) {
-		return (
+		const detail =
 			this.runtime?.history?.outputs?.error ??
-			(cancelled ? null : (error ?? null))
-		);
+			(cancelled ? null : (error ?? null));
+		return this.runtime?.protect?.(detail) ?? detail;
 	}
 
 	/** 保存が完了した本文だけを永続ファイルの参照へ切り替える。 */
@@ -501,7 +511,8 @@ export abstract class PiRun extends PiLifecycle {
 					if (current()) {
 						const detail =
 							error instanceof Error
-								? error.message
+								? (this.runtime?.protect?.(error.message) ??
+									error.message)
 								: "Piへの送信に失敗しました。";
 						if (!submission.accepted) {
 							this.emit({

@@ -35,6 +35,7 @@ export const supportedTools = [
 	"powershell",
 	"pwsh",
 	"bash",
+	"pnpm",
 ];
 
 /** 親の終了・設定変更・個別取消しを子の起動へ伝える。 */
@@ -253,7 +254,7 @@ function createSubagentExecution(
 						? { writableRoots: [] }
 						: {}),
 					shell: tools.some((tool) =>
-						["powershell", "pwsh", "bash"].includes(tool),
+						["powershell", "pwsh", "bash", "pnpm"].includes(tool),
 					),
 				},
 				allowedTools: tools,

@@ -278,7 +278,7 @@ function workflowRole(tools: string[], policy: AgentAccessPolicy) {
 			: [],
 		shell:
 			tools.some((tool) =>
-				["powershell", "pwsh", "bash"].includes(tool),
+				["powershell", "pwsh", "bash", "pnpm"].includes(tool),
 			) && policy.shell,
 	};
 }

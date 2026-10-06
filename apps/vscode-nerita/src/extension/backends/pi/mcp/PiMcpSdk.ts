@@ -49,7 +49,10 @@ export type PiMcpSdk = {
 	): string;
 	toToolExposure(exposure: string): NonNullable<ToolDefinition["exposure"]>;
 	FileAuthStorageBackend: new (path: string) => unknown;
-	McpOAuthCredentialStore: new (backend: unknown, lockDir: string) => unknown;
+	McpOAuthCredentialStore: new (
+		backend: unknown,
+		lockDir?: string,
+	) => PiMcpCredentials;
 	StreamableHttpTransport: new (options: {
 		url: string;
 		headers: Record<string, string>;
@@ -74,4 +77,16 @@ export type PiMcpSdk = {
 		) => unknown;
 		onTools: (connection: PiMcpConnection) => void;
 	}) => PiMcpConnection;
+};
+
+/** OAuth の認証状態の読込み・保存は SDK が担当し、秘密値を含む状態を UI の型に含めない。 */
+export type PiMcpCredentials = {
+	forServer: (
+		name: string,
+		url: string,
+	) => {
+		load: () => unknown;
+		save: (state: unknown) => void;
+		withRefreshLock: <T>(operation: () => Promise<T>) => Promise<T>;
+	};
 };

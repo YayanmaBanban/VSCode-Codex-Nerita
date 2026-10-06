@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { credentialFixture } from "../support/credentials";
 import { setImmediate } from "node:timers/promises";
 import {
 	piFixture,
@@ -325,16 +326,23 @@ async function verifyPiModelPersistence(t: TestContext) {
 
 /** 検証用の OAuth 情報とモデル設定を用意し、利用枠の取得で起きる競合を再現する。 */
 async function prepareQuotaModel(f: Awaited<ReturnType<typeof piFixture>>) {
-	await writeFile(
-		join(f.agentDir, "auth.json"),
-		JSON.stringify({
-			openai: {
-				type: "oauth",
-				access: "local-quota-token",
-				refresh: "local-refresh-token",
-				expires: Date.now() + 3600000,
-			},
-		}),
+	const storage = credentialFixture();
+	f.options.credentials = storage.credentials;
+	const credential = {
+		type: "oauth" as const,
+		access: "local-quota-token",
+		refresh: "local-refresh-token",
+		expires: Date.now() + 3600000,
+	};
+	await storage.credentials.login(
+		"openai",
+		"oauth",
+		"session",
+		"利用枠の試験",
+		() =>
+			storage.credentials.modify("openai", () =>
+				Promise.resolve(credential),
+			),
 	);
 	const configured = JSON.parse(
 		await readFile(join(f.agentDir, "models.json"), "utf8"),

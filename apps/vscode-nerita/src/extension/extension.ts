@@ -7,6 +7,9 @@ import { BackendRuntime } from "./session/BackendRuntime";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 import { registerSandboxSetup } from "./backends/codex/settings/sandboxSetup";
+import { registerMxcDiagnostics } from "./runtime/MxcDiagnostics";
+import { registerSandboxPanel } from "./runtime/SandboxPanel";
+import { registerCredentialPanel } from "./credentials/CredentialPanel";
 import { registerGuardrailsEditor } from "./backends/pi/guardrails/GuardrailsEditor";
 import { registerWorkflowEditor } from "./backends/pi/workflows/WorkflowEditor";
 import { registerAgentManager } from "./agentManager/AgentManagerPanel";
@@ -19,6 +22,9 @@ export async function activate(
 	context: vscode.ExtensionContext,
 ): Promise<void> {
 	registerSandboxSetup(context);
+	registerMxcDiagnostics(context);
+	registerSandboxPanel(context);
+	registerCredentialPanel(context);
 	const guardrails = await registerGuardrailsEditor(context);
 	const trust = registerTrustCommands(context);
 	for (const folder of vscode.workspace.workspaceFolders ?? []) {

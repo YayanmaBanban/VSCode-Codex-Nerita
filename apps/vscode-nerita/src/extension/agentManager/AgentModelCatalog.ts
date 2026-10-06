@@ -7,6 +7,14 @@ import { CodexClient } from "../backends/codex/CodexClient";
 import { parseModels } from "../backends/codex/protocol/account";
 import { piAgentModel } from "../backends/pi/PiAgentModels";
 import { piProviders } from "../backends/pi/PiProviders";
+import {
+	PiCredentialVault,
+	PiCredentialStore,
+} from "../credentials/PiCredentialStore";
+import {
+	CredentialStores,
+	SessionMemoryCredentialStore,
+} from "../credentials/CredentialStore";
 
 export type AgentModelReader = (
 	backend: "pi" | "codex",
@@ -17,10 +25,11 @@ export type AgentModelReader = (
 export function agentModelReader(
 	extensionPath: string,
 	cwd: string,
+	credentials?: PiCredentialStore,
 ): AgentModelReader {
 	return (backend, signal) =>
 		backend === "pi"
-			? readPi(extensionPath, signal)
+			? readPi(extensionPath, signal, credentials)
 			: readCodex(extensionPath, cwd, signal);
 }
 
@@ -75,6 +84,7 @@ async function readCodex(
 async function readPi(
 	extensionPath: string,
 	caller: AbortSignal,
+	credentials?: PiCredentialStore,
 ): Promise<ManagerModel[]> {
 	const signal = AbortSignal.any([caller, AbortSignal.timeout(20000)]);
 	const sdk = (await import(
@@ -86,7 +96,14 @@ async function readPi(
 	};
 	const agentDir = sdk.getAgentDir();
 	const runtime = await sdk.ModelRuntime.create({
-		authPath: join(agentDir, "auth.json"),
+		credentials:
+			credentials ??
+			new PiCredentialStore(
+				new PiCredentialVault(
+					new CredentialStores(new SessionMemoryCredentialStore()),
+					{ read: () => undefined, write: () => Promise.resolve() },
+				),
+			),
 		modelsPath: join(agentDir, "models.json"),
 		modelsStorePath: join(agentDir, "models-store.json"),
 		allowModelNetwork: true,

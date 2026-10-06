@@ -1,6 +1,12 @@
 // 検索可能な認証先一覧と、SDK から要求された入力をエディター内に表示する。
 
-import { type JSX, type Dispatch, type SetStateAction, useState } from "react";
+import {
+	type JSX,
+	type Dispatch,
+	type SetStateAction,
+	useState,
+	useRef,
+} from "react";
 
 import type {
 	PiAuthItem,
@@ -21,15 +27,22 @@ type AuthInputProps = {
 
 /** 入力値は送信時・アンマウント時に破棄し、永続化しない。 */
 function AuthInput({ prompt, send }: AuthInputProps) {
-	const [value, setValue] = useState("");
+	const inputRef = useRef<HTMLInputElement>(null);
+	const selectRef = useRef<HTMLSelectElement>(null);
+	const [hasValue, setHasValue] = useState(false);
 	return (
 		<form
 			className="flex max-w-[560px] flex-col gap-[10px]"
 			onSubmit={(event) => {
 				event.preventDefault();
+				const field = inputRef.current ?? selectRef.current;
+				const value = field?.value ?? "";
+				if (field) {
+					field.value = "";
+				}
+				setHasValue(false);
 				if (value) {
 					send({ type: "answer", id: prompt.id, value });
-					setValue("");
 				}
 			}}
 		>
@@ -37,8 +50,10 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 				<select
 					id="auth-input"
 					autoFocus
-					value={value}
-					onChange={(event) => setValue(event.target.value)}
+					ref={selectRef}
+					onChange={(event) =>
+						setHasValue(Boolean(event.target.value))
+					}
 					className={cn(
 						"rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text",
 					)}
@@ -57,10 +72,12 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 					type={prompt.secret ? "password" : "text"}
 					autoComplete="off"
 					spellCheck={false}
-					value={value}
+					ref={inputRef}
 					title={prompt.message}
 					placeholder={prompt.message}
-					onChange={(event) => setValue(event.target.value)}
+					onChange={(event) =>
+						setHasValue(Boolean(event.target.value))
+					}
 					className={cn(
 						"min-w-0 rounded-[4px] border border-menu-border bg-menu p-[10px]",
 						"text-menu-text outline-settings-focus",
@@ -68,12 +85,19 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 				/>
 			)}
 			<div className="mb-[16px] flex flex-wrap items-baseline gap-[8px]">
-				<button type="submit" disabled={!value}>
+				<button type="submit" disabled={!hasValue}>
 					送信
 				</button>
 				<button
 					type="button"
-					onClick={() => send({ type: "cancel" })}
+					onClick={() => {
+						const field = inputRef.current ?? selectRef.current;
+						if (field) {
+							field.value = "";
+						}
+						setHasValue(false);
+						send({ type: "cancel" });
+					}}
 					className="border-alert-border bg-alert"
 				>
 					キャンセル
@@ -237,6 +261,15 @@ function AuthProviderContent({
 }: AuthProviderContentProps) {
 	return (
 		<div className="pr-[8px] pb-[20px] pl-[38px]">
+			{item.accounts?.map((account) => (
+				<p key={account.id} className="text-muted">
+					{account.active ? "使用中 · " : ""}
+					{account.name} ·{" "}
+					{account.mode === "session"
+						? "このセッションのみ"
+						: "VS Code に保存"}
+				</p>
+			))}
 			{/* 通知領域の高さを確保し、表示・消去・折り返しで操作位置を動かさない。 */}
 			{renderProviderFeedback(item, feedback)}
 			<div className="flex flex-wrap gap-[8px]">
