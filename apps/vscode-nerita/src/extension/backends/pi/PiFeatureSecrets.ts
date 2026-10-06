@@ -7,7 +7,7 @@ export function piFeatureSecrets(): Promise<readonly string[]> {
 			.filter(
 				([key, value]) =>
 					/TOKEN|SECRET|PASSWORD|API_KEY/.test(key) &&
-					!!isNonEmptyString(value),
+					isNonEmptyString(value),
 			)
 			.map(([, value]) => value!),
 	);

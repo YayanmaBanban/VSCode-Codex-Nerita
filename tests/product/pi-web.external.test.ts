@@ -1,6 +1,6 @@
 // 導入済み Web 拡張で公開リポジトリを取得し、保存先と信頼境界を確認する。
+import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import { type TestContext, test } from "node:test";
 
 import assert from "node:assert/strict";
@@ -13,7 +13,6 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { join, delimiter, dirname } from "node:path";
-
 import { piFixture, send, permission, finished } from "../support/pi";
 
 void test("導入済み Web 拡張の取得先を未信頼として扱う", verifyPiWebTrust);
@@ -116,9 +115,11 @@ async function prepareWebExtension(f: Awaited<ReturnType<typeof piFixture>>) {
 		process.env.NERITA_EXTERNAL_AGENT_DIR,
 		"npm/node_modules/pi-web-access",
 	);
-	const manifest = JSON.parse(
-		await readFile(join(installed, "package.json"), "utf8"),
-	) as { name: string };
+	const manifest = z
+		.looseObject({ name: z.string() })
+		.parse(
+			JSON.parse(await readFile(join(installed, "package.json"), "utf8")),
+		);
 	assert.equal(manifest.name, "pi-web-access");
 	const cache = join(f.root, "download-cache");
 	await mkdir(process.env.PI_CODING_AGENT_DIR, { recursive: true });

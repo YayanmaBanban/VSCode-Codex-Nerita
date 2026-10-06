@@ -1,4 +1,5 @@
 // パス選択に必要な項目だけを Host と Webview で共有する。
+import { isRecord } from "./validation";
 import {
 	isSymbolLocation,
 	type SymbolLocation,
@@ -65,10 +66,10 @@ export function isPathString(value: unknown): value is string {
 
 /** Host から受け取る一覧項目を検証する。 */
 export function isWorkspacePath(value: unknown): value is WorkspacePath {
-	if (typeof value !== "object" || value === null) {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const entry = value as Record<string, unknown>;
+	const entry = value;
 	return (
 		isPathString(entry.uri) &&
 		isPathString(entry.name) &&

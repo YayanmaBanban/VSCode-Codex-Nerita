@@ -1,4 +1,5 @@
 // 入力文中に表示する参照先と、送信本文内の位置を共有する。
+import { isRecord } from "./validation";
 import { isComposerTarget, type ComposerTarget } from "./composerTargets";
 
 /** 通常文の中でチップ表示する参照の開始位置。 */
@@ -24,7 +25,10 @@ export function pathText(path: ComposerTarget): string {
 }
 
 /** 本文と一致し、位置が重ならない参照だけを復元可能にする。 */
-export function validReferences(text: string, value: unknown): boolean {
+export function validReferences(
+	text: string,
+	value: unknown,
+): value is ComposerReference[] | undefined {
 	if (value === undefined) {
 		return true;
 	}
@@ -34,10 +38,10 @@ export function validReferences(text: string, value: unknown): boolean {
 
 	let end = 0;
 	return value.every((item: unknown) => {
-		if (item === null || typeof item !== "object") {
+		if (!isRecord(item)) {
 			return false;
 		}
-		const reference = item as Record<string, unknown>;
+		const reference = item;
 		if (
 			!Number.isSafeInteger(reference.offset) ||
 			typeof reference.offset !== "number" ||

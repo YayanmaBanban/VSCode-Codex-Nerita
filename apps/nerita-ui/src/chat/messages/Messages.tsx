@@ -3,12 +3,10 @@ import {
 	isNonEmptyString,
 	isNonZeroNumber,
 } from "@nerita/shared/valuePredicates";
-
 import { type ReactNode, type RefObject, useRef } from "react";
 
 import { SettingsTooltip } from "../SettingsTooltip";
 import { cn } from "cnfast";
-
 import { ArrowUpToLine } from "lucide-react";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { ChatMessage, ToolSummary } from "@nerita/shared/chatState";
@@ -173,7 +171,7 @@ function MessageEntry(props: MessageEntryProps) {
 			<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
 				<MessageContent {...props} />
 			</div>
-			{user && !!isNonZeroNumber(message.attachments?.length) && (
+			{user && isNonZeroNumber(message.attachments?.length) && (
 				<div
 					className="mt-2 flex flex-wrap gap-1.5"
 					aria-label="添付ファイル"

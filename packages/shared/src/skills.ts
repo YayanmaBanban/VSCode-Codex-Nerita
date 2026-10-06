@@ -8,10 +8,10 @@ export function validSkills(value: unknown): value is SkillSummary[] {
 	return (
 		Array.isArray(value) &&
 		value.every((item: unknown) => {
-			if (item === null || typeof item !== "object") {
+			if (!isRecord(item)) {
 				return false;
 			}
-			const skill = item as Record<string, unknown>;
+			const skill = item;
 			return (
 				typeof skill.name === "string" &&
 				typeof skill.description === "string" &&
@@ -20,3 +20,4 @@ export function validSkills(value: unknown): value is SkillSummary[] {
 		})
 	);
 }
+import { isRecord } from "./validation";

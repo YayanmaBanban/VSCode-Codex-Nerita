@@ -35,10 +35,10 @@ export type PiAuthRequest =
 	| { type: "cancel" };
 /** 専用パネルからの要求も未知の型・過大な入力を拒否する。 */
 export function isPiAuthRequest(value: unknown): value is PiAuthRequest {
-	if (value === null || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const item = value as Record<string, unknown>;
+	const item = value;
 	if (item.type === "ready" || item.type === "cancel") {
 		return true;
 	}

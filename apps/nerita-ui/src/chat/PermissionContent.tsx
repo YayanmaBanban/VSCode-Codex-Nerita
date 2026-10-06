@@ -37,7 +37,7 @@ export function PermissionContent({
 				/>
 			)}
 			<PermissionFields fields={permission.fields ?? []} />
-			{!!isNonZeroNumber(permission.details?.length) && (
+			{isNonZeroNumber(permission.details?.length) && (
 				<PermissionDetails fields={permission.details} />
 			)}
 			{permission.command !== undefined && (

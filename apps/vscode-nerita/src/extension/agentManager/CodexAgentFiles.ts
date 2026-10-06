@@ -1,4 +1,5 @@
 // `.codex/agents` 直下の TOML を読み、定義・モデル・承認設定を編集用の状態へ変換する。
+import { fsErrorCode } from "../runtime/FsError";
 import { readdir } from "node:fs/promises";
 import { parse } from "smol-toml";
 import { z } from "zod";
@@ -28,7 +29,7 @@ export async function codexAgentFiles(root: string) {
 			.filter((name) => name.endsWith(".toml"))
 			.sort();
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+		if (fsErrorCode(error) === "ENOENT") {
 			return { agents: [], files: {}, errors: [] };
 		}
 		throw error;

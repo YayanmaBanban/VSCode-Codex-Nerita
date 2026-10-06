@@ -1,5 +1,6 @@
 // 組み込みの検索・コード実行を、会話の許可済みツールと Host の寿命へ限定する。
 
+import { z } from "zod";
 import type {
 	ExtensionAPI,
 	ExtensionFactory,
@@ -96,7 +97,7 @@ export function guardedPiFeature(
 				if (piToolPermitted(tool.name, features)) {
 					pi.registerTool(
 						guardFeatureTool(
-							tool as unknown as ToolDefinition,
+							tool,
 							guardedFeatures,
 							cwd,
 							authorize,
@@ -111,7 +112,7 @@ export function guardedPiFeature(
 
 /** 承認待ちから計時し、コード内の設定で期限を延ばせないようにする。 */
 function guardFeatureTool(
-	tool: ToolDefinition,
+	tool: Omit<ToolDefinition, "renderCall" | "renderResult">,
 	features: PiToolFeatures,
 	cwd: string,
 	authorize: PiAuthorize,
@@ -244,7 +245,9 @@ function checkFeatureInput(name: string, params: unknown): void {
 	if (name !== "tool_search") {
 		return;
 	}
-	const input = params as { query: string; limit?: number };
+	const input = z
+		.object({ query: z.string(), limit: z.number().optional() })
+		.parse(params);
 	if (input.query.length > 2048 || (input.limit ?? 8) > 16) {
 		throw new Error("検索文字列は2048文字、件数は16件以内にしてください。");
 	}

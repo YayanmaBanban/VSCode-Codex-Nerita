@@ -26,7 +26,7 @@ export function normalizeOpenAIModels(
 			slug: item.slug,
 			displayName: item.display_name,
 			priority,
-			visibility: item.visibility as PiCatalogModel["visibility"],
+			visibility: item.visibility,
 			...(ultraEffort !== undefined ? { ultraEffort } : {}),
 			...(supportsPriority(item.service_tiers) ? { fastMode: true } : {}),
 		});
@@ -81,14 +81,18 @@ function validReasoningEntries(value: unknown): value is { effort: string }[] {
 }
 
 /** 識別子と名前を短い文字列に限定し、未知の公開状態を拒否する。 */
-function isModelIdentity(
-	item: unknown,
-): item is Record<string, unknown> & { slug: string; display_name: string } {
+function isModelIdentity(item: unknown): item is Record<string, unknown> & {
+	slug: string;
+	display_name: string;
+	visibility: PiCatalogModel["visibility"];
+} {
 	return (
 		isRecord(item) &&
 		isShortText(item.slug) &&
 		isShortText(item.display_name) &&
-		["list", "hide", "none"].includes(String(item.visibility))
+		(item.visibility === "list" ||
+			item.visibility === "hide" ||
+			item.visibility === "none")
 	);
 }
 

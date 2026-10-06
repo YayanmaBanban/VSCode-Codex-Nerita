@@ -47,33 +47,32 @@ async function historyFixture(t: TestContext) {
 	f.responses.set("thread/turns/list", ({ params }) => ({
 		data: [
 			{
-				id: Boolean(params!.cursor) === true ? "second" : "first",
+				id: Boolean(params!.cursor) ? "second" : "first",
 				status: "completed",
 				itemsView: "summary",
 				items: [],
 			},
 		],
-		nextCursor: Boolean(params!.cursor) === true ? null : "turn-next",
+		nextCursor: Boolean(params!.cursor) ? null : "turn-next",
 	}));
 	f.responses.set("thread/items/list", ({ params }) => ({
 		data: [
 			{
 				turnId: params!.turnId,
-				item:
-					Boolean(params!.cursor) === true
-						? { id: "answer", type: "agentMessage", text: "完了" }
-						: {
-								id: "command",
-								type: "commandExecution",
-								command: "emit output",
-								cwd: f.cwd,
-								status: "completed",
-								exitCode: 0,
-								aggregatedOutput: text,
-							},
+				item: Boolean(params!.cursor)
+					? { id: "answer", type: "agentMessage", text: "完了" }
+					: {
+							id: "command",
+							type: "commandExecution",
+							command: "emit output",
+							cwd: f.cwd,
+							status: "completed",
+							exitCode: 0,
+							aggregatedOutput: text,
+						},
 			},
 		],
-		nextCursor: Boolean(params!.cursor) === true ? null : "item-next",
+		nextCursor: Boolean(params!.cursor) ? null : "item-next",
 	}));
 	const controller = f.controller();
 	const events: HostMessage[] = [];
@@ -246,7 +245,7 @@ void test("Codex の後続ページが壊れても現在の会話と全文参照
 	const original = f.responses.get("thread/items/list")!;
 	for (const failure of ["wrong-turn", "repeated-cursor"]) {
 		f.responses.set("thread/items/list", (request) => {
-			if (!(Boolean(request.params!.cursor) === true)) {
+			if (!Boolean(request.params!.cursor)) {
 				return original(request);
 			}
 			return failure === "wrong-turn"
@@ -335,9 +334,7 @@ void test("Codex の子履歴の全文参照を親に引き継ぎ、会話切替
 					request.method === "thread/read" &&
 					request.params!.threadId === "child",
 			)
-			.every(
-				(request) => !(Boolean(request.params!.includeTurns) === true),
-			),
+			.every((request) => !Boolean(request.params!.includeTurns)),
 	);
 	await historyAction(f.controller, "broken");
 	assert.equal(f.controller.snapshot().sessionId, "broken");
@@ -350,7 +347,7 @@ void test("Codex のページ取得中に切断した場合は遅い復元結果
 	const f = await historyFixture(t);
 	const original = f.responses.get("thread/items/list")!;
 	f.responses.set("thread/items/list", (request) => {
-		if (Boolean(request.params!.cursor) === true) {
+		if (Boolean(request.params!.cursor)) {
 			f.controller.invalidate();
 		}
 		return original(request);
@@ -362,10 +359,8 @@ void test("Codex のページ取得中に切断した場合は遅い復元結果
 	assert.ok(
 		!f.requests.some(
 			(request) =>
-				Boolean(
-					request.method === "thread/turns/list" &&
-					request.params!.cursor,
-				) === true,
+				request.method === "thread/turns/list" &&
+				Boolean(request.params!.cursor),
 		),
 	);
 });

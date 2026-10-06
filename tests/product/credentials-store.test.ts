@@ -1,10 +1,10 @@
 // 永続保存・メモリー消失・アカウント更新を、製品アダプターと同梱 SDK の入口から確認する。
+import { loadPiSdk } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSdk";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import { inspect } from "node:util";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { credentialFixture } from "../support/credentials";
@@ -51,7 +51,9 @@ void test("Binding は秘密値と注入先の上書きを拒否し、既存の 
 			provider: { ...binding.provider, [key]: "PRIVATE_MARKER" },
 		};
 		assert.equal(credentialBindingSchema.safeParse(input).success, false);
-		await assert.rejects(store.update(() => [input as never]));
+		// 型の契約を意図的に破り、実行時検証でも保存を拒否することを確認する。
+		// @ts-expect-error 不正な Provider を入力する拒否テスト。
+		await assert.rejects(store.update(() => [input]));
 	}
 	assert.equal(await readFile(file, "utf8"), original);
 	assert.ok(!original.includes("PRIVATE_MARKER"));
@@ -141,11 +143,7 @@ for (const mode of ["session", "secret-storage"] as const) {
 	void test(`同梱 SDK が ${mode} の API キーログイン・OAuth の排他更新・ログアウトを使う`, async (t) => {
 		const f = await piFixture(t);
 		const storage = credentialFixture();
-		const sdk = (await import(
-			pathToFileURL(
-				join(process.env.NERITA_TEST_EXTENSION!, "dist/runtime/pi.mjs"),
-			).href
-		)) as typeof PiSdk;
+		const sdk = await loadPiSdk(process.env.NERITA_TEST_EXTENSION!);
 		const runtime = await sdk.ModelRuntime.create({
 			credentials: storage.credentials,
 			modelsPath: null,
@@ -352,6 +350,8 @@ void test("BWS の保存モード変更は直列化され、失敗しても既�
 	const f = credentialFixture();
 	const metadata = new Map<string, unknown>();
 	let fail = false;
+	// VS Code 境界で使う秘密ストアとメタデータ操作だけを代替する。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const context = {
 		secrets: {
 			get: (key: string) => Promise.resolve(f.secrets.get(key)),

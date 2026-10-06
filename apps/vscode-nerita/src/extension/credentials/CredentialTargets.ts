@@ -1,4 +1,5 @@
 // 承認済みコマンドの固定 URL と Git/npm の接続先メタデータから、資格情報の要求を確定する。
+import { fsErrorCode } from "../runtime/FsError";
 import {
 	isNonZeroNumber,
 	nonEmptyString,
@@ -131,8 +132,8 @@ async function gitTargets(cwd: string, command: string, workspace: string) {
 		return remoteUrls(await gitConfigText(config), remotes);
 	} catch (error) {
 		if (
-			(error as NodeJS.ErrnoException).code === "ENOENT" ||
-			(error as NodeJS.ErrnoException).code === "ENOTDIR"
+			fsErrorCode(error) === "ENOENT" ||
+			fsErrorCode(error) === "ENOTDIR"
 		) {
 			return [];
 		}

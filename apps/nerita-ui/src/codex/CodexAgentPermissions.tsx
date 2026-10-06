@@ -146,9 +146,11 @@ function ApprovalPolicyField({
 		typeof edit.approvalPolicy === "object"
 			? edit.approvalPolicy.granular
 			: undefined;
-	const policy = granular
-		? "granular"
-		: ((edit.approvalPolicy as string | undefined) ?? "on-request");
+	const simplePolicy =
+		typeof edit.approvalPolicy === "string"
+			? edit.approvalPolicy
+			: "on-request";
+	const policy = granular ? "granular" : simplePolicy;
 	return (
 		<div className="grid">
 			<Field label="承認ポリシー">
@@ -257,11 +259,7 @@ function GranularFields({
 		<>
 			<fieldset className="grid gap-3 rounded-md border border-input-border p-3">
 				<legend className="text-sm">承認要求を許可する項目</legend>
-				{(
-					Object.keys(
-						granularLabels,
-					) as (keyof typeof granularLabels)[]
-				).map((key) => (
+				{granularApprovalSchema.keyof().options.map((key) => (
 					<SettingsTooltip key={key} content={key}>
 						<label className="flex items-center gap-2 text-sm">
 							<ApprovalCheckbox

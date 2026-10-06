@@ -98,9 +98,7 @@ async function executePiReadTool(
 		permit.signal.throwIfAborted();
 	};
 	await check();
-	let tool:
-		| ReturnType<typeof sdk.createReadToolDefinition>
-		| ReturnType<typeof sdk.createLsToolDefinition>;
+	let tool: Omit<PiSdk.ToolDefinition, "renderCall" | "renderResult">;
 	if (kind === "read") {
 		const content: Buffer = await readApprovedFile(target, check);
 		tool = sdk.createReadToolDefinition(paths.cwd, {
@@ -120,7 +118,7 @@ async function executePiReadTool(
 		);
 	}
 	permit.signal.throwIfAborted();
-	const result = await (tool as PiSdk.ToolDefinition).execute(
+	const result = await tool.execute(
 		id,
 		{ ...input, path: target },
 		permit.signal,

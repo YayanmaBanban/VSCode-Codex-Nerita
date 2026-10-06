@@ -1,4 +1,6 @@
 // Git・npmrc・Bitwarden の参照を承認後に解決し、保管庫全体を探索しない。
+import { fsErrorCode } from "../runtime/FsError";
+import { isRecord } from "@nerita/shared/validation";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { throwCredentialError } from "./CredentialErrors";
 import { open } from "node:fs/promises";
@@ -97,7 +99,7 @@ async function npmText(file: string) {
 			await handle.close();
 		}
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+		if (fsErrorCode(error) === "ENOENT") {
 			return "";
 		}
 		return throwCredentialError("npm 認証設定を読み込めません。", error);
@@ -202,13 +204,14 @@ export class BitwardenSecretsProvider extends BoundProvider {
 					{ BWS_ACCESS_TOKEN: value },
 				),
 			);
-			let secret: { id?: unknown; projectId?: unknown; value?: unknown };
+			let secret: unknown;
 			try {
-				secret = JSON.parse(output) as typeof secret;
+				secret = JSON.parse(output);
 			} catch {
 				throw new Error("Bitwarden の応答形式が不正です。");
 			}
 			if (
+				!isRecord(secret) ||
 				secret.id !== provider.secretId ||
 				(isNonEmptyString(provider.projectId) &&
 					secret.projectId !== provider.projectId) ||

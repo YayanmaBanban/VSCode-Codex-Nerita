@@ -73,7 +73,7 @@ function unsupportedSymbolLocation(location: vscode.Location | undefined) {
 	const range: unknown = location?.range;
 	return (
 		!location ||
-		!(Boolean(range) === true) ||
+		!Boolean(range) ||
 		location.uri.scheme !== "file" ||
 		isNonEmptyString(location.uri.query) ||
 		isNonEmptyString(location.uri.fragment) ||

@@ -21,7 +21,7 @@ export function ContributionRenderer({
 		return (
 			<SliderCard
 				control={control}
-				disabled={disabled || !!(control.disabled === true)}
+				disabled={disabled || control.disabled === true}
 				onChange={onChange}
 			/>
 		);
@@ -33,7 +33,7 @@ export function ContributionRenderer({
 		return (
 			<ConfigControl
 				option={control.option}
-				disabled={disabled || !!(control.disabled === true)}
+				disabled={disabled || control.disabled === true}
 				onChange={(value) => onChange(control.option.id, value)}
 			/>
 		);

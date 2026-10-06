@@ -1,4 +1,5 @@
 // 設定ファイルの参照範囲と内容の世代を確認し、同じワークスペースの保存を直列化する。
+import { fsErrorCode } from "../runtime/FsError";
 import { createHash, randomUUID } from "node:crypto";
 import {
 	mkdir,
@@ -59,7 +60,7 @@ export async function readWorkspaceFile(
 		}
 		return await readFile(file, "utf8");
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+		if (fsErrorCode(error) === "ENOENT") {
 			return undefined;
 		}
 		throw error;

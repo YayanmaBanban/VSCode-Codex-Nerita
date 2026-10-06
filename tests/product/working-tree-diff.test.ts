@@ -156,6 +156,8 @@ async function verifyDiff(
 		await provider.provideTextDocumentContent(opened[0]!.before, token),
 		"INDEX VERSION\n",
 	);
+	// 閉じる通知では対象 URI だけを製品へ渡す。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	close({ uri: opened[0]!.before } as unknown as vscode.TextDocument);
 	assert.throws(
 		() => provider.provideTextDocumentContent(opened[0]!.before, token),
@@ -209,6 +211,8 @@ async function verifyBoundary(
 /** エディター境界で必要な URI の性質だけを与える。 */
 function fakeUri(scheme: string, fsPath: string, query = "") {
 	const path = fsPath.replaceAll("\\", "/");
+	// 実際の VS Code を起動せず、差分表示で利用する URI 操作だけを代替する。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	return {
 		scheme,
 		fsPath,

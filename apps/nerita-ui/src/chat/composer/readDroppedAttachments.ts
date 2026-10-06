@@ -11,11 +11,16 @@ function readFile(file: File): Promise<DroppedAttachment> {
 		const reader = new FileReader();
 		reader.onerror = () =>
 			reject(new Error("ファイルを読み込めませんでした。"));
-		reader.onload = () =>
+		reader.onload = () => {
+			if (typeof reader.result !== "string") {
+				reject(new Error("ファイルを読み込めませんでした。"));
+				return;
+			}
 			resolve({
 				name: file.name,
-				data: (reader.result as string).split(",")[1] ?? "",
+				data: reader.result.split(",")[1] ?? "",
 			});
+		};
 		reader.readAsDataURL(file);
 	});
 }

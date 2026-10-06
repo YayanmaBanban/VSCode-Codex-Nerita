@@ -9,7 +9,7 @@ import { findMatches, matchLimit } from "./findMatches";
 type TextBlock = {
 	element: Element;
 	text: string;
-	nodes: { node: Text; start: number }[];
+	nodes: { node: Node; start: number }[];
 };
 
 /** 非表示の折り畳み内容や操作ボタンを除いた、画面上の文章を集める。 */
@@ -45,7 +45,7 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 			block = { element, text: "", nodes: [] };
 			blocks.push(block);
 		}
-		block.nodes.push({ node: node as Text, start: block.text.length });
+		block.nodes.push({ node, start: block.text.length });
 		block.text += node.textContent;
 	}
 	return blocks;
@@ -64,10 +64,12 @@ export function searchRanges(
 			matchLimit - ranges.length,
 		)) {
 			const first = block.nodes.find(
-				({ node, start }) => start + node.length > match.start,
+				({ node, start }) =>
+					start + node.textContent!.length > match.start,
 			)!;
 			const last = block.nodes.find(
-				({ node, start }) => start + node.length >= match.end,
+				({ node, start }) =>
+					start + node.textContent!.length >= match.end,
 			)!;
 			const range = document.createRange();
 			range.setStart(first.node, match.start - first.start);

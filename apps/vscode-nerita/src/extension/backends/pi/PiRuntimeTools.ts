@@ -50,14 +50,8 @@ export async function preparePiRuntimeTools(
 	options.signal.throwIfAborted();
 	const paths = await runtimePaths(options);
 	const { cwd, policy } = paths;
-	const tools = ["write", "edit"].map((kind) =>
-		createPiFileTool(
-			sdk,
-			kind as "write" | "edit",
-			paths,
-			authorize,
-			options.signal,
-		),
+	const tools = (["write", "edit"] as const).map((kind) =>
+		createPiFileTool(sdk, kind, paths, authorize, options.signal),
 	);
 	tools.push(
 		...(["read", "ls"] as const).map((kind) =>

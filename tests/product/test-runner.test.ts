@@ -14,6 +14,8 @@ void test("回帰検出は目的のテストとアサーションだけを認定
 		source.indexOf("function verifyRegression("),
 		source.indexOf("/** 選んだ領域"),
 	);
+	// リポジトリの検証関数を別コンテキストで実行し、既知の呼び出し契約を付ける。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const verify = runInNewContext(`${functions}\nverifyRegression`, {
 		regressions: {
 			fixture: {

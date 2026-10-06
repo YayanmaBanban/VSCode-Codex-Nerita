@@ -1,6 +1,6 @@
 // スキル一覧の必須フィールドを検証し、有効な候補だけを公開する。
 import { isRecord } from "@nerita/shared/validation";
-import { validSkills, type SkillSummary } from "@nerita/shared/skills";
+import { type SkillSummary } from "@nerita/shared/skills";
 
 /** App Server の一覧を表示と送信に共通の候補へ正規化する。 */
 export function parseSkills(value: unknown): SkillSummary[] {
@@ -23,15 +23,17 @@ function collectEnabledSkills(entry: unknown, skills: SkillSummary[]) {
 		if (
 			!isRecord(item) ||
 			typeof item.enabled !== "boolean" ||
-			!validSkills([item])
+			typeof item.name !== "string" ||
+			typeof item.description !== "string" ||
+			typeof item.path !== "string"
 		) {
 			throw new Error("Invalid skill");
 		}
 		if (item.enabled) {
 			skills.push({
-				name: item.name as string,
-				description: item.description as string,
-				path: item.path as string,
+				name: item.name,
+				description: item.description,
+				path: item.path,
 			});
 		}
 	}

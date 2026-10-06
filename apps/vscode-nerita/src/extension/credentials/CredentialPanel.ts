@@ -1,9 +1,8 @@
 // 資格情報の管理画面は秘密値を受信せず、秘密入力と移行の確定を Host の対話で行う。
+import { loadPiSdk } from "../backends/pi/PiSdk";
 import * as vscode from "vscode";
 import { realpath } from "node:fs/promises";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import {
 	credentialRequestSchema,
 	type CredentialRequest,
@@ -241,10 +240,7 @@ async function migrateAuth(
 	service: CredentialService,
 	signal: AbortSignal,
 ) {
-	const sdk = (await import(
-		pathToFileURL(join(context.extensionUri.fsPath, "dist/runtime/pi.mjs"))
-			.href
-	)) as typeof PiSdk;
+	const sdk = await loadPiSdk(context.extensionUri.fsPath);
 	const choice =
 		request.type === "migrate-mcp"
 			? { mode: "secret-storage" as const }

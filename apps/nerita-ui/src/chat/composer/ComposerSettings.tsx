@@ -1,6 +1,5 @@
 // 入力欄の下に添付・使用量・接続中の設定を順に配置する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
@@ -141,7 +140,7 @@ function settingsConnected(state: ChatState) {
 		(state.connection === "ready" ||
 			(state.piAccount !== null &&
 				state.connection === "auth-required")) &&
-		!!isNonEmptyString(state.sessionId) &&
+		isNonEmptyString(state.sessionId) &&
 		!state.sessionPending
 	);
 }

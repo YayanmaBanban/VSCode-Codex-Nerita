@@ -1,7 +1,6 @@
 // UI の送信・設定・停止要求を子プロセスとの JSONL 通信で処理し、共有状態への反映を確認する。
 
 import { type TestContext, test } from "node:test";
-
 import assert from "node:assert/strict";
 
 import { randomUUID } from "node:crypto";
@@ -333,6 +332,8 @@ function prepareSandboxSetupUi(
 			}
 		}
 	});
+	// VS Code の登録境界で利用するパスと購読管理だけを代替する。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	registerSandboxSetup({
 		extensionUri: { fsPath: f.extensionPath },
 		subscriptions,

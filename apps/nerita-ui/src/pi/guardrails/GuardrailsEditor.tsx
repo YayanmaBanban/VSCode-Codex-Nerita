@@ -1,8 +1,9 @@
 // ガードレールの設定編集と、ツールを実行しない検査を同じ画面で提供する。
 
-import type {
-	GuardBridge,
-	GuardProbe,
+import {
+	guardProbeSchema,
+	type GuardBridge,
+	type GuardProbe,
 } from "@nerita/shared/guardrails/messages";
 import { cn } from "cnfast";
 import { type Dispatch, type SetStateAction, useState } from "react";
@@ -221,7 +222,9 @@ function GuardrailsProbeTarget({
 					onChange={(event) =>
 						setProbe({
 							...probe,
-							tool: event.target.value as GuardProbe["tool"],
+							tool: guardProbeSchema.shape.tool.parse(
+								event.target.value,
+							),
 						})
 					}
 				>

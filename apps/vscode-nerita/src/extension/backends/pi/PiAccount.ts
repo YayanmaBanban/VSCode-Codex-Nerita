@@ -1,6 +1,6 @@
 // 認証の秘密値を Host 内に留め、モデル選択と公開状態をまとめる。
+import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -225,11 +225,13 @@ export class PiAccount {
 		if (!supportsAuthOperation(await this.items(signal), id)) {
 			throw new Error("未対応の認証操作です。");
 		}
-		const [provider, type, accountId] = JSON.parse(id) as [
-			string,
-			"api_key" | "oauth" | "logout" | "select" | "delete",
-			string?,
-		];
+		const [provider, type, accountId] = z
+			.tuple([
+				z.string(),
+				z.enum(["api_key", "oauth", "logout", "select", "delete"]),
+				z.string().optional(),
+			])
+			.parse(JSON.parse(id));
 		this.catalog.invalidate();
 		if (type === "select" || type === "delete") {
 			if (!this.credentials || !isNonEmptyString(accountId)) {

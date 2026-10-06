@@ -8,15 +8,15 @@ export type SourceRange = { start: SourcePosition; end: SourcePosition };
 
 /** 範囲の座標と前後関係を通信・下書き復元時に検証する。 */
 export function isSourceRange(value: unknown): value is SourceRange {
-	if (value === null || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const range = value as Record<string, unknown>;
+	const range = value;
 	const position = (point: unknown): point is SourcePosition => {
-		if (point === null || typeof point !== "object") {
+		if (!isRecord(point)) {
 			return false;
 		}
-		const p = point as Record<string, unknown>;
+		const p = point;
 		return [p.line, p.character].every(
 			(n) =>
 				typeof n === "number" &&
@@ -39,10 +39,10 @@ export type SymbolLocation = { kind: number; range: SourceRange };
 
 /** シンボルの種別と位置を検証する。 */
 export function isSymbolLocation(value: unknown): value is SymbolLocation {
-	if (value === null || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const symbol = value as Record<string, unknown>;
+	const symbol = value;
 	return (
 		typeof symbol.kind === "number" &&
 		Number.isInteger(symbol.kind) &&
@@ -51,3 +51,4 @@ export function isSymbolLocation(value: unknown): value is SymbolLocation {
 		isSourceRange(symbol.range)
 	);
 }
+import { isRecord } from "./validation";

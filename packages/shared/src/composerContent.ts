@@ -1,4 +1,5 @@
 // 下書き内の通常文と貼り付けブロックを、表示先をまたいで保持する。
+import { isRecord } from "./validation";
 import { isNonZeroNumber } from "./valuePredicates";
 import { validReferences, type ComposerReference } from "./composerReferences";
 
@@ -79,12 +80,13 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 	}
 
 	const ids = new Set<string>();
+	let text = "";
 	return (
 		(parts as unknown[]).every((value, index) => {
-			if (value === null || typeof value !== "object") {
+			if (!isRecord(value)) {
 				return false;
 			}
-			const part = value as Record<string, unknown>;
+			const part = value;
 			if (
 				typeof part.id !== "string" ||
 				part.id === "" ||
@@ -98,14 +100,16 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 			}
 
 			ids.add(part.id);
+			text += part.text;
 			return true;
-		}) &&
-		(parts as ComposerPart[]).map((part) => part.text).join("") === draft
+		}) && text === draft
 	);
 }
 
 /** 通常文の参照位置を検証し、貼り付けブロック内の参照を拒否する。 */
-function validPartReferences(part: Record<string, unknown>): boolean {
+function validPartReferences(
+	part: Record<string, unknown>,
+): part is Record<string, unknown> & { text: string } {
 	return (
 		typeof part.text === "string" &&
 		!(part.type === "pasted" && part.references !== undefined) &&

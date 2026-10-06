@@ -1,4 +1,5 @@
 // インデックスの本文を読み取り専用 URI に保持し、現在のファイルと VS Code で比較する。
+import { fsErrorCode } from "../runtime/FsError";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { execFile } from "node:child_process";
@@ -91,7 +92,7 @@ export class WorkingTreeDiff implements vscode.Disposable {
 			await stat(uri.fsPath);
 			return uri;
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			if (fsErrorCode(error) !== "ENOENT") {
 				throw error;
 			}
 			const emptyUri = uri.with({ scheme, query: randomUUID() });
@@ -151,7 +152,7 @@ async function validateRealPath(root: string, path: string) {
 	try {
 		actualPath = await realpath(path);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+		if (fsErrorCode(error) !== "ENOENT") {
 			throw error;
 		}
 		actualPath = resolve(await realpath(dirname(path)), basename(path));

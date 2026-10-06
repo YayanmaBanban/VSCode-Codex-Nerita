@@ -96,11 +96,18 @@ export class Approvals {
 		const entry = this.pending.get(id);
 		if (
 			!entry ||
+			!(
+				decision === "accept" ||
+				decision === "decline" ||
+				decision === "cancel" ||
+				decision === "accept-session" ||
+				decision === "accept-workspace"
+			) ||
 			!entry.permission.options.some((option) => option.id === decision)
 		) {
 			return false;
 		}
-		entry.finish(decision as Decision);
+		entry.finish(decision);
 		return true;
 	}
 }

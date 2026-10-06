@@ -1,6 +1,6 @@
 // 外部 App Server だけを子プロセスで代替し、本番のクライアント・通信・コントローラーを接続する。
+import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import { type RequestListener, type IncomingMessage } from "http";
 
 import assert from "node:assert/strict";
@@ -150,9 +150,13 @@ function createCodexControllerFactory(
 			codexSelectionStore({
 				read: async () => {
 					try {
-						return JSON.parse(
-							await readFile(selectionPath, "utf8"),
-						) as unknown;
+						return z
+							.unknown()
+							.parse(
+								JSON.parse(
+									await readFile(selectionPath, "utf8"),
+								),
+							);
 					} catch {
 						return undefined;
 					}
@@ -194,7 +198,18 @@ function createCodexRelayHandler(
 			body += chunk;
 		});
 		request.on("end", () => {
-			const message = JSON.parse(body) as Rpc;
+			const message = z
+				.object({
+					method: z.string(),
+					id: z.number().optional(),
+					params: z.record(z.string(), z.unknown()).optional(),
+				})
+				.transform(({ method, id, params }): Rpc => ({
+					method,
+					...(id === undefined ? {} : { id }),
+					...(params === undefined ? {} : { params }),
+				}))
+				.parse(JSON.parse(body));
 			requests.push(message);
 			if (message.id === undefined) {
 				response.end();

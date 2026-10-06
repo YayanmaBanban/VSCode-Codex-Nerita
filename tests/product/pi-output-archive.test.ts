@@ -1,4 +1,6 @@
 // SDK の一時シェル出力を恒久保存し、削除・改ざん後の参照境界を検証する。
+import { isRecord } from "@nerita/shared/validation";
+import { loadPiSdk } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSdk";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -7,7 +9,6 @@ import { randomBytes } from "node:crypto";
 import { mkdtemp, writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import { PiOutputArchive } from "../../apps/vscode-nerita/src/extension/backends/pi/results/PiOutputArchive";
 import { ToolOutputStore } from "../../apps/vscode-nerita/src/extension/session/ToolOutputStore";
@@ -81,9 +82,10 @@ void test("一時シェル出力を保存し、元ファイルの削除後も全
 	);
 	const record = manager.getBranch().find((entry) => entry.type === "custom");
 	assert.ok(record?.type === "custom");
+	assert.ok(isRecord(record.data));
 	const invalid = {
 		...record,
-		data: { ...(record.data as object), ownerSessionId: "../outside" },
+		data: { ...record.data, ownerSessionId: "../outside" },
 	};
 	assert.throws(
 		() => archive.restore([{ ...tool }], [invalid]),
@@ -92,10 +94,6 @@ void test("一時シェル出力を保存し、元ファイルの削除後も全
 });
 
 /** 配布用に束ねた SDK を使い、ユーザー環境の Pi は読み込まない。 */
-async function loadSdk() {
-	return (await import(
-		pathToFileURL(
-			join(process.env.NERITA_TEST_EXTENSION!, "dist/runtime/pi.mjs"),
-		).href
-	)) as typeof PiSdk;
+async function loadSdk(): Promise<typeof PiSdk> {
+	return loadPiSdk(process.env.NERITA_TEST_EXTENSION!);
 }

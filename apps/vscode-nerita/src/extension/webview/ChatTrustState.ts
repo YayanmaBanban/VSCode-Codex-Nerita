@@ -57,7 +57,7 @@ export class ChatTrustState {
 			vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 		const untrusted =
 			configuredBackend() === "pi" &&
-			!!isNonEmptyString(cwd) &&
+			isNonEmptyString(cwd) &&
 			!(
 				vscode.workspace.isTrusted &&
 				(await this.store?.trusted(cwd)) === true

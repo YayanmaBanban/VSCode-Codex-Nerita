@@ -214,6 +214,8 @@ export default defineConfig([
 				},
 			],
 			// Boolean判定の対象を明示化する
+			// unknown の Boolean() を strict-boolean-expressions が要求するため、自動削除と競合させない。
+			"no-extra-boolean-cast": "off",
 			"@typescript-eslint/strict-boolean-expressions": [
 				"error",
 				{
@@ -222,8 +224,25 @@ export default defineConfig([
 					allowNullableObject: true,
 				},
 			],
+			// boolean === true / false の不要な比較
+			"@typescript-eslint/no-unnecessary-boolean-literal-compare":
+				"error",
+			// Boolean() / String() 等の不要な型変換
+			"@typescript-eslint/no-unnecessary-type-conversion": "error",
 			// null合体演算子を強制
 			"@typescript-eslint/prefer-nullish-coalescing": "error",
+			// 型を狭める unsafe な as を禁止
+			"@typescript-eslint/no-unsafe-type-assertion": "error",
+			// Promise.catch の error を any にしない
+			"@typescript-eslint/use-unknown-in-catch-callback-variable":
+				"error",
+			// 文字列してごまかさない
+			"@typescript-eslint/no-base-to-string": [
+				"error",
+				{
+					checkUnknown: true,
+				},
+			],
 		},
 	},
 	{

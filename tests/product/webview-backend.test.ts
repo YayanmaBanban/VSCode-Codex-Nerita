@@ -103,7 +103,7 @@ async function openView(
 	assert.ok(isNonEmptyString(sessionId));
 	const runtime = new BackendRuntime(() => controller);
 	t.after(() => runtime.dispose());
-	const extensionUri = { fsPath: f.root } as unknown as vscode.Uri;
+	const extensionUri = vscode.Uri.file(f.root);
 	const provider = new ChatViewProvider(
 		extensionUri,
 		runtime,
@@ -146,6 +146,7 @@ function prepareSettings(cwd: string) {
 	});
 	Object.assign(vscode.ConfigurationTarget, { Global: 1, Workspace: 2 });
 	Object.assign(vscode.Uri, {
+		file: (fsPath: string) => ({ fsPath }),
 		joinPath: (base: vscode.Uri, ...parts: string[]) => ({
 			fsPath: join(base.fsPath, ...parts),
 			toString: () => parts.join("/"),
@@ -160,6 +161,8 @@ function prepareSettings(cwd: string) {
 /** 公開 Webview 通信の入出力を記録し、Host の検証・振り分けを通す。 */
 function attachWebview(provider: ChatViewProvider, messages: HostMessage[]) {
 	let receive!: (value: UiMessage) => void;
+	// 製品が利用する Webview の通信・破棄境界だけを代替する。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const view = {
 		webview: {
 			postMessage: (message: HostMessage) => {

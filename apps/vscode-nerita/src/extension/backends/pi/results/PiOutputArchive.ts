@@ -143,7 +143,7 @@ export class PiOutputArchive {
 			outputId: randomUUID(),
 			preview: boundedPreview(source.text),
 			complete:
-				!!isNonEmptyString(source.path) || !(source.truncated === true),
+				isNonEmptyString(source.path) || !(source.truncated === true),
 			...(tool.exitCode === undefined ? {} : { exitCode: tool.exitCode }),
 		};
 	}

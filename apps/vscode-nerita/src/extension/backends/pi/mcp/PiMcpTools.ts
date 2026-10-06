@@ -1,4 +1,5 @@
 // MCP 操作ごとに承認を求め、保存前に結果から秘密値を除去して出力サイズを制限する。
+import { z } from "zod";
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { isRecord } from "@nerita/shared/validation";
 import { approvePiTool, type PiAuthorize } from "../PiApprovedTools";
@@ -69,16 +70,12 @@ export function safeMcpResult(result: unknown, secrets: readonly string[]) {
 		return [{ type: "text" as const, text: item.content.text }];
 	});
 	const structured = piStructuredDisplay(raw.structuredContent, secrets);
-	let data:
-		| NonNullable<
-				Awaited<
-					ReturnType<ToolDefinition["execute"]>
-				>["structuredContent"]
-		  >
-		| undefined;
+	let data: Awaited<
+		ReturnType<ToolDefinition["execute"]>
+	>["structuredContent"];
 	if (raw.structuredContent !== undefined) {
 		try {
-			data = JSON.parse(structured.text) as typeof data;
+			data = z.json().parse(JSON.parse(structured.text));
 		} catch {
 			data = { summary: structured.text, omitted: true };
 		}

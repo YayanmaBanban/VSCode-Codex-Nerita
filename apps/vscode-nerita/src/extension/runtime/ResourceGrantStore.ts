@@ -250,7 +250,7 @@ export function workspaceFor(call: ToolCall): string {
 export function grantable(event: DenialEvent): boolean {
 	return (
 		event.resourceType === "file" &&
-		!!isNonEmptyString(event.resource?.tool) &&
+		isNonEmptyString(event.resource?.tool) &&
 		["install", "helper", "config"].includes(event.resource.kind) &&
 		["read", "execute"].includes(event.requestedAccess) &&
 		!/(?:^|[\\/])(?:\.ssh|\.aws|\.azure|\.gnupg|credentials|secrets?)(?:[\\/]|$)/i.test(

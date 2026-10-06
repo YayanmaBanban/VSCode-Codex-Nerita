@@ -170,10 +170,10 @@ function createMcpSynchronizer(
 				const loaded = await config();
 				const entries = loaded.entries.filter(
 					(entry) =>
-						(entry.config?.enabled === true &&
-							"url" in entry.config &&
-							options.policy.networkAccess &&
-							serverPermitted(entry.name)) === true,
+						entry.config?.enabled === true &&
+						"url" in entry.config &&
+						options.policy.networkAccess &&
+						serverPermitted(entry.name),
 				);
 				await removeObsolete(entries);
 				for (const entry of entries) {

@@ -1,4 +1,5 @@
 // 実在する祖先と正規化されたパスを確認し、Host ファイルツールの書込み境界を検査する。
+import { fsErrorCode } from "../runtime/FsError";
 import { lstat, realpath, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { containsPath, type AgentAccessPolicy } from "./AgentAccessPolicy";
@@ -45,7 +46,7 @@ export async function canonicalPath(
 			await lstat(ancestor);
 			exists = true;
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			if (fsErrorCode(error) !== "ENOENT") {
 				throw error;
 			}
 		}
@@ -131,7 +132,7 @@ export class WorkspacePathPolicy {
 					);
 				}
 			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+				if (fsErrorCode(error) !== "ENOENT") {
 					throw error;
 				}
 			}

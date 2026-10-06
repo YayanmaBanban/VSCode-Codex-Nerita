@@ -1,4 +1,5 @@
 // ChatGPT OAuth に渡すインストール識別子を、認証情報とは別に保存する。
+import { fsErrorCode } from "../../runtime/FsError";
 import { randomUUID } from "node:crypto";
 import {
 	link,
@@ -20,7 +21,7 @@ export async function getPiDeviceId(agentDir: string): Promise<string> {
 		// 書込み済みの一時ファイルから保存先へのリンクを作り、別の Host が書込み途中のファイルを読むのを防ぐ。
 		await link(temporary, file);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+		if (fsErrorCode(error) !== "EEXIST") {
 			throw error;
 		}
 	} finally {

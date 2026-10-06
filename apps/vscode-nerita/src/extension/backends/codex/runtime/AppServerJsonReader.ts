@@ -94,7 +94,7 @@ export class AppServerJsonReader {
 			}
 			this.receive(value);
 		}
-		if (Boolean(result.failed) === true) {
+		if (Boolean(result.failed)) {
 			throw new Error("Invalid JSONL");
 		}
 	}

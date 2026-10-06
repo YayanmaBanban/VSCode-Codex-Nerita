@@ -1,4 +1,5 @@
 // 現在の認証とモデル一覧を利用し、会話やツールを作らず要約だけを生成する。
+import { piThinkingSchema } from "@nerita/shared/agentManager/config";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { HandoffRequest } from "../../session/HandoffContext";
@@ -55,11 +56,9 @@ function piHandoffOptions(
 		signal: request.signal,
 		...(isNonEmptyString(reasoning) && reasoning !== "off"
 			? {
-					reasoning: reasoning as NonNullable<
-						NonNullable<
-							Parameters<ModelRuntime["completeSimple"]>[2]
-						>["reasoning"]
-					>,
+					reasoning: piThinkingSchema
+						.exclude(["off"])
+						.parse(reasoning),
 				}
 			: {}),
 		cacheRetention: "none",

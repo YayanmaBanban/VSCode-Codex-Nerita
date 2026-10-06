@@ -3,7 +3,7 @@
 import {
 	changeScopes,
 	type ChangeReference,
-	type ChangeScope,
+	isChangeScope,
 } from "@nerita/shared/changeReferences";
 import type { Attachment } from "@nerita/shared/composer";
 import { pathText } from "@nerita/shared/composerReferences";
@@ -108,17 +108,7 @@ export function completionItems(
 			category: label,
 		}));
 	} else if (category === "Git の変更") {
-		items = (Object.keys(changeScopes) as ChangeScope[]).map((scope) => {
-			const { name, description } = changeScopes[scope];
-			const reference: ChangeReference = { kind: "changes", scope, name };
-			return {
-				id: scope,
-				label: name,
-				description,
-				reference,
-				text: `${pathText(reference)} `,
-			};
-		});
+		items = changeCompletionItems();
 	} else if (category === "ファイルとディレクトリ") {
 		items = attachments.map((file) => ({
 			id: file.id,
@@ -140,6 +130,23 @@ export function completionItems(
 			.toLocaleLowerCase()
 			.includes(query.toLocaleLowerCase()),
 	);
+}
+
+/** Git の各範囲を、選択候補と送信時の参照チップへ変換する。 */
+function changeCompletionItems(): CompletionItem[] {
+	return Object.keys(changeScopes)
+		.filter(isChangeScope)
+		.map((scope) => {
+			const { name, description } = changeScopes[scope];
+			const reference: ChangeReference = { kind: "changes", scope, name };
+			return {
+				id: scope,
+				label: name,
+				description,
+				reference,
+				text: `${pathText(reference)} `,
+			};
+		});
 }
 
 /** 利用可能なスラッシュコマンドの候補を生成する。 */

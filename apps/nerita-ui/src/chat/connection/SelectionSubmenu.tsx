@@ -57,7 +57,7 @@ export function SelectionSubmenu<Value extends string>({
 					>
 						<Menu.RadioGroup
 							value={value ?? ""}
-							onValueChange={(next) => onSelect(next as Value)}
+							onValueChange={selectKnownOption(options, onSelect)}
 						>
 							{options.map(([option, name]) => (
 								<Menu.RadioItem
@@ -89,4 +89,17 @@ export function SelectionSubmenu<Value extends string>({
 			</Menu.Portal>
 		</Menu.SubmenuRoot>
 	);
+}
+
+/** メニューの未知の値は、呼び出し側が公開した設定値と一致した場合だけ渡す。 */
+function selectKnownOption<Value extends string>(
+	options: SelectionSubmenuProps<Value>["options"],
+	onSelect: SelectionSubmenuProps<Value>["onSelect"],
+) {
+	return (next: unknown) => {
+		const selected = options.find(([option]) => option === next);
+		if (selected) {
+			onSelect(selected[0]);
+		}
+	};
 }

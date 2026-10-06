@@ -1,4 +1,5 @@
 // HTTP エラーと認証更新の外部境界だけを置き換え、SDK の公開・履歴保存まで確認する。
+import { z } from "zod";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile, writeFile } from "node:fs/promises";
@@ -116,20 +117,25 @@ async function saveCredentials(
 /** ローカル HTTP と OAuth 応答のみを登録し、確定メッセージを変更する拡張の後でも保護する。 */
 async function configureProvider(f: Awaited<ReturnType<typeof piFixture>>) {
 	const modelsPath = join(f.agentDir, "models.json");
-	const config = JSON.parse(await readFile(modelsPath, "utf8")) as {
-		providers: { local: Record<string, unknown> };
-	};
+	const config = z
+		.looseObject({
+			providers: z.looseObject({
+				local: z.record(z.string(), z.unknown()),
+			}),
+		})
+		.parse(JSON.parse(await readFile(modelsPath, "utf8")));
 	delete config.providers.local.apiKey;
 	config.providers.local = {
 		...config.providers.local,
 		apiKey: "$UNCONFIGURED_FIXTURE_KEY",
-		models: (
-			config.providers.local.models as Record<string, unknown>[]
-		).map((model) => ({
-			...model,
-			name: "test-model",
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-		})),
+		models: z
+			.array(z.record(z.string(), z.unknown()))
+			.parse(config.providers.local.models)
+			.map((model) => ({
+				...model,
+				name: "test-model",
+				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			})),
 	};
 	await writeFile(modelsPath, JSON.stringify(config));
 	const extension = join(f.agentDir, "auth-fixture.mjs");

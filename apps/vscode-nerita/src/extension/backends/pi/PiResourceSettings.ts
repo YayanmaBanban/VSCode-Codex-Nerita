@@ -1,4 +1,5 @@
 // リソース探索が Host で未導入パッケージをインストールしないよう、導入済みのローカル参照だけを渡す。
+import { fsErrorCode } from "../../runtime/FsError";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { realpath } from "node:fs/promises";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
@@ -57,7 +58,7 @@ async function localPackages(
 				typeof entry === "string" ? local : { ...entry, source: local },
 			);
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			if (fsErrorCode(error) !== "ENOENT") {
 				throw error;
 			}
 		}

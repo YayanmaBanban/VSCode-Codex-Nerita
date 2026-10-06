@@ -115,7 +115,7 @@ function OutputRange({
 						aria-label="次の範囲を表示"
 						disabled={
 							loading ||
-							!!isNonEmptyString(error) ||
+							isNonEmptyString(error) ||
 							!range ||
 							range.eof
 						}

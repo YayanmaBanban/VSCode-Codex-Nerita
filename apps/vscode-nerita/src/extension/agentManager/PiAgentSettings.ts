@@ -1,8 +1,6 @@
 // Pi の定義と設定を表示用に読み、優先順位の再実装を管理画面へ持ち込まない。
+import { loadPiSdk } from "../backends/pi/PiSdk";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-import type * as PiSdk from "@earendil-works/pi-coding-agent";
-import { pathToFileURL } from "node:url";
-import { join } from "node:path";
 import { z } from "zod";
 import { loadSubagentDefinitions } from "../backends/pi/PiSubagentDefinitions";
 import {
@@ -46,9 +44,7 @@ export async function readPiAgents(
 	trusted: boolean,
 	projectText: string | undefined,
 ) {
-	const sdk = (await import(
-		pathToFileURL(join(extensionPath, "dist/runtime/pi.mjs")).href
-	)) as typeof PiSdk;
+	const sdk = await loadPiSdk(extensionPath);
 	const agentDir = sdk.getAgentDir();
 	const settings = sdk.SettingsManager.create(root, agentDir);
 	settings.setProjectTrusted(trusted);
@@ -77,10 +73,9 @@ export async function readPiAgents(
 		agents,
 		defaults: piDefaultsSchema.parse(
 			Object.fromEntries(
-				Object.keys(piDefaultsSchema.shape).map((key) => [
-					key,
-					project[key as keyof typeof project],
-				]),
+				piDefaultsSchema
+					.keyof()
+					.options.map((key) => [key, project[key]]),
 			),
 		),
 		userSettings: JSON.stringify(user, null, 2),

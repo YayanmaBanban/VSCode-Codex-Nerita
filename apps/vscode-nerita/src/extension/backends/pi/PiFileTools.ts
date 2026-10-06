@@ -107,7 +107,7 @@ async function executePiFileTool(
 	};
 	/** 開いた既存ファイルの `identity` 確認後にだけ切り詰め、新規ファイルは排他的に作る。 */
 	const write = createApprovedFileWriter(snapshot, check, approved);
-	const tool =
+	const tool: Omit<ToolDefinition, "renderCall" | "renderResult"> =
 		kind === "write"
 			? sdk.createWriteToolDefinition(paths.cwd, {
 					operations: {
@@ -142,13 +142,7 @@ async function executePiFileTool(
 					},
 				});
 	await check();
-	return (tool as ToolDefinition).execute(
-		id,
-		call.params,
-		approved.signal,
-		update,
-		context,
-	);
+	return tool.execute(id, call.params, approved.signal, update, context);
 }
 
 /** 検査したファイルの実体を保持し、切り詰めの直前に再確認する。 */

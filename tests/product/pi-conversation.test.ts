@@ -1,12 +1,11 @@
 // モデル変更・追加指示を SDK 本体の次の HTTP 要求へ反映し、保存した選択を新しい接続で使う。
+import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import { type TestContext, test } from "node:test";
 
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-
 import { credentialFixture } from "../support/credentials";
 import { setImmediate } from "node:timers/promises";
 import {
@@ -17,7 +16,6 @@ import {
 	until,
 	sessionFiles,
 } from "../support/pi";
-import type { PiModelSelection } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 
 void test(
 	"利用枠の取得応答をローカルで再現し、プロバイダー変更と接続破棄後の遅い応答を公開しない",
@@ -305,13 +303,19 @@ async function verifyPiModelPersistence(t: TestContext) {
 	assert.equal(await readFile(join(f.cwd, "result.txt"), "utf8"), "accepted");
 	assert.equal(f.model.requests.length, 2);
 	assert.ok(f.model.requests[1]!.includes("追加指示を含める"));
-	const first = JSON.parse(f.model.requests[0]!) as Record<string, unknown>;
+	const first = z
+		.record(z.string(), z.unknown())
+		.parse(JSON.parse(f.model.requests[0]!));
 	assert.equal(first.model, "other-model");
 	assert.equal(first.reasoning_effort, "high");
 	await controller.dispose();
-	const saved = JSON.parse(
-		await readFile(selection, "utf8"),
-	) as PiModelSelection;
+	const saved = z
+		.strictObject({
+			provider: z.string(),
+			model: z.string(),
+			reasoning: z.string().optional(),
+		})
+		.parse(JSON.parse(await readFile(selection, "utf8")));
 	assert.deepEqual(saved, {
 		provider: "local",
 		model: "other-model",
@@ -323,7 +327,9 @@ async function verifyPiModelPersistence(t: TestContext) {
 	await restored.connect();
 	await send(restored, "新しい会話");
 	assert.equal((await finished(restored)).run, "completed");
-	const next = JSON.parse(f.model.requests[2]!) as Record<string, unknown>;
+	const next = z
+		.record(z.string(), z.unknown())
+		.parse(JSON.parse(f.model.requests[2]!));
 	assert.equal(next.model, "other-model");
 	assert.equal(next.reasoning_effort, "high");
 }
@@ -348,9 +354,11 @@ async function prepareQuotaModel(f: Awaited<ReturnType<typeof piFixture>>) {
 				Promise.resolve(credential),
 			),
 	);
-	const configured = JSON.parse(
-		await readFile(join(f.agentDir, "models.json"), "utf8"),
-	) as { providers: Record<string, unknown> };
+	const configured = z
+		.looseObject({ providers: z.record(z.string(), z.unknown()) })
+		.parse(
+			JSON.parse(await readFile(join(f.agentDir, "models.json"), "utf8")),
+		);
 	configured.providers.openai = {
 		baseUrl: "https://api.openai.com/v1",
 		api: "openai-responses",
@@ -372,10 +380,12 @@ async function prepareQuotaModel(f: Awaited<ReturnType<typeof piFixture>>) {
 
 /** 要約用の送信には副作用ツールを含めず、参照履歴を未信頼として扱う。 */
 function verifyHandoffIsolation(f: Awaited<ReturnType<typeof piFixture>>) {
-	const summary = JSON.parse(f.model.requests[2]!) as {
-		tools?: unknown[];
-		messages: unknown[];
-	};
+	const summary = z
+		.looseObject({
+			tools: z.array(z.unknown()).optional(),
+			messages: z.array(z.unknown()),
+		})
+		.parse(JSON.parse(f.model.requests[2]!));
 	assert.equal(
 		summary.tools?.length ?? 0,
 		0,

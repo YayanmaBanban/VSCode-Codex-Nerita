@@ -1,6 +1,5 @@
 ﻿// 入力中の文書を古い通知で上書きせず、編集の反映後に操作を送る。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import {
 	type EffectCallback,
 	type Dispatch,
@@ -89,7 +88,7 @@ export function useWorkflow(bridge: WorkflowBridge) {
 		request,
 		reply,
 		busy: busy || text !== state?.text,
-		locked: locked || !!(state?.running === true),
+		locked: locked || state?.running === true,
 		reload: () => {
 			if (state) {
 				draft.current = state.text;

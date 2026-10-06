@@ -34,7 +34,7 @@ async function elicitForm(
 	title: string,
 	empty: { action: string; content: null; _meta: null },
 ) {
-	const content = Object.create(null) as Record<string, unknown>;
+	const content: Record<string, unknown> = { __proto__: null };
 	for (const [key, field] of Object.entries(properties)) {
 		if (!supportedField(field)) {
 			return { ...empty, action: "decline" };
@@ -91,11 +91,11 @@ function supportedField(field: unknown): field is Record<string, unknown> {
 		["string", "number", "integer", "boolean"].includes(
 			String(field.type),
 		) &&
-		!(Boolean(field.format) === true) &&
-		!(Boolean(field.oneOf) === true) &&
-		!(Boolean(field.anyOf) === true) &&
-		!(Boolean(field.pattern) === true) &&
-		!(Boolean(field.items) === true)
+		!Boolean(field.format) &&
+		!Boolean(field.oneOf) &&
+		!Boolean(field.anyOf) &&
+		!Boolean(field.pattern) &&
+		!Boolean(field.items)
 	);
 }
 

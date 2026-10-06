@@ -1,11 +1,13 @@
 // パスとコマンドのルールを、JSON と同じ設定オブジェクト上で編集する。
 
-import type { JSX } from "react";
-
-import type {
-	GuardrailsConfig,
-	PathRule,
+import {
+	guardActionSchema,
+	commandRuleSchema,
+	pathRuleSchema,
+	type GuardrailsConfig,
+	type PathRule,
 } from "@nerita/shared/guardrails/config";
+import type { JSX } from "react";
 import { cn } from "cnfast";
 
 export const inputStyle =
@@ -36,7 +38,7 @@ function Action({ label, className, value, onChange }: ActionProps) {
 				className={inputStyle}
 				value={value}
 				onChange={(event) =>
-					onChange(event.target.value as typeof value)
+					onChange(guardActionSchema.parse(event.target.value))
 				}
 			>
 				<option value="deny">deny · 拒否</option>
@@ -342,7 +344,9 @@ function CommandRuleShell({ rule, update }: CommandRuleShellProps) {
 				value={rule.shell}
 				onChange={(event) =>
 					update({
-						shell: event.target.value as typeof rule.shell,
+						shell: commandRuleSchema.shape.shell.parse(
+							event.target.value,
+						),
 					})
 				}
 			>
@@ -468,7 +472,9 @@ function PathRuleBase({ rule, updatePath, index }: PathRuleBaseProps) {
 				value={rule.base}
 				onChange={(event) =>
 					updatePath(index, {
-						base: event.target.value as PathRule["base"],
+						base: pathRuleSchema.shape.base.parse(
+							event.target.value,
+						),
 					})
 				}
 			>
@@ -492,7 +498,9 @@ function PathRuleMatch({ rule, updatePath, index }: PathRuleMatchProps) {
 				value={rule.match}
 				onChange={(event) =>
 					updatePath(index, {
-						match: event.target.value as PathRule["match"],
+						match: pathRuleSchema.shape.match.parse(
+							event.target.value,
+						),
 					})
 				}
 			>

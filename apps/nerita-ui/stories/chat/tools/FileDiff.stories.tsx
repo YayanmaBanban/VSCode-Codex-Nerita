@@ -1,4 +1,5 @@
 // 実際のツール本文を通し、差分の行番号・集計・ファイルを開く要求を確認する。
+import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
@@ -90,9 +91,9 @@ type Story = StoryObj<typeof meta>;
 export const Ranges: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const diffs = canvasElement.querySelectorAll(".tool-diff");
+		const diffs = canvasElement.querySelectorAll<HTMLElement>(".tool-diff");
 		for (const diff of [diffs[0]!, diffs[1]!]) {
-			const view = within(diff as HTMLElement);
+			const view = within(diff);
 			await expect(
 				view.getByLabelText("3 行追加、2 行削除"),
 			).toBeVisible();
@@ -106,12 +107,8 @@ export const Ranges: Story = {
 			await expect(diff).toHaveTextContent(/72\s+\+ \/\*\*/);
 			await expect(diff).toHaveTextContent(/93\s+\+ \/\/ 外側/);
 		}
-		await expect(
-			within(diffs[2]! as HTMLElement).getByText("L1–3"),
-		).toBeVisible();
-		await expect(
-			within(diffs[3]! as HTMLElement).getByText("L10–12"),
-		).toBeVisible();
+		await expect(within(diffs[2]!).getByText("L1–3")).toBeVisible();
+		await expect(within(diffs[3]!).getByText("L10–12")).toBeVisible();
 		await expect(diffs[4]).toHaveTextContent(/10\s+- old/);
 		await expect(diffs[4]).toHaveTextContent(/15\s+\+ new/);
 		await expect(diffs[4]).toHaveTextContent(/16\s+context/);
@@ -123,9 +120,12 @@ export const Ranges: Story = {
 			await within(document.body).findByRole("tooltip"),
 		).toHaveTextContent(`/workspace/project/${path}`);
 		await userEvent.click(button);
-		const sent = JSON.parse(
+		const sent: unknown = JSON.parse(
 			canvas.getByRole("status").textContent,
-		) as UiMessage;
+		);
+		if (!isUiMessage(sent)) {
+			throw new Error("送信した要求の形式が不正です。");
+		}
 		await expect(sent.type).toBe("diff/open");
 		if (sent.type === "diff/open") {
 			await expect(sent.path).toBe(`/workspace/project/${path}`);

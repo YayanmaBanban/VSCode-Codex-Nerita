@@ -1,4 +1,5 @@
 // 1サーバーの接続・動的定義・停止を所有し、古い定義の実行を拒否する。
+import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	ExtensionAPI,
@@ -52,7 +53,8 @@ export class PiMcpServer {
 		if (!entry.config || !("url" in entry.config)) {
 			throw new Error("stdio MCP は上流対応の対象です。");
 		}
-		mcpHttpUrl(entry.config.url);
+		const url = entry.config.url;
+		mcpHttpUrl(url);
 		this.timeoutMs = Math.min(60000, (entry.config.timeout ?? 60) * 1000);
 		this.lifetime = AbortSignal.any([signal, this.controller.signal]);
 		this.operation = this.lifetime;
@@ -71,7 +73,7 @@ export class PiMcpServer {
 				this.gate.request(input, init, this.operation, true),
 			createTransport: (_entry, _cwd, authProvider) =>
 				new sdk.StreamableHttpTransport({
-					url: (entry.config as { url: string }).url,
+					url,
 					headers: resolvedMcpHeaders(entry),
 					authProvider,
 					fetch: (input, init) =>
@@ -195,7 +197,7 @@ export class PiMcpServer {
 				return this.run(name, signal, () =>
 					this.connection.callTool(
 						tool.name,
-						args as Record<string, unknown>,
+						z.record(z.string(), z.unknown()).parse(args),
 						{ signal, timeoutMs: this.timeoutMs },
 					),
 				);
@@ -242,7 +244,12 @@ export class PiMcpServer {
 					() =>
 						this.resourceRequest(
 							action,
-							args as { uri?: string; cursor?: string },
+							z
+								.object({
+									uri: z.string().max(4096).optional(),
+									cursor: z.string().max(4096).optional(),
+								})
+								.parse(args),
 							signal,
 						),
 					true,
@@ -254,7 +261,7 @@ export class PiMcpServer {
 	/** SDK の読取り専用操作へ、同じ有限の要求期限を渡す。 */
 	private resourceRequest(
 		action: string,
-		args: { uri?: string; cursor?: string },
+		args: { uri?: string | undefined; cursor?: string | undefined },
 		signal: AbortSignal,
 	): Promise<unknown> {
 		const options = { signal, timeoutMs: this.timeoutMs };

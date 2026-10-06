@@ -1,4 +1,5 @@
 // 明示登録したルートの内側にある別リポジトリへ、親の信頼を暗黙に引き継がせない。
+import { fsErrorCode } from "../../runtime/FsError";
 import { lstat } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { containsPath } from "../AgentAccessPolicy";
@@ -17,11 +18,7 @@ export async function hasNestedRepository(
 			await lstat(join(directory, ".git"));
 			return true;
 		} catch (error) {
-			if (
-				!["ENOENT", "ENOTDIR"].includes(
-					(error as NodeJS.ErrnoException).code ?? "",
-				)
-			) {
+			if (!["ENOENT", "ENOTDIR"].includes(fsErrorCode(error) ?? "")) {
 				return true;
 			}
 		}

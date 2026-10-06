@@ -1,4 +1,5 @@
 // 固定の Git 引数で差分を読み、巨大な差分は要約に切り替えて参照資料にする。
+import { fsErrorCode } from "../../../runtime/FsError";
 import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -72,10 +73,7 @@ export async function readChangeContext(
 				...paths,
 			]);
 		} catch (error) {
-			if (
-				(error as NodeJS.ErrnoException).code !==
-				"ERR_CHILD_PROCESS_STDIO_MAXBUFFER"
-			) {
+			if (fsErrorCode(error) !== "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
 				throw error;
 			}
 			return `${header}[Diff too large; summary only]\n${summary.slice(

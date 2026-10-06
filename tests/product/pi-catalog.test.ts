@@ -1,11 +1,11 @@
 // 同梱 SDK の OAuth と本番カタログ取得を使い、期限・取消し・認証変更を区別する。
+import { loadPiSdk } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSdk";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
-import type * as PiSdk from "@earendil-works/pi-coding-agent";
+
 import { OpenAIModelCatalogService } from "../../apps/vscode-nerita/src/extension/backends/pi/openai/OpenAIModelCatalogService";
 import { PiModelCatalogService } from "../../apps/vscode-nerita/src/extension/backends/pi/PiModelCatalogService";
 import { piFixture } from "../support/pi";
@@ -44,6 +44,8 @@ async function verifyCatalogTimeout(t: TestContext) {
 		}
 		return waitForCancellation(init!.signal!);
 	});
+	// カタログの接続境界では参照中モデルだけを使い、会話の起動を代替する。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const session = { model: publicModel } as unknown as AgentSession;
 	const catalog = new PiModelCatalogService(models, session, fetch, {
 		openai: { createCatalog: () => reader },
@@ -98,11 +100,7 @@ async function catalogModels(t: TestContext) {
 			},
 		}),
 	);
-	const sdk = (await import(
-		pathToFileURL(
-			join(process.env.NERITA_TEST_EXTENSION!, "dist/runtime/pi.mjs"),
-		).href
-	)) as typeof PiSdk;
+	const sdk = await loadPiSdk(process.env.NERITA_TEST_EXTENSION!);
 	return sdk.ModelRuntime.create({
 		authPath,
 		modelsPath: join(f.agentDir, "models.json"),

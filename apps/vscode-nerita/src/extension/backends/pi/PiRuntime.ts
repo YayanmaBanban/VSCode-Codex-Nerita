@@ -1,9 +1,9 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
+import { loadPiSdk } from "./PiSdk";
 import {
 	isNonEmptyString,
 	nonEmptyString,
 } from "@nerita/shared/valuePredicates";
-
 import { randomUUID } from "node:crypto";
 import { bindPiOutputArchive } from "./results/PiOutputArchive";
 import type { HandoffGenerator } from "../../session/HandoffContext";
@@ -17,7 +17,6 @@ import {
 import { preparePiWebTrust, type PiWebTrust } from "./PiWebTrust";
 import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import type {
 	AgentSession,
 	AgentSessionEvent,
@@ -672,18 +671,6 @@ async function prepareRuntimeResources(
 		settingsManager,
 		controls,
 		options,
-	};
-}
-
-/** 配布済みの ESM エントリーポイントから SDK を読み込み、Host で使用する API の型を付ける。 */
-async function loadPiSdk(extensionPath: string) {
-	const sdkUrl = pathToFileURL(
-		join(extensionPath, "dist/runtime/pi.mjs"),
-	).href;
-	return (await import(sdkUrl)) as typeof PiSdk & {
-		getSupportedThinkingLevels(
-			model: NonNullable<AgentSession["model"]>,
-		): string[];
 	};
 }
 

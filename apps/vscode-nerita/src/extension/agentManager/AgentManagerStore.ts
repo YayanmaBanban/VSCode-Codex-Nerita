@@ -208,9 +208,7 @@ export class AgentManagerStore {
 					old.defaultModel,
 				);
 				let text = state.files.piText ?? "{}\n";
-				for (const key of Object.keys(
-					piDefaultsSchema.shape,
-				) as (keyof typeof defaults)[]) {
+				for (const key of piDefaultsSchema.keyof().options) {
 					text = editJson(text, ["subagents", key], defaults[key]);
 				}
 				await writeWorkspaceFile(

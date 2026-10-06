@@ -176,11 +176,8 @@ function verifyFinalState(
 
 /** 要約は固定モデルと無承認・読取り専用の一時会話を使う。 */
 function verifyGenerationRequest(f: Awaited<ReturnType<typeof codexFixture>>) {
-	const start = f.requests.find(
-		(request) =>
-			Boolean(
-				request.method === "thread/start" && request.params?.ephemeral,
-			) === true,
+	const start = f.requests.find((request) =>
+		Boolean(request.method === "thread/start" && request.params?.ephemeral),
 	);
 	assert.ok(start);
 	assert.equal(start.params?.sandbox, "read-only");

@@ -1,13 +1,14 @@
 // 秘密値を含まない Binding と Provider の状態だけを扱う。秘密値の入力は Host の対話で行う。
-import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-import { useEffect, useState } from "react";
 import {
+	credentialStorageModeSchema,
 	type CredentialBinding,
 	type CredentialBridge,
 	type CredentialReply,
 	type CredentialRequest,
 	type CredentialStorageMode,
 } from "@nerita/shared/credentials";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import { useEffect, useState } from "react";
 import "../chat/chat.css";
 import { BindingForm } from "./CredentialBindingForm";
 
@@ -166,7 +167,11 @@ function ProviderSettings({
 						value={mode}
 						disabled={state.busy}
 						onChange={(event) =>
-							setMode(event.target.value as CredentialStorageMode)
+							setMode(
+								credentialStorageModeSchema.parse(
+									event.target.value,
+								),
+							)
 						}
 					>
 						<option value="session">このセッションのみ</option>

@@ -3,7 +3,6 @@ import {
 	isNonEmptyString,
 	nonZeroNumber,
 } from "@nerita/shared/valuePredicates";
-
 import { type JSX, useState, type Dispatch, type SetStateAction } from "react";
 
 import {
@@ -16,7 +15,6 @@ import {
 } from "@nerita/shared/agentManager/effort";
 import type { ManagerState } from "@nerita/shared/agentManager/messages";
 import { cn } from "cnfast";
-
 import { buttonStyle, EffortField, Field, inputStyle } from "./Fields";
 import { HandoffModelField } from "./HandoffModelField";
 import type { ManagerSave } from "./useAgentManager";
@@ -33,7 +31,7 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 	const [config, setConfig] = useState<HandoffConfig>(state.handoff);
 	const [repair, setRepair] = useState(false);
 	const [error, setError] = useState<string>();
-	const locked = busy || (!!isNonEmptyString(state.handoffError) && !repair);
+	const locked = busy || (isNonEmptyString(state.handoffError) && !repair);
 	const effortError = handoffEffortError(
 		config,
 		state.handoff,
@@ -162,7 +160,7 @@ function HandoffFields(props: HandoffFieldsProps) {
 				})}
 			</div>
 			<button
-				disabled={!!isNonEmptyString(effortError)}
+				disabled={isNonEmptyString(effortError)}
 				className={cn(buttonStyle, "justify-self-start")}
 				type="submit"
 			>

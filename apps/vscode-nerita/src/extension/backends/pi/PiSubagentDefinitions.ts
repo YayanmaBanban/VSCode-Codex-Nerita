@@ -1,4 +1,5 @@
 // 外部パッケージのコードを実行せず、エージェント定義だけを読み込む。
+import { fsErrorCode } from "../../runtime/FsError";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
@@ -146,7 +147,7 @@ async function readDefinitions(
 	try {
 		root = await realpath(directory);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+		if (fsErrorCode(error) === "ENOENT") {
 			return [];
 		}
 		throw error;

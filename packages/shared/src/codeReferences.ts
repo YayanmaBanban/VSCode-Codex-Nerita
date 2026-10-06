@@ -1,4 +1,5 @@
 // コード参照は本文を保存せず、送信時に読む URI と範囲を保持する。
+import { isRecord } from "./validation";
 import { isSourceRange, type SourceRange } from "./symbolLocation";
 import { isPathString } from "./workspacePaths";
 
@@ -14,10 +15,10 @@ export function validCodeReferences(
 		(Array.isArray(value) &&
 			value.length <= 20 &&
 			value.every((item: unknown) => {
-				if (item === null || typeof item !== "object") {
+				if (!isRecord(item)) {
 					return false;
 				}
-				const reference = item as Record<string, unknown>;
+				const reference = item;
 				return (
 					isPathString(reference.uri) &&
 					reference.uri.startsWith("file://") &&

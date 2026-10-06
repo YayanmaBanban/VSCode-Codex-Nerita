@@ -1,4 +1,5 @@
 // ワークスペース内には検証済みの Binding メタデータだけを書き、既存の設定と除外規則を保持する。
+import { fsErrorCode } from "../runtime/FsError";
 import {
 	lstat,
 	mkdir,
@@ -17,7 +18,7 @@ import {
 } from "@nerita/shared/credentials";
 import { throwCredentialError } from "./CredentialErrors";
 
-	/** `root` は Host が確定したワークスペース。リンク経由でワークスペース外へ保存しない。 */
+/** `root` は Host が確定したワークスペース。リンク経由でワークスペース外へ保存しない。 */
 export class BindingStore {
 	private pending = Promise.resolve();
 	constructor(readonly root: string) {}
@@ -35,7 +36,7 @@ export class BindingStore {
 				throw new Error("Binding の保存先が Workspace 外です。");
 			}
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT" || create) {
+			if (fsErrorCode(error) !== "ENOENT" || create) {
 				throw error;
 			}
 		}
@@ -59,7 +60,7 @@ export class BindingStore {
 				await file.close();
 			}
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			if (fsErrorCode(error) === "ENOENT") {
 				return [];
 			}
 			return throwCredentialError(
@@ -82,7 +83,7 @@ export class BindingStore {
 			try {
 				await writeFile(ignore, "/bindings.json\n", { flag: "wx" });
 			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+				if (fsErrorCode(error) !== "EEXIST") {
 					throw error;
 				}
 				if ((await lstat(ignore)).isSymbolicLink()) {

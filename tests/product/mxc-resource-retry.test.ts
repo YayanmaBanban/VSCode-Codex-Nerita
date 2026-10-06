@@ -126,7 +126,11 @@ fs.writeFileSync(path.join(path.dirname(config.processContainer.captureDenials.o
 			const child = original(process.execPath, ["-e", body], options);
 			const stdin = child.stdin!;
 			const write = stdin.end.bind(stdin);
+			// ランチャーが使う文字列入力だけを捕捉し、元のストリームへ渡す。
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			stdin.end = ((input: string, encoding: BufferEncoding) => {
+				// 製品が生成した MXC ポリシーを観測し、その内容の比較は試験本体で行う。
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				policies.push(JSON.parse(input) as ContainerConfig);
 				return write(input, encoding);
 			}) as typeof stdin.end;

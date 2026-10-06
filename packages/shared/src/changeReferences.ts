@@ -33,10 +33,10 @@ export function isChangeScope(value: unknown): value is ChangeScope {
 
 /** 保存データやクリップボード由来のチップを検証する。 */
 export function isChangeReference(value: unknown): value is ChangeReference {
-	if (value === null || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const entry = value as Record<string, unknown>;
+	const entry = value;
 	return (
 		entry.kind === "changes" &&
 		isChangeScope(entry.scope) &&
@@ -55,3 +55,4 @@ export function validChangeScopes(
 			value.every(isChangeScope))
 	);
 }
+import { isRecord } from "./validation";

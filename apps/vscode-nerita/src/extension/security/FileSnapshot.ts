@@ -1,4 +1,5 @@
 // 承認したファイルと既存祖先の同一性を保持する。Host 検査は OS サンドボックスと同じ競合耐性を保証しない。
+import { fsErrorCode } from "../runtime/FsError";
 import { createHash } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -52,7 +53,7 @@ export async function snapshotFile(
 				.digest("hex"),
 		};
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+		if (fsErrorCode(error) !== "ENOENT") {
 			throw error;
 		}
 	}
@@ -70,7 +71,7 @@ async function existingEntry(path: string): Promise<Entry | undefined> {
 			birthtimeMs: info.birthtimeMs,
 		};
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+		if (fsErrorCode(error) !== "ENOENT") {
 			throw error;
 		}
 		return undefined;

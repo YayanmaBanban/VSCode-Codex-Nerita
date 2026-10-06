@@ -13,7 +13,6 @@ import { ChangeContextError } from "./context/changeContext";
 import { openChanges } from "./context/openChanges";
 import { CodeReferenceError } from "../../session/codeReferenceContext";
 import { HandoffContextError } from "../../session/HandoffContext";
-
 import {
 	type SessionReferencesRequest,
 	type SessionReferenceOpen,
@@ -130,8 +129,16 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (isHistoryAction(message)) {
-			const action = message.type.slice("session/".length) as
-				"load" | "fork" | "delete" | "archive" | "rename" | "unarchive";
+			const action = (
+				{
+					"session/load": "load",
+					"session/fork": "fork",
+					"session/delete": "delete",
+					"session/archive": "archive",
+					"session/rename": "rename",
+					"session/unarchive": "unarchive",
+				} as const
+			)[message.type];
 			await this.manageHistory(
 				action,
 				message.sessionId,

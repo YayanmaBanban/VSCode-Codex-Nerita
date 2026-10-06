@@ -77,7 +77,7 @@ export class SandboxManagement {
 				grantable(event) ||
 				(event.resource?.kind === "cache" &&
 					event.resourceType === "file" &&
-					!!isNonEmptyString(event.resource.tool)),
+					isNonEmptyString(event.resource.tool)),
 		);
 		if (!actionable) {
 			return Promise.resolve(false);

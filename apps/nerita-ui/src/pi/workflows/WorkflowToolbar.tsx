@@ -25,7 +25,7 @@ export function WorkflowToolbar({
 	switchMode: () => void;
 }) {
 	const disabled = editor.busy || editor.locked;
-	const dirty = !!(editor.state?.dirty === true);
+	const dirty = editor.state?.dirty === true;
 	return (
 		<header className="shrink-0 border-b border-[var(--workflow-border)] p-4">
 			<div className="flex flex-wrap items-center justify-between gap-3">

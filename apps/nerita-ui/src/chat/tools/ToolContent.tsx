@@ -128,7 +128,7 @@ export function GenericTool({
 	scrollable?: boolean;
 } & Pick<ActivityToolProps, "send" | "cwd">) {
 	const hasDetails =
-		!!isNonZeroNumber(tool.content?.length) ||
+		isNonZeroNumber(tool.content?.length) ||
 		tool.rawInput !== undefined ||
 		tool.rawOutput !== undefined;
 	return (

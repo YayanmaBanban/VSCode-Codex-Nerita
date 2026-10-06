@@ -35,7 +35,13 @@ const credentialSchema = z.discriminatedUnion("type", [
 			key: z.string().optional(),
 			env: z.record(z.string(), z.string()).optional(),
 		})
-		.strict(),
+		.strict()
+		// SDK の exactOptionalPropertyTypes に合わせ、未指定のキーは値を undefined にせず省略する。
+		.transform(({ type, key, env }) => ({
+			type,
+			...(key === undefined ? {} : { key }),
+			...(env === undefined ? {} : { env }),
+		})),
 	z
 		.object({
 			type: z.literal("oauth"),
@@ -100,7 +106,7 @@ export class PiCredentialVault {
 		try {
 			const credential = value.use((text) =>
 				credentialSchema.parse(JSON.parse(text)),
-			) as Credential;
+			);
 			this.stores.redactor.credential(credential);
 			if (credential.type === "api_key") {
 				for (const field of Object.values(credential.env ?? {})) {
@@ -133,7 +139,7 @@ export class PiCredentialVault {
 			if (!account || !this.writable(account)) {
 				throw new Error("認証アカウントが利用できません。");
 			}
-			const validated = credentialSchema.parse(next) as Credential;
+			const validated = credentialSchema.parse(next);
 			this.stores.redactor.credential(validated);
 			const value = new SecretValue(JSON.stringify(validated));
 			try {

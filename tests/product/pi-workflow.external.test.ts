@@ -1,12 +1,11 @@
 // 導入済みワークフローエンジンを SDK 本体で動く子へ接続し、結果と副作用を確認する。
+import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import { type TestContext, test } from "node:test";
 
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-
 import { piFixture, send, permission, finished, until } from "../support/pi";
 import { restoredState } from "../support/restoredState";
 import { type PiRuntimeOptions } from "@/extension/backends/pi/PiRuntime";
@@ -131,9 +130,11 @@ async function prepareWorkflowFixture(
 		process.env.NERITA_EXTERNAL_AGENT_DIR,
 		"npm/node_modules/pi-subagents",
 	);
-	const manifest = JSON.parse(
-		await readFile(join(installed, "package.json"), "utf8"),
-	) as { name: string };
+	const manifest = z
+		.looseObject({ name: z.string() })
+		.parse(
+			JSON.parse(await readFile(join(installed, "package.json"), "utf8")),
+		);
 	assert.equal(manifest.name, "pi-subagents");
 	await writeFile(
 		join(f.agentDir, "settings.json"),

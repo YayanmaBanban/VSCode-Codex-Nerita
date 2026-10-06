@@ -1,4 +1,5 @@
 // 書込み範囲を指定して Codex 本体の OS によるアクセス制限を確認する。承認 UI は別のテストで検証する。
+import { fsErrorCode } from "../../apps/vscode-nerita/src/extension/runtime/FsError";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { mkdir, readFile, realpath, writeFile, access } from "node:fs/promises";
@@ -200,7 +201,7 @@ async function heartbeatStarted(cwd: string) {
 	try {
 		return (await readFile(join(cwd, "heartbeat.txt"), "utf8")).length >= 2;
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+		if (fsErrorCode(error) !== "ENOENT") {
 			throw error;
 		}
 		return false;

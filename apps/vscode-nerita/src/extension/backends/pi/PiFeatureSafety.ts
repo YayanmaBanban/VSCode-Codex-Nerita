@@ -26,6 +26,8 @@ export function privateFeatureValue<T>(
 	)
 		.text.replace(/(?:Bearer\s+|sk-)[\w.-]+/g, "[非公開]")
 		.replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "[非公開]");
+	// 呼び出し元の型を持つ JSON の伏字処理であり、表示用の複製を同じ結果契約で返す。
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const result = JSON.parse(hidden, privateValue) as T;
 	return protect?.(result) ?? result;
 }

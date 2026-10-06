@@ -3,7 +3,6 @@ import {
 	isNonEmptyString,
 	isNonZeroNumber,
 } from "@nerita/shared/valuePredicates";
-
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import {
@@ -39,7 +38,7 @@ export function useAttachmentDrop(
 	const enabled =
 		!locked &&
 		state.connection === "ready" &&
-		!!isNonEmptyString(state.sessionId) &&
+		isNonEmptyString(state.sessionId) &&
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending &&

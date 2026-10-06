@@ -1,4 +1,6 @@
 // 同梱した MXC を ESM として読み込み、ネイティブ資産と worker の相対参照を維持する。
+import { z } from "zod";
+import { isRecord } from "@nerita/shared/validation";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type * as Sdk from "@microsoft/mxc-sdk";
@@ -27,10 +29,27 @@ export async function loadMxcSdk(extensionPath: string): Promise<MxcSdk> {
 			"dist/runtime/node_modules/@microsoft/mxc-sdk/dist/index.js",
 		),
 	);
-	const sdk = (await import(url.href)) as typeof Sdk;
-	const helper = (await import(new URL("./helper.js", url).href)) as {
-		resolveExecutableAndArgs: MxcSdk["resolveLaunch"];
-	};
+	const sdk = z
+		.custom<typeof Sdk>(
+			(value) =>
+				isRecord(value) &&
+				[
+					"createConfigFromPolicy",
+					"getPlatformSupport",
+					"provisionSandbox",
+					"startSandbox",
+					"stopSandbox",
+					"deprovisionSandbox",
+				].every((name) => typeof value[name] === "function"),
+		)
+		.parse(await import(url.href));
+	const helper = z
+		.custom<{ resolveExecutableAndArgs: MxcSdk["resolveLaunch"] }>(
+			(value) =>
+				isRecord(value) &&
+				typeof value.resolveExecutableAndArgs === "function",
+		)
+		.parse(await import(new URL("./helper.js", url).href));
 	return {
 		...sdk,
 		launcherPath: join(

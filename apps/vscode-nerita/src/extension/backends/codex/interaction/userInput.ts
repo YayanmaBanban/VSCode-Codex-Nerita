@@ -12,10 +12,8 @@ export async function userInput(
 	if (!Array.isArray(p.questions)) {
 		throw new AppServerRpcError(-32602, "Invalid questions");
 	}
-	const answers = Object.create(null) as Record<
-		string,
-		{ answers: string[] }
-	>;
+	const answers: Record<string, { answers: string[] }> = {};
+	Object.setPrototypeOf(answers, null);
 	for (const question of p.questions as unknown[]) {
 		if (!isRecord(question)) {
 			throw new AppServerRpcError(-32602, "Invalid question");
@@ -47,7 +45,7 @@ async function questionAnswer(
 	if (
 		Array.isArray(question.options) &&
 		question.options.length > 0 &&
-		!(Boolean(question.isSecret) === true)
+		!Boolean(question.isSecret)
 	) {
 		const labels = question.options.map((option: unknown) => {
 			if (!isRecord(option)) {
@@ -55,11 +53,11 @@ async function questionAnswer(
 			}
 			return text(option.label);
 		});
-		if (Boolean(question.isOther) === true) {
+		if (Boolean(question.isOther)) {
 			labels.push("自由に入力する");
 		}
 		answer = await ui.choose(title, labels, signal);
-		if (Boolean(question.isOther) === true && answer === "自由に入力する") {
+		if (Boolean(question.isOther) && answer === "自由に入力する") {
 			answer = await ui.input(title, false, signal);
 		}
 	} else {

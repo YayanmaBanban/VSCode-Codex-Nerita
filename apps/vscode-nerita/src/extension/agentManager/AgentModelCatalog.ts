@@ -1,8 +1,7 @@
 // チャットの接続先を切り替えず、設定管理に必要なモデル能力だけを取得する。
+import { loadPiSdk } from "../backends/pi/PiSdk";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 import { CodexClient } from "../backends/codex/CodexClient";
 import { parseModels } from "../backends/codex/protocol/account";
@@ -88,13 +87,7 @@ async function readPi(
 	credentials?: PiCredentialStore,
 ): Promise<ManagerModel[]> {
 	const signal = AbortSignal.any([caller, AbortSignal.timeout(20000)]);
-	const sdk = (await import(
-		pathToFileURL(join(extensionPath, "dist/runtime/pi.mjs")).href
-	)) as typeof PiSdk & {
-		getSupportedThinkingLevels(
-			model: NonNullable<PiSdk.AgentSession["model"]>,
-		): string[];
-	};
+	const sdk = await loadPiSdk(extensionPath);
 	const agentDir = sdk.getAgentDir();
 	const runtime = await sdk.ModelRuntime.create({
 		credentials:

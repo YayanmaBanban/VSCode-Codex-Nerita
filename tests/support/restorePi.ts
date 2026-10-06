@@ -1,4 +1,5 @@
 // 保存元のプロセスと状態を共有せず、本番のコントローラーで履歴を復元する。
+import { z } from "zod";
 import { readFile, writeFile } from "node:fs/promises";
 import { PiSessionController } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import { createPiRuntime } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
@@ -6,12 +7,14 @@ import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/secu
 
 /** 親から渡された専用領域と履歴 ID だけを使う。 */
 async function main() {
-	const input = JSON.parse(await readFile(process.argv[2]!, "utf8")) as {
-		cwd: string;
-		agentDir: string;
-		sessionId: string;
-		output: string;
-	};
+	const input = z
+		.looseObject({
+			cwd: z.string(),
+			agentDir: z.string(),
+			sessionId: z.string(),
+			output: z.string(),
+		})
+		.parse(JSON.parse(await readFile(process.argv[2]!, "utf8")));
 	const trustStore = new WorkspaceTrustStore({
 		read: () => undefined,
 		write: () => Promise.resolve(),
@@ -50,7 +53,7 @@ async function main() {
 	}
 }
 
-void main().catch((error) => {
+void main().catch((error: unknown) => {
 	console.error(error);
 	process.exitCode = 1;
 });

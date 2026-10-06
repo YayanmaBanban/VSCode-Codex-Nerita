@@ -111,9 +111,7 @@ export class PiMcpGate {
 		const target = mcpHttpUrl(
 			input instanceof Request ? input.url : String(input),
 		);
-		const configured = mcpHttpUrl(
-			(this.options.entry.config as { url: string }).url,
-		);
+		const configured = configuredHttpUrl(this.options.entry);
 		if (!oauth && target.href !== configured.href) {
 			throw new Error("MCP の接続先が一致しません。");
 		}
@@ -188,4 +186,12 @@ export class PiMcpGate {
 		permit.signal.throwIfAborted();
 		this.approved.set(key, { signal: permit.signal, call });
 	}
+}
+
+/** 設定の HTTP 接続先を取り出し、stdio や未設定を拒否する。 */
+function configuredHttpUrl(entry: PiMcpEntry): URL {
+	if (!entry.config || !("url" in entry.config)) {
+		throw new Error("MCP の HTTP 接続先が設定されていません。");
+	}
+	return mcpHttpUrl(entry.config.url);
 }

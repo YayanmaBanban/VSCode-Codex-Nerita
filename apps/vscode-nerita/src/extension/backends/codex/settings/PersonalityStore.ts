@@ -1,4 +1,5 @@
 // 指定された保存先の TOML を読み、設定ファイルを優先してプリセットを保存する。
+import { fsErrorCode } from "../../../runtime/FsError";
 import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { readFile, mkdir, writeFile, rename, unlink } from "node:fs/promises";
 import { join, dirname } from "node:path";
@@ -18,7 +19,7 @@ async function readToml(path: string) {
 	try {
 		return parse(await readFile(path, "utf8"));
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+		if (fsErrorCode(error) === "ENOENT") {
 			return {};
 		}
 		throw error;

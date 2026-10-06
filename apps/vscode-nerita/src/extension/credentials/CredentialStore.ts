@@ -94,11 +94,14 @@ export class SecretRedactor {
 	}
 	value<T>(value: T): T {
 		const json: unknown = JSON.stringify(value);
-		return typeof json !== "string"
-			? value
-			: (JSON.parse(json, (_key, field: unknown) =>
-					typeof field === "string" ? this.text(field) : field,
-				) as T);
+		if (typeof json !== "string") {
+			return value;
+		}
+		// 自身でシリアライズした値の文字列だけを置換し、呼び出し元の表示契約を維持する。
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+		return JSON.parse(json, (_key, field: unknown) =>
+			typeof field === "string" ? this.text(field) : field,
+		) as T;
 	}
 	dispose() {
 		this.values.clear();

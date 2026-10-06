@@ -1,6 +1,5 @@
 // Pi のプロジェクト既定値だけを編集し、ユーザー設定や優先順位を変更しない。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-
 import {
 	piDefaultsSchema,
 	piThinkingSchema,
@@ -147,7 +146,7 @@ function PiDefaultsFields({
 				/>
 			</Field>
 			<button
-				disabled={!!isNonEmptyString(error)}
+				disabled={isNonEmptyString(error)}
 				className={cn(buttonStyle, "justify-self-start")}
 				type="submit"
 			>

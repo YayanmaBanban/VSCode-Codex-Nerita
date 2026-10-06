@@ -1,4 +1,5 @@
 // 通常のコピー内容に参照情報を添え、同じ入力欄では検証後にチップへ戻す。
+import { isRecord } from "@nerita/shared/validation";
 import {
 	$createParagraphNode,
 	$getSelection,
@@ -74,10 +75,10 @@ export function readClipboardReferences(
 	}
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (value === null || typeof value !== "object") {
+		if (!isRecord(value)) {
 			return null;
 		}
-		const payload = value as Record<string, unknown>;
+		const payload = value;
 		if (
 			payload.version !== 1 ||
 			payload.text !== text ||
@@ -87,7 +88,7 @@ export function readClipboardReferences(
 		) {
 			return null;
 		}
-		return payload.references as ComposerReference[];
+		return payload.references;
 	} catch {
 		return null;
 	}

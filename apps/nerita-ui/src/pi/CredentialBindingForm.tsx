@@ -1,10 +1,11 @@
 // フォームは参照 ID と対象だけを扱い、秘密値を受信しない。
-import { nonEmptyString } from "@nerita/shared/valuePredicates";
-import { useState } from "react";
 import {
+	credentialKindSchema,
 	credentialBindingSchema,
 	type CredentialBinding,
 } from "@nerita/shared/credentials";
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
+import { useState } from "react";
 
 /** 認証方式ごとに必要な参照項目だけを表示する。 */
 export function BindingForm({
@@ -232,7 +233,7 @@ function BindingSelectors({
 					value={kind}
 					disabled={busy}
 					onChange={(event) =>
-						setKind(event.target.value as typeof kind)
+						setKind(credentialKindSchema.parse(event.target.value))
 					}
 					className="w-full rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
 				>
@@ -250,7 +251,12 @@ function BindingSelectors({
 					value={provider}
 					disabled={busy}
 					onChange={(event) =>
-						setProvider(event.target.value as typeof provider)
+						setProvider(
+							credentialBindingSchema.shape.provider.options
+								.map((option) => option.shape.type.value)
+								.find((type) => type === event.target.value) ??
+								provider,
+						)
 					}
 					className="w-full rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
 				>

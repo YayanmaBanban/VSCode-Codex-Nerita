@@ -1,4 +1,5 @@
 // セッション参照の候補・チップ・読み取り要求を Host と共有する。
+import { isRecord } from "./validation";
 import { isPathString } from "./workspacePaths";
 
 /** 会話を再開せず、送信時に本文を読み取るための参照。 */
@@ -12,10 +13,10 @@ export type SessionReference = {
 
 /** ID を本文や URL から推測せず、明示された参照として検証する。 */
 export function isSessionReference(value: unknown): value is SessionReference {
-	if (value === null || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const entry = value as Record<string, unknown>;
+	const entry = value;
 	return (
 		entry.kind === "session" &&
 		isSessionReferenceMode(entry.mode) &&
@@ -75,10 +76,10 @@ export function validSessionReferences(
 		(Array.isArray(value) &&
 			value.length <= 5 &&
 			value.every((item: unknown) => {
-				if (item === null || typeof item !== "object") {
+				if (!isRecord(item)) {
 					return false;
 				}
-				const entry = item as Record<string, unknown>;
+				const entry = item;
 				return (
 					isSessionReferenceMode(entry.mode) &&
 					typeof entry.sessionId === "string" &&

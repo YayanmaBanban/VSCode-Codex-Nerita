@@ -1,4 +1,5 @@
 // npm 設定は既知の非秘密項目だけを複製する。未知のキー・補間・認証付き URL は引き継がない。
+import { fsErrorCode } from "./FsError";
 import { readFile, stat } from "node:fs/promises";
 
 /** 入力をそのままログや例外に含めない。最大サイズを超える設定は空の設定として扱う。 */
@@ -9,7 +10,7 @@ export async function sanitizedNpmConfig(path: string): Promise<string> {
 		}
 		return sanitizeNpmText(await readFile(path, "utf8"));
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+		if (fsErrorCode(error) === "ENOENT") {
 			return "";
 		}
 		throw new Error("Sandbox 用 npm 設定を生成できません。", {

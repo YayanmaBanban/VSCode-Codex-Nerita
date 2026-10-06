@@ -1,7 +1,7 @@
 // 外部 MCP の HTTP 境界を提供し、承認前の通信と副作用の再送を観測する。
 
+import { z } from "zod";
 import type { RequestListener, IncomingMessage, ServerResponse } from "http";
-
 import { createServer } from "node:http";
 import { once } from "node:events";
 
@@ -60,11 +60,13 @@ function createMcpFixtureHandler(
 			body += chunk;
 		});
 		request.on("end", () => {
-			const message = JSON.parse(body) as {
-				id?: number;
-				method: string;
-				params?: unknown;
-			};
+			const message = z
+				.looseObject({
+					id: z.number().optional(),
+					method: z.string(),
+					params: z.unknown().optional(),
+				})
+				.parse(JSON.parse(body));
 			methods.push(message.method);
 			if (message.id === undefined) {
 				response.writeHead(204).end();

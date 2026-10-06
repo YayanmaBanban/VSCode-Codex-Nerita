@@ -1,4 +1,6 @@
 // pi-web-access の取得先をロード前に登録し、通知がなくても新規 clone を未信頼にする。
+import { fsErrorCode } from "../../runtime/FsError";
+import { isRecord } from "@nerita/shared/validation";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -22,15 +24,15 @@ export async function preparePiWebTrust(
 ): Promise<PiWebTrust[]> {
 	const result: PiWebTrust[] = [];
 	for (const entry of entries) {
-		let manifest: { name?: string };
+		let manifest: unknown;
 		try {
 			manifest = JSON.parse(
 				await readFile(join(dirname(entry), "../package.json"), "utf8"),
-			) as { name?: string };
+			);
 		} catch {
 			continue;
 		}
-		if (manifest.name !== "pi-web-access") {
+		if (!isRecord(manifest) || manifest.name !== "pi-web-access") {
 			continue;
 		}
 		const configPath = webConfigPath();
@@ -86,12 +88,17 @@ async function readWebConfig(path: string) {
 	try {
 		raw = await readFile(path, "utf8");
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+		if (fsErrorCode(error) !== "ENOENT") {
 			throw error;
 		}
 	}
-	const config = JSON.parse(raw) as { githubClone?: { clonePath?: unknown } };
-	const configured = config.githubClone?.clonePath;
+	const config: unknown = JSON.parse(raw);
+	if (!isRecord(config)) {
+		throw new Error("Web取得の設定形式が不正です。");
+	}
+	const configured = isRecord(config.githubClone)
+		? config.githubClone.clonePath
+		: undefined;
 	const cache =
 		typeof configured === "string" && configured.trim() !== ""
 			? configured.trim()

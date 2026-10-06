@@ -73,7 +73,7 @@ export function AgentSettings(props: AgentSettingsProps) {
 				<button
 					type="submit"
 					className={`${buttonStyle} justify-self-end`}
-					disabled={!!isNonEmptyString(error)}
+					disabled={isNonEmptyString(error)}
 				>
 					変更を保存
 				</button>
