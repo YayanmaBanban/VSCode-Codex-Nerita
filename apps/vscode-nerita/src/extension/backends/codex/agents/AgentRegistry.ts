@@ -39,7 +39,7 @@ export class AgentRegistry {
 			typeof p.threadId === "string"
 		) {
 			const status = threadAgentStatus(p.status);
-			if (!status) {
+			if (!(status !== undefined)) {
 				return {};
 			}
 			this.statuses.set(p.threadId, status);
@@ -115,7 +115,7 @@ export class AgentRegistry {
 						...this.metadata.get(agent.threadId),
 					};
 					// 明示的な完了・停止を維持し、それ以外はスレッドの状態通知を活動開始の通知より優先する。
-					return status &&
+					return status !== undefined &&
 						["running", "idle", "pendingInit"].includes(
 							merged.status,
 						)

@@ -108,6 +108,9 @@ export const InputPending: Story = {
 	},
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
+		await expect(
+			canvas.getByPlaceholderText("APIキーを入力してください"),
+		).toHaveFocus();
 		await userEvent.type(
 			canvas.getByPlaceholderText("APIキーを入力してください"),
 			"fixture-key",

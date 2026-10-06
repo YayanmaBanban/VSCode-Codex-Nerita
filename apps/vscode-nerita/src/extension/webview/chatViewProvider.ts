@@ -339,7 +339,10 @@ export class ChatViewProvider
 		} satisfies HostMessage);
 		this.viewState(webview);
 		// 保存した配置は最初のサイドバー表示時に復元する。
-		if (!this.views.get(webview)?.editor && !this.placement.initialized) {
+		if (
+			!(this.views.get(webview)?.editor === true) &&
+			!this.placement.initialized
+		) {
 			await this.placement.sync();
 		}
 	}

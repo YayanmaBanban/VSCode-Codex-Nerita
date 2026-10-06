@@ -8,7 +8,7 @@ export function classifyToolCommand(
 ): CommandClass {
 	if (
 		tool !== "pnpm" ||
-		!args.length ||
+		args.length === 0 ||
 		args.some((arg) => /[\0\r\n]/.test(arg))
 	) {
 		return "installation-network";
@@ -46,6 +46,6 @@ function safeQueryArguments(args: readonly string[]): boolean {
 				"-r",
 			].includes(arg) ||
 			/^--depth=\d+$/.test(arg) ||
-			/^(?:@[a-z0-9._-]+\/)?[a-z0-9][a-z0-9._-]*$/i.test(arg),
+			/^(?:@[\w.-]+\/)?[a-z0-9][\w.-]*$/i.test(arg),
 	);
 }

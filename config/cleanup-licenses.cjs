@@ -6,7 +6,7 @@ const path = require("node:path");
 async function cleanupLicenses(directory, product, version) {
 	if (
 		!["codex", "pi"].includes(product) ||
-		!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)
+		!/^\d+\.\d+\.\d+(?:-[0-9A-Z.-]+)?$/i.test(version)
 	) {
 		throw new Error("ライセンス削除対象の製品またはバージョンが不正です。");
 	}

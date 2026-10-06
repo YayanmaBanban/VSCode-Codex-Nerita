@@ -154,8 +154,8 @@ function storedPiModel(value: unknown): PiModelSelection | undefined {
 		!("model" in value) ||
 		typeof value.provider !== "string" ||
 		typeof value.model !== "string" ||
-		!value.provider.trim() ||
-		!value.model.trim()
+		value.provider.trim() === "" ||
+		value.model.trim() === ""
 	) {
 		return undefined;
 	}

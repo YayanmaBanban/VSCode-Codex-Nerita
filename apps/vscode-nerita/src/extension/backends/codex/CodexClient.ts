@@ -1,4 +1,5 @@
 // App Server の起動・初期化をまとめ、初期化済み接続だけを呼び出し側へ渡す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ClientInfo } from "./codex-app-server/ClientInfo";
 import type { CommandExecParams } from "./codex-app-server/v2/CommandExecParams";
 import type { WindowsSandboxSetupMode } from "./codex-app-server/v2/WindowsSandboxSetupMode";
@@ -175,7 +176,7 @@ export class CodexClient {
 			sortDirection: "asc",
 			itemsView,
 			limit: 50,
-			...(cursor ? { cursor } : {}),
+			...(isNonEmptyString(cursor) ? { cursor } : {}),
 		});
 	}
 	/** ターン本文が省略された場合に項目をページ取得する。 */
@@ -185,7 +186,7 @@ export class CodexClient {
 			turnId,
 			sortDirection: "asc",
 			limit: 100,
-			...(cursor ? { cursor } : {}),
+			...(isNonEmptyString(cursor) ? { cursor } : {}),
 		});
 	}
 	/** 会話名は Codex 側へ保存する。 */
@@ -219,7 +220,7 @@ export class CodexClient {
 	/** 利用可能モデルのページを取得する。 */
 	listModels(cursor?: string) {
 		return this.transport.request("model/list", {
-			...(cursor ? { cursor } : {}),
+			...(isNonEmptyString(cursor) ? { cursor } : {}),
 		});
 	}
 	/** 既存 UI が表示する利用枠を取得する。 */

@@ -1,4 +1,5 @@
 // シンボル検索の候補と空結果・失敗を実ファイルなしで再現する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { WorkspacePath } from "@nerita/shared/workspacePaths";
 import type {
 	WorkspaceSymbolsRequest,
@@ -19,8 +20,8 @@ export function mockWorkspaceSymbols(
 		symbol: {
 			kind: 4,
 			range: {
-				start: { line: index ? 8 : 41, character: 0 },
-				end: { line: index ? 20 : 137, character: 1 },
+				start: { line: isNonZeroNumber(index) ? 8 : 41, character: 0 },
+				end: { line: isNonZeroNumber(index) ? 20 : 137, character: 1 },
 			},
 		},
 	}));

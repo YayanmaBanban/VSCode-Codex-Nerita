@@ -5,6 +5,7 @@ import { CopyButton } from "../CopyButton";
 import { toolOutputClass } from "./toolStyles";
 
 /** 表示中のプレビューまたは一範囲だけをコピーし、未取得の全文は読み込まない。 */
+/* eslint-disable jsx-a11y-x/no-noninteractive-tabindex -- 長い出力をキーボードでスクロールするため、表示領域を Tab の対象にする。 */
 export function CommandOutput({
 	text,
 	copyDisabled = false,
@@ -15,6 +16,7 @@ export function CommandOutput({
 	return (
 		<div className="relative">
 			<pre
+				role="region"
 				className={cn(
 					toolOutputClass,
 					"max-h-[400px] overflow-auto rounded-[4px] border border-solid",
@@ -34,3 +36,4 @@ export function CommandOutput({
 		</div>
 	);
 }
+/* eslint-enable jsx-a11y-x/no-noninteractive-tabindex */

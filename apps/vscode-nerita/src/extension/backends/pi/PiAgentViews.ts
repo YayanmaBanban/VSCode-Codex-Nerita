@@ -1,4 +1,5 @@
 // 接続中の子の会話を保持し、既存 `AgentViewer` の読み取り契約へ変換する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { randomUUID } from "node:crypto";
 import { relative, resolve } from "node:path";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
@@ -164,7 +165,10 @@ export class PiAgentViews {
 		const entry = this.entries.get(id)!;
 		this.save?.({
 			version: 1,
-			cwd: relative(this.rootCwd, entry.state.cwd ?? this.rootCwd) || ".",
+			cwd:
+				nonEmptyString(
+					relative(this.rootCwd, entry.state.cwd ?? this.rootCwd),
+				) ?? ".",
 			summary: entry.summary,
 			messages: entry.state.messages,
 			tools: entry.state.tools,
@@ -211,7 +215,7 @@ export class PiAgentViews {
 /** 大きなツール入出力は表示用だけを短縮し、SDK の実行結果は変更しない。 */
 function boundedValue(value: unknown): unknown {
 	const text = JSON.stringify(value);
-	return text && text.length > 8192
+	return text !== "" && text.length > 8192
 		? `${text.slice(0, 8192)}\n（表示を省略）`
 		: value;
 }

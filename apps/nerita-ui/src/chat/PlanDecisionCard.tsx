@@ -1,4 +1,5 @@
 // `Plan` 完了後の実装先を選ぶカードを表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import { useReducedMotion } from "motion/react";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -6,17 +7,20 @@ import type { UiMessage } from "@nerita/shared/messages";
 import { BorderBeam } from "../ui/BorderBeam";
 import { ButtonCurtain } from "../ui/ButtonCurtain";
 
-/** 完了した `Plan` に対する1回限りの選択を Host へ送る。 */
-export function PlanDecisionCard({
-	state,
-	send,
-}: {
+type PlanDecisionCardProps = {
 	state: ChatState;
 	send: (message: UiMessage) => void;
-}) {
+};
+
+/** 完了した `Plan` に対する1回限りの選択を Host へ送る。 */
+export function PlanDecisionCard({ state, send }: PlanDecisionCardProps) {
 	const reduced = useReducedMotion();
 	const decision = state.planDecision;
-	if (!decision || !state.sessionId || state.connection !== "ready") {
+	if (
+		!decision ||
+		!isNonEmptyString(state.sessionId) ||
+		state.connection !== "ready"
+	) {
 		return null;
 	}
 	const disabled =
@@ -40,7 +44,7 @@ export function PlanDecisionCard({
 				"border-[var(--nerita-testing-icon-passed)] p-4",
 			)}
 		>
-			{!reduced && (
+			{!(reduced === true) && (
 				<BorderBeam
 					size={80}
 					duration={6}

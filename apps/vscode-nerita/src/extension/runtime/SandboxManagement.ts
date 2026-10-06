@@ -1,4 +1,5 @@
 // 実行基盤から能力・拒否・リソースを受け取り、管理画面へ秘密値を含まない状態を公開する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { SandboxSnapshot } from "@nerita/shared/sandboxManagement";
 import {
 	resourceDecisionSchema,
@@ -76,7 +77,7 @@ export class SandboxManagement {
 				grantable(event) ||
 				(event.resource?.kind === "cache" &&
 					event.resourceType === "file" &&
-					!!event.resource.tool),
+					!!isNonEmptyString(event.resource.tool)),
 		);
 		if (!actionable) {
 			return Promise.resolve(false);
@@ -127,7 +128,7 @@ export class SandboxManagement {
 		const event = waiting.report.events.find(
 			(item) => item.id === decision.denialEventId,
 		)!;
-		if (waiting.deciding) {
+		if (waiting.deciding === true) {
 			throw new Error("この拒否イベントは処理中です。");
 		}
 		waiting.deciding = true;
@@ -240,7 +241,7 @@ export class SandboxManagement {
 								...(grantable(event) ? ["allow" as const] : []),
 								...(event.resourceType === "file" &&
 								event.resource?.kind === "cache" &&
-								event.resource.tool
+								isNonEmptyString(event.resource.tool)
 									? ["use-sandbox-cache" as const]
 									: []),
 							]

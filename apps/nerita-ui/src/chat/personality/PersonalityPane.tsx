@@ -270,7 +270,7 @@ function savePresetDisabled(
 	return (
 		locked ||
 		pending ||
-		!name.trim() ||
+		name.trim() === "" ||
 		collision ||
 		text.length > 100000 ||
 		(!changedName && text === initialText)

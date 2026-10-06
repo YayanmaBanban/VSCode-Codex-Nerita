@@ -1,4 +1,5 @@
 // VS Code の言語プロバイダーから検索し、Webview には位置情報だけを渡す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import {
 	isWorkspacePath,
@@ -19,12 +20,12 @@ export async function searchWorkspaceSymbols(
 		entries: [],
 		truncated: false,
 	};
-	if (!request.query.trim()) {
+	if (request.query.trim() === "") {
 		return result;
 	}
 	try {
 		const symbols = await vscode.commands.executeCommand<
-			vscode.SymbolInformation[]
+			vscode.SymbolInformation[] | undefined
 		>("vscode.executeWorkspaceSymbolProvider", request.query.trim());
 		const seen = new Set<string>();
 		for (const symbol of symbols ?? []) {
@@ -68,12 +69,14 @@ export async function searchWorkspaceSymbols(
 }
 
 /** 検索対象のワークスペースに属するローカル位置だけを受け付ける。 */
-function unsupportedSymbolLocation(location: vscode.Location) {
+function unsupportedSymbolLocation(location: vscode.Location | undefined) {
+	const range: unknown = location?.range;
 	return (
-		!location?.range ||
+		!location ||
+		!(Boolean(range) === true) ||
 		location.uri.scheme !== "file" ||
-		location.uri.query ||
-		location.uri.fragment ||
+		isNonEmptyString(location.uri.query) ||
+		isNonEmptyString(location.uri.fragment) ||
 		!vscode.workspace.getWorkspaceFolder(location.uri)
 	);
 }

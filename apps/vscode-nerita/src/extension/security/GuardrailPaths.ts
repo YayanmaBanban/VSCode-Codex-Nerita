@@ -1,4 +1,5 @@
 // パスの表記と実体を両方検査し、リンク経由の保護対象へのアクセスも判定する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { homedir } from "node:os";
 import { relative, resolve } from "node:path";
 import type {
@@ -87,7 +88,7 @@ export async function inspectGuardPath(
 	const paths = [...new Set([lexical, canonical])];
 	for (const path of paths) {
 		const protectedReason = builtinProtection(path, roots, operation);
-		if (protectedReason) {
+		if (isNonEmptyString(protectedReason)) {
 			addFinding(result, "deny", "builtin:protected", protectedReason);
 		}
 	}
@@ -104,9 +105,8 @@ export async function inspectGuardPath(
 		const canonicalRules = matching.filter((rule) =>
 			matchesRule(rule, canonical, root),
 		);
-		let action: GuardAction = canonicalRules.length
-			? "allow"
-			: config.pathAccess.outsideRead;
+		let action: GuardAction =
+			canonicalRules.length > 0 ? "allow" : config.pathAccess.outsideRead;
 		if (operation === "write") {
 			action = "deny";
 		}

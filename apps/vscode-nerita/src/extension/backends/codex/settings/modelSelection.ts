@@ -1,4 +1,5 @@
 // Codex の選択だけを永続化し、起動時は現在のモデル候補で検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { isRecord } from "@nerita/shared/validation";
 import type { ModelInfo } from "../protocol/account";
 
@@ -26,7 +27,7 @@ export function modelReasoning(model: ModelInfo, previous = ""): string {
 	const maximum = reasoningLevels
 		.filter((level) => supported.includes(level))
 		.at(-1);
-	return maximum &&
+	return isNonEmptyString(maximum) &&
 		reasoningLevels.indexOf(previous) > reasoningLevels.indexOf(maximum)
 		? maximum
 		: model.defaultReasoningEffort;
@@ -52,7 +53,7 @@ export function codexSelectionStore(storage: {
 			if (
 				!isRecord(value) ||
 				typeof value.model !== "string" ||
-				!value.model.trim()
+				value.model.trim() === ""
 			) {
 				return undefined;
 			}

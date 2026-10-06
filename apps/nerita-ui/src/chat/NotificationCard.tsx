@@ -1,5 +1,5 @@
 // 入力欄の上で送信結果を短く伝え、残り表示時間と閉じる操作を提供する。
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useLayoutEffect, useEffect, useRef, type CSSProperties } from "react";
 import { cn } from "cnfast";
 import { X } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -17,7 +17,9 @@ export function NotificationCard({
 	duration?: number;
 }) {
 	const close = useRef(onClose);
-	close.current = onClose;
+	useLayoutEffect(() => {
+		close.current = onClose;
+	}, [onClose]);
 	const reducedMotion = useReducedMotion();
 	useEffect(() => {
 		const timer = setTimeout(() => close.current(), duration);
@@ -63,9 +65,10 @@ export function NotificationCard({
 				animate={{ transform: "scaleX(0)" }}
 				transition={{
 					duration: duration / 1000,
-					ease: reducedMotion
-						? (value) => Math.floor(value * 4) / 4
-						: "linear",
+					ease:
+						reducedMotion === true
+							? (value) => Math.floor(value * 4) / 4
+							: "linear",
 					type: "tween",
 				}}
 			/>

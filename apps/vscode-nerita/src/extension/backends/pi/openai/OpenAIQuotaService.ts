@@ -1,4 +1,5 @@
 // 新しい ChatGPT OAuth の取得を試し、アクセス拒否時は出所を明示する Codex 取得へ委譲する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	AgentSession,
 	ModelRuntime,
@@ -41,7 +42,7 @@ export function normalizeOpenAIQuota(payload: unknown): QuotaWindow[] | null {
 			detail: quotaResetDetail(reset),
 		});
 	}
-	return windows.length ? windows : null;
+	return windows.length > 0 ? windows : null;
 }
 
 /** SDK による OAuth 更新を利用し、接続・設定変更・実行後だけ取得する。 */
@@ -78,7 +79,9 @@ export class OpenAIQuotaService {
 					redirect: "error",
 					headers: {
 						...auth.headers,
-						...(account ? { "ChatGPT-Account-Id": account } : {}),
+						...(isNonEmptyString(account)
+							? { "ChatGPT-Account-Id": account }
+							: {}),
 					},
 				},
 			);

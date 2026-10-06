@@ -1,4 +1,5 @@
 // 出力の境界をまたぐ秘密値を保持し、伏字にしてから逐次通知する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { SecretRedactor } from "./CredentialStore";
 /** 秘密値の最大長を基に末尾を留保し、重なる一致区間もまとめて保持する。 */
 export class CredentialStream {
@@ -27,12 +28,12 @@ export class CredentialStream {
 		this.publish(this.pending.length);
 	}
 	private publish(boundary: number) {
-		if (!boundary) {
+		if (!isNonZeroNumber(boundary)) {
 			return;
 		}
 		const text = this.redactor.text(this.pending.slice(0, boundary));
 		this.pending = this.pending.slice(boundary);
-		if (text) {
+		if (text !== "") {
 			this.emit(text);
 		}
 	}

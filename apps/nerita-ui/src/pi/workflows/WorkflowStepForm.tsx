@@ -146,7 +146,7 @@ function createContextModeChange(
 	return (value: string, ref = source) => {
 		const { resume: _resume, fork: _fork, agent: _agent, ...rest } = step;
 		const dependency =
-			ref && !rest.depends_on.includes(ref)
+			ref !== "" && !rest.depends_on.includes(ref)
 				? [...rest.depends_on, ref]
 				: rest.depends_on;
 		if (value === "resume") {

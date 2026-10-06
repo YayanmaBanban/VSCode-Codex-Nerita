@@ -1,4 +1,5 @@
 // エージェントの状態・アイコン・名前を独立したタイムラインカードで表示する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import { Check, Circle, LoaderCircle, Square, X } from "lucide-react";
 import type { AgentStatus, SubAgentSummary } from "@nerita/shared/subAgents";
@@ -20,8 +21,8 @@ const labels: Record<AgentStatus, string> = {
 /** 読み取り待ちでもパス末尾の名前を表示する。 */
 export function agentName(agent: SubAgentSummary): string {
 	return (
-		agent.nickname ||
-		agent.agentPath.split("/").filter(Boolean).at(-1) ||
+		nonEmptyString(agent.nickname) ??
+		nonEmptyString(agent.agentPath.split("/").filter(Boolean).at(-1)) ??
 		agent.threadId
 	);
 }
@@ -40,7 +41,7 @@ export function AgentIcon({
 				"[&>svg]:size-full",
 			)}
 			dangerouslySetInnerHTML={{
-				__html: icons[iconKey] ?? icons.cheetah,
+				__html: icons[iconKey],
 			}}
 		/>
 	);

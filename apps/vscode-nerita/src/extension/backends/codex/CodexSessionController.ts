@@ -1,4 +1,6 @@
 // 検証済みの Webview 操作を、現在の thread とローカル実行 ID に限定する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import { RequestDeduplicator } from "../../session/RequestDeduplicator";
 import type { UiMessage } from "@nerita/shared/messages";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { CodexSubmission } from "./CodexSubmission";
@@ -19,7 +21,7 @@ import {
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
 export class CodexSessionController extends CodexSubmission {
-	private seen = new Set<string>();
+	private requests = new RequestDeduplicator();
 	/** 二重要求と古い UI の操作を排除して、失敗は要求元へ通知する。 */
 	async receive(value: unknown): Promise<void> {
 		if (!isUiMessage(value)) {
@@ -29,12 +31,8 @@ export class CodexSessionController extends CodexSubmission {
 			this.emit({ type: "state/snapshot", state: this.snapshot() });
 			return;
 		}
-		if (this.seen.has(value.requestId)) {
+		if (!this.requests.accept(value.requestId)) {
 			return;
-		}
-		this.seen.add(value.requestId);
-		if (this.seen.size > 2048) {
-			this.seen.delete(this.seen.values().next().value!);
 		}
 		try {
 			await this.dispatch(value);
@@ -59,20 +57,23 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.type === "changes/open") {
-			return await this.openRequestedChanges(message);
+			await this.openRequestedChanges(message);
+			return;
 		}
 		if (
 			message.type === "session/searchReferences" ||
 			message.type === "session/openReference"
 		) {
-			return await this.sessionReferenceAction(message);
+			await this.sessionReferenceAction(message);
+			return;
 		}
 		if (
 			message.type === "personality/read" ||
 			message.type === "personality/save" ||
 			message.type === "personality/select"
 		) {
-			return await this.personalityAction(message);
+			await this.personalityAction(message);
+			return;
 		}
 		await this.dispatchMutableAction(message);
 	}
@@ -236,7 +237,12 @@ export class CodexSessionController extends CodexSubmission {
 		const cwd = this.state.cwd;
 		const id = this.state.sessionId;
 		const epoch = this.epoch;
-		if (!client || !cwd || !id || this.state.connection !== "ready") {
+		if (
+			!client ||
+			!isNonEmptyString(cwd) ||
+			!isNonEmptyString(id) ||
+			this.state.connection !== "ready"
+		) {
 			throw new Error("Disconnected");
 		}
 		const current = () =>
@@ -264,7 +270,11 @@ export class CodexSessionController extends CodexSubmission {
 	) {
 		const { cwd, sessionId } = this.state;
 		const epoch = this.epoch;
-		if (!cwd || !sessionId || this.state.connection !== "ready") {
+		if (
+			!isNonEmptyString(cwd) ||
+			!isNonEmptyString(sessionId) ||
+			this.state.connection !== "ready"
+		) {
 			throw new Error("Disconnected");
 		}
 		await openChanges(
@@ -279,7 +289,7 @@ export class CodexSessionController extends CodexSubmission {
 	private async sendPromptAction(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): Promise<void> {
-		const command = /^\/(plan|goal)(?:\s+([\s\S]*))?$/u.exec(
+		const command = /^\/(plan|goal)(?:\s([\s\S]*))?$/u.exec(
 			message.text.trim(),
 		);
 		if (command) {
@@ -287,7 +297,7 @@ export class CodexSessionController extends CodexSubmission {
 			if (this.collaborationMode !== command[1]) {
 				await this.setConfig("collaboration_mode", command[1]!);
 			}
-			if (!command[2]?.trim()) {
+			if (!isNonEmptyString(command[2]?.trim())) {
 				this.emit({
 					type: "prompt/accepted",
 					requestId: message.requestId,
@@ -297,7 +307,7 @@ export class CodexSessionController extends CodexSubmission {
 			}
 			// /plan 自体はモデルへの指示にせず、本文だけで計画ターンを開始する。
 			if (command[1] === "plan") {
-				message = { ...message, text: command[2] };
+				message = { ...message, text: command[2].trimStart() };
 			}
 		}
 		if (message.text.trim() === "/logout") {

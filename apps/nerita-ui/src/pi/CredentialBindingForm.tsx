@@ -1,4 +1,5 @@
 // フォームは参照 ID と対象だけを扱い、秘密値を受信しない。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { useState } from "react";
 import {
 	credentialBindingSchema,
@@ -54,7 +55,7 @@ export function BindingForm({
 			{kind.endsWith("token") || kind === "username-password" ? (
 				<EnvironmentField binding={binding} busy={busy} />
 			) : null}
-			{error && <p role="alert">{error}</p>}
+			{error !== "" && <p role="alert">{error}</p>}
 			<button type="submit" disabled={busy}>
 				Binding を保存
 			</button>
@@ -77,8 +78,8 @@ function parseBindingForm(
 			? {
 					type: provider,
 					secretId: field("secretId"),
-					...(projectId ? { projectId } : {}),
-					accountId: field("accountId") || "default",
+					...(projectId !== "" ? { projectId } : {}),
+					accountId: nonEmptyString(field("accountId")) ?? "default",
 				}
 			: { type: provider };
 	const types = {

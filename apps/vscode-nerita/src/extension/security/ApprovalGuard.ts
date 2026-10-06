@@ -1,5 +1,9 @@
 // 承認前に要求全体を固定し、既存 `Permission` UI から1回限りの `permit` を発行する。
 import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
+import {
 	freezeToolCall,
 	issueApprovedToolCall,
 	type ToolCall,
@@ -23,11 +27,11 @@ export type ToolAuthorizer = (
 
 /** シェル実行の可否を確認し、Host の読取り・一覧操作以外は承認を求める。 */
 export function assessToolCall(call: ToolCall): "allow" | "ask" {
-	if ((call.command || call.hostShell) && !call.policy.shell) {
+	if ((call.command || call.hostShell === true) && !call.policy.shell) {
 		throw new Error("このroleではShell実行が禁止されています。");
 	}
 	return !call.command &&
-		!call.hostShell &&
+		!(call.hostShell === true) &&
 		["read", "ls"].includes(call.tool)
 		? "allow"
 		: "ask";
@@ -44,7 +48,7 @@ export async function approveToolCall(
 	input = freezeToolCall(input);
 	const trustSignal = await evaluateTrust(input);
 	const semantic = semanticGuard.snapshot();
-	const snapshot = input.policy.guardrailsRoot
+	const snapshot = isNonEmptyString(input.policy.guardrailsRoot)
 		? guardrailRegistry.snapshot(input.policy.guardrailsRoot, [
 				input.policy.guardrailsRoot,
 			])
@@ -129,7 +133,7 @@ function guardPresentation(call: ToolCall, result: GuardResult) {
 			display: "text",
 		});
 	}
-	if (result.paths.length) {
+	if (result.paths.length > 0) {
 		presentation.fields?.push({
 			id: "guardrails-paths",
 			label: "正規化後の対象パス",
@@ -140,10 +144,10 @@ function guardPresentation(call: ToolCall, result: GuardResult) {
 	presentation.fields?.push({
 		id: "guardrails",
 		label: "ガードレール判定",
-		value: result.reasons.join("\n") || "追加の制限なし",
+		value: nonEmptyString(result.reasons.join("\n")) ?? "追加の制限なし",
 		display: "text",
 	});
-	if (result.uncertainties.length) {
+	if (result.uncertainties.length > 0) {
 		presentation.details?.push({
 			id: "uncertainties",
 			label: "確認が必要な範囲",

@@ -1,4 +1,5 @@
 // 子固有の文脈を付け足し、承認先とツール権限は親の上限を保持する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { PiRuntimeOptions } from "./PiRuntime";
 import type { PiChildOptions } from "./PiChildRuntimes";
 import type { ToolAuthorizer } from "../../security/ApprovalGuard";
@@ -70,7 +71,9 @@ function jobAuthorizer(
 	id: string | undefined,
 	jobs: PiJobs | undefined,
 ) {
-	return authorize && id && jobs ? jobs.authorizer(id, authorize) : authorize;
+	return authorize && isNonEmptyString(id) && jobs
+		? jobs.authorizer(id, authorize)
+		: authorize;
 }
 
 /** 同名の子エージェントが並列実行されていても、タスクを表示して承認対象を区別する。 */

@@ -1,4 +1,5 @@
 // 適用済み設定を `workspaceState` に保存し、ディスク上の編集を自動適用しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { realpath } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -24,7 +25,9 @@ export class GuardrailsSettings {
 			try {
 				guardrailRegistry.apply(
 					root,
-					text ? parseGuardrails(text) : defaultGuardrails(),
+					isNonEmptyString(text)
+						? parseGuardrails(text)
+						: defaultGuardrails(),
 				);
 			} catch {
 				guardrailRegistry.block(root);

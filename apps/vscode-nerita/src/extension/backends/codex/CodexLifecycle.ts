@@ -1,4 +1,5 @@
 // App Server の接続・切断と新規スレッドの作成を管理し、会話状態へ反映する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { initialState } from "@nerita/shared/chatState";
 import {
 	codexAuthMethods,
@@ -136,10 +137,11 @@ export abstract class CodexLifecycle extends SessionState {
 			const opening = this.factory(
 				{
 					notification: (message) => {
-						if (epoch === this.epoch) {
-							if (!this.auth.notification(message)) {
-								this.notification(message);
-							}
+						if (
+							epoch === this.epoch &&
+							!this.auth.notification(message)
+						) {
+							this.notification(message);
 						}
 					},
 					request: (message, signal) =>
@@ -194,7 +196,7 @@ export abstract class CodexLifecycle extends SessionState {
 		const client = this.client;
 		if (
 			!client ||
-			!this.state.cwd ||
+			!isNonEmptyString(this.state.cwd) ||
 			this.busy() ||
 			this.state.sessionPending
 		) {

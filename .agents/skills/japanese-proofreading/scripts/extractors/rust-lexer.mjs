@@ -1,9 +1,9 @@
 // Rust のコメントと文字列を読み飛ばし、コード中の識別子候補を収集する。
-const IDENTIFIER = /(?:r#)?[_\p{XID_Start}][\p{XID_Continue}]*/uy;
+const IDENTIFIER = /(?:r#)?[_\p{XID_Start}]\p{XID_Continue}*/uy;
 const RAW_STRING = /(?:br|cr|r)(#{0,255})"/y;
 const STRING = /[bc]?"/y;
 const CHARACTER =
-	/(?:b)?'(?:[^'\\\r\n\t]|\\(?:[nrt0\\'"]|x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]+\}))'/uy;
+	/b?'(?:[^'\\\r\n\t]|\\(?:[nrt0\\'"]|x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]+\}))'/uy;
 
 /** 入れ子の深さを数えて、ブロックコメントの末尾を返す。 */
 function blockEnd(source, start) {
@@ -95,7 +95,7 @@ function identifierEnd(source, i, identifiers) {
 	}
 	const name = token[0].replace(/^r#/, "");
 	if (
-		/^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$|^[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+$|^[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+$/.test(
+		/^[a-z][\da-z]*[A-Z][\dA-Za-z]*$|^[A-Z][a-z0-9]+[A-Z][A-Za-z0-9]*$|^[A-Za-z][A-Za-z0-9]*_\w+$/.test(
 			name,
 		)
 	) {

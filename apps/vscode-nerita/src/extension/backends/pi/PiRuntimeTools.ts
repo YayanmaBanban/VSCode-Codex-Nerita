@@ -1,4 +1,5 @@
 // OS ごとに実行基盤を選び、Windows のシェルだけをサンドボックスへ接続する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { realpath } from "node:fs/promises";
 import {
@@ -81,7 +82,7 @@ export async function preparePiRuntimeTools(
 		? "このroleではShell実行が禁止されています。"
 		: (unavailable ??
 			(!executor ? "Sandbox Executorが接続されていません。" : undefined));
-	if (executor && !reason) {
+	if (executor && !isNonEmptyString(reason)) {
 		tools.push(
 			createPiPnpmTool(
 				paths,
@@ -132,8 +133,8 @@ function hostShellOptions(settings?: ShellSettings): PiSdk.BashToolOptions {
 	const shellPath = settings?.getShellPath();
 	const commandPrefix = settings?.getShellCommandPrefix();
 	return {
-		...(shellPath ? { shellPath } : {}),
-		...(commandPrefix ? { commandPrefix } : {}),
+		...(isNonEmptyString(shellPath) ? { shellPath } : {}),
+		...(isNonEmptyString(commandPrefix) ? { commandPrefix } : {}),
 	};
 }
 
@@ -175,7 +176,7 @@ async function runtimePaths(options: PiRuntimeOptions) {
 
 /** 設定取得の失敗をシェル固有の利用不能理由にし、`read` やモデル接続は維持する。 */
 async function executionMode(options: PiRuntimeOptions) {
-	if (options.sandboxUnavailable) {
+	if (isNonEmptyString(options.sandboxUnavailable)) {
 		return { executor: null, unavailable: options.sandboxUnavailable };
 	}
 	if (options.executor !== undefined) {

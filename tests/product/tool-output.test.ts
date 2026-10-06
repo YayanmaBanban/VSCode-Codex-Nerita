@@ -1,4 +1,5 @@
 // バイト境界・参照の失効・連続出力の保持量を、Host の取得契約で検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import { ToolOutputStore } from "../../apps/vscode-nerita/src/extension/session/ToolOutputStore";
@@ -28,7 +29,7 @@ void test("UTF-8 の連続取得で日本語と絵文字を分断せず、参照
 		rawOutput: { formatted_output: text },
 		rawItem: { aggregatedOutput: text },
 	});
-	assert.ok(tool.output?.outputRef);
+	assert.ok(isNonEmptyString(tool.output?.outputRef));
 	assert.ok(tool.output.preview.length < 2200);
 	assert.ok(tool.output.preview.startsWith("先頭🐈"));
 	assert.ok(tool.output.preview.endsWith("末尾エラー"));
@@ -122,12 +123,12 @@ void test("範囲取得は不正 UTF-8 を拒否し、有効な文字の途中�
 		limit: 64,
 	};
 	assert.ok(
-		(await store.read(request)).error,
+		isNonEmptyString((await store.read(request)).error),
 		"孤立した先頭バイトを除外しない",
 	);
 	writeFileSync(path, Buffer.from([0x61, 0x80, 0x62]));
 	assert.ok(
-		(await store.read({ ...request, offset: 1 })).error,
+		isNonEmptyString((await store.read({ ...request, offset: 1 })).error),
 		"ASCII の後の孤立した継続バイトを除外しない",
 	);
 	writeFileSync(path, "🐈日本語", "utf8");
@@ -139,7 +140,7 @@ void test("範囲取得は不正 UTF-8 を拒否し、有効な文字の途中�
 	}
 	writeFileSync(path, Buffer.from([0xf0, 0x80, 0x80, 0x80, 0x61]));
 	assert.ok(
-		(await store.read({ ...request, offset: 2 })).error,
+		isNonEmptyString((await store.read({ ...request, offset: 2 })).error),
 		"不正な文字全体を検証する",
 	);
 });
@@ -219,13 +220,15 @@ void test("範囲要求は負数・小数・過大な取得量・任意パスを
 	}
 	const store = new ToolOutputStore();
 	assert.ok(
-		(
-			await store.read({
-				...request,
-				type: "tool/output",
-				outputRef: "../../unregistered",
-			})
-		).error,
+		isNonEmptyString(
+			(
+				await store.read({
+					...request,
+					type: "tool/output",
+					outputRef: "../../unregistered",
+				})
+			).error,
+		),
 	);
 });
 
@@ -262,7 +265,7 @@ void test("書込み待ちの累積結果を置き換え、追記・破棄後も
 	store.project(pending);
 	const cancelled = store.read(request);
 	store.dispose();
-	assert.ok((await cancelled).error);
+	assert.ok(isNonEmptyString((await cancelled).error));
 });
 
 void test("Pi の構造化結果から許可された一時出力だけを読み、削除済みと履歴ではパスへ戻らない", async (t) => {
@@ -298,7 +301,7 @@ void test("Pi の構造化結果から許可された一時出力だけを読み
 	registerPiOutput(live, "bash", source, false);
 	const projected = store.project(live);
 	assert.equal(projected.exitCode, 1);
-	assert.ok(projected.output?.outputRef);
+	assert.ok(isNonEmptyString(projected.output?.outputRef));
 	assert.ok(!JSON.stringify(projected).includes(path));
 	const request = {
 		type: "tool/output" as const,
@@ -312,12 +315,12 @@ void test("Pi の構造化結果から許可された一時出力だけを読み
 		"全文の先頭\n省略部分🐈\n末尾のエラー",
 	);
 	unlinkSync(path);
-	assert.ok((await store.read(request)).error);
+	assert.ok(isNonEmptyString((await store.read(request)).error));
 	const historical = { ...live, id: "history" };
 	registerPiOutput(historical, "bash", source, true);
 	const restored = store.project(historical);
 	assert.equal(restored.output?.outputRef, undefined);
-	assert.ok(restored.output?.preview.includes("先頭"));
+	assert.ok(restored.output?.preview.includes("先頭") === true);
 	const invalid = { ...live, id: "unregistered" };
 	registerPiOutput(
 		invalid,
@@ -388,7 +391,7 @@ async function verifyCodexOutput(t: TestContext) {
 		.snapshot()
 		.tools.find((tool) => tool.id === item.id)!;
 	assert.equal(tool.exitCode, 1);
-	assert.ok(tool.output?.outputRef);
+	assert.ok(isNonEmptyString(tool.output?.outputRef));
 	assert.ok(JSON.stringify(tool).length < 3000);
 	assert.match(tool.output.preview, /末尾エラー$/u);
 	let response: ToolOutputResponse | undefined;

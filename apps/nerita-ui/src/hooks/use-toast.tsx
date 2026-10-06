@@ -1,4 +1,9 @@
 // トーストの状態・通知・自動終了を管理し、React へ公開する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+	nonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 
 import * as React from "react";
 
@@ -149,16 +154,19 @@ function toast(props: ToastOptions) {
 
 	// Auto-dismiss after duration
 	if (props.duration !== Infinity) {
-		const timeout = setTimeout(() => {
-			dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
+		const timeout = setTimeout(
+			() => {
+				dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
 
-			// Remove after animation completes
-			setTimeout(() => {
-				dispatch({ type: actionTypes.REMOVE_TOAST, toastId: id });
-			}, TOAST_REMOVE_DELAY);
+				// Remove after animation completes
+				setTimeout(() => {
+					dispatch({ type: actionTypes.REMOVE_TOAST, toastId: id });
+				}, TOAST_REMOVE_DELAY);
 
-			toastTimeouts.delete(id);
-		}, props.duration || 5000);
+				toastTimeouts.delete(id);
+			},
+			nonZeroNumber(props.duration) ?? 5000,
+		);
 
 		toastTimeouts.set(id, timeout);
 	}
@@ -177,7 +185,7 @@ function toast(props: ToastOptions) {
 
 		// Clear any existing timeout
 		const timeout = toastTimeouts.get(id);
-		if (timeout) {
+		if (isNonZeroNumber(timeout)) {
 			clearTimeout(timeout);
 			toastTimeouts.delete(id);
 		}
@@ -246,9 +254,9 @@ function useToast() {
 				...(toastId === undefined ? {} : { toastId }),
 			});
 
-			if (toastId) {
+			if (isNonEmptyString(toastId)) {
 				const timeout = toastTimeouts.get(toastId);
-				if (timeout) {
+				if (isNonZeroNumber(timeout)) {
 					clearTimeout(timeout);
 					toastTimeouts.delete(toastId);
 				}

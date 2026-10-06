@@ -1,4 +1,6 @@
 // 認証専用 Webview の公開状態と、入力を Host へ渡す通信契約。
+import { isRecord } from "./validation";
+
 export type PiAuthItem = {
 	id: string;
 	name: string;
@@ -33,7 +35,7 @@ export type PiAuthRequest =
 	| { type: "cancel" };
 /** 専用パネルからの要求も未知の型・過大な入力を拒否する。 */
 export function isPiAuthRequest(value: unknown): value is PiAuthRequest {
-	if (!value || typeof value !== "object") {
+	if (value === null || typeof value !== "object") {
 		return false;
 	}
 	const item = value as Record<string, unknown>;
@@ -51,41 +53,48 @@ export function isPiAuthRequest(value: unknown): value is PiAuthRequest {
 }
 /** Host の状態通知を受け入れる前に、描画用の値を確認する。 */
 export function isPiAuthState(value: unknown): value is PiAuthState {
-	if (!value || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const state = value as PiAuthState;
 	return (
-		Array.isArray(state.items) &&
-		state.items.every(
-			(item) =>
-				!!item &&
-				typeof item.id === "string" &&
-				typeof item.name === "string" &&
-				typeof item.configured === "boolean" &&
-				(item.accounts === undefined ||
-					(Array.isArray(item.accounts) &&
-						item.accounts.every(
-							(account) =>
-								typeof account.id === "string" &&
-								typeof account.name === "string" &&
-								(account.mode === "session" ||
-									account.mode === "secret-storage") &&
-								typeof account.active === "boolean",
-						))) &&
-				Array.isArray(item.methods) &&
-				item.methods.every(
-					(method) =>
-						!!method &&
-						typeof method.id === "string" &&
-						typeof method.name === "string",
-				),
-		) &&
-		isNullableString(state.active) &&
-		typeof state.notice === "string" &&
-		(state.error === null || typeof state.error === "string") &&
-		validAuthFeedback(state) &&
-		validAuthPrompt(state)
+		Array.isArray(value.items) &&
+		value.items.every(isAuthItem) &&
+		isNullableString(value.active) &&
+		typeof value.notice === "string" &&
+		isNullableString(value.error) &&
+		validAuthFeedback(value.feedback) &&
+		validAuthPrompt(value.prompt)
+	);
+}
+
+/** 未検証のプロバイダー項目と、アカウント・認証方式の配列を検証する。 */
+function isAuthItem(value: unknown): boolean {
+	return (
+		isRecord(value) &&
+		typeof value.id === "string" &&
+		typeof value.name === "string" &&
+		typeof value.configured === "boolean" &&
+		(value.accounts === undefined ||
+			(Array.isArray(value.accounts) &&
+				value.accounts.every(isAuthAccount))) &&
+		Array.isArray(value.methods) &&
+		value.methods.every(
+			(method: unknown) =>
+				isRecord(method) &&
+				typeof method.id === "string" &&
+				typeof method.name === "string",
+		)
+	);
+}
+
+/** アカウントの保存方式は公開契約の2種類に限定する。 */
+function isAuthAccount(value: unknown): boolean {
+	return (
+		isRecord(value) &&
+		typeof value.id === "string" &&
+		typeof value.name === "string" &&
+		(value.mode === "session" || value.mode === "secret-storage") &&
+		typeof value.active === "boolean"
 	);
 }
 
@@ -95,18 +104,18 @@ function isNullableString(value: unknown): boolean {
 }
 
 /** 入力要求と選択肢の構造を検証する。 */
-function validAuthPrompt(state: PiAuthState): boolean {
+function validAuthPrompt(prompt: unknown): boolean {
 	return (
-		state.prompt === null ||
-		(!!state.prompt &&
-			typeof state.prompt.id === "string" &&
-			typeof state.prompt.message === "string" &&
-			typeof state.prompt.secret === "boolean" &&
-			(state.prompt.options === undefined ||
-				(Array.isArray(state.prompt.options) &&
-					state.prompt.options.every(
-						(option) =>
-							!!option &&
+		prompt === null ||
+		(isRecord(prompt) &&
+			typeof prompt.id === "string" &&
+			typeof prompt.message === "string" &&
+			typeof prompt.secret === "boolean" &&
+			(prompt.options === undefined ||
+				(Array.isArray(prompt.options) &&
+					prompt.options.every(
+						(option: unknown) =>
+							isRecord(option) &&
 							typeof option.id === "string" &&
 							typeof option.label === "string",
 					))))
@@ -114,15 +123,13 @@ function validAuthPrompt(state: PiAuthState): boolean {
 }
 
 /** 認証結果の通知とエラーを検証する。 */
-function validAuthFeedback(state: PiAuthState) {
+function validAuthFeedback(feedback: unknown) {
 	return (
-		state.feedback === undefined ||
-		(!!state.feedback &&
-			typeof state.feedback === "object" &&
-			!Array.isArray(state.feedback) &&
-			Object.values(state.feedback).every(
-				(item) =>
-					!!item &&
+		feedback === undefined ||
+		(isRecord(feedback) &&
+			Object.values(feedback).every(
+				(item: unknown) =>
+					isRecord(item) &&
 					typeof item.notice === "string" &&
 					(item.error === null || typeof item.error === "string"),
 			))

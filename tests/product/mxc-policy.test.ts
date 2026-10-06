@@ -1,4 +1,5 @@
 // SDK 本体の変換で権限上限と環境変数を確認し、承認境界を迂回した起動を拒否する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { realpath } from "node:fs/promises";
@@ -82,7 +83,7 @@ void test("通信許可と readOnly role を変換しても host loopback と Wo
 	const temporary = join(call.cwd, "dedicated-temp");
 	const config = createMxcConfig(sdk, call, temporary);
 	assert.equal(config.network?.egress?.default, "allow");
-	assert.equal(config.network?.ingress?.hostLoopback, "deny");
+	assert.equal(config.network.ingress?.hostLoopback, "deny");
 	assert.deepEqual(config.filesystem!.readwritePaths, [temporary]);
 	assert.ok(config.filesystem!.readonlyPaths!.includes(call.cwd));
 });
@@ -109,7 +110,7 @@ void test("SDK の欠落を利用不可理由として返し、Docker は常に�
 		new AbortController().signal,
 	);
 	assert.equal(status.available, false);
-	assert.ok(status.reason);
+	assert.ok(isNonEmptyString(status.reason));
 	assert.equal(dockerAvailability.available, false);
 	assert.match(dockerAvailability.reason!, /準備中/);
 });

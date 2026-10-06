@@ -1,4 +1,5 @@
 // 利用枠のうち最も低い残量の割合と、枠ごとの詳細を入力欄に表示する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { QuotaWindow } from "@nerita/shared/composer";
 import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
@@ -6,7 +7,7 @@ import "./quotaBar.css";
 
 /** 枠が取得できた場合だけ、控えめな波付きバーを表示する。 */
 export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
-	if (!windows?.length) {
+	if (!isNonZeroNumber(windows?.length)) {
 		return null;
 	}
 	const remaining = Math.min(...windows.map((window) => window.remaining));
@@ -21,7 +22,7 @@ export function QuotaBar({ windows }: { windows: QuotaWindow[] | null }) {
 							<div>
 								{window.label}: {window.remaining}%
 							</div>
-							{window.detail && <div>{window.detail}</div>}
+							{window.detail !== "" && <div>{window.detail}</div>}
 						</div>
 					))}
 					{windows.some(

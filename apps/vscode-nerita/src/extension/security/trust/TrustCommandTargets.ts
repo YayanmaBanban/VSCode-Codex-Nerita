@@ -4,7 +4,7 @@ import type { ToolCall } from "../ApprovedToolCall";
 
 /** 動的な作業場所や文字列からの追加実行は推測で許可しない。 */
 export function commandTrustTargets(call: ToolCall): string[] {
-	if (!call.command && !call.hostShell) {
+	if (!call.command && !(call.hostShell === true)) {
 		return [];
 	}
 	const command = checkedCommand(call.params.command);
@@ -40,7 +40,7 @@ function checkedCommand(command: unknown): string {
 	) {
 		throw new Error("動的なコード実行のTrustを解決できません。");
 	}
-	if (/\bgit\s+(?:[^\r\n;|]*\s)?clone\b/i.test(command)) {
+	if (/\bgit\s+(?:[^\s;|]+\s+)*clone\b/i.test(command)) {
 		throw new Error(
 			"外部repoの取得には出所を登録するWeb取得経路を使用してください。",
 		);

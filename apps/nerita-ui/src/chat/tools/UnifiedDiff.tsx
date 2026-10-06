@@ -17,7 +17,7 @@ export function UnifiedDiff({
 		}
 	}, [diff]);
 	return (
-		<DiffView {...location} hunks={hunks.length ? hunks : undefined}>
+		<DiffView {...location} hunks={hunks.length > 0 ? hunks : undefined}>
 			{hunks.length === 0 && (
 				<pre className={toolOutputClass}>{diff}</pre>
 			)}

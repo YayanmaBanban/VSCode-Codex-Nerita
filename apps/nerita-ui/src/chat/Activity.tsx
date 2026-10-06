@@ -1,4 +1,5 @@
 // ツールごとの折り畳みカードと、エージェント由来の承認選択肢を表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { type AsyncTask, taskActive } from "@nerita/shared/asyncTask";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -30,7 +31,7 @@ export function Activity({ state, send }: ActivityProps) {
 					aria-label="承認要求"
 					key={permission.id}
 				>
-					{!reduced && (
+					{!(reduced === true) && (
 						<span
 							aria-hidden="true"
 							className="pointer-events-none absolute inset-0 rounded-[inherit]"
@@ -56,7 +57,10 @@ export function Activity({ state, send }: ActivityProps) {
 										: "quiet group relative isolate overflow-hidden bg-transparent",
 								)}
 								onClick={() => {
-									if (state.sessionId && state.runId) {
+									if (
+										isNonEmptyString(state.sessionId) &&
+										isNonEmptyString(state.runId)
+									) {
 										send({
 											type: "permission/respond",
 											requestId: crypto.randomUUID(),
@@ -112,9 +116,10 @@ function ToolActivity({ state, send }: ToolActivityProps) {
 						task={task}
 						cancelTurn={cancelTurn}
 						onStop={
-							(cancelTurn || canStopTask(task)) &&
-							state.sessionId &&
-							(tool.runId || state.runId) &&
+							(cancelTurn || canStopTask(task) === true) &&
+							isNonEmptyString(state.sessionId) &&
+							(isNonEmptyString(tool.runId) ||
+								isNonEmptyString(state.runId)) &&
 							state.connection === "ready"
 								? () =>
 										send({
@@ -135,5 +140,7 @@ function ToolActivity({ state, send }: ToolActivityProps) {
 
 /** 停止可能で未処理の非同期タスクだけを対象にする。 */
 function canStopTask(task: AsyncTask | undefined) {
-	return task && taskActive(task) && task.canStop && !task.stopPending;
+	return (
+		task && taskActive(task) && task.canStop && !(task.stopPending === true)
+	);
 }

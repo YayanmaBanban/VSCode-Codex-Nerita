@@ -99,7 +99,7 @@ export async function loadPiResources(
 	await loader.reload();
 	signal.throwIfAborted();
 	const errors = loader.getExtensions().errors;
-	if (errors.length) {
+	if (errors.length > 0) {
 		throw new Error(
 			`Pi拡張を読み込めませんでした: ${errors.map((item) => `${item.path}: ${item.error}`).join(", ")}`,
 		);

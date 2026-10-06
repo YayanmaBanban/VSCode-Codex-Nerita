@@ -1,4 +1,8 @@
 // 履歴パネルを変更せず、コンポーザー用の候補を検索して内容を表示する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import type { CodexConnection } from "../runtime/connection";
 import {
 	type SessionReferenceOpen,
@@ -33,10 +37,12 @@ export async function searchSessionReferences(
 			sortDirection: "desc",
 			modelProviders: [],
 			sourceKinds: threadSources,
-			...(request.query.trim()
+			...(request.query.trim() !== ""
 				? { searchTerm: request.query.trim() }
 				: {}),
-			...(request.cursor ? { cursor: request.cursor } : {}),
+			...(isNonEmptyString(request.cursor)
+				? { cursor: request.cursor }
+				: {}),
 		});
 		if (
 			!current() ||
@@ -56,8 +62,8 @@ export async function searchSessionReferences(
 				mode: "transcript" as const,
 				sessionId: thread.id,
 				name: (
-					thread.name?.trim() ||
-					thread.preview ||
+					nonEmptyString(thread.name?.trim()) ??
+					nonEmptyString(thread.preview) ??
 					thread.id
 				).slice(0, 200),
 				cwd: thread.cwd,

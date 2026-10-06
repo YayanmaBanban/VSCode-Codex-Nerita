@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const workflowFileSchema = z
 	.string()
-	.regex(/^[A-Za-z0-9][A-Za-z0-9._-]*\.toml$/);
+	.regex(/^[A-Za-z0-9][\w.-]*\.toml$/);
 export const workflowRequestSchema = z.discriminatedUnion("type", [
 	z.strictObject({ type: z.literal("ready") }),
 	z.strictObject({

@@ -1,4 +1,5 @@
 // 履歴とアーカイブ共通の削除操作に、取り消せないことを伝える確認を挟む。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { cn } from "cnfast";
 import { AlertDialog } from "@base-ui/react/alert-dialog";
@@ -24,7 +25,7 @@ export function SessionDelete({
 	disabled: boolean;
 	send: (message: UiMessage) => void;
 }) {
-	const title = session.title?.trim() || "無題のセッション";
+	const title = nonEmptyString(session.title?.trim()) ?? "無題のセッション";
 	return (
 		<AlertDialog.Root>
 			<SettingsTooltip content="セッションを削除">

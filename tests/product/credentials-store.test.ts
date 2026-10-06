@@ -1,4 +1,5 @@
 // 永続保存・メモリー消失・アカウント更新を、製品アダプターと同梱 SDK の入口から確認する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile, writeFile } from "node:fs/promises";
@@ -223,7 +224,7 @@ void test("MCP は秘密ストアへ保存完了後に結果を公開し、同�
 	assert.ok(
 		restarted.withLock((current) => ({
 			result: current?.includes("mcp-private"),
-		})),
+		})) === true,
 	);
 	const trace: number[] = [];
 	await Promise.all([
@@ -266,7 +267,7 @@ function authProvider(
 				}),
 				resolve: ({ credential }) =>
 					Promise.resolve(
-						credential?.key
+						isNonEmptyString(credential?.key)
 							? { auth: { apiKey: credential.key } }
 							: undefined,
 					),
@@ -398,7 +399,7 @@ void test("BWS の保存モード変更は直列化され、失敗しても既�
 		value?.use((text) => text),
 		"bws-persistent",
 	);
-	value?.dispose();
+	value.dispose();
 	assert.equal(
 		restarted.stores.redactor.text("bws-persistent"),
 		"[REDACTED]",

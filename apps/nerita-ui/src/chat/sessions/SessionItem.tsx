@@ -1,4 +1,5 @@
 // 1つのセッションの概要と独立した操作ボタンを表示する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { Archive, ArchiveRestore, GitFork, Pencil } from "lucide-react";
@@ -30,7 +31,7 @@ export function SessionItem({
 	capabilities: SessionCapabilities;
 	send: (message: UiMessage) => void;
 }) {
-	const title = session.title?.trim() || "無題のセッション";
+	const title = nonEmptyString(session.title?.trim()) ?? "無題のセッション";
 	const [renaming, setRenaming] = useState(false);
 	return (
 		<li
@@ -103,6 +104,10 @@ function renderSessionActions(
 	title: string,
 	setRenaming: Dispatch<SetStateAction<boolean>>,
 ) {
+	const archived = session.archived === true;
+	const archiveLabel = archived ? "アーカイブから戻す" : "アーカイブ";
+	const canArchive =
+		(archived ? capabilities.unarchive : capabilities.archive) === true;
 	return (
 		<div className="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
 			<SessionDelete
@@ -116,29 +121,24 @@ function renderSessionActions(
 					className={sessionActionClass}
 					aria-label={`${title}の名前を変更`}
 					disabled={
-						disabled || !capabilities.rename || session.archived
+						disabled ||
+						!(capabilities.rename === true) ||
+						session.archived
 					}
 					onClick={() => setRenaming(true)}
 				>
 					<Pencil size={14} aria-hidden="true" />
 				</button>
 			</SettingsTooltip>
-			<SettingsTooltip
-				content={session.archived ? "アーカイブから戻す" : "アーカイブ"}
-			>
+			<SettingsTooltip content={archiveLabel}>
 				<button
 					type="button"
 					className={sessionActionClass}
-					disabled={
-						disabled ||
-						!(session.archived
-							? capabilities.unarchive
-							: capabilities.archive)
-					}
-					aria-label={`${title}を${session.archived ? "アーカイブから戻す" : "アーカイブ"}`}
+					disabled={disabled || !canArchive}
+					aria-label={`${title}を${archiveLabel}`}
 					onClick={() =>
 						send({
-							type: session.archived
+							type: archived
 								? "session/unarchive"
 								: "session/archive",
 							requestId: crypto.randomUUID(),
@@ -146,7 +146,7 @@ function renderSessionActions(
 						})
 					}
 				>
-					{session.archived ? (
+					{archived ? (
 						<ArchiveRestore size={14} aria-hidden="true" />
 					) : (
 						<Archive size={14} aria-hidden="true" />

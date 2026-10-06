@@ -1,4 +1,9 @@
 // 通常メッセージの Markdown を React 要素へ変換し、テーマに沿って表示する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
 import { cn } from "cnfast";
 import type { UiMessage } from "@nerita/shared/messages";
@@ -42,7 +47,7 @@ const components: Components = {
 		</div>
 	),
 	// 本文中の画像は外部取得せず、代替テキストを表示する。
-	img: ({ alt }) => <span>{alt || "画像"}</span>,
+	img: ({ alt }) => <span>{nonEmptyString(alt) ?? "画像"}</span>,
 };
 
 /** Markdown の見出し・リスト・コード・表を Webview のテーマに合わせる。 */
@@ -92,7 +97,11 @@ export function MessageText({
 		<div className={markdownStyle}>
 			<Markdown
 				remarkPlugins={[remarkGfm, remarkBreaks]}
-				rehypePlugins={content.targets.size ? [content.plugin] : []}
+				rehypePlugins={
+					isNonZeroNumber(content.targets.size)
+						? [content.plugin]
+						: []
+				}
 				urlTransform={markdownUrl}
 				components={{
 					...components,
@@ -112,7 +121,7 @@ export function MessageText({
 						const local = /^file:\/\//i.test(href ?? "");
 						return (
 							<a
-								href={href || undefined}
+								href={nonEmptyString(href) ?? undefined}
 								title={title}
 								target={local ? undefined : "_blank"}
 								rel="noreferrer noopener"
@@ -121,7 +130,7 @@ export function MessageText({
 									"focus-visible:outline-2 focus-visible:outline-focus",
 								)}
 								onClick={(event) => {
-									if (local && href) {
+									if (local && isNonEmptyString(href)) {
 										event.preventDefault();
 										send?.({
 											type: "reference/open",

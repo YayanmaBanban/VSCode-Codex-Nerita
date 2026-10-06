@@ -1,4 +1,5 @@
 // App Server のコマンド・ファイル承認を既存 UI の選択肢へ変換する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { isRecord } from "@nerita/shared/validation";
 import type {
 	PermissionField,
@@ -75,7 +76,7 @@ function approvalDetails(
 	}
 	for (const field of ["command", "cwd", "reason", "grantRoot"] as const) {
 		const value = approvalString(params[field]);
-		if (value) {
+		if (isNonEmptyString(value)) {
 			if (field === "command" || field === "cwd") {
 				presentation[field] = value;
 			} else {

@@ -8,7 +8,7 @@ export function validSkills(value: unknown): value is SkillSummary[] {
 	return (
 		Array.isArray(value) &&
 		value.every((item: unknown) => {
-			if (!item || typeof item !== "object") {
+			if (item === null || typeof item !== "object") {
 				return false;
 			}
 			const skill = item as Record<string, unknown>;

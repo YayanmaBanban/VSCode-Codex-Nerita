@@ -64,9 +64,6 @@ for (const length of [100, 1000]) {
 		assert.equal(events.length, 3);
 		const event = events.at(-1)!;
 		assert.equal(event.type, "state/patch");
-		if (event.type !== "state/patch") {
-			throw new Error("差分通知が必要");
-		}
 		assert.equal(event.baseRevision, partial.revision);
 		const completedMessage = event.patch.messages![0]!;
 		assert.equal(completedMessage.text, "あ".repeat(length));

@@ -52,7 +52,7 @@ function $copyReferences(event: ClipboardEvent): void {
 	}
 	const text = selection.getTextContent();
 	if (
-		references.length &&
+		references.length > 0 &&
 		text.length <= 100_000 &&
 		validReferences(text, references)
 	) {
@@ -74,7 +74,7 @@ export function readClipboardReferences(
 	}
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (!value || typeof value !== "object") {
+		if (value === null || typeof value !== "object") {
 			return null;
 		}
 		const payload = value as Record<string, unknown>;
@@ -82,7 +82,7 @@ export function readClipboardReferences(
 			payload.version !== 1 ||
 			payload.text !== text ||
 			!Array.isArray(payload.references) ||
-			!payload.references.length ||
+			payload.references.length === 0 ||
 			!validReferences(text, payload.references)
 		) {
 			return null;
@@ -95,7 +95,7 @@ export function readClipboardReferences(
 
 /** クリップボード付加情報のサイズ制限を確認する。 */
 function invalidClipboardSize(raw: string, text: string) {
-	return !raw || raw.length > 4000000 || text.length > 100000;
+	return raw === "" || raw.length > 4000000 || text.length > 100000;
 }
 
 /** 既存の文字数検査と取り消し操作の境界を保ち、選択範囲をチップ付きの本文へ置換する。 */

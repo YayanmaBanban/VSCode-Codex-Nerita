@@ -1,4 +1,5 @@
 // 表示先とコマンドの接続先を保持し、バックエンドの終了・再生成を管理する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
 import { randomUUID } from "node:crypto";
 import { initialState } from "@nerita/shared/chatState";
@@ -28,7 +29,7 @@ export class BackendRuntime implements BackendSession {
 		return {
 			...state,
 			...(!this.current ? { connection: "connecting" as const } : {}),
-			...(this.error
+			...(isNonEmptyString(this.error)
 				? { connection: "error" as const, error: this.error }
 				: {}),
 			revision: this.revision,

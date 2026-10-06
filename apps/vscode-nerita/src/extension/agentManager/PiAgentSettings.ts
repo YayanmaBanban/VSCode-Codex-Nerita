@@ -1,4 +1,5 @@
 // Pi の定義と設定を表示用に読み、優先順位の再実装を管理画面へ持ち込まない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { pathToFileURL } from "node:url";
 import { join } from "node:path";
@@ -52,7 +53,7 @@ export async function readPiAgents(
 	const settings = sdk.SettingsManager.create(root, agentDir);
 	settings.setProjectTrusted(trusted);
 	const errors = settings.drainErrors();
-	if (errors.length) {
+	if (errors.length > 0) {
 		throw new Error(
 			"Pi の設定ファイルを読み込めません。設定の形式を確認してください。",
 		);
@@ -109,7 +110,7 @@ async function managedPiAgents(
 	const agents = new Map<string, ManagedAgent>();
 	const files: Record<string, string> = {};
 	for (const definition of definitions) {
-		if (definition.definitionPath) {
+		if (isNonEmptyString(definition.definitionPath)) {
 			const text = await readWorkspaceFile(
 				root,
 				definition.definitionPath,
@@ -131,7 +132,7 @@ async function managedPiAgents(
 			definitionThinking: definition.thinking,
 			edit: agentEditSchema.parse({
 				...(project.agentOverrides?.[definition.name] ?? {}),
-				...(definition.definitionPath
+				...(isNonEmptyString(definition.definitionPath)
 					? {
 							definition: {
 								name: definition.name,

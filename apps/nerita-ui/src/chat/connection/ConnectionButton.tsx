@@ -57,7 +57,7 @@ export function ConnectionButton({ state, send }: ConnectionButtonProps) {
 		state.run === "cancelling";
 	const action = connectionAction(state.connection);
 	useEffect(() => {
-		if (reduced) {
+		if (reduced === true) {
 			setDisplayed(state.connection);
 			setCurtain(null);
 		} else if (previous.current !== state.connection) {
@@ -70,7 +70,7 @@ export function ConnectionButton({ state, send }: ConnectionButtonProps) {
 			previous.current !== "disconnected" &&
 			state.connection === "ready";
 		previous.current = state.connection;
-		if (!connected || reduced) {
+		if (!connected || reduced === true) {
 			setCelebrating(false);
 			return;
 		}
@@ -212,7 +212,7 @@ function ConnectionTrigger(props: ConnectionTriggerProps) {
 					/>
 				</span>
 				{curtain && <ConnectionCurtain {...props} curtain={curtain} />}
-				{!reduced &&
+				{!(reduced === true) &&
 					showConnectionBeam(
 						state.connection,
 						reconnectable,

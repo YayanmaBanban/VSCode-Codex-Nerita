@@ -1,10 +1,12 @@
-// 入力中の文書を古い通知で上書きせず、編集の反映後に操作を送る。
+﻿// 入力中の文書を古い通知で上書きせず、編集の反映後に操作を送る。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import {
 	type EffectCallback,
 	type Dispatch,
 	type RefObject,
 	type SetStateAction,
+	useCallback,
 	useEffect,
 	useRef,
 	useState,
@@ -20,7 +22,10 @@ import type {
 export function useWorkflow(bridge: WorkflowBridge) {
 	const [state, setState] = useState<WorkflowState | null>(null);
 	const [text, setText] = useState("");
-	const [busy, setBusy] = useState(false);
+	const [{ busy, locked }, setActivity] = useState({
+		busy: false,
+		locked: false,
+	});
 	const [reply, setReply] = useState<Extract<
 		WorkflowReply,
 		{ type: "reply" }
@@ -28,11 +33,18 @@ export function useWorkflow(bridge: WorkflowBridge) {
 	const pending = useRef<{ id: number; edit: boolean; text?: string } | null>(
 		null,
 	);
+	/** 保留要求の種別はイベント内で読み取り、描画用のロック状態へ反映する。 */
+	const setBusy = useCallback((value: boolean) => {
+		setActivity({
+			busy: value,
+			locked: value && pending.current?.edit === false,
+		});
+	}, []);
 	const sequence = useRef(0);
 	const draft = useRef("");
 	const host = useRef<WorkflowState | null>(null);
-	useEffect(
-		createWorkflowSubscription(
+	useEffect(() => {
+		return createWorkflowSubscription(
 			host,
 			draft,
 			setState,
@@ -40,32 +52,26 @@ export function useWorkflow(bridge: WorkflowBridge) {
 			setText,
 			setReply,
 			bridge,
-			acceptEdit,
+			() => acceptWorkflowEdit(draft, pending, host, setText),
 			setBusy,
-		),
-		[bridge],
-	);
-	/** VS Code が改行を正規化した場合も、新しい入力がなければ確定内容へ揃える。 */
-	function acceptEdit() {
-		if (draft.current === pending.current?.text && host.current) {
-			draft.current = host.current.text;
-			setText(host.current.text);
-		}
-	}
+		)();
+	}, [bridge, setBusy]);
 	useEffect(
-		createWorkflowEditEffect(
-			state,
-			busy,
-			text,
-			reply,
-			sequence,
-			pending,
-			setBusy,
-			bridge,
-		),
-		[state, text, busy, bridge, reply],
+		() =>
+			createWorkflowEditEffect(
+				state,
+				busy,
+				text,
+				reply,
+				sequence,
+				pending,
+				setBusy,
+				bridge,
+			)(),
+		[state, text, busy, bridge, reply, setBusy],
 	);
-	const change = createWorkflowDraftUpdater(draft, setText, setReply);
+	const change = (value: string) =>
+		createWorkflowDraftUpdater(draft, setText, setReply)(value);
 	const request = (type: "save" | "check" | "run") => {
 		if (!state || busy || text !== state.text) {
 			return;
@@ -83,7 +89,7 @@ export function useWorkflow(bridge: WorkflowBridge) {
 		request,
 		reply,
 		busy: busy || text !== state?.text,
-		locked: (busy && pending.current?.edit === false) || !!state?.running,
+		locked: locked || !!(state?.running === true),
 		reload: () => {
 			if (state) {
 				draft.current = state.text;
@@ -92,6 +98,19 @@ export function useWorkflow(bridge: WorkflowBridge) {
 			}
 		},
 	};
+}
+
+/** 改行の正規化後も、未送信の入力がなければ確定内容へ揃える。 */
+function acceptWorkflowEdit(
+	draft: RefObject<string>,
+	pending: RefObject<{ text?: string } | null>,
+	host: RefObject<WorkflowState | null>,
+	setText: Dispatch<SetStateAction<string>>,
+) {
+	if (draft.current === pending.current?.text && host.current) {
+		draft.current = host.current.text;
+		setText(host.current.text);
+	}
 }
 
 /** 入力サイズを検査してワークフローの下書きを更新する。 */
@@ -132,7 +151,7 @@ function createWorkflowEditEffect(
 	} | null,
 	sequence: RefObject<number>,
 	pending: RefObject<{ id: number; edit: boolean; text?: string } | null>,
-	setBusy: Dispatch<SetStateAction<boolean>>,
+	setBusy: (busy: boolean) => void,
 	bridge: WorkflowBridge,
 ): EffectCallback {
 	return () => {
@@ -140,7 +159,7 @@ function createWorkflowEditEffect(
 			!state ||
 			busy ||
 			text === state.text ||
-			reply?.error ||
+			isNonEmptyString(reply?.error) ||
 			state.running
 		) {
 			return;
@@ -178,7 +197,7 @@ function createWorkflowSubscription(
 	>,
 	bridge: WorkflowBridge,
 	acceptEdit: () => void,
-	setBusy: Dispatch<SetStateAction<boolean>>,
+	setBusy: (busy: boolean) => void,
 ): EffectCallback {
 	return () => {
 		const receiveState = (message: WorkflowState) => {
@@ -186,7 +205,7 @@ function createWorkflowSubscription(
 				host.current !== null && draft.current !== host.current.text;
 			host.current = message;
 			setState(message);
-			if (!pending.current?.edit && !local) {
+			if (!(pending.current?.edit === true) && !local) {
 				draft.current = message.text;
 				setText(message.text);
 			} else if (!pending.current && local) {
@@ -204,10 +223,10 @@ function createWorkflowSubscription(
 			} else if (message.id === 0) {
 				setReply(message);
 			} else if (pending.current?.id === message.id) {
-				if (pending.current.edit && !message.error) {
+				if (pending.current.edit && !isNonEmptyString(message.error)) {
 					acceptEdit();
 				}
-				if (!pending.current.edit || message.error) {
+				if (!pending.current.edit || isNonEmptyString(message.error)) {
 					setReply(message);
 				}
 				pending.current = null;

@@ -1,4 +1,5 @@
 // Git・npmrc・Bitwarden の参照を承認後に解決し、保管庫全体を探索しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { throwCredentialError } from "./CredentialErrors";
 import { open } from "node:fs/promises";
 import { join } from "node:path";
@@ -57,7 +58,7 @@ export class GitCredentialProvider extends BoundProvider {
 			["credential", "fill"],
 			candidate.requirement.workspace,
 			signal,
-			`protocol=https\nhost=${host}\n${path.length ? `path=${path.join("/")}\n` : ""}\n`,
+			`protocol=https\nhost=${host}\n${path.length > 0 ? `path=${path.join("/")}\n` : ""}\n`,
 			{ GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never" },
 		);
 		const fields = Object.fromEntries(
@@ -69,7 +70,10 @@ export class GitCredentialProvider extends BoundProvider {
 					line.slice(line.indexOf("=") + 1),
 				]),
 		);
-		if (!fields.username || !fields.password) {
+		if (
+			!isNonEmptyString(fields.username) ||
+			!isNonEmptyString(fields.password)
+		) {
 			throw new Error("Git の資格情報を取得できません。");
 		}
 		return {
@@ -119,35 +123,33 @@ export class NpmConfigProvider extends BoundProvider {
 		]) {
 			for (const line of (await npmText(path)).split(/\r?\n/)) {
 				const match = line.match(
-					/^\s*(\/\/[^=\s]+:\s*(?:_authToken|_auth|username|_password))\s*=\s*(.*?)\s*$/i,
+					/^\s*(\/\/[^=\s]+:\s*(?:_authToken|_auth|username|_password))\s*=([^\r\n]*)$/i,
 				);
 				if (match) {
-					settings.set(match[1]!.replace(/\s/g, ""), match[2]!);
+					settings.set(
+						match[1]!.replace(/\s/g, ""),
+						match[2]!.trim(),
+					);
 				}
 			}
 		}
 		const target = candidate.requirement.target.replace(/\/$/, "");
 		const scope = `//${target}/:`;
 		const expand = (value: string) =>
-			value.replace(
-				/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g,
-				(_match, name: string) => {
-					const resolved = this.env[name];
-					if (!resolved) {
-						throw new Error(
-							"npm 認証の環境変数が設定されていません。",
-						);
-					}
-					return resolved;
-				},
-			);
+			value.replace(/\$\{([A-Z_]\w*)\}/gi, (_match, name: string) => {
+				const resolved = this.env[name];
+				if (!isNonEmptyString(resolved)) {
+					throw new Error("npm 認証の環境変数が設定されていません。");
+				}
+				return resolved;
+			});
 		signal.throwIfAborted();
 		const token = settings.get(`${scope}_authToken`);
-		if (token) {
+		if (isNonEmptyString(token)) {
 			return { type: "token", secret: new SecretValue(expand(token)) };
 		}
 		const basic = settings.get(`${scope}_auth`);
-		if (basic) {
+		if (isNonEmptyString(basic)) {
 			return {
 				type: "npm-basic",
 				secret: new SecretValue(expand(basic)),
@@ -155,7 +157,7 @@ export class NpmConfigProvider extends BoundProvider {
 		}
 		const username = settings.get(`${scope}username`);
 		const password = settings.get(`${scope}_password`);
-		if (username && password) {
+		if (isNonEmptyString(username) && isNonEmptyString(password)) {
 			return {
 				type: "npm-basic",
 				secret: new SecretValue(
@@ -208,10 +210,10 @@ export class BitwardenSecretsProvider extends BoundProvider {
 			}
 			if (
 				secret.id !== provider.secretId ||
-				(provider.projectId &&
+				(isNonEmptyString(provider.projectId) &&
 					secret.projectId !== provider.projectId) ||
 				typeof secret.value !== "string" ||
-				!secret.value
+				secret.value === ""
 			) {
 				throw new Error(
 					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",

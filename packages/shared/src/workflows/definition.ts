@@ -1,9 +1,10 @@
 // TOML とエディターが共有する定義を検証し、依存順に並べ替える。
+import { isNonEmptyString } from "../valuePredicates";
 
 import { z } from "zod";
 import { parse } from "smol-toml";
 
-const id = z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,63}$/);
+const id = z.string().regex(/^[A-Z][\w-]{0,63}$/i);
 const stepSchema = z
 	.object({
 		id,
@@ -41,7 +42,7 @@ export type WorkflowStep = Workflow["steps"][number];
 
 /** 任意の式を認めず、結果参照の構文だけを解析する。 */
 export function outputReferences(task: string) {
-	const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]{0,63})\.output\s*\}\}/g;
+	const pattern = /\{\{\s*([A-Za-z][\w-]{0,63})\.output\s*\}\}/g;
 	const refs = [...task.matchAll(pattern)];
 	if (/\{\{|\}\}/.test(task.replace(pattern, ""))) {
 		throw new Error("結果参照は {{ step.output }} だけを使用できます。");
@@ -77,7 +78,7 @@ export function validateWorkflow(value: unknown): Workflow {
 		const ready = [...steps.values()].filter(
 			createReadyStepFilter(ordered),
 		);
-		if (!ready.length) {
+		if (ready.length === 0) {
 			throw new Error("依存関係が循環しています。");
 		}
 		ordered.push(...ready);
@@ -99,7 +100,7 @@ function validateStep(step: WorkflowStep, steps: Map<string, WorkflowStep>) {
 	validateMode(step);
 	validateReferences(step, steps);
 	if (
-		step.resume &&
+		isNonEmptyString(step.resume) &&
 		[...steps.values()].filter((other) => other.resume === step.resume)
 			.length > 1
 	) {
@@ -109,10 +110,13 @@ function validateStep(step: WorkflowStep, steps: Map<string, WorkflowStep>) {
 
 /** 新規・複製・継続の指定を相互に矛盾させない。 */
 function validateMode(step: WorkflowStep) {
-	if (step.resume && (step.fork || step.agent)) {
+	if (
+		isNonEmptyString(step.resume) &&
+		(isNonEmptyString(step.fork) || isNonEmptyString(step.agent))
+	) {
 		throw new Error("resume は agent・fork と併用できません。");
 	}
-	if (!step.resume && !step.agent) {
+	if (!isNonEmptyString(step.resume) && !isNonEmptyString(step.agent)) {
 		throw new Error(`agent がありません: ${step.id}`);
 	}
 }
@@ -142,7 +146,7 @@ function validateReferences(
 function ancestors(step: WorkflowStep, steps: Map<string, WorkflowStep>) {
 	const pending = [...step.depends_on];
 	const found = new Set<string>();
-	while (pending.length) {
+	while (pending.length > 0) {
 		const id = pending.pop()!;
 		if (found.has(id)) {
 			continue;

@@ -1,4 +1,8 @@
 // Provider CLI は Host の固定 argv と最小環境で実行し、失敗の標準出力を例外へ含めない。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import { spawn, execFile } from "node:child_process";
 import { realpath, mkdtemp, rm } from "node:fs/promises";
 import { delimiter, join, relative, isAbsolute } from "node:path";
@@ -56,7 +60,7 @@ export const runProviderProcess: ProviderProcess = async (
 ) => {
 	signal.throwIfAborted();
 	const executable = await providerExecutable(name, workspace);
-	if (!executable) {
+	if (!isNonEmptyString(executable)) {
 		throw new Error(`${name} が導入されていません。`);
 	}
 	const env = Object.fromEntries(
@@ -122,7 +126,11 @@ export const runProviderProcess: ProviderProcess = async (
 };
 /** Provider のヘルパーも終了してから一時領域を削除する。 */
 function stopProvider(child: ReturnType<typeof spawn>) {
-	if (process.platform !== "win32" || !process.env.SystemRoot || !child.pid) {
+	if (
+		process.platform !== "win32" ||
+		!isNonEmptyString(process.env.SystemRoot) ||
+		!isNonZeroNumber(child.pid)
+	) {
 		child.kill();
 		return;
 	}

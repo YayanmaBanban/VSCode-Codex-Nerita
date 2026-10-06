@@ -1,4 +1,5 @@
 // 認証の秘密値を Host 内に留め、モデル選択と公開状態をまとめる。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type {
 	AgentSession,
@@ -59,11 +60,14 @@ export class PiAccount {
 	/** カタログの更新後は利用可能なモデルへ復帰し、選択不能な履歴モデルを残さない。 */
 	async refreshCatalog(signal: AbortSignal): Promise<void> {
 		const provider = this.session.model?.provider;
-		if (provider && this.catalog.snapshot(provider) !== undefined) {
+		if (
+			isNonEmptyString(provider) &&
+			this.catalog.snapshot(provider) !== undefined
+		) {
 			await this.catalog.refresh(provider, signal);
 		}
 		signal.throwIfAborted();
-		if (provider) {
+		if (isNonEmptyString(provider)) {
 			await this.reconcileModel(signal);
 		}
 		this.restoreReasoning(signal);
@@ -74,7 +78,7 @@ export class PiAccount {
 	private restoreReasoning(signal: AbortSignal): void {
 		const saved = this.initialSelection;
 		this.initialSelection = undefined;
-		if (!saved?.reasoning) {
+		if (!isNonEmptyString(saved?.reasoning)) {
 			return;
 		}
 		const options = this.controls.reasoningOptions;
@@ -92,7 +96,7 @@ export class PiAccount {
 		].find((candidate) =>
 			options.some((option) => option.value === candidate),
 		);
-		if (value) {
+		if (isNonEmptyString(value)) {
 			this.controls.selectReasoning(value, signal);
 		}
 	}
@@ -228,7 +232,7 @@ export class PiAccount {
 		];
 		this.catalog.invalidate();
 		if (type === "select" || type === "delete") {
-			if (!this.credentials || !accountId) {
+			if (!this.credentials || !isNonEmptyString(accountId)) {
 				throw new Error("認証アカウントが指定されていません。");
 			}
 			if (type === "select") {
@@ -268,7 +272,9 @@ export class PiAccount {
 				provider,
 				type,
 				interaction,
-				deviceId ? { getDeviceId: () => deviceId } : undefined,
+				isNonEmptyString(deviceId)
+					? { getDeviceId: () => deviceId }
+					: undefined,
 			);
 		if (!this.credentials) {
 			await login();
@@ -437,7 +443,7 @@ function authStatusLabel(
 	provider: string,
 	configured: boolean | undefined,
 ) {
-	if (configured) {
+	if (configured === true) {
 		if (models.isUsingOAuth(provider)) {
 			return "OAuth設定済み";
 		}

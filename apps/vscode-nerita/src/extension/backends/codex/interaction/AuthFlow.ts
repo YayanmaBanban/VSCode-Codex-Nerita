@@ -1,4 +1,5 @@
 // ブラウザ認証の通知と応答の順序を吸収し、秘密情報を UI へ渡さない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { CodexClient } from "../CodexClient";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import { isRecord } from "@nerita/shared/validation";
@@ -35,7 +36,7 @@ export class AuthFlow {
 		signal.throwIfAborted();
 		if (method === "apiKey") {
 			const apiKey = service.apiKey();
-			if (!apiKey) {
+			if (!isNonEmptyString(apiKey)) {
 				throw new Error("API key unavailable");
 			}
 			await client.login({ type: "apiKey", apiKey });
@@ -55,7 +56,7 @@ export class AuthFlow {
 		// URL を開く前に失敗・取消が起きても未処理の拒否にしない。
 		void done.catch(() => undefined);
 		this.complete = (id, success) => {
-			if (!loginId) {
+			if (!isNonEmptyString(loginId)) {
 				if (early.size < 16) {
 					early.set(id, success);
 				}
@@ -70,7 +71,7 @@ export class AuthFlow {
 			}
 		};
 		const abort = () => {
-			if (loginId) {
+			if (isNonEmptyString(loginId)) {
 				void client.cancelLogin(loginId).catch(() => undefined);
 			}
 			reject(new Error("Login cancelled"));

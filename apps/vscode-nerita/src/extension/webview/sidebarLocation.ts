@@ -74,6 +74,8 @@ export class SidebarPlacement implements vscode.Disposable {
 				await moveSidebar(location);
 				this.applied = location;
 			}
+			// 移動の待機中に dispose が呼ばれる場合も、通知を送らない。
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 			if (!this.disposed) {
 				this.notify(location);
 			}

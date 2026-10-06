@@ -39,7 +39,7 @@ export function createSessionBridge(scenario: SessionScenario) {
 			bridge.patchState({ sessionsLoading: true, sessionsError: null });
 			const archived = message.archived ?? false;
 			const page =
-				scenario === "paginated" && !message.more
+				scenario === "paginated" && !(message.more === true)
 					? sessions.slice(0, 2)
 					: sessions;
 			timers.add(
@@ -55,7 +55,8 @@ export function createSessionBridge(scenario: SessionScenario) {
 								: page,
 							sessionsArchived: archived,
 							sessionsNextCursor:
-								scenario === "paginated" && !message.more
+								scenario === "paginated" &&
+								!(message.more === true)
 									? "next"
 									: null,
 							sessionsError:

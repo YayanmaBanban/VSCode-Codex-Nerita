@@ -21,7 +21,7 @@ export async function handoffWithDeadline(
 			cancelled,
 		]);
 		signal.throwIfAborted();
-		if (!result.trim()) {
+		if (result.trim() === "") {
 			throw new Error("Empty handoff");
 		}
 		return result;

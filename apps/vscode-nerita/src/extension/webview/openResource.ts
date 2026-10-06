@@ -1,4 +1,5 @@
 // チップと添付一覧から、ローカルのファイル・フォルダを VS Code で表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { isSourceRange, type SourceRange } from "@nerita/shared/symbolLocation";
 
@@ -9,7 +10,11 @@ export async function openResource(
 ): Promise<void> {
 	validateResourceRange(range);
 	let uri = vscode.Uri.parse(value, true);
-	if (uri.scheme !== "file" || uri.query || uri.fragment) {
+	if (
+		uri.scheme !== "file" ||
+		isNonEmptyString(uri.query) ||
+		isNonEmptyString(uri.fragment)
+	) {
 		throw new Error("Unsupported resource URI");
 	}
 	const location = /:(\d+)(?::(\d+))?(?:-(\d+)(?::(\d+))?)?$/.exec(uri.path);
@@ -57,7 +62,7 @@ function resourceSelection(location: RegExpExecArray) {
 	};
 	const selection = {
 		start,
-		end: location[3]
+		end: isNonEmptyString(location[3])
 			? {
 					line: Number(location[3]) - 1,
 					character: Number(location[4] ?? 1) - 1,

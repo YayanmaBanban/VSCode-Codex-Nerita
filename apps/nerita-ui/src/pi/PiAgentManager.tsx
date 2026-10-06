@@ -1,15 +1,11 @@
 // Pi のプロジェクト定義と設定上書きを、共通の一覧・フォームから編集する。
-import { useState } from "react";
-import {
-	agentEditSchema,
-	type AgentEdit,
-} from "@nerita/shared/agentManager/config";
-import { effortError } from "@nerita/shared/agentManager/effort";
+import { agentEditSchema } from "@nerita/shared/agentManager/config";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import { AgentBrowser } from "../agentManager/AgentBrowser";
 import { AgentSettings } from "../agentManager/AgentSettings";
 import { AgentModelControl } from "../agentManager/AgentModelControl";
 import { EnabledField } from "../agentManager/EnabledField";
+import { useAgentEditor } from "../agentManager/useAgentEditor";
 import type { AgentManagerProps } from "../agentManager/managerProps";
 import { PiDefaultsSettings } from "./PiDefaultsSettings";
 
@@ -67,43 +63,17 @@ function PiAgentEditor({
 	agent,
 	...props
 }: AgentManagerProps & { agent?: ManagedAgent | undefined }) {
-	const [edit, setEdit] = useState<AgentEdit>(
-		agent?.edit ?? {
-			definition: { name: "", description: "", prompt: "" },
-		},
+	const { edit, change, models, settings } = useAgentEditor(
+		props,
+		agent,
+		"pi",
+		() =>
+			agent?.edit ?? {
+				definition: { name: "", description: "", prompt: "" },
+			},
 	);
-	const [filename, setFilename] = useState("");
-	const models = props.state.models.pi;
-	const error = effortError(
-		models,
-		edit.model,
-		edit.thinking,
-		agent?.edit.model,
-		agent?.edit.thinking,
-	);
-	const change = (next: AgentEdit) => {
-		setEdit(next);
-		props.onDirty();
-	};
 	return (
-		<AgentSettings
-			agent={agent}
-			edit={edit}
-			models={models}
-			onChange={change}
-			busy={props.busy}
-			error={error}
-			filename={filename}
-			onFilenameChange={
-				agent
-					? undefined
-					: (value) => {
-							setFilename(value);
-							props.onDirty();
-						}
-			}
-			onSubmit={() => submitAgent(props.save, agent, filename, edit)}
-		>
+		<AgentSettings {...settings}>
 			<AgentModelControl
 				models={models}
 				model={edit.model}
@@ -131,19 +101,4 @@ function PiAgentEditor({
 			)}
 		</AgentSettings>
 	);
-}
-
-/** 保存先の識別子は編集状態から分離し、名前変更でも元ファイルを更新する。 */
-function submitAgent(
-	save: AgentManagerProps["save"],
-	agent: ManagedAgent | undefined,
-	filename: string,
-	draft: AgentEdit,
-) {
-	const edit = agentEditSchema.parse(draft);
-	if (agent) {
-		save({ type: "agent", agentId: agent.id, edit });
-	} else {
-		save({ type: "createAgent", backend: "pi", filename, edit });
-	}
 }

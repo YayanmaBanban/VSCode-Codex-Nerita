@@ -1,4 +1,5 @@
 // 下書き内の通常文と貼り付けブロックを、表示先をまたいで保持する。
+import { isNonZeroNumber } from "./valuePredicates";
 import { validReferences, type ComposerReference } from "./composerReferences";
 
 /** 入力順と安定した識別子を持つ下書きの断片。 */
@@ -17,8 +18,8 @@ export function promptContent(draft: string, parts: ComposerPart[]) {
 	let text = "";
 	const normalized = parts.map((part) => {
 		const separator =
-			text &&
-			part.text &&
+			text !== "" &&
+			part.text !== "" &&
 			!text.endsWith("\n") &&
 			!part.text.startsWith("\n")
 				? "\n"
@@ -70,7 +71,7 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 	}
 	if (
 		!Array.isArray(parts) ||
-		!parts.length ||
+		parts.length === 0 ||
 		parts.length > 201 ||
 		parts.length % 2 !== 1
 	) {
@@ -80,16 +81,17 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 	const ids = new Set<string>();
 	return (
 		(parts as unknown[]).every((value, index) => {
-			if (!value || typeof value !== "object") {
+			if (value === null || typeof value !== "object") {
 				return false;
 			}
 			const part = value as Record<string, unknown>;
 			if (
 				typeof part.id !== "string" ||
-				!part.id ||
+				part.id === "" ||
 				part.id.length > 256 ||
 				ids.has(part.id) ||
-				part.type !== (index % 2 ? "pasted" : "text") ||
+				part.type !==
+					(isNonZeroNumber(index % 2) ? "pasted" : "text") ||
 				!validPartReferences(part)
 			) {
 				return false;

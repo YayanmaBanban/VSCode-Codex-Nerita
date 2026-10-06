@@ -1,4 +1,5 @@
 // MCP の既存認証はモデル認証と別に取り込み、秘密ストアの読み戻し後に確定する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { readLegacyAuth } from "./PiAuthMigration";
@@ -39,7 +40,7 @@ export async function prepareMcpAuthMigration(
 				throw new Error("MCP 移行は既に終了しています。");
 			}
 			backend.withLock((current) => {
-				const existing = current
+				const existing = isNonEmptyString(current)
 					? z
 							.record(z.string(), z.unknown())
 							.parse(JSON.parse(current))

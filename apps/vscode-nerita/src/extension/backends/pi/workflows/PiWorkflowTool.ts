@@ -1,4 +1,5 @@
 // ワークスペースの TOML だけを受け付け、検査と実行を同じコンパイル経路へ通す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { readFile, stat, realpath } from "node:fs/promises";
 import { join } from "node:path";
@@ -28,7 +29,7 @@ import { type PiSubagentDefinition } from "../PiSubagentDefinitions";
 const inputSchema = z
 	.object({
 		action: z.enum(["validate", "run"]),
-		file: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*\.toml$/),
+		file: z.string().regex(/^[A-Za-z0-9][\w.-]*\.toml$/),
 		async: z.boolean().default(false),
 	})
 	.strict();
@@ -38,7 +39,7 @@ export function createPiWorkflowRunner(
 	packagePath: string | undefined,
 	...args: Parameters<typeof createPiSubagentTool>
 ) {
-	if (!packagePath) {
+	if (!isNonEmptyString(packagePath)) {
 		return undefined;
 	}
 	const [

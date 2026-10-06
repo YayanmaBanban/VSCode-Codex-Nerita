@@ -1,4 +1,9 @@
 // 階層の移動と Host への遅延読み込みを、候補の編集処理から分離する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { useEffect, useState } from "react";
 import type { Bridge } from "@nerita/shared/bridge";
 import type {
@@ -73,7 +78,12 @@ function workspaceCompletionItems(
 	const filtered = items.filter((item) =>
 		item.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
 	);
-	if (current && data && !data.error && !query.trim()) {
+	if (
+		current &&
+		data &&
+		!isNonEmptyString(data.error) &&
+		query.trim() === ""
+	) {
 		filtered.unshift({
 			id: "insert-directory",
 			label: "このフォルダのパスを挿入",
@@ -98,8 +108,8 @@ function emptyPathMessage(
 		return "読み込み中…";
 	}
 	return (
-		data.error ||
-		(uri || data.entries.length
+		nonEmptyString(data.error) ??
+		(isNonEmptyString(uri) || isNonZeroNumber(data.entries.length)
 			? "候補がありません。"
 			: "開いているワークスペースがありません。")
 	);

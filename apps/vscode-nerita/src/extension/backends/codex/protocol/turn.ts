@@ -1,4 +1,5 @@
 // 会話開始・ターン操作・認証確認で利用する応答フィールドを検証して公開する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { ThreadStartResponse } from "../codex-app-server/v2/ThreadStartResponse";
 import type { Turn } from "../codex-app-server/v2/Turn";
 import type { TurnInterruptResponse } from "../codex-app-server/v2/TurnInterruptResponse";
@@ -21,7 +22,7 @@ export function parseStartedThread(value: unknown): StartedThread {
 		!isRecord(value) ||
 		!isRecord(value.thread) ||
 		typeof value.thread.id !== "string" ||
-		!value.thread.id ||
+		value.thread.id === "" ||
 		typeof value.model !== "string" ||
 		typeof value.cwd !== "string"
 	) {
@@ -76,7 +77,7 @@ export function parseTurn(value: unknown): TurnInfo {
 	if (
 		!isRecord(value) ||
 		typeof value.id !== "string" ||
-		!value.id ||
+		value.id === "" ||
 		(value.status !== "inProgress" &&
 			value.status !== "completed" &&
 			value.status !== "interrupted" &&
@@ -95,14 +96,18 @@ export function parseStartedTurn(value: unknown): { turn: TurnInfo } {
 }
 /** 追加指示が受け付けられたターンの識別子を検証する。 */
 export function parseSteeredTurn(value: unknown): { turnId: string } {
-	if (!isRecord(value) || typeof value.turnId !== "string" || !value.turnId) {
+	if (
+		!isRecord(value) ||
+		typeof value.turnId !== "string" ||
+		value.turnId === ""
+	) {
 		throw new Error("Invalid steer response");
 	}
 	return { turnId: value.turnId };
 }
 /** `interrupt` の成功は空オブジェクトとして受け取る。 */
 export function parseInterrupt(value: unknown): TurnInterruptResponse {
-	if (!isRecord(value) || Object.keys(value).length) {
+	if (!isRecord(value) || isNonZeroNumber(Object.keys(value).length)) {
 		throw new Error("Invalid interrupt response");
 	}
 	return {};

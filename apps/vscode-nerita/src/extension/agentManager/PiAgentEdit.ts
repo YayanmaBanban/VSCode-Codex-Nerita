@@ -1,4 +1,5 @@
 // プロジェクトの Markdown 定義のメタデータと本文だけを編集する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { parseDocument } from "yaml";
 import type { AgentEdit } from "@nerita/shared/agentManager/config";
 
@@ -12,10 +13,10 @@ export function editPiAgent(text: string | undefined, edit: AgentEdit): string {
 	document.set("name", edit.definition.name);
 	document.set("description", edit.definition.description);
 	if (text === undefined) {
-		if (edit.model) {
+		if (isNonEmptyString(edit.model)) {
 			document.set("model", edit.model);
 		}
-		if (edit.thinking) {
+		if (edit.thinking !== undefined) {
 			document.set("thinking", edit.thinking);
 		}
 	}
@@ -33,7 +34,7 @@ function piDocument(text: string | undefined) {
 		throw new Error("Agent 定義の frontmatter が不正です。");
 	}
 	const document = parseDocument(match?.[1] ?? "{}");
-	if (document.errors.length) {
+	if (document.errors.length > 0) {
 		throw new Error("Agent 定義の YAML が不正です。");
 	}
 	return document;

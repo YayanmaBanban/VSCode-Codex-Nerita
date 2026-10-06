@@ -1,4 +1,8 @@
 // BorderBeam
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import { motion, type Transition, type MotionStyle } from "motion/react";
 
@@ -84,7 +88,7 @@ export const BorderBeam = (props: BorderBeamProps) => {
 		speedMultiplier = 1,
 	} = props;
 	// 速度倍率から一周の時間を求める。
-	const actualDuration = speedMultiplier
+	const actualDuration = isNonZeroNumber(speedMultiplier)
 		? duration / speedMultiplier
 		: duration;
 
@@ -161,8 +165,10 @@ function beamAppearance({
 		"--color-from": colorFrom,
 		"--color-to": colorTo,
 		opacity,
-		...(glowEffect ? { boxShadow: glowEffect } : {}),
-		...(beamBorderRadius ? { borderRadius: `${beamBorderRadius}px` } : {}),
+		...(isNonEmptyString(glowEffect) ? { boxShadow: glowEffect } : {}),
+		...(isNonZeroNumber(beamBorderRadius)
+			? { borderRadius: `${beamBorderRadius}px` }
+			: {}),
 		...style,
 	};
 

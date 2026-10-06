@@ -1,4 +1,5 @@
 // 閲覧スタックと要求 ID で古い要求への応答を除外し、親のチャット状態を保つ。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import {
 	type EffectCallback,
@@ -30,17 +31,18 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 		setView(null);
 	}, [sessionId]);
 	useEffect(
-		createAgentViewPolling(
-			setView,
-			setError,
-			agent,
-			sessionId,
-			setLoading,
-			opener,
-			bridge,
-			reload,
-		),
-		[bridge, sessionId, agent?.threadId],
+		() =>
+			createAgentViewPolling(
+				setView,
+				setError,
+				agent,
+				sessionId,
+				setLoading,
+				opener,
+				bridge,
+				reload,
+			)(),
+		[bridge, sessionId, agent],
 	);
 	return {
 		agent,
@@ -72,7 +74,7 @@ function createAgentViewPolling(
 	return () => {
 		setView(null);
 		setError(null);
-		if (!agent || !sessionId) {
+		if (!agent || !isNonEmptyString(sessionId)) {
 			setLoading(false);
 			opener.current?.focus({ preventScroll: true });
 			opener.current = null;
@@ -84,7 +86,7 @@ function createAgentViewPolling(
 		let disposed = false;
 		/** 取得中の追加要求を防ぎ、要求 ID を付けて会話を読み込む。 */
 		const read = () => {
-			if (requestId || disposed) {
+			if (isNonEmptyString(requestId) || disposed) {
 				return;
 			}
 			clearTimeout(timer);
@@ -107,7 +109,7 @@ function createAgentViewPolling(
 		};
 		const unsubscribe = bridge.subscribe((message) => {
 			if (
-				!requestId ||
+				!isNonEmptyString(requestId) ||
 				!("requestId" in message) ||
 				message.requestId !== requestId
 			) {

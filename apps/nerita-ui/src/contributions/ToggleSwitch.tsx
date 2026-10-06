@@ -32,7 +32,7 @@ export function ToggleSwitch({
 					)}
 					aria-label={control.label}
 					aria-checked={control.checked}
-					disabled={disabled || !!control.disabled}
+					disabled={disabled || !!(control.disabled === true)}
 					onClick={() =>
 						onChange(
 							control.checked

@@ -14,6 +14,7 @@ import type { BindingStore } from "./BindingStore";
 import { providerExecutable } from "./ProviderProcess";
 import { prepareMcpAuthMigration } from "./McpAuthMigration";
 import { preparePiAuthMigration } from "./PiAuthMigration";
+import { selectLocalWorkspace } from "../webview/selectLocalWorkspace";
 import { webviewHtml } from "../webview/webviewHtml";
 
 /** フォルダーを開き直した後やパネル破棄後の保存は拒否する。 */
@@ -134,15 +135,11 @@ export function registerCredentialPanel(context: vscode.ExtensionContext) {
 
 /** パネルの寿命と操作中の状態を共有する。 */
 async function openCredentialPanel(context: vscode.ExtensionContext) {
-	const folders = vscode.workspace.workspaceFolders ?? [];
-	const folder =
-		folders.length === 1
-			? folders[0]
-			: await vscode.window.showWorkspaceFolderPick();
-	if (!folder || folder.uri.scheme !== "file") {
+	const selected = await selectLocalWorkspace();
+	if (!selected) {
 		return;
 	}
-	const root = await realpath(folder.uri.fsPath);
+	const { root } = selected;
 	const service = credentialService(context);
 	const bindings = service.bindings(root);
 

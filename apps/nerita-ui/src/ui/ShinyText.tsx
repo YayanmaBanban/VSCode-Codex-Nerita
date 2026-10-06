@@ -46,7 +46,7 @@ export const ShinyText: React.FC<ShinyTextProps> = (props) => {
 	const animationDuration = speed * 1000;
 	const delayDuration = delay * 1000;
 
-	useAnimationFrame(
+	useAnimationFrame((time, delta) =>
 		createShineFrame(
 			disabled,
 			isPaused,
@@ -57,7 +57,7 @@ export const ShinyText: React.FC<ShinyTextProps> = (props) => {
 			delayDuration,
 			progress,
 			directionRef,
-		),
+		)(time, delta),
 	);
 
 	useEffect(() => {

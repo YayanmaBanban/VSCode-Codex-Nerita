@@ -1,4 +1,5 @@
 // Markdown の構造を保ちながら、検証済みの参照位置だけをチップへ置換する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	pathText,
 	validReferences,
@@ -40,14 +41,14 @@ export function messageReferences(
 					node.properties![key] = restore(value);
 				}
 			}
-			if (node.type !== "text" && node.value) {
+			if (node.type !== "text" && isNonEmptyString(node.value)) {
 				node.value = restore(node.value);
 			}
 			if (!node.children) {
 				return;
 			}
 			node.children = node.children.flatMap((child): HtmlNode[] => {
-				if (child.type !== "text" || !child.value) {
+				if (child.type !== "text" || !isNonEmptyString(child.value)) {
 					visit(child);
 					return [child];
 				}
@@ -65,7 +66,7 @@ export function messageReferences(
 		};
 		visit(tree);
 	};
-	if (!references.length || !validReferences(text, references)) {
+	if (references.length === 0 || !validReferences(text, references)) {
 		return { text, targets, plugin };
 	}
 	let cursor = 0;

@@ -1,4 +1,5 @@
 // Pi の非同期 `CredentialStore` でアカウント別に保存し、Host 全体で更新処理を直列化する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -42,10 +43,10 @@ const credentialSchema = z.discriminatedUnion("type", [
 			refresh: z.string(),
 			expires: z.number(),
 		})
-		.passthrough(),
+		.loose(),
 ]);
 
-	/** メタデータには秘密値を入れず、複数の Runtime からの認証更新も同じ待機列を通す。 */
+/** メタデータには秘密値を入れず、複数の Runtime からの認証更新も同じ待機列を通す。 */
 export class PiCredentialVault {
 	private accounts: PiCredentialAccount[];
 	private active: Record<string, string>;
@@ -69,7 +70,9 @@ export class PiCredentialVault {
 	list(provider?: string) {
 		return structuredClone(
 			this.accounts.filter(
-				(account) => !provider || account.provider === provider,
+				(account) =>
+					!isNonEmptyString(provider) ||
+					account.provider === provider,
 			),
 		);
 	}

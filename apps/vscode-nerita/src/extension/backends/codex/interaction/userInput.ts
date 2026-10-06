@@ -46,8 +46,8 @@ async function questionAnswer(
 	let answer: string | undefined;
 	if (
 		Array.isArray(question.options) &&
-		question.options.length &&
-		!question.isSecret
+		question.options.length > 0 &&
+		!(Boolean(question.isSecret) === true)
 	) {
 		const labels = question.options.map((option: unknown) => {
 			if (!isRecord(option)) {
@@ -55,11 +55,11 @@ async function questionAnswer(
 			}
 			return text(option.label);
 		});
-		if (question.isOther) {
+		if (Boolean(question.isOther) === true) {
 			labels.push("自由に入力する");
 		}
 		answer = await ui.choose(title, labels, signal);
-		if (question.isOther && answer === "自由に入力する") {
+		if (Boolean(question.isOther) === true && answer === "自由に入力する") {
 			answer = await ui.input(title, false, signal);
 		}
 	} else {

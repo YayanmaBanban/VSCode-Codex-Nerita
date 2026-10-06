@@ -27,7 +27,7 @@ export function ReadTool({ tool }: { tool: ToolSummary }) {
 						`上限: ${input.limit}${tool.kind === "list" ? "件" : "行"}`}
 				</p>
 			)}
-			{texts.length ? (
+			{texts.length > 0 ? (
 				<Value value={texts.join("\n\n")} />
 			) : (
 				<p className={cn(toolLabelClass, "text-muted")}>

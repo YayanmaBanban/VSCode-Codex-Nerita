@@ -160,9 +160,9 @@ async function verifySandboxSetupNotifications(t: TestContext) {
 		const previous = f.requests.filter(
 			(request) => request.method === "windowsSandbox/setupStart",
 		).length;
-		let settled = false;
+		const completion = { settled: false };
 		const running = command().finally(() => {
-			settled = true;
+			completion.settled = true;
 		});
 		try {
 			await until(
@@ -177,7 +177,7 @@ async function verifySandboxSetupNotifications(t: TestContext) {
 			// 開始応答だけで終了する回帰を、完了通知のない観測期間で検出する。
 			await setTimeout(100);
 			assert.equal(
-				settled,
+				completion.settled,
 				false,
 				"開始受付だけで完了表示してはいけない",
 			);
@@ -192,7 +192,7 @@ async function verifySandboxSetupNotifications(t: TestContext) {
 			}
 			await running;
 		} finally {
-			if (!settled) {
+			if (!completion.settled) {
 				subscriptions[0]!.dispose();
 				await running;
 			}
@@ -231,7 +231,7 @@ async function verifyCodexConfigAndRun(t: TestContext) {
 	const start = f.requests.find((request) => request.method === "turn/start");
 	assert.ok(start);
 	assert.equal(start.params?.model, "model-b");
-	assert.equal(start.params?.effort, "high");
+	assert.equal(start.params.effort, "high");
 	const threadId = controller.snapshot().sessionId;
 	const turnId = "turn-1";
 	f.notify("turn/started", {
@@ -261,7 +261,7 @@ async function verifyCodexConfigAndRun(t: TestContext) {
 	);
 	assert.equal(steer.length, 1);
 	assert.equal(steer[0]!.params?.expectedTurnId, turnId);
-	assert.ok(JSON.stringify(steer[0]!.params?.input).includes("追加指示"));
+	assert.ok(JSON.stringify(steer[0]!.params.input).includes("追加指示"));
 	await action(controller, "prompt/cancel");
 	await until(() =>
 		f.requests.some((request) => request.method === "turn/interrupt"),
@@ -367,7 +367,7 @@ async function verifyCodexReconnection(
 	);
 	assert.equal(starts.length, 2);
 	assert.equal(starts[1]!.params?.model, "model-b");
-	assert.equal(starts[1]!.params?.effort, "high");
+	assert.equal(starts[1]!.params.effort, "high");
 	f.notify("turn/plan/updated", {
 		threadId: restored.snapshot().sessionId,
 		turnId: "turn-2",

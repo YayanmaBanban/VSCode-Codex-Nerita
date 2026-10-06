@@ -1,4 +1,5 @@
 // エディターの検査と実際のツール呼び出しが同じ判定を使用する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import type { GuardrailsConfig } from "@nerita/shared/guardrails/config";
 import type {
 	GuardProbe,
@@ -24,7 +25,7 @@ export async function evaluateGuardrails(
 		uncertainties: [],
 	};
 	try {
-		const cwd = await canonicalPath(probe.cwd || ".", root);
+		const cwd = await canonicalPath(nonEmptyString(probe.cwd) ?? ".", root);
 		if (!roots.some((workspace) => containsPath(workspace, cwd))) {
 			addFinding(
 				result,
@@ -63,7 +64,7 @@ export async function evaluateGuardrails(
 				root,
 				roots,
 				cwd,
-				probe.input || ".",
+				nonEmptyString(probe.input) ?? ".",
 				operation,
 				result,
 			);

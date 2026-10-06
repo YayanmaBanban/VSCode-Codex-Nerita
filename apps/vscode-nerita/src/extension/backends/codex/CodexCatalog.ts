@@ -1,4 +1,8 @@
 // Codex の履歴一覧を作業フォルダー単位で取得し、ページと接続世代を管理する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { isRecord } from "@nerita/shared/validation";
 import { sameCwd } from "../../workspace";
 import { CodexRun } from "./CodexRun";
@@ -51,7 +55,11 @@ export abstract class CodexCatalog extends CodexRun {
 	): Promise<void> {
 		const client = this.client;
 		const cwd = this.state.cwd;
-		if (!client || !cwd || this.state.connection !== "ready") {
+		if (
+			!client ||
+			!isNonEmptyString(cwd) ||
+			this.state.connection !== "ready"
+		) {
 			return;
 		}
 		if (this.cannotLoadMore(more, archived)) {
@@ -238,7 +246,9 @@ export abstract class CodexCatalog extends CodexRun {
 				});
 				if (id === this.state.sessionId) {
 					this.patch({
-						sessionTitle: message.params.threadName.trim() || null,
+						sessionTitle:
+							nonEmptyString(message.params.threadName.trim()) ??
+							null,
 					});
 				}
 			}

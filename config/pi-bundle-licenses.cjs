@@ -50,7 +50,7 @@ async function copyBundleLicenses(
 		const output = path.join(destination, "licenses", name);
 		await fs.mkdir(output, { recursive: true });
 		const files = (await fs.readdir(directory)).filter((file) =>
-			/^(licen[sc]e|notice|copying)([.-]|$)/i.test(file),
+			/^(?:licen[sc]e|notice|copying)(?:[.-]|$)/i.test(file),
 		);
 		for (const file of files) {
 			await fs.cp(path.join(directory, file), path.join(output, file), {

@@ -7,7 +7,7 @@ const characters = new Intl.Segmenter("ja", { granularity: "grapheme" });
 /** 絵文字や結合文字も1文字ずつ表示する。利用側はメッセージ ID ごとにコンポーネントをマウントする。 */
 export function useStreamingText(text: string, streaming: boolean): string {
 	const reducedMotion = useReducedMotion();
-	const animate = streaming && !reducedMotion;
+	const animate = streaming && !(reducedMotion === true);
 	const [displayed, setDisplayed] = useState(animate ? "" : text);
 	const received = useRef(text);
 	useEffect(() => {

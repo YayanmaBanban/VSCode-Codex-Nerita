@@ -12,7 +12,7 @@ function addTerm(terms, value) {
 	}
 
 	for (const match of value.matchAll(
-		/[A-Za-z][A-Za-z0-9]*(?:[._+#:@-][A-Za-z0-9]+)*/g,
+		/[A-Z][A-Z0-9]*(?:[._+#:@-][A-Z0-9]+)*/gi,
 	)) {
 		const term = match[0].toLowerCase();
 		terms.add(term);
@@ -50,16 +50,16 @@ export function extractReferencedPackageTerms(source) {
 		}
 	};
 
-	addMatches(/npm:((?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*)/gi);
+	addMatches(/npm:((?:@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*)/gi);
 	addMatches(
-		/node_modules[\\/]((?:@[a-z0-9][a-z0-9._-]*[\\/])?[a-z0-9][a-z0-9._-]*)/gi,
+		/node_modules[\\/]((?:@[a-z0-9][\w.-]*[\\/])?[a-z0-9][\w.-]*)/gi,
 	);
 	addMatches(
 		/(?:manifest|metadata)\.name\s*(?:===|!==|==|!=)\s*["']([^"']+)["']/g,
 	);
-	addMatches(/(@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*)/gi);
+	addMatches(/(@[a-z0-9][\w.-]*\/[a-z0-9][\w.-]*)/gi);
 	addMatches(
-		/`?\b([a-z0-9][a-z0-9._-]*(?:-[a-z0-9._-]+)+)\b`?\s+`?v?\d+\.\d+\.\d+\b`?/gi,
+		/`?\b([a-z0-9][\w.]*-[\w\-.]+)\b`?\s+`?v?\d+\.\d+\.\d+\b`?/gi,
 	);
 
 	return terms;
@@ -81,7 +81,7 @@ export function parseCspellWordList(source) {
 			continue;
 		}
 
-		if (line.length >= 2 && /^[A-Za-z0-9][A-Za-z0-9._+#:@-]*$/.test(line)) {
+		if (line.length >= 2 && /^[A-Z0-9][\w.+#:@-]*$/i.test(line)) {
 			terms.add(line.toLowerCase());
 		}
 	}
@@ -114,13 +114,13 @@ export function extractProjectTerms(packageJson) {
 		}
 
 		for (const match of script.matchAll(
-			/(?:^|&&|\|\||;)\s*([A-Za-z][A-Za-z0-9._-]*)/g,
+			/(?:^|&&|\|\||;)\s*([A-Z][\w.-]*)/gi,
 		)) {
 			addTerm(terms, match[1]);
 		}
 
 		for (const match of script.matchAll(
-			/[A-Za-z0-9_.-]+(?:[\\/][A-Za-z0-9_.-]+)+/g,
+			/[\w.-]+(?:[\\/][\w.-]+)+/g,
 		)) {
 			for (const segment of match[0].split(/[\\/]/)) {
 				addTerm(terms, segment);

@@ -99,7 +99,7 @@ export function completionItems(
 			description: skill.description,
 			text: `@${skill.name} `,
 		}));
-	} else if (!category) {
+	} else if (category === "") {
 		items = contextCategories.map(({ label, description, keywords }) => ({
 			id: label,
 			label,

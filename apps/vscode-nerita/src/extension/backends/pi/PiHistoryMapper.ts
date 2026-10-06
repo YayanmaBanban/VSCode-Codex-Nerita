@@ -1,4 +1,8 @@
 // 保存された選択ブランチを再表示し、未完了ツールや承認を再実行しない。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -16,7 +20,10 @@ export function restorePiHistory(
 	const state = { ...initialState(), cwd, runId: "history:initial" };
 	let title: string | undefined;
 	for (const entry of entries) {
-		if (entry.type === "session_info" && entry.name?.trim()) {
+		if (
+			entry.type === "session_info" &&
+			isNonEmptyString(entry.name?.trim())
+		) {
 			title = entry.name.trim();
 		}
 		if (entry.type !== "message") {
@@ -48,8 +55,10 @@ function historyTitle(
 	state: ChatState,
 ): string | null {
 	return (
-		title ||
-		state.messages.find((m) => m.role === "user")?.text.slice(0, 120) ||
+		nonEmptyString(title) ??
+		nonEmptyString(
+			state.messages.find((m) => m.role === "user")?.text.slice(0, 120),
+		) ??
 		"Pi"
 	);
 }
@@ -97,7 +106,7 @@ function restoreChatMessage(
 					.filter((part) => part.type === "text")
 					.map((part) => part.text)
 					.join("");
-	if (text) {
+	if (text !== "") {
 		state.messages.push({
 			id: entry.id,
 			role: message.role,

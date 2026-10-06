@@ -26,7 +26,7 @@ export async function readDroppedAttachments(
 ): Promise<DroppedAttachment[]> {
 	if (
 		Array.from(transfer.items).some(
-			(item) => item.webkitGetAsEntry?.()?.isDirectory,
+			(item) => item.webkitGetAsEntry()?.isDirectory === true,
 		)
 	) {
 		throw new Error("フォルダーは添付できません。");
@@ -39,7 +39,7 @@ export async function readDroppedAttachments(
 		.filter(isLocalFileUri);
 	// VS Code のエクスプローラーが渡すローカル絶対パスも参照として扱う。
 	const codeFiles = transfer.getData("CodeFiles");
-	if (!uris.length && codeFiles) {
+	if (uris.length === 0 && codeFiles !== "") {
 		const paths: unknown = JSON.parse(codeFiles);
 		if (Array.isArray(paths)) {
 			uris = paths
@@ -67,10 +67,11 @@ export async function readDroppedAttachments(
 		);
 	}
 
-	const dropped = uris.length
-		? uris.map((uri) => ({ uri }))
-		: await Promise.all(files.map(readFile));
-	if (!dropped.length) {
+	const dropped =
+		uris.length > 0
+			? uris.map((uri) => ({ uri }))
+			: await Promise.all(files.map(readFile));
+	if (dropped.length === 0) {
 		throw new Error("ローカルファイルをドロップしてください。");
 	}
 

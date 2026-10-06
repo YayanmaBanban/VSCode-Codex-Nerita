@@ -22,7 +22,7 @@ export function AgentBrowser({
 	children: ReactNode;
 }) {
 	const items = [
-		...(defaults
+		...(defaults === true
 			? [
 					{
 						id: "defaults",
@@ -73,7 +73,7 @@ export function AgentBrowser({
 						</SettingsTooltip>
 					))}
 				</nav>
-				{!items.length && (
+				{items.length === 0 && (
 					<p className="text-sm text-muted">
 						Agent 定義がありません。
 					</p>

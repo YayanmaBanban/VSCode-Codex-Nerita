@@ -1,4 +1,5 @@
 // モデル変更・追加指示を SDK 本体の次の HTTP 要求へ反映し、保存した選択を新しい接続で使う。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { type TestContext, test } from "node:test";
 
@@ -93,7 +94,10 @@ async function verifyPiQuotaLifetime(t: TestContext) {
 			.snapshot()
 			.configOptions.find((option) => option.id === "provider")
 			?.options.find((option) => option.value === "openai")?.value;
-		assert.ok(model, "SDK 本体の OpenAI モデル一覧を使う");
+		assert.ok(
+			isNonEmptyString(model),
+			"SDK 本体の OpenAI モデル一覧を使う",
+		);
 		const select = (value: string, requestId: string) =>
 			controller.receive({
 				type: "config/set",
@@ -172,7 +176,7 @@ function createQuotaRequest(
 		}
 		assert.equal(url, "https://chatgpt.com/backend-api/wham/usage");
 		assert.equal(init?.redirect, "error");
-		assert.ok(init?.signal);
+		assert.ok(init.signal);
 		return new Promise<Response>((reply) =>
 			pending.push({ signal: init.signal!, reply }),
 		);

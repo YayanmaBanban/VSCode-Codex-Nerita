@@ -1,4 +1,5 @@
 // HTTP MCP サーバーの結果と副作用を、承認・共有状態・保存・復元の各段階で検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -180,7 +181,9 @@ void test("コード実行内の MCP 応答喪失を、子の保存・復元・�
 	await permission(f.controller, "accept");
 	await permission(f.controller, "accept");
 	const state = await finished(f.controller);
-	const child = state.tools.find((tool) => tool.parentToolCallId);
+	const child = state.tools.find((tool) =>
+		isNonEmptyString(tool.parentToolCallId),
+	);
 	assert.equal(child?.status, "unknown", JSON.stringify(state.tools));
 	await f.controller.receive({
 		type: "session/list",

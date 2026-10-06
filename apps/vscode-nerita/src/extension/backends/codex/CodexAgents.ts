@@ -1,4 +1,5 @@
 // 親の実行セッションを変更せず、子スレッドの通知・メタデータ・閲覧を提供する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { UiMessage } from "@nerita/shared/messages";
 import { CodexRequests } from "./CodexRequests";
 import { AgentRegistry, agentMetadata } from "./agents/AgentRegistry";
@@ -45,7 +46,7 @@ export abstract class CodexAgents extends CodexRequests {
 		const client = this.client;
 		const sessionId = this.state.sessionId;
 		const epoch = this.epoch;
-		if (!client || !sessionId) {
+		if (!client || !isNonEmptyString(sessionId)) {
 			return;
 		}
 		for (const agent of this.state.agents) {
@@ -73,7 +74,7 @@ export abstract class CodexAgents extends CodexRequests {
 								...agentMetadata(thread),
 							};
 							const status = threadAgentStatus(thread.status);
-							return current === agent && status
+							return current === agent && status !== undefined
 								? withThreadStatus(enriched, status)
 								: enriched;
 						}),
@@ -102,7 +103,7 @@ export abstract class CodexAgents extends CodexRequests {
 		);
 		if (
 			!client ||
-			!cwd ||
+			!isNonEmptyString(cwd) ||
 			!known ||
 			sessionId !== message.sessionId ||
 			this.state.connection !== "ready"
@@ -175,7 +176,7 @@ export abstract class CodexAgents extends CodexRequests {
 
 		agents.set(
 			known.threadId,
-			latest === known && status
+			latest === known && status !== undefined
 				? withThreadStatus(enriched, status)
 				: enriched,
 		);
@@ -228,6 +229,7 @@ function matchesAgentThread(
 ): boolean {
 	return (
 		thread.id === threadId &&
-		(!thread.parentThreadId || thread.parentThreadId === parentThreadId)
+		(!isNonEmptyString(thread.parentThreadId) ||
+			thread.parentThreadId === parentThreadId)
 	);
 }

@@ -1,4 +1,8 @@
 // セッションタイトル・表示先・接続操作と、認証やエラーの案内を表示する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 
 import type { BackendId } from "@nerita/shared/backend";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -55,10 +59,11 @@ export function ConnectionHeader(props: ConnectionHeaderProps) {
 				<ConnectionButton state={state} send={send} />
 				<ChatHeaderActions {...props} viewLabel={viewLabel} />
 			</header>
-			{(requestError ||
-				(state.connection !== "auth-required" && state.error)) && (
+			{(isNonEmptyString(requestError) ||
+				(state.connection !== "auth-required" &&
+					isNonEmptyString(state.error))) && (
 				<div role="alert" className={cn("error-banner", noticeClass)}>
-					{requestError || state.error}
+					{nonEmptyString(requestError) ?? state.error}
 				</div>
 			)}
 			<AnimatePresence>
@@ -70,7 +75,7 @@ export function ConnectionHeader(props: ConnectionHeaderProps) {
 						send={send}
 					/>
 				)}
-				{props.backend === "pi" && props.untrusted && (
+				{props.backend === "pi" && props.untrusted === true && (
 					<ActionNotice
 						key="trust"
 						label="ワークスペースの信頼"
@@ -179,10 +184,12 @@ function ChatHeaderActions(props: ChatHeaderActionsProps) {
 /** 現在のセッションに表示するタイトルを選ぶ。 */
 function sessionHeaderTitle(state: ChatState) {
 	return (
-		state.sessionTitle?.trim() ||
-		state.sessions
-			.find((session) => session.sessionId === state.sessionId)
-			?.title?.trim() ||
+		nonEmptyString(state.sessionTitle?.trim()) ??
+		nonEmptyString(
+			state.sessions
+				.find((session) => session.sessionId === state.sessionId)
+				?.title?.trim(),
+		) ??
 		"新規チャット"
 	);
 }

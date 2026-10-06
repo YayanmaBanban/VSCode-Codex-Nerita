@@ -1,4 +1,5 @@
 // ワークフローの子会話を保持し、継続と完了時点の複製を通常のガードへ接続する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	Workflow,
 	WorkflowStep,
@@ -60,14 +61,14 @@ export class PiWorkflowChildren {
 	) {
 		for (const step of workflow.steps) {
 			const source = this.plans.get(step.resume ?? step.fork ?? "");
-			const definition = step.resume
+			const definition = isNonEmptyString(step.resume)
 				? source!.definition
 				: selectAgent(definitions, step.agent!, "both");
-			const model = step.resume
+			const model = isNonEmptyString(step.resume)
 				? source!.model
 				: agentModel(definition, parentModel);
 			if (
-				step.fork &&
+				isNonEmptyString(step.fork) &&
 				(model.provider !== source!.model.provider ||
 					model.model !== source!.model.model)
 			) {
@@ -110,7 +111,7 @@ export class PiWorkflowChildren {
 				parentId: this.rootId,
 				status: "queued",
 				background: false,
-				context: plan.step.fork ? "fork" : "fresh",
+				context: isNonEmptyString(plan.step.fork) ? "fork" : "fresh",
 			},
 			signal,
 			async (jobSignal) => {
@@ -160,7 +161,7 @@ export class PiWorkflowChildren {
 			throw new Error("依存先が完了していません。");
 		}
 		const expected = step.task.replace(
-			/\{\{\s*([A-Za-z][A-Za-z0-9_-]{0,63})\.output\s*\}\}/g,
+			/\{\{\s*([A-Za-z][\w-]{0,63})\.output\s*\}\}/g,
 			(_match, id: string) => this.completed.get(id)!.result.output,
 		);
 		if (
@@ -179,7 +180,9 @@ export class PiWorkflowChildren {
 
 	/** 未指定の参照を別のステップへ解決しない。 */
 	private referenceId(id: string | undefined) {
-		return id ? this.completed.get(id)?.result.runId : undefined;
+		return isNonEmptyString(id)
+			? this.completed.get(id)?.result.runId
+			: undefined;
 	}
 
 	/** 再開にも起動承認を要求し、既存の子へ重ねて prompt を送らない。 */
@@ -190,7 +193,10 @@ export class PiWorkflowChildren {
 		signal: AbortSignal,
 	) {
 		const source = this.source(plan.step);
-		if (plan.step.resume && source!.retained.latest !== plan.step.resume) {
+		if (
+			isNonEmptyString(plan.step.resume) &&
+			source!.retained.latest !== plan.step.resume
+		) {
 			throw new Error("古い完了時点からは再開できません。");
 		}
 		const permit = await approveToolCall(
@@ -204,7 +210,7 @@ export class PiWorkflowChildren {
 			signal,
 		);
 		consumeApprovedToolCall(permit);
-		if (plan.step.resume) {
+		if (isNonEmptyString(plan.step.resume)) {
 			const current = source!.retained;
 			current.latest = "";
 			Object.assign(current.approval, {

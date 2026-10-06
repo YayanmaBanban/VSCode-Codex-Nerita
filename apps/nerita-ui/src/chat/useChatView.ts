@@ -36,15 +36,16 @@ export function useChatView(bridge: Bridge) {
 	const [restore, setRestore] = useState<{ scrollTop: number } | null>(null);
 	const conversation = useRef<HTMLElement>(null);
 	useEffect(
-		createViewStateEffect(
-			bridge,
-			setBackend,
-			setUntrusted,
-			setSidebarLocation,
-			updateDraft,
-			setEditor,
-			setRestore,
-		),
+		() =>
+			createViewStateEffect(
+				bridge,
+				setBackend,
+				setUntrusted,
+				setSidebarLocation,
+				updateDraft,
+				setEditor,
+				setRestore,
+			)(),
 		[bridge],
 	);
 	useEffect(() => {
@@ -83,11 +84,8 @@ export function useChatView(bridge: Bridge) {
 		});
 	};
 	/** 配置変更にも移動直前のスクロール位置を引き継ぐ。 */
-	const selectSidebar = createSidebarSelector(
-		sidebarLocation,
-		bridge,
-		conversation,
-	);
+	const selectSidebar = (location: SidebarLocation) =>
+		createSidebarSelector(sidebarLocation, bridge, conversation)(location);
 	return {
 		untrusted,
 		backend,

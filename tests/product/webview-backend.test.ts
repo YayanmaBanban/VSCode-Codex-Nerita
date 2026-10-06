@@ -1,4 +1,5 @@
 // Webview の公開通信経路で、設定保存待ちの送信拒否と下書き保持を検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import { join } from "node:path";
@@ -99,7 +100,7 @@ async function openView(
 	const controller = f.controller();
 	await controller.connect();
 	const sessionId = controller.snapshot().sessionId;
-	assert.ok(sessionId);
+	assert.ok(isNonEmptyString(sessionId));
 	const runtime = new BackendRuntime(() => controller);
 	t.after(() => runtime.dispose());
 	const extensionUri = { fsPath: f.root } as unknown as vscode.Uri;

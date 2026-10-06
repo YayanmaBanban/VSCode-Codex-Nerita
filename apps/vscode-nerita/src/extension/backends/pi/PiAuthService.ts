@@ -1,4 +1,5 @@
 // 認証専用エディターに SDK の対話を接続する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { isPiAuthRequest, type PiAuthState } from "@nerita/shared/piAuth";
 import { randomUUID } from "node:crypto";
@@ -37,7 +38,7 @@ class PiAuthPanel implements PiAuthService {
 
 	/** 通知を認証先に紐付け、他の認証先の結果を上書きしない。 */
 	private publish() {
-		if (this.feedbackOwner) {
+		if (isNonEmptyString(this.feedbackOwner)) {
 			this.state.feedback = {
 				...this.state.feedback,
 				[this.feedbackOwner]: {
@@ -247,7 +248,7 @@ class PiAuthPanel implements PiAuthService {
 		} else {
 			this.state.notice = event.message;
 		}
-		if (url) {
+		if (isNonEmptyString(url)) {
 			this.openAuthUrl(signal, url);
 		}
 		this.publish();

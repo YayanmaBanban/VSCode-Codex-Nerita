@@ -1,4 +1,8 @@
 // ワークスペースの必要な一階層だけを VS Code API で列挙する。
+import {
+	isNonEmptyString,
+	nonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import type {
 	WorkspacePath,
@@ -36,8 +40,8 @@ export async function listWorkspacePaths(
 		}
 		const uri = vscode.Uri.parse(request.uri, true);
 		if (
-			uri.query ||
-			uri.fragment ||
+			isNonEmptyString(uri.query) ||
+			isNonEmptyString(uri.fragment) ||
 			!vscode.workspace.getWorkspaceFolder(uri)
 		) {
 			throw new Error("Outside workspace");
@@ -63,9 +67,10 @@ export async function listWorkspacePaths(
 			)
 			.sort(
 				(a, b) =>
-					Number(b.kind === "directory") -
-						Number(a.kind === "directory") ||
-					a.name.localeCompare(b.name),
+					nonZeroNumber(
+						Number(b.kind === "directory") -
+							Number(a.kind === "directory"),
+					) ?? a.name.localeCompare(b.name),
 			);
 		return {
 			type: "workspace/paths",

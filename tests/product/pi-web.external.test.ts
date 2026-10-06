@@ -1,4 +1,5 @@
 // 導入済み Web 拡張で公開リポジトリを取得し、保存先と信頼境界を確認する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { type TestContext, test } from "node:test";
 
@@ -46,7 +47,7 @@ async function verifyPiWebTrust(t: TestContext) {
 	assert.equal(state.tools[0]?.status, "completed", JSON.stringify(state));
 	const files = await readdir(cache, { recursive: true });
 	const readme = files.find((file) => file.endsWith("README"));
-	assert.ok(readme, JSON.stringify(state.tools));
+	assert.ok(isNonEmptyString(readme), JSON.stringify(state.tools));
 	const target = join(cache, readme);
 	assert.ok((await readFile(target, "utf8")).length > 0);
 	assert.equal(await f.trust.trusted(target), false);
@@ -108,8 +109,8 @@ function preferPublicGit(t: TestContext) {
 /** 導入済み拡張を検査し、取得物を一時キャッシュへ固定する。 */
 async function prepareWebExtension(f: Awaited<ReturnType<typeof piFixture>>) {
 	assert.ok(
-		process.env.NERITA_EXTERNAL_AGENT_DIR &&
-			process.env.PI_CODING_AGENT_DIR,
+		isNonEmptyString(process.env.NERITA_EXTERNAL_AGENT_DIR) &&
+			isNonEmptyString(process.env.PI_CODING_AGENT_DIR),
 	);
 	const installed = join(
 		process.env.NERITA_EXTERNAL_AGENT_DIR,

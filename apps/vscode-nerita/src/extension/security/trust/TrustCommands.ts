@@ -17,7 +17,7 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 	const store = new WorkspaceTrustStore(
 		{
 			read: () =>
-				context.globalState.get(`${key}.pending`)
+				context.globalState.get<boolean>(`${key}.pending`) === true
 					? null
 					: context.globalState.get(key),
 			write: async (value) => {

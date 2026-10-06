@@ -1,4 +1,5 @@
 // シェル名に対応する実行ファイルを環境から解決し、別のシェルへ自動切替しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { access, realpath } from "node:fs/promises";
 import { delimiter, isAbsolute, join } from "node:path";
 
@@ -19,7 +20,7 @@ export async function resolvePowerShell(
 	}
 	for (const path of candidates(name)) {
 		const executable = await canonicalExecutable(path);
-		if (executable && (await usable(executable))) {
+		if (isNonEmptyString(executable) && (await usable(executable))) {
 			return executable;
 		}
 	}
@@ -32,13 +33,13 @@ export async function resolvePowerShell(
 function candidates(name: PowerShellKind): string[] {
 	if (name === "powershell") {
 		const root = process.env.SystemRoot;
-		if (!root || !isAbsolute(root)) {
+		if (!isNonEmptyString(root) || !isAbsolute(root)) {
 			throw new Error("WindowsのSystemRootを解決できません。");
 		}
 		return [join(root, "System32/WindowsPowerShell/v1.0/powershell.exe")];
 	}
 	const directories = [
-		...(process.env.ProgramFiles
+		...(isNonEmptyString(process.env.ProgramFiles)
 			? [join(process.env.ProgramFiles, "PowerShell/7")]
 			: []),
 		...(process.env.PATH ?? "").split(delimiter),

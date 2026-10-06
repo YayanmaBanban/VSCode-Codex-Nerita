@@ -1,4 +1,8 @@
 // 差分の入力形式によらず、ファイル見出し・範囲・行番号を同じ表示に揃える。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import type { structuredPatch } from "diff";
 import type { ReactNode } from "react";
@@ -27,7 +31,8 @@ export function DiffView({
 	hunks: DiffHunk[] | undefined;
 	children?: ReactNode;
 }) {
-	const name = path.replaceAll("\\", "/").split("/").at(-1) || path;
+	const name =
+		nonEmptyString(path.replaceAll("\\", "/").split("/").at(-1)) ?? path;
 	const fullPath = diffPath(path, cwd);
 	const total = hunks && changeCount(hunks.flatMap((hunk) => hunk.lines));
 	return (
@@ -66,6 +71,7 @@ export function DiffView({
 }
 
 /** 変更前後で行数がある側の範囲をまとめ、終端は最終行の次の行番号で示す（72 行目は `L72–73`）。 */
+/* eslint-disable jsx-a11y-x/no-noninteractive-tabindex -- 横に長い差分をキーボードでスクロールするため、表示領域を Tab の対象にする。 */
 function HunkView({ hunk }: { hunk: DiffHunk }) {
 	const starts = [];
 	const ends = [];
@@ -104,6 +110,7 @@ function HunkView({ hunk }: { hunk: DiffHunk }) {
 				<ChangeCount {...changeCount(hunk.lines)} />
 			</div>
 			<pre
+				role="region"
 				className={cn(
 					"file-diff-lines",
 					toolCodeClass,
@@ -139,6 +146,7 @@ function HunkView({ hunk }: { hunk: DiffHunk }) {
 }
 
 /** 差分ブロック内の追加行と削除行を数え、文脈行を集計から除く。 */
+/* eslint-enable jsx-a11y-x/no-noninteractive-tabindex */
 function changeCount(lines: string[]) {
 	return {
 		added: lines.filter((line) => line.startsWith("+")).length,
@@ -165,7 +173,7 @@ function diffPath(path: string, cwd?: string | null) {
 	const absolute =
 		normalized.startsWith("/") || /^[a-z]:\//i.test(normalized);
 	const full =
-		!absolute && cwd
+		!absolute && isNonEmptyString(cwd)
 			? `${cwd.replaceAll("\\", "/")}/${normalized}`
 			: normalized;
 	const parts: string[] = [];

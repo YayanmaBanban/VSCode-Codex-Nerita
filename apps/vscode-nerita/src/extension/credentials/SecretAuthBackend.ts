@@ -1,4 +1,5 @@
 // 同期の MCP SDK 保存 API をメモリーへ接続し、非同期の秘密保存が完了してから結果を公開する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	SecretValue,
 	type CredentialStore,
@@ -72,7 +73,7 @@ export class SecretAuthBackend {
 		this.value = undefined;
 	}
 	private protect() {
-		if (!this.value) {
+		if (!isNonEmptyString(this.value)) {
 			return;
 		}
 		let value: unknown;

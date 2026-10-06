@@ -1,4 +1,5 @@
 // React Flow の配置は表示だけに使い、接続線を `depends_on` として扱う。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { Workflow } from "@nerita/shared/workflows/definition";
 import {
@@ -20,10 +21,10 @@ import { useEffect, useState } from "react";
 
 /** 会話の扱いをノード内の短い表記にする。 */
 function contextLabel(step: Workflow["steps"][number]) {
-	if (step.fork) {
+	if (isNonEmptyString(step.fork)) {
 		return `Fork: ${step.fork}`;
 	}
-	return step.resume ? "Resume" : "Fresh";
+	return isNonEmptyString(step.resume) ? "Resume" : "Fresh";
 }
 
 /** 依存関係の段数に沿って配置し、編集中の定義に循環があっても配置計算を終了する。 */

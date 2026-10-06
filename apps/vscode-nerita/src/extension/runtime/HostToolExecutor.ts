@@ -1,7 +1,9 @@
 // 既知の互換性問題に対して明示承認された argv だけを Host で実行する。
-import { spawn, execFile, type ChildProcess } from "node:child_process";
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
+import { createProcessTreeStopper } from "./ProcessTreeStopper";
+import { spawn, type ChildProcess } from "node:child_process";
 import { realpath } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 import {
 	consumeApprovedToolCall,
 	type ApprovedToolCall,
@@ -59,9 +61,9 @@ export class HostToolExecutor implements SandboxCommandExecutor {
 function validateHostCall(call: ToolCall) {
 	const permission = call.compatibility?.permission;
 	if (
-		!call.hostShell ||
+		!(call.hostShell === true) ||
 		!call.policy.shell ||
-		!call.command?.length ||
+		!isNonZeroNumber(call.command?.length) ||
 		!permission ||
 		call.compatibility?.code !== "native-pnpm-dos-path"
 	) {
@@ -124,23 +126,7 @@ function collectHostOutput(
 		let stdout = "";
 		let stderr = "";
 		let failure: Error | undefined;
-		let stopping = false;
-		const stop = () => {
-			if (stopping || !child.pid) {
-				return;
-			}
-			stopping = true;
-			execFile(
-				join(process.env.SystemRoot!, "System32", "taskkill.exe"),
-				["/PID", String(child.pid), "/T", "/F"],
-				{ windowsHide: true, timeout: 5000 },
-				() => {
-					if (child.exitCode === null && child.signalCode === null) {
-						child.kill();
-					}
-				},
-			);
-		};
+		const stop = createProcessTreeStopper(child);
 		const abort = () => {
 			failure = new Error("Host 実行を停止しました。", {
 				cause: signal.reason,

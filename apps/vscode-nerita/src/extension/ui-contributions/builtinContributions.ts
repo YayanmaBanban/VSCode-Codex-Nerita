@@ -1,4 +1,5 @@
 // 既存 `ConfigOption` を宣言型 UI へ変換し、バックエンド固有の既定表示を Host に閉じ込める。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { fastModeControl, fastModeConfigIds as tiers } from "./fastModeControl";
 import {
 	modelControl as sharedModelControl,
@@ -107,7 +108,7 @@ export function createBuiltinUiRegistry(): UiContributionRegistry {
 	const registry = new UiContributionRegistry();
 	registry.registerUiContribution("nerita.config", configContributions);
 	registry.registerUiContribution("nerita.quota", (state) =>
-		state.connection === "ready" && state.quota?.length
+		state.connection === "ready" && isNonZeroNumber(state.quota?.length)
 			? [
 					{
 						id: "quota",

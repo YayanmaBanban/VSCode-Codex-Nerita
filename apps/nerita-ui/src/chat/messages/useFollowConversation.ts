@@ -1,4 +1,5 @@
 // 手動で過去を読んでいる位置を守り、末尾にいる間だけ内容の追加へ追従する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { useLayoutEffect, useRef, type RefObject } from "react";
 
 export function useFollowConversation(
@@ -25,13 +26,13 @@ export function useFollowConversation(
 			4;
 		const follow = () => {
 			if (following.current && !paused && !toolScroll.active()) {
-				element.scrollTop = element.scrollHeight;
+				element.scrollTo({ top: element.scrollHeight });
 				previousTop = element.scrollTop;
 			}
 		};
 		const scroll = () => {
 			// サブエージェントの表示中に会話欄が隠れたことによる位置変化は、手動操作として扱わない。
-			if (!element.clientHeight || toolScroll.active()) {
+			if (!isNonZeroNumber(element.clientHeight) || toolScroll.active()) {
 				return;
 			}
 			if (atBottom()) {
@@ -92,7 +93,7 @@ function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
 	};
 	const align = () => {
 		if (
-			!heading?.isConnected ||
+			!(heading?.isConnected === true) ||
 			heading.getAttribute("aria-expanded") !== "true"
 		) {
 			cancel();
@@ -109,7 +110,8 @@ function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
 		if (
 			collapse
 				?.getAnimations()
-				.some((animation) => animation.playState !== "finished")
+				.some((animation) => animation.playState !== "finished") ===
+			true
 		) {
 			frame = requestAnimationFrame(align);
 		} else {

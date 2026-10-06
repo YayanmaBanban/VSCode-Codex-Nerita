@@ -1,4 +1,5 @@
 // モデルを明示した設定だけを照合し、バックエンドの優先順位は解決しない。
+import { isNonEmptyString } from "../valuePredicates";
 import type { ManagerModel } from "./messages";
 import type { HandoffConfig } from "./config";
 
@@ -21,7 +22,7 @@ export function handoffEffortError(
 	selectedBackend?: "pi" | "codex",
 ): string | undefined {
 	for (const backend of ["pi", "codex"] as const) {
-		if (selectedBackend && backend !== selectedBackend) {
+		if (selectedBackend !== undefined && backend !== selectedBackend) {
 			continue;
 		}
 		const item = config.backends[backend];
@@ -36,7 +37,7 @@ export function handoffEffortError(
 			old.strategy === "fixed" ? old.model : undefined,
 			backendEffort(old),
 		);
-		if (error) {
+		if (isNonEmptyString(error)) {
 			return `${backend}: ${error}`;
 		}
 	}
@@ -51,7 +52,7 @@ export function effortError(
 	previousModel?: string,
 	previousEffort?: string,
 ): string | undefined {
-	if (!effort) {
+	if (!isNonEmptyString(effort)) {
 		return undefined;
 	}
 	const options = models.find((item) => item.value === model)?.efforts;

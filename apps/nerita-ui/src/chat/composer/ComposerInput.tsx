@@ -120,7 +120,7 @@ export function ComposerInput(props: ComposerInputProps) {
 					props.onSubmit();
 				}}
 			/>
-			{error && (
+			{error !== "" && (
 				<p role="alert" className="text-[12px] text-tool-error">
 					{error}
 				</p>

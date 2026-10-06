@@ -1,4 +1,5 @@
 // 会話を再開せず、チャット入力欄の参照候補と原文表示だけを提供する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { PiSession } from "./PiRuntime";
 import type {
 	SessionReferencesRequest,
@@ -30,7 +31,9 @@ export async function piReferenceAction(
 					.includes(message.query.trim().toLocaleLowerCase()),
 		);
 		signal.throwIfAborted();
-		const offset = message.cursor ? Number(message.cursor) : 0;
+		const offset = isNonEmptyString(message.cursor)
+			? Number(message.cursor)
+			: 0;
 		if (!Number.isSafeInteger(offset) || offset < 0) {
 			throw new Error("参照一覧を検索し直してください。");
 		}

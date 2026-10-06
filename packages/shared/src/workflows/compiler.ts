@@ -1,4 +1,5 @@
 // 検証済みの依存関係を JavaScript へ変換し、文字列をコードとして解釈させない。
+import { isNonEmptyString } from "../valuePredicates";
 import {
 	outputReferences,
 	validateWorkflow,
@@ -16,15 +17,15 @@ export function compileWorkflow(value: unknown): string {
 			.map((dep) => names.get(dep))
 			.join(",");
 		const fields = [`task: ${taskExpression(step)}`];
-		if (step.agent) {
+		if (isNonEmptyString(step.agent)) {
 			fields.push(`agent: ${JSON.stringify(step.agent)}`);
 		}
-		if (step.resume) {
+		if (isNonEmptyString(step.resume)) {
 			fields.push(
 				`resume: results[${JSON.stringify(step.resume)}].runId`,
 			);
 		}
-		if (step.fork) {
+		if (isNonEmptyString(step.fork)) {
 			fields.push(
 				`neritaFork: results[${JSON.stringify(step.fork)}].runId`,
 			);

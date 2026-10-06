@@ -1,4 +1,5 @@
 // Host のメニュー通知を代替し、実入力欄の選択保持と変換を観察する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComposerPart } from "@nerita/shared/composerContent";
@@ -23,7 +24,7 @@ function CodeBlockStory() {
 				const context = event.currentTarget
 					.querySelector("[data-vscode-context]")
 					?.getAttribute("data-vscode-context");
-				const parsed: unknown = context
+				const parsed: unknown = isNonEmptyString(context)
 					? JSON.parse(context)
 					: undefined;
 				setRequestId(

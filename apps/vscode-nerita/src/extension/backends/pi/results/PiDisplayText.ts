@@ -32,7 +32,7 @@ export function privateDisplayText(
 	let text = value.slice(0, bytes + longest);
 	let omitted = text.length < value.length;
 	for (const secret of secrets) {
-		if (secret && text.includes(secret)) {
+		if (secret !== "" && text.includes(secret)) {
 			text = text.replaceAll(secret, privateText);
 			omitted = true;
 		}

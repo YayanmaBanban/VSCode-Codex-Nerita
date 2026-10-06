@@ -64,7 +64,7 @@ export async function readMxcDenials(
 	return {
 		events: report.denials.map((denial) => classifyDenial(denial, policy)),
 		truncated: report.summary.deniedResourcesTruncated,
-		status: report.denials.length ? "reported" : "empty",
+		status: report.denials.length > 0 ? "reported" : "empty",
 	};
 }
 

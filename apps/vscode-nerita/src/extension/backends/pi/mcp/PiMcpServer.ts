@@ -1,4 +1,5 @@
 // 1サーバーの接続・動的定義・停止を所有し、古い定義の実行を拒否する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	ExtensionAPI,
 	ToolDefinition,
@@ -138,7 +139,7 @@ export class PiMcpServer {
 	/** サーバーの定義とリソース操作が同名でも、別の名前を割り当てる。 */
 	private allocate(key: string, label: string): string | undefined {
 		const existing = this.names.get(key);
-		if (existing) {
+		if (isNonEmptyString(existing)) {
 			return existing;
 		}
 		if (this.names.size >= 512) {
@@ -164,7 +165,7 @@ export class PiMcpServer {
 		const exposure = sdk.getMcpToolExposure(entry.config!, tool.name);
 		const name = this.allocate(`tool:${tool.name}`, tool.name);
 		if (
-			!name ||
+			!isNonEmptyString(name) ||
 			exposure === "hidden" ||
 			!piToolPermitted(name, features)
 		) {
@@ -210,7 +211,7 @@ export class PiMcpServer {
 		const exposure = entry.config!.exposure ?? "deferred";
 		const name = this.allocate(`resource:${action}`, action);
 		if (
-			!name ||
+			!isNonEmptyString(name) ||
 			exposure === "hidden" ||
 			!piToolPermitted(name, features)
 		) {

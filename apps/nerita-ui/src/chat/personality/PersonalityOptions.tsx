@@ -1,4 +1,5 @@
 // 上部オプションメニューから性格設定パネルを開き、Host へ編集操作を送る。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import {
 	type ReactNode,
@@ -46,7 +47,7 @@ export function PersonalityOptions(props: PersonalityOptionsProps) {
 		setPending(false);
 	}, [state.personality]);
 	useEffect(() => {
-		if (error) {
+		if (isNonEmptyString(error)) {
 			setPending(false);
 		}
 	}, [error]);
@@ -293,7 +294,7 @@ function PersonalityDialog({
 						<Dialog.Description className="mt-0 text-[11px] leading-[1.7] text-muted">
 							グローバルとワークスペースの指示を、この順で結合します。変更は会話の開始・分岐・再開時に反映されます。
 						</Dialog.Description>
-						{error && (
+						{isNonEmptyString(error) && (
 							<p role="alert" className="text-[12px]">
 								{error}
 							</p>

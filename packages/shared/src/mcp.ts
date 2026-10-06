@@ -36,13 +36,14 @@ export function isMcpMessageContent(
 
 /** コピー時も名前と接続状態を読み取れる本文にする。 */
 export function mcpSummaryText(servers: McpServerSummary[]): string {
-	const list = servers.length
-		? servers
-				.map(
-					(server) =>
-						`● ${server.name} (${server.runtimeStatus ?? "不明"})`,
-				)
-				.join("\n")
-		: "利用可能なMCPサーバーはありません。";
-	return servers.length ? `設定済みMCPサーバー:\n${list}` : list;
+	const list =
+		servers.length > 0
+			? servers
+					.map(
+						(server) =>
+							`● ${server.name} (${server.runtimeStatus ?? "不明"})`,
+					)
+					.join("\n")
+			: "利用可能なMCPサーバーはありません。";
+	return servers.length > 0 ? `設定済みMCPサーバー:\n${list}` : list;
 }

@@ -18,7 +18,7 @@ export function ContextUsage({ usage }: { usage: Usage | null }) {
 	const reduced = useReducedMotion();
 	const percent = usage ? Math.min(100, (usage.used / usage.size) * 100) : 0;
 	useEffect(() => {
-		if (reduced || percent <= progress.get()) {
+		if (reduced === true || percent <= progress.get()) {
 			progress.set(percent);
 			return;
 		}

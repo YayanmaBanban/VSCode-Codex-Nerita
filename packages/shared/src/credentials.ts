@@ -6,11 +6,11 @@ export const credentialStorageModeSchema = z.enum([
 	"secret-storage",
 ]);
 export type CredentialStorageMode = z.infer<typeof credentialStorageModeSchema>;
-const id = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/);
+const id = z.string().regex(/^[a-z0-9][\w.-]{0,127}$/i);
 const target = z
 	.string()
 	.max(512)
-	.regex(/^[a-zA-Z0-9.-]+(?::[0-9]+)?(?:\/[-a-zA-Z0-9._~%/]*)?$/);
+	.regex(/^[a-z0-9.-]+(?::\d+)?(?:\/[-\w.~%/]*)?$/i);
 export const credentialKindSchema = z.enum([
 	"git-https",
 	"npm-registry",
@@ -46,7 +46,7 @@ export const credentialBindingSchema = z
 						.regex(/^[A-Z][A-Z0-9_]{0,63}$/)
 						.refine(
 							(value) =>
-								!/^(?:PATH|PATHEXT|COMSPEC|SYSTEMROOT|WINDIR|TEMP|TMP|HOME|USERPROFILE|APPDATA|LOCALAPPDATA|NODE_OPTIONS|NODE_PATH|BWS_ACCESS_TOKEN|NPM_CONFIG_|GIT_|LD_|DYLD_|PSMODULEPATH)/.test(
+								!/^(?:PATH|COMSPEC|SYSTEMROOT|WINDIR|TEMP|TMP|HOME|USERPROFILE|APPDATA|LOCALAPPDATA|NODE_OPTIONS|NODE_PATH|BWS_ACCESS_TOKEN|NPM_CONFIG_|GIT_|LD_|DYLD_|PSMODULEPATH)/.test(
 									value,
 								),
 						),

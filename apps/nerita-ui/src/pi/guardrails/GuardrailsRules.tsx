@@ -21,22 +21,29 @@ function ruleBackground(index: number): string {
 
 /** 許可・確認・拒否の選択値と、変更を通知する関数。 */
 type ActionProps = {
+	label: string;
+	className?: string;
 	value: "allow" | "ask" | "deny";
 	onChange: (value: "allow" | "ask" | "deny") => void;
 };
 
 /** 動作名は判定結果と同じ表記に揃える。 */
-function Action({ value, onChange }: ActionProps) {
+function Action({ label, className, value, onChange }: ActionProps) {
 	return (
-		<select
-			className={inputStyle}
-			value={value}
-			onChange={(event) => onChange(event.target.value as typeof value)}
-		>
-			<option value="deny">deny · 拒否</option>
-			<option value="ask">ask · 承認</option>
-			<option value="allow">allow · 許可候補</option>
-		</select>
+		<label className={className}>
+			{label}
+			<select
+				className={inputStyle}
+				value={value}
+				onChange={(event) =>
+					onChange(event.target.value as typeof value)
+				}
+			>
+				<option value="deny">deny · 拒否</option>
+				<option value="ask">ask · 承認</option>
+				<option value="allow">allow · 許可候補</option>
+			</select>
+		</label>
 	);
 }
 
@@ -69,18 +76,17 @@ export function GuardrailsRules({ config, onChange }: GuardrailsRulesProps) {
 	};
 	return (
 		<div className="flex flex-col gap-5">
-			<label className="flex flex-col gap-2">
-				workspace外の読取り
-				<Action
-					value={config.pathAccess.outsideRead}
-					onChange={(outsideRead) =>
-						onChange({
-							...config,
-							pathAccess: { ...config.pathAccess, outsideRead },
-						})
-					}
-				/>
-			</label>
+			<Action
+				label="workspace外の読取り"
+				className="flex flex-col gap-2"
+				value={config.pathAccess.outsideRead}
+				onChange={(outsideRead) =>
+					onChange({
+						...config,
+						pathAccess: { ...config.pathAccess, outsideRead },
+					})
+				}
+			/>
 			<p className="m-0 text-[12px] text-muted">
 				workspace外の書込みは拒否します。Shell・write/edit・拡張Toolの承認は維持します。SSHなどの組込み保護は緩和できません。
 			</p>
@@ -258,13 +264,11 @@ function CommandRuleCard({
 							}
 						/>
 					</label>
-					<label>
-						判定
-						<Action
-							value={rule.action}
-							onChange={(action) => update({ action })}
-						/>
-					</label>
+					<Action
+						label="判定"
+						value={rule.action}
+						onChange={(action) => update({ action })}
+					/>
 					<CommandRuleShell rule={rule} update={update} />
 					{<CommandRulePattern rule={rule} update={update} />}
 					<label className="sm:col-span-2">
@@ -396,13 +400,11 @@ function PathRuleCard(props: PathRuleCardProps): JSX.Element {
 							}
 						/>
 					</label>
-					<label>
-						判定
-						<Action
-							value={rule.action}
-							onChange={(action) => updatePath(index, { action })}
-						/>
-					</label>
+					<Action
+						label="判定"
+						value={rule.action}
+						onChange={(action) => updatePath(index, { action })}
+					/>
 					<PathRuleBase {...props} />
 					<PathRuleMatch {...props} />
 					<label className="sm:col-span-2">

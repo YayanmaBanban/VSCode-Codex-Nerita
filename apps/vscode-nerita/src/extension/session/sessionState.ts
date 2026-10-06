@@ -1,4 +1,5 @@
 ﻿// Host が管理する会話状態と UI 購読を保持し、単調に増加する番号付きの差分を配信する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { type HostMessage } from "@nerita/shared/messages";
 import { createBuiltinUiRegistry } from "../ui-contributions/builtinContributions";
@@ -136,7 +137,7 @@ function finalizeMessages(
 	state: ChatState,
 ): Partial<ChatState> {
 	if (
-		!patch.run ||
+		!(patch.run !== undefined) ||
 		!["completed", "cancelled", "failed"].includes(patch.run)
 	) {
 		return patch;
@@ -144,7 +145,9 @@ function finalizeMessages(
 	return {
 		...patch,
 		messages: (patch.messages ?? state.messages).map((message) =>
-			message.streaming ? { ...message, streaming: false } : message,
+			message.streaming === true
+				? { ...message, streaming: false }
+				: message,
 		),
 	};
 }
@@ -160,7 +163,7 @@ function sessionTitle(
 		return patch.sessionTitle;
 	}
 	if (row) {
-		return row.title?.trim() || null;
+		return nonEmptyString(row.title?.trim()) ?? null;
 	}
 	if (sessionId !== state.sessionId) {
 		return null;

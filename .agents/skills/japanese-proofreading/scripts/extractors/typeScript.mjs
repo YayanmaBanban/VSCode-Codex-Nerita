@@ -141,9 +141,9 @@ export function extractSourceComments(source, filePath) {
  */
 function isIdentifierLike(name) {
 	return (
-		/^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(name) ||
-		/^[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+$/.test(name) ||
-		/^[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+$/.test(name)
+		/^[a-z][\da-z]*[A-Z][\dA-Za-z]*$/.test(name) ||
+		/^[A-Z][a-z0-9]+[A-Z][A-Za-z0-9]*$/.test(name) ||
+		/^[A-Z][A-Z0-9]*_\w+$/i.test(name)
 	);
 }
 

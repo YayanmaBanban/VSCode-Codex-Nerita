@@ -1,4 +1,5 @@
 // 本番のコントローラー・配布用 SDK・専用保存領域を接続し、操作と後片付けだけを共通化する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
@@ -31,7 +32,8 @@ export async function until(
 /** 認証済みモデルやユーザーの設定を使わず、新しい作業領域を用意する。 */
 export async function piFixture(t: TestContext) {
 	assert.ok(
-		process.env.NERITA_TEST_ROOT && process.env.NERITA_TEST_EXTENSION,
+		isNonEmptyString(process.env.NERITA_TEST_ROOT) &&
+			isNonEmptyString(process.env.NERITA_TEST_EXTENSION),
 		"pnpm test:product から実行してください。",
 	);
 	const root = await mkdtemp(join(process.env.NERITA_TEST_ROOT, "scenario-"));

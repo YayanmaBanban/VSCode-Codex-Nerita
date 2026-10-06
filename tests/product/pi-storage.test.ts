@@ -1,4 +1,5 @@
 // 本番の保存・履歴選択を通し、別のコントローラーでの復元と失敗時のデータ保持を検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import {
 	readFile,
@@ -176,7 +177,7 @@ void test("一覧取得後に履歴が破損しても現在の会話と元ファ
 	});
 	assert.equal(controller.snapshot().sessionId, current.sessionId);
 	assert.deepEqual(controller.snapshot().messages, current.messages);
-	assert.ok(controller.snapshot().sessionsError);
+	assert.ok(isNonEmptyString(controller.snapshot().sessionsError));
 	assert.equal(await readFile(saved.path, "utf8"), "broken");
 	assert.equal(f.model.requests.length, 2);
 	await send(controller, "切替失敗後も続行する");

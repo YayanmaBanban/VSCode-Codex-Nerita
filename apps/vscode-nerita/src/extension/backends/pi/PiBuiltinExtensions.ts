@@ -1,4 +1,5 @@
 // Nerita 組み込み拡張は VSIX 内から注入し、ワークスペースの `.pi/extensions` へ書き込まない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	ExtensionFactory,
 	InlineExtension,
@@ -41,7 +42,7 @@ export function neritaExtensionFactories(
 						);
 						pi.on("before_agent_start", (event) => {
 							const prompt = controls.delegationPrompt();
-							return prompt
+							return isNonEmptyString(prompt)
 								? {
 										systemPrompt: `${event.systemPrompt}\n\n${prompt}`,
 									}
@@ -71,7 +72,7 @@ export function neritaExtensionFactories(
 				() => sdk.createToolSearchExtension(),
 			],
 		] as const) {
-			if (enabled) {
+			if (enabled === true) {
 				extensions.push({
 					name,
 					factory: guardedPiFeature(

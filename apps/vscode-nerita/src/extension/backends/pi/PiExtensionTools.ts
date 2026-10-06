@@ -59,7 +59,10 @@ export function guardPiExtensionTools(
 		if (builtin) {
 			return register(name, registration);
 		}
-		const shell = process.platform !== "win32" && name === "bash" && policy;
+		const shell =
+			process.platform !== "win32" && name === "bash"
+				? policy
+				: undefined;
 		if (reserved.has(name) && !shell) {
 			throw new Error(
 				`Pi拡張による組み込みToolの上書きは拒否されました: ${name}`,
@@ -70,7 +73,7 @@ export function guardPiExtensionTools(
 					registration.definition,
 					cwd,
 					authorize,
-					policy,
+					shell,
 					signal,
 				)
 			: approvePiTool(

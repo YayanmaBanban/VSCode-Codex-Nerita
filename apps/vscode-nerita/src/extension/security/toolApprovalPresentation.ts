@@ -1,4 +1,5 @@
 // 固定済みの実行要求から、承認判断に必要な条件と補足情報を取り出す。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	PermissionField,
 	PermissionPresentation,
@@ -46,7 +47,7 @@ export function toolApprovalPresentation(
 			([key]) => key !== "command" || command === undefined,
 		),
 	);
-	if (Object.keys(params).length) {
+	if (Object.keys(params).length > 0) {
 		(command === undefined ? fields : details).push(
 			field(
 				"params",
@@ -80,7 +81,7 @@ function field(
 
 /** Host 実行にサンドボックスの保証を付けない。 */
 function executionScope(call: ToolCall): string {
-	if (call.hostShell) {
+	if (call.hostShell === true) {
 		return "Pi Shell（OSの権限で実行）";
 	}
 	if (call.tool.startsWith("extension:")) {
@@ -96,12 +97,13 @@ function executionFields(
 	details: PermissionField[],
 ) {
 	fields.push(field("scope", "実行範囲", executionScope(call)));
-	if (!call.hostShell && !call.tool.startsWith("extension:")) {
+	if (!(call.hostShell === true) && !call.tool.startsWith("extension:")) {
 		fields.push(
 			field(
 				"writableRoots",
 				"書込み許可",
-				call.policy.writableRoots.join("\n") || "なし（readOnly）",
+				nonEmptyString(call.policy.writableRoots.join("\n")) ??
+					"なし（readOnly）",
 			),
 		);
 		if (call.command) {

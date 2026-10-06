@@ -34,7 +34,7 @@ export function validReferences(text: string, value: unknown): boolean {
 
 	let end = 0;
 	return value.every((item: unknown) => {
-		if (!item || typeof item !== "object") {
+		if (item === null || typeof item !== "object") {
 			return false;
 		}
 		const reference = item as Record<string, unknown>;

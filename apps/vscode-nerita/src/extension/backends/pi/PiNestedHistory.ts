@@ -1,4 +1,5 @@
 // SDK が親ツールの結果へ保存した子の要約を、再実行せず表示用カードへ復元する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { SessionMessageEntry } from "@earendil-works/pi-coding-agent";
 import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { mapPiTool } from "./PiToolMapper";
@@ -48,14 +49,16 @@ export function restorePiNestedTools(
 			tool.id === call.id && tool.runId === state.runId
 				? {
 						...tool,
-						status: call.error?.includes(MCP_RESULT_UNKNOWN_TEXT)
-							? "unknown"
-							: nestedStatuses[call.status],
+						status:
+							call.error?.includes(MCP_RESULT_UNKNOWN_TEXT) ===
+							true
+								? "unknown"
+								: nestedStatuses[call.status],
 						summaryOnly: true,
 						...(call.argumentsBytes === undefined
 							? {}
 							: { omittedArgumentBytes: call.argumentsBytes }),
-						content: call.error
+						content: isNonEmptyString(call.error)
 							? [
 									{
 										type: "content",

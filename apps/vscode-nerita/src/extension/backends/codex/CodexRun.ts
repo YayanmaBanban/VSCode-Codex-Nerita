@@ -1,4 +1,5 @@
 // 開始受付とターン完了を区別し、通知・停止・承認を対象の実行に対応付ける。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { randomUUID } from "node:crypto";
 import type { ComposerReference } from "@nerita/shared/composerReferences";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -33,7 +34,7 @@ export abstract class CodexRun extends CodexAgents {
 		if (
 			this.busy() ||
 			!this.client ||
-			!this.state.sessionId ||
+			!isNonEmptyString(this.state.sessionId) ||
 			this.promptPending()
 		) {
 			throw new Error("Busy");
@@ -64,9 +65,8 @@ export abstract class CodexRun extends CodexAgents {
 
 		let prepared = false;
 		try {
-			const attachments = files.length
-				? await this.prepareAttachments(files)
-				: [];
+			const attachments =
+				files.length > 0 ? await this.prepareAttachments(files) : [];
 
 			this.checkPreparedTurn(run);
 
@@ -145,19 +145,20 @@ export abstract class CodexRun extends CodexAgents {
 	}
 
 	/** モデルの画像対応を確認して添付を読み込む。 */
-	private async prepareAttachments(files: Attachment[]) {
+	protected async prepareAttachments(files: Attachment[]) {
 		const model =
 			this.turnOptions.model ??
 			this.state.configOptions.find((item) => item.id === "model")
 				?.currentValue;
-		const attachments = files.length
-			? await attachmentInput(
-					files,
-					this.models
-						.find((item) => item.model === model)
-						?.inputModalities.includes("image") ?? false,
-				)
-			: [];
+		const attachments =
+			files.length > 0
+				? await attachmentInput(
+						files,
+						this.models
+							.find((item) => item.model === model)
+							?.inputModalities.includes("image") ?? false,
+					)
+				: [];
 		return attachments;
 	}
 
@@ -181,7 +182,12 @@ export abstract class CodexRun extends CodexAgents {
 	/** `interrupt` の応答後も `turn/completed` まで停止待ちを維持する。 */
 	private interrupt(): void {
 		const run = this.active;
-		if (!run?.turnId || !run.started || run.interruptSent || !this.client) {
+		if (
+			!isNonEmptyString(run?.turnId) ||
+			!run.started ||
+			run.interruptSent ||
+			!this.client
+		) {
 			return;
 		}
 		run.interruptSent = true;
@@ -200,7 +206,7 @@ export abstract class CodexRun extends CodexAgents {
 		if (!event || !this.active || event.threadId !== this.active.threadId) {
 			return;
 		}
-		if (!this.active.turnId) {
+		if (!isNonEmptyString(this.active.turnId)) {
 			if (this.active.events.length >= 10_000) {
 				throw new Error("Too many early events");
 			}
@@ -232,7 +238,7 @@ export abstract class CodexRun extends CodexAgents {
 				if (
 					status === "completed" &&
 					this.collaborationMode === "plan" &&
-					planText
+					isNonEmptyString(planText)
 				) {
 					this.patch({
 						planDecision: {

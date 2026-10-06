@@ -7,11 +7,12 @@ import { useLexicalEditable } from "@lexical/react/useLexicalEditable";
 import { $getNodeByKey, HISTORY_PUSH_TAG, type NodeKey } from "lexical";
 import type { ComposerTarget } from "@nerita/shared/composerTargets";
 import {
-	referenceIcon,
 	referenceKindLabel,
 	referenceActionLabel,
 } from "./referencePresentation";
 import { OPEN_REFERENCE_COMMAND } from "./ReferenceActionsPlugin";
+
+import { ReferenceChipContent } from "../ReferenceChipContent";
 
 /** 参照チップ全体の配置と枠線を定義する。 */
 const referenceChipStyle = cn(
@@ -46,7 +47,6 @@ export function PathReferenceChip({
 }) {
 	const [editor] = useLexicalComposerContext();
 	const editable = useLexicalEditable();
-	const Icon = referenceIcon(path);
 	return (
 		<span
 			title={pathText(path)}
@@ -67,15 +67,7 @@ export function PathReferenceChip({
 					editor.dispatchCommand(OPEN_REFERENCE_COMMAND, path);
 				}}
 			>
-				<Icon size={14} aria-hidden="true" />
-				<span className="truncate">
-					{path.kind === "session"
-						? `${path.mode === "handoff" ? "Handoff" : "Session"}: ${path.name}`
-						: path.name}
-					{path.kind === "file" && path.range
-						? `(${path.range.start.line}:${path.range.end.line})`
-						: ""}
-				</span>
+				<ReferenceChipContent path={path} />
 			</button>
 			<button
 				type="button"
@@ -91,7 +83,7 @@ export function PathReferenceChip({
 					editor.update(
 						() => {
 							const node = $getNodeByKey(nodeKey);
-							if (node?.isAttached()) {
+							if (node?.isAttached() === true) {
 								node.selectPrevious();
 								node.remove();
 							}

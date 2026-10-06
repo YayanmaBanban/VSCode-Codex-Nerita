@@ -1,4 +1,5 @@
 // ページ応答を子プロセスとの JSONL 通信へ流し、履歴の公開・出力取得・失敗時の保持を確認する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
@@ -46,32 +47,33 @@ async function historyFixture(t: TestContext) {
 	f.responses.set("thread/turns/list", ({ params }) => ({
 		data: [
 			{
-				id: params!.cursor ? "second" : "first",
+				id: Boolean(params!.cursor) === true ? "second" : "first",
 				status: "completed",
 				itemsView: "summary",
 				items: [],
 			},
 		],
-		nextCursor: params!.cursor ? null : "turn-next",
+		nextCursor: Boolean(params!.cursor) === true ? null : "turn-next",
 	}));
 	f.responses.set("thread/items/list", ({ params }) => ({
 		data: [
 			{
 				turnId: params!.turnId,
-				item: params!.cursor
-					? { id: "answer", type: "agentMessage", text: "完了" }
-					: {
-							id: "command",
-							type: "commandExecution",
-							command: "emit output",
-							cwd: f.cwd,
-							status: "completed",
-							exitCode: 0,
-							aggregatedOutput: text,
-						},
+				item:
+					Boolean(params!.cursor) === true
+						? { id: "answer", type: "agentMessage", text: "完了" }
+						: {
+								id: "command",
+								type: "commandExecution",
+								command: "emit output",
+								cwd: f.cwd,
+								status: "completed",
+								exitCode: 0,
+								aggregatedOutput: text,
+							},
 			},
 		],
-		nextCursor: params!.cursor ? null : "item-next",
+		nextCursor: Boolean(params!.cursor) === true ? null : "item-next",
 	}));
 	const controller = f.controller();
 	const events: HostMessage[] = [];
@@ -230,7 +232,7 @@ void test("Codex の複数ページの履歴を復元・フォークし、ツー
 	);
 	await historyAction(f.controller, "saved", "session/fork");
 	assert.equal(f.controller.snapshot().sessionId, "forked");
-	assert.ok((await readTail(f.controller, ref)).error);
+	assert.ok(isNonEmptyString((await readTail(f.controller, ref)).error));
 	const forkRef = f.controller.snapshot().tools[0]!.output!.outputRef!;
 	assert.notEqual(forkRef, ref);
 	assert.equal((await readTail(f.controller, forkRef)).text, "末尾");
@@ -244,7 +246,7 @@ void test("Codex の後続ページが壊れても現在の会話と全文参照
 	const original = f.responses.get("thread/items/list")!;
 	for (const failure of ["wrong-turn", "repeated-cursor"]) {
 		f.responses.set("thread/items/list", (request) => {
-			if (!request.params!.cursor) {
+			if (!(Boolean(request.params!.cursor) === true)) {
 				return original(request);
 			}
 			return failure === "wrong-turn"
@@ -265,7 +267,7 @@ void test("Codex の後続ページが壊れても現在の会話と全文参照
 		});
 		await historyAction(f.controller, "broken");
 		const after = f.controller.snapshot();
-		assert.ok(after.sessionsError);
+		assert.ok(isNonEmptyString(after.sessionsError));
 		assert.equal(after.sessionId, before.sessionId);
 		assert.deepEqual(after.tools, before.tools);
 		assert.deepEqual(after.messages, before.messages);
@@ -324,7 +326,7 @@ void test("Codex の子履歴の全文参照を親に引き継ぎ、会話切替
 		.find((event) => event.type === "agent/view");
 	assert.equal(latest?.type, "agent/view");
 	const latestRef = latest.view.tools[0]!.output!.outputRef!;
-	assert.ok((await readTail(f.controller, ref)).error);
+	assert.ok(isNonEmptyString((await readTail(f.controller, ref)).error));
 	assert.equal((await readTail(f.controller, latestRef)).text, "末尾");
 	assert.ok(
 		f.requests
@@ -333,18 +335,22 @@ void test("Codex の子履歴の全文参照を親に引き継ぎ、会話切替
 					request.method === "thread/read" &&
 					request.params!.threadId === "child",
 			)
-			.every((request) => !request.params!.includeTurns),
+			.every(
+				(request) => !(Boolean(request.params!.includeTurns) === true),
+			),
 	);
 	await historyAction(f.controller, "broken");
 	assert.equal(f.controller.snapshot().sessionId, "broken");
-	assert.ok((await readTail(f.controller, latestRef)).error);
+	assert.ok(
+		isNonEmptyString((await readTail(f.controller, latestRef)).error),
+	);
 });
 
 void test("Codex のページ取得中に切断した場合は遅い復元結果を公開しない", async (t) => {
 	const f = await historyFixture(t);
 	const original = f.responses.get("thread/items/list")!;
 	f.responses.set("thread/items/list", (request) => {
-		if (request.params!.cursor) {
+		if (Boolean(request.params!.cursor) === true) {
 			f.controller.invalidate();
 		}
 		return original(request);
@@ -356,8 +362,10 @@ void test("Codex のページ取得中に切断した場合は遅い復元結果
 	assert.ok(
 		!f.requests.some(
 			(request) =>
-				request.method === "thread/turns/list" &&
-				request.params!.cursor,
+				Boolean(
+					request.method === "thread/turns/list" &&
+					request.params!.cursor,
+				) === true,
 		),
 	);
 });

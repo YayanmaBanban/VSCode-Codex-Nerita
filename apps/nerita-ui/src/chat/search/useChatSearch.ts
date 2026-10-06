@@ -1,4 +1,5 @@
 // Ctrl+F の表示制御と、会話の更新に追従する検索・ハイライトを管理する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 
 import {
 	type EffectCallback,
@@ -14,6 +15,14 @@ import {
 import { searchPattern, type FindOptions } from "./findMatches";
 import { revealMatch, searchRanges } from "./searchRanges";
 
+/** 検索件数と選択位置、上限到達・入力エラーをまとめた表示状態。 */
+type SearchResult = {
+	count: number;
+	index: number;
+	limited: boolean;
+	error: string;
+};
+
 /** 検索中は本文の DOM を保持し、CSS Highlight で一致箇所だけを強調する。 */
 export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 	const [open, setOpen] = useState(false);
@@ -23,13 +32,16 @@ export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 		wholeWord: false,
 		regex: false,
 	});
-	const [result, setResult] = useState({
+	const [result, setResult] = useState<SearchResult>({
 		count: 0,
 		index: 0,
 		limited: false,
 		error: "",
 	});
 	const input = useRef<HTMLInputElement>(null);
+	const setInput = useCallback((element: HTMLInputElement | null) => {
+		input.current = element;
+	}, []);
 	const previousFocus = useRef<HTMLElement | null>(null);
 	const ranges = useRef<Range[]>([]);
 	const index = useRef(0);
@@ -38,29 +50,27 @@ export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 		previousFocus.current?.focus({ preventScroll: true });
 	}, []);
 	/** 選択中の一致だけを別色にし、入力欄のカーソルは動かさない。 */
-	const select = useCallback(
-		createMatchSelector(index, ranges, conversation, setResult),
-		[conversation],
-	);
+	const select = useMatchSelector(index, ranges, conversation, setResult);
 	const move = useCallback(
 		(direction: number) => {
 			const count = ranges.current.length;
-			if (count) {
+			if (isNonZeroNumber(count)) {
 				select((index.current + direction + count) % count);
 			}
 		},
 		[select],
 	);
 	useEffect(
-		createSearchKeyboardEffect(
-			open,
-			previousFocus,
-			conversation,
-			setQuery,
-			setOpen,
-			input,
-			move,
-		),
+		() =>
+			createSearchKeyboardEffect(
+				open,
+				previousFocus,
+				conversation,
+				setQuery,
+				setOpen,
+				input,
+				move,
+			)(),
 		[conversation, move, open],
 	);
 	useEffect(() => {
@@ -70,16 +80,17 @@ export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 		}
 	}, [open]);
 	useEffect(
-		createSearchHighlightEffect(
-			conversation,
-			open,
-			query,
-			options,
-			ranges,
-			setResult,
-			select,
-			index,
-		),
+		() =>
+			createSearchHighlightEffect(
+				conversation,
+				open,
+				query,
+				options,
+				ranges,
+				setResult,
+				select,
+				index,
+			)(),
 		[conversation, open, options, query, select],
 	);
 	return {
@@ -89,38 +100,34 @@ export function useChatSearch(conversation: RefObject<HTMLElement | null>) {
 		options,
 		setOptions,
 		result,
-		input,
+		setInput,
 		close,
 		move,
 	};
 }
 
 /** 入力欄のフォーカスを維持したまま現在の一致を強調する。 */
-function createMatchSelector(
-	index: RefObject<number>,
-	ranges: RefObject<Range[]>,
-	conversation: RefObject<HTMLElement | null>,
-	setResult: Dispatch<
-		SetStateAction<{
-			count: number;
-			index: number;
-			limited: boolean;
-			error: string;
-		}>
-	>,
+function useMatchSelector(
+	indexRef: RefObject<number>,
+	rangesRef: RefObject<Range[]>,
+	conversationRef: RefObject<HTMLElement | null>,
+	setResult: Dispatch<SetStateAction<SearchResult>>,
 ): (position: number, scroll?: boolean) => void {
-	return (position: number, scroll = true) => {
-		index.current = position;
-		const range = ranges.current[position];
-		CSS.highlights.set(
-			"chat-find-current",
-			new Highlight(...(range ? [range] : [])),
-		);
-		if (range && scroll && conversation.current) {
-			revealMatch(range, conversation.current);
-		}
-		setResult((current) => ({ ...current, index: position }));
-	};
+	return useCallback(
+		(position: number, scroll = true) => {
+			indexRef.current = position;
+			const range = rangesRef.current[position];
+			CSS.highlights.set(
+				"chat-find-current",
+				new Highlight(...(range ? [range] : [])),
+			);
+			if (range && scroll && conversationRef.current) {
+				revealMatch(range, conversationRef.current);
+			}
+			setResult((current) => ({ ...current, index: position }));
+		},
+		[indexRef, rangesRef, conversationRef, setResult],
+	);
 }
 
 /** 検索ショートカットを捕捉し、終了時にリスナーを解除する。 */
@@ -169,14 +176,7 @@ function createSearchHighlightEffect(
 	query: string,
 	options: FindOptions,
 	ranges: RefObject<Range[]>,
-	setResult: Dispatch<
-		SetStateAction<{
-			count: number;
-			index: number;
-			limited: boolean;
-			error: string;
-		}>
-	>,
+	setResult: Dispatch<SetStateAction<SearchResult>>,
 	select: (position: number, scroll?: boolean) => void,
 	index: RefObject<number>,
 ): EffectCallback {
@@ -196,7 +196,7 @@ function createSearchHighlightEffect(
 			index,
 		);
 		let timer: ReturnType<typeof setTimeout> | undefined;
-		if (query) {
+		if (query !== "") {
 			// 入力中の本文走査を避け、最後の条件変更から250ミリ秒後に検索する。
 			setResult({ count: 0, index: 0, limited: false, error: "" });
 			timer = setTimeout(() => {
@@ -239,14 +239,7 @@ function createSearchHighlighter(
 	options: FindOptions,
 	root: HTMLElement,
 	ranges: RefObject<Range[]>,
-	setResult: Dispatch<
-		SetStateAction<{
-			count: number;
-			index: number;
-			limited: boolean;
-			error: string;
-		}>
-	>,
+	setResult: Dispatch<SetStateAction<SearchResult>>,
 	select: (position: number, scroll?: boolean) => void,
 	index: RefObject<number>,
 ) {
@@ -326,8 +319,8 @@ function initializeSearchQuery(
 		const selection = window.getSelection();
 		if (
 			selection?.anchorNode &&
-			conversation.current?.contains(selection.anchorNode) &&
-			selection.toString()
+			conversation.current?.contains(selection.anchorNode) === true &&
+			selection.toString() !== ""
 		) {
 			setQuery(selection.toString());
 		}

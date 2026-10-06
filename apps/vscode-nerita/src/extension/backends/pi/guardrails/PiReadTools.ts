@@ -146,7 +146,7 @@ function approvedLsOperations(
 				await check();
 				const child = relative(target, path);
 				if (
-					child &&
+					child !== "" &&
 					(child.includes("/") ||
 						child.includes("\\") ||
 						child === "..")

@@ -117,9 +117,9 @@ export class ToolOutputWriter {
 	private append(file: File, text: string) {
 		if (file.snapshot) {
 			clearImmediate(file.snapshot.timer);
-			while (file.snapshot) {
-				this.step(file, file.snapshot);
-			}
+		}
+		while (file.snapshot) {
+			this.step(file, file.snapshot);
 		}
 		if (file.error) {
 			throw file.error;

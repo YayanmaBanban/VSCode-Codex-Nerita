@@ -1,4 +1,5 @@
 // pnpm を構造化 argv で受け付け、既知の非互換だけを明示承認付き Host 経路へ送る。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { z } from "zod";
 import { realpath } from "node:fs/promises";
@@ -143,9 +144,9 @@ async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 			(resource) =>
 				resource.tool === "pnpm" &&
 				resource.kind === "helper" &&
-				/\.(exe|cjs|mjs)$/i.test(resource.target),
+				/\.(?:exe|cjs|mjs)$/i.test(resource.target),
 		)?.target ?? tools.executables["pnpm.exe"];
-	if (!entrypoint) {
+	if (!isNonEmptyString(entrypoint)) {
 		throw new Error("pnpm の実行エントリーポイントを検出できません。");
 	}
 	const executable = await realpath(entrypoint);
@@ -163,7 +164,7 @@ async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 	}
 	const node = tools.executables["node.exe"];
 	if (
-		!node ||
+		!isNonEmptyString(node) ||
 		paths.policy.workspaceRoots.some((root) => containsPath(root, node))
 	) {
 		throw new Error("信頼できる Node.js を検出できません。");

@@ -1,4 +1,8 @@
 // 接続前のワークスペース条件を検証し、利用者が解決できる原因を区別する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import path from "node:path";
 import { WorkspaceError } from "./workspaceError";
 
@@ -20,7 +24,7 @@ export function requireLocalWorkspace(
 	trusted: boolean,
 	remoteName: string | undefined,
 ): string {
-	if (!folders?.length) {
+	if (!isNonZeroNumber(folders?.length)) {
 		throw new WorkspaceError(
 			"作業フォルダーが開かれていません。VS Codeで「ファイル → フォルダーを開く」を選択してから、再接続してください。",
 		);
@@ -30,7 +34,7 @@ export function requireLocalWorkspace(
 			"ワークスペースが制限モードです。フォルダーの内容を確認して信頼を設定してから、再接続してください。",
 		);
 	}
-	if (remoteName) {
+	if (isNonEmptyString(remoteName)) {
 		throw new WorkspaceError(
 			"Remote・WSL・Dev Containersには未対応です。ローカルのVS Codeウィンドウでフォルダーを開いてください。",
 		);

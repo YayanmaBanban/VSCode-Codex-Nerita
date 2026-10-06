@@ -1,10 +1,12 @@
-// 文書の更新を直列化し、入力中の内容を古い Host 通知で上書きしない。
+﻿// 文書の更新を直列化し、入力中の内容を古い Host 通知で上書きしない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import {
 	type EffectCallback,
 	type Dispatch,
 	type RefObject,
 	type SetStateAction,
+	useCallback,
 	useEffect,
 	useRef,
 	useState,
@@ -17,52 +19,54 @@ import type {
 	GuardState,
 } from "@nerita/shared/guardrails/messages";
 
+/** 要求に対する Host の応答。状態通知は含まない。 */
+type GuardRequestReply = Extract<GuardReply, { type: "reply" }>;
+
 /** 編集の反映を待ってから保存・検査を送り、文書バージョンを一致させる。 */
 export function useGuardrails(bridge: GuardBridge) {
 	const [state, setState] = useState<GuardState | null>(null);
 	const [text, setText] = useState("");
-	const [busy, setBusy] = useState(false);
-	const [reply, setReply] = useState<Extract<
-		GuardReply,
-		{ type: "reply" }
-	> | null>(null);
-	const pending = useRef<{ id: number; edit: boolean } | null>(null);
+	const { busy, locked, pendingRef, setBusy } = useGuardrailsActivity();
+	const [reply, setReply] = useState<GuardRequestReply | null>(null);
 	const sequence = useRef(0);
 	const draft = useRef("");
 	const host = useRef<GuardState | null>(null);
 	useEffect(
-		createGuardrailsSubscription(
-			host,
-			draft,
-			setState,
-			pending,
-			setText,
-			setReply,
-			bridge,
-			setBusy,
-		),
-		[bridge],
+		() =>
+			createGuardrailsSubscription(
+				host,
+				draft,
+				setState,
+				pendingRef,
+				setText,
+				setReply,
+				bridge,
+				setBusy,
+			)(),
+		[bridge, setBusy, pendingRef],
 	);
 	useEffect(
-		createGuardrailsEditEffect(
-			state,
-			busy,
-			text,
-			reply,
-			sequence,
-			pending,
-			setBusy,
-			bridge,
-		),
-		[state, text, busy, bridge, reply],
+		() =>
+			createGuardrailsEditEffect(
+				state,
+				busy,
+				text,
+				reply,
+				sequence,
+				pendingRef,
+				setBusy,
+				bridge,
+			)(),
+		[state, text, busy, bridge, reply, setBusy, pendingRef],
 	);
-	const change = createGuardrailsDraftUpdater(setReply, draft, setText);
+	const change = (value: string) =>
+		createGuardrailsDraftUpdater(setReply, draft, setText)(value);
 	const request = (type: "save" | "apply" | "check", probe: GuardProbe) => {
 		if (!state || busy || text !== state.text) {
 			return;
 		}
 		const id = ++sequence.current;
-		pending.current = { id, edit: false };
+		pendingRef.current = { id, edit: false };
 		setBusy(true);
 		setReply(null);
 		bridge.postMessage(
@@ -78,7 +82,7 @@ export function useGuardrails(bridge: GuardBridge) {
 		busy: busy || text !== state?.text,
 		reply,
 		request,
-		locked: busy && pending.current?.edit === false,
+		locked,
 		conflict: Boolean(reply?.error) && text !== state?.text,
 		reload: () => {
 			if (state) {
@@ -90,24 +94,22 @@ export function useGuardrails(bridge: GuardBridge) {
 	};
 }
 
+/** 保留要求の種別はイベント内で読み取り、描画用のロック状態へ反映する。 */
+function useGuardrailsActivity() {
+	const pendingRef = useRef<{ id: number; edit: boolean } | null>(null);
+	const [activity, setActivity] = useState({ busy: false, locked: false });
+	const setBusy = useCallback((value: boolean) => {
+		setActivity({
+			busy: value,
+			locked: value && pendingRef.current?.edit === false,
+		});
+	}, []);
+	return { ...activity, pendingRef, setBusy };
+}
+
 /** 入力サイズを検査して未保存の下書きを更新する。 */
 function createGuardrailsDraftUpdater(
-	setReply: Dispatch<
-		SetStateAction<{
-			type: "reply";
-			id: number;
-			error: string | null;
-			notice: string;
-			result: {
-				action: "allow" | "ask" | "deny";
-				reasons: string[];
-				rules: string[];
-				paths: string[];
-				uncertainties: string[];
-			} | null;
-			warnings: string[];
-		} | null>
-	>,
+	setReply: Dispatch<SetStateAction<GuardRequestReply | null>>,
 	draft: RefObject<string>,
 	setText: Dispatch<SetStateAction<string>>,
 ) {
@@ -134,32 +136,24 @@ function createGuardrailsEditEffect(
 	state: GuardState | null,
 	busy: boolean,
 	text: string,
-	reply: {
-		type: "reply";
-		id: number;
-		error: string | null;
-		notice: string;
-		result: {
-			action: "allow" | "ask" | "deny";
-			reasons: string[];
-			rules: string[];
-			paths: string[];
-			uncertainties: string[];
-		} | null;
-		warnings: string[];
-	} | null,
+	reply: GuardRequestReply | null,
 	sequence: RefObject<number>,
-	pending: RefObject<{ id: number; edit: boolean } | null>,
-	setBusy: Dispatch<SetStateAction<boolean>>,
+	pendingRef: RefObject<{ id: number; edit: boolean } | null>,
+	setBusy: (busy: boolean) => void,
 	bridge: GuardBridge,
 ): EffectCallback {
 	return () => {
-		if (!state || busy || text === state.text || reply?.error) {
+		if (
+			!state ||
+			busy ||
+			text === state.text ||
+			isNonEmptyString(reply?.error)
+		) {
 			return;
 		}
 		const timer = window.setTimeout(() => {
 			const id = ++sequence.current;
-			pending.current = { id, edit: true };
+			pendingRef.current = { id, edit: true };
 			setBusy(true);
 			bridge.postMessage({
 				type: "edit",
@@ -177,26 +171,11 @@ function createGuardrailsSubscription(
 	host: RefObject<GuardState | null>,
 	draft: RefObject<string>,
 	setState: Dispatch<SetStateAction<GuardState | null>>,
-	pending: RefObject<{ id: number; edit: boolean } | null>,
+	pendingRef: RefObject<{ id: number; edit: boolean } | null>,
 	setText: Dispatch<SetStateAction<string>>,
-	setReply: Dispatch<
-		SetStateAction<{
-			type: "reply";
-			id: number;
-			error: string | null;
-			notice: string;
-			result: {
-				action: "allow" | "ask" | "deny";
-				reasons: string[];
-				rules: string[];
-				paths: string[];
-				uncertainties: string[];
-			} | null;
-			warnings: string[];
-		} | null>
-	>,
+	setReply: Dispatch<SetStateAction<GuardRequestReply | null>>,
 	bridge: GuardBridge,
-	setBusy: Dispatch<SetStateAction<boolean>>,
+	setBusy: (busy: boolean) => void,
 ): EffectCallback {
 	return () => {
 		const receiveState = (message: GuardState) => {
@@ -204,10 +183,10 @@ function createGuardrailsSubscription(
 				host.current !== null && draft.current !== host.current.text;
 			host.current = message;
 			setState(message);
-			if (!pending.current?.edit && !localChanges) {
+			if (!(pendingRef.current?.edit === true) && !localChanges) {
 				draft.current = message.text;
 				setText(message.text);
-			} else if (!pending.current && localChanges) {
+			} else if (!pendingRef.current && localChanges) {
 				setReply({
 					type: "reply",
 					id: 0,
@@ -221,11 +200,14 @@ function createGuardrailsSubscription(
 		const unsubscribe = bridge.subscribe((message) => {
 			if (message.type === "state") {
 				receiveState(message);
-			} else if (pending.current?.id === message.id) {
-				if (!pending.current.edit || message.error) {
+			} else if (pendingRef.current?.id === message.id) {
+				if (
+					!pendingRef.current.edit ||
+					isNonEmptyString(message.error)
+				) {
 					setReply(message);
 				}
-				pending.current = null;
+				pendingRef.current = null;
 				setBusy(false);
 			}
 		});

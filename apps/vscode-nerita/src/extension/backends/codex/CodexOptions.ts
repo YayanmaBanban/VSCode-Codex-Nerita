@@ -1,4 +1,8 @@
 // 実行開始前にモデル候補・会話単位の設定・添付を確定する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { modelOptions } from "./settings/modelOptions";
 import type { TurnStartParams } from "./codex-app-server/v2/TurnStartParams";
 import type { ModelInfo } from "./protocol/account";
@@ -47,7 +51,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.state.configOptions.find((item) => item.id === id)
 				?.currentValue;
 		const model = selected("model");
-		if (!model) {
+		if (!isNonEmptyString(model)) {
 			throw new Error("Model unavailable");
 		}
 		return {
@@ -62,14 +66,17 @@ export abstract class CodexOptions extends CodexAttachments {
 
 	/** 新しい会話の候補を検証し、最初のターンより前に設定を復元する。 */
 	protected async restorePlanSettings(settings: PlanSettings): Promise<void> {
-		if (settings.approvalsReviewer) {
+		if (
+			settings.approvalsReviewer !== undefined &&
+			settings.approvalsReviewer !== null
+		) {
 			this.turnOptions.approvalsReviewer = settings.approvalsReviewer;
 		}
 		await this.setConfig("model", settings.model);
-		if (settings.effort) {
+		if (settings.effort !== "") {
 			await this.setConfig("reasoning_effort", settings.effort);
 		}
-		if (settings.mode) {
+		if (settings.mode !== "") {
 			await this.setConfig("mode", settings.mode);
 		}
 		if (settings.sandboxPolicy) {
@@ -103,7 +110,7 @@ export abstract class CodexOptions extends CodexAttachments {
 				this.models.push(...page.data);
 				cursor = page.nextCursor ?? undefined;
 				recordModelCursor(cursor, seen);
-			} while (cursor);
+			} while (isNonEmptyString(cursor));
 		} catch {
 			if (epoch !== this.epoch) {
 				return;
@@ -158,7 +165,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.state.configOptions.find(
 				(item) => item.id === "reasoning_effort",
 			)?.currentValue ?? "";
-		if (model) {
+		if (isNonEmptyString(model)) {
 			await this.selectionStore?.write({ model, reasoning });
 		}
 	}
@@ -211,7 +218,8 @@ export abstract class CodexOptions extends CodexAttachments {
 			throw new Error("Invalid setting");
 		}
 		if (id === "model") {
-			return this.selectModel(value);
+			this.selectModel(value);
+			return;
 		}
 		if (id === "reasoning_effort") {
 			this.turnOptions.effort = value;
@@ -268,9 +276,11 @@ export abstract class CodexOptions extends CodexAttachments {
 		return (
 			this.busy() ||
 			this.state.configPending ||
-			!this.state.configOptions
-				.find((item) => item.id === id)
-				?.options.some((choice) => choice.value === value)
+			!(
+				this.state.configOptions
+					.find((item) => item.id === id)
+					?.options.some((choice) => choice.value === value) === true
+			)
 		);
 	}
 
@@ -288,7 +298,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		if (value === "default" && this.collaborationMode !== "default") {
 			const epoch = this.epoch;
 			const sessionId = this.state.sessionId;
-			if (!this.client || !sessionId) {
+			if (!this.client || !isNonEmptyString(sessionId)) {
 				throw new Error("Disconnected");
 			}
 			this.patch({ configPending: true });
@@ -336,7 +346,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		const model = this.state.configOptions.find(
 			(item) => item.id === "model",
 		)?.currentValue;
-		if (!model) {
+		if (!isNonEmptyString(model)) {
 			throw new Error("Model unavailable");
 		}
 		return {
@@ -344,9 +354,11 @@ export abstract class CodexOptions extends CodexAttachments {
 			settings: {
 				model,
 				reasoning_effort:
-					this.state.configOptions.find(
-						(item) => item.id === "reasoning_effort",
-					)?.currentValue || null,
+					nonEmptyString(
+						this.state.configOptions.find(
+							(item) => item.id === "reasoning_effort",
+						)?.currentValue,
+					) ?? null,
 				developer_instructions: null,
 			},
 		};
@@ -412,10 +424,10 @@ function reviewerValue(
 
 /** モデル一覧のカーソル循環を拒否する。 */
 function recordModelCursor(cursor: string | undefined, seen: Set<string>) {
-	if (cursor && seen.has(cursor)) {
+	if (isNonEmptyString(cursor) && seen.has(cursor)) {
 		throw new Error("Repeated model cursor");
 	}
-	if (cursor) {
+	if (isNonEmptyString(cursor)) {
 		seen.add(cursor);
 	}
 }
@@ -451,7 +463,8 @@ function sandboxMode(policy: TurnStartParams["sandboxPolicy"]): string {
 			return "workspace-write";
 		case "dangerFullAccess":
 			return "danger-full-access";
-		default:
+		case undefined:
+		case "externalSandbox":
 			return "";
 	}
 }

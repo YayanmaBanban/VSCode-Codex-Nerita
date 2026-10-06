@@ -1,4 +1,9 @@
 // 単一の `subagent` 要求を Host 管理の子へ変換し、結果を親へ返す。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
+import { PiChildOutput } from "./PiChildOutput";
 
 import { resolve } from "node:path";
 import { z } from "zod";
@@ -49,7 +54,7 @@ function subagentSignal(
 		lifetime,
 		guardrailRegistry.snapshot(
 			policy.guardrailsRoot ?? cwd,
-			policy.guardrailsRoot
+			isNonEmptyString(policy.guardrailsRoot)
 				? [policy.guardrailsRoot]
 				: policy.workspaceRoots,
 		).signal,
@@ -65,7 +70,7 @@ export function createPiSubagentTools(
 	const jobs = args[7] ?? new PiJobs(views);
 	args[6] = views;
 	args[7] = jobs;
-	return args[0].length
+	return args[0].length > 0
 		? [createPiSubagentTool(...args), createPiJobTool(jobs)]
 		: [];
 }
@@ -133,7 +138,7 @@ export function createPiSubagentTool(
 				combined,
 				execute,
 			);
-			if (input.async) {
+			if (input.async === true) {
 				return {
 					content: [
 						{
@@ -291,7 +296,7 @@ export function selectAgent(
 ) {
 	const eligible = agents.filter(
 		(agent) =>
-			(agent.name === name || agent.aliases?.includes(name)) &&
+			(agent.name === name || agent.aliases?.includes(name) === true) &&
 			(agent.source === "extension" ||
 				scope === "both" ||
 				agent.source === scope),
@@ -300,7 +305,7 @@ export function selectAgent(
 	if (!agent) {
 		throw new Error(`サブエージェント定義がありません: ${name}`);
 	}
-	if (agent.unavailableReason) {
+	if (isNonEmptyString(agent.unavailableReason)) {
 		throw new Error(agent.unavailableReason);
 	}
 	return agent;
@@ -317,12 +322,12 @@ export function agentModel(
 	const raw = definition.model ?? parent.id;
 	const match = /:(off|minimal|low|medium|high|xhigh|max)$/.exec(raw);
 	const model = match ? raw.slice(0, match.index) : raw;
-	const slash = definition.model ? model.indexOf("/") : -1;
+	const slash = isNonEmptyString(definition.model) ? model.indexOf("/") : -1;
 	const reasoning = definition.thinking ?? match?.[1];
 	return {
 		provider: slash > 0 ? model.slice(0, slash) : parent.provider,
 		model: slash > 0 ? model.slice(slash + 1) : model,
-		...(reasoning ? { reasoning } : {}),
+		...(isNonEmptyString(reasoning) ? { reasoning } : {}),
 	};
 }
 
@@ -331,7 +336,7 @@ function withModel(
 	definition: PiSubagentDefinition,
 	model: string | undefined,
 ) {
-	return model ? { ...definition, model } : definition;
+	return isNonEmptyString(model) ? { ...definition, model } : definition;
 }
 
 /** プロンプトの置換指定を子の起動契約へ渡す。 */
@@ -356,7 +361,7 @@ function availableAgentNames(agents: PiSubagentDefinition[]) {
 	return [
 		...new Set(
 			agents
-				.filter((agent) => !agent.unavailableReason)
+				.filter((agent) => !isNonEmptyString(agent.unavailableReason))
 				.flatMap((agent) => [agent.name, ...(agent.aliases ?? [])]),
 		),
 	].join(", ");
@@ -374,25 +379,8 @@ async function runChildPrompt(
 	update: Parameters<ToolDefinition["execute"]>[3],
 ): ReturnType<ToolDefinition["execute"]> {
 	views.status(viewId, "running");
-	let output = "";
-	let failed = false;
-	const unsubscribe = child.subscribe((event) => {
-		views.event(viewId, event);
-		if (event.type === "tool_execution_end" && event.isError) {
-			failed = true;
-		}
-		if (
-			event.type === "message_end" &&
-			event.message.role === "assistant"
-		) {
-			output = event.message.content
-				.filter((part) => part.type === "text")
-				.map((part) => part.text)
-				.join("\n")
-				.slice(0, 32768);
-			failed ||= ["error", "aborted"].includes(event.message.stopReason);
-		}
-	});
+	const outcome = new PiChildOutput(views, viewId);
+	const unsubscribe = child.subscribe((event) => outcome.receive(event));
 	try {
 		update?.({
 			content: [
@@ -405,15 +393,20 @@ async function runChildPrompt(
 		});
 		await child.prompt(input.task);
 		permit.signal.throwIfAborted();
-		if (failed) {
-			throw new Error(output || "サブエージェントの実行に失敗しました。");
+		if (outcome.failed) {
+			throw new Error(
+				nonEmptyString(outcome.output) ??
+					"サブエージェントの実行に失敗しました。",
+			);
 		}
 		views.status(viewId, "completed");
 		return {
 			content: [
 				{
 					type: "text",
-					text: output || "子から本文の応答がありませんでした。",
+					text:
+						nonEmptyString(outcome.output) ??
+						"子から本文の応答がありませんでした。",
 				},
 			],
 			details: {

@@ -1,0 +1,22 @@
+{
+	"path": [
+		"apps/vscode-nerita/src",
+		"apps/nerita-ui/src",
+		"packages/shared/src"
+	],
+	"minLines": 8,
+	"minTokens": 60,
+	"mode": "mild",
+	"gitignore": true,
+	"reporters": ["console", "html"],
+	"output": "report/jscpd",
+	"ignore": [
+		"**/*.stories.tsx",
+		"**/*.test.ts",
+		"**/*.test.tsx",
+		"**/*.spec.ts",
+		"**/*.spec.tsx",
+		"**/codex-app-server/**",
+		"apps/vscode-nerita/src/extension/backends/pi/guardrails/schema.json"
+	]
+}

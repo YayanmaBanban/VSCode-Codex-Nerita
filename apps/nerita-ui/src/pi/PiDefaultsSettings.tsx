@@ -1,4 +1,5 @@
 // Pi のプロジェクト既定値だけを編集し、ユーザー設定や優先順位を変更しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import {
 	piDefaultsSchema,
@@ -46,7 +47,7 @@ export function PiDefaultsSettings({
 			className="grid gap-4"
 			onSubmit={(event) => {
 				event.preventDefault();
-				if (error) {
+				if (isNonEmptyString(error)) {
 					return;
 				}
 				save({
@@ -146,13 +147,13 @@ function PiDefaultsFields({
 				/>
 			</Field>
 			<button
-				disabled={!!error}
+				disabled={!!isNonEmptyString(error)}
 				className={cn(buttonStyle, "justify-self-start")}
 				type="submit"
 			>
 				既定値を保存
 			</button>
-			{error && (
+			{isNonEmptyString(error) && (
 				<p role="alert" className="text-sm">
 					{error}
 				</p>

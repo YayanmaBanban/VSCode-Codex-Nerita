@@ -50,7 +50,7 @@ async function loadRuntime(root) {
  */
 function commandEnvironment() {
 	const allowed =
-		/^(?:systemroot|windir|systemdrive|comspec|path|pathext|temp|tmp|programfiles|programfiles\\(x86\\)|programw6432|programdata|userprofile|homedrive|homepath|localappdata|appdata|os|processor_architecture|number_of_processors)$/i;
+		/^(?:systemroot|windir|systemdrive|comspec|path|pathext|temp|tmp|programfiles|programfiles\\x86\\|programw6432|programdata|userprofile|homedrive|homepath|localappdata|appdata|os|processor_architecture|number_of_processors)$/i;
 
 	return Object.fromEntries(
 		Object.entries(process.env).filter(

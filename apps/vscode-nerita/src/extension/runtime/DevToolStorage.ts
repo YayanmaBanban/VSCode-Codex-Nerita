@@ -1,4 +1,5 @@
 // ワークスペース別の永続キャッシュと呼出し別の設定を用意し、ホストの資格情報を公開しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
@@ -29,7 +30,9 @@ export async function prepareDevToolStorage(
 	// ホストの .npmrc/.gitconfig は include・helper・秘密情報を持ち得るため、そのまま複製しない。
 	await writeFile(
 		npmConfig,
-		npmConfigSource ? await sanitizedNpmConfig(npmConfigSource) : "",
+		isNonEmptyString(npmConfigSource)
+			? await sanitizedNpmConfig(npmConfigSource)
+			: "",
 		{ flag: "wx" },
 	);
 	await writeFile(gitConfig, "[credential]\n\thelper =\n", { flag: "wx" });

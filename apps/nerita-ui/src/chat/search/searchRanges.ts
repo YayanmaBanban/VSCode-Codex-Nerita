@@ -1,4 +1,8 @@
 // 描画済みの会話から検索範囲を作り、React の DOM を書き換えずに一致を示す。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import { findMatches, matchLimit } from "./findMatches";
 
 /** インライン装飾をまたいで検索できる、1つの表示ブロック。 */
@@ -17,7 +21,7 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 		const parent = node.parentElement;
 		if (
 			!parent ||
-			!node.textContent ||
+			!isNonEmptyString(node.textContent) ||
 			parent.closest(
 				"button,input,textarea,select,svg,script,style,[aria-hidden='true'],.sr-only,.message-actions",
 			)
@@ -27,7 +31,7 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 		const range = document.createRange();
 		range.selectNodeContents(node);
 		if (
-			!range.getClientRects().length ||
+			!isNonZeroNumber(range.getClientRects().length) ||
 			getComputedStyle(parent).visibility === "hidden"
 		) {
 			continue;

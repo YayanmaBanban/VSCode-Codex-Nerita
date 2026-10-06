@@ -12,7 +12,7 @@ export type SessionReference = {
 
 /** ID を本文や URL から推測せず、明示された参照として検証する。 */
 export function isSessionReference(value: unknown): value is SessionReference {
-	if (!value || typeof value !== "object") {
+	if (value === null || typeof value !== "object") {
 		return false;
 	}
 	const entry = value as Record<string, unknown>;
@@ -75,7 +75,7 @@ export function validSessionReferences(
 		(Array.isArray(value) &&
 			value.length <= 5 &&
 			value.every((item: unknown) => {
-				if (!item || typeof item !== "object") {
+				if (item === null || typeof item !== "object") {
 					return false;
 				}
 				const entry = item as Record<string, unknown>;

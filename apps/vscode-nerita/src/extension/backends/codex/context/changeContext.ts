@@ -1,4 +1,5 @@
 // 固定の Git 引数で差分を読み、巨大な差分は要約に切り替えて参照資料にする。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
@@ -61,7 +62,7 @@ export async function readChangeContext(
 			"--stat-width=100",
 			...paths,
 		]);
-		const header = `Changes: ${changeScopes[scope].name}\nWorking directory: ${cwd}\nScope: ${changeScopes[scope].description}\n${excluded.length ? "Configured exclusion patterns are applied." : "No path exclusions are applied."} Binary contents are omitted.\n\n`;
+		const header = `Changes: ${changeScopes[scope].name}\nWorking directory: ${cwd}\nScope: ${changeScopes[scope].description}\n${excluded.length > 0 ? "Configured exclusion patterns are applied." : "No path exclusions are applied."} Binary contents are omitted.\n\n`;
 		let patch: string;
 		try {
 			patch = await git(cwd, [
@@ -88,7 +89,7 @@ export async function readChangeContext(
 				limit,
 			)}${summary.length > limit ? "\n[Summary truncated]" : ""}`;
 		}
-		return header + (patch || "No changes in this scope.");
+		return header + (nonEmptyString(patch) ?? "No changes in this scope.");
 	} catch {
 		throw new ChangeContextError(scope);
 	}

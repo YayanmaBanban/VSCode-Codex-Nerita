@@ -1,4 +1,5 @@
 // 既存本文を優先し、空欄だけ構造化結果の安全な要約で補う。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { PiDisplayText } from "./PiDisplayText";
@@ -32,7 +33,7 @@ export function piResultDisplay(
 		return { content: [] };
 	}
 	const body = bodyContent(ownValue(result, "content"), options);
-	if (body.content?.length) {
+	if (isNonZeroNumber(body.content?.length)) {
 		return { ...body, ...savedDisplay(result) };
 	}
 	const value = structuredValue(
@@ -74,7 +75,7 @@ function structuredValue(
 	value: unknown,
 	options: PiResultDisplayOptions,
 ): unknown {
-	if (!options.mcpEnvelope) {
+	if (!(options.mcpEnvelope === true)) {
 		return value;
 	}
 	return isRecord(value) ? ownValue(value, "structuredContent") : undefined;
@@ -88,7 +89,9 @@ function bodyContent(
 	if (!Array.isArray(value)) {
 		return { content: [] };
 	}
-	const bounded = options.mcpEnvelope || !!options.secrets?.length;
+	const bounded =
+		options.mcpEnvelope === true ||
+		isNonZeroNumber(options.secrets?.length);
 	if (!bounded) {
 		return {
 			content: value.flatMap((part: unknown) => {
@@ -117,7 +120,7 @@ function boundedBody(
 		if (text === undefined) {
 			continue;
 		}
-		if (count++) {
+		if (isNonZeroNumber(count++)) {
 			output.append("\n");
 		}
 		output.append(output.string(text, secrets));
@@ -126,7 +129,7 @@ function boundedBody(
 			break;
 		}
 	}
-	return count
+	return isNonZeroNumber(count)
 		? {
 				content: [textContent(output.finish())],
 				resultDisplay: { source: "content", omitted: output.omitted },

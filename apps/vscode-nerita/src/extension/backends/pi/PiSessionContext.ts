@@ -55,7 +55,7 @@ export function piSessionContext(
 				return [`${message.role}:\n${content}`];
 			})
 			.join("\n\n");
-		if (!text.trim()) {
+		if (text.trim() === "") {
 			throw new Error("参照できる発言がありません。");
 		}
 		return text.length > 40_000
@@ -77,7 +77,7 @@ export function piSessionContext(
 		}
 	}
 	const text = sdk.serializeConversation(sdk.convertToLlm(messages));
-	if (!text.trim()) {
+	if (text.trim() === "") {
 		throw new Error("引き継ぐ会話がありません。");
 	}
 	return text;

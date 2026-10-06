@@ -1,4 +1,5 @@
 // 復元前の ID 照合では本文全体を読み込まず、上限付きで最初の有効な JSON 行を確認する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { open } from "node:fs/promises";
 import { StringDecoder } from "node:string_decoder";
 import { isRecord } from "@nerita/shared/validation";
@@ -23,17 +24,17 @@ export async function readPiSessionHeader(
 				null,
 			);
 			bytes += bytesRead;
-			pending += bytesRead
+			pending += isNonZeroNumber(bytesRead)
 				? decoder.write(buffer.subarray(0, bytesRead))
 				: decoder.end();
 			const lines = pending.split("\n");
-			pending = bytesRead ? lines.pop()! : "";
+			pending = isNonZeroNumber(bytesRead) ? lines.pop()! : "";
 			const header = firstHeader(lines);
 			if (header) {
 				signal.throwIfAborted();
 				return header;
 			}
-			if (!bytesRead) {
+			if (!isNonZeroNumber(bytesRead)) {
 				break;
 			}
 		}

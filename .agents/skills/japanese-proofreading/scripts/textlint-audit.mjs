@@ -69,7 +69,7 @@ export function extractDocumentAuditItems(source, filePath) {
 	let fenceLength = 0;
 
 	function flush(endLine) {
-		if (buffer.length === 0 || startLine === null) {
+		if (buffer.length === 0) {
 			return;
 		}
 
@@ -92,7 +92,7 @@ export function extractDocumentAuditItems(source, filePath) {
 	for (let index = 0; index < lines.length; index += 1) {
 		const line = lines[index];
 		const trimmed = line.trim();
-		const fenceMatch = markdown ? line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/) : null;
+		const fenceMatch = readFence(line, markdown);
 
 		if (fenceMatch) {
 			const marker = fenceMatch[1][0];
@@ -130,6 +130,15 @@ export function extractDocumentAuditItems(source, filePath) {
 	flush(lines.length);
 
 	return items;
+}
+
+/** フェンス記号を先に読み取り、後続の情報文字列とのバックトラックを避ける。 */
+function readFence(line, markdown) {
+	if (!markdown) {
+		return null;
+	}
+	const match = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+	return match ? [match[0], match[1], line.slice(match[0].length)] : null;
 }
 
 /** バッククォートの開始フェンスでは、後続の情報文字列にバッククォートを含められない。 */

@@ -1,4 +1,5 @@
 // 実行中の承認と追加質問を、同じターンの寿命に限定する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { CodexOptions } from "./CodexOptions";
 import type { ActiveTurn } from "./ActiveTurn";
 import { Approvals, parseApproval } from "./interaction/Approvals";
@@ -45,7 +46,7 @@ export abstract class CodexRequests extends CodexOptions {
 			(item) =>
 				item.id === approval.itemId && item.runId === this.state.runId,
 		);
-		if (tool?.paths.length) {
+		if (isNonZeroNumber(tool?.paths.length)) {
 			approval.presentation.fields = [
 				...approval.presentation.fields,
 				{
@@ -99,7 +100,7 @@ export abstract class CodexRequests extends CodexOptions {
 				{
 					title: "追加権限の承認（このターンのみ）",
 					fields: [
-						...(typeof p.reason === "string" && p.reason
+						...(typeof p.reason === "string" && p.reason !== ""
 							? [
 									{
 										id: "reason",

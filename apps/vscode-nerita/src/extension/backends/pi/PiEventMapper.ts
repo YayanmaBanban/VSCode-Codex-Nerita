@@ -1,4 +1,8 @@
 // Pi のアシスタント本文とツール通知を、既存の会話タイムラインへ変換する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { randomUUID } from "node:crypto";
 import type { ChatMessage, ChatState } from "@nerita/shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -28,7 +32,10 @@ export class PiEventMapper {
 		) {
 			return;
 		}
-		if (event.type === "message_start" || !this.messageId) {
+		if (
+			event.type === "message_start" ||
+			!isNonEmptyString(this.messageId)
+		) {
 			this.messageId = randomUUID();
 		}
 		const text = this.protect(
@@ -48,7 +55,7 @@ export class PiEventMapper {
 			order: messageOrder(existing, state),
 		};
 		this.finishMessage(finished, event.message);
-		if (!text && !existing) {
+		if (text === "" && !existing) {
 			return;
 		}
 		return {
@@ -71,7 +78,8 @@ export class PiEventMapper {
 		if (finished) {
 			if (message.stopReason === "error") {
 				this.error = this.protect(
-					message.errorMessage || "Piの応答取得に失敗しました。",
+					nonEmptyString(message.errorMessage) ??
+						"Piの応答取得に失敗しました。",
 				);
 			}
 			this.aborted ||= message.stopReason === "aborted";

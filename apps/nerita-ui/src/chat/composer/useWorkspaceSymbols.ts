@@ -1,4 +1,5 @@
 // 検索語の変更をまとめ、閉じたメニューや古い要求への応答を捨てる。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { useEffect, useState } from "react";
 import type { Bridge } from "@nerita/shared/bridge";
 import {
@@ -20,7 +21,7 @@ export function useWorkspaceSymbols(
 	} | null>(null);
 	useEffect(() => {
 		setResult(null);
-		if (!active || !bridge || !term || !isSymbolQuery(term)) {
+		if (!active || !bridge || term === "" || !isSymbolQuery(term)) {
 			return;
 		}
 		const requestId = crypto.randomUUID();
@@ -72,9 +73,10 @@ export function useWorkspaceSymbols(
 	return {
 		items,
 		empty: emptySymbolMessage(bridge, term, data),
-		notice: data?.truncated
-			? "先頭100件を表示しています。検索語を絞り込んでください。"
-			: undefined,
+		notice:
+			data?.truncated === true
+				? "先頭100件を表示しています。検索語を絞り込んでください。"
+				: undefined,
 	};
 }
 
@@ -87,7 +89,7 @@ function emptySymbolMessage(
 	if (!bridge) {
 		return "シンボル検索を利用できません。";
 	}
-	if (!term) {
+	if (term === "") {
 		return "シンボル名を入力してください。";
 	}
 	if (!isSymbolQuery(term)) {
@@ -97,7 +99,7 @@ function emptySymbolMessage(
 		return "検索中…";
 	}
 	return (
-		data.error ||
+		nonEmptyString(data.error) ??
 		"候補がありません。検索語や言語拡張の対応を確認してください。"
 	);
 }

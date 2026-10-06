@@ -18,7 +18,7 @@ export async function readAttachments(
 	let remaining = 2 * 1024 * 1024;
 	for (const file of files) {
 		const path = fileURLToPath(file.uri);
-		if (/^\.(png|jpe?g|webp|gif)$/i.test(extname(path))) {
+		if (/^\.(?:png|jpe?g|webp|gif)$/i.test(extname(path))) {
 			if (!images) {
 				throw new Error("Image input unavailable");
 			}

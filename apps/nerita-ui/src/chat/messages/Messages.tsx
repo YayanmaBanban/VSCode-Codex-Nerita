@@ -1,4 +1,8 @@
 // メッセージと、同じターンへの移動・回答コピーを表示する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 
 import { type ReactNode, type RefObject, useRef } from "react";
 
@@ -82,9 +86,6 @@ export function Messages({
 		}
 		if (tool) {
 			return renderTimelineTool(tool, tools, renderTool);
-		}
-		if (!message) {
-			return null;
 		}
 		const index = messages.indexOf(message);
 		const user = message.role === "user";
@@ -172,7 +173,7 @@ function MessageEntry(props: MessageEntryProps) {
 			<div className="message-text leading-[1.85] [overflow-wrap:anywhere]">
 				<MessageContent {...props} />
 			</div>
-			{user && !!message.attachments?.length && (
+			{user && !!isNonZeroNumber(message.attachments?.length) && (
 				<div
 					className="mt-2 flex flex-wrap gap-1.5"
 					aria-label="添付ファイル"
@@ -202,7 +203,7 @@ function renderTimelineTool(
 	tools: ToolSummary[],
 	renderTool: ((tool: ToolSummary) => ReactNode) | undefined,
 ) {
-	if (!tool.parentToolCallId) {
+	if (!isNonEmptyString(tool.parentToolCallId)) {
 		return renderTool?.(tool);
 	}
 	const parent = tools.find(

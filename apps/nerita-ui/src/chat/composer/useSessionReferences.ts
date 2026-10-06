@@ -1,4 +1,9 @@
 // セッション候補を履歴パネルと独立して検索し、次ページを明示操作で取得する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 
 import {
 	type EffectCallback,
@@ -44,22 +49,23 @@ export function useSessionReferences(
 		setPage({ query: term });
 	}, [term, active]);
 	useEffect(
-		createSessionReferenceSearch(
-			active,
-			setPage,
-			setResult,
-			setLoading,
-			bridge,
-			term,
-			cursor,
-		),
+		() =>
+			createSessionReferenceSearch(
+				active,
+				setPage,
+				setResult,
+				setLoading,
+				bridge,
+				term,
+				cursor,
+			)(),
 		[bridge, active, term, cursor],
 	);
 	const data = result?.query === term ? result : null;
 	const items = sessionCompletionItems(
 		(data?.entries ?? []).map((entry) => ({ ...entry, mode })),
 	);
-	if (data?.nextCursor && !loading) {
+	if (isNonEmptyString(data?.nextCursor) && !loading) {
 		items.push({
 			id: "load-more-sessions",
 			label: "さらに読み込む",
@@ -71,7 +77,7 @@ export function useSessionReferences(
 		empty: emptySessionMessage(bridge, term, loading, data),
 		notice: sessionReferenceNotice(data, loading),
 		more: () => {
-			if (data?.nextCursor && !loading) {
+			if (isNonEmptyString(data?.nextCursor) && !loading) {
 				setPage({ query: term, cursor: data.nextCursor });
 			}
 		},
@@ -100,7 +106,7 @@ function createSessionReferenceSearch(
 			setLoading(false);
 			return;
 		}
-		if (!cursor) {
+		if (!isNonEmptyString(cursor)) {
 			setResult(null);
 		}
 		setLoading(true);
@@ -135,7 +141,7 @@ function createSessionReferenceSearch(
 					type: "session/searchReferences",
 					requestId,
 					query: term,
-					...(cursor ? { cursor } : {}),
+					...(isNonEmptyString(cursor) ? { cursor } : {}),
 				}),
 			250,
 		);
@@ -166,17 +172,20 @@ function mergeSessionReferencePage(
 	message: SessionReferencesResult,
 ): SetStateAction<SessionReferencePage | null> {
 	return (previous) => {
-		const old = cursor && previous?.query === term ? previous : null;
+		const old =
+			isNonEmptyString(cursor) && previous?.query === term
+				? previous
+				: null;
 		const repeated = repeatedSessionCursor(message, cursor, old);
 		return {
 			query: term,
 			entries: mergeSessionEntries(old, message),
-			nextCursor: repeated ? null : message.nextCursor,
+			nextCursor: repeated === true ? null : message.nextCursor,
 			seen: nextSeenCursors(old, cursor),
-			...(message.error || repeated
+			...(isNonEmptyString(message.error) || repeated === true
 				? {
 						error:
-							message.error ||
+							nonEmptyString(message.error) ??
 							"一覧を続けて取得できませんでした。検索し直してください。",
 					}
 				: {}),
@@ -202,7 +211,10 @@ function nextSeenCursors(
 	old: SessionReferencePage | null,
 	cursor: string | undefined,
 ): string[] {
-	return [...(old?.seen ?? []), ...(cursor ? [cursor] : [])];
+	return [
+		...(old?.seen ?? []),
+		...(isNonEmptyString(cursor) ? [cursor] : []),
+	];
 }
 
 /** ページ間のセッション候補を ID 単位で統合する。 */
@@ -226,8 +238,8 @@ function sessionReferenceNotice(
 	loading: boolean,
 ) {
 	return (
-		data?.error ||
-		(loading && data?.entries.length
+		nonEmptyString(data?.error) ??
+		(loading && isNonZeroNumber(data?.entries.length)
 			? "読み込み中…"
 			: "同じ作業フォルダーのセッションを参照します。")
 	);
@@ -249,5 +261,5 @@ function emptySessionMessage(
 	if (loading || !data) {
 		return "読み込み中…";
 	}
-	return data.error || "参照できるセッションがありません。";
+	return nonEmptyString(data.error) ?? "参照できるセッションがありません。";
 }

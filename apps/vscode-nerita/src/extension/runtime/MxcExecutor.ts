@@ -1,8 +1,13 @@
 // 承認済みコマンドを MXC に渡し、停止・タイムアウト・出力回収を同じプロセス寿命で管理する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
+import { createProcessTreeStopper } from "./ProcessTreeStopper";
 import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execFile, type ChildProcess } from "node:child_process";
+import { type ChildProcess } from "node:child_process";
 import type { ContainerConfig } from "@microsoft/mxc-sdk";
 import {
 	consumeApprovedToolCall,
@@ -52,7 +57,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 			name: "Microsoft MXC",
 			details: [
 				this.isolationTier,
-				`Network: ${policy.networkAccess ? "allow" : "deny"} / host loopback: ${policy.hostLoopbackAccess ? "allow" : "deny"}`,
+				`Network: ${policy.networkAccess ? "allow" : "deny"} / host loopback: ${policy.hostLoopbackAccess === true ? "allow" : "deny"}`,
 				"Clipboard / input injection: deny",
 			],
 		};
@@ -144,7 +149,7 @@ export async function executeMxcCommand(
 	operationId = randomUUID(),
 ): Promise<SandboxCommandResult> {
 	signal.throwIfAborted();
-	if (!process.env.SystemRoot) {
+	if (!isNonEmptyString(process.env.SystemRoot)) {
 		throw new Error("Windows の SystemRoot を取得できません。");
 	}
 	const hostTemporary = await mkdtemp(join(tmpdir(), "nerita-mxc-"));
@@ -184,8 +189,8 @@ export async function executeMxcCommand(
 			hostTemporary,
 			onOutput,
 		);
-		// MXC 本体が先に timeout すると launcher は終了コードと構造化エラーを返す。
-		// Host 側のタイマーより先に close しても、通常の終了結果として扱わない。
+		// MXC 本体が先にタイムアウトすると、起動用プロセスは終了コードと構造化エラーを返す。
+		// Host 側のタイマーより先に `close` イベントが届いても、正常終了として扱わない。
 		const timeoutError = JSON.stringify({
 			error: {
 				code: "backend_error",
@@ -232,8 +237,8 @@ async function validateMxcCall(call: ToolCall) {
 function validateCommand(call: ToolCall) {
 	if (
 		!call.policy.shell ||
-		!call.command?.length ||
-		!call.command[0] ||
+		!isNonZeroNumber(call.command?.length) ||
+		!isNonEmptyString(call.command[0]) ||
 		call.command.some((arg) => arg.includes("\0")) ||
 		!Number.isSafeInteger(call.timeoutMs) ||
 		call.timeoutMs! < 1 ||
@@ -281,23 +286,7 @@ function collectOutput(
 		let stdout = "";
 		let stderr = "";
 		let failure: Error | undefined;
-		let stopping = false;
-		const stop = () => {
-			if (stopping || !child.pid) {
-				return;
-			}
-			stopping = true;
-			execFile(
-				join(process.env.SystemRoot!, "System32", "taskkill.exe"),
-				["/PID", String(child.pid), "/T", "/F"],
-				{ windowsHide: true, timeout: 5000 },
-				() => {
-					if (child.exitCode === null && child.signalCode === null) {
-						child.kill();
-					}
-				},
-			);
-		};
+		const stop = createProcessTreeStopper(child);
 		const abort = () => {
 			failure = new Error("Sandbox 実行を停止しました。", {
 				cause: signal.reason,
@@ -361,7 +350,7 @@ async function prepareMxcDevTools(
 		call.command?.[0],
 	);
 	const managedRoot = process.env.LOCALAPPDATA;
-	if (!managedRoot) {
+	if (!isNonEmptyString(managedRoot)) {
 		throw new Error("Sandbox キャッシュの保存先を取得できません。");
 	}
 	// 拒否されたホストキャッシュを分類する候補。検出しても読み書きは許可しない。
@@ -379,7 +368,7 @@ async function prepareMxcDevTools(
 		join(managedRoot, "Nerita", "sandbox-cache"),
 		workspaceFor(call),
 		temporary,
-		process.env.USERPROFILE
+		isNonEmptyString(process.env.USERPROFILE)
 			? join(process.env.USERPROFILE, ".npmrc")
 			: undefined,
 		management ? management.resourceGrants.usesCache(call) : true,

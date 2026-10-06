@@ -81,7 +81,7 @@ export function summarizeJevCall(call: ToolCall): JevReviewInput {
 		action: `Review a ${tool} tool invocation before human approval`,
 		arguments_summary: [
 			`argument_count=${Object.keys(call.params).length}`,
-			`command_present=${Boolean(call.command || call.hostShell)}`,
+			`command_present=${Boolean(call.command ?? call.hostShell)}`,
 			"Argument values, paths, contents and user intent are withheld",
 		],
 		side_effects: [

@@ -1,4 +1,8 @@
 // ハンドオフの設定だけを保存し、モデル実行やセッション移行は開始しない。
+import {
+	isNonEmptyString,
+	nonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 
 import { type JSX, useState, type Dispatch, type SetStateAction } from "react";
 
@@ -29,7 +33,7 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 	const [config, setConfig] = useState<HandoffConfig>(state.handoff);
 	const [repair, setRepair] = useState(false);
 	const [error, setError] = useState<string>();
-	const locked = busy || (!!state.handoffError && !repair);
+	const locked = busy || (!!isNonEmptyString(state.handoffError) && !repair);
 	const effortError = handoffEffortError(
 		config,
 		state.handoff,
@@ -41,7 +45,7 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 			className="grid gap-5"
 			onSubmit={(event) => {
 				event.preventDefault();
-				if (effortError) {
+				if (isNonEmptyString(effortError)) {
 					return;
 				}
 				const parsed = handoffSchema.safeParse(config);
@@ -66,7 +70,7 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 					current を選びます。
 				</p>
 			</div>
-			{state.handoffError && (
+			{isNonEmptyString(state.handoffError) && (
 				<div
 					role="alert"
 					className={cn(
@@ -84,7 +88,7 @@ export function HandoffSettings({ state, busy, save }: HandoffSettingsProps) {
 					</button>
 				</div>
 			)}
-			{error && (
+			{isNonEmptyString(error) && (
 				<p role="alert" className="text-sm">
 					{error}
 				</p>
@@ -128,7 +132,7 @@ function HandoffFields(props: HandoffFieldsProps) {
 					min={1}
 					max={2147483647}
 					step={1}
-					value={config.defaults.timeoutMs || ""}
+					value={nonZeroNumber(config.defaults.timeoutMs) ?? ""}
 					onChange={(event) =>
 						setConfig({
 							...config,
@@ -158,13 +162,13 @@ function HandoffFields(props: HandoffFieldsProps) {
 				})}
 			</div>
 			<button
-				disabled={!!effortError}
+				disabled={!!isNonEmptyString(effortError)}
 				className={cn(buttonStyle, "justify-self-start")}
 				type="submit"
 			>
 				ハンドオフ設定を保存
 			</button>
-			{effortError && (
+			{isNonEmptyString(effortError) && (
 				<p role="alert" className="text-sm">
 					{effortError}
 				</p>
@@ -176,55 +180,7 @@ function HandoffFields(props: HandoffFieldsProps) {
 /** バックエンド別のハンドオフ設定、モデル候補と編集操作。 */
 type BackendHandoffSettingsProps = {
 	backend: "pi" | "codex";
-	item:
-		| {
-				strategy: "fixed";
-				model: string;
-				thinking?:
-					| "off"
-					| "minimal"
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| undefined;
-		  }
-		| {
-				strategy: "current";
-				thinking?:
-					| "off"
-					| "minimal"
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| undefined;
-		  }
-		| {
-				strategy: "fixed";
-				model: string;
-				reasoningEffort?:
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| "ultra"
-					| undefined;
-		  }
-		| {
-				strategy: "current";
-				reasoningEffort?:
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| "ultra"
-					| undefined;
-		  };
+	item: HandoffConfig["backends"][BackendHandoffSettingsProps["backend"]];
 	setConfig: Dispatch<SetStateAction<HandoffConfig>>;
 	config: HandoffConfig;
 	state: ManagerState;
@@ -303,61 +259,11 @@ function BackendHandoffSettings(
 	);
 }
 
-/** 引き継ぐモデルの選択方式と、固定モデルの候補・編集操作。 */
-type HandoffStrategyFieldProps = {
-	backend: "pi" | "codex";
-	item:
-		| {
-				strategy: "fixed";
-				model: string;
-				thinking?:
-					| "off"
-					| "minimal"
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| undefined;
-		  }
-		| {
-				strategy: "current";
-				thinking?:
-					| "off"
-					| "minimal"
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| undefined;
-		  }
-		| {
-				strategy: "fixed";
-				model: string;
-				reasoningEffort?:
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| "ultra"
-					| undefined;
-		  }
-		| {
-				strategy: "current";
-				reasoningEffort?:
-					| "low"
-					| "medium"
-					| "high"
-					| "xhigh"
-					| "max"
-					| "ultra"
-					| undefined;
-		  };
-	setConfig: Dispatch<SetStateAction<HandoffConfig>>;
-	config: HandoffConfig;
-};
+/** 引き継ぐモデルの選択方式と設定の編集操作。 */
+type HandoffStrategyFieldProps = Pick<
+	BackendHandoffSettingsProps,
+	"backend" | "item" | "setConfig" | "config"
+>;
 
 /** `current` へ戻すと固定モデルを保存対象から除外する。 */
 function HandoffStrategyField({

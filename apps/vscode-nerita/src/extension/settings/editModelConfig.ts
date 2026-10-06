@@ -1,4 +1,5 @@
 // TOML のコメントや他の設定を保持して、モデル設定の通常テーブルを更新する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { parse } from "smol-toml";
 
 /** 複数行の値を分断せず、完結した文に分ける。 */
@@ -15,7 +16,7 @@ function statementsOf(text: string): string[] {
 		statements.push(pending);
 		pending = "";
 	}
-	if (pending) {
+	if (pending !== "") {
 		throw new Error("TOML の編集位置を特定できません。");
 	}
 	return statements;
@@ -47,7 +48,7 @@ function replacement(
 	eol: string,
 ): string {
 	const comment = commentOf(statement, key);
-	return `${key} = ${JSON.stringify(value)}${comment ? ` ${comment}` : ""}${eol}`;
+	return `${key} = ${JSON.stringify(value)}${comment !== "" ? ` ${comment}` : ""}${eol}`;
 }
 
 /** 末尾に設定を追加しても、直前の文と連結しないようにする。 */
@@ -85,7 +86,7 @@ export function editModelConfig(
 			found ||= active;
 		}
 		const key = active ? Object.keys(parse(statement))[0] : undefined;
-		if (key && remaining.has(key)) {
+		if (isNonEmptyString(key) && remaining.has(key)) {
 			output += replacement(statement, key, remaining.get(key)!, eol);
 			remaining.delete(key);
 		} else {

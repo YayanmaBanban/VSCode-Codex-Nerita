@@ -170,10 +170,10 @@ function createMcpSynchronizer(
 				const loaded = await config();
 				const entries = loaded.entries.filter(
 					(entry) =>
-						entry.config?.enabled &&
-						"url" in entry.config &&
-						options.policy.networkAccess &&
-						serverPermitted(entry.name),
+						(entry.config?.enabled === true &&
+							"url" in entry.config &&
+							options.policy.networkAccess &&
+							serverPermitted(entry.name)) === true,
 				);
 				await removeObsolete(entries);
 				for (const entry of entries) {
@@ -272,7 +272,7 @@ function createMcpSdkLoader(
 				),
 			),
 		);
-		if (!exists.some(Boolean) && !pi.getMcpServers().length) {
+		if (!exists.some(Boolean) && pi.getMcpServers().length === 0) {
 			return false;
 		}
 		connection.sdk = await options.load();

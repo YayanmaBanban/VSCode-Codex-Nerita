@@ -32,18 +32,19 @@ export function ActionNotice({
 			aria-hidden={!present}
 			inert={!present}
 			initial={
-				reducedMotion
+				reducedMotion === true
 					? false
 					: { opacity: 0, transform: "translateY(-20px)" }
 			}
 			animate={{ opacity: 1, transform: "translateY(0px)" }}
 			exit={{
 				opacity: 0,
-				transform: reducedMotion
-					? "translateY(0px)"
-					: "translateY(-12px)",
+				transform:
+					reducedMotion === true
+						? "translateY(0px)"
+						: "translateY(-12px)",
 				transition: {
-					duration: reducedMotion ? 0 : 0.2,
+					duration: reducedMotion === true ? 0 : 0.2,
 					ease: "easeOut",
 				},
 			}}

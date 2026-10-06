@@ -1,4 +1,8 @@
 // 現在の会話の出力をファイルへ退避し、短いプレビューと UTF-8 範囲取得を提供する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import type {
 	ToolOutputRequest,
@@ -131,18 +135,8 @@ export class ToolOutputStore {
 			if (this.refs.get(entry.ref) !== entry) {
 				throw new Error("Output expired");
 			}
-			const before = lstatSync(entry.path);
-			if (
-				!before.isFile() ||
-				realpathSync(entry.path) !== resolve(entry.path)
-			) {
-				throw new Error("Not a regular file");
-			}
-			fd = openSync(entry.path, "r");
+			fd = openOutputFile(entry.path);
 			const stat = fstatSync(fd);
-			if (before.ino !== stat.ino || before.dev !== stat.dev) {
-				throw new Error("File changed");
-			}
 			return {
 				...response,
 				...readRange(fd, stat.size, request.offset, request.limit),
@@ -169,7 +163,7 @@ export class ToolOutputStore {
 		this.entries.clear();
 		this.refs.clear();
 		this.projected = new WeakSet();
-		if (this.directory) {
+		if (isNonEmptyString(this.directory)) {
 			rmSync(this.directory, { recursive: true, force: true });
 		}
 		this.directory = undefined;
@@ -177,7 +171,7 @@ export class ToolOutputStore {
 
 	/** 追記経路では本文を再構築せず、保持する先頭・末尾に上限を設ける。 */
 	private write(entry: Entry, source: ToolOutputSource) {
-		if (source.path) {
+		if (isNonEmptyString(source.path)) {
 			this.writer.cancel(entry.ref);
 			entry.path = source.path;
 		} else {
@@ -191,19 +185,21 @@ export class ToolOutputStore {
 			);
 		}
 		entry.head = safeHead(
-			source.delta ? entry.head + source.text : source.text,
+			source.delta === true ? entry.head + source.text : source.text,
 			2000,
 		);
 		entry.tail = safeTail(
-			source.delta ? entry.tail + source.text : source.text,
+			source.delta === true ? entry.tail + source.text : source.text,
 			800,
 		);
-		entry.chars = (source.delta ? entry.chars : 0) + source.text.length;
+		entry.chars =
+			(source.delta === true ? entry.chars : 0) + source.text.length;
 		entry.characters = updatedCharacterCount(entry.characters, source);
 		entry.bytes =
-			(source.delta ? entry.bytes : 0) + Buffer.byteLength(source.text);
+			(source.delta === true ? entry.bytes : 0) +
+			Buffer.byteLength(source.text);
 		entry.truncated = source.truncated ?? false;
-		if (source.path) {
+		if (isNonEmptyString(source.path)) {
 			this.readPreviewEdges(entry);
 		}
 	}
@@ -212,18 +208,8 @@ export class ToolOutputStore {
 	private readPreviewEdges(entry: Entry) {
 		let fd: number | undefined;
 		try {
-			const before = lstatSync(entry.path);
-			if (
-				!before.isFile() ||
-				realpathSync(entry.path) !== resolve(entry.path)
-			) {
-				throw new Error("Not a regular file");
-			}
-			fd = openSync(entry.path, "r");
+			fd = openOutputFile(entry.path);
 			const stat = fstatSync(fd);
-			if (before.ino !== stat.ino || before.dev !== stat.dev) {
-				throw new Error("File changed");
-			}
 			const size = stat.size;
 			const head = readRange(fd, size, 0, 8000);
 			const tail = readRange(fd, size, Math.max(0, size - 3200), 3200);
@@ -241,6 +227,28 @@ export class ToolOutputStore {
 				closeSync(fd);
 			}
 		}
+	}
+}
+
+/**
+ * シンボリックリンクとファイルの差し替えを拒否する。
+ * 検証に失敗した場合は、開いたファイル記述子を閉じてから例外を投げる。
+ */
+function openOutputFile(path: string): number {
+	const before = lstatSync(path);
+	if (!before.isFile() || realpathSync(path) !== resolve(path)) {
+		throw new Error("Not a regular file");
+	}
+	const fd = openSync(path, "r");
+	try {
+		const stat = fstatSync(fd);
+		if (before.ino !== stat.ino || before.dev !== stat.dev) {
+			throw new Error("File changed");
+		}
+		return fd;
+	} catch (error) {
+		closeSync(fd);
+		throw error;
 	}
 }
 
@@ -326,7 +334,8 @@ function contentText(parts: unknown[] | undefined) {
 			? content.text
 			: undefined;
 	});
-	return texts?.length && texts.every((text) => text !== undefined)
+	return isNonZeroNumber(texts?.length) &&
+		texts.every((text) => text !== undefined)
 		? texts.join("\n")
 		: undefined;
 }
@@ -350,7 +359,9 @@ function preview(entry: Entry, source: ToolOutputSource) {
 				? `${head}\n\n${omission}\n\n${tail}`
 				: entry.head,
 		truncated,
-		...(!entry.truncated || source.path ? { outputRef: entry.ref } : {}),
+		...(!entry.truncated || isNonEmptyString(source.path)
+			? { outputRef: entry.ref }
+			: {}),
 		...(!entry.truncated ? { totalBytes: entry.bytes } : {}),
 	};
 }
@@ -361,13 +372,15 @@ function updatedCharacterCount(
 	source: ToolOutputSource,
 ): number | undefined {
 	if (
-		source.truncated ||
-		source.path ||
-		(source.delta && previous === undefined)
+		source.truncated === true ||
+		isNonEmptyString(source.path) ||
+		(source.delta === true && previous === undefined)
 	) {
 		return undefined;
 	}
-	return (source.delta ? previous! : 0) + characterCount(source.text);
+	return (
+		(source.delta === true ? previous! : 0) + characterCount(source.text)
+	);
 }
 
 /** 絵文字を UTF-16 の二文字として数えず、全文の配列化も避ける。 */

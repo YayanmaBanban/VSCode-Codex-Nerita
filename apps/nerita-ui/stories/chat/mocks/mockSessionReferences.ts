@@ -1,4 +1,5 @@
 // 同名の会話と次ページを使い、セッション参照の候補選択を再現する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	SessionReferencesRequest,
 	SessionReferencesResult,
@@ -34,8 +35,14 @@ export function mockSessionReferences(
 	return {
 		type: "session/references",
 		requestId: request.requestId,
-		entries: filtered.slice(request.cursor ? 2 : 0, request.cursor ? 4 : 2),
-		nextCursor: !request.cursor && filtered.length > 2 ? "second" : null,
+		entries: filtered.slice(
+			isNonEmptyString(request.cursor) ? 2 : 0,
+			isNonEmptyString(request.cursor) ? 4 : 2,
+		),
+		nextCursor:
+			!isNonEmptyString(request.cursor) && filtered.length > 2
+				? "second"
+				: null,
 		...(request.query === "error"
 			? {
 					error: "セッションを検索できませんでした。検索し直してください。",

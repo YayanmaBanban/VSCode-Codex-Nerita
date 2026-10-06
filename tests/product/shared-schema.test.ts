@@ -4,6 +4,32 @@ import { test } from "node:test";
 import { isUiContributions } from "@nerita/shared/uiContributionValidation";
 import { validComposerField } from "@nerita/shared/composerValidation";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
+import { isPiAuthState } from "@nerita/shared/piAuth";
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+	nonEmptyString,
+	nonZeroNumber,
+} from "@nerita/shared/valuePredicates";
+
+void test("条件式と代替値の選択は空文字・未設定・ゼロ・NaN を除外し、空白・負数・無限大を保持する", () => {
+	for (const value of [undefined, null, ""]) {
+		assert.equal(isNonEmptyString(value), false);
+		assert.equal(nonEmptyString(value) ?? "fallback", "fallback");
+	}
+	for (const value of [" ", "0", "false", "名前"]) {
+		assert.equal(isNonEmptyString(value), true);
+		assert.equal(nonEmptyString(value) ?? "fallback", value);
+	}
+	for (const value of [undefined, null, 0, -0, NaN]) {
+		assert.equal(isNonZeroNumber(value), false);
+		assert.equal(nonZeroNumber(value) ?? 100, 100);
+	}
+	for (const value of [-1, 1, Infinity, -Infinity]) {
+		assert.equal(isNonZeroNumber(value), true);
+		assert.equal(nonZeroNumber(value) ?? 100, value);
+	}
+});
 
 void test("宣言型 UI は ID・重複・未解決条件・同値切替・非有限進捗を拒否し、未知キーと参照を保持する", () => {
 	const option = {
@@ -89,4 +115,60 @@ void test("Composer の既存の緩い条件を維持する", () => {
 		]),
 		true,
 	);
+});
+
+void test("認証状態は両方の保存方式を受け入れ、壊れた入れ子を例外なく拒否する", () => {
+	const item = {
+		id: "provider",
+		name: "Provider",
+		configured: true,
+		accounts: [
+			{ id: "session", name: "Session", mode: "session", active: true },
+			{
+				id: "saved",
+				name: "Saved",
+				mode: "secret-storage",
+				active: false,
+			},
+		],
+		methods: [{ id: "key", name: "API key" }],
+	};
+	const value = {
+		items: [item],
+		active: null,
+		notice: "",
+		error: null,
+		prompt: {
+			id: "key",
+			message: "入力",
+			secret: true,
+			options: [{ id: "first", label: "最初" }],
+		},
+		feedback: { provider: { notice: "", error: null } },
+	};
+	assert.equal(isPiAuthState(value), true);
+	assert.equal(
+		isPiAuthState({ ...value, prompt: null, feedback: undefined }),
+		true,
+	);
+	for (const invalid of [
+		{ ...value, items: [null] },
+		{ ...value, items: [{ ...item, accounts: [null] }] },
+		{
+			...value,
+			items: [
+				{
+					...item,
+					accounts: [{ ...item.accounts[0], mode: "unknown" }],
+				},
+			],
+		},
+		{ ...value, items: [{ ...item, methods: [null] }] },
+		{ ...value, prompt: undefined },
+		{ ...value, prompt: { ...value.prompt, options: [null] } },
+		{ ...value, feedback: null },
+		{ ...value, feedback: { provider: null } },
+	]) {
+		assert.equal(isPiAuthState(invalid), false, JSON.stringify(invalid));
+	}
 });

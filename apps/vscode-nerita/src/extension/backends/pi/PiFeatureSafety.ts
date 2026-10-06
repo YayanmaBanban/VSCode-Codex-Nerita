@@ -10,8 +10,8 @@ export function privateFeatureValue<T>(
 	secrets: readonly string[] = [],
 	protect?: <TValue>(value: TValue) => TValue,
 ): T {
-	const json = JSON.stringify(value);
-	if (json === undefined) {
+	const json: unknown = JSON.stringify(value);
+	if (typeof json !== "string") {
 		return value;
 	}
 	const encodedSecrets = secrets.flatMap((secret) => {
@@ -24,11 +24,8 @@ export function privateFeatureValue<T>(
 		Number.POSITIVE_INFINITY,
 		encodedSecrets,
 	)
-		.text.replace(/(?:Bearer\s+|sk-)[A-Za-z0-9._-]+/g, "[非公開]")
-		.replace(
-			/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
-			"[非公開]",
-		);
+		.text.replace(/(?:Bearer\s+|sk-)[\w.-]+/g, "[非公開]")
+		.replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "[非公開]");
 	const result = JSON.parse(hidden, privateValue) as T;
 	return protect?.(result) ?? result;
 }

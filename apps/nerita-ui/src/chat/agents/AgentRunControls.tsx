@@ -1,4 +1,5 @@
 // 子の閲覧中も親の実行に属する承認と全体停止を操作できるようにする。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
@@ -19,7 +20,7 @@ export function AgentRunControls({
 		state.run !== "running" &&
 		state.run !== "cancelling" &&
 		!activeChildren &&
-		!state.permissions.length
+		state.permissions.length === 0
 	) {
 		return null;
 	}
@@ -42,7 +43,10 @@ export function AgentRunControls({
 						"disabled:opacity-40",
 					)}
 					onClick={() => {
-						if (state.sessionId && state.runId) {
+						if (
+							isNonEmptyString(state.sessionId) &&
+							isNonEmptyString(state.runId)
+						) {
 							send({
 								type: "prompt/cancel",
 								requestId: crypto.randomUUID(),

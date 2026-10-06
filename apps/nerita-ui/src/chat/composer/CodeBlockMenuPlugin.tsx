@@ -1,4 +1,8 @@
 // 標準コンテキストメニューへ選択状態を渡し、Host からの変換要求を処理する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { Bridge } from "@nerita/shared/bridge";
@@ -96,7 +100,10 @@ export function CodeBlockMenuPlugin({ bridge }: CodeBlockMenuPluginProps) {
 			}),
 			editor.registerUpdateListener(({ dirtyElements, dirtyLeaves }) => {
 				// 本文変更や下書き復元後に、古いノード位置で置換しない。
-				if (dirtyElements.size || dirtyLeaves.size) {
+				if (
+					isNonZeroNumber(dirtyElements.size) ||
+					isNonZeroNumber(dirtyLeaves.size)
+				) {
 					clear();
 				}
 			}),
@@ -124,7 +131,7 @@ export function CodeBlockMenuPlugin({ bridge }: CodeBlockMenuPluginProps) {
 function insertSelectedCodeBlock(editor: LexicalEditor, saved: RangeSelection) {
 	editor.update(() => {
 		const text = $selectedPlainText(saved);
-		if (!text?.trim() || $readParts().length >= 201) {
+		if (!isNonEmptyString(text?.trim()) || $readParts().length >= 201) {
 			return;
 		}
 		$setSelection(saved.clone());
@@ -144,7 +151,7 @@ function prepareCodeBlockSelection(
 		if (
 			!root ||
 			!$isRangeSelection(selection) ||
-			!$selectedPlainText(selection)?.trim() ||
+			!isNonEmptyString($selectedPlainText(selection)?.trim()) ||
 			$readParts().length >= 201
 		) {
 			return;

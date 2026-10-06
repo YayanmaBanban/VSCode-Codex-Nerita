@@ -1,4 +1,5 @@
 // 外部 App Server だけを子プロセスで代替し、本番のクライアント・通信・コントローラーを接続する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { type RequestListener, type IncomingMessage } from "http";
 
@@ -43,7 +44,7 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
 
 /** Codex の製品バイナリや認証情報を使わず、通信先をテスト専用領域に用意する。 */
 export async function codexFixture(t: TestContext) {
-	assert.ok(process.env.NERITA_TEST_ROOT);
+	assert.ok(isNonEmptyString(process.env.NERITA_TEST_ROOT));
 	const root = await mkdtemp(join(process.env.NERITA_TEST_ROOT, "codex-"));
 	const cwd = join(root, "workspace");
 	await mkdir(cwd);
@@ -70,7 +71,7 @@ export async function codexFixture(t: TestContext) {
 		assert.deepEqual(unexpected, []);
 	});
 	const address = server.address();
-	assert.ok(address && typeof address !== "string");
+	assert.ok(address !== null && typeof address !== "string");
 	await writeFile(
 		join(cwd, "control-url"),
 		`http://127.0.0.1:${address.port}`,

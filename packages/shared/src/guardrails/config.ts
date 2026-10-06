@@ -8,7 +8,7 @@ const relativePattern = z
 	.min(1)
 	.max(256)
 	.regex(
-		/^(?![\\/])(?!.*:)(?!.*\\)(?!.*(?:^|\/)\.\.(?:\/|$))[\u0020-\uffff]+$/,
+		/^(?![\\/])(?!.*:)(?!.+\\)(?!.*(?:^|\/)\.\.(?:\/|$))[\u0020-\uffff]+$/,
 		"基準からの相対パスを / 区切りで指定してください。.. は使用できません。",
 	);
 const ruleFields = {
@@ -16,7 +16,7 @@ const ruleFields = {
 		.string()
 		.min(1)
 		.max(80)
-		.regex(/^[a-zA-Z0-9_-]+$/),
+		.regex(/^[\w-]+$/),
 	reason: z.string().min(1).max(500),
 	action: guardActionSchema,
 };

@@ -1,4 +1,5 @@
 // 外部パッケージのコードを実行せず、エージェント定義だけを読み込む。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
@@ -119,7 +120,7 @@ async function userWorkflowPackage(
 	for (const entry of settings.getGlobalSettings().packages ?? []) {
 		const source = typeof entry === "string" ? entry : entry.source;
 		const installed = manager.getInstalledPath(source, "user");
-		if (!installed) {
+		if (!isNonEmptyString(installed)) {
 			continue;
 		}
 		try {
@@ -214,7 +215,7 @@ function packageCandidates(
 		)) {
 			const source = typeof entry === "string" ? entry : entry.source;
 			const installed = manager.getInstalledPath(source, scope);
-			if (installed) {
+			if (isNonEmptyString(installed)) {
 				candidates.push(installed);
 			}
 		}

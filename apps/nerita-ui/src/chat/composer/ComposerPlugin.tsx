@@ -1,4 +1,5 @@
 // 下書き同期と入力制限を編集履歴から分離し、再描画でカーソルをリセットしない。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { ComposerPart } from "@nerita/shared/composerContent";
@@ -9,7 +10,7 @@ import {
 	type LexicalEditor,
 	SKIP_DOM_SELECTION_TAG,
 } from "lexical";
-import { type RefObject, useEffect, useRef } from "react";
+import { useLayoutEffect, type RefObject, useEffect, useRef } from "react";
 import { registerComposerCommands } from "./commands";
 import { $readParts, $writeParts, contentKey } from "./content";
 
@@ -23,9 +24,11 @@ export function ComposerPlugin(props: {
 }) {
 	const [editor] = useLexicalComposerContext();
 	const latest = useRef(props);
-	latest.current = props;
+	useLayoutEffect(() => {
+		latest.current = props;
+	}, [props]);
 	useEffect(() => {
-		editor.setEditable(!props.locked);
+		editor.setEditable(!(props.locked === true));
 	}, [editor, props.locked]);
 	useEffect(
 		() =>
@@ -50,7 +53,7 @@ export function ComposerPlugin(props: {
 		editor.update(
 			() => {
 				$writeParts(props.parts);
-				if (focused) {
+				if (focused === true) {
 					$getRoot().selectEnd();
 				}
 			},
@@ -58,7 +61,7 @@ export function ComposerPlugin(props: {
 				tag: [
 					"draft-restore",
 					HISTORIC_TAG,
-					...(focused ? [] : [SKIP_DOM_SELECTION_TAG]),
+					...(focused === true ? [] : [SKIP_DOM_SELECTION_TAG]),
 				],
 			},
 		);
@@ -90,7 +93,8 @@ function registerDraftUpdates(
 			if (
 				tags.has("draft-restore") ||
 				tags.has("draft-reject") ||
-				(!dirtyElements.size && !dirtyLeaves.size)
+				(!isNonZeroNumber(dirtyElements.size) &&
+					!isNonZeroNumber(dirtyLeaves.size))
 			) {
 				return;
 			}

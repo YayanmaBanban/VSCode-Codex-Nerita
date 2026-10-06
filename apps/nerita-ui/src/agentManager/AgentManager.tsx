@@ -1,4 +1,5 @@
 // バックエンドに応じて管理画面を選び、タブ・選択・未保存入力を管理する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { RotateCw, UserPlus } from "lucide-react";
@@ -54,12 +55,12 @@ export function AgentManager({ bridge }: { bridge: ManagerBridge }) {
 					setPending(null);
 				}}
 			/>
-			{editor.error && (
+			{isNonEmptyString(editor.error) && (
 				<p role="alert" className="m-0 text-sm break-words">
 					{editor.error}
 				</p>
 			)}
-			{editor.notice && (
+			{editor.notice !== "" && (
 				<p role="status" className="m-0 text-sm">
 					{editor.notice}
 				</p>

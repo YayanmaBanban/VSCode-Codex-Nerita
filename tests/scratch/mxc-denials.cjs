@@ -70,7 +70,7 @@ async function capture(root, createMxcConfig, sdk) {
 				],
 				env: Object.fromEntries(
 					Object.entries(process.env).filter(([key]) =>
-						/^(systemroot|windir|systemdrive|comspec|path|pathext|userprofile|localappdata|appdata|programfiles|programdata)$/i.test(
+						/^(?:systemroot|windir|systemdrive|comspec|path|pathext|userprofile|localappdata|appdata|programfiles|programdata)$/i.test(
 							key,
 						),
 					),

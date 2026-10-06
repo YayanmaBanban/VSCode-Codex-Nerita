@@ -1,4 +1,5 @@
 // 読み取り専用の子スレッドと、親のスレッドへ戻るヘッダーを表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -14,6 +15,7 @@ import { ToolCard } from "../tools/ToolCard";
 import { AgentCard, AgentIcon, agentName } from "./AgentCard";
 import { AgentRunControls } from "./AgentRunControls";
 import type { useAgentViewer } from "./useAgentViewer";
+import { useInitialFocus } from "../../hooks/useInitialFocus";
 
 /** 閲覧中の子スレッドの状態と、親のチャット状態・操作要求の送信関数。 */
 type AgentViewerProps = {
@@ -40,7 +42,7 @@ export function AgentViewer({ viewer, state, send }: AgentViewerProps) {
 		>
 			<AgentViewerHeader viewer={viewer} current={current} />
 			<div className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-5">
-				{viewer.error && (
+				{isNonEmptyString(viewer.error) && (
 					<div role="alert" className="mb-3 text-[12px]">
 						{viewer.error}
 						<button
@@ -61,7 +63,7 @@ export function AgentViewer({ viewer, state, send }: AgentViewerProps) {
 						busy={false}
 						messages={view.messages}
 						tools={view.tools}
-						agents={agents.length ? agents : view.agents}
+						agents={agents.length > 0 ? agents : view.agents}
 						renderTool={(tool) => (
 							<ToolCard
 								key={`${tool.runId}:${tool.id}`}
@@ -77,7 +79,7 @@ export function AgentViewer({ viewer, state, send }: AgentViewerProps) {
 						)}
 					/>
 				)}
-				{emptyAgentView(view) && (
+				{emptyAgentView(view) === true && (
 					<p className="text-[12px] text-muted">
 						まだ会話はありません。
 					</p>
@@ -96,6 +98,7 @@ type AgentViewerHeaderProps = {
 
 /** 閲覧スレッドを示し、親への移動と再読み込みを提供する。 */
 function AgentViewerHeader({ viewer, current }: AgentViewerHeaderProps) {
+	const backButton = useInitialFocus<HTMLButtonElement>();
 	return (
 		<header
 			className={cn(
@@ -105,7 +108,7 @@ function AgentViewerHeader({ viewer, current }: AgentViewerHeaderProps) {
 		>
 			<SettingsTooltip content="親へ戻る">
 				<button
-					autoFocus
+					ref={backButton}
 					type="button"
 					onClick={viewer.back}
 					aria-label="親へ戻る"
@@ -142,8 +145,8 @@ function AgentViewerHeader({ viewer, current }: AgentViewerHeaderProps) {
 function emptyAgentView(view: AgentThreadView | null) {
 	return (
 		view &&
-		!view.messages.length &&
-		!view.tools.length &&
-		!view.agents.length
+		view.messages.length === 0 &&
+		view.tools.length === 0 &&
+		view.agents.length === 0
 	);
 }

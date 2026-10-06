@@ -14,7 +14,7 @@ export function SettingsTooltip({
 	aboveMenu?: boolean;
 }) {
 	const trigger = useRef<HTMLElement>(null);
-	if (!content) {
+	if (!(content !== undefined && content !== null && content !== false)) {
 		return children;
 	}
 	return (

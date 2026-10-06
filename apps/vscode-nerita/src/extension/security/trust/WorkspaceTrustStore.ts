@@ -15,7 +15,7 @@ const savedTrust = z
 					root: z.string().refine((path) => resolve(path) === path),
 					trust: z.enum(["trusted", "untrusted"]),
 					origin: z.enum(["workspace", "external", "external-cache"]),
-					updatedAt: z.number().finite(),
+					updatedAt: z.number(),
 					identity: z
 						.object({
 							dev: z.number(),
@@ -255,7 +255,7 @@ function registrationEvent(
 	origin: TrustRecord["origin"] | undefined,
 	fallback: string,
 ): string {
-	if (!origin) {
+	if (!(origin !== undefined)) {
 		return fallback;
 	}
 	return origin === "workspace"

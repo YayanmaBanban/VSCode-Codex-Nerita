@@ -287,7 +287,7 @@ function GuardrailsRulePane({
 					disabled={editor.locked}
 					className="m-0 min-w-0 border-0 p-0"
 				>
-					{tab === "form" && parsed?.success ? (
+					{tab === "form" && parsed?.success === true ? (
 						<GuardrailsRules
 							config={parsed.data}
 							onChange={(config) =>

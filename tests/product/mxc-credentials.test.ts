@@ -1,4 +1,5 @@
 // 実際の MXC / native pnpm と同梱 Pi SDK を通し、モデル・履歴・環境への秘密値混入を検出する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import childProcess, {
@@ -200,7 +201,7 @@ async function queryCli(parentPid: number): Promise<string> {
 	const pipe = stdout.match(
 		/--config (\\\\\.\\pipe\\nerita-mxc-[a-f0-9]+)/,
 	)?.[1];
-	assert.ok(pipe, stdout);
+	assert.ok(isNonEmptyString(pipe), stdout);
 	assert.equal(
 		await readConfigPipe(pipe),
 		"",

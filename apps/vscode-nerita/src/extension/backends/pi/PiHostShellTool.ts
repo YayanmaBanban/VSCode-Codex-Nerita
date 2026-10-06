@@ -14,7 +14,7 @@ const inputSchema = z
 		command: z.string().refine((value) => value.trim().length > 0),
 		timeout: z.number().positive().optional(),
 	})
-	.passthrough();
+	.loose();
 
 /** SDK と信頼済みシェル拡張の両方に、同じ承認・`role`・`Stop` を適用する。 */
 export function createPiHostShellTool(

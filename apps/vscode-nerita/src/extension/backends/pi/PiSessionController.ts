@@ -1,6 +1,8 @@
 // 検証済み Webview メッセージを Pi の最小機能へ接続する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import type { BackendSession } from "../../session/chatSession";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
+import { RequestDeduplicator } from "../../session/RequestDeduplicator";
 import type { UiMessage } from "@nerita/shared/messages";
 import { PiHistory } from "./PiHistory";
 import { piReferenceAction } from "./PiReferenceActions";
@@ -11,7 +13,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	agentModels() {
 		return this.runtime?.account?.agentModels() ?? [];
 	}
-	private seen = new Set<string>();
+	private requests = new RequestDeduplicator();
 	private authAbort: AbortController | undefined;
 
 	/** 実行や別の設定変更が完了するまで設定操作を拒否する。 */
@@ -37,12 +39,8 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			await this.readToolOutput(value);
 			return;
 		}
-		if (this.seen.has(value.requestId)) {
+		if (!this.requests.accept(value.requestId)) {
 			return;
-		}
-		this.seen.add(value.requestId);
-		if (this.seen.size > 2048) {
-			this.seen.delete(this.seen.values().next().value!);
 		}
 		try {
 			await this.dispatch(value);
@@ -121,7 +119,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			return;
 		}
 		if (message.type === "session/list") {
-			if (message.archived || message.more) {
+			if (message.archived === true || message.more === true) {
 				throw new Error("Piのアーカイブ・追加ページは未対応です。");
 			}
 			await this.refreshSessions();
@@ -156,7 +154,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			if (
 				!this.busy() &&
 				!this.state.sessionPending &&
-				this.runtime?.storageChanged?.()
+				this.runtime?.storageChanged?.() === true
 			) {
 				await this.refreshStorage();
 			}
@@ -186,7 +184,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			this.state.connection !== "ready"
 		) {
 			throw new Error(
-				this.state.error ||
+				nonEmptyString(this.state.error) ??
 					"Piの保存先を更新できませんでした。再送してください。",
 			);
 		}
@@ -216,7 +214,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (
 			message.type === "prompt/cancel" &&
 			message.runId === this.state.runId &&
-			this.canCancelJobs()
+			this.canCancelJobs() === true
 		) {
 			this.cancel();
 			return;
@@ -302,7 +300,11 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			message.type !== "config/set" ||
 				message.configId === "provider" ||
 				(message.configId === "model" &&
-					!this.runtime?.quota?.canRetainForModel?.(message.value)),
+					!(
+						this.runtime?.quota?.canRetainForModel(
+							message.value,
+						) === true
+					)),
 		);
 	}
 

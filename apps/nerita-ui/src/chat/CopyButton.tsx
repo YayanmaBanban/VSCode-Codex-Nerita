@@ -29,7 +29,7 @@ function useCopyFeedback(text: string) {
 			return;
 		}
 		const shake =
-			current.result === "error" && !reduced
+			current.result === "error" && !(reduced === true)
 				? button.current?.animate(
 						[
 							{ transform: "translateX(0)" },
@@ -103,7 +103,7 @@ export function CopyButton({
 							),
 					className,
 				)}
-				disabled={disabled || !text}
+				disabled={disabled || text === ""}
 				onClick={() => void copy()}
 			>
 				<Copy size={iconSize} aria-hidden="true" />

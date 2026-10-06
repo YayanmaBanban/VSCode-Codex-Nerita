@@ -1,4 +1,8 @@
 // 設定画面のラベルと入力部品を揃え、キーボードだけでも編集できるようにする。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import type { ReactNode } from "react";
 import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 
@@ -39,19 +43,39 @@ export function ModelField({
 				aria-label="モデル"
 				className={inputStyle}
 				value={value ?? ""}
-				onChange={(event) => onChange(event.target.value || undefined)}
+				onChange={(event) =>
+					onChange(nonEmptyString(event.target.value) ?? undefined)
+				}
 			>
 				<option value="">未指定（バックエンドに任せる）</option>
-				{value && !models.some((item) => item.value === value) && (
-					<option value={value}>{value}（保存済み・未確認）</option>
-				)}
-				{models.map((model) => (
-					<option key={model.value} value={model.value}>
-						{model.name}
-					</option>
-				))}
+				<ModelOptions
+					value={isNonEmptyString(value) ? value : ""}
+					models={models}
+				/>
 			</select>
 		</Field>
+	);
+}
+
+/** モデル設定とハンドオフ設定で、候補一覧にない保存済みの値も表示する。 */
+export function ModelOptions({
+	value,
+	models,
+}: {
+	value: string;
+	models: ManagerModel[];
+}) {
+	return (
+		<>
+			{value !== "" && !models.some((model) => model.value === value) && (
+				<option value={value}>{value}（保存済み・未確認）</option>
+			)}
+			{models.map((model) => (
+				<option key={model.value} value={model.value}>
+					{model.name}
+				</option>
+			))}
+		</>
 	);
 }
 
@@ -73,10 +97,12 @@ export function EffortField({
 				aria-label={label}
 				className={inputStyle}
 				value={value ?? ""}
-				onChange={(event) => onChange(event.target.value || undefined)}
+				onChange={(event) =>
+					onChange(nonEmptyString(event.target.value) ?? undefined)
+				}
 			>
 				<option value="">未指定</option>
-				{value && !options.includes(value) && (
+				{isNonEmptyString(value) && !options.includes(value) && (
 					<option value={value} disabled>
 						{value}（非対応・未確認）
 					</option>

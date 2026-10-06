@@ -1,4 +1,5 @@
 // MXC 本体と Pi の公開操作を通し、通常・子・Codemode の同じ OS 境界と出力保存を確認する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import { mkdir, writeFile, readFile, realpath } from "node:fs/promises";
@@ -178,7 +179,7 @@ void test("MXC の大量 stdout/stderr は逐次プレビューと保存後の�
 	assert.equal(tool.exitCode, 7, JSON.stringify(tool.output));
 	assert.equal(tool.output!.truncated, true);
 	assert.ok(tool.output!.preview.length < 30000);
-	assert.ok(tool.output!.outputRef);
+	assert.ok(isNonEmptyString(tool.output!.outputRef));
 	const files = await sessionFiles(f.cwd);
 	assert.ok(files[0]!.text.includes("OUTPUT_END"));
 	const replies: unknown[] = [];
@@ -257,8 +258,8 @@ async function queueExecution(
 function hasOutput(tools: ToolSummary[], marker: string) {
 	return tools.some(
 		(tool) =>
-			tool.status === "in_progress" &&
-			tool.output?.preview.includes(marker),
+			(tool.status === "in_progress" &&
+				tool.output?.preview.includes(marker)) === true,
 	);
 }
 

@@ -1,4 +1,5 @@
 // SDK の入力処理だけを保留し、完了・停止と競合した追加指示のキューと保存履歴を検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import type { HostMessage } from "@nerita/shared/messages";
@@ -50,7 +51,8 @@ async function verifyLateSteer(t: TestContext, stop: boolean) {
 		);
 		if (stop) {
 			const state = controller.snapshot();
-			assert.ok(state.sessionId && state.runId);
+			assert.ok(isNonEmptyString(state.sessionId));
+			assert.ok(isNonEmptyString(state.runId));
 			await controller.receive({
 				type: "prompt/cancel",
 				requestId: "stop",

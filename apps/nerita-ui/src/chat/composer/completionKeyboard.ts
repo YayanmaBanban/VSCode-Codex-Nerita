@@ -1,4 +1,5 @@
 // 候補一覧のキー操作を本文・検索欄で共有し、IME 確定を選択として扱わない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { LexicalEditor } from "lexical";
 import type { Completion } from "./completions";
 import type { CompletionItem } from "./completionItems";
@@ -55,7 +56,7 @@ function handleBackKey(
 		return false;
 	}
 	event.preventDefault();
-	if (options.category) {
+	if (options.category !== "") {
 		options.back();
 	} else if (event.key === "Escape") {
 		options.close();
@@ -70,11 +71,13 @@ function backFromCategory(
 	category: string,
 	inSearch: boolean,
 ) {
-	return event.key === "ArrowLeft" && category && !inSearch;
+	return event.key === "ArrowLeft" && category !== "" && !inSearch;
 }
 
 /** IME 入力中のキーを候補操作から除外する。 */
 function composingCompletion(event: KeyboardEvent, editor: LexicalEditor) {
+	// IME の確定時に isComposing が先に解除されても、確定キーを処理しない。
+	// eslint-disable-next-line @typescript-eslint/no-deprecated
 	return event.isComposing || event.keyCode === 229 || editor.isComposing();
 }
 
@@ -87,7 +90,7 @@ function handleCompletionSelection(
 	if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 		event.preventDefault();
 		setSelected(
-			items.length
+			items.length > 0
 				? (index + (event.key === "ArrowDown" ? 1 : items.length - 1)) %
 						items.length
 				: 0,
@@ -114,7 +117,8 @@ function isCompletionSelectionKey(
 		(event.key === "Enter" ||
 			event.key === "Tab" ||
 			(event.key === "ArrowRight" &&
-				(items[index]?.category || items[index]?.directory))) &&
+				(isNonEmptyString(items[index]?.category) ||
+					items[index]?.directory !== undefined))) &&
 		!event.shiftKey
 	);
 }

@@ -1,14 +1,13 @@
 // Codex の TOML 定義を、共通の一覧・フォームから編集する。
-import { useState } from "react";
 import {
 	agentEditSchema,
 	type AgentEdit,
 } from "@nerita/shared/agentManager/config";
-import { effortError } from "@nerita/shared/agentManager/effort";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import { AgentBrowser } from "../agentManager/AgentBrowser";
 import { AgentSettings } from "../agentManager/AgentSettings";
 import { AgentModelControl } from "../agentManager/AgentModelControl";
+import { useAgentEditor } from "../agentManager/useAgentEditor";
 import type { AgentManagerProps } from "../agentManager/managerProps";
 import { CodexAgentPermissions } from "./CodexAgentPermissions";
 
@@ -47,39 +46,14 @@ function CodexAgentEditor({
 	agent,
 	...props
 }: AgentManagerProps & { agent?: ManagedAgent | undefined }) {
-	const [edit, setEdit] = useState<AgentEdit>(() => codexDraft(agent?.edit));
-	const [filename, setFilename] = useState("");
-	const models = props.state.models.codex;
-	const error = effortError(
-		models,
-		edit.model,
-		edit.reasoningEffort,
-		agent?.edit.model,
-		agent?.edit.reasoningEffort,
+	const { edit, change, models, settings } = useAgentEditor(
+		props,
+		agent,
+		"codex",
+		() => codexDraft(agent?.edit),
 	);
-	const change = (next: AgentEdit) => {
-		setEdit(next);
-		props.onDirty();
-	};
 	return (
-		<AgentSettings
-			agent={agent}
-			edit={edit}
-			models={models}
-			onChange={change}
-			busy={props.busy}
-			error={error}
-			filename={filename}
-			onFilenameChange={
-				agent
-					? undefined
-					: (value) => {
-							setFilename(value);
-							props.onDirty();
-						}
-			}
-			onSubmit={() => submitAgent(props.save, agent, filename, edit)}
-		>
+		<AgentSettings {...settings}>
 			<AgentModelControl
 				allowUnspecified={false}
 				models={models}
@@ -121,19 +95,4 @@ function codexDraft(
 		approvalsReviewer: edit.approvalsReviewer ?? "user",
 		approvalPolicy: edit.approvalPolicy ?? "on-request",
 	};
-}
-
-/** 保存先の識別子は編集状態から分離し、名前変更でも元ファイルを更新する。 */
-function submitAgent(
-	save: AgentManagerProps["save"],
-	agent: ManagedAgent | undefined,
-	filename: string,
-	draft: AgentEdit,
-) {
-	const edit = agentEditSchema.parse(draft);
-	if (agent) {
-		save({ type: "agent", agentId: agent.id, edit });
-	} else {
-		save({ type: "createAgent", backend: "codex", filename, edit });
-	}
 }

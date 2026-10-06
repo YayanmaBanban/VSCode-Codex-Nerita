@@ -1,4 +1,5 @@
 // SDK の保存領域に属する一覧だけを表示し、待機中の切替・古い取得結果を防ぐ。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { PiRun } from "./PiRun";
 
 /** 一覧取得と会話の切替を、送信と同じ接続世代で管理する。 */
@@ -73,7 +74,7 @@ export abstract class PiHistory extends PiRun {
 			fork &&
 			this.epoch === nextEpoch &&
 			this.runtime?.history &&
-			!this.state.sessionsError
+			!isNonEmptyString(this.state.sessionsError)
 		) {
 			await this.refreshSessions();
 		}

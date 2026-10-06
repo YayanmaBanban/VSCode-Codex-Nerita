@@ -1,4 +1,5 @@
 // ツールの本文・差分・任意の入出力はテキストとして表示し、実行しない。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
@@ -17,13 +18,11 @@ export function Value({
 	scrollable?: boolean;
 }) {
 	if (scrollable) {
+		const formatted: unknown =
+			typeof value === "string" ? value : JSON.stringify(value, null, 2);
 		return (
 			<CommandOutput
-				text={
-					typeof value === "string"
-						? value
-						: (JSON.stringify(value, null, 2) ?? "")
-				}
+				text={typeof formatted === "string" ? formatted : ""}
 			/>
 		);
 	}
@@ -129,7 +128,7 @@ export function GenericTool({
 	scrollable?: boolean;
 } & Pick<ActivityToolProps, "send" | "cwd">) {
 	const hasDetails =
-		!!tool.content?.length ||
+		!!isNonZeroNumber(tool.content?.length) ||
 		tool.rawInput !== undefined ||
 		tool.rawOutput !== undefined;
 	return (
@@ -174,13 +173,15 @@ export function EditingFiles({ tool, send, cwd }: ActivityToolProps) {
 			cwd={cwd}
 			tool={{
 				...tool,
-				paths: tool.content?.some(
-					(value) =>
-						isRecord(value) &&
-						(value.type === "diff" || value.type === "unifiedDiff"),
-				)
-					? []
-					: tool.paths,
+				paths:
+					tool.content?.some(
+						(value) =>
+							isRecord(value) &&
+							(value.type === "diff" ||
+								value.type === "unifiedDiff"),
+					) === true
+						? []
+						: tool.paths,
 			}}
 		/>
 	);

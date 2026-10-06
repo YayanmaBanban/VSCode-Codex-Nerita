@@ -1,4 +1,8 @@
 // 固定した操作欄と結果欄を、スクロールする編集内容から分離する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { useState } from "react";
 import { cn } from "cnfast";
 import type { WorkflowBridge } from "@nerita/shared/workflows/messages";
@@ -21,7 +25,7 @@ export function WorkflowToolbar({
 	switchMode: () => void;
 }) {
 	const disabled = editor.busy || editor.locked;
-	const dirty = !!editor.state?.dirty;
+	const dirty = !!(editor.state?.dirty === true);
 	return (
 		<header className="shrink-0 border-b border-[var(--workflow-border)] p-4">
 			<div className="flex flex-wrap items-center justify-between gap-3">
@@ -93,7 +97,7 @@ function WorkflowActions({
 				実行
 			</button>
 			<button
-				disabled={!editor.state?.running}
+				disabled={!(editor.state?.running === true)}
 				onClick={() => bridge.postMessage({ type: "stop" })}
 			>
 				停止
@@ -110,23 +114,24 @@ export function WorkflowFeedback({ editor }: { editor: WorkflowEditorState }) {
 	const [showScript, setShowScript] = useState(false);
 	const script = editor.reply?.script;
 	const notice =
-		editor.reply?.notice || "定義を保存してから実行してください。";
+		nonEmptyString(editor.reply?.notice) ??
+		"定義を保存してから実行してください。";
 	return (
 		<footer className="shrink-0 border-t border-[var(--workflow-border)] p-3">
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<p role="status" className="min-w-0 flex-1 break-words">
-					{editor.state?.running
+					{editor.state?.running === true
 						? "実行中 · 承認はチャットで操作してください。エディタを閉じると停止します。"
 						: notice}
 				</p>
 				<button
-					disabled={!script}
+					disabled={!isNonEmptyString(script)}
 					onClick={() => setShowScript((value) => !value)}
 				>
 					生成スクリプト{showScript ? "を閉じる" : "を表示"}
 				</button>
 			</div>
-			{showScript && script && (
+			{showScript && isNonEmptyString(script) && (
 				<pre
 					className={cn(
 						"mt-3 max-h-48 overflow-auto rounded border",
@@ -148,7 +153,7 @@ export function WorkflowError({
 	error: string | null | undefined;
 	reload: () => void;
 }) {
-	if (!error) {
+	if (!isNonEmptyString(error)) {
 		return null;
 	}
 	return (

@@ -1,4 +1,5 @@
 // 保存形式ごとの履歴を取得し、表示中の会話を変更せずに復元データを組み立てる。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	initialState,
 	type ChatState,
@@ -210,7 +211,7 @@ function userContent(
 				throw new Error("Invalid user input");
 			}
 			const path = historyAttachmentPath(part, index);
-			if (path) {
+			if (isNonEmptyString(path)) {
 				attachments.push({
 					id: `attachment:${index}`,
 					name: win32.basename(path),

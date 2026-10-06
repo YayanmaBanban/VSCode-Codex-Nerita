@@ -67,7 +67,7 @@ export const managerRequestSchema = z.discriminatedUnion("type", [
 		type: z.literal("createAgent"),
 		...mutation,
 		backend: backendSchema,
-		filename: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/),
+		filename: z.string().regex(/^[a-z0-9][\w-]{0,79}$/i),
 		edit: agentEditSchema,
 	}),
 	z.strictObject({ type: z.literal("ready") }),

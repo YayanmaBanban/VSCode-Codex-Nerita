@@ -1,4 +1,5 @@
 // チャットの接続先を切り替えず、設定管理に必要なモデル能力だけを取得する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
@@ -67,13 +68,13 @@ async function readCodex(
 				})),
 			);
 			cursor = page.nextCursor ?? undefined;
-			if (cursor && seen.has(cursor)) {
+			if (isNonEmptyString(cursor) && seen.has(cursor)) {
 				throw new Error("モデル一覧のページが循環しています。");
 			}
-			if (cursor) {
+			if (isNonEmptyString(cursor)) {
 				seen.add(cursor);
 			}
-		} while (cursor);
+		} while (isNonEmptyString(cursor));
 		return models;
 	} finally {
 		await client.dispose();

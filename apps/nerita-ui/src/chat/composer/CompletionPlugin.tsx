@@ -1,4 +1,8 @@
 // 候補メニューを Lexical の選択範囲と接続し、通常の送信より先にキーを処理する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { Bridge } from "@nerita/shared/bridge";
@@ -105,6 +109,13 @@ function useCompletionState(
 	const dismissed = useRef("");
 	const container = useRef<HTMLDivElement>(null);
 	const id = useId();
+	/** 閉じた補完候補を記録し、同じ編集位置での再表示を防ぐ。 */
+	const close = () => {
+		dismissed.current = JSON.stringify(
+			editor.getEditorState().read($completion),
+		);
+		setMatch(null);
+	};
 	useEffect(() => {
 		if (contextRequest === lastRequest.current) {
 			return;
@@ -117,6 +128,7 @@ function useCompletionState(
 		setSelected(0);
 	}, [contextRequest, editor]);
 	return {
+		close,
 		match,
 		setMatch,
 		category,
@@ -145,12 +157,7 @@ function useCompletionActions(
 		state.selected,
 		Math.max(0, candidates.items.length - 1),
 	);
-	const close = () => {
-		state.dismissed.current = JSON.stringify(
-			editor.getEditorState().read($completion),
-		);
-		state.setMatch(null);
-	};
+	const close = state.close;
 	const back = () => {
 		if (candidates.browsing && candidates.paths.hasParent) {
 			candidates.paths.back();
@@ -264,17 +271,7 @@ type CompletionPanelProps = {
 		ancestors: WorkspacePath[];
 		onAncestor: (depth: number) => void;
 	}) => JSX.Element;
-	paths: {
-		ancestors: WorkspacePath[];
-		goTo: (depth: number) => void;
-		items: CompletionItem[];
-		path: string;
-		empty: string;
-		open: (entry: WorkspacePath) => void;
-		back: () => void;
-		reset: () => void;
-		hasParent: boolean;
-	};
+	paths: ReturnType<typeof useCompletionCandidates>["paths"];
 	setSearch: Dispatch<SetStateAction<string | null>>;
 	setSelected: Dispatch<SetStateAction<number>>;
 	recent: CompletionItem[];
@@ -306,17 +303,18 @@ function CompletionPanel(props: CompletionPanelProps) {
 		browsing,
 		pick,
 	} = props;
+	// 検索欄以外の階層ボタンからも戻れるよう、表示用ラッパーで子要素のキーを受け取る。
 	return (
 		<div
 			ref={container}
+			role="presentation"
 			onKeyDown={(event) => {
 				if (
-					event.key === "Escape" ||
-					(event.altKey && event.key === "ArrowLeft")
+					(event.key === "Escape" ||
+						(event.altKey && event.key === "ArrowLeft")) &&
+					handleKey(event.nativeEvent, true)
 				) {
-					if (handleKey(event.nativeEvent, true)) {
-						event.stopPropagation();
-					}
+					event.stopPropagation();
 				}
 			}}
 		>
@@ -361,17 +359,7 @@ function createCompletionPicker(
 		notice: string;
 		more: () => void;
 	},
-	paths: {
-		ancestors: WorkspacePath[];
-		goTo: (depth: number) => void;
-		items: CompletionItem[];
-		path: string;
-		empty: string;
-		open: (entry: WorkspacePath) => void;
-		back: () => void;
-		reset: () => void;
-		hasParent: boolean;
-	},
+	paths: ReturnType<typeof useCompletionCandidates>["paths"],
 	setSearch: Dispatch<SetStateAction<string | null>>,
 	setSelected: Dispatch<SetStateAction<number>>,
 	setCategory: Dispatch<SetStateAction<string>>,
@@ -381,14 +369,14 @@ function createCompletionPicker(
 	setMatch: Dispatch<SetStateAction<Completion | null>>,
 ) {
 	return (item: CompletionItem) => {
-		if (item.disabled) {
+		if (item.disabled === true) {
 			return;
 		}
 		if (item.category === "添付ファイル") {
 			addAttachment();
 			return;
 		}
-		if (item.more) {
+		if (item.more === true) {
 			sessions.more();
 			return;
 		}
@@ -398,7 +386,7 @@ function createCompletionPicker(
 			setSelected(0);
 			return;
 		}
-		if (item.category) {
+		if (isNonEmptyString(item.category)) {
 			paths.reset();
 			setCategory(item.category);
 			setSearch("");
@@ -441,5 +429,5 @@ function completionTitle(marker: string, category: string): string {
 	if (marker === "@") {
 		return "スキル";
 	}
-	return category || "コンテキスト";
+	return nonEmptyString(category) ?? "コンテキスト";
 }

@@ -59,7 +59,7 @@ void test("Pi は native pnpm を承認前に起動せず、照会のセッシ�
 		["accept", "accept-session", "accept-workspace", "cancel"],
 	);
 	assert.equal(first.commandPermission?.commandClass, "read-only-ish");
-	assert.equal(first.commandPermission?.route, "host");
+	assert.equal(first.commandPermission.route, "host");
 	await permission(controller, "accept-session");
 	let state = await finished(controller);
 	assert.equal(

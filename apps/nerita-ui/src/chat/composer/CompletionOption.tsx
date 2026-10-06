@@ -1,4 +1,5 @@
 // 候補の種別に応じたアイコンと、選択状態を表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import { FolderOpen } from "lucide-react";
 import type { CompletionItem } from "./completionItems";
@@ -32,12 +33,28 @@ export function CompletionOption({
 			<div
 				id={id}
 				role="option"
+				tabIndex={-1}
 				aria-selected={selected}
-				aria-label={item.category ? item.label : undefined}
+				aria-label={
+					isNonEmptyString(item.category) ? item.label : undefined
+				}
 				aria-disabled={item.disabled}
 				onMouseDown={(event) => event.preventDefault()}
+				onKeyDown={(event) => {
+					if (
+						event.nativeEvent.isComposing ||
+						item.disabled === true
+					) {
+						return;
+					}
+					if (event.key === "Enter" || event.key === " ") {
+						event.preventDefault();
+						event.stopPropagation();
+						onPick(item);
+					}
+				}}
 				onClick={() => {
-					if (!item.disabled) {
+					if (!(item.disabled === true)) {
 						onPick(item);
 					}
 				}}
@@ -45,7 +62,7 @@ export function CompletionOption({
 					"cursor-pointer rounded border border-transparent p-2",
 					"[overflow-wrap:anywhere]",
 					context && "flex items-center gap-2",
-					item.disabled && "cursor-not-allowed opacity-50",
+					item.disabled === true && "cursor-not-allowed opacity-50",
 					selected
 						? "border-settings-focus bg-settings-hover"
 						: "hover:bg-settings-hover",
@@ -72,12 +89,12 @@ function CompletionOptionLabel({
 			<span
 				className={cn(
 					context && "min-w-0 text-[12px]",
-					item.category ? "shrink-0" : "truncate",
+					isNonEmptyString(item.category) ? "shrink-0" : "truncate",
 				)}
 			>
 				{item.label}
 			</span>
-			{item.description && (
+			{isNonEmptyString(item.description) && (
 				<span
 					className={cn(
 						"text-[12px] text-muted",

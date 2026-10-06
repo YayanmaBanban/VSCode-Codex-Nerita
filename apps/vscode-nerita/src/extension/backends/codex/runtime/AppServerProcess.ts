@@ -1,4 +1,5 @@
 // シェルを介さず App Server を起動し、接続終了時にプロセスツリーを解放する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import type { WindowsSandboxSetupMode } from "../codex-app-server/v2/WindowsSandboxSetupMode";
 import { sandboxServerEnvironment } from "../../../runtime/CommandEnvironment";
@@ -9,14 +10,15 @@ export function startAppServerProcess(
 	cwd: string,
 	windowsSandbox?: WindowsSandboxSetupMode,
 ): ChildProcessWithoutNullStreams {
-	const env = windowsSandbox
-		? sandboxServerEnvironment()
-		: { ...process.env };
+	const env =
+		windowsSandbox !== undefined
+			? sandboxServerEnvironment()
+			: { ...process.env };
 	// Extension Host 固有の Node 起動設定を、Codex が起動する子プロセスへ持ち込まない。
 	delete env.NODE_OPTIONS;
 	delete env.ELECTRON_RUN_AS_NODE;
 	const args = ["app-server", "--listen", "stdio://"];
-	if (windowsSandbox) {
+	if (windowsSandbox !== undefined) {
 		args.push("-c", `windows.sandbox="${windowsSandbox}"`);
 		// config.toml 内の `env` 追加・`shell` 起動フックを専用接続へ持ち込まない。
 		args.push(
@@ -38,7 +40,11 @@ export function startAppServerProcess(
 export async function stopAppServerProcess(
 	child: ChildProcessWithoutNullStreams,
 ): Promise<void> {
-	if (child.pid && child.exitCode === null && child.signalCode === null) {
+	if (
+		isNonZeroNumber(child.pid) &&
+		child.exitCode === null &&
+		child.signalCode === null
+	) {
 		await new Promise<void>((resolve) => {
 			/** 終了通知と監視タイマーを一度だけ解放する。 */
 			const done = () => {

@@ -124,12 +124,12 @@ function verifyFinalState(
 		assert.equal(starts.length, 2);
 		assert.equal(starts[1]!.params?.threadId, sessionId);
 		assert.ok(
-			JSON.stringify(starts[1]!.params?.additionalContext).includes(
+			JSON.stringify(starts[1]!.params.additionalContext).includes(
 				"引継ぎ用の要約",
 			),
 		);
 		assert.ok(
-			!JSON.stringify(starts[1]!.params?.additionalContext).includes(
+			!JSON.stringify(starts[1]!.params.additionalContext).includes(
 				"参照元だけの回答",
 			),
 		);
@@ -178,12 +178,14 @@ function verifyFinalState(
 function verifyGenerationRequest(f: Awaited<ReturnType<typeof codexFixture>>) {
 	const start = f.requests.find(
 		(request) =>
-			request.method === "thread/start" && request.params?.ephemeral,
+			Boolean(
+				request.method === "thread/start" && request.params?.ephemeral,
+			) === true,
 	);
 	assert.ok(start);
 	assert.equal(start.params?.sandbox, "read-only");
-	assert.equal(start.params?.approvalPolicy, "never");
-	assert.deepEqual(start.params?.config, {
+	assert.equal(start.params.approvalPolicy, "never");
+	assert.deepEqual(start.params.config, {
 		tools: { shell: false },
 		web_search: "disabled",
 	});
@@ -191,6 +193,6 @@ function verifyGenerationRequest(f: Awaited<ReturnType<typeof codexFixture>>) {
 		(request) => request.method === "turn/start",
 	)!.params;
 	assert.equal(input?.threadId, "thread-2");
-	assert.ok(JSON.stringify(input?.input).includes("untrusted_conversation"));
-	assert.ok(JSON.stringify(input?.input).includes("参照元だけの回答"));
+	assert.ok(JSON.stringify(input.input).includes("untrusted_conversation"));
+	assert.ok(JSON.stringify(input.input).includes("参照元だけの回答"));
 }

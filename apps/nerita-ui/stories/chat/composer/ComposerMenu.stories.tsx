@@ -106,3 +106,26 @@ export const Ready: Story = {
 		);
 	},
 };
+
+export const KeyboardSelection: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		const input = canvas.getByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		for (const key of ["[Enter]", " "]) {
+			await userEvent.click(input);
+			await userEvent.clear(input);
+			await userEvent.type(input, "/");
+			const option = await canvas.findByRole("option", { name: /\/new/ });
+			option.focus();
+			await expect(option).toHaveFocus();
+			await userEvent.keyboard(key);
+			await expect(input).toHaveTextContent("/new");
+			await expect(bridge.sent).not.toContainEqual(
+				expect.objectContaining({ type: "prompt/send" }),
+			);
+		}
+	},
+};

@@ -1,4 +1,5 @@
 // Host で速度設定を汎用の `toggle` 宣言へ変換する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ConfigOption } from "@nerita/shared/composer";
 import type { NeritaUiControl } from "@nerita/shared/uiContributions";
 
@@ -33,6 +34,6 @@ export function fastModeControl(
 		disabled: ![onValue, offValue].every((value) =>
 			option.options.some((item) => item.value === value),
 		),
-		...(description ? { description } : {}),
+		...(isNonEmptyString(description) ? { description } : {}),
 	};
 }

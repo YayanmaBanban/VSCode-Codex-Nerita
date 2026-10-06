@@ -1,4 +1,5 @@
 // 拒否から追加した権限とキャッシュ設定を保持する。保存成功前に UI や実行へ公開しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { randomUUID } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import { isAbsolute, normalize, parse, basename } from "node:path";
@@ -67,7 +68,7 @@ export class ResourceGrantStore {
 			const resource = event.resource;
 			if (
 				!resource ||
-				!resource.tool ||
+				!isNonEmptyString(resource.tool) ||
 				decision.action !== "allow" ||
 				!grantable(event)
 			) {
@@ -122,7 +123,7 @@ export class ResourceGrantStore {
 			signal.throwIfAborted();
 			if (
 				event.resource?.kind !== "cache" ||
-				!event.resource.tool ||
+				!isNonEmptyString(event.resource.tool) ||
 				event.resourceType !== "file"
 			) {
 				throw new Error("キャッシュ以外の保存先は切り替えられません。");
@@ -239,7 +240,7 @@ export function workspaceFor(call: ToolCall): string {
 	const workspace = call.policy.workspaceRoots
 		.filter((root) => containsPath(root, call.cwd))
 		.sort((a, b) => b.length - a.length)[0];
-	if (!workspace) {
+	if (!isNonEmptyString(workspace)) {
 		throw new Error("Sandbox の workspace 境界外です。");
 	}
 	return workspace;
@@ -249,10 +250,10 @@ export function workspaceFor(call: ToolCall): string {
 export function grantable(event: DenialEvent): boolean {
 	return (
 		event.resourceType === "file" &&
-		!!event.resource?.tool &&
+		!!isNonEmptyString(event.resource?.tool) &&
 		["install", "helper", "config"].includes(event.resource.kind) &&
 		["read", "execute"].includes(event.requestedAccess) &&
-		!/(^|[\\/])(?:\.ssh|\.aws|\.azure|\.gnupg|credentials|secrets?)([\\/]|$)/i.test(
+		!/(?:^|[\\/])(?:\.ssh|\.aws|\.azure|\.gnupg|credentials|secrets?)(?:[\\/]|$)/i.test(
 			event.target,
 		) &&
 		!/^\.(?:npmrc|gitconfig|netrc|env)(?:\.|$)/i.test(

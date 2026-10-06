@@ -1,4 +1,5 @@
 // `powershell` と `pwsh` を別々に登録し、モデルに渡す説明を実際のシェルと揃える。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { containsPath } from "../../security/AgentAccessPolicy";
 import {
@@ -27,7 +28,7 @@ export async function createPiShellTools(
 	const tools: PiSdk.ToolDefinition[] = [];
 	for (const name of ["powershell", "pwsh"] as const) {
 		const definition = shellDefinition(sdk, paths.cwd, name);
-		if (unavailable || !executor) {
+		if (isNonEmptyString(unavailable) || !executor) {
 			if (name === "powershell") {
 				tools.push(
 					unavailableTool(

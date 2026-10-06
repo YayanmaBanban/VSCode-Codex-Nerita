@@ -1,7 +1,10 @@
+import sonarjs from "eslint-plugin-sonarjs";
+import reactHooks from "eslint-plugin-react-hooks";
+import regexp from "eslint-plugin-regexp";
+import jsxA11yX from "eslint-plugin-jsx-a11y-x";
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-
 import storybook from "eslint-plugin-storybook";
-
+import vitest from "@vitest/eslint-plugin";
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
 import { defineConfig, globalIgnores } from "eslint/config";
@@ -25,11 +28,15 @@ export default defineConfig([
 		"out/**",
 		"apps/vscode-nerita/src/extension/backends/codex/codex-app-server/**",
 	]),
+	regexp.configs.recommended,
 	js.configs.recommended,
 	prettier,
 	...storybook.configs["flat/recommended"],
 	{
 		files: ["**/*.{js,mjs,cjs,ts,tsx}"],
+		plugins: {
+			sonarjs,
+		},
 		languageOptions: {
 			globals: {
 				...globals.node,
@@ -39,13 +46,21 @@ export default defineConfig([
 			reportUnusedDisableDirectives: "error",
 		},
 		rules: {
+			// ifに中括弧がない
 			curly: ["error", "all"],
+			// ===を強制
 			eqeqeq: ["error", "always"],
+			// 重複した同じインポート
 			"no-duplicate-imports": "error",
+			// ネストになった三項演算子
 			"no-nested-ternary": "error",
+			// プロパティ名が同じなら省略する
 			"object-shorthand": ["error", "always"],
+			// 文字列の結合にはテンプレートリテラルを使う
 			"prefer-template": "error",
+			// 関数内の分岐の数
 			complexity: ["error", 10],
+			// ネストの深さ
 			"max-depth": ["error", 3],
 			// コールバックの入れ子を2段までに制限する。
 			"max-nested-callbacks": [
@@ -64,6 +79,20 @@ export default defineConfig([
 					skipComments: true,
 				},
 			],
+			// 人間にとって理解しにくい関数
+			"sonarjs/cognitive-complexity": ["error", 15],
+			// DRY・AIによる重複実装
+			"sonarjs/no-identical-functions": ["error", 5],
+			// 同じif/switchの分岐
+			"sonarjs/no-duplicated-branches": "error",
+			// 全ての分岐が同一という明確な異常
+			"sonarjs/no-all-duplicated-branches": "error",
+			// 同じ条件をelse-if等で再利用
+			"sonarjs/no-identical-conditions": "error",
+			// foo === foo 等のロジック異常
+			"sonarjs/no-identical-expressions": "error",
+			// 不要に複雑な条件構造
+			"sonarjs/no-collapsible-if": "error",
 		},
 	},
 	{
@@ -161,6 +190,40 @@ export default defineConfig([
 						"Use for...of or Promise.all instead of async forEach callbacks.",
 				},
 			],
+			"@typescript-eslint/switch-exhaustiveness-check": [
+				"error",
+				{
+					allowDefaultCaseForExhaustiveSwitch: false,
+					considerDefaultExhaustiveForUnions: false,
+				},
+			],
+			"@typescript-eslint/no-deprecated": "error",
+			// 常にtrue/falseになる条件
+			"@typescript-eslint/no-unnecessary-condition": [
+				"error",
+				{
+					allowConstantLoopConditions: "only-allowed-literals",
+				},
+			],
+			// void戻り値の誤用
+			"@typescript-eslint/no-confusing-void-expression": [
+				"error",
+				{
+					ignoreArrowShorthand: true,
+					ignoreVoidOperator: true,
+				},
+			],
+			// Boolean判定の対象を明示化する
+			"@typescript-eslint/strict-boolean-expressions": [
+				"error",
+				{
+					allowString: false,
+					allowNumber: false,
+					allowNullableObject: true,
+				},
+			],
+			// null合体演算子を強制
+			"@typescript-eslint/prefer-nullish-coalescing": "error",
 		},
 	},
 	{
@@ -177,7 +240,13 @@ export default defineConfig([
 			"apps/nerita-ui/src/**/*.{ts,tsx}",
 			"apps/nerita-ui/stories/**/*.{ts,tsx}",
 		],
-		languageOptions: { globals: globals.browser },
+		...jsxA11yX.configs.recommended,
+		languageOptions: {
+			...jsxA11yX.configs.recommended.languageOptions,
+			globals: {
+				...globals.browser,
+			},
+		},
 	},
 	{
 		files: ["apps/nerita-ui/vitest.config.ts"],
@@ -245,6 +314,20 @@ export default defineConfig([
 	{
 		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
 		plugins: {
+			"react-hooks": reactHooks,
+		},
+		rules: {
+			"react-hooks/rules-of-hooks": "error",
+			"react-hooks/exhaustive-deps": "error",
+			"react-hooks/immutability": "error",
+			"react-hooks/purity": "error",
+			"react-hooks/refs": "error",
+			"react-hooks/set-state-in-render": "error",
+		},
+	},
+	{
+		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
+		plugins: {
 			"better-tailwindcss": betterTailwindcss,
 		},
 		settings: {
@@ -279,6 +362,17 @@ export default defineConfig([
 				{ preferSingleLine: true, printWidth: 0 },
 			],
 			"better-tailwindcss/enforce-consistent-class-order": "warn",
+		},
+	},
+	{
+		files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
+		plugins: {
+			vitest,
+		},
+		rules: {
+			"vitest/no-focused-tests": "error",
+			"vitest/no-standalone-expect": "error",
+			"vitest/no-conditional-expect": "error",
 		},
 	},
 ]);

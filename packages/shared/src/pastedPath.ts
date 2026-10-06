@@ -1,4 +1,5 @@
 // 貼り付けた絶対パスから、VS Code 形式の行・列と行範囲を取り出す。
+import { isNonEmptyString } from "./valuePredicates";
 import { isAbsoluteLocalPath } from "./workspacePaths";
 import { isSourceRange, type SourceRange } from "./symbolLocation";
 
@@ -54,7 +55,7 @@ function parsePathRange(
 		};
 		range = {
 			start,
-			end: location[4]
+			end: isNonEmptyString(location[4])
 				? {
 						line: Number(location[4]) - 1,
 						character: Number(location[5] ?? 1) - 1,

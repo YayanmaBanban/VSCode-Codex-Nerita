@@ -1,4 +1,8 @@
 // グラフとフォームの編集内容を同じ定義に集約し、TOML へ変換する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 
 import { cn } from "cnfast";
 import {
@@ -264,12 +268,12 @@ function WorkflowInspector({
 					})
 				}
 			/>
-			{(error || validation) && (
+			{(isNonEmptyString(error) || isNonEmptyString(validation)) && (
 				<p
 					role="alert"
 					className="mt-4 break-words whitespace-pre-wrap text-tool-error"
 				>
-					{error || validation}
+					{nonEmptyString(error) ?? validation}
 				</p>
 			)}
 		</aside>

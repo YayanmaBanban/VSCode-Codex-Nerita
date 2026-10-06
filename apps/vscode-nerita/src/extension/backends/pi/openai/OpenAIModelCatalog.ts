@@ -27,7 +27,7 @@ export function normalizeOpenAIModels(
 			displayName: item.display_name,
 			priority,
 			visibility: item.visibility as PiCatalogModel["visibility"],
-			...(ultraEffort ? { ultraEffort } : {}),
+			...(ultraEffort !== undefined ? { ultraEffort } : {}),
 			...(supportsPriority(item.service_tiers) ? { fastMode: true } : {}),
 		});
 	}
@@ -61,7 +61,7 @@ function resolveUltraEffort(
 		const level = piThinkingLevels.find(
 			(value) => value !== "off" && value === entry.effort,
 		);
-		return level ? [level] : [];
+		return level !== undefined ? [level] : [];
 	});
 	const preferred = levels.find(
 		(level) => level === item.multi_agent_reasoning_effort,

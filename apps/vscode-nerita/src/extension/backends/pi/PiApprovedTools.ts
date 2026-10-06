@@ -80,7 +80,11 @@ function isRawPublicFetch(
 	}
 	try {
 		const url = new URL(params.url);
-		return url.protocol === "https:" && !url.username && !url.password;
+		return (
+			url.protocol === "https:" &&
+			url.username === "" &&
+			url.password === ""
+		);
 	} catch {
 		return false;
 	}

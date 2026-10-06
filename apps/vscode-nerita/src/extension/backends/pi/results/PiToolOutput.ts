@@ -1,4 +1,5 @@
 // Pi の組み込みシェル結果から、表示本文と Host 内だけの一時出力参照を取り出す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { lstatSync, realpathSync } from "node:fs";
@@ -37,7 +38,7 @@ export function registerPiOutput(
 	setToolOutputSource(tool, {
 		text: structured.output,
 		truncated: structured.truncated,
-		...(path && structured.truncated ? { path } : {}),
+		...(isNonEmptyString(path) && structured.truncated ? { path } : {}),
 	});
 }
 
@@ -70,7 +71,7 @@ function registerContentOutput(
 	setToolOutputSource(tool, {
 		text: text.replace(/\n\n\[Showing [^\n]*Full output: [^\n]*\]/gu, ""),
 		truncated: truncation,
-		...(path ? { path } : {}),
+		...(isNonEmptyString(path) ? { path } : {}),
 	});
 }
 

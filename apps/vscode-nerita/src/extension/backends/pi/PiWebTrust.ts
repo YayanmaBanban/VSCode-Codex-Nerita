@@ -1,4 +1,5 @@
 // pi-web-access の取得先をロード前に登録し、通知がなくても新規 clone を未信頼にする。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -63,10 +64,10 @@ export async function preparePiWebTrust(
 
 /** Web 拡張の設定探索順に従って設定ファイルを選ぶ。 */
 function webConfigPath(): string {
-	if (process.env.PI_CODING_AGENT_DIR) {
+	if (isNonEmptyString(process.env.PI_CODING_AGENT_DIR)) {
 		return join(process.env.PI_CODING_AGENT_DIR, "web-search.json");
 	}
-	const primary = process.env.XDG_CONFIG_HOME
+	const primary = isNonEmptyString(process.env.XDG_CONFIG_HOME)
 		? join(process.env.XDG_CONFIG_HOME, "pi")
 		: join(homedir(), ".pi/agent");
 	const legacy = join(homedir(), ".pi");
@@ -92,7 +93,7 @@ async function readWebConfig(path: string) {
 	const config = JSON.parse(raw) as { githubClone?: { clonePath?: unknown } };
 	const configured = config.githubClone?.clonePath;
 	const cache =
-		typeof configured === "string" && configured.trim()
+		typeof configured === "string" && configured.trim() !== ""
 			? configured.trim()
 			: "/tmp/pi-github-repos";
 	const expanded = cache
@@ -101,7 +102,7 @@ async function readWebConfig(path: string) {
 			process.env.HOME ?? process.env.USERPROFILE ?? "",
 		)
 		.replace(
-			/\$([A-Z_][A-Z0-9_]*)/gi,
+			/\$([A-Z_]\w*)/gi,
 			(match, name: string) => process.env[name] ?? match,
 		);
 	return {

@@ -64,7 +64,7 @@ export class OpenAIProviderControls implements PiModelControls {
 			return undefined;
 		}
 		const effort = this.metadata?.ultraEffort;
-		return effort
+		return effort !== undefined
 			? this.session
 					?.getAvailableThinkingLevels()
 					.find((level) => model.thinkingLevelMap?.[level] === effort)
@@ -77,13 +77,15 @@ export class OpenAIProviderControls implements PiModelControls {
 			...(this.session?.getAvailableThinkingLevels() ?? []).map(
 				(value) => ({ value, name: value }),
 			),
-			...(this.ultraLevel ? [{ value: "ultra", name: "Ultra" }] : []),
+			...(this.ultraLevel !== undefined
+				? [{ value: "ultra", name: "Ultra" }]
+				: []),
 		];
 	}
 	/** Fast は優先処理を要求する設定として公開し、処理速度そのものを保証しない。 */
 	get configOptions(): ConfigOption[] {
 		const state = this.snapshot();
-		return this.metadata?.fastMode
+		return this.metadata?.fastMode === true
 			? [
 					{
 						id: "fast-mode",
@@ -105,7 +107,7 @@ export class OpenAIProviderControls implements PiModelControls {
 		this.snapshot();
 		if (
 			id !== "fast-mode" ||
-			!this.metadata?.fastMode ||
+			!(this.metadata?.fastMode === true) ||
 			!["on", "off"].includes(value)
 		) {
 			return false;
@@ -143,13 +145,13 @@ export class OpenAIProviderControls implements PiModelControls {
 			this.reset();
 		}
 		if (
-			!level ||
+			!(level !== undefined) ||
 			level !== this.ultraBasis ||
 			this.session?.thinkingLevel !== level
 		) {
 			this.ultra = false;
 		}
-		if (!this.metadata?.fastMode) {
+		if (!(this.metadata?.fastMode === true)) {
 			this.fast = false;
 		}
 		this.key = key;
@@ -159,7 +161,7 @@ export class OpenAIProviderControls implements PiModelControls {
 		signal.throwIfAborted();
 		this.snapshot();
 		const ultraLevel = this.ultraLevel;
-		if (value === "ultra" && ultraLevel) {
+		if (value === "ultra" && ultraLevel !== undefined) {
 			this.session!.setThinkingLevel(ultraLevel);
 			this.ultraBasis = ultraLevel;
 			this.ultra = true;
@@ -168,7 +170,7 @@ export class OpenAIProviderControls implements PiModelControls {
 		const level = this.session
 			?.getAvailableThinkingLevels()
 			.find((item) => item === value);
-		if (!level) {
+		if (!(level !== undefined)) {
 			throw new Error("利用可能な Pi 推論レベルを選択してください。");
 		}
 		this.session!.setThinkingLevel(level);
@@ -195,7 +197,7 @@ export class OpenAIProviderControls implements PiModelControls {
 		return (
 			!!current &&
 			!!model &&
-			!this.session?.isCompacting &&
+			!(this.session?.isCompacting === true) &&
 			model.provider === current.provider &&
 			model.id === current.id &&
 			model.api === current.api &&

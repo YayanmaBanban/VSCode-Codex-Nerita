@@ -1,4 +1,5 @@
 // 設定検査のエラーと、判定理由・正規化後のパスを表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import type { GuardReply } from "@nerita/shared/guardrails/messages";
 
@@ -20,7 +21,7 @@ export function GuardrailsFeedback({
 				"text-input-text",
 			)}
 		>
-			{reply.error ? (
+			{isNonEmptyString(reply.error) ? (
 				<p
 					role="alert"
 					className="m-0 break-words whitespace-pre-wrap text-tool-error"

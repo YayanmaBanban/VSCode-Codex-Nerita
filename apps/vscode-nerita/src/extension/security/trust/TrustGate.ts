@@ -1,4 +1,5 @@
 // モデルから渡された信頼値を使用せず、Host 登録の実行コンテキストを参照する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { ToolCall } from "../ApprovedToolCall";
@@ -32,7 +33,7 @@ export async function evaluateTrust(
 	if (isReadOnly(call)) {
 		return undefined;
 	}
-	const context = call.policy.trustContextId
+	const context = isNonEmptyString(call.policy.trustContextId)
 		? contexts.get(call.policy.trustContextId)
 		: undefined;
 	if (!context) {
@@ -69,7 +70,9 @@ export async function evaluateTrust(
 
 /** 複数のルートを許可した実行基盤へ渡す場合は、そのすべてを実行対象として判定する。 */
 function executionRoots(call: ToolCall): string[] {
-	return call.command || call.hostShell || call.tool.startsWith("extension:")
+	return call.command ||
+		call.hostShell === true ||
+		call.tool.startsWith("extension:")
 		? call.policy.workspaceRoots
 		: [];
 }
@@ -78,7 +81,7 @@ function executionRoots(call: ToolCall): string[] {
 function isReadOnly(call: ToolCall): boolean {
 	return (
 		!call.command &&
-		!call.hostShell &&
+		!(call.hostShell === true) &&
 		(["read", "ls", "grep", "find"].includes(call.tool) ||
 			call.externalRead === true)
 	);
@@ -91,11 +94,9 @@ function containsUntrustedCode(
 	paths: string[],
 ): boolean {
 	return (
-		!!(
-			call.command ||
-			call.hostShell ||
-			call.tool.startsWith("extension:")
-		) &&
+		(call.command !== undefined ||
+			call.hostShell === true ||
+			call.tool.startsWith("extension:")) &&
 		context.store
 			.list()
 			.some(

@@ -4,7 +4,7 @@ const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 const ENGLISH_TOKEN_PATTERN =
-	/(?:[A-Za-z][A-Za-z0-9]*(?:[._+#:@-][A-Za-z0-9]+)*|[0-9]+[A-Za-z][A-Za-z0-9]*(?:[._+#:@-][A-Za-z0-9]+)*)/g;
+	/[A-Z][A-Z0-9]*(?:[._+#:@-][A-Z0-9]+)*|\d+[A-Z][A-Z0-9]*(?:[._+#:@-][A-Z0-9]+)*/gi;
 
 /** 許可語句が、元の文章で空白だけを挟んで連続しているか確認する。 */
 function matchesAllowedPhrase(matches, index, phrase, text) {

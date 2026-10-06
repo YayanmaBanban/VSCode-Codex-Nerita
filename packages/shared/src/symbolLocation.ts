@@ -8,12 +8,12 @@ export type SourceRange = { start: SourcePosition; end: SourcePosition };
 
 /** 範囲の座標と前後関係を通信・下書き復元時に検証する。 */
 export function isSourceRange(value: unknown): value is SourceRange {
-	if (!value || typeof value !== "object") {
+	if (value === null || typeof value !== "object") {
 		return false;
 	}
 	const range = value as Record<string, unknown>;
 	const position = (point: unknown): point is SourcePosition => {
-		if (!point || typeof point !== "object") {
+		if (point === null || typeof point !== "object") {
 			return false;
 		}
 		const p = point as Record<string, unknown>;
@@ -39,7 +39,7 @@ export type SymbolLocation = { kind: number; range: SourceRange };
 
 /** シンボルの種別と位置を検証する。 */
 export function isSymbolLocation(value: unknown): value is SymbolLocation {
-	if (!value || typeof value !== "object") {
+	if (value === null || typeof value !== "object") {
 		return false;
 	}
 	const symbol = value as Record<string, unknown>;

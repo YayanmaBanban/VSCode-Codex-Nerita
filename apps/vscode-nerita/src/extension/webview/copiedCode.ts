@@ -1,4 +1,5 @@
 // 通常のコピーで元の座標を記録し、Webview の貼り付け本文と照合する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { win32 } from "node:path";
@@ -34,12 +35,12 @@ export class CopiedCode implements vscode.Disposable {
 						!range ||
 						range.isEmpty ||
 						document.uri.scheme !== "file" ||
-						vscode.env.remoteName
+						isNonEmptyString(vscode.env.remoteName)
 					) {
 						return;
 					}
 					const text = document.getText(range);
-					if (!text.trim() || text.length > 100_000) {
+					if (text.trim() === "" || text.length > 100_000) {
 						return;
 					}
 					const entry: WorkspacePath = {

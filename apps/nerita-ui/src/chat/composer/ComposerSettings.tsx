@@ -1,4 +1,5 @@
 // 入力欄の下に添付・使用量・接続中の設定を順に配置する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -30,7 +31,7 @@ export function ComposerSettings({
 		state.run === "cancelling";
 	/** 操作は現在の会話 ID と一意な要求 ID を添えて送る。 */
 	const change = (configId: string, value: string) => {
-		if (state.sessionId && !disabled) {
+		if (isNonEmptyString(state.sessionId) && !disabled) {
 			send({
 				type: "config/set",
 				requestId: crypto.randomUUID(),
@@ -140,7 +141,7 @@ function settingsConnected(state: ChatState) {
 		(state.connection === "ready" ||
 			(state.piAccount !== null &&
 				state.connection === "auth-required")) &&
-		!!state.sessionId &&
+		!!isNonEmptyString(state.sessionId) &&
 		!state.sessionPending
 	);
 }

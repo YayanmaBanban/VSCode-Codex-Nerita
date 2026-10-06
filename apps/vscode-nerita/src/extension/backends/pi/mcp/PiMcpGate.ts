@@ -1,4 +1,5 @@
 // 接続設定と環境変数を承認後にも検査し、変更した接続へ古い許可を流用しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { createHash } from "node:crypto";
 import type { PiMcpEntry } from "./PiMcpConfig";
 import type { PiAuthorize } from "../PiApprovedTools";
@@ -33,8 +34,8 @@ export function resolvedMcpHeaders(entry: PiMcpEntry): Record<string, string> {
 export function mcpHttpUrl(value: string): URL {
 	const url = new URL(value);
 	if (
-		url.username ||
-		url.password ||
+		isNonEmptyString(url.username) ||
+		isNonEmptyString(url.password) ||
 		!(
 			url.protocol === "https:" ||
 			(url.protocol === "http:" &&
@@ -91,7 +92,10 @@ export class PiMcpGate {
 			throw new Error("この役割では MCP 通信が禁止されています。");
 		}
 		const entry = await current();
-		if (!entry?.config?.enabled || mcpIdentity(entry) !== this.identity) {
+		if (
+			!(entry?.config?.enabled === true) ||
+			mcpIdentity(entry) !== this.identity
+		) {
 			throw new Error("MCP の設定が変更されました。再接続してください。");
 		}
 		signal.throwIfAborted();
@@ -137,7 +141,7 @@ export class PiMcpGate {
 		target: URL,
 		signal: AbortSignal,
 	): Promise<void> {
-		if (this.approved.get(key)?.signal.aborted) {
+		if (this.approved.get(key)?.signal.aborted === true) {
 			this.approved.delete(key);
 		}
 		if (!this.approved.has(key)) {

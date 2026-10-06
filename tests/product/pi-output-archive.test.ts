@@ -1,4 +1,5 @@
 // SDK の一時シェル出力を恒久保存し、削除・改ざん後の参照境界を検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
@@ -65,7 +66,7 @@ void test("一時シェル出力を保存し、元ファイルの削除後も全
 	t.after(() => store.dispose());
 	const projected = store.project(tool);
 	assert.equal(projected.exitCode, 1);
-	assert.ok(projected.output?.outputRef);
+	assert.ok(isNonEmptyString(projected.output?.outputRef));
 	assert.equal(
 		(
 			await store.read({

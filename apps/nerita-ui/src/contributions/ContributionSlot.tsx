@@ -1,4 +1,5 @@
 // Host で選別された Contribution を指定 `slot` へ安定した順序で配置する。
+import { nonZeroNumber } from "@nerita/shared/valuePredicates";
 import type {
 	NeritaUiSlot,
 	UiContributions,
@@ -24,7 +25,7 @@ export function ContributionSlot({
 				.filter((item) => item.slot === name)
 				.sort(
 					(a, b) =>
-						(a.order ?? 0) - (b.order ?? 0) ||
+						nonZeroNumber((a.order ?? 0) - (b.order ?? 0)) ??
 						a.id.localeCompare(b.id),
 				)
 				.map((item) => (

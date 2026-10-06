@@ -1,4 +1,5 @@
 // 子エージェントと個別承認の表示用データ。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { Permission } from "@nerita/shared/chatState";
 import type { SubAgentSummary } from "@nerita/shared/subAgents";
 /** 同名の子を固定 ID で識別する。 */
@@ -12,7 +13,7 @@ export function piAgentState() {
 			nickname: `reviewer ${i + 1}`,
 			status: "running",
 			statusMessage: task,
-			iconKey: i ? "duck" : "cheetah",
+			iconKey: isNonZeroNumber(i) ? "duck" : "cheetah",
 			order: i + 2,
 		}),
 	);

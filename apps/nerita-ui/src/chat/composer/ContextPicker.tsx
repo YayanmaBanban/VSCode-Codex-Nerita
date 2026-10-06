@@ -75,7 +75,7 @@ export function ContextPicker({
 									</SettingsTooltip>
 								);
 							})}
-							{!recent.length && (
+							{recent.length === 0 && (
 								<span className="text-[12px] text-muted">
 									まだありません
 								</span>

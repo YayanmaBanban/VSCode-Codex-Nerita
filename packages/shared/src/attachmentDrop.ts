@@ -20,7 +20,7 @@ export function isLocalFileUri(value: unknown): value is string {
 
 	try {
 		const uri = new URL(value);
-		return uri.protocol === "file:" && !uri.search && !uri.hash;
+		return uri.protocol === "file:" && uri.search === "" && uri.hash === "";
 	} catch {
 		return false;
 	}
@@ -30,13 +30,13 @@ export function isLocalFileUri(value: unknown): value is string {
 export function validDroppedAttachments(
 	value: unknown,
 ): value is DroppedAttachment[] {
-	if (!Array.isArray(value) || !value.length || value.length > 20) {
+	if (!Array.isArray(value) || value.length === 0 || value.length > 20) {
 		return false;
 	}
 
 	let total = 0;
 	return value.every((item: unknown) => {
-		if (!item || typeof item !== "object") {
+		if (item === null || typeof item !== "object") {
 			return false;
 		}
 		if ("uri" in item) {
@@ -55,7 +55,7 @@ export function validDroppedAttachments(
 		return (
 			total <= Math.ceil(MAX_DROP_BYTES / 3) * 4 &&
 			item.data.length % 4 === 0 &&
-			/^[A-Za-z0-9+/]*={0,2}$/.test(item.data)
+			/^[A-Z0-9+/]*={0,2}$/i.test(item.data)
 		);
 	});
 }
@@ -69,6 +69,6 @@ function validAttachmentName(name: unknown): boolean {
 		!/[<>:"/\\|?*]/.test(name) &&
 		!Array.from(name).some((char) => char.charCodeAt(0) < 32) &&
 		!/[. ]$/.test(name) &&
-		!/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)
+		!/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)
 	);
 }

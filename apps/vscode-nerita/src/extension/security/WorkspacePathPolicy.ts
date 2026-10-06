@@ -6,7 +6,7 @@ import { freezeToolCall } from "./ApprovedToolCall";
 
 /** デバイス名前空間・ADS・ドライブ相対名などの別解釈を許さない。 */
 export function validatePath(path: string) {
-	if (!path || path.includes("\0")) {
+	if (path === "" || path.includes("\0")) {
 		throw new Error("不正なファイルパスです。");
 	}
 	if (
@@ -20,7 +20,7 @@ export function validatePath(path: string) {
 				.some(
 					(p) =>
 						(/[ .]$/.test(p) && p !== "." && p !== "..") ||
-						/^(con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(
+						/^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(
 							p,
 						),
 				))
@@ -65,7 +65,7 @@ export async function canonicalPath(
 export async function createWorkspaceAccessPolicy(
 	roots: readonly string[],
 ): Promise<AgentAccessPolicy> {
-	if (!roots.length) {
+	if (roots.length === 0) {
 		throw new Error("workspace rootsを解決できません。");
 	}
 	const canonical = await Promise.all(

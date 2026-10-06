@@ -1,4 +1,5 @@
 // SDK が stderr に追記する拒否レポートのポインターをツール出力から分離する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { basename, dirname, normalize } from "node:path";
 import { z } from "zod";
 
@@ -18,7 +19,7 @@ export class MxcStderr {
 
 	write(chunk: string): void {
 		this.pending += chunk;
-		while (this.pending.length) {
+		while (isNonZeroNumber(this.pending.length)) {
 			const position = this.pending.indexOf(marker);
 			if (position < 0) {
 				const length = Math.max(
@@ -51,7 +52,7 @@ export class MxcStderr {
 	}
 
 	private flush(length: number): void {
-		if (length) {
+		if (isNonZeroNumber(length)) {
 			this.emit(this.pending.slice(0, length));
 		}
 		this.pending = this.pending.slice(length);

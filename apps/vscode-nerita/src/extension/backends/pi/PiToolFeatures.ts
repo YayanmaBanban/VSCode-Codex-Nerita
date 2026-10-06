@@ -42,7 +42,8 @@ export function piToolExposure(
 	if (["subagent", "subagent_job", "subagent_workflow"].includes(tool.name)) {
 		return tool;
 	}
-	return features.toolSearch && (!tool.exposure || tool.exposure === "direct")
+	return features.toolSearch === true &&
+		(!(tool.exposure !== undefined) || tool.exposure === "direct")
 		? {
 				...tool,
 				exposure: "deferred",
@@ -206,12 +207,13 @@ function guardFeatureContext(
 			if (!piToolPermitted(name, features)) {
 				throw new Error("許可されていないツールです。");
 			}
-			const serialized = JSON.stringify(args) ?? "";
+			const json: unknown = JSON.stringify(args);
+			const serialized = typeof json === "string" ? json : "";
 			if (
 				(features.protect?.(serialized) !== undefined &&
 					features.protect(serialized) !== serialized) ||
 				secrets.some(
-					(secret) => !!secret && serialized.includes(secret),
+					(secret) => !(secret === "") && serialized.includes(secret),
 				) ||
 				/"(?:authorization|password|secret|token|credential|api[_-]?key|private[_-]?key)"\s*:/i.test(
 					serialized,

@@ -1,4 +1,8 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 
 import { randomUUID } from "node:crypto";
 import { bindPiOutputArchive } from "./results/PiOutputArchive";
@@ -309,7 +313,7 @@ async function openRuntimeSessionStore(
 	agentDir: string,
 	storage: PiSessionStorage,
 ) {
-	return options.ephemeral
+	return options.ephemeral === true
 		? {
 				manager: sdk.SessionManager.inMemory(options.cwd),
 				history: undefined,
@@ -600,7 +604,7 @@ async function prepareRuntimeResources(
 	options: PiRuntimeOptions,
 	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
 ) {
-	const agentDir = options.agentDir || sdk.getAgentDir();
+	const agentDir = nonEmptyString(options.agentDir) ?? sdk.getAgentDir();
 	const settingsManager = sdk.SettingsManager.create(options.cwd, agentDir);
 	settingsManager.setProjectTrusted(await piWorkspaceTrusted(options));
 	// Host 側の停止・承認管理を経ずに会話を再実行しないよう、SDK の自動再試行などを無効化する。
@@ -688,7 +692,7 @@ function runtimeAuthorizer(
 	authorize: PiAuthorize,
 	codemode?: boolean,
 ): PiAuthorize {
-	return codemode
+	return codemode === true
 		? (request, signal) =>
 				abortableFeatureApproval(authorize(request, signal), signal)
 		: authorize;
@@ -704,7 +708,7 @@ function createChildren(
 		{
 			...options,
 			executor: tools.executor,
-			...(tools.unavailable
+			...(isNonEmptyString(tools.unavailable)
 				? { sandboxUnavailable: tools.unavailable }
 				: {}),
 		},
@@ -794,7 +798,10 @@ function resolvePreferredModel(
 	selection: PiModelSelection | undefined,
 	modelRuntime: PiSdk.ModelRuntime,
 ) {
-	if (!selection?.provider.trim() || !selection.model.trim()) {
+	if (
+		!isNonEmptyString(selection?.provider.trim()) ||
+		selection.model.trim() === ""
+	) {
 		return undefined;
 	}
 	return modelRuntime
@@ -829,7 +836,7 @@ function validateChildModel(
 	model: ReturnType<typeof resolvePiInitialModel>,
 ) {
 	if (
-		options.strictModel &&
+		options.strictModel === true &&
 		(!model ||
 			model.id !== options.preferredModel?.model ||
 			model.provider !== options.preferredModel.provider)

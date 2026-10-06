@@ -9,6 +9,7 @@ import {
 } from "@nerita/shared/agentManager/messages";
 import type { BackendSession } from "../session/chatSession";
 import { configuredBackend } from "../webview/backendSettings";
+import { selectLocalWorkspace } from "../webview/selectLocalWorkspace";
 import { webviewHtml } from "../webview/webviewHtml";
 import { AgentManagerStore } from "./AgentManagerStore";
 import { readPiAgents } from "./PiAgentSettings";
@@ -75,11 +76,11 @@ export class AgentManagerPanel {
 				try {
 					const live = this.liveModels(id);
 					this.catalogs[id] =
-						live.length &&
+						live.length > 0 &&
 						live.every((model) => model.efforts !== undefined)
 							? live
 							: await this.readModels(id, this.abort.signal);
-					if (!this.catalogs[id].length) {
+					if (this.catalogs[id].length === 0) {
 						this.modelErrors.push(
 							`${id}: モデル一覧を取得できません。認証設定を確認して再読み込みしてください。`,
 						);
@@ -186,8 +187,11 @@ export class AgentManagerPanel {
 		if (
 			this.closed ||
 			!vscode.workspace.isTrusted ||
-			!vscode.workspace.workspaceFolders?.some(
-				(item) => item.uri.toString() === this.folder.uri.toString(),
+			!(
+				vscode.workspace.workspaceFolders?.some(
+					(item) =>
+						item.uri.toString() === this.folder.uri.toString(),
+				) === true
 			)
 		) {
 			throw new Error("信頼済みのワークスペースを開いてください。");
@@ -226,15 +230,11 @@ export function registerAgentManager(
 	context.subscriptions.push(
 		vscode.commands.registerCommand("nerita.agents.manage", async () => {
 			try {
-				const folders = vscode.workspace.workspaceFolders ?? [];
-				const folder =
-					folders.length === 1
-						? folders[0]
-						: await vscode.window.showWorkspaceFolderPick();
-				if (!folder || folder.uri.scheme !== "file") {
+				const selected = await selectLocalWorkspace();
+				if (!selected) {
 					return;
 				}
-				const root = await realpath(folder.uri.fsPath);
+				const { folder, root } = selected;
 				const existing = panels.get(root);
 				if (existing) {
 					existing.reveal();

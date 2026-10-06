@@ -1,4 +1,5 @@
 // 検索ペインと候補ペインを持ち、選択中の行を見える範囲に保つ。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { cn } from "cnfast";
 import {
@@ -12,6 +13,7 @@ import {
 } from "react";
 import type { CompletionItem } from "./completionItems";
 import { CompletionOption } from "./CompletionOption";
+import { useInitialFocus } from "../../hooks/useInitialFocus";
 
 /** 補完候補・検索語・選択位置と、検索や候補選択の操作。 */
 type CompletionMenuProps = {
@@ -62,7 +64,7 @@ export function CompletionMenu(props: CompletionMenuProps) {
 				"absolute left-0 z-50 flex max-h-[min(560px,80dvh)] min-w-0 flex-col",
 				"overflow-y-auto rounded-[6px] border border-panel-border bg-input p-2",
 				"shadow-lg",
-				context ? "w-[min(460px,calc(100vw-54px))]" : "w-full",
+				context === true ? "w-[min(460px,calc(100vw-54px))]" : "w-full",
 				above ? "bottom-full mb-2" : "top-0",
 			)}
 			role="region"
@@ -70,12 +72,12 @@ export function CompletionMenu(props: CompletionMenuProps) {
 		>
 			{header}
 			<CompletionSearchInput {...props} />
-			{location && (
+			{isNonEmptyString(location) && (
 				<p className="mb-2 text-[12px] break-all text-muted">
 					{location}
 				</p>
 			)}
-			{notice && (
+			{isNonEmptyString(notice) && (
 				<p role="status" className="mb-2 text-[12px] text-muted">
 					{notice}
 				</p>
@@ -140,7 +142,7 @@ function CompletionList({
 					onPick={onPick}
 				/>
 			))}
-			{!items.length && (
+			{items.length === 0 && (
 				<p className="p-2 text-[12px] text-muted" role="status">
 					{empty}
 				</p>
@@ -162,17 +164,18 @@ function CompletionSearchInput({
 	onKeyDown,
 	location,
 }: CompletionSearchInputProps) {
+	const input = useInitialFocus<HTMLInputElement>(autoFocus === true);
 	return (
 		<div
 			className={cn(
 				"flex shrink-0 items-center gap-2",
-				context
+				context === true
 					? "order-last mt-2 border-t border-panel-border pt-2"
 					: "mb-2 border-b border-panel-border pb-2",
 			)}
 		>
 			<input
-				autoFocus={autoFocus}
+				ref={input}
 				aria-label={`${title}を検索`}
 				role="combobox"
 				aria-expanded="true"
@@ -183,7 +186,11 @@ function CompletionSearchInput({
 				value={query}
 				onChange={(event) => onQuery(event.target.value)}
 				onKeyDown={onKeyDown}
-				placeholder={location ? "この階層を検索" : `${title}を検索`}
+				placeholder={
+					isNonEmptyString(location)
+						? "この階層を検索"
+						: `${title}を検索`
+				}
 				className={cn(
 					"w-full min-w-0 rounded border border-input-border bg-input p-2",
 					"text-input-text",

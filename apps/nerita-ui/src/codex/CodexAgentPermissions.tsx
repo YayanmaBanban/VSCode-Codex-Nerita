@@ -1,4 +1,5 @@
 // サンドボックス・承認者と承認要求の種類を Codex の保存形式で編集する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { Check, ChevronRight } from "lucide-react";
 import { cn } from "cnfast";
@@ -72,14 +73,16 @@ export function CodexAgentPermissions({
 											...edit,
 											sandboxMode:
 												agentEditSchema.shape.sandboxMode.parse(
-													value || undefined,
+													nonEmptyString(value) ??
+														undefined,
 												),
 										}
 									: {
 											...edit,
 											approvalsReviewer:
 												agentEditSchema.shape.approvalsReviewer.parse(
-													value || undefined,
+													nonEmptyString(value) ??
+														undefined,
 												),
 										},
 							)
@@ -171,7 +174,9 @@ function ApprovalPolicyField({
 													),
 											}
 										: agentEditSchema.shape.approvalPolicy.parse(
-												event.target.value || undefined,
+												nonEmptyString(
+													event.target.value,
+												) ?? undefined,
 											),
 							})
 						}
@@ -250,31 +255,29 @@ function GranularFields({
 }) {
 	return (
 		<>
-			{granular && (
-				<fieldset className="grid gap-3 rounded-md border border-input-border p-3">
-					<legend className="text-sm">承認要求を許可する項目</legend>
-					{(
-						Object.keys(
-							granularLabels,
-						) as (keyof typeof granularLabels)[]
-					).map((key) => (
-						<SettingsTooltip key={key} content={key}>
-							<label className="flex items-center gap-2 text-sm">
-								<ApprovalCheckbox
-									checked={granular[key]}
-									onChange={(checked) =>
-										onChange({
-											...granular,
-											[key]: checked,
-										})
-									}
-								/>
-								{granularLabels[key]}
-							</label>
-						</SettingsTooltip>
-					))}
-				</fieldset>
-			)}
+			<fieldset className="grid gap-3 rounded-md border border-input-border p-3">
+				<legend className="text-sm">承認要求を許可する項目</legend>
+				{(
+					Object.keys(
+						granularLabels,
+					) as (keyof typeof granularLabels)[]
+				).map((key) => (
+					<SettingsTooltip key={key} content={key}>
+						<label className="flex items-center gap-2 text-sm">
+							<ApprovalCheckbox
+								checked={granular[key]}
+								onChange={(checked) =>
+									onChange({
+										...granular,
+										[key]: checked,
+									})
+								}
+							/>
+							{granularLabels[key]}
+						</label>
+					</SettingsTooltip>
+				))}
+			</fieldset>
 		</>
 	);
 }

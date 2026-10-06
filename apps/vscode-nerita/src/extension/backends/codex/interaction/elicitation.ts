@@ -1,4 +1,5 @@
 // MCP の URL 誘導と基本フォームを検証し、承諾した入力だけを返す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { isRecord } from "@nerita/shared/validation";
 import { text, type InteractionService } from "./interactionService";
 
@@ -90,11 +91,11 @@ function supportedField(field: unknown): field is Record<string, unknown> {
 		["string", "number", "integer", "boolean"].includes(
 			String(field.type),
 		) &&
-		!field.format &&
-		!field.oneOf &&
-		!field.anyOf &&
-		!field.pattern &&
-		!field.items
+		!(Boolean(field.format) === true) &&
+		!(Boolean(field.oneOf) === true) &&
+		!(Boolean(field.anyOf) === true) &&
+		!(Boolean(field.pattern) === true) &&
+		!(Boolean(field.items) === true)
 	);
 }
 
@@ -121,7 +122,10 @@ async function elicitField(
 	if (omitField(value, required, choices)) {
 		return null;
 	}
-	if (validate(value) || (choices && !choices.includes(value))) {
+	if (
+		isNonEmptyString(validate(value)) ||
+		(choices && !choices.includes(value))
+	) {
 		return undefined;
 	}
 	return { value: fieldValue(field.type, value) };
@@ -133,7 +137,10 @@ function omitField(
 	required: boolean,
 	choices: string[] | undefined,
 ): boolean {
-	return !required && (!value || (value === "省略" && choices !== undefined));
+	return (
+		!required &&
+		(value === "" || (value === "省略" && choices !== undefined))
+	);
 }
 
 /** 必須・数値・文字数の制約を入力時と送信前に照合する。 */
@@ -142,7 +149,7 @@ function validateField(
 	field: Record<string, unknown>,
 	required: boolean,
 ): string | undefined {
-	if (!value) {
+	if (value === "") {
 		return required ? "入力してください。" : undefined;
 	}
 	if (
@@ -216,6 +223,8 @@ async function elicitUrl(
 	return {
 		...empty,
 		action:
+			// 確認待ちの間に AbortSignal は変更されるため、返答後にも取消しを確認する。
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 			answer === "入力を完了した" && !signal.aborted
 				? "accept"
 				: "cancel",

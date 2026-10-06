@@ -65,7 +65,7 @@ export class CredentialService {
 	private async readBws(key: string) {
 		const id = key.slice("bws.auth.".length);
 		const mode = this.bwsSession.get(id) ?? this.bwsModes[id];
-		if (!mode) {
+		if (!(mode !== undefined)) {
 			return undefined;
 		}
 		const value = await this.stores.store(mode).get(key);
@@ -125,7 +125,7 @@ export class CredentialService {
 		mode: CredentialStorageMode,
 		token: string,
 	) {
-		if (!token || /[\r\n\0]/.test(token)) {
+		if (token === "" || /[\r\n\0]/.test(token)) {
 			throw new Error("Bitwarden のトークン形式が不正です。");
 		}
 		this.stores.redactor.protect(token);

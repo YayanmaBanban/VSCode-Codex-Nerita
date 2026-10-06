@@ -1,12 +1,8 @@
 // 検索可能な認証先一覧と、SDK から要求された入力をエディター内に表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
-import {
-	type JSX,
-	type Dispatch,
-	type SetStateAction,
-	useState,
-	useRef,
-} from "react";
+import { type JSX, type Dispatch, type SetStateAction, useState } from "react";
+import { useInitialFocus } from "../hooks/useInitialFocus";
 
 import type {
 	PiAuthItem,
@@ -27,8 +23,10 @@ type AuthInputProps = {
 
 /** 入力値は送信時・アンマウント時に破棄し、永続化しない。 */
 function AuthInput({ prompt, send }: AuthInputProps) {
-	const inputRef = useRef<HTMLInputElement>(null);
-	const selectRef = useRef<HTMLSelectElement>(null);
+	const inputRef = useInitialFocus<HTMLInputElement>(!prompt.options);
+	const selectRef = useInitialFocus<HTMLSelectElement>(
+		prompt.options !== undefined,
+	);
 	const [hasValue, setHasValue] = useState(false);
 	return (
 		<form
@@ -41,7 +39,7 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 					field.value = "";
 				}
 				setHasValue(false);
-				if (value) {
+				if (value !== "") {
 					send({ type: "answer", id: prompt.id, value });
 				}
 			}}
@@ -49,7 +47,6 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 			{prompt.options ? (
 				<select
 					id="auth-input"
-					autoFocus
 					ref={selectRef}
 					onChange={(event) =>
 						setHasValue(Boolean(event.target.value))
@@ -68,7 +65,6 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 			) : (
 				<input
 					id="auth-input"
-					autoFocus
 					type={prompt.secret ? "password" : "text"}
 					autoComplete="off"
 					spellCheck={false}
@@ -168,7 +164,7 @@ export function PiAuthEditor({ state, send }: PiAuthEditorProps) {
 					);
 				})}
 			</ul>
-			{!filtered.length && (
+			{filtered.length === 0 && (
 				<p className="py-[24px] text-center text-muted">
 					一致する認証先がありません。
 				</p>
@@ -313,7 +309,7 @@ function renderProviderFeedback(
 			aria-label={`${item.name}の通知`}
 			className="mb-[12px] overflow-y-auto overscroll-contain"
 		>
-			{feedback?.error && (
+			{isNonEmptyString(feedback?.error) && (
 				<p
 					role="alert"
 					className={cn(
@@ -324,7 +320,7 @@ function renderProviderFeedback(
 					{feedback.error}
 				</p>
 			)}
-			{feedback?.notice && (
+			{isNonEmptyString(feedback?.notice) && (
 				<p
 					role="status"
 					className={cn(
@@ -335,15 +331,16 @@ function renderProviderFeedback(
 					{feedback.notice}
 				</p>
 			)}
-			{!feedback?.error && !feedback?.notice && (
-				<p
-					role="status"
-					className={cn(
-						"m-0 h-[40px] rounded-[6px] border border-tooltip-border bg-tooltip",
-						"p-[12px] leading-[20px] break-words",
-					)}
-				/>
-			)}
+			{!isNonEmptyString(feedback?.error) &&
+				!isNonEmptyString(feedback?.notice) && (
+					<p
+						role="status"
+						className={cn(
+							"m-0 h-[40px] rounded-[6px] border border-tooltip-border bg-tooltip",
+							"p-[12px] leading-[20px] break-words",
+						)}
+					/>
+				)}
 		</div>
 	);
 }

@@ -1,4 +1,5 @@
 // 生の構造化結果を Webview へ渡さず、有限の走査で表示用 JSON を作る。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { PiDisplayText } from "./PiDisplayText";
 
 /** 循環、非公開情報、巨大な結果を表示用の説明へ置き換える。 */
@@ -103,13 +104,13 @@ class StructuredDisplay {
 				this.output.omitted = true;
 				break;
 			}
-			if (count++) {
+			if (isNonZeroNumber(count++)) {
 				this.output.append(",");
 			}
 			this.output.append(`\n${"  ".repeat(depth + 1)}`);
 			this.entry(key, descriptor, array, depth);
 		}
-		if (count && !this.output.full) {
+		if (isNonZeroNumber(count) && !this.output.full) {
 			this.output.append(`\n${"  ".repeat(depth)}`);
 		}
 	}

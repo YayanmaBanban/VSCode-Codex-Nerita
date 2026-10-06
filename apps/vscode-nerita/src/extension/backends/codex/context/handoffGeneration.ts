@@ -1,4 +1,5 @@
 // 要約専用の一時接続で生成し、表示中の会話や参照元を変更しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { CodexFactory, CodexConnection } from "../runtime/connection";
 import type { HandoffRequest } from "../../../session/HandoffContext";
 import { isRecord } from "@nerita/shared/validation";
@@ -61,7 +62,9 @@ export async function generateCodexHandoff(
 		await client.startTurn({
 			threadId,
 			model: request.model,
-			...(request.effort ? { effort: request.effort } : {}),
+			...(isNonEmptyString(request.effort)
+				? { effort: request.effort }
+				: {}),
 			input: [{ type: "text", text: request.prompt, text_elements: [] }],
 		});
 		return await done;

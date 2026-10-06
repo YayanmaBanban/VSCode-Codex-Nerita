@@ -1,4 +1,5 @@
 // チャットの入力・逐次応答・接続状態と承認要求を表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { Bridge } from "@nerita/shared/bridge";
 import { type ChatState } from "@nerita/shared/chatState";
@@ -143,12 +144,13 @@ function ChatWorkspace(props: ChatWorkspaceProps) {
 			>
 				<ChatSearchBar search={search} />
 				<ChatConversation {...props} onOpenAgent={agentViewer.open} />
-				{state.connection === "auth-required" && state.error && (
-					<AuthenticationFailureNotification
-						key={state.error}
-						message={state.error}
-					/>
-				)}
+				{state.connection === "auth-required" &&
+					isNonEmptyString(state.error) && (
+						<AuthenticationFailureNotification
+							key={state.error}
+							message={state.error}
+						/>
+					)}
 				{submission.notice && (
 					<NotificationCard
 						key={submission.notice.id}

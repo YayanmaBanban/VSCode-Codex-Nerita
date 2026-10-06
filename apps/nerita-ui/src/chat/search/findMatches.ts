@@ -1,4 +1,5 @@
 // 会話検索の条件を正規表現へ変換し、Unicode の単語境界と空一致を扱う。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 
 /** 検索バーから指定する一致条件。 */
 export type FindOptions = {
@@ -15,7 +16,7 @@ export function searchPattern(
 	query: string,
 	options: FindOptions,
 ): RegExp | null {
-	if (!query) {
+	if (query === "") {
 		return null;
 	}
 	let source = options.regex
@@ -35,7 +36,7 @@ export function findMatches(
 ): TextMatch[] {
 	const matches: TextMatch[] = [];
 	for (const match of text.matchAll(pattern)) {
-		if (!match[0].length) {
+		if (!isNonZeroNumber(match[0].length)) {
 			continue;
 		}
 		matches.push({

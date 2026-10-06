@@ -102,6 +102,8 @@ function createTrustRequestListener(
 						canSelectMany: false,
 						title: "Trust を管理するフォルダー",
 					});
+					// フォルダー選択の待機中にパネルが閉じられる場合がある。
+					// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 					if (!panelState.closed && folders?.[0]) {
 						await store.registerWorkspace(folders[0].fsPath);
 					}

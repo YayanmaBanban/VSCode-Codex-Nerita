@@ -1,8 +1,13 @@
 // ファイルドロップと画像ペーストを、会話を固定した添付要求へ変換する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import {
+	useLayoutEffect,
 	useRef,
 	useState,
 	type ClipboardEvent,
@@ -34,7 +39,7 @@ export function useAttachmentDrop(
 	const enabled =
 		!locked &&
 		state.connection === "ready" &&
-		!!state.sessionId &&
+		!!isNonEmptyString(state.sessionId) &&
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending &&
@@ -43,7 +48,9 @@ export function useAttachmentDrop(
 		state.run !== "cancelling";
 	const scope = `${state.connection}:${state.cwd}:${state.sessionId}`;
 	const current = useRef({ scope, enabled });
-	current.current = { scope, enabled };
+	useLayoutEffect(() => {
+		current.current = { scope, enabled };
+	}, [scope, enabled]);
 
 	/** 子要素の Lexical やブラウザーがファイルを挿入・表示する前に処理する。 */
 	const stop = (event: DragEvent | ClipboardEvent) => {
@@ -52,29 +59,44 @@ export function useAttachmentDrop(
 	};
 
 	/** ドロップとペーストの読み込み・会話確認を共通化する。 */
-	const attach = createAttachmentReader(
-		enabled,
-		pending,
-		setReading,
-		setError,
-		current,
-		scope,
-		send,
-		state,
-	);
+	const attach = (transfer: DataTransfer) =>
+		createAttachmentReader(
+			enabled,
+			pending,
+			setReading,
+			setError,
+			current,
+			scope,
+			send,
+			state,
+		)(transfer);
 
-	return {
-		active: active && enabled,
-		reading,
-		error,
-		handlers: attachmentDropHandlers(
+	/** イベント発生時にだけドラッグ深度と読み込み状態を参照する。 */
+	const handlers = () =>
+		attachmentDropHandlers(
 			stop,
 			attach,
 			depth,
 			setActive,
 			enabled,
 			pending,
-		),
+		);
+	return {
+		active: active && enabled,
+		reading,
+		error,
+		handlers: {
+			onPasteCapture: (event: ClipboardEvent) =>
+				handlers().onPasteCapture(event),
+			onDragEnterCapture: (event: DragEvent) =>
+				handlers().onDragEnterCapture(event),
+			onDragOverCapture: (event: DragEvent) =>
+				handlers().onDragOverCapture(event),
+			onDragLeaveCapture: (event: DragEvent) =>
+				handlers().onDragLeaveCapture(event),
+			onDropCapture: (event: DragEvent) =>
+				handlers().onDropCapture(event),
+		},
 	};
 }
 
@@ -92,7 +114,7 @@ function attachmentDropHandlers(
 			const images = Array.from(event.clipboardData.files).filter(
 				(file) => file.type.startsWith("image/"),
 			);
-			if (!images.length) {
+			if (images.length === 0) {
 				return;
 			}
 			stop(event);
@@ -125,7 +147,7 @@ function attachmentDropHandlers(
 			}
 			stop(event);
 			depth.current = Math.max(0, depth.current - 1);
-			if (!depth.current) {
+			if (!isNonZeroNumber(depth.current)) {
 				setActive(false);
 			}
 		},

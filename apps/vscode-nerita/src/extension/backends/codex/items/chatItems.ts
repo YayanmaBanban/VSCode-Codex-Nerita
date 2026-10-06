@@ -1,4 +1,5 @@
 // App Server のメッセージと基本ツール項目を、既存 UI の表示データへ変換する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";
@@ -153,17 +154,17 @@ function commandTitle(command: string, actions: unknown): string {
 		? actions.flatMap((action: unknown) =>
 				isRecord(action) &&
 				typeof action.command === "string" &&
-				action.command.trim()
+				action.command.trim() !== ""
 					? [powerShellBody(action.command)]
 					: [],
 			)
 		: [];
-	return commands.length ? commands.join("; ") : powerShellBody(command);
+	return commands.length > 0 ? commands.join("; ") : powerShellBody(command);
 }
 
 /** PowerShell の起動引数を表示から外す。実行用のコマンドには変更を加えない。 */
 function powerShellBody(command: string): string {
-	const invocation = /^(?:&\s+)?("[^"]+"|'[^']+'|\S+)\s+([\s\S]*)$/u.exec(
+	const invocation = /^(?:&\s+)?("[^"]+"|'[^']+'|\S+)\s([\s\S]*)$/u.exec(
 		command.trim(),
 	);
 	if (!invocation) {
@@ -173,10 +174,10 @@ function powerShellBody(command: string): string {
 	if (!/(?:^|[\\/])(?:powershell|pwsh)(?:\.exe)?$/iu.test(executable)) {
 		return command;
 	}
-	const body = /(?:^|\s)-Command\s+([\s\S]+)$/iu
+	const body = /(?:^|\s)-Command\s([\s\S]+)$/iu
 		.exec(invocation[2]!)?.[1]
 		?.trim();
-	if (!body) {
+	if (!isNonEmptyString(body)) {
 		return command;
 	}
 	return body.replace(/^(['"])([\s\S]*)\1$/u, "$2");

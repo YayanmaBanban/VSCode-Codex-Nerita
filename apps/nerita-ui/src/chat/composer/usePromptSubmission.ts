@@ -1,4 +1,5 @@
 // 送信の受付・失敗・切断で入力ロックを解除し、失敗した下書きは編集可能なまま残す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { Bridge } from "@nerita/shared/bridge";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -8,6 +9,7 @@ import {
 } from "@nerita/shared/composerContent";
 import type { UiMessage } from "@nerita/shared/messages";
 import {
+	useLayoutEffect,
 	useEffect,
 	useRef,
 	useState,
@@ -32,7 +34,9 @@ export function usePromptSubmission(
 		text: string;
 	} | null>(null);
 	const latest = useRef(clearDraft);
-	latest.current = clearDraft;
+	useLayoutEffect(() => {
+		latest.current = clearDraft;
+	}, [clearDraft]);
 	useEffect(
 		() =>
 			bridge.subscribe((message) => {
@@ -58,7 +62,7 @@ export function usePromptSubmission(
 		[bridge],
 	);
 	useEffect(() => {
-		if (state.connection !== "ready" && pending.current) {
+		if (state.connection !== "ready" && isNonEmptyString(pending.current)) {
 			setNotice({
 				id: pending.current,
 				text: "接続が切れたため、送信を確認できませんでした。",
@@ -75,16 +79,17 @@ export function usePromptSubmission(
 		!state.configPending &&
 		!state.attachmentPending;
 	/** 待機中の要求 ID を参照して連打を防ぐ。下書きは受付後だけ消す。 */
-	const submit = createPromptSubmitter(
-		available,
-		pending,
-		draft,
-		state,
-		parts,
-		setNotice,
-		setLocked,
-		send,
-	);
+	const submit = () =>
+		createPromptSubmitter(
+			available,
+			pending,
+			draft,
+			state,
+			parts,
+			setNotice,
+			setLocked,
+			send,
+		)();
 	return {
 		locked,
 		available,
@@ -108,9 +113,9 @@ function createPromptSubmitter(
 	return () => {
 		if (
 			!available ||
-			pending.current ||
-			!draft.trim() ||
-			!state.sessionId
+			isNonEmptyString(pending.current) ||
+			draft.trim() === "" ||
+			!isNonEmptyString(state.sessionId)
 		) {
 			return;
 		}
@@ -149,9 +154,9 @@ function createPromptSubmitter(
 			requestId,
 			sessionId: state.sessionId,
 			...promptContent(draft, parts),
-			...(sessionReferences.length ? { sessionReferences } : {}),
-			...(changeScopes.length ? { changeScopes } : {}),
-			...(codeReferences.length ? { codeReferences } : {}),
+			...(sessionReferences.length > 0 ? { sessionReferences } : {}),
+			...(changeScopes.length > 0 ? { changeScopes } : {}),
+			...(codeReferences.length > 0 ? { codeReferences } : {}),
 		});
 	};
 }

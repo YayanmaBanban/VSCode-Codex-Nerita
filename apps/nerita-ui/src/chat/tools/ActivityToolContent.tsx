@@ -1,4 +1,5 @@
 // 推論の Markdown と、画像・Web 検索の参照先を専用本文として表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import { isRecord } from "@nerita/shared/validation";
@@ -30,7 +31,9 @@ export function ThinkTool({ tool }: ActivityToolProps) {
 						? value.content
 						: value;
 				const text = contentText(content);
-				return text ? <MessageText key={index} text={text} /> : null;
+				return text !== "" ? (
+					<MessageText key={index} text={text} />
+				) : null;
 			})}
 		</>
 	);
@@ -40,7 +43,7 @@ export function ThinkTool({ tool }: ActivityToolProps) {
 function fileUri(path: string, cwd?: string | null): string | undefined {
 	let normalized = path.replaceAll("\\", "/");
 	if (!normalized.startsWith("/") && !/^[a-z]:\//i.test(normalized)) {
-		if (!cwd) {
+		if (!isNonEmptyString(cwd)) {
 			return undefined;
 		}
 		normalized = `${cwd.replaceAll("\\", "/").replace(/\/$/, "")}/${normalized}`;
@@ -59,7 +62,7 @@ export function ImageViewTool({ tool, send, cwd }: ActivityToolProps) {
 				const uri = fileUri(path, tool.cwd ?? cwd);
 				return (
 					<div key={index}>
-						{uri && send ? (
+						{isNonEmptyString(uri) && send ? (
 							<a
 								className={linkClass}
 								href={uri}
@@ -92,7 +95,7 @@ export function WebSearchTool({ tool }: ActivityToolProps) {
 	const query =
 		typeof tool.rawInput === "string" ? tool.rawInput : input.query;
 	const label = searchLabel(query, action.url);
-	if (!label) {
+	if (label === "") {
 		return null;
 	}
 	// 検索語は検索リンクへ、URL は HTTP(S) だけを直接開く。
@@ -135,7 +138,7 @@ function fileUriSlashes(normalized: string) {
 
 /** 空でない検索語を優先し、なければ検索先 URL を表示する。 */
 function searchLabel(query: unknown, url: unknown) {
-	if (typeof query === "string" && query.trim()) {
+	if (typeof query === "string" && query.trim() !== "") {
 		return query;
 	}
 	if (typeof url === "string") {

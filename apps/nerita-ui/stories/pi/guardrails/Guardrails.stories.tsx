@@ -1,4 +1,5 @@
 // 専用エディターの編集・保存・検査を、ファイルを書き換えない通信モックで再現する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { GuardrailsEditor } from "../../../src/pi/guardrails/GuardrailsEditor";
@@ -47,8 +48,9 @@ function mockBridge() {
 				warnings: [],
 			};
 			try {
-				if (message.type === "check" && response.inspectionError) {
-					throw new Error(response.inspectionError);
+				const error = response.inspectionError;
+				if (message.type === "check" && isNonEmptyString(error)) {
+					throw new Error(error);
 				}
 				if (message.type === "edit") {
 					state = {

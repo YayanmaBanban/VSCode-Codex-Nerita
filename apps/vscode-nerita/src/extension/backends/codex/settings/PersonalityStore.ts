@@ -1,4 +1,5 @@
 // 指定された保存先の TOML を読み、設定ファイルを優先してプリセットを保存する。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { readFile, mkdir, writeFile, rename, unlink } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
@@ -31,7 +32,7 @@ export class PersonalityStore {
 	constructor(
 		private readonly cwd: string,
 		private readonly home = homedir(),
-		private readonly configHome = process.env.CODEX_HOME ||
+		private readonly configHome = nonEmptyString(process.env.CODEX_HOME) ??
 			join(home, ".codex"),
 	) {}
 	/** 保存先を UI 入力に依存せず決定する。 */

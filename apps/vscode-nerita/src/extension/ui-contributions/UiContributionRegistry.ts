@@ -1,4 +1,5 @@
 // 内部の登録元を集約し、現在の状態に応じた宣言だけを公開する。
+import { nonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { ChatState } from "@nerita/shared/chatState";
 import type {
 	NeritaUiContribution,
@@ -49,7 +50,8 @@ export class UiContributionRegistry {
 			.map(({ when: _when, ...item }) => item)
 			.sort(
 				(a, b) =>
-					(a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id),
+					nonZeroNumber((a.order ?? 0) - (b.order ?? 0)) ??
+					a.id.localeCompare(b.id),
 			);
 		const result = { surface: context.backend, items };
 		if (!isUiContributions(result)) {

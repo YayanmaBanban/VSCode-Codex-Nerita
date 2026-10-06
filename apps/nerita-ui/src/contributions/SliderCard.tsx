@@ -64,7 +64,7 @@ export function SliderCard({
 		(choice) => choice.value === option.currentValue,
 	);
 	const label = optionLabel(option);
-	const unavailable = disabled || !(model ?? option).options.length;
+	const unavailable = disabled || (model ?? option).options.length === 0;
 	return (
 		<CSPProvider disableStyleElements>
 			<Popover.Root onOpenChange={() => setPreview(null)}>
@@ -140,7 +140,7 @@ function cardTrigger(
 				model
 					? "gap-[6px] px-[5px] text-[12px] font-medium"
 					: "w-[28px] shrink-0 p-0",
-				control.warning ? "text-warning" : "text-muted",
+				control.warning === true ? "text-warning" : "text-muted",
 			)}
 		>
 			{model ? (
@@ -148,14 +148,15 @@ function cardTrigger(
 					<span className="truncate">
 						<span
 							className={cn(
-								!control.warning && "text-foreground",
+								!(control.warning === true) &&
+									"text-foreground",
 							)}
 						>
 							{optionLabel(model)}
 						</span>{" "}
 						{optionLabel(option)}
 					</span>
-					{control.fastMode?.checked && (
+					{control.fastMode?.checked === true && (
 						<span
 							aria-hidden="true"
 							className={cn(
@@ -213,7 +214,7 @@ function CardHeader({ control, disabled, onChange }: CardProps) {
 					className={cn(
 						"m-0 text-center text-[12px] font-medium",
 						model && "text-link",
-						control.warning && "text-warning",
+						control.warning === true && "text-warning",
 					)}
 				>
 					{optionLabel(option)}

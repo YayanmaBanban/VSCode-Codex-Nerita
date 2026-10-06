@@ -1,4 +1,5 @@
 // MCP 設定を上書き順に検証し、不正な上位設定から下位へ戻さない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { createHash } from "node:crypto";
 import { lstat, open, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
@@ -54,7 +55,7 @@ export async function loadPiMcpConfig(
 	}
 	for (const layer of configLayers(options)) {
 		const loaded = await readLayer(layer, validate);
-		if (loaded.error) {
+		if (isNonEmptyString(loaded.error)) {
 			entries.clear();
 			errors.push(loaded.error);
 		}

@@ -41,7 +41,7 @@ const permits = new WeakSet<ApprovedToolCall>();
 export function freezeToolCall<T>(value: T): T {
 	const copy = structuredClone(value);
 	const freeze = (item: unknown): void => {
-		if (item && typeof item === "object") {
+		if (item !== null && typeof item === "object") {
 			Object.values(item).forEach(freeze);
 			Object.freeze(item);
 		}

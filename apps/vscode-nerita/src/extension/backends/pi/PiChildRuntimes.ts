@@ -126,7 +126,7 @@ export class PiChildRuntimes {
 			}
 			return session;
 		} catch (error) {
-			child.detachAbort?.();
+			child.detachAbort();
 			this.children.delete(child);
 			throw error;
 		}

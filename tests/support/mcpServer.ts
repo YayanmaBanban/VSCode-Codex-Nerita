@@ -20,7 +20,7 @@ export async function mcpServer() {
 	server.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address();
-	if (!address || typeof address === "string") {
+	if (!(address !== null) || typeof address === "string") {
 		throw new Error("MCP の起動に失敗しました。");
 	}
 	return {

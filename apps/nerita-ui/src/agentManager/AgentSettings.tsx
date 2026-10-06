@@ -1,4 +1,8 @@
 // バックエンド別の設定を受け取り、名前・説明・本文と保存操作を共通化する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import type { ReactNode } from "react";
 import { cn } from "cnfast";
 import {
@@ -39,7 +43,7 @@ export function AgentSettings(props: AgentSettingsProps) {
 			className="grid gap-5"
 			onSubmit={(event) => {
 				event.preventDefault();
-				if (!error) {
+				if (!isNonEmptyString(error)) {
 					onSubmit();
 				}
 			}}
@@ -61,7 +65,7 @@ export function AgentSettings(props: AgentSettingsProps) {
 					rows={10}
 					limit={60000}
 				/>
-				{error && (
+				{isNonEmptyString(error) && (
 					<p role="alert" className="text-sm">
 						{error}
 					</p>
@@ -69,7 +73,7 @@ export function AgentSettings(props: AgentSettingsProps) {
 				<button
 					type="submit"
 					className={`${buttonStyle} justify-self-end`}
-					disabled={!!error}
+					disabled={!!isNonEmptyString(error)}
 				>
 					変更を保存
 				</button>
@@ -113,7 +117,7 @@ function AgentIdentityFields({
 					/>
 				</Field>
 			)}
-			{agent?.definitionPath && (
+			{isNonEmptyString(agent?.definitionPath) && (
 				<p className="m-0 text-xs break-all text-muted">
 					{agent.definitionPath}
 				</p>
@@ -131,7 +135,7 @@ function AgentIdentityFields({
 			) : (
 				<p className="m-0 text-sm text-muted">{agent?.description}</p>
 			)}
-			{agent?.unavailableReason && (
+			{isNonEmptyString(agent?.unavailableReason) && (
 				<p role="status" className="text-sm text-muted">
 					{agent.unavailableReason}
 				</p>
@@ -151,7 +155,7 @@ function DefinitionBadges({
 		models.find((item) => item.value === model)?.name ??
 			model ??
 			"モデル未指定",
-		agent?.definitionThinking
+		isNonEmptyString(agent?.definitionThinking)
 			? reasoningLabel(agent.definitionThinking)
 			: "推論未指定",
 	];
@@ -201,7 +205,7 @@ function DefinitionField({
 	};
 	return (
 		<Field label={label}>
-			{rows ? (
+			{isNonZeroNumber(rows) ? (
 				<textarea
 					{...input}
 					className={cn(inputStyle, "resize-none")}

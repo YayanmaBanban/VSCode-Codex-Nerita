@@ -1,4 +1,5 @@
 // 会話の作業ルートに対する信頼状態を、会話本文とは独立して Webview へ通知する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import type { HostMessage } from "@nerita/shared/messages";
 import type { ChatSession } from "../session/chatSession";
@@ -56,8 +57,11 @@ export class ChatTrustState {
 			vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 		const untrusted =
 			configuredBackend() === "pi" &&
-			!!cwd &&
-			!(vscode.workspace.isTrusted && (await this.store?.trusted(cwd)));
+			!!isNonEmptyString(cwd) &&
+			!(
+				vscode.workspace.isTrusted &&
+				(await this.store?.trusted(cwd)) === true
+			);
 		if (revision === this.revision) {
 			this.publish({ type: "workspace/trustState", untrusted });
 		}

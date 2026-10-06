@@ -1,4 +1,5 @@
 // 実行ごとに取得した資格情報を専用の環境・設定へまとめ、終了時に一時領域と値を破棄する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { mkdtemp, writeFile, appendFile, rm } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
@@ -107,11 +108,11 @@ async function prepareGitHelper(
 	directory: string,
 	env: Record<string, string>,
 ) {
-	if (env.GIT_ASKPASS) {
+	if (isNonEmptyString(env.GIT_ASKPASS)) {
 		throw new Error("Git の資格情報対象が重複しています。");
 	}
 	const node = await providerExecutable("node", lease.requirement.workspace);
-	if (!node) {
+	if (!isNonEmptyString(node)) {
 		throw new Error(
 			"Git の資格情報ヘルパーに必要な Node.js がありません。",
 		);

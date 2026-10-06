@@ -1,4 +1,5 @@
 // 候補表示の検出と Tab 操作を Lexical へ登録し、解除時に購読も解除する。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 
 import {
 	$getNodeByKey,
@@ -9,7 +10,7 @@ import {
 	mergeRegister,
 	type LexicalEditor,
 } from "lexical";
-import { useEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect, useEffect, useRef, type RefObject } from "react";
 import { $completion, $insertCompletion, type Completion } from "./completions";
 import { $pointOffset } from "./content";
 
@@ -32,7 +33,7 @@ function $indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
 			const spaces =
 				/ {1,2}$/.exec(block.getTextContent().slice(0, end))?.[0]
 					.length ?? 0;
-			if (spaces) {
+			if (isNonZeroNumber(spaces)) {
 				$insertCompletion(
 					{
 						key: block.getKey(),
@@ -54,6 +55,8 @@ function ignoreIndentKey(event: KeyboardEvent, editor: LexicalEditor) {
 	return (
 		event.key !== "Tab" ||
 		event.isComposing ||
+		// IME の確定時に isComposing が先に解除されても、確定キーを処理しない。
+		// eslint-disable-next-line @typescript-eslint/no-deprecated
 		event.keyCode === 229 ||
 		editor.isComposing() ||
 		event.ctrlKey ||
@@ -76,7 +79,9 @@ export function useCompletionEditor(
 	},
 ) {
 	const latest = useRef(options);
-	latest.current = options;
+	useLayoutEffect(() => {
+		latest.current = options;
+	}, [options]);
 	useEffect(() => registerCompletionCommands(editor, latest), [editor]);
 	useEffect(() => {
 		const outside = (event: Event) => {
@@ -84,8 +89,8 @@ export function useCompletionEditor(
 			if (
 				latest.current.container.current &&
 				event.target instanceof Node &&
-				!latest.current.container.current?.contains(event.target) &&
-				!editor.getRootElement()?.contains(event.target)
+				!latest.current.container.current.contains(event.target) &&
+				!(editor.getRootElement()?.contains(event.target) === true)
 			) {
 				latest.current.onMatch(null);
 			}
@@ -145,7 +150,11 @@ function registerCompletionCommands(
 				return;
 			}
 			if (
-				!editor.getRootElement()?.contains(document.activeElement) ||
+				!(
+					editor
+						.getRootElement()
+						?.contains(document.activeElement) === true
+				) ||
 				editor.isComposing()
 			) {
 				return;

@@ -1,4 +1,5 @@
 // 読み取った世代を照合し、設定ごとの保存先へ必要なキーだけを書き込む。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	applyEdits,
 	modify,
@@ -180,7 +181,7 @@ export class AgentManagerStore {
 					},
 					request.backend,
 				);
-				if (error) {
+				if (isNonEmptyString(error)) {
 					throw new Error(error);
 				}
 				await writeWorkspaceFile(
@@ -261,7 +262,7 @@ export class AgentManagerStore {
 		state: Awaited<ReturnType<AgentManagerStore["read"]>>,
 	) {
 		const agent = state.agents.find((item) => item.id === request.agentId);
-		if (!agent?.editable) {
+		if (!(agent?.editable === true)) {
 			throw new Error("この Agent は編集できません。");
 		}
 		const edit = agentEditSchema.parse(request.edit);
@@ -307,7 +308,7 @@ export class AgentManagerStore {
 	) {
 		assertPiEdit(edit);
 		piSettings(state.files.piText);
-		if (edit.definition && !agent.definitionPath) {
+		if (edit.definition && !isNonEmptyString(agent.definitionPath)) {
 			throw new Error("プロジェクト定義だけを編集できます。");
 		}
 		const text = piOverrideText(state.files.piText, agent, edit);
@@ -365,7 +366,7 @@ export class AgentManagerStore {
 			previousModel,
 			previousEffort,
 		);
-		if (error) {
+		if (isNonEmptyString(error)) {
 			throw new Error(error);
 		}
 	}
@@ -377,7 +378,7 @@ export class AgentManagerStore {
 		previous?: string,
 	) {
 		if (
-			model &&
+			isNonEmptyString(model) &&
 			model !== previous &&
 			!this.models(backend).some((item) => item.value === model)
 		) {
@@ -414,7 +415,7 @@ async function savePiDefinition(
 	files: Record<string, string>,
 ) {
 	const file = agent.definitionPath;
-	if (!file || !edit.definition) {
+	if (!isNonEmptyString(file) || !edit.definition) {
 		return () => Promise.resolve();
 	}
 	const old = files[file];

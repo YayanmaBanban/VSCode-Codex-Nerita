@@ -1,4 +1,5 @@
 // 検索は Host の読取りだけで行い、ワークスペース内の検索プログラムを起動しない。
+import { nonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { lstat, readdir, realpath } from "node:fs/promises";
 import { join, relative } from "node:path";
@@ -54,7 +55,10 @@ export function createPiSearchTools(
 			const output: string[] = [];
 			for (const file of files) {
 				combined.throwIfAborted();
-				const name = relative(root, file).replaceAll("\\", "/") || file;
+				const name =
+					nonEmptyString(
+						relative(root, file).replaceAll("\\", "/"),
+					) ?? file;
 				if (kind === "find") {
 					output.push(...matchingName(input.pattern, name));
 				} else {
@@ -87,7 +91,8 @@ export function createPiSearchTools(
 					{
 						type: "text",
 						text:
-							output.join("\n") || "No matches in scanned files.",
+							nonEmptyString(output.join("\n")) ??
+							"No matches in scanned files.",
 					},
 				],
 				details: { scanned: files.length, bounded: true },
@@ -106,7 +111,7 @@ async function searchFiles(
 	const pending = [root];
 	const files: string[] = [];
 	let visited = 0;
-	while (pending.length && visited++ < 1000 && files.length < 200) {
+	while (pending.length > 0 && visited++ < 1000 && files.length < 200) {
 		const path = pending.pop()!;
 		signal.throwIfAborted();
 		const permit = await approveToolCall(

@@ -1,7 +1,7 @@
 // 生成コマンドの指定版、または pnpm のレジストリで公開された最新版を解決する。
 const { runPnpm } = require("./run-pnpm.cjs");
 
-const versionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+const versionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Z.-]+)?$/i;
 
 /** 最新版は一度だけ解決し、すべての依存更新に同じ固定バージョンを渡す。 */
 function readRequestedVersion(packageName, command) {

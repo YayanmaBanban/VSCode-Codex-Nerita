@@ -34,7 +34,7 @@ export async function listMcpServers(
 	const data: McpServerSummary[] = [];
 	const cursors = new Set<string>();
 	let cursor: string | undefined;
-	do {
+	while (true) {
 		checkCurrent();
 		const page = await client.listMcpServerStatus(threadId, cursor);
 		checkCurrent();
@@ -47,6 +47,6 @@ export async function listMcpServers(
 		}
 		cursor = page.nextCursor;
 		cursors.add(cursor);
-	} while (cursor !== undefined);
+	}
 	return data;
 }

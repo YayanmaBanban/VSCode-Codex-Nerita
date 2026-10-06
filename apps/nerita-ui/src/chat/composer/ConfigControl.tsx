@@ -1,4 +1,5 @@
 // 設定候補の `name` を表示し、`value` だけを Host に送る。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { CSPProvider } from "@base-ui/react/csp-provider";
 import { Select } from "@base-ui/react/select";
@@ -36,7 +37,7 @@ export function ConfigControl({
 			<CSPProvider disableStyleElements>
 				<Select.Root
 					value={option.currentValue}
-					disabled={disabled || !option.options.length}
+					disabled={disabled || option.options.length === 0}
 					onValueChange={(value) => {
 						if (value !== null) {
 							onChange(value);
@@ -49,7 +50,7 @@ export function ConfigControl({
 								"config-trigger inline-flex max-w-[170px] cursor-pointer items-center",
 								"gap-[6px] rounded-[4px]",
 								"[&_svg]:shrink-0",
-								icon
+								icon !== undefined
 									? "border border-solid border-input-border bg-input px-[4px] py-[5px]"
 									: "border-0 bg-transparent px-[5px] py-[6px]",
 								"text-[12px] text-ellipsis text-inherit",
@@ -109,7 +110,9 @@ function ConfigOptions({ inDialog, option }: ConfigOptionsProps) {
 							<SettingsTooltip
 								key={choice.value}
 								content={
-									choice.icon ? undefined : choice.description
+									choice.icon !== undefined
+										? undefined
+										: choice.description
 								}
 								aboveMenu
 							>
@@ -147,7 +150,7 @@ function controlTooltip(option: ConfigOption, icon?: string) {
 	const current = option.options.find(
 		(choice) => choice.value === option.currentValue,
 	);
-	if (icon) {
+	if (isNonEmptyString(icon)) {
 		return current?.name ?? option.currentValue;
 	}
 	return current?.description ?? option.description;
@@ -158,7 +161,7 @@ type ChoiceLabelProps = { choice: ConfigChoice };
 
 /** アイコン付きの候補では、説明も項目内に表示する。 */
 function ChoiceLabel({ choice }: ChoiceLabelProps) {
-	if (!choice.icon) {
+	if (!(choice.icon !== undefined)) {
 		return <Select.ItemText>{choice.name}</Select.ItemText>;
 	}
 	const Icon = choice.icon === "user" ? User : Bot;
@@ -184,7 +187,7 @@ type ControlLabelProps = {
 
 /** アイコン指定時だけ選択値と矢印を省略する。 */
 function ControlLabel({ option, icon, chevron }: ControlLabelProps) {
-	if (icon) {
+	if (icon !== undefined) {
 		const Icon = icon === "user" ? User : Bot;
 		return <Icon size={16} aria-hidden="true" />;
 	}

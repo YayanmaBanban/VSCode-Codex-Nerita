@@ -1,4 +1,5 @@
 // 現在のプロバイダーへ設定を委譲し、未登録プロバイダーでは Pi 標準の推論設定を使う。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiProviderControls as ControlsState } from "@nerita/shared/piProviderControls";
 import type { PiModelControls, PiProviders } from "./PiProvider";
@@ -45,7 +46,7 @@ export class PiProviderControls {
 		const provider = this.session?.model?.provider;
 		this.bindProviderControls(provider);
 		this.active?.bindDelegation?.(() => this.canDelegate());
-		if (provider) {
+		if (isNonEmptyString(provider)) {
 			this.active?.setCatalog?.(this.catalog(provider));
 		}
 		return this.active;
@@ -56,7 +57,7 @@ export class PiProviderControls {
 		if (provider !== this.provider) {
 			this.active?.reset();
 			this.provider = provider;
-			this.active = provider
+			this.active = isNonEmptyString(provider)
 				? this.providers[provider]?.createControls?.()
 				: undefined;
 			if (this.session) {
@@ -109,7 +110,7 @@ export class PiProviderControls {
 		const level = this.session
 			?.getAvailableThinkingLevels()
 			.find((item) => item === value);
-		if (!level) {
+		if (!(level !== undefined)) {
 			throw new Error("利用可能なPi推論レベルを選択してください。");
 		}
 		this.session!.setThinkingLevel(level);
@@ -118,7 +119,7 @@ export class PiProviderControls {
 	/** 追加設定の受付はそのプロバイダーに限定する。 */
 	configure(id: string, value: string, signal: AbortSignal): void {
 		signal.throwIfAborted();
-		if (!this.resolve()?.configure(id, value, signal)) {
+		if (!(this.resolve()?.configure(id, value, signal) === true)) {
 			throw new Error("未対応のPi設定です。");
 		}
 	}

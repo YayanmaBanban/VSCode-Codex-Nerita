@@ -30,7 +30,7 @@ export async function runAppServerJsonWorker() {
 		const values: unknown[] = [];
 		try {
 			if (chunk === null) {
-				if (length) {
+				if (length > 0) {
 					values.push(parseLine());
 				}
 			} else {

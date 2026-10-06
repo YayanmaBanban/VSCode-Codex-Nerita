@@ -29,12 +29,14 @@ function shouldPasteAsBlock(text: string): boolean {
 	}
 	// 正規表現では言語を確定できないため、単なる記号や単語では判定しない。
 	return [
-		/^\s*```[^\n]*\n[\s\S]*\n\s*```\s*$/,
+		/^\s*```[^\n]*\n[^\n]*\n\s*(?:\S[^\n]*\n\s*)*```\s*$/,
 		/^\s*(?:export\s+)?(?:const|let|var)\s+[\w$]+\s*(?::[^=\n]+)?=/m,
 		/^\s*(?:export\s+)?(?:async\s+)?(?:function|def|fn)\s+[\w$]+\s*\(/m,
-		/^\s*(?:import\s+.+\s+from\s+["']|from\s+[\w.]+\s+import\s+)/m,
+		/^\s*(?:import\s+\S(?:[^\n]*\S)?\s+from\s+["']|from\s+[\w.]+\s+import\s+)/m,
 		/^\s*(?:if|for|while)\s*\([^\n]*\)\s*\{/m,
 		/^\s*[\w$]+(?:\.[\w$]+)*\([^\n]*\);?\s*$/m,
+		// 開始タグと終了タグの大文字・小文字の一致も判定するため、i フラグは使わない。
+		// eslint-disable-next-line regexp/use-ignore-case
 		/^\s*<([A-Za-z][\w:-]*)\b[^>]*>[\s\S]*<\/\1>\s*$/,
 		/^\s*\{\s*"[^"\n]+"\s*:[\s\S]*\}\s*$/,
 	].some((pattern) => pattern.test(text));
@@ -115,6 +117,8 @@ export function registerComposerCommands(
 				}
 				if (
 					event.isComposing ||
+					// IME の確定時に isComposing が先に解除されても、確定キーを処理しない。
+					// eslint-disable-next-line @typescript-eslint/no-deprecated
 					event.keyCode === 229 ||
 					editor.isComposing()
 				) {

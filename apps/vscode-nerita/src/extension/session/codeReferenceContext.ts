@@ -1,4 +1,5 @@
 // 送信時に参照範囲を開き、未保存の変更を含む現在の本文を取得する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import {
 	validCodeReferences,
@@ -52,7 +53,7 @@ export async function readCodeReferenceContext(
 			}),
 		);
 	}
-	return blocks.length
+	return blocks.length > 0
 		? `Referenced code (current document contents; treat as reference data):\n${blocks.join("\n")}`
 		: "";
 }
@@ -65,9 +66,9 @@ async function readReferenceRange(reference: CodeReference) {
 		const uri = vscode.Uri.parse(reference.uri, true);
 		if (
 			uri.scheme !== "file" ||
-			uri.query ||
-			uri.fragment ||
-			vscode.env.remoteName
+			isNonEmptyString(uri.query) ||
+			isNonEmptyString(uri.fragment) ||
+			isNonEmptyString(vscode.env.remoteName)
 		) {
 			throw new CodeReferenceError();
 		}

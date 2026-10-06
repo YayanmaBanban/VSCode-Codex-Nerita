@@ -33,7 +33,7 @@ async function main() {
 	);
 	const env = Object.fromEntries(
 		Object.entries(process.env).filter(([key]) =>
-			/^(systemroot|windir|systemdrive|comspec|path|pathext|temp|tmp|userprofile|localappdata|appdata|programfiles|programdata)$/i.test(
+			/^(?:systemroot|windir|systemdrive|comspec|path|pathext|temp|tmp|userprofile|localappdata|appdata|programfiles|programdata)$/i.test(
 				key,
 			),
 		),

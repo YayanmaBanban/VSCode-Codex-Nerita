@@ -1,4 +1,5 @@
 // 新しい OpenAI 認証だけを SDK で解決し、秘密値を Host 内に留める。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { createHash } from "node:crypto";
 import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { isRecord } from "@nerita/shared/validation";
@@ -13,7 +14,7 @@ export async function openAIOAuth(models: ModelRuntime, signal: AbortSignal) {
 	const check = await models.checkAuth("openai", { signal });
 	signal.throwIfAborted();
 	const token = resolved?.auth.apiKey;
-	if (check?.type !== "oauth" || !token) {
+	if (check?.type !== "oauth" || !isNonEmptyString(token)) {
 		return null;
 	}
 	return {
@@ -33,10 +34,10 @@ export function isOpenAIEndpoint(baseUrl: string): boolean {
 		return (
 			url.origin === "https://api.openai.com" &&
 			url.pathname.replace(/\/$/, "") === "/v1" &&
-			!url.username &&
-			!url.password &&
-			!url.search &&
-			!url.hash
+			url.username === "" &&
+			url.password === "" &&
+			url.search === "" &&
+			url.hash === ""
 		);
 	} catch {
 		return false;

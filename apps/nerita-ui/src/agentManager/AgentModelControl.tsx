@@ -1,4 +1,8 @@
 // 共通のモデルカードへ、管理画面の編集値とモデル候補を渡す。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 import type { ConfigChoice, ConfigOption } from "@nerita/shared/composer";
 import { modelControl, reasoningLabel } from "@nerita/shared/settingsCards";
@@ -18,7 +22,8 @@ export function managerOption(
 		currentValue: value ?? "",
 		options: [
 			...(allowUnspecified ? [{ value: "", name: "未指定" }] : []),
-			...(value && !choices.some((item) => item.value === value)
+			...(isNonEmptyString(value) &&
+			!choices.some((item) => item.value === value)
 				? [{ value, name: `${value}（保存済み）` }]
 				: []),
 			...choices,
@@ -69,7 +74,7 @@ export function AgentModelControl({
 				onChange={(key, value) =>
 					onChange(
 						key === "model" ? "model" : "reasoning_effort",
-						value || undefined,
+						nonEmptyString(value) ?? undefined,
 					)
 				}
 			/>

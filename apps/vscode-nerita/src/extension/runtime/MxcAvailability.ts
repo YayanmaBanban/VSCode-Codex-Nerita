@@ -1,4 +1,8 @@
 // 能力検出に加えて固定コマンドを起動し、DLL の存在だけで利用可能と判定しない。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { commandEnvironment } from "./CommandEnvironment";
@@ -22,12 +26,12 @@ export async function probeMxc(
 	try {
 		const sdk = await loadMxcSdk(extensionPath);
 		status = describeMxcSupport(sdk);
-		if (status.reason) {
+		if (isNonEmptyString(status.reason)) {
 			return status;
 		}
 		const root = await realpath(cwd);
 		const systemRoot = process.env.SystemRoot;
-		if (!systemRoot) {
+		if (!isNonEmptyString(systemRoot)) {
 			throw new Error("Windows の SystemRoot を取得できません。");
 		}
 		const body =
@@ -68,7 +72,7 @@ export async function probeMxc(
 			result.stdout.trim() !== "NERITA_MXC_READY"
 		) {
 			throw new Error(
-				`MXC 起動 Probe に失敗しました (${result.exitCode}): ${result.stderr || result.stdout}`,
+				`MXC 起動 Probe に失敗しました (${result.exitCode}): ${nonEmptyString(result.stderr) ?? result.stdout}`,
 			);
 		}
 		return { ...status, available: true };
@@ -91,14 +95,15 @@ function describeMxcSupport(sdk: MxcSdk): SandboxAvailability {
 		available: false,
 		availableMethods: [...support.availableMethods],
 		uiCapabilities: { ...support.uiCapabilities },
-		...(support.isolationTier
+		...(support.isolationTier !== undefined
 			? { isolationTier: support.isolationTier }
 			: {}),
 		...(!support.isSupported ||
 		!support.availableMethods.includes("processcontainer")
 			? {
 					reason:
-						support.reason || "ProcessContainer が利用できません。",
+						nonEmptyString(support.reason) ??
+						"ProcessContainer が利用できません。",
 				}
 			: {}),
 	};

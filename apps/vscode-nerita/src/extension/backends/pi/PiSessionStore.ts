@@ -1,4 +1,8 @@
 // Pi 標準の JSONL を保存し、選択した保存先の履歴だけを公開する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 
 import {
 	mkdir,
@@ -133,8 +137,8 @@ export async function openPiSessionStore(
 					sessionId: row.id,
 					cwd,
 					title:
-						row.name?.trim() ||
-						row.firstMessage.trim().slice(0, 120) ||
+						nonEmptyString(row.name?.trim()) ??
+						nonEmptyString(row.firstMessage.trim().slice(0, 120)) ??
 						"Piの会話",
 					updatedAt: row.modified.toISOString(),
 				})),
@@ -237,9 +241,9 @@ function forkSessionStore(
 	resume: PiResumeTarget,
 	manager: PiSdk.SessionManager,
 ) {
-	if (resume.fork) {
+	if (resume.fork === true) {
 		const leaf = manager.getLeafId();
-		if (!leaf) {
+		if (!isNonEmptyString(leaf)) {
 			throw new Error("空のPi履歴はフォークできません。");
 		}
 		// SDK はこの `manager` だけを新しい ID・ファイルへ切り替える。

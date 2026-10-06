@@ -1,4 +1,5 @@
 // リソース探索が Host で未導入パッケージをインストールしないよう、導入済みのローカル参照だけを渡す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { realpath } from "node:fs/promises";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 
@@ -47,7 +48,7 @@ async function localPackages(
 	for (const entry of settings.packages ?? []) {
 		const source = typeof entry === "string" ? entry : entry.source;
 		const installed = manager.getInstalledPath(source, scope);
-		if (!installed) {
+		if (!isNonEmptyString(installed)) {
 			continue;
 		}
 		try {

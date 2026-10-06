@@ -1,4 +1,5 @@
 // 書込み範囲を指定して Codex 本体の OS によるアクセス制限を確認する。承認 UI は別のテストで検証する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { mkdir, readFile, realpath, writeFile, access } from "node:fs/promises";
 import { join } from "node:path";
@@ -13,7 +14,7 @@ import { commandEnvironment } from "../../apps/vscode-nerita/src/extension/runti
 async function main() {
 	const extension = process.env.NERITA_DISTRIBUTION_TEST_EXTENSION;
 	const root = process.env.NERITA_WINDOWS_TEST_ROOT;
-	assert.ok(extension && root);
+	assert.ok(isNonEmptyString(extension) && isNonEmptyString(root));
 	const workspace = join(root, "workspace");
 	const outside = join(root, "outside.txt");
 	await mkdir(workspace);

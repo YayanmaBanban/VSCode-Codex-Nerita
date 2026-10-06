@@ -1,4 +1,5 @@
 // 秘密情報はメモリーか VS Code の保管 API へ委譲し、通常の JSON 保存先へ渡さない。
+import { nonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { CredentialStorageMode } from "@nerita/shared/credentials";
 
 /** JSON と表示文字列では秘密値を公開しない。値を使う側は取得目的を限定する。 */
@@ -25,7 +26,7 @@ export class SecretValue {
 export class SecretRedactor {
 	private readonly values = new Set<string>();
 	protect(value: string) {
-		if (value) {
+		if (value !== "") {
 			this.values.add(value);
 		}
 	}
@@ -48,7 +49,9 @@ export class SecretRedactor {
 				start = value.indexOf(secret, start + 1);
 			}
 		}
-		matches.sort((a, b) => a.start - b.start || b.end - a.end);
+		matches.sort(
+			(a, b) => nonZeroNumber(a.start - b.start) ?? b.end - a.end,
+		);
 		const merged: typeof matches = [];
 		for (const match of matches) {
 			const last = merged.at(-1);
@@ -74,7 +77,7 @@ export class SecretRedactor {
 		].sort((a, b) => b.length - a.length);
 	}
 	credential(value: unknown) {
-		if (!value || typeof value !== "object") {
+		if (value === null || typeof value !== "object") {
 			return;
 		}
 		for (const [key, field] of Object.entries(value)) {
@@ -90,8 +93,8 @@ export class SecretRedactor {
 		}
 	}
 	value<T>(value: T): T {
-		const json = JSON.stringify(value);
-		return json === undefined
+		const json: unknown = JSON.stringify(value);
+		return typeof json !== "string"
 			? value
 			: (JSON.parse(json, (_key, field: unknown) =>
 					typeof field === "string" ? this.text(field) : field,

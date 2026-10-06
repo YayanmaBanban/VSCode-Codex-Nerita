@@ -16,10 +16,10 @@ const section = z
 		provider: z.string().min(1).optional(),
 		reasoning: z.string().optional(),
 	})
-	.passthrough();
+	.loose();
 const schema = z
 	.object({ pi: section.optional(), codex: section.optional() })
-	.passthrough();
+	.loose();
 type Selection = {
 	model?: string | undefined;
 	provider?: string | undefined;
@@ -72,7 +72,7 @@ export class ModelConfig {
 				{ root: this.globalRoot, source: global, values: shared },
 				{ root: this.root, source: workspace, values: local },
 			]
-				.filter((item) => Object.keys(item.values).length)
+				.filter((item) => Object.keys(item.values).length > 0)
 				.map((item) => ({
 					...item,
 					text: editModelConfig(

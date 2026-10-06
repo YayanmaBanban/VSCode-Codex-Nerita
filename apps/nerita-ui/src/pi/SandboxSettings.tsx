@@ -1,4 +1,5 @@
 // Sandbox の検査結果・権限・拒否を表示する。設定値や資格情報の中身は受け取らない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	commandPermissionLabel,
 	type CommandPermissionKey,
@@ -63,7 +64,7 @@ export function SandboxSettings({ bridge }: { bridge: SandboxBridge }) {
 					Pi の実行環境と、ホスト実行の承認を管理します。
 				</p>
 			</header>
-			{error && (
+			{error !== "" && (
 				<p role="alert" className="text-sm">
 					{error}
 				</p>
@@ -411,10 +412,10 @@ function SandboxBackend({
 							{backend.available
 								? "利用可能"
 								: "利用不可・未検査"}
-							{backend.isolationTier &&
+							{isNonEmptyString(backend.isolationTier) &&
 								` · ${backend.isolationTier}`}
 						</p>
-						{backend.reason && (
+						{isNonEmptyString(backend.reason) && (
 							<p className="m-0 break-words text-muted">
 								{backend.reason}
 							</p>

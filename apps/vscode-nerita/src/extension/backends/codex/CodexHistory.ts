@@ -1,4 +1,8 @@
 // Codex に保存された履歴を操作し、復元が成功するまで現在の会話を保持する。
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { sameCwd } from "../../workspace";
 import { CodexCatalog } from "./CodexCatalog";
 import { restoreDisplayHistory } from "./history/restoreHistory";
@@ -20,7 +24,7 @@ export abstract class CodexHistory extends CodexCatalog {
 			this.state.sessionPending ||
 			this.state.attachmentPending ||
 			this.state.configPending ||
-			!this.state.sessionCapabilities[action]
+			!(this.state.sessionCapabilities[action] === true)
 		);
 	}
 	/** 復元中に別クライアントが会話を進めた場合は、不完全な本文を公開しない。 */
@@ -50,7 +54,7 @@ export abstract class CodexHistory extends CodexCatalog {
 		);
 		if (
 			!client ||
-			!cwd ||
+			!isNonEmptyString(cwd) ||
 			!row ||
 			!sameCwd(row.cwd, cwd) ||
 			this.historyUnavailable(action)
@@ -95,7 +99,9 @@ export abstract class CodexHistory extends CodexCatalog {
 				this.restoring = undefined;
 				this.patch({
 					sessionPending: false,
-					...(error ? { sessionsError: error } : {}),
+					...(isNonEmptyString(error)
+						? { sessionsError: error }
+						: {}),
 				});
 			}
 		}
@@ -206,7 +212,9 @@ export abstract class CodexHistory extends CodexCatalog {
 				...restored,
 				sessionId: result.thread.id,
 				sessionTitle:
-					result.thread.name?.trim() || result.thread.preview || null,
+					nonEmptyString(result.thread.name?.trim()) ??
+					nonEmptyString(result.thread.preview) ??
+					null,
 				runId: null,
 				run: "idle",
 				permissions: [],
@@ -304,13 +312,16 @@ function validateHistoryAction(
 	name: string | undefined,
 ) {
 	if (
-		row.archived
+		row.archived === true
 			? !["unarchive", "delete"].includes(action)
 			: action === "unarchive"
 	) {
 		throw new Error("Invalid archive action");
 	}
-	if (action === "rename" && (!name?.trim() || name.trim().length > 200)) {
+	if (
+		action === "rename" &&
+		(!isNonEmptyString(name?.trim()) || name.trim().length > 200)
+	) {
 		throw new Error("Invalid name");
 	}
 }

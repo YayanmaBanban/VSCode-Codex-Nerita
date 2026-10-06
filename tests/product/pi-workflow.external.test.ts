@@ -1,4 +1,5 @@
 // 導入済みワークフローエンジンを SDK 本体で動く子へ接続し、結果と副作用を確認する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { type TestContext, test } from "node:test";
 
@@ -125,7 +126,7 @@ function queueWorkflowReplies(f: {
 async function prepareWorkflowFixture(
 	f: Awaited<ReturnType<typeof piFixture>>,
 ) {
-	assert.ok(process.env.NERITA_EXTERNAL_AGENT_DIR);
+	assert.ok(isNonEmptyString(process.env.NERITA_EXTERNAL_AGENT_DIR));
 	const installed = join(
 		process.env.NERITA_EXTERNAL_AGENT_DIR,
 		"npm/node_modules/pi-subagents",

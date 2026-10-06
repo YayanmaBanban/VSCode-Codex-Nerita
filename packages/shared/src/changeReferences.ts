@@ -33,7 +33,7 @@ export function isChangeScope(value: unknown): value is ChangeScope {
 
 /** 保存データやクリップボード由来のチップを検証する。 */
 export function isChangeReference(value: unknown): value is ChangeReference {
-	if (!value || typeof value !== "object") {
+	if (value === null || typeof value !== "object") {
 		return false;
 	}
 	const entry = value as Record<string, unknown>;

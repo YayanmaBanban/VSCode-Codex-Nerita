@@ -16,7 +16,7 @@ function statements(text: string) {
 		result.push(pending);
 		pending = "";
 	}
-	if (pending) {
+	if (pending !== "") {
 		throw new Error("TOML の編集位置を特定できません。");
 	}
 	return result;
@@ -31,7 +31,7 @@ function trailingComment(statement: string): string {
 	) {
 		try {
 			const parsed = parse(statement.slice(0, index));
-			if (Object.keys(parsed).length) {
+			if (Object.keys(parsed).length > 0) {
 				return statement.slice(index).trimEnd();
 			}
 		} catch {
@@ -50,9 +50,9 @@ function replacement(
 ) {
 	const comment = trailingComment(statement);
 	if (value === undefined) {
-		return comment ? `${comment}${eol}` : "";
+		return comment !== "" ? `${comment}${eol}` : "";
 	}
-	return `${stringify({ [name]: value }).trimEnd()}${comment ? ` ${comment}` : ""}${eol}`;
+	return `${stringify({ [name]: value }).trimEnd()}${comment !== "" ? ` ${comment}` : ""}${eol}`;
 }
 
 /** 指定した設定だけを更新し、Pi 専用の項目はエラーとして拒否する。 */

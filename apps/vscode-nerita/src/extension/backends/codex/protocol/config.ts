@@ -17,7 +17,7 @@ export function parseSandboxConfig(value: unknown): { sandbox: string | null } {
 	if (sandbox === undefined || sandbox === null) {
 		return { sandbox: null };
 	}
-	if (typeof sandbox !== "string" || !sandbox) {
+	if (typeof sandbox !== "string" || sandbox === "") {
 		throw new Error("CodexのSandbox設定が不正です。");
 	}
 	return { sandbox };

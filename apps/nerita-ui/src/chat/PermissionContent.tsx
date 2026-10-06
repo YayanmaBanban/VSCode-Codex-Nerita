@@ -1,4 +1,5 @@
 // 承認の要点を常時表示し、長い実行情報は開閉できる詳細へまとめる。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import { ChevronRight } from "lucide-react";
 import { useId, useState } from "react";
@@ -36,7 +37,7 @@ export function PermissionContent({
 				/>
 			)}
 			<PermissionFields fields={permission.fields ?? []} />
-			{!!permission.details?.length && (
+			{!!isNonZeroNumber(permission.details?.length) && (
 				<PermissionDetails fields={permission.details} />
 			)}
 			{permission.command !== undefined && (
@@ -54,7 +55,7 @@ export function PermissionContent({
 
 /** 短い値は2列に揃え、コードは狭い画面でも読める全幅で表示する。 */
 function PermissionFields({ fields }: { fields: PermissionField[] }) {
-	if (!fields.length) {
+	if (fields.length === 0) {
 		return null;
 	}
 	return (
@@ -93,9 +94,11 @@ function PermissionFields({ fields }: { fields: PermissionField[] }) {
 }
 
 /** 全文を保持したまま、キーボードでもスクロールできる表示枠に収める。 */
+/* eslint-disable jsx-a11y-x/no-noninteractive-tabindex -- 長いコードをキーボードでスクロールするため、表示領域を Tab の対象にする。 */
 function PermissionCode({ label, value }: { label: string; value: string }) {
 	return (
 		<pre
+			role="region"
 			aria-label={label}
 			tabIndex={0}
 			className={cn(
@@ -109,6 +112,7 @@ function PermissionCode({ label, value }: { label: string; value: string }) {
 		</pre>
 	);
 }
+/* eslint-enable jsx-a11y-x/no-noninteractive-tabindex */
 
 /** 詳細の内容を保持し、閉じた内容への操作を防ぎながら高さを変える。 */
 function PermissionDetails({ fields }: { fields: PermissionField[] }) {

@@ -1,4 +1,5 @@
 // 通常文と貼り付けブロックの境界で上下キーの移動先を揃える。
+import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import {
 	$getSelection,
 	$isElementNode,
@@ -13,7 +14,7 @@ import { $pointOffset, $selectOffset } from "./content";
 /** 折り返された通常文では、実際の表示上の先頭行・最終行を判定する。 */
 function atVisualEdge(element: HTMLElement, up: boolean): boolean {
 	const selection = window.getSelection();
-	if (!selection?.rangeCount) {
+	if (!isNonZeroNumber(selection?.rangeCount)) {
 		return false;
 	}
 	const caret = selection.getRangeAt(0).getBoundingClientRect();
@@ -77,7 +78,7 @@ function moveSelectedBlock(
 		return false;
 	}
 	const element = editor.getElementByKey(block.getKey());
-	if (outsideVisualEdge(block, element, up)) {
+	if (outsideVisualEdge(block, element, up) === true) {
 		return false;
 	}
 	event.preventDefault();

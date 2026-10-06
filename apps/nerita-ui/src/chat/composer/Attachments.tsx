@@ -17,7 +17,7 @@ export function Attachments({
 	onOpen: (id: string) => void;
 	onRemove: (id: string) => void;
 }) {
-	if (!files.length) {
+	if (files.length === 0) {
 		return null;
 	}
 	return (

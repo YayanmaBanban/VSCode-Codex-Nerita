@@ -250,11 +250,10 @@ function useSliderInteraction(
 	const selected = Math.min(max, Math.max(0, draft ?? value));
 	const progress = max > 0 ? selected / max : 0;
 	// 外部から値が更新されるまでは、解放した位置を維持する。
-	useEffect(createSliderSyncEffect(drag, setDraft, onPreview), [
-		value,
-		count,
-		onPreview,
-	]);
+	useEffect(
+		() => createSliderSyncEffect(drag, setDraft, onPreview)(),
+		[value, count, onPreview],
+	);
 	/** マウスとキーボードの確定位置を、外部からの値の更新前にも表示する。 */
 	function commit(next: number) {
 		setDraft(next);

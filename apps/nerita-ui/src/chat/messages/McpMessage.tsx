@@ -41,7 +41,7 @@ export function McpMessage({
 	return (
 		<div>
 			<p className="mt-0 mb-2">設定済みMCPサーバー:</p>
-			{!content.servers.length ? (
+			{content.servers.length === 0 ? (
 				<p className="m-0 text-muted">MCPサーバーはありません。</p>
 			) : (
 				<ul

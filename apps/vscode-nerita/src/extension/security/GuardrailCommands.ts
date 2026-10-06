@@ -22,7 +22,7 @@ export async function inspectGuardCommand(
 		"Shellの実行には1回限りの承認が必要です。",
 	);
 	if (
-		/(?:remove-item|\brm\b|\brmdir\b|\bdel\b)|\bgit\s+(?:clean\b|reset\b[^\r\n;|]*--hard)/i.test(
+		/remove-item|\brm\b|\brmdir\b|\bdel\b|\bgit\s+(?:clean\b|reset\b[^\r\n;|]*--hard)/i.test(
 			command,
 		)
 	) {

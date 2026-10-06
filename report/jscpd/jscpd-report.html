@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copy/Paste Detector Report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f7fafc; color: #2d3748; }
+    a { color: #3182ce; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .header { background: #fff; box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px 0 rgba(0,0,0,.06); padding: 1rem 0; }
+    .header-inner { max-width: 80rem; margin: 0 auto; padding: 0 1rem; }
+    .header h1 { font-size: 1.875rem; font-weight: 600; color: #2d3748; margin: 0; }
+    .main { max-width: 80rem; margin: 2rem auto; padding: 0 1rem; }
+    .card { background: #fff; box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px 0 rgba(0,0,0,.06); border-radius: 0.25rem; padding: 1.5rem; margin-bottom: 2rem; }
+    h2 { font-size: 1.5rem; font-weight: 600; color: #4a5568; margin: 0 0 1rem 0; }
+    .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    .stat-card { padding: 1rem; border-radius: 0.25rem; text-align: center; }
+    .stat-card h3 { font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem 0; }
+    .stat-card .val { font-size: 2.25rem; font-weight: 700; }
+    .stat-blue { background: #bee3f8; color: #2a4365; }
+    .stat-green { background: #c6f6d5; color: #276749; }
+    .stat-yellow { background: #fefcbf; color: #975a16; }
+    .stat-red { background: #fed7d7; color: #9b2c2c; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #edf2f7; color: #718096; text-transform: uppercase; font-size: 0.75rem; font-weight: 600; padding: 0.75rem 1.5rem; text-align: left; }
+    tbody td { padding: 0.75rem 1.5rem; border-bottom: 1px solid #edf2f7; font-size: 0.875rem; }
+    tbody tr:hover { background: #f7fafc; }
+    .clone-section { margin-bottom: 2rem; }
+    .clone-section h2 { border-bottom: 2px solid #edf2f7; padding-bottom: 0.5rem; }
+    .clone-item { padding: 1rem 0; border-bottom: 1px solid #edf2f7; }
+    .clone-item:last-child { border-bottom: none; }
+    .clone-info { color: #718096; font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .toggle-btn { background: #a0aec0; color: #fff; border: none; padding: 0.125rem 0.5rem; font-size: 0.75rem; border-radius: 0.25rem; cursor: pointer; margin-left: 0.5rem; }
+    .toggle-btn:focus { outline: none; }
+    .code-block { background: #f7fafc; border: 1px solid #edf2f7; border-radius: 0.25rem; padding: 1rem; margin-top: 0.5rem; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 0.875rem; color: #2d3748; white-space: pre-wrap; overflow-x: auto; display: none; }
+    .code-block.visible { display: block; }
+    .no-dupes { color: #27ae60; font-weight: 700; font-size: 1.125rem; }
+    .footer { margin-top: 3rem; padding: 2rem 0; border-top: 1px solid #e0e0e0; text-align: center; font-family: -apple-system, sans-serif; color: #666; }
+    .footer p { margin: 0.5rem 0; font-size: 0.875rem; }
+    .footer a { color: #0066cc; }
+    .footer .small { font-size: 0.75rem; color: #999; }
+    @media (max-width: 768px) { .dashboard { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <h1>jscpd - copy/paste report</h1>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="card">
+      <section>
+        <h2>Dashboard</h2>
+        <div class="dashboard">
+          <div class="stat-card stat-blue">
+            <h3>Total Files</h3>
+            <div class="val">471</div>
+          </div>
+          <div class="stat-card stat-green">
+            <h3>Total Lines of Code</h3>
+            <div class="val">61123</div>
+          </div>
+          <div class="stat-card stat-yellow">
+            <h3>Number of Clones</h3>
+            <div class="val">19</div>
+          </div>
+          <div class="stat-card stat-red">
+            <h3>Duplicated Lines</h3>
+            <div class="val">351 (0.57%)</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="card">
+      <section>
+        <h2>Formats with Duplications</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Format</th>
+              <th>Files</th>
+              <th>Lines</th>
+              <th>Clones</th>
+              <th>Duplicated Lines</th>
+              <th>Duplicated Tokens</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td><a href="#css-clones">css</a></td>
+              <td>16</td>
+              <td>1200</td>
+              <td>0</td>
+              <td>0 (0.00%)</td>
+              <td>0 (0.00%)</td>
+            </tr>
+            
+            <tr>
+              <td><a href="#json-clones">json</a></td>
+              <td>2</td>
+              <td>280</td>
+              <td>1</td>
+              <td>21 (7.50%)</td>
+              <td>74 (8.79%)</td>
+            </tr>
+            
+            <tr>
+              <td><a href="#powershell-clones">powershell</a></td>
+              <td>1</td>
+              <td>84</td>
+              <td>0</td>
+              <td>0 (0.00%)</td>
+              <td>0 (0.00%)</td>
+            </tr>
+            
+            <tr>
+              <td><a href="#tsx-clones">tsx</a></td>
+              <td>103</td>
+              <td>16247</td>
+              <td>8</td>
+              <td>174 (1.07%)</td>
+              <td>733 (0.98%)</td>
+            </tr>
+            
+            <tr>
+              <td><a href="#typescript-clones">typescript</a></td>
+              <td>349</td>
+              <td>43312</td>
+              <td>10</td>
+              <td>156 (0.36%)</td>
+              <td>872 (0.39%)</td>
+            </tr>
+            
+            <tr style="font-weight: 700;">
+              <td>Total</td>
+              <td>471</td>
+              <td>61123</td>
+              <td>19</td>
+              <td>351 (0.57%)</td>
+              <td>1679 (0.54%)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    
+    
+    <div class="card">
+      <section class="clone-section">
+        <a name="json-clones"></a>
+        <h2>json</h2>
+        <div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              extension\backends\pi\guardrails\schema.json (Line 24:14 - Line 44:8),
+              extension\backends\pi\guardrails\schema.json (Line 92:17 - Line 112:8)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-json-1')">Show code</button>
+            </div>
+            <pre id="code-json-1" class="code-block">		&#34;pathRules&#34;: {
+			&#34;maxItems&#34;: 100,
+			&#34;type&#34;: &#34;array&#34;,
+			&#34;items&#34;: {
+				&#34;type&#34;: &#34;object&#34;,
+				&#34;properties&#34;: {
+					&#34;id&#34;: {
+						&#34;type&#34;: &#34;string&#34;,
+						&#34;minLength&#34;: 1,
+						&#34;maxLength&#34;: 80,
+						&#34;pattern&#34;: &#34;^[a-zA-Z0-9_-]+$&#34;
+					},
+					&#34;reason&#34;: {
+						&#34;type&#34;: &#34;string&#34;,
+						&#34;minLength&#34;: 1,
+						&#34;maxLength&#34;: 500
+					},
+					&#34;action&#34;: {
+						&#34;type&#34;: &#34;string&#34;,
+						&#34;enum&#34;: [&#34;allow&#34;, &#34;ask&#34;, &#34;deny&#34;]
+					},</pre>
+          </div>
+          
+        </div>
+      </section>
+    </div>
+    
+    <div class="card">
+      <section class="clone-section">
+        <a name="tsx-clones"></a>
+        <h2>tsx</h2>
+        <div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              agentManager\Fields.tsx (Line 52:33 - Line 65:2),
+              agentManager\HandoffModelField.tsx (Line 28:35 - Line 41:2)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-1')">Show code</button>
+            </div>
+            <pre id="code-tsx-1" class="code-block">					!models.some((item) =&#62; item.value === value) &#38;&#38; (
+						&#60;option value={value}&#62;
+							{value}（保存済み・未確認）
+						&#60;/option&#62;
+					)}
+				{models.map((model) =&#62; (
+					&#60;option key={model.value} value={model.value}&#62;
+						{model.name}
+					&#60;/option&#62;
+				))}
+			&#60;/select&#62;
+		&#60;/Field&#62;
+	);
+}</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              agentManager\HandoffSettings.tsx (Line 181:34 - Line 233:24),
+              agentManager\HandoffSettings.tsx (Line 311:32 - Line 363:24)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-2')">Show code</button>
+            </div>
+            <pre id="code-tsx-2" class="code-block">type BackendHandoffSettingsProps = {
+	backend: &#34;pi&#34; | &#34;codex&#34;;
+	item:
+		| {
+				strategy: &#34;fixed&#34;;
+				model: string;
+				thinking?:
+					| &#34;off&#34;
+					| &#34;minimal&#34;
+					| &#34;low&#34;
+					| &#34;medium&#34;
+					| &#34;high&#34;
+					| &#34;xhigh&#34;
+					| &#34;max&#34;
+					| undefined;
+		  }
+		| {
+				strategy: &#34;current&#34;;
+				thinking?:
+					| &#34;off&#34;
+					| &#34;minimal&#34;
+					| &#34;low&#34;
+					| &#34;medium&#34;
+					| &#34;high&#34;
+					| &#34;xhigh&#34;
+					| &#34;max&#34;
+					| undefined;
+		  }
+		| {
+				strategy: &#34;fixed&#34;;
+				model: string;
+				reasoningEffort?:
+					| &#34;low&#34;
+					| &#34;medium&#34;
+					| &#34;high&#34;
+					| &#34;xhigh&#34;
+					| &#34;max&#34;
+					| &#34;ultra&#34;
+					| undefined;
+		  }
+		| {
+				strategy: &#34;current&#34;;
+				reasoningEffort?:
+					| &#34;low&#34;
+					| &#34;medium&#34;
+					| &#34;high&#34;
+					| &#34;xhigh&#34;
+					| &#34;max&#34;
+					| &#34;ultra&#34;
+					| undefined;
+		  };
+	setConfig: Dispatch&#60;SetStateAction&#60;HandoffConfig&#62;&#62;;
+	config: HandoffConfig;</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              chat\composer\CompletionPlugin.tsx (Line 274:2 - Line 284:3),
+              chat\composer\CompletionPlugin.tsx (Line 372:2 - Line 382:3)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-3')">Show code</button>
+            </div>
+            <pre id="code-tsx-3" class="code-block">	paths: {
+		ancestors: WorkspacePath[];
+		goTo: (depth: number) =&#62; void;
+		items: CompletionItem[];
+		path: string;
+		empty: string;
+		open: (entry: WorkspacePath) =&#62; void;
+		back: () =&#62; void;
+		reset: () =&#62; void;
+		hasParent: boolean;
+	};</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              chat\composer\PathReferenceChip.tsx (Line 68:5 - Line 79:13),
+              chat\messages\MessageReferenceChip.tsx (Line 59:5 - Line 70:13)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-4')">Show code</button>
+            </div>
+            <pre id="code-tsx-4" class="code-block">				}}
+			&#62;
+				&#60;Icon size={14} aria-hidden=&#34;true&#34; /&#62;
+				&#60;span className=&#34;truncate&#34;&#62;
+					{path.kind === &#34;session&#34;
+						? `${path.mode === &#34;handoff&#34; ? &#34;Handoff&#34; : &#34;Session&#34;}: ${path.name}`
+						: path.name}
+					{path.kind === &#34;file&#34; &#38;&#38; path.range
+						? `(${path.range.start.line}:${path.range.end.line})`
+						: &#34;&#34;}
+				&#60;/span&#62;
+			&#60;/button&#62;</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              chat\connection\BackendMenu.tsx (Line 36:5 - Line 57:15),
+              chat\connection\SidebarMenu.tsx (Line 31:5 - Line 52:15)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-5')">Show code</button>
+            </div>
+            <pre id="code-tsx-5" class="code-block">				&#60;ChevronRight
+					size={14}
+					className=&#34;ml-auto&#34;
+					aria-hidden=&#34;true&#34;
+				/&#62;
+			&#60;/Menu.SubmenuTrigger&#62;
+			&#60;Menu.Portal&#62;
+				&#60;Menu.Positioner
+					side=&#34;left&#34;
+					align=&#34;start&#34;
+					sideOffset={4}
+					collisionPadding={8}
+					className=&#34;z-30&#34;
+				&#62;
+					&#60;Menu.Popup
+						className={cn(
+							&#34;min-w-[128px] rounded-[6px] border border-solid border-menu-border&#34;,
+							&#34;bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]&#34;,
+						)}
+					&#62;
+						&#60;Menu.RadioGroup
+							value={backend ?? &#34;&#34;}</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              chat\connection\BackendMenu.tsx (Line 73:39 - Line 93:2),
+              chat\connection\SidebarMenu.tsx (Line 71:11 - Line 91:2)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-6')">Show code</button>
+            </div>
+            <pre id="code-tsx-6" class="code-block">									className={backendOptionStyle}
+								&#62;
+									&#60;span className=&#34;size-[16px] shrink-0&#34;&#62;
+										&#60;Menu.RadioItemIndicator&#62;
+											&#60;Check
+												size={16}
+												className=&#34;text-menu-check&#34;
+												aria-hidden=&#34;true&#34;
+											/&#62;
+										&#60;/Menu.RadioItemIndicator&#62;
+									&#60;/span&#62;
+									{label}
+								&#60;/Menu.RadioItem&#62;
+							))}
+						&#60;/Menu.RadioGroup&#62;
+					&#60;/Menu.Popup&#62;
+				&#60;/Menu.Positioner&#62;
+			&#60;/Menu.Portal&#62;
+		&#60;/Menu.SubmenuRoot&#62;
+	);
+}</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              codex\CodexAgentManager.tsx (Line 58:30 - Line 83:22),
+              pi\PiAgentManager.tsx (Line 82:23 - Line 107:22)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-7')">Show code</button>
+            </div>
+            <pre id="code-tsx-7" class="code-block">		agent?.edit.reasoningEffort,
+	);
+	const change = (next: AgentEdit) =&#62; {
+		setEdit(next);
+		props.onDirty();
+	};
+	return (
+		&#60;AgentSettings
+			agent={agent}
+			edit={edit}
+			models={models}
+			onChange={change}
+			busy={props.busy}
+			error={error}
+			filename={filename}
+			onFilenameChange={
+				agent
+					? undefined
+					: (value) =&#62; {
+							setFilename(value);
+							props.onDirty();
+						}
+			}
+			onSubmit={() =&#62; submitAgent(props.save, agent, filename, edit)}
+		&#62;
+			&#60;AgentModelControl</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              codex\CodexAgentManager.tsx (Line 123:3 - Line 137:39),
+              pi\PiAgentManager.tsx (Line 133:3 - Line 147:39)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-tsx-8')">Show code</button>
+            </div>
+            <pre id="code-tsx-8" class="code-block">	};
+}
+
+/** 保存先の識別子は編集状態から分離し、名前変更でも元ファイルを更新する。 */
+function submitAgent(
+	save: AgentManagerProps[&#34;save&#34;],
+	agent: ManagedAgent | undefined,
+	filename: string,
+	draft: AgentEdit,
+) {
+	const edit = agentEditSchema.parse(draft);
+	if (agent) {
+		save({ type: &#34;agent&#34;, agentId: agent.id, edit });
+	} else {
+		save({ type: &#34;createAgent&#34;, backend: &#34;codex&#34;, filename, edit });</pre>
+          </div>
+          
+        </div>
+      </section>
+    </div>
+    
+    <div class="card">
+      <section class="clone-section">
+        <a name="typescript-clones"></a>
+        <h2>typescript</h2>
+        <div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              chat\search\useChatSearch.ts (Line 176:22 - Line 188:2),
+              chat\search\useChatSearch.ts (Line 246:19 - Line 258:2)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-1')">Show code</button>
+            </div>
+            <pre id="code-typescript-1" class="code-block">	options: FindOptions,
+	ranges: RefObject&#60;Range[]&#62;,
+	setResult: Dispatch&#60;
+		SetStateAction&#60;{
+			count: number;
+			index: number;
+			limited: boolean;
+			error: string;
+		}&#62;
+	&#62;,
+	select: (position: number, scroll?: boolean) =&#62; void,
+	index: RefObject&#60;number&#62;,
+): EffectCallback {</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              pi\guardrails\useGuardrails.ts (Line 112:2 - Line 127:4),
+              pi\guardrails\useGuardrails.ts (Line 204:2 - Line 219:4)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-2')">Show code</button>
+            </div>
+            <pre id="code-typescript-2" class="code-block">	setReply: Dispatch&#60;
+		SetStateAction&#60;{
+			type: &#34;reply&#34;;
+			id: number;
+			error: string | null;
+			notice: string;
+			result: {
+				action: &#34;allow&#34; | &#34;ask&#34; | &#34;deny&#34;;
+				reasons: string[];
+				rules: string[];
+				paths: string[];
+				uncertainties: string[];
+			} | null;
+			warnings: string[];
+		} | null&#62;
+	&#62;,</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              pi\guardrails\useGuardrails.ts (Line 113:18 - Line 126:11),
+              pi\guardrails\useGuardrails.ts (Line 154:9 - Line 167:10)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-3')">Show code</button>
+            </div>
+            <pre id="code-typescript-3" class="code-block">		SetStateAction&#60;{
+			type: &#34;reply&#34;;
+			id: number;
+			error: string | null;
+			notice: string;
+			result: {
+				action: &#34;allow&#34; | &#34;ask&#34; | &#34;deny&#34;;
+				reasons: string[];
+				rules: string[];
+				paths: string[];
+				uncertainties: string[];
+			} | null;
+			warnings: string[];
+		} | null&#62;</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              pi\guardrails\useGuardrails.ts (Line 115:14 - Line 128:7),
+              pi\guardrails\useGuardrails.ts (Line 207:14 - Line 220:8)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-4')">Show code</button>
+            </div>
+            <pre id="code-typescript-4" class="code-block">			id: number;
+			error: string | null;
+			notice: string;
+			result: {
+				action: &#34;allow&#34; | &#34;ask&#34; | &#34;deny&#34;;
+				reasons: string[];
+				rules: string[];
+				paths: string[];
+				uncertainties: string[];
+			} | null;
+			warnings: string[];
+		} | null&#62;
+	&#62;,
+	draft: RefObject&#60;string&#62;,</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              extension\agentManager\AgentManagerPanel.ts (Line 231:8 - Line 241:10),
+              extension\credentials\CredentialPanel.ts (Line 136:70 - Line 146:7)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-5')">Show code</button>
+            </div>
+            <pre id="code-typescript-5" class="code-block">			try {
+				const folders = vscode.workspace.workspaceFolders ?? [];
+				const folder =
+					folders.length === 1
+						? folders[0]
+						: await vscode.window.showWorkspaceFolderPick();
+				if (!folder || folder.uri.scheme !== &#34;file&#34;) {
+					return;
+				}
+				const root = await realpath(folder.uri.fsPath);
+				const existing = panels.get(root);</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              extension\backends\codex\CodexRun.ts (Line 148:34 - Line 163:3),
+              extension\backends\codex\CodexSubmission.ts (Line 436:39 - Line 451:3)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-6')">Show code</button>
+            </div>
+            <pre id="code-typescript-6" class="code-block">	private async prepareAttachments(files: Attachment[]) {
+		const model =
+			this.turnOptions.model ??
+			this.state.configOptions.find((item) =&#62; item.id === &#34;model&#34;)
+				?.currentValue;
+		const attachments =
+			files.length &#62; 0
+				? await attachmentInput(
+						files,
+						this.models
+							.find((item) =&#62; item.model === model)
+							?.inputModalities.includes(&#34;image&#34;) ?? false,
+					)
+				: [];
+		return attachments;
+	}</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              extension\backends\codex\CodexSessionController.ts (Line 30:64 - Line 46:11),
+              extension\backends\pi\PiSessionController.ts (Line 38:35 - Line 54:11)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-7')">Show code</button>
+            </div>
+            <pre id="code-typescript-7" class="code-block">			this.emit({ type: &#34;state/snapshot&#34;, state: this.snapshot() });
+			return;
+		}
+		if (this.seen.has(value.requestId)) {
+			return;
+		}
+		this.seen.add(value.requestId);
+		if (this.seen.size &#62; 2048) {
+			this.seen.delete(this.seen.values().next().value!);
+		}
+		try {
+			await this.dispatch(value);
+		} catch (error) {
+			this.emit({
+				type: &#34;request/failed&#34;,
+				requestId: value.requestId,
+				error: requestError(value.type, error),</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              extension\backends\pi\PiSubagentTool.ts (Line 384:21 - Line 401:5),
+              extension\backends\pi\workflows\PiWorkflowPrompt.ts (Line 20:17 - Line 37:5)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-8')">Show code</button>
+            </div>
+            <pre id="code-typescript-8" class="code-block">		views.event(viewId, event);
+		if (event.type === &#34;tool_execution_end&#34; &#38;&#38; event.isError) {
+			outcome.failed = true;
+		}
+		if (
+			event.type === &#34;message_end&#34; &#38;&#38;
+			event.message.role === &#34;assistant&#34;
+		) {
+			output = event.message.content
+				.filter((part) =&#62; part.type === &#34;text&#34;)
+				.map((part) =&#62; part.text)
+				.join(&#34;\n&#34;)
+				.slice(0, 32768);
+			outcome.failed ||= [&#34;error&#34;, &#34;aborted&#34;].includes(
+				event.message.stopReason,
+			);
+		}
+	});</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              extension\runtime\HostToolExecutor.ts (Line 122:8 - Line 146:24),
+              extension\runtime\MxcExecutor.ts (Line 282:10 - Line 306:24)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-9')">Show code</button>
+            </div>
+            <pre id="code-typescript-9" class="code-block">	output?: SandboxCommandOutput,
+): Promise&#60;SandboxCommandResult&#62; {
+	return new Promise((resolve, reject) =&#62; {
+		let stdout = &#34;&#34;;
+		let stderr = &#34;&#34;;
+		let failure: Error | undefined;
+		let stopping = false;
+		const stop = () =&#62; {
+			if (stopping || !isNonZeroNumber(child.pid)) {
+				return;
+			}
+			stopping = true;
+			execFile(
+				join(process.env.SystemRoot!, &#34;System32&#34;, &#34;taskkill.exe&#34;),
+				[&#34;/PID&#34;, String(child.pid), &#34;/T&#34;, &#34;/F&#34;],
+				{ windowsHide: true, timeout: 5000 },
+				() =&#62; {
+					if (child.exitCode === null &#38;&#38; child.signalCode === null) {
+						child.kill();
+					}
+				},
+			);
+		};
+		const abort = () =&#62; {
+			failure = new Error(&#34;Host 実行を停止しました。&#34;, {</pre>
+          </div>
+          
+          <div class="clone-item">
+            <div class="clone-info">
+              extension\session\ToolOutputStore.ts (Line 138:4 - Line 149:5),
+              extension\session\ToolOutputStore.ts (Line 221:4 - Line 232:5)
+            </div>
+            <div>
+              <button class="toggle-btn" onclick="toggle('code-typescript-10')">Show code</button>
+            </div>
+            <pre id="code-typescript-10" class="code-block">			const before = lstatSync(entry.path);
+			if (
+				!before.isFile() ||
+				realpathSync(entry.path) !== resolve(entry.path)
+			) {
+				throw new Error(&#34;Not a regular file&#34;);
+			}
+			fd = openSync(entry.path, &#34;r&#34;);
+			const stat = fstatSync(fd);
+			if (before.ino !== stat.ino || before.dev !== stat.dev) {
+				throw new Error(&#34;File changed&#34;);
+			}</pre>
+          </div>
+          
+        </div>
+      </section>
+    </div>
+    
+    
+  </div>
+
+  <div class="footer">
+    <p>Generated by <a href="https://jscpd.dev" target="_blank">jscpd</a> v5.4.0 by <a href="https://github.com/kucherenko" target="_blank">Andrey Kucherenko</a></p>
+    <p><a href="https://www.npmjs.com/package/jscpd" target="_blank"><img src="https://img.shields.io/npm/dw/jscpd.svg?style=flat-square" alt="npm weekly downloads" style="vertical-align: middle;"></a></p>
+  </div>
+
+  <script>
+    function toggle(id) {
+      var el = document.getElementById(id);
+      if (el) { el.classList.toggle('visible'); }
+    }
+  </script>
+</body>
+</html>

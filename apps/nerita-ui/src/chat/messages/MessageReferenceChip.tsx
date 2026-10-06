@@ -4,10 +4,9 @@ import { cn } from "cnfast";
 import type { ComposerTarget } from "@nerita/shared/composerTargets";
 import { pathText } from "@nerita/shared/composerReferences";
 import type { UiMessage } from "@nerita/shared/messages";
-import {
-	referenceIcon,
-	referenceActionLabel,
-} from "../composer/referencePresentation";
+import { referenceActionLabel } from "../composer/referencePresentation";
+
+import { ReferenceChipContent } from "../ReferenceChipContent";
 
 /** 参照の種別に応じて Host へ開く操作を渡す。 */
 export function MessageReferenceChip({
@@ -17,7 +16,6 @@ export function MessageReferenceChip({
 	path: ComposerTarget;
 	send: ((message: UiMessage) => void) | undefined;
 }) {
-	const Icon = referenceIcon(path);
 	return (
 		<SettingsTooltip content={pathText(path)}>
 			<button
@@ -58,15 +56,7 @@ export function MessageReferenceChip({
 					}
 				}}
 			>
-				<Icon size={14} aria-hidden="true" />
-				<span className="truncate">
-					{path.kind === "session"
-						? `${path.mode === "handoff" ? "Handoff" : "Session"}: ${path.name}`
-						: path.name}
-					{path.kind === "file" && path.range
-						? `(${path.range.start.line}:${path.range.end.line})`
-						: ""}
-				</span>
+				<ReferenceChipContent path={path} />
 			</button>
 		</SettingsTooltip>
 	);

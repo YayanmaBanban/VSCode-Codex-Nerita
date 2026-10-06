@@ -1,4 +1,8 @@
 // `prompt` の受付と実行を分け、開始直前の停止や旧接続の完了が現在の実行に反映されるのを防ぐ。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 
 import type { ChatState } from "@nerita/shared/chatState";
 
@@ -48,7 +52,7 @@ export abstract class PiRun extends PiLifecycle {
 				? undefined
 				: title.fields?.find((field) => field.id === "subagent-job")
 						?.value;
-		if (jobId && signal && this.runtime?.jobs) {
+		if (isNonEmptyString(jobId) && signal && this.runtime?.jobs) {
 			const jobs = this.runtime.jobs;
 			jobs.read(jobId);
 			return this.approvals.authorize(
@@ -94,7 +98,7 @@ export abstract class PiRun extends PiLifecycle {
 			throw new Error("Pi への接続とモデル設定を完了してください。");
 		}
 		if (
-			!this.state.cwd ||
+			!isNonEmptyString(this.state.cwd) ||
 			(await realpath(this.state.cwd)) !== request.root
 		) {
 			throw new Error(
@@ -133,7 +137,7 @@ export abstract class PiRun extends PiLifecycle {
 		if (!runtime || this.state.sessionPending) {
 			throw new Error("Piへ接続してから送信してください。");
 		}
-		if (message.changeScopes?.length) {
+		if (isNonZeroNumber(message.changeScopes?.length)) {
 			throw new Error("Piの最小版では変更点の添付には対応していません。");
 		}
 		if (this.submission) {
@@ -174,7 +178,8 @@ export abstract class PiRun extends PiLifecycle {
 		};
 
 		const input =
-			message.codeReferences?.length || message.sessionReferences?.length
+			isNonZeroNumber(message.codeReferences?.length) ||
+			isNonZeroNumber(message.sessionReferences?.length)
 				? piPromptContext(
 						runtime,
 						this.state.cwd!,
@@ -538,7 +543,7 @@ function finishedRunStatus(
 	if (cancelled) {
 		return "cancelled";
 	}
-	if (error) {
+	if (isNonEmptyString(error)) {
 		return "failed";
 	}
 	return "completed";

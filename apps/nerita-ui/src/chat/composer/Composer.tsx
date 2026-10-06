@@ -1,4 +1,5 @@
 // 入力領域と送信・停止・設定操作をまとめる。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { Bridge } from "@nerita/shared/bridge";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -68,7 +69,7 @@ export function Composer(props: ComposerProps) {
 					ドロップしてファイルを添付
 				</div>
 			)}
-			{drop.error && (
+			{drop.error !== "" && (
 				<p role="alert" className="text-[12px] text-tool-error">
 					{drop.error}
 				</p>
@@ -156,7 +157,10 @@ function ComposerFooter({
 							aria-label="停止"
 							disabled={state.run === "cancelling"}
 							onClick={() => {
-								if (state.sessionId && state.runId) {
+								if (
+									isNonEmptyString(state.sessionId) &&
+									isNonEmptyString(state.runId)
+								) {
 									send({
 										type: "prompt/cancel",
 										requestId: crypto.randomUUID(),
@@ -201,8 +205,8 @@ function sendDisabled(
 	return (
 		drop.reading ||
 		!available ||
-		!state.sessionId ||
-		!parts.some((part) => part.text.trim())
+		!isNonEmptyString(state.sessionId) ||
+		!parts.some((part) => part.text.trim() !== "")
 	);
 }
 
@@ -213,7 +217,7 @@ function attachmentAction(
 	send: (message: UiMessage) => void,
 ) {
 	if (
-		!state.sessionId ||
+		!isNonEmptyString(state.sessionId) ||
 		state.connection !== "ready" ||
 		state.sessionPending ||
 		state.configPending ||

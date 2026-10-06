@@ -13,7 +13,7 @@ export function createJevReviewer(
 	apiKey: string,
 	transport: typeof fetch = fetch,
 ): JevReviewer {
-	if (!apiKey.trim()) {
+	if (apiKey.trim() === "") {
 		throw new Error("JevのAPIキーが未設定です。");
 	}
 	return async (input, signal) => {

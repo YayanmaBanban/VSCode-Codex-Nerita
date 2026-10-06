@@ -1,4 +1,8 @@
 // ツールの種別に応じた本文・状態アイコン・停止操作と開閉を表示する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 
 import { taskActive, type AsyncTask } from "@nerita/shared/asyncTask";
 import type { ToolSummary } from "@nerita/shared/chatState";
@@ -39,7 +43,7 @@ function toolBody(
 	if (tool.output) {
 		return OutputBody;
 	}
-	if (tool.summaryOnly) {
+	if (tool.summaryOnly === true) {
 		return ToolHistoryContent;
 	}
 	return tool.resultDisplay ? GenericTool : renderer.Body;
@@ -196,14 +200,18 @@ type ToolHistoryContentProps = ActivityToolProps;
 
 /** 保存された入力や本文があれば表示し、保存されていない結果本文は補わない。 */
 function ToolHistoryContent({ tool, send, cwd }: ToolHistoryContentProps) {
-	return tool.rawInput !== undefined || tool.content?.length ? (
+	return tool.rawInput !== undefined ||
+		isNonZeroNumber(tool.content?.length) ? (
 		<GenericTool tool={tool} send={send} cwd={cwd} />
 	) : null;
 }
 
 /** 保存されない本文や入力、省略された子の記録を明示する。 */
 function renderHistoryNotice(tool: ToolSummary) {
-	if (!tool.summaryOnly && !tool.nestedCallsIncomplete) {
+	if (
+		!(tool.summaryOnly === true) &&
+		!(tool.nestedCallsIncomplete === true)
+	) {
 		return null;
 	}
 	return (
@@ -212,7 +220,7 @@ function renderHistoryNotice(tool: ToolSummary) {
 				"px-[10px] pb-[8px] text-[12px] [overflow-wrap:anywhere] text-muted",
 			)}
 		>
-			{tool.summaryOnly && (
+			{tool.summaryOnly === true && (
 				<p className="m-0">
 					保存された要約です。結果本文は保存されていません。
 				</p>
@@ -223,7 +231,7 @@ function renderHistoryNotice(tool: ToolSummary) {
 					{tool.omittedArgumentBytes} バイト）。
 				</p>
 			)}
-			{tool.nestedCallsIncomplete && (
+			{tool.nestedCallsIncomplete === true && (
 				<p className="m-0">
 					入れ子のツール履歴は一部省略されています。
 				</p>
@@ -264,7 +272,7 @@ function renderToolBody(
 				"[&_section+section]:mt-[14px]",
 			)}
 		>
-			{cwd && (
+			{isNonEmptyString(cwd) && (
 				<div
 					className={cn(
 						"tool-cwd mb-[8px] text-[12px] [overflow-wrap:anywhere] text-muted",
@@ -492,7 +500,7 @@ function cardStatus(
 		}
 		return "completed";
 	}
-	if (tool.backgrounded) {
+	if (tool.backgrounded === true) {
 		return "in_progress";
 	}
 	return tool.status;
@@ -521,7 +529,7 @@ function stopTitle(
 		}
 		return "コマンドを停止";
 	}
-	if (stopPending) {
+	if (stopPending === true) {
 		return "停止を待っています";
 	}
 	return "個別停止できるバックグラウンドタスクはありません";

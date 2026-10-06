@@ -1,4 +1,5 @@
 // 保存済みワークスペースを検索し、信頼状態を変更したり記録を削除したりする。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { cn } from "cnfast";
 import { type JSX, useEffect, useState } from "react";
@@ -63,7 +64,7 @@ export function TrustManager({ bridge }: TrustManagerProps) {
 					placeholder="名前またはパスで検索"
 				/>
 			</label>
-			{state?.error && (
+			{isNonEmptyString(state?.error) && (
 				<p role="alert" className="m-0 text-sm break-words">
 					{state.error}
 				</p>
@@ -82,9 +83,9 @@ export function TrustManager({ bridge }: TrustManagerProps) {
 						send={send}
 					/>
 				))}
-				{state && !records.length && (
+				{state && records.length === 0 && (
 					<p className="text-sm text-muted">
-						{query
+						{query !== ""
 							? "一致するフォルダーがありません。"
 							: "保存された記録はありません。"}
 					</p>

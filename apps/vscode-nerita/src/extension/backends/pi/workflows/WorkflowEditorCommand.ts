@@ -1,4 +1,5 @@
 // 新規定義を作る際も既存ファイルを上書きせず、専用エディタへ開く。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { stringify } from "smol-toml";
 import { workflowFileSchema } from "@nerita/shared/workflows/messages";
@@ -28,7 +29,7 @@ export function registerWorkflowCommand(
 							? null
 							: "英数字から始まる .toml ファイル名を指定してください。",
 				});
-				if (!file) {
+				if (!isNonEmptyString(file)) {
 					return;
 				}
 				const uri = vscode.Uri.joinPath(

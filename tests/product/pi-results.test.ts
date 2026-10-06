@@ -1,4 +1,5 @@
 // 通常ツールの大きな結果を、本番の機能設定・SDK・共有状態・保存・復元へ通す。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { type TestContext, test } from "node:test";
 
@@ -77,7 +78,9 @@ async function verifyNestedOutputArchive(t: TestContext) {
 	await permission(controller, "accept");
 	const state = await finished(controller);
 	assert.equal(state.error, null);
-	const child = state.tools.find((tool) => tool.parentToolCallId);
+	const child = state.tools.find((tool) =>
+		isNonEmptyString(tool.parentToolCallId),
+	);
 	assert.ok(child);
 	const output = await readOutput(controller, child);
 	assert.match(output, /末尾$/u, "子の大きな結果を JSON の途中で切断しない");
@@ -133,7 +136,7 @@ async function verifyNestedOutputArchive(t: TestContext) {
 	const unavailable = missing
 		.snapshot()
 		.tools.find((tool) => tool.id === child.id);
-	assert.ok(unavailable?.output?.truncated);
+	assert.ok(unavailable?.output?.truncated === true);
 	assert.equal(unavailable.output.outputRef, undefined);
 	assert.match(unavailable.output.preview, /末尾/u);
 }
@@ -166,7 +169,9 @@ void test("コード実行からの書込みも個別承認を要求し、親子
 		state.tools.every((tool) => tool.status === "completed"),
 		JSON.stringify(state.tools),
 	);
-	const child = state.tools.find((tool) => tool.parentToolCallId);
+	const child = state.tools.find((tool) =>
+		isNonEmptyString(tool.parentToolCallId),
+	);
 	assert.ok(child);
 	assert.ok(state.tools.some((tool) => tool.id === child.parentToolCallId));
 	await controller.dispose();
@@ -240,7 +245,7 @@ async function verifyPiResultHistory(
 		result.status === "failed" ? JSON.stringify(result) : "",
 	);
 	assert.ok(
-		f.model.requests.at(-1)?.includes("末尾"),
+		f.model.requests.at(-1)?.includes("末尾") === true,
 		"モデルに正常な結果の末尾が届く",
 	);
 	const saved = await sessionFiles(f.cwd);
@@ -264,7 +269,7 @@ async function verifyPiResultHistory(
 		.snapshot()
 		.tools.find((tool) => tool.title === "large_result");
 	assert.equal(restoredResult?.status, "completed");
-	assert.ok(restoredResult);
+	assert.notEqual(restoredResult, undefined);
 	assert.ok(restoredResult.output);
 	assert.equal(restoredResult.output.preview, result.output.preview);
 	assert.equal(await readOutput(restored, restoredResult), liveOutput);
@@ -277,7 +282,7 @@ async function verifyPiResultHistory(
 
 /** 実際の通信契約で全範囲を読み、保存・再接続後の欠落を検出する。 */
 async function readOutput(controller: PiSessionController, tool: ToolSummary) {
-	assert.ok(tool.output?.outputRef);
+	assert.ok(isNonEmptyString(tool.output?.outputRef));
 	let text = "";
 	let offset = 0;
 	while (true) {

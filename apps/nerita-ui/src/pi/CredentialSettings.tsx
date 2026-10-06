@@ -1,4 +1,5 @@
 // 秘密値を含まない Binding と Provider の状態だけを扱う。秘密値の入力は Host の対話で行う。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { useEffect, useState } from "react";
 import {
 	type CredentialBinding,
@@ -67,7 +68,7 @@ export function CredentialEditor({
 			<p className="mb-[20px] text-muted">
 				Binding には秘密情報の参照と利用先を保存します。
 			</p>
-			{error && (
+			{error !== "" && (
 				<p
 					role="alert"
 					className="rounded-[6px] border border-alert-border bg-alert p-[12px]"
@@ -75,7 +76,7 @@ export function CredentialEditor({
 					{error}
 				</p>
 			)}
-			{notice && <p role="status">{notice}</p>}
+			{notice !== "" && <p role="status">{notice}</p>}
 			<ProviderSettings state={state} send={send} />
 			<section aria-label="Binding">
 				<h2 className="text-[16px] font-semibold">Binding</h2>
@@ -131,7 +132,7 @@ function providerStatus(provider: State["providers"][number]) {
 		session: "このセッションのみ",
 		"secret-storage": "VS Code に保存",
 	};
-	return `${status} · ${provider.authenticated ? "認証済み" : "未認証"} · ${provider.mode ? modes[provider.mode] : "未設定"}`;
+	return `${status} · ${provider.authenticated ? "認証済み" : "未認証"} · ${provider.mode !== null ? modes[provider.mode] : "未設定"}`;
 }
 /** BWS の認証は Host の秘密入力で設定する。 */
 function ProviderSettings({
@@ -216,8 +217,9 @@ function ProviderStates({ providers }: { providers: State["providers"] }) {
 			className="break-words"
 		>
 			{providerName(provider.id)}
-			{provider.accountId && ` · ${provider.accountId}`} ·{" "}
-			{providerStatus(provider)}
+			{isNonEmptyString(provider.accountId) &&
+				` · ${provider.accountId}`}{" "}
+			· {providerStatus(provider)}
 		</p>
 	));
 }

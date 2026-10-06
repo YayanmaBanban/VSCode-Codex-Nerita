@@ -59,7 +59,7 @@ function appendTextPart(
 		last.text += previousText ? "\n" : "";
 		if ($isElementNode(node)) {
 			const references = $readReferences(node, last.text.length);
-			if (references.length) {
+			if (references.length > 0) {
 				last.references = [...(last.references ?? []), ...references];
 			}
 		}

@@ -1,4 +1,5 @@
 // 表示中の一範囲だけを保持し、出力参照から必要な UTF-8 範囲を取得する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import type { Bridge } from "@nerita/shared/bridge";
 import {
@@ -32,7 +33,7 @@ export function ToolOutputView({ output }: { output: ToolOutputPreview }) {
 		<section>
 			<CommandOutput text={output.preview} />
 			{output.truncated &&
-				(output.outputRef && bridge ? (
+				(isNonEmptyString(output.outputRef) && bridge ? (
 					<>
 						<button
 							type="button"
@@ -97,7 +98,7 @@ function OutputRange({
 						type="button"
 						className={rangeButtonClass}
 						aria-label="前の範囲を表示"
-						disabled={loading || !previous.length}
+						disabled={loading || previous.length === 0}
 						onClick={() => {
 							prepare();
 							setOffset(previous.at(-1)!);
@@ -112,7 +113,12 @@ function OutputRange({
 						type="button"
 						className={rangeButtonClass}
 						aria-label="次の範囲を表示"
-						disabled={loading || !!error || !range || range.eof}
+						disabled={
+							loading ||
+							!!isNonEmptyString(error) ||
+							!range ||
+							range.eof
+						}
 						onClick={() => {
 							if (!range) {
 								return;
@@ -125,7 +131,7 @@ function OutputRange({
 						<ChevronRight size={16} aria-hidden="true" />
 					</button>
 				</SettingsTooltip>
-				{range && !loading && !error && (
+				{range && !loading && !isNonEmptyString(error) && (
 					<span>
 						{range.offset.toLocaleString()}–
 						{range.nextOffset.toLocaleString()} バイト
@@ -199,7 +205,7 @@ function RangeContent({
 	loading: boolean;
 	range: ToolOutputResponse | undefined;
 }) {
-	if (error) {
+	if (isNonEmptyString(error)) {
 		return <p role="alert">{error}</p>;
 	}
 	return (

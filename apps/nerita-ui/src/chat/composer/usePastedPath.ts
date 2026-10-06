@@ -28,7 +28,7 @@ export function usePastedPath(
 	editor: LexicalEditor,
 	bridge: Bridge | undefined,
 ) {
-	useEffect(createPastedPathEffect(bridge, editor), [editor, bridge]);
+	useEffect(() => createPastedPathEffect(bridge, editor)(), [editor, bridge]);
 }
 
 /** 貼り付けたパスの照合処理を登録し、終了時に照合待ちの購読とコマンド登録を解除する。 */
@@ -71,7 +71,7 @@ function createPastedPathHandler(
 			match?.marker !== "#" ||
 			match.query !== "" ||
 			!$isRangeSelection(selection) ||
-			!text.trim()
+			text.trim() === ""
 		) {
 			return false;
 		}

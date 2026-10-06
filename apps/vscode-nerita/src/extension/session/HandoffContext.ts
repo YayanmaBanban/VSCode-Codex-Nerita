@@ -45,7 +45,7 @@ export async function generateHandoff(
 		const settings = config.backends[backend];
 		const model =
 			settings.strategy === "fixed" ? settings.model : currentModel;
-		if (!model) {
+		if (model === "") {
 			throw new Error("Missing model");
 		}
 
@@ -53,7 +53,7 @@ export async function generateHandoff(
 		return await handoffWithDeadline(
 			{
 				model,
-				...(effort ? { effort } : {}),
+				...(effort !== undefined ? { effort } : {}),
 				timeoutMs: config.defaults.timeoutMs,
 				signal,
 				systemPrompt: handoffInstructions,

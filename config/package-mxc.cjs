@@ -94,6 +94,6 @@ function windowsMxcAsset(parts) {
 	return (
 		parts.length === 2 ||
 		parts[2] === "_manifest" ||
-		/\.(exe|dll)$/.test(parts[2])
+		/\.(?:exe|dll)$/.test(parts[2])
 	);
 }

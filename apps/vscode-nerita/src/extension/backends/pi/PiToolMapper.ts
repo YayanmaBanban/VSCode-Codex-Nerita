@@ -1,4 +1,9 @@
 // Pi のツール実行通知を、会話の実行 ID と順序を保った共通カードへ変換する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../session/timelineOrder";
@@ -26,7 +31,7 @@ export function mapPiTool(
 	const existing = state.tools.find(
 		(tool) => tool.id === event.toolCallId && tool.runId === state.runId,
 	);
-	if (isFinishedTool(existing)) {
+	if (isFinishedTool(existing) === true) {
 		return;
 	}
 	const input: unknown = "args" in event ? event.args : existing?.rawInput;
@@ -86,9 +91,9 @@ function piToolSummary(
 	const kind = toolKind(event.toolName);
 	return {
 		id: event.toolCallId,
-		...(state.runId ? { runId: state.runId } : {}),
+		...(isNonEmptyString(state.runId) ? { runId: state.runId } : {}),
 		...toolParent(event, existing),
-		...(state.cwd ? { cwd: state.cwd } : {}),
+		...(isNonEmptyString(state.cwd) ? { cwd: state.cwd } : {}),
 		order: existing?.order ?? nextTimelineOrder(state),
 		title: toolTitle(existing, file, label, kind, input),
 		kind,
@@ -120,7 +125,7 @@ function toolParent(
 	existing: ToolSummary | undefined,
 ) {
 	const id = event.parentToolCallId ?? existing?.parentToolCallId;
-	return id ? { parentToolCallId: id } : {};
+	return isNonEmptyString(id) ? { parentToolCallId: id } : {};
 }
 
 /** 既存の対象パスを保持し、新規ツールのパスを補う。 */
@@ -128,7 +133,7 @@ function toolPaths(
 	existing: ToolSummary | undefined,
 	file: string | undefined,
 ): string[] {
-	return existing?.paths ?? (file ? [file] : []);
+	return existing?.paths ?? (isNonEmptyString(file) ? [file] : []);
 }
 
 /** 実行ツールは元のコマンドを見出しに使い、その他は既存の操作名を保持する。 */
@@ -146,7 +151,10 @@ function toolTitle(
 	) {
 		return input.command;
 	}
-	return existing?.title ?? (file ? `${label}: ${file}` : label);
+	return (
+		existing?.title ??
+		(isNonEmptyString(file) ? `${label}: ${file}` : label)
+	);
 }
 
 /** `Stop` や通信障害で終了通知が来ない場合も、当該実行のカードを実行中のまま残さない。 */
@@ -161,14 +169,14 @@ export function finishPiTools(
 			? {
 					...tool,
 					status: cancelled ? "cancelled" : "failed",
-					content: tool.content?.length
+					content: isNonZeroNumber(tool.content?.length)
 						? tool.content
 						: [
 								textContent(
 									cancelled
 										? "処理を停止しました。"
-										: error ||
-												"ツールの完了通知を受信できませんでした。",
+										: (nonEmptyString(error) ??
+												"ツールの完了通知を受信できませんでした。"),
 								),
 							],
 				}

@@ -1,4 +1,5 @@
 // PATH と実体パスから実行候補を検出する。プロファイル適用前に広い親ディレクトリを許可しない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { realpath, stat } from "node:fs/promises";
 import {
 	basename,
@@ -23,8 +24,8 @@ export function devToolEnvironment(
 	const output: Record<string, string> = {};
 	for (const [key, value] of Object.entries(input)) {
 		if (
-			value &&
-			/^(systemroot|windir|systemdrive|comspec|pathext|os|processor_architecture|number_of_processors)$/i.test(
+			isNonEmptyString(value) &&
+			/^(?:systemroot|windir|systemdrive|comspec|pathext|os|processor_architecture|number_of_processors)$/i.test(
 				key,
 			)
 		) {
@@ -66,7 +67,7 @@ export async function discoverDevTools(
 	const names = [
 		...new Set(profiles.flatMap((profile) => [...profile.commands])),
 	];
-	if (command) {
+	if (isNonEmptyString(command)) {
 		names.push(command);
 	}
 	for (const name of names) {
@@ -75,7 +76,7 @@ export async function discoverDevTools(
 			: directories.map((directory) => join(directory, name));
 		for (const candidate of candidates) {
 			const executable = await existingFile(candidate);
-			if (!executable) {
+			if (!isNonEmptyString(executable)) {
 				continue;
 			}
 			executables[basename(name).toLowerCase()] = executable;
@@ -87,7 +88,7 @@ export async function discoverDevTools(
 	for (const profile of profiles) {
 		for (const name of profile.commands) {
 			const executable = executables[basename(name).toLowerCase()];
-			if (executable) {
+			if (isNonEmptyString(executable)) {
 				resources.push(...(await profile.resolve(executable)));
 			}
 		}
@@ -99,7 +100,7 @@ export async function discoverDevTools(
 				.filter(
 					(resource) =>
 						resource.kind === "helper" &&
-						/\.(exe|cjs)$/i.test(resource.target),
+						/\.(?:exe|cjs)$/i.test(resource.target),
 				)
 				.map((resource) => dirname(resource.target)),
 			...Object.values(executables).map(dirname),
@@ -132,7 +133,7 @@ function toolDirectories(
 		"VCINSTALLDIR",
 	]) {
 		const directory = environment[name];
-		if (directory && isAbsolute(directory)) {
+		if (isNonEmptyString(directory) && isAbsolute(directory)) {
 			directories.push(directory, join(directory, "bin"));
 		}
 	}
@@ -158,7 +159,9 @@ export function requireInstallDirectory(directory: string): string {
 	];
 	if (
 		parse(directory).root.toLowerCase() === directory.toLowerCase() ||
-		privateRoots.some((root) => root && containsPath(directory, root))
+		privateRoots.some(
+			(root) => isNonEmptyString(root) && containsPath(directory, root),
+		)
 	) {
 		throw new Error(
 			"ツールのインストール先としてドライブ全体や利用者の設定領域は許可できません。",

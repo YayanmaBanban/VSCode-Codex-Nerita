@@ -1,4 +1,5 @@
 // グラフ操作を TOML の依存関係へ変換し、削除で参照切れを隠さない。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	Workflow,
 	WorkflowStep,
@@ -30,7 +31,7 @@ export function connectSteps(
 	}
 	const pending = [source];
 	const visited = new Set<string>();
-	while (pending.length) {
+	while (pending.length > 0) {
 		const id = pending.pop()!;
 		if (id === target) {
 			throw new Error("依存関係が循環する接続は追加できません。");
@@ -92,7 +93,7 @@ export function renameStep(
 	target: string,
 ): Workflow {
 	if (
-		!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(target) ||
+		!/^[A-Z][\w-]{0,63}$/i.test(target) ||
 		workflow.steps.some((step) => step.id === target && step.id !== source)
 	) {
 		throw new Error(
@@ -107,10 +108,12 @@ export function renameStep(
 			...step,
 			id: rename(step.id),
 			depends_on: step.depends_on.map(rename),
-			...(step.resume ? { resume: rename(step.resume) } : {}),
-			...(step.fork ? { fork: rename(step.fork) } : {}),
+			...(isNonEmptyString(step.resume)
+				? { resume: rename(step.resume) }
+				: {}),
+			...(isNonEmptyString(step.fork) ? { fork: rename(step.fork) } : {}),
 			task: step.task.replace(
-				/\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.output\s*\}\}/g,
+				/\{\{\s*([A-Za-z][\w-]*)\.output\s*\}\}/g,
 				(match: string, id: string) =>
 					id === source ? `{{ ${target}.output }}` : match,
 			),

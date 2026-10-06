@@ -1,4 +1,8 @@
 // JSONL に不足する出力本文をセッション配下へ保存し、分岐後も同じ実体を参照する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+} from "@nerita/shared/valuePredicates";
 import type {
 	AgentSession,
 	SessionEntry,
@@ -74,7 +78,11 @@ export class PiOutputArchive {
 			return;
 		}
 		const source = takeToolOutputSource(tool) ?? textSource(tool);
-		if (!source || (!event.parentToolCallId && !source.path)) {
+		if (
+			!source ||
+			(!isNonEmptyString(event.parentToolCallId) &&
+				!isNonEmptyString(source.path))
+		) {
 			return;
 		}
 		const record = this.record(tool, source);
@@ -134,7 +142,8 @@ export class PiOutputArchive {
 			ownerSessionId: this.manager.getSessionId(),
 			outputId: randomUUID(),
 			preview: boundedPreview(source.text),
-			complete: !!source.path || !source.truncated,
+			complete:
+				!!isNonEmptyString(source.path) || !(source.truncated === true),
 			...(tool.exitCode === undefined ? {} : { exitCode: tool.exitCode }),
 		};
 	}
@@ -150,7 +159,7 @@ export class PiOutputArchive {
 		);
 		const path = join(folder, `${record.outputId}.txt`);
 		const temporary = `${path}.pending`;
-		if (source.path) {
+		if (isNonEmptyString(source.path)) {
 			assertLocalPath(source.path);
 			await copyFile(source.path, temporary, constants.COPYFILE_EXCL);
 		} else {
@@ -187,8 +196,8 @@ export class PiOutputArchive {
 		}
 		setToolOutputSource(tool, {
 			text: record.preview,
-			truncated: !path,
-			...(path ? { path } : {}),
+			truncated: !isNonEmptyString(path),
+			...(isNonEmptyString(path) ? { path } : {}),
 		});
 	}
 }
@@ -237,7 +246,7 @@ function textSource(tool: ToolSummary): ToolOutputSource | undefined {
 			? [part.content.text]
 			: [];
 	});
-	return texts?.length
+	return isNonZeroNumber(texts?.length)
 		? {
 				text: texts.join("\n"),
 				truncated: tool.resultDisplay?.omitted ?? false,

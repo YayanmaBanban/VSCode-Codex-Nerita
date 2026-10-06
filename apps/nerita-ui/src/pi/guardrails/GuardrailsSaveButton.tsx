@@ -33,7 +33,9 @@ export function GuardrailsSaveButton({
 							duration={4}
 							borderThickness={2}
 							transition={
-								reducedMotion ? { duration: 0, repeat: 0 } : {}
+								reducedMotion === true
+									? { duration: 0, repeat: 0 }
+									: {}
 							}
 						/>
 					</span>

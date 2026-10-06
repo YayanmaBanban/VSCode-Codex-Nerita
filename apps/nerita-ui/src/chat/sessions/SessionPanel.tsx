@@ -1,4 +1,5 @@
 // 右ペインに作業フォルダとセッション履歴を表示する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
@@ -50,7 +51,7 @@ export function SessionPanel({
 			animate={{ transform: "translateX(0%)", marginRight: 0 }}
 			exit={collapsed}
 			transition={{
-				duration: reduceMotion ? 0 : 0.22,
+				duration: reduceMotion === true ? 0 : 0.22,
 				ease: [0.22, 1, 0.36, 1],
 			}}
 			inert={!present}
@@ -72,7 +73,7 @@ export function SessionPanel({
 			}}
 		>
 			<SessionPanelHeader state={state} close={close} onClose={onClose} />
-			{capabilities.unarchive && (
+			{capabilities.unarchive === true && (
 				<SessionArchiveFilter state={state} send={send} />
 			)}
 			<SessionPanelList
@@ -147,7 +148,9 @@ function SessionPanelList(props: SessionPanelListProps) {
 	const { state, send } = props;
 	return (
 		<div className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-[8px]">
-			{state.sessionsError && <SessionListError {...props} />}
+			{isNonEmptyString(state.sessionsError) && (
+				<SessionListError {...props} />
+			)}
 			{state.sessionPending && (
 				<p role="status" className="mx-[8px] text-[12px] text-muted">
 					セッションを更新しています…
@@ -237,7 +240,9 @@ function sessionListPending(state: ChatState): boolean | undefined {
 /** 読み込みとエラーがない空の一覧を判定する。 */
 function emptySessionList(state: ChatState) {
 	return (
-		!state.sessions.length && !state.sessionsLoading && !state.sessionsError
+		state.sessions.length === 0 &&
+		!state.sessionsLoading &&
+		!isNonEmptyString(state.sessionsError)
 	);
 }
 

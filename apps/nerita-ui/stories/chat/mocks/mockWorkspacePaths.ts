@@ -44,7 +44,7 @@ export function mockResolvePath(
 					item.path.toLowerCase() ===
 					message.path
 						.replaceAll("/", "\\")
-						.replace(/[\\]+$/, "")
+						.replace(/\\+$/, "")
 						.toLowerCase(),
 			) ?? null,
 	};

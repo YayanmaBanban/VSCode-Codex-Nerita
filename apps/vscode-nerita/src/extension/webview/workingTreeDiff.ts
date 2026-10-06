@@ -1,4 +1,5 @@
 // インデックスの本文を読み取り専用 URI に保持し、現在のファイルと VS Code で比較する。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { execFile } from "node:child_process";
 import { realpath, stat } from "node:fs/promises";
@@ -56,9 +57,10 @@ export class WorkingTreeDiff implements vscode.Disposable {
 			"--",
 			gitPath,
 		]);
-		const before = tracked
-			? await git(root, ["show", "--textconv", `:${gitPath}`])
-			: "";
+		const before =
+			tracked !== ""
+				? await git(root, ["show", "--textconv", `:${gitPath}`])
+				: "";
 		const beforeUri = vscode.Uri.from({
 			scheme,
 			path: workspaceFileUri.path,
@@ -109,11 +111,14 @@ export class WorkingTreeDiff implements vscode.Disposable {
 
 /** ローカルの信頼済みワークスペースに属するファイルパスを確定する。 */
 async function resolveDiffFile(path: string, cwd?: string | null) {
-	if (!vscode.workspace.isTrusted || vscode.env.remoteName) {
+	if (
+		!vscode.workspace.isTrusted ||
+		isNonEmptyString(vscode.env.remoteName)
+	) {
 		throw new Error("Unsupported diff workspace");
 	}
 	const base = cwd;
-	if (!isAbsolute(path) && !base) {
+	if (!isAbsolute(path) && !isNonEmptyString(base)) {
 		throw new Error("Missing workspace path");
 	}
 	const workspaceFileUri = vscode.Uri.file(

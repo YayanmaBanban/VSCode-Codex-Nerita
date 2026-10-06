@@ -8,7 +8,11 @@ export function protectPiFeatureTool(
 	tool: ToolDefinition,
 	features: PiToolFeatures,
 ): ToolDefinition {
-	if (!features.codemode && !features.toolSearch && !features.protect) {
+	if (
+		!(features.codemode === true) &&
+		!(features.toolSearch === true) &&
+		!features.protect
+	) {
 		return tool;
 	}
 	return {

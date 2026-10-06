@@ -30,7 +30,7 @@ function maskInlineCode(text, preserveRealTarget) {
 		// 対象の識別子は保護しつつ、引用の外にある不自然な接頭辞は検査する。
 		const keepMarker =
 			preserveRealTarget &&
-			/(?<![\p{Script=Han}A-Za-z0-9_])実[ \t]*$/u.test(
+			/(?<![\p{Script=Han}\w])実[ \t]*$/u.test(
 				text.slice(0, opening.index),
 			);
 		const replacement = text
@@ -59,11 +59,11 @@ export function maskProtectedText(text, { preserveRealTarget = false } = {}) {
 	masked = maskWithSpaces(masked, /\]\([^)]+\)/g);
 	masked = maskWithSpaces(
 		masked,
-		/(?:\.{1,2}[\\/])(?:[A-Za-z0-9_.@*+-]+[\\/])+[A-Za-z0-9_.@*+-]*/g,
+		/\.{1,2}[\\/](?:[\w.@*+-]+[\\/])+[\w.@*+-]*/g,
 	);
 	masked = maskWithSpaces(
 		masked,
-		/(?:[A-Za-z0-9_.@*+-]+[\\/])*[A-Za-z0-9_.@*+-]+\.(?:jsonl?|toml|ya?ml|md|markdown|txt|text|js|jsx|mjs|cjs|ts|tsx|mts|cts|css|scss|less|html?|svg|png|jpe?g|gif|webp|ico|wasm|xml|csv|lock|log|ini|cfg|conf|env)\b/gi,
+		/(?:[\w.@*+-]+[\\/])*[\w.@*+-]+\.(?:jsonl?|toml|ya?ml|md|markdown|txt|text|js|jsx|mjs|cjs|ts|tsx|mts|cts|css|scss|less|html?|svg|png|jpe?g|gif|webp|ico|wasm|xml|csv|lock|log|ini|cfg|conf|env)\b/gi,
 	);
 	masked = maskWithSpaces(
 		masked,
@@ -71,13 +71,13 @@ export function maskProtectedText(text, { preserveRealTarget = false } = {}) {
 	);
 	masked = maskWithSpaces(
 		masked,
-		/\b\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|vmin|vmax|KiB|MiB|GiB|TiB|B|KB|MB|GB|TB|ms|s|min|h|Hz|kHz|MHz|GHz|dpi|fps)\b/g,
+		/\b\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|vmin|vmax|KiB|MiB|GiB|TiB|[Bsh]|KB|MB|GB|TB|ms|min|Hz|kHz|MHz|GHz|dpi|fps)\b/g,
 	);
 	masked = maskWithSpaces(
 		masked,
 		/\b(?:Ctrl|Alt|Shift|Meta|Cmd)(?:\+[A-Za-z0-9]+)+\b/g,
 	);
-	masked = maskWithSpaces(masked, /(?:^|[\s（(])\/[A-Za-z][A-Za-z0-9:_-]*/g);
+	masked = maskWithSpaces(masked, /(?:^|[\s（(])\/[A-Z][\w:-]*/gi);
 	masked = maskWithSpaces(masked, /\b[A-Z](?:\/[A-Z])+\b/g);
 	masked = maskWithSpaces(masked, /\b[A-Z]{2,}\([A-Z0-9]+\)/g);
 	masked = maskWithSpaces(

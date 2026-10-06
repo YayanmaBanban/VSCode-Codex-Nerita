@@ -1,4 +1,8 @@
 // 承認済みコマンドの固定 URL と Git/npm の接続先メタデータから、資格情報の要求を確定する。
+import {
+	isNonZeroNumber,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { open, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -74,7 +78,11 @@ function commandTargets(command: string) {
 	for (const value of command.match(/https:\/\/[^\s'"<>;]+/g) ?? []) {
 		try {
 			const url = new URL(value);
-			if (!url.username && !url.password && !/[$`{}]/.test(value)) {
+			if (
+				url.username === "" &&
+				url.password === "" &&
+				!/[$`{}]/.test(value)
+			) {
 				targets.add(url.host);
 				targets.add(`${url.host}${url.pathname}`.replace(/\/$/, ""));
 			}
@@ -104,12 +112,13 @@ async function gitTargets(cwd: string, command: string, workspace: string) {
 	for (const match of command.matchAll(
 		/(?:^|\s)git(?:\.exe)?\s+(?:fetch|pull|push|ls-remote)\b\s*([^\r\n;|&]*)/g,
 	)) {
-		const first = match[1]!.trim().split(/\s/)[0] || "origin";
-		if (/^[a-zA-Z0-9._-]+$/.test(first)) {
+		const first =
+			nonEmptyString(match[1]!.trim().split(/\s/)[0]) ?? "origin";
+		if (/^[\w.-]+$/.test(first)) {
 			remotes.add(first);
 		}
 	}
-	if (!remotes.size) {
+	if (!isNonZeroNumber(remotes.size)) {
 		return [];
 	}
 	const config = join(cwd, ".git/config");
@@ -140,8 +149,8 @@ function remoteUrls(text: string, names: Set<string>) {
 		}
 		const url =
 			names.has(remote) &&
-			line.match(/^\s*(?:url|pushurl)\s*=\s*(https:\/\/[^\s]+)\s*$/)?.[1];
-		if (url) {
+			line.match(/^\s*(?:url|pushurl)\s*=\s*(https:\/\/\S+)\s*$/)?.[1];
+		if (url !== undefined && url !== false) {
 			for (const target of commandTargets(url)) {
 				targets.add(target);
 			}

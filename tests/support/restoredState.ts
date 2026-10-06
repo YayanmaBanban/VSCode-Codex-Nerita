@@ -1,4 +1,5 @@
 // 新規プロセスへ履歴 ID を渡し、保存結果から復元された公開状態だけを読む。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
@@ -11,7 +12,7 @@ export async function restoredState(
 	f: { root: string; cwd: string; agentDir: string },
 	sessionId: string,
 ) {
-	assert.ok(process.env.NERITA_RESTORE_RUNNER);
+	assert.ok(isNonEmptyString(process.env.NERITA_RESTORE_RUNNER));
 	const input = join(f.root, `${randomUUID()}.json`);
 	const output = `${input}.result`;
 	await writeFile(

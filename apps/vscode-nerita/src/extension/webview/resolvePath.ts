@@ -1,4 +1,9 @@
 // 明示的に貼り付けられたパスだけを調べ、本文を読まずに参照の種類を確定する。
+import {
+	isNonEmptyString,
+	isNonZeroNumber,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import * as vscode from "vscode";
 import { win32 } from "node:path";
 import { isSourceRange } from "@nerita/shared/symbolLocation";
@@ -24,11 +29,11 @@ export async function resolvePath(
 		const uri = vscode.Uri.file(win32.normalize(request.path));
 		const stat = await vscode.workspace.fs.stat(uri);
 		const kind = pathKind(stat.type);
-		if (kind && (!request.range || kind === "file")) {
+		if (kind !== null && (!request.range || kind === "file")) {
 			result.entry = {
 				uri: uri.toString(),
 				path: uri.fsPath,
-				name: win32.basename(uri.fsPath) || uri.fsPath,
+				name: nonEmptyString(win32.basename(uri.fsPath)) ?? uri.fsPath,
 				kind,
 				...(request.range ? { range: request.range } : {}),
 			};
@@ -43,17 +48,17 @@ export async function resolvePath(
 function invalidPathRequest(request: ResolvePathRequest) {
 	return (
 		!isAbsoluteLocalPath(request.path) ||
-		vscode.env.remoteName ||
+		isNonEmptyString(vscode.env.remoteName) ||
 		(request.range !== undefined && !isSourceRange(request.range))
 	);
 }
 
 /** ディレクトリを優先して VS Code のファイル種別を判定する。 */
 function pathKind(type: vscode.FileType): "directory" | "file" | null {
-	if (type & vscode.FileType.Directory) {
+	if (isNonZeroNumber(type & vscode.FileType.Directory)) {
 		return "directory";
 	}
-	if (type & vscode.FileType.File) {
+	if (isNonZeroNumber(type & vscode.FileType.File)) {
 		return "file";
 	}
 	return null;

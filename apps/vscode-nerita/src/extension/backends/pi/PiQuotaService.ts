@@ -24,7 +24,7 @@ export class PiQuotaService implements PiQuotaReader {
 			return false;
 		}
 		const nextId = value.slice(current.provider.length + 1);
-		if (!nextId) {
+		if (nextId === "") {
 			return false;
 		}
 		const group = this.providers[current.provider]?.quotaGroup;
@@ -51,7 +51,7 @@ export class PiQuotaService implements PiQuotaReader {
 			).read(signal);
 			signal.throwIfAborted();
 			return this.session.model?.provider === model.provider &&
-				this.session.model?.id === model.id
+				this.session.model.id === model.id
 				? quota
 				: null;
 		} catch {

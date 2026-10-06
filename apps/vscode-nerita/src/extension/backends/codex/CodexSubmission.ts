@@ -1,4 +1,5 @@
 // 追加指示の待機・送信を管理し、受付が確定するまで二重送信を防ぐ。
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { ChangeScope } from "@nerita/shared/changeReferences";
 import type { CodeReference } from "@nerita/shared/codeReferences";
@@ -14,7 +15,6 @@ import { type ActiveTurn } from "./ActiveTurn";
 import { type UserInput } from "./codex-app-server/v2/UserInput";
 import { CodexHistory } from "./CodexHistory";
 import { type AdditionalContext } from "./context/additionalContext";
-import { attachmentInput } from "./context/attachmentInput";
 import { changeContext } from "./context/changeContext";
 import { generateCodexHandoff } from "./context/handoffGeneration";
 import { readSessionContext } from "./context/sessionContext";
@@ -170,9 +170,8 @@ export abstract class CodexSubmission extends CodexHistory {
 			}
 			const { run, client } = this.requireSteerTurn();
 			const files = [...this.state.attachments];
-			const attachments = files.length
-				? await this.prepareSteerAttachments(files)
-				: [];
+			const attachments =
+				files.length > 0 ? await this.prepareAttachments(files) : [];
 			this.checkSubmission(epoch, sessionId);
 			checkWaitingRun();
 			// 添付の読み込み中に完了した場合も通常送信へ切り替える。
@@ -204,7 +203,7 @@ export abstract class CodexSubmission extends CodexHistory {
 	private createWaitingRunCheck(waitingRun: ActiveTurn | undefined) {
 		return () => {
 			if (
-				waitingRun?.abort.signal.aborted &&
+				waitingRun?.abort.signal.aborted === true &&
 				this.state.run !== "completed"
 			) {
 				throw new Error("Pending submission cancelled");
@@ -266,7 +265,11 @@ export abstract class CodexSubmission extends CodexHistory {
 	private requireSteerTurn() {
 		const run = this.active;
 		const client = this.client!;
-		if (this.state.run !== "running" || !run?.turnId || !run.started) {
+		if (
+			this.state.run !== "running" ||
+			!isNonEmptyString(run?.turnId) ||
+			!run.started
+		) {
 			throw new Error("Turn not ready");
 		}
 		return { run, client };
@@ -335,7 +338,7 @@ export abstract class CodexSubmission extends CodexHistory {
 			epoch === this.epoch &&
 			sessionId === this.state.sessionId &&
 			!(
-				waitingRun?.abort.signal.aborted &&
+				waitingRun?.abort.signal.aborted === true &&
 				this.state.run !== "completed"
 			);
 		const abort = new AbortController();
@@ -346,22 +349,23 @@ export abstract class CodexSubmission extends CodexHistory {
 		}, 50);
 		let context: AdditionalContext | undefined;
 		try {
-			context = sessionReferences.length
-				? await this.buildSubmissionReferences(
-						sessionReferences,
-						sessionId,
-						goal,
-						abort,
-						epoch,
-						checkWaitingRun,
-						current,
-					)
-				: undefined;
+			context =
+				sessionReferences.length > 0
+					? await this.buildSubmissionReferences(
+							sessionReferences,
+							sessionId,
+							goal,
+							abort,
+							epoch,
+							checkWaitingRun,
+							current,
+						)
+					: undefined;
 		} finally {
 			clearInterval(monitor);
 		}
 
-		if (changeScopes.length) {
+		if (changeScopes.length > 0) {
 			context = {
 				...context,
 				...(await changeContext(this.state.cwd!, changeScopes)),
@@ -370,7 +374,7 @@ export abstract class CodexSubmission extends CodexHistory {
 		if (this.state.run === "running") {
 			await new Promise<void>((resolve) => setTimeout(resolve, 500));
 		}
-		if (codeReferences.length) {
+		if (codeReferences.length > 0) {
 			const value = await readCodeReferenceContext(codeReferences, () => {
 				this.checkSubmission(epoch, sessionId);
 				checkWaitingRun();
@@ -423,23 +427,6 @@ export abstract class CodexSubmission extends CodexHistory {
 			generate: (request) =>
 				generateCodexHandoff(this.factory, this.state.cwd!, request),
 		});
-	}
-
-	/** 追加入力に添えるファイルをモデルの対応形式で読み込む。 */
-	private async prepareSteerAttachments(files: Attachment[]) {
-		const model =
-			this.turnOptions.model ??
-			this.state.configOptions.find((item) => item.id === "model")
-				?.currentValue;
-		const attachments = files.length
-			? await attachmentInput(
-					files,
-					this.models
-						.find((item) => item.model === model)
-						?.inputModalities.includes("image") ?? false,
-				)
-			: [];
-		return attachments;
 	}
 
 	/** 待機や読み込みをまたいでも送信先と接続世代を固定する。 */

@@ -67,7 +67,7 @@ export function ChatConversation(props: ChatConversationProps) {
 				<Activity state={{ ...state, tools: [] }} send={send} />
 				<PlanDecisionCard state={state} send={send} />
 				{state.run === "running" && <ThinkingIndicator />}
-				{runLabels[state.run] && (
+				{runLabels[state.run] !== "" && (
 					<p
 						className="run-status my-2 flex items-center gap-1 text-[12px] text-muted"
 						role="status"

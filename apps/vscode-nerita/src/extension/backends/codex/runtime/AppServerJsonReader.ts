@@ -87,12 +87,14 @@ export class AppServerJsonReader {
 			throw new Error("Invalid worker response");
 		}
 		for (const value of result.values as unknown[]) {
+			// receive が同期的に dispose する場合もあるため、各応答の配信前に終了を確認する。
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 			if (this.closed) {
 				return;
 			}
 			this.receive(value);
 		}
-		if (result.failed) {
+		if (Boolean(result.failed) === true) {
 			throw new Error("Invalid JSONL");
 		}
 	}

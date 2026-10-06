@@ -1,4 +1,5 @@
 // コードブロックの削除操作を本文の編集から分離し、削除を取り消せるようにする。
+import { nonZeroNumber } from "@nerita/shared/valuePredicates";
 import {
 	$addUpdateTag,
 	$createParagraphNode,
@@ -12,7 +13,7 @@ import {
 /** ブロックだけを削除し、前後の文章を余分な改行なしでつなぎ直す。 */
 function $removeBlock(key: NodeKey): void {
 	const block = $getNodeByKey(key);
-	if (!block?.isAttached()) {
+	if (!(block?.isAttached() === true)) {
 		return;
 	}
 	$addUpdateTag(HISTORY_PUSH_TAG);
@@ -117,7 +118,10 @@ export function connectBlockScroll(
 /** ホイールの行・ページ単位をピクセルへ換算する。 */
 function wheelUnit(event: WheelEvent, element: HTMLElement) {
 	if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
-		return parseFloat(getComputedStyle(element).lineHeight) || 20;
+		return (
+			nonZeroNumber(parseFloat(getComputedStyle(element).lineHeight)) ??
+			20
+		);
 	}
 	if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
 		return element.clientHeight;

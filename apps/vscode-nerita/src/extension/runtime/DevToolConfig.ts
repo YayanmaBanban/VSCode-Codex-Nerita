@@ -23,25 +23,26 @@ function sanitizeNpmText(text: string): string {
 	const output: string[] = [];
 	for (const line of text.split(/\r?\n/)) {
 		const match = line.match(
-			/^\s*(registry|@[-\w.]+:registry|strict-ssl|fund|audit)\s*=\s*(.*?)\s*$/i,
+			/^\s*(registry|@[-\w.]+:registry|strict-ssl|fund|audit)\s*=([^\r\n]*)$/i,
 		);
 		if (!match) {
 			continue;
 		}
 		const key = match[1]!.toLowerCase();
-		const value = match[2]!;
+		const value = match[2]!.trim();
 		if (key.endsWith("registry")) {
 			if (safeRegistry(value)) {
 				output.push(`${key}=${value}`);
 			}
-		} else if (/^(true|false)$/i.test(value)) {
+		} else if (
+			/^(?:true|false)$/i.test(value) &&
+			(key !== "strict-ssl" || value.toLowerCase() === "true")
+		) {
 			// ホスト設定から TLS 検証を無効にしない。
-			if (key !== "strict-ssl" || value.toLowerCase() === "true") {
-				output.push(`${key}=${value.toLowerCase()}`);
-			}
+			output.push(`${key}=${value.toLowerCase()}`);
 		}
 	}
-	return output.length ? `${output.join("\n")}\n` : "";
+	return output.length > 0 ? `${output.join("\n")}\n` : "";
 }
 
 /** URL の認証情報・クエリー・フラグメント・環境変数補間は秘密情報を含み得るため除外する。 */
@@ -50,10 +51,10 @@ function safeRegistry(value: string): boolean {
 		const url = new URL(value);
 		return (
 			url.protocol === "https:" &&
-			!url.username &&
-			!url.password &&
-			!url.search &&
-			!url.hash &&
+			url.username === "" &&
+			url.password === "" &&
+			url.search === "" &&
+			url.hash === "" &&
 			!/[${}\s]/.test(value)
 		);
 	} catch {

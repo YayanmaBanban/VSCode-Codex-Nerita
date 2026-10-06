@@ -42,7 +42,7 @@ export class CredentialExecutor implements SandboxCommandExecutor {
 				entries.push(
 					await this.broker.acquire(
 						requirement,
-						call.hostShell ? "host" : "mxc",
+						call.hostShell === true ? "host" : "mxc",
 						this.authorize,
 						approved.signal,
 					),
