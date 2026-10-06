@@ -18,7 +18,7 @@
 		"watch:esbuild": "pnpm build:shared && pnpm --filter nerita watch",
 		"watch:tsc": "pnpm --filter nerita exec tsc --noEmit --watch -p tsconfig.json",
 		"watch:webview": "pnpm --filter @nerita/ui exec tsc -p tsconfig.json --watch",
-		"check": "pnpm lint && pnpm check-types && pnpm check-types:tests && duplication:ci",
+		"check": "pnpm lint && pnpm check-types && pnpm check-types:tests && pnpm duplication:ci",
 		"check-types": "pnpm --filter nerita check && pnpm --filter @nerita/shared check && pnpm --filter @nerita/ui check",
 		"check-types:tests": "tsc --noEmit -p tests/tsconfig.json",
 		"lint": "eslint .",

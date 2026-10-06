@@ -4,10 +4,11 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
-import ignore from "ignore";
+import { createTextlintIgnore } from "./textlint-ignore.mjs";
 import {
 	extractSourceComments,
 	extractSourceIdentifiers,
+	extractSourceTexts,
 	SOURCE_EXTENSIONS,
 } from "./extractors/index.mjs";
 import {
@@ -106,30 +107,6 @@ function normalizePath(filePath) {
 	return filePath.split(path.sep).join("/");
 }
 
-/**
- * `.textlintignore` を読み込む。
- */
-async function loadTextlintIgnore() {
-	const matcher = ignore().add([
-		".git/",
-		"node_modules/",
-		".textlint-cache/",
-	]);
-	const ignorePath = path.join(ROOT, ".textlintignore");
-
-	try {
-		const content = await fs.readFile(ignorePath, "utf8");
-
-		matcher.add(content);
-	} catch (error) {
-		if (error?.code !== "ENOENT") {
-			throw error;
-		}
-	}
-
-	return matcher;
-}
-
 async function loadTextlintTerms() {
 	const configPath = path.join(SKILL_ROOT, "config", "textlint-terms.json");
 	const content = await fs.readFile(configPath, "utf8");
@@ -175,7 +152,7 @@ async function getAllFiles(ignoreMatcher) {
 			}
 
 			if (entry.isDirectory()) {
-				if (ignoreMatcher.ignores(`${relativePath}/`)) {
+				if (await ignoreMatcher.ignores(`${relativePath}/`)) {
 					continue;
 				}
 
@@ -187,7 +164,7 @@ async function getAllFiles(ignoreMatcher) {
 				continue;
 			}
 
-			if (ignoreMatcher.ignores(relativePath)) {
+			if (await ignoreMatcher.ignores(relativePath)) {
 				continue;
 			}
 
@@ -222,7 +199,7 @@ function gitFiles(args) {
  *
  * HEAD との差分に未追跡ファイルを加える。ステージ済み・未ステージの変更を含める。
  */
-async function getChangedFiles(ignoreMatcher) {
+function getChangedFiles(repositoryFiles) {
 	const changed = gitFiles([
 		"diff",
 		"--name-only",
@@ -241,31 +218,8 @@ async function getChangedFiles(ignoreMatcher) {
 
 	const candidates = [...new Set([...changed, ...untracked])];
 
-	const files = [];
-
-	for (const file of candidates) {
-		if (ignoreMatcher.ignores(file)) {
-			continue;
-		}
-
-		if (!isTargetFile(file)) {
-			continue;
-		}
-
-		try {
-			const stat = await fs.lstat(path.join(ROOT, file));
-
-			if (!stat.isFile() || stat.isSymbolicLink()) {
-				continue;
-			}
-		} catch {
-			continue;
-		}
-
-		files.push(file);
-	}
-
-	return files;
+	const available = new Set(repositoryFiles);
+	return candidates.filter((file) => available.has(file));
 }
 
 function printTermIssues(issues) {
@@ -320,7 +274,7 @@ function printTermIssues(issues) {
 }
 
 const targetSpecs = await resolveTextlintTargets(ROOT, positionals);
-const ignoreMatcher = await loadTextlintIgnore();
+const ignoreMatcher = createTextlintIgnore(ROOT);
 
 await clearTextlintCacheForScope({
 	root: ROOT,
@@ -329,7 +283,7 @@ await clearTextlintCacheForScope({
 
 const repositoryFiles = await getAllFiles(ignoreMatcher);
 const candidates = shouldUseChangedFiles(mode.changed, targetSpecs)
-	? await getChangedFiles(ignoreMatcher)
+	? getChangedFiles(repositoryFiles)
 	: repositoryFiles;
 const files = filterFilesByTargets(candidates, targetSpecs);
 
@@ -403,12 +357,16 @@ for (const file of files) {
 	}
 
 	/**
-	 * 対応する言語の抽出処理でコメントだけを取り出す。
+	 * 文字列を用語・スロップ検査と、意味を確認するレビュー用データに含める。
+	 * 文章用の textlint プリセットはコメント本文にだけ適用する。
 	 */
 	if (SOURCE_EXTENSIONS.has(extension)) {
 		const extracted = extractSourceComments(source, file);
 
-		auditItems.push(...extracted.items);
+		auditItems.push(
+			...extracted.items,
+			...extractSourceTexts(source, file),
+		);
 
 		if (!JAPANESE_PATTERN.test(extracted.lintText)) {
 			continue;

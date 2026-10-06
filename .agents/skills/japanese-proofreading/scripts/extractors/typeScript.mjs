@@ -1,6 +1,8 @@
 // ソースの構文木から日本語コメントを取り出し、元の行と列を維持する。
 import ts from "typescript";
 
+export { extractSourceTexts } from "./typeScript-texts.mjs";
+
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 

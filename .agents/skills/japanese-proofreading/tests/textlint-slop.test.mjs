@@ -13,7 +13,10 @@ import {
 	maskIgnoredDocument,
 	writeTextlintIssues,
 } from "../scripts/textlint-audit.mjs";
-import { extractSourceComments } from "../scripts/extractors/index.mjs";
+import {
+	extractSourceComments,
+	extractSourceTexts,
+} from "../scripts/extractors/index.mjs";
 
 const config = JSON.parse(
 	await fs.readFile(
@@ -95,9 +98,7 @@ test("protected Markdown and ignored ranges do not produce issues or shift lines
 		"",
 		"土台",
 		"-->",
-		"<!-- texlint-ignore-start -->",
 		"静かに壊れる",
-		"<!-- texlint-ignore-end -->",
 		"",
 		"設定の正本を更新する。",
 	].join("\r\n");
@@ -108,14 +109,29 @@ test("protected Markdown and ignored ranges do not produce issues or shift lines
 	);
 	assert.deepEqual(inspect("`実 VS Code` と `実 foo` を示す。"), []);
 	assert.equal(inspect("[正本](./example.md)")[0].term, "正本");
-	assert.deepEqual(inspect("参照 [リンク][正本]\n\n[正本]: ./example.md"), []);
-	assert.equal(inspect("[正本][参照]\n\n[参照]: ./example.md")[0].term, "正本");
+	assert.deepEqual(
+		inspect("参照 [リンク][正本]\n\n[正本]: ./example.md"),
+		[],
+	);
+	assert.equal(
+		inspect("[正本][参照]\n\n[参照]: ./example.md")[0].term,
+		"正本",
+	);
 	for (const marker of ["`", "~"]) {
-		const fenced = [`${marker.repeat(4)}text`, marker.repeat(3), "設定の正本を更新する", marker.repeat(4), "設計の土台にする。"].join("\n");
-		assert.deepEqual(inspect(fenced).map(({ term, line }) => [term, line]), [["土台", 5]]);
+		const fenced = [
+			`${marker.repeat(4)}text`,
+			marker.repeat(3),
+			"設定の正本を更新する",
+			marker.repeat(4),
+			"設計の土台にする。",
+		].join("\n");
+		assert.deepEqual(
+			inspect(fenced).map(({ term, line }) => [term, line]),
+			[["土台", 5]],
+		);
 	}
 	assert.throws(
-		() => inspect("<!-- texlint-ignore-start -->\n正本"),
+		() => inspect("正本"),
 		/unclosed/,
 	);
 });
@@ -147,6 +163,43 @@ test("multiline comments and inline code retain source line numbers", () => {
 			[["正本", 4]],
 		);
 	}
+});
+
+test("source strings reuse slop and terminology checks while protecting code and URLs", () => {
+	const source = [
+		'console.log("実 Webview: 起動に成功");',
+		'throw new Error("実 Webview の起動に失敗しました。");',
+		"const text = `設計の土台にする。${count}",
+		"実 Webview で確認する。`;",
+		'const terms = "fallback と strangelexeme と readValue を確認する。";',
+		'const protectedText = "`正本` を参照する https://example.com/正本 [参照](./正本.md)";',
+	].join("\r\n");
+	const items = extractSourceTexts(source, "sample.ts");
+	assert.deepEqual(
+		findSlopIssues(items, config).map(({ type, line }) => [type, line]),
+		[
+			["ai-slop-pattern", 1],
+			["ai-slop-pattern", 2],
+			["ai-slop", 3],
+			["ai-slop-pattern", 4],
+		],
+	);
+	assert.deepEqual(
+		findEnglishTermIssues(
+			items,
+			{
+				allowedEnglish: ["Webview"],
+				preferredJapanese: { fallback: "代替処理" },
+			},
+			new Set(),
+			new Set(["readValue"]),
+		).map(({ type, line }) => [type, line]),
+		[
+			["preferred-japanese", 5],
+			["unknown-english", 5],
+			["unquoted-identifier", 5],
+		],
+	);
 });
 
 test("new issue types retain the version 2 schema and twenty-example limit alongside English types", async (t) => {
@@ -194,10 +247,10 @@ test("new issue types retain the version 2 schema and twenty-example limit along
 	}
 });
 
-test("all CLI modes save review candidates without failing and fail for deterministic patterns", async (t) => {
+/** 外部辞書を取得せずに CLI を検証できるよう、一時ディレクトリと辞書キャッシュを用意する。 */
+async function createCliWorkspace(t) {
 	const root = await fs.mkdtemp(path.join(os.tmpdir(), "nerita-slop-cli-"));
 	t.after(() => fs.rm(root, { recursive: true, force: true }));
-	// 外部辞書の取得を避け、検出と保存の経路だけを検証する。
 	await fs.mkdir(path.join(root, ".textlint-cache"));
 	const dictionaryConfig = JSON.parse(
 		await fs.readFile(
@@ -214,21 +267,33 @@ test("all CLI modes save review candidates without failing and fail for determin
 			terms: [],
 		}),
 	);
-	await fs.writeFile(path.join(root, "sample.md"), "設計の土台にする。\n");
+	return root;
+}
+
+/** 指定モードを別プロセスで実行し、終了コードと診断出力を返す。 */
+function runCli(root, mode, file) {
 	const cli = fileURLToPath(
 		new URL("../scripts/textlint.mjs", import.meta.url),
 	);
+	return spawnSync(
+		process.execPath,
+		[cli, "--root", root, `--${mode}`, ...(file ? [file] : [])],
+		{
+			encoding: "utf8",
+			timeout: 60000,
+		},
+	);
+}
+
+test("all CLI modes save review candidates without failing and fail for deterministic patterns", async (t) => {
+	const root = await createCliWorkspace(t);
 	for (const mode of ["all", "changed", "review-all", "review-changed"]) {
 		for (const [text, expected, type] of [
 			["設計の土台にする。\n", 0, "ai-slop"],
 			["設定の正本を更新する。\n", 1, "ai-slop-pattern"],
 		]) {
 			await fs.writeFile(path.join(root, "sample.md"), text);
-			const result = spawnSync(
-				process.execPath,
-				[cli, "--root", root, `--${mode}`, "sample.md"],
-				{ encoding: "utf8", timeout: 60000 },
-			);
+			const result = runCli(root, mode, "sample.md");
 			assert.equal(
 				result.status,
 				expected,
@@ -259,5 +324,159 @@ test("all CLI modes save review candidates without failing and fail for determin
 				);
 			}
 		}
+	}
+});
+
+async function createNestedIgnoreWorkspace(t) {
+	const root = await createCliWorkspace(t);
+	const files = {
+		".textlintignore": "*.ts\n/blocked/\n",
+		"skill/.textlintignore": "/tests/\n!keep.ts\n",
+		"skill/nested/.textlintignore": "!deep.ts\n",
+		"blocked/.textlintignore": "!error.ts\n",
+		"root.ts": 'const text = "設定の正本を更新する。";',
+		"skill/hidden.ts": 'const text = "設定の正本を更新する。";',
+		"skill/tests/error.ts": 'const text = "設定の正本を更新する。";',
+		"blocked/error.ts": 'const text = "設定の正本を更新する。";',
+		"sibling/keep.ts": 'const text = "設定の正本を更新する。";',
+		"skill/keep.ts": 'const text = "設定を確認します。";',
+		"skill/nested/deep.ts": 'const text = "接続を確認します。";',
+	};
+	for (const [file, content] of Object.entries(files)) {
+		await fs.mkdir(path.dirname(path.join(root, file)), {
+			recursive: true,
+		});
+		await fs.writeFile(path.join(root, file), content);
+	}
+	for (const args of [
+		["init", "--quiet"],
+		[
+			"-c",
+			"user.name=Test",
+			"-c",
+			"user.email=test@example.com",
+			"commit",
+			"--quiet",
+			"--allow-empty",
+			"-m",
+			"Initial",
+		],
+	]) {
+		const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+		assert.equal(result.status, 0, result.stdout + result.stderr);
+	}
+	return root;
+}
+
+test("nested ignores apply to all, changed and explicitly selected CLI targets", async (t) => {
+	const root = await createNestedIgnoreWorkspace(t);
+	for (const mode of ["all", "changed", "review-all", "review-changed"]) {
+		const result = runCli(root, mode);
+		assert.equal(result.status, 0, result.stdout + result.stderr);
+		if (mode.startsWith("review")) {
+			const scope = mode.includes("changed") ? "changed" : "all";
+			const output = await fs.readFile(
+				path.join(root, ".textlint-cache", `review-${scope}.jsonl`),
+				"utf8",
+			);
+			const records = output
+				.trim()
+				.split("\n")
+				.map((line) => JSON.parse(line));
+			assert.deepEqual(
+				records
+					.slice(1)
+					.map(({ file }) => file)
+					.sort(),
+				["skill/keep.ts", "skill/nested/deep.ts"],
+			);
+		}
+		const excluded = runCli(root, mode, "skill/tests/error.ts");
+		assert.equal(excluded.status, 0, excluded.stdout + excluded.stderr);
+		assert.match(excluded.stdout, /対象ファイルはありません/);
+	}
+	await fs.writeFile(
+		path.join(root, "skill/keep.ts"),
+		'const text = "設定の正本を更新する。";',
+	);
+	const included = runCli(root, "changed", "skill/keep.ts");
+	assert.equal(included.status, 1, included.stdout + included.stderr);
+});
+
+test("all CLI modes inspect source strings without prose presets or rewriting machine values", async (t) => {
+	const root = await createCliWorkspace(t);
+	const source = [
+		'const command = "git status", event = "webview.ready", file = "./sample.ts";',
+		'const key = "処理済み";',
+		'const view = <div>接続を再試行します{followUp ? "フォローアップを送信" : "チャットを送信"}</div>;',
+		`const longLabel = "${"説明".repeat(60)}";`,
+	].join("\n");
+	const errors =
+		'\nconsole.log("実 Webview: 起動に成功");\nthrow new Error("実 Webview の起動に失敗しました。");';
+	for (const mode of ["all", "changed", "review-all", "review-changed"]) {
+		await fs.writeFile(path.join(root, "sample.tsx"), source + errors);
+		const failed = runCli(root, mode, "sample.tsx");
+		assert.equal(failed.status, 1, failed.stdout + failed.stderr);
+		assert.equal(
+			await fs.readFile(path.join(root, "sample.tsx"), "utf8"),
+			source + errors,
+		);
+		const scope = mode.includes("changed") ? "changed" : "all";
+		const issuesPath = path.join(
+			root,
+			".textlint-cache",
+			`issues-${scope}.json`,
+		);
+		const saved = JSON.parse(await fs.readFile(issuesPath, "utf8"));
+		const slop = saved.issues.filter(
+			({ type }) => type === "ai-slop-pattern",
+		);
+		assert.deepEqual(
+			slop
+				.flatMap(({ occurrences }) => occurrences)
+				.map(({ line }) => line),
+			[5, 6],
+		);
+
+		await fs.writeFile(path.join(root, "sample.tsx"), source);
+		const passed = runCli(root, mode, "sample.tsx");
+		assert.equal(passed.status, 0, passed.stdout + passed.stderr);
+		assert.equal(
+			await fs.readFile(path.join(root, "sample.tsx"), "utf8"),
+			source,
+		);
+		await assert.rejects(fs.readFile(issuesPath), { code: "ENOENT" });
+		const reviewPath = path.join(
+			root,
+			".textlint-cache",
+			`review-${scope}.jsonl`,
+		);
+		if (!mode.startsWith("review")) {
+			await assert.rejects(fs.readFile(reviewPath), { code: "ENOENT" });
+			continue;
+		}
+
+		const records = (await fs.readFile(reviewPath, "utf8"))
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+		assert.equal(records[0].itemCount, 5);
+		assert.deepEqual(
+			records
+				.slice(1)
+				.map(({ kind, text, startLine, endLine }) => [
+					kind,
+					text,
+					startLine,
+					endLine,
+				]),
+			[
+				["string", "処理済み", 2, 2],
+				["jsx-text", "接続を再試行します", 3, 3],
+				["string", "フォローアップを送信", 3, 3],
+				["string", "チャットを送信", 3, 3],
+				["string", "説明".repeat(60), 4, 4],
+			],
+		);
 	}
 });

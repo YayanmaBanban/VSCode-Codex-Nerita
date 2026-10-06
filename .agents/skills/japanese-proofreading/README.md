@@ -2,7 +2,7 @@
 
 # 日本語校正スキル
 
-コメント・JSDoc・README・Markdown の日本語を、まとまった変更の後に校正するスキルです。
+コメント・JSDoc・文字列・JSX 本文・README・Markdown の日本語を、まとまった変更の後に校正するスキルです。
 静的検査に加え、エージェントが周辺コードや文章を読み、説明と実装の一致や文章の読みやすさを確認します。
 通常の実装や `pnpm package` では自動実行せず、校正を依頼したときに使います。
 
@@ -93,11 +93,16 @@ pnpm --dir .agents/skills/japanese-proofreading textlint --root ../../.. README.
 
 Markdown・テキスト文書の本文と、JavaScript・TypeScript・Rust のコメントに対応しています。
 
+JavaScript・TypeScript では、日本語の文字列リテラル、テンプレートの固定部分、JSX 本文も抽出します。これらの用語・AI スロップを検査し、文章用の textlint プリセットは適用しません。`textlint:review*` の実行時には、意味を確認するためのレビュー用データも出力します。
+
+修正前に周辺コードと利用箇所を確認し、機械が読むキーやプロトコル値は維持します。自動置換は行いません。
+
 箇条書きの文体は常体に固定せず、文書内での文体の混在を検査します。
 
 検査対象からの除外は次のように扱います。
 
-- 除外するファイルは対象リポジトリの `.textlintignore` に記述してください。ビルド成果物や自動生成ファイルを校正対象に含めたくない場合も、ここに記述します。
+- 除外するファイルは、対象リポジトリのルートや各フォルダの `.textlintignore` に記述してください。パターンは配置先のフォルダを基準に評価し、配下に適用します。たとえば、このスキル内の `.textlintignore` に `/tests/` と書くと、スキル内のテストだけを除外します。
+- 上位の設定を継承し、下位の設定を優先します。`!` で除外を解除できますが、除外したフォルダ内の設定は読み込みません。配下のファイルを対象に戻す場合は、親フォルダの除外も解除してください。
 - `.git/`・`node_modules/`・`.textlint-cache/` は常に除外します。
 - シンボリックリンクは追跡しません。
 
@@ -156,6 +161,10 @@ node --test .agents/skills/japanese-proofreading/tests/*.test.mjs
 - `extractSourceIdentifiers(source, filePath)`
 
 `extractSourceComments()` は元の行・列を保つ `lintText` と、本文・ファイル名・行番号を持つ `items` を返します。`extractSourceIdentifiers()` は識別子の収集結果を `Set` で返します。
+
+文字列を抽出する言語では、`extractSourceTexts(source, filePath)` も実装します。戻り値は `file`・`startLine`・`endLine`・`kind`・`text` を持つ項目の配列です。現在は JavaScript・TypeScript に対応し、`kind` は `string`・`template-text`・`jsx-text` です。
+
+式を含むテンプレートは固定部分ごとに分けて抽出します。エスケープシーケンスや JSX の文字参照は展開せず、元の表記を保ちます。Rust は文字列抽出に対応していないため、この API は空配列を返します。
 
 - `typeScript.mjs`：TypeScript の構文木を使い、JavaScript・TypeScript・JSX・TSX を扱います。
 - `rust.mjs`：`.rs` の字句を走査し、通常コメント・ドキュメントコメント・入れ子のブロックコメントを抽出します。
