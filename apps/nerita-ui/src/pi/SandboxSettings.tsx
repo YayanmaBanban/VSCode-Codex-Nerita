@@ -71,6 +71,7 @@ export function SandboxSettings({ bridge }: { bridge: SandboxBridge }) {
 			{state ? (
 				<>
 					<SandboxBackend state={state} busy={busy} probe={probe} />
+					<SandboxLimitations />
 					<CommandGrants state={state} busy={busy} revoke={revoke} />
 					<ResourceGrants
 						state={state}
@@ -89,6 +90,31 @@ export function SandboxSettings({ bridge }: { bridge: SandboxBridge }) {
 				<p role="status">読み込み中…</p>
 			)}
 		</main>
+	);
+}
+
+/** 現行の BaseContainer の確認結果を示し、読み取りまで隔離できると誤認させない。 */
+function SandboxLimitations() {
+	return (
+		<section
+			className="grid gap-3 rounded border border-input-border p-3 text-sm"
+			aria-label="現在のMXCの制約"
+		>
+			<h2 className="m-0 text-lg font-semibold">現在のMXCの制約</h2>
+			<p className="m-0 text-muted">
+				Windows側の対応待ちにより、現行のMXC
+				BaseContainerには次の制約があります。
+			</p>
+			<ul className="m-0 grid gap-2 pl-5">
+				<li>ワークスペース外の読み取りを防ぐことは保証できません。</li>
+				<li>
+					ホストからSandbox内へのループバック接続は許可できません。
+				</li>
+			</ul>
+			<p className="m-0 text-muted">
+				ワークスペース外への書き込み拒否と、外部への通信制御は確認済みです。
+			</p>
+		</section>
 	);
 }
 

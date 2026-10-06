@@ -218,12 +218,10 @@ function printMatrix(name, result) {
 	return matrix;
 }
 
-async function runCase({
+function createCaseConfig({
 	sdk,
-	name,
 	rw,
 	ro,
-	control,
 	nodeExe,
 	withVolumeRoot,
 	leastPrivilege = false,
@@ -282,55 +280,78 @@ async function runCase({
 	config.containment = "processcontainer";
 
 	if (leastPrivilege) {
-		config.processContainer = {
-			...(config.processContainer ?? {}),
-			leastPrivilege: true,
-		};
-
-		/*
-		 * leastPrivilege は BaseContainer/PSEC では表現できないため、
-		 * MXC は AppContainer fallback tier を選択する。
-		 *
-		 * T3 AppContainer+DACL に落ちた場合、policy path のHost DACLを
-		 * 一時変更する必要があるため明示的に許可する。
-		 */
-		config.fallback = {
-			...(config.fallback ?? {}),
-			allowDaclMutation: true,
-		};
-
-		console.log(
-			JSON.stringify(
-				{
-					containment: config.containment,
-					leastPrivilege:
-						config.processContainer?.leastPrivilege ?? false,
-					fallback: config.fallback,
-					cwd: config.process.cwd,
-					filesystem: config.filesystem,
-				},
-				null,
-				2,
-			),
-		);
+		configureLeastPrivilege(config);
 	}
 
-	const probeScript = createProbeScript({
-		rw,
-		ro,
-		control,
-	});
+	return config;
+}
+
+function configureLeastPrivilege(config) {
+	config.processContainer = {
+		...(config.processContainer ?? {}),
+		leastPrivilege: true,
+	};
+
+	/*
+	 * leastPrivilege は BaseContainer/PSEC では表現できないため、
+	 * MXC は AppContainer fallback tier を選択する。
+	 *
+	 * T3 AppContainer+DACL に落ちた場合、policy path のHost DACLを
+	 * 一時変更する必要があるため明示的に許可する。
+	 */
+	config.fallback = {
+		...(config.fallback ?? {}),
+		allowDaclMutation: true,
+	};
+
+	console.log(
+		JSON.stringify(
+			{
+				containment: config.containment,
+				leastPrivilege: config.processContainer?.leastPrivilege ?? false,
+				fallback: config.fallback,
+				cwd: config.process.cwd,
+				filesystem: config.filesystem,
+			},
+			null,
+			2,
+		),
+	);
+}
+
+function createProbeCommand({ rw, ro, control, nodeExe, useCmd }) {
+	if (useCmd) {
+		const cmdExe = path.join(process.env.SystemRoot, "System32", "cmd.exe");
+
+		const clauses = [
+			`(echo sandbox-write > "${path.join(rw, "rw-marker.txt")}") && echo RW_WRITE=PASS || echo RW_WRITE=FAIL`,
+			`(type "${path.join(rw, "rw-marker.txt")}") && echo RW_READ=PASS || echo RW_READ=FAIL`,
+
+			`(type "${path.join(ro, "readme.txt")}") && echo RO_READ=PASS || echo RO_READ=FAIL`,
+			`(echo denied > "${path.join(ro, "write-attempt.txt")}") && echo RO_WRITE=PASS || echo RO_WRITE=FAIL`,
+
+			`(type "${path.join(control, "readme.txt")}") && echo CONTROL_READ=PASS || echo CONTROL_READ=FAIL`,
+			`(echo denied > "${path.join(control, "write-attempt.txt")}") && echo CONTROL_WRITE=PASS || echo CONTROL_WRITE=FAIL`,
+		];
+
+		return [cmdExe, "/D", "/S", "/C", clauses.join(" & ")]
+			.map(quoteWindowsArgument)
+			.join(" ");
+	}
+
+	const probeScript = createProbeScript({ rw, ro, control });
+	return [nodeExe, "-e", probeScript].map(quoteWindowsArgument).join(" ");
+}
+
+async function runCase(options) {
+	const { sdk, name, rw, nodeExe, leastPrivilege = false } = options;
+	const config = createCaseConfig(options);
 
 	config.process = {
 		...config.process,
-
-		commandLine: [nodeExe, "-e", probeScript]
-			.map(quoteWindowsArgument)
-			.join(" "),
-
+		commandLine: createProbeCommand(options),
 		cwd: rw,
-
-		env: commandEnvironment(nodeDirectory, rw),
+		env: commandEnvironment(path.dirname(nodeExe), rw),
 	};
 
 	console.log("");
@@ -350,6 +371,21 @@ async function runCase({
 		),
 	);
 
+	if (leastPrivilege) {
+		const probeConfigPath = path.join(
+			os.tmpdir(),
+			"nerita-mxc-appcontainer-probe.json",
+		);
+
+		await fs.writeFile(
+			probeConfigPath,
+			JSON.stringify(config, null, 2),
+			"utf8",
+		);
+
+		console.log("C probe config:", probeConfigPath);
+	}
+
 	const result = await spawnAndCollect(sdk, config, rw);
 
 	const matrix = printMatrix(`${name} RESULT`, result);
@@ -358,6 +394,154 @@ async function runCase({
 		...result,
 		matrix,
 	};
+}
+
+async function runWithoutVolumeRoot({ sdk, rw, ro, control, nodeExe }) {
+	/*
+	 * Case A:
+	 *
+	 * Issue #1109 の対照。
+	 * このHostではcwd解決に失敗する可能性がある。
+	 */
+	let withoutRoot;
+
+	try {
+		withoutRoot = await runCase({
+			sdk,
+			name: "WITHOUT volume-root RO",
+			rw,
+			ro,
+			control,
+			nodeExe,
+			withVolumeRoot: false,
+		});
+	} catch (error) {
+		console.log("");
+		console.log("WITHOUT volume-root RO failed before matrix:");
+		console.log(error instanceof Error ? error.stack : error);
+	}
+
+	return withoutRoot;
+}
+
+function compareMatrix(matrix, expected) {
+	let mismatch = false;
+	for (const [key, expectedValue] of Object.entries(expected)) {
+		const actual = matrix[key] ?? "<missing>";
+
+		const ok = actual === expectedValue;
+
+		console.log(
+			key.padEnd(16),
+			`expected=${expectedValue}`,
+			`actual=${actual}`,
+			ok ? "OK" : "MISMATCH",
+		);
+
+		if (!ok) {
+			mismatch = true;
+		}
+	}
+
+	return mismatch;
+}
+
+function reportOutsideRead(withRoot) {
+	if (withRoot.matrix.CONTROL_READ === "PASS") {
+		console.error("MXC_DIRECT_OUTSIDE_READ_VISIBLE");
+
+		console.error(
+			`
+Nerita の MxcExecutor / MxcPolicy を通していない
+@microsoft/mxc-sdk 直接実行でも、
+policy に含めていない control path を読み取れました。
+
+この場合、ResourceGrant の問題ではありません。
+MXC / ProcessContainer / Windows filesystem enforcement
+の再現として扱えます。
+`.trim(),
+		);
+	}
+}
+
+async function runMatrixCases({ sdk, rw, ro, control, nodeExe }) {
+	const withoutRoot = await runWithoutVolumeRoot({ sdk, rw, ro, control, nodeExe });
+
+	/*
+	 * Case B:
+	 *
+	 * Nerita の現在の workspace volume-root compatibility
+	 * grant に近い条件。
+	 */
+	const withRoot = await runCase({
+		sdk,
+		name: "WITH volume-root RO",
+		rw,
+		ro,
+		control,
+		nodeExe,
+		withVolumeRoot: true,
+	});
+
+	console.log("");
+	console.log("=".repeat(72));
+	console.log("Expected WITH volume-root RO");
+	console.log("=".repeat(72));
+
+	const expected = {
+		RW_WRITE: "PASS",
+		RW_READ: "PASS",
+		RO_READ: "PASS",
+		RO_WRITE: "FAIL",
+		CONTROL_READ: "FAIL",
+		CONTROL_WRITE: "FAIL",
+	};
+
+	let mismatch = compareMatrix(withRoot.matrix, expected);
+
+	console.log("");
+	console.log("=".repeat(72));
+	console.log(
+		"C: AppContainer fallback / leastPrivilege / NO volume-root RO",
+	);
+	console.log("=".repeat(72));
+
+	const appContainer = await runCase({
+		sdk,
+		name: "C: AppContainer fallback / leastPrivilege / NO volume-root RO",
+		rw,
+		ro,
+		control,
+		nodeExe,
+
+		// 重要: CではC:\をROに入れない
+		withVolumeRoot: false,
+
+		// BaseContainerを使わせない
+		leastPrivilege: true,
+
+		// Node/Winsock互換性をfilesystem検証から除外
+		useCmd: true,
+	});
+
+	if (compareMatrix(appContainer.matrix, expected)) {
+		mismatch = true;
+	}
+
+	console.log("");
+
+	reportOutsideRead(withRoot);
+
+	if (mismatch) {
+		process.exitCode = 1;
+		return;
+	}
+
+	console.log("MXC direct filesystem matrix PASSED.");
+
+	if (withoutRoot) {
+		console.log("WITHOUT volume-root RO exit:", withoutRoot.exitCode);
+	}
 }
 
 async function main() {
@@ -411,151 +595,18 @@ async function main() {
 	});
 
 	try {
-		/*
-		 * Case A:
-		 *
-		 * Issue #1109 の対照。
-		 * このHostではcwd解決に失敗する可能性がある。
-		 */
-		let withoutRoot;
-
-		try {
-			withoutRoot = await runCase({
-				sdk,
-				name: "WITHOUT volume-root RO",
-				rw,
-				ro,
-				control,
-				nodeExe,
-				withVolumeRoot: false,
-			});
-		} catch (error) {
-			console.log("");
-			console.log("WITHOUT volume-root RO failed before matrix:");
-			console.log(error instanceof Error ? error.stack : error);
-		}
-
-		/*
-		 * Case B:
-		 *
-		 * Nerita の現在の workspace volume-root compatibility
-		 * grant に近い条件。
-		 */
-		const withRoot = await runCase({
-			sdk,
-			name: "WITH volume-root RO",
-			rw,
-			ro,
-			control,
-			nodeExe,
-			withVolumeRoot: true,
-		});
-
-		console.log("");
-		console.log("=".repeat(72));
-		console.log("Expected WITH volume-root RO");
-		console.log("=".repeat(72));
-
-		const expected = {
-			RW_WRITE: "PASS",
-			RW_READ: "PASS",
-			RO_READ: "PASS",
-			RO_WRITE: "FAIL",
-			CONTROL_READ: "FAIL",
-			CONTROL_WRITE: "FAIL",
-		};
-
-		let mismatch = false;
-
-		for (const [key, expectedValue] of Object.entries(expected)) {
-			const actual = withRoot.matrix[key] ?? "<missing>";
-
-			const ok = actual === expectedValue;
-
-			console.log(
-				key.padEnd(16),
-				`expected=${expectedValue}`,
-				`actual=${actual}`,
-				ok ? "OK" : "MISMATCH",
-			);
-
-			if (!ok) {
-				mismatch = true;
-			}
-		}
-
-		console.log("");
-		console.log("=".repeat(72));
-		console.log(
-			"C: AppContainer fallback / leastPrivilege / NO volume-root RO",
-		);
-		console.log("=".repeat(72));
-
-		const appContainer = await runCase({
-			sdk,
-			name: "C: AppContainer fallback / leastPrivilege / NO volume-root RO",
-			rw,
-			ro,
-			control,
-			nodeExe,
-
-			// 重要: CではC:\をROに入れない
-			withVolumeRoot: false,
-
-			// BaseContainerを使わせない
-			leastPrivilege: true,
-		});
-
-		for (const [key, expectedValue] of Object.entries(expected)) {
-			const actual = appContainer.matrix[key] ?? "<missing>";
-
-			const ok = actual === expectedValue;
-
-			console.log(
-				key.padEnd(16),
-				`expected=${expectedValue}`,
-				`actual=${actual}`,
-				ok ? "OK" : "MISMATCH",
-			);
-
-			if (!ok) {
-				mismatch = true;
-			}
-		}
-
-		console.log("");
-
-		if (withRoot.matrix.CONTROL_READ === "PASS") {
-			console.error("MXC_DIRECT_OUTSIDE_READ_VISIBLE");
-
-			console.error(
-				`
-Nerita の MxcExecutor / MxcPolicy を通していない
-@microsoft/mxc-sdk 直接実行でも、
-policy に含めていない control path を読み取れました。
-
-この場合、ResourceGrant の問題ではありません。
-MXC / ProcessContainer / Windows filesystem enforcement
-の再現として扱えます。
-`.trim(),
-			);
-		}
-
-		if (mismatch) {
-			process.exitCode = 1;
-			return;
-		}
-
-		console.log("MXC direct filesystem matrix PASSED.");
-
-		if (withoutRoot) {
-			console.log("WITHOUT volume-root RO exit:", withoutRoot.exitCode);
-		}
+		await runMatrixCases({ sdk, rw, ro, control, nodeExe });
 	} finally {
-		await fs.rm(root, {
-			recursive: true,
-			force: true,
-		});
+		if (process.env.MXC_KEEP_ARTIFACTS === "1") {
+			console.log("");
+			console.log("MXC fixture preserved:");
+			console.log(root);
+		} else {
+			await fs.rm(root, {
+				recursive: true,
+				force: true,
+			});
+		}
 	}
 }
 
