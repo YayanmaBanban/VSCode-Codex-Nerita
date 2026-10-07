@@ -14,6 +14,8 @@ import { codexFixture, codexResponseGate, type Rpc } from "../support/codex";
 import { until } from "../support/pi";
 import type { CodexSessionController } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";
 import { parseTurnEvent } from "../../apps/vscode-nerita/src/extension/backends/codex/items/turnEvents";
+import type { ItemGuardianApprovalReviewStartedNotification } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ItemGuardianApprovalReviewStartedNotification";
+import type { ItemGuardianApprovalReviewCompletedNotification } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ItemGuardianApprovalReviewCompletedNotification";
 
 void test("活動通知の差分・計画・推論は、ターンへ適用する前に本文を検証する", () => {
 	for (const [method, fields] of [
@@ -24,6 +26,40 @@ void test("活動通知の差分・計画・推論は、ターンへ適用する
 			{ itemId: "item", summaryIndex: -1, delta: "text" },
 		],
 		["item/started", { item: { id: 42, type: "plan" } }],
+		[
+			"item/autoApprovalReview/started",
+			{
+				reviewId: 42,
+				review: {
+					status: "inProgress",
+					riskLevel: null,
+					userAuthorization: null,
+					rationale: null,
+				},
+				action: {
+					type: "requestPermissions",
+					reason: null,
+					permissions: {},
+				},
+			},
+		],
+		[
+			"item/autoApprovalReview/completed",
+			{
+				reviewId: "review",
+				review: {
+					status: "inProgress",
+					riskLevel: null,
+					userAuthorization: null,
+					rationale: null,
+				},
+				action: {
+					type: "requestPermissions",
+					reason: null,
+					permissions: {},
+				},
+			},
+		],
 	] as const) {
 		assert.throws(
 			() =>
@@ -344,6 +380,184 @@ void test(
 	"コンテキスト圧縮の開始・完了通知で同じカードの状態を更新する",
 	verifyCompactionNotifications,
 );
+
+void test(
+	"自動承認審査の開始・完了で独立したカードを更新し、遅い開始と重複完了を無視する",
+	verifyApprovalReviewNotifications,
+);
+
+/** 通知経路を通して開始・完了と対象コマンドの状態を確認する。 */
+async function verifyApprovalReviewNotifications(t: TestContext) {
+	const f = await codexFixture(t);
+	const controller = f.controller();
+	await controller.connect();
+	await action(controller, "prompt/send", { text: "開始" });
+	const threadId = controller.snapshot().sessionId!;
+	const params: ItemGuardianApprovalReviewStartedNotification = {
+		threadId,
+		turnId: "turn-1",
+		startedAtMs: 1000,
+		reviewId: "review-1",
+		targetItemId: "command",
+		review: {
+			status: "inProgress",
+			riskLevel: null,
+			userAuthorization: null,
+			rationale: null,
+		},
+		action: {
+			type: "command",
+			source: "shell",
+			command: "pnpm.cmd --version",
+			cwd: f.cwd,
+		},
+	};
+	f.notify("item/started", {
+		threadId,
+		turnId: "turn-1",
+		item: {
+			id: "command",
+			type: "commandExecution",
+			command: "pnpm.cmd --version",
+			cwd: f.cwd,
+		},
+	});
+	f.notify("item/autoApprovalReview/started", params);
+	await until(() => controller.snapshot().tools.length === 2);
+	const started = controller
+		.snapshot()
+		.tools.find((tool) => tool.title === "Guardian Review")!;
+	assert.equal(started.status, "in_progress");
+	assert.equal(started.kind, "think");
+	assert.deepEqual(started.rawOutput, {
+		review: params.review,
+		action: params.action,
+	});
+	const review: ItemGuardianApprovalReviewCompletedNotification["review"] = {
+		status: "approved",
+		riskLevel: "low",
+		userAuthorization: "high",
+		rationale: "バージョン確認のため承認しました。",
+	};
+	const completion: ItemGuardianApprovalReviewCompletedNotification = {
+		...params,
+		completedAtMs: 2000,
+		decisionSource: "agent",
+		review,
+	};
+	f.notify("item/autoApprovalReview/completed", completion);
+	await until(
+		() =>
+			controller.snapshot().tools.find((tool) => tool.id === started.id)
+				?.status === "completed",
+	);
+	const finished = controller
+		.snapshot()
+		.tools.find((tool) => tool.id === started.id)!;
+	assert.equal(finished.order, started.order);
+	assert.deepEqual(finished.rawOutput, { review, action: params.action });
+	await verifyAdditionalApprovalReviews(
+		f,
+		controller,
+		params,
+		completion,
+		started.id,
+	);
+}
+
+/** 複数審査を保持し、完了済み審査と古いターンへの通知は現在の状態を変えない。 */
+async function verifyAdditionalApprovalReviews(
+	f: Awaited<ReturnType<typeof codexFixture>>,
+	controller: CodexSessionController,
+	params: ItemGuardianApprovalReviewStartedNotification,
+	completion: ItemGuardianApprovalReviewCompletedNotification,
+	reviewToolId: string,
+) {
+	f.notify("item/autoApprovalReview/started", {
+		...params,
+		reviewId: "review-2",
+	});
+	f.notify("item/autoApprovalReview/completed", {
+		...completion,
+		reviewId: "network-review",
+		targetItemId: null,
+		action: {
+			type: "networkAccess",
+			target: "example.com",
+			host: "example.com",
+			protocol: "https",
+			port: 443,
+		},
+	});
+	f.notify("item/autoApprovalReview/started", params);
+	f.notify("item/autoApprovalReview/completed", {
+		...completion,
+		review: { ...completion.review, rationale: "重複通知" },
+	});
+	f.notify("item/autoApprovalReview/started", {
+		...params,
+		turnId: "old-turn",
+		reviewId: "stale-review",
+	});
+	f.notify("thread/name/updated", {
+		threadId: params.threadId,
+		threadName: "審査通知の受信完了",
+	});
+	await until(
+		() => controller.snapshot().sessionTitle === "審査通知の受信完了",
+	);
+	assert.equal(controller.snapshot().tools.length, 4);
+	assert.deepEqual(
+		controller.snapshot().tools.find((tool) => tool.id === reviewToolId)
+			?.rawOutput,
+		{ review: completion.review, action: params.action },
+	);
+	assert.equal(
+		controller.snapshot().tools.find((tool) => tool.id === "command")
+			?.status,
+		"in_progress",
+	);
+	assert.equal(
+		controller
+			.snapshot()
+			.tools.filter((tool) => tool.title === "Guardian Review").length,
+		3,
+	);
+}
+
+void test("自動承認審査の拒否・期限切れ・中断は対象操作と独立した失敗カードになる", async (t) => {
+	const f = await codexFixture(t);
+	const controller = f.controller();
+	await controller.connect();
+	await action(controller, "prompt/send", { text: "開始" });
+	for (const status of ["denied", "timedOut", "aborted"]) {
+		f.notify("item/autoApprovalReview/completed", {
+			threadId: controller.snapshot().sessionId,
+			turnId: "turn-1",
+			reviewId: status,
+			targetItemId: null,
+			startedAtMs: 1000,
+			completedAtMs: 2000,
+			decisionSource: "agent",
+			review: {
+				status,
+				riskLevel: null,
+				userAuthorization: null,
+				rationale: "審査を終了しました。",
+			},
+			action: {
+				type: "requestPermissions",
+				reason: null,
+				permissions: {},
+			},
+		});
+	}
+	await until(() => controller.snapshot().tools.length === 3);
+	assert.ok(
+		controller.snapshot().tools.every((tool) => tool.status === "failed"),
+	);
+	assert.equal(controller.snapshot().run, "running");
+});
 
 /** 開始と完了を実際の通知経路に流し、同じ項目 ID のカードが重複せず更新されることを確認する。 */
 async function verifyCompactionNotifications(t: TestContext) {

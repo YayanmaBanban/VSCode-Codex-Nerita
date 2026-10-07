@@ -86,6 +86,13 @@ function otherActivity(
 	base: Partial<ToolSummary>,
 ): Partial<ToolSummary> {
 	const type = value.type;
+	if (type === "autoApprovalReview") {
+		return {
+			title: "Guardian Review",
+			kind: "think",
+			rawOutput: { review: value.review, action: value.action },
+		};
+	}
 	if (type === "imageView") {
 		return {
 			title: "画像を確認",

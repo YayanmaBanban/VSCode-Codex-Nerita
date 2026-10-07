@@ -17,7 +17,7 @@ import "../../../src/chat/chat.css";
 const initialTools: ToolSummary[] = [
 	{
 		id: "guardian",
-		title: "コマンドの安全性を確認",
+		title: "Guardian Review",
 		kind: "think",
 		status: "in_progress",
 		paths: [],

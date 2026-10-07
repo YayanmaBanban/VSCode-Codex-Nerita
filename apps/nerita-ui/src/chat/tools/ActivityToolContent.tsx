@@ -2,9 +2,7 @@
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
-import { isRecord } from "@nerita/shared/validation";
 import { MessageText } from "../messages/MessageText";
-import { GuardianReview } from "./GuardianReview";
 
 export type ActivityToolProps = {
 	tool: ToolSummary;
@@ -15,14 +13,6 @@ const linkClass =
 	"text-link underline underline-offset-2 [overflow-wrap:anywhere]";
 
 export function ThinkTool({ tool }: ActivityToolProps) {
-	// 旧形式の審査カードはタイトルが一定でないため、入力・出力の `review` オブジェクトでも判定する。
-	if (
-		[tool.rawInput, tool.rawOutput].some(
-			(value) => isRecord(value) && isRecord(value.review),
-		)
-	) {
-		return <GuardianReview tool={tool} />;
-	}
 	return (
 		<>
 			{tool.content?.map((value, index) => {

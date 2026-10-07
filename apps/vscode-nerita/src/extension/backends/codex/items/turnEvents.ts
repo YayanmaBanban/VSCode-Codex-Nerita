@@ -5,6 +5,8 @@ import { parseActivityUpdate, type ActivityUpdate } from "./activityEvent";
 import { isRecord } from "@nerita/shared/validation";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import { parseTurn, type TurnInfo } from "../protocol/turn";
+import { z } from "zod";
+import type { GuardianApprovalReview } from "../codex-app-server/v2/GuardianApprovalReview";
 
 /** 対象ターンへ適用できる通知だけを表す。 */
 export type TurnEvent =
@@ -74,6 +76,21 @@ export function parseTurnEvent(
 	}
 	const turnId = text(params.turnId);
 	if (
+		[
+			"item/autoApprovalReview/started",
+			"item/autoApprovalReview/completed",
+		].includes(message.method)
+	) {
+		const completed = message.method.endsWith("/completed");
+		return {
+			kind: "item",
+			threadId,
+			turnId,
+			item: approvalReviewItem(params, completed),
+			completed,
+		};
+	}
+	if (
 		![
 			"item/agentMessage/delta",
 			"item/plan/delta",
@@ -117,6 +134,8 @@ function supportedTurnMethods() {
 		"turn/completed",
 		"item/started",
 		"item/completed",
+		"item/autoApprovalReview/started",
+		"item/autoApprovalReview/completed",
 		"item/agentMessage/delta",
 		"item/commandExecution/outputDelta",
 		"item/commandExecution/terminalInteraction",
@@ -130,6 +149,43 @@ function supportedTurnMethods() {
 		"turn/plan/updated",
 		"turn/diff/updated",
 	];
+}
+
+/** 審査 ID を独立した項目へ変換し、対象項目がない審査や同じ操作への複数審査も保持する。 */
+function approvalReviewItem(
+	params: Record<string, unknown>,
+	completed: boolean,
+): CodexItem {
+	const review: GuardianApprovalReview = z
+		.object({
+			status: z.enum([
+				"inProgress",
+				"approved",
+				"denied",
+				"timedOut",
+				"aborted",
+			]),
+			riskLevel: z.enum(["low", "medium", "high", "critical"]).nullable(),
+			userAuthorization: z
+				.enum(["unknown", "low", "medium", "high"])
+				.nullable(),
+			rationale: z.string().nullable(),
+		})
+		.parse(params.review);
+	if (completed && review.status === "inProgress") {
+		throw new Error("Invalid review completion");
+	}
+	return {
+		...params,
+		id: `autoApprovalReview:${text(params.reviewId)}`,
+		type: "autoApprovalReview",
+		review,
+		action: z.record(z.string(), z.unknown()).parse(params.action),
+		status:
+			completed && review.status !== "approved"
+				? "failed"
+				: review.status,
+	};
 }
 
 /** 完了通知の項目配列を取得する。 */
