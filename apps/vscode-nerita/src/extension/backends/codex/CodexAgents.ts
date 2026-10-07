@@ -1,55 +1,54 @@
 // 親の実行セッションを変更せず、子スレッドの通知・メタデータ・閲覧を提供する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-import type { UiMessage } from "@nerita/shared/messages";
-import { CodexRequests } from "./CodexRequests";
+import type { HostMessage, UiMessage } from "@nerita/shared/messages";
+import type { ChatState } from "@nerita/shared/chatState";
+import type { ToolOutputStore } from "../../session/ToolOutputStore";
 import { AgentRegistry, agentMetadata } from "./agents/AgentRegistry";
 import { threadAgentStatus, withThreadStatus } from "./items/agentItems";
 import { restoreDisplayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
-import { isRecord } from "@nerita/shared/validation";
 import { type SubAgentSummary } from "@nerita/shared/subAgents";
 import { type HistoryThread } from "./protocol/history";
 import type { CodexConnection } from "./runtime/connection";
 
-/** Agent 用の読み取りを接続世代と親セッションに限定する。 */
-export abstract class CodexAgents extends CodexRequests {
+/** 通知後の変更を参照の同一性で確認し、閲覧出力の管理はセッションへ委ねる。 */
+type AgentSession = {
+	snapshot: () => Readonly<ChatState>;
+	connection: () => CodexConnection | undefined;
+	epoch: () => number;
+	patch: (change: Partial<ChatState>) => void;
+	publishView: (
+		message: Extract<HostMessage, { type: "agent/view" }>,
+		outputs: ToolOutputStore,
+	) => void;
+};
+
+/** 子の通知・メタデータ・閲覧を管理し、親ターンの通知の振り分けはコントローラーへ委ねる。 */
+export class CodexAgents {
 	private readonly agentRegistry = new AgentRegistry();
 	private metadataRequests = new Map<string, Promise<void>>();
-	/** 子の通知は親ターンの `threadId` フィルターより前に処理する。 */
-	protected override notification(message: AppServerNotification): void {
-		super.notification(message);
-		// 親の項目は開始応答待ちも含め、`CodexRun` が本文と同じ受信順で再生する。
-		if (
-			isRecord(message.params) &&
-			message.params.threadId === this.state.sessionId &&
-			(message.method === "turn/completed" ||
-				(this.active &&
-					["item/started", "item/completed"].includes(
-						message.method,
-					)))
-		) {
-			return;
-		}
-		this.agentNotification(message);
-	}
+	constructor(private readonly session: AgentSession) {}
+
 	/** 最終一覧の項目も通常通知と同じ重複排除へ通す。 */
-	protected agentNotification(message: AppServerNotification): void {
-		this.agentRegistry.reset(`${this.epoch}:${this.state.sessionId}`);
-		const patch = this.agentRegistry.notification(this.state, message);
+	notification(message: AppServerNotification): void {
+		const state = this.session.snapshot();
+		this.agentRegistry.reset(`${this.session.epoch()}:${state.sessionId}`);
+		const patch = this.agentRegistry.notification(state, message);
 		if (patch.agents) {
-			this.patch(patch);
+			this.session.patch(patch);
 		}
-		this.synchronizeAgents();
+		this.synchronize();
 	}
 	/** 開始直後と履歴復元後に名前を補完し、遅い `read` で新しい状態を上書きしない。 */
-	protected synchronizeAgents(): void {
-		const client = this.client;
-		const sessionId = this.state.sessionId;
-		const epoch = this.epoch;
+	synchronize(): void {
+		const state = this.session.snapshot();
+		const client = this.session.connection();
+		const sessionId = state.sessionId;
+		const epoch = this.session.epoch();
 		if (!client || !isNonEmptyString(sessionId)) {
 			return;
 		}
-		for (const agent of this.state.agents) {
+		for (const agent of state.agents) {
 			const key = `${epoch}:${sessionId}:${agent.threadId}`;
 			if (this.metadataRequests.has(key)) {
 				continue;
@@ -57,15 +56,16 @@ export abstract class CodexAgents extends CodexRequests {
 			const operation = client
 				.readThread(agent.threadId)
 				.then(({ thread }) => {
+					const latest = this.session.snapshot();
 					if (
-						this.epoch !== epoch ||
-						this.state.sessionId !== sessionId ||
+						this.session.epoch() !== epoch ||
+						latest.sessionId !== sessionId ||
 						thread.id !== agent.threadId
 					) {
 						return;
 					}
-					this.patch({
-						agents: this.state.agents.map((current) => {
+					this.session.patch({
+						agents: latest.agents.map((current) => {
 							if (current.threadId !== agent.threadId) {
 								return current;
 							}
@@ -92,13 +92,14 @@ export abstract class CodexAgents extends CodexRequests {
 		}
 	}
 	/** 既知の子スレッドだけを読み、会話の再開や現在のセッションの切り替えは行わない。 */
-	protected async readAgent(
+	async read(
 		message: Extract<UiMessage, { type: "agent/read" }>,
 	): Promise<void> {
-		const client = this.client;
-		const { sessionId, cwd } = this.state;
-		const epoch = this.epoch;
-		const known = this.state.agents.find(
+		const state = this.session.snapshot();
+		const client = this.session.connection();
+		const { sessionId, cwd } = state;
+		const epoch = this.session.epoch();
+		const known = state.agents.find(
 			(agent) => agent.threadId === message.threadId,
 		);
 		if (
@@ -106,12 +107,13 @@ export abstract class CodexAgents extends CodexRequests {
 			!isNonEmptyString(cwd) ||
 			!known ||
 			sessionId !== message.sessionId ||
-			this.state.connection !== "ready"
+			state.connection !== "ready"
 		) {
 			throw new Error("Unknown agent");
 		}
 		const current = () =>
-			epoch === this.epoch && sessionId === this.state.sessionId;
+			epoch === this.session.epoch() &&
+			sessionId === this.session.snapshot().sessionId;
 		const { thread } = await readAgentThread(
 			client,
 			message.threadId,
@@ -155,7 +157,9 @@ export abstract class CodexAgents extends CodexRequests {
 		const { state: view, outputs } = restored;
 
 		const agents = new Map(
-			this.state.agents.map((agent) => [agent.threadId, agent]),
+			this.session
+				.snapshot()
+				.agents.map((agent) => [agent.threadId, agent]),
 		);
 
 		// 読み取り中の通知を優先し、履歴から見つかった孫スレッドだけを追加する。
@@ -181,11 +185,11 @@ export abstract class CodexAgents extends CodexRequests {
 				: enriched,
 		);
 
-		this.patch({ agents: [...agents.values()] });
+		this.session.patch({ agents: [...agents.values()] });
 
-		this.synchronizeAgents();
+		this.synchronize();
 
-		this.emit(
+		this.session.publishView(
 			{
 				type: "agent/view",
 				requestId: message.requestId,

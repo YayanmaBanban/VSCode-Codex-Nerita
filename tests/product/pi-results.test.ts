@@ -10,6 +10,12 @@ import { randomUUID } from "node:crypto";
 import type { PiSessionController } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import type { ToolOutputResponse } from "@nerita/shared/toolOutput";
+import {
+	privateFeatureResult,
+	privateFeatureValue,
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiFeatureSafety";
+import { piResultDisplay } from "../../apps/vscode-nerita/src/extension/backends/pi/results/PiResultDisplay";
+import { SecretRedactor } from "../../apps/vscode-nerita/src/extension/credentials/CredentialStore";
 
 import {
 	piFixture,
@@ -28,6 +34,55 @@ for (const [toolSearch, codemode] of [
 	void test(`通常ツールの大きな結果を保持する（検索=${toolSearch}、コード実行=${codemode}）`, (t) =>
 		verifyPiResultHistory(t, toolSearch, codemode));
 }
+
+void test("秘密値が本文の判別子と一致しても、結果・更新・保存用の本文を消さず任意データを保護する", () => {
+	const redactor = new SecretRedactor();
+	redactor.protect("text");
+	const result = {
+		content: [{ type: "text" as const, text: "visible result text" }],
+		details: { tokenCount: 42, headers: { count: 1 }, public: "text" },
+		structuredContent: { tokenCount: 42, public: "text" },
+		isError: true,
+		terminate: true,
+	};
+	const safe = privateFeatureResult(result, [], (value) =>
+		redactor.text(value),
+	);
+	assert.deepEqual(safe.content, [
+		{ type: "text", text: "visible result [REDACTED]" },
+	]);
+	assert.deepEqual(safe.details, {
+		tokenCount: "[非公開]",
+		headers: "[非公開]",
+		public: "[REDACTED]",
+	});
+	assert.deepEqual(safe.structuredContent, {
+		tokenCount: "[非公開]",
+		public: "[REDACTED]",
+	});
+	assert.equal(safe.isError, true);
+	assert.equal(safe.terminate, true);
+	assert.deepEqual(piResultDisplay(safe).content, [
+		{
+			type: "content",
+			content: { type: "text", text: "visible result [REDACTED]" },
+		},
+	]);
+	assert.equal(result.content[0]!.text, "visible result text");
+	assert.deepEqual(
+		privateFeatureResult({
+			content: [
+				{ type: "text", text: '{"token":"sensitive","count":1}' },
+			],
+			details: undefined,
+		}).content,
+		[{ type: "text", text: '{"token":"[非公開]","count":1}' }],
+	);
+	assert.deepEqual(
+		privateFeatureValue({ createdAt: new Date("2026-01-01T00:00:00Z") }),
+		{ createdAt: "2026-01-01T00:00:00.000Z" },
+	);
+});
 
 void test(
 	"コード実行の子の全文を別ファイルへ保存し、再接続とフォークで共有する",

@@ -11,6 +11,7 @@ import type { PiToolFeatures } from "./PiToolFeatures";
 import { guardPiExtensionTools } from "./PiExtensionTools";
 import { neritaMcpExtension } from "./mcp/PiMcpExtension";
 import type { PiMcpSdk } from "./mcp/PiMcpSdk";
+import { privatePiMessage } from "./PiMessageSafety";
 
 /** 本文をファイルパスと解釈させず、定義の指定どおり基底プロンプトへ反映する。 */
 function agentPromptOverride(
@@ -154,7 +155,9 @@ function resourceExtensionFactories(
 			hidden: true,
 			factory(api) {
 				api.on("message_end", (event) => ({
-					message: features.protect?.(event.message) ?? event.message,
+					message: features.protect
+						? privatePiMessage(event.message, features.protect)
+						: event.message,
 				}));
 			},
 		},

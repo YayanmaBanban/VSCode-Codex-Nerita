@@ -1,12 +1,10 @@
 // ターン内の通知を到着順に適用し、完了済み項目への遅延差分を抑止する。
 import type { ChatState } from "@nerita/shared/chatState";
-import { isRecord } from "@nerita/shared/validation";
 import type { ActiveTurn } from "../ActiveTurn";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import type { TurnEvent } from "./turnEvents";
 import { itemPatch, messagePatch } from "./chatItems";
 import { activityPatch } from "./activityEvents";
-import { type TurnInfo } from "../protocol/turn";
 
 type TurnTarget = {
 	// 同一通知内でも適用済みの項目を次の更新に含めるため、状態は都度取得する。
@@ -33,8 +31,7 @@ export function applyTurnEvent(
 		target.patch(
 			activityPatch(
 				target.snapshot(),
-				event.method,
-				event.params,
+				event.update,
 				run.streams,
 				run.completedItems,
 			),
@@ -60,22 +57,11 @@ export function applyTurnEvent(
 
 /** ターン完了時の項目を反映して終了状態を確定する。 */
 function completeTurn(
-	event: {
-		kind: "turn";
-		threadId: string;
-		turnId: string;
-		turn: TurnInfo;
-		completed: boolean;
-		items: unknown[];
-	},
+	event: Extract<TurnEvent, { kind: "turn" }>,
 	target: TurnTarget,
 ) {
 	for (const item of event.items) {
-		if (
-			isRecord(item) &&
-			typeof item.type === "string" &&
-			["subAgentActivity", "collabAgentToolCall"].includes(item.type)
-		) {
+		if (["subAgentActivity", "collabAgentToolCall"].includes(item.type)) {
 			target.agentNotification({
 				method: "item/completed",
 				params: {
@@ -93,24 +79,13 @@ function completeTurn(
 
 /** 項目通知を一度だけ適用して完了済み ID を保持する。 */
 function applyItemEvent(
-	event: {
-		kind: "item";
-		threadId: string;
-		turnId: string;
-		item: Record<string, unknown>;
-		completed: boolean;
-	},
+	event: Extract<TurnEvent, { kind: "item" }>,
 	target: TurnTarget,
 	run: ActiveTurn,
 ) {
 	const id = event.item.id;
-	if (typeof id !== "string") {
-		throw new Error("Invalid event item ID");
-	}
-	if (
-		typeof event.item.type === "string" &&
-		["subAgentActivity", "collabAgentToolCall"].includes(event.item.type)
-	) {
+
+	if (["subAgentActivity", "collabAgentToolCall"].includes(event.item.type)) {
 		target.agentNotification({
 			method: event.completed ? "item/completed" : "item/started",
 			params: {
@@ -122,12 +97,7 @@ function applyItemEvent(
 	}
 	if (
 		!run.completedItems.has(id) &&
-		!(
-			typeof event.item.type === "string" &&
-			["subAgentActivity", "collabAgentToolCall"].includes(
-				event.item.type,
-			)
-		)
+		!["subAgentActivity", "collabAgentToolCall"].includes(event.item.type)
 	) {
 		target.patch(itemPatch(target.snapshot(), event.item, event.completed));
 	}

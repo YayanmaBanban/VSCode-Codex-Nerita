@@ -1,4 +1,5 @@
 // 履歴 RPC の応答から、一覧と復元に必要な検証済みフィールドだけを公開する。
+import { parseCodexItem, type CodexItem } from "./item";
 import { isRecord } from "@nerita/shared/validation";
 import {
 	parseStartedThread,
@@ -9,7 +10,7 @@ import {
 
 /** 保存済みターンの本文と読み込み状態。 */
 export type HistoryTurn = TurnInfo & {
-	items: Record<string, unknown>[];
+	items: CodexItem[];
 	itemsView: "notLoaded" | "summary" | "full";
 };
 /** 履歴操作前に作業フォルダーと稼働状態を照合するメタデータ。 */
@@ -37,14 +38,7 @@ function text(value: unknown): string {
 	return value;
 }
 /** 項目本文は共通の描画変換処理で種別ごとに検証する。 */
-function item(value: unknown): Record<string, unknown> {
-	if (!isRecord(value)) {
-		throw new Error("Invalid history item");
-	}
-	text(value.id);
-	text(value.type);
-	return value;
-}
+const item = parseCodexItem;
 /** 復元するターンを検証する。 */
 export function parseHistoryTurn(value: unknown): HistoryTurn {
 	const turn = parseTurn(value);

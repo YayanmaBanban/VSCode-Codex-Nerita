@@ -1,4 +1,5 @@
 // 既存本文を優先し、空欄だけ構造化結果の安全な要約で補う。
+import { textToolContent } from "@nerita/shared/toolContent";
 import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
@@ -154,9 +155,7 @@ function bodyText(part: unknown): string | undefined {
 }
 
 /** プレーンテキスト用の共有カード形式へ揃える。 */
-function textContent(text: string) {
-	return { type: "content", content: { type: "text", text } };
-}
+const textContent = textToolContent;
 
 /** ゲッターを呼び出さずに値を取得し、不正な Proxy による例外で表示処理を止めない。 */
 function ownValue(value: object, key: string): unknown {

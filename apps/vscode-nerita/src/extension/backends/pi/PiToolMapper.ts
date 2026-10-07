@@ -1,4 +1,5 @@
 // Pi のツール実行通知を、会話の実行 ID と順序を保った共通カードへ変換する。
+import { textToolContent } from "@nerita/shared/toolContent";
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
@@ -12,9 +13,7 @@ import { piResultDisplay, piResultUnknown } from "./results/PiResultDisplay";
 import { registerPiOutput } from "./results/PiToolOutput";
 
 /** SDK の出力を、共通のテキスト表示形式へ揃える。 */
-function textContent(text: string) {
-	return { type: "content", content: { type: "text", text } };
-}
+const textContent = textToolContent;
 
 /** 終了済み項目や別ターンの同名 ID を変更せず、部分結果は累積値として置換する。 */
 export function mapPiTool(

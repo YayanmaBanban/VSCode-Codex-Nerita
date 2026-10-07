@@ -1,12 +1,10 @@
 // 推論・計画・MCP などの完了項目を、共通ツールカードへ正規化する。
 import type { ToolSummary } from "@nerita/shared/chatState";
+import { textToolContent, type ToolContent } from "@nerita/shared/toolContent";
 import { isRecord } from "@nerita/shared/validation";
 
 /** テキストを表示用のコンテンツ形式へ変換する。 */
-export const textContent = (text: string) => ({
-	type: "content",
-	content: { type: "text", text },
-});
+export const textContent = textToolContent;
 /** コマンドと編集以外の App Server 項目を表示用に変換する。 */
 export function activityItem(
 	value: Record<string, unknown>,
@@ -74,6 +72,7 @@ function externalActivity(
 		return {
 			title: "Web検索",
 			kind: "search",
+			searchLabel: webSearchLabel(value.query ?? value.action),
 			rawInput: value.query ?? value.action,
 			rawOutput: value.action,
 		};
@@ -140,13 +139,13 @@ function strings(value: unknown): string[] {
 /** unified diff から変更前後の本文を再構築せず、受信した差分をそのまま保持する。 */
 export function fileChanges(changes: unknown): {
 	paths: string[];
-	content: unknown[];
+	content: ToolContent[];
 } {
 	if (!Array.isArray(changes)) {
 		throw new Error("Invalid file changes");
 	}
 	const paths: string[] = [];
-	const content = changes.map((change: unknown) => {
+	const content = changes.map((change: unknown): ToolContent => {
 		if (!isRecord(change)) {
 			throw new Error("Invalid file change");
 		}
@@ -156,4 +155,19 @@ export function fileChanges(changes: unknown): {
 		return { type: "unifiedDiff", path, diff };
 	});
 	return { paths, content };
+}
+
+/** 検索語と URL の優先順位は Host で決め、バックエンドの `action` を UI に解釈させない。 */
+function webSearchLabel(input: unknown): string {
+	if (typeof input === "string") {
+		return input;
+	}
+	if (!isRecord(input)) {
+		return "";
+	}
+	if (typeof input.query === "string" && input.query.trim() !== "") {
+		return input.query;
+	}
+	const action = isRecord(input.action) ? input.action : input;
+	return typeof action.url === "string" ? action.url : "";
 }

@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
+import { textToolContent } from "@nerita/shared/toolContent";
 import { createStoryBridge } from "./mocks/storyBridge";
 import { StoryChat as ChatApp } from "./StoryChat";
 
@@ -77,7 +78,11 @@ function createScrollControl() {
 						title: "推論",
 						status: "in_progress",
 						paths: [],
-						content: ["**高さが変わるツール本文**\n\n".repeat(20)],
+						content: [
+							textToolContent(
+								"**高さが変わるツール本文**\n\n".repeat(20),
+							),
+						],
 					},
 				],
 			};

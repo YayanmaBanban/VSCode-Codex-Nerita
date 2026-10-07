@@ -1,4 +1,5 @@
-// 実行開始前にモデル候補・会話単位の設定・添付を確定する。
+// モデル候補と会話単位の実効設定を管理し、次のターンに渡す設定を確定する。
+import type { ChatState } from "@nerita/shared/chatState";
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -7,16 +8,16 @@ import { modelOptions } from "./settings/modelOptions";
 import type { TurnStartParams } from "./codex-app-server/v2/TurnStartParams";
 import type { ModelInfo } from "./protocol/account";
 import { parseThreadPermissions, type StartedThread } from "./protocol/turn";
-import { CodexAttachments } from "./CodexAttachments";
 import { isRecord } from "@nerita/shared/validation";
 import { parseQuota, parseUsage } from "./protocol/usage";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import type { CollaborationMode } from "./codex-app-server/CollaborationMode";
-import { type CodexConnection } from "./runtime/connection";
+import type { CodexConnection } from "./runtime/connection";
 import {
 	resolveCodexSelection,
 	modelReasoning,
 	type CodexModelSelection,
+	type CodexSelectionStore,
 } from "./settings/modelSelection";
 
 /** Plan から新規会話へ移す、モデルと権限の実効設定。 */
@@ -28,8 +29,32 @@ type PlanSettings = {
 	approvalsReviewer: TurnStartParams["approvalsReviewer"];
 };
 
+/** 会話状態と接続はコントローラー経由で参照し、設定側に別の状態・接続を持たせない。 */
+type OptionsSession = {
+	snapshot: () => Readonly<ChatState>;
+	connection: () => CodexConnection | undefined;
+	epoch: () => number;
+	busy: () => boolean;
+	patch: (change: Partial<ChatState>) => void;
+};
+
+/** 会話設定から上書きする項目だけを保持し、入力や送信先を所有しない。 */
+type TurnOptions = Pick<
+	TurnStartParams,
+	| "model"
+	| "effort"
+	| "approvalsReviewer"
+	| "sandboxPolicy"
+	| "serviceTierForTurn"
+>;
+
 /** 設定は次のターンに適用し、CLI のユーザー設定ファイルを書き換えない。 */
-export abstract class CodexOptions extends CodexAttachments {
+export class CodexOptions {
+	constructor(
+		private readonly session: OptionsSession,
+		private readonly selectionStore?: CodexSelectionStore,
+	) {}
+
 	/** App Server が返すモデル別の対応推論量を管理画面へ公開する。 */
 	agentModels() {
 		return this.models.map((model) => ({
@@ -40,32 +65,60 @@ export abstract class CodexOptions extends CodexAttachments {
 			),
 		}));
 	}
-	protected models: ModelInfo[] = [];
-	protected turnOptions: Partial<TurnStartParams> = {};
+	private models: ModelInfo[] = [];
+	private turnOptions: TurnOptions = {};
 	private initialSandbox: StartedThread["sandbox"];
 	private initialTier: string | null = null;
-	protected collaborationMode = "default";
+	private collaborationMode = "default";
+	get mode(): string {
+		return this.collaborationMode;
+	}
+	/** ハンドオフと添付の画像対応の判定にも、次の送信と同じ選択モデルを使う。 */
+	get model(): string {
+		return (
+			this.turnOptions.model ??
+			this.session
+				.snapshot()
+				.configOptions.find((item) => item.id === "model")
+				?.currentValue ??
+			""
+		);
+	}
+	get supportsImages(): boolean {
+		return (
+			this.models
+				.find((item) => item.model === this.model)
+				?.inputModalities.includes("image") ?? false
+		);
+	}
+	/** 内部の可変設定を公開せず、送信時点のモデル・権限・協調モードを渡す。 */
+	turnSettings(): TurnOptions & { collaborationMode: CollaborationMode } {
+		return {
+			...structuredClone(this.turnOptions),
+			collaborationMode: this.collaborationSettings(),
+		};
+	}
 	/** 新規会話で初期化される設定を、Plan 会話から退避する。 */
-	protected capturePlanSettings(): PlanSettings {
+	capturePlanSettings(): PlanSettings {
 		const selected = (id: string) =>
-			this.state.configOptions.find((item) => item.id === id)
+			this.session.snapshot().configOptions.find((item) => item.id === id)
 				?.currentValue;
 		const model = selected("model");
 		if (!isNonEmptyString(model)) {
 			throw new Error("Model unavailable");
 		}
-		return {
+		return structuredClone({
 			model,
 			effort: selected("reasoning_effort") ?? "",
 			mode: selected("mode") ?? "",
 			approvalsReviewer: this.turnOptions.approvalsReviewer,
 			sandboxPolicy:
 				this.turnOptions.sandboxPolicy ?? this.initialSandbox,
-		};
+		});
 	}
 
 	/** 新しい会話の候補を検証し、最初のターンより前に設定を復元する。 */
-	protected async restorePlanSettings(settings: PlanSettings): Promise<void> {
+	async restorePlanSettings(settings: PlanSettings): Promise<void> {
 		if (
 			settings.approvalsReviewer !== undefined &&
 			settings.approvalsReviewer !== null
@@ -84,13 +137,13 @@ export abstract class CodexOptions extends CodexAttachments {
 			this.turnOptions.sandboxPolicy = settings.sandboxPolicy;
 		}
 	}
-	/** モデルのページを全て取得し、失敗しても基本会話を利用できるようにする。 */
-	protected override async initializedThread(
+	/** 会話の切り替え後、操作待ちを維持したまま呼ぶ。モデル候補の取得に失敗しても会話を継続する。 */
+	async initialize(
 		thread: StartedThread,
 		restoreSelection = true,
 	): Promise<void> {
-		const client = this.client!;
-		const epoch = this.epoch;
+		const client = this.session.connection()!;
+		const epoch = this.session.epoch();
 		this.models = [];
 		this.turnOptions = {
 			approvalsReviewer: thread.approvalsReviewer ?? "user",
@@ -104,7 +157,7 @@ export abstract class CodexOptions extends CodexAttachments {
 			const seen = new Set<string>();
 			do {
 				const page = await client.listModels(cursor);
-				if (epoch !== this.epoch) {
+				if (epoch !== this.session.epoch()) {
 					return;
 				}
 				this.models.push(...page.data);
@@ -112,19 +165,17 @@ export abstract class CodexOptions extends CodexAttachments {
 				recordModelCursor(cursor, seen);
 			} while (isNonEmptyString(cursor));
 		} catch {
-			if (epoch !== this.epoch) {
+			if (epoch !== this.session.epoch()) {
 				return;
 			}
 			this.models = [];
 		}
 
 		const saved = await this.savedSelection(restoreSelection);
-		if (epoch !== this.epoch) {
+		if (epoch !== this.session.epoch()) {
 			return;
 		}
 		this.applyInitialSelection(thread, saved);
-		this.patch({ attachmentsSupported: this.supportsAttachments });
-
 		await this.loadThreadCapabilities(client, thread, epoch);
 	}
 
@@ -154,17 +205,18 @@ export abstract class CodexOptions extends CodexAttachments {
 	}
 
 	/** UI で確定したモデル・推論だけを保存し、履歴復元では上書きしない。 */
-	protected async rememberSelection(id: string): Promise<void> {
+	async rememberSelection(id: string): Promise<void> {
 		if (id !== "model" && id !== "reasoning_effort") {
 			return;
 		}
-		const model = this.state.configOptions.find(
-			(item) => item.id === "model",
-		)?.currentValue;
+		const model = this.session
+			.snapshot()
+			.configOptions.find((item) => item.id === "model")?.currentValue;
 		const reasoning =
-			this.state.configOptions.find(
-				(item) => item.id === "reasoning_effort",
-			)?.currentValue ?? "";
+			this.session
+				.snapshot()
+				.configOptions.find((item) => item.id === "reasoning_effort")
+				?.currentValue ?? "";
 		if (isNonEmptyString(model)) {
 			await this.selectionStore?.write({ model, reasoning });
 		}
@@ -177,18 +229,18 @@ export abstract class CodexOptions extends CodexAttachments {
 	) {
 		try {
 			const response = await client.listSkills?.(thread.cwd);
-			if (epoch === this.epoch) {
-				this.patch({ skills: response ?? [] });
+			if (epoch === this.session.epoch()) {
+				this.session.patch({ skills: response ?? [] });
 			}
 		} catch {
-			if (epoch === this.epoch) {
-				this.patch({ skills: [] });
+			if (epoch === this.session.epoch()) {
+				this.session.patch({ skills: [] });
 			}
 		}
 		try {
 			const quota = await client.readRateLimits();
-			if (epoch === this.epoch) {
-				this.patch({ quota });
+			if (epoch === this.session.epoch()) {
+				this.session.patch({ quota });
 			}
 		} catch {
 			/* API キーや独自プロバイダーでは利用枠を取得できない場合がある。 */
@@ -197,7 +249,7 @@ export abstract class CodexOptions extends CodexAttachments {
 
 	/** 選択モデルに合わせて推論量と速度の候補を組み直す。 */
 	private updateOptions(model: string, effort: string, tier: string): void {
-		this.patch({
+		this.session.patch({
 			configOptions: modelOptions(
 				this.models,
 				model,
@@ -213,7 +265,7 @@ export abstract class CodexOptions extends CodexAttachments {
 		});
 	}
 	/** 提示した候補だけを次のターンへ渡し、実行中の変更を禁止する。 */
-	protected async setConfig(id: string, value: string): Promise<void> {
+	async setConfig(id: string, value: string): Promise<void> {
 		if (this.invalidSetting(id, value)) {
 			throw new Error("Invalid setting");
 		}
@@ -244,8 +296,8 @@ export abstract class CodexOptions extends CodexAttachments {
 		if (id === "approvals_reviewer") {
 			this.turnOptions.approvalsReviewer = reviewerValue(value);
 		}
-		this.patch({
-			configOptions: this.state.configOptions.map((item) => {
+		this.session.patch({
+			configOptions: this.session.snapshot().configOptions.map((item) => {
 				if (item.id === id) {
 					return { ...item, currentValue: value };
 				}
@@ -274,11 +326,12 @@ export abstract class CodexOptions extends CodexAttachments {
 	/** 提示済みの選択肢と設定変更可能な状態を照合する。 */
 	private invalidSetting(id: string, value: string) {
 		return (
-			this.busy() ||
-			this.state.configPending ||
+			this.session.busy() ||
+			this.session.snapshot().configPending ||
 			!(
-				this.state.configOptions
-					.find((item) => item.id === id)
+				this.session
+					.snapshot()
+					.configOptions.find((item) => item.id === id)
 					?.options.some((choice) => choice.value === value) === true
 			)
 		);
@@ -296,29 +349,30 @@ export abstract class CodexOptions extends CodexAttachments {
 	/** 必要なモード変更をサーバーへ反映してから状態を更新する。 */
 	private async setCollaborationMode(value: string) {
 		if (value === "default" && this.collaborationMode !== "default") {
-			const epoch = this.epoch;
-			const sessionId = this.state.sessionId;
-			if (!this.client || !isNonEmptyString(sessionId)) {
+			const epoch = this.session.epoch();
+			const sessionId = this.session.snapshot().sessionId;
+			const client = this.session.connection();
+			if (!client || !isNonEmptyString(sessionId)) {
 				throw new Error("Disconnected");
 			}
-			this.patch({ configPending: true });
+			this.session.patch({ configPending: true });
 			try {
-				await this.client.updateCollaborationMode(
+				await client.updateCollaborationMode(
 					sessionId,
 					this.collaborationSettings("default"),
 				);
 				if (
-					epoch !== this.epoch ||
-					sessionId !== this.state.sessionId
+					epoch !== this.session.epoch() ||
+					sessionId !== this.session.snapshot().sessionId
 				) {
 					throw new Error("Thread changed");
 				}
 			} finally {
 				if (
-					epoch === this.epoch &&
-					sessionId === this.state.sessionId
+					epoch === this.session.epoch() &&
+					sessionId === this.session.snapshot().sessionId
 				) {
-					this.patch({ configPending: false });
+					this.session.patch({ configPending: false });
 				}
 			}
 		}
@@ -328,9 +382,11 @@ export abstract class CodexOptions extends CodexAttachments {
 	/** 対応する推論量を引き継いでモデルを変更する。 */
 	private selectModel(value: string) {
 		const model = this.models.find((item) => item.model === value)!;
-		const previousEffort = this.state.configOptions.find(
-			(item) => item.id === "reasoning_effort",
-		)?.currentValue;
+		const previousEffort = this.session
+			.snapshot()
+			.configOptions.find(
+				(item) => item.id === "reasoning_effort",
+			)?.currentValue;
 		const effort = modelReasoning(model, previousEffort);
 		this.turnOptions.model = value;
 		this.turnOptions.effort = effort;
@@ -340,12 +396,12 @@ export abstract class CodexOptions extends CodexAttachments {
 	}
 
 	/** モードによる上書きにも、送信時点のモデルと推論量を使用する。 */
-	protected collaborationSettings(
+	private collaborationSettings(
 		mode = this.collaborationMode,
 	): CollaborationMode {
-		const model = this.state.configOptions.find(
-			(item) => item.id === "model",
-		)?.currentValue;
+		const model = this.session
+			.snapshot()
+			.configOptions.find((item) => item.id === "model")?.currentValue;
 		if (!isNonEmptyString(model)) {
 			throw new Error("Model unavailable");
 		}
@@ -355,34 +411,36 @@ export abstract class CodexOptions extends CodexAttachments {
 				model,
 				reasoning_effort:
 					nonEmptyString(
-						this.state.configOptions.find(
-							(item) => item.id === "reasoning_effort",
-						)?.currentValue,
+						this.session
+							.snapshot()
+							.configOptions.find(
+								(item) => item.id === "reasoning_effort",
+							)?.currentValue,
 					) ?? null,
 				developer_instructions: null,
 			},
 		};
 	}
 	/** 会話単位の使用量とアカウント単位の利用枠を分ける。 */
-	protected override notification(message: AppServerNotification): void {
+	notification(message: AppServerNotification): void {
 		const p = message.params;
 		if (!isRecord(p)) {
 			return;
 		}
 		if (
 			message.method === "thread/settings/updated" &&
-			p.threadId === this.state.sessionId
+			p.threadId === this.session.snapshot().sessionId
 		) {
 			this.applyThreadPermissions(p.threadSettings);
 		}
 		if (message.method === "account/rateLimits/updated") {
-			this.patch({ quota: parseQuota(p.rateLimits) });
+			this.session.patch({ quota: parseQuota(p.rateLimits) });
 		}
 		if (
 			message.method === "thread/tokenUsage/updated" &&
-			p.threadId === this.state.sessionId
+			p.threadId === this.session.snapshot().sessionId
 		) {
-			this.patch({ usage: parseUsage(p.tokenUsage) });
+			this.session.patch({ usage: parseUsage(p.tokenUsage) });
 		}
 	}
 
@@ -392,22 +450,24 @@ export abstract class CodexOptions extends CodexAttachments {
 		this.initialSandbox = settings.sandboxPolicy;
 		delete this.turnOptions.sandboxPolicy;
 		this.turnOptions.approvalsReviewer = settings.approvalsReviewer;
-		this.patch({
-			configOptions: this.state.configOptions.map((option) => {
-				if (option.id === "mode") {
-					return {
-						...option,
-						currentValue: sandboxMode(settings.sandboxPolicy),
-					};
-				}
-				if (option.id === "approvals_reviewer") {
-					return {
-						...option,
-						currentValue: settings.approvalsReviewer,
-					};
-				}
-				return option;
-			}),
+		this.session.patch({
+			configOptions: this.session
+				.snapshot()
+				.configOptions.map((option) => {
+					if (option.id === "mode") {
+						return {
+							...option,
+							currentValue: sandboxMode(settings.sandboxPolicy),
+						};
+					}
+					if (option.id === "approvals_reviewer") {
+						return {
+							...option,
+							currentValue: settings.approvalsReviewer,
+						};
+					}
+					return option;
+				}),
 		});
 	}
 }

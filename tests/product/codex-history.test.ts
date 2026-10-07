@@ -8,7 +8,7 @@ import { test, type TestContext } from "node:test";
 import * as z from "zod";
 import type { HostMessage } from "@nerita/shared/messages";
 import type { ToolOutputResponse } from "@nerita/shared/toolOutput";
-import { codexFixture } from "../support/codex";
+import { codexFixture, codexResponseGate } from "../support/codex";
 import { until } from "../support/pi";
 
 type Controller = ReturnType<
@@ -129,6 +129,74 @@ void test("Codex の履歴再開応答に含まれるフルアクセス権限を
 	assertPermissionDisplay(f.controller, "danger-full-access", true);
 });
 
+void test("Codex の履歴復元は保存済みのモデル選択に置き換えず、次の新規会話には保存選択を適用する", async (t) => {
+	const f = await historyFixture(t);
+	for (const [configId, value] of [
+		["model", "model-b"],
+		["reasoning_effort", "high"],
+	]) {
+		await f.controller.receive({
+			type: "config/set",
+			requestId: randomUUID(),
+			sessionId: f.controller.snapshot().sessionId,
+			configId,
+			value,
+		});
+	}
+	f.responses.set("thread/resume", () => ({
+		thread: f.thread("saved"),
+		model: "model-a",
+		reasoningEffort: "low",
+		cwd: f.cwd,
+	}));
+	await historyAction(f.controller, "saved");
+	const options = f.controller.snapshot().configOptions;
+	assert.equal(
+		options.find((option) => option.id === "model")?.currentValue,
+		"model-a",
+	);
+	assert.equal(
+		options.find((option) => option.id === "reasoning_effort")
+			?.currentValue,
+		"low",
+	);
+	await f.controller.receive({
+		type: "prompt/send",
+		requestId: randomUUID(),
+		sessionId: "saved",
+		text: "履歴を続ける",
+	});
+	const resumed = f.requests.find(
+		(request) => request.method === "turn/start",
+	)!;
+	assert.deepEqual(resumed.params?.collaborationMode, {
+		mode: "default",
+		settings: {
+			model: "model-a",
+			reasoning_effort: "low",
+			developer_instructions: null,
+		},
+	});
+	f.notify("turn/completed", {
+		threadId: "saved",
+		turn: { id: "turn-1", status: "completed", items: [] },
+	});
+	await until(() => f.controller.snapshot().run === "completed");
+	await historyAction(f.controller, "saved", "session/new");
+	await f.controller.receive({
+		type: "prompt/send",
+		requestId: randomUUID(),
+		sessionId: f.controller.snapshot().sessionId,
+		text: "新規会話",
+	});
+	const starts = f.requests.filter(
+		(request) => request.method === "turn/start",
+	);
+	assert.equal(starts.length, 2);
+	assert.equal(starts[1]!.params?.model, "model-b");
+	assert.equal(starts[1]!.params.effort, "high");
+});
+
 void test("Codex の履歴再開後の権限通知を表示と次の送信へ反映し、他スレッドの通知を混ぜない", async (t) => {
 	const f = await historyFixture(t);
 	await historyAction(f.controller, "saved");
@@ -234,11 +302,211 @@ void test("Codex の複数ページの履歴を復元・フォークし、ツー
 	);
 	await historyAction(f.controller, "saved", "session/fork");
 	assert.equal(f.controller.snapshot().sessionId, "forked");
+	assert.ok(
+		f.controller
+			.snapshot()
+			.sessions.some((row) => row.sessionId === "forked"),
+	);
 	assert.ok(isNonEmptyString((await readTail(f.controller, ref)).error));
 	const forkRef = f.controller.snapshot().tools[0]!.output!.outputRef!;
 	assert.notEqual(forkRef, ref);
 	assert.equal((await readTail(f.controller, forkRef)).text, "末尾");
 	assert.ok(!f.requests.some((request) => request.method === "turn/start"));
+});
+
+void test("Codex の一覧未反映のフォークを名前変更・アーカイブ・復帰し、復帰した履歴の全文を取得できる", async (t) => {
+	const f = await historyFixture(t);
+	for (const method of ["thread/name/set", "thread/archive"]) {
+		f.responses.set(method, () => ({}));
+	}
+	f.responses.set("thread/unarchive", () => ({ thread: f.thread("forked") }));
+	await historyAction(f.controller, "saved", "session/fork");
+	const initialRef = f.controller.snapshot().tools[0]!.output!.outputRef!;
+	await f.controller.receive({
+		type: "session/rename",
+		requestId: randomUUID(),
+		sessionId: "forked",
+		name: "  利用者が変更  ",
+	});
+	const renamed = f.controller.snapshot();
+	assert.equal(renamed.sessionTitle, "利用者が変更");
+	assert.equal(
+		renamed.sessions.find((row) => row.sessionId === "forked")?.title,
+		"利用者が変更",
+	);
+	assert.equal((await readTail(f.controller, initialRef)).text, "末尾");
+	await historyAction(f.controller, "forked", "session/archive");
+	const archived = f.controller.snapshot();
+	assert.equal(archived.sessionId, null);
+	assert.deepEqual(archived.messages, []);
+	assert.deepEqual(archived.tools, []);
+	assert.deepEqual(archived.configOptions, []);
+	assert.ok(
+		isNonEmptyString((await readTail(f.controller, initialRef)).error),
+	);
+	await f.controller.receive({
+		type: "session/list",
+		requestId: randomUUID(),
+		archived: true,
+	});
+	assert.equal(
+		f.controller
+			.snapshot()
+			.sessions.find((row) => row.sessionId === "forked")?.archived,
+		true,
+	);
+
+	await historyAction(f.controller, "forked", "session/unarchive");
+	const revived = f.controller.snapshot();
+	assert.equal(revived.sessionsError, null);
+	assert.equal(revived.sessionsArchived, true);
+	assert.ok(
+		!revived.sessions.some((row) => row.sessionId === "forked"),
+		"復帰したフォークをアーカイブ一覧に残さない",
+	);
+	await f.controller.receive({
+		type: "session/list",
+		requestId: randomUUID(),
+		archived: false,
+	});
+	assert.equal(
+		f.controller
+			.snapshot()
+			.sessions.find((row) => row.sessionId === "forked")?.archived,
+		false,
+	);
+	await historyAction(f.controller, "forked");
+	const restoredRef = f.controller.snapshot().tools[0]!.output!.outputRef!;
+	assert.equal((await readTail(f.controller, restoredRef)).text, "末尾");
+	const mutations = f.requests.filter((request) =>
+		["thread/name/set", "thread/archive", "thread/unarchive"].includes(
+			request.method,
+		),
+	);
+	assert.deepEqual(
+		mutations.map(({ method, params }) => ({ method, params })),
+		[
+			{
+				method: "thread/name/set",
+				params: { threadId: "forked", name: "利用者が変更" },
+			},
+			{ method: "thread/archive", params: { threadId: "forked" } },
+			{ method: "thread/unarchive", params: { threadId: "forked" } },
+		],
+	);
+});
+
+void test("Codex の表示中のフォークを削除すると会話と一覧から除き、全文参照を失効させる", async (t) => {
+	const f = await historyFixture(t);
+	f.responses.set("thread/delete", () => ({}));
+	await historyAction(f.controller, "saved", "session/fork");
+	const ref = f.controller.snapshot().tools[0]!.output!.outputRef!;
+	await historyAction(f.controller, "forked", "session/delete");
+	const state = f.controller.snapshot();
+	assert.equal(state.sessionId, null);
+	assert.deepEqual(state.messages, []);
+	assert.deepEqual(state.tools, []);
+	assert.deepEqual(state.agents, []);
+	assert.deepEqual(state.configOptions, []);
+	assert.equal(state.sessionPending, false);
+	assert.ok(!state.sessions.some((row) => row.sessionId === "forked"));
+	assert.ok(isNonEmptyString((await readTail(f.controller, ref)).error));
+	const deleted = f.requests.filter(
+		(request) => request.method === "thread/delete",
+	);
+	assert.equal(deleted.length, 1);
+	assert.deepEqual(deleted[0]!.params, { threadId: "forked" });
+});
+
+void test("Codex の履歴一覧は同じ作業場所の後続ページを統合し、カーソルの循環でも表示済みの行と会話を保持する", async (t) => {
+	const f = await historyFixture(t);
+	const sessionId = f.controller.snapshot().sessionId;
+	f.responses.set("thread/list", ({ params }) => ({
+		data: Boolean(params!.cursor)
+			? [
+					f.thread("second"),
+					{ ...f.thread("outside"), cwd: join(f.cwd, "other") },
+				]
+			: [f.thread("first")],
+		nextCursor: Boolean(params!.cursor) ? "last-page" : "next-page",
+	}));
+	await f.controller.receive({
+		type: "session/list",
+		requestId: randomUUID(),
+	});
+	await f.controller.receive({
+		type: "session/list",
+		requestId: randomUUID(),
+		more: true,
+	});
+	assert.deepEqual(
+		f.controller.snapshot().sessions.map((row) => row.sessionId),
+		["first", "second"],
+	);
+	assert.equal(f.controller.snapshot().sessionsNextCursor, "last-page");
+
+	f.responses.set("thread/list", () => ({
+		data: [f.thread("unexpected")],
+		nextCursor: "next-page",
+	}));
+	await f.controller.receive({
+		type: "session/list",
+		requestId: randomUUID(),
+		more: true,
+	});
+	const state = f.controller.snapshot();
+	assert.deepEqual(
+		state.sessions.map((row) => row.sessionId),
+		["first", "second"],
+	);
+	assert.ok(isNonEmptyString(state.sessionsError));
+	assert.equal(state.sessionsLoading, false);
+	assert.equal(state.sessionId, sessionId);
+});
+
+void test("Codex の一覧未反映のフォークも外部の名前変更・アーカイブを反映し、アーカイブした会話を送信対象から外す", async (t) => {
+	const f = await historyFixture(t);
+	await historyAction(f.controller, "saved", "session/fork");
+	f.notify("thread/name/updated", {
+		threadId: "forked",
+		threadName: "別画面で変更",
+	});
+	await until(() => {
+		const state = f.controller.snapshot();
+		return state.sessionTitle === "別画面で変更" && !state.sessionsLoading;
+	});
+	assert.equal(f.controller.snapshot().sessionTitle, "別画面で変更");
+	assert.equal(
+		f.controller
+			.snapshot()
+			.sessions.find((row) => row.sessionId === "forked")?.title,
+		"別画面で変更",
+	);
+
+	f.notify("thread/archived", { threadId: "forked" });
+	await until(() => {
+		const state = f.controller.snapshot();
+		return state.sessionId === null && !state.sessionsLoading;
+	});
+	const archived = f.controller.snapshot();
+	assert.equal(archived.run, "idle");
+	assert.equal(archived.messages.length, 2);
+	assert.equal(archived.tools.length, 2);
+	assert.deepEqual(archived.configOptions, []);
+	assert.deepEqual(archived.permissions, []);
+	assert.ok(!archived.sessions.some((row) => row.sessionId === "forked"));
+
+	await f.controller.receive({
+		type: "session/list",
+		requestId: randomUUID(),
+		archived: true,
+	});
+	const row = f.controller
+		.snapshot()
+		.sessions.find((row) => row.sessionId === "forked");
+	assert.ok(row);
+	assert.equal(row.title, "別画面で変更");
+	assert.equal(row.archived, true);
 });
 
 void test("Codex の後続ページが壊れても現在の会話と全文参照を保持する", async (t) => {
@@ -280,6 +548,101 @@ void test("Codex の後続ページが壊れても現在の会話と全文参照
 		);
 	}
 });
+
+void test("Codex の操作前確認中に履歴の実行開始が届いた場合は、古い確認応答で再開せず現在の会話を保持する", async (t) => {
+	const f = await historyFixture(t);
+	await historyAction(f.controller, "saved");
+	const before = f.controller.snapshot();
+	const original = f.responses.get("thread/read")!;
+	const gate = codexResponseGate();
+	t.after(() => gate.release({ thread: f.thread("broken") }));
+	let waiting = false;
+	f.responses.set("thread/read", (request) => {
+		if (request.params!.threadId === "broken") {
+			waiting = true;
+			return gate.response;
+		}
+		return original(request);
+	});
+	const restoring = historyAction(f.controller, "broken");
+	await until(() => waiting);
+	f.notify("turn/started", {
+		threadId: "broken",
+		turn: { id: "concurrent", status: "inProgress", items: [] },
+	});
+	f.notify("thread/tokenUsage/updated", {
+		threadId: "saved",
+		tokenUsage: { last: { totalTokens: 1 }, modelContextWindow: 100 },
+	});
+	await until(() => f.controller.snapshot().usage?.used === 1);
+	gate.release({ thread: f.thread("broken") });
+	await restoring;
+	const resumes = f.requests.filter(
+		(request) =>
+			request.method === "thread/resume" &&
+			request.params!.threadId === "broken",
+	);
+	assert.equal(resumes.length, 0);
+	const after = f.controller.snapshot();
+	assert.equal(after.sessionId, "saved");
+	assert.deepEqual(after.messages, before.messages);
+	assert.deepEqual(after.tools, before.tools);
+	assert.ok(isNonEmptyString(after.sessionsError));
+	assert.equal(after.sessionPending, false);
+	assert.equal(
+		(await readTail(f.controller, before.tools[0]!.output!.outputRef!))
+			.text,
+		"末尾",
+	);
+});
+
+for (const method of ["turn/started", "thread/archived", "thread/deleted"]) {
+	void test(`Codex の履歴復元中に ${method} が届いた場合は現在の会話と全文参照を保持する`, async (t) => {
+		const f = await historyFixture(t);
+		await historyAction(f.controller, "saved");
+		const before = f.controller.snapshot();
+		const original = f.responses.get("thread/items/list")!;
+		const gate = codexResponseGate();
+		t.after(() => gate.release({ data: [], nextCursor: null }));
+		let waiting = false;
+		f.responses.set("thread/items/list", (request) => {
+			if (
+				request.params!.threadId === "broken" &&
+				Boolean(request.params!.cursor)
+			) {
+				waiting = true;
+				return gate.response;
+			}
+			return original(request);
+		});
+		const restoring = historyAction(f.controller, "broken");
+		await until(() => waiting);
+		assert.equal(f.controller.snapshot().sessionPending, true);
+		f.notify(method, {
+			threadId: "broken",
+			turn: { id: "concurrent", status: "inProgress", items: [] },
+		});
+		// 同じストリームの後続通知を待ち、競合通知が到着してからページを返す。
+		f.notify("thread/tokenUsage/updated", {
+			threadId: "saved",
+			tokenUsage: { last: { totalTokens: 1 }, modelContextWindow: 100 },
+		});
+		await until(() => f.controller.snapshot().usage?.used === 1);
+		gate.release({ data: [], nextCursor: null });
+		await restoring;
+		const after = f.controller.snapshot();
+		assert.equal(after.sessionId, "saved");
+		assert.deepEqual(after.messages, before.messages);
+		assert.deepEqual(after.tools, before.tools);
+		assert.equal(after.sessionPending, false);
+		assert.ok(isNonEmptyString(after.sessionsError));
+		assert.equal(
+			(await readTail(f.controller, before.tools[0]!.output!.outputRef!))
+				.text,
+			"末尾",
+		);
+	});
+}
 
 void test("Codex の子履歴の全文参照を親に引き継ぎ、会話切替で失効させる", async (t) => {
 	const f = await historyFixture(t);
@@ -346,6 +709,116 @@ void test("Codex の子履歴の全文参照を親に引き継ぎ、会話切替
 	);
 });
 
+for (const changed of [false, true]) {
+	void test(`Codex の遅い子メタデータは名前を補い、取得中の状態通知を優先する（通知=${changed}）`, async (t) => {
+		const f = await historyFixture(t);
+		const threadId = f.controller.snapshot().sessionId!;
+		const gate = codexResponseGate();
+		const reply = {
+			thread: { ...f.thread("child"), agentNickname: "取得した名前" },
+		};
+		t.after(() => gate.release(reply));
+		let waiting = false;
+		f.responses.set("thread/read", () => {
+			waiting = true;
+			return gate.response;
+		});
+		f.notify("item/started", {
+			threadId,
+			turnId: "past-turn",
+			item: {
+				id: "child-start",
+				type: "subAgentActivity",
+				agentThreadId: "child",
+				agentPath: "child",
+				kind: "started",
+			},
+		});
+		await until(() => waiting);
+		if (changed) {
+			f.notify("thread/status/changed", {
+				threadId: "child",
+				status: { type: "systemError" },
+			});
+			await until(
+				() =>
+					f.controller.snapshot().agents[0]?.status === "systemError",
+			);
+		}
+
+		gate.release(reply);
+		await until(
+			() =>
+				f.controller.snapshot().agents[0]?.nickname === "取得した名前",
+		);
+		assert.equal(
+			f.controller.snapshot().agents[0]!.status,
+			changed ? "systemError" : "idle",
+		);
+		assert.equal(f.controller.snapshot().sessionId, threadId);
+	});
+}
+
+void test("Codex の子閲覧中に親会話を切り替えても、遅い履歴を公開せず新しい会話を保持する", async (t) => {
+	const f = await historyFixture(t);
+	f.notify("item/started", {
+		threadId: f.controller.snapshot().sessionId,
+		turnId: "past-turn",
+		item: {
+			id: "child-start",
+			type: "subAgentActivity",
+			agentThreadId: "child",
+			agentPath: "child",
+			kind: "started",
+		},
+	});
+	await until(() => f.controller.snapshot().agents.length === 1);
+	const gate = codexResponseGate();
+	const original = f.responses.get("thread/items/list")!;
+	t.after(() => gate.release({ data: [], nextCursor: null }));
+	let waiting = false;
+	f.responses.set("thread/items/list", (request) => {
+		if (request.params!.threadId === "child") {
+			waiting = true;
+			return gate.response;
+		}
+		return original(request);
+	});
+	const requestId = randomUUID();
+	const pending = f.controller.receive({
+		type: "agent/read",
+		requestId,
+		sessionId: f.controller.snapshot().sessionId!,
+		threadId: "child",
+	});
+	await until(() => waiting);
+
+	await f.controller.receive({
+		type: "session/new",
+		requestId: randomUUID(),
+	});
+	const sessionId = f.controller.snapshot().sessionId;
+	gate.release({
+		data: [
+			{
+				turnId: "first",
+				item: { id: "late", type: "agentMessage", text: "旧会話の子" },
+			},
+		],
+		nextCursor: null,
+	});
+	await pending;
+	assert.equal(f.controller.snapshot().sessionId, sessionId);
+	assert.deepEqual(f.controller.snapshot().agents, []);
+	assert.deepEqual(f.controller.snapshot().messages, []);
+	assert.ok(
+		!f.events.some(
+			(event) =>
+				event.type === "agent/view" && event.requestId === requestId,
+		),
+	);
+});
+
 void test("Codex のページ取得中に切断した場合は遅い復元結果を公開しない", async (t) => {
 	const f = await historyFixture(t);
 	const original = f.responses.get("thread/items/list")!;
@@ -365,6 +838,54 @@ void test("Codex のページ取得中に切断した場合は遅い復元結果
 				request.method === "thread/turns/list" &&
 				Boolean(request.params!.cursor),
 		),
+	);
+});
+
+void test("Codex の履歴復元後の設定取得中に切断しても、再接続の会話を保持して次の履歴操作を実行できる", async (t) => {
+	const f = await historyFixture(t);
+	const gate = codexResponseGate();
+	t.after(() => gate.release({ data: [], nextCursor: null }));
+	let waiting = false;
+	f.responses.set("model/list", () => {
+		waiting = true;
+		return gate.response;
+	});
+	const restoring = historyAction(f.controller, "saved");
+	await until(() => waiting);
+	assert.equal(f.controller.snapshot().sessionId, "saved");
+	assert.equal(f.controller.snapshot().sessionPending, true);
+	const oldRef = f.controller.snapshot().tools[0]!.output!.outputRef!;
+	f.controller.invalidate();
+	f.responses.delete("model/list");
+	await f.controller.connect();
+	const sessionId = f.controller.snapshot().sessionId;
+	assert.notEqual(sessionId, "saved");
+	gate.release({ data: [], nextCursor: null });
+	await restoring;
+	assert.equal(f.controller.snapshot().connection, "ready");
+	assert.equal(f.controller.snapshot().sessionId, sessionId);
+	assert.equal(f.controller.snapshot().sessionPending, false);
+	assert.equal(f.controller.snapshot().sessionsError, null);
+	assert.deepEqual(f.controller.snapshot().tools, []);
+	assert.equal(
+		f.controller
+			.snapshot()
+			.configOptions.find((option) => option.id === "model")
+			?.currentValue,
+		"model-a",
+	);
+	assert.ok(isNonEmptyString((await readTail(f.controller, oldRef)).error));
+	await historyAction(f.controller, "broken");
+	assert.equal(f.controller.snapshot().sessionId, "broken");
+	assert.equal(f.controller.snapshot().sessionPending, false);
+	assert.equal(
+		(
+			await readTail(
+				f.controller,
+				f.controller.snapshot().tools[0]!.output!.outputRef!,
+			)
+		).text,
+		"末尾",
 	);
 });
 

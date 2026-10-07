@@ -1,4 +1,5 @@
 // App Server のメッセージと基本ツール項目を、既存 UI の表示データへ変換する。
+import type { CodexItem } from "../protocol/item";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
 import { isRecord } from "@nerita/shared/validation";
@@ -45,12 +46,9 @@ export function messagePatch(
 /** 承認に必要なコマンド・変更対象と、完了時の概要を表示する。 */
 export function itemPatch(
 	state: ChatState,
-	value: unknown,
+	value: CodexItem,
 	completed: boolean,
 ): Partial<ChatState> {
-	if (!isRecord(value) || typeof value.id !== "string") {
-		throw new Error("Invalid item");
-	}
 	if (
 		value.type === "subAgentActivity" ||
 		value.type === "collabAgentToolCall"
@@ -141,6 +139,7 @@ function updateCommandOrFiles(
 			tool.exitCode = value.exitCode;
 		}
 		if (typeof value.aggregatedOutput === "string") {
+			tool.commandOutput = value.aggregatedOutput;
 			tool.rawOutput = { formatted_output: value.aggregatedOutput };
 		}
 	} else if (value.type === "fileChange") {

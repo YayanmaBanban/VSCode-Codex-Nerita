@@ -1,21 +1,41 @@
 // 実行中の承認と追加質問を、同じターンの寿命に限定する。
 import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
-import { CodexOptions } from "./CodexOptions";
+import type { ChatState } from "@nerita/shared/chatState";
+import type { InteractionService } from "./interaction/interactionService";
 import type { ActiveTurn } from "./ActiveTurn";
 import { Approvals, parseApproval } from "./interaction/Approvals";
 import type { AppServerRequest } from "./protocol/rpcMessage";
 import { isRecord } from "@nerita/shared/validation";
 import { interactionRequest } from "./interaction/interactionRequests";
 import { permissionProfile } from "./settings/permissionProfile";
+
+/** 同じターンの参照を返し、開始待ちの前後で対象が切り替わったか照合する。 */
+type RequestSession = {
+	snapshot: () => Readonly<ChatState>;
+	active: () =>
+		| Readonly<Pick<ActiveTurn, "threadId" | "turnId" | "ready" | "abort">>
+		| undefined;
+	patch: (change: Partial<ChatState>) => void;
+};
+
 /** 承認と入力要求を停止・切断・サーバー側取消へ追従させる。 */
-export abstract class CodexRequests extends CodexOptions {
+export class CodexRequests {
 	private interactionTail: Promise<unknown> = Promise.resolve();
-	protected active: ActiveTurn | undefined;
-	protected readonly approvals = new Approvals(() =>
-		this.patch({ permissions: this.approvals.list() }),
+	private readonly approvals = new Approvals(() =>
+		this.session.patch({ permissions: this.approvals.list() }),
 	);
+	constructor(
+		private readonly session: RequestSession,
+		private readonly interactions?: InteractionService,
+	) {}
+
+	/** 表示中の承認要求へ利用者の選択を返し、承認の中止に伴うターン停止はコントローラーへ委ねる。 */
+	respond(permissionId: string, optionId: string): boolean {
+		return this.approvals.respond(permissionId, optionId);
+	}
+
 	/** サーバーからの要求が現在の実行に属するか確認し、取消済みの承認は表示しない。 */
-	protected override async request(
+	async request(
 		message: AppServerRequest,
 		signal: AbortSignal,
 	): Promise<unknown> {
@@ -29,22 +49,22 @@ export abstract class CodexRequests extends CodexOptions {
 			return this.interaction(message, signal);
 		}
 		const approval = parseApproval(message);
-		const run = this.active;
+		const run = this.session.active();
 		if (!run || approval.threadId !== run.threadId) {
 			return { decision: "cancel" };
 		}
 		await run.ready;
 		if (
-			this.active !== run ||
+			this.session.active() !== run ||
 			approval.turnId !== run.turnId ||
-			this.state.run !== "running" ||
+			this.session.snapshot().run !== "running" ||
 			signal.aborted
 		) {
 			return { decision: "cancel" };
 		}
-		const tool = this.state.tools.find(
-			(item) =>
-				item.id === approval.itemId && item.runId === this.state.runId,
+		const state = this.session.snapshot();
+		const tool = state.tools.find(
+			(item) => item.id === approval.itemId && item.runId === state.runId,
 		);
 		if (isNonZeroNumber(tool?.paths.length)) {
 			approval.presentation.fields = [
@@ -68,7 +88,7 @@ export abstract class CodexRequests extends CodexOptions {
 		message: AppServerRequest,
 		signal: AbortSignal,
 	): Promise<unknown> {
-		const run = this.active;
+		const run = this.session.active();
 		const p = message.params;
 		const empty = cancelledInteraction(message.method);
 		if (!run || !isRecord(p) || p.threadId !== run.threadId) {
@@ -76,9 +96,9 @@ export abstract class CodexRequests extends CodexOptions {
 		}
 		await run.ready;
 		if (
-			this.active !== run ||
+			this.session.active() !== run ||
 			(p.turnId !== null && p.turnId !== run.turnId) ||
-			this.state.run !== "running" ||
+			this.session.snapshot().run !== "running" ||
 			signal.aborted
 		) {
 			return empty;

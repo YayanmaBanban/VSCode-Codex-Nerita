@@ -5,7 +5,7 @@ import { isPiAuthRequest, type PiAuthState } from "@nerita/shared/piAuth";
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { webviewHtml } from "../../webview/webviewHtml";
-import type { PiAuthService } from "./PiAccount";
+import type { PiAuthService } from "./PiAccountAuthFlow";
 
 /** 認証パネルを閉じると、進行中の認証を中断して入力待ちを解除するサービス。 */
 export function createPiAuthService(extensionUri: vscode.Uri): PiAuthService {

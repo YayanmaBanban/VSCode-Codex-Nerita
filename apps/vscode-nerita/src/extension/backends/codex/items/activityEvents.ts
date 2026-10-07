@@ -1,29 +1,21 @@
-// 項目ごとの逐次出力を蓄積し、ターン ID を照合済みの通知だけを表示へ反映する。
+// 検証済みの活動通知を順に反映し、完了済み項目への遅延更新を抑止する。
 import type { ChatState, ToolSummary } from "@nerita/shared/chatState";
-import { isRecord } from "@nerita/shared/validation";
 import { nextTimelineOrder } from "../../../session/timelineOrder";
-import { fileChanges, textContent } from "./activityItems";
+import { textContent } from "./activityItems";
 import { setToolOutputSource } from "../../../session/toolOutputSource";
+import type { ActivityUpdate } from "./activityEvent";
 
 /** 分割された推論の各セクションを独立して蓄積する。 */
 export type ActivityStreams = Map<string, Map<string, string>>;
-/** テキストのある通知を検証する。 */
-function text(value: unknown): string {
-	if (typeof value !== "string") {
-		throw new Error("Invalid activity text");
-	}
-	return value;
-}
-/** コマンド出力、推論、計画、差分の通知を既存カードへ反映する。 */
+
+/** ターン ID と通知本文を入口で検証してから、既存カードへ反映する。 */
 export function activityPatch(
 	state: ChatState,
-	method: string,
-	p: Record<string, unknown>,
+	update: ActivityUpdate,
 	streams: ActivityStreams,
 	completed: Set<string>,
 ): Partial<ChatState> {
-	const synthetic = method.startsWith("turn/");
-	const id = synthetic ? `turn:${method}` : text(p.itemId);
+	const id = update.id;
 	if (completed.has(id)) {
 		return {};
 	}
@@ -43,7 +35,7 @@ export function activityPatch(
 			};
 	const parts = streams.get(id) ?? new Map<string, string>();
 	streams.set(id, parts);
-	updateActivityTool(method, tool, p, parts);
+	updateActivityTool(tool, update, parts);
 	return {
 		tools: previous
 			? state.tools.map((item) => (item === previous ? tool : item))
@@ -51,89 +43,72 @@ export function activityPatch(
 	};
 }
 
-/** 通知の種別に対応するカードの内容を更新する。 */
+/** 判別子が保証するフィールドを読み、外部データの再検査は行わない。 */
 function updateActivityTool(
-	method: string,
 	tool: ToolSummary,
-	p: Record<string, unknown>,
+	update: ActivityUpdate,
 	parts: Map<string, string>,
 ) {
-	if (method === "turn/diff/updated") {
-		tool.title = "ターン全体の差分";
-		tool.kind = "edit";
-		tool.content = [
-			{ type: "unifiedDiff", path: "変更全体", diff: text(p.diff) },
-		];
-	} else if (method === "turn/plan/updated") {
-		if (!Array.isArray(p.plan)) {
-			throw new Error("Invalid plan");
-		}
-		tool.title = "実行計画";
-		tool.kind = "think";
-		tool.content = [
-			textContent(
-				p.plan
-					.map((step: unknown) => {
-						if (!isRecord(step)) {
-							throw new Error("Invalid plan step");
-						}
-						return `${text(step.status)}: ${text(step.step)}`;
-					})
-					.join("\n"),
-			),
-		];
-	} else if (method === "item/fileChange/patchUpdated") {
-		Object.assign(tool, fileChanges(p.changes));
-		tool.title = "ファイル変更";
-		tool.kind = "edit";
-	} else if (method === "item/commandExecution/terminalInteraction") {
-		tool.rawInput = { stdin: text(p.stdin) };
-	} else if (method === "item/mcpToolCall/progress") {
-		tool.content = [textContent(text(p.message))];
-	} else if (method.includes("reasoning")) {
-		updateReasoning(p, method, parts, tool);
-	} else {
-		updateActivityOutput(parts, p, method, tool);
+	switch (update.kind) {
+		case "diff":
+			tool.title = "ターン全体の差分";
+			tool.kind = "edit";
+			tool.content = [
+				{ type: "unifiedDiff", path: "変更全体", diff: update.diff },
+			];
+			return;
+		case "plan":
+			tool.title = "実行計画";
+			tool.kind = "think";
+			tool.content = [
+				textContent(
+					update.plan
+						.map((step) => `${step.status}: ${step.step}`)
+						.join("\n"),
+				),
+			];
+			return;
+		case "changes":
+			tool.paths = update.paths;
+			tool.content = update.content;
+			tool.title = "ファイル変更";
+			tool.kind = "edit";
+			return;
+		case "stdin":
+			tool.rawInput = { stdin: update.stdin };
+			return;
+		case "progress":
+			tool.content = [textContent(update.message)];
+			return;
+		case "reasoning":
+			updateReasoning(tool, update, parts);
+			return;
+		case "output":
+			if (update.command) {
+				tool.kind = "execute";
+				setToolOutputSource(tool, { text: update.delta, delta: true });
+			} else {
+				parts.set("text", (parts.get("text") ?? "") + update.delta);
+				tool.title = "ファイル変更";
+				tool.content = [textContent(parts.get("text")!)];
+			}
 	}
 }
 
-/** コマンドや計画の逐次出力を蓄積する。 */
-function updateActivityOutput(
-	parts: Map<string, string>,
-	p: Record<string, unknown>,
-	method: string,
-	tool: ToolSummary,
-) {
-	if (method === "item/commandExecution/outputDelta") {
-		tool.kind = "execute";
-		setToolOutputSource(tool, { text: text(p.delta), delta: true });
-	} else {
-		parts.set("text", (parts.get("text") ?? "") + text(p.delta));
-		tool.title = method === "item/plan/delta" ? "計画" : "ファイル変更";
-		tool.content = [textContent(parts.get("text")!)];
-	}
-}
-
-/** 推論のセクションごとに差分を蓄積する。 */
+/** 推論の同じセクションだけへ差分を蓄積し、追加通知では既存本文を消さない。 */
 function updateReasoning(
-	p: Record<string, unknown>,
-	method: string,
-	parts: Map<string, string>,
 	tool: ToolSummary,
+	update: Extract<ActivityUpdate, { kind: "reasoning" }>,
+	parts: Map<string, string>,
 ) {
-	const index = p.summaryIndex ?? p.contentIndex;
-	if (!Number.isSafeInteger(index) || Number(index) < 0) {
-		throw new Error("Invalid reasoning index");
-	}
-	const key = `${method.includes("summary") ? "summary" : "content"}:${Number(index)}`;
-	if (method.endsWith("summaryPartAdded")) {
-		if (!parts.has(key)) {
-			parts.set(key, "");
-		}
-	} else {
-		parts.set(key, (parts.get(key) ?? "") + text(p.delta));
+	const key = `${update.section}:${update.index}`;
+	if (!update.added) {
+		parts.set(key, (parts.get(key) ?? "") + update.delta);
+	} else if (!parts.has(key)) {
+		parts.set(key, "");
 	}
 	tool.title = "推論";
 	tool.kind = "think";
 	tool.content = [textContent([...parts.values()].join("\n\n"))];
+	return;
 }

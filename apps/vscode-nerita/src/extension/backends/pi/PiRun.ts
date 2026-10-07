@@ -340,7 +340,7 @@ export abstract class PiRun extends PiLifecycle {
 		error?: string,
 		aborted = false,
 	): void {
-		error = this.runtime?.protect?.(error) ?? error;
+		error = error === undefined ? undefined : this.protectText(error);
 		const cancelled = submission.cancelled || aborted;
 		if (this.runtime) {
 			setPiSessionRunning(this.runtime.sessionId, false);
@@ -369,7 +369,12 @@ export abstract class PiRun extends PiLifecycle {
 		const detail =
 			this.runtime?.history?.outputs?.error ??
 			(cancelled ? null : (error ?? null));
-		return this.runtime?.protect?.(detail) ?? detail;
+		return detail === null ? null : this.protectText(detail);
+	}
+
+	/** 実行結果と保存失敗の表示には、同じ会話の伏字辞書を適用する。 */
+	private protectText(value: string): string {
+		return this.runtime?.protect?.(value) ?? value;
 	}
 
 	/** 保存が完了した本文だけを永続ファイルの参照へ切り替える。 */

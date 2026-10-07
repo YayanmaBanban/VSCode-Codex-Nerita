@@ -1,43 +1,91 @@
 // 検索・コード実行の結果を伏字にし、承認の取消しを返答待ちから独立させる。
 import { privateDisplayText } from "./results/PiDisplayText";
+import { z } from "zod";
+import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
 
 const sensitiveKey =
 	/authorization|headers|cookie|password|secret|token|credential|api[_-]?key|private[_-]?key/i;
 
 /** 結果・保存値・更新イベントのすべてに同じ保護を適用する。 */
-export function privateFeatureValue<T>(
-	value: T,
+export function privateFeatureValue(
+	value: unknown,
 	secrets: readonly string[] = [],
-	protect?: <TValue>(value: TValue) => TValue,
-): T {
+	protect?: (value: string) => string,
+) {
 	const json: unknown = JSON.stringify(value);
 	if (typeof json !== "string") {
-		return value;
+		return undefined;
 	}
-	const encodedSecrets = secrets.flatMap((secret) => {
-		const escaped = JSON.stringify(secret).slice(1, -1);
-		return [secret, escaped, JSON.stringify(escaped).slice(1, -1)];
-	});
-	// JSON 全体の途中切断は構文を壊す。表示とコード実行の上限は各出力境界で適用する。
-	const hidden = privateDisplayText(
-		json,
+	// キーや JSON 構文を文字列置換せず、値ごとに保護する。
+	return z.json().parse(
+		JSON.parse(json, (key: string, field: unknown) => {
+			const result = sensitiveKey.test(key) ? "[非公開]" : field;
+			return typeof result === "string"
+				? privateFeatureText(result, secrets, protect)
+				: result;
+		}),
+	);
+}
+
+/** 本文だけを置換し、文字列であることを保証する。 */
+export function privateFeatureText(
+	value: string,
+	secrets: readonly string[] = [],
+	protect?: (value: string) => string,
+): string {
+	const text = privateDisplayText(
+		privateJsonText(value),
 		Number.POSITIVE_INFINITY,
-		encodedSecrets,
+		secrets,
 	)
 		.text.replace(/(?:Bearer\s+|sk-)[\w.-]+/g, "[非公開]")
 		.replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "[非公開]");
-	// 呼び出し元の型を持つ JSON の伏字処理であり、表示用の複製を同じ結果契約で返す。
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-	const result = JSON.parse(hidden, privateValue) as T;
-	return protect?.(result) ?? result;
+	return protect?.(text) ?? text;
+}
+
+/** SDK の判別子と制御フラグは保持し、任意データを元の型として返さない。 */
+export function privateFeatureResult(
+	result: AgentToolResult<unknown>,
+	secrets: readonly string[] = [],
+	protect?: (value: string) => string,
+): AgentToolResult<unknown> {
+	const structuredContent = privateFeatureValue(
+		result.structuredContent,
+		secrets,
+		protect,
+	);
+	return {
+		content: result.content.map((part) => {
+			if (part.type === "text") {
+				return {
+					type: "text",
+					text: privateFeatureText(part.text, secrets, protect),
+				};
+			}
+			// 画像のデータや MIME が置換対象なら、破損した画像を返さず非公開の本文へ変える。
+			if (
+				privateFeatureText(part.data, secrets, protect) !== part.data ||
+				privateFeatureText(part.mimeType, secrets, protect) !==
+					part.mimeType
+			) {
+				return { type: "text", text: "[非公開]" };
+			}
+			return { type: "image", data: part.data, mimeType: part.mimeType };
+		}),
+		details: privateFeatureValue(result.details, secrets, protect),
+		...(structuredContent === undefined ? {} : { structuredContent }),
+		...(result.isError === undefined ? {} : { isError: result.isError }),
+		...(result.terminate === undefined
+			? {}
+			: { terminate: result.terminate }),
+		// 利用量は数値の SDK 契約であり、表示用の伏字変換から分離する。
+		...(result.usage === undefined ? {} : { usage: result.usage }),
+	};
 }
 
 /** SDK が text に入れる JSON 文字列も、オブジェクトと同じ基準で伏字にする。 */
-function privateValue(key: string, value: unknown): unknown {
-	if (sensitiveKey.test(key)) {
-		return "[非公開]";
-	}
-	if (typeof value !== "string" || !/^\s*[[{]/.test(value)) {
+function privateJsonText(value: string): string {
+	if (!/^\s*[[{]/.test(value)) {
 		return value;
 	}
 	try {

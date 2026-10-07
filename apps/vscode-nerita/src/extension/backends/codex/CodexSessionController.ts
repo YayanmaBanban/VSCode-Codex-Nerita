@@ -1,9 +1,30 @@
 // 検証済みの Webview 操作を、現在の thread とローカル実行 ID に限定する。
-import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import type { AppServerNotification } from "./protocol/rpcMessage";
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { RequestDeduplicator } from "../../session/RequestDeduplicator";
 import type { UiMessage } from "@nerita/shared/messages";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { CodexSubmission } from "./CodexSubmission";
+import { CodexRun } from "./CodexRun";
+import { CodexLifecycle } from "./CodexLifecycle";
+import { SessionState } from "../../session/sessionState";
+import type { ChatState } from "@nerita/shared/chatState";
+import { CodexCatalog } from "./CodexCatalog";
+import { CodexHistory, type RestoredHistory } from "./CodexHistory";
+import { CodexRequests } from "./CodexRequests";
+import { CodexAgents } from "./CodexAgents";
+import { CodexOptions } from "./CodexOptions";
+import { CodexAttachments } from "./CodexAttachments";
+import type { CodexFactory } from "./runtime/connection";
+import type { AttachmentService } from "../../session/attachmentService";
+import type { AuthService } from "./interaction/AuthFlow";
+import type { InteractionService } from "./interaction/interactionService";
+import type { CodexSelectionStore } from "./settings/modelSelection";
+import { isRecord } from "@nerita/shared/validation";
+import type { StartedThread } from "./protocol/turn";
 import {
 	searchSessionReferences,
 	openSessionReference,
@@ -19,8 +40,219 @@ import {
 } from "@nerita/shared/sessionReferences";
 
 /** 送信・停止・承認・接続・履歴操作を公開する。 */
-export class CodexSessionController extends CodexSubmission {
+export class CodexSessionController extends SessionState {
 	private requests = new RequestDeduplicator();
+	private readonly options: CodexOptions;
+	private readonly serverRequests: CodexRequests;
+	private readonly attachments: CodexAttachments;
+	private readonly submission: CodexSubmission;
+	private readonly run: CodexRun;
+	private readonly lifecycle: CodexLifecycle;
+	/** 機能別の協調オブジェクトへ現在値の取得を渡し、会話状態と接続をここで共有する。 */
+	constructor(
+		factory: CodexFactory,
+		files?: AttachmentService,
+		auth?: AuthService,
+		interactions?: InteractionService,
+		selectionStore?: CodexSelectionStore,
+	) {
+		super();
+		const stateAccess = {
+			snapshot: () => this.state,
+			busy: () => this.busy(),
+			patch: (change: Partial<ChatState>) => this.patch(change),
+		};
+		this.lifecycle = new CodexLifecycle(
+			{
+				...stateAccess,
+				notification: (message) => this.notification(message),
+				request: (message, signal) =>
+					this.serverRequests.request(message, signal),
+				resetRun: () => this.run.reset(),
+				initializedThread: (thread) => this.initializedThread(thread),
+			},
+			factory,
+			auth,
+		);
+		const session = {
+			...stateAccess,
+			connection: () => this.lifecycle.connection,
+			epoch: () => this.lifecycle.generation,
+		};
+		this.serverRequests = new CodexRequests(
+			{ ...stateAccess, active: () => this.run.current },
+			interactions,
+		);
+		this.options = new CodexOptions(session, selectionStore);
+		this.attachments = new CodexAttachments(session, files);
+		this.run = new CodexRun(
+			{
+				...session,
+				failConnection: (message) =>
+					this.lifecycle.failConnection(message),
+			},
+			this.options,
+			this.agents,
+		);
+		this.submission = new CodexSubmission(
+			{
+				...session,
+				active: () => this.run.current,
+				prompt: (text, context, references) =>
+					this.run.prompt(text, context, references),
+				prepareAttachments: (selected) =>
+					this.run.prepareAttachments(selected),
+			},
+			this.options,
+			factory,
+		);
+	}
+
+	/** 接続の終了待ちと世代の照合は、接続処理へまとめて委ねる。 */
+	connect(): Promise<void> {
+		return this.lifecycle.connect();
+	}
+
+	/** ワークスペース変更時の接続取消しと実行解除を同じ経路へ通す。 */
+	invalidate(): void {
+		this.lifecycle.invalidate();
+	}
+
+	/** 接続の終了処理を始めてから UI の購読と全文出力を解除し、接続の回収完了まで待つ。 */
+	async dispose(): Promise<void> {
+		const closing = this.lifecycle.dispose();
+		this.clearListeners();
+		await closing;
+	}
+
+	/** 送信準備を先に取り消してから、親ターンを停止する。 */
+	private cancel(): void {
+		this.submission.cancel();
+		this.run.cancel();
+	}
+
+	/** 管理画面には設定オブジェクトが取得したモデル別の推論候補を公開する。 */
+	agentModels() {
+		return this.options.agentModels();
+	}
+	private readonly catalog = new CodexCatalog({
+		snapshot: () => this.state,
+		connection: () => this.lifecycle.connection,
+		epoch: () => this.lifecycle.generation,
+		patch: (change) => this.patch(change),
+		clearThread: () => this.clearUnavailableThread(),
+	});
+	private readonly agents = new CodexAgents({
+		snapshot: () => this.state,
+		connection: () => this.lifecycle.connection,
+		epoch: () => this.lifecycle.generation,
+		patch: (change) => this.patch(change),
+		publishView: (message, outputs) => this.emit(message, outputs),
+	});
+	private readonly history = new CodexHistory(
+		{
+			snapshot: () => this.state,
+			connection: () => this.lifecycle.connection,
+			epoch: () => this.lifecycle.generation,
+			busy: () => this.busy(),
+			patch: (change) => this.patch(change),
+			clearThread: () => this.clearUnavailableThread(true),
+			restoreThread: (restored, current) =>
+				this.restoreHistory(restored, current),
+		},
+		this.catalog,
+	);
+
+	/** 本文と全文出力を同時に引き継ぎ、設定初期化を終えた同じ会話の子だけを同期する。 */
+	private async restoreHistory(
+		restored: RestoredHistory,
+		current: () => boolean,
+	): Promise<void> {
+		const { result, display } = restored;
+		if (!current()) {
+			display.outputs.dispose();
+			return;
+		}
+		this.run.reset();
+		this.patch(
+			{
+				...display.state,
+				sessionId: result.thread.id,
+				sessionTitle:
+					nonEmptyString(result.thread.name?.trim()) ??
+					nonEmptyString(result.thread.preview) ??
+					null,
+				runId: null,
+				run: "idle",
+				permissions: [],
+				asyncTasks: [],
+				attachments: [],
+				usage: null,
+				configOptions: [],
+				error: null,
+			},
+			display.outputs,
+		);
+		await this.options.initialize(result, false);
+		if (current() && this.state.sessionId === result.thread.id) {
+			this.agents.synchronize();
+		}
+	}
+
+	/** 新規会話は設定を先に初期化し、同じ接続の一覧だけを公開する。 */
+	private async initializedThread(thread: StartedThread): Promise<void> {
+		const epoch = this.lifecycle.generation;
+		await this.options.initialize(thread);
+		if (epoch === this.lifecycle.generation) {
+			this.patch({
+				attachmentsSupported: this.attachments.supportsAttachments,
+			});
+			await this.catalog.initialize();
+		}
+	}
+
+	/** 外部通知では本文を残し、利用者の履歴操作で削除・アーカイブした場合は内容も消す。 */
+	private clearUnavailableThread(clearContents = false): void {
+		this.run.reset();
+		this.patch({
+			sessionId: null,
+			runId: null,
+			run: "idle",
+			permissions: [],
+			attachments: [],
+			configOptions: [],
+			usage: null,
+			...(clearContents
+				? { messages: [], tools: [], asyncTasks: [] }
+				: {}),
+		});
+	}
+
+	/** 履歴の競合、設定、子、親ターン、一覧の順を明示し、通知の順序をここで管理する。 */
+	private notification(message: AppServerNotification): void {
+		this.history.notification(message);
+		this.options.notification(message);
+		this.childrenNotification(message);
+		this.run.notification(message);
+		this.catalog.notification(message);
+	}
+
+	/** 親の項目はターン処理で待機・再生し、子の通知は親ターンの絞り込み前に届ける。 */
+	private childrenNotification(message: AppServerNotification): void {
+		if (
+			isRecord(message.params) &&
+			message.params.threadId === this.state.sessionId &&
+			(message.method === "turn/completed" ||
+				(this.run.current &&
+					["item/started", "item/completed"].includes(
+						message.method,
+					)))
+		) {
+			return;
+		}
+		this.agents.notification(message);
+	}
+
 	/** 二重要求と古い UI の操作を排除して、失敗は要求元へ通知する。 */
 	async receive(value: unknown): Promise<void> {
 		if (!isUiMessage(value)) {
@@ -52,7 +284,7 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.type === "agent/read") {
-			await this.readAgent(message);
+			await this.agents.read(message);
 			return;
 		}
 		if (message.type === "changes/open") {
@@ -80,7 +312,7 @@ export class CodexSessionController extends CodexSubmission {
 	/** 更新待ちを排除して認証・接続操作を処理する。 */
 	private async dispatchMutableAction(message: UiMessage): Promise<void> {
 		if (
-			this.submissionPending &&
+			this.submission.pending &&
 			![
 				"prompt/send",
 				"prompt/cancel",
@@ -101,7 +333,7 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.type === "auth/start") {
-			await this.authenticate(message.methodId);
+			await this.lifecycle.authenticate(message.methodId);
 			return;
 		}
 		if (this.state.connection !== "ready") {
@@ -117,15 +349,15 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.type === "session/new") {
-			await this.newThread();
+			await this.lifecycle.newThread();
 			return;
 		}
 		if (message.type === "auth/logout") {
-			await this.logout();
+			await this.lifecycle.logout();
 			return;
 		}
 		if (message.type === "session/list") {
-			await this.refreshSessions(message.archived, message.more);
+			await this.catalog.refresh(message.archived, message.more);
 			return;
 		}
 		if (isHistoryAction(message)) {
@@ -139,7 +371,7 @@ export class CodexSessionController extends CodexSubmission {
 					"session/unarchive": "unarchive",
 				} as const
 			)[message.type];
-			await this.manageHistory(
+			await this.history.manage(
 				action,
 				message.sessionId,
 				message.type === "session/rename" ? message.name : undefined,
@@ -168,18 +400,18 @@ export class CodexSessionController extends CodexSubmission {
 		}
 		const plan = decision.text;
 		if (message.action === "new") {
-			const settings = this.capturePlanSettings();
-			await this.newThread();
-			await this.restorePlanSettings(settings);
+			const settings = this.options.capturePlanSettings();
+			await this.lifecycle.newThread();
+			await this.options.restorePlanSettings(settings);
 		} else {
-			await this.setConfig("collaboration_mode", "default");
+			await this.options.setConfig("collaboration_mode", "default");
 		}
 		this.patch({ planDecision: null });
 		const text =
 			message.action === "new"
 				? `A previous agent produced the plan below to accomplish the user's task. Implement the plan in a fresh context. Treat the plan as the source of user intent, re-read files as needed, and carry the work through implementation and verification.\n\n${plan}`
 				: plan;
-		await this.submitPrompt(text, this.state.sessionId);
+		await this.submission.submitPrompt(text, this.state.sessionId);
 	}
 
 	/** 操作対象が現在の会話であることを確認する。 */
@@ -194,8 +426,8 @@ export class CodexSessionController extends CodexSubmission {
 			return this.sendPromptAction(message);
 		}
 		if (message.type === "config/set") {
-			await this.setConfig(message.configId, message.value);
-			await this.rememberSelection(message.configId);
+			await this.options.setConfig(message.configId, message.value);
+			await this.options.rememberSelection(message.configId);
 			return;
 		}
 		if (
@@ -203,7 +435,7 @@ export class CodexSessionController extends CodexSubmission {
 			message.type === "attachment/open" ||
 			message.type === "attachment/remove"
 		) {
-			await this.attachment(message);
+			await this.attachments.attachment(message);
 			return;
 		}
 		this.runningAction(message);
@@ -221,8 +453,8 @@ export class CodexSessionController extends CodexSubmission {
 			}
 		>,
 	) {
-		const client = this.client;
-		const epoch = this.epoch;
+		const client = this.lifecycle.connection;
+		const epoch = this.lifecycle.generation;
 		if (!client?.readPersonality || !client.changePersonality) {
 			throw new Error("接続後に設定を開いてください。");
 		}
@@ -230,7 +462,7 @@ export class CodexSessionController extends CodexSubmission {
 			message.type === "personality/read"
 				? await client.readPersonality()
 				: await client.changePersonality(message);
-		if (epoch === this.epoch) {
+		if (epoch === this.lifecycle.generation) {
 			this.patch({ personality });
 		}
 		return;
@@ -240,10 +472,10 @@ export class CodexSessionController extends CodexSubmission {
 	private async sessionReferenceAction(
 		message: SessionReferencesRequest | SessionReferenceOpen,
 	) {
-		const client = this.client;
+		const client = this.lifecycle.connection;
 		const cwd = this.state.cwd;
 		const id = this.state.sessionId;
-		const epoch = this.epoch;
+		const epoch = this.lifecycle.generation;
 		if (
 			!client ||
 			!isNonEmptyString(cwd) ||
@@ -253,7 +485,7 @@ export class CodexSessionController extends CodexSubmission {
 			throw new Error("Disconnected");
 		}
 		const current = () =>
-			epoch === this.epoch && id === this.state.sessionId;
+			epoch === this.lifecycle.generation && id === this.state.sessionId;
 		if (message.type === "session/searchReferences") {
 			const result = await searchSessionReferences(
 				client,
@@ -276,7 +508,7 @@ export class CodexSessionController extends CodexSubmission {
 		message: Extract<UiMessage, { type: "changes/open" }>,
 	) {
 		const { cwd, sessionId } = this.state;
-		const epoch = this.epoch;
+		const epoch = this.lifecycle.generation;
 		if (
 			!isNonEmptyString(cwd) ||
 			!isNonEmptyString(sessionId) ||
@@ -287,7 +519,9 @@ export class CodexSessionController extends CodexSubmission {
 		await openChanges(
 			cwd,
 			message.scope,
-			() => epoch === this.epoch && sessionId === this.state.sessionId,
+			() =>
+				epoch === this.lifecycle.generation &&
+				sessionId === this.state.sessionId,
 		);
 		return;
 	}
@@ -301,8 +535,8 @@ export class CodexSessionController extends CodexSubmission {
 		);
 		if (command) {
 			this.assertSubmissionIdle();
-			if (this.collaborationMode !== command[1]) {
-				await this.setConfig("collaboration_mode", command[1]!);
+			if (this.options.mode !== command[1]) {
+				await this.options.setConfig("collaboration_mode", command[1]!);
 			}
 			if (!isNonEmptyString(command[2]?.trim())) {
 				this.emit({
@@ -319,7 +553,7 @@ export class CodexSessionController extends CodexSubmission {
 		}
 		if (message.text.trim() === "/logout") {
 			this.assertSubmissionIdle();
-			await this.logout();
+			await this.lifecycle.logout();
 			this.emit({
 				type: "prompt/accepted",
 				requestId: message.requestId,
@@ -328,7 +562,7 @@ export class CodexSessionController extends CodexSubmission {
 			return;
 		}
 		if (message.text.trim() === "/mcp") {
-			await this.showMcpStatus(message.sessionId);
+			await this.submission.showMcpStatus(message.sessionId);
 			this.emit({
 				type: "prompt/accepted",
 				requestId: message.requestId,
@@ -338,7 +572,7 @@ export class CodexSessionController extends CodexSubmission {
 		}
 		if (message.text.trim() === "/new") {
 			this.assertSubmissionIdle();
-			await this.newThread();
+			await this.lifecycle.newThread();
 			this.emit({
 				type: "prompt/accepted",
 				requestId: message.requestId,
@@ -346,7 +580,7 @@ export class CodexSessionController extends CodexSubmission {
 			});
 			return;
 		}
-		const mode = await this.submitPrompt(
+		const mode = await this.submission.submitPrompt(
 			message.text,
 			message.sessionId,
 			message.sessionReferences,
@@ -364,7 +598,7 @@ export class CodexSessionController extends CodexSubmission {
 
 	/** 送信準備中の会話切り替えを禁止する。 */
 	private assertSubmissionIdle() {
-		if (this.submissionPending) {
+		if (this.submission.pending) {
 			throw new Error("Submission pending");
 		}
 	}
@@ -390,7 +624,7 @@ export class CodexSessionController extends CodexSubmission {
 		if (
 			message.type === "permission/respond" &&
 			this.state.run === "running" &&
-			this.approvals.respond(message.permissionId, message.optionId)
+			this.serverRequests.respond(message.permissionId, message.optionId)
 		) {
 			if (message.optionId === "cancel") {
 				this.cancel();

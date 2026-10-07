@@ -12,6 +12,7 @@ import type { SecretAuthBackend } from "../../credentials/SecretAuthBackend";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import {
 	privateFeatureValue,
+	privateFeatureResult,
 	abortableFeatureApproval,
 } from "./PiFeatureSafety";
 
@@ -22,7 +23,7 @@ export type PiToolFeatures = {
 	allowedTools?: string[] | undefined;
 	registry?: Set<string>;
 	secrets?: () => Promise<readonly string[]>;
-	protect?: <T>(value: T) => T;
+	protect?: (value: string) => string;
 	mcpBackend?: () => Promise<SecretAuthBackend>;
 };
 
@@ -160,7 +161,7 @@ function guardFeatureTool(
 					combined,
 					secrets,
 				);
-				return privateFeatureValue(
+				return privateFeatureResult(
 					await approved.execute(
 						id,
 						params,
@@ -168,7 +169,7 @@ function guardFeatureTool(
 						update
 							? (result) =>
 									update(
-										privateFeatureValue(
+										privateFeatureResult(
 											result,
 											secrets,
 											features.protect,
@@ -222,17 +223,21 @@ function guardFeatureContext(
 			) {
 				throw new Error("認証値を含む引数はコード実行から渡せません。");
 			}
-			return privateFeatureValue(
-				await context.executeTool(name, args, {
-					...options,
-					signal: AbortSignal.any([
-						combined,
-						...(options?.signal ? [options.signal] : []),
-					]),
-				}),
-				secrets,
-				features.protect,
-			);
+			const outcome = await context.executeTool(name, args, {
+				...options,
+				signal: AbortSignal.any([
+					combined,
+					...(options?.signal ? [options.signal] : []),
+				]),
+			});
+			return {
+				...outcome,
+				result: privateFeatureResult(
+					outcome.result,
+					secrets,
+					features.protect,
+				),
+			};
 		},
 	};
 }

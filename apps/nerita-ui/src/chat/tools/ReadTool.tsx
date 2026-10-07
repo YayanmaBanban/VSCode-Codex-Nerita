@@ -9,12 +9,7 @@ import { toolLabelClass } from "./toolStyles";
 export function ReadTool({ tool }: { tool: ToolSummary }) {
 	const input = isRecord(tool.rawInput) ? tool.rawInput : {};
 	const texts = (tool.content ?? []).flatMap((part) => {
-		const content = isRecord(part) ? part.content : undefined;
-		return isRecord(content) &&
-			content.type === "text" &&
-			typeof content.text === "string"
-			? [content.text]
-			: [];
+		return part.type === "content" ? [part.content.text] : [];
 	});
 	return (
 		<>

@@ -114,7 +114,17 @@ export class PiAgentViews {
 		entry.state.tools = entry.state.tools.slice(-128).map((tool) => ({
 			...tool,
 			rawInput: boundedValue(tool.rawInput),
-			content: (tool.content ?? []).slice(-16).map(boundedValue),
+			content: (tool.content ?? []).slice(-16).map((part) =>
+				part.type === "content"
+					? {
+							...part,
+							content: {
+								...part.content,
+								text: part.content.text.slice(-32768),
+							},
+						}
+					: part,
+			),
 		}));
 		if (
 			event.type === "message_end" ||

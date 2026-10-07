@@ -74,6 +74,7 @@ const initialTools: ToolSummary[] = [
 	},
 	{
 		id: "execute",
+		commandOutput: "Running tests…\n✓ configuration\n✓ session",
 		runId: "run-test",
 		title: "pnpm.cmd test",
 		kind: "execute",

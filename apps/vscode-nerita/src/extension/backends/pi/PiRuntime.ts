@@ -42,7 +42,8 @@ import {
 	createPiWorkflowRunner,
 } from "./workflows/PiWorkflowTool";
 import { bindPiRuntimeLifetime } from "./PiRuntimeLifetime";
-import { PiAccount, type PiAuthService } from "./PiAccount";
+import { PiAccount } from "./PiAccount";
+import type { PiAuthService } from "./PiAccountAuthFlow";
 import { getPiDeviceId } from "./PiDeviceId";
 import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
@@ -88,7 +89,7 @@ export type PiSession = Pick<
 	| "dispose"
 > & {
 	/** SDK 外から届く例外も、会話と同じ伏字辞書で公開前に保護する。 */
-	protect?: <T>(value: T) => T;
+	protect?: (value: string) => string;
 	commandPermissions?: CommandPermissions;
 	workflow?: (
 		request: WorkflowExecution,
@@ -344,8 +345,8 @@ function runtimeSessionFacade(
 	const { subagents, runtimeTools, options, resourceLoader } = resources;
 
 	return Object.assign(session, {
-		protect: <T>(value: T) =>
-			options.credentials!.vault.stores.redactor.value(value),
+		protect: (value: string) =>
+			options.credentials!.vault.stores.redactor.text(value),
 		generateHandoff: (request: Parameters<HandoffGenerator>[0]) =>
 			generatePiHandoff(
 				modelRuntime,
@@ -657,8 +658,8 @@ async function prepareRuntimeResources(
 			toolSearch: options.toolSearch,
 			allowedTools: options.allowedTools,
 			secrets: () => piFeatureSecrets(),
-			protect: <T>(value: T) =>
-				options.credentials!.vault.stores.redactor.value(value),
+			protect: (value: string) =>
+				options.credentials!.vault.stores.redactor.text(value),
 		},
 	);
 	return {
@@ -856,8 +857,8 @@ async function createConfiguredPiSession(
 		codemode: options.codemode,
 		toolSearch: options.toolSearch,
 		secrets: () => piFeatureSecrets(),
-		protect: <T>(value: T) =>
-			options.credentials!.vault.stores.redactor.value(value),
+		protect: (value: string) =>
+			options.credentials!.vault.stores.redactor.text(value),
 	};
 	const exposedTools = customTools.map((tool) =>
 		protectPiFeatureTool(piToolExposure(tool, features), features),

@@ -92,16 +92,15 @@ export class SecretRedactor {
 			}
 		}
 	}
-	value<T>(value: T): T {
+	/** JSON 化で型や構造が変わるため、具体型への復帰は利用側の検証に委ねる。 */
+	value(value: unknown): unknown {
 		const json: unknown = JSON.stringify(value);
 		if (typeof json !== "string") {
 			return value;
 		}
-		// 自身でシリアライズした値の文字列だけを置換し、呼び出し元の表示契約を維持する。
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		return JSON.parse(json, (_key, field: unknown) =>
 			typeof field === "string" ? this.text(field) : field,
-		) as T;
+		);
 	}
 	dispose() {
 		this.values.clear();

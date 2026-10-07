@@ -9,6 +9,9 @@ import { isSubAgent } from "./subAgents";
 import { isUiContributions } from "./uiContributionValidation";
 import { isPiProviderControls } from "./piProviderControls";
 import { isPermissionPresentation } from "./permission";
+import { validReferences } from "./composerReferences";
+import type { ChatMessage, ToolSummary } from "./chatState";
+import { isToolContent } from "./toolContent";
 
 /** 差分通知に未知のフィールドが混入した場合も拒否する。 */
 export function validStateField(key: string, value: unknown): boolean {
@@ -91,12 +94,9 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 					isId(item.id) &&
 					typeof item.role === "string" &&
 					["user", "assistant"].includes(item.role) &&
-					(item.streaming === undefined ||
-						typeof item.streaming === "boolean") &&
-					(item.mcp === undefined || isMcpMessageContent(item.mcp)) &&
-					(item.attachments === undefined ||
-						validComposerField("attachments", item.attachments)) &&
-					typeof item.text === "string",
+					typeof item.text === "string" &&
+					validReferences(item.text, item.references) &&
+					validOptionalFields(item, messageOptionalValidators),
 			),
 		tools: (value) =>
 			everyRecord(
@@ -104,11 +104,7 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				(item) =>
 					isId(item.id) &&
 					typeof item.title === "string" &&
-					validToolHistory(item) &&
-					(item.kind === undefined ||
-						typeof item.kind === "string") &&
-					(item.content === undefined ||
-						Array.isArray(item.content)) &&
+					validOptionalFields(item, toolOptionalValidators) &&
 					[
 						"pending",
 						"in_progress",
@@ -126,7 +122,6 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				value,
 				(item) =>
 					isId(item.id) &&
-					isPermissionPresentation(item) &&
 					everyRecord(
 						item.options,
 						(o) =>
@@ -134,7 +129,8 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 							typeof o.name === "string" &&
 							typeof o.kind === "string" &&
 							["allow", "deny", "abort"].includes(o.kind),
-					),
+					) &&
+					isPermissionPresentation(item),
 			),
 		authMethods: (value) =>
 			everyRecord(
@@ -144,6 +140,52 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 		attachmentsSupported: (value) => typeof value === "boolean",
 	} satisfies Record<string, (value: unknown) => boolean>),
 );
+
+/** 宣言された任意フィールドを網羅し、追加時の検証漏れを型チェックで検出する。 */
+type OptionalValidators<T> = {
+	[K in keyof T as Record<never, never> extends Pick<T, K> ? K : never]-?: (
+		value: unknown,
+	) => boolean;
+};
+const messageOptionalValidators = {
+	order: (value) => typeof value === "number" && Number.isFinite(value),
+	references: () => true, // 本文との位置関係も含めて上で検証する。
+	attachments: (value) => validComposerField("attachments", value),
+	streaming: (value) => typeof value === "boolean",
+	mcp: isMcpMessageContent,
+} satisfies OptionalValidators<ChatMessage>;
+const toolOptionalValidators = {
+	output: validToolOutputPreview,
+	exitCode: (value) =>
+		typeof value === "number" && Number.isSafeInteger(value),
+	cwd: (value) => typeof value === "string",
+	backgrounded: (value) => typeof value === "boolean",
+	order: (value) => typeof value === "number" && Number.isFinite(value),
+	runId: isId,
+	parentToolCallId: isId,
+	summaryOnly: (value) => typeof value === "boolean",
+	omittedArgumentBytes: validOmittedArgumentBytes,
+	nestedCallsIncomplete: (value) => typeof value === "boolean",
+	kind: (value) => typeof value === "string",
+	content: (value) => Array.isArray(value) && value.every(isToolContent),
+	commandOutput: (value) => typeof value === "string",
+	searchLabel: (value) => typeof value === "string",
+	resultDisplay: validResultDisplay,
+	// 診断用の生データは任意の構造を保持する。
+	rawInput: () => true,
+	rawOutput: () => true,
+	rawItem: () => true,
+} satisfies OptionalValidators<ToolSummary>;
+
+/** 未指定は許可し、既知の任意フィールドだけを検証する。未知キーと元参照は維持する。 */
+function validOptionalFields(
+	item: Record<string, unknown>,
+	validators: Record<string, (value: unknown) => boolean>,
+): boolean {
+	return Object.entries(validators).every(
+		([key, validate]) => item[key] === undefined || validate(item[key]),
+	);
+}
 
 /** 表示用メタデータには、生の結果や任意フィールドを許可しない。 */
 function validResultDisplay(value: unknown): boolean {
@@ -156,28 +198,6 @@ function validResultDisplay(value: unknown): boolean {
 			Object.keys(value).every(
 				(key) => key === "source" || key === "omitted",
 			))
-	);
-}
-
-/** 子の親 ID と、保存された要約の任意情報を検証する。 */
-function validToolHistory(item: Record<string, unknown>) {
-	return (
-		validToolOutput(item) &&
-		validResultDisplay(item.resultDisplay) &&
-		(item.parentToolCallId === undefined || isId(item.parentToolCallId)) &&
-		(item.summaryOnly === undefined ||
-			typeof item.summaryOnly === "boolean") &&
-		(item.nestedCallsIncomplete === undefined ||
-			typeof item.nestedCallsIncomplete === "boolean") &&
-		validOmittedArgumentBytes(item.omittedArgumentBytes)
-	);
-}
-
-/** 出力本文とは独立した終了コードも共有境界で検証する。 */
-function validToolOutput(item: Record<string, unknown>) {
-	return (
-		validToolOutputPreview(item.output) &&
-		(item.exitCode === undefined || Number.isSafeInteger(item.exitCode))
 	);
 }
 

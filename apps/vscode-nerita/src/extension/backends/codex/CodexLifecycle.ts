@@ -1,11 +1,10 @@
 // App Server の接続・切断と新規スレッドの作成を管理し、会話状態へ反映する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-import { initialState } from "@nerita/shared/chatState";
+import { initialState, type ChatState } from "@nerita/shared/chatState";
 import {
 	codexAuthMethods,
 	codexConnectionText,
 } from "@nerita/shared/codexConnection";
-import { SessionState } from "../../session/sessionState";
 import { WorkspaceError } from "../../workspaceError";
 import type { CodexConnection, CodexFactory } from "./runtime/connection";
 import type {
@@ -15,43 +14,55 @@ import type {
 import { AuthFlow, type AuthService } from "./interaction/AuthFlow";
 import type { StartedThread } from "./protocol/turn";
 
+/** 会話状態の管理と通知の振り分けはコントローラーへ委ね、会話の確定後に初期化の完了を待つ。 */
+type LifecycleSession = {
+	snapshot: () => Readonly<ChatState>;
+	busy: () => boolean;
+	patch: (change: Partial<ChatState>) => void;
+	notification: (message: AppServerNotification) => void;
+	request: (
+		message: AppServerRequest,
+		signal: AbortSignal,
+	) => Promise<unknown>;
+	resetRun: () => void;
+	initializedThread: (thread: StartedThread) => Promise<void>;
+};
+
 /** 接続世代で古い通知を排除し、起動中のプロセスも終了まで追跡する。 */
-export abstract class CodexLifecycle extends SessionState {
-	protected client: CodexConnection | undefined;
-	protected epoch = 0;
+export class CodexLifecycle {
+	private client: CodexConnection | undefined;
+	private epoch = 0;
 	private abort: AbortController | undefined;
 	private closing = new Set<Promise<unknown>>();
 	private readonly auth = new AuthFlow();
-	/** 実接続とテスト用接続を同じ契約で受け取る。 */
+	/** 本番とテストの接続を同じ契約で受け取り、このクラスで接続を管理する。 */
 	constructor(
-		protected readonly factory: CodexFactory,
+		private readonly session: LifecycleSession,
+		private readonly factory: CodexFactory,
 		private readonly authService?: AuthService,
-	) {
-		super();
+	) {}
+
+	/** 接続の更新・終了をコントローラー側で重複して管理しない。 */
+	get connection(): CodexConnection | undefined {
+		return this.client;
 	}
-	/** 実行管理に通知を渡す。 */
-	protected abstract notification(message: AppServerNotification): void;
-	/** 実行範囲が一致する承認だけを UI へ渡す。 */
-	protected abstract request(
-		message: AppServerRequest,
-		signal: AbortSignal,
-	): Promise<unknown>;
-	/** 実行の待機と承認を解除する。 */
-	protected abstract resetRun(): void;
-	/** 新しいスレッドに機能別の初期状態を準備する。 */
-	protected async initializedThread(_thread: StartedThread): Promise<void> {}
+
+	/** 機能別の非同期処理も同じ接続世代で照合する。 */
+	get generation(): number {
+		return this.epoch;
+	}
 	/** ログイン完了後も同じ接続で認証を確認する。 */
-	protected async authenticate(method: string): Promise<void> {
+	async authenticate(method: string): Promise<void> {
 		if (
 			!this.client ||
 			!this.authService ||
 			!this.abort ||
-			this.state.connection !== "auth-required"
+			this.session.snapshot().connection !== "auth-required"
 		) {
 			throw new Error("Login unavailable");
 		}
 		const epoch = this.epoch;
-		this.patch({ connection: "authenticating", error: null });
+		this.session.patch({ connection: "authenticating", error: null });
 		try {
 			await this.auth.start(
 				this.client,
@@ -78,7 +89,7 @@ export abstract class CodexLifecycle extends SessionState {
 	/** 現在の接続で発生したログイン失敗だけを表示する。 */
 	private reportAuthenticationFailure(epoch: number) {
 		if (epoch === this.epoch) {
-			this.patch({
+			this.session.patch({
 				connection: "auth-required",
 				error: codexConnectionText.authenticationFailed,
 			});
@@ -86,18 +97,18 @@ export abstract class CodexLifecycle extends SessionState {
 	}
 
 	/** 解除の成功後に旧アカウントの表示と接続を破棄し、認証状態を読み直す。 */
-	protected async logout(): Promise<void> {
+	async logout(): Promise<void> {
 		const client = this.client;
 		if (
 			!client ||
-			this.state.connection !== "ready" ||
-			this.busy() ||
-			this.state.sessionPending
+			this.session.snapshot().connection !== "ready" ||
+			this.session.busy() ||
+			this.session.snapshot().sessionPending
 		) {
 			throw new Error("Logout unavailable");
 		}
 		const epoch = this.epoch;
-		this.patch({ sessionPending: true, error: null });
+		this.session.patch({ sessionPending: true, error: null });
 		try {
 			await client.logout();
 			if (epoch !== this.epoch) {
@@ -105,11 +116,11 @@ export abstract class CodexLifecycle extends SessionState {
 			}
 			this.disconnect();
 			const { revision: _revision, ...empty } = initialState();
-			this.patch(empty);
+			this.session.patch(empty);
 			await this.connect();
 		} finally {
 			if (epoch === this.epoch) {
-				this.patch({ sessionPending: false });
+				this.session.patch({ sessionPending: false });
 			}
 		}
 	}
@@ -119,10 +130,10 @@ export abstract class CodexLifecycle extends SessionState {
 		this.disconnect();
 		const epoch = this.epoch;
 		const { revision: _revision, ...empty } = initialState();
-		this.patch({
+		this.session.patch({
 			...empty,
-			messages: this.state.messages,
-			tools: this.state.tools,
+			messages: this.session.snapshot().messages,
+			tools: this.session.snapshot().tools,
 			connection: "connecting",
 			attachmentsSupported: false,
 		});
@@ -141,12 +152,12 @@ export abstract class CodexLifecycle extends SessionState {
 							epoch === this.epoch &&
 							!this.auth.notification(message)
 						) {
-							this.notification(message);
+							this.session.notification(message);
 						}
 					},
 					request: (message, signal) =>
 						epoch === this.epoch
-							? this.request(message, signal)
+							? this.session.request(message, signal)
 							: Promise.resolve({ decision: "cancel" }),
 					disconnected: () => {
 						if (epoch === this.epoch) {
@@ -169,13 +180,13 @@ export abstract class CodexLifecycle extends SessionState {
 			}
 
 			this.client = client;
-			this.patch({ cwd });
+			this.session.patch({ cwd });
 			const account = await client.readAccount();
 			if (epoch !== this.epoch) {
 				return;
 			}
 			if (account.requiresOpenaiAuth && !account.authenticated) {
-				this.patch({
+				this.session.patch({
 					connection: "auth-required",
 					authMethods: this.authService ? codexAuthMethods() : [],
 				});
@@ -192,26 +203,27 @@ export abstract class CodexLifecycle extends SessionState {
 	}
 
 	/** 成功時だけ表示を切り替え、同じプロセスに新しい thread を作る。 */
-	protected async newThread(): Promise<void> {
+	async newThread(): Promise<void> {
+		const state = this.session.snapshot();
 		const client = this.client;
 		if (
 			!client ||
-			!isNonEmptyString(this.state.cwd) ||
-			this.busy() ||
-			this.state.sessionPending
+			!isNonEmptyString(state.cwd) ||
+			this.session.busy() ||
+			this.session.snapshot().sessionPending
 		) {
 			throw new Error("Busy");
 		}
 		const epoch = this.epoch;
-		this.patch({ sessionPending: true, error: null });
+		this.session.patch({ sessionPending: true, error: null });
 		try {
-			const result = await client.startThread({ cwd: this.state.cwd });
+			const result = await client.startThread({ cwd: state.cwd });
 			if (epoch !== this.epoch) {
 				return;
 			}
 
-			this.resetRun();
-			this.patch({
+			this.session.resetRun();
+			this.session.patch({
 				connection: "ready",
 				sessionId: result.thread.id,
 				runId: null,
@@ -233,24 +245,24 @@ export abstract class CodexLifecycle extends SessionState {
 					},
 				],
 			});
-			await this.initializedThread(result);
+			await this.session.initializedThread(result);
 		} catch (error) {
 			if (epoch === this.epoch) {
-				this.patch({
+				this.session.patch({
 					error: "新規会話を開始できませんでした。再試行してください。",
 				});
 			}
 			throw error;
 		} finally {
 			if (epoch === this.epoch) {
-				this.patch({ sessionPending: false });
+				this.session.patch({ sessionPending: false });
 			}
 		}
 	}
 	/** 接続と実行の世代を無効化し、全プロセスの終了を追跡する。 */
 	private disconnect(): void {
 		this.epoch++;
-		this.resetRun();
+		this.session.resetRun();
 		this.abort?.abort();
 		this.abort = undefined;
 		if (this.client) {
@@ -265,16 +277,14 @@ export abstract class CodexLifecycle extends SessionState {
 		void settled.then(() => this.closing.delete(settled));
 	}
 	/** 実行中の切断は失敗として表示し、再接続できる状態にする。 */
-	protected failConnection(
-		message: string = codexConnectionText.disconnected,
-	): void {
-		const failed = this.busy();
+	failConnection(message: string = codexConnectionText.disconnected): void {
+		const failed = this.session.busy();
 		this.disconnect();
-		this.patch({
+		this.session.patch({
 			connection: "error",
 			sessionsLoading: false,
 			sessionsNextCursor: null,
-			run: failed ? "failed" : this.state.run,
+			run: failed ? "failed" : this.session.snapshot().run,
 			sessionPending: false,
 			permissions: [],
 			error: message,
@@ -282,9 +292,9 @@ export abstract class CodexLifecycle extends SessionState {
 	}
 	/** ワークスペース変更時は旧会話への操作を無効にする。 */
 	invalidate(): void {
-		const cancelled = this.busy();
+		const cancelled = this.session.busy();
 		this.disconnect();
-		this.patch({
+		this.session.patch({
 			connection: "disconnected",
 			sessionsLoading: false,
 			sessionsNextCursor: null,
@@ -292,14 +302,13 @@ export abstract class CodexLifecycle extends SessionState {
 			cwd: null,
 			personality: null,
 			sessionPending: false,
-			run: cancelled ? "cancelled" : this.state.run,
+			run: cancelled ? "cancelled" : this.session.snapshot().run,
 			permissions: [],
 		});
 	}
 	/** 初期化待ちも含め、拡張機能の終了前に接続を回収する。 */
 	async dispose(): Promise<void> {
 		this.disconnect();
-		this.clearListeners();
 		await Promise.allSettled(this.closing);
 	}
 }

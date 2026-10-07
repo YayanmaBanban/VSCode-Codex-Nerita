@@ -3,7 +3,7 @@ import { errorText } from "@nerita/shared/errorText";
 import * as vscode from "vscode";
 import type { BackendSession } from "../../../session/chatSession";
 import { parseWorkflow } from "@nerita/shared/workflows/definition";
-import { compileWorkflow } from "@nerita/shared/workflows/compiler";
+import { compileWorkflow } from "./compiler";
 import {
 	workflowRequestSchema,
 	type WorkflowRequest,

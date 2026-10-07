@@ -18,6 +18,10 @@ import type { TestContext } from "node:test";
 import { CodexClient } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
 import { CodexSessionController } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";
 import type { AuthService } from "../../apps/vscode-nerita/src/extension/backends/codex/interaction/AuthFlow";
+import type { AttachmentService } from "../../apps/vscode-nerita/src/extension/session/attachmentService";
+import type { CodexFactory } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/connection";
+import type { InteractionService } from "../../apps/vscode-nerita/src/extension/backends/codex/interaction/interactionService";
+import { parseRpcMessage } from "../../apps/vscode-nerita/src/extension/backends/codex/protocol/rpcMessage";
 import { codexSelectionStore } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/modelSelection";
 
 /** 外部境界で受け取った JSON-RPC 要求。 */
@@ -26,6 +30,12 @@ export type Rpc = {
 	method: string;
 	params?: Record<string, unknown>;
 };
+
+/** サーバー発の要求へ、本番のクライアントが JSONL で返した応答。 */
+type ClientResponse = Extract<
+	ReturnType<typeof parseRpcMessage>,
+	{ kind: "response" }
+>;
 
 /** テスト側が指定した応答を、子プロセスの標準出力へ中継する。 */
 const relay = `
@@ -49,6 +59,7 @@ export async function codexFixture(t: TestContext) {
 	const cwd = join(root, "workspace");
 	await mkdir(cwd);
 	const requests: Rpc[] = [];
+	const clientResponses: ClientResponse[] = [];
 	const responses = new Map<string, (message: Rpc) => unknown>();
 	const streams: ServerResponse[] = [];
 	const unexpected: string[] = [];
@@ -61,6 +72,7 @@ export async function codexFixture(t: TestContext) {
 			state,
 			unexpected,
 			responses,
+			clientResponses,
 		),
 	);
 	server.listen(0, "127.0.0.1");
@@ -95,6 +107,7 @@ export async function codexFixture(t: TestContext) {
 	);
 	const selectionPath = join(root, "selection.json");
 	const controllers: CodexSessionController[] = [];
+	const factory = createCodexFactory(cwd, root);
 	t.after(async () => {
 		for (const controller of controllers) {
 			await controller.dispose();
@@ -103,50 +116,71 @@ export async function codexFixture(t: TestContext) {
 	return {
 		state,
 		requests,
+		clientResponses,
 		responses,
 		cwd,
 		extensionPath: root,
+		factory,
 		disconnect: () => {
 			streams.at(-1)!.destroy();
 		},
-		notify: (method: string, params: unknown) => {
-			streams.at(-1)!.write(`${JSON.stringify({ method, params })}\n`);
-		},
+		...createCodexServerMessages(streams),
 		controller: createCodexControllerFactory(
-			cwd,
-			root,
+			factory,
 			selectionPath,
 			controllers,
 		),
 	};
 }
 
-/** 本番のクライアントを使うコントローラーを生成し、テスト終了時に破棄する対象として登録する。 */
+/** 現在の接続へ通知とサーバー要求を送信し、再接続しても要求 ID を重複させない。 */
+function createCodexServerMessages(streams: ServerResponse[]) {
+	let requestId = 0;
+	return {
+		notify: (method: string, params: unknown) => {
+			streams.at(-1)!.write(`${JSON.stringify({ method, params })}\n`);
+		},
+		serverRequest: (method: string, params: unknown) => {
+			const id = ++requestId;
+			streams
+				.at(-1)!
+				.write(`${JSON.stringify({ id, method, params })}\n`);
+			return id;
+		},
+	};
+}
+
+/** 起動・取り消しの時点を制御するときも、接続と JSONL 通信は本番の実装を使う。 */
+function createCodexFactory(cwd: string, root: string): CodexFactory {
+	return async (callbacks, signal) => ({
+		cwd,
+		client: await CodexClient.connect({
+			extensionPath: root,
+			cwd,
+			clientInfo: { title: null, name: "fixture", version: "1" },
+			callbacks,
+			signal,
+		}),
+	});
+}
+
+/** 接続生成を差し替えた場合も、一時領域の設定保存と終了時の回収を共用する。 */
 function createCodexControllerFactory(
-	cwd: string,
-	root: string,
+	defaultFactory: CodexFactory,
 	selectionPath: string,
 	controllers: CodexSessionController[],
 ) {
-	return (auth?: AuthService) => {
+	return (
+		auth?: AuthService,
+		files?: AttachmentService,
+		interactions?: InteractionService,
+		factory: CodexFactory = defaultFactory,
+	) => {
 		const controller = new CodexSessionController(
-			async (callbacks, signal) => ({
-				cwd,
-				client: await CodexClient.connect({
-					extensionPath: root,
-					cwd,
-					clientInfo: {
-						title: null,
-						name: "fixture",
-						version: "1",
-					},
-					callbacks,
-					signal,
-				}),
-			}),
-			undefined,
+			factory,
+			files,
 			auth,
-			undefined,
+			interactions,
 			codexSelectionStore({
 				read: async () => {
 					try {
@@ -184,6 +218,7 @@ function createCodexRelayHandler(
 	},
 	unexpected: string[],
 	responses: Map<string, (message: Rpc) => unknown>,
+	clientResponses: ClientResponse[],
 ): RequestListener<typeof IncomingMessage, typeof ServerResponse> | undefined {
 	return (request, response) => {
 		if (request.url === "/events") {
@@ -198,6 +233,12 @@ function createCodexRelayHandler(
 			body += chunk;
 		});
 		request.on("end", () => {
+			const parsed = parseRpcMessage(z.unknown().parse(JSON.parse(body)));
+			if (parsed.kind === "response") {
+				clientResponses.push(parsed);
+				response.end();
+				return;
+			}
 			const message = z
 				.object({
 					method: z.string(),
@@ -209,7 +250,11 @@ function createCodexRelayHandler(
 					...(id === undefined ? {} : { id }),
 					...(params === undefined ? {} : { params }),
 				}))
-				.parse(JSON.parse(body));
+				.parse(
+					parsed.kind === "request"
+						? parsed.request
+						: parsed.notification,
+				);
 			requests.push(message);
 			if (message.id === undefined) {
 				response.end();
@@ -220,20 +265,64 @@ function createCodexRelayHandler(
 				const result = custom
 					? custom(message)
 					: reply(message, cwd, state);
-				response.end(`${JSON.stringify({ id: message.id, result })}\n`);
+				void sendCodexResponse(
+					response,
+					message,
+					result,
+					unexpected,
+					state.failSteer && message.method === "turn/steer",
+				);
 			} catch {
-				if (!(state.failSteer && message.method === "turn/steer")) {
-					unexpected.push(message.method);
-				}
-				response.end(
-					`${JSON.stringify({
-						id: message.id,
-						error: { code: -32000, message: "fixture failure" },
-					})}\n`,
+				sendCodexFailure(
+					response,
+					message,
+					unexpected,
+					state.failSteer && message.method === "turn/steer",
 				);
 			}
 		});
 	};
+}
+
+/** 遅延応答も本番の JSONL 経路へ返し、非同期の失敗を準備失敗として記録する。 */
+async function sendCodexResponse(
+	response: ServerResponse,
+	message: Rpc,
+	answer: unknown,
+	unexpected: string[],
+	expectedFailure: boolean,
+) {
+	try {
+		const result = await answer;
+		response.end(`${JSON.stringify({ id: message.id, result })}\n`);
+	} catch {
+		sendCodexFailure(response, message, unexpected, expectedFailure);
+	}
+}
+
+/** 指定した失敗以外を後片付け時の失敗にし、RPC にも失敗応答を返す。 */
+function sendCodexFailure(
+	response: ServerResponse,
+	message: Rpc,
+	unexpected: string[],
+	expectedFailure: boolean,
+) {
+	if (!expectedFailure) {
+		unexpected.push(message.method);
+	}
+	response.end(
+		`${JSON.stringify({ id: message.id, error: { code: -32000, message: "fixture failure" } })}\n`,
+	);
+}
+
+/** 外部 RPC 応答の返却時点をシナリオ側で指定し、通知と応答の順を検証する。 */
+export function codexResponseGate() {
+	let release: ((value: unknown) => void) | undefined;
+	const response = new Promise<unknown>((resolve) => {
+		release = resolve;
+	});
+	assert.ok(release);
+	return { response, release };
 }
 
 /** 応答は公開プロトコルの最小データに限定し、画面状態を生成しない。 */

@@ -2,7 +2,7 @@
 import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
 import type { ToolSummary } from "@nerita/shared/chatState";
-import { isRecord } from "@nerita/shared/validation";
+import type { ToolContent } from "@nerita/shared/toolContent";
 import { FileDiff } from "./FileDiff";
 import { UnifiedDiff } from "./UnifiedDiff";
 import { toolLabelClass, toolOutputClass } from "./toolStyles";
@@ -51,17 +51,10 @@ function Content({
 	send,
 	cwd,
 }: {
-	value: unknown;
+	value: ToolContent;
 	scrollable: boolean;
 } & Pick<ActivityToolProps, "send" | "cwd">) {
-	if (!isRecord(value)) {
-		return <Value value={value} scrollable={scrollable} />;
-	}
-	if (
-		value.type === "unifiedDiff" &&
-		typeof value.path === "string" &&
-		typeof value.diff === "string"
-	) {
+	if (value.type === "unifiedDiff") {
 		return (
 			<UnifiedDiff
 				path={value.path}
@@ -71,7 +64,7 @@ function Content({
 			/>
 		);
 	}
-	if (isFileDiffContent(value)) {
+	if (value.type === "diff") {
 		return (
 			<FileDiff
 				path={value.path}
@@ -82,32 +75,10 @@ function Content({
 			/>
 		);
 	}
-	if (
-		value.type === "content" &&
-		isRecord(value.content) &&
-		value.content.type === "text" &&
-		typeof value.content.text === "string"
-	) {
+	if (value.type === "content") {
 		return <Value value={value.content.text} scrollable={scrollable} />;
 	}
 	return <Value value={value} scrollable={scrollable} />;
-}
-
-/** ファイル差分の本文と対象パスを検証する。 */
-function isFileDiffContent(value: Record<string, unknown>): value is Record<
-	string,
-	unknown
-> & {
-	path: string;
-	oldText: string | null;
-	newText: string;
-} {
-	return (
-		value.type === "diff" &&
-		typeof value.path === "string" &&
-		(value.oldText === null || typeof value.oldText === "string") &&
-		typeof value.newText === "string"
-	);
 }
 
 /** Host が作った要約には、表示元の説明を添える。 */
@@ -176,9 +147,8 @@ export function EditingFiles({ tool, send, cwd }: ActivityToolProps) {
 				paths:
 					tool.content?.some(
 						(value) =>
-							isRecord(value) &&
-							(value.type === "diff" ||
-								value.type === "unifiedDiff"),
+							value.type === "diff" ||
+							value.type === "unifiedDiff",
 					) === true
 						? []
 						: tool.paths,
@@ -189,9 +159,7 @@ export function EditingFiles({ tool, send, cwd }: ActivityToolProps) {
 
 /** 整形済みの出力があれば単独で表示し、それ以外では入力と停止用の端末参照を隠す。 */
 export function ExecuteTool({ tool }: { tool: ToolSummary }) {
-	const output = isRecord(tool.rawOutput)
-		? tool.rawOutput.formatted_output
-		: undefined;
+	const output = tool.commandOutput;
 	if (typeof output === "string") {
 		return <CommandOutput text={output} />;
 	}
@@ -201,7 +169,7 @@ export function ExecuteTool({ tool }: { tool: ToolSummary }) {
 				...tool,
 				rawInput: undefined,
 				content: (tool.content ?? []).filter(
-					(value) => !isRecord(value) || value.type !== "terminal",
+					(value) => value.type !== "terminal",
 				),
 			}}
 			scrollable

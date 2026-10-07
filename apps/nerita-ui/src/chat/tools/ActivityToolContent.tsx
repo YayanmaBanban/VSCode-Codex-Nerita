@@ -26,11 +26,7 @@ export function ThinkTool({ tool }: ActivityToolProps) {
 	return (
 		<>
 			{tool.content?.map((value, index) => {
-				const content =
-					isRecord(value) && isRecord(value.content)
-						? value.content
-						: value;
-				const text = contentText(content);
+				const text = value.type === "content" ? value.content.text : "";
 				return text !== "" ? (
 					<MessageText key={index} text={text} />
 				) : null;
@@ -90,11 +86,7 @@ export function ImageViewTool({ tool, send, cwd }: ActivityToolProps) {
 }
 
 export function WebSearchTool({ tool }: ActivityToolProps) {
-	const input = isRecord(tool.rawInput) ? tool.rawInput : {};
-	const action = isRecord(input.action) ? input.action : input;
-	const query =
-		typeof tool.rawInput === "string" ? tool.rawInput : input.query;
-	const label = searchLabel(query, action.url);
+	const label = tool.searchLabel ?? "";
 	if (label === "") {
 		return null;
 	}
@@ -114,17 +106,6 @@ export function WebSearchTool({ tool }: ActivityToolProps) {
 	);
 }
 
-/** 文字列と構造化されたテキストから表示本文だけを取り出す。 */
-function contentText(content: unknown) {
-	if (typeof content === "string") {
-		return content;
-	}
-	if (isRecord(content) && typeof content.text === "string") {
-		return content.text;
-	}
-	return "";
-}
-
 /** UNC・絶対パス・ドライブパスに対応する URI の区切りを返す。 */
 function fileUriSlashes(normalized: string) {
 	if (normalized.startsWith("//")) {
@@ -134,15 +115,4 @@ function fileUriSlashes(normalized: string) {
 		return "//";
 	}
 	return "///";
-}
-
-/** 空でない検索語を優先し、なければ検索先 URL を表示する。 */
-function searchLabel(query: unknown, url: unknown) {
-	if (typeof query === "string" && query.trim() !== "") {
-		return query;
-	}
-	if (typeof url === "string") {
-		return url;
-	}
-	return "";
 }

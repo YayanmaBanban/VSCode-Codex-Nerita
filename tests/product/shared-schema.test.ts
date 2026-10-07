@@ -9,6 +9,7 @@ import { errorText } from "@nerita/shared/errorText";
 import { validStateField } from "@nerita/shared/stateFieldValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { isAsyncTask } from "@nerita/shared/asyncTask";
+import { initialState } from "@nerita/shared/chatState";
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
@@ -21,6 +22,7 @@ void test("条件式と代替値の選択は空文字・未設定・ゼロ・NaN
 		assert.equal(isNonEmptyString(value), false);
 		assert.equal(nonEmptyString(value) ?? "fallback", "fallback");
 	}
+
 	for (const value of [" ", "0", "false", "名前"]) {
 		assert.equal(isNonEmptyString(value), true);
 		assert.equal(nonEmptyString(value) ?? "fallback", value);
@@ -216,5 +218,119 @@ void test("認証状態は両方の保存方式を受け入れ、壊れた入れ
 		{ ...value, feedback: { provider: null } },
 	]) {
 		assert.equal(isPiAuthState(invalid), false, JSON.stringify(invalid));
+	}
+});
+
+void test("Host の任意フィールドはスナップショット・差分・ツール更新で検証し、元参照を維持する", () => {
+	const message = {
+		id: "message",
+		role: "user",
+		text: "hello",
+		references: [],
+		order: 1,
+		extra: { keep: true },
+	};
+	const tool = {
+		id: "tool",
+		title: "tool",
+		status: "completed",
+		paths: [],
+		cwd: "workspace",
+		backgrounded: false,
+		order: 2,
+		runId: "run",
+		content: [
+			{ type: "content", content: { type: "text", text: "result" } },
+		],
+	};
+	for (const patch of [{ messages: [message] }, { tools: [tool] }]) {
+		const notification = { type: "state/patch", revision: 1, patch };
+		assert.ok(isHostMessage(notification));
+		assert.equal(notification.patch, patch);
+	}
+	assert.ok(
+		isHostMessage({
+			type: "state/snapshot",
+			state: { ...initialState(), messages: [message], tools: [tool] },
+		}),
+	);
+	for (const invalid of [
+		{ references: null },
+		{ references: [{}] },
+		{ order: "wrong" },
+		{ order: NaN },
+	]) {
+		const messages = [{ ...message, ...invalid }];
+		assert.equal(
+			isHostMessage({
+				type: "state/patch",
+				revision: 1,
+				patch: { messages },
+			}),
+			false,
+			JSON.stringify(invalid),
+		);
+		assert.equal(
+			isHostMessage({
+				type: "state/snapshot",
+				state: { ...initialState(), messages },
+			}),
+			false,
+			JSON.stringify(invalid),
+		);
+	}
+});
+
+void test("ツールの任意フィールドはスナップショット・差分・ツール更新で不正な値を拒否する", () => {
+	const tool = {
+		id: "tool",
+		title: "tool",
+		status: "completed",
+		paths: [],
+		cwd: "workspace",
+		backgrounded: false,
+		order: 2,
+		runId: "run",
+		content: [
+			{ type: "content", content: { type: "text", text: "result" } },
+		],
+	};
+	for (const invalid of [
+		{ cwd: 42 },
+		{ backgrounded: "wrong" },
+		{ runId: {} },
+		{ order: "wrong" },
+		{ content: [{ type: "content", content: { type: "text", text: 42 } }] },
+		{ searchLabel: null },
+		{ commandOutput: [] },
+	]) {
+		const tools = [{ ...tool, ...invalid }];
+		assert.equal(
+			isHostMessage({
+				type: "state/patch",
+				revision: 1,
+				patch: { tools },
+			}),
+			false,
+			JSON.stringify(invalid),
+		);
+		assert.equal(
+			isHostMessage({
+				type: "state/patch",
+				revision: 1,
+				patch: {},
+				toolUpdates: tools,
+			}),
+			false,
+			JSON.stringify(invalid),
+		);
+		assert.equal(
+			isHostMessage({
+				type: "state/snapshot",
+				state: { ...initialState(), tools },
+			}),
+			false,
+			JSON.stringify(invalid),
+		);
 	}
 });

@@ -152,6 +152,7 @@ function isActivityIdentity(item: Record<string, unknown>): item is Record<
 	agentThreadId: string;
 	agentPath: string;
 	id: string;
+	kind: "started" | "interacted" | "interrupted" | "completed";
 } {
 	return (
 		typeof item.agentThreadId === "string" &&

@@ -1,4 +1,5 @@
 // MCP の URL 誘導と基本フォームを検証し、承諾した入力だけを返す。
+import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { isRecord } from "@nerita/shared/validation";
 import { text, type InteractionService } from "./interactionService";
@@ -67,7 +68,7 @@ async function elicitForm(
 /** フォーム項目の説明と必須表示を組み立てる。 */
 function fieldPrompt(
 	title: string,
-	field: Record<string, unknown>,
+	field: SupportedField,
 	key: string,
 	required: boolean,
 ) {
@@ -75,7 +76,7 @@ function fieldPrompt(
 }
 
 /** 数値の型と上下限を照合する。 */
-function invalidNumber(number: number, field: Record<string, unknown>) {
+function invalidNumber(number: number, field: SupportedField) {
 	return (
 		!Number.isFinite(number) ||
 		(field.type === "integer" && !Number.isInteger(number)) ||
@@ -85,11 +86,42 @@ function invalidNumber(number: number, field: Record<string, unknown>) {
 }
 
 /** 基本フォームとして扱えない型や制約を拒否する。 */
-function supportedField(field: unknown): field is Record<string, unknown> {
+const supportedFieldSchema = z
+	.object({
+		type: z.enum(["string", "number", "integer", "boolean"]),
+		title: z.string().optional(),
+		description: z.string().optional(),
+		minimum: z.number().optional(),
+		maximum: z.number().optional(),
+		minLength: z.number().int().nonnegative().optional(),
+		maxLength: z.number().int().nonnegative().optional(),
+		enum: z
+			.array(z.union([z.string(), z.number(), z.boolean()]))
+			.nonempty()
+			.optional(),
+	})
+	.refine(
+		(field) =>
+			(field.minimum === undefined ||
+				field.maximum === undefined ||
+				field.minimum <= field.maximum) &&
+			(field.minLength === undefined ||
+				field.maxLength === undefined ||
+				field.minLength <= field.maxLength) &&
+			(field.enum === undefined ||
+				field.enum.every((value) =>
+					field.type === "integer"
+						? typeof value === "number" && Number.isInteger(value)
+						: typeof value === field.type,
+				)),
+	);
+type SupportedField = z.infer<typeof supportedFieldSchema>;
+
+/** 未対応の制約を拒否し、対応する型と各制約の値を保証する。 */
+function supportedField(field: unknown): field is SupportedField {
 	return (
 		isRecord(field) &&
-		typeof field.type === "string" &&
-		["string", "number", "integer", "boolean"].includes(field.type) &&
+		supportedFieldSchema.safeParse(field).success &&
 		!Boolean(field.format) &&
 		!Boolean(field.oneOf) &&
 		!Boolean(field.anyOf) &&
@@ -100,7 +132,7 @@ function supportedField(field: unknown): field is Record<string, unknown> {
 
 /** 任意項目の省略を `null`、取消や不正な入力を `undefined` で区別する。 */
 async function elicitField(
-	field: Record<string, unknown>,
+	field: SupportedField,
 	required: boolean,
 	prompt: string,
 	ui: InteractionService,
@@ -145,7 +177,7 @@ function omitField(
 /** 必須・数値・文字数の制約を入力時と送信前に照合する。 */
 function validateField(
 	value: string,
-	field: Record<string, unknown>,
+	field: SupportedField,
 	required: boolean,
 ): string | undefined {
 	if (value === "") {
@@ -168,9 +200,9 @@ function validateField(
 }
 
 /** 列挙値を優先し、真偽値の入力には固定の選択肢を用意する。 */
-function fieldChoices(field: Record<string, unknown>) {
+function fieldChoices(field: SupportedField) {
 	if (Array.isArray(field.enum)) {
-		return field.enum.map(text);
+		return field.enum.map(String);
 	}
 	if (field.type === "boolean") {
 		return ["true", "false"];
@@ -179,7 +211,7 @@ function fieldChoices(field: Record<string, unknown>) {
 }
 
 /** 検証済みの入力文字列をフォームの宣言型へ変換する。 */
-function fieldValue(type: unknown, value: string) {
+function fieldValue(type: SupportedField["type"], value: string) {
 	if (type === "boolean") {
 		return value === "true";
 	}

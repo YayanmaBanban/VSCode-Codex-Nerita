@@ -1,10 +1,10 @@
 // 検証済みの依存関係を JavaScript へ変換し、文字列をコードとして解釈させない。
-import { isNonEmptyString } from "../valuePredicates";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	outputReferences,
 	validateWorkflow,
 	type WorkflowStep,
-} from "./definition";
+} from "@nerita/shared/workflows/definition";
 
 /** 各ステップは依存先の完了だけを待ち、依存関係のないステップを待たない。 */
 export function compileWorkflow(value: unknown): string {

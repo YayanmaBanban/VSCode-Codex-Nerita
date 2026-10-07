@@ -105,6 +105,7 @@ export class ToolOutputStore {
 			output: preview(entry, source),
 		};
 		delete result.rawOutput;
+		delete result.commandOutput;
 		delete result.rawItem;
 		delete result.content;
 		this.projected.add(result);

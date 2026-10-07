@@ -5,32 +5,33 @@ import {
 } from "@nerita/shared/valuePredicates";
 import { isRecord } from "@nerita/shared/validation";
 import { sameCwd } from "../../workspace";
-import { CodexRun } from "./CodexRun";
-import type { StartedThread } from "./protocol/turn";
+import type { ChatState } from "@nerita/shared/chatState";
+import type { SessionSummary } from "@nerita/shared/sessionHistory";
+import type { CodexConnection } from "./runtime/connection";
 import type { AppServerNotification } from "./protocol/rpcMessage";
 import { PendingThreads, historySummary } from "./history/PendingThreads";
 import { threadSources } from "./history/threadSources";
 import { type HistoryThread } from "./protocol/history";
 
-/** 新規会話と履歴復元で同じ一覧機能を公開する。 */
-export abstract class CodexCatalog extends CodexRun {
-	protected pendingThreads = new PendingThreads();
+/** 状態と接続の所有をセッションに残し、一覧に必要な操作だけを受け取る。 */
+type CatalogSession = {
+	snapshot: () => Readonly<ChatState>;
+	connection: () => CodexConnection | undefined;
+	epoch: () => number;
+	patch: (change: Partial<ChatState>) => void;
+	clearThread: () => void;
+};
+
+/** ページ取得と未反映の履歴を所有し、設定初期化・ターンの解除はセッションに委ねる。 */
+export class CodexCatalog {
+	private readonly pendingThreads = new PendingThreads();
 	private listVersion = 0;
 	private cursors = new Set<string>();
-	/** 復元では一覧のフィルターを保って設定だけを更新する。 */
-	protected restoreThreadOptions(thread: StartedThread): Promise<void> {
-		return super.initializedThread(thread, false);
-	}
-	/** 新規接続時から履歴機能を利用可能にする。 */
-	protected override async initializedThread(
-		thread: StartedThread,
-	): Promise<void> {
-		const epoch = this.epoch;
-		await super.initializedThread(thread);
-		if (epoch !== this.epoch) {
-			return;
-		}
-		this.patch({
+	constructor(private readonly session: CatalogSession) {}
+
+	/** 設定初期化と接続世代の照合を終えた後、新規会話の一覧を公開する。 */
+	async initialize(): Promise<void> {
+		this.session.patch({
 			sessionCapabilities: {
 				list: true,
 				load: true,
@@ -41,39 +42,51 @@ export abstract class CodexCatalog extends CodexRun {
 				unarchive: true,
 			},
 		});
-		await this.refreshSessions(false);
+		await this.refresh(false);
 	}
 	/** 一覧操作が会話操作の後に古い結果を書き戻さないようにする。 */
-	protected invalidateCatalog(): void {
+	invalidate(): void {
 		this.listVersion++;
-		this.patch({ sessionsLoading: false, sessionsNextCursor: null });
+		this.session.patch({
+			sessionsLoading: false,
+			sessionsNextCursor: null,
+		});
+	}
+	/** 一覧の応答に反映されるまで、作成済みのフォークを保持して一覧に補う。 */
+	rememberFork(epoch: number, thread: HistoryThread): void {
+		this.pendingThreads.remember(epoch, thread);
+	}
+	/** 履歴操作の成功後にだけ、一覧未反映のメタデータを更新する。 */
+	updatePendingThread(
+		epoch: number,
+		id: string,
+		change: Partial<SessionSummary> | null,
+	): void {
+		this.pendingThreads.update(epoch, id, change);
 	}
 	/** 次ページは明示操作時だけ追加し、別フォルダーの行を除外する。 */
-	protected async refreshSessions(
-		archived = this.state.sessionsArchived,
+	async refresh(
+		archived = this.session.snapshot().sessionsArchived,
 		more = false,
 	): Promise<void> {
-		const client = this.client;
-		const cwd = this.state.cwd;
-		if (
-			!client ||
-			!isNonEmptyString(cwd) ||
-			this.state.connection !== "ready"
-		) {
+		const state = this.session.snapshot();
+		const client = this.session.connection();
+		const cwd = state.cwd;
+		if (!client || !isNonEmptyString(cwd) || state.connection !== "ready") {
 			return;
 		}
 		if (this.cannotLoadMore(more, archived)) {
 			return;
 		}
-		const cursor = more ? this.state.sessionsNextCursor! : undefined;
-		const epoch = this.epoch;
+		const cursor = more ? state.sessionsNextCursor! : undefined;
+		const epoch = this.session.epoch();
 		const version = ++this.listVersion;
 		const current = () =>
-			epoch === this.epoch && version === this.listVersion;
+			epoch === this.session.epoch() && version === this.listVersion;
 		if (!more) {
 			this.cursors.clear();
 		}
-		this.patch({
+		this.session.patch({
 			sessionsLoading: true,
 			sessionsError: null,
 			sessionsArchived: archived,
@@ -91,17 +104,18 @@ export abstract class CodexCatalog extends CodexRun {
 	}
 	/** 読み込み中やフィルター変更後の追加ページ取得を抑止する。 */
 	private cannotLoadMore(more: boolean, archived: boolean) {
+		const state = this.session.snapshot();
 		return (
 			more &&
-			(this.state.sessionsLoading ||
-				archived !== this.state.sessionsArchived ||
-				this.state.sessionsNextCursor === null)
+			(state.sessionsLoading ||
+				archived !== state.sessionsArchived ||
+				state.sessionsNextCursor === null)
 		);
 	}
 
 	/** 一覧の取得失敗と完了を同じ接続世代にだけ反映する。 */
 	private async loadCatalogPage(
-		client: NonNullable<CodexCatalog["client"]>,
+		client: CodexConnection,
 		cwd: string,
 		archived: boolean,
 		cursor: string | undefined,
@@ -127,14 +141,14 @@ export abstract class CodexCatalog extends CodexRun {
 			this.applyCatalogPage(page, cursor, more, cwd, archived, epoch);
 		} catch {
 			if (current()) {
-				this.patch({
+				this.session.patch({
 					sessionsError:
 						"履歴を取得できませんでした。再試行してください。",
 				});
 			}
 		} finally {
 			if (current()) {
-				this.patch({ sessionsLoading: false });
+				this.session.patch({ sessionsLoading: false });
 			}
 		}
 	}
@@ -159,7 +173,7 @@ export abstract class CodexCatalog extends CodexRun {
 		}
 
 		const rows = new Map(
-			(more ? this.state.sessions : []).map((row) => [
+			(more ? this.session.snapshot().sessions : []).map((row) => [
 				row.sessionId,
 				row,
 			]),
@@ -172,7 +186,7 @@ export abstract class CodexCatalog extends CodexRun {
 			rows.set(thread.id, historySummary(thread, archived));
 		}
 
-		this.patch({
+		this.session.patch({
 			sessions: this.pendingThreads.merge(
 				epoch,
 				archived,
@@ -184,10 +198,9 @@ export abstract class CodexCatalog extends CodexRun {
 	}
 
 	/** 別クライアントによる名前変更や保存完了も次の一覧に反映する。 */
-	protected override notification(message: AppServerNotification): void {
-		super.notification(message);
-
+	notification(message: AppServerNotification): void {
 		this.updateCatalogNotification(message);
+		const state = this.session.snapshot();
 		if (
 			isRecord(message.params) &&
 			[
@@ -197,27 +210,18 @@ export abstract class CodexCatalog extends CodexRun {
 				"thread/deleted",
 				"turn/completed",
 			].includes(message.method) &&
-			this.state.connection === "ready" &&
-			!this.state.sessionPending
+			state.connection === "ready" &&
+			!state.sessionPending
 		) {
 			if (
 				["thread/archived", "thread/deleted"].includes(
 					message.method,
 				) &&
-				message.params.threadId === this.state.sessionId
+				message.params.threadId === state.sessionId
 			) {
-				this.resetRun();
-				this.patch({
-					sessionId: null,
-					runId: null,
-					run: "idle",
-					permissions: [],
-					attachments: [],
-					configOptions: [],
-					usage: null,
-				});
+				this.session.clearThread();
 			}
-			void this.refreshSessions();
+			void this.refresh();
 		}
 	}
 
@@ -232,20 +236,20 @@ export abstract class CodexCatalog extends CodexRun {
 				message.method === "thread/archived" ||
 				message.method === "thread/unarchived"
 			) {
-				this.pendingThreads.update(this.epoch, id, {
+				this.pendingThreads.update(this.session.epoch(), id, {
 					archived: message.method === "thread/archived",
 				});
 			} else if (message.method === "thread/deleted") {
-				this.pendingThreads.update(this.epoch, id, null);
+				this.pendingThreads.update(this.session.epoch(), id, null);
 			} else if (
 				message.method === "thread/name/updated" &&
 				typeof message.params.threadName === "string"
 			) {
-				this.pendingThreads.update(this.epoch, id, {
+				this.pendingThreads.update(this.session.epoch(), id, {
 					title: message.params.threadName,
 				});
-				if (id === this.state.sessionId) {
-					this.patch({
+				if (id === this.session.snapshot().sessionId) {
+					this.session.patch({
 						sessionTitle:
 							nonEmptyString(message.params.threadName.trim()) ??
 							null,

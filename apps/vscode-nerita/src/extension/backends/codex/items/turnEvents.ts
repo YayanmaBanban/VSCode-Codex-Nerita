@@ -1,5 +1,7 @@
 // ターン処理で使う通知を検証し、会話・ターン・項目の識別子を共通の形式で取り出す。
 
+import { parseCodexItem, type CodexItem } from "../protocol/item";
+import { parseActivityUpdate, type ActivityUpdate } from "./activityEvent";
 import { isRecord } from "@nerita/shared/validation";
 import type { AppServerNotification } from "../protocol/rpcMessage";
 import { parseTurn, type TurnInfo } from "../protocol/turn";
@@ -10,8 +12,7 @@ export type TurnEvent =
 			kind: "activity";
 			threadId: string;
 			turnId: string;
-			method: string;
-			params: Record<string, unknown>;
+			update: ActivityUpdate;
 	  }
 	| {
 			kind: "turn";
@@ -19,7 +20,7 @@ export type TurnEvent =
 			turnId: string;
 			turn: TurnInfo;
 			completed: boolean;
-			items: unknown[];
+			items: CodexItem[];
 	  }
 	| {
 			kind: "delta";
@@ -32,7 +33,7 @@ export type TurnEvent =
 			kind: "item";
 			threadId: string;
 			turnId: string;
-			item: Record<string, unknown>;
+			item: CodexItem;
 			completed: boolean;
 	  };
 /** 必須の文字列フィールドを検証する。 */
@@ -84,8 +85,7 @@ export function parseTurnEvent(
 			kind: "activity",
 			threadId,
 			turnId,
-			method: message.method,
-			params,
+			update: parseActivityUpdate(message.method, params),
 		};
 	}
 	if (
@@ -100,16 +100,12 @@ export function parseTurnEvent(
 			delta: text(params.delta),
 		};
 	}
-	if (!isRecord(params.item)) {
-		throw new Error("Invalid item");
-	}
-	text(params.item.id);
-	text(params.item.type);
+	const item = parseCodexItem(params.item);
 	return {
 		kind: "item",
 		threadId,
 		turnId,
-		item: params.item,
+		item,
 		completed: message.method === "item/completed",
 	};
 }
@@ -137,8 +133,8 @@ function supportedTurnMethods() {
 }
 
 /** 完了通知の項目配列を取得する。 */
-function turnItems(params: Record<string, unknown>): unknown[] {
+function turnItems(params: Record<string, unknown>): CodexItem[] {
 	return isRecord(params.turn) && Array.isArray(params.turn.items)
-		? params.turn.items
+		? params.turn.items.map(parseCodexItem)
 		: [];
 }

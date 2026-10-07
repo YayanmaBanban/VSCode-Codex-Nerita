@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { parseWorkflow } from "@nerita/shared/workflows/definition";
-import { compileWorkflow } from "@nerita/shared/workflows/compiler";
+import { compileWorkflow } from "./compiler";
 import {
 	type AgentAccessPolicy,
 	containsPath,

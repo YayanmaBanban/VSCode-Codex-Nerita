@@ -238,13 +238,10 @@ export function bindPiOutputArchive(
 /** 表示用に処理済みのテキストだけを保存し、画像や未知の構造化値を直列化しない。 */
 function textSource(tool: ToolSummary): ToolOutputSource | undefined {
 	const texts = tool.content?.flatMap((part) => {
-		if (!isRecord(part) || !isRecord(part.content)) {
+		if (part.type !== "content") {
 			return [];
 		}
-		return part.content.type === "text" &&
-			typeof part.content.text === "string"
-			? [part.content.text]
-			: [];
+		return [part.content.text];
 	});
 	return isNonZeroNumber(texts?.length)
 		? {

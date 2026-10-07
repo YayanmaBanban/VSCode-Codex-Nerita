@@ -5,7 +5,7 @@ import { isRecord } from "@nerita/shared/validation";
 import { approvePiTool, type PiAuthorize } from "../PiApprovedTools";
 import {
 	abortableFeatureApproval,
-	privateFeatureValue,
+	privateFeatureResult,
 } from "../PiFeatureSafety";
 import { piResultDisplay } from "../results/PiResultDisplay";
 import { piStructuredDisplay } from "../results/PiStructuredDisplay";
@@ -60,11 +60,7 @@ export function safeMcpResult(result: unknown, secrets: readonly string[]) {
 		{ mcpEnvelope: true, secrets },
 	);
 	const content = (display.content ?? []).flatMap((item) => {
-		if (
-			!isRecord(item) ||
-			!isRecord(item.content) ||
-			typeof item.content.text !== "string"
-		) {
+		if (item.type !== "content") {
 			return [];
 		}
 		return [{ type: "text" as const, text: item.content.text }];
@@ -80,7 +76,7 @@ export function safeMcpResult(result: unknown, secrets: readonly string[]) {
 			data = { summary: structured.text, omitted: true };
 		}
 	}
-	return privateFeatureValue(
+	return privateFeatureResult(
 		{
 			content,
 			structuredContent: {

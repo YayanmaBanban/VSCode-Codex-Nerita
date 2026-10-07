@@ -1,5 +1,6 @@
 // Host が保持し Webview へ同期する会話状態と、両側で使う初期値を定義する。
 import type { McpMessageContent } from "./mcp";
+import type { ToolContent } from "./toolContent";
 import type { ToolOutputPreview } from "./toolOutput";
 import type { PermissionPresentation } from "./permission";
 import type { ComposerReference } from "./composerReferences";
@@ -69,7 +70,10 @@ export type ToolSummary = {
 		| "unknown";
 	paths: string[];
 	kind?: string;
-	content?: unknown[];
+	content?: ToolContent[];
+	/** 専用カードが表示する情報は Host で正規化し、生データから分離する。 */
+	commandOutput?: string;
+	searchLabel?: string;
 	/** Host が整形した結果の表示元と、省略の有無。 */
 	resultDisplay?: {
 		source: "content" | "structuredContent";

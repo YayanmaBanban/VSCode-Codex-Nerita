@@ -9,13 +9,96 @@ import { inspect } from "node:util";
 import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { credentialFixture } from "../support/credentials";
 import { piFixture } from "../support/pi";
-import { SecretValue } from "../../apps/vscode-nerita/src/extension/credentials/CredentialStore";
+import {
+	SecretValue,
+	SecretRedactor,
+} from "../../apps/vscode-nerita/src/extension/credentials/CredentialStore";
 import { BindingStore } from "../../apps/vscode-nerita/src/extension/credentials/BindingStore";
 import { credentialBindingSchema } from "../../packages/shared/src/credentials";
 import { preparePiAuthMigration } from "../../apps/vscode-nerita/src/extension/credentials/PiAuthMigration";
 import { SecretAuthBackend } from "../../apps/vscode-nerita/src/extension/credentials/SecretAuthBackend";
 import { prepareMcpAuthMigration } from "../../apps/vscode-nerita/src/extension/credentials/McpAuthMigration";
 import { CredentialService } from "../../apps/vscode-nerita/src/extension/credentials/CredentialService";
+import { PiAccountAuthFlow } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAccountAuthFlow";
+
+void test("任意の伏字データは JSON 値として返し、元の Date や構造を保持する型契約を持たない", () => {
+	const redactor = new SecretRedactor();
+	redactor.protect("fixture-secret");
+	const original = {
+		createdAt: new Date("2026-01-01T00:00:00Z"),
+		nested: { text: "fixture-secret", count: 42 },
+	};
+	assert.deepEqual(redactor.value(original), {
+		createdAt: "2026-01-01T00:00:00.000Z",
+		nested: { text: "[REDACTED]", count: 42 },
+	});
+	assert.equal(original.nested.text, "fixture-secret");
+	assert.ok(original.createdAt instanceof Date);
+});
+
+void test("認証フローは秘密入力を通知前に保護し、成功後にカタログとモデルの再同期を依頼する", async (t) => {
+	const f = await piFixture(t);
+	const storage = credentialFixture();
+	const sdk = await loadPiSdk(process.env.NERITA_TEST_EXTENSION!);
+	const models = await sdk.ModelRuntime.create({
+		credentials: storage.credentials,
+		modelsPath: null,
+		modelsStorePath: join(f.agentDir, "models-store.json"),
+		refreshOnCreate: false,
+	});
+	const provider = authProvider(() => Promise.resolve(oauth("unused")));
+	models.registerNativeProvider(provider);
+	const events: Parameters<
+		Parameters<typeof models.login>[2]["notify"]
+	>[0][] = [];
+	const changed: (string | undefined)[] = [];
+	let invalidated = false;
+	const flow = new PiAccountAuthFlow(
+		models,
+		{
+			manage: async (items, execute, signal) => {
+				assert.ok(
+					(await items()).some((item) => item.id === provider.id),
+				);
+				await execute(JSON.stringify([provider.id, "api_key"]), signal);
+			},
+			interaction: () => ({
+				prompt: (prompt) => {
+					if (prompt.type === "select") {
+						return Promise.resolve("session");
+					}
+					return Promise.resolve(
+						prompt.type === "secret" ? "progress" : "Fixture",
+					);
+				},
+				notify: (event) => events.push(event),
+			}),
+		},
+		undefined,
+		storage.credentials,
+		() => {
+			invalidated = true;
+		},
+		(id) => {
+			changed.push(id);
+			return Promise.resolve();
+		},
+	);
+
+	await flow.authenticate(new AbortController().signal);
+	assert.equal(invalidated, true);
+	assert.deepEqual(changed, [provider.id, undefined]);
+	assert.deepEqual(events, [
+		{ type: "progress", message: "key [REDACTED]" },
+		{
+			type: "info",
+			message: "認証通知に秘密値が含まれるため非公開にしました。",
+		},
+	]);
+	assert.equal((await models.getAuth(provider.id))?.auth.apiKey, "progress");
+	assert.equal(storage.vault.list(provider.id)[0]?.name, "Fixture");
+	assert.equal(storage.vault.list(provider.id)[0]?.mode, "session");
+});
 
 void test("Binding は秘密値と注入先の上書きを拒否し、既存の Git 除外規則を保持する", async (t) => {
 	const f = await piFixture(t);
@@ -256,13 +339,21 @@ function authProvider(
 		auth: {
 			apiKey: {
 				name: "API",
-				login: async (interaction) => ({
-					type: "api_key",
-					key: await interaction.prompt({
+				login: async (interaction) => {
+					const key = await interaction.prompt({
 						type: "secret",
 						message: "API key",
-					}),
-				}),
+					});
+					interaction.notify({
+						type: "progress",
+						message: `key ${key}`,
+					});
+					interaction.notify({
+						type: "auth_url",
+						url: `https://example.test/${key}`,
+					});
+					return { type: "api_key", key };
+				},
 				resolve: ({ credential }) =>
 					Promise.resolve(
 						isNonEmptyString(credential?.key)

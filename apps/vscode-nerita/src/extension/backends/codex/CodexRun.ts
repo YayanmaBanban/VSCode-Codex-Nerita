@@ -3,7 +3,10 @@ import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { randomUUID } from "node:crypto";
 import type { ComposerReference } from "@nerita/shared/composerReferences";
 import { nextTimelineOrder } from "../../session/timelineOrder";
-import { CodexAgents } from "./CodexAgents";
+import type { CodexAgents } from "./CodexAgents";
+import type { CodexOptions } from "./CodexOptions";
+import type { ChatState } from "@nerita/shared/chatState";
+import type { CodexConnection } from "./runtime/connection";
 import { attachmentInput } from "./context/attachmentInput";
 import { skillInput } from "./context/skillInput";
 import type { AppServerNotification } from "./protocol/rpcMessage";
@@ -15,50 +18,84 @@ import { type Attachment } from "@nerita/shared/composer";
 import { type TurnInfo } from "./protocol/turn";
 import { isRecord } from "@nerita/shared/validation";
 
+/** 状態と接続はコントローラーから取得し、ターン処理で複製して保持しない。 */
+type RunSession = {
+	snapshot: () => Readonly<ChatState>;
+	connection: () => CodexConnection | undefined;
+	busy: () => boolean;
+	patch: (change: Partial<ChatState>) => void;
+	failConnection: (message: string) => void;
+};
+
 /** 同じ `thread` で停止後も会話を続けられる実行管理。 */
-export abstract class CodexRun extends CodexAgents {
+export class CodexRun {
+	/** ターン処理だけが生成・更新・解除し、承認側には現在の参照を渡す。 */
+	private active: ActiveTurn | undefined;
 	private cancelTimer: NodeJS.Timeout | undefined;
 	private planText: string | null = null;
 
+	constructor(
+		private readonly session: RunSession,
+		private readonly options: CodexOptions,
+		private readonly agents: CodexAgents,
+	) {}
+
+	/** 開始待ちや取消しの照合に必要な情報を、元のターン参照で公開する。 */
+	get current():
+		| Readonly<
+				Pick<
+					ActiveTurn,
+					"threadId" | "turnId" | "started" | "ready" | "abort"
+				>
+		  >
+		| undefined {
+		return this.active;
+	}
+
 	/** 会話と添付の準備中は実行を開始しない。 */
 	private promptPending(): boolean {
-		return this.state.sessionPending || this.state.attachmentPending;
+		return (
+			this.session.snapshot().sessionPending ||
+			this.session.snapshot().attachmentPending
+		);
 	}
 
 	/** 表示用の実行 ID を先に確保し、完了は通知だけで確定する。 */
-	protected async prompt(
+	async prompt(
 		text: string,
 		context?: AdditionalContext,
 		references: ComposerReference[] = [],
 	): Promise<void> {
+		const state = this.session.snapshot();
+		const client = this.session.connection();
 		if (
-			this.busy() ||
-			!this.client ||
-			!isNonEmptyString(this.state.sessionId) ||
+			this.session.busy() ||
+			!client ||
+			!isNonEmptyString(state.sessionId) ||
 			this.promptPending()
 		) {
 			throw new Error("Busy");
 		}
 
-		const run = new ActiveTurn(this.state.sessionId);
+		const run = new ActiveTurn(state.sessionId);
 		this.planText = null;
 		this.active = run;
 		const userId = randomUUID();
-		const files = [...this.state.attachments];
-		this.patch({
+		const files = [...state.attachments];
+		this.session.patch({
 			run: "running",
 			planDecision: null,
 			runId: randomUUID(),
 			error: null,
 			messages: [
-				...this.state.messages,
+				...state.messages,
 				{
 					id: userId,
 					references,
 					attachments: files,
 					role: "user",
 					text,
-					order: nextTimelineOrder(this.state),
+					order: nextTimelineOrder(state),
 				},
 			],
 		});
@@ -71,16 +108,15 @@ export abstract class CodexRun extends CodexAgents {
 			this.checkPreparedTurn(run);
 
 			prepared = true;
-			const result = await this.client.startTurn({
+			const result = await client.startTurn({
 				...(context ? { additionalContext: context } : {}),
-				...this.turnOptions,
-				collaborationMode: this.collaborationSettings(),
+				...this.options.turnSettings(),
 				threadId: run.threadId,
 				clientUserMessageId: userId,
 				input: [
 					{ type: "text", text, text_elements: [] },
 					...attachments,
-					...skillInput(text, this.state.skills),
+					...skillInput(text, this.session.snapshot().skills),
 				],
 			});
 			if (this.active !== run) {
@@ -113,13 +149,15 @@ export abstract class CodexRun extends CodexAgents {
 		if (this.active === run) {
 			this.finish("failed");
 			if (!prepared) {
-				this.patch({
+				this.session.patch({
 					error: "添付を読み込めませんでした。UTF-8テキスト（合計2MBまで）または画像対応モデルの画像を選択してください。",
 				});
 			}
 		}
-		this.patch({
-			messages: this.state.messages.filter((item) => item.id !== userId),
+		this.session.patch({
+			messages: this.session
+				.snapshot()
+				.messages.filter((item) => item.id !== userId),
 		});
 	}
 
@@ -130,49 +168,45 @@ export abstract class CodexRun extends CodexAgents {
 		files: Attachment[],
 	) {
 		run.turnId = result.turn.id;
-		this.patch({
-			attachments: this.state.attachments.filter(
-				(item) => !files.some((file) => file.id === item.id),
-			),
+		this.session.patch({
+			attachments: this.session
+				.snapshot()
+				.attachments.filter(
+					(item) => !files.some((file) => file.id === item.id),
+				),
 		});
 		run.release();
 		for (const event of run.events.splice(0)) {
 			this.applyEvent(event);
 		}
-		if (this.active === run && this.state.run === "cancelling") {
+		if (
+			this.active === run &&
+			this.session.snapshot().run === "cancelling"
+		) {
 			this.interrupt();
 		}
 	}
 
 	/** モデルの画像対応を確認して添付を読み込む。 */
-	protected async prepareAttachments(files: Attachment[]) {
-		const model =
-			this.turnOptions.model ??
-			this.state.configOptions.find((item) => item.id === "model")
-				?.currentValue;
+	async prepareAttachments(files: Attachment[]) {
 		const attachments =
 			files.length > 0
-				? await attachmentInput(
-						files,
-						this.models
-							.find((item) => item.model === model)
-							?.inputModalities.includes("image") ?? false,
-					)
+				? await attachmentInput(files, this.options.supportsImages)
 				: [];
 		return attachments;
 	}
 
-	/** 開始応答前の Stop も保持し、ターン ID が判明したら一度だけ送信する。 */
-	protected cancel(): void {
-		if (this.state.run !== "running" || !this.active) {
+	/** 開始応答前の停止も保持し、応答と開始通知が揃ったら一度だけ送信する。 */
+	cancel(): void {
+		if (this.session.snapshot().run !== "running" || !this.active) {
 			return;
 		}
 		const run = this.active;
-		this.patch({ run: "cancelling" });
+		this.session.patch({ run: "cancelling" });
 		run.abort.abort();
 		this.cancelTimer = setTimeout(() => {
 			if (this.active === run) {
-				this.failConnection(
+				this.session.failConnection(
 					"停止を確認できなかったため接続を終了しました。再接続してください。",
 				);
 			}
@@ -182,26 +216,26 @@ export abstract class CodexRun extends CodexAgents {
 	/** `interrupt` の応答後も `turn/completed` まで停止待ちを維持する。 */
 	private interrupt(): void {
 		const run = this.active;
+		const client = this.session.connection();
 		if (
 			!isNonEmptyString(run?.turnId) ||
 			!run.started ||
 			run.interruptSent ||
-			!this.client
+			!client
 		) {
 			return;
 		}
 		run.interruptSent = true;
-		void this.client.interruptTurn(run.threadId, run.turnId).catch(() => {
+		void client.interruptTurn(run.threadId, run.turnId).catch(() => {
 			if (this.active === run) {
-				this.failConnection(
+				this.session.failConnection(
 					"ターンを停止できませんでした。再接続してください。",
 				);
 			}
 		});
 	}
 	/** 開始応答より先の通知を保存し、前のターンの遅い通知は適用しない。 */
-	protected override notification(message: AppServerNotification): void {
-		super.notification(message);
+	notification(message: AppServerNotification): void {
 		const event = parseTurnEvent(message);
 		if (!event || !this.active || event.threadId !== this.active.threadId) {
 			return;
@@ -228,21 +262,21 @@ export abstract class CodexRun extends CodexAgents {
 		this.capturePlan(event);
 
 		applyTurnEvent(run, event, {
-			snapshot: () => this.state,
-			patch: (change) => this.patch(change),
-			agentNotification: (message) => this.agentNotification(message),
+			snapshot: () => this.session.snapshot(),
+			patch: (change) => this.session.patch(change),
+			agentNotification: (message) => this.agents.notification(message),
 			interrupt: () => this.interrupt(),
 			finish: (status) => {
 				const planText = this.planText?.trim();
 				this.finish(status);
 				if (
 					status === "completed" &&
-					this.collaborationMode === "plan" &&
+					this.options.mode === "plan" &&
 					isNonEmptyString(planText)
 				) {
-					this.patch({
+					this.session.patch({
 						planDecision: {
-							runId: this.state.runId!,
+							runId: this.session.snapshot().runId!,
 							text: planText,
 						},
 					});
@@ -275,9 +309,10 @@ export abstract class CodexRun extends CodexAgents {
 	}
 	/** 終了時に未完了カードの状態を確定し、承認待ちを取り消す。会話は保持する。 */
 	private finish(status: "completed" | "cancelled" | "failed"): void {
-		this.patch({
-			tools: this.state.tools.map((tool) =>
-				tool.runId === this.state.runId && tool.id.startsWith("turn:")
+		this.session.patch({
+			tools: this.session.snapshot().tools.map((tool) =>
+				tool.runId === this.session.snapshot().runId &&
+				tool.id.startsWith("turn:")
 					? {
 							...tool,
 							status:
@@ -286,8 +321,8 @@ export abstract class CodexRun extends CodexAgents {
 					: tool,
 			),
 		});
-		this.resetRun();
-		this.patch({
+		this.reset();
+		this.session.patch({
 			run: status,
 			permissions: [],
 			error:
@@ -297,20 +332,22 @@ export abstract class CodexRun extends CodexAgents {
 		});
 	}
 	/** 開始応答の待機を終了し、承認を取り消して停止用タイマーを解除する。 */
-	protected override resetRun(): void {
+	reset(): void {
 		clearTimeout(this.cancelTimer);
 		const run = this.active;
 		this.active = undefined;
 		run?.release();
 		run?.abort.abort();
 		if (run) {
-			this.patch({
-				tools: this.state.tools.map((tool) =>
-					tool.runId === this.state.runId &&
-					["pending", "in_progress"].includes(tool.status)
-						? { ...tool, status: "failed" }
-						: tool,
-				),
+			this.session.patch({
+				tools: this.session
+					.snapshot()
+					.tools.map((tool) =>
+						tool.runId === this.session.snapshot().runId &&
+						["pending", "in_progress"].includes(tool.status)
+							? { ...tool, status: "failed" }
+							: tool,
+					),
 			});
 		}
 	}

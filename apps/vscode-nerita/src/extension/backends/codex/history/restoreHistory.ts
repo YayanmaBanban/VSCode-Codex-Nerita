@@ -1,4 +1,5 @@
 // 保存形式ごとの履歴を取得し、表示中の会話を変更せずに復元データを組み立てる。
+import type { CodexItem } from "../protocol/item";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	initialState,
@@ -266,16 +267,13 @@ export function replayHistory(turns: HistoryTurn[], threadId = "history") {
 function applyHistoryItems(
 	state: ChatState,
 	turn: HistoryTurn,
-	items: Record<string, unknown>[],
+	items: CodexItem[],
 	outputs?: ToolOutputStore,
 ) {
 	state.runId = `history:${turn.id}`;
 	for (const item of new Map(
 		items.map((entry) => [entry.id, entry]),
 	).values()) {
-		if (typeof item.id !== "string") {
-			throw new Error("Invalid history item ID");
-		}
 		if (item.type === "userMessage") {
 			const id = `${state.runId}:${item.id}`;
 			const previous = state.messages.find(

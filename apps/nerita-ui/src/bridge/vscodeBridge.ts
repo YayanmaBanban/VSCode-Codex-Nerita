@@ -1,4 +1,5 @@
 ﻿// VS Code API を呼ぶ唯一のブラウザ境界。Storybook では同じ契約を差し替える。
+import type { ZodType } from "zod";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { Bridge } from "@nerita/shared/bridge";
 import {
@@ -52,99 +53,49 @@ let api: VsCodeApi | undefined;
 
 /** 資格情報管理では秘密値を含まない専用契約で通信する。 */
 export function createCredentialBridge(): CredentialBridge {
-	api ??= acquireVsCodeApi();
-	return {
-		postMessage: (message) => api?.postMessage(message),
-		subscribe(listener) {
-			const receive = (event: MessageEvent<unknown>) => {
-				const parsed = credentialReplySchema.safeParse(event.data);
-				if (parsed.success) {
-					listener(parsed.data);
-				}
-			};
-			window.addEventListener("message", receive);
-			return () => window.removeEventListener("message", receive);
-		},
-	};
+	return createBridge(schemaReader(credentialReplySchema));
 }
 /** Sandbox 管理画面でも Host の通知を共有スキーマで検証する。 */
 export function createSandboxBridge(): SandboxBridge {
-	api ??= acquireVsCodeApi();
-	return {
-		postMessage: (message) => api?.postMessage(message),
-		subscribe(listener) {
-			const receive = (event: MessageEvent<unknown>) => {
-				const parsed = sandboxReplySchema.safeParse(event.data);
-				if (parsed.success) {
-					listener(parsed.data);
-				}
-			};
-			window.addEventListener("message", receive);
-			return () => window.removeEventListener("message", receive);
-		},
-	};
+	return createBridge(schemaReader(sandboxReplySchema));
 }
 /** Trust 管理画面の受信データも共有スキーマで検証する。 */
 export function createTrustBridge(): TrustBridge {
-	api ??= acquireVsCodeApi();
-	return {
-		postMessage: (message) => api?.postMessage(message),
-		subscribe(listener) {
-			const receive = (event: MessageEvent<unknown>) => {
-				const parsed = trustReplySchema.safeParse(event.data);
-				if (parsed.success) {
-					listener(parsed.data);
-				}
-			};
-			window.addEventListener("message", receive);
-			return () => window.removeEventListener("message", receive);
-		},
-	};
+	return createBridge(schemaReader(trustReplySchema));
 }
 /** Agent Manager の専用通信にも共有スキーマを適用する。 */
 export function createAgentManagerBridge(): ManagerBridge {
-	api ??= acquireVsCodeApi();
-	return {
-		postMessage: (message) => api?.postMessage(message),
-		subscribe(listener) {
-			const receive = (event: MessageEvent<unknown>) => {
-				const parsed = managerReplySchema.safeParse(event.data);
-				if (parsed.success) {
-					listener(parsed.data);
-				}
-			};
-			window.addEventListener("message", receive);
-			return () => window.removeEventListener("message", receive);
-		},
-	};
+	return createBridge(schemaReader(managerReplySchema));
 }
 /** Workflow の専用パネルでも受信内容を共有スキーマで検証する。 */
 export function createWorkflowBridge(): WorkflowBridge {
-	api ??= acquireVsCodeApi();
-	return {
-		postMessage: (message) => api?.postMessage(message),
-		subscribe(listener) {
-			const receive = (event: MessageEvent<unknown>) => {
-				const parsed = workflowReplySchema.safeParse(event.data);
-				if (parsed.success) {
-					listener(parsed.data);
-				}
-			};
-			window.addEventListener("message", receive);
-			return () => window.removeEventListener("message", receive);
-		},
-	};
+	return createBridge(schemaReader(workflowReplySchema));
 }
 /** 設定エディターも同じ API 境界を通し、Host の通知を検証する。 */
 export function createGuardrailsBridge(): GuardBridge {
-	api ??= acquireVsCodeApi();
+	return createBridge(schemaReader(guardReplySchema));
+}
+/** 認証専用パネルではチャット状態の保存・復元を利用しない。 */
+export function createPiAuthPost(): (request: PiAuthRequest) => void {
+	const acquired = (api ??= acquireVsCodeApi());
+	return (request) => acquired.postMessage(request);
+}
+/** API を一度だけ取得し、購読解除可能な Bridge を返す。 */
+export function createVsCodeBridge(): Bridge {
+	return createBridge((value) => (isHostMessage(value) ? value : undefined));
+}
+
+/** 型ガードは元参照、Zod は解析済みの値を渡し、購読解除を共通化する。 */
+function createBridge<T>(parse: (value: unknown) => T | undefined) {
+	const acquired = (api ??= acquireVsCodeApi());
 	return {
-		postMessage: (message) => api?.postMessage(message),
-		subscribe(listener) {
+		postMessage: (message: Parameters<VsCodeApi["postMessage"]>[0]) =>
+			acquired.postMessage(message),
+		subscribe(listener: (message: T) => void) {
 			const receive = (event: MessageEvent<unknown>) => {
-				const parsed = guardReplySchema.safeParse(event.data);
-				if (parsed.success) {
-					listener(parsed.data);
+				const message = parse(event.data);
+				if (message !== undefined) {
+					listener(message);
 				}
 			};
 			window.addEventListener("message", receive);
@@ -152,24 +103,13 @@ export function createGuardrailsBridge(): GuardBridge {
 		},
 	};
 }
-/** 認証専用パネルではチャット状態の保存・復元を利用しない。 */
-export function createPiAuthPost(): (request: PiAuthRequest) => void {
-	api ??= acquireVsCodeApi();
-	return (request) => api?.postMessage(request);
-}
-/** API を一度だけ取得し、購読解除可能な Bridge を返す。 */
-export function createVsCodeBridge(): Bridge {
-	api ??= acquireVsCodeApi();
-	return {
-		postMessage: (message) => api?.postMessage(message),
-		subscribe(listener) {
-			const receive = (event: MessageEvent<unknown>) => {
-				if (isHostMessage(event.data)) {
-					listener(event.data);
-				}
-			};
-			window.addEventListener("message", receive);
-			return () => window.removeEventListener("message", receive);
-		},
+
+/** 専用パネルはスキーマが返す解析値を通知し、不正な入力を捨てる。 */
+function schemaReader<T>(
+	schema: ZodType<T>,
+): (value: unknown) => T | undefined {
+	return (value) => {
+		const parsed = schema.safeParse(value);
+		return parsed.success ? parsed.data : undefined;
 	};
 }

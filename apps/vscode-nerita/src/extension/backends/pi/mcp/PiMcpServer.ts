@@ -1,5 +1,6 @@
 // 1サーバーの接続・動的定義・停止を所有し、古い定義の実行を拒否する。
 import { z } from "zod";
+import { isRecord } from "@nerita/shared/validation";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type {
 	ExtensionAPI,
@@ -13,7 +14,10 @@ import { MCP_RESULT_UNKNOWN_TEXT } from "../results/PiResultDisplay";
 import type { PiAuthorize } from "../PiApprovedTools";
 import { piToolPermitted, type PiToolFeatures } from "../PiToolFeatures";
 import { piFeatureSecrets } from "../PiFeatureSecrets";
-import { abortableFeatureApproval } from "../PiFeatureSafety";
+import {
+	abortableFeatureApproval,
+	privateFeatureResult,
+} from "../PiFeatureSafety";
 import type { AgentAccessPolicy } from "../../../security/AgentAccessPolicy";
 
 /** 1接続の出所と権限は生成後に変更せず、設定変更では接続ごと交換する。 */
@@ -304,7 +308,11 @@ export class PiMcpServer {
 			const safe = resource
 				? safeMcpResource(result, secrets)
 				: safeMcpResult(result, secrets);
-			return this.options.features.protect?.(safe) ?? safe;
+			return privateFeatureResult(
+				safe,
+				[],
+				this.options.features.protect,
+			);
 		} catch {
 			// 要求開始後の切断・期限・取消しでは、遠隔側の副作用を取り消せたとは判断できない。
 			const result = safeMcpResult(
@@ -316,7 +324,10 @@ export class PiMcpServer {
 			);
 			return {
 				...result,
-				details: { ...result.details, outcome: "unknown" },
+				details: {
+					...(isRecord(result.details) ? result.details : {}),
+					outcome: "unknown",
+				},
 			};
 		} finally {
 			signal.removeEventListener("abort", cancel);

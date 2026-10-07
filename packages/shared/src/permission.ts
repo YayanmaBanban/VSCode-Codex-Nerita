@@ -24,7 +24,9 @@ export type PermissionPresentation = {
 };
 
 /** 受信した表示情報の任意項目も、描画前に検証する。 */
-export function isPermissionPresentation(value: unknown): boolean {
+export function isPermissionPresentation(
+	value: unknown,
+): value is PermissionPresentation {
 	return (
 		isRecord(value) &&
 		typeof value.title === "string" &&

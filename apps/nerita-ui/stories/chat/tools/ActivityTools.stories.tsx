@@ -15,7 +15,13 @@ const tools: ToolSummary[] = [
 		status: "in_progress",
 		paths: [],
 		content: [
-			"**Implementing file move mapping**",
+			{
+				type: "content",
+				content: {
+					type: "text",
+					text: "**Implementing file move mapping**",
+				},
+			},
 			{
 				type: "content",
 				content: {
@@ -41,9 +47,11 @@ const tools: ToolSummary[] = [
 		status: "in_progress",
 		paths: [],
 		rawInput: "React scroll & resize",
+		searchLabel: "React scroll & resize",
 	},
 	{
 		id: "url",
+		searchLabel: "https://example.com/page?q=1",
 		title: "Web検索（URL）",
 		kind: "search",
 		rawItem: { type: "webSearch" },
@@ -56,6 +64,7 @@ const tools: ToolSummary[] = [
 	},
 	{
 		id: "flat-url",
+		searchLabel: "https://example.com/normalized",
 		title: "Web検索（正規化後）",
 		kind: "search",
 		rawItem: { type: "webSearch" },

@@ -1,46 +1,44 @@
 // 添付ファイルの選択と寿命を、接続やモデル設定から分離する。
+import type { ChatState } from "@nerita/shared/chatState";
 import type { ComposerMessage } from "@nerita/shared/composer";
 import type { AttachmentService } from "../../session/attachmentService";
-import type { AuthService } from "./interaction/AuthFlow";
-import type { InteractionService } from "./interaction/interactionService";
-import { CodexLifecycle } from "./CodexLifecycle";
-import type { CodexFactory } from "./runtime/connection";
-import type { CodexSelectionStore } from "./settings/modelSelection";
 
-/** 接続世代と会話 ID が一致する添付操作だけを許可する。 */
-export abstract class CodexAttachments extends CodexLifecycle {
-	/** VS Code サービスを接続と同じ寿命で受け取る。 */
+/** セッション状態は所有せず、操作前後に現在の会話と世代を取得する。 */
+type AttachmentTarget = {
+	snapshot(): ChatState;
+	epoch(): number;
+	busy(): boolean;
+	patch(change: Partial<ChatState>): void;
+};
+
+/** 添付の寿命を接続・設定の継承順から独立させる。 */
+export class CodexAttachments {
 	constructor(
-		factory: CodexFactory,
+		private readonly target: AttachmentTarget,
 		private readonly files?: AttachmentService,
-		auth?: AuthService,
-		protected readonly interactions?: InteractionService,
-		protected readonly selectionStore?: CodexSelectionStore,
-	) {
-		super(factory, auth);
-	}
+	) {}
 
 	/** 選択や読み込みの前後で会話と接続世代を照合する。 */
-	protected async attachment(
+	async attachment(
 		message: Exclude<ComposerMessage, { type: "config/set" }>,
 	): Promise<void> {
-		if (!this.files || this.busy()) {
+		if (!this.files || this.target.busy()) {
 			throw new Error("Attachments unavailable");
 		}
 		if (message.type !== "attachment/add") {
-			const file = this.state.attachments.find(
-				(item) => item.id === message.attachmentId,
-			);
+			const file = this.target
+				.snapshot()
+				.attachments.find((item) => item.id === message.attachmentId);
 			if (!file) {
 				throw new Error("Unknown attachment");
 			}
 			if (message.type === "attachment/open") {
 				await this.files.open(file);
 			} else {
-				this.patch({
-					attachments: this.state.attachments.filter(
-						(item) => item !== file,
-					),
+				this.target.patch({
+					attachments: this.target
+						.snapshot()
+						.attachments.filter((item) => item !== file),
 				});
 			}
 			return;
@@ -53,12 +51,12 @@ export abstract class CodexAttachments extends CodexLifecycle {
 		message: Extract<ComposerMessage, { type: "attachment/add" }>,
 		service: AttachmentService,
 	): Promise<void> {
-		if (this.state.attachmentPending) {
+		if (this.target.snapshot().attachmentPending) {
 			return;
 		}
-		const epoch = this.epoch,
-			threadId = this.state.sessionId;
-		this.patch({ attachmentPending: true });
+		const epoch = this.target.epoch(),
+			threadId = this.target.snapshot().sessionId;
+		this.target.patch({ attachmentPending: true });
 		try {
 			if (message.files && !service.drop) {
 				throw new Error("File drop unavailable");
@@ -66,11 +64,16 @@ export abstract class CodexAttachments extends CodexLifecycle {
 			const selected = message.files
 				? await service.drop!(message.files)
 				: await service.pick();
-			if (epoch !== this.epoch || threadId !== this.state.sessionId) {
+			if (
+				epoch !== this.target.epoch() ||
+				threadId !== this.target.snapshot().sessionId
+			) {
 				return;
 			}
 			const files = new Map(
-				this.state.attachments.map((item) => [item.uri, item]),
+				this.target
+					.snapshot()
+					.attachments.map((item) => [item.uri, item]),
 			);
 			for (const file of selected) {
 				files.set(file.uri, file);
@@ -78,15 +81,15 @@ export abstract class CodexAttachments extends CodexLifecycle {
 			if (files.size > 20) {
 				throw new Error("Too many attachments");
 			}
-			this.patch({ attachments: [...files.values()] });
+			this.target.patch({ attachments: [...files.values()] });
 		} finally {
-			if (epoch === this.epoch) {
-				this.patch({ attachmentPending: false });
+			if (epoch === this.target.epoch()) {
+				this.target.patch({ attachmentPending: false });
 			}
 		}
 	}
 
-	protected get supportsAttachments(): boolean {
+	get supportsAttachments(): boolean {
 		return !!this.files;
 	}
 }
