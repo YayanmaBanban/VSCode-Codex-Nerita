@@ -152,6 +152,7 @@ async function run() {
 		).toBeVisible();
 		const { light } = await verifyApprovedWrite(model, page, chat, cwd);
 		await verifyStoppedWrite(model, page, chat, cwd, light);
+		await require("./dlc.cjs").verifyDlc(page, model, cwd);
 		console.log(
 			"実 Webview: 信頼操作・再接続・承認付き書込み・停止に成功",
 			process.env.NERITA_UI_ARTIFACTS,

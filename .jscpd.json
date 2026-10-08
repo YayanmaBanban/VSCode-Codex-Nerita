@@ -1,5 +1,6 @@
 {
 	"path": [
+		"apps/nerita-dlc/src",
 		"apps/vscode-nerita/src",
 		"apps/nerita-ui/src",
 		"packages/shared/src"

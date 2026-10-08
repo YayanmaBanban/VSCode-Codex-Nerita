@@ -297,7 +297,7 @@ export default defineConfig([
 		},
 	},
 	{
-		files: ["packages/shared/src/**/*.ts"],
+		files: ["packages/shared/src/**/*.ts", "apps/nerita-dlc/src/**/*.ts"],
 		rules: {
 			"no-restricted-imports": [
 				"error",

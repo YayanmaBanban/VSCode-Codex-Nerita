@@ -147,6 +147,34 @@
 		},
 		"commands": [
 			{
+				"command": "nerita.dlc.create",
+				"title": "Nerita DLC: プロジェクトを作成",
+				"enablement": "isWorkspaceTrusted"
+			},
+			{
+				"command": "nerita.dlc.plan",
+				"title": "Nerita DLC: プランを登録",
+				"enablement": "isWorkspaceTrusted"
+			},
+			{
+				"command": "nerita.dlc.run",
+				"title": "Nerita DLC: 次の作業を実行",
+				"enablement": "isWorkspaceTrusted"
+			},
+			{
+				"command": "nerita.dlc.cancel",
+				"title": "Nerita DLC: 実行を停止"
+			},
+			{
+				"command": "nerita.dlc.status",
+				"title": "Nerita DLC: 状態を表示"
+			},
+			{
+				"command": "nerita.dlc.retry",
+				"title": "Nerita DLC: 作業を再試行",
+				"enablement": "isWorkspaceTrusted"
+			},
+			{
 				"command": "nerita.credentials.manage",
 				"title": "Nerita: 資格情報を管理"
 			},
@@ -263,6 +291,7 @@
 		"@earendil-works/pi-coding-agent": "1.0.0",
 		"@microsoft/mxc-sdk": "0.9.0",
 		"@nerita/shared": "workspace:*",
+		"@nerita/dlc": "workspace:*",
 		"@openai/codex": "0.160.0",
 		"diff": "8.0.4",
 		"jsonc-parser": "^3.3.1",

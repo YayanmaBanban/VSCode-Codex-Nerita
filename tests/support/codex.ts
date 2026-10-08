@@ -6,6 +6,7 @@ import { type RequestListener, type IncomingMessage } from "http";
 import assert from "node:assert/strict";
 import { createServer, type ServerResponse } from "node:http";
 import { once } from "node:events";
+import { setTimeout } from "node:timers/promises";
 import {
 	copyFile,
 	mkdir,
@@ -107,7 +108,7 @@ export async function codexFixture(t: TestContext) {
 	);
 	const selectionPath = join(root, "selection.json");
 	const controllers: CodexSessionController[] = [];
-	const factory = createCodexFactory(cwd, root);
+	const factory = createCodexFactory(cwd, root, streams);
 	t.after(async () => {
 		for (const controller of controllers) {
 			await controller.dispose();
@@ -151,17 +152,32 @@ function createCodexServerMessages(streams: ServerResponse[]) {
 }
 
 /** 起動・取り消しの時点を制御するときも、接続と JSONL 通信は本番の実装を使う。 */
-function createCodexFactory(cwd: string, root: string): CodexFactory {
-	return async (callbacks, signal) => ({
-		cwd,
-		client: await CodexClient.connect({
+function createCodexFactory(
+	cwd: string,
+	root: string,
+	streams: ServerResponse[],
+): CodexFactory {
+	return async (callbacks, signal) => {
+		const previous = streams.length;
+		const client = await CodexClient.connect({
 			extensionPath: root,
 			cwd,
 			clientInfo: { title: null, name: "fixture", version: "1" },
 			callbacks,
 			signal,
-		}),
-	});
+		});
+		// 初期化 RPC と通知用 GET は独立して到着する。両経路が開く前に通知を送らない。
+		const waiting = AbortSignal.any([signal, AbortSignal.timeout(15000)]);
+		try {
+			while (streams.length <= previous) {
+				await setTimeout(1, undefined, { signal: waiting });
+			}
+			return { cwd, client };
+		} catch (error) {
+			await client.dispose();
+			throw error;
+		}
+	};
 }
 
 /** 接続生成を差し替えた場合も、一時領域の設定保存と終了時の回収を共用する。 */

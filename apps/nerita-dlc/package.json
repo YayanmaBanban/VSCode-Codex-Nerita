@@ -1,0 +1,24 @@
+{
+	"name": "@nerita/dlc",
+	"private": true,
+	"version": "0.0.1",
+	"type": "commonjs",
+	"exports": {
+		"./*": {
+			"types": "./src/*.ts",
+			"nerita-source": "./src/*.ts",
+			"default": "./dist/*.js"
+		}
+	},
+	"scripts": {
+		"check": "tsc -p tsconfig.json --noEmit",
+		"build": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@nerita/shared": "workspace:*",
+		"zod": "^4.6.5"
+	},
+	"devDependencies": {
+		"typescript": "^6.0.3"
+	}
+}

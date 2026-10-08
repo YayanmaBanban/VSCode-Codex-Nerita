@@ -17,7 +17,9 @@ import { registerAgentManager } from "./agentManager/AgentManagerPanel";
 import { registerTrustCommands } from "./security/trust/TrustCommands";
 import { preparePiWebTrust } from "./backends/pi/PiWebTrust";
 import { userTrustedExtensionPaths } from "./backends/pi/PiExtensionTrust";
+import { registerDlcCommands } from "./dlc/DlcCommands";
 let controller: BackendSession | undefined;
+let dlc: { dispose(): Promise<void> } | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
 export async function activate(
 	context: vscode.ExtensionContext,
@@ -56,6 +58,7 @@ export async function activate(
 		}),
 	});
 	controller = session;
+	dlc = registerDlcCommands(context, trust);
 	registerWorkflowEditor(context, session);
 	registerAgentManager(context, session);
 	const provider = new ChatViewProvider(
@@ -96,6 +99,8 @@ export async function activate(
 }
 /** Extension Host の終了までに App Server のプロセスツリーを終了する。 */
 export async function deactivate(): Promise<void> {
+	await dlc?.dispose();
+	dlc = undefined;
 	await controller?.dispose();
 	controller = undefined;
 	await disposeDroppedAttachments();
