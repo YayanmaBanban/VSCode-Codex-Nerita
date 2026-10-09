@@ -296,9 +296,9 @@
 	"dependencies": {
 		"@earendil-works/pi-coding-agent": "1.0.0",
 		"@microsoft/mxc-sdk": "0.9.0",
-		"@nerita/shared": "workspace:*",
 		"@nerita/dlc": "workspace:*",
-		"@openai/codex": "0.160.0",
+		"@nerita/shared": "workspace:*",
+		"@openai/codex": "0.162.0",
 		"diff": "8.0.4",
 		"jsonc-parser": "^3.3.1",
 		"smol-toml": "^1.8.0",
