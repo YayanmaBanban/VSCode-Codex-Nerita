@@ -65,7 +65,7 @@ async function verifyAccount(page, chat, model, findFrame) {
 	).toBeVisible();
 	await selectBackend(chat, "Pi", "pi");
 	await expect(
-		chat.getByRole("button", { name: "接続済み", exact: true }),
+		chat.getByRole("status", { name: "接続済み", exact: true }),
 	).toBeVisible();
 	model.replies.push("切替後の Pi が受領しました");
 	await chat
@@ -149,7 +149,7 @@ async function verifyAuthClose(page, chat, model, findFrame) {
 	);
 	await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	await expect(
-		chat.getByRole("button", { name: "接続済み", exact: true }),
+		chat.getByRole("status", { name: "接続済み", exact: true }),
 	).toBeVisible();
 	assert.equal(await credentials(), before);
 	assert.equal(model.requests.length, requests);

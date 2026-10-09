@@ -1,58 +1,56 @@
 // 実行世代と実測した差分を照合して状態を遷移させる。レビューの完了は扱わない。
 import { DlcActionSchema } from "@nerita/shared/dlc/contracts";
-import { type ProjectState, type WorkItem, nextWork } from "./state";
+import { nextStage } from "./routing";
+import { type IntentState, type WorkItem, nextWork, workPhase } from "./state";
 import {
 	RuntimeEvidenceSchema,
 	SemanticResultSchema,
 	type RuntimeResult,
+	type RuntimeEvidence,
 	type SemanticResult,
 } from "./runtime";
 
 /** UI の操作では、結果の確定や進行中の状態の上書きを許さない。 */
-export function applyAction(state: ProjectState, value: unknown): ProjectState {
+export function applyAction(state: IntentState, value: unknown): IntentState {
 	const action = DlcActionSchema.parse(value);
+	if (action.type === "advance") {
+		const next = nextStage(state.workflow.stages);
+		throw new Error(
+			next.stageId === null
+				? "ワークフローは完了しています。"
+				: `${next.stageId}: ${next.reason}`,
+		);
+	}
+	if (action.type === "archive") {
+		return archiveIntent(state);
+	}
+	if (state.workflow.status !== "in-flight") {
+		throw new Error("この Intent は作業中ではありません。");
+	}
 	if (action.type === "plan") {
-		if (state.stage !== "planning") {
+		if (workPhase(state) !== "planning") {
 			throw new Error("プランは既に確定しています。");
 		}
 		const workItems = action.tasks.map((task, index): WorkItem => ({
 			...task,
-			id: `${state.id}:task:${index + 1}`,
+			id: `${state.intentId}:task:${index + 1}`,
 			status: "ready",
 			attempts: [],
 		}));
 		return {
 			...state,
 			revision: state.revision + 1,
-			stage: "implementing",
 			workItems,
 		};
 	}
 	if (action.type !== "retry") {
 		throw new Error("実行と停止はコントローラーへ要求してください。");
 	}
-	if (
-		state.workItems.some((item) =>
-			["running", "stopping"].includes(item.status),
-		)
-	) {
-		throw new Error("実行中は再試行できません。");
-	}
-	const item = state.workItems.find((work) => work.id === action.workItemId);
-	if (
-		!item ||
-		!["failed", "cancelled", "interrupted"].includes(item.status)
-	) {
-		throw new Error("この作業は再試行できません。");
-	}
-	return replaceItem(state, { ...item, status: "ready" });
+	return retryWork(state, action.workItemId);
 }
 
 /** 実行前に永続化するための状態を作る。同時実行と同一世代の再利用は拒否する。 */
-export function beginWork(
-	state: ProjectState,
-	attemptId: string,
-): ProjectState {
+export function beginWork(state: IntentState, attemptId: string): IntentState {
 	if (
 		state.workItems.some((item) =>
 			["running", "stopping"].includes(item.status),
@@ -89,21 +87,21 @@ export function beginWork(
 
 /** 古い実行・停止後の成功・捏造された根拠を現在の実行へ反映しない。 */
 export function finishWork(
-	state: ProjectState,
+	state: IntentState,
 	attemptId: string,
 	receipt: RuntimeResult,
-): ProjectState {
+): IntentState {
 	const item = currentItem(state, attemptId);
 	if (!item) {
 		return state;
 	}
-	if (item.status === "stopping") {
-		return failWork(state, attemptId, "cancelled", "実行を停止しました。");
-	}
 	const result = boundSemanticResult(receipt.semantic, attemptId, item.id);
-	const evidence = RuntimeEvidenceSchema.parse(receipt.evidence);
-	if (evidence.attemptId !== attemptId || evidence.workItemId !== item.id) {
-		throw new Error("結果と根拠の作業・実行世代が一致しません。");
+	const evidence = boundEvidence(receipt.evidence, attemptId, item.id);
+	if (item.status === "stopping" || evidence.outcome === "cancelled") {
+		return finishItem(state, item, "cancelled", "実行を停止しました。", {
+			result: result ?? null,
+			evidence,
+		});
 	}
 	if (result === undefined) {
 		return finishItem(
@@ -142,36 +140,51 @@ function boundSemanticResult(
 		: undefined;
 }
 
+function boundEvidence(
+	value: unknown,
+	attemptId: string,
+	workItemId: string,
+): RuntimeEvidence {
+	const evidence = RuntimeEvidenceSchema.parse(value);
+	if (
+		evidence.attemptId !== attemptId ||
+		evidence.workItemId !== workItemId
+	) {
+		throw new Error("結果と根拠の作業・実行世代が一致しません。");
+	}
+	return evidence;
+}
+
 /** 中止と失敗を区別し、結果が来なかった実行にも終端状態を残す。 */
 export function failWork(
-	state: ProjectState,
+	state: IntentState,
 	attemptId: string,
 	status: "failed" | "cancelled",
 	detail: string,
-): ProjectState {
+): IntentState {
 	const item = currentItem(state, attemptId);
 	return item ? finishItem(state, item, status, detail, {}) : state;
 }
 
 /** 停止の要求を先に確定し、遅れて届く成功を受け付けない。 */
 export function requestStop(
-	state: ProjectState,
+	state: IntentState,
 	attemptId: string,
-): ProjectState {
+): IntentState {
 	const item = currentItem(state, attemptId);
 	return item
 		? finishItem(state, item, "stopping", "停止処理中です。", {})
 		: state;
 }
 
-function currentItem(state: ProjectState, attemptId: string) {
+function currentItem(state: IntentState, attemptId: string) {
 	return state.workItems.find(
 		(item) =>
 			["running", "stopping"].includes(item.status) &&
 			item.attempts.at(-1)?.id === attemptId,
 	);
 }
-function replaceItem(state: ProjectState, item: WorkItem): ProjectState {
+function replaceItem(state: IntentState, item: WorkItem): IntentState {
 	const workItems = state.workItems.map((work) =>
 		work.id === item.id ? item : work,
 	);
@@ -179,18 +192,15 @@ function replaceItem(state: ProjectState, item: WorkItem): ProjectState {
 		...state,
 		workItems,
 		revision: state.revision + 1,
-		stage: workItems.every((work) => work.status === "implemented")
-			? "awaiting-review"
-			: state.stage,
 	};
 }
 function finishItem(
-	state: ProjectState,
+	state: IntentState,
 	item: WorkItem,
 	status: WorkItem["status"],
 	detail: string,
 	receipt: Partial<WorkItem["attempts"][number]>,
-): ProjectState {
+): IntentState {
 	return replaceItem(state, {
 		...item,
 		status,
@@ -199,7 +209,7 @@ function finishItem(
 				? {
 						...attempt,
 						...receipt,
-						status: status === "ready" ? "failed" : status,
+						status: attemptStatus(status),
 						detail,
 					}
 				: attempt,
@@ -260,4 +270,51 @@ function evidenceProblem(
 		return "失敗または未完了のツール実行があります。";
 	}
 	return null;
+}
+
+function retryWork(state: IntentState, workItemId: string): IntentState {
+	if (
+		state.workItems.some((item) =>
+			["running", "stopping"].includes(item.status),
+		)
+	) {
+		throw new Error("実行中は再試行できません。");
+	}
+	const item = state.workItems.find((work) => work.id === workItemId);
+	if (
+		!item ||
+		!["failed", "cancelled", "interrupted"].includes(item.status)
+	) {
+		throw new Error("この作業は再試行できません。");
+	}
+	return replaceItem(state, { ...item, status: "ready" });
+}
+function archiveIntent(state: IntentState): IntentState {
+	if (
+		state.workItems.some((item) =>
+			["running", "stopping"].includes(item.status),
+		)
+	) {
+		throw new Error("実行中はアーカイブできません。");
+	}
+	if (state.workflow.status === "archived") {
+		return state;
+	}
+	return {
+		...state,
+		revision: state.revision + 1,
+		workflow: { ...state.workflow, status: "archived" },
+	};
+}
+
+function attemptStatus(
+	status: WorkItem["status"],
+): WorkItem["attempts"][number]["status"] {
+	if (status === "implemented") {
+		return "completed";
+	}
+	if (status === "ready") {
+		return "failed";
+	}
+	return status;
 }

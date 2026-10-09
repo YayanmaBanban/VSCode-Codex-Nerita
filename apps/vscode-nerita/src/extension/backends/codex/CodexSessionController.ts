@@ -1,5 +1,6 @@
 // 検証済みの Webview 操作を、現在の thread とローカル実行 ID に限定する。
 import type { AppServerNotification } from "./protocol/rpcMessage";
+import { executeBackend } from "../../session/BackendExecution";
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -68,7 +69,12 @@ export class CodexSessionController extends SessionState {
 				notification: (message) => this.notification(message),
 				request: (message, signal) =>
 					this.serverRequests.request(message, signal),
-				resetRun: () => this.run.reset(),
+				resetRun: () => {
+					this.run.reset();
+					this.execution.fail(
+						new Error("Codex の内部実行が中断されました。"),
+					);
+				},
 				initializedThread: (thread) => this.initializedThread(thread),
 			},
 			factory,
@@ -88,6 +94,7 @@ export class CodexSessionController extends SessionState {
 		this.run = new CodexRun(
 			{
 				...session,
+				finished: (status) => this.execution.finish(status),
 				failConnection: (message) =>
 					this.lifecycle.failConnection(message),
 			},
@@ -111,6 +118,26 @@ export class CodexSessionController extends SessionState {
 	/** 接続の終了待ちと世代の照合は、接続処理へまとめて委ねる。 */
 	connect(): Promise<void> {
 		return this.lifecycle.connect();
+	}
+	/** 内部入力はスラッシュコマンド・追加指示・チャット用通信を通さず送信する。 */
+	async execute(text: string, signal: AbortSignal) {
+		if (
+			this.busy() ||
+			this.state.connection !== "ready" ||
+			this.state.configPending ||
+			this.state.sessionPending
+		) {
+			throw new Error("Codex の内部実行を開始できません。");
+		}
+		return executeBackend(
+			this.execution,
+			() => this.run.prompt(text),
+			() => this.cancel(),
+			signal,
+		);
+	}
+	cancelExecution(): void {
+		this.cancel();
 	}
 
 	/** ワークスペース変更時の接続取消しと実行解除を同じ経路へ通す。 */
@@ -530,9 +557,7 @@ export class CodexSessionController extends SessionState {
 	private async sendPromptAction(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): Promise<void> {
-		const command = /^\/(plan|goal)(?:\s([\s\S]*))?$/u.exec(
-			message.text.trim(),
-		);
+		const command = /^\/(plan)(?:\s([\s\S]*))?$/u.exec(message.text.trim());
 		if (command) {
 			this.assertSubmissionIdle();
 			if (this.options.mode !== command[1]) {

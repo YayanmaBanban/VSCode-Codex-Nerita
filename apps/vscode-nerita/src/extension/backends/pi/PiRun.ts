@@ -9,7 +9,10 @@ import type { ChatState } from "@nerita/shared/chatState";
 import { realpath } from "node:fs/promises";
 import type { WorkflowExecution } from "@nerita/shared/workflows/messages";
 import { randomUUID } from "node:crypto";
-import type { UiMessage } from "@nerita/shared/messages";
+import {
+	executeBackend,
+	type BackendPrompt,
+} from "../../session/BackendExecution";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { PiLifecycle } from "./PiLifecycle";
 import { PiEventMapper } from "./PiEventMapper";
@@ -34,6 +37,26 @@ type Submission = {
 
 /** 通常送信と追加指示を同じ実行に結び付け、停止・完了との競合を遮断する。 */
 export abstract class PiRun extends PiLifecycle {
+	/** DLC は通常の受信・追加指示処理を通さず、新規の入力だけを実行する。 */
+	async execute(text: string, signal: AbortSignal) {
+		if (
+			this.busy() ||
+			this.state.connection !== "ready" ||
+			this.state.configPending ||
+			this.state.sessionPending
+		) {
+			throw new Error("Pi の内部実行を開始できません。");
+		}
+		return executeBackend(
+			this.execution,
+			() => this.submit({ requestId: randomUUID(), text }),
+			() => this.cancel(),
+			signal,
+		);
+	}
+	cancelExecution(): void {
+		this.cancel();
+	}
 	private submission: Submission | undefined;
 	protected readonly approvals = new PiPermissions(() =>
 		this.patch({ permissions: this.approvals.list() }),
@@ -130,9 +153,7 @@ export abstract class PiRun extends PiLifecycle {
 		return operation;
 	}
 	/** SDK の事前検証が終わった時点で送信受付を通知し、入力欄の下書きを消せるようにする。 */
-	protected submit(
-		message: Extract<UiMessage, { type: "prompt/send" }>,
-	): void {
+	protected submit(message: BackendPrompt): void {
 		const runtime = this.runtime;
 		if (!runtime || this.state.sessionPending) {
 			throw new Error("Piへ接続してから送信してください。");
@@ -208,10 +229,7 @@ export abstract class PiRun extends PiLifecycle {
 	}
 
 	/** SDK の非同期の入力処理中は次の送信を拒否し、遅れて積まれたキューを回収する。 */
-	private steer(
-		message: Extract<UiMessage, { type: "prompt/send" }>,
-		submission: Submission,
-	): void {
+	private steer(message: BackendPrompt, submission: Submission): void {
 		const runtime = this.runtime!;
 		if (
 			!submission.accepted ||
@@ -289,9 +307,7 @@ export abstract class PiRun extends PiLifecycle {
 	}
 
 	/** 通常送信またはキュー登録された入力だけを会話本文へ追加する。 */
-	private appendUserMessage(
-		message: Extract<UiMessage, { type: "prompt/send" }>,
-	) {
+	private appendUserMessage(message: BackendPrompt) {
 		this.patch({
 			messages: [
 				...this.state.messages,
@@ -316,7 +332,7 @@ export abstract class PiRun extends PiLifecycle {
 		submission: Submission,
 		epoch: number,
 		runtime: PiSession,
-		message: Extract<UiMessage, { type: "prompt/send" }>,
+		message: BackendPrompt,
 		error: unknown,
 	) {
 		if (submission.cancelled || submission.ended || this.epoch !== epoch) {
@@ -361,6 +377,7 @@ export abstract class PiRun extends PiLifecycle {
 			...this.runtime?.account?.snapshot(),
 			usage: this.contextUsage(),
 		});
+		this.execution.finish(finishedRunStatus(cancelled, error));
 		this.refreshQuota();
 	}
 
@@ -416,6 +433,7 @@ export abstract class PiRun extends PiLifecycle {
 
 	/** 遅れて完了する事前検証も、古い会話へ送信できない状態にする。 */
 	protected override resetRun(): void {
+		this.execution.fail(new Error("Pi の内部実行が中断されました。"));
 		if (this.runtime) {
 			setPiSessionRunning(this.runtime.sessionId, false);
 		}
@@ -433,7 +451,7 @@ export abstract class PiRun extends PiLifecycle {
 		runtime: PiSession,
 		current: () => boolean,
 		submission: Submission,
-		message: Extract<UiMessage, { type: "prompt/send" }>,
+		message: BackendPrompt,
 	) {
 		return (text: string) =>
 			runtime.prompt(text, {
@@ -500,7 +518,7 @@ export abstract class PiRun extends PiLifecycle {
 		submission: Submission,
 		mapper: PiEventMapper,
 		current: () => boolean,
-		message: Extract<UiMessage, { type: "prompt/send" }>,
+		message: BackendPrompt,
 	) {
 		const operation = input
 			.then(

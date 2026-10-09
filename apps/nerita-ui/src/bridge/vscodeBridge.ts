@@ -31,6 +31,7 @@ import {
 } from "@nerita/shared/guardrails/messages";
 /** VS Code が Webview に提供する最小 API。 */
 type VsCodeApi = {
+	setState: (state: unknown) => void;
 	postMessage: (
 		message:
 			| UiMessage
@@ -83,6 +84,13 @@ export function createPiAuthPost(): (request: PiAuthRequest) => void {
 /** API を一度だけ取得し、購読解除可能な Bridge を返す。 */
 export function createVsCodeBridge(): Bridge {
 	return createBridge((value) => (isHostMessage(value) ? value : undefined));
+}
+
+/** 再読み込み時のパネル復元を有効にする。実際の展開位置は Host の利用者状態に保存する。 */
+export function createDlcWorkspaceBridge(): Bridge {
+	const bridge = createVsCodeBridge();
+	api?.setState({ page: "dlc-workspace" });
+	return bridge;
 }
 
 /** 型ガードは元参照、Zod は解析済みの値を渡し、購読解除を共通化する。 */

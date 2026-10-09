@@ -1,5 +1,5 @@
 // Host の順序番号を確認し、会話の復元と差分購読を React に接続する。
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type ChatState, initialState } from "@nerita/shared/chatState";
 import type { UiMessage, HostMessage } from "@nerita/shared/messages";
 import type { Bridge } from "@nerita/shared/bridge";
@@ -51,14 +51,17 @@ export function useChat(bridge: Bridge) {
 		bridge.postMessage({ type: "ui/ready" });
 		return unsubscribe;
 	}, [bridge]);
-	/** 操作直前に個別要求の古いエラーを消す。 */
-	const send = (message: UiMessage) => {
-		if (message.type === "prompt/send") {
-			promptRequests.current.add(message.requestId);
-		}
-		setRequestError(null);
-		bridge.postMessage(message);
-	};
+	/** 操作直前に個別要求の古いエラーを消す。参照を固定して過去の本文の再描画を防ぐ。 */
+	const send = useCallback(
+		(message: UiMessage) => {
+			if (message.type === "prompt/send") {
+				promptRequests.current.add(message.requestId);
+			}
+			setRequestError(null);
+			bridge.postMessage(message);
+		},
+		[bridge],
+	);
 	return { state, requestError, send };
 }
 
@@ -91,6 +94,8 @@ function isAuxiliaryMessage(message: HostMessage): message is Exclude<
 	}
 > {
 	return [
+		"dlc/state",
+		"dlc/editorState",
 		"workspace/trustState",
 		"tool/outputResult",
 		"ui/codeBlock",

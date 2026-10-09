@@ -8,6 +8,7 @@ export function webviewHtml(
 	extensionUri: vscode.Uri,
 	page:
 		| "chat"
+		| "dlc-workspace"
 		| "sandbox"
 		| "credentials"
 		| "pi-auth"

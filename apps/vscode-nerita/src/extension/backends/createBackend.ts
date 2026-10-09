@@ -25,6 +25,7 @@ import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
 import { PiSessionController } from "./pi/PiSessionController";
 import { sandboxManagement } from "../runtime/SandboxPanel";
 import { credentialService } from "../credentials/CredentialService";
+import type { BackendId } from "@nerita/shared/backend";
 
 /** Codex の接続先に VS Code 標準のワークスペース条件を適用する。 */
 function workspaceDirectory(): string {
@@ -39,11 +40,13 @@ function workspaceDirectory(): string {
 export function createBackend(
 	context: vscode.ExtensionContext,
 	trustStore?: WorkspaceTrustStore,
+	backend?: BackendId,
 ): BackendSession {
 	if (
-		vscode.workspace
-			.getConfiguration("nerita")
-			.get<string>("backend", "codex") === "pi"
+		(backend ??
+			vscode.workspace
+				.getConfiguration("nerita")
+				.get<string>("backend", "codex")) === "pi"
 	) {
 		return new PiSessionController(createPiFactory(context, trustStore));
 	}

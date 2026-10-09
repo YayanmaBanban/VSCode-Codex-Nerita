@@ -1,9 +1,16 @@
 // 実行中の承認と追加質問を、同じターンの寿命に限定する。
 import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import type { ChatState } from "@nerita/shared/chatState";
+import { relative, resolve } from "node:path";
+import { isManagedDlcPath } from "@nerita/shared/dlc/managedPaths";
+import { canonicalPath } from "../../security/WorkspacePathPolicy";
 import type { InteractionService } from "./interaction/interactionService";
 import type { ActiveTurn } from "./ActiveTurn";
-import { Approvals, parseApproval } from "./interaction/Approvals";
+import {
+	Approvals,
+	parseApproval,
+	type ApprovalRequest,
+} from "./interaction/Approvals";
 import type { AppServerRequest } from "./protocol/rpcMessage";
 import { isRecord } from "@nerita/shared/validation";
 import { interactionRequest } from "./interaction/interactionRequests";
@@ -66,17 +73,10 @@ export class CodexRequests {
 		const tool = state.tools.find(
 			(item) => item.id === approval.itemId && item.runId === state.runId,
 		);
-		if (isNonZeroNumber(tool?.paths.length)) {
-			approval.presentation.fields = [
-				...approval.presentation.fields,
-				{
-					id: "paths",
-					label: "対象ファイル",
-					value: tool.paths.join("\n"),
-					display: "text",
-				},
-			];
+		if (await managedFileChange(message.method, state, tool)) {
+			return { decision: "decline" };
 		}
+		approvalPaths(approval, tool);
 		return this.approvals.ask(approval.presentation, [
 			signal,
 			run.abort.signal,
@@ -164,6 +164,52 @@ export class CodexRequests {
 			throw error;
 		}
 	}
+}
+
+function approvalPaths(
+	approval: ApprovalRequest,
+	tool: ChatState["tools"][number] | undefined,
+): void {
+	if (isNonZeroNumber(tool?.paths.length)) {
+		approval.presentation.fields = [
+			...approval.presentation.fields,
+			{
+				id: "paths",
+				label: "対象ファイル",
+				value: tool.paths.join("\n"),
+				display: "text",
+			},
+		];
+	}
+}
+
+/** App Server が承認を要求した既知の変更対象にも Host 管理領域の制限を適用する。 */
+async function managedFileChange(
+	method: string,
+	state: Readonly<ChatState>,
+	tool: ChatState["tools"][number] | undefined,
+): Promise<boolean> {
+	if (
+		method !== "item/fileChange/requestApproval" ||
+		state.cwd === null ||
+		!tool
+	) {
+		return false;
+	}
+	const cwd = tool.cwd ?? state.cwd;
+	for (const input of tool.paths) {
+		const paths = [resolve(cwd, input), await canonicalPath(input, cwd)];
+		if (
+			paths.some((path) =>
+				isManagedDlcPath(
+					relative(state.cwd ?? cwd, path).replaceAll("\\", "/"),
+				),
+			)
+		) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /** 実行対象がない対話要求へ、種類に合った取消結果を返す。 */

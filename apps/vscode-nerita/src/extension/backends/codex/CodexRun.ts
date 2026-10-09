@@ -20,6 +20,7 @@ import { isRecord } from "@nerita/shared/validation";
 
 /** 状態と接続はコントローラーから取得し、ターン処理で複製して保持しない。 */
 type RunSession = {
+	finished?: (status: "completed" | "cancelled" | "failed") => void;
 	snapshot: () => Readonly<ChatState>;
 	connection: () => CodexConnection | undefined;
 	busy: () => boolean;
@@ -330,6 +331,7 @@ export class CodexRun {
 					? "実行に失敗しました。入力内容とCodexの認証・設定を確認して再送してください。"
 					: null,
 		});
+		this.session.finished?.(status);
 	}
 	/** 開始応答の待機を終了し、承認を取り消して停止用タイマーを解除する。 */
 	reset(): void {

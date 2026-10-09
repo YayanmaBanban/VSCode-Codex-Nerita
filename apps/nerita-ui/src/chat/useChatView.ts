@@ -1,4 +1,4 @@
-// サイドバーとエディタの下書き・スクロール位置を Host 経由で引き継ぐ。
+// サイドバーとエディタの配置・スクロール位置を Host 経由で引き継ぐ。
 
 import {
 	type EffectCallback,
@@ -12,24 +12,12 @@ import {
 
 import type { BackendId } from "@nerita/shared/backend";
 import type { Bridge } from "@nerita/shared/bridge";
-import type { ComposerPart } from "@nerita/shared/composerContent";
 import type { SidebarLocation } from "@nerita/shared/sidebar";
 
-/** 空の入力にも編集可能な通常文を1つ用意する。 */
-const textPart = (text: string): ComposerPart => ({
-	id: crypto.randomUUID(),
-	type: "text",
-	text,
-});
-
-/** 表示先ごとの DOM と、全表示先で共有する下書きを接続する。 */
+/** 表示先ごとの DOM と、接続・配置・スクロール位置を接続する。 */
 export function useChatView(bridge: Bridge) {
 	const [untrusted, setUntrusted] = useState(false);
 	const [backend, setBackend] = useState<BackendId | undefined>();
-	const [draftParts, updateDraft] = useState<ComposerPart[]>(() => [
-		textPart(""),
-	]);
-	const draft = draftParts.map((part) => part.text).join("");
 	const [editor, setEditor] = useState(false);
 	const [sidebarLocation, setSidebarLocation] =
 		useState<SidebarLocation>("secondary");
@@ -42,7 +30,6 @@ export function useChatView(bridge: Bridge) {
 				setBackend,
 				setUntrusted,
 				setSidebarLocation,
-				updateDraft,
 				setEditor,
 				setRestore,
 			)(),
@@ -60,17 +47,6 @@ export function useChatView(bridge: Bridge) {
 		});
 		return () => cancelAnimationFrame(frame);
 	}, [restore]);
-	/** ローカル入力を即座に反映し、隠れた表示先にも最新値を渡す。 */
-	const setDraft = (value: string | ComposerPart[]) => {
-		const parts = typeof value === "string" ? [textPart(value)] : value;
-		updateDraft(parts);
-		bridge.postMessage({
-			type: "ui/saveDraft",
-			requestId: crypto.randomUUID(),
-			draft: parts.map((part) => part.text).join(""),
-			draftParts: parts,
-		});
-	};
 	/** 移動直前の位置を保存してから、Host に表示先の切り替えを依頼する。 */
 	const toggleEditor = () => {
 		bridge.postMessage({
@@ -89,9 +65,6 @@ export function useChatView(bridge: Bridge) {
 	return {
 		untrusted,
 		backend,
-		draft,
-		draftParts,
-		setDraft,
 		editor,
 		toggleEditor,
 		conversation,
@@ -100,13 +73,12 @@ export function useChatView(bridge: Bridge) {
 	};
 }
 
-/** 表示先間で共有した下書きとスクロール位置を購読する。 */
+/** 表示先の配置とスクロール位置を購読し、下書きの更新は入力領域へ任せる。 */
 function createViewStateEffect(
 	bridge: Bridge,
 	setBackend: Dispatch<SetStateAction<BackendId | undefined>>,
 	setUntrusted: Dispatch<SetStateAction<boolean>>,
 	setSidebarLocation: Dispatch<SetStateAction<SidebarLocation>>,
-	updateDraft: Dispatch<SetStateAction<ComposerPart[]>>,
 	setEditor: Dispatch<SetStateAction<boolean>>,
 	setRestore: Dispatch<SetStateAction<{ scrollTop: number } | null>>,
 ): EffectCallback {
@@ -127,7 +99,6 @@ function createViewStateEffect(
 			if (message.type !== "ui/viewState") {
 				return;
 			}
-			updateDraft(message.draftParts ?? [textPart(message.draft)]);
 			setEditor(message.editor);
 			if (message.restoreScroll) {
 				setRestore({ scrollTop: message.scrollTop });

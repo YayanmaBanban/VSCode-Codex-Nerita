@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"kind": "workspace-detection",
+	"detectorVersion": 1,
+	"classification": {
+		"detected": "brownfield",
+		"evidence": ["src/index.ts"]
+	},
+	"repository": { "vcs": "git", "root": ".", "submodules": false },
+	"layout": {
+		"kind": "single",
+		"definition": null,
+		"packageManager": "pnpm"
+	},
+	"projects": [{ "root": ".", "name": "sample", "manifest": "package.json" }],
+	"languages": [{ "name": "typescript", "evidence": ["src/index.ts"] }],
+	"frameworks": [
+		{ "name": "react", "projectRoot": ".", "evidence": ["package.json"] }
+	],
+	"declaredScripts": [
+		{
+			"projectRoot": ".",
+			"source": "package.json",
+			"names": ["check", "test"]
+		}
+	],
+	"practices": ["AGENTS.md"],
+	"scan": {
+		"status": "complete",
+		"inputFingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+		"warnings": []
+	}
+}

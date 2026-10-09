@@ -24,6 +24,8 @@ export function ComposerPlugin(props: {
 }) {
 	const [editor] = useLexicalComposerContext();
 	const latest = useRef(props);
+	// ローカル編集の反映が遅れて届いても、それを外部復元として新しい編集へ書き戻さない。
+	const localParts = useRef(new WeakSet<ComposerPart[]>());
 	useLayoutEffect(() => {
 		latest.current = props;
 	}, [props]);
@@ -39,11 +41,12 @@ export function ComposerPlugin(props: {
 			),
 		[editor],
 	);
-	useEffect(() => registerDraftUpdates(editor, latest), [editor]);
+	useEffect(() => registerDraftUpdates(editor, latest, localParts), [editor]);
 	useEffect(() => {
 		if (
+			localParts.current.has(props.parts) ||
 			editor.getEditorState().read(() => contentKey($readParts())) ===
-			contentKey(props.parts)
+				contentKey(props.parts)
 		) {
 			return;
 		}
@@ -81,6 +84,7 @@ function registerDraftUpdates(
 		onSubmit: () => void;
 		onError: (message: string) => void;
 	}>,
+	localParts: RefObject<WeakSet<ComposerPart[]>>,
 ): () => void {
 	return editor.registerUpdateListener(
 		({
@@ -119,6 +123,7 @@ function registerDraftUpdates(
 			}
 			latest.current.onError("");
 			if (contentKey(parts) !== contentKey(latest.current.parts)) {
+				localParts.current.add(parts);
 				latest.current.onChange(parts);
 			}
 		},

@@ -3,7 +3,7 @@ import type { ContextUsage, QuotaWindow } from "@nerita/shared/composer";
 import { isRecord } from "@nerita/shared/validation";
 
 /** 利用枠の1つのバケットを検証する。 */
-export function parseQuota(value: unknown): QuotaWindow[] {
+export function parseQuota(value: unknown): QuotaWindow[] | null {
 	if (!isRecord(value)) {
 		throw new Error("Invalid rate limits");
 	}
@@ -32,7 +32,10 @@ export function parseQuota(value: unknown): QuotaWindow[] {
 			windows,
 		);
 	}
-	return windows;
+	return nonEmptyQuota(windows);
+}
+function nonEmptyQuota(windows: QuotaWindow[]): QuotaWindow[] | null {
+	return windows.length === 0 ? null : windows;
 }
 /** 検証済みの利用枠を表示用の残量と期限へ変換する。 */
 function appendQuotaWindow(
@@ -71,7 +74,7 @@ function isResetTime(value: unknown): value is number | null {
 }
 
 /** 読み取り応答の互換バケットを利用する。 */
-export function parseQuotaResponse(value: unknown): QuotaWindow[] {
+export function parseQuotaResponse(value: unknown): QuotaWindow[] | null {
 	if (!isRecord(value)) {
 		throw new Error("Invalid rate limits response");
 	}

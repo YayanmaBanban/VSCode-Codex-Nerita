@@ -9,8 +9,10 @@ import {
 	createTrustBridge,
 	createSandboxBridge,
 	createCredentialBridge,
+	createDlcWorkspaceBridge,
 } from "./bridge/vscodeBridge";
 import { ChatApp } from "./chat/ChatApp";
+import { DlcWorkspace } from "./chat/dlc/DlcWorkspace";
 import { PiAuthPage } from "./pi/PiAuthPage";
 import { GuardrailsEditor } from "./pi/guardrails/GuardrailsEditor";
 import { WorkflowEditor } from "./pi/workflows/WorkflowEditor";
@@ -21,7 +23,11 @@ import { CredentialSettings } from "./pi/CredentialSettings";
 import "./chat/tailwind.css";
 const root = document.getElementById("root");
 if (root) {
-	if (root.dataset.page === "credentials") {
+	if (root.dataset.page === "dlc-workspace") {
+		createRoot(root).render(
+			<DlcWorkspace bridge={createDlcWorkspaceBridge()} />,
+		);
+	} else if (root.dataset.page === "credentials") {
 		createRoot(root).render(
 			<CredentialSettings bridge={createCredentialBridge()} />,
 		);

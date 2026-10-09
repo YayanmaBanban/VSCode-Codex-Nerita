@@ -10,6 +10,7 @@ import type { UiMessage } from "@nerita/shared/messages";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import type { ComposerReference } from "@nerita/shared/composerReferences";
+import { memo } from "react";
 import { messageReferences } from "./messageReferences";
 import { MessageReferenceChip } from "./MessageReferenceChip";
 
@@ -82,8 +83,8 @@ const markdownStyle = cn(
 	"[&_input]:mr-[6px]",
 );
 
-/** 生の HTML は実行せず、表・リスト・改行を含む Markdown を表示する。 */
-export function MessageText({
+/** 入力や別の発言の更新では、未変更の本文を再解析せず、リンクの DOM とフォーカスも保持する。 */
+export const MessageText = memo(function MessageText({
 	text,
 	send,
 	references = [],
@@ -150,4 +151,4 @@ export function MessageText({
 			</Markdown>
 		</div>
 	);
-}
+});

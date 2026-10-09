@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { DlcPathSchema } from "@nerita/shared/dlc/contracts";
 import type { SourceSnapshot } from "@nerita/dlc/runtime";
 import { containsPath } from "../security/AgentAccessPolicy";
+import { isDlcPath, isDlcKnowledge } from "@nerita/shared/dlc/managedPaths";
 
 const execute = promisify(execFile);
 const maxFiles = 10000;
@@ -24,22 +25,7 @@ export async function collectSourceSnapshot(
 		throw new Error("DLC は Git リポジトリのルートで実行してください。");
 	}
 	const baseCommit = (await git(root, ["rev-parse", "HEAD"], signal)).trim();
-	const indexDigest = createHash("sha256")
-		.update(
-			await git(
-				root,
-				[
-					"diff",
-					"--cached",
-					"--binary",
-					"--no-ext-diff",
-					"--no-textconv",
-					"HEAD",
-				],
-				signal,
-			),
-		)
-		.digest("hex");
+	const indexDigest = await stagedDigest(root, signal);
 	const names = [
 		...new Set(
 			(
@@ -56,13 +42,18 @@ export async function collectSourceSnapshot(
 				)
 			)
 				.split("\0")
-				.filter(Boolean),
+				.filter(
+					(name) =>
+						name !== "" &&
+						(!isDlcPath(name) || isDlcKnowledge(name)),
+				),
 		),
 	].sort();
 	if (names.length > maxFiles) {
 		throw new Error("DLC のソース収集上限を超えています。");
 	}
 	const files: SourceSnapshot["files"] = [];
+	const artifacts: SourceSnapshot["files"] = [];
 	let bytes = 0;
 	for (const name of names) {
 		signal.throwIfAborted();
@@ -75,20 +66,20 @@ export async function collectSourceSnapshot(
 		if (bytes > maxBytes) {
 			throw new Error("DLC のソース収集容量を超えています。");
 		}
-		files.push({
+		(isDlcKnowledge(path) ? artifacts : files).push({
 			path,
 			digest: createHash("sha256").update(file).digest("hex"),
 		});
 	}
 	const id = createHash("sha256")
-		.update(JSON.stringify({ baseCommit, indexDigest, files }))
+		.update(JSON.stringify({ baseCommit, indexDigest, files, artifacts }))
 		.digest("hex");
 	if (
 		(await git(root, ["rev-parse", "HEAD"], signal)).trim() !== baseCommit
 	) {
 		throw new Error("ソースの収集中に基準コミットが変更されました。");
 	}
-	return { id, baseCommit, indexDigest, complete: true, files };
+	return { id, baseCommit, indexDigest, complete: true, files, artifacts };
 }
 
 async function git(
@@ -130,4 +121,29 @@ async function sourceFile(root: string, path: string): Promise<Buffer | null> {
 		throw new Error(`ソース収集容量を超えています: ${path}`);
 	}
 	return readFile(target);
+}
+
+async function stagedDigest(
+	root: string,
+	signal: AbortSignal,
+): Promise<string> {
+	return createHash("sha256")
+		.update(
+			await git(
+				root,
+				[
+					"diff",
+					"--cached",
+					"--binary",
+					"--no-ext-diff",
+					"--no-textconv",
+					"HEAD",
+					"--",
+					".",
+					":(exclude,icase).nerita/dlc/**",
+				],
+				signal,
+			),
+		)
+		.digest("hex");
 }

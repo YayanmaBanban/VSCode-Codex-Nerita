@@ -23,6 +23,7 @@ import {
 import { type SidebarLocation } from "@nerita/shared/sidebar";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
 import { ChatTrustState } from "./ChatTrustState";
+import { BackendRuntime } from "../session/BackendRuntime";
 
 /** UI を閉じても会話を保持し、再表示時の ready で状態を復元する。 */
 export class ChatViewProvider
@@ -253,6 +254,9 @@ export class ChatViewProvider
 
 	/** 実行・接続・設定変更の完了前はセッションを交換しない。 */
 	private runtimeBusy(): boolean {
+		if (this.session instanceof BackendRuntime && this.session.busy()) {
+			return true;
+		}
 		const state = this.session.snapshot();
 		return (
 			state.run === "running" ||
@@ -323,6 +327,10 @@ export class ChatViewProvider
 
 	/** 要求元の Webview にだけ接続状態と保存済み表示を復元する。 */
 	private async initializeView(webview: vscode.Webview) {
+		await this.session.receive({
+			type: "dlc/read",
+			requestId: crypto.randomUUID(),
+		});
 		await this.trustState.refresh();
 		void webview.postMessage({
 			type: "ui/backendState",

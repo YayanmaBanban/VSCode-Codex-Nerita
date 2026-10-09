@@ -2,11 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DlcController } from "@nerita/dlc/controller";
-import {
-	createProject,
-	projectProjection,
-	type ProjectState,
-} from "@nerita/dlc/state";
+import { intentProjection, type IntentState } from "@nerita/dlc/state";
 import { applyAction, beginWork, finishWork } from "@nerita/dlc/transitions";
 import type {
 	ExecutionRequest,
@@ -14,17 +10,18 @@ import type {
 	NeritaRuntimePort,
 } from "@nerita/dlc/runtime";
 import {
-	plannedProject,
+	plannedIntent,
+	createTestIntent,
 	executionReceipt,
 	successfulRuntime,
 } from "../support/dlc";
 
-void test("Goal と Plan を登録し、実測した変更を伴う実装結果でレビュー待ちになる", () => {
-	const goal = createProject("project", "挨拶を変更する");
-	assert.equal(projectProjection(goal).canRun, false);
-	const running = beginWork(plannedProject(), "attempt");
+void test("Intent と Plan を登録し、実測した変更を伴う実装結果でレビュー待ちになる", () => {
+	const goal = createTestIntent();
+	assert.equal(intentProjection(goal).canRun, false);
+	const running = beginWork(plannedIntent(), "attempt");
 	const state = finishWork(running, "attempt", executionReceipt());
-	assert.equal(state.stage, "awaiting-review");
+	assert.equal(intentProjection(state).stage, "awaiting-review");
 	assert.equal(state.workItems[0]?.status, "implemented");
 	assert.equal(
 		state.workItems[0].attempts[0]?.evidence?.tools[0]?.status,
@@ -90,17 +87,17 @@ for (const scenario of missingEvidence) {
 		const receipt = executionReceipt();
 		scenario.edit(receipt);
 		const state = finishWork(
-			beginWork(plannedProject(), "attempt"),
+			beginWork(plannedIntent(), "attempt"),
 			"attempt",
 			receipt,
 		);
 		assert.equal(state.workItems[0]?.status, "failed");
-		assert.equal(state.stage, "implementing");
+		assert.equal(intentProjection(state).stage, "implementing");
 	});
 }
 
 void test("旧世代の遅延結果と別作業の結果を受け付けない", () => {
-	const running = beginWork(plannedProject(), "current");
+	const running = beginWork(plannedIntent(), "current");
 	assert.equal(finishWork(running, "old", executionReceipt("old")), running);
 	assert.throws(
 		() =>
@@ -117,17 +114,17 @@ void test("旧世代の遅延結果と別作業の結果を受け付けない", 
 });
 
 void test("表示データを書き換えてもドメインの状態は変わらない", () => {
-	const state = plannedProject();
-	const view = projectProjection(state);
+	const state = plannedIntent();
+	const view = intentProjection(state);
 	view.workItems[0]!.status = "implemented";
-	assert.equal(projectProjection(state).workItems[0]?.status, "ready");
+	assert.equal(intentProjection(state).workItems[0]?.status, "ready");
 });
 
 void test("構造化結果が不正でも実測した根拠を失敗した実行に残す", () => {
 	const receipt = executionReceipt();
 	receipt.semantic = { outcome: "implemented", executed: true };
 	const state = finishWork(
-		beginWork(plannedProject(), "attempt"),
+		beginWork(plannedIntent(), "attempt"),
 		"attempt",
 		receipt,
 	);
@@ -138,10 +135,10 @@ void test("構造化結果が不正でも実測した根拠を失敗した実行
 });
 
 void test("クラッシュした実行は中断として復旧し、明示的な再試行で新しい世代を使う", async () => {
-	let saved: ProjectState | undefined;
+	let saved: IntentState | undefined;
 	let launches = 0;
 	const controller = await DlcController.open(
-		beginWork(plannedProject(), "crashed"),
+		beginWork(plannedIntent(), "crashed"),
 		successfulRuntime(() => {
 			launches += 1;
 		}),
@@ -159,7 +156,10 @@ void test("クラッシュした実行は中断として復旧し、明示的な
 		/実行できる作業/,
 	);
 	assert.equal(launches, 0);
-	await controller.dispatch({ type: "retry", workItemId: "project:task:1" });
+	await controller.dispatch({
+		type: "retry",
+		workItemId: "00000000-0000-4000-8000-000000000023:task:1",
+	});
 	await controller.dispatch({ type: "run" });
 	assert.equal(launches, 1);
 	assert.equal(saved?.workItems[0]?.attempts[0]?.status, "interrupted");
@@ -191,7 +191,7 @@ void test("二重起動を拒否し、停止後に返る成功もキャンセル
 		status: () => ({ attemptId: "attempt", running: true }),
 	};
 	const controller = await DlcController.open(
-		plannedProject(),
+		plannedIntent(),
 		runtime,
 		{ save: () => Promise.resolve() },
 		() => "attempt",
@@ -213,14 +213,14 @@ void test("実行開始状態の保存に失敗したら Runtime を起動しな
 	let launches = 0;
 	let saves = 0;
 	const controller = await DlcController.open(
-		plannedProject(),
+		plannedIntent(),
 		successfulRuntime(() => {
 			launches += 1;
 		}),
 		{
 			save: () => {
 				saves += 1;
-				return saves > 1
+				return saves >= 1
 					? Promise.reject(new Error("保存失敗"))
 					: Promise.resolve();
 			},
@@ -235,7 +235,7 @@ void test("実行開始状態の保存に失敗したら Runtime を起動しな
 void test("起動直後のキャンセルでは開始状態を保存しても Runtime を送信しない", async () => {
 	let launches = 0;
 	const dlc = await DlcController.open(
-		plannedProject(),
+		plannedIntent(),
 		successfulRuntime(() => {
 			launches += 1;
 		}),

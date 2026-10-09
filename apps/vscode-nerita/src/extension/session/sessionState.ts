@@ -5,10 +5,12 @@ import { type HostMessage } from "@nerita/shared/messages";
 import { createBuiltinUiRegistry } from "../ui-contributions/builtinContributions";
 import type { ContributionContext } from "../ui-contributions/contributionConditions";
 import { StatePublisher } from "./statePublisher";
+import { BackendExecution } from "./BackendExecution";
 import { ToolOutputStore } from "./ToolOutputStore";
 import type { ToolOutputRequest } from "@nerita/shared/toolOutput";
 /** 接続と実行が共有する状態・承認管理。 */
 export class SessionState {
+	protected readonly execution = new BackendExecution();
 	private outputs = new ToolOutputStore();
 	/** 出力取得は実行状態から独立させ、失効した参照も通常の応答として返す。 */
 	protected async readToolOutput(request: ToolOutputRequest): Promise<void> {
@@ -41,6 +43,57 @@ export class SessionState {
 			),
 		});
 	}
+	/** 終了後の表示記録は、参照の失効前に保存元から本文を取得する。 */
+	async executionConversation(): Promise<ChatState> {
+		const state = this.snapshot();
+		let total = 0;
+		for (const tool of state.tools) {
+			const ref = tool.output?.outputRef;
+			if (ref === undefined) {
+				continue;
+			}
+			const text = await this.executionOutput(
+				ref,
+				16 * 1024 * 1024 - total,
+			);
+			tool.rawOutput = text;
+			total += Buffer.byteLength(text);
+			delete tool.output;
+		}
+		return state;
+	}
+	private async executionOutput(
+		ref: string,
+		budget: number,
+	): Promise<string> {
+		const parts: string[] = [];
+		let offset = 0;
+		let size = 0;
+		for (;;) {
+			const response = await this.outputs.read({
+				type: "tool/output",
+				requestId: ref,
+				outputRef: ref,
+				offset,
+				limit: 64 * 1024,
+			});
+			if (response.error !== undefined) {
+				throw new Error(response.error);
+			}
+			size += Buffer.byteLength(response.text);
+			if (size > budget) {
+				throw new Error("DLC の出力保存上限を超えています。");
+			}
+			parts.push(response.text);
+			if (response.eof) {
+				return parts.join("");
+			}
+			if (response.nextOffset <= offset) {
+				throw new Error("DLC の出力を最後まで取得できません。");
+			}
+			offset = response.nextOffset;
+		}
+	}
 	/** UI 通知の購読と解除を提供する。 */
 	subscribe(listener: (event: HostMessage) => void): () => void {
 		this.listeners.add(listener);
@@ -71,6 +124,7 @@ export class SessionState {
 		patch: Partial<Omit<ChatState, "revision">>,
 		outputs?: ToolOutputStore,
 	): void {
+		this.execution.observe(patch);
 		patch = finalizeMessages(patch, this.state);
 		// 一覧の絞り込みや再取得で現在のタイトルを失わないよう、会話状態に保持する。
 		const sessionId =
@@ -125,6 +179,7 @@ export class SessionState {
 	}
 	/** 終了時に UI 購読を解放する。 */
 	protected clearListeners(): void {
+		this.execution.fail(new Error("内部実行の接続が終了しました。"));
 		this.outputs.dispose();
 		this.publisher.dispose();
 		this.listeners.clear();

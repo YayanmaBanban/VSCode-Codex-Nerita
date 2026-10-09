@@ -9,6 +9,7 @@ import { isSidebarLocation } from "./sidebar";
 import { validDraftParts } from "./composerContent";
 import { isPathString, isWorkspacePath } from "./workspacePaths";
 import { isSessionReference } from "./sessionReferences";
+import { DlcEditorStateSchema, DlcViewSchema } from "./dlc/contracts";
 
 /** Host からの通知もブラウザで受信時に検証する。 */
 export function isHostMessage(value: unknown): value is HostMessage {
@@ -25,6 +26,9 @@ const hostMessageValidators = new Map<
 	(value: Record<string, unknown>) => boolean
 >(
 	Object.entries({
+		"dlc/state": (value) => DlcViewSchema.safeParse(value.view).success,
+		"dlc/editorState": (value) =>
+			DlcEditorStateSchema.safeParse(value.state).success,
 		"workspace/trustState": (value) => typeof value.untrusted === "boolean",
 		"tool/outputResult": validToolOutputResponse,
 		"ui/codeBlock": (value) => {

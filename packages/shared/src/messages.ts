@@ -28,9 +28,11 @@ import type { PersonalityMessage } from "./personality";
 import type { ComposerMessage } from "./composer";
 import type { AgentThreadView } from "./subAgents";
 import type { SessionHistoryMessage } from "./sessionHistory";
+import type { DlcEditorState, DlcUiMessage, DlcView } from "./dlc/contracts";
 
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| DlcUiMessage
 	| { type: "workspace/manageTrust"; requestId: string }
 	| ToolOutputRequest
 	| { type: "diff/open"; requestId: string; path: string }
@@ -116,6 +118,8 @@ export type UiMessage =
 
 /** 初期復元・以後の差分・個別要求の失敗を通知する。 */
 export type HostMessage =
+	| { type: "dlc/state"; view: DlcView }
+	| { type: "dlc/editorState"; state: DlcEditorState }
 	| { type: "workspace/trustState"; untrusted: boolean }
 	| ToolOutputResponse
 	| { type: "ui/backendState"; backend: BackendId }

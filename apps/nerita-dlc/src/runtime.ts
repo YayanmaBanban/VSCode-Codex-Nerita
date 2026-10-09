@@ -10,6 +10,11 @@ export const SourceSnapshotSchema = z.strictObject({
 	files: z.array(
 		z.strictObject({ path: DlcPathSchema, digest: z.string().min(1) }),
 	),
+	artifacts: z
+		.array(
+			z.strictObject({ path: DlcPathSchema, digest: z.string().min(1) }),
+		)
+		.optional(),
 });
 export type SourceSnapshot = z.infer<typeof SourceSnapshotSchema>;
 
@@ -50,8 +55,8 @@ export type SemanticResult = z.infer<typeof SemanticResultSchema>;
 
 /** 方針の拡張や未対応の継続方式は、実行前に Runtime が拒否する。 */
 export const ExecutionRequestSchema = DlcTaskSchema.extend({
-	projectId: z.string(),
-	goal: z.string(),
+	intentId: z.uuid(),
+	request: z.string(),
 	workItemId: z.string(),
 	attemptId: z.string(),
 	continuity: z.enum(["fresh", "continue", "handoff"]),

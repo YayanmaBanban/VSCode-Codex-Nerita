@@ -14,6 +14,7 @@ import { isSymbolQuery } from "./workspaceSymbols";
 import { validSessionReferences } from "./sessionReferences";
 import { isChangeScope, validChangeScopes } from "./changeReferences";
 import { validCodeReferences } from "./codeReferences";
+import { DlcUiMessageSchema } from "./dlc/contracts";
 
 /** UI からの要求は実行前に検証する。 */
 export function isUiMessage(value: unknown): value is UiMessage {
@@ -25,6 +26,12 @@ export function isUiMessage(value: unknown): value is UiMessage {
 	}
 	if (!isId(value.requestId)) {
 		return false;
+	}
+	if (
+		typeof value.type === "string" &&
+		(value.type.startsWith("dlc/") || value.type === "ui/setMode")
+	) {
+		return DlcUiMessageSchema.safeParse(value).success;
 	}
 
 	const validator = uiMessageValidators.get(value.type);

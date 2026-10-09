@@ -11,6 +11,7 @@ import type { GuardResult } from "@nerita/shared/guardrails/messages";
 import { canonicalPath } from "./WorkspacePathPolicy";
 import { containsPath } from "./AgentAccessPolicy";
 import { matchPath } from "./GuardrailGlob";
+import { isManagedDlcPath } from "@nerita/shared/dlc/managedPaths";
 export { matchPath } from "./GuardrailGlob";
 
 /** 複数ルールのうち強い制限を残し、1つの allow で別の deny を解除しない。 */
@@ -54,6 +55,14 @@ function builtinProtection(
 	operation: "read" | "write",
 ): string | undefined {
 	const parts = path.replaceAll("\\", "/").toLowerCase().split("/");
+	if (
+		operation === "write" &&
+		roots.some((root) =>
+			isManagedDlcPath(relative(root, path).replaceAll("\\", "/")),
+		)
+	) {
+		return "DLC の管理ファイルは Host が更新します。";
+	}
 	if (
 		parts.some((part) => [".ssh", ".aws", ".gnupg"].includes(part)) ||
 		parts.at(-1) === ".git-credentials"
@@ -114,7 +123,7 @@ export async function inspectGuardPath(
 			result,
 			action,
 			"builtin:outside",
-			`workspace外への${operation === "read" ? "読取り" : "書込み"}です。`,
+			`ワークスペース外への${operation === "read" ? "読み取り" : "書き込み"}です。`,
 		);
 	}
 	for (const rule of matching) {

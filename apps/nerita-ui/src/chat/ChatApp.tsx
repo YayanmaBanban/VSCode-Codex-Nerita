@@ -3,7 +3,6 @@ import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { Bridge } from "@nerita/shared/bridge";
 import { type ChatState } from "@nerita/shared/chatState";
-import { type ComposerPart } from "@nerita/shared/composerContent";
 import { type UiMessage } from "@nerita/shared/messages";
 import { cn } from "cnfast";
 import { AnimatePresence } from "motion/react";
@@ -12,9 +11,8 @@ import { AgentViewer } from "./agents/AgentViewer";
 import { useAgentViewer } from "./agents/useAgentViewer";
 import "./chat.css";
 import { ChatConversation } from "./ChatConversation";
-import { Composer } from "./composer/Composer";
-import { usePromptSubmission } from "./composer/usePromptSubmission";
-import { ConnectionHeader } from "./connection/ConnectionHeader";
+import { ChatComposer } from "./composer/ChatComposer";
+import { ChatModeHeader } from "./ChatModeHeader";
 import { useFollowConversation } from "./messages/useFollowConversation";
 import { NotificationCard } from "./NotificationCard";
 import { ChatSearchBar } from "./search/ChatSearchBar";
@@ -24,39 +22,26 @@ import { useSessionPanel } from "./sessions/useSessionPanel";
 import { useChat } from "./useChat";
 import { useChatView } from "./useChatView";
 import { ToolOutputBridge } from "./tools/ToolOutputView";
+import { useDlc } from "./dlc/useDlc";
+import "./dlc/dlc.css";
 
 /** Host とのメッセージ送受信に使うブリッジ。 */
 type ChatAppProps = { bridge: Bridge };
 
 /** 差し替え可能なブリッジを使って実環境と Storybook で同じ UI を動かす。 */
 export function ChatApp({ bridge }: ChatAppProps) {
-	const {
-		untrusted,
-		backend,
-		draft,
-		draftParts,
-		setDraft,
-		editor,
-		toggleEditor,
-		conversation,
-		sidebarLocation,
-		selectSidebar,
-	} = useChatView(bridge);
-	const { state, requestError, send } = useChat(bridge);
+	const view = useChatView(bridge);
+	const { conversation } = view;
+	const chat = useChat(bridge);
+	const { state, send } = chat;
+	const dlc = useDlc(bridge);
 	const agentViewer = useAgentViewer(bridge, state.sessionId);
 	const search = useChatSearch(conversation);
 	const sessionPanel = useSessionPanel(send);
-	const submission = usePromptSubmission(
-		bridge,
-		state,
-		draft,
-		() => setDraft(""),
-		send,
-		draftParts,
-	);
+	const [submissionLocked, setSubmissionLocked] = useState(false);
 	const bottom = useRef<HTMLDivElement>(null);
 	const busy = state.run === "running" || state.run === "cancelling";
-	const available = chatAvailable(state, busy, submission);
+	const available = chatAvailable(state, busy, submissionLocked);
 	useFollowConversation(
 		conversation,
 		state.sessionId,
@@ -69,19 +54,12 @@ export function ChatApp({ bridge }: ChatAppProps) {
 					"chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col",
 				)}
 			>
-				<ConnectionHeader
-					untrusted={untrusted}
-					backend={backend}
-					sidebarLocation={sidebarLocation}
-					onSelectSidebar={selectSidebar}
-					state={state}
-					editor={editor}
-					onToggleEditor={toggleEditor}
-					requestError={requestError}
+				<ChatModeHeader
+					view={view}
+					chat={chat}
+					dlc={dlc}
 					available={available}
-					send={send}
-					sessionsOpen={sessionPanel.open}
-					onToggleSessions={sessionPanel.toggle}
+					sessionPanel={sessionPanel}
 				/>
 				<ChatWorkspace
 					agentViewer={agentViewer}
@@ -92,10 +70,9 @@ export function ChatApp({ bridge }: ChatAppProps) {
 					busy={busy}
 					conversation={conversation}
 					bottom={bottom}
-					submission={submission}
+					onSubmissionLock={setSubmissionLocked}
 					bridge={bridge}
-					draftParts={draftParts}
-					setDraft={setDraft}
+					dlc={dlc.mode === "dlc"}
 				/>
 			</main>
 		</ToolOutputBridge>
@@ -104,6 +81,7 @@ export function ChatApp({ bridge }: ChatAppProps) {
 
 /** 会話・検索・履歴・下書きの状態と、表示や送信に使う操作・DOM 参照。 */
 type ChatWorkspaceProps = {
+	dlc: boolean;
 	agentViewer: ReturnType<typeof useAgentViewer>;
 	state: ChatState;
 	send: (message: UiMessage) => void;
@@ -112,23 +90,14 @@ type ChatWorkspaceProps = {
 	busy: boolean;
 	conversation: RefObject<HTMLElement | null>;
 	bottom: RefObject<HTMLDivElement | null>;
-	submission: ReturnType<typeof usePromptSubmission>;
+	onSubmissionLock: (locked: boolean) => void;
 	bridge: Bridge;
-	draftParts: ComposerPart[];
-	setDraft: (value: string | ComposerPart[]) => void;
 };
 
 /** 会話・子スレッド・入力欄と履歴パネルを配置する。 */
 function ChatWorkspace(props: ChatWorkspaceProps) {
-	const {
-		agentViewer,
-		state,
-		send,
-		sessionPanel,
-		search,
-		submission,
-		draftParts,
-	} = props;
+	const { agentViewer, state, send, sessionPanel, search } = props;
+	const sessionsVisible = sessionPanel.open && !props.dlc;
 	return (
 		<div className="relative flex min-h-0 flex-1 overflow-x-clip">
 			{agentViewer.agent && (
@@ -140,7 +109,7 @@ function ChatWorkspace(props: ChatWorkspaceProps) {
 						? "hidden"
 						: "flex min-w-0 flex-1 flex-col",
 				)}
-				inert={sessionPanel.open && sessionPanel.compact}
+				inert={sessionsVisible && sessionPanel.compact}
 			>
 				<ChatSearchBar search={search} />
 				<ChatConversation {...props} onOpenAgent={agentViewer.open} />
@@ -151,25 +120,17 @@ function ChatWorkspace(props: ChatWorkspaceProps) {
 							message={state.error}
 						/>
 					)}
-				{submission.notice && (
-					<NotificationCard
-						key={submission.notice.id}
-						onClose={submission.dismissNotice}
-						backgroundColor="var(--nerita-input-validation-error-background)"
-					>
-						{submission.notice.text}
-					</NotificationCard>
-				)}
-				<Composer
-					{...props}
-					parts={draftParts}
-					submit={submission.submit}
-					locked={submission.locked}
-					available={submission.available}
+				<ChatComposer
+					bridge={props.bridge}
+					state={state}
+					send={send}
+					busy={props.busy}
+					visible={!props.dlc}
+					onLockChange={props.onSubmissionLock}
 				/>
 			</div>
 			<AnimatePresence initial={false}>
-				{sessionPanel.open && (
+				{sessionsVisible && (
 					<SessionPanel
 						key="sessions"
 						compact={sessionPanel.compact}
@@ -206,12 +167,12 @@ function AuthenticationFailureNotification({
 function chatAvailable(
 	state: ChatState,
 	busy: boolean,
-	submission: ReturnType<typeof usePromptSubmission>,
+	submissionLocked: boolean,
 ) {
 	return (
 		state.connection === "ready" &&
 		!busy &&
-		!submission.locked &&
+		!submissionLocked &&
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending

@@ -93,6 +93,33 @@ for (const [method, title, decision] of [
 	});
 }
 
+void test("Codex の承認対象に DLC 管理 JSON が含まれると、利用者の許可で解除せず拒否する", async (t) => {
+	const f = await codexFixture(t);
+	const controller = f.controller();
+	await controller.connect();
+	await action(controller, "prompt/send", { text: "状態を書き換える" });
+	const threadId = controller.snapshot().sessionId;
+	f.notify("item/started", {
+		threadId,
+		turnId: "turn-1",
+		item: {
+			id: "state-edit",
+			type: "fileChange",
+			status: "inProgress",
+			changes: [{ path: ".nerita/dlc/workspace.json", diff: "+invalid" }],
+		},
+	});
+	await until(() => controller.snapshot().tools[0]?.id === "state-edit");
+	const id = f.serverRequest("item/fileChange/requestApproval", {
+		threadId,
+		turnId: "turn-1",
+		itemId: "state-edit",
+		reason: "直接編集",
+	});
+	assert.deepEqual(await reply(f, id), { decision: "decline" });
+	assert.deepEqual(controller.snapshot().permissions, []);
+});
+
 void test("Codex は別スレッドと終了済みターンの承認を表示せず、次のターンへ持ち越さない", async (t) => {
 	const f = await codexFixture(t);
 	const controller = f.controller();

@@ -4,10 +4,10 @@ import {
 	type DlcProjection,
 } from "@nerita/shared/dlc/contracts";
 import {
-	type ProjectState,
-	ProjectStateSchema,
-	projectProjection,
-	recoverProject,
+	type IntentState,
+	IntentStateSchema,
+	intentProjection,
+	recoverIntent,
 } from "./state";
 import { type NeritaRuntimePort, type ExecutionRequest } from "./runtime";
 import {
@@ -18,7 +18,9 @@ import {
 	requestStop,
 } from "./transitions";
 
-export type ProjectStore = { save(state: ProjectState): Promise<void> };
+export type IntentStore = {
+	save(state: IntentState, expectedRevision: number): Promise<void>;
+};
 type ActiveRun = {
 	id: string;
 	abort: AbortController;
@@ -31,10 +33,11 @@ export class DlcController {
 	private pendingSaves = 0;
 	private writes: Promise<void> = Promise.resolve();
 	private storageFailed = false;
+	private listeners = new Set<() => void>();
 	private constructor(
-		private state: ProjectState,
+		private state: IntentState,
 		private runtime: NeritaRuntimePort,
-		private store: ProjectStore,
+		private store: IntentStore,
 		private newId: () => string,
 	) {}
 
@@ -42,16 +45,25 @@ export class DlcController {
 	static async open(
 		value: unknown,
 		runtime: NeritaRuntimePort,
-		store: ProjectStore,
+		store: IntentStore,
 		newId: () => string,
 	): Promise<DlcController> {
-		const state = recoverProject(ProjectStateSchema.parse(value));
-		await store.save(state);
+		const previous = IntentStateSchema.parse(value);
+		const state = recoverIntent(previous);
+		if (state !== previous) {
+			await store.save(state, previous.revision);
+		}
 		return new DlcController(state, runtime, store, newId);
 	}
 
 	projection(): DlcProjection {
-		return projectProjection(this.state);
+		return intentProjection(this.state);
+	}
+	subscribe(listener: () => void): () => void {
+		this.listeners.add(listener);
+		return () => {
+			this.listeners.delete(listener);
+		};
 	}
 
 	/** 操作要求を検証し、エージェントや UI が終端状態を書き込む経路を作らない。 */
@@ -98,11 +110,7 @@ export class DlcController {
 			signal.throwIfAborted();
 			const request = this.executionRequest(id);
 			const result = await this.runtime.run(request, signal);
-			await this.update((state) =>
-				signal.aborted
-					? failWork(state, id, "cancelled", "実行を停止しました。")
-					: finishWork(state, id, result),
-			);
+			await this.update((state) => finishWork(state, id, result));
 		} catch (error) {
 			if (this.storageFailed) {
 				throw error;
@@ -130,8 +138,8 @@ export class DlcController {
 			throw new Error("実行対象がありません。");
 		}
 		return {
-			projectId: this.state.id,
-			goal: this.state.goal,
+			intentId: this.state.intentId,
+			request: this.state.intent.request,
 			workItemId: item.id,
 			attemptId,
 			title: item.title,
@@ -155,7 +163,7 @@ export class DlcController {
 		return active.operation;
 	}
 	private update(
-		transition: (state: ProjectState) => ProjectState,
+		transition: (state: IntentState) => IntentState,
 	): Promise<void> {
 		this.pendingSaves += 1;
 		const operation = this.writes.then(async () => {
@@ -167,8 +175,14 @@ export class DlcController {
 				return;
 			}
 			try {
-				await this.store.save(next);
+				await this.store.save(
+					IntentStateSchema.parse(next),
+					this.state.revision,
+				);
 				this.state = next;
+				for (const listener of this.listeners) {
+					listener();
+				}
 			} catch (error) {
 				this.storageFailed = true;
 				throw error;

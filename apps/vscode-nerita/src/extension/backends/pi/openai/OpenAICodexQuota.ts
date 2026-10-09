@@ -34,7 +34,7 @@ export function openAICodexQuota(
 				}
 				const windows = await client.readRateLimits();
 				signal.throwIfAborted();
-				return windows.length > 0
+				return windows !== null
 					? windows.map((window) => ({
 							...window,
 							source: "codex-login" as const,

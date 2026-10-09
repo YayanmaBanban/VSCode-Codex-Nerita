@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { createBackend } from "./backends/createBackend";
 import type { BackendSession } from "./session/chatSession";
 import { BackendRuntime } from "./session/BackendRuntime";
+import { DlcSessionOwnership } from "./session/DlcSessionOwnership";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 import { registerSandboxSetup } from "./backends/codex/settings/sandboxSetup";
@@ -49,7 +50,14 @@ export async function activate(
 	} catch {
 		/* 未検証の取得設定は Runtime の接続時に拒否して表示する。 */
 	}
-	const session = new BackendRuntime(() => createBackend(context, trust));
+	const session = new BackendRuntime(
+		(backend) => createBackend(context, trust, backend),
+		new DlcSessionOwnership({
+			read: () => context.globalState.get("dlc.managedSessions"),
+			write: (ids) =>
+				context.globalState.update("dlc.managedSessions", ids),
+		}),
+	);
 	context.subscriptions.push({
 		dispose: trust.onChange(() => {
 			if (session.snapshot().uiContributions?.surface === "pi") {
@@ -58,7 +66,7 @@ export async function activate(
 		}),
 	});
 	controller = session;
-	dlc = registerDlcCommands(context, trust);
+	dlc = registerDlcCommands(context, trust, session);
 	registerWorkflowEditor(context, session);
 	registerAgentManager(context, session);
 	const provider = new ChatViewProvider(

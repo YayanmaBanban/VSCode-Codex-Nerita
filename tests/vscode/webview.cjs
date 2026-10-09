@@ -148,13 +148,13 @@ async function run() {
 		);
 		await chat.locator("button[data-connection]").click();
 		await expect(
-			chat.getByRole("button", { name: "接続済み", exact: true }),
+			chat.getByRole("status", { name: "接続済み", exact: true }),
 		).toBeVisible();
 		const { light } = await verifyApprovedWrite(model, page, chat, cwd);
 		await verifyStoppedWrite(model, page, chat, cwd, light);
-		await require("./dlc.cjs").verifyDlc(page, model, cwd);
+		await require("./dlc.cjs").verifyDlc(page, chat, model, cwd, findFrame);
 		console.log(
-			"実 Webview: 信頼操作・再接続・承認付き書込み・停止に成功",
+			"VS Code の Webview: 信頼操作・再接続・承認付き書き込み・停止に成功",
 			process.env.NERITA_UI_ARTIFACTS,
 		);
 		assert.deepEqual(errors, []);

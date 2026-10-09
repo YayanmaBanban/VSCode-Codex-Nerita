@@ -1,6 +1,7 @@
 // 入力欄の下に添付・使用量・接続中の設定を順に配置する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
+import { memo } from "react";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import { BackendSettingsSurface } from "../../contributions/BackendSettingsSurface";
@@ -17,7 +18,7 @@ type ComposerSettingsProps = {
 };
 
 /** 設定項目を Host から受け取り、変更要求を検証済みのメッセージで送る。 */
-export function ComposerSettings({
+export const ComposerSettings = memo(function ComposerSettings({
 	state,
 	send,
 	onOpenContext,
@@ -95,7 +96,7 @@ export function ComposerSettings({
 			</div>
 		</div>
 	);
-}
+});
 
 /** 添付を含むチャット状態と、操作の無効化・要求の送信。 */
 type ComposerAttachmentsProps = {

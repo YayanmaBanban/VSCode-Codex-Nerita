@@ -1,0 +1,83 @@
+/* DLC のフォームとモード操作に、チャットと共通のテーマ・フォーカスを適用する。 */
+@layer base {
+	.dlc-form {
+		display: grid;
+		gap: 12px;
+		margin: 12px 0;
+	}
+	.dlc-form label {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+	.dlc-form input,
+	.dlc-form textarea,
+	.dlc-panel select {
+		min-width: 0;
+		max-width: 100%;
+		font: inherit;
+		color: var(--nerita-input-foreground);
+		background: var(--nerita-input-background);
+		border: 1px solid var(--nerita-input-border);
+		border-radius: 4px;
+		padding: 7px 9px;
+	}
+	.dlc-form textarea {
+		min-height: 110px;
+		resize: vertical;
+	}
+	.dlc-form details > summary {
+		margin-bottom: 10px;
+	}
+	.dlc-form input:focus-visible,
+	.dlc-form select:focus-visible,
+	.dlc-panel select:focus-visible {
+		outline: 1px solid var(--nerita-focus-border);
+		outline-offset: 2px;
+	}
+	.dlc-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+	.dlc-request {
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.dlc-work-items {
+		list-style: none;
+		padding: 0;
+	}
+	.dlc-work-items li {
+		padding: 10px 0;
+	}
+	.dlc-work-items button {
+		margin: 4px;
+	}
+	.dlc-error {
+		padding: 12px;
+		color: var(--nerita-error-foreground);
+		overflow-wrap: anywhere;
+	}
+	.chat-mode-switch {
+		display: inline-flex;
+		gap: 2px;
+		padding: 2px;
+		border: 1px solid var(--nerita-panel-border);
+		border-radius: 6px;
+	}
+	.chat-mode-switch button {
+		font: inherit;
+		color: inherit;
+		padding: 3px 7px;
+		background: transparent;
+		border: 0;
+		border-radius: 4px;
+	}
+	.chat-mode-switch button[aria-pressed="true"] {
+		background: var(--nerita-button-secondary-background);
+		box-shadow: inset 0 0 0 1px var(--nerita-focus-border);
+	}
+}

@@ -14,7 +14,9 @@
 		"AI",
 		"Other"
 	],
-	"activationEvents": [],
+	"activationEvents": [
+		"onWebviewPanel:nerita.dlc.workspace"
+	],
 	"publisher": "nerita-local",
 	"icon": "dist/media/nerita_store_icon.png",
 	"extensionKind": [
@@ -147,8 +149,12 @@
 		},
 		"commands": [
 			{
+				"command": "nerita.dlc.openWorkspace",
+				"title": "Nerita DLC: 作業画面を開く"
+			},
+			{
 				"command": "nerita.dlc.create",
-				"title": "Nerita DLC: プロジェクトを作成",
+				"title": "Nerita DLC: Intent の作成・選択を開く",
 				"enablement": "isWorkspaceTrusted"
 			},
 			{

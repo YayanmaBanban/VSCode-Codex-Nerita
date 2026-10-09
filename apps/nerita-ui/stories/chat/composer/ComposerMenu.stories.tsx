@@ -79,8 +79,8 @@ export const Ready: Story = {
 			await canvas.findByRole("option", { name: /\/plan/ }),
 		).toBeVisible();
 		await expect(
-			canvas.getByRole("option", { name: /\/goal/ }),
-		).toBeVisible();
+			canvas.queryByRole("option", { name: /\/goal/ }),
+		).not.toBeInTheDocument();
 		// Host から Pi の状態が届いたとき、開いた候補にも切替を反映する。
 		const state = scenarioState("empty");
 		state.revision = 100;

@@ -8,6 +8,7 @@ import type { BackendId } from "@nerita/shared/backend";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { SidebarLocation } from "@nerita/shared/sidebar";
+import type { ReactNode } from "react";
 import { cn } from "cnfast";
 import { AnimatePresence } from "motion/react";
 import { List, Maximize2, MessageSquareText, Minimize2 } from "lucide-react";
@@ -22,6 +23,9 @@ const iconClass =
 
 /** 接続・エラー・履歴の表示状態と、会話や表示先を切り替える操作。 */
 type ConnectionHeaderProps = {
+	connectionControl?: ReactNode;
+	title?: string;
+	dlc?: boolean;
 	untrusted?: boolean;
 	backend?: BackendId | undefined;
 	state: ChatState;
@@ -38,8 +42,8 @@ type ConnectionHeaderProps = {
 
 /** 狭い表示でも操作を残し、長いセッションタイトルだけを省略する。 */
 export function ConnectionHeader(props: ConnectionHeaderProps) {
-	const { state, requestError, send, editor } = props;
-	const title = sessionHeaderTitle(state);
+	const { state, send, editor } = props;
+	const title = props.title ?? sessionHeaderTitle(state);
 	const viewLabel = editor ? "サイドバーへ戻る" : "エディタグループへ移動";
 	return (
 		<>
@@ -56,9 +60,122 @@ export function ConnectionHeader(props: ConnectionHeaderProps) {
 				>
 					{title}
 				</h1>
-				<ConnectionButton state={state} send={send} />
+				{props.connectionControl ?? (
+					<ConnectionButton state={state} send={send} />
+				)}
 				<ChatHeaderActions {...props} viewLabel={viewLabel} />
 			</header>
+			<ConnectionNotices {...props} />
+		</>
+	);
+}
+
+/** 会話・履歴・表示先・設定の操作と、操作可否を判定する状態。 */
+type ChatHeaderActionsProps = {
+	dlc?: boolean;
+	available: boolean;
+	send: (message: UiMessage) => void;
+	state: ChatState;
+	sessionsOpen: boolean;
+	onToggleSessions: () => void;
+	viewLabel: "サイドバーへ戻る" | "エディタグループへ移動";
+	onToggleEditor: () => void;
+	editor: boolean;
+	backend?: undefined | "codex" | "pi";
+	sidebarLocation?: undefined | "primary" | "secondary";
+	onSelectSidebar?: ((location: SidebarLocation) => void) | undefined;
+	requestError: null | string;
+};
+
+/** 新規会話・履歴一覧・表示先と個別設定の操作をまとめる。 */
+function ChatHeaderActions(props: ChatHeaderActionsProps) {
+	const {
+		available,
+		send,
+		state,
+		sessionsOpen,
+		onToggleSessions,
+		viewLabel,
+		onToggleEditor,
+		editor,
+		requestError,
+	} = props;
+	return (
+		<div className="flex shrink-0 items-center gap-[2px]">
+			{props.dlc !== true && (
+				<SettingsTooltip content="新しいチャット">
+					<button
+						type="button"
+						className={iconClass}
+						aria-label="新しいチャット"
+						disabled={!available}
+						onClick={() =>
+							send({
+								type: "session/new",
+								requestId: crypto.randomUUID(),
+							})
+						}
+					>
+						<MessageSquareText size={16} aria-hidden="true" />
+					</button>
+				</SettingsTooltip>
+			)}
+			{props.dlc !== true && (
+				<SettingsTooltip content="セッション一覧">
+					<button
+						type="button"
+						id="session-list-toggle"
+						className={iconClass}
+						aria-label="セッション一覧"
+						disabled={!state.sessionCapabilities.list}
+						aria-expanded={sessionsOpen}
+						aria-controls="session-panel"
+						onClick={onToggleSessions}
+					>
+						<List size={16} aria-hidden="true" />
+					</button>
+				</SettingsTooltip>
+			)}
+			<SettingsTooltip content={viewLabel}>
+				<button
+					type="button"
+					className={iconClass}
+					aria-label={viewLabel}
+					onClick={onToggleEditor}
+				>
+					{editor ? (
+						<Minimize2 size={16} aria-hidden="true" />
+					) : (
+						<Maximize2 size={16} aria-hidden="true" />
+					)}
+				</button>
+			</SettingsTooltip>
+			{props.dlc !== true && (
+				<PersonalityOptions {...props} error={requestError} />
+			)}
+		</div>
+	);
+}
+
+/** 現在のセッションに表示するタイトルを選ぶ。 */
+function sessionHeaderTitle(state: ChatState) {
+	return (
+		nonEmptyString(state.sessionTitle?.trim()) ??
+		nonEmptyString(
+			state.sessions
+				.find((session) => session.sessionId === state.sessionId)
+				?.title?.trim(),
+		) ??
+		"新規チャット"
+	);
+}
+
+/** 接続と信頼の案内を、操作ヘッダーとは独立して表示する。 */
+function ConnectionNotices(props: ConnectionHeaderProps) {
+	const { state, requestError, send } = props;
+	return (
+		<>
+			{" "}
 			{(isNonEmptyString(requestError) ||
 				(state.connection !== "auth-required" &&
 					isNonEmptyString(state.error))) && (
@@ -98,98 +215,5 @@ export function ConnectionHeader(props: ConnectionHeaderProps) {
 				)}
 			</AnimatePresence>
 		</>
-	);
-}
-
-/** 会話・履歴・表示先・設定の操作と、操作可否を判定する状態。 */
-type ChatHeaderActionsProps = {
-	available: boolean;
-	send: (message: UiMessage) => void;
-	state: ChatState;
-	sessionsOpen: boolean;
-	onToggleSessions: () => void;
-	viewLabel: "サイドバーへ戻る" | "エディタグループへ移動";
-	onToggleEditor: () => void;
-	editor: boolean;
-	backend?: undefined | "codex" | "pi";
-	sidebarLocation?: undefined | "primary" | "secondary";
-	onSelectSidebar?: ((location: SidebarLocation) => void) | undefined;
-	requestError: null | string;
-};
-
-/** 新規会話・履歴一覧・表示先と個別設定の操作をまとめる。 */
-function ChatHeaderActions(props: ChatHeaderActionsProps) {
-	const {
-		available,
-		send,
-		state,
-		sessionsOpen,
-		onToggleSessions,
-		viewLabel,
-		onToggleEditor,
-		editor,
-		requestError,
-	} = props;
-	return (
-		<div className="flex shrink-0 items-center gap-[2px]">
-			<SettingsTooltip content="新しいチャット">
-				<button
-					type="button"
-					className={iconClass}
-					aria-label="新しいチャット"
-					disabled={!available}
-					onClick={() =>
-						send({
-							type: "session/new",
-							requestId: crypto.randomUUID(),
-						})
-					}
-				>
-					<MessageSquareText size={16} aria-hidden="true" />
-				</button>
-			</SettingsTooltip>
-			<SettingsTooltip content="セッション一覧">
-				<button
-					type="button"
-					id="session-list-toggle"
-					className={iconClass}
-					aria-label="セッション一覧"
-					disabled={!state.sessionCapabilities.list}
-					aria-expanded={sessionsOpen}
-					aria-controls="session-panel"
-					onClick={onToggleSessions}
-				>
-					<List size={16} aria-hidden="true" />
-				</button>
-			</SettingsTooltip>
-			<SettingsTooltip content={viewLabel}>
-				<button
-					type="button"
-					className={iconClass}
-					aria-label={viewLabel}
-					onClick={onToggleEditor}
-				>
-					{editor ? (
-						<Minimize2 size={16} aria-hidden="true" />
-					) : (
-						<Maximize2 size={16} aria-hidden="true" />
-					)}
-				</button>
-			</SettingsTooltip>
-			<PersonalityOptions {...props} error={requestError} />
-		</div>
-	);
-}
-
-/** 現在のセッションに表示するタイトルを選ぶ。 */
-function sessionHeaderTitle(state: ChatState) {
-	return (
-		nonEmptyString(state.sessionTitle?.trim()) ??
-		nonEmptyString(
-			state.sessions
-				.find((session) => session.sessionId === state.sessionId)
-				?.title?.trim(),
-		) ??
-		"新規チャット"
 	);
 }

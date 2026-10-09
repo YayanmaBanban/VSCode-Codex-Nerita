@@ -7,7 +7,7 @@ import type { ComposerPart } from "@nerita/shared/composerContent";
 import type { UiMessage } from "@nerita/shared/messages";
 import { cn } from "cnfast";
 import { ArrowUp } from "lucide-react";
-import { type Dispatch, type SetStateAction, useState } from "react";
+import { useCallback, useState } from "react";
 import { iconButtonClass } from "../messages/messageStyles";
 import { SettingsTooltip } from "../SettingsTooltip";
 import { ComposerInput } from "./ComposerInput";
@@ -41,6 +41,10 @@ export function Composer(props: ComposerProps) {
 	} = props;
 	const drop = useAttachmentDrop(state, locked, send);
 	const [contextRequest, setContextRequest] = useState(0);
+	const openContext = useCallback(
+		() => setContextRequest((value) => value + 1),
+		[],
+	);
 	const inputLocked = locked || drop.reading;
 	const sendLabel = busy ? "フォローアップを送信" : "送信";
 	return (
@@ -97,7 +101,7 @@ export function Composer(props: ComposerProps) {
 			<ComposerFooter
 				inputLocked={inputLocked}
 				{...props}
-				setContextRequest={setContextRequest}
+				onOpenContext={openContext}
 				sendLabel={sendLabel}
 				drop={drop}
 			/>
@@ -110,7 +114,7 @@ type ComposerFooterProps = {
 	inputLocked: boolean;
 	state: ChatState;
 	send: (message: UiMessage) => void;
-	setContextRequest: Dispatch<SetStateAction<number>>;
+	onOpenContext: () => void;
 	busy: boolean;
 	sendLabel: "フォローアップを送信" | "送信";
 	drop: ReturnType<typeof useAttachmentDrop>;
@@ -123,7 +127,7 @@ function ComposerFooter({
 	inputLocked,
 	state,
 	send,
-	setContextRequest,
+	onOpenContext,
 	busy,
 	sendLabel,
 	drop,
@@ -140,9 +144,7 @@ function ComposerFooter({
 				<ComposerSettings
 					state={state}
 					send={send}
-					onOpenContext={() =>
-						setContextRequest((value) => value + 1)
-					}
+					onOpenContext={onOpenContext}
 				/>
 			</div>
 			<div className="flex shrink-0 items-center gap-2">

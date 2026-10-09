@@ -77,20 +77,12 @@ export function completionItems(
 	if (marker === "/") {
 		items = slashCompletionItems();
 		if (collaborationModes) {
-			items.push(
-				{
-					id: "plan",
-					label: "/plan",
-					description: "Plan モードに切り替え",
-					text: "/plan ",
-				},
-				{
-					id: "goal",
-					label: "/goal",
-					description: "Goal モードに切り替え",
-					text: "/goal ",
-				},
-			);
+			items.push({
+				id: "plan",
+				label: "/plan",
+				description: "Plan モードに切り替え",
+				text: "/plan ",
+			});
 		}
 	} else if (marker === "@") {
 		items = skills.map((skill) => ({

@@ -1,5 +1,6 @@
 // エージェントなしで状態機械を検証するため、Runtime 境界の観測結果を明示的に用意する。
-import { createProject } from "@nerita/dlc/state";
+import { createIntentState } from "@nerita/dlc/state";
+import { currentCatalogDigest } from "../../apps/vscode-nerita/src/extension/dlc/IntentRepository";
 import { applyAction } from "@nerita/dlc/transitions";
 import type {
 	RuntimeResult,
@@ -7,8 +8,32 @@ import type {
 	NeritaRuntimePort,
 } from "@nerita/dlc/runtime";
 
-export function plannedProject() {
-	return applyAction(createProject("project", "挨拶を変更する"), {
+export const testIntentId = "00000000-0000-4000-8000-000000000023";
+export function createTestIntent() {
+	return createIntentState(
+		{
+			schemaVersion: 1,
+			spaceId: "default",
+			intentId: testIntentId,
+			title: "挨拶を変更する",
+			request: "挨拶を変更する",
+			createdAt: "2026-10-08T00:00:00Z",
+		},
+		{
+			profileId: "classic",
+			profileVersion: 1,
+			catalogVersion: 1,
+			catalogDigest: currentCatalogDigest,
+			workspaceFingerprint: `sha256:${"0".repeat(64)}`,
+			workspaceSchemaVersion: 1,
+			detectorVersion: 1,
+			projectTypeSource: "detected",
+			effectiveProjectType: "brownfield",
+		},
+	);
+}
+export function plannedIntent() {
+	return applyAction(createTestIntent(), {
 		type: "plan",
 		tasks: [
 			{
@@ -21,7 +46,7 @@ export function plannedProject() {
 }
 export function executionReceipt(
 	attemptId = "attempt",
-	workItemId = "project:task:1",
+	workItemId = "00000000-0000-4000-8000-000000000023:task:1",
 ): RuntimeResult {
 	return {
 		semantic: {

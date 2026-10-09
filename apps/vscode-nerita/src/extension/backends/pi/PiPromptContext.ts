@@ -1,6 +1,6 @@
 // 送信と追加指示で同じ参照検証を使い、資料を本文から区別する。
 import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
-import type { UiMessage } from "@nerita/shared/messages";
+import type { BackendPrompt } from "../../session/BackendExecution";
 import type { PiSession } from "./PiRuntime";
 import { buildSessionReferenceContext } from "../../session/SessionReferenceContext";
 import { readCodeReferenceContext } from "../../session/codeReferenceContext";
@@ -9,7 +9,7 @@ import { readCodeReferenceContext } from "../../session/codeReferenceContext";
 export async function piPromptContext(
 	runtime: PiSession,
 	cwd: string,
-	message: Extract<UiMessage, { type: "prompt/send" }>,
+	message: BackendPrompt,
 	signal: AbortSignal,
 	check: () => void,
 ): Promise<string> {
