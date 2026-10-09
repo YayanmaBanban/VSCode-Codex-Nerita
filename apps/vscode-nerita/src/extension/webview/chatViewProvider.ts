@@ -5,6 +5,7 @@ import { webviewHtml } from "./webviewHtml";
 import { bindWebview } from "./webviewBinding";
 import type { ChatSession } from "../session/chatSession";
 import type { HostMessage, UiMessage } from "@nerita/shared/messages";
+import type { ConversationScrollAnchor } from "@nerita/shared/conversationScroll";
 import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { isRecord } from "@nerita/shared/validation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
@@ -38,6 +39,7 @@ export class ChatViewProvider
 	private draft = "";
 	private draftParts: ComposerPart[] | undefined;
 	private scrollTop = 0;
+	private scrollAnchor: ConversationScrollAnchor | undefined;
 	private placement: SidebarPlacement;
 	private backendSubscription: vscode.Disposable;
 	private backendPending = false;
@@ -139,6 +141,7 @@ export class ChatViewProvider
 			draft: this.draft,
 			...(this.draftParts ? { draftParts: this.draftParts } : {}),
 			scrollTop: this.scrollTop,
+			...(this.scrollAnchor ? { scrollAnchor: this.scrollAnchor } : {}),
 			restoreScroll,
 		} satisfies HostMessage);
 	}
@@ -283,6 +286,7 @@ export class ChatViewProvider
 		}
 		if (value.type === "ui/saveScroll") {
 			this.scrollTop = value.scrollTop;
+			this.scrollAnchor = value.scrollAnchor;
 			return;
 		}
 		if (value.type === "ui/openEditor") {

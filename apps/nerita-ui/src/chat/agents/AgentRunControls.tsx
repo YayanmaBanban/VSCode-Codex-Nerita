@@ -1,5 +1,6 @@
-// 子の閲覧中も親の実行に属する承認と全体停止を操作できるようにする。
+// 閲覧中のエージェントと子孫の停止、およびセッション全体の承認を操作する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import { agentSubtree, type SubAgentSummary } from "@nerita/shared/subAgents";
 import { cn } from "cnfast";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
@@ -9,57 +10,67 @@ import { Activity } from "../Activity";
 export function AgentRunControls({
 	state,
 	send,
+	agent,
+	onStop,
+	stopping,
+	stopError,
 }: {
 	state: ChatState;
 	send: (message: UiMessage) => void;
+	agent: SubAgentSummary;
+	onStop: () => void;
+	stopping: boolean;
+	stopError: string | null;
 }) {
-	const activeChildren = state.agents.some(
-		(agent) => agent.status === "running" || agent.status === "pendingInit",
-	);
+	const active = agentSubtree(
+		[
+			agent,
+			...state.agents.filter((item) => item.threadId !== agent.threadId),
+		],
+		agent.threadId,
+	).some((item) => ["running", "pendingInit", "idle"].includes(item.status));
 	if (
-		state.run !== "running" &&
-		state.run !== "cancelling" &&
-		!activeChildren &&
+		!active &&
+		!stopping &&
+		stopError === null &&
 		state.permissions.length === 0
 	) {
 		return null;
 	}
 	return (
 		<aside
-			aria-label="親と子の実行操作"
+			aria-label="エージェントの停止・承認"
 			className={cn(
 				"max-h-[45%] shrink-0 overflow-y-auto border-t border-solid",
 				"border-message-border p-3 text-[12px]",
 			)}
 		>
 			<div className="mb-2 flex items-center justify-between gap-3">
-				<span>親と子の実行・承認</span>
+				<span>自身と子の停止</span>
 				<button
 					type="button"
-					disabled={state.run === "cancelling"}
+					disabled={!active || stopping}
 					className={cn(
 						"rounded border border-solid border-message-border px-3 py-2",
 						"hover:bg-message-user",
 						"disabled:opacity-40",
 					)}
-					onClick={() => {
-						if (
-							isNonEmptyString(state.sessionId) &&
-							isNonEmptyString(state.runId)
-						) {
-							send({
-								type: "prompt/cancel",
-								requestId: crypto.randomUUID(),
-								sessionId: state.sessionId,
-								runId: state.runId,
-							});
-						}
-					}}
+					onClick={onStop}
 				>
-					すべて停止
+					{stopping ? "停止要求中…" : "自身と子を停止"}
 				</button>
 			</div>
-			<Activity state={{ ...state, tools: [] }} send={send} />
+			{isNonEmptyString(stopError) && (
+				<p role="alert" className="text-tool-error">
+					{stopError}
+				</p>
+			)}
+			{state.permissions.length > 0 && (
+				<>
+					<p>セッション全体の承認</p>
+					<Activity state={{ ...state, tools: [] }} send={send} />
+				</>
+			)}
 		</aside>
 	);
 }

@@ -215,7 +215,11 @@ export class BackendRuntime implements BackendSession {
 			});
 			return;
 		}
-		if (value.type === "execution/stop" || value.type === "agent/read") {
+		if (
+			value.type === "execution/stop" ||
+			value.type === "agent/read" ||
+			value.type === "agent/stop"
+		) {
 			await active.session.receive(value);
 			return;
 		}

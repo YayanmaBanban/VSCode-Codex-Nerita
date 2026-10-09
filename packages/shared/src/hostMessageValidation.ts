@@ -1,5 +1,6 @@
 // Host から届く通知を検証してから、Webview の状態や描画に反映する。
 import type { HostMessage } from "./messages";
+import { validConversationScrollAnchor } from "./conversationScroll";
 import { validToolOutputResponse } from "./toolOutput";
 import { isBackendId } from "./backend";
 import { isId, isRecord, isRevision } from "./validation";
@@ -49,6 +50,8 @@ const hostMessageValidators = new Map<
 				)
 			);
 		},
+		"agent/stopped": (value) =>
+			isId(value.requestId) && isId(value.threadId),
 		"session/references": (value) => {
 			return (
 				isId(value.requestId) &&
@@ -104,7 +107,8 @@ const hostMessageValidators = new Map<
 				validDraftParts(value.draft, value.draftParts) &&
 				typeof value.scrollTop === "number" &&
 				Number.isFinite(value.scrollTop) &&
-				value.scrollTop >= 0
+				value.scrollTop >= 0 &&
+				validConversationScrollAnchor(value.scrollAnchor)
 			);
 		},
 		"state/snapshot": (value) => {

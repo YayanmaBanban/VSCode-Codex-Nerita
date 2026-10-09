@@ -14,6 +14,8 @@ import { Messages } from "./messages/Messages";
 import { PlanDecisionCard } from "./PlanDecisionCard";
 import { RunStatusIcon } from "./RunStatusIcon";
 import { ThinkingIndicator } from "./ThinkingIndicator";
+import type { MessageTimeline } from "./messages/messageTimeline";
+import type { ConversationVirtualizer } from "./messages/useConversationVirtualizer";
 
 const runLabels = {
 	idle: "",
@@ -32,6 +34,8 @@ type ChatConversationProps = {
 	conversation: RefObject<HTMLElement | null>;
 	bottom: RefObject<HTMLDivElement | null>;
 	onOpenAgent: (agent: SubAgentSummary) => void;
+	timeline: MessageTimeline;
+	virtual: ConversationVirtualizer;
 };
 
 /** スクロール参照は親が保持し、表示先の復元と新着への追従に共用する。 */
@@ -43,7 +47,7 @@ export function ChatConversation(props: ChatConversationProps) {
 			<section
 				ref={conversation}
 				className={cn(
-					"conversation min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto",
+					"conversation min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto [overflow-anchor:none]",
 					"px-[20px] py-[22px]",
 				)}
 				aria-label="会話"
@@ -162,6 +166,8 @@ type ConversationMessagesProps = {
 	state: ChatState;
 	busy: boolean;
 	onOpenAgent: (agent: SubAgentSummary) => void;
+	timeline: MessageTimeline;
+	virtual: ConversationVirtualizer;
 };
 
 /** 会話に属するツールと子スレッドをメッセージへ対応付ける。 */
@@ -170,6 +176,8 @@ function ConversationMessages({
 	state,
 	busy,
 	onOpenAgent,
+	timeline,
+	virtual,
 }: ConversationMessagesProps) {
 	return (
 		<div
@@ -179,6 +187,8 @@ function ConversationMessages({
 			aria-relevant="additions text"
 		>
 			<Messages
+				timeline={timeline}
+				virtual={virtual}
 				send={send}
 				messages={state.messages}
 				busy={busy}

@@ -22,9 +22,7 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 		if (
 			!parent ||
 			!isNonEmptyString(node.textContent) ||
-			parent.closest(
-				"button,input,textarea,select,svg,script,style,[aria-hidden='true'],.sr-only,.message-actions",
-			)
+			excludedText(parent)
 		) {
 			continue;
 		}
@@ -49,6 +47,17 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 		block.text += node.textContent;
 	}
 	return blocks;
+}
+
+/** 操作ラベルは除き、検索対象にしたツール名とエージェント名は強調できるようにする。 */
+function excludedText(parent: HTMLElement) {
+	return (
+		parent.closest(
+			"input,textarea,select,svg,script,style,[aria-hidden='true'],.sr-only,.message-actions",
+		) !== null ||
+		(parent.closest("button") !== null &&
+			parent.closest(".tool-title,.agent-card") === null)
+	);
 }
 
 /** 文字位置を DOM Range へ変換し、一致数が多いときは上限到達も返す。 */

@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { piFixture, send, finished, permission, until } from "../support/pi";
 import { restoredState } from "../support/restoredState";
 
-for (const outcome of ["accept", "stop", "restricted"]) {
+for (const outcome of ["accept", "stop", "child-stop", "restricted"]) {
 	void test(`子の起動と書込みを個別承認し、親の制限と停止を継承する（${outcome}）`, (t) =>
 		verifyPiChildApproval(t, outcome));
 }
@@ -41,14 +41,15 @@ async function verifyPiChildApproval(t: TestContext, outcome: string) {
 	assert.ok(f.model.requests[2]!.includes("子の作業"));
 	if (outcome === "accept") {
 		await permission(controller, "accept");
-	} else if (outcome === "stop") {
+	} else if (outcome === "stop" || outcome === "child-stop") {
 		await until(() => controller.snapshot().permissions.length === 1);
 		const pending = controller.snapshot();
 		await controller.receive({
-			type: "prompt/cancel",
+			...(outcome === "child-stop"
+				? { type: "agent/stop", threadId: pending.agents[0]!.threadId }
+				: { type: "prompt/cancel", runId: pending.runId }),
 			requestId: "stop",
 			sessionId: pending.sessionId,
-			runId: pending.runId,
 		});
 		await controller.receive({
 			type: "permission/respond",
@@ -65,9 +66,12 @@ async function verifyPiChildApproval(t: TestContext, outcome: string) {
 	assert.equal(child.parentThreadId, state.sessionId);
 	assert.equal(
 		child.status,
-		{ accept: "completed", stop: "interrupted", restricted: "errored" }[
-			outcome
-		],
+		{
+			accept: "completed",
+			stop: "interrupted",
+			"child-stop": "interrupted",
+			restricted: "errored",
+		}[outcome],
 	);
 	if (outcome === "accept") {
 		assert.equal(
@@ -85,7 +89,11 @@ async function verifyPiChildApproval(t: TestContext, outcome: string) {
 	assert.equal(restored.agents.length, 1);
 	assert.equal(restored.agents[0]!.threadId, child.threadId);
 	assert.equal(restored.agents[0]!.status, child.status);
-	assert.equal(f.model.requests.length, outcome === "stop" ? 3 : 5);
+	assert.equal(
+		f.model.requests.length,
+		{ stop: 3, "child-stop": 4, accept: 5, restricted: 5 }[outcome],
+	);
+	assert.equal(state.run, outcome === "stop" ? "cancelled" : "completed");
 }
 
 /** 親の委譲、子の書込み、親への結果通知を順番に返す。 */

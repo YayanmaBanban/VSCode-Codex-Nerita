@@ -1,5 +1,6 @@
 // Host と Webview の要求・通知の通信契約を定義し、実行環境の API に依存させない。
 import type { ChatState } from "./chatState";
+import type { ConversationScrollAnchor } from "./conversationScroll";
 import type { ToolOutputRequest, ToolOutputResponse } from "./toolOutput";
 import type { BackendId } from "./backend";
 import type { ComposerPart } from "./composerContent";
@@ -43,6 +44,12 @@ export type UiMessage =
 			sessionId: string;
 			threadId: string;
 	  }
+	| {
+			type: "agent/stop";
+			requestId: string;
+			sessionId: string;
+			threadId: string;
+	  }
 	| SessionReferencesRequest
 	| SessionReferenceOpen
 	| {
@@ -67,7 +74,12 @@ export type UiMessage =
 			draft: string;
 			draftParts?: ComposerPart[];
 	  }
-	| { type: "ui/saveScroll"; requestId: string; scrollTop: number }
+	| {
+			type: "ui/saveScroll";
+			requestId: string;
+			scrollTop: number;
+			scrollAnchor?: ConversationScrollAnchor;
+	  }
 	| { type: "connection/retry"; requestId: string }
 	| { type: "session/new"; requestId: string }
 	| {
@@ -125,6 +137,7 @@ export type HostMessage =
 	| { type: "ui/backendState"; backend: BackendId }
 	| { type: "ui/codeBlock"; requestId: string }
 	| { type: "agent/view"; requestId: string; view: AgentThreadView }
+	| { type: "agent/stopped"; requestId: string; threadId: string }
 	| SessionReferencesResult
 	| WorkspaceSymbolsResult
 	| WorkspacePathsResult
@@ -137,6 +150,7 @@ export type HostMessage =
 			draft: string;
 			draftParts?: ComposerPart[];
 			scrollTop: number;
+			scrollAnchor?: ConversationScrollAnchor;
 			restoreScroll: boolean;
 	  }
 	| { type: "state/snapshot"; state: ChatState }

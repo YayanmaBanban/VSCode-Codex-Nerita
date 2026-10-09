@@ -12,13 +12,18 @@ import {
 } from "react";
 
 import type { Bridge } from "@nerita/shared/bridge";
+import type { UiMessage } from "@nerita/shared/messages";
 import type {
 	AgentThreadView,
 	SubAgentSummary,
 } from "@nerita/shared/subAgents";
 
 /** 子・孫の閲覧だけを切り替え、表示中は読み取りを直列で更新する。 */
-export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
+export function useAgentViewer(
+	bridge: Bridge,
+	sessionId: string | null,
+	send: (message: UiMessage) => void,
+) {
 	const [stack, setStack] = useState<SubAgentSummary[]>([]);
 	const [view, setView] = useState<AgentThreadView | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -26,6 +31,7 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 	const reload = useRef<() => void>(() => {});
 	const opener = useRef<HTMLElement | null>(null);
 	const agent = stack.at(-1);
+	const stop = useAgentStop(bridge, sessionId, send);
 	useEffect(() => {
 		setStack([]);
 		setView(null);
@@ -49,6 +55,16 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 		view,
 		error,
 		loading,
+		stopping: stop.threadId !== undefined,
+		stopError:
+			stop.error?.threadId === agent?.threadId
+				? (stop.error?.text ?? null)
+				: null,
+		stop: () => {
+			if (agent) {
+				stop.request(agent.threadId);
+			}
+		},
 		open: (next: SubAgentSummary) => {
 			if (!agent && document.activeElement instanceof HTMLElement) {
 				opener.current = document.activeElement;
@@ -57,6 +73,72 @@ export function useAgentViewer(bridge: Bridge, sessionId: string | null) {
 		},
 		back: () => setStack((current) => current.slice(0, -1)),
 		retry: () => reload.current(),
+	};
+}
+
+/** 停止応答を閲覧要求とは別に照合し、失敗を残して再試行できるようにする。 */
+function useAgentStop(
+	bridge: Bridge,
+	sessionId: string | null,
+	send: (message: UiMessage) => void,
+) {
+	const [pending, setPending] = useState<{
+		requestId: string;
+		threadId: string;
+		sessionId: string;
+	}>();
+	const [error, setError] = useState<{
+		threadId: string;
+		text: string;
+	} | null>(null);
+	useEffect(() => {
+		setPending(undefined);
+		setError(null);
+	}, [sessionId]);
+	useEffect(() => {
+		if (!pending || pending.sessionId !== sessionId) {
+			return;
+		}
+		const unsubscribe = bridge.subscribe((message) => {
+			if (
+				!("requestId" in message) ||
+				message.requestId !== pending.requestId
+			) {
+				return;
+			}
+			if (message.type === "request/failed") {
+				setError({ threadId: pending.threadId, text: message.error });
+				setPending(undefined);
+			} else if (
+				message.type === "agent/stopped" &&
+				message.threadId === pending.threadId
+			) {
+				setPending(undefined);
+			}
+		});
+		const timer = setTimeout(() => {
+			setError({
+				threadId: pending.threadId,
+				text: "停止要求の応答がありません。表示を更新して状態を確認してください。",
+			});
+			setPending(undefined);
+		}, 30000);
+		send({ type: "agent/stop", ...pending });
+		return () => {
+			clearTimeout(timer);
+			unsubscribe();
+		};
+	}, [bridge, pending, sessionId, send]);
+	return {
+		threadId: pending?.threadId,
+		error,
+		request: (threadId: string) => {
+			if (pending || !isNonEmptyString(sessionId)) {
+				return;
+			}
+			setError(null);
+			setPending({ requestId: crypto.randomUUID(), threadId, sessionId });
+		},
 	};
 }
 

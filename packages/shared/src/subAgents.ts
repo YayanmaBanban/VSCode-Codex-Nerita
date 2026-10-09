@@ -61,6 +61,32 @@ export type SubAgentSummary = {
 	order: number;
 };
 
+/** 既知の親子関係だけをたどり、対象自身と子孫を返す。循環を検出した場合はエラーにする。 */
+export function agentSubtree(
+	agents: readonly SubAgentSummary[],
+	threadId: string,
+): SubAgentSummary[] {
+	const target = agents.find((agent) => agent.threadId === threadId);
+	if (!target) {
+		return [];
+	}
+	const result = [target];
+	const seen = new Set([threadId]);
+	for (const parent of result) {
+		for (const agent of agents) {
+			if (agent.parentThreadId !== parent.threadId) {
+				continue;
+			}
+			if (seen.has(agent.threadId)) {
+				throw new Error("エージェントの親子関係が循環しています。");
+			}
+			seen.add(agent.threadId);
+			result.push(agent);
+		}
+	}
+	return result;
+}
+
 /** 親の実行状態とは別に取得する会話のスナップショット。 */
 export type AgentThreadView = {
 	threadId: string;

@@ -150,18 +150,51 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			this.readAgent(message);
 			return;
 		}
+		if (message.type === "agent/stop") {
+			await this.stopAgent(message);
+			return;
+		}
 		if (message.type === "prompt/send") {
-			if (
-				!this.busy() &&
-				!this.state.sessionPending &&
-				this.runtime?.storageChanged?.() === true
-			) {
-				await this.refreshStorage();
-			}
-			this.submit(message);
+			await this.submitCurrentPrompt(message);
 			return;
 		}
 		this.dispatchRunAction(message);
+	}
+
+	/** 初回送信に限り、未使用の会話の保存先を設定へ追従させる。 */
+	private async submitCurrentPrompt(
+		message: Extract<UiMessage, { type: "prompt/send" }>,
+	): Promise<void> {
+		if (
+			!this.busy() &&
+			!this.state.sessionPending &&
+			this.runtime?.storageChanged?.() === true
+		) {
+			await this.refreshStorage();
+		}
+		this.submit(message);
+	}
+
+	/** 親の SDK は中断せず、対象のジョブ回収後に要求元へ応答する。 */
+	private async stopAgent(
+		message: Extract<UiMessage, { type: "agent/stop" }>,
+	): Promise<void> {
+		const runtime = this.runtime;
+		if (!runtime?.jobs) {
+			throw new Error("このPi接続に停止対象のジョブがありません。");
+		}
+		await runtime.jobs.cancelSubtree(message.threadId);
+		if (
+			this.runtime !== runtime ||
+			this.state.sessionId !== message.sessionId
+		) {
+			throw new Error("会話が切り替わったため、停止を中止しました。");
+		}
+		this.emit({
+			type: "agent/stopped",
+			requestId: message.requestId,
+			threadId: message.threadId,
+		});
 	}
 
 	/** 現在の接続が保持する子の会話だけを返す。 */

@@ -17,7 +17,72 @@ import {
 	nonZeroNumber,
 } from "@nerita/shared/valuePredicates";
 
-void test("条件式と代替値の選択は空文字・未設定・ゼロ・NaN を除外し、空白・負数・無限大を保持する", () => {
+void test("可変高さの会話位置は両方向で検証し、不正なアンカーを拒否する", () => {
+	const scrollAnchor = {
+		sessionId: "session",
+		entryKey: "message:entry",
+		offset: -32,
+		atEnd: false,
+	};
+	const request = {
+		type: "ui/saveScroll",
+		requestId: "request",
+		scrollTop: 320,
+		scrollAnchor,
+	};
+	const response = {
+		type: "ui/viewState",
+		editor: true,
+		draft: "",
+		scrollTop: 320,
+		scrollAnchor,
+		restoreScroll: true,
+	};
+	assert.ok(isUiMessage(request));
+	assert.ok(isHostMessage(response));
+	for (const malformed of [
+		null,
+		{},
+		{ ...scrollAnchor, offset: Infinity },
+		{ ...scrollAnchor, offset: NaN },
+		{ ...scrollAnchor, entryKey: 42 },
+		{ ...scrollAnchor, sessionId: [] },
+		{ ...scrollAnchor, atEnd: "false" },
+	]) {
+		assert.equal(
+			isUiMessage({ ...request, scrollAnchor: malformed }),
+			false,
+		);
+		assert.equal(
+			isHostMessage({ ...response, scrollAnchor: malformed }),
+			false,
+		);
+	}
+});
+
+void test("エージェント停止の通信はセッション・対象・要求の ID を検証する", () => {
+	const request = {
+		type: "agent/stop",
+		requestId: "request",
+		sessionId: "session",
+		threadId: "child",
+	};
+	const response = {
+		type: "agent/stopped",
+		requestId: "request",
+		threadId: "child",
+	};
+	assert.ok(isUiMessage(request));
+	assert.ok(isHostMessage(response));
+	for (const key of ["requestId", "sessionId", "threadId"]) {
+		assert.equal(isUiMessage({ ...request, [key]: "" }), false);
+	}
+	for (const key of ["requestId", "threadId"]) {
+		assert.equal(isHostMessage({ ...response, [key]: 42 }), false);
+	}
+});
+
+void test("条件式と代替値の選択は空文字・未設定・ゼロ・`NaN` を除外し、空白・負数・無限大を保持する", () => {
 	for (const value of [undefined, null, ""]) {
 		assert.equal(isNonEmptyString(value), false);
 		assert.equal(nonEmptyString(value) ?? "fallback", "fallback");

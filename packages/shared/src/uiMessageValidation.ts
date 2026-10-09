@@ -1,5 +1,6 @@
 // Webview から届く操作要求を、副作用を実行する前に検証する。
 import type { UiMessage } from "./messages";
+import { validConversationScrollAnchor } from "./conversationScroll";
 import { validToolOutputRequest } from "./toolOutput";
 import { isBackendId } from "./backend";
 import { isId, isRecord } from "./validation";
@@ -50,6 +51,7 @@ const uiMessageValidators = new Map<
 			![...value.path].some((character) => character.charCodeAt(0) < 32),
 		"ui/setBackend": (value) => isBackendId(value.backend),
 		"agent/read": (value) => isId(value.sessionId) && isId(value.threadId),
+		"agent/stop": (value) => isId(value.sessionId) && isId(value.threadId),
 		"changes/open": (value) => isChangeScope(value.scope),
 		"session/searchReferences": (value) =>
 			isSymbolQuery(value.query) &&
@@ -89,7 +91,8 @@ const uiMessageValidators = new Map<
 		"ui/saveScroll": (value) =>
 			typeof value.scrollTop === "number" &&
 			Number.isFinite(value.scrollTop) &&
-			value.scrollTop >= 0,
+			value.scrollTop >= 0 &&
+			validConversationScrollAnchor(value.scrollAnchor),
 		"connection/retry": () => true,
 		"auth/logout": () => true,
 		"session/new": () => true,

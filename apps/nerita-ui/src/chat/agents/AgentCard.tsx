@@ -1,7 +1,10 @@
 // エージェントの状態・アイコン・名前を独立したタイムラインカードで表示する。
-import { nonEmptyString } from "@nerita/shared/valuePredicates";
+import {
+	isNonEmptyString,
+	nonEmptyString,
+} from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
-import { Check, Circle, LoaderCircle, Square, X } from "lucide-react";
+import { Check, LoaderCircle, X } from "lucide-react";
 import type { AgentStatus, SubAgentSummary } from "@nerita/shared/subAgents";
 import { icons } from "./AgentIcons";
 import "../loaders.css";
@@ -47,7 +50,7 @@ export function AgentIcon({
 	);
 }
 
-/** 実行中だけ回転させ、カード全体をキーボードで開けるようにする。 */
+/** 状態はアイコンで伝え、カード全体をキーボードで開けるようにする。 */
 export function AgentCard({
 	agent,
 	onOpen,
@@ -55,7 +58,13 @@ export function AgentCard({
 	agent: SubAgentSummary;
 	onOpen: (agent: SubAgentSummary) => void;
 }) {
-	const Icon = agentStatusIcon(agent.status);
+	const chips = [
+		agent.role,
+		agent.agentPath.split("/").filter(Boolean).at(-1),
+		agent.model,
+		agent.reasoningEffort,
+	].filter(isNonEmptyString);
+
 	return (
 		<button
 			type="button"
@@ -70,42 +79,72 @@ export function AgentCard({
 			onClick={() => onOpen(agent)}
 			aria-label={`${agentName(agent)}の会話を表示 · ${labels[agent.status]}`}
 		>
-			<Icon
-				size={16}
-				aria-hidden="true"
-				className={cn(
-					"shrink-0",
-					agent.status === "running" ? "tool-progress" : "text-muted",
-				)}
-			/>
+			<AgentStatusIndicator status={agent.status} />
 			<AgentIcon iconKey={agent.iconKey} />
 			<span className="min-w-0 flex-1">
 				<span className="block text-[13px] [overflow-wrap:anywhere]">
 					{agentName(agent)}
 				</span>
-				<span className="block text-[12px] [overflow-wrap:anywhere] text-muted">
-					{[labels[agent.status], agent.role, agent.model]
-						.filter(Boolean)
-						.join(" · ")}
+				<span className="mt-1 flex flex-wrap gap-2 text-[12px]">
+					{chips.map((chip, index) => (
+						<span
+							key={index}
+							className={cn(
+								"agent-chip max-w-full rounded-[5px] bg-message-code px-2 py-[6px]",
+								"leading-none [overflow-wrap:anywhere] text-foreground",
+							)}
+						>
+							{chip}
+						</span>
+					))}
 				</span>
 			</span>
 		</button>
 	);
 }
 
-/** エージェントの実行・停止・異常状態に対応するアイコンを返す。 */
-function agentStatusIcon(status: AgentStatus) {
+/** 待機と停止は色だけを変えて同じパルスを使い、状態名はカードの読み上げに残す。 */
+function AgentStatusIndicator({ status }: { status: AgentStatus }) {
 	if (status === "running") {
-		return LoaderCircle;
+		return (
+			<LoaderCircle
+				size={16}
+				aria-hidden="true"
+				className="tool-progress shrink-0"
+			/>
+		);
 	}
 	if (status === "completed") {
-		return Check;
-	}
-	if (["interrupted", "shutdown"].includes(status)) {
-		return Square;
+		return (
+			<Check
+				size={16}
+				aria-hidden="true"
+				className="shrink-0 text-menu-check"
+			/>
+		);
 	}
 	if (["errored", "systemError", "notFound"].includes(status)) {
-		return X;
+		return (
+			<X
+				size={16}
+				aria-hidden="true"
+				className="shrink-0 text-tool-error"
+			/>
+		);
 	}
-	return Circle;
+	return (
+		<span
+			aria-hidden="true"
+			className={cn(
+				"agent-status-dots flex h-4 w-4 shrink-0 items-center justify-between",
+				status === "interrupted" || status === "shutdown"
+					? "text-warning"
+					: "text-white",
+			)}
+		>
+			<span className="size-1 rounded-full bg-current" />
+			<span className="size-1 rounded-full bg-current" />
+			<span className="size-1 rounded-full bg-current" />
+		</span>
+	);
 }

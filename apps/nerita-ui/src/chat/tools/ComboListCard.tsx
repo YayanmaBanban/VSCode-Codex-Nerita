@@ -3,6 +3,7 @@ import { cn } from "cnfast";
 import type { ReactNode } from "react";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import type { ToolSummary } from "@nerita/shared/chatState";
+import { ToolCardCollapse } from "./ToolCardCollapse";
 import "./comboListCard.css";
 
 const statusLabels = {
@@ -68,24 +69,21 @@ export function ComboListCard({
 					aria-hidden="true"
 				/>
 			</button>
-			<div
+			<ToolCardCollapse
 				id={bodyId}
 				className="combo-list-collapse"
-				inert={!open}
-				aria-hidden={!open}
+				open={open}
 			>
-				<div className="min-h-0 overflow-hidden">
-					<div
-						className={cn(
-							"tool-body ml-[7px] flex flex-col gap-[12px] border-0 border-l",
-							"border-solid border-panel-border py-[6px] pr-[4px] pl-[18px] text-[12px]",
-							"leading-[1.65]",
-						)}
-					>
-						{children}
-					</div>
+				<div
+					className={cn(
+						"tool-body ml-[7px] flex flex-col gap-[12px] border-0 border-l",
+						"border-solid border-panel-border py-[6px] pr-[4px] pl-[18px] text-[12px]",
+						"leading-[1.65]",
+					)}
+				>
+					{children}
 				</div>
-			</div>
+			</ToolCardCollapse>
 		</div>
 	);
 }

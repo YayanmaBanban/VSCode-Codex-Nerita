@@ -213,6 +213,83 @@ export const CompletionPreservesExpansion: Story = {
 	},
 };
 
+/** 大量履歴でも閉じた差分と Markdown を保持せず、閉じる途中の開き直しでは本文を失わない。 */
+export const ClosedBodiesReleased: Story = {
+	render: () => (
+		<main className="p-4">
+			<ToolCard
+				tool={{
+					id: "lazy-diff",
+					title: "差分の遅延表示",
+					kind: "edit",
+					status: "completed",
+					paths: [],
+					content: [
+						{
+							type: "diff",
+							path: "lazy.txt",
+							oldText: "変更前\n",
+							newText: "変更後\n",
+						},
+					],
+				}}
+			/>
+			<ToolCard
+				tool={{
+					id: "lazy-think",
+					title: "推論の遅延表示",
+					kind: "think",
+					status: "completed",
+					paths: [],
+					content: [
+						{
+							type: "content",
+							content: { type: "text", text: "**推論の本文**" },
+						},
+					],
+				}}
+			/>
+		</main>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		for (const name of ["差分の遅延表示", "推論の遅延表示"]) {
+			const heading = canvas.getByRole("button", {
+				name: new RegExp(`^${name}`),
+			});
+			const body = () =>
+				name === "差分の遅延表示"
+					? canvas.queryByRole("region", {
+							name: "lazy.txt の差分",
+							hidden: true,
+						})
+					: canvas.queryByText("推論の本文");
+			await expect(body()).not.toBeInTheDocument();
+			await userEvent.click(heading);
+			await waitFor(() => expect(body()).toBeVisible());
+			await userEvent.click(heading);
+			await waitFor(() => expect(body()).not.toBeInTheDocument());
+
+			await userEvent.click(heading);
+			await waitFor(() => expect(body()).toBeVisible());
+			await userEvent.click(heading);
+			await userEvent.click(heading);
+			const collapse = document.getElementById(
+				heading.getAttribute("aria-controls")!,
+			);
+			await Promise.allSettled(
+				collapse!
+					.getAnimations()
+					.map((animation) => animation.finished),
+			);
+			await expect(heading).toHaveAttribute("aria-expanded", "true");
+			await expect(body()).toBeVisible();
+			await userEvent.click(heading);
+			await waitFor(() => expect(body()).not.toBeInTheDocument());
+		}
+	},
+};
+
 /** 会話末尾で長いカードを開き、展開前後の見出し位置を確認する。 */
 function ScrollExpansionStory() {
 	const container = useRef<HTMLDivElement>(null);
@@ -438,11 +515,36 @@ export const OutputControls: Story = {
 				canvas.queryByRole("region", { name: "詳細出力" }),
 			).not.toBeInTheDocument();
 			await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+			await verifyClosedOutputReset(canvasElement);
 		} finally {
 			copy.mockRestore();
 		}
 	},
 };
+
+/** カード全体を閉じたら取得済み出力を解放し、開き直した詳細表示は初期状態に戻る。 */
+async function verifyClosedOutputReset(canvasElement: HTMLElement) {
+	const canvas = within(canvasElement);
+	const heading = canvas.getByRole("button", {
+		name: /^Get-Content/,
+		expanded: true,
+	});
+	await userEvent.click(canvas.getByRole("button", { name: "詳細出力" }));
+	await userEvent.click(
+		canvas.getByRole("button", { name: "出力応答を受信" }),
+	);
+	await userEvent.click(heading);
+	await waitFor(() =>
+		expect(
+			canvas.queryByRole("region", { name: "詳細出力", hidden: true }),
+		).not.toBeInTheDocument(),
+	);
+	await userEvent.click(heading);
+	await expect(
+		canvas.getByRole("button", { name: "詳細出力" }),
+	).toHaveAttribute("aria-expanded", "false");
+	await expect(canvas.queryByText(/先頭の詳細出力/)).not.toBeInTheDocument();
+}
 
 /** Host が非公開情報を除去した構造化結果を模したデータで、要約と省略表示を確認する。 */
 export const StructuredResult: Story = {

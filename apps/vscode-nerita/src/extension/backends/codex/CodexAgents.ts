@@ -7,7 +7,8 @@ import { AgentRegistry, agentMetadata } from "./agents/AgentRegistry";
 import { threadAgentStatus, withThreadStatus } from "./items/agentItems";
 import { restoreDisplayHistory } from "./history/restoreHistory";
 import type { AppServerNotification } from "./protocol/rpcMessage";
-import { type SubAgentSummary } from "@nerita/shared/subAgents";
+import { agentSubtree, type SubAgentSummary } from "@nerita/shared/subAgents";
+import { setTimeout } from "node:timers/promises";
 import { type HistoryThread } from "./protocol/history";
 import type { CodexConnection } from "./runtime/connection";
 
@@ -21,6 +22,9 @@ type AgentSession = {
 		message: Extract<HostMessage, { type: "agent/view" }>,
 		outputs: ToolOutputStore,
 	) => void;
+	publishStopped: (
+		message: Extract<HostMessage, { type: "agent/stopped" }>,
+	) => void;
 };
 
 /** 子の通知・メタデータ・閲覧を管理し、親ターンの通知の振り分けはコントローラーへ委ねる。 */
@@ -28,6 +32,54 @@ export class CodexAgents {
 	private readonly agentRegistry = new AgentRegistry();
 	private metadataRequests = new Map<string, Promise<void>>();
 	constructor(private readonly session: AgentSession) {}
+
+	/** 親の実行状態は変更せず、既知の対象と子孫の稼働ターンだけを中断する。 */
+	async stop(
+		message: Extract<UiMessage, { type: "agent/stop" }>,
+	): Promise<void> {
+		const client = this.session.connection();
+		const epoch = this.session.epoch();
+		const current = () => {
+			const state = this.session.snapshot();
+			return (
+				this.session.epoch() === epoch &&
+				state.sessionId === message.sessionId &&
+				state.connection === "ready" &&
+				!state.sessionPending
+			);
+		};
+		if (
+			!client ||
+			!current() ||
+			!this.session
+				.snapshot()
+				.agents.some((agent) => agent.threadId === message.threadId)
+		) {
+			throw new Error("この会話に停止対象のエージェントがありません。");
+		}
+		const stopped = new Set<string>();
+		const deadline = Date.now() + 10000;
+		// 対象自身を先に中断し、処理中に通知された新しい子孫も次の繰り返しで停止対象に加える。
+		while (current()) {
+			const targets = agentSubtree(
+				this.session.snapshot().agents,
+				message.threadId,
+			).filter((agent) => !stopped.has(agent.threadId));
+			if (targets.length === 0) {
+				this.session.publishStopped({
+					type: "agent/stopped",
+					requestId: message.requestId,
+					threadId: message.threadId,
+				});
+				return;
+			}
+			for (const target of targets) {
+				await interruptAgentThread(client, target, current, deadline);
+				stopped.add(target.threadId);
+			}
+		}
+		throw new Error("会話が切り替わったため、停止を中止しました。");
+	}
 
 	/** 最終一覧の項目も通常通知と同じ重複排除へ通す。 */
 	notification(message: AppServerNotification): void {
@@ -206,6 +258,66 @@ export class CodexAgents {
 			outputs,
 		);
 	}
+}
+
+/** 初期化と停止が競合した場合はターンの公開を待ち、古い接続や別の親のターンは操作しない。 */
+async function interruptAgentThread(
+	client: CodexConnection,
+	agent: SubAgentSummary,
+	current: () => boolean,
+	deadline: number,
+): Promise<void> {
+	while (current() && Date.now() < deadline) {
+		const { thread } = await readAgentThread(
+			client,
+			agent.threadId,
+			current,
+		);
+		if (
+			!current() ||
+			!matchesAgentThread(thread, agent.threadId, agent.parentThreadId)
+		) {
+			throw new Error("停止対象の会話を確認できませんでした。");
+		}
+		const turns =
+			thread.historyMode === "paginated"
+				? (
+						await client.listTurns(
+							agent.threadId,
+							undefined,
+							"summary",
+							"desc",
+						)
+					).data
+				: thread.turns;
+		if (!current()) {
+			throw new Error("会話が切り替わったため、停止を中止しました。");
+		}
+		const turn = turns.find((item) => item.status === "inProgress");
+		if (turn) {
+			await client.interruptTurn(agent.threadId, turn.id);
+			return;
+		}
+		if (!awaitingAgentTurn(thread, agent)) {
+			return;
+		}
+		await setTimeout(100);
+	}
+	throw new Error(
+		"停止対象の実行を確認できませんでした。表示を更新して再試行してください。",
+	);
+}
+
+/** 初期化中や活動中はターンをまだ取得できない場合があるため、終了済みとは区別する。 */
+function awaitingAgentTurn(
+	thread: HistoryThread,
+	agent: SubAgentSummary,
+): boolean {
+	return (
+		thread.active ||
+		thread.status === "notLoaded" ||
+		agent.status === "pendingInit"
+	);
 }
 
 /** ページ形式では本文の一括要求を避け、旧形式だけ本文付きで取得し直す。 */

@@ -3,7 +3,13 @@ import {
 	isNonEmptyString,
 	isNonZeroNumber,
 } from "@nerita/shared/valuePredicates";
-import { type ReactNode, type RefObject, useRef } from "react";
+import { type ReactNode, type RefObject, useMemo, useRef } from "react";
+import {
+	messageTimeline,
+	type MessageTimeline,
+	type TimelineEntry,
+} from "./messageTimeline";
+import type { ConversationVirtualizer } from "./useConversationVirtualizer";
 
 import { SettingsTooltip } from "../SettingsTooltip";
 import { cn } from "cnfast";
@@ -56,6 +62,8 @@ type MessagesProps = {
 	renderTool?: (tool: ToolSummary) => ReactNode;
 	agents?: SubAgentSummary[];
 	renderAgent?: (agent: SubAgentSummary) => ReactNode;
+	timeline?: MessageTimeline;
+	virtual?: ConversationVirtualizer;
 };
 
 /** DOM の参照で移動先を解決し、別のチャット画面への干渉を防ぐ。 */
@@ -66,10 +74,16 @@ export function Messages({
 	renderTool,
 	agents = [],
 	renderAgent,
+	timeline,
+	virtual,
 }: MessagesProps) {
 	const elements = useRef(new Map<string, HTMLElement>());
 	/** 回答から対応する送信メッセージの先頭へ移動する。 */
 	const jump = (id: string) => {
+		if (virtual) {
+			virtual.reveal(`message:${id}`, true);
+			return;
+		}
 		const element = elements.current.get(id);
 		element?.focus({ preventScroll: true });
 		element?.scrollIntoView({
@@ -77,32 +91,77 @@ export function Messages({
 			behavior: "instant",
 		});
 	};
-	const entries = messageTimeline(messages, tools, agents);
-	return entries.map(({ message, tool, agent }) => {
-		if (agent) {
-			return renderAgent?.(agent);
+	const data = useMemo(
+		() => timeline ?? messageTimeline(messages, tools, agents),
+		[timeline, messages, tools, agents],
+	);
+	const render = (entry: TimelineEntry) => {
+		if (entry.kind === "agent") {
+			return renderAgent?.(entry.agent);
 		}
-		if (tool) {
-			return renderTimelineTool(tool, tools, renderTool);
+		if (entry.kind === "tool") {
+			return renderTimelineTool(entry.tool, entry.parent, renderTool);
 		}
-		const index = messages.indexOf(message);
-		const user = message.role === "user";
-		const previousUser = messages
-			.slice(0, index)
-			.reverse()
-			.find((item) => item.role === "user");
 		return (
 			<MessageEntry
-				key={message.id}
-				message={message}
-				user={user}
+				key={entry.key}
+				message={entry.message}
+				user={entry.message.role === "user"}
 				elements={elements}
 				send={send}
-				target={previousUser}
+				target={entry.previousUser}
 				jump={jump}
 			/>
 		);
-	});
+	};
+	if (!virtual) {
+		return data.entries.map((entry) => (
+			<div
+				key={entry.key}
+				data-entry-key={entry.key}
+				className="flow-root"
+			>
+				{render(entry)}
+			</div>
+		));
+	}
+	return <VirtualMessages virtual={virtual} data={data} render={render} />;
+}
+
+/** 測定対象の行には余白を含め、描画範囲に入った行だけをマウントする。 */
+function VirtualMessages({
+	virtual,
+	data,
+	render,
+}: {
+	virtual: ConversationVirtualizer;
+	data: MessageTimeline;
+	render: (entry: TimelineEntry) => ReactNode;
+}) {
+	const { virtualizer, list } = virtual;
+	return (
+		<div
+			ref={list}
+			className="relative w-full"
+			data-entry-count={data.entries.length}
+			style={{ height: virtualizer.getTotalSize() }}
+		>
+			{virtualizer.getVirtualItems().map((item) => (
+				<div
+					key={item.key}
+					ref={virtualizer.measureElement}
+					data-index={item.index}
+					data-entry-key={data.entries[item.index]!.key}
+					className="absolute top-0 left-0 flow-root w-full"
+					style={{
+						transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
+					}}
+				>
+					{render(data.entries[item.index]!)}
+				</div>
+			))}
+		</div>
+	);
 }
 
 /** メッセージの表示状態と、同じターンの送信文への移動操作。 */
@@ -114,34 +173,6 @@ type MessageEntryProps = {
 	target: undefined | ChatMessage;
 	jump: (id: string) => void;
 };
-
-/** 発言・ツール・子の結果を共通の順序で並べる。 */
-function messageTimeline(
-	messages: ChatMessage[],
-	tools: ToolSummary[],
-	agents: SubAgentSummary[],
-) {
-	return [
-		...messages.map((message, index) => ({
-			order: message.order ?? index,
-			message,
-			tool: undefined,
-			agent: undefined,
-		})),
-		...tools.map((tool, index) => ({
-			order: tool.order ?? messages.length + index,
-			message: undefined,
-			tool,
-			agent: undefined,
-		})),
-		...agents.map((agent) => ({
-			order: agent.order,
-			agent,
-			message: undefined,
-			tool: undefined,
-		})),
-	].sort((a, b) => a.order - b.order);
-}
 
 /** 本文・添付・ターン移動と回答コピーの操作を表示する。 */
 function MessageEntry(props: MessageEntryProps) {
@@ -198,16 +229,12 @@ function MessageEntry(props: MessageEntryProps) {
 /** 子カードに親の名前を添え、実行中と復元した履歴を同じ配置で表示する。 */
 function renderTimelineTool(
 	tool: ToolSummary,
-	tools: ToolSummary[],
+	parent: ToolSummary | undefined,
 	renderTool: ((tool: ToolSummary) => ReactNode) | undefined,
 ) {
 	if (!isNonEmptyString(tool.parentToolCallId)) {
 		return renderTool?.(tool);
 	}
-	const parent = tools.find(
-		(item) =>
-			item.id === tool.parentToolCallId && item.runId === tool.runId,
-	);
 	return (
 		<div
 			key={`${tool.runId}:${tool.id}`}

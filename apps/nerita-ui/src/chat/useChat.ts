@@ -7,7 +7,7 @@ import { applyStatePatch } from "@nerita/shared/toolUpdates";
 
 /** 接続ごとに状態を初期化し、差分欠落時はスナップショットを要求する。 */
 export function useChat(bridge: Bridge) {
-	const promptRequests = useRef(new Set<string>());
+	const dedicatedRequests = useRef(new Set<string>());
 	const [state, setState] = useState(initialState);
 	const [requestError, setRequestError] = useState<string | null>(null);
 	useEffect(() => {
@@ -15,18 +15,15 @@ export function useChat(bridge: Bridge) {
 		let ready = false;
 		setState(current);
 		setRequestError(null);
+		dedicatedRequests.current.clear();
 		const unsubscribe = bridge.subscribe((message) => {
-			if (message.type === "prompt/accepted") {
-				promptRequests.current.delete(message.requestId);
+			if (consumeDedicatedResult(message, dedicatedRequests.current)) {
 				return;
 			}
 			if (isAuxiliaryMessage(message)) {
 				return;
 			}
 			if (message.type === "request/failed") {
-				if (promptRequests.current.delete(message.requestId)) {
-					return;
-				}
 				setRequestError(message.error);
 				return;
 			}
@@ -54,8 +51,11 @@ export function useChat(bridge: Bridge) {
 	/** 操作直前に個別要求の古いエラーを消す。参照を固定して過去の本文の再描画を防ぐ。 */
 	const send = useCallback(
 		(message: UiMessage) => {
-			if (message.type === "prompt/send") {
-				promptRequests.current.add(message.requestId);
+			if (
+				message.type === "prompt/send" ||
+				message.type === "agent/stop"
+			) {
+				dedicatedRequests.current.add(message.requestId);
 			}
 			setRequestError(null);
 			bridge.postMessage(message);
@@ -63,6 +63,23 @@ export function useChat(bridge: Bridge) {
 		[bridge],
 	);
 	return { state, requestError, send };
+}
+
+/** 送信フォームとエージェント閲覧が扱う結果は、全体エラーへ重複表示しない。 */
+function consumeDedicatedResult(
+	message: HostMessage,
+	requests: Set<string>,
+): boolean {
+	if (
+		message.type === "prompt/accepted" ||
+		message.type === "agent/stopped"
+	) {
+		requests.delete(message.requestId);
+		return true;
+	}
+	return (
+		message.type === "request/failed" && requests.delete(message.requestId)
+	);
 }
 
 /** 初回通知または差分欠落時に全体状態を再取得する。 */
@@ -86,11 +103,7 @@ function requiresSnapshot(
 function isAuxiliaryMessage(message: HostMessage): message is Exclude<
 	HostMessage,
 	{
-		type:
-			| "state/snapshot"
-			| "state/patch"
-			| "request/failed"
-			| "prompt/accepted";
+		type: "state/snapshot" | "state/patch" | "request/failed";
 	}
 > {
 	return [
@@ -101,6 +114,8 @@ function isAuxiliaryMessage(message: HostMessage): message is Exclude<
 		"ui/codeBlock",
 		"ui/viewState",
 		"agent/view",
+		"agent/stopped",
+		"prompt/accepted",
 		"workspace/paths",
 		"workspace/resolvedPath",
 		"workspace/symbols",

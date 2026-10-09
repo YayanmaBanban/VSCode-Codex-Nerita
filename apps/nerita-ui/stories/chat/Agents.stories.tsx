@@ -1,8 +1,9 @@
 // Agent の状態一覧と、親の下書きを保持する子・孫スレッド閲覧を再現する。
 import { useMemo } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { agentIconKeys, type SubAgentSummary } from "@nerita/shared/subAgents";
-import { StoryChat as ChatApp } from "./StoryChat";
+import { StoryChat as ChatApp, storyBridge } from "./StoryChat";
 import { AgentCard } from "../../src/chat/agents/AgentCard";
 import { createChatStoryBridge } from "./mocks/mockBridge";
 
@@ -14,6 +15,7 @@ const child: SubAgentSummary = {
 	nickname: "swift-cheetah",
 	role: "reviewer",
 	model: "GPT-5.x",
+	reasoningEffort: "High",
 	status: "running",
 	order: 2,
 	iconKey: "cheetah",
@@ -26,10 +28,11 @@ const grandchild: SubAgentSummary = {
 	agentPath: "/root/reviewer/helper",
 };
 /** 子の読み取りだけをモックし、画面と戻る操作は実装を使う。 */
-function AgentsStory() {
+function AgentsStory({ running = false }: { running?: boolean }) {
 	const bridge = useMemo(() => {
 		const mock = createChatStoryBridge();
 		mock.patchState({
+			...(running ? { run: "running" as const, runId: "story-run" } : {}),
 			agents: [child, grandchild],
 			messages: [
 				{
@@ -88,7 +91,7 @@ function AgentsStory() {
 			);
 		};
 		return mock;
-	}, []);
+	}, [running]);
 	return <ChatApp bridge={bridge} />;
 }
 /** 長い名前を含む全状態のカードを比較する。 */
@@ -133,6 +136,82 @@ export default meta;
 /** ネスト閲覧を確認するストーリー。 */
 type Story = StoryObj<typeof meta>;
 export const Viewer: Story = {};
+export const StopSubtree: Story = {
+	args: { running: true },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		await userEvent.click(
+			canvas.getByRole("button", { name: /swift-cheetahの会話/ }),
+		);
+		await userEvent.click(
+			canvas.getByRole("button", { name: /helperの会話/ }),
+		);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "自身と子を停止" }),
+		);
+		await waitFor(() =>
+			expect(bridge.sent).toContainEqual(
+				expect.objectContaining({
+					type: "agent/stop",
+					sessionId: "story-session",
+					threadId: "grandchild",
+				}),
+			),
+		);
+		const request = [...bridge.sent]
+			.reverse()
+			.find((message) => message.type === "agent/stop")!;
+		await expect(
+			canvas.getByRole("button", { name: "停止要求中…" }),
+		).toBeDisabled();
+		bridge.emit({
+			type: "request/failed",
+			requestId: request.requestId,
+			error: "停止できませんでした。",
+		});
+		await waitFor(() =>
+			expect(
+				within(
+					canvas.getByRole("complementary", {
+						name: "エージェントの停止・承認",
+					}),
+				).getByRole("alert"),
+			).toHaveTextContent("停止できませんでした。"),
+		);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "自身と子を停止" }),
+		);
+		await waitFor(() =>
+			expect(
+				bridge.sent.filter((message) => message.type === "agent/stop"),
+			).toHaveLength(2),
+		);
+		const retry = [...bridge.sent]
+			.reverse()
+			.find((message) => message.type === "agent/stop")!;
+		bridge.patchState({
+			agents: [child, { ...grandchild, status: "interrupted" }],
+		});
+		bridge.emit({
+			type: "agent/stopped",
+			requestId: retry.requestId,
+			threadId: "grandchild",
+		});
+		await waitFor(() =>
+			expect(
+				canvas.queryByRole("button", { name: "自身と子を停止" }),
+			).not.toBeInTheDocument(),
+		);
+		await userEvent.click(canvas.getByRole("button", { name: "親へ戻る" }));
+		await expect(
+			canvas.getByRole("button", { name: "自身と子を停止" }),
+		).toBeEnabled();
+		await expect(
+			bridge.sent.some((message) => message.type === "prompt/cancel"),
+		).toBe(false);
+	},
+};
 export const States: Story = { render: () => <StatesStory /> };
 export const Icons: Story = {
 	render: () => (

@@ -100,6 +100,17 @@ export class PiAgentViews {
 		return id;
 	}
 
+	/** ワークフローの子も、停止に使うジョブと同じ親子関係で表示する。 */
+	setParent(id: string, parentThreadId: string): void {
+		const entry = this.entries.get(id);
+		if (!entry) {
+			throw new Error("このPi接続に子の会話がありません。");
+		}
+		entry.summary.parentThreadId = parentThreadId;
+		this.persist(id);
+		this.changed();
+	}
+
 	/** 子の本文とツールを親とは別のタイムラインへ蓄積する。 */
 	event(id: string, event: PiEvent) {
 		const entry = this.entries.get(id)!;
@@ -200,10 +211,10 @@ export class PiAgentViews {
 		}
 		return structuredClone({
 			threadId: id,
-			parentThreadId: this.parentId,
+			parentThreadId: entry.summary.parentThreadId,
 			messages: entry.state.messages,
 			tools: entry.state.tools,
-			agents: [],
+			agents: this.list().filter((agent) => agent.parentThreadId === id),
 		});
 	}
 

@@ -6,11 +6,13 @@ export function useFollowConversation(
 	container: RefObject<HTMLElement | null>,
 	sessionId: string | null,
 	paused: boolean,
+	sharedFollowing?: RefObject<boolean>,
 ) {
-	const following = useRef(true);
+	const localFollowing = useRef(true);
+	const following = sharedFollowing ?? localFollowing;
 	useLayoutEffect(() => {
 		following.current = true;
-	}, [sessionId]);
+	}, [sessionId, following]);
 	useLayoutEffect(() => {
 		const element = container.current;
 		if (!element) {
@@ -79,7 +81,7 @@ export function useFollowConversation(
 			element.removeEventListener("scroll", scroll);
 			element.removeEventListener("wheel", wheel);
 		};
-	}, [container, sessionId, paused]);
+	}, [container, sessionId, paused, following]);
 }
 
 /** カードを開く前の見出し位置を保ち、展開中は会話末尾への自動スクロールを止める。 */

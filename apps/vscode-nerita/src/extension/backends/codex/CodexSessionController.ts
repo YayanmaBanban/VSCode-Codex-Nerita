@@ -175,6 +175,7 @@ export class CodexSessionController extends SessionState {
 		epoch: () => this.lifecycle.generation,
 		patch: (change) => this.patch(change),
 		publishView: (message, outputs) => this.emit(message, outputs),
+		publishStopped: (message) => this.emit(message),
 	});
 	private readonly history = new CodexHistory(
 		{
@@ -312,6 +313,10 @@ export class CodexSessionController extends SessionState {
 		}
 		if (message.type === "agent/read") {
 			await this.agents.read(message);
+			return;
+		}
+		if (message.type === "agent/stop") {
+			await this.agents.stop(message);
 			return;
 		}
 		if (message.type === "changes/open") {

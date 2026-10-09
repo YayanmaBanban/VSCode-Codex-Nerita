@@ -6,7 +6,17 @@ import { type ChatState } from "@nerita/shared/chatState";
 import { type UiMessage } from "@nerita/shared/messages";
 import { cn } from "cnfast";
 import { AnimatePresence } from "motion/react";
-import { useRef, useState, type RefObject } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
+import {
+	messageTimeline,
+	type MessageTimeline,
+} from "./messages/messageTimeline";
+import {
+	useConversationVirtualizer,
+	type ConversationVirtualizer,
+} from "./messages/useConversationVirtualizer";
+import { ToolExpansion, useToolExpansion } from "./tools/ToolExpansion";
+import { useConversationPosition } from "./messages/useConversationPosition";
 import { AgentViewer } from "./agents/AgentViewer";
 import { useAgentViewer } from "./agents/useAgentViewer";
 import "./chat.css";
@@ -35,8 +45,28 @@ export function ChatApp({ bridge }: ChatAppProps) {
 	const chat = useChat(bridge);
 	const { state, send } = chat;
 	const dlc = useDlc(bridge);
-	const agentViewer = useAgentViewer(bridge, state.sessionId);
-	const search = useChatSearch(conversation);
+	const agentViewer = useAgentViewer(bridge, state.sessionId, send);
+	const timeline = useMemo(
+		() =>
+			messageTimeline(
+				state.messages,
+				state.tools,
+				state.agents.filter(
+					(agent) => agent.parentThreadId === state.sessionId,
+				),
+			),
+		[state.messages, state.tools, state.agents, state.sessionId],
+	);
+	const following = useRef(true);
+	const virtual = useConversationVirtualizer(
+		timeline,
+		conversation,
+		following,
+		state.sessionId,
+	);
+	const expansion = useToolExpansion(state.sessionId);
+	useConversationPosition(view, virtual, state.sessionId, following);
+	const search = useChatSearch(conversation, timeline, virtual, expansion);
 	const sessionPanel = useSessionPanel(send);
 	const [submissionLocked, setSubmissionLocked] = useState(false);
 	const bottom = useRef<HTMLDivElement>(null);
@@ -46,35 +76,40 @@ export function ChatApp({ bridge }: ChatAppProps) {
 		conversation,
 		state.sessionId,
 		search.open || !!agentViewer.agent,
+		following,
 	);
 	return (
 		<ToolOutputBridge value={bridge}>
-			<main
-				className={cn(
-					"chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col",
-				)}
-			>
-				<ChatModeHeader
-					view={view}
-					chat={chat}
-					dlc={dlc}
-					available={available}
-					sessionPanel={sessionPanel}
-				/>
-				<ChatWorkspace
-					agentViewer={agentViewer}
-					state={state}
-					send={send}
-					sessionPanel={sessionPanel}
-					search={search}
-					busy={busy}
-					conversation={conversation}
-					bottom={bottom}
-					onSubmissionLock={setSubmissionLocked}
-					bridge={bridge}
-					dlc={dlc.mode === "dlc"}
-				/>
-			</main>
+			<ToolExpansion value={expansion}>
+				<main
+					className={cn(
+						"chat-app m-auto flex h-dvh min-h-[360px] max-w-[1350px] flex-col",
+					)}
+				>
+					<ChatModeHeader
+						view={view}
+						chat={chat}
+						dlc={dlc}
+						available={available}
+						sessionPanel={sessionPanel}
+					/>
+					<ChatWorkspace
+						agentViewer={agentViewer}
+						state={state}
+						send={send}
+						sessionPanel={sessionPanel}
+						search={search}
+						busy={busy}
+						conversation={conversation}
+						bottom={bottom}
+						timeline={timeline}
+						virtual={virtual}
+						onSubmissionLock={setSubmissionLocked}
+						bridge={bridge}
+						dlc={dlc.mode === "dlc"}
+					/>
+				</main>
+			</ToolExpansion>
 		</ToolOutputBridge>
 	);
 }
@@ -92,6 +127,8 @@ type ChatWorkspaceProps = {
 	bottom: RefObject<HTMLDivElement | null>;
 	onSubmissionLock: (locked: boolean) => void;
 	bridge: Bridge;
+	timeline: MessageTimeline;
+	virtual: ConversationVirtualizer;
 };
 
 /** 会話・子スレッド・入力欄と履歴パネルを配置する。 */

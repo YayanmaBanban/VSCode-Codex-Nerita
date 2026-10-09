@@ -16,7 +16,8 @@ import {
 	X,
 	type LucideIcon,
 } from "lucide-react";
-import { useId, useState, type Dispatch, type SetStateAction } from "react";
+import { useId, type Dispatch, type SetStateAction } from "react";
+import { useCardExpansion } from "./ToolExpansion";
 import "../loaders.css";
 import { SettingsTooltip } from "../SettingsTooltip";
 import {
@@ -29,6 +30,7 @@ import { ComboListCard } from "./ComboListCard";
 import { GenericTool } from "./ToolContent";
 import { toolRenderer } from "./toolRenderers";
 import { ToolOutputView } from "./ToolOutputView";
+import { ToolCardCollapse } from "./ToolCardCollapse";
 import { toolLabelClass } from "./toolStyles";
 import "./toolCard.css";
 
@@ -71,7 +73,7 @@ export function ToolCard({
 	const Icon = renderer.Icon;
 	const Body = toolBody(tool, renderer);
 	const comboList = usesComboList(tool, Body);
-	const [state, setState] = useState<CardState>({ open: false });
+	const [state, setState] = useCardExpansion(tool);
 	if (comboList) {
 		return (
 			<ComboListCard
@@ -112,17 +114,14 @@ export function ToolCard({
 				task={task}
 			/>
 			{Body && (
-				<div
+				<ToolCardCollapse
 					id={bodyId}
 					className="tool-card-collapse"
-					inert={!state.open}
-					aria-hidden={!state.open}
+					open={state.open}
 				>
-					<div className="min-h-0 overflow-hidden">
-						{renderHistoryNotice(tool)}
-						{renderToolBody(Body, tool, send, workspaceCwd)}
-					</div>
-				</div>
+					{renderHistoryNotice(tool)}
+					{renderToolBody(Body, tool, send, workspaceCwd)}
+				</ToolCardCollapse>
 			)}
 		</div>
 	);
@@ -256,7 +255,7 @@ function usesComboList(
 	);
 }
 
-/** 閉じるアニメーション中に本文が消えないよう、開閉にかかわらず描画する。 */
+/** 展開時に使う本文を組み立て、実際の描画と解放は開閉領域に委ねる。 */
 function renderToolBody(
 	body: NonNullable<ReturnType<typeof toolRenderer>["Body"]>,
 	tool: ToolSummary,

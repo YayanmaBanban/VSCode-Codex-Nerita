@@ -1,6 +1,7 @@
 // 子の待機列・承認・取消しを親の応答期間から分離し、表示用の結果を保存する。
 import { errorText } from "@nerita/shared/errorText";
 import { z } from "zod";
+import { agentSubtree } from "@nerita/shared/subAgents";
 import type {
 	SessionEntry,
 	SessionManager,
@@ -64,6 +65,7 @@ export class PiJobs {
 			if (!this.records.has(record.parentId)) {
 				record.parentId = parentId;
 			}
+			this.views.setParent(record.id, record.parentId);
 		}
 	}
 
@@ -85,6 +87,7 @@ export class PiJobs {
 		const abort = new AbortController();
 		const combined = AbortSignal.any([signal, abort.signal]);
 		this.records.set(record.id, { ...record });
+		this.views.setParent(record.id, record.parentId);
 		this.update(record.id, "queued");
 		const done = this.execute(record.id, combined, run, useSlot).finally(
 			() => this.active.delete(record.id),
@@ -233,6 +236,20 @@ export class PiJobs {
 		active?.abort.abort();
 		await active?.done.catch(() => undefined);
 	}
+	/** 対象自身と子孫のジョブへ一斉に取消しを要求し、親や兄弟のジョブは継続する。 */
+	async cancelSubtree(id: string): Promise<void> {
+		this.read(id);
+		const targets = agentSubtree(this.views.list(), id);
+		const jobs = targets.flatMap((target) => {
+			const job = this.active.get(target.threadId);
+			return job ? [job] : [];
+		});
+		for (const job of jobs) {
+			job.abort.abort();
+		}
+		await Promise.allSettled(jobs.map((job) => job.done));
+	}
+
 	/** 起動待ちも先に失効させ、全ジョブの回収を待つ。 */
 	async stop() {
 		this.stopping = true;

@@ -170,10 +170,11 @@ export class CodexClient {
 		threadId: string,
 		cursor?: string,
 		itemsView: "full" | "summary" = "full",
+		sortDirection: "asc" | "desc" = "asc",
 	) {
 		return this.transport.request("thread/turns/list", {
 			threadId,
-			sortDirection: "asc",
+			sortDirection,
 			itemsView,
 			limit: 50,
 			...(isNonEmptyString(cursor) ? { cursor } : {}),

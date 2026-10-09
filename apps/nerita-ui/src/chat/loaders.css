@@ -1,4 +1,4 @@
-/* ツール実行中の回転表示を定義する。 */
+/* ツール実行中の回転と、エージェントの待機・停止で共有するパルスを定義する。 */
 .tool-progress {
 	color: var(--nerita-description-foreground);
 	animation: tool-spin 1.2s linear infinite;
@@ -8,8 +8,29 @@
 		transform: rotate(360deg);
 	}
 }
+.agent-status-dots > span {
+	animation: agent-dot-pulse 1.2s ease-in-out infinite;
+}
+.agent-status-dots > span:nth-child(2) {
+	animation-delay: -1s;
+}
+.agent-status-dots > span:nth-child(3) {
+	animation-delay: -0.8s;
+}
+@keyframes agent-dot-pulse {
+	0%,
+	100% {
+		opacity: 0.35;
+		transform: scale(0.75);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
 @media (prefers-reduced-motion: reduce) {
-	.tool-progress {
+	.tool-progress,
+	.agent-status-dots > span {
 		animation: none;
 	}
 }
