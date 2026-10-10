@@ -1,6 +1,18 @@
 // Host が正規化した見出しと、本文に残す実行コマンドを再現する。
 import type { ToolSummary } from "@nerita/shared/chatState";
 
+const longCommand = `rtk proxy powershell -NoProfile -EncodedCommand ${"JABQ".repeat(400)}`;
+
+export const longCommandTool: ToolSummary = {
+	id: "long-command",
+	title: longCommand,
+	kind: "execute",
+	status: "completed",
+	paths: [],
+	rawInput: { command: longCommand },
+	output: { preview: "実行完了", truncated: false },
+};
+
 export const commandTools: ToolSummary[] = [
 	{
 		id: "codex-command",

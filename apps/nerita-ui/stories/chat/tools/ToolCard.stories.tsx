@@ -11,7 +11,7 @@ import { ToolCard } from "../../../src/chat/tools/ToolCard";
 import { useFollowConversation } from "../../../src/chat/messages/useFollowConversation";
 import { ToolOutputBridge } from "../../../src/chat/tools/ToolOutputView";
 import { createStoryBridge } from "../mocks/storyBridge";
-import { commandTools } from "../fixtures/toolCommands";
+import { commandTools, longCommandTool } from "../fixtures/toolCommands";
 import "../../../src/chat/chat.css";
 
 const initialTools: ToolSummary[] = [
@@ -175,6 +175,15 @@ type Story = StoryObj<typeof meta>;
 export const Running: Story = {};
 export const Background: Story = { args: { background: true } };
 export const CommandTitles: Story = { args: { commands: true } };
+
+/** 長い実行コマンドの見出しにホバーし、ツールチップの省略表示を確認する。 */
+export const LongCommandTooltip: Story = {
+	render: () => (
+		<main className="p-4">
+			<ToolCard tool={longCommandTool} />
+		</main>
+	),
+};
 
 /** 開いた実行カードだけを展開したまま保ち、閉じたカードは完了後も閉じておく。 */
 export const CompletionPreservesExpansion: Story = {

@@ -351,9 +351,7 @@ function renderToolHeading(
 	// 圧縮はコマンド実行ではないため、停止ボタンを増やさず進行アイコンだけを共用する。
 	const progress = usesExecutionProgress(tool);
 	return (
-		<SettingsTooltip
-			content={<span className="whitespace-pre-wrap">{title}</span>}
-		>
+		<SettingsTooltip content={title}>
 			<Heading
 				className={cn(
 					"tool-heading group flex w-full min-w-0 items-center gap-[8px] p-[10px]",

@@ -3,6 +3,8 @@ import { Tooltip } from "@base-ui/react/tooltip";
 import { cn } from "cnfast";
 import { useRef, type ReactElement, type ReactNode } from "react";
 
+const MAX_TOOLTIP_CHARACTERS = 300;
+
 /** ホバーとフォーカスで説明を表示し、既存要素の操作と役割を維持する。 */
 export function SettingsTooltip({
 	children,
@@ -17,6 +19,19 @@ export function SettingsTooltip({
 	if (!(content !== undefined && content !== null && content !== false)) {
 		return children;
 	}
+	// 長文による画面からのはみ出しを抑えつつ、サロゲートペアを分断せずに省略する。
+	const characters =
+		typeof content === "string" ? Array.from(content) : undefined;
+	const tooltipContent = characters ? (
+		<span className="whitespace-pre-wrap">
+			{characters.length > MAX_TOOLTIP_CHARACTERS
+				? `${characters.slice(0, MAX_TOOLTIP_CHARACTERS).join("")}…`
+				: content}
+		</span>
+	) : (
+		content
+	);
+
 	return (
 		<Tooltip.Root
 			onOpenChange={(_open, details) => {
@@ -66,7 +81,7 @@ export function SettingsTooltip({
 						)}
 						role="tooltip"
 					>
-						{content}
+						{tooltipContent}
 					</Tooltip.Popup>
 				</Tooltip.Positioner>
 			</Tooltip.Portal>
