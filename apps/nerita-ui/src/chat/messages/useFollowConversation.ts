@@ -19,6 +19,8 @@ export function useFollowConversation(
 			return;
 		}
 		let previousTop = element.scrollTop;
+		let previousHeight = element.scrollHeight;
+		let previousViewport = element.clientHeight;
 		let frame = 0;
 		const toolScroll = registerToolCardScroll(element, () => {
 			following.current = false;
@@ -30,6 +32,8 @@ export function useFollowConversation(
 			if (following.current && !paused && !toolScroll.active()) {
 				element.scrollTo({ top: element.scrollHeight });
 				previousTop = element.scrollTop;
+				previousHeight = element.scrollHeight;
+				previousViewport = element.clientHeight;
 			}
 		};
 		const scroll = () => {
@@ -39,10 +43,18 @@ export function useFollowConversation(
 			}
 			if (atBottom()) {
 				following.current = true;
-			} else if (element.scrollTop < previousTop) {
+			} else if (
+				element.scrollTop < previousTop &&
+				element.scrollHeight === previousHeight &&
+				element.clientHeight === previousViewport
+			) {
+				// 仮想行の再計測や、会話が空のときの表示を消す際などに高さが変わる。
+				// 内容や表示領域の高さが変わった場合は、ブラウザの位置補正を手動操作とみなさない。
 				following.current = false;
 			}
 			previousTop = element.scrollTop;
+			previousHeight = element.scrollHeight;
+			previousViewport = element.clientHeight;
 		};
 		// `wheel` 直後の描画更新が、ブラウザの `scroll` 通知より先に追従する競合を防ぐ。
 		const wheel = (event: WheelEvent) => {
@@ -54,34 +66,42 @@ export function useFollowConversation(
 			cancelAnimationFrame(frame);
 			frame = requestAnimationFrame(follow);
 		};
-		const resize = new ResizeObserver(schedule);
-		const observe = () => {
-			resize.disconnect();
-			resize.observe(element);
-			for (const child of element.children) {
-				resize.observe(child);
-			}
-			schedule();
-		};
-		const mutation = new MutationObserver(observe);
-		mutation.observe(element, {
-			childList: true,
-			subtree: true,
-			characterData: true,
-		});
+		const stopObserving = observeConversation(element, schedule);
 		element.addEventListener("scroll", scroll);
 		element.addEventListener("wheel", wheel, { passive: true });
-		observe();
 		follow();
 		return () => {
 			toolScroll.dispose();
 			cancelAnimationFrame(frame);
-			resize.disconnect();
-			mutation.disconnect();
+			stopObserving();
 			element.removeEventListener("scroll", scroll);
 			element.removeEventListener("wheel", wheel);
 		};
 	}, [container, sessionId, paused, following]);
+}
+
+/** 会話欄とその内容の高さ、行や本文の変更を監視し、末尾への追従処理を次のフレームに予約する。 */
+function observeConversation(element: HTMLElement, schedule: () => void) {
+	const resize = new ResizeObserver(schedule);
+	const observe = () => {
+		resize.disconnect();
+		resize.observe(element);
+		for (const child of element.children) {
+			resize.observe(child);
+		}
+		schedule();
+	};
+	const mutation = new MutationObserver(observe);
+	mutation.observe(element, {
+		childList: true,
+		subtree: true,
+		characterData: true,
+	});
+	observe();
+	return () => {
+		resize.disconnect();
+		mutation.disconnect();
+	};
 }
 
 /** カードを開く前の見出し位置を保ち、展開中は会話末尾への自動スクロールを止める。 */
