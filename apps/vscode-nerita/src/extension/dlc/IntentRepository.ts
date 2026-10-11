@@ -52,7 +52,7 @@ export class IntentRepository {
 	/** 同じ Host の読込みと保存を並べ、別 Host とはファイルロックで排他する。 */
 	locked<T>(operation: () => Promise<T>): Promise<T> {
 		const pending = this.operations.then(() =>
-			withDlcLock(this.files, operation),
+			withDlcLock(this.liveFiles, operation),
 		);
 		this.operations = pending.then(
 			() => undefined,
@@ -63,11 +63,12 @@ export class IntentRepository {
 	constructor(
 		readonly files: SafeDlcFiles,
 		private readonly authority: IntentAuthority,
+		private readonly liveFiles: SafeDlcFiles,
 	) {
 		this.documents = new TrustedDocuments(
-			files,
+			liveFiles,
 			authority,
-			`dlc.${createHash("sha256").update(files.root).digest("hex")}`,
+			`dlc.${createHash("sha256").update(liveFiles.root).digest("hex")}`,
 		);
 	}
 	private async directoryFor(intentId: string): Promise<string> {
@@ -84,7 +85,7 @@ export class IntentRepository {
 		return this.locked(() => this.directoryFor(intentId));
 	}
 	private runKey(intentId: string, attemptId: string, kind: string): string {
-		return `dlc.run.${jsonDigest({ root: this.files.root, intentId, attemptId, kind })}`;
+		return `dlc.run.${jsonDigest({ root: this.liveFiles.root, intentId, attemptId, kind })}`;
 	}
 	private async writeRun(
 		intentId: string,
@@ -98,15 +99,15 @@ export class IntentRepository {
 			throw new Error("実行記録は既に固定されています。");
 		}
 		const file = `${directory}/runs/${jsonDigest({ attemptId, kind }).slice(7)}.json`;
-		await this.files.directory(`${directory}/runs`);
-		const existing = await this.files.read(file);
+		await this.liveFiles.directory(`${directory}/runs`);
+		const existing = await this.liveFiles.read(file);
 		if (
 			existing !== undefined &&
 			jsonDigest(JSON.parse(existing)) !== jsonDigest(value)
 		) {
 			throw new Error("未確定の実行記録が競合しています。");
 		}
-		await this.files.write(file, value);
+		await this.liveFiles.write(file, value);
 		await this.authority.write(key, {
 			revision: 0,
 			digest: jsonDigest(value),
@@ -126,7 +127,7 @@ export class IntentRepository {
 			throw new Error("信頼済みの実行記録がありません。");
 		}
 		const anchor = AuthorityRecordSchema.parse(saved);
-		const record = await this.files.read(
+		const record = await this.liveFiles.read(
 			`${directory}/runs/${jsonDigest({ attemptId, kind }).slice(7)}.json`,
 			16 * 1024 * 1024,
 		);
@@ -211,10 +212,12 @@ export class IntentRepository {
 		}
 	}
 	private async registry(): Promise<IntentRegistry> {
-		await this.files.directory(intentsDirectory);
-		const existing = await this.files.read(`${spaceDirectory}/space.json`);
+		await this.liveFiles.directory(intentsDirectory);
+		const existing = await this.liveFiles.read(
+			`${spaceDirectory}/space.json`,
+		);
 		if (existing === undefined) {
-			await this.files.write(`${spaceDirectory}/space.json`, space);
+			await this.liveFiles.write(`${spaceDirectory}/space.json`, space);
 		} else {
 			SpaceSchema.parse(JSON.parse(existing));
 		}
@@ -252,9 +255,12 @@ export class IntentRepository {
 		);
 	}
 	private async assertNoOrphans(registry: IntentRegistry): Promise<void> {
-		const entries = await readdir(await this.files.path(intentsDirectory), {
-			withFileTypes: true,
-		});
+		const entries = await readdir(
+			await this.liveFiles.path(intentsDirectory),
+			{
+				withFileTypes: true,
+			},
+		);
 		const known = new Set(registry.entries.map((entry) => entry.dirName));
 		if (entries.some((entry) => entry.isSymbolicLink())) {
 			throw new Error("Intent レジストリ内のリンクは利用できません。");
@@ -272,7 +278,7 @@ export class IntentRepository {
 		entry: IntentRegistry["entries"][number],
 	): Promise<IntentState> {
 		const directory = `${intentsDirectory}/${IntentDirectorySchema.parse(entry.dirName)}`;
-		const text = await this.files.read(`${directory}/intent.json`);
+		const text = await this.liveFiles.read(`${directory}/intent.json`);
 		if (text === undefined) {
 			throw new Error("Intent の本文がありません。");
 		}
@@ -298,7 +304,7 @@ export class IntentRepository {
 				"Intent のカタログが現在の定義と異なります。明示的な移行が必要です。",
 			);
 		}
-		return restoreState(this.files, directory, disk, intent);
+		return restoreState(this.liveFiles, directory, disk, intent);
 	}
 	/** 新規作成は本文と状態を先に確定し、最後にレジストリへ登録する。 */
 	create(
@@ -355,6 +361,38 @@ export class IntentRepository {
 			);
 		}
 	}
+	/** Git 側へは停止した状態の写しだけを出力する。読込み・復旧には一切使わない。 */
+	exportSnapshot(intentId: string): Promise<void> {
+		return this.locked(async () => {
+			const registry = await this.registry();
+			const entry = registry.entries.find(
+				(item) => item.intentId === intentId,
+			);
+			if (!entry) {
+				throw new Error("出力する Intent が登録されていません。");
+			}
+			const state = await this.loadEntry(entry);
+			if (
+				state.workItems.some(
+					(item) =>
+						item.status === "running" || item.status === "stopping",
+				)
+			) {
+				throw new Error("実行中の状態は Git の履歴へ出力できません。");
+			}
+			const directory = `${intentsDirectory}/${entry.dirName}`;
+			await this.files.directory(directory);
+			await this.files.write(`${directory}/intent.json`, state.intent);
+			const disk = await persistState(this.files, directory, state);
+			await this.files.write(`${directory}/state.json`, disk);
+			await this.files.write(`${directory}/snapshot.json`, {
+				schemaVersion: 1,
+				kind: "historical-snapshot",
+				intentId,
+				revision: state.revision,
+			});
+		});
+	}
 	private async register(
 		state: IntentState,
 		registry: IntentRegistry,
@@ -367,10 +405,16 @@ export class IntentRepository {
 			.slice(0, 50);
 		const label = slug === "" ? "intent" : slug;
 		const existing = new Set(
-			(await readdir(await this.files.path(intentsDirectory))).map(
+			(await readdir(await this.liveFiles.path(intentsDirectory))).map(
 				(entry) => entry.toLowerCase(),
 			),
 		);
+		await this.files.directory(intentsDirectory);
+		for (const entry of await readdir(
+			await this.files.path(intentsDirectory),
+		)) {
+			existing.add(entry.toLowerCase());
+		}
 		let dirName = `${date}-${label}`;
 		let suffix = 1;
 		while (existing.has(dirName)) {
@@ -378,9 +422,9 @@ export class IntentRepository {
 		}
 		IntentDirectorySchema.parse(dirName);
 		const directory = `${intentsDirectory}/${dirName}`;
-		await this.files.directory(directory);
-		await this.files.write(`${directory}/intent.json`, state.intent);
-		const disk = await persistState(this.files, directory, state);
+		await this.liveFiles.directory(directory);
+		await this.liveFiles.write(`${directory}/intent.json`, state.intent);
+		const disk = await persistState(this.liveFiles, directory, state);
 		await this.documents.commit(
 			state.intentId,
 			`${directory}/state.json`,
@@ -432,7 +476,7 @@ export class IntentRepository {
 				throw new Error("未実装の工程の進行状態は変更できません。");
 			}
 			const directory = `${intentsDirectory}/${entry.dirName}`;
-			const disk = await persistState(this.files, directory, state);
+			const disk = await persistState(this.liveFiles, directory, state);
 			await this.documents.commit(
 				state.intentId,
 				`${directory}/state.json`,
@@ -483,7 +527,7 @@ export class IntentRepository {
 		return this.locked(async () => {
 			let registry = await this.registry();
 			const entries = await readdir(
-				await this.files.path(intentsDirectory),
+				await this.liveFiles.path(intentsDirectory),
 				{ withFileTypes: true },
 			);
 			for (const entry of entries) {
@@ -496,7 +540,7 @@ export class IntentRepository {
 					continue;
 				}
 				const dirName = IntentDirectorySchema.parse(entry.name);
-				const text = await this.files.read(
+				const text = await this.liveFiles.read(
 					`${intentsDirectory}/${dirName}/intent.json`,
 				);
 				if (text === undefined) {

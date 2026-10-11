@@ -3,6 +3,7 @@ import { errorText } from "@nerita/shared/errorText";
 import * as vscode from "vscode";
 import { requireLocalWorkspace } from "../workspace";
 import { probeMxc } from "./MxcAvailability";
+import { mxcMeasurements } from "./MxcTiming";
 import { dockerAvailability, type SandboxAvailability } from "./SandboxBackend";
 
 /** 固定の起動検査のみを実行する。ワークスペース内のスクリプトや設定を読み込まない。 */
@@ -80,6 +81,7 @@ async function showDiagnostics(
 				{
 					node: process.versions.node,
 					backends: [status, dockerAvailability],
+					measurements: mxcMeasurements(),
 				},
 				null,
 				2,

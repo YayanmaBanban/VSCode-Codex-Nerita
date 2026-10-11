@@ -15,6 +15,7 @@ import type {
 	DlcAction,
 } from "@nerita/shared/dlc/contracts";
 import type { BackendId } from "@nerita/shared/backend";
+import type { HostMessage } from "@nerita/shared/messages";
 import { errorText } from "@nerita/shared/errorText";
 import { requireLocalWorkspace } from "../workspace";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
@@ -26,6 +27,11 @@ import { withDlcLock } from "./DlcLock";
 import { DlcRuntime } from "./DlcRuntime";
 import { collectSourceSnapshot } from "./SourceSnapshot";
 import { intentSummary } from "./IntentSummary";
+import { ProjectStorage } from "./ProjectStorage";
+import { WorktreeManager } from "./WorktreeManager";
+import { z } from "zod";
+import { containsPath } from "../security/AgentAccessPolicy";
+import { hostStorageRoot } from "../session/HostStorage";
 
 const execute = promisify(execFile);
 
@@ -34,6 +40,9 @@ type Workspace = {
 	repository: IntentRepository;
 	detection: WorkspaceDetection;
 	selectionKey: string;
+	storage: ProjectStorage;
+	worktrees: WorktreeManager;
+	assignments: Record<string, { targetId: string; backend: BackendId }>;
 };
 
 /** コマンドと Webview は同じ操作を使い、表示と実行の責任を分ける。 */
@@ -47,7 +56,11 @@ export class DlcHost {
 	private error: string | null = null;
 	private generation = 0;
 	private closed = false;
-	private runningIntent: string | undefined;
+	private runningIntents = new Set<string>();
+	private assigningIntents = new Set<string>();
+	private targets: DlcView["targets"] = [];
+	private targetId: string | null = null;
+	private resetting: Promise<void> | undefined;
 	private selectionSequence = 0;
 	private backend: BackendId;
 	constructor(
@@ -63,28 +76,57 @@ export class DlcHost {
 						.getConfiguration("nerita")
 						.get<BackendId>("backend", "codex");
 		runtime.setDlcHandler((message) => this.receive(message));
-		let execution = "";
-		const unsubscribe = runtime.subscribe((event) => {
+
+		const publishState = (event: HostMessage) => {
 			if (
 				event.type !== "state/snapshot" &&
 				event.type !== "state/patch"
 			) {
 				return;
 			}
-			const active = runtime.activeDlc();
-			const key = `${active?.intentId}:${active?.attemptId}:${runtime.dlcPrompt()?.attemptId}`;
-			if (execution !== key) {
-				execution = key;
-				this.publish();
-			}
+			this.publish();
+		};
+		const unsubscribeChat = runtime.scope("chat").subscribe(publishState);
+		const unsubscribeDlc = runtime.scope("dlc").subscribe(publishState);
+		context.subscriptions.push({
+			dispose: () => {
+				unsubscribeChat();
+				unsubscribeDlc();
+			},
 		});
-		context.subscriptions.push({ dispose: unsubscribe });
 	}
 	view(): DlcView {
 		return {
 			mode: this.runtime.viewMode(),
 			backend: this.backend,
-			intents: this.intents,
+			intents: this.intents.map((intent) => ({
+				...intent,
+				...(this.executionForIntent.has(intent.intentId)
+					? {
+							execution: this.executionForIntent.get(
+								intent.intentId,
+							)!,
+						}
+					: {}),
+			})),
+			targets: this.targets,
+			targetId: this.targetId,
+			assignmentPending: this.assigningIntents.has(this.selectedId ?? ""),
+			targetBusy: this.targets.some(
+				(target) =>
+					target.id === this.targetId &&
+					this.runtime
+						.runningDirectories()
+						.some(
+							(root) =>
+								containsPath(root, target.directory) ||
+								containsPath(target.directory, root),
+						),
+			),
+			running: this.runtime.activeDlcs().map((active) => ({
+				...active,
+				targetId: this.targetsForIntent.get(active.intentId) ?? null,
+			})),
 			environment: this.environment,
 			selected: this.selected?.projection() ?? null,
 			error: this.error,
@@ -95,7 +137,13 @@ export class DlcHost {
 	private publish(): void {
 		this.runtime.publish({ type: "dlc/state", view: this.view() });
 	}
-	private open(): Promise<Workspace> {
+	private targetsForIntent = new Map<string, string>();
+	private executionForIntent = new Map<
+		string,
+		{ targetId: string; backend: BackendId }
+	>();
+	private async open(): Promise<Workspace> {
+		await this.resetting;
 		if (this.closed) {
 			throw new Error("DLC は終了しています。");
 		}
@@ -113,6 +161,16 @@ export class DlcHost {
 				vscode.env.remoteName,
 			),
 		);
+		const worktrees = new WorktreeManager(root, hostStorageRoot());
+		if (
+			!(await worktrees.list()).some(
+				(target) => target.main && target.root === root,
+			)
+		) {
+			throw new Error(
+				"DLC の管理元は main の Nerita です。Worktree では通常チャットを使用してください。",
+			);
+		}
 		const generation = this.generation;
 		const trustSignal = this.trust.signal;
 		const files = new SafeDlcFiles(root, async () => {
@@ -137,20 +195,60 @@ export class DlcHost {
 		const detection = await withDlcLock(files, () =>
 			initializeWorkspace(files, trustSignal),
 		);
-		const repository = new IntentRepository(files, {
-			read: (key) => this.context.globalState.get(key),
-			write: async (key, value) => {
-				await this.context.globalState.update(key, value);
-			},
-		});
-		const hash = createHash("sha256").update(root).digest("hex");
-		await this.migrateGoal(repository, detection, hash);
-		return {
+		return this.openStorage(root, files, detection, worktrees);
+	}
+	private async openStorage(
+		root: string,
+		files: SafeDlcFiles,
+		detection: WorkspaceDetection,
+		worktrees: WorktreeManager,
+	): Promise<Workspace> {
+		const storage = await ProjectStorage.open(
 			root,
-			repository,
-			detection,
-			selectionKey: `dlc.selection.${hash}`,
-		};
+			hostStorageRoot(),
+			async () => {
+				await files.path(".nerita/dlc");
+			},
+		);
+		const repository = new IntentRepository(
+			files,
+			storage.authority,
+			storage.files,
+		);
+		const hash = storage.id;
+		try {
+			await this.migrateGoal(
+				repository,
+				detection,
+				createHash("sha256").update(root).digest("hex"),
+			);
+			return {
+				root,
+				repository,
+				detection,
+				selectionKey: `dlc.selection.${hash}`,
+				storage,
+				worktrees,
+				assignments: z
+					.record(
+						z.string(),
+						z.strictObject({
+							targetId: z.string(),
+							backend: z.enum(["pi", "codex"]),
+						}),
+					)
+					.parse(
+						JSON.parse(
+							(await storage.files.read(
+								".nerita/dlc/assignments.json",
+							)) ?? "{}",
+						),
+					),
+			};
+		} catch (error) {
+			await storage.dispose();
+			throw error;
+		}
 	}
 	private async migrateGoal(
 		repository: IntentRepository,
@@ -208,7 +306,28 @@ export class DlcHost {
 						new DlcRuntime(
 							workspace.repository,
 							this.runtime,
-							() => this.backend,
+							() =>
+								workspace.assignments[intentId]?.backend ??
+								this.backend,
+							async () => {
+								const assignment =
+									workspace.assignments[intentId];
+								if (!assignment) {
+									throw new Error(
+										"実行先の Worktree を選択してください。",
+									);
+								}
+								const target = await workspace.worktrees.target(
+									assignment.targetId,
+									this.trust.signal,
+								);
+								if (!(await this.trust.trusted(target.root))) {
+									throw new Error(
+										"実行先の Nerita Trust を確認してください。",
+									);
+								}
+								return target.root;
+							},
 						),
 						{
 							save: (state, expected) =>
@@ -256,6 +375,166 @@ export class DlcHost {
 			branch: name === "" ? null : name,
 		};
 	}
+	private async refreshTargets(workspace: Workspace): Promise<void> {
+		this.targets = await Promise.all(
+			(await workspace.worktrees.list(this.trust.signal)).map(
+				async (target) => ({
+					...target,
+					directory: target.root,
+					trusted: await this.trust.trusted(target.root),
+				}),
+			),
+		).then((targets) =>
+			targets.map(
+				({
+					id,
+					directory,
+					name,
+					branch,
+					main,
+					removable,
+					trusted,
+				}) => ({
+					id,
+					directory,
+					name,
+					branch,
+					main,
+					removable,
+					trusted,
+				}),
+			),
+		);
+		for (const [intentId, assignment] of Object.entries(
+			workspace.assignments,
+		)) {
+			this.targetsForIntent.set(intentId, assignment.targetId);
+			this.executionForIntent.set(intentId, assignment);
+		}
+		this.targetId =
+			this.selectedId !== undefined
+				? (workspace.assignments[this.selectedId]?.targetId ??
+					this.targets.find((target) => target.main)?.id ??
+					null)
+				: (this.targets.find((target) => target.main)?.id ?? null);
+	}
+	private async assign(
+		workspace: Workspace,
+		intentId: string,
+		targetId: string,
+		backend: BackendId,
+	): Promise<void> {
+		if (this.runningIntents.has(intentId)) {
+			throw new Error(
+				"実行が終わってから対象の実行先を変更してください。",
+			);
+		}
+		this.assertAssignmentReady(intentId);
+		this.assigningIntents.add(intentId);
+		this.publish();
+		try {
+			await this.persistAssignment(
+				workspace,
+				intentId,
+				targetId,
+				backend,
+			);
+		} finally {
+			this.assigningIntents.delete(intentId);
+			this.publish();
+		}
+	}
+	private assertAssignmentReady(intentId: string): void {
+		if (this.assigningIntents.has(intentId)) {
+			throw new Error(
+				"実行先を保存しています。完了後に再試行してください。",
+			);
+		}
+	}
+	private async persistAssignment(
+		workspace: Workspace,
+		intentId: string,
+		targetId: string,
+		backend: BackendId,
+	): Promise<void> {
+		const generation = this.generation;
+		await workspace.worktrees.target(targetId, this.trust.signal);
+		await workspace.repository.locked(async () => {
+			if (generation !== this.generation) {
+				throw new Error("DLC の管理元が変更されています。");
+			}
+			const next = {
+				...workspace.assignments,
+				[intentId]: { targetId, backend },
+			};
+			await workspace.storage.files.write(
+				".nerita/dlc/assignments.json",
+				next,
+			);
+			workspace.assignments = next;
+		});
+		this.targetsForIntent.set(intentId, targetId);
+		this.executionForIntent.set(intentId, { targetId, backend });
+		if (this.selectedId === intentId) {
+			this.targetId = targetId;
+			this.backend = backend;
+		}
+	}
+
+	private async worktreeAction(
+		workspace: Workspace,
+		message: DlcUiMessage,
+	): Promise<boolean> {
+		if (message.type === "dlc/trust") {
+			await vscode.commands.executeCommand("nerita.trust.manage");
+			return true;
+		}
+		if (message.type === "dlc/worktreeCreate") {
+			if (this.runtime.busy()) {
+				throw new Error(
+					"実行が終わってから Worktree を作成してください。",
+				);
+			}
+			const target = await workspace.repository.locked(() =>
+				workspace.worktrees.create(this.trust.signal),
+			);
+			await this.trust.registerWorkspace(target.root);
+			await this.read();
+			return true;
+		}
+		if (message.type === "dlc/worktreeRemove") {
+			const target = await workspace.worktrees.target(message.targetId);
+			await this.runtime.withDirectory(target.root, () =>
+				workspace.repository.locked(() =>
+					workspace.worktrees.remove(
+						message.targetId,
+						this.trust.signal,
+					),
+				),
+			);
+			await this.refreshTargets(workspace);
+			this.publish();
+			return true;
+		}
+		if (message.type === "dlc/target") {
+			if (
+				message.intentId !== this.selectedId ||
+				this.selected?.projection().revision !== message.revision
+			) {
+				throw new Error("Intent の選択または版が変更されています。");
+			}
+			await this.assign(
+				workspace,
+				message.intentId,
+				message.targetId,
+				this.backend,
+			);
+			this.publish();
+			return true;
+		}
+		return false;
+	}
+
 	private async restoreSelection(
 		workspace: Workspace,
 		sequence: number,
@@ -278,9 +557,7 @@ export class DlcHost {
 			return true;
 		}
 		if (message.type === "dlc/chat") {
-			this.runtime.selectMode("dlc");
-			await vscode.commands.executeCommand("nerita.codex.chat.focus");
-			this.publish();
+			await vscode.commands.executeCommand("nerita.dlc.openWorkspace");
 			return true;
 		}
 		if (message.type === "dlc/editorState") {
@@ -297,21 +574,45 @@ export class DlcHost {
 			await this.read();
 			return true;
 		}
-		if (message.type === "dlc/backend") {
-			if (this.runningIntent !== undefined) {
-				throw new Error(
-					"実行が終わってから DLC のバックエンドを変更してください。",
-				);
-			}
-			this.backend = message.backend;
-			await this.context.globalState.update(
-				"dlc.backend",
+		return this.backendSelection(message);
+	}
+	private validateBackendSelection(
+		message: Extract<DlcUiMessage, { type: "dlc/backend" }>,
+	): void {
+		if (
+			message.intentId !== (this.selectedId ?? null) ||
+			message.revision !== (this.selected?.projection().revision ?? null)
+		) {
+			throw new Error("Intent の選択または版が変更されています。");
+		}
+		if (
+			this.selectedId !== undefined &&
+			this.runningIntents.has(this.selectedId)
+		) {
+			throw new Error(
+				"実行が終わってから DLC のバックエンドを変更してください。",
+			);
+		}
+	}
+	private async backendSelection(message: DlcUiMessage): Promise<boolean> {
+		if (message.type !== "dlc/backend") {
+			return false;
+		}
+		this.validateBackendSelection(message);
+		const targetId = this.targetId;
+		if (message.intentId !== null && targetId !== null) {
+			await this.assign(
+				await this.open(),
+				message.intentId,
+				targetId,
 				message.backend,
 			);
-			this.publish();
-			return true;
+		} else {
+			this.backend = message.backend;
 		}
-		return false;
+		await this.context.globalState.update("dlc.backend", message.backend);
+		this.publish();
+		return true;
 	}
 
 	private async read(): Promise<void> {
@@ -322,17 +623,18 @@ export class DlcHost {
 		const workspace = await this.open();
 		const sequence = this.selectionSequence;
 		for (const intentId of this.controllers.keys()) {
-			if (intentId !== this.runningIntent) {
+			if (!this.runningIntents.has(intentId)) {
 				this.controllers.delete(intentId);
 			}
 		}
-		if (this.selectedId !== this.runningIntent) {
+		if (!this.runningIntents.has(this.selectedId ?? "")) {
 			this.selected = undefined;
 		}
 		this.intents = (await workspace.repository.projections()).map(
 			intentSummary,
 		);
 		await this.refreshEnvironment(workspace);
+		await this.refreshTargets(workspace);
 		await this.restoreSelection(workspace, sequence);
 		this.publish();
 	}
@@ -358,13 +660,28 @@ export class DlcHost {
 		}
 		this.selectedId = intentId;
 		this.selected = controller;
+		const assignment = workspace.assignments[intentId];
+		this.targetId =
+			assignment?.targetId ??
+			this.targets.find((target) => target.main)?.id ??
+			null;
+		if (assignment) {
+			this.backend = assignment.backend;
+		}
 		this.runtime.selectDlc(intentId);
+		await this.restoreAttempt(workspace, controller, intentId);
+	}
+	private async restoreAttempt(
+		workspace: Workspace,
+		controller: DlcController,
+		intentId: string,
+	): Promise<void> {
 		const attempt = controller
 			.projection()
 			.workItems.flatMap((item) => item.attempts)
 			.at(-1);
 		if (
-			this.runningIntent !== intentId &&
+			!this.runningIntents.has(intentId) &&
 			attempt !== undefined &&
 			workspace.repository.hasConversation(intentId, attempt.id)
 		) {
@@ -396,6 +713,9 @@ export class DlcHost {
 			return;
 		}
 		const workspace = await this.open();
+		if (await this.worktreeAction(workspace, message)) {
+			return;
+		}
 		if (message.type === "dlc/create") {
 			workspace.detection = await workspace.repository.locked(() =>
 				initializeWorkspace(
@@ -411,6 +731,7 @@ export class DlcHost {
 				{},
 				message.projectType,
 			);
+			await workspace.repository.exportSnapshot(state.intentId);
 			this.intents = [
 				...this.intents,
 				intentSummary(
@@ -421,11 +742,12 @@ export class DlcHost {
 			];
 			await this.select(workspace, state.intentId);
 			this.runtime.selectMode("dlc");
-			await this.read();
+			// 作成済みの選択を公開した後に読み直すと、操作中のコントローラーが失われる。
+			this.publish();
 			return;
 		}
 		if (message.type === "dlc/recover") {
-			if (this.runningIntent !== undefined) {
+			if (this.runningIntents.size > 0) {
 				throw new Error(
 					"実行が終わってから Intent を復旧してください。",
 				);
@@ -456,6 +778,7 @@ export class DlcHost {
 		if (message.intentId !== this.selectedId) {
 			throw new Error("Intent が変更されています。");
 		}
+		const selection = this.runtime.beginAttemptSelection(message.intentId);
 		const active = this.runtime.activeDlc();
 		if (
 			active?.intentId === message.intentId &&
@@ -477,6 +800,7 @@ export class DlcHost {
 					message.attemptId,
 				)
 			).prompt,
+			selection,
 		);
 		return;
 	}
@@ -502,6 +826,7 @@ export class DlcHost {
 		controller: DlcController,
 		message: Extract<DlcUiMessage, { type: "dlc/action" }>,
 	): Promise<void> {
+		this.assertAssignmentReady(message.intentId);
 		if (message.action.type === "cancel") {
 			await controller.dispatch(message.action);
 			return;
@@ -513,22 +838,43 @@ export class DlcHost {
 			);
 		}
 		if (message.action.type === "retry") {
-			await collectSourceSnapshot(workspace.root, this.trust.signal);
+			const target = workspace.assignments[message.intentId];
+			if (!target) {
+				throw new Error("実行先を選択してください。");
+			}
+			await collectSourceSnapshot(
+				(await workspace.worktrees.target(target.targetId)).root,
+				this.trust.signal,
+			);
 		}
 		if (message.action.type !== "run") {
 			await controller.dispatch(message.action);
+			if (!controller.projection().canCancel) {
+				await workspace.repository.exportSnapshot(message.intentId);
+			}
 			return;
 		}
-		if (this.runningIntent !== undefined) {
-			throw new Error("別の DLC 実行が進行中です。");
+		if (this.runningIntents.has(message.intentId)) {
+			throw new Error("この Intent は既に実行中です。");
 		}
-		this.runningIntent = message.intentId;
+		this.runningIntents.add(message.intentId);
 		try {
+			if (!workspace.assignments[message.intentId]) {
+				if (this.targetId === null) {
+					throw new Error("実行先を選択してください。");
+				}
+				await this.persistAssignment(
+					workspace,
+					message.intentId,
+					this.targetId,
+					this.backend,
+				);
+			}
 			this.runtime.selectMode("dlc");
-			await vscode.commands.executeCommand("nerita.codex.chat.focus");
 			await controller.dispatch(message.action);
+			await workspace.repository.exportSnapshot(message.intentId);
 		} finally {
-			this.runningIntent = undefined;
+			this.runningIntents.delete(message.intentId);
 		}
 	}
 	async command(
@@ -562,12 +908,26 @@ export class DlcHost {
 		await vscode.commands.executeCommand("nerita.dlc.openWorkspace");
 		return this.view();
 	}
-	async reset(): Promise<void> {
+	reset(): Promise<void> {
+		this.resetting ??= this.clearWorkspace().finally(() => {
+			this.resetting = undefined;
+		});
+		return this.resetting;
+	}
+	private async clearWorkspace(): Promise<void> {
+		const workspace = this.workspace;
 		this.generation++;
 		this.selectionSequence++;
-		const active = this.runtime.activeDlc();
-		if (active) {
-			await this.runtime.stopDlc(active.attemptId);
+		await Promise.all(
+			this.runtime
+				.activeDlcs()
+				.map((active) => this.runtime.stopDlc(active.attemptId)),
+		);
+		if (workspace) {
+			await workspace.then(
+				(value) => value.storage.dispose(),
+				() => undefined,
+			);
 		}
 		this.workspace = undefined;
 		this.controllers.clear();
@@ -575,12 +935,16 @@ export class DlcHost {
 		this.selectedId = undefined;
 		this.intents = [];
 		this.environment = null;
+		this.targets = [];
+		this.targetId = null;
+		this.targetsForIntent.clear();
+		this.executionForIntent.clear();
 		this.runtime.selectDlc(undefined);
 		this.publish();
 	}
 	async dispose(): Promise<void> {
-		await this.reset();
 		this.closed = true;
+		await this.reset();
 	}
 }
 

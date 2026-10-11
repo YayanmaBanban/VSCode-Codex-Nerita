@@ -3,16 +3,8 @@ param([Parameter(Mandatory = $true)][string]$Executable)
 $ErrorActionPreference = 'Stop'
 [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
 
-# 読み手の PID を OS から確認し、パイプ名を知った別プロセスにも本文を送らない。
-Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
-public static class NeritaPipeClient {
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool GetNamedPipeClientProcessId(SafePipeHandle pipe, out uint pid);
-}
-'@
+# PID の確認と終了通知はビルド済み DLL を使い、起動のたびにコンパイルしない。
+[void][System.Reflection.Assembly]::LoadFrom((Join-Path $PSScriptRoot 'nerita-mxc-pipe.dll'))
 
 $name = 'nerita-mxc-' + [Guid]::NewGuid().ToString('N')
 $security = New-Object System.IO.Pipes.PipeSecurity
@@ -40,14 +32,16 @@ try {
     $start.RedirectStandardError = $true
     $start.RedirectStandardInput = $true
     $child = [System.Diagnostics.Process]::Start($start)
+    $exited = [NeritaPipeClient]::WaitForExitAsync($child)
     $child.StandardInput.Close()
     $stdout = $child.StandardOutput.BaseStream.CopyToAsync([Console]::OpenStandardOutput())
     $stderr = $child.StandardError.BaseStream.CopyToAsync([Console]::OpenStandardError())
     # CLI は属性確認でも接続する。本文を読む接続まで同じ起動 PID を確認し続ける。
     while (-not $child.HasExited) {
-        $index = [System.Threading.Tasks.Task]::WaitAny($connections, 100)
-        if ($child.HasExited) { break }
-        if ($index -lt 0) { continue }
+        # 接続と終了を同時に待ち、終了後のポーリング待ちをなくす。
+        [System.Threading.Tasks.Task[]]$waits = @($connections) + @($exited)
+        $index = [System.Threading.Tasks.Task]::WaitAny($waits)
+        if ($index -eq $connections.Length -or $child.HasExited) { break }
         [void]$connections[$index].GetAwaiter().GetResult()
         $pipe = $pipes[$index]
         [uint32]$clientId = 0

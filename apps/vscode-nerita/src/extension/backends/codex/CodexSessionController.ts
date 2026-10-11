@@ -119,6 +119,9 @@ export class CodexSessionController extends SessionState {
 	connect(): Promise<void> {
 		return this.lifecycle.connect();
 	}
+	waitForShutdown(): Promise<void> {
+		return this.lifecycle.waitForShutdown();
+	}
 	/** 内部入力はスラッシュコマンド・追加指示・チャット用通信を通さず送信する。 */
 	async execute(text: string, signal: AbortSignal) {
 		if (

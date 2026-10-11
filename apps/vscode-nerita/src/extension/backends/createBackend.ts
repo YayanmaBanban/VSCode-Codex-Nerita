@@ -7,6 +7,9 @@ import {
 } from "./pi/PiRuntime";
 
 import * as vscode from "vscode";
+import { realpath } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { basename } from "node:path";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
 import type { BackendSession } from "../session/chatSession";
 import { ModelConfig } from "../settings/ModelConfig";
@@ -23,7 +26,10 @@ import { createPiAuthService } from "./pi/PiAuthService";
 import { userTrustedExtensionPaths } from "./pi/PiExtensionTrust";
 
 import { PiSessionController } from "./pi/PiSessionController";
-import { sandboxManagement } from "../runtime/SandboxPanel";
+import {
+	sandboxManagement,
+	releaseSandboxManagement,
+} from "../runtime/SandboxPanel";
 import { credentialService } from "../credentials/CredentialService";
 import type { BackendId } from "@nerita/shared/backend";
 
@@ -41,6 +47,7 @@ export function createBackend(
 	context: vscode.ExtensionContext,
 	trustStore?: WorkspaceTrustStore,
 	backend?: BackendId,
+	executionRoot?: string,
 ): BackendSession {
 	if (
 		(backend ??
@@ -48,11 +55,13 @@ export function createBackend(
 				.getConfiguration("nerita")
 				.get<string>("backend", "codex")) === "pi"
 	) {
-		return new PiSessionController(createPiFactory(context, trustStore));
+		return new PiSessionController(
+			createPiFactory(context, trustStore, executionRoot),
+		);
 	}
 	return new CodexSessionController(
 		async (callbacks, signal) => {
-			const cwd = workspaceDirectory();
+			const cwd = await explicitDirectory(executionRoot, trustStore);
 			const client = await CodexClient.connect({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
@@ -70,9 +79,15 @@ export function createBackend(
 		authService,
 		interactionService,
 		codexSelectionStore({
-			read: () => modelConfig(workspaceDirectory()).read("codex"),
+			read: () =>
+				modelConfig(executionRoot ?? workspaceDirectory()).read(
+					"codex",
+				),
 			write: (selection) =>
-				modelConfig(workspaceDirectory()).write("codex", selection),
+				modelConfig(executionRoot ?? workspaceDirectory()).write(
+					"codex",
+					selection,
+				),
 		}),
 	);
 }
@@ -81,26 +96,13 @@ export function createBackend(
 function createPiFactory(
 	context: vscode.ExtensionContext,
 	trustStore: WorkspaceTrustStore | undefined,
+	executionRoot: string | undefined,
 ): PiFactory {
-	const sandbox = sandboxManagement(context);
-	const commandPermissions = sandbox.commands;
+	const sandboxId = executionRoot !== undefined ? randomUUID() : "chat";
 	return async (signal, authorize, resume) => {
-		await sandbox.startSession(signal);
-		const folders = vscode.workspace.workspaceFolders;
-		let folder = folders?.[0];
-		if (folders && folders.length > 1) {
-			folder = await vscode.window.showWorkspaceFolderPick({
-				placeHolder: "この会話の作業rootを選択してください",
-			});
-			if (!folder) {
-				throw new Error("作業rootの選択を取り消しました。");
-			}
-		}
-		const cwd = requireLocalWorkspace(
-			folder ? [folder] : undefined,
-			true,
-			vscode.env.remoteName,
-		);
+		const cwd = await piDirectory(executionRoot, trustStore);
+		const sandbox = await piSandbox(context, sandboxId, cwd, signal);
+		const commandPermissions = sandbox.commands;
 		const config = modelConfig(cwd);
 		const preferredModel = storedPiModel(await config.read("pi"));
 		const session = await createPiRuntime({
@@ -114,9 +116,7 @@ function createPiFactory(
 			sandboxManagement: sandbox,
 			extensionPath: context.extensionUri.fsPath,
 			cwd,
-			workspaceRoots: (vscode.workspace.workspaceFolders ?? []).map(
-				(folder) => folder.uri.fsPath,
-			),
+			workspaceRoots: [cwd],
 			workspaceTrusted: vscode.workspace.isTrusted,
 			...(trustStore ? { trustStore } : {}),
 			trustEnabled: () => vscode.workspace.isTrusted,
@@ -146,6 +146,68 @@ function createPiFactory(
 		});
 		return { session, cwd };
 	};
+}
+
+async function piDirectory(
+	executionRoot: string | undefined,
+	trustStore: WorkspaceTrustStore | undefined,
+): Promise<string> {
+	const folders = vscode.workspace.workspaceFolders;
+	let folder = folders?.[0];
+	if (executionRoot === undefined && folders && folders.length > 1) {
+		folder = await vscode.window.showWorkspaceFolderPick({
+			placeHolder: "この会話の作業フォルダーを選択してください",
+		});
+		if (!folder) {
+			throw new Error("作業フォルダーの選択を取り消しました。");
+		}
+	}
+	const selectedRoot =
+		executionRoot ??
+		requireLocalWorkspace(
+			folder ? [folder] : undefined,
+			true,
+			vscode.env.remoteName,
+		);
+	return explicitDirectory(selectedRoot, trustStore);
+}
+async function piSandbox(
+	context: vscode.ExtensionContext,
+	sandboxId: string,
+	cwd: string,
+	signal: AbortSignal,
+) {
+	const scope = createHash("sha256")
+		.update(process.platform === "win32" ? cwd.toLowerCase() : cwd)
+		.digest("hex");
+	const sandbox = sandboxManagement(
+		context,
+		sandboxId,
+		`${basename(cwd)} · ${sandboxId === "chat" ? "Chat" : "DLC"}`,
+		scope,
+	);
+	await sandbox.startSession(signal);
+	signal.addEventListener(
+		"abort",
+		() => releaseSandboxManagement(context, sandboxId, sandbox),
+		{ once: true },
+	);
+	return sandbox;
+}
+
+/** UI の表示位置から実行先を推定せず、信頼済みの実体ルートを接続へ渡す。 */
+async function explicitDirectory(
+	root: string | undefined,
+	trust: WorkspaceTrustStore | undefined,
+): Promise<string> {
+	if (!vscode.workspace.isTrusted || vscode.env.remoteName !== undefined) {
+		throw new Error("信頼済みのローカル環境で実行してください。");
+	}
+	const cwd = await realpath(root ?? workspaceDirectory());
+	if (trust && !(await trust.trusted(cwd))) {
+		throw new Error("実行先の Nerita Trust を確認してください。");
+	}
+	return cwd;
 }
 
 /** Pi の接続に必要なプロバイダーとモデルが揃っている場合だけ復元する。 */

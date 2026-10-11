@@ -134,6 +134,12 @@ export type DlcProjection = z.infer<typeof DlcProjectionSchema>;
 export const IntentSummarySchema = z.strictObject({
 	intentId: z.uuid(),
 	title: z.string(),
+	execution: z
+		.strictObject({
+			targetId: z.string(),
+			backend: z.enum(["pi", "codex"]),
+		})
+		.optional(),
 	status: z.enum([
 		"idle",
 		"running",
@@ -201,7 +207,29 @@ export const DlcUiMessageSchema = z.discriminatedUnion("type", [
 	z.strictObject({
 		type: z.literal("dlc/backend"),
 		requestId: z.string().min(1),
+		intentId: z.uuid().nullable(),
+		revision: z.number().int().nonnegative().nullable(),
 		backend: z.enum(["pi", "codex"]),
+	}),
+	z.strictObject({
+		type: z.literal("dlc/worktreeCreate"),
+		requestId: z.string().min(1),
+	}),
+	z.strictObject({
+		type: z.literal("dlc/worktreeRemove"),
+		requestId: z.string().min(1),
+		targetId: z.string().min(1),
+	}),
+	z.strictObject({
+		type: z.literal("dlc/target"),
+		requestId: z.string().min(1),
+		intentId: z.uuid(),
+		revision: z.number().int().nonnegative(),
+		targetId: z.string().min(1),
+	}),
+	z.strictObject({
+		type: z.literal("dlc/trust"),
+		requestId: z.string().min(1),
 	}),
 	z.strictObject({
 		type: z.literal("ui/setMode"),
@@ -220,6 +248,27 @@ export const DlcViewSchema = z.strictObject({
 	mode: z.enum(["chat", "dlc"]),
 	backend: z.enum(["pi", "codex"]),
 	intents: z.array(IntentSummarySchema),
+	targets: z.array(
+		z.strictObject({
+			id: z.string(),
+			directory: z.string(),
+			name: z.string(),
+			branch: z.string().nullable(),
+			main: z.boolean(),
+			removable: z.boolean(),
+			trusted: z.boolean(),
+		}),
+	),
+	targetId: z.string().nullable(),
+	targetBusy: z.boolean(),
+	assignmentPending: z.boolean(),
+	running: z.array(
+		z.strictObject({
+			intentId: z.uuid(),
+			attemptId: z.string(),
+			targetId: z.string().nullable(),
+		}),
+	),
 	environment: z
 		.strictObject({ workspace: z.string(), branch: z.string().nullable() })
 		.nullable(),

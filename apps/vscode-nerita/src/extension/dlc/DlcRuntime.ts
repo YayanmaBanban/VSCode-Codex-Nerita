@@ -21,6 +21,8 @@ export class DlcRuntime implements NeritaRuntimePort {
 		private repository: IntentRepository,
 		private runtime: BackendRuntime,
 		private backend: () => BackendId,
+		private target: () => Promise<string> = () =>
+			Promise.resolve(repository.files.root),
 	) {}
 	status() {
 		const active = this.runtime.activeDlc();
@@ -40,7 +42,11 @@ export class DlcRuntime implements NeritaRuntimePort {
 			);
 		}
 		signal.throwIfAborted();
-		return this.execute(request, signal);
+		return this.target().then((root) =>
+			this.runtime.withDirectory(root, (reservation) =>
+				this.execute(request, signal, root, reservation),
+			),
+		);
 	}
 	stop(attemptId: string): Promise<void> {
 		return this.runtime.stopDlc(attemptId);
@@ -48,19 +54,22 @@ export class DlcRuntime implements NeritaRuntimePort {
 	private async execute(
 		request: ExecutionRequest,
 		signal: AbortSignal,
+		root: string,
+		reservation: object,
 	): Promise<RuntimeResult> {
 		const files = this.repository.files;
 		const directory = await this.repository.directory(request.intentId);
 		const knowledge = await freezeKnowledge(files, directory, signal);
 		const prompt = executionPrompt(request, knowledge);
 		const backend = this.backend();
-		const before = await collectSourceSnapshot(files.root, signal);
+		const before = await collectSourceSnapshot(root, signal);
 		await this.repository.freezeRun({
 			schemaVersion: 1,
 			request,
 			knowledge,
 			prompt,
 			backend,
+			executionDirectory: root,
 		});
 		try {
 			const execution = await this.runtime.executeDlc(
@@ -69,14 +78,15 @@ export class DlcRuntime implements NeritaRuntimePort {
 					attemptId: request.attemptId,
 					backend,
 					prompt,
-					root: files.root,
+					root,
 				},
 				signal,
+				reservation,
 			);
 			// 停止後も実測した変更を残す。信頼の失効時は保存を拒否する。
 			await files.path(directory);
 			const after = await collectSourceSnapshot(
-				files.root,
+				root,
 				AbortSignal.timeout(30_000),
 			);
 			await files.path(directory);
@@ -89,7 +99,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 					before,
 					after,
 					tools: execution.result.tools.map((tool) =>
-						toolEvidence(tool, files.root),
+						toolEvidence(tool, root),
 					),
 					approvals: execution.approvals,
 					policy: "workspace-inherit",

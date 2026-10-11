@@ -34,6 +34,30 @@ export class CommandPermissions {
 	list(): CommandGrant[] {
 		return structuredClone([...this.grants.values()]);
 	}
+	/** 別セッションの永続権限変更だけを取り込み、現在のセッション承認を保持する。 */
+	refreshWorkspace(): void {
+		const saved = commandGrantSchema.array().safeParse(this.storage.read());
+		if (!saved.success) {
+			return;
+		}
+		const incoming = new Map(
+			saved.data
+				.filter((grant) => grant.scope === "workspace")
+				.map((grant) => [permissionKey(grant.permission), grant]),
+		);
+		for (const [key, grant] of this.grants) {
+			if (grant.scope === "workspace" && !incoming.has(key)) {
+				this.grants.delete(key);
+				this.invalidate(key);
+			}
+		}
+		for (const [key, grant] of incoming) {
+			if (this.grants.get(key)?.scope !== "session") {
+				this.grants.set(key, grant);
+			}
+		}
+		this.changed();
+	}
 
 	/** 一致する許可だけを参照し、別の実行経路・ワークスペース・ツール・コマンドクラスへ拡張しない。 */
 	has(permission: CommandPermissionKey): boolean {

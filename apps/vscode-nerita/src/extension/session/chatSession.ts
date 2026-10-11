@@ -19,6 +19,8 @@ export type BackendSession = ChatSession & {
 		signal: AbortSignal,
 	) => Promise<BackendExecutionResult>;
 	cancelExecution?: () => void;
+	/** 既に要求された終了を待つ。未確認なら拒否し、接続中のセッション自体は終了しない。 */
+	waitForShutdown?: () => Promise<void>;
 	executionConversation?: () => Promise<ChatState>;
 	agentModels?: () => {
 		value: string;

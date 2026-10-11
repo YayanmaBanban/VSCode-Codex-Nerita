@@ -8,11 +8,60 @@ import { join } from "node:path";
 
 import { piFixture, send, finished, permission, until } from "../support/pi";
 import { restoredState } from "../support/restoredState";
+import { PiChildRuntimes } from "../../apps/vscode-nerita/src/extension/backends/pi/PiChildRuntimes";
+import {
+	createPiRuntime,
+	type PiRuntimeOptions,
+} from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 
 for (const outcome of ["accept", "stop", "child-stop", "restricted"]) {
 	void test(`子の起動と書込みを個別承認し、親の制限と停止を継承する（${outcome}）`, (t) =>
 		verifyPiChildApproval(t, outcome));
 }
+
+void test("子 Pi のネイティブ終了が失敗したら親の Stop へ伝え、後続の子起動でも失敗を保持する", async (t) => {
+	const f = await piFixture(t);
+	const signal = new AbortController().signal;
+	const options: PiRuntimeOptions = {
+		extensionPath: process.env.NERITA_TEST_EXTENSION!,
+		cwd: f.cwd,
+		agentDir: f.agentDir,
+		preferredModel: { provider: "local", model: "test-model" },
+		executor: null,
+		workspaceTrusted: true,
+		workspaceRoots: [f.cwd],
+		trustStore: f.trust,
+		signal,
+		authorize: () => Promise.resolve(signal),
+	};
+	let closed = 0;
+	const children = new PiChildRuntimes(
+		options,
+		{
+			workspaceRoots: [f.cwd],
+			writableRoots: [f.cwd],
+			networkAccess: false,
+			shell: false,
+		},
+		signal,
+		async (childOptions) => {
+			const native = await createPiRuntime(childOptions);
+			const close = native.close.bind(native);
+			native.close = async () => {
+				await close();
+				closed++;
+				throw new Error("子の終了通知なし");
+			};
+			return native;
+		},
+	);
+	await children.open({ role: {} });
+	await assert.rejects(children.stop(), /終了を確認/);
+	assert.equal(closed, 1);
+	await assert.rejects(children.stop(), /終了を確認/);
+	await assert.rejects(children.open({ role: {} }), /終了を確認/);
+	children.dispose();
+});
 
 /** 子の承認・停止・制限を親から継承し、復元後も子の結果を維持する。 */
 async function verifyPiChildApproval(t: TestContext, outcome: string) {

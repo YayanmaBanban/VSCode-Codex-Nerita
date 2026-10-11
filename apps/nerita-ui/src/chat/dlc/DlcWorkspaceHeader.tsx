@@ -1,6 +1,7 @@
 // 実行環境と設定は Intent 本文から切り離し、保存された依頼は Phase 0 で参照する。
 import type { DlcAction, DlcProjection } from "@nerita/shared/dlc/contracts";
 import type { useDlcWorkspace } from "./useDlcWorkspace";
+import { WorktreeControls } from "./DlcWorktrees";
 
 export function DlcWorkspaceHeader({
 	ui,
@@ -20,33 +21,44 @@ export function DlcWorkspaceHeader({
 				</div>
 				<button
 					type="button"
-					onClick={() =>
-						ui.send({
-							type: "dlc/chat",
-							requestId: crypto.randomUUID(),
-						})
-					}
+					disabled={ui.selected === null}
+					onClick={() => {
+						if (!ui.expanded.includes(3)) {
+							ui.toggle(3);
+						}
+					}}
 				>
-					チャットで確認
+					Phase 3 の会話を表示
 				</button>
 			</div>
 			<div className="flex flex-wrap items-center gap-3 text-muted">
 				<span>
-					実行環境: {ui.view.environment?.workspace ?? "確認中"} /{" "}
+					管理元: {ui.view.environment?.workspace ?? "確認中"} /{" "}
 					{ui.view.environment?.branch ?? "ブランチ未取得"}
 				</span>
 				<label className="flex items-center gap-2">
-					実行先
+					バックエンド
 					<select
 						aria-label="DLC のバックエンド"
 						value={ui.view.backend}
-						disabled={ui.view.active !== null}
+						disabled={
+							ui.selected === null ||
+							ui.view.assignmentPending ||
+							ui.view.running.some(
+								(run) => run.intentId === ui.selected?.intentId,
+							)
+						}
 						onChange={(event) => {
 							const backend = event.target.value;
-							if (backend === "pi" || backend === "codex") {
+							if (
+								(backend === "pi" || backend === "codex") &&
+								backend !== ui.view.backend
+							) {
 								ui.send({
 									type: "dlc/backend",
 									requestId: crypto.randomUUID(),
+									intentId: ui.selected?.intentId ?? null,
+									revision: ui.selected?.revision ?? null,
 									backend,
 								});
 							}
@@ -57,6 +69,7 @@ export function DlcWorkspaceHeader({
 					</select>
 				</label>
 			</div>
+			<WorktreeControls ui={ui} />
 		</header>
 	);
 }

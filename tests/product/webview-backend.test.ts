@@ -14,6 +14,67 @@ void test(
 	verifyBackendPending,
 );
 
+void test("DLC 表示中も通常チャットの再接続待ちの失敗を要求元へ返し、DLC の会話へ混ぜない", async (t) => {
+	const f = await piFixture(t);
+	const first = f.controller();
+	let release!: () => void;
+	const cleanup = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	let disposing = false;
+	let created = false;
+	const runtime = new BackendRuntime(() => {
+		if (created) {
+			return f.controller();
+		}
+		created = true;
+		return {
+			snapshot: () => first.snapshot(),
+			subscribe: (listener) => first.subscribe(listener),
+			receive: (value) => first.receive(value),
+			invalidate: () => first.invalidate(),
+			dispose: async () => {
+				disposing = true;
+				await first.dispose();
+				await cleanup;
+			},
+		};
+	});
+	t.after(() => runtime.dispose());
+	const chat = runtime.scope("chat");
+	await chat.receive({ type: "connection/retry", requestId: "connect" });
+	const sessionId = chat.snapshot().sessionId;
+	assert.ok(isNonEmptyString(sessionId));
+	runtime.selectMode("dlc");
+	const chatEvents: HostMessage[] = [];
+	const dlcEvents: HostMessage[] = [];
+	chat.subscribe((event) => chatEvents.push(event));
+	runtime.scope("dlc").subscribe((event) => dlcEvents.push(event));
+	const restarting = runtime.restart();
+	try {
+		await until(() => disposing);
+		await chat.receive({
+			type: "prompt/send",
+			requestId: "switching-prompt",
+			sessionId,
+			text: "下書き",
+		});
+		assert.ok(
+			chatEvents.some(
+				(event) =>
+					event.type === "request/failed" &&
+					event.requestId === "switching-prompt",
+			),
+		);
+		assert.equal(dlcEvents.length, 0);
+		assert.equal(f.model.requests.length, 0);
+	} finally {
+		release();
+		await restarting;
+	}
+	assert.equal(chat.snapshot().connection, "ready");
+});
+
 /** SDK への送信は実処理を使い、VS Code の設定保存だけを保留する。 */
 async function verifyBackendPending(t: TestContext) {
 	const f = await piFixture(t);

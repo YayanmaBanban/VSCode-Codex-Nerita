@@ -33,6 +33,9 @@ type OutputRecord = {
 	exitCode?: number;
 };
 
+/** 出力の保存失敗は実行結果の失敗であり、SDK や子プロセスの終了未確認とは区別する。 */
+export class PiOutputArchiveError extends Error {}
+
 /** 本文の保存完了後にだけ参照を追記し、保存失敗を実行元へ返す。 */
 export class PiOutputArchive {
 	private pending = new Set<Promise<void>>();
@@ -87,7 +90,7 @@ export class PiOutputArchive {
 		}
 		const record = this.record(tool, source);
 		const operation = this.save(record, source).catch(() => {
-			this.failure = new Error(
+			this.failure = new PiOutputArchiveError(
 				"ツール出力を保存できませんでした。保存先の空き容量とアクセス権を確認してください。",
 			);
 		});
@@ -224,9 +227,12 @@ export function bindPiOutputArchive(
 	session.abort = async () => {
 		try {
 			await abort();
-		} finally {
-			await archive.flush();
+		} catch (error) {
+			// 保存も終了させるが、停止の失敗を保存の失敗で上書きしない。
+			await archive.flush().catch(() => {});
+			throw error;
 		}
+		await archive.flush();
 	};
 	const dispose = session.dispose.bind(session);
 	session.dispose = () => {

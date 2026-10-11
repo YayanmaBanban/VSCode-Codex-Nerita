@@ -99,10 +99,6 @@ function WorkItem({
 							intentId: selected.intentId,
 							attemptId: attempt.id,
 						});
-						send({
-							type: "dlc/chat",
-							requestId: crypto.randomUUID(),
-						});
 					}}
 				>
 					実行 {index + 1} · {statusLabels[attempt.status]}

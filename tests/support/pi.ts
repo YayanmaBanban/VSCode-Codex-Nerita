@@ -13,6 +13,7 @@ import {
 	createPiRuntime,
 	type PiRuntimeOptions,
 	type PiSession,
+	type PiFactory,
 } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 import type { PiSessionStorage } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionStore";
@@ -56,6 +57,31 @@ export async function piFixture(t: TestContext) {
 	});
 	let storage: PiSessionStorage = "workspace";
 	const options: Partial<PiRuntimeOptions> = {};
+	/** 終了失敗を検証する場合は、呼び出し側がコントローラーの回収結果も検証する。 */
+	const factory =
+		(
+			afterCreate?: (session: PiSession) => Promise<void> | void,
+			executionRoot = cwd,
+		): PiFactory =>
+		async (signal, authorize, resume) => {
+			const session = await createPiRuntime({
+				extensionPath: process.env.NERITA_TEST_EXTENSION!,
+				cwd: executionRoot,
+				agentDir,
+				preferredModel: { provider: "local", model: "test-model" },
+				executor: null,
+				workspaceTrusted: true,
+				workspaceRoots: [executionRoot],
+				trustStore: trust,
+				getStorage: () => storage,
+				...options,
+				signal,
+				authorize,
+				...(resume ? { resume } : {}),
+			});
+			await afterCreate?.(session);
+			return { cwd: executionRoot, session };
+		};
 	return {
 		root,
 		cwd,
@@ -63,35 +89,16 @@ export async function piFixture(t: TestContext) {
 		model,
 		trust,
 		options,
+		factory,
 		storage: (next: PiSessionStorage) => {
 			storage = next;
 		},
 		controller: (
 			afterCreate?: (session: PiSession) => Promise<void> | void,
+			executionRoot = cwd,
 		) => {
 			const controller = new PiSessionController(
-				async (signal, authorize, resume) => {
-					const session = await createPiRuntime({
-						extensionPath: process.env.NERITA_TEST_EXTENSION!,
-						cwd,
-						agentDir,
-						preferredModel: {
-							provider: "local",
-							model: "test-model",
-						},
-						executor: null,
-						workspaceTrusted: true,
-						workspaceRoots: [cwd],
-						trustStore: trust,
-						getStorage: () => storage,
-						...options,
-						signal,
-						authorize,
-						...(resume ? { resume } : {}),
-					});
-					await afterCreate?.(session);
-					return { cwd, session };
-				},
+				factory(afterCreate, executionRoot),
 			);
 			controllers.push(controller);
 			return controller;

@@ -54,11 +54,11 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
 `;
 
 /** Codex の製品バイナリや認証情報を使わず、通信先をテスト専用領域に用意する。 */
-export async function codexFixture(t: TestContext) {
+export async function codexFixture(t: TestContext, executionRoot?: string) {
 	assert.ok(isNonEmptyString(process.env.NERITA_TEST_ROOT));
 	const root = await mkdtemp(join(process.env.NERITA_TEST_ROOT, "codex-"));
-	const cwd = join(root, "workspace");
-	await mkdir(cwd);
+	const cwd = executionRoot ?? join(root, "workspace");
+	await mkdir(cwd, { recursive: true });
 	const requests: Rpc[] = [];
 	const clientResponses: ClientResponse[] = [];
 	const responses = new Map<string, (message: Rpc) => unknown>();

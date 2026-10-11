@@ -19,7 +19,9 @@ const ownerSchema = z.strictObject({
 	token: z.uuid(),
 	pid: z.number().int().positive(),
 });
-const lockPath = ".nerita/dlc/.lock";
+
+/** 取得前の一時競合だけを区別する。破損、書込み失敗、解放失敗は再試行しない。 */
+export class DlcLockBusyError extends Error {}
 function exited(pid: number): boolean {
 	try {
 		process.kill(pid, 0);
@@ -30,7 +32,14 @@ function exited(pid: number): boolean {
 		);
 	}
 }
-async function acquire(files: SafeDlcFiles, target: string): Promise<void> {
+async function acquire(
+	files: SafeDlcFiles,
+	target: string,
+	lockPath: string,
+): Promise<void> {
+	const LockError = lockPath.endsWith(".controller")
+		? Error
+		: DlcLockBusyError;
 	try {
 		await mkdir(target);
 	} catch (error) {
@@ -43,22 +52,21 @@ async function acquire(files: SafeDlcFiles, target: string): Promise<void> {
 		}
 		const text = await files.read(`${lockPath}/owner.json`);
 		if (text === undefined) {
-			throw new Error(
+			throw new LockError(
 				"DLC の保存ロックが未確定です。別の処理の終了を確認してください。",
 				{ cause: error },
 			);
 		}
 		const owner = ownerSchema.parse(JSON.parse(text));
 		if (!exited(owner.pid)) {
-			throw new Error(
-				"別のウィンドウで DLC を保存しています。完了後に再読込みしてください。",
+			throw new LockError(
+				lockPath.endsWith(".controller")
+					? "別のウィンドウがこのプロジェクトの DLC を管理しています。管理元のウィンドウを使用してください。"
+					: "別のウィンドウで DLC を保存しています。完了後に再読込みしてください。",
 				{ cause: error },
 			);
 		}
-		await rename(
-			target,
-			await files.path(`.nerita/dlc/.lock-${owner.token}`),
-		);
+		await rename(target, await files.path(`${lockPath}-${owner.token}`));
 		await mkdir(target);
 	}
 }
@@ -103,15 +111,30 @@ export async function withDlcLock<T>(
 	files: SafeDlcFiles,
 	operation: () => Promise<T>,
 ): Promise<T> {
+	const lease = await acquireDlcLease(files, ".lock");
+	try {
+		return await operation();
+	} finally {
+		await lease();
+	}
+}
+
+/** 管理元の稼働中も保存時と同じ実体照合で排他制御する。終了した所有者の記録は退避する。 */
+export async function acquireDlcLease(
+	files: SafeDlcFiles,
+	name: ".lock" | ".controller",
+): Promise<() => Promise<void>> {
 	await files.directory(".nerita/dlc");
+	const lockPath = `.nerita/dlc/${name}`;
 	const target = await files.path(lockPath);
-	await acquire(files, target);
+	await acquire(files, target, lockPath);
 	const owner = { token: randomUUID(), pid: process.pid };
 	const identity = await lstat(target);
 	try {
 		await files.write(`${lockPath}/owner.json`, owner);
-		return await operation();
-	} finally {
+	} catch (error) {
 		await release(target, identity, owner.token);
+		throw error;
 	}
+	return () => release(target, identity, owner.token);
 }

@@ -9,6 +9,7 @@ export const RunContextSchema = z.strictObject({
 	schemaVersion: z.literal(1),
 	request: ExecutionRequestSchema,
 	backend: z.enum(["pi", "codex"]),
+	executionDirectory: z.string().min(1),
 	prompt: z
 		.string()
 		.min(1)

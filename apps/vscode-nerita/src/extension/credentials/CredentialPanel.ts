@@ -20,7 +20,7 @@ import { webviewHtml } from "../webview/webviewHtml";
 async function assertWorkspace(root: string, signal: AbortSignal) {
 	signal.throwIfAborted();
 	if (!vscode.workspace.isTrusted) {
-		throw new Error("信頼済み Workspace が必要です。");
+		throw new Error("信頼済みのワークスペースが必要です。");
 	}
 	const roots = await Promise.all(
 		(vscode.workspace.workspaceFolders ?? [])
@@ -28,7 +28,7 @@ async function assertWorkspace(root: string, signal: AbortSignal) {
 			.map((folder) => realpath(folder.uri.fsPath)),
 	);
 	if (!roots.includes(root)) {
-		throw new Error("Workspace が変更されました。");
+		throw new Error("ワークスペースが変更されました。");
 	}
 	const file = vscode.Uri.file(
 		join(root, ".nerita/bindings.json"),
@@ -91,7 +91,7 @@ async function snapshot(
 	bindings: BindingStore,
 	service: CredentialService,
 	busy: boolean,
-): Promise<CredentialReply> {
+): Promise<Extract<CredentialReply, { type: "state" }>> {
 	const available = Boolean(await providerExecutable("bws", root));
 	const accounts = await Promise.all(
 		service.bwsAccounts().map(async (accountId) => {
@@ -171,14 +171,21 @@ function bindCredentialPanel(
 ) {
 	const lifetime = new AbortController();
 	let busy = false;
+	let generation = 0;
+	let current: Extract<CredentialReply, { type: "state" }> | undefined;
 	const post = (reply: CredentialReply) => {
 		if (!lifetime.signal.aborted) {
 			void panel.webview.postMessage(reply);
 		}
 	};
 	const publish = async () => {
+		const revision = ++generation;
 		try {
-			post(await snapshot(root, bindings, service, busy));
+			const state = await snapshot(root, bindings, service, busy);
+			if (revision === generation) {
+				current = state;
+				post(state);
+			}
 		} catch {
 			post({
 				type: "error",
@@ -224,7 +231,10 @@ function bindCredentialPanel(
 			return;
 		}
 		busy = true;
-		void publish();
+		generation++;
+		if (current) {
+			post({ ...current, busy: true });
+		}
 		void runRequest(parsed.data);
 	});
 	panel.onDidDispose(() => {

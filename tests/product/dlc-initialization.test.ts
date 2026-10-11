@@ -205,7 +205,7 @@ void test("CAS とロックは別ウィンドウの古い更新と同時保存�
 		"Intent",
 		await f.detection(),
 	);
-	const other = new IntentRepository(f.files, f.authority);
+	const other = new IntentRepository(f.files, f.authority, f.files);
 	const stale = await other.load(state.intentId);
 	const next = applyAction(state, {
 		type: "plan",
@@ -241,8 +241,9 @@ void test("Host の確定後に state の置換が失敗しても、操作 ID �
 		}
 	}
 	const repository = new IntentRepository(
-		new FaultFiles(f.root, () => Promise.resolve()),
+		f.files,
 		f.authority,
+		new FaultFiles(f.root, () => Promise.resolve()),
 	);
 	const next = applyAction(state, { type: "archive" });
 	await assert.rejects(repository.save(next, state.revision), /置換の中断/);

@@ -57,6 +57,11 @@ function view(selected = projection(first, "最初の Intent")): DlcView {
 		backend: "codex",
 		error: null,
 		active: null,
+		targets: [],
+		targetId: null,
+		targetBusy: false,
+		assignmentPending: false,
+		running: [],
 		execution: null,
 		selected,
 		environment: { workspace: "sample", branch: "feature/dlc-ui" },
@@ -70,11 +75,13 @@ function view(selected = projection(first, "最初の Intent")): DlcView {
 function WorkspaceStory() {
 	const bridge = useMemo(() => {
 		const mock = createStoryBridge(scenarioState("empty"));
+		let initialized = false;
 		return {
 			...mock,
 			postMessage(message: UiMessage) {
 				mock.postMessage(message);
-				if (message.type === "ui/ready") {
+				if (message.type === "ui/ready" && !initialized) {
+					initialized = true;
 					mock.emit({
 						type: "dlc/editorState",
 						state: { expanded: { [first]: [0], [second]: [0] } },
@@ -212,27 +219,21 @@ export const ChatModes: Story = {
 		const bridge = storyBridge(canvasElement);
 		bridge.emit({ type: "dlc/state", view: view() });
 		await expect(
-			await canvas.findByLabelText("DLC の実行情報"),
+			await canvas.findByLabelText("Codexへのメッセージ"),
 		).toBeVisible();
+		await expect(
+			canvas.queryByLabelText("DLC の実行情報"),
+		).not.toBeInTheDocument();
 		await expect(
 			canvas.queryByLabelText("Intent のタイトル"),
 		).not.toBeInTheDocument();
 		await expect(
-			canvas.queryByRole("button", { name: "新しいチャット" }),
-		).not.toBeInTheDocument();
-		await expect(
-			canvas.queryByLabelText("Codexへのメッセージ"),
-		).not.toBeInTheDocument();
-		await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
-		await expect(bridge.sent.at(-1)).toMatchObject({
-			type: "ui/setMode",
-			mode: "chat",
-		});
-		bridge.emit({ type: "dlc/state", view: { ...view(), mode: "chat" } });
-		await expect(
-			await canvas.findByLabelText("Codexへのメッセージ"),
+			canvas.getByRole("button", { name: "新しいチャット" }),
 		).toBeVisible();
 		await userEvent.click(canvas.getByRole("button", { name: "DLC" }));
 		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/open" });
+		await expect(
+			canvas.getByLabelText("Codexへのメッセージ"),
+		).toBeVisible();
 	},
 };

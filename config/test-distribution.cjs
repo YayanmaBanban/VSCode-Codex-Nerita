@@ -40,7 +40,12 @@ async function main() {
 		}
 		run(
 			process.execPath,
-			[path.join(repoRoot, "config/test-products.cjs")],
+			[
+				path.join(repoRoot, "config/test-products.cjs"),
+				...process.argv
+					.slice(2)
+					.filter((arg) => arg !== "--ui" && arg !== "--sandbox"),
+			],
 			{
 				...process.env,
 				NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
@@ -86,7 +91,7 @@ async function main() {
 			},
 		});
 		if (exitCode !== 0) {
-			throw new Error("実 Extension Host の配布検証が失敗しました。");
+			throw new Error("実際の Extension Host での配布検証が失敗しました。");
 		}
 	} finally {
 		await removeRun(root);
@@ -118,6 +123,7 @@ async function prepareWebview(root) {
 		USERPROFILE: home,
 		HOMEDRIVE: path.parse(home).root.slice(0, 2),
 		HOMEPATH: home.slice(2),
+		LOCALAPPDATA: path.join(home, "AppData/Local"),
 		PI_CODING_AGENT_DIR: path.join(home, ".pi/agent"),
 		CODEX_HOME: path.join(home, ".codex"),
 		NERITA_UI_MODEL: model,

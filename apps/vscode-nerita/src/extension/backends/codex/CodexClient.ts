@@ -1,5 +1,6 @@
 // App Server の起動・初期化をまとめ、初期化済み接続だけを呼び出し側へ渡す。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import { realpath } from "node:fs/promises";
 import type { ClientInfo } from "./codex-app-server/ClientInfo";
 import type { CommandExecParams } from "./codex-app-server/v2/CommandExecParams";
 import type { WindowsSandboxSetupMode } from "./codex-app-server/v2/WindowsSandboxSetupMode";
@@ -47,6 +48,7 @@ export class CodexClient {
 		readonly serverInfo: InitializeResponse,
 		private readonly detachAbort: () => void,
 		private readonly personality: PersonalityStore,
+		private readonly cwd: string,
 	) {}
 
 	/** `initialize` の成功後に `initialized` を送り、失敗時は起動したプロセスを回収する。 */
@@ -68,7 +70,7 @@ export class CodexClient {
 		}
 		/** 初期化待ちでもワークスペース変更・拡張機能終了に追従する。 */
 		const abort = () => {
-			void transport.dispose();
+			void transport.dispose().catch(() => {});
 		};
 		options.signal?.addEventListener("abort", abort, { once: true });
 		const detachAbort = () =>
@@ -89,6 +91,7 @@ export class CodexClient {
 				response,
 				detachAbort,
 				new PersonalityStore(options.cwd),
+				options.cwd,
 			);
 		} catch (error) {
 			detachAbort();
@@ -157,13 +160,24 @@ export class CodexClient {
 	}
 	/** 元の会話を変更せず、新しいスレッドへ分岐する。 */
 	async forkThread(threadId: string, excludeTurns = false) {
-		return this.transport.request("thread/fork", {
+		const fork = await this.transport.request("thread/fork", {
+			cwd: this.cwd,
 			developerInstructions: composeDeveloperInstructions(
 				await this.personality.read(),
 			),
 			threadId,
 			excludeTurns,
 		});
+		if (
+			!isNonEmptyString(fork.thread.id) ||
+			fork.thread.id === threadId ||
+			(await realpath(fork.cwd)) !== (await realpath(this.cwd))
+		) {
+			throw new Error(
+				"Codex の分岐先の会話 ID または実行先が一致しません。",
+			);
+		}
+		return fork;
 	}
 	/** 古いターンから順に、全項目を指定して取得する。 */
 	listTurns(

@@ -13,6 +13,9 @@ import type {
 } from "./protocol/rpcMessage";
 import { AuthFlow, type AuthService } from "./interaction/AuthFlow";
 import type { StartedThread } from "./protocol/turn";
+import { realpath } from "node:fs/promises";
+import { trustKey } from "../../security/trust/WorkspaceTrustStore";
+import { BackendShutdown } from "../../session/BackendShutdown";
 
 /** 会話状態の管理と通知の振り分けはコントローラーへ委ね、会話の確定後に初期化の完了を待つ。 */
 type LifecycleSession = {
@@ -34,6 +37,7 @@ export class CodexLifecycle {
 	private epoch = 0;
 	private abort: AbortController | undefined;
 	private closing = new Set<Promise<unknown>>();
+	private readonly shutdown = new BackendShutdown();
 	private readonly auth = new AuthFlow();
 	/** 本番とテストの接続を同じ契約で受け取り、このクラスで接続を管理する。 */
 	constructor(
@@ -138,13 +142,12 @@ export class CodexLifecycle {
 			attachmentsSupported: false,
 		});
 
-		await Promise.allSettled(this.closing);
-		if (epoch !== this.epoch) {
-			return;
-		}
-
-		this.abort = new AbortController();
 		try {
+			await this.waitForShutdown();
+			if (epoch !== this.epoch) {
+				return;
+			}
+			this.abort = new AbortController();
 			const opening = this.factory(
 				{
 					notification: (message) => {
@@ -170,7 +173,9 @@ export class CodexLifecycle {
 			this.track(
 				opening.then(async ({ client }) => {
 					if (epoch !== this.epoch) {
-						await client.dispose();
+						const closing = client.dispose();
+						this.shutdown.track(closing);
+						await closing;
 					}
 				}),
 			);
@@ -194,6 +199,7 @@ export class CodexLifecycle {
 			}
 			await this.newThread();
 		} catch (error) {
+			this.shutdown.captureOpeningFailure(error);
 			if (epoch === this.epoch) {
 				this.failConnection(
 					error instanceof WorkspaceError ? error.message : undefined,
@@ -218,6 +224,10 @@ export class CodexLifecycle {
 		this.session.patch({ sessionPending: true, error: null });
 		try {
 			const result = await client.startThread({ cwd: state.cwd });
+			if (epoch !== this.epoch) {
+				return;
+			}
+			await this.validateThread(result, state.cwd, epoch);
 			if (epoch !== this.epoch) {
 				return;
 			}
@@ -259,6 +269,29 @@ export class CodexLifecycle {
 			}
 		}
 	}
+	/** RPC の要求先と実効設定を照合し、不明な Thread へターンを送信させない。 */
+	private async validateThread(
+		result: StartedThread,
+		cwd: string,
+		epoch: number,
+	): Promise<void> {
+		try {
+			if (
+				!isNonEmptyString(result.thread.id) ||
+				trustKey(await realpath(result.cwd)) !==
+					trustKey(await realpath(cwd))
+			) {
+				throw new Error("Codex の実行先が要求先と一致しません。");
+			}
+		} catch (error) {
+			if (epoch === this.epoch) {
+				this.failConnection(
+					"Codex の実行先を確認できません。接続の終了を要求しました。",
+				);
+			}
+			throw error;
+		}
+	}
 	/** 接続と実行の世代を無効化し、全プロセスの終了を追跡する。 */
 	private disconnect(): void {
 		this.epoch++;
@@ -266,7 +299,7 @@ export class CodexLifecycle {
 		this.abort?.abort();
 		this.abort = undefined;
 		if (this.client) {
-			this.track(this.client.dispose());
+			this.shutdown.track(this.client.dispose());
 			this.client = undefined;
 		}
 	}
@@ -309,6 +342,13 @@ export class CodexLifecycle {
 	/** 初期化待ちも含め、拡張機能の終了前に接続を回収する。 */
 	async dispose(): Promise<void> {
 		this.disconnect();
-		await Promise.allSettled(this.closing);
+		await this.waitForShutdown();
+	}
+	/** 遅れて成立した旧接続の回収も含めて確認する。通常の起動失敗は終了失敗に含めない。 */
+	async waitForShutdown(): Promise<void> {
+		while (this.closing.size > 0) {
+			await Promise.all(this.closing);
+		}
+		await this.shutdown.wait();
 	}
 }

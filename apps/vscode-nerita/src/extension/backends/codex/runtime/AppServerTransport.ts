@@ -4,6 +4,7 @@ import { AppServerJsonReader } from "./AppServerJsonReader";
 import type { RequestId } from "../codex-app-server/RequestId";
 import type { ClientNotification } from "../codex-app-server/ClientNotification";
 import { stopAppServerProcess } from "./AppServerProcess";
+import { BackendShutdownError } from "../../../session/BackendShutdown";
 import {
 	parseRpcMessage,
 	type AppServerNotification,
@@ -152,7 +153,7 @@ export class AppServerTransport {
 		if (this.closed) {
 			return;
 		}
-		void this.dispose(error);
+		void this.dispose(error).catch(() => {});
 		this.callbacks.disconnected?.(error);
 	}
 
@@ -173,7 +174,11 @@ export class AppServerTransport {
 		this.stopping = Promise.all([
 			this.reader.dispose(),
 			stopAppServerProcess(this.child),
-		]).then(() => undefined);
+		])
+			.then(() => undefined)
+			.catch((error: unknown) => {
+				throw new BackendShutdownError(error);
+			});
 		return this.stopping;
 	}
 }

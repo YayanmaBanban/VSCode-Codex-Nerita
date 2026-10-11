@@ -8,6 +8,10 @@ import { freezeToolCall } from "../../security/ApprovedToolCall";
 import type { PiRuntimeOptions, PiRuntimeSession } from "./PiRuntime";
 import type { PiForkMessage } from "./PiForkContext";
 import type { PiJobs } from "./PiJobs";
+import {
+	BackendShutdown,
+	BackendShutdownError,
+} from "../../session/BackendShutdown";
 
 /** 子は許可範囲内の作業場所と権限を指定できる。実行基盤・承認先・親の権限設定は差し替えられない。 */
 export type PiChildOptions = {
@@ -42,6 +46,7 @@ export class PiChildRuntimes {
 	private disposed = false;
 	private stoppingNow = false;
 	private stopping: Promise<void> | undefined;
+	private readonly shutdown = new BackendShutdown();
 
 	constructor(
 		parent: PiRuntimeOptions,
@@ -64,6 +69,7 @@ export class PiChildRuntimes {
 
 	/** 親と role の両方で許可される権限だけを残す。会話の複製と外部拡張の継承は分ける。 */
 	async open(options: PiChildOptions): Promise<PiRuntimeSession> {
+		await this.shutdown.wait();
 		this.lifetime.throwIfAborted();
 		if (this.disposed || this.stoppingNow) {
 			throw new Error("終了中の親Runtimeから子を起動できません。");
@@ -139,10 +145,12 @@ export class PiChildRuntimes {
 			this.stoppingNow = true;
 			this.stopping = Promise.allSettled(
 				[...this.children].map((child) => this.close(child)),
-			).then(() => {
-				this.stoppingNow = false;
-				this.stopping = undefined;
-			});
+			)
+				.then(() => this.shutdown.wait())
+				.finally(() => {
+					this.stoppingNow = false;
+					this.stopping = undefined;
+				});
 		}
 		return this.stopping;
 	}
@@ -151,12 +159,26 @@ export class PiChildRuntimes {
 	private close(child: Child): Promise<void> {
 		child.closing ??= Promise.resolve().then(async () => {
 			try {
-				const session = child.session ?? (await child.opening);
-				try {
-					await session.abort();
-				} finally {
-					await (child.closeSession ?? session.close.bind(session))();
+				const session =
+					child.session ??
+					(await child.opening.catch((error: unknown) => {
+						if (error instanceof BackendShutdownError) {
+							throw error;
+						}
+						return undefined;
+					}));
+				if (session) {
+					// 実行の中止が失敗しても、close による終了確認を必ず行う。
+					await session.abort().catch(() => {});
+					await (
+						child.closeSession ?? session.close.bind(session)
+					)().catch((error: unknown) => {
+						throw new BackendShutdownError(error);
+					});
 				}
+			} catch (error) {
+				this.shutdown.recordFailure(error);
+				throw error;
 			} finally {
 				child.detachAbort?.();
 				this.children.delete(child);
@@ -169,6 +191,6 @@ export class PiChildRuntimes {
 	/** 同期 `dispose` でも起動 `signal` は即座に失効し、終了処理は追跡して回収する。 */
 	dispose(): void {
 		this.disposed = true;
-		void this.stop();
+		void this.stop().catch(() => {});
 	}
 }

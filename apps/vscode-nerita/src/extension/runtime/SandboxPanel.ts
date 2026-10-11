@@ -10,48 +10,107 @@ import { webviewHtml } from "../webview/webviewHtml";
 import { SandboxManagement } from "./SandboxManagement";
 import { probeMxc } from "./MxcAvailability";
 
-const managers = new WeakMap<vscode.ExtensionContext, SandboxManagement>();
+const managers = new WeakMap<
+	vscode.ExtensionContext,
+	Map<string, { manager: SandboxManagement; label: string; scope: string }>
+>();
 
 /** 同じ Host の実行経路と管理画面で承認ストアを二重生成しない。 */
 export function sandboxManagement(
 	context: vscode.ExtensionContext,
+	id = "chat",
+	label = "Chat",
+	scope = "default",
 ): SandboxManagement {
-	let manager = managers.get(context);
+	let registry = managers.get(context);
+	if (!registry) {
+		registry = new Map();
+		managers.set(context, registry);
+	}
+	let manager =
+		registry.get(id)?.scope === scope
+			? registry.get(id)?.manager
+			: undefined;
 	if (!manager) {
+		const notify = () => {
+			for (const entry of registry.values()) {
+				if (entry.scope === scope) {
+					entry.manager.commands.refreshWorkspace();
+					entry.manager.resourceGrants.refreshWorkspace();
+				}
+			}
+		};
 		manager = new SandboxManagement(
 			{
 				read: () =>
-					context.workspaceState.get("nerita.commandPermissions"),
+					context.globalState.get(
+						`nerita.commandPermissions.${scope}`,
+					),
 				write: async (grants) => {
-					await context.workspaceState.update(
-						"nerita.commandPermissions",
+					await context.globalState.update(
+						`nerita.commandPermissions.${scope}`,
 						grants,
 					);
+					notify();
 				},
 			},
 			{
-				read: () => context.workspaceState.get("nerita.resourceGrants"),
+				read: () =>
+					context.globalState.get(`nerita.resourceGrants.${scope}`),
 				write: async (state) => {
-					await context.workspaceState.update(
-						"nerita.resourceGrants",
+					await context.globalState.update(
+						`nerita.resourceGrants.${scope}`,
 						state,
 					);
+					notify();
 				},
 			},
 		);
-		managers.set(context, manager);
+		registry.set(id, { manager, label, scope });
 	}
 	return manager;
 }
 
 /** 通常のエディタグループへ開き、パネルを閉じたら検査と購読も回収する。 */
 export function registerSandboxPanel(context: vscode.ExtensionContext) {
-	const manager = sandboxManagement(context);
 	context.subscriptions.push(
-		vscode.commands.registerCommand("nerita.pi.sandboxSettings", () => {
-			openSandboxPanel(context, manager);
-		}),
+		vscode.commands.registerCommand(
+			"nerita.pi.sandboxSettings",
+			async () => {
+				const entries = [...(managers.get(context)?.values() ?? [])];
+				const selected =
+					entries.length > 1
+						? await vscode.window.showQuickPick(
+								entries.map((entry) => ({
+									label: entry.label,
+									entry,
+								})),
+								{ placeHolder: "Sandbox を確認する実行環境" },
+							)
+						: undefined;
+				if (entries.length > 1 && !selected) {
+					return;
+				}
+				const entry = selected?.entry ?? entries[0];
+				openSandboxPanel(
+					context,
+					entry?.manager ?? sandboxManagement(context),
+				);
+			},
+		),
 	);
+}
+
+/** 終了した Run は選択候補から外す。既に開いているパネルは失効した状態を表示する。 */
+export function releaseSandboxManagement(
+	context: vscode.ExtensionContext,
+	id: string,
+	expected: SandboxManagement,
+): void {
+	const registry = managers.get(context);
+	if (registry?.get(id)?.manager === expected) {
+		registry.delete(id);
+	}
 }
 
 /** Webview から任意の起動引数や新しい許可を受け付けない。 */

@@ -45,6 +45,8 @@ async function execute(root, files, environment, regression) {
 		process.execPath,
 		[
 			"--test",
+			// Worktree の並列検証は各シナリオ内で行い、全ファイルの同時起動で Host を過負荷にしない。
+			"--test-concurrency=4",
 			"--test-timeout=90000",
 			`--test-reporter=${regression ? pathToFileURL(path.join(repoRoot, "config/product-regression-reporter.cjs")).href : "spec"}`,
 			...files.map((name) =>

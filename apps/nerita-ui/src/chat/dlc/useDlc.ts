@@ -12,6 +12,11 @@ export function useDlc(bridge: Bridge): DlcView {
 		selected: null,
 		error: null,
 		active: null,
+		targets: [],
+		targetId: null,
+		targetBusy: false,
+		assignmentPending: false,
+		running: [],
 		execution: null,
 	});
 	useEffect(

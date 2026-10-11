@@ -102,23 +102,23 @@ async function prepareRepository(cwd) {
 	);
 }
 async function switchPendingIntent(page, chat, editor) {
-	await chat.getByRole("button", { name: "Chat", exact: true }).click();
 	await expect(chat.getByLabel("承認要求")).toHaveCount(0);
 	await expect(chat.getByLabel("Codexへのメッセージ")).toBeVisible();
-	await chat.getByRole("button", { name: "DLC", exact: true }).click();
 	await editor
 		.getByRole("button", { name: "新しい Intent", exact: true })
 		.click();
 	const second = await createIntent(editor, "別の Intent");
-	await expect(chat.getByLabel("承認要求")).toHaveCount(0);
-	await expect(
-		editor.getByRole("button", { name: "画面からの Intent", exact: true }),
-	).toContainText("実行中");
+	await expect(editor.getByLabel("承認要求")).toHaveCount(0);
+	const running = editor.getByRole("button", {
+		name: "画面からの Intent",
+		exact: true,
+	});
+	await expect(running).toContainText("実行中");
 	await screenshot(page, "dlc-other-intent.png");
-	await chat
-		.getByRole("button", { name: "実行中の Intent を表示", exact: true })
-		.click();
-	await expect(chat.getByLabel("承認要求")).toBeVisible();
+	await running.click();
+	await expect(
+		editor.getByLabel("Worktree の会話").getByLabel("承認要求"),
+	).toBeVisible();
 	return second;
 }
 async function verifyDlc(page, chat, model, cwd, findFrame) {
@@ -126,6 +126,7 @@ async function verifyDlc(page, chat, model, cwd, findFrame) {
 	await page.setViewportSize({ width: 1400, height: 900 });
 	await chat.getByRole("button", { name: "DLC", exact: true }).click();
 	let editor = await findFrame(page, ".dlc-workspace");
+	let conversation = editor.getByLabel("Worktree の会話");
 	await expect(chat.getByLabel("Intent のタイトル")).toHaveCount(0);
 	await screenshot(page, "dlc-create.png");
 	const first = await createIntent(editor, "画面からの Intent");
@@ -142,10 +143,12 @@ async function verifyDlc(page, chat, model, cwd, findFrame) {
 	await editor
 		.getByRole("button", { name: "手動タスクを実行", exact: true })
 		.click();
-	await expect(chat.getByLabel("承認要求")).toBeVisible();
+	await expect(conversation.getByLabel("承認要求")).toBeVisible();
 	await expect.poll(() => model.requests.length).toBe(count + 1);
+	await expect(chat.getByLabel("承認要求")).toHaveCount(0);
+	await expect(chat.getByLabel("Codexへのメッセージ")).toBeVisible();
 	const prompt = executionPrompt(model.requests.at(-1));
-	await verifyPrompt(chat, prompt);
+	await verifyPrompt(conversation, prompt);
 	await assert.rejects(fs.stat(path.join(cwd, "dlc.txt")), {
 		code: "ENOENT",
 	});
@@ -153,6 +156,7 @@ async function verifyDlc(page, chat, model, cwd, findFrame) {
 	const second = await switchPendingIntent(page, chat, editor);
 	assert.notEqual(first, second);
 	editor = await reopenWorkspace(page, chat, editor, findFrame);
+	conversation = editor.getByLabel("Worktree の会話");
 	await expect(
 		editor.getByRole("button", { name: /Phase 3 · Construction/ }),
 	).toHaveAttribute("aria-expanded", "true");
@@ -162,10 +166,10 @@ async function verifyDlc(page, chat, model, cwd, findFrame) {
 	await expect(
 		editor.getByRole("button", { name: "画面からの Intent", exact: true }),
 	).toHaveAttribute("aria-pressed", "true");
-	await expect(chat.getByLabel("承認要求")).toBeVisible();
+	await expect(conversation.getByLabel("承認要求")).toBeVisible();
 	assert.equal(model.requests.length, count + 1);
 	model.replies.push(resultContract(model.requests.at(-1)));
-	await chat
+	await conversation
 		.getByLabel("承認要求")
 		.getByRole("button", { name: "今回のみ許可", exact: true })
 		.click();
@@ -176,22 +180,21 @@ async function verifyDlc(page, chat, model, cwd, findFrame) {
 		editor.getByRole("button", { name: "画面からの Intent", exact: true }),
 	).toContainText("レビュー待ち");
 	assert.equal(await fs.readFile(path.join(cwd, "dlc.txt"), "utf8"), "dlc\n");
-	await expect(chat.getByLabel("承認要求")).toHaveCount(0);
+	await expect(conversation.getByLabel("承認要求")).toHaveCount(0);
 	await screenshot(page, "dlc-result.png");
 	await editor.getByRole("button", { name: "再読込み", exact: true }).click();
 	await editor
 		.getByRole("button", { name: "実行 1 · 実行終了", exact: true })
 		.click();
-	await verifyPrompt(chat, prompt);
-	await verifyDeniedAndStopped(page, chat, editor, model, cwd, second);
+	await verifyPrompt(conversation, prompt);
+	await verifyDeniedAndStopped(page, editor, model, cwd, second);
 	await reviewWorkspace(page, editor);
-	await chat.getByRole("button", { name: "Chat", exact: true }).click();
 	await expect(chat.getByLabel("Codexへのメッセージ")).toBeVisible();
 	await expect(
 		chat.getByText("画面からの承認を受領しました", { exact: true }),
 	).toBeVisible();
 	console.log(
-		"DLC: 独立エディタ・Phase 表示・チャット連携・再表示・承認・拒否・停止・履歴に成功",
+		"DLC: 独立エディタ・Phase 表示・Phase 3 の会話・再表示・承認・拒否・停止・履歴に成功",
 	);
 }
 async function verifyPrompt(chat, prompt) {
@@ -212,19 +215,11 @@ async function reopenWorkspace(page, chat, editor, findFrame) {
 		"workbench.action.closeActiveEditor",
 	);
 	await expect.poll(() => editor.isDetached()).toBe(true);
-	await chat
-		.getByRole("button", { name: "DLC の作業画面を開く", exact: true })
-		.click();
+	await chat.getByRole("button", { name: "DLC", exact: true }).click();
 	return findFrame(page, ".dlc-workspace");
 }
-async function verifyDeniedAndStopped(
-	page,
-	chat,
-	editor,
-	model,
-	cwd,
-	intentId,
-) {
+async function verifyDeniedAndStopped(page, editor, model, cwd, intentId) {
+	const chat = editor.getByLabel("Worktree の会話");
 	await editor.locator(`[data-intent-id="${intentId}"]`).click();
 	await plan(editor, "denied.txt");
 	model.replies.push({
@@ -263,7 +258,7 @@ async function verifyDeniedAndStopped(
 		.click();
 	await expect(chat.getByLabel("承認要求")).toBeVisible();
 	await editor
-		.getByRole("button", { name: "実行を停止", exact: true })
+		.getByRole("button", { name: "DLC の会話を停止", exact: true })
 		.click();
 	await expect(editor.getByLabel("手動タスク")).toContainText("停止済み");
 	await expect(chat.getByLabel("承認要求")).toHaveCount(0);
@@ -291,7 +286,7 @@ async function reviewWorkspace(page, editor) {
 		for (const width of [1400, 1000]) {
 			await page.setViewportSize({ width, height: 900 });
 			await editor
-				.getByRole("heading", { name: "別の Intent", exact: true })
+				.getByLabel("Worktree の会話", { exact: true })
 				.scrollIntoViewIfNeeded();
 			const size = await editor.evaluate(() => ({
 				width: globalThis.document.documentElement.clientWidth,
@@ -303,4 +298,4 @@ async function reviewWorkspace(page, editor) {
 	}
 	await page.setViewportSize({ width: 1000, height: 800 });
 }
-module.exports = { verifyDlc };
+module.exports = { verifyDlc, createIntent, plan, resultContract, screenshot };

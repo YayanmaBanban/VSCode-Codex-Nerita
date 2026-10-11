@@ -1,8 +1,10 @@
 // Worker を起動し、子プロセスの標準出力を使って JSONL の順序・UTF-8・最終応答・切断を検証する。
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import childProcess, { spawn } from "node:child_process";
 import { Readable } from "node:stream";
 import { test } from "node:test";
+import { once } from "node:events";
+import { stopAppServerProcess } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerProcess";
 import { AppServerJsonReader } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerJsonReader";
 import { AppServerTransport } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/AppServerTransport";
 
@@ -160,4 +162,44 @@ process.stdin.once('data', () => {
 	await rejected;
 	assert.equal(notifications, 0);
 	assert.ok(child.stdout.destroyed);
+});
+
+void test("App Server は kill の受付だけで終了済みにせず、終了通知がなければ回収失敗を返す", async (t) => {
+	const child = spawn(
+		process.execPath,
+		["-e", "setInterval(() => {}, 1000)"],
+		{ windowsHide: true, stdio: "pipe" },
+	);
+	await once(child, "spawn");
+	const kill = child.kill.bind(child);
+	t.after(async () => {
+		const exited = once(child, "exit");
+		kill();
+		await exited;
+		child.stdin.destroy();
+		child.stdout.destroy();
+		child.stderr.destroy();
+	});
+	// 自分の検証子だけを対象にし、OS が終了を通知しない状況を作る。
+	t.mock.method(child, "kill", () => true);
+	t.mock.method(childProcess, "spawn", () => child);
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	let ended = false;
+	const closing = stopAppServerProcess(child);
+	void closing.then(
+		() => {
+			ended = true;
+		},
+		() => {
+			ended = true;
+		},
+	);
+	const rejected = assert.rejects(closing, /終了を確認できません/);
+	t.mock.timers.tick(5000);
+	await Promise.resolve();
+	assert.equal(ended, false);
+	assert.equal(child.exitCode, null);
+	t.mock.timers.tick(5000);
+	await rejected;
+	t.mock.timers.reset();
 });

@@ -249,6 +249,11 @@ void test("認証状態は両方の保存方式を受け入れ、壊れた入れ
 	const value = {
 		items: [item],
 		active: null,
+		targets: [],
+		targetId: null,
+		targetBusy: false,
+		assignmentPending: false,
+		running: [],
 		notice: "",
 		error: null,
 		prompt: {

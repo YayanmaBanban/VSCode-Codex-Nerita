@@ -27,6 +27,7 @@ export function useChat(bridge: Bridge) {
 				setRequestError(message.error);
 				return;
 			}
+			const previous = current;
 			if (message.type === "state/snapshot") {
 				if (ready && message.state.revision < current.revision) {
 					return;
@@ -42,6 +43,10 @@ export function useChat(bridge: Bridge) {
 					return;
 				}
 				current = applyStatePatch(current, message);
+			}
+			// 会話や Run の表示を切り替えたら、前の対象への操作エラーを持ち越さない。
+			if (conversationChanged(previous, current)) {
+				setRequestError(null);
 			}
 			setState(current);
 		});
@@ -63,6 +68,14 @@ export function useChat(bridge: Bridge) {
 		[bridge],
 	);
 	return { state, requestError, send };
+}
+
+/** 表示中の接続内の操作エラーを、異なる会話や実行へ適用しない。 */
+function conversationChanged(previous: ChatState, current: ChatState): boolean {
+	return (
+		current.sessionId !== previous.sessionId ||
+		current.runId !== previous.runId
+	);
 }
 
 /** 送信フォームとエージェント閲覧が扱う結果は、全体エラーへ重複表示しない。 */

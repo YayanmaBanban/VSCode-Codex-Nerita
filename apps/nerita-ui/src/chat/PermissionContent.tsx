@@ -53,7 +53,7 @@ export function PermissionContent({
 	);
 }
 
-/** 短い値は2列に揃え、コードは狭い画面でも読める全幅で表示する。 */
+/** 短い値は2列に揃え、長いパスやコードは狭い画面でも読める全幅で表示する。 */
 function PermissionFields({ fields }: { fields: PermissionField[] }) {
 	if (fields.length === 0) {
 		return null;
@@ -69,7 +69,7 @@ function PermissionFields({ fields }: { fields: PermissionField[] }) {
 				<div
 					key={field.id}
 					className={cn(
-						field.display === "code"
+						field.display === "code" || field.value.length > 64
 							? "col-span-2 min-w-0"
 							: "contents",
 					)}

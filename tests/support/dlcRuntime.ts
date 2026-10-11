@@ -21,13 +21,17 @@ export async function dlcRuntimeFixture(
 	const records = new Map<string, unknown>();
 	const files = new SafeDlcFiles(cwd, () => Promise.resolve());
 	await initializeWorkspace(files, new AbortController().signal);
-	const repository = new IntentRepository(files, {
-		read: (key) => records.get(key),
-		write: (key, value) => {
-			records.set(key, value);
-			return Promise.resolve();
+	const repository = new IntentRepository(
+		files,
+		{
+			read: (key) => records.get(key),
+			write: (key, value) => {
+				records.set(key, value);
+				return Promise.resolve();
+			},
 		},
-	});
+		files,
+	);
 	await repository.import(createTestIntent());
 	await repository.save(plannedIntent(), 0);
 	const createRuntime = () =>

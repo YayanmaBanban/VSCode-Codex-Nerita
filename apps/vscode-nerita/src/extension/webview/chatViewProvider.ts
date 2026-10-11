@@ -43,6 +43,7 @@ export class ChatViewProvider
 	private placement: SidebarPlacement;
 	private backendSubscription: vscode.Disposable;
 	private backendPending = false;
+	private runtime: BackendRuntime | undefined;
 	private copiedCode = new CopiedCode();
 	private workingTreeDiff = new WorkingTreeDiff();
 	private trustState: ChatTrustState;
@@ -53,11 +54,19 @@ export class ChatViewProvider
 		private restartBackend: () => Promise<void>,
 		trustStore?: WorkspaceTrustStore,
 	) {
-		this.trustState = new ChatTrustState(session, trustStore, (message) => {
-			for (const webview of this.views.keys()) {
-				void webview.postMessage(message);
-			}
-		});
+		if (session instanceof BackendRuntime) {
+			this.runtime = session;
+			this.session = session.scope("chat");
+		}
+		this.trustState = new ChatTrustState(
+			this.session,
+			trustStore,
+			(message) => {
+				for (const webview of this.views.keys()) {
+					void webview.postMessage(message);
+				}
+			},
+		);
 		this.backendSubscription = vscode.workspace.onDidChangeConfiguration(
 			(event) => {
 				if (event.affectsConfiguration("nerita.backend")) {
@@ -257,7 +266,7 @@ export class ChatViewProvider
 
 	/** 実行・接続・設定変更の完了前はセッションを交換しない。 */
 	private runtimeBusy(): boolean {
-		if (this.session instanceof BackendRuntime && this.session.busy()) {
+		if (this.runtime?.busy() === true) {
 			return true;
 		}
 		const state = this.session.snapshot();

@@ -70,6 +70,7 @@ type PhaseProps = {
 	action: (action: DlcAction) => void;
 	send: (message: UiMessage) => void;
 	initialization: ReactNode;
+	conversation: ReactNode;
 };
 export function DlcPhases(props: PhaseProps) {
 	return (
@@ -85,6 +86,14 @@ export function DlcPhases(props: PhaseProps) {
 		</div>
 	);
 }
+function executionBusy(view: DlcView, selected: DlcProjection): boolean {
+	return (
+		view.targetBusy ||
+		view.assignmentPending ||
+		view.running.some((run) => run.intentId === selected.intentId)
+	);
+}
+
 function PhaseSection({
 	selected,
 	view,
@@ -93,6 +102,7 @@ function PhaseSection({
 	action,
 	send,
 	initialization,
+	conversation,
 	phase,
 	name,
 }: PhaseProps & { phase: number; name: string }) {
@@ -131,12 +141,15 @@ function PhaseSection({
 				{phase === 0 && initialization}
 				{selected !== null && <StageList stages={stages} />}
 				{selected !== null && phase === 3 && (
-					<DlcWorkItems
-						selected={selected}
-						active={view.active !== null}
-						action={action}
-						send={send}
-					/>
+					<>
+						<DlcWorkItems
+							selected={selected}
+							active={executionBusy(view, selected)}
+							action={action}
+							send={send}
+						/>
+						{conversation}
+					</>
 				)}
 				{phase > 0 && pending && (
 					<p className="text-muted">

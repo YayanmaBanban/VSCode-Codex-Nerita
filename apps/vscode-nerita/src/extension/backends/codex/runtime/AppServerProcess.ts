@@ -3,6 +3,7 @@ import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import type { WindowsSandboxSetupMode } from "../codex-app-server/v2/WindowsSandboxSetupMode";
 import { sandboxServerEnvironment } from "../../../runtime/CommandEnvironment";
+import { BackendShutdownError } from "../../../session/BackendShutdown";
 
 /** 認証・`CODEX_HOME`・設定を継承し、同梱ネイティブ実行ファイルを起動する。 */
 export function startAppServerProcess(
@@ -45,17 +46,30 @@ export async function stopAppServerProcess(
 		child.exitCode === null &&
 		child.signalCode === null
 	) {
-		await new Promise<void>((resolve) => {
+		await new Promise<void>((resolve, reject) => {
+			let forced = false;
 			/** 終了通知と監視タイマーを一度だけ解放する。 */
 			const done = () => {
 				clearTimeout(timer);
 				child.off("exit", done);
 				resolve();
 			};
-			const timer = setTimeout(() => {
-				child.kill();
-				done();
-			}, 5000);
+			/** kill の受付は終了確認ではない。再試行後にも通知がなければ予約を保持させる。 */
+			const timeout = () => {
+				if (!forced) {
+					forced = true;
+					timer = setTimeout(timeout, 5000);
+					child.kill();
+					return;
+				}
+				child.off("exit", done);
+				reject(
+					new BackendShutdownError(
+						new Error("Codex App Server の終了通知がありません。"),
+					),
+				);
+			};
+			let timer = setTimeout(timeout, 5000);
 			child.once("exit", done);
 			if (process.platform === "win32") {
 				const killer = spawn(

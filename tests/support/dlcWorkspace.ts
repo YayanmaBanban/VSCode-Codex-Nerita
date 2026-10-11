@@ -32,7 +32,7 @@ export async function dlcWorkspace(t: TestContext) {
 	};
 	const detection = () =>
 		initializeWorkspace(files, new AbortController().signal);
-	const repository = new IntentRepository(files, authority);
+	const repository = new IntentRepository(files, authority, files);
 	return {
 		root,
 		files,

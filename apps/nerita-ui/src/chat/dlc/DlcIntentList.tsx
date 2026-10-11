@@ -58,8 +58,9 @@ export function DlcIntentList({
 							{labels[intent.status]}
 						</span>
 						<span className="text-[11px] text-muted">
-							現在のワークスペース ·{" "}
-							{ui.view.environment?.branch ?? "ブランチ未取得"}
+							{intent.execution
+								? `${ui.view.targets.find((target) => target.id === intent.execution?.targetId)?.name ?? "消失した Worktree"} · ${intent.execution.backend === "pi" ? "Pi" : "Codex"}`
+								: "実行先未選択"}
 						</span>
 					</button>
 				))}

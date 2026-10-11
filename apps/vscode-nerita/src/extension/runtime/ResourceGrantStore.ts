@@ -20,7 +20,7 @@ const savedSchema = z.object({
 	grants: resourceGrantSchema.array(),
 	caches: sandboxCacheSchema.array(),
 });
-/** VS Code の workspaceState と同じ Host 管理領域を使う。 */
+/** 永続権限とキャッシュ設定を読み書きする Host 側の保存先。 */
 export type ResourceGrantStorage = {
 	read(): unknown;
 	write(state: {
@@ -53,6 +53,20 @@ export class ResourceGrantStore {
 	/** キャッシュ設定も表示側へ参照を渡さない。 */
 	listCaches() {
 		return structuredClone(this.caches);
+	}
+	/** 永続権限とキャッシュ設定だけ同期し、別 Run の一時権限を取り込まない。 */
+	refreshWorkspace(): void {
+		const saved = savedSchema.safeParse(this.storage.read());
+		if (saved.success) {
+			this.grants = [
+				...this.grants.filter((grant) => grant.scope !== "workspace"),
+				...saved.data.grants.filter(
+					(grant) => grant.scope === "workspace",
+				),
+			];
+			this.caches = saved.data.caches;
+			this.changed();
+		}
 	}
 
 	/** Host が実行と照合済みのイベントにだけ権限を作る。 */
@@ -106,7 +120,7 @@ export class ResourceGrantStore {
 			);
 			next.push(grant);
 			await this.persist(next, this.caches);
-			// 保存中に停止された process/session 許可は公開後直ちに回収する。
+			// 保存中に停止された実行やセッションの一時権限は、公開後直ちに回収する。
 			if (signal.aborted && grant.scope !== "workspace") {
 				this.grants = this.grants.filter(
 					(item) => item.id !== grant.id,
@@ -117,7 +131,7 @@ export class ResourceGrantStore {
 		});
 	}
 
-	/** ホストキャッシュへの RW は作らず、workspace の切替と原因のツールを保存する。 */
+	/** ホストキャッシュへの書込み権限は作らず、ワークスペースごとにキャッシュの切替対象のツールを保存する。 */
 	switchCache(event: DenialEvent, call: ToolCall, signal: AbortSignal) {
 		return this.enqueue(async () => {
 			signal.throwIfAborted();
@@ -139,7 +153,7 @@ export class ResourceGrantStore {
 		});
 	}
 
-	/** 保存失敗時にはメモリーも表示も残す。 */
+	/** 保存失敗時はメモリー上の状態と表示を維持する。 */
 	revoke(id: string, cache = false) {
 		return this.enqueue(() =>
 			this.persist(
@@ -241,7 +255,7 @@ export function workspaceFor(call: ToolCall): string {
 		.filter((root) => containsPath(root, call.cwd))
 		.sort((a, b) => b.length - a.length)[0];
 	if (!isNonEmptyString(workspace)) {
-		throw new Error("Sandbox の workspace 境界外です。");
+		throw new Error("Sandbox のワークスペースの範囲外です。");
 	}
 	return workspace;
 }

@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { createBackend } from "./backends/createBackend";
 import type { BackendSession } from "./session/chatSession";
 import { BackendRuntime } from "./session/BackendRuntime";
-import { DlcSessionOwnership } from "./session/DlcSessionOwnership";
+import { sessionOwnershipStorage } from "./dlc/SessionOwnershipStorage";
 import { ChatViewProvider } from "./webview/chatViewProvider";
 import { disposeDroppedAttachments } from "./webview/droppedAttachments";
 import { registerSandboxSetup } from "./backends/codex/settings/sandboxSetup";
@@ -19,6 +19,8 @@ import { registerTrustCommands } from "./security/trust/TrustCommands";
 import { preparePiWebTrust } from "./backends/pi/PiWebTrust";
 import { userTrustedExtensionPaths } from "./backends/pi/PiExtensionTrust";
 import { registerDlcCommands } from "./dlc/DlcCommands";
+import { directoryRunStorage } from "./dlc/DirectoryRunStorage";
+import { hostStorageRoot } from "./session/HostStorage";
 let controller: BackendSession | undefined;
 let dlc: { dispose(): Promise<void> } | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
@@ -50,14 +52,7 @@ export async function activate(
 	} catch {
 		/* 未検証の取得設定は Runtime の接続時に拒否して表示する。 */
 	}
-	const session = new BackendRuntime(
-		(backend) => createBackend(context, trust, backend),
-		new DlcSessionOwnership({
-			read: () => context.globalState.get("dlc.managedSessions"),
-			write: (ids) =>
-				context.globalState.update("dlc.managedSessions", ids),
-		}),
-	);
+	const session = await createRuntime(context, trust);
 	context.subscriptions.push({
 		dispose: trust.onChange(() => {
 			if (session.snapshot().uiContributions?.surface === "pi") {
@@ -112,4 +107,15 @@ export async function deactivate(): Promise<void> {
 	await controller?.dispose();
 	controller = undefined;
 	await disposeDroppedAttachments();
+}
+
+async function createRuntime(
+	context: vscode.ExtensionContext,
+	trust: ReturnType<typeof registerTrustCommands>,
+): Promise<BackendRuntime> {
+	return new BackendRuntime(
+		(backend, root) => createBackend(context, trust, backend, root),
+		await sessionOwnershipStorage(hostStorageRoot()),
+		await directoryRunStorage(hostStorageRoot()),
+	);
 }

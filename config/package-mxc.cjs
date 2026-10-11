@@ -2,6 +2,8 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createRequire } = require("node:module");
+const { execFile } = require("node:child_process");
+const { promisify } = require("node:util");
 const { extensionRequire, repoRoot } = require("./workspace-paths.cjs");
 
 /** ネイティブモジュールはバンドルせず、固定済みの依存ツリーをコピーする。 */
@@ -64,9 +66,35 @@ async function packageMxc(target) {
 		path.join(target, "nerita-mxc-launcher.ps1"),
 		`\uFEFF${launcher}`,
 	);
+	await compilePipeClient(target);
 }
 
 module.exports = { packageMxc };
+
+/** PowerShell と同じ .NET Framework 向けに一度だけコンパイルし、ランチャーと同梱する。 */
+async function compilePipeClient(target) {
+	if (process.platform !== "win32" || !process.env.SystemRoot) {
+		throw new Error("MXC ランチャーのビルドには Windows が必要です。");
+	}
+	const compiler = path.join(
+		process.env.SystemRoot,
+		"Microsoft.NET/Framework64/v4.0.30319/csc.exe",
+	);
+	await promisify(execFile)(
+		compiler,
+		[
+			"/nologo",
+			"/target:library",
+			"/optimize+",
+			`/out:${path.join(target, "nerita-mxc-pipe.dll")}`,
+			path.join(
+				repoRoot,
+				"apps/vscode-nerita/src/extension/runtime/MxcPipeClient.cs",
+			),
+		],
+		{ windowsHide: true },
+	);
+}
 
 /** 対象は Windows x64。SDK の署名検証用マニフェストと動的インポート先は残す。 */
 function runtimeAsset(name, relative) {

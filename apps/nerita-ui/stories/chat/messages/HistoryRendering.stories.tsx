@@ -127,8 +127,8 @@ export const RestoredDraftSubmission: Story = {
 	},
 };
 
-/** DLC へ切り替えて入力欄を隠した後も、下書きを保持して通常チャットへ戻す。 */
-export const ModeSwitchKeepsDraft: Story = {
+/** DLC の作業画面を開いても、通常チャットの入力と下書きを維持する。 */
+export const DlcWorkspaceKeepsDraft: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const bridge = storyBridge(canvasElement);
@@ -141,6 +141,11 @@ export const ModeSwitchKeepsDraft: Story = {
 			mode: "dlc" as const,
 			backend: "codex" as const,
 			intents: [],
+			targets: [],
+			targetId: null,
+			targetBusy: false,
+			assignmentPending: false,
+			running: [],
 			environment: null,
 			selected: null,
 			error: null,
@@ -148,11 +153,7 @@ export const ModeSwitchKeepsDraft: Story = {
 			execution: null,
 		};
 		bridge.emit({ type: "dlc/state", view });
-		await waitFor(() =>
-			expect(canvas.queryByRole("textbox")).not.toBeInTheDocument(),
-		);
-		await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
-		bridge.emit({ type: "dlc/state", view: { ...view, mode: "chat" } });
+		await expect(canvas.getByRole("textbox")).toBeVisible();
 		await waitFor(() =>
 			expect(canvas.getByRole("textbox")).toHaveTextContent(
 				"編集中の下書き",

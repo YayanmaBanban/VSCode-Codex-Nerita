@@ -158,20 +158,7 @@ async function run() {
 			process.env.NERITA_UI_ARTIFACTS,
 		);
 		assert.deepEqual(errors, []);
-		await require("./account.cjs").verifyAccount(
-			page,
-			chat,
-			model,
-			findFrame,
-		);
-		await verifyToolOutput(page, chat, model, cwd);
-		await require("./sandbox-management.cjs").verifySandboxManagement(
-			page,
-			chat,
-			model,
-			cwd,
-			findFrame,
-		);
+		await verifyOtherPanels(page, chat, model, cwd, findFrame);
 		assert.deepEqual(errors, []);
 	} finally {
 		if (page) {
@@ -270,4 +257,22 @@ async function verifyStoppedWrite(model, page, chat, cwd, light) {
 	await page.screenshot({
 		path: path.join(process.env.NERITA_UI_ARTIFACTS, "stopped.png"),
 	});
+}
+
+async function verifyOtherPanels(page, chat, model, cwd, findFrame) {
+	await require("./account.cjs").verifyAccount(page, chat, model, findFrame);
+	await verifyToolOutput(page, chat, model, cwd);
+	await require("./sandbox-management.cjs").verifySandboxManagement(
+		page,
+		chat,
+		model,
+		cwd,
+		findFrame,
+	);
+	await require("./dlc-worktrees.cjs").verifyWorktrees(
+		page,
+		chat,
+		model,
+		findFrame,
+	);
 }

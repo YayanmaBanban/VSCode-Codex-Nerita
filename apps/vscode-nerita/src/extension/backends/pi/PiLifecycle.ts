@@ -6,6 +6,7 @@ import type { PiAuthorize } from "./PiApprovedTools";
 import type { PiResumeTarget } from "./PiSessionStore";
 import { restorePiHistory } from "./PiHistoryMapper";
 import type { ContributionContext } from "../../ui-contributions/contributionConditions";
+import { BackendShutdown } from "../../session/BackendShutdown";
 
 /** 本番の Runtime はシェルと子の Runtime も回収し、テスト接続は従来の SDK 契約を使う。 */
 async function closePiSession(session: PiSession): Promise<void> {
@@ -41,6 +42,7 @@ export abstract class PiLifecycle extends SessionState {
 	protected disposed = false;
 	private opening: AbortController | undefined;
 	private closing = new Set<Promise<unknown>>();
+	private readonly shutdown = new BackendShutdown();
 	private quotaAbort: AbortController | undefined;
 
 	/** 旧要求を取り消し、取得元が変わる場合だけ表示値も破棄する。 */
@@ -117,12 +119,12 @@ export abstract class PiLifecycle extends SessionState {
 			sessionsError: null,
 			error: null,
 		});
-		await Promise.allSettled(this.closing);
-		if (epoch !== this.epoch) {
-			return;
-		}
 		let candidate: PiSession | undefined;
 		try {
+			await this.waitForShutdown();
+			if (epoch !== this.epoch) {
+				return;
+			}
 			const operation = this.factory(
 				opening.signal,
 				(title, signal) => {
@@ -136,7 +138,9 @@ export abstract class PiLifecycle extends SessionState {
 				resume,
 			).then(async (result) => {
 				if (epoch !== this.epoch) {
-					await closePiSession(result.session);
+					const closing = closePiSession(result.session);
+					this.shutdown.track(closing);
+					await closing;
 				}
 				return result;
 			});
@@ -162,9 +166,10 @@ export abstract class PiLifecycle extends SessionState {
 			this.publishConnectedSession(restored, cwd, session, resume);
 			if (previous) {
 				previousOpening?.abort();
-				this.track(closePiSession(previous));
+				this.shutdown.track(closePiSession(previous));
 			}
 		} catch (error) {
+			this.shutdown.captureOpeningFailure(error);
 			this.recoverConnection(
 				epoch,
 				previous,
@@ -187,7 +192,7 @@ export abstract class PiLifecycle extends SessionState {
 	) {
 		opening.abort();
 		if (candidate) {
-			this.track(closePiSession(candidate));
+			this.shutdown.track(closePiSession(candidate));
 		}
 		if (epoch === this.epoch && previous) {
 			this.opening = previousOpening;
@@ -307,7 +312,7 @@ export abstract class PiLifecycle extends SessionState {
 				session.history.entries,
 			);
 		} catch (error) {
-			this.track(closePiSession(session));
+			this.shutdown.track(closePiSession(session));
 			throw error;
 		}
 		return restored;
@@ -338,7 +343,7 @@ export abstract class PiLifecycle extends SessionState {
 		this.unsubscribeAgents = undefined;
 		this.runtimeEpoch = undefined;
 		if (runtime) {
-			this.track(closePiSession(runtime));
+			this.shutdown.track(closePiSession(runtime));
 		}
 	}
 
@@ -354,7 +359,14 @@ export abstract class PiLifecycle extends SessionState {
 		this.disposed = true;
 		this.disconnect();
 		this.clearListeners();
-		await Promise.allSettled(this.closing);
+		await this.waitForShutdown();
+	}
+	/** 通常の実行・取得失敗は吸収し、SDK の終了確認失敗だけを排他管理へ返す。 */
+	async waitForShutdown(): Promise<void> {
+		while (this.closing.size > 0) {
+			await Promise.all(this.closing);
+		}
+		await this.shutdown.wait();
 	}
 }
 

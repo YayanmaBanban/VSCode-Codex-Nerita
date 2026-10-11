@@ -5,6 +5,7 @@ import { DlcPhases } from "./DlcPhases";
 import { DlcIntentList } from "./DlcIntentList";
 import { DlcWorkspaceHeader, IntentOverview } from "./DlcWorkspaceHeader";
 import { useDlcWorkspace } from "./useDlcWorkspace";
+import { DlcConversation } from "./DlcConversation";
 import "./dlc.css";
 import "../chat.css";
 
@@ -19,7 +20,7 @@ export function DlcWorkspace({ bridge }: { bridge: Bridge }) {
 				<DlcIntentList ui={ui} />
 				<div className="min-h-0 min-w-0 overflow-auto p-5 @max-[600px]:p-3">
 					<DlcWorkspaceHeader ui={ui} />
-					<DlcWorkspaceContent ui={ui} />
+					<DlcWorkspaceContent ui={ui} bridge={bridge} />
 				</div>
 			</div>
 		</main>
@@ -28,8 +29,10 @@ export function DlcWorkspace({ bridge }: { bridge: Bridge }) {
 
 function DlcWorkspaceContent({
 	ui,
+	bridge,
 }: {
 	ui: ReturnType<typeof useDlcWorkspace>;
+	bridge: Bridge;
 }) {
 	const error = ui.view.error ?? ui.editor.error;
 	return (
@@ -69,8 +72,8 @@ function DlcWorkspaceContent({
 			{ui.view.active &&
 				ui.view.active.intentId !== ui.selected?.intentId && (
 					<p role="status" className="mb-3 text-muted">
-						別の Intent
-						を実行しています。実行が終わってから次のタスクを開始できます。
+						別の Intent を実行しています。異なる Worktree
+						では並行して実行できます。
 					</p>
 				)}
 			{ui.newIntent || ui.selected ? (
@@ -83,6 +86,9 @@ function DlcWorkspaceContent({
 					action={ui.action}
 					send={ui.send}
 					initialization={<Initialization ui={ui} />}
+					conversation={
+						<DlcConversation bridge={bridge} view={ui.view} />
+					}
 				/>
 			) : (
 				<p className="text-muted">

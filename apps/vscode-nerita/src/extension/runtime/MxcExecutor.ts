@@ -1,5 +1,7 @@
 // 承認済みコマンドを MXC に渡し、停止・タイムアウト・出力回収を同じプロセス寿命で管理する。
 import { errorText } from "@nerita/shared/errorText";
+import { performance } from "node:perf_hooks";
+import { MxcTiming, type MxcMeasurement } from "./MxcTiming";
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
@@ -51,6 +53,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 		private readonly onDenials?: (report: DenialReport) => void,
 		private readonly onPolicy?: (resources: ResourcePolicy[]) => void,
 		private readonly management?: SandboxManagement,
+		private readonly onMeasurement?: (value: MxcMeasurement) => void,
 	) {}
 
 	describe(policy: AgentAccessPolicy) {
@@ -103,6 +106,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 					injection,
 					this.management,
 					operationId,
+					this.onMeasurement,
 				);
 				stdout += result.stdout;
 				stderr += result.stderr;
@@ -148,16 +152,26 @@ export async function executeMxcCommand(
 	injection?: CredentialInjection,
 	management?: SandboxManagement,
 	operationId = randomUUID(),
+	onMeasurement?: (value: MxcMeasurement) => void,
 ): Promise<SandboxCommandResult> {
 	signal.throwIfAborted();
 	if (!isNonEmptyString(process.env.SystemRoot)) {
-		throw new Error("Windows の SystemRoot を取得できません。");
+		throw new Error("Windows のシステムルートを環境変数から取得できません。");
 	}
-	const hostTemporary = await mkdtemp(join(tmpdir(), "nerita-mxc-"));
+	const timing = new MxcTiming();
+	const hostTemporary = await timing.measure("temporaryMs", () =>
+		mkdtemp(join(tmpdir(), "nerita-mxc-")),
+	);
 	const temporary = join(hostTemporary, "sandbox");
 	try {
-		await mkdir(temporary);
-		let devTools = await prepareMxcDevTools(call, temporary, management);
+		await timing.measure("temporaryMs", () => mkdir(temporary));
+		let devTools = await prepareMxcDevTools(
+			call,
+			temporary,
+			timing,
+			management,
+		);
+		const policyStarted = performance.now();
 		if (management) {
 			devTools = await management.resourceGrants.apply(
 				devTools,
@@ -183,33 +197,80 @@ export async function executeMxcCommand(
 			},
 		};
 		signal.throwIfAborted();
-		const result = await collectOutput(
-			spawnMxcLauncher(sdk, config, call.cwd),
+		timing.value.policyMs = performance.now() - policyStarted;
+		const result = await measuredMxcOutput(
+			sdk,
+			config,
+			call,
 			signal,
-			call.timeoutMs!,
 			hostTemporary,
+			timing,
 			onOutput,
 		);
-		// MXC 本体が先にタイムアウトすると、起動用プロセスは終了コードと構造化エラーを返す。
-		// Host 側のタイマーより先に `close` イベントが届いても、正常終了として扱わない。
-		const timeoutError = JSON.stringify({
-			error: {
-				code: "backend_error",
-				message: `script timed out after ${call.timeoutMs}ms`,
-			},
-		});
-		if (
-			result.exitCode === 0xffff_ffff &&
-			result.stderr.trimEnd().endsWith(timeoutError)
-		) {
-			throw new Error("Sandbox 実行がタイムアウトしました。");
-		}
-		const report = await readMxcDenials(hostTemporary, devTools);
+		assertMxcCompleted(result, call.timeoutMs!);
+		const report = await timing.measure("denialsMs", () =>
+			readMxcDenials(hostTemporary, devTools),
+		);
 		onDenials?.(report);
 		return result;
 	} finally {
-		// mkdtemp が返した専用領域だけを回収する。リンクの置換は辿らない。
-		await rm(hostTemporary, { recursive: true, force: true });
+		await cleanupMxc(hostTemporary, timing, onMeasurement);
+	}
+}
+
+async function cleanupMxc(
+	hostTemporary: string,
+	timing: MxcTiming,
+	onMeasurement?: (value: MxcMeasurement) => void,
+): Promise<void> {
+	// mkdtemp が返した専用領域だけを回収する。リンクの置換は辿らない。
+	try {
+		await timing.measure("cleanupMs", () =>
+			rm(hostTemporary, { recursive: true, force: true }),
+		);
+	} finally {
+		timing.finish(onMeasurement);
+	}
+}
+
+async function measuredMxcOutput(
+	sdk: MxcSdk,
+	config: ContainerConfig,
+	call: ToolCall,
+	signal: AbortSignal,
+	reportDirectory: string,
+	timing: MxcTiming,
+	onOutput?: SandboxCommandOutput,
+): Promise<SandboxCommandResult> {
+	const launchStarted = performance.now();
+	const child = spawnMxcLauncher(sdk, config, call.cwd);
+	timing.value.spawnMs = performance.now() - launchStarted;
+	const output = (stream: "stdout" | "stderr", chunk: string) => {
+		timing.value.firstOutputMs ??= performance.now() - launchStarted;
+		onOutput?.(stream, chunk);
+	};
+	return timing.measure("executionMs", () =>
+		collectOutput(child, signal, call.timeoutMs!, reportDirectory, output),
+	);
+}
+
+function assertMxcCompleted(
+	result: SandboxCommandResult,
+	timeoutMs: number,
+): void {
+	// MXC 本体が先にタイムアウトすると、起動用プロセスは終了コードと構造化エラーを返す。
+	// Host 側のタイマーより先に `close` イベントが届いても、正常終了として扱わない。
+	const timeoutError = JSON.stringify({
+		error: {
+			code: "backend_error",
+			message: `script timed out after ${timeoutMs}ms`,
+		},
+	});
+	if (
+		result.exitCode === 0xffff_ffff &&
+		result.stderr.trimEnd().endsWith(timeoutError)
+	) {
+		throw new Error("Sandbox 実行がタイムアウトしました。");
 	}
 }
 
@@ -262,7 +323,7 @@ async function validateRoots(call: ToolCall) {
 				),
 		)
 	) {
-		throw new Error("Sandbox の workspace 境界外です。");
+		throw new Error("Sandbox のワークスペースの範囲外です。");
 	}
 	for (const path of [
 		...call.policy.workspaceRoots,
@@ -345,12 +406,15 @@ function collectOutput(
 async function prepareMxcDevTools(
 	call: ToolCall,
 	temporary: string,
+	timing: MxcTiming,
 	management?: SandboxManagement,
 ) {
-	const discovered = await discoverDevTools(
-		call.env ?? {},
-		initialDevToolProfiles,
-		call.command?.[0],
+	const discovered = await timing.measure("discoveryMs", () =>
+		discoverDevTools(
+			call.env ?? {},
+			initialDevToolProfiles,
+			call.command?.[0],
+		),
 	);
 	const managedRoot = process.env.LOCALAPPDATA;
 	if (!isNonEmptyString(managedRoot)) {
@@ -366,14 +430,16 @@ async function prepareMxcDevTools(
 			toolResource("cache", target, tool, "profile"),
 		);
 	}
-	return prepareDevToolStorage(
-		discovered,
-		join(managedRoot, "Nerita", "sandbox-cache"),
-		workspaceFor(call),
-		temporary,
-		isNonEmptyString(process.env.USERPROFILE)
-			? join(process.env.USERPROFILE, ".npmrc")
-			: undefined,
-		management ? management.resourceGrants.usesCache(call) : true,
+	return timing.measure("storageMs", () =>
+		prepareDevToolStorage(
+			discovered,
+			join(managedRoot, "Nerita", "sandbox-cache"),
+			workspaceFor(call),
+			temporary,
+			isNonEmptyString(process.env.USERPROFILE)
+				? join(process.env.USERPROFILE, ".npmrc")
+				: undefined,
+			management ? management.resourceGrants.usesCache(call) : true,
+		),
 	);
 }

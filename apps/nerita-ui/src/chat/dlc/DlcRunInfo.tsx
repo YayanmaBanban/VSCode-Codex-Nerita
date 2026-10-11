@@ -2,6 +2,7 @@
 import type { DlcView } from "@nerita/shared/dlc/contracts";
 import type { ChatState } from "@nerita/shared/chatState";
 import type { UiMessage } from "@nerita/shared/messages";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 type RunInfoProps = {
 	view: DlcView;
@@ -21,23 +22,12 @@ export function DlcRunInfo({ view, state, send }: RunInfoProps) {
 				<span className="text-muted">
 					{view.selected?.title ?? "Intent を選択してください"}
 				</span>
-				<button
-					type="button"
-					onClick={() =>
-						send({
-							type: "dlc/open",
-							requestId: crypto.randomUUID(),
-						})
-					}
-				>
-					DLC の作業画面を開く
-				</button>
+				<span className="text-muted">
+					{view.backend === "pi" ? "Pi" : "Codex"}
+				</span>
+				<RunControl view={view} state={state} send={send} />
 			</div>
-			{view.error !== null && (
-				<p role="alert" className="text-tool-error">
-					{view.error}
-				</p>
-			)}
+			<ExecutionTarget view={view} state={state} />
 			{other && (
 				<p role="status">
 					別の Intent を実行しています。{" "}
@@ -60,6 +50,56 @@ export function DlcRunInfo({ view, state, send }: RunInfoProps) {
 			<ExecutionDetails view={view} state={state} />
 			<HistorySelector view={view} send={send} />
 		</section>
+	);
+}
+
+/** 閲覧中の履歴では停止ボタンを出さず、現在表示している Run だけを対象にする。 */
+function RunControl({ view, state, send }: RunInfoProps) {
+	const active = view.running.some(
+		(run) =>
+			run.intentId === view.selected?.intentId &&
+			run.attemptId === view.execution?.attemptId,
+	);
+	const sessionId = state.sessionId;
+	const runId = state.runId;
+	if (!active || !isNonEmptyString(sessionId) || !isNonEmptyString(runId)) {
+		return null;
+	}
+	if (state.run !== "running" && state.run !== "cancelling") {
+		return null;
+	}
+	return (
+		<button
+			type="button"
+			aria-label="DLC の会話を停止"
+			disabled={state.run === "cancelling"}
+			onClick={() =>
+				send({
+					type: "prompt/cancel",
+					requestId: crypto.randomUUID(),
+					sessionId,
+					runId,
+				})
+			}
+		>
+			停止
+		</button>
+	);
+}
+
+/** 過去の会話では現在の割当より、その実行が実際に使ったディレクトリを優先する。 */
+function ExecutionTarget({
+	view,
+	state,
+}: Pick<RunInfoProps, "view" | "state">) {
+	return (
+		<p className="my-1 break-all text-muted">
+			実行先:{" "}
+			{state.cwd ??
+				view.targets.find((target) => target.id === view.targetId)
+					?.directory ??
+				"未選択"}
+		</p>
 	);
 }
 
