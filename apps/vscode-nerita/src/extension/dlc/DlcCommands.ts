@@ -17,6 +17,9 @@ export function registerDlcCommands(
 		vscode.commands.registerCommand("nerita.dlc.openWorkspace", () =>
 			editor.open(),
 		),
+		vscode.commands.registerCommand("nerita.dlc.closeWorkspace", () =>
+			editor.dispose(),
+		),
 		vscode.window.registerWebviewPanelSerializer("nerita.dlc.workspace", {
 			deserializeWebviewPanel(panel) {
 				editor.restore(panel);

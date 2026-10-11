@@ -58,6 +58,7 @@ export class DlcHost {
 	private error: string | null = null;
 	private generation = 0;
 	private closed = false;
+	private workspaceOpen = false;
 	private runningIntents = new Set<string>();
 	private controllerActions = new Map<string, Set<object>>();
 	private assigningIntents = new Set<string>();
@@ -111,7 +112,7 @@ export class DlcHost {
 	}
 	view(): DlcView {
 		return {
-			mode: this.runtime.viewMode(),
+			mode: this.workspaceOpen ? "dlc" : "chat",
 			backend: this.backend,
 			intents: this.intents.map((intent) => ({
 				...intent,
@@ -198,6 +199,13 @@ export class DlcHost {
 	}
 	private publish(): void {
 		this.runtime.publish({ type: "dlc/state", view: this.view() });
+	}
+	/** エディタの開閉だけを選択モードへ反映し、実行中の会話・Intent は維持する。 */
+	setWorkspaceOpen(open: boolean): void {
+		// 実行開始で Runtime のモードが変わっても、閉じたエディタを選択済みに戻さない。
+		this.workspaceOpen = open;
+		this.runtime.selectMode(open ? "dlc" : "chat");
+		this.publish();
 	}
 	private targetsForIntent = new Map<string, string>();
 	private executionForIntent = new Map<
@@ -641,8 +649,17 @@ export class DlcHost {
 			);
 		}
 		if (message.type === "ui/setMode") {
-			this.runtime.selectMode(message.mode);
-			await this.read();
+			await vscode.commands.executeCommand(
+				message.mode === "dlc"
+					? "nerita.dlc.openWorkspace"
+					: "nerita.dlc.closeWorkspace",
+			);
+			if (message.mode === "chat") {
+				// エディタが既に閉じていても、チャットモードの選択を確定して通知する。
+				this.setWorkspaceOpen(false);
+			} else {
+				await this.read();
+			}
 			return true;
 		}
 		if (message.type === "dlc/read") {

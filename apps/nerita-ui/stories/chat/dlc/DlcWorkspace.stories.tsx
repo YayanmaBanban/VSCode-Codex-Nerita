@@ -217,7 +217,35 @@ export const ChatModes: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const bridge = storyBridge(canvasElement);
+		const chatButton = canvas.getByRole("button", {
+			name: "Chat",
+		});
+		const dlcButton = canvas.getByRole("button", {
+			name: "DLC",
+		});
+		const document = within(canvasElement.ownerDocument.body);
+		await expect(chatButton).toHaveAttribute("aria-pressed", "true");
+		await userEvent.hover(chatButton);
+		await waitFor(() =>
+			expect(
+				document.getByRole("tooltip", { name: "チャットモード" }),
+			).toBeVisible(),
+		);
+		await userEvent.unhover(chatButton);
+		await userEvent.hover(dlcButton);
+		await waitFor(() =>
+			expect(
+				document.getByRole("tooltip", { name: "ライフサイクルモード" }),
+			).toBeVisible(),
+		);
+		await userEvent.click(dlcButton);
+		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/open" });
+		// Host から DLC エディタを開いた通知が届くまで、選択枠はチャットモードのままにする。
+		await expect(chatButton).toHaveAttribute("aria-pressed", "true");
 		bridge.emit({ type: "dlc/state", view: view() });
+		await waitFor(() =>
+			expect(dlcButton).toHaveAttribute("aria-pressed", "true"),
+		);
 		await expect(
 			await canvas.findByLabelText("Codexへのメッセージ"),
 		).toBeVisible();
@@ -230,8 +258,15 @@ export const ChatModes: Story = {
 		await expect(
 			canvas.getByRole("button", { name: "新しいチャット" }),
 		).toBeVisible();
-		await userEvent.click(canvas.getByRole("button", { name: "DLC" }));
-		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/open" });
+		await userEvent.click(chatButton);
+		await expect(bridge.sent.at(-1)).toMatchObject({
+			type: "ui/setMode",
+			mode: "chat",
+		});
+		bridge.emit({ type: "dlc/state", view: { ...view(), mode: "chat" } });
+		await waitFor(() =>
+			expect(chatButton).toHaveAttribute("aria-pressed", "true"),
+		);
 		await expect(
 			canvas.getByLabelText("Codexへのメッセージ"),
 		).toBeVisible();

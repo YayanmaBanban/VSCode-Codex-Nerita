@@ -211,16 +211,23 @@ async function reopenWorkspace(page, chat, editor, findFrame) {
 	await editor
 		.getByRole("button", { name: /Phase 0 · Initialization/ })
 		.click();
-	await require("vscode").commands.executeCommand(
-		"workbench.action.closeActiveEditor",
-	);
+	const chatButton = chat.getByRole("button", { name: "Chat", exact: true });
+	const dlcButton = chat.getByRole("button", { name: "DLC", exact: true });
+	await expect(dlcButton).toHaveAttribute("aria-pressed", "true");
+	await chatButton.click();
 	await expect.poll(() => editor.isDetached()).toBe(true);
-	await chat.getByRole("button", { name: "DLC", exact: true }).click();
+	await expect(chatButton).toHaveAttribute("aria-pressed", "true");
+	await expect(chat.getByLabel("Codexへのメッセージ")).toBeVisible();
+	await screenshot(page, "dlc-chat-mode.png");
+	await dlcButton.click();
+	await expect(dlcButton).toHaveAttribute("aria-pressed", "true");
 	return findFrame(page, ".dlc-workspace");
 }
 async function verifyDeniedAndStopped(page, editor, model, cwd, intentId) {
 	const chat = editor.getByLabel("Worktree の会話");
-	await editor.locator(`[data-intent-id="${intentId}"]`).click();
+	const intent = editor.locator(`[data-intent-id="${intentId}"]`);
+	await intent.click();
+	await expect(intent).toHaveAttribute("aria-pressed", "true");
 	await plan(editor, "denied.txt");
 	model.replies.push({
 		name: "write",

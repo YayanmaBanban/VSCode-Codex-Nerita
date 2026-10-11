@@ -22,14 +22,10 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 	) {}
 
 	/** 単一のエディタを再表示し、開き直しで Run を生成しない。 */
-	async open(): Promise<void> {
-		await this.host.receive({
-			type: "ui/setMode",
-			requestId: randomUUID(),
-			mode: "dlc",
-		});
+	open(): void {
 		if (this.panel) {
 			this.panel.reveal();
+			this.host.setWorkspaceOpen(true);
 			return;
 		}
 		this.restore(
@@ -59,6 +55,7 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 				this.unbind?.();
 				this.unbind = undefined;
 				this.panel = undefined;
+				this.host.setWorkspaceOpen(false);
 			},
 		);
 		panel.webview.html = webviewHtml(
@@ -66,6 +63,7 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 			this.context.extensionUri,
 			"dlc-workspace",
 		);
+		this.host.setWorkspaceOpen(true);
 	}
 
 	/** 画面の要求を検証し、失敗は要求元の会話領域へ返す。 */
@@ -142,5 +140,8 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 		const panel = this.panel;
 		this.panel = undefined;
 		panel?.dispose();
+		if (panel) {
+			this.host.setWorkspaceOpen(false);
+		}
 	}
 }
