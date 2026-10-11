@@ -1,15 +1,17 @@
 // 実際の Host・Git・SDK と共有予約を使い、実行開始が保留されても失敗履歴を追加せず、既存の Run を停止しないことを確認する。
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test, type TestContext } from "node:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { DirectoryRuns } from "../../apps/vscode-nerita/src/extension/session/DirectoryRuns";
+import { IntentRepository } from "../../apps/vscode-nerita/src/extension/dlc/IntentRepository";
 import { dlcHostFixture } from "../support/dlcHost";
 import { until } from "../support/pi";
 import type { DlcHost } from "../../apps/vscode-nerita/src/extension/dlc/DlcHost";
 import type { DlcAction } from "@nerita/shared/dlc/contracts";
+import type { IntentState } from "@nerita/dlc/state";
 
 void test("共有 main の開始を履歴なしで保留し、既存 Run を維持したまま作成・信頼した Worktree から手動で並列実行する", async (t) => {
 	const { f, runtime, host, intentId, action } = await dlcHostFixture(t);
@@ -230,3 +232,106 @@ void test("開始条件の再確認と Worktree の選択が重なっても割�
 	assert.equal(host.view().intents[0]?.startHold, undefined);
 	assert.equal(f.model.requests.length, 0);
 });
+
+for (const order of ["開始受付が先", "再確認が先"]) {
+	void test(`${order}でも実行中の Run を中断済みとして扱わず、同じ実行への停止要求と根拠の保存を維持する`, async (t) => {
+		const { f, runtime, host, intentId } = await dlcHostFixture(t);
+		const storage = pauseStorageReads(t);
+		f.model.replies.push({
+			name: "write",
+			arguments: { path: "hello.txt", content: "after\n" },
+		});
+		const recheck = () =>
+			host.receive({ type: "dlc/read", requestId: "recheck-starting" });
+		let read: Promise<void>;
+		if (order === "再確認が先") {
+			read = recheck();
+			await until(() => storage.projections.waiting);
+		}
+		const run = sendAction(host, intentId, { type: "run" });
+		await until(() => storage.load.waiting);
+		if (order === "開始受付が先") {
+			read = recheck();
+			await until(() => storage.projections.waiting);
+		}
+		storage.load.release();
+		await until(
+			() => runtime.scope("dlc").snapshot().permissions.length === 1,
+		);
+		const active = runtime.scope("dlc").snapshot();
+		storage.projections.release();
+		await read!;
+		assert.equal(host.view().error, null);
+		assert.equal(host.view().selected!.workItems[0]?.status, "running");
+		assert.equal(
+			runtime.scope("dlc").snapshot().sessionId,
+			active.sessionId,
+		);
+		await sendAction(host, intentId, { type: "cancel" });
+		await run;
+		assert.equal(host.view().error, null);
+		assert.equal(runtime.activeDlcs().length, 0);
+		await recheck();
+		const attempt = storage.states.get(intentId)?.workItems[0]?.attempts[0];
+		assert.equal(attempt?.status, "cancelled");
+		assert.equal(
+			attempt.evidence?.outcome,
+			"cancelled",
+			JSON.stringify(attempt),
+		);
+		assert.equal(attempt.evidence.before.complete, true);
+		assert.equal(attempt.evidence.after.complete, true);
+		assert.equal(attempt.evidence.before.id, attempt.evidence.after.id);
+		assert.equal(
+			await readFile(join(f.cwd, "hello.txt"), "utf8"),
+			"before\n",
+		);
+		assert.equal(f.model.requests.length, 1);
+	});
+}
+
+/** 読込み結果の返却だけを待機させ、`IntentRepository` の読込み・ロック・復旧処理はそのまま使う。 */
+function pauseStorageReads(t: TestContext) {
+	const pause = () => {
+		let release!: () => void;
+		const promise = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		t.after(release);
+		return { waiting: false, promise, release };
+	};
+	const load = pause();
+	const projections = pause();
+	const states = new Map<string, IntentState>();
+	// 元のメソッドを実インスタンスに束縛して使い、保存値を代替しない。
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	const loadIntent = IntentRepository.prototype.load;
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	const readProjections = IntentRepository.prototype.projections;
+	t.mock.method(
+		IntentRepository.prototype,
+		"load",
+		async function (this: IntentRepository, id: string) {
+			const state = await loadIntent.call(this, id);
+			states.set(id, state);
+			if (!load.waiting) {
+				load.waiting = true;
+				await load.promise;
+			}
+			return state;
+		},
+	);
+	t.mock.method(
+		IntentRepository.prototype,
+		"projections",
+		async function (this: IntentRepository) {
+			const values = await readProjections.call(this);
+			if (!projections.waiting) {
+				projections.waiting = true;
+				await projections.promise;
+			}
+			return values;
+		},
+	);
+	return { load, projections, states };
+}

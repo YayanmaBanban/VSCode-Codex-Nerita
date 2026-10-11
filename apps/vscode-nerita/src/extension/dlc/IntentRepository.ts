@@ -36,6 +36,7 @@ import {
 import {
 	RunContextSchema,
 	RunConversationSchema,
+	runRecordLimit,
 	type RunContext,
 } from "./RunContext";
 import type { ChatState } from "@nerita/shared/chatState";
@@ -100,14 +101,14 @@ export class IntentRepository {
 		}
 		const file = `${directory}/runs/${jsonDigest({ attemptId, kind }).slice(7)}.json`;
 		await this.liveFiles.directory(`${directory}/runs`);
-		const existing = await this.liveFiles.read(file);
+		const existing = await this.liveFiles.read(file, runRecordLimit);
 		if (
 			existing !== undefined &&
 			jsonDigest(JSON.parse(existing)) !== jsonDigest(value)
 		) {
 			throw new Error("未確定の実行記録が競合しています。");
 		}
-		await this.liveFiles.write(file, value);
+		await this.liveFiles.write(file, value, runRecordLimit);
 		await this.authority.write(key, {
 			revision: 0,
 			digest: jsonDigest(value),
@@ -129,7 +130,7 @@ export class IntentRepository {
 		const anchor = AuthorityRecordSchema.parse(saved);
 		const record = await this.liveFiles.read(
 			`${directory}/runs/${jsonDigest({ attemptId, kind }).slice(7)}.json`,
-			16 * 1024 * 1024,
+			runRecordLimit,
 		);
 		if (record === undefined) {
 			throw new Error("保存した実行記録がありません。");
@@ -161,14 +162,21 @@ export class IntentRepository {
 		attemptId: string,
 		state: ChatState,
 	): Promise<void> {
-		return this.locked(() =>
-			this.writeRun(
-				intentId,
-				attemptId,
-				"conversation",
-				RunConversationSchema.parse(state),
-			),
-		);
+		return this.locked(async () => {
+			const value = RunConversationSchema.parse(state);
+			if (this.hasConversation(intentId, attemptId)) {
+				const saved = await this.readRun(
+					intentId,
+					attemptId,
+					"conversation",
+				);
+				if (jsonDigest(saved) !== jsonDigest(value)) {
+					throw new Error("実行記録は既に固定されています。");
+				}
+				return;
+			}
+			await this.writeRun(intentId, attemptId, "conversation", value);
+		});
 	}
 	conversation(intentId: string, attemptId: string): Promise<ChatState> {
 		return this.locked(async () => {

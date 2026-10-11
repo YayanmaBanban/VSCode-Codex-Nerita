@@ -2,8 +2,93 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { IntentRepository } from "../../apps/vscode-nerita/src/extension/dlc/IntentRepository";
+import { SafeDlcFiles } from "../../apps/vscode-nerita/src/extension/dlc/SafeDlcFiles";
+import { isState } from "@nerita/shared/stateValidation";
 import { dlcHostFixture } from "../support/dlcHost";
 import { until } from "../support/pi";
+
+void test("会話の保存失敗の原因を解消した後に履歴を開くと全文を再保存し、実行状態を変えず再実行もしない", async (t) => {
+	const { f, runtime, host, intentId, action } = await dlcHostFixture(t);
+	let failing = true;
+	// 元の保存処理を使い、会話ファイルの書込みだけを失敗させる。
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	const write = SafeDlcFiles.prototype.write;
+	t.mock.method(
+		SafeDlcFiles.prototype,
+		"write",
+		async function (
+			this: SafeDlcFiles,
+			path: string,
+			value: unknown,
+			limit?: number,
+		) {
+			if (failing && isState(value)) {
+				throw new Error("会話ファイルの保存故障");
+			}
+			return write.call(this, path, value, limit);
+		},
+	);
+	f.model.replies.push({
+		name: "write",
+		arguments: { path: "hello.txt", content: "after\n" },
+	});
+	const run = action({ type: "run" });
+	await until(() => runtime.scope("dlc").snapshot().permissions.length === 1);
+	const active = runtime.activeDlc()!;
+	const scoped = runtime.scope("dlc");
+	const current = scoped.snapshot();
+	const item = host.view().selected!.workItems[0]!;
+	f.model.replies.push(
+		JSON.stringify({
+			attemptId: active.attemptId,
+			workItemId: item.id,
+			outcome: "implemented",
+			summary: "挨拶を更新した",
+			changedPaths: ["hello.txt"],
+		}),
+	);
+	await scoped.receive({
+		type: "permission/respond",
+		requestId: "allow",
+		sessionId: current.sessionId!,
+		runId: current.runId!,
+		permissionId: current.permissions[0]!.id,
+		optionId: current.permissions[0]!.options.find(
+			(option) => option.kind === "allow",
+		)!.id,
+	});
+	await run;
+	const before = host.view().selected!;
+	assert.equal(before.workItems[0]?.status, "failed");
+	assert.match(
+		before.workItems[0].detail ?? "",
+		/会話記録を保存できませんでした/,
+	);
+	const showHistory = () =>
+		host.receive({
+			type: "dlc/attempt",
+			requestId: "retry-save",
+			intentId,
+			attemptId: active.attemptId,
+		});
+	await showHistory();
+	assert.match(host.view().error!, /保存故障/);
+	failing = false;
+	await Promise.all([showHistory(), showHistory()]);
+	assert.equal(host.view().error, null);
+	assert.ok(
+		scoped
+			.snapshot()
+			.messages.some((message) =>
+				message.text.includes("挨拶を更新した"),
+			),
+	);
+	await host.receive({ type: "dlc/read", requestId: "persisted-history" });
+	assert.equal(host.view().error, null);
+	assert.deepEqual(host.view().selected, before);
+	assert.equal(scoped.snapshot().sessionId, current.sessionId);
+	assert.equal(f.model.requests.length, 2);
+});
 
 void test("履歴 A の取得中に実行中 B を選ぶと、遅れた A の応答後も B の会話と承認・停止対象を表示する", async (t) => {
 	const { f, runtime, host, intentId, action } = await dlcHostFixture(t);

@@ -4,6 +4,7 @@ import type { ToolSummary } from "@nerita/shared/chatState";
 import { DlcPathSchema } from "@nerita/shared/dlc/contracts";
 import {
 	ExecutionRequestSchema,
+	RuntimeResultError,
 	type ExecutionRequest,
 	type NeritaRuntimePort,
 	type RuntimeEvidence,
@@ -103,6 +104,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 			backend,
 			executionDirectory: root,
 		});
+		let result: RuntimeResult | undefined;
 		try {
 			const execution = await this.runtime.executeDlc(
 				{
@@ -122,7 +124,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 				AbortSignal.timeout(30_000),
 			);
 			await files.path(directory);
-			return {
+			result = {
 				semantic: semanticResult(execution.result.response),
 				evidence: {
 					attemptId: request.attemptId,
@@ -137,18 +139,41 @@ export class DlcRuntime implements NeritaRuntimePort {
 					policy: "workspace-inherit",
 				},
 			};
+			return result;
 		} finally {
-			const conversation = this.runtime.conversation(
+			await this.saveConversation(request, result);
+		}
+	}
+	private async saveConversation(
+		request: ExecutionRequest,
+		result: RuntimeResult | undefined,
+	): Promise<void> {
+		const conversation = this.runtime.conversation(
+			request.intentId,
+			request.attemptId,
+		);
+		if (!conversation) {
+			return;
+		}
+		try {
+			await this.repository.saveConversation(
 				request.intentId,
 				request.attemptId,
+				conversation,
 			);
-			if (conversation) {
-				await this.repository.saveConversation(
-					request.intentId,
-					request.attemptId,
-					conversation,
-				);
+		} catch (error) {
+			if (!result) {
+				throw error;
 			}
+			const detail =
+				error instanceof Error
+					? error.message
+					: "保存処理に失敗しました。";
+			throw new RuntimeResultError(
+				`会話記録を保存できませんでした。実行結果と根拠は保持しています。履歴を開くと、保持中の会話の再保存を試みます。${detail}`,
+				result,
+				{ cause: error },
+			);
 		}
 	}
 }

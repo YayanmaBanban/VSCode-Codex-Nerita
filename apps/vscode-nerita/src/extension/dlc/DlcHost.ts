@@ -59,6 +59,7 @@ export class DlcHost {
 	private generation = 0;
 	private closed = false;
 	private runningIntents = new Set<string>();
+	private controllerActions = new Map<string, Set<object>>();
 	private assigningIntents = new Set<string>();
 	private targets: DlcView["targets"] = [];
 	private targetId: string | null = null;
@@ -361,6 +362,15 @@ export class DlcHost {
 			controller = workspace.repository
 				.load(intentId)
 				.then((state) => {
+					if (
+						this.runtime
+							.activeDlcs()
+							.some((run) => run.intentId === intentId)
+					) {
+						throw new Error(
+							"実行中の Intent は復旧できません。終了後に再読込みしてください。",
+						);
+					}
 					workspace.repository.assertResumable(state);
 					return DlcController.open(
 						state,
@@ -687,20 +697,34 @@ export class DlcHost {
 		}
 		const workspace = await this.open();
 		const sequence = this.selectionSequence;
-		for (const intentId of this.controllers.keys()) {
-			if (!this.runningIntents.has(intentId)) {
-				this.controllers.delete(intentId);
-			}
-		}
 		// 再確認中も現在の選択を保持し、並行する実行先の変更を拒否しない。
 		this.intents = (await workspace.repository.projections()).map(
 			intentSummary,
 		);
 		await this.refreshEnvironment(workspace);
 		await this.refreshTargets(workspace);
+		await this.refreshControllers();
 		this.startHolds.clear();
 		await this.restoreSelection(workspace, sequence);
 		this.publish();
+	}
+	/** 再読込み中に受け付けた操作や実行が使う Controller を保持し、復旧用に作り直さない。 */
+	private async refreshControllers(): Promise<void> {
+		const retained: Promise<DlcController>[] = [];
+		for (const [intentId, controller] of this.controllers) {
+			if (
+				this.controllerActions.has(intentId) ||
+				this.runningIntents.has(intentId)
+			) {
+				retained.push(controller);
+			} else {
+				this.controllers.delete(intentId);
+			}
+		}
+		// 古い一覧の読込み結果で、待機中に変わった進捗を上書きしない。
+		for (const controller of await Promise.all(retained)) {
+			this.updateSummary(controller.projection());
+		}
 	}
 	private async select(
 		workspace: Workspace,
@@ -811,13 +835,16 @@ export class DlcHost {
 			return;
 		}
 		if (message.type === "dlc/recover") {
-			if (this.runningIntents.size > 0) {
+			if (
+				this.runningIntents.size > 0 ||
+				this.controllerActions.size > 0
+			) {
 				throw new Error(
 					"実行が終わってから Intent を復旧してください。",
 				);
 			}
 			await workspace.repository.recoverOrphans();
-			this.controllers.clear();
+			await this.refreshControllers();
 			this.selected = undefined;
 			await this.read();
 			return;
@@ -851,6 +878,11 @@ export class DlcHost {
 			this.runtime.selectDlc(message.intentId);
 			return;
 		}
+		await this.restoreConversation(
+			workspace,
+			message.intentId,
+			message.attemptId,
+		);
 		this.runtime.showAttempt(
 			message.intentId,
 			message.attemptId,
@@ -868,22 +900,75 @@ export class DlcHost {
 		);
 		return;
 	}
+	/** 同じ Host に全文が残り、実行が終了した会話だけを再保存する。 */
+	private async restoreConversation(
+		workspace: Workspace,
+		intentId: string,
+		attemptId: string,
+	): Promise<void> {
+		if (
+			workspace.repository.hasConversation(intentId, attemptId) ||
+			this.runtime
+				.activeDlcs()
+				.some(
+					(run) =>
+						run.intentId === intentId &&
+						run.attemptId === attemptId,
+				)
+		) {
+			return;
+		}
+		const conversation = this.runtime.conversation(intentId, attemptId);
+		if (conversation) {
+			await workspace.repository.runContext(intentId, attemptId);
+			await workspace.repository.saveConversation(
+				intentId,
+				attemptId,
+				conversation,
+			);
+		}
+	}
 	private async action(
 		workspace: Workspace,
 		message: Extract<DlcUiMessage, { type: "dlc/action" }>,
 	): Promise<void> {
-		const controller = await this.controller(workspace, message.intentId);
-		if (
-			message.revision >= 0 &&
-			(message.intentId !== this.selectedId ||
-				controller.projection().revision !== message.revision)
-		) {
-			throw new Error(
-				"表示した Intent の版が古くなっています。再読込みしてください。",
+		const release = this.retainController(message.intentId);
+		try {
+			const controller = await this.controller(
+				workspace,
+				message.intentId,
 			);
+			if (
+				message.revision >= 0 &&
+				(message.intentId !== this.selectedId ||
+					controller.projection().revision !== message.revision)
+			) {
+				throw new Error(
+					"表示した Intent の版が古くなっています。再読込みしてください。",
+				);
+			}
+			await this.dispatchAction(workspace, controller, message);
+			this.publish();
+		} finally {
+			release();
 		}
-		await this.dispatchAction(workspace, controller, message);
-		this.publish();
+	}
+	/** 非同期読込みの前から終了時の保存まで Controller を保持する。停止要求も実行要求と同じ Controller を使う。 */
+	private retainController(intentId: string): () => void {
+		const actions =
+			this.controllerActions.get(intentId) ?? new Set<object>();
+		const owner = {};
+		actions.add(owner);
+		this.controllerActions.set(intentId, actions);
+		return () => {
+			actions.delete(owner);
+			if (
+				actions.size === 0 &&
+				this.controllerActions.get(intentId) === actions
+			) {
+				this.controllerActions.delete(intentId);
+			}
+		};
 	}
 	private async dispatchAction(
 		workspace: Workspace,
@@ -1025,6 +1110,7 @@ export class DlcHost {
 		this.controllers.clear();
 		this.selected = undefined;
 		this.selectedId = undefined;
+		this.controllerActions.clear();
 		this.intents = [];
 		this.environment = null;
 		this.targets = [];

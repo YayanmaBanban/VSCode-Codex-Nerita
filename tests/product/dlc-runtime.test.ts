@@ -1,6 +1,6 @@
 // モデルの HTTP 境界だけを制御し、Pi の実ツール・承認・ソース収集から DLC の結果を確認する。
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test, type TestContext } from "node:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -8,7 +8,13 @@ import { join } from "node:path";
 import { DlcController } from "@nerita/dlc/controller";
 import { type IntentState } from "@nerita/dlc/state";
 import { type ExecutionRequest } from "@nerita/dlc/runtime";
+import { isState } from "@nerita/shared/stateValidation";
+import {
+	SafeDlcFiles,
+	jsonDigest,
+} from "../../apps/vscode-nerita/src/extension/dlc/SafeDlcFiles";
 import { validStateField } from "@nerita/shared/stateFieldValidation";
+import type { AuthorityRecord } from "../../apps/vscode-nerita/src/extension/dlc/IntentAuthority";
 
 import { plannedIntent } from "../support/dlc";
 import { piFixture, until } from "../support/pi";
@@ -17,6 +23,272 @@ import { dlcRuntimeFixture } from "../support/dlcRuntime";
 import { collectSourceSnapshot } from "../../apps/vscode-nerita/src/extension/dlc/SourceSnapshot";
 
 const execute = promisify(execFile);
+
+void test("Codex の9 MiB の出力が JSON 化で上限を超えても、収集したファイル変更と根拠を保持し、履歴の確定を拒否する", async (t) => {
+	const f = await codexFixture(t);
+	await prepareRepository(f.cwd);
+	const session = f.controller();
+	const fixture = await dlcRuntimeFixture(
+		t,
+		f.cwd,
+		() => session,
+		undefined,
+		"codex",
+	);
+	const controller = await openStoredController(fixture);
+	const run = controller.dispatch({ type: "run" });
+	await until(
+		() => f.state.turn === 1 && session.snapshot().run === "running",
+	);
+	const scope = { threadId: session.snapshot().sessionId, turnId: "turn-1" };
+	emitLargeCodexOutput(f, scope);
+	await writeFile(join(f.cwd, "hello.txt"), "codex\n");
+	emitCodexFileChange(f, scope);
+	f.notify("item/completed", {
+		...scope,
+		item: {
+			id: "result",
+			type: "agentMessage",
+			text: JSON.stringify({
+				attemptId: "attempt",
+				workItemId: `${plannedIntent().intentId}:task:1`,
+				outcome: "implemented",
+				summary: "変更した",
+				changedPaths: ["hello.txt"],
+			}),
+		},
+	});
+	f.notify("turn/completed", {
+		threadId: scope.threadId,
+		turn: { id: scope.turnId, status: "completed", items: [] },
+	});
+	await run;
+	const repository = fixture.createRepository();
+	const state = await repository.load(plannedIntent().intentId);
+	const attempt = state.workItems[0]?.attempts[0];
+	assert.equal(attempt?.status, "failed");
+	assert.match(
+		attempt.detail ?? "",
+		/会話記録を保存できませんでした.*保存上限/,
+	);
+	assert.equal(attempt.result?.summary, "変更した");
+	assert.ok(attempt.evidence);
+	assert.notEqual(attempt.evidence.before.id, attempt.evidence.after.id);
+	assert.ok(
+		attempt.evidence.tools.some(
+			(tool) => tool.kind === "edit" && tool.status === "completed",
+		),
+	);
+	const conversation = fixture.backend.conversation(
+		state.intentId,
+		"attempt",
+	);
+	const output = conversation?.tools.find(
+		(tool) => tool.id === "output",
+	)?.rawOutput;
+	assert.ok(typeof output === "string");
+	assert.equal(Buffer.byteLength(output), 9 * 1024 * 1024);
+	assert.equal(repository.hasConversation(state.intentId, "attempt"), false);
+	assert.equal(await readFile(join(f.cwd, "hello.txt"), "utf8"), "codex\n");
+	assert.equal(
+		f.requests.filter((request) => request.method === "turn/start").length,
+		1,
+	);
+});
+
+/** App Server の代替から、JSON のエスケープで保存容量が増える出力を送る。 */
+function emitLargeCodexOutput(
+	f: Awaited<ReturnType<typeof codexFixture>>,
+	scope: { threadId: string | null; turnId: string },
+) {
+	const command = {
+		id: "output",
+		type: "commandExecution",
+		command: "emit output",
+		cwd: f.cwd,
+		status: "inProgress",
+		aggregatedOutput: null,
+		exitCode: null,
+	};
+	f.notify("item/started", { ...scope, item: command });
+	// 出力は小さな通知に分けて送り、`SessionState` が参照から全文を復元する。
+	const chunk = "\\".repeat(64 * 1024);
+	for (let index = 0; index < 144; index++) {
+		f.notify("item/commandExecution/outputDelta", {
+			...scope,
+			itemId: command.id,
+			delta: chunk,
+		});
+	}
+	f.notify("item/completed", {
+		...scope,
+		item: { ...command, status: "completed", exitCode: 0 },
+	});
+}
+
+/** テストで変更した `hello.txt` に対応する App Server の完了通知。 */
+function emitCodexFileChange(
+	f: Awaited<ReturnType<typeof codexFixture>>,
+	scope: { threadId: string | null; turnId: string },
+) {
+	f.notify("item/completed", {
+		...scope,
+		item: {
+			id: "patch",
+			type: "fileChange",
+			status: "completed",
+			changes: [
+				{ path: "hello.txt", diff: "@@ -1 +1 @@\n-before\n+codex" },
+			],
+		},
+	});
+}
+
+for (const boundary of ["会話ファイル", "Host の確定記録"]) {
+	void test(`${boundary}の保存だけが失敗してもファイル変更・結果・根拠を再読込みでき、同じ全文の再保存で履歴を復元する`, async (t) => {
+		const f = await piFixture(t);
+		await prepareRepository(f.cwd);
+		f.model.replies.push(
+			{
+				name: "write",
+				arguments: { path: "hello.txt", content: "after\n" },
+			},
+			JSON.stringify({
+				attemptId: "attempt",
+				workItemId: `${plannedIntent().intentId}:task:1`,
+				outcome: "implemented",
+				summary: "挨拶を更新した",
+				changedPaths: ["hello.txt"],
+			}),
+		);
+		const fixture = await dlcRuntimeFixture(
+			t,
+			f.cwd,
+			() => f.controller(),
+			() => {},
+		);
+		const restore = failConversationStorage(t, fixture, boundary);
+		const controller = await openStoredController(fixture);
+		await controller.dispatch({ type: "run" });
+		const reopened = fixture.createRepository();
+		const state = await reopened.load(plannedIntent().intentId);
+		const attempt = state.workItems[0]?.attempts[0];
+		assert.equal(attempt?.status, "failed");
+		assert.match(attempt.detail ?? "", /会話記録を保存できませんでした/);
+		assert.equal(attempt.result?.summary, "挨拶を更新した");
+		assert.ok(attempt.evidence);
+		assert.notEqual(attempt.evidence.before.id, attempt.evidence.after.id);
+		assert.equal(attempt.evidence.tools[0]?.status, "completed");
+		assert.equal(attempt.evidence.approvals[0]?.kind, "allow");
+		assert.equal(
+			await readFile(join(f.cwd, "hello.txt"), "utf8"),
+			"after\n",
+		);
+		assert.equal(
+			reopened.hasConversation(state.intentId, "attempt"),
+			false,
+		);
+		const conversation = fixture.backend.conversation(
+			state.intentId,
+			"attempt",
+		);
+		assert.ok(conversation);
+		const replacement = { ...conversation, messages: [] };
+		if (boundary === "Host の確定記録") {
+			await assert.rejects(
+				reopened.saveConversation(
+					state.intentId,
+					"attempt",
+					replacement,
+				),
+				/未確定の実行記録が競合/,
+			);
+		}
+		restore();
+		await Promise.all([
+			reopened.saveConversation(state.intentId, "attempt", conversation),
+			reopened.saveConversation(state.intentId, "attempt", conversation),
+		]);
+		assert.deepEqual(
+			await fixture
+				.createRepository()
+				.conversation(state.intentId, "attempt"),
+			conversation,
+		);
+		await assert.rejects(
+			reopened.saveConversation(state.intentId, "attempt", replacement),
+			/既に固定/,
+		);
+		assert.deepEqual(await reopened.load(state.intentId), state);
+		assert.equal(f.model.requests.length, 2);
+	});
+}
+
+/** Intent を読み直せるように、実際の保存処理と Runtime を使うコントローラーを開く。 */
+function openStoredController(
+	fixture: Awaited<ReturnType<typeof dlcRuntimeFixture>>,
+) {
+	return DlcController.open(
+		plannedIntent(),
+		fixture.runtime,
+		{ save: (state, revision) => fixture.repository.save(state, revision) },
+		() => "attempt",
+	);
+}
+
+/** 会話の保存だけを失敗させ、状態の保存・根拠の保持・ソース収集には実際の処理を使う。 */
+function failConversationStorage(
+	t: TestContext,
+	fixture: Awaited<ReturnType<typeof dlcRuntimeFixture>>,
+	boundary: string,
+) {
+	let failing = true;
+	if (boundary === "会話ファイル") {
+		// 元のファイル操作は実インスタンスに束縛し、会話以外を代替しない。
+		// eslint-disable-next-line @typescript-eslint/unbound-method
+		const write = SafeDlcFiles.prototype.write;
+		t.mock.method(
+			SafeDlcFiles.prototype,
+			"write",
+			function (
+				this: SafeDlcFiles,
+				path: string,
+				value: unknown,
+				limit?: number,
+			) {
+				if (failing && isState(value)) {
+					return Promise.reject(new Error("会話ファイルの保存故障"));
+				}
+				return write.call(this, path, value, limit);
+			},
+		);
+	} else {
+		const write = fixture.authority.write.bind(fixture.authority);
+		t.mock.method(
+			fixture.authority,
+			"write",
+			(key: string, value: AuthorityRecord) => {
+				if (
+					failing &&
+					value.metadataDigest ===
+						jsonDigest({
+							intentId: plannedIntent().intentId,
+							attemptId: "attempt",
+							kind: "conversation",
+						})
+				) {
+					return Promise.reject(
+						new Error("会話の確定記録の保存故障"),
+					);
+				}
+				return write(key, value);
+			},
+		);
+	}
+	return () => {
+		failing = false;
+	};
+}
 void test("DLC の管理 JSON と staged 更新は実装成果に含めず、Markdown は別の成果物として収集する", async (t) => {
 	const f = await piFixture(t);
 	await prepareRepository(f.cwd);
@@ -283,18 +555,7 @@ void test("Codex の通信と完了通知も同じ Runtime Port で実装結果�
 	const turnId = "turn-1";
 	// 代替 App Server の外部境界でファイル変更とプロトコル通知を発行する。
 	await writeFile(join(f.cwd, "hello.txt"), "codex\n");
-	f.notify("item/completed", {
-		threadId,
-		turnId,
-		item: {
-			id: "patch",
-			type: "fileChange",
-			status: "completed",
-			changes: [
-				{ path: "hello.txt", diff: "@@ -1 +1 @@\n-before\n+codex" },
-			],
-		},
-	});
+	emitCodexFileChange(f, { threadId, turnId });
 	f.notify("item/completed", {
 		threadId,
 		turnId,

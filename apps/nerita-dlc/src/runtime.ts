@@ -64,6 +64,17 @@ export const ExecutionRequestSchema = DlcTaskSchema.extend({
 });
 export type ExecutionRequest = z.infer<typeof ExecutionRequestSchema>;
 export type RuntimeResult = { semantic: unknown; evidence: RuntimeEvidence };
+/** 会話の保存に失敗しても、実行要求に結び付いた収集済みの結果をエラーに含めて渡す。 */
+export class RuntimeResultError extends Error {
+	constructor(
+		message: string,
+		readonly result: RuntimeResult,
+		options?: ErrorOptions,
+	) {
+		super(message, options);
+		this.name = "RuntimeResultError";
+	}
+}
 export type RuntimeStatus = { attemptId: string | null; running: boolean };
 
 /** 根拠は Runtime が発行する。エージェントの JSON を根拠として受け付けない。 */

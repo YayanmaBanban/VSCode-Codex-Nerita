@@ -161,9 +161,33 @@ export function failWork(
 	attemptId: string,
 	status: "failed" | "cancelled",
 	detail: string,
+	receipt?: RuntimeResult,
 ): IntentState {
 	const item = currentItem(state, attemptId);
-	return item ? finishItem(state, item, status, detail, {}) : state;
+	if (!item) {
+		return state;
+	}
+	return finishItem(
+		state,
+		item,
+		status,
+		detail,
+		receipt
+			? {
+					result:
+						boundSemanticResult(
+							receipt.semantic,
+							attemptId,
+							item.id,
+						) ?? null,
+					evidence: boundEvidence(
+						receipt.evidence,
+						attemptId,
+						item.id,
+					),
+				}
+			: {},
+	);
 }
 
 /** 停止の要求を先に確定し、遅れて届く成功を受け付けない。 */

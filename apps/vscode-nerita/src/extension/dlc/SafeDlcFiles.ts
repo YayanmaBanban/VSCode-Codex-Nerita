@@ -126,11 +126,18 @@ export class SafeDlcFiles {
 	}
 
 	/** 同じディレクトリの一時ファイルを同期してから置換する。失敗時は旧内容を保持する。 */
-	async write(relativePath: string, value: unknown): Promise<void> {
+	async write(
+		relativePath: string,
+		value: unknown,
+		limit?: number,
+	): Promise<void> {
+		const text = `${JSON.stringify(value, null, 2)}\n`;
+		if (limit !== undefined && Buffer.byteLength(text, "utf8") > limit) {
+			throw new Error(`DLC の保存上限を超えています: ${relativePath}`);
+		}
 		const target = await this.path(relativePath);
 		const temporary = `${relativePath}.${randomUUID()}.tmp`;
 		const temporaryPath = await this.path(temporary);
-		const text = `${JSON.stringify(value, null, 2)}\n`;
 		const handle = await open(temporaryPath, "wx");
 		try {
 			try {

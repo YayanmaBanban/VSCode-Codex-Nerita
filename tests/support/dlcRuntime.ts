@@ -9,6 +9,7 @@ import { DlcRuntime } from "../../apps/vscode-nerita/src/extension/dlc/DlcRuntim
 import { IntentRepository } from "../../apps/vscode-nerita/src/extension/dlc/IntentRepository";
 import { SafeDlcFiles } from "../../apps/vscode-nerita/src/extension/dlc/SafeDlcFiles";
 import { initializeWorkspace } from "../../apps/vscode-nerita/src/extension/dlc/WorkspaceDetection";
+import type { IntentAuthority } from "../../apps/vscode-nerita/src/extension/dlc/IntentAuthority";
 import { createTestIntent, plannedIntent, testIntentId } from "./dlc";
 
 export async function dlcRuntimeFixture(
@@ -21,17 +22,16 @@ export async function dlcRuntimeFixture(
 	const records = new Map<string, unknown>();
 	const files = new SafeDlcFiles(cwd, () => Promise.resolve());
 	await initializeWorkspace(files, new AbortController().signal);
-	const repository = new IntentRepository(
-		files,
-		{
-			read: (key) => records.get(key),
-			write: (key, value) => {
-				records.set(key, value);
-				return Promise.resolve();
-			},
+	const authority: IntentAuthority = {
+		read: (key) => records.get(key),
+		write: (key, value) => {
+			records.set(key, value);
+			return Promise.resolve();
 		},
-		files,
-	);
+	};
+	const createRepository = () =>
+		new IntentRepository(files, authority, files);
+	const repository = createRepository();
 	await repository.import(createTestIntent());
 	await repository.save(plannedIntent(), 0);
 	const createRuntime = () =>
@@ -82,6 +82,8 @@ export async function dlcRuntimeFixture(
 	}
 	return {
 		createRuntime,
+		createRepository,
+		authority,
 		repository,
 		backend,
 		runtime: new DlcRuntime(repository, backend, () => backendId),

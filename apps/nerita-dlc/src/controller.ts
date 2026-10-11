@@ -9,7 +9,11 @@ import {
 	intentProjection,
 	recoverIntent,
 } from "./state";
-import { type NeritaRuntimePort, type ExecutionRequest } from "./runtime";
+import {
+	RuntimeResultError,
+	type NeritaRuntimePort,
+	type ExecutionRequest,
+} from "./runtime";
 import {
 	applyAction,
 	beginWork,
@@ -135,6 +139,9 @@ export class DlcController {
 					id,
 					signal.aborted ? "cancelled" : "failed",
 					detail,
+					error instanceof RuntimeResultError
+						? error.result
+						: undefined,
 				),
 			);
 		}

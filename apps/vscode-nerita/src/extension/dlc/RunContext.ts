@@ -5,6 +5,9 @@ import type { ChatState } from "@nerita/shared/chatState";
 import { ExecutionRequestSchema } from "@nerita/dlc/runtime";
 import { FrozenKnowledgeSchema } from "./FrozenKnowledge";
 
+/** UTF-8 で保存・読み込む実行記録の上限バイト数。JSON のエスケープ・整形・末尾改行も含む。 */
+export const runRecordLimit = 16 * 1024 * 1024;
+
 export const RunContextSchema = z.strictObject({
 	schemaVersion: z.literal(1),
 	request: ExecutionRequestSchema,
