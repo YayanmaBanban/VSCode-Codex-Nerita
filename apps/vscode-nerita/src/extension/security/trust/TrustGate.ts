@@ -38,10 +38,9 @@ export async function evaluateTrust(
 		: undefined;
 	if (!context) {
 		throw new Error(
-			"Workspace Trustを解決できないため実行を拒否しました。",
+			"ワークスペースの信頼状態を確認できないため、実行を拒否しました。",
 		);
 	}
-	const signal = context.store.signal;
 	const paths = [
 		call.cwd,
 		...context.roots,
@@ -51,6 +50,10 @@ export async function evaluateTrust(
 	if (typeof call.params.path === "string") {
 		paths.push(resolve(call.cwd, call.params.path));
 	}
+	// ルート内の信頼取消しにも追随し、独立した Worktree の追加では承認待ちの許可を取り消さない。
+	const signal = AbortSignal.any(
+		paths.map((path) => context.store.signalFor(path)),
+	);
 	const trusted =
 		context.enabled() &&
 		(
@@ -61,7 +64,7 @@ export async function evaluateTrust(
 	if (!trusted || mixed) {
 		context.store.audit("execution-denied", call.cwd);
 		throw new Error(
-			"未信頼のWorkspaceまたは外部コードが含まれるため実行を拒否しました。Trust操作が必要です。",
+			"未信頼のワークスペースまたは外部コードが含まれるため、実行を拒否しました。信頼する操作が必要です。",
 		);
 	}
 	signal.throwIfAborted();

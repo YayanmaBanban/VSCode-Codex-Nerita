@@ -105,6 +105,16 @@ export class DlcController {
 		id: string,
 		signal: AbortSignal,
 	): Promise<DlcProjection> {
+		const operation = () => this.executeAdmitted(id, signal);
+		// 開始条件を満たさない場合は、実行履歴を追加しない。
+		return this.runtime.withAdmission
+			? this.runtime.withAdmission(operation, signal)
+			: operation();
+	}
+	private async executeAdmitted(
+		id: string,
+		signal: AbortSignal,
+	): Promise<DlcProjection> {
 		await this.update((state) => beginWork(state, id));
 		try {
 			signal.throwIfAborted();

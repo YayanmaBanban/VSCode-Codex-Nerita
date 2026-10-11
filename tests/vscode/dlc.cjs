@@ -267,7 +267,12 @@ async function verifyDeniedAndStopped(page, editor, model, cwd, intentId) {
 	});
 	await screenshot(page, "dlc-stopped.png");
 }
-async function reviewWorkspace(page, editor) {
+async function reviewWorkspace(
+	page,
+	editor,
+	focus = "Worktree の会話",
+	prefix = "dlc-workspace",
+) {
 	const vscode = require("vscode");
 	const themes = vscode.extensions.getExtension("vscode.theme-defaults")
 		.packageJSON.contributes.themes;
@@ -286,16 +291,23 @@ async function reviewWorkspace(page, editor) {
 		for (const width of [1400, 1000]) {
 			await page.setViewportSize({ width, height: 900 });
 			await editor
-				.getByLabel("Worktree の会話", { exact: true })
+				.getByLabel(focus, { exact: true })
 				.scrollIntoViewIfNeeded();
 			const size = await editor.evaluate(() => ({
 				width: globalThis.document.documentElement.clientWidth,
 				content: globalThis.document.documentElement.scrollWidth,
 			}));
 			assert.ok(size.content <= size.width, JSON.stringify(size));
-			await screenshot(page, `dlc-workspace-${kind}-${width}.png`);
+			await screenshot(page, `${prefix}-${kind}-${width}.png`);
 		}
 	}
 	await page.setViewportSize({ width: 1000, height: 800 });
 }
-module.exports = { verifyDlc, createIntent, plan, resultContract, screenshot };
+module.exports = {
+	verifyDlc,
+	createIntent,
+	plan,
+	resultContract,
+	screenshot,
+	reviewWorkspace,
+};

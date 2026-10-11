@@ -54,10 +54,14 @@ export function trustKey(path: string): string {
 export class WorkspaceTrustStore {
 	private records = new Map<string, TrustRecord>();
 	private controller = new AbortController();
+	private rootControllers = new Map<
+		string,
+		{ root: string; controller: AbortController }
+	>();
 	private queue: Promise<void> = Promise.resolve();
 	private failed = false;
-	private pendingRestrictions = 0;
-	private listeners = new Set<() => void>();
+	private pendingRestrictions = new Map<object, string | undefined>();
+	private listeners = new Set<(root?: string) => void>();
 	constructor(
 		private readonly storage: TrustStorage,
 		readonly audit: TrustAudit = () => {},
@@ -82,33 +86,73 @@ export class WorkspaceTrustStore {
 	get signal(): AbortSignal {
 		return this.controller.signal;
 	}
+	/** 保存前・保存後の通知を受けた表示は、進行中の保存が完了してから再照合する。 */
+	async waitForChanges(): Promise<void> {
+		let pending: Promise<void>;
+		do {
+			pending = this.queue;
+			await pending;
+		} while (pending !== this.queue);
+	}
+	/** 独立した Worktree の信頼変更では既存の許可を失効させず、親子ルートの変更には追随する。 */
+	signalFor(root: string): AbortSignal {
+		const key = trustKey(resolve(root));
+		let scoped = this.rootControllers.get(key);
+		if (!scoped) {
+			scoped = { root: resolve(root), controller: new AbortController() };
+			this.rootControllers.set(key, scoped);
+		}
+		return scoped.controller.signal;
+	}
 	/** 表示用に返した記録を変更しても、Host 内の信頼記録には影響しない。 */
 	list(): TrustRecord[] {
 		return [...this.records.values()].map((record) => ({ ...record }));
 	}
 	/** VS Code 側の状態変更でも待機中の要求を失効させる。 */
-	invalidate(): void {
+	invalidate(root?: string): void {
 		const previous = this.controller;
 		this.controller = new AbortController();
-		previous.abort(
-			new Error("Workspace Trustが変更されました。再接続してください。"),
+		const reason = new Error(
+			"ワークスペースの信頼設定が変更されました。再接続してください。",
 		);
+		previous.abort(reason);
+		for (const scoped of this.rootControllers.values()) {
+			if (
+				root === undefined ||
+				containsPath(root, scoped.root) ||
+				containsPath(scoped.root, root)
+			) {
+				const old = scoped.controller;
+				scoped.controller = new AbortController();
+				old.abort(reason);
+			}
+		}
 		for (const listener of this.listeners) {
-			listener();
+			listener(root);
 		}
 	}
 	/** 信頼状態の変更を購読し、UI の表示更新とセッションの取り消しに使う。 */
-	onChange(listener: () => void): () => void {
+	onChange(listener: (root?: string) => void): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
 	}
 	/** 実体パスを照合し、最も深い登録ルートの状態を採用する。 */
 	async trusted(path: string): Promise<boolean> {
-		if (this.failed || this.pendingRestrictions > 0) {
+		if (this.failed) {
 			return false;
 		}
 		try {
 			const actual = await canonicalPath(path, process.cwd());
+			if (
+				[...this.pendingRestrictions.values()].some(
+					(root) =>
+						root === undefined ||
+						containsPath(root, actual) ||
+						containsPath(actual, root),
+				)
+			) {
+				return false;
+			}
 			const record = this.list()
 				.filter((item) => containsPath(item.root, actual))
 				.sort((a, b) => b.root.length - a.root.length)[0];
@@ -152,8 +196,9 @@ export class WorkspaceTrustStore {
 	}
 	/** 存在しなくなったフォルダーも保存済みのキーで削除する。 */
 	remove(root: string): Promise<void> {
-		this.pendingRestrictions++;
-		this.invalidate();
+		const scope = this.changeScope(root);
+		const release = this.restrict(scope);
+		this.invalidate(scope);
 		const action = this.queue
 			.then(async () => {
 				const record = this.records.get(trustKey(root));
@@ -175,21 +220,12 @@ export class WorkspaceTrustStore {
 				}
 				const records = new Map(this.records);
 				records.delete(trustKey(root));
-				try {
-					await this.storage.write({
-						version: 1,
-						records: [...records.values()],
-					});
-				} catch (error) {
-					this.failed = true;
-					throw error;
-				}
-				this.records = records;
+				await this.persistRecords(records);
 				this.audit("user-removed", root);
 			})
 			.finally(() => {
-				this.pendingRestrictions--;
-				this.invalidate();
+				release();
+				this.invalidate(scope);
 			});
 		this.queue = action.catch(() => {});
 		return action;
@@ -201,9 +237,10 @@ export class WorkspaceTrustStore {
 		origin?: TrustRecord["origin"],
 		expected?: TrustRecord["identity"],
 	): Promise<void> {
+		const scope = this.changeScope(root, origin);
+		const release = trusted ? undefined : this.restrict(scope);
 		if (!trusted) {
-			this.pendingRestrictions++;
-			this.invalidate();
+			this.invalidate(scope);
 		}
 		const action = this.queue
 			.then(async () => {
@@ -222,31 +259,52 @@ export class WorkspaceTrustStore {
 					updatedAt: Date.now(),
 					identity,
 				});
-				try {
-					await this.storage.write({
-						version: 1,
-						records: [...records.values()],
-					});
-				} catch (error) {
-					this.failed = true;
-					this.invalidate();
-					throw error;
-				}
-				this.records = records;
+				await this.persistRecords(records);
 				this.failed = false;
 				const event = trusted ? "user-trusted" : "user-revoked";
 				this.audit(registrationEvent(origin, event), canonical);
-				this.invalidate();
+				this.invalidate(this.changeScope(canonical, origin));
 			})
 			.finally(() => {
 				// 保存失敗による拒否は `failed` で維持し、保存待ちの制限カウンターだけを減らす。
 				if (!trusted) {
-					this.pendingRestrictions--;
-					this.invalidate();
+					release?.();
+					this.invalidate(scope);
 				}
 			});
 		this.queue = action.catch(() => {});
 		return action;
+	}
+	/** 保存した記録だけを公開し、保存失敗は全ルートの信頼失効として扱う。 */
+	private async persistRecords(
+		records: Map<string, TrustRecord>,
+	): Promise<void> {
+		try {
+			await this.storage.write({
+				version: 1,
+				records: [...records.values()],
+			});
+		} catch (error) {
+			this.failed = true;
+			this.invalidate();
+			throw error;
+		}
+		this.records = records;
+	}
+	/** 外部コードの信頼変更は読み込んだ拡張にも影響するため、すべての実行許可を失効させる。 */
+	private changeScope(
+		root: string,
+		origin?: TrustRecord["origin"],
+	): string | undefined {
+		return recordOrigin(resolve(root), this.records, origin) === "workspace"
+			? resolve(root)
+			: undefined;
+	}
+	/** 保存待ちの制限を対象ルートへ適用する。保存失敗後は `failed` によって全ルートの拒否を維持する。 */
+	private restrict(root: string | undefined): () => void {
+		const token = {};
+		this.pendingRestrictions.set(token, root);
+		return () => this.pendingRestrictions.delete(token);
 	}
 }
 

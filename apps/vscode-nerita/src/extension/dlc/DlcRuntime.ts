@@ -17,6 +17,7 @@ import type { IntentRepository } from "./IntentRepository";
 
 /** セッションの生成・購読・承認・終了処理を DLC 側へ複製しない。 */
 export class DlcRuntime implements NeritaRuntimePort {
+	private admission: { root: string; reservation: object } | undefined;
 	constructor(
 		private repository: IntentRepository,
 		private runtime: BackendRuntime,
@@ -31,6 +32,29 @@ export class DlcRuntime implements NeritaRuntimePort {
 			running: active !== null,
 		};
 	}
+	/** Git・信頼・実行先を再確認し、Run の作成前から終了後の保存まで同じ予約を使う。 */
+	async withAdmission<T>(
+		operation: () => Promise<T>,
+		signal: AbortSignal,
+	): Promise<T> {
+		signal.throwIfAborted();
+		const root = await this.target();
+		return this.runtime.withDirectory(root, async (reservation) => {
+			if ((await this.target()) !== root) {
+				throw new Error(
+					"実行先が変更されています。再確認してください。",
+				);
+			}
+			await this.repository.files.path(".nerita/dlc");
+			signal.throwIfAborted();
+			this.admission = { root, reservation };
+			try {
+				return await operation();
+			} finally {
+				this.admission = undefined;
+			}
+		});
+	}
 	run(value: ExecutionRequest, signal: AbortSignal): Promise<RuntimeResult> {
 		const request = ExecutionRequestSchema.parse(value);
 		if (
@@ -42,6 +66,14 @@ export class DlcRuntime implements NeritaRuntimePort {
 			);
 		}
 		signal.throwIfAborted();
+		if (this.admission) {
+			return this.execute(
+				request,
+				signal,
+				this.admission.root,
+				this.admission.reservation,
+			);
+		}
 		return this.target().then((root) =>
 			this.runtime.withDirectory(root, (reservation) =>
 				this.execute(request, signal, root, reservation),

@@ -20,7 +20,10 @@ export function preparePiTrust(options: PiRuntimeOptions) {
 			...options,
 			trustStore: store,
 			trustContextId: options.parentPolicy?.trustContextId ?? binding.id,
-			signal: AbortSignal.any([options.signal, store.signal]),
+			signal: AbortSignal.any([
+				options.signal,
+				store.signalFor(options.cwd),
+			]),
 		},
 	};
 }
@@ -44,7 +47,9 @@ export async function restrictPiStorage(
 		return options;
 	}
 	if (options.resume?.storage === "workspace") {
-		throw new Error("workspace内の履歴を再開するにはTrust操作が必要です。");
+		throw new Error(
+			"ワークスペース内の履歴を再開するには、ワークスペースを信頼する操作が必要です。",
+		);
 	}
 	return { ...options, storage: "global", getStorage: () => "global" };
 }

@@ -76,6 +76,8 @@ void test("信頼取消しの保存失敗中は全ルートを拒否し、明示
 	});
 	await store.setUserTrust(root, true);
 	await store.setUserTrust(other, true);
+	const mainSignal = store.signalFor(root);
+	const otherSignal = store.signalFor(other);
 	fail = true;
 	await assert.rejects(
 		store.setUserTrust(root, false),
@@ -83,10 +85,59 @@ void test("信頼取消しの保存失敗中は全ルートを拒否し、明示
 	);
 	assert.equal(await store.trusted(root), false);
 	assert.equal(await store.trusted(other), false);
+	assert.equal(mainSignal.aborted, true);
+	assert.equal(otherSignal.aborted, true);
 	fail = false;
 	await store.setUserTrust(root, true);
 	assert.equal(await store.trusted(root), true);
 	assert.equal(await store.trusted(other), true);
+});
+
+void test("独立した Worktree の追加・信頼・取消しでは main の許可を維持し、親子ルートと外部コードの変更は失効させる", async () => {
+	const root = join(process.env.NERITA_TEST_ROOT!, "scoped-trust-main");
+	const other = join(process.env.NERITA_TEST_ROOT!, "scoped-trust-worktree");
+	const nested = join(root, "nested");
+	const external = join(
+		process.env.NERITA_TEST_ROOT!,
+		"scoped-trust-external",
+	);
+	await Promise.all([
+		mkdir(nested, { recursive: true }),
+		mkdir(other),
+		mkdir(external),
+	]);
+	let pendingSave: Promise<void> | undefined;
+	const store = new WorkspaceTrustStore({
+		read: () => undefined,
+		write: () => pendingSave ?? Promise.resolve(),
+	});
+	await store.setUserTrust(root, true);
+	const mainSignal = store.signalFor(root);
+	await store.registerWorkspace(other);
+	assert.equal(mainSignal.aborted, false);
+	await store.setUserTrust(other, true);
+	assert.equal(mainSignal.aborted, false);
+	const otherSignal = store.signalFor(other);
+	let finishSave!: () => void;
+	pendingSave = new Promise<void>((resolve) => {
+		finishSave = resolve;
+	});
+	const revoke = store.setUserTrust(other, false);
+	assert.equal(await store.trusted(root), true);
+	assert.equal(await store.trusted(other), false);
+	finishSave();
+	await revoke;
+	pendingSave = undefined;
+	assert.equal(otherSignal.aborted, true);
+	assert.equal(mainSignal.aborted, false);
+	assert.equal(await store.trusted(root), true);
+	await store.registerWorkspace(nested);
+	assert.equal(mainSignal.aborted, true);
+	const refreshedMain = store.signalFor(root);
+	const refreshedOther = store.signalFor(other);
+	await store.registerExternal(external);
+	assert.equal(refreshedMain.aborted, true);
+	assert.equal(refreshedOther.aborted, true);
 });
 
 /** VS Code の設定・イベントだけを代替し、信頼の照合は実装を通す。 */

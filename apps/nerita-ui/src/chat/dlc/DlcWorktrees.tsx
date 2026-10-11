@@ -16,6 +16,7 @@ export function WorktreeControls({
 			<label className="flex min-w-0 items-center gap-2">
 				Worktree
 				<select
+					id="dlc-worktree"
 					aria-label="DLC の Worktree"
 					className="max-w-full min-w-0"
 					value={ui.view.targetId ?? ""}
@@ -72,7 +73,7 @@ function WorktreeActions({
 		<>
 			<button
 				type="button"
-				disabled={ui.view.running.length > 0 || ui.view.targetBusy}
+				disabled={ui.view.assignmentPending}
 				title="main の HEAD から作成します。未コミットの変更は含みません。"
 				onClick={() =>
 					ui.send({

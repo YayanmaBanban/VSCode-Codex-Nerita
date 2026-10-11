@@ -54,11 +54,7 @@ export async function activate(
 	}
 	const session = await createRuntime(context, trust);
 	context.subscriptions.push({
-		dispose: trust.onChange(() => {
-			if (session.snapshot().uiContributions?.surface === "pi") {
-				session.invalidate();
-			}
-		}),
+		dispose: trust.onChange((root) => session.invalidateTrust(root)),
 	});
 	controller = session;
 	dlc = registerDlcCommands(context, trust, session);

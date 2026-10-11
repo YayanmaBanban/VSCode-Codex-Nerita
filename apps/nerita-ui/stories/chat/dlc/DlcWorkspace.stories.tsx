@@ -237,3 +237,146 @@ export const ChatModes: Story = {
 		).toBeVisible();
 	},
 };
+
+export const StartHold: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = workspaceBridge(canvasElement);
+		const selected = {
+			...projection(first, "最初の Intent"),
+			canRun: true,
+		};
+		const held: DlcView = {
+			...view(selected),
+			targetId: "main",
+			targetBusy: true,
+			targets: [
+				{
+					id: "main",
+					name: "sample",
+					directory: "sample",
+					branch: "main",
+					main: true,
+					removable: false,
+					trusted: true,
+				},
+			],
+			running: [
+				{ intentId: second, attemptId: "other-run", targetId: "main" },
+			],
+			intents: [
+				{
+					intentId: first,
+					title: selected.title,
+					status: "idle",
+					startHold: {
+						reason: "worktree-required",
+						message:
+							"この実行先は別の処理で使用中です。独立した Worktree を選択してください。",
+					},
+				},
+				{ intentId: second, title: "別の Intent", status: "running" },
+			],
+		};
+		bridge.emit({ type: "dlc/state", view: held });
+		await expect(await canvas.findByText("Worktree が必要")).toBeVisible();
+		await userEvent.click(
+			canvas.getByRole("button", { name: /Phase 3 · Construction/ }),
+		);
+		await expect(
+			canvas.getByRole("button", { name: "手動タスクを実行" }),
+		).toBeDisabled();
+		await expect(
+			canvas.getByRole("button", { name: /Phase 3 · Construction/ }),
+		).toHaveTextContent("実行保留");
+		await expect(
+			canvas.getByRole("button", { name: /Phase 0 · Initialization/ }),
+		).toHaveTextContent("完了");
+		await userEvent.click(
+			canvas.getByRole("button", { name: "新しい Worktree を作成" }),
+		);
+		await expect(bridge.sent.at(-1)).toMatchObject({
+			type: "dlc/worktreeCreate",
+		});
+		await userEvent.click(
+			canvas.getByRole("button", { name: "開始条件を再確認" }),
+		);
+		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/read" });
+		await verifyTrustRelease(canvasElement, bridge, held);
+	},
+};
+
+/** 信頼操作の応答を受けるまで保留し、表示更新だけでは Run を送信しない。 */
+async function verifyTrustRelease(
+	element: HTMLElement,
+	bridge: StoryBridge,
+	held: DlcView,
+) {
+	const canvas = within(element);
+	const selected = held.selected!;
+	const untrusted: DlcView = {
+		...held,
+		targetId: "worktree",
+		targetBusy: false,
+		targets: [
+			...held.targets,
+			{
+				id: "worktree",
+				name: "work-new",
+				directory: "work-new",
+				branch: null,
+				main: false,
+				removable: true,
+				trusted: false,
+			},
+		],
+		intents: [
+			{
+				intentId: first,
+				title: selected.title,
+				status: "idle",
+				startHold: {
+					reason: "trust-required",
+					message: "実行先の Nerita Trust を確認してください。",
+				},
+			},
+			held.intents[1]!,
+		],
+	};
+	bridge.emit({ type: "dlc/state", view: untrusted });
+	await userEvent.click(
+		await canvas.findByRole("button", { name: "信頼設定を開く" }),
+	);
+	await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/trust" });
+	bridge.emit({
+		type: "dlc/state",
+		view: {
+			...untrusted,
+			targets: untrusted.targets.map((target) => ({
+				...target,
+				trusted: true,
+			})),
+			intents: [
+				{ intentId: first, title: selected.title, status: "idle" },
+				held.intents[1]!,
+			],
+		},
+	});
+	await waitFor(async () => {
+		await expect(
+			canvas.getByRole("button", { name: "手動タスクを実行" }),
+		).toBeEnabled();
+	});
+	await expect(
+		bridge.sent.some((message) => message.type === "dlc/action"),
+	).toBe(false);
+	await userEvent.click(
+		canvas.getByRole("button", { name: "手動タスクを実行" }),
+	);
+	await expect(bridge.sent.at(-1)).toMatchObject({
+		type: "dlc/action",
+		intentId: first,
+		revision: 0,
+		action: { type: "run" },
+	});
+}

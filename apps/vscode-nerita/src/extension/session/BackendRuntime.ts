@@ -17,6 +17,7 @@ import {
 import type { BackendExecutionResult } from "./BackendExecution";
 import { ToolOutputStore } from "./ToolOutputStore";
 import type { DlcSessionOwnership } from "./DlcSessionOwnership";
+import { containsPath } from "../security/AgentAccessPolicy";
 
 type DlcInput = {
 	intentId: string;
@@ -522,6 +523,23 @@ export class BackendRuntime implements BackendSession {
 		for (const active of this.dlcSessions.values()) {
 			active.abort.abort();
 			active.session.invalidate();
+		}
+	}
+	/** 個別の信頼変更はそのルートの会話だけに適用し、独立した Worktree の実行は維持する。 */
+	invalidateTrust(root?: string): void {
+		const affected = (cwd: string | null) =>
+			root === undefined ||
+			cwd === null ||
+			containsPath(root, cwd) ||
+			containsPath(cwd, root);
+		if (this.current && affected(this.current.snapshot().cwd)) {
+			this.current.invalidate();
+		}
+		for (const active of this.dlcSessions.values()) {
+			if (affected(active.root)) {
+				active.abort.abort();
+				active.session.invalidate();
+			}
 		}
 	}
 

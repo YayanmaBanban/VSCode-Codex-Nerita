@@ -4,7 +4,13 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const vscode = require("vscode");
 const { expect } = require("@playwright/test");
-const { createIntent, plan, resultContract, screenshot } = require("./dlc.cjs");
+const {
+	createIntent,
+	plan,
+	resultContract,
+	screenshot,
+	reviewWorkspace,
+} = require("./dlc.cjs");
 
 async function createTargets(page, editor, findFrame) {
 	const select = editor.getByLabel("DLC の Worktree");
@@ -95,6 +101,7 @@ async function verifyWorktrees(page, chat, model, findFrame) {
 	await launch(editor, model);
 	await editor.locator(`[data-intent-id="${b.id}"]`).click();
 	await expect(editor.getByLabel("承認要求")).toHaveCount(0);
+	await verifyStartHold(page, editor, model, targets);
 	await expect(
 		editor.getByRole("button", { name: "手動タスクを実行", exact: true }),
 	).toBeEnabled();
@@ -113,7 +120,7 @@ async function verifyWorktrees(page, chat, model, findFrame) {
 		conversation.getByText(/Intent の選択または版が変更されています/),
 	).toHaveCount(0);
 	await expect(
-		conversation.getByText(/Workspace Trustが変更されました/),
+		conversation.getByText(/ワークスペースの信頼設定が変更されました/),
 	).toHaveCount(0);
 	await editor.locator(`[data-intent-id="${a.id}"]`).click();
 	await conversation
@@ -145,5 +152,40 @@ async function verifyWorktrees(page, chat, model, findFrame) {
 	console.log(
 		"DLC Worktree: UI で作成・信頼・並行承認・対象の停止・実書込み・削除拒否を確認",
 	);
+}
+
+/** 共有する実行先の保留から、既存 Run を止めずに作成・再確認・独立 Worktree の選択へ進む。 */
+async function verifyStartHold(page, editor, model, targets) {
+	const select = editor.getByLabel("DLC の Worktree");
+	const requests = model.requests.length;
+	await select.selectOption(targets[0]);
+	const hold = editor.getByLabel("実行開始の保留");
+	await expect(hold).toContainText("独立した Worktree");
+	await expect(
+		editor.getByRole("button", { name: "手動タスクを実行", exact: true }),
+	).toBeDisabled();
+	await expect(
+		editor.getByRole("button", { name: /Phase 3 · Construction/ }),
+	).toContainText("実行保留");
+	await reviewWorkspace(page, editor, "実行開始の保留", "dlc-start-hold");
+	await hold
+		.getByRole("button", { name: "新しい Worktree を作成", exact: true })
+		.click();
+	await expect(select.locator("option")).toHaveCount(4);
+	await expect(
+		editor.getByRole("button", { name: "Worktree A の作業", exact: true }),
+	).toContainText("実行中");
+	await hold
+		.getByRole("button", { name: "開始条件を再確認", exact: true })
+		.click();
+	await expect(hold).toBeVisible();
+	assert.equal(model.requests.length, requests);
+	await select.selectOption(targets[1]);
+	await expect(hold).toHaveCount(0);
+	await expect(
+		editor.getByRole("button", { name: "手動タスクを実行", exact: true }),
+	).toBeEnabled();
+	assert.equal(model.requests.length, requests);
+	await page.setViewportSize({ width: 1400, height: 900 });
 }
 module.exports = { verifyWorktrees };

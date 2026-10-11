@@ -22,6 +22,16 @@ const localStorage: DirectoryRunStorage = {
 	},
 };
 
+/** 開始前の競合は実行失敗と区別し、別の Worktree への切替を案内する。 */
+export class DirectoryRunConflictError extends Error {
+	constructor() {
+		super(
+			"この作業ディレクトリでは別の実行が進行中です。独立した Worktree を選択するか、終了後に再確認してください。",
+		);
+		this.name = "DirectoryRunConflictError";
+	}
+}
+
 export class DirectoryRuns {
 	constructor(private storage: DirectoryRunStorage = localStorage) {}
 
@@ -40,9 +50,7 @@ export class DirectoryRuns {
 						containsPath(actual, record.root),
 				)
 			) {
-				throw new Error(
-					"この作業ディレクトリでは別の実行が進行中です。終了後に再試行してください。",
-				);
+				throw new DirectoryRunConflictError();
 			}
 			return [...active, run];
 		});

@@ -130,10 +130,18 @@ export const DlcProjectionSchema = z.strictObject({
 });
 export type DlcProjection = z.infer<typeof DlcProjectionSchema>;
 
-/** 一覧の表示は保存済み進捗から生成し、UI の選択状態は含めない。 */
+/** 開始保留は実行結果や工程の失敗とは別に、Host が現在の実行条件から生成する。 */
+export const DlcStartHoldSchema = z.strictObject({
+	reason: z.enum(["worktree-required", "trust-required", "unavailable"]),
+	message: z.string().min(1),
+});
+export type DlcStartHold = z.infer<typeof DlcStartHoldSchema>;
+
+/** 一覧の表示は保存済み進捗と Host の開始条件から生成し、UI の選択状態は含めない。 */
 export const IntentSummarySchema = z.strictObject({
 	intentId: z.uuid(),
 	title: z.string(),
+	startHold: DlcStartHoldSchema.optional(),
 	execution: z
 		.strictObject({
 			targetId: z.string(),

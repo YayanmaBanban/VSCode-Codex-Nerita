@@ -90,6 +90,11 @@ function executionBusy(view: DlcView, selected: DlcProjection): boolean {
 	return (
 		view.targetBusy ||
 		view.assignmentPending ||
+		view.intents.some(
+			(intent) =>
+				intent.intentId === selected.intentId &&
+				intent.startHold !== undefined,
+		) ||
 		view.running.some((run) => run.intentId === selected.intentId)
 	);
 }
@@ -129,7 +134,7 @@ function PhaseSection({
 						Phase {phase} · {name}
 					</span>
 					<span className="text-[11px] font-normal text-muted">
-						{phaseStatus(stages)}
+						{phaseExecutionStatus(stages, phase, view, selected)}
 					</span>
 				</button>
 			</h2>
@@ -159,6 +164,30 @@ function PhaseSection({
 			</div>
 		</section>
 	);
+}
+
+/** 工程の保存状態を変更せず、コード変更を伴う Phase の開始保留を重ねて表示する。 */
+function phaseExecutionStatus(
+	stages: DlcProjection["stages"],
+	phase: number,
+	view: DlcView,
+	selected: DlcProjection | null,
+): string {
+	if (
+		phase < 3 ||
+		!stages.some(
+			(stage) => stage.status === "pending" && stage.selection !== "skip",
+		)
+	) {
+		return phaseStatus(stages);
+	}
+	return view.intents.some(
+		(intent) =>
+			intent.intentId === selected?.intentId &&
+			intent.startHold !== undefined,
+	)
+		? "実行保留"
+		: phaseStatus(stages);
 }
 
 function StageList({ stages }: { stages: DlcProjection["stages"] }) {

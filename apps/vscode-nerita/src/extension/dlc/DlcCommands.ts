@@ -43,11 +43,6 @@ export function registerDlcCommands(
 			editor.dispose();
 			void host.reset();
 		}),
-		{
-			dispose: trust.onChange(() => {
-				void host.reset();
-			}),
-		},
 	);
 	return host;
 }

@@ -68,6 +68,11 @@ export type RuntimeStatus = { attemptId: string | null; running: boolean };
 
 /** 根拠は Runtime が発行する。エージェントの JSON を根拠として受け付けない。 */
 export type NeritaRuntimePort = {
+	/** 実行先の検証・予約を状態更新より先に行い、終了確認まで保持する。 */
+	withAdmission?<T>(
+		operation: () => Promise<T>,
+		signal: AbortSignal,
+	): Promise<T>;
 	run(request: ExecutionRequest, signal: AbortSignal): Promise<RuntimeResult>;
 	stop(attemptId: string): Promise<void>;
 	status(): RuntimeStatus;

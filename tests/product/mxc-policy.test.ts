@@ -76,7 +76,7 @@ void test("MXC は既定で通信・Clipboard・入力注入を拒否し、明�
 	);
 });
 
-void test("通信許可と readOnly role を変換しても host loopback と Workspace 書込みを拡大しない", async () => {
+void test("通信許可と readOnly の権限を変換してもホストのループバック通信とワークスペースへの書込みを許可しない", async () => {
 	const { sdk, call } = await fixture();
 	call.policy.networkAccess = true;
 	call.policy.writableRoots = [];
@@ -88,18 +88,21 @@ void test("通信許可と readOnly role を変換しても host loopback と Wo
 	assert.ok(config.filesystem!.readonlyPaths!.includes(call.cwd));
 });
 
-void test("承認のコピー・再使用・Workspace 外要求は MXC を起動する前に拒否する", async () => {
+void test("承認のコピー・再使用・ワークスペース外への要求は MXC を起動する前に拒否する", async () => {
 	const { sdk, call } = await fixture();
 	const executor = new MxcExecutor(sdk, "base-container");
 	const signal = new AbortController().signal;
 	const permit = issueApprovedToolCall(call, signal);
 	await assert.rejects(executor.execute({ ...permit }), /再承認/);
-	await assert.rejects(executor.execute(permit), /Workspace Trust/);
+	await assert.rejects(
+		executor.execute(permit),
+		/ワークスペースの信頼状態を確認できない/,
+	);
 	await assert.rejects(executor.execute(permit), /再承認/);
 	call.policy.writableRoots = [join(call.cwd, "..")];
 	await assert.rejects(
 		executor.execute(issueApprovedToolCall(call, signal)),
-		/境界外/,
+		/Sandbox のワークスペースの範囲外/,
 	);
 });
 

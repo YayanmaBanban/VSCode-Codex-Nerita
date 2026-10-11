@@ -13,6 +13,7 @@ import type {
 	DlcUiMessage,
 	DlcView,
 	DlcAction,
+	DlcStartHold,
 } from "@nerita/shared/dlc/contracts";
 import type { BackendId } from "@nerita/shared/backend";
 import type { HostMessage } from "@nerita/shared/messages";
@@ -32,6 +33,7 @@ import { WorktreeManager } from "./WorktreeManager";
 import { z } from "zod";
 import { containsPath } from "../security/AgentAccessPolicy";
 import { hostStorageRoot } from "../session/HostStorage";
+import { DirectoryRunConflictError } from "../session/DirectoryRuns";
 
 const execute = promisify(execFile);
 
@@ -63,6 +65,8 @@ export class DlcHost {
 	private resetting: Promise<void> | undefined;
 	private selectionSequence = 0;
 	private backend: BackendId;
+	private startHolds = new Map<string, DlcStartHold>();
+	private unsubscribeTrust: () => void;
 	constructor(
 		private context: vscode.ExtensionContext,
 		private trust: WorkspaceTrustStore,
@@ -76,6 +80,15 @@ export class DlcHost {
 						.getConfiguration("nerita")
 						.get<BackendId>("backend", "codex");
 		runtime.setDlcHandler((message) => this.receive(message));
+		this.unsubscribeTrust = trust.onChange((root) => {
+			void this.trustChanged(root).catch((error: unknown) => {
+				if (this.closed) {
+					return;
+				}
+				this.error = errorText(error);
+				this.publish();
+			});
+		});
 
 		const publishState = (event: HostMessage) => {
 			if (
@@ -101,6 +114,10 @@ export class DlcHost {
 			backend: this.backend,
 			intents: this.intents.map((intent) => ({
 				...intent,
+				startHold:
+					intent.status === "idle"
+						? this.startHold(intent.intentId)
+						: undefined,
 				...(this.executionForIntent.has(intent.intentId)
 					? {
 							execution: this.executionForIntent.get(
@@ -133,6 +150,50 @@ export class DlcHost {
 			active: this.runtime.activeDlc(),
 			execution: this.runtime.dlcPrompt(),
 		};
+	}
+	/** 一覧の保留表示は開始の許可を意味しない。実際の開始は Runtime の予約で再判定する。 */
+	private startHold(intentId: string): DlcStartHold | undefined {
+		if (this.runningIntents.has(intentId)) {
+			return undefined;
+		}
+		const held = this.startHolds.get(intentId);
+		if (held) {
+			return held;
+		}
+		const targetId = this.targetsForIntent.get(intentId);
+		const target =
+			targetId !== undefined
+				? this.targets.find((item) => item.id === targetId)
+				: this.targets.find((item) => item.main);
+		if (!target) {
+			return {
+				reason: "unavailable",
+				message:
+					"実行先を確認できません。再読込みして Worktree を選択してください。",
+			};
+		}
+		if (!target.trusted) {
+			return {
+				reason: "trust-required",
+				message: "実行先の Nerita Trust を確認してください。",
+			};
+		}
+		if (
+			this.runtime
+				.runningDirectories()
+				.some(
+					(root) =>
+						containsPath(root, target.directory) ||
+						containsPath(target.directory, root),
+				)
+		) {
+			return {
+				reason: "worktree-required",
+				message:
+					"この実行先は別の処理で使用中です。独立した Worktree を選択するか、終了後に再確認してください。",
+			};
+		}
+		return undefined;
 	}
 	private publish(): void {
 		this.runtime.publish({ type: "dlc/state", view: this.view() });
@@ -172,7 +233,7 @@ export class DlcHost {
 			);
 		}
 		const generation = this.generation;
-		const trustSignal = this.trust.signal;
+		const trustSignal = this.trust.signalFor(root);
 		const files = new SafeDlcFiles(root, async () => {
 			trustSignal.throwIfAborted();
 			if (
@@ -376,7 +437,10 @@ export class DlcHost {
 		};
 	}
 	private async refreshTargets(workspace: Workspace): Promise<void> {
-		this.targets = await Promise.all(
+		const generation = this.generation;
+		// 再照合が失敗した場合に、古い実行先を開始可能として表示し続けない。
+		this.targets = [];
+		const targets = await Promise.all(
 			(await workspace.worktrees.list(this.trust.signal)).map(
 				async (target) => ({
 					...target,
@@ -405,6 +469,14 @@ export class DlcHost {
 				}),
 			),
 		);
+		if (generation !== this.generation || this.closed) {
+			return;
+		}
+		this.targets = targets;
+		this.restoreAssignments(workspace);
+	}
+	/** 割当は Host の保存値を使い、一覧を更新しても利用者の実行先を選び直さない。 */
+	private restoreAssignments(workspace: Workspace): void {
 		for (const [intentId, assignment] of Object.entries(
 			workspace.assignments,
 		)) {
@@ -475,6 +547,7 @@ export class DlcHost {
 		});
 		this.targetsForIntent.set(intentId, targetId);
 		this.executionForIntent.set(intentId, { targetId, backend });
+		this.startHolds.delete(intentId);
 		if (this.selectedId === intentId) {
 			this.targetId = targetId;
 			this.backend = backend;
@@ -490,11 +563,7 @@ export class DlcHost {
 			return true;
 		}
 		if (message.type === "dlc/worktreeCreate") {
-			if (this.runtime.busy()) {
-				throw new Error(
-					"実行が終わってから Worktree を作成してください。",
-				);
-			}
+			// 実行中の Worktree を変更せずに別の Worktree を作り、保留を解消する操作を提供する。
 			const target = await workspace.repository.locked(() =>
 				workspace.worktrees.create(this.trust.signal),
 			);
@@ -543,11 +612,7 @@ export class DlcHost {
 			this.selectedId ??
 			this.context.workspaceState.get<string>(workspace.selectionKey);
 		// 一覧の読み込み中に利用者が選んだ Intent を、自動復元で上書きしない。
-		if (
-			sequence === this.selectionSequence &&
-			selectedId !== undefined &&
-			!this.selected
-		) {
+		if (sequence === this.selectionSequence && selectedId !== undefined) {
 			await this.select(workspace, selectedId);
 		}
 	}
@@ -627,14 +692,13 @@ export class DlcHost {
 				this.controllers.delete(intentId);
 			}
 		}
-		if (!this.runningIntents.has(this.selectedId ?? "")) {
-			this.selected = undefined;
-		}
+		// 再確認中も現在の選択を保持し、並行する実行先の変更を拒否しない。
 		this.intents = (await workspace.repository.projections()).map(
 			intentSummary,
 		);
 		await this.refreshEnvironment(workspace);
 		await this.refreshTargets(workspace);
+		this.startHolds.clear();
 		await this.restoreSelection(workspace, sequence);
 		this.publish();
 	}
@@ -854,10 +918,19 @@ export class DlcHost {
 			}
 			return;
 		}
+		await this.startRun(workspace, controller, message);
+	}
+	/** 開始前の保留を Intent ごとに保持し、実行中の別 Intent へ影響させない。 */
+	private async startRun(
+		workspace: Workspace,
+		controller: DlcController,
+		message: Extract<DlcUiMessage, { type: "dlc/action" }>,
+	): Promise<void> {
 		if (this.runningIntents.has(message.intentId)) {
 			throw new Error("この Intent は既に実行中です。");
 		}
 		this.runningIntents.add(message.intentId);
+		this.startHolds.delete(message.intentId);
 		try {
 			if (!workspace.assignments[message.intentId]) {
 				if (this.targetId === null) {
@@ -873,6 +946,25 @@ export class DlcHost {
 			this.runtime.selectMode("dlc");
 			await controller.dispatch(message.action);
 			await workspace.repository.exportSnapshot(message.intentId);
+		} catch (error) {
+			if (controller.projection().canRun) {
+				const target = this.targets.find(
+					(item) =>
+						item.id === this.targetsForIntent.get(message.intentId),
+				);
+				const reason =
+					target?.trusted === false
+						? "trust-required"
+						: "unavailable";
+				this.startHolds.set(message.intentId, {
+					reason:
+						error instanceof DirectoryRunConflictError
+							? "worktree-required"
+							: reason,
+					message: errorText(error),
+				});
+			}
+			throw error;
 		} finally {
 			this.runningIntents.delete(message.intentId);
 		}
@@ -939,12 +1031,42 @@ export class DlcHost {
 		this.targetId = null;
 		this.targetsForIntent.clear();
 		this.executionForIntent.clear();
+		this.startHolds.clear();
 		this.runtime.selectDlc(undefined);
 		this.publish();
 	}
 	async dispose(): Promise<void> {
 		this.closed = true;
+		this.unsubscribeTrust();
 		await this.reset();
+	}
+	/** 管理元の信頼変更では状態をリセットし、個別 Worktree の変更では実行先の表示を更新する。 */
+	private async trustChanged(root?: string): Promise<void> {
+		const generation = this.generation;
+		if (this.closed) {
+			return;
+		}
+		if (root === undefined) {
+			await this.reset();
+			return;
+		}
+		const workspace = await this.workspace;
+		if (!workspace) {
+			return;
+		}
+		if (
+			containsPath(root, workspace.root) ||
+			containsPath(workspace.root, root)
+		) {
+			await this.reset();
+			return;
+		}
+		await this.trust.waitForChanges();
+		if (generation !== this.generation) {
+			return;
+		}
+		await this.refreshTargets(workspace);
+		this.publish();
 	}
 }
 
