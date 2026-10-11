@@ -21,15 +21,18 @@ export async function piReferenceAction(
 		throw new Error("セッション参照を利用できません。");
 	}
 	if (message.type === "session/searchReferences") {
-		const rows = (await history.list(signal, true)).filter(
-			(row) =>
+		const rows = (await history.list(signal, true)).filter((row) => {
+			if (!(
 				row.sessionId !== runtime.sessionId &&
 				!isPiSessionRunning(row.sessionId) &&
-				sameCwd(row.cwd, cwd) &&
-				(row.title ?? row.sessionId)
-					.toLocaleLowerCase()
-					.includes(message.query.trim().toLocaleLowerCase()),
-		);
+				sameCwd(row.cwd, cwd)
+			)) {
+				return false;
+			}
+			return (row.title ?? row.sessionId)
+				.toLocaleLowerCase()
+				.includes(message.query.trim().toLocaleLowerCase());
+		});
 		signal.throwIfAborted();
 		const offset = isNonEmptyString(message.cursor)
 			? Number(message.cursor)

@@ -72,10 +72,12 @@ export async function preparePiRuntimeTools(
 		);
 		return { paths, tools, executor: null, unavailable: undefined };
 	}
+	const sandboxReason =
+		unavailable ??
+		(!executor ? "Sandbox Executorが接続されていません。" : undefined);
 	const reason = !policy.shell
 		? "このroleではShell実行が禁止されています。"
-		: (unavailable ??
-			(!executor ? "Sandbox Executorが接続されていません。" : undefined));
+		: sandboxReason;
 	if (executor && !isNonEmptyString(reason)) {
 		tools.push(
 			createPiPnpmTool(

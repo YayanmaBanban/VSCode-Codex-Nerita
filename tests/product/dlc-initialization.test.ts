@@ -14,14 +14,12 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { AuthorityRecordSchema } from "../../apps/vscode-nerita/src/extension/dlc/IntentAuthority";
 import { detectionLimits } from "../../apps/vscode-nerita/src/extension/dlc/WorkspaceDetection";
-import { applyAction, beginWork, finishWork } from "@nerita/dlc/transitions";
+import { applyAction, beginWork } from "@nerita/dlc/transitions";
 import {
-	intentProjection,
 	recoverIntent,
 	IntentStateSchema,
 	IntentRegistrySchema,
 } from "@nerita/dlc/state";
-import { migrateLegacy } from "@nerita/dlc/migration";
 import { WorkspaceDetectionSchema } from "@nerita/dlc/workspace";
 import { SafeDlcFiles } from "../../apps/vscode-nerita/src/extension/dlc/SafeDlcFiles";
 import { IntentRepository } from "../../apps/vscode-nerita/src/extension/dlc/IntentRepository";
@@ -29,11 +27,6 @@ import { freezeKnowledge } from "../../apps/vscode-nerita/src/extension/dlc/Froz
 import { withDlcLock } from "../../apps/vscode-nerita/src/extension/dlc/DlcLock";
 import { DlcPathSchema } from "@nerita/shared/dlc/contracts";
 import { dlcWorkspace } from "../support/dlcWorkspace";
-import {
-	createTestIntent,
-	plannedIntent,
-	executionReceipt,
-} from "../support/dlc";
 
 void test("検出スキーマの公開例は有効で、未知版・機密情報・不正なプロジェクト参照を拒否する", async () => {
 	const root = process.env.NERITA_TEST_REPO_ROOT;
@@ -410,50 +403,6 @@ void test("未実装の工程は、形が正しい成功・承認待ち・修正
 	}
 	assert.deepEqual(await f.repository.load(state.intentId), state);
 });
-void test("Goal 移行は ID・原文・実行記録を保持し、レビュー待ちを正式な工程完了へ変換しない", () => {
-	const complete = finishWork(
-		beginWork(plannedIntent(), "attempt"),
-		"attempt",
-		executionReceipt(),
-	);
-	const workItems = complete.workItems.map((item) => ({
-		...item,
-		attempts: legacyAttempts(item.attempts),
-	}));
-	const legacy = {
-		schemaVersion: 1,
-		id: complete.intentId,
-		goal: "  原文  ",
-		revision: 8,
-		stage: "awaiting-review",
-		workItems,
-	};
-	const migrated = migrateLegacy(
-		legacy,
-		complete.routing,
-		complete.intent.createdAt,
-	);
-	assert.equal(migrated.intentId, legacy.id);
-	assert.equal(migrated.intent.request, legacy.goal);
-	assert.deepEqual(migrated.workItems, complete.workItems);
-	assert.equal(intentProjection(migrated).stage, "awaiting-review");
-	assert.equal(migrated.workflow.status, "in-flight");
-	assert.deepEqual(recoverIntent(migrated), migrated);
-	assert.throws(() =>
-		migrateLegacy(
-			{ ...legacy, id: "duplicate-or-invalid" },
-			createTestIntent().routing,
-			complete.intent.createdAt,
-		),
-	);
-});
-function legacyAttempts(
-	attempts: ReturnType<
-		typeof createTestIntent
-	>["workItems"][number]["attempts"],
-) {
-	return attempts.map((attempt) => ({ ...attempt, status: "implemented" }));
-}
 void test("信頼失効中の保存失敗でも、自分の保存ロックだけを解放する", async (t) => {
 	const f = await dlcWorkspace(t);
 	let trusted = true;

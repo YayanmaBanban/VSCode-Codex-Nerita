@@ -105,12 +105,9 @@ export class CodexSubmission {
 		changes: ChangeScope[],
 		code: CodeReference[],
 	): boolean {
-		return (
-			sessions.length > 0 ||
-			changes.length > 0 ||
-			code.length > 0 ||
-			this.session.snapshot().run === "running"
-		);
+		const hasReferences =
+			sessions.length > 0 || changes.length > 0 || code.length > 0;
+		return hasReferences || this.session.snapshot().run === "running";
 	}
 
 	/** 読み込み後も同じ実行へ追加入力できることを確認する。 */
@@ -489,7 +486,11 @@ export class CodexSubmission {
 		if (
 			!this.current(operation) ||
 			!this.session.connection() ||
-			this.session.snapshot().connection !== "ready" ||
+			this.session.snapshot().connection !== "ready"
+		) {
+			throw new Error("Submission unavailable");
+		}
+		if (
 			this.session.snapshot().sessionPending ||
 			this.session.snapshot().configPending ||
 			this.session.snapshot().attachmentPending

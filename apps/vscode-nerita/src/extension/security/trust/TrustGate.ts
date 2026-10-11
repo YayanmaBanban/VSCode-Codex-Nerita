@@ -6,6 +6,7 @@ import type { ToolCall } from "../ApprovedToolCall";
 import { containsPath } from "../AgentAccessPolicy";
 import { type WorkspaceTrustStore } from "./WorkspaceTrustStore";
 import { commandTrustTargets } from "./TrustCommandTargets";
+import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 
 /** 子は親のコンテキストを共有し、信頼の上限を拡大しない。 */
 type Context = {
@@ -57,7 +58,13 @@ export async function evaluateTrust(
 	const trusted =
 		context.enabled() &&
 		(
-			await Promise.all(paths.map((path) => context.store.trusted(path)))
+			await Promise.all(
+				paths.map(async (path) =>
+					backendWorkspaceTrusted("pi", () =>
+						context.store.trusted(path),
+					),
+				),
+			)
 		).every(Boolean);
 	// 任意コマンドは同じルート内の未信頼ツリーにも到達できるため、混在時は実行を止める。
 	const mixed = containsUntrustedCode(call, context, paths);
@@ -73,20 +80,24 @@ export async function evaluateTrust(
 
 /** 複数のルートを許可した実行基盤へ渡す場合は、そのすべてを実行対象として判定する。 */
 function executionRoots(call: ToolCall): string[] {
-	return call.command ||
+	if (!(
+		call.command ||
 		call.hostShell === true ||
 		call.tool.startsWith("extension:")
-		? call.policy.workspaceRoots
-		: [];
+	)) {
+		return [];
+	}
+	return call.policy.workspaceRoots;
 }
 
 /** 拡張ツールの自己申告した名前では読取り許可を与えない。 */
 function isReadOnly(call: ToolCall): boolean {
+	if (!(!call.command && !(call.hostShell === true))) {
+		return false;
+	}
 	return (
-		!call.command &&
-		!(call.hostShell === true) &&
-		(["read", "ls", "grep", "find"].includes(call.tool) ||
-			call.externalRead === true)
+		["read", "ls", "grep", "find"].includes(call.tool) ||
+		call.externalRead === true
 	);
 }
 
@@ -96,16 +107,18 @@ function containsUntrustedCode(
 	context: Context,
 	paths: string[],
 ): boolean {
-	return (
-		(call.command !== undefined ||
-			call.hostShell === true ||
-			call.tool.startsWith("extension:")) &&
-		context.store
-			.list()
-			.some(
-				(record) =>
-					record.trust === "untrusted" &&
-					paths.some((root) => containsPath(root, record.root)),
-			)
-	);
+	if (!(
+		call.command !== undefined ||
+		call.hostShell === true ||
+		call.tool.startsWith("extension:")
+	)) {
+		return false;
+	}
+	return context.store
+		.list()
+		.some(
+			(record) =>
+				record.trust === "untrusted" &&
+				paths.some((root) => containsPath(root, record.root)),
+		);
 }

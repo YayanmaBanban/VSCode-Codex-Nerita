@@ -105,11 +105,13 @@ export class CodexCatalog {
 	/** 読み込み中やフィルター変更後の追加ページ取得を抑止する。 */
 	private cannotLoadMore(more: boolean, archived: boolean) {
 		const state = this.session.snapshot();
+		if (!more) {
+			return false;
+		}
 		return (
-			more &&
-			(state.sessionsLoading ||
-				archived !== state.sessionsArchived ||
-				state.sessionsNextCursor === null)
+			state.sessionsLoading ||
+			archived !== state.sessionsArchived ||
+			state.sessionsNextCursor === null
 		);
 	}
 
@@ -201,18 +203,18 @@ export class CodexCatalog {
 	notification(message: AppServerNotification): void {
 		this.updateCatalogNotification(message);
 		const state = this.session.snapshot();
-		if (
-			isRecord(message.params) &&
+		if (!isRecord(message.params)) {
+			return;
+		}
+		const relevantUpdate =
 			[
 				"thread/name/updated",
 				"thread/archived",
 				"thread/unarchived",
 				"thread/deleted",
 				"turn/completed",
-			].includes(message.method) &&
-			state.connection === "ready" &&
-			!state.sessionPending
-		) {
+			].includes(message.method) && state.connection === "ready";
+		if (relevantUpdate && !state.sessionPending) {
 			if (
 				["thread/archived", "thread/deleted"].includes(
 					message.method,

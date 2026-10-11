@@ -15,12 +15,13 @@ async function measure(name, operation) {
 	let peakHeap = before.heapUsed;
 	let lag = 0;
 	let previous = performance.now();
-	const timer = setInterval(() => {
+	const sampleRuntime = () => {
 		const now = performance.now();
 		lag = Math.max(lag, now - previous - 10);
 		previous = now;
 		peakHeap = Math.max(peakHeap, process.memoryUsage().heapUsed);
-	}, 10);
+	};
+	const timer = setInterval(sampleRuntime, 10);
 	const started = performance.now();
 	const result = await operation();
 	const elapsed = performance.now() - started;
@@ -59,7 +60,7 @@ async function stream(root, cumulative) {
 	let text = "";
 	let maximumCall = 0;
 	try {
-		await measure(cumulative ? "cumulative" : "delta", async () => {
+		const measureOutputProjection = async () => {
 			for (let i = 0; i < count; i++) {
 				text = cumulative ? text + chunk : chunk;
 				tool = { ...tool };
@@ -99,7 +100,11 @@ async function stream(root, cumulative) {
 				maximumCallMs: maximumCall,
 				stateBytes: Buffer.byteLength(JSON.stringify(tool)),
 			};
-		});
+		};
+		await measure(
+			cumulative ? "cumulative" : "delta",
+			measureOutputProjection,
+		);
 	} finally {
 		await store.dispose();
 	}
@@ -204,7 +209,7 @@ async function history(root) {
 async function retained(root) {
 	const { ToolOutputStore } = require(path.join(root, "store.cjs"));
 	const store = new ToolOutputStore();
-	await measure("snapshot-retained", async () => {
+	const measureRetainedSnapshot = async () => {
 		const tool = store.project({
 			id: "large",
 			title: "計測",
@@ -222,7 +227,8 @@ async function retained(root) {
 		});
 		assert.equal(response.error, undefined);
 		return { stateBytes: Buffer.byteLength(JSON.stringify(tool)) };
-	});
+	};
+	await measure("snapshot-retained", measureRetainedSnapshot);
 	await store.dispose();
 }
 

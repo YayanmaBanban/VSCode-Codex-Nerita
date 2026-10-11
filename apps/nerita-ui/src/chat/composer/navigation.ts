@@ -37,13 +37,14 @@ export function $moveAcrossBlock(
 	if (
 		!$isRangeSelection(selection) ||
 		!selection.isCollapsed() ||
-		event.shiftKey ||
-		event.ctrlKey ||
-		event.metaKey ||
-		event.altKey ||
-		event.isComposing ||
-		editor.isComposing()
+		event.shiftKey
 	) {
+		return false;
+	}
+	if (event.ctrlKey || event.metaKey || event.altKey) {
+		return false;
+	}
+	if (event.isComposing || editor.isComposing()) {
 		return false;
 	}
 	return moveSelectedBlock(editor, event, up, selection);

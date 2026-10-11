@@ -86,9 +86,11 @@ export function connectBlockScroll(
 			if (
 				event.ctrlKey ||
 				event.shiftKey ||
-				Math.abs(event.deltaX) > Math.abs(event.deltaY) ||
-				event.deltaY === 0
+				Math.abs(event.deltaX) > Math.abs(event.deltaY)
 			) {
+				return;
+			}
+			if (event.deltaY === 0) {
 				return;
 			}
 			const root = editor.getRootElement();

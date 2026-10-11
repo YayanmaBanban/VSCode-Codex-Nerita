@@ -51,7 +51,8 @@ if (!values.root) {
 	throw new Error("--root <repository-directory> is required");
 }
 const ROOT = await fs.realpath(path.resolve(values.root));
-if (!(await fs.stat(ROOT)).isDirectory()) {
+const rootStats = await fs.stat(ROOT);
+if (!rootStats.isDirectory()) {
 	throw new Error("--root must be a directory");
 }
 
@@ -297,7 +298,8 @@ const referencedPackageTerms = new Set();
 const sourceIdentifiers = new Set();
 
 for (const file of repositoryFiles) {
-	if (!SOURCE_EXTENSIONS.has(path.extname(file).toLowerCase())) {
+	const extension = path.extname(file).toLowerCase();
+	if (!SOURCE_EXTENSIONS.has(extension)) {
 		continue;
 	}
 

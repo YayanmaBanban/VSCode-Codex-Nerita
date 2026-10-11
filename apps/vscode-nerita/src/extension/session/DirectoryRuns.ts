@@ -75,13 +75,15 @@ function processExited(pid: number): boolean {
 
 /** メイン応答の後も動くコマンド・子エージェントがあれば、実行先の予約を維持する。 */
 export function sessionWriting(state: ChatState): boolean {
-	return (
+	const activeRun =
 		state.run === "running" ||
 		state.run === "cancelling" ||
 		state.tools.some(
 			(tool) =>
 				tool.status === "in_progress" || tool.status === "pending",
-		) ||
+		);
+	return (
+		activeRun ||
 		state.agents.some((agent) =>
 			["running", "pendingInit"].includes(agent.status),
 		) ||

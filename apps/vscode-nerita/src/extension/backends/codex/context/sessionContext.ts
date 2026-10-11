@@ -22,12 +22,10 @@ function checkThread(
 	cwd: string,
 	current: () => boolean,
 ): void {
-	if (
-		!current() ||
-		thread.id !== id ||
-		!sameCwd(thread.cwd, cwd) ||
-		thread.active
-	) {
+	if (!current() || thread.id !== id || !sameCwd(thread.cwd, cwd)) {
+		throw new SessionContextError();
+	}
+	if (thread.active) {
 		throw new SessionContextError();
 	}
 }

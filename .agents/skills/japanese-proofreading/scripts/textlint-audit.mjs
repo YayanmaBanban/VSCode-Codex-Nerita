@@ -14,7 +14,7 @@ export function maskIgnoredDocument(source, filePath) {
 	let ignored = false;
 	let startLine = null;
 	const lines = source.split(/(?<=\n)/u);
-	const masked = lines.map((line, index) => {
+	const maskIgnoredLine = (line, index) => {
 		const marker = line.trim();
 
 		const endsIgnore = IGNORE_END.test(marker);
@@ -39,7 +39,8 @@ export function maskIgnoredDocument(source, filePath) {
 		}
 
 		return ignored || endsIgnore ? line.replace(/[^\r\n]/g, " ") : line;
-	});
+	};
+	const masked = lines.map(maskIgnoredLine);
 
 	if (ignored) {
 		throw new Error(
@@ -148,7 +149,9 @@ function validFenceOpening(marker, info) {
 
 /** 開始フェンスと同じ記号が同数以上続き、後ろに空白以外がないことを確認する。 */
 function closesFence(match, marker, length) {
-	return match[1][0] === marker && match[1].length >= length && !match[2].trim();
+	return (
+		match[1][0] === marker && match[1].length >= length && !match[2].trim()
+	);
 }
 
 function cachePath(root, type, scope, extension) {
@@ -224,7 +227,7 @@ function groupIssues(issues) {
 		}
 	}
 
-	const grouped = [...groups.values()].map((group) => {
+	const summarizeIssueGroup = (group) => {
 		const variants = [...group.variants].sort((left, right) =>
 			left.localeCompare(right),
 		);
@@ -247,7 +250,8 @@ function groupIssues(issues) {
 		}
 
 		return output;
-	});
+	};
+	const grouped = [...groups.values()].map(summarizeIssueGroup);
 
 	return grouped.sort((left, right) => {
 		const typeComparison = left.type.localeCompare(right.type);
@@ -302,7 +306,7 @@ export async function writeTextlintReview({ root, scope, items }) {
 	await fs.mkdir(outputDirectory, { recursive: true });
 
 	const outputPath = cachePath(root, "review", scope, "jsonl");
-	const sortedItems = [...items].sort((left, right) => {
+	const compareAuditItems = (left, right) => {
 		const fileComparison = left.file.localeCompare(right.file);
 
 		if (fileComparison !== 0) {
@@ -314,7 +318,8 @@ export async function writeTextlintReview({ root, scope, items }) {
 		}
 
 		return left.endLine - right.endLine;
-	});
+	};
+	const sortedItems = [...items].sort(compareAuditItems);
 
 	const lines = [
 		JSON.stringify({

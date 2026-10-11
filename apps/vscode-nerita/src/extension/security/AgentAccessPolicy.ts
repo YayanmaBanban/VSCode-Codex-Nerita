@@ -20,10 +20,10 @@ export type AgentRole = Partial<
 /** 共通の接頭辞を持つ別ディレクトリを含めず、相対パスから指定ルートの配下か判定する。 */
 export function containsPath(root: string, target: string): boolean {
 	const path = relative(root, target);
-	return (
-		path === "" ||
-		(!isAbsolute(path) && path !== ".." && !path.startsWith(`..${sep}`))
-	);
+	if (path === "") {
+		return true;
+	}
+	return !isAbsolute(path) && path !== ".." && !path.startsWith(`..${sep}`);
 }
 
 /** 親と `role` の共通部分だけを返し、どの階層でも権限を拡大させない。 */

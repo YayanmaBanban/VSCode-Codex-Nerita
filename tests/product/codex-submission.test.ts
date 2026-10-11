@@ -132,12 +132,17 @@ for (const outcome of ["running", "completed"]) {
 			),
 		);
 		assert.ok(
-			f.events.some(
-				(event) =>
+			f.events.some((event) => {
+				if (!(
 					event.type === "prompt/accepted" &&
-					event.requestId === "additional" &&
-					event.mode === (outcome === "running" ? "steer" : "start"),
-			),
+					event.requestId === "additional"
+				)) {
+					return false;
+				}
+				return (
+					event.mode === (outcome === "running" ? "steer" : "start")
+				);
+			}),
 		);
 		assert.equal(controller.snapshot().messages.at(-1)!.text, "追加の指示");
 	});

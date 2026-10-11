@@ -63,10 +63,11 @@ function validateHostCall(call: ToolCall) {
 	if (
 		!(call.hostShell === true) ||
 		!call.policy.shell ||
-		!isNonZeroNumber(call.command?.length) ||
-		!permission ||
-		call.compatibility?.code !== "native-pnpm-dos-path"
+		!isNonZeroNumber(call.command?.length)
 	) {
+		throw new Error("明示承認された Host 実行要求ではありません。");
+	}
+	if (!permission || call.compatibility?.code !== "native-pnpm-dos-path") {
 		throw new Error("明示承認された Host 実行要求ではありません。");
 	}
 	validateHostIdentity(call);
@@ -80,11 +81,19 @@ function validateHostIdentity(call: ToolCall) {
 	if (
 		permission.route !== "host" ||
 		permission.tool !== "pnpm" ||
-		basename(command[0]!).toLowerCase() !== "pnpm.exe" ||
+		basename(command[0]!).toLowerCase() !== "pnpm.exe"
+	) {
+		throw new Error("Host 実行の承認キーと起動対象が一致しません。");
+	}
+	if (
 		classifyToolCommand("pnpm", command.slice(1)) !==
 			permission.commandClass ||
 		!call.policy.workspaceRoots.includes(permission.workspace) ||
-		!containsPath(permission.workspace, call.cwd) ||
+		!containsPath(permission.workspace, call.cwd)
+	) {
+		throw new Error("Host 実行の承認キーと起動対象が一致しません。");
+	}
+	if (
 		call.policy.workspaceRoots.some((root) =>
 			containsPath(root, command[0]!),
 		)
@@ -98,9 +107,11 @@ function validateHostLimits(call: ToolCall) {
 	if (
 		!Number.isSafeInteger(call.timeoutMs) ||
 		call.timeoutMs! < 1 ||
-		call.timeoutMs! > 600_000 ||
-		call.command!.some((arg) => arg.includes("\0"))
+		call.timeoutMs! > 600_000
 	) {
+		throw new Error("Host 実行の引数または時間制限が不正です。");
+	}
+	if (call.command!.some((arg) => arg.includes("\0"))) {
 		throw new Error("Host 実行の引数または時間制限が不正です。");
 	}
 	// Host では readOnly role を隔離できないため、子の書込み上限を解除して起動しない。

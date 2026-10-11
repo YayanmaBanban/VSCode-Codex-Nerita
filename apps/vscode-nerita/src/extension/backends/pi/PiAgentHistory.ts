@@ -74,15 +74,21 @@ export function restorePiAgentRecords(
 
 /** 外部から編集された JSONL も画面の通信と同じ項目検証へ通す。 */
 function isAgentRecord(value: unknown): value is PiAgentRecord {
-	return (
+	if (!(
 		isRecord(value) &&
 		value.version === 1 &&
-		typeof value.cwd === "string" &&
+		typeof value.cwd === "string"
+	)) {
+		return false;
+	}
+	if (!(
 		!isAbsolute(value.cwd) &&
 		isSubAgent(value.summary) &&
-		validItems("messages", value.messages, 256) &&
-		validItems("tools", value.tools, 128)
-	);
+		validItems("messages", value.messages, 256)
+	)) {
+		return false;
+	}
+	return validItems("tools", value.tools, 128);
 }
 
 /** 保存する配列の上限と表示項目の形式をまとめて検証する。 */

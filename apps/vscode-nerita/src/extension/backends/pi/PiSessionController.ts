@@ -18,10 +18,12 @@ export class PiSessionController extends PiHistory implements BackendSession {
 
 	/** 実行や別の設定変更が完了するまで設定操作を拒否する。 */
 	private configurationUnavailable(): boolean {
-		return (
+		const pendingSession =
 			this.busy() ||
 			this.state.configPending ||
-			this.state.sessionPending ||
+			this.state.sessionPending;
+		return (
+			pendingSession ||
 			!["ready", "auth-required"].includes(this.state.connection)
 		);
 	}
@@ -329,15 +331,16 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			| { type: "auth/start"; requestId: string; methodId: string }
 			| { type: "auth/logout"; requestId: string },
 	) {
+		if (message.type !== "config/set" || message.configId === "provider") {
+			this.cancelQuota(true);
+			return;
+		}
 		this.cancelQuota(
-			message.type !== "config/set" ||
-				message.configId === "provider" ||
-				(message.configId === "model" &&
-					!(
-						this.runtime?.quota?.canRetainForModel(
-							message.value,
-						) === true
-					)),
+			message.configId === "model" &&
+				!(
+					this.runtime?.quota?.canRetainForModel(message.value) ===
+					true
+				),
 		);
 	}
 

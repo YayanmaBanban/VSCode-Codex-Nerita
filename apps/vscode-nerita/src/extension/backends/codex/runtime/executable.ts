@@ -20,7 +20,13 @@ export async function resolveCodexExecutable(
 	if (
 		!isRecord(project) ||
 		!isRecord(project.dependencies) ||
-		!isRecord(codex) ||
+		!isRecord(codex)
+	) {
+		throw new Error(
+			"同梱 Codex のバージョンが一致しません。拡張機能を再ビルドしてください。",
+		);
+	}
+	if (
 		typeof codex.version !== "string" ||
 		project.dependencies["@openai/codex"] !== codex.version
 	) {

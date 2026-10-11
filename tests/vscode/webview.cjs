@@ -15,10 +15,10 @@ async function findFrame(page, selector) {
 			async () => {
 				for (const frame of page.frames()) {
 					try {
-						if (
+						const frameVisible =
 							!frame.isDetached() &&
-							(await frame.locator(selector).count())
-						) {
+							(await frame.locator(selector).count());
+						if (frameVisible) {
 							found = frame;
 							return true;
 						}
@@ -147,9 +147,10 @@ async function run() {
 			'[aria-label="Codexへのメッセージ"]',
 		);
 		await chat.locator("button[data-connection]").click();
+		await expect(chat.locator("button[data-connection]")).toHaveCount(0);
 		await expect(
-			chat.getByRole("status", { name: "接続済み", exact: true }),
-		).toBeVisible();
+			chat.getByRole("button", { name: "新しいチャット", exact: true }),
+		).toBeEnabled();
 		const { light } = await verifyApprovedWrite(model, page, chat, cwd);
 		await verifyStoppedWrite(model, page, chat, cwd, light);
 		await require("./dlc.cjs").verifyDlc(page, chat, model, cwd, findFrame);

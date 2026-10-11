@@ -10,22 +10,7 @@ export function validatePath(path: string) {
 	if (path === "" || path.includes("\0")) {
 		throw new Error("不正なファイルパスです。");
 	}
-	if (
-		process.platform === "win32" &&
-		(/^[\\/]{2}/.test(path) ||
-			/^[a-z]:(?![\\/])/i.test(path) ||
-			/[:<>"|?*]/.test(path.replace(/^[a-z]:[\\/]/i, "")) ||
-			[...path].some((c) => c.charCodeAt(0) < 32) ||
-			path
-				.split(/[\\/]/)
-				.some(
-					(p) =>
-						(/[ .]$/.test(p) && p !== "." && p !== "..") ||
-						/^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(
-							p,
-						),
-				))
-	) {
+	if (process.platform === "win32" && isWindowsSpecialPath(path)) {
 		throw new Error("Windowsの特殊パスは許可されていません。");
 	}
 }
@@ -146,5 +131,28 @@ function readablePath(policy: AgentAccessPolicy, target: string): boolean {
 	return (
 		!policy.readableRoots ||
 		policy.readableRoots.some((root) => containsPath(root, target))
+	);
+}
+
+/** Windows が別の対象として解釈する区切り・制御文字・予約名を検出する。 */
+function isWindowsSpecialPath(path: string): boolean {
+	if (
+		/^[\\/]{2}/.test(path) ||
+		/^[a-z]:(?![\\/])/i.test(path) ||
+		/[:<>"|?*]/.test(path.replace(/^[a-z]:[\\/]/i, ""))
+	) {
+		return true;
+	}
+	return (
+		[...path].some((c) => c.charCodeAt(0) < 32) ||
+		path.split(/[\\/]/).some((p) => {
+			const invalidSegment = /[ .]$/.test(p) && p !== "." && p !== "..";
+			return (
+				invalidSegment ||
+				/^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(
+					p,
+				)
+			);
+		})
 	);
 }

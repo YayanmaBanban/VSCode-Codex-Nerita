@@ -52,17 +52,16 @@ function $indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
 
 /** 通常の Tab 入力だけを字下げ操作として受け付ける。 */
 function ignoreIndentKey(event: KeyboardEvent, editor: LexicalEditor) {
-	return (
+	const ignoredTab =
 		event.key !== "Tab" ||
 		event.isComposing ||
 		// IME の確定時に isComposing が先に解除されても、確定キーを処理しない。
 		// eslint-disable-next-line @typescript-eslint/no-deprecated
-		event.keyCode === 229 ||
-		editor.isComposing() ||
-		event.ctrlKey ||
-		event.metaKey ||
-		event.altKey
-	);
+		event.keyCode === 229;
+	if (ignoredTab || editor.isComposing() || event.ctrlKey) {
+		return true;
+	}
+	return event.metaKey || event.altKey;
 }
 
 /** React 側の最新状態を参照し、検索欄への移動でも本文の置換範囲を保つ。 */
@@ -86,10 +85,12 @@ export function useCompletionEditor(
 	useEffect(() => {
 		const outside = (event: Event) => {
 			// 初回表示中の検索欄へのフォーカスを、パネル外への移動と判定しない。
-			if (
+			const outsideCompletion =
 				latest.current.container.current &&
 				event.target instanceof Node &&
-				!latest.current.container.current.contains(event.target) &&
+				!latest.current.container.current.contains(event.target);
+			if (
+				outsideCompletion === true &&
 				!(editor.getRootElement()?.contains(event.target) === true)
 			) {
 				latest.current.onMatch(null);

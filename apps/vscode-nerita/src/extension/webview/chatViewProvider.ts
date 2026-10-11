@@ -270,14 +270,18 @@ export class ChatViewProvider
 			return true;
 		}
 		const state = this.session.snapshot();
-		return (
+		const pendingSession =
 			state.run === "running" ||
 			state.run === "cancelling" ||
-			state.connection === "connecting" ||
+			state.connection === "connecting";
+		if (
+			pendingSession ||
 			state.connection === "authenticating" ||
-			state.sessionPending ||
-			state.configPending
-		);
+			state.sessionPending
+		) {
+			return true;
+		}
+		return state.configPending;
 	}
 
 	/** 下書きと表示位置を同期して会話操作をバックエンドへ渡す。 */

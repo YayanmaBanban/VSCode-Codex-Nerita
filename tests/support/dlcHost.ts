@@ -7,6 +7,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import type { DlcAction } from "@nerita/shared/dlc/contracts";
+import type { BackendId } from "@nerita/shared/backend";
 import { DlcHost } from "../../apps/vscode-nerita/src/extension/dlc/DlcHost";
 import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
 import { piFixture } from "./pi";
@@ -14,11 +15,14 @@ import { piFixture } from "./pi";
 const execute = promisify(execFile);
 
 /** 会話・Git・保存処理を代替せず、必要な VS Code の Memento とワークスペースだけを用意する。 */
-function hostContext(root: string): vscode.ExtensionContext {
+export function hostContext(
+	root: string,
+	backend: BackendId = "pi",
+): vscode.ExtensionContext {
 	Object.assign(vscode.workspace, {
 		isTrusted: true,
 		workspaceFolders: [{ uri: { scheme: "file", fsPath: root } }],
-		getConfiguration: () => ({ get: () => "pi" }),
+		getConfiguration: () => ({ get: () => backend }),
 	});
 	const records = new Map<string, unknown>();
 	const memento = {
@@ -54,8 +58,12 @@ export async function dlcHostFixture(t: TestContext) {
 	const runtime = new BackendRuntime((_backend, root) =>
 		f.controller(undefined, root ?? f.cwd),
 	);
+	const unsubscribeTrust = f.trust.onChange((root) =>
+		runtime.invalidateTrust(root),
+	);
 	const host = new DlcHost(context, f.trust, runtime);
 	t.after(async () => {
+		unsubscribeTrust();
 		await host.dispose();
 		await runtime.dispose();
 	});
@@ -102,7 +110,7 @@ export async function dlcHostFixture(t: TestContext) {
 }
 
 /** 未コミットの製品ファイルをコピーせず、検証用の main HEAD を作る。 */
-async function prepareRepository(root: string) {
+export async function prepareRepository(root: string) {
 	await writeFile(join(root, "hello.txt"), "before\n");
 	await execute("git", ["init", "--quiet", root], { windowsHide: true });
 	await execute("git", ["-C", root, "config", "core.autocrlf", "false"], {

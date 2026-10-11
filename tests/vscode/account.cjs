@@ -64,9 +64,10 @@ async function verifyAccount(page, chat, model, findFrame) {
 		chat.locator('button[data-connection="auth-required"]'),
 	).toBeVisible();
 	await selectBackend(chat, "Pi", "pi");
+	await expect(chat.locator("button[data-connection]")).toHaveCount(0);
 	await expect(
-		chat.getByRole("status", { name: "接続済み", exact: true }),
-	).toBeVisible();
+		chat.getByRole("button", { name: "新しいチャット", exact: true }),
+	).toBeEnabled();
 	model.replies.push("切替後の Pi が受領しました");
 	await chat
 		.getByRole("textbox", { name: "Codexへのメッセージ" })
@@ -148,9 +149,10 @@ async function verifyAuthClose(page, chat, model, findFrame) {
 		"Pi 認証情報",
 	);
 	await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+	await expect(chat.locator("button[data-connection]")).toHaveCount(0);
 	await expect(
-		chat.getByRole("status", { name: "接続済み", exact: true }),
-	).toBeVisible();
+		chat.getByRole("button", { name: "新しいチャット", exact: true }),
+	).toBeEnabled();
 	assert.equal(await credentials(), before);
 	assert.equal(model.requests.length, requests);
 	await require("./credentials.cjs").verifyCredentials(

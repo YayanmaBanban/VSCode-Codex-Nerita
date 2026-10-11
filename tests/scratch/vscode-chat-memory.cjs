@@ -247,7 +247,8 @@ async function main() {
 
 /** 削除対象が作成した dist 直下のディレクトリであることを確認する。 */
 async function removeTemporaryRoot(root) {
-	if (path.dirname(path.resolve(root)) !== dist) {
+	const outsideDist = path.dirname(path.resolve(root)) !== dist;
+	if (outsideDist) {
 		throw new Error("一時ディレクトリが dist の外にあります");
 	}
 	await fs.rm(root, {

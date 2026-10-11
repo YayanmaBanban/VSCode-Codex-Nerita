@@ -86,19 +86,18 @@ async function clickButton(chat, label) {
 
 /** 一覧の再取得による DOM の入れ替えを考慮し、存在確認とクリックをまとめる。 */
 async function clickSelector(chat, selector) {
+	const clickEnabledButton = (value) => {
+		const button = globalThis.document.querySelector(value);
+		if (!button || button.disabled) {
+			return false;
+		}
+		button.click();
+		return true;
+	};
 	await expect
-		.poll(
-			() =>
-				chat.evaluate((value) => {
-					const button = globalThis.document.querySelector(value);
-					if (!button || button.disabled) {
-						return false;
-					}
-					button.click();
-					return true;
-				}, selector),
-			{ timeout: 30000 },
-		)
+		.poll(() => chat.evaluate(clickEnabledButton, selector), {
+			timeout: 30000,
+		})
 		.toBe(true);
 }
 
@@ -143,15 +142,14 @@ async function cycle(context, results, index) {
 		mounted > 0 && mounted < 50,
 		`描画範囲が制限されていません: ${mounted}`,
 	);
-	if (
-		await chat.evaluate(() =>
-			Boolean(
-				globalThis.document.querySelector(
-					'button[aria-label="セッション一覧を閉じる"]',
-				),
+	const sessionPanelOpen = await chat.evaluate(() =>
+		Boolean(
+			globalThis.document.querySelector(
+				'button[aria-label="セッション一覧を閉じる"]',
 			),
-		)
-	) {
+		),
+	);
+	if (sessionPanelOpen) {
 		await clickButton(chat, "セッション一覧を閉じる");
 	}
 	await measure(context, results, `loaded-${index}`);

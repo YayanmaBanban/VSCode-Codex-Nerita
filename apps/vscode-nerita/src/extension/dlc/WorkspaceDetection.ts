@@ -119,9 +119,11 @@ class WorkspaceScanner {
 		if (
 			depth > detectionLimits.depth ||
 			this.visited > detectionLimits.files ||
-			this.bytes > detectionLimits.bytes ||
-			Date.now() - this.started > detectionLimits.durationMs
+			this.bytes > detectionLimits.bytes
 		) {
+			throw new Error("ワークスペース検出の走査上限を超えています。");
+		}
+		if (Date.now() - this.started > detectionLimits.durationMs) {
 			throw new Error("ワークスペース検出の走査上限を超えています。");
 		}
 	}
@@ -178,13 +180,13 @@ class WorkspaceScanner {
 			.object({ packages: z.array(z.string().min(1)) })
 			.parse(parseYaml(workspace)).packages;
 		if (
-			patterns.some(
-				(pattern) =>
+			patterns.some((pattern) => {
+				const invalidPattern =
 					pattern.startsWith("/") ||
 					pattern.includes("..") ||
-					pattern.includes("\\") ||
-					pattern.includes(":"),
-			)
+					pattern.includes("\\");
+				return invalidPattern || pattern.includes(":");
+			})
 		) {
 			throw new Error("ワークスペースのパッケージ指定が不正です。");
 		}

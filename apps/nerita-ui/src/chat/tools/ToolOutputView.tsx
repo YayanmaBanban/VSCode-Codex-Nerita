@@ -29,45 +29,48 @@ export function ToolOutputView({ output }: { output: ToolOutputPreview }) {
 	const bridge = useContext(ToolOutputBridge);
 	const [expanded, setExpanded] = useState(false);
 	const rangeId = useId();
+	const outputRef = output.outputRef;
+	const canExpand =
+		output.truncated && isNonEmptyString(outputRef) && bridge !== undefined;
+	const details = canExpand ? (
+		<>
+			<button
+				type="button"
+				className={cn(
+					"mt-[8px] inline-flex items-center gap-[6px] rounded-[5px] border-0",
+					"bg-transparent px-[6px] py-[4px] text-[12px] text-muted",
+					"hover:bg-settings-hover",
+					"focus-visible:outline-1 focus-visible:outline-settings-focus",
+				)}
+				onClick={() => setExpanded(!expanded)}
+				aria-expanded={expanded}
+				aria-controls={rangeId}
+			>
+				詳細出力
+				{expanded ? (
+					<ChevronUp size={14} aria-hidden="true" />
+				) : (
+					<ChevronRight size={14} aria-hidden="true" />
+				)}
+			</button>
+			{expanded && (
+				<OutputRange
+					id={rangeId}
+					key={outputRef}
+					outputRef={outputRef}
+					bridge={bridge}
+				/>
+			)}
+		</>
+	) : (
+		<p className="text-[12px] text-muted">
+			省略部分の出力を取得できません。
+		</p>
+	);
 	return (
 		<section>
 			<CommandOutput text={output.preview} />
-			{output.truncated &&
-				(isNonEmptyString(output.outputRef) && bridge ? (
-					<>
-						<button
-							type="button"
-							className={cn(
-								"mt-[8px] inline-flex items-center gap-[6px] rounded-[5px] border-0",
-								"bg-transparent px-[6px] py-[4px] text-[12px] text-muted",
-								"hover:bg-settings-hover",
-								"focus-visible:outline-1 focus-visible:outline-settings-focus",
-							)}
-							onClick={() => setExpanded(!expanded)}
-							aria-expanded={expanded}
-							aria-controls={rangeId}
-						>
-							詳細出力
-							{expanded ? (
-								<ChevronUp size={14} aria-hidden="true" />
-							) : (
-								<ChevronRight size={14} aria-hidden="true" />
-							)}
-						</button>
-						{expanded && (
-							<OutputRange
-								id={rangeId}
-								key={output.outputRef}
-								outputRef={output.outputRef}
-								bridge={bridge}
-							/>
-						)}
-					</>
-				) : (
-					<p className="text-[12px] text-muted">
-						省略部分の出力を取得できません。
-					</p>
-				))}
+			{output.truncated && details}
 		</section>
 	);
 }
@@ -89,6 +92,8 @@ function OutputRange({
 		outputRef,
 		offset,
 	);
+	const unavailableRange = loading || isNonEmptyString(error) || !range;
+	const rangeReady = !loading && !isNonEmptyString(error);
 	return (
 		<section id={id} aria-label="詳細出力" aria-busy={loading}>
 			<RangeContent error={error} loading={loading} range={range} />
@@ -113,12 +118,7 @@ function OutputRange({
 						type="button"
 						className={rangeButtonClass}
 						aria-label="次の範囲を表示"
-						disabled={
-							loading ||
-							isNonEmptyString(error) ||
-							!range ||
-							range.eof
-						}
+						disabled={unavailableRange || range.eof}
 						onClick={() => {
 							if (!range) {
 								return;
@@ -131,7 +131,7 @@ function OutputRange({
 						<ChevronRight size={16} aria-hidden="true" />
 					</button>
 				</SettingsTooltip>
-				{range && !loading && !isNonEmptyString(error) && (
+				{range && rangeReady && (
 					<span>
 						{range.offset.toLocaleString()}–
 						{range.nextOffset.toLocaleString()} バイト

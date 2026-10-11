@@ -129,8 +129,10 @@ function AgentViewerHeader({ viewer, current }: AgentViewerHeaderProps) {
 
 /** 読み込み済みの会話に表示項目がないか確認する。 */
 function emptyAgentView(view: AgentThreadView | null) {
+	if (!view) {
+		return view;
+	}
 	return (
-		view &&
 		view.messages.length === 0 &&
 		view.tools.length === 0 &&
 		view.agents.length === 0

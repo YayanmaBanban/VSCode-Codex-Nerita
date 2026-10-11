@@ -32,9 +32,10 @@ function readComment(source, i) {
 	}
 	const block = pair === "/*";
 	const marker = source[i + 2];
-	const outerDoc = block
-		? marker === "*" && !["*", "/"].includes(source[i + 3])
-		: marker === "/" && source[i + 3] !== "/";
+	const expectedMarker = block ? "*" : "/";
+	const outerDoc =
+		marker === expectedMarker &&
+		(block ? !["*", "/"].includes(source[i + 3]) : source[i + 3] !== "/");
 	const doc = marker === "!" || outerDoc;
 	const next = block ? blockEnd(source, i) : lineEnd(source, i);
 	return {

@@ -44,9 +44,13 @@ async function main() {
 	const project = await readJson(path.join(root, "package.json"));
 	if (
 		project.dependencies["@earendil-works/pi-coding-agent"] !== version ||
-		aiManifest.version !== version ||
-		(requested !== undefined && requested !== version)
+		aiManifest.version !== version
 	) {
+		throw new Error(
+			"指定版・固定依存・インストール済みの Pi SDK・pi-ai のバージョンを揃えてください。",
+		);
+	}
+	if (requested !== undefined && requested !== version) {
 		throw new Error(
 			"指定版・固定依存・インストール済みの Pi SDK・pi-ai のバージョンを揃えてください。",
 		);

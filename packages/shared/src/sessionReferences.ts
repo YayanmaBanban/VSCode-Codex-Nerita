@@ -17,15 +17,21 @@ export function isSessionReference(value: unknown): value is SessionReference {
 		return false;
 	}
 	const entry = value;
-	return (
+	if (!(
 		entry.kind === "session" &&
 		isSessionReferenceMode(entry.mode) &&
-		typeof entry.sessionId === "string" &&
+		typeof entry.sessionId === "string"
+	)) {
+		return false;
+	}
+	if (!(
 		entry.sessionId.length > 0 &&
 		entry.sessionId.length <= 256 &&
-		isPathString(entry.name) &&
-		isPathString(entry.cwd)
-	);
+		isPathString(entry.name)
+	)) {
+		return false;
+	}
+	return isPathString(entry.cwd);
 }
 
 /** セッション参照の一ページ検索。検索語はタイトルに適用する。 */
@@ -71,21 +77,25 @@ export function isSessionReferenceMode(
 export function validSessionReferences(
 	value: unknown,
 ): value is SessionContextReference[] | undefined {
+	if (value === undefined) {
+		return true;
+	}
 	return (
-		value === undefined ||
-		(Array.isArray(value) &&
-			value.length <= 5 &&
-			value.every((item: unknown) => {
-				if (!isRecord(item)) {
-					return false;
-				}
-				const entry = item;
-				return (
-					isSessionReferenceMode(entry.mode) &&
-					typeof entry.sessionId === "string" &&
-					entry.sessionId.length > 0 &&
-					entry.sessionId.length <= 256
-				);
-			}))
+		Array.isArray(value) &&
+		value.length <= 5 &&
+		value.every((item: unknown) => {
+			if (!isRecord(item)) {
+				return false;
+			}
+			const entry = item;
+			if (!(
+				isSessionReferenceMode(entry.mode) &&
+				typeof entry.sessionId === "string" &&
+				entry.sessionId.length > 0
+			)) {
+				return false;
+			}
+			return entry.sessionId.length <= 256;
+		})
 	);
 }

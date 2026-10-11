@@ -163,12 +163,15 @@ function createApprovedFileWriter(
 		const handle = await open(path, snapshot.file ? "r+" : "wx");
 		try {
 			const info = await handle.stat();
+			const sameIdentity = (
+				previous: NonNullable<typeof snapshot.file>,
+			) =>
+				info.ino === previous.ino &&
+				info.dev === previous.dev &&
+				info.birthtimeMs === previous.birthtimeMs;
 			if (
 				info.nlink > 1 ||
-				(snapshot.file &&
-					(info.ino !== snapshot.file.ino ||
-						info.dev !== snapshot.file.dev ||
-						info.birthtimeMs !== snapshot.file.birthtimeMs))
+				(snapshot.file && !sameIdentity(snapshot.file))
 			) {
 				throw new Error("ファイルが差し替えられました。");
 			}

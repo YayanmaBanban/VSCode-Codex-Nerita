@@ -28,7 +28,11 @@ export function normalizeOpenAIQuota(payload: unknown): QuotaWindow[] | null {
 		if (
 			!isRecord(window) ||
 			!isFiniteNumber(window.used_percent) ||
-			typeof window.limit_window_seconds !== "number" ||
+			typeof window.limit_window_seconds !== "number"
+		) {
+			continue;
+		}
+		if (
 			!Number.isFinite(window.limit_window_seconds) ||
 			window.limit_window_seconds <= 0
 		) {
@@ -116,12 +120,14 @@ export class OpenAIQuotaService {
 
 	/** API キーや独自宛先のモデルから利用枠の認証を流用しない。 */
 	private canFetch(model: NonNullable<AgentSession["model"]>): boolean {
-		return (
+		if (!(
 			model.provider === "openai" &&
 			model.api === "openai-responses" &&
-			isOpenAIEndpoint(model.baseUrl) &&
-			this.models.isUsingOAuth(model.provider)
-		);
+			isOpenAIEndpoint(model.baseUrl)
+		)) {
+			return false;
+		}
+		return this.models.isUsingOAuth(model.provider);
 	}
 
 	/** 取得開始時と現在のモデルが一致するか照合する。 */
@@ -130,12 +136,11 @@ export class OpenAIQuotaService {
 		if (!current || !this.canFetch(current)) {
 			return true;
 		}
-		return (
+		const changedModel =
 			current.provider !== model.provider ||
 			current.id !== model.id ||
-			current.api !== model.api ||
-			current.baseUrl !== model.baseUrl
-		);
+			current.api !== model.api;
+		return changedModel || current.baseUrl !== model.baseUrl;
 	}
 }
 

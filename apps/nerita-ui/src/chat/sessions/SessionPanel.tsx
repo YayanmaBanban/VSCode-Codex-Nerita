@@ -248,13 +248,16 @@ function emptySessionList(state: ChatState) {
 
 /** 非同期処理がある時は履歴の切り替えを抑制する。 */
 function sessionActionsDisabled(state: ChatState) {
-	return (
+	const sessionPendingCheck =
 		state.connection !== "ready" ||
 		state.sessionPending ||
-		state.configPending ||
+		state.configPending;
+	if (
+		sessionPendingCheck ||
 		state.attachmentPending ||
-		state.run === "running" ||
-		state.run === "cancelling" ||
-		state.asyncTasks.some(taskActive)
-	);
+		state.run === "running"
+	) {
+		return true;
+	}
+	return state.run === "cancelling" || state.asyncTasks.some(taskActive);
 }

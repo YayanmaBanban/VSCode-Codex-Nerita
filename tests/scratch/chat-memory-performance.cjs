@@ -78,7 +78,7 @@ function historyRpc(root) {
 	};
 	child.on("error", fail);
 	child.on("exit", () => fail(new Error("App Server exited")));
-	lines.on("line", (line) => {
+	const receiveResponse = (line) => {
 		const response = JSON.parse(line);
 		const request = pending.get(response.id);
 		if (!request) {
@@ -91,9 +91,10 @@ function historyRpc(root) {
 		} else {
 			request.resolve(response.result);
 		}
-	});
-	const request = (method, params) =>
-		new Promise((resolve, reject) => {
+	};
+	lines.on("line", receiveResponse);
+	const request = (method, params) => {
+		const sendRequest = (resolve, reject) => {
 			const id = ++nextId;
 			const timer = setTimeout(() => {
 				pending.delete(id);
@@ -101,7 +102,9 @@ function historyRpc(root) {
 			}, 30000);
 			pending.set(id, { resolve, reject, timer });
 			child.stdin.write(`${JSON.stringify({ id, method, params })}\n`);
-		});
+		};
+		return new Promise(sendRequest);
+	};
 	const dispose = async () => {
 		fail(new Error("App Server disposed"));
 		lines.close();

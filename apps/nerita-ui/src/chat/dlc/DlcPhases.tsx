@@ -87,14 +87,16 @@ export function DlcPhases(props: PhaseProps) {
 	);
 }
 function executionBusy(view: DlcView, selected: DlcProjection): boolean {
-	return (
+	const intentPending =
 		view.targetBusy ||
 		view.assignmentPending ||
 		view.intents.some(
 			(intent) =>
 				intent.intentId === selected.intentId &&
 				intent.startHold !== undefined,
-		) ||
+		);
+	return (
+		intentPending ||
 		view.running.some((run) => run.intentId === selected.intentId)
 	);
 }

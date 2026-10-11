@@ -86,10 +86,12 @@ export class AgentManagerStore {
 			if (handoffText !== undefined) {
 				const value: unknown = JSON.parse(handoffText);
 				// 以前の管理画面が付けた相対参照は、次回保存時に除去する。
-				if (
+				const schemaPresent =
 					typeof value === "object" &&
 					value !== null &&
-					"$schema" in value &&
+					"$schema" in value;
+				if (
+					schemaPresent &&
 					value.$schema === "./handoff.schema.json"
 				) {
 					delete value.$schema;

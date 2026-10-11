@@ -150,13 +150,16 @@ function updateCommandOrFiles(
 /** 解析済みの各操作を見出しへ使い、解析結果がない場合は起動コマンドから補う。 */
 function commandTitle(command: string, actions: unknown): string {
 	const commands = Array.isArray(actions)
-		? actions.flatMap((action: unknown) =>
-				isRecord(action) &&
-				typeof action.command === "string" &&
-				action.command.trim() !== ""
-					? [powerShellBody(action.command)]
-					: [],
-			)
+		? actions.flatMap((action: unknown) => {
+				if (!(
+					isRecord(action) &&
+					typeof action.command === "string" &&
+					action.command.trim() !== ""
+				)) {
+					return [];
+				}
+				return [powerShellBody(action.command)];
+			})
 		: [];
 	return commands.length > 0 ? commands.join("; ") : powerShellBody(command);
 }

@@ -108,15 +108,14 @@ async function connectWebview(browserSession) {
 			async () => {
 				for (const context of contexts) {
 					const candidate = chatContext(frameSession, context.id);
-					if (
-						await candidate.evaluate(() =>
-							Boolean(
-								globalThis.document.querySelector(
-									'[aria-label="Codexへのメッセージ"]',
-								),
+					const composerPresent = await candidate.evaluate(() =>
+						Boolean(
+							globalThis.document.querySelector(
+								'[aria-label="Codexへのメッセージ"]',
 							),
-						)
-					) {
+						),
+					);
+					if (composerPresent) {
 						chat = candidate;
 						return true;
 					}

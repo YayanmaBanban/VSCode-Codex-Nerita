@@ -16,7 +16,11 @@ export function parseQuota(value: unknown): QuotaWindow[] | null {
 		if (
 			!isRecord(window) ||
 			typeof window.usedPercent !== "number" ||
-			!Number.isFinite(window.usedPercent) ||
+			!Number.isFinite(window.usedPercent)
+		) {
+			throw new Error("Invalid rate limit window");
+		}
+		if (
 			!isWindowDuration(window.windowDurationMins) ||
 			!isResetTime(window.resetsAt)
 		) {
@@ -85,7 +89,11 @@ export function parseUsage(value: unknown): ContextUsage | null {
 	if (
 		!isRecord(value) ||
 		!isRecord(value.last) ||
-		typeof value.last.totalTokens !== "number" ||
+		typeof value.last.totalTokens !== "number"
+	) {
+		throw new Error("Invalid token usage");
+	}
+	if (
 		!Number.isFinite(value.last.totalTokens) ||
 		value.last.totalTokens < 0
 	) {

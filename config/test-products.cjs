@@ -83,11 +83,22 @@ function verifyRegression(result, regression) {
 		.filter(Boolean)
 		.map((line) => JSON.parse(line));
 	const expected = regressions[regression].expected;
+	if (result.status === 0 || result.status === null) {
+		console.error(result.stdout, result.stderr);
+		throw new Error(
+			`狙った回帰をアサーションで検出できません: ${regression}`,
+		);
+	}
 	if (
-		result.status === 0 ||
-		result.status === null ||
 		(result.signal !== null && result.signal !== undefined) ||
-		failures.length === 0 ||
+		failures.length === 0
+	) {
+		console.error(result.stdout, result.stderr);
+		throw new Error(
+			`狙った回帰をアサーションで検出できません: ${regression}`,
+		);
+	}
+	if (
 		result.stderr.trim() ||
 		failures.some(
 			(failure) => !expectedRegressionFailure(failure, expected),
@@ -130,11 +141,11 @@ async function verifyRegressions(root, files, environment) {
 
 /** 自分で作った一時領域だけを削除する。 */
 async function removeRun(root) {
-	if (
+	const unsafeRoot =
 		path.dirname(root) !== os.tmpdir() ||
 		!path.basename(root).startsWith("nerita-products-") ||
-		(await fs.lstat(root)).isSymbolicLink()
-	) {
+		(await fs.lstat(root)).isSymbolicLink();
+	if (unsafeRoot) {
 		throw new Error("検証用の一時領域を確認できません。");
 	}
 	await fs.rm(root, { recursive: true, force: true });
@@ -194,7 +205,8 @@ async function main() {
 			NERITA_TEST_REPO_ROOT: repoRoot,
 			NERITA_EXTERNAL_AGENT_DIR: externalAgentDir,
 		};
-		if (!(await execute(root, files, environment))) {
+		const executionFailed = !(await execute(root, files, environment));
+		if (executionFailed) {
 			process.exitCode = 1;
 			return;
 		}

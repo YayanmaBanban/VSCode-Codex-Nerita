@@ -46,18 +46,25 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 					value[key] === undefined || typeof value[key] === "boolean",
 			),
 		sessions: (value) =>
-			everyRecord(
-				value,
-				(item) =>
+			everyRecord(value, (item) => {
+				if (!(
 					isId(item.sessionId) &&
 					(item.archived === undefined ||
-						typeof item.archived === "boolean") &&
+						typeof item.archived === "boolean")
+				)) {
+					return false;
+				}
+				if (!(
 					typeof item.cwd === "string" &&
-					(item.title === undefined ||
-						typeof item.title === "string") &&
-					(item.updatedAt === undefined ||
-						typeof item.updatedAt === "string"),
-			),
+					(item.title === undefined || typeof item.title === "string")
+				)) {
+					return false;
+				}
+				return (
+					item.updatedAt === undefined ||
+					typeof item.updatedAt === "string"
+				);
+			}),
 		asyncTasks: (value) => Array.isArray(value) && value.every(isAsyncTask),
 		connection: (value) =>
 			typeof value === "string" &&
@@ -81,30 +88,42 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 			].includes(value),
 		sessionId: (value) => value === null || isId(value),
 		runId: (value) => value === null || isId(value),
-		planDecision: (value) =>
-			value === null ||
-			(isRecord(value) &&
+		planDecision: (value) => {
+			if (value === null) {
+				return true;
+			}
+			return (
+				isRecord(value) &&
 				isId(value.runId) &&
-				typeof value.text === "string"),
+				typeof value.text === "string"
+			);
+		},
 		error: (value) => value === null || typeof value === "string",
 		messages: (value) =>
-			everyRecord(
-				value,
-				(item) =>
+			everyRecord(value, (item) => {
+				if (!(
 					isId(item.id) &&
 					typeof item.role === "string" &&
-					["user", "assistant"].includes(item.role) &&
+					["user", "assistant"].includes(item.role)
+				)) {
+					return false;
+				}
+				return (
 					typeof item.text === "string" &&
 					validReferences(item.text, item.references) &&
-					validOptionalFields(item, messageOptionalValidators),
-			),
+					validOptionalFields(item, messageOptionalValidators)
+				);
+			}),
 		tools: (value) =>
-			everyRecord(
-				value,
-				(item) =>
+			everyRecord(value, (item) => {
+				if (!(
 					isId(item.id) &&
 					typeof item.title === "string" &&
-					validOptionalFields(item, toolOptionalValidators) &&
+					validOptionalFields(item, toolOptionalValidators)
+				)) {
+					return false;
+				}
+				return (
 					[
 						"pending",
 						"in_progress",
@@ -115,21 +134,24 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 						"unknown",
 					].some((status) => status === item.status) &&
 					Array.isArray(item.paths) &&
-					item.paths.every((p: unknown) => typeof p === "string"),
-			),
+					item.paths.every((p: unknown) => typeof p === "string")
+				);
+			}),
 		permissions: (value) =>
 			everyRecord(
 				value,
 				(item) =>
 					isId(item.id) &&
-					everyRecord(
-						item.options,
-						(o) =>
+					everyRecord(item.options, (o) => {
+						if (!(
 							isId(o.id) &&
 							typeof o.name === "string" &&
-							typeof o.kind === "string" &&
-							["allow", "deny", "abort"].includes(o.kind),
-					) &&
+							typeof o.kind === "string"
+						)) {
+							return false;
+						}
+						return ["allow", "deny", "abort"].includes(o.kind);
+					}) &&
 					isPermissionPresentation(item),
 			),
 		authMethods: (value) =>
@@ -189,22 +211,28 @@ function validOptionalFields(
 
 /** 表示用メタデータには、生の結果や任意フィールドを許可しない。 */
 function validResultDisplay(value: unknown): boolean {
+	if (value === undefined) {
+		return true;
+	}
+	if (!(
+		isRecord(value) &&
+		typeof value.source === "string" &&
+		["content", "structuredContent"].includes(value.source)
+	)) {
+		return false;
+	}
 	return (
-		value === undefined ||
-		(isRecord(value) &&
-			typeof value.source === "string" &&
-			["content", "structuredContent"].includes(value.source) &&
-			typeof value.omitted === "boolean" &&
-			Object.keys(value).every(
-				(key) => key === "source" || key === "omitted",
-			))
+		typeof value.omitted === "boolean" &&
+		Object.keys(value).every((key) => key === "source" || key === "omitted")
 	);
 }
 
 /** 省略サイズは非負の整数だけを受理する。 */
 function validOmittedArgumentBytes(value: unknown) {
+	if (value === undefined) {
+		return true;
+	}
 	return (
-		value === undefined ||
-		(typeof value === "number" && Number.isSafeInteger(value) && value >= 0)
+		typeof value === "number" && Number.isSafeInteger(value) && value >= 0
 	);
 }

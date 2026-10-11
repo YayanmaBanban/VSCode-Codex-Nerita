@@ -309,11 +309,10 @@ function CompletionPanel(props: CompletionPanelProps) {
 			ref={container}
 			role="presentation"
 			onKeyDown={(event) => {
-				if (
-					(event.key === "Escape" ||
-						(event.altKey && event.key === "ArrowLeft")) &&
-					handleKey(event.nativeEvent, true)
-				) {
+				const dismissKey =
+					event.key === "Escape" ||
+					(event.altKey && event.key === "ArrowLeft");
+				if (dismissKey && handleKey(event.nativeEvent, true)) {
 					event.stopPropagation();
 				}
 			}}

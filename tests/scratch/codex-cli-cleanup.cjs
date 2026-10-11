@@ -52,7 +52,8 @@ async function cleanup(binary, cwd, managedRoot, record) {
 			await request("thread/delete", { threadId: target.threadId });
 			await fs.rm(checkout, { recursive: true, force: true });
 			const bucket = path.dirname(checkout);
-			if ((await fs.readdir(bucket)).length === 0) {
+			const emptyBucket = (await fs.readdir(bucket)).length === 0;
+			if (emptyBucket) {
 				await fs.rmdir(bucket);
 			}
 			removed++;
@@ -74,7 +75,7 @@ function startCleanupServer(binary, cwd) {
 	const pending = new Map();
 	let sequence = 0;
 	const lines = createInterface({ input: child.stdout });
-	lines.on("line", (line) => {
+	const receiveResponse = (line) => {
 		const message = JSON.parse(line);
 		const waiting = pending.get(message.id);
 		if (!waiting) {
@@ -86,7 +87,8 @@ function startCleanupServer(binary, cwd) {
 		} else {
 			waiting.resolve(message.result);
 		}
-	});
+	};
+	lines.on("line", receiveResponse);
 	const request = (method, params) =>
 		new Promise((resolve, reject) => {
 			const id = ++sequence;

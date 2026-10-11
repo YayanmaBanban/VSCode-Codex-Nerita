@@ -156,12 +156,14 @@ export class WorkspaceTrustStore {
 			const record = this.list()
 				.filter((item) => containsPath(item.root, actual))
 				.sort((a, b) => b.root.length - a.root.length)[0];
-			return (
+			if (!(
 				!!record &&
 				record.trust === "trusted" &&
-				(await sameRootIdentity(record)) &&
-				!(await hasNestedRepository(record.root, actual))
-			);
+				(await sameRootIdentity(record))
+			)) {
+				return false;
+			}
+			return !(await hasNestedRepository(record.root, actual));
 		} catch {
 			return false;
 		}
@@ -362,12 +364,14 @@ async function sameRootIdentity(record: TrustRecord): Promise<boolean> {
 		return false;
 	}
 	const info = await stat(record.root);
-	return (
+	if (!(
 		info.isDirectory() &&
 		info.dev === record.identity.dev &&
-		info.ino === record.identity.ino &&
-		info.birthtimeMs === record.identity.birthtimeMs
-	);
+		info.ino === record.identity.ino
+	)) {
+		return false;
+	}
+	return info.birthtimeMs === record.identity.birthtimeMs;
 }
 
 /** 外部ツリー配下を個別に信頼しても、出所の記録を失わない。 */

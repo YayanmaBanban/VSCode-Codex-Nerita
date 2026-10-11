@@ -60,15 +60,16 @@ export function removeStep(workflow: Workflow, id: string): Workflow {
 	if (workflow.steps.length === 1) {
 		throw new Error("ステップは 1 件以上必要です。");
 	}
-	const referenced = workflow.steps.some(
-		(step) =>
-			step.id !== id &&
-			(step.resume === id ||
-				step.fork === id ||
-				new RegExp(`\\{\\{\\s*${id}\\.output\\s*\\}\\}`).test(
-					step.task,
-				)),
-	);
+	const referenced = workflow.steps.some((step) => {
+		if (!(step.id !== id)) {
+			return false;
+		}
+		return (
+			step.resume === id ||
+			step.fork === id ||
+			new RegExp(`\\{\\{\\s*${id}\\.output\\s*\\}\\}`).test(step.task)
+		);
+	});
 	if (referenced) {
 		throw new Error(
 			"会話または結果が参照されています。参照を変更してから削除してください。",

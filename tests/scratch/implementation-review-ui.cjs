@@ -57,7 +57,9 @@ async function captureStory(page, root, story, theme, width) {
 	if (story.includes("unknown-result")) {
 		await page.getByText("結果不明", { exact: true }).waitFor();
 		const heading = page.getByRole("button", { name: /^遠隔の項目を更新/ });
-		if ((await heading.getAttribute("aria-expanded")) === "false") {
+		const collapsed =
+			(await heading.getAttribute("aria-expanded")) === "false";
+		if (collapsed) {
 			await heading.click();
 		}
 		await page

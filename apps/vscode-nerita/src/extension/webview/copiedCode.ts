@@ -32,7 +32,11 @@ export class CopiedCode implements vscode.Disposable {
 					if (
 						token.isCancellationRequested ||
 						ranges.length !== 1 ||
-						!range ||
+						!range
+					) {
+						return;
+					}
+					if (
 						range.isEmpty ||
 						document.uri.scheme !== "file" ||
 						isNonEmptyString(vscode.env.remoteName)
@@ -92,11 +96,14 @@ export class CopiedCode implements vscode.Disposable {
 				end.line,
 				end.character,
 			);
-			return this.copied === copied &&
+			if (!(
+				this.copied === copied &&
 				document.validateRange(range).isEqual(range) &&
 				fingerprint(document.getText(range)) === copied.hash
-				? copied.entry
-				: null;
+			)) {
+				return null;
+			}
+			return copied.entry;
 		} catch {
 			return null;
 		}

@@ -34,41 +34,62 @@ export type ToolOutputResponse = {
 
 /** 不正な範囲や無制限の読み込みを通信境界で拒否する。 */
 export function validToolOutputRequest(value: Record<string, unknown>) {
-	return (
+	if (!(
 		isId(value.outputRef) &&
 		byteOffset(value.offset) &&
-		byteOffset(value.limit) &&
-		Number(value.limit) >= 4 &&
-		Number(value.limit) <= toolOutputChunkBytes
+		byteOffset(value.limit)
+	)) {
+		return false;
+	}
+	return (
+		Number(value.limit) >= 4 && Number(value.limit) <= toolOutputChunkBytes
 	);
 }
 
 /** 読み込み応答の文字数と、バイト位置が戻らないことを検証する。 */
 export function validToolOutputResponse(value: Record<string, unknown>) {
-	return (
+	if (!(
 		isId(value.requestId) &&
 		isId(value.outputRef) &&
-		typeof value.text === "string" &&
+		typeof value.text === "string"
+	)) {
+		return false;
+	}
+	if (!(
 		value.text.length <= toolOutputChunkBytes &&
 		byteOffset(value.offset) &&
-		byteOffset(value.nextOffset) &&
+		byteOffset(value.nextOffset)
+	)) {
+		return false;
+	}
+	if (!(
 		Number(value.nextOffset) >= Number(value.offset) &&
-		typeof value.eof === "boolean" &&
-		(value.error === undefined || typeof value.error === "string")
-	);
+		typeof value.eof === "boolean"
+	)) {
+		return false;
+	}
+	return value.error === undefined || typeof value.error === "string";
 }
 
 /** プレビュー自体にも上限を設け、上限を超える本文の混入を拒否する。 */
 export function validToolOutputPreview(value: unknown) {
-	return (
-		value === undefined ||
-		(isRecord(value) &&
-			typeof value.preview === "string" &&
-			value.preview.length <= 2200 &&
-			typeof value.truncated === "boolean" &&
-			(value.outputRef === undefined || isId(value.outputRef)) &&
-			(value.totalBytes === undefined || byteOffset(value.totalBytes)))
-	);
+	if (value === undefined) {
+		return true;
+	}
+	if (!(
+		isRecord(value) &&
+		typeof value.preview === "string" &&
+		value.preview.length <= 2200
+	)) {
+		return false;
+	}
+	if (!(
+		typeof value.truncated === "boolean" &&
+		(value.outputRef === undefined || isId(value.outputRef))
+	)) {
+		return false;
+	}
+	return value.totalBytes === undefined || byteOffset(value.totalBytes);
 }
 
 /** バイト位置は安全な非負整数に限定する。 */

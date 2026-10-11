@@ -72,11 +72,11 @@ function restoreToolResult(
 		.filter((part) => part.type === "text")
 		.map((part) => part.text)
 		.join("\n");
-	const cancelled =
-		message.isError &&
-		(resultText === "Operation aborted" ||
-			resultText === "This operation was aborted" ||
-			/(?:^|\n)Command aborted$/.test(resultText));
+	const abortedText =
+		resultText === "Operation aborted" ||
+		resultText === "This operation was aborted" ||
+		/(?:^|\n)Command aborted$/.test(resultText);
+	const cancelled = message.isError && abortedText;
 	Object.assign(
 		state,
 		mapPiTool(

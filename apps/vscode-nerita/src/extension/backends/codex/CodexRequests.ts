@@ -64,9 +64,11 @@ export class CodexRequests {
 		if (
 			this.session.active() !== run ||
 			approval.turnId !== run.turnId ||
-			this.session.snapshot().run !== "running" ||
-			signal.aborted
+			this.session.snapshot().run !== "running"
 		) {
+			return { decision: "cancel" };
+		}
+		if (signal.aborted) {
 			return { decision: "cancel" };
 		}
 		const state = this.session.snapshot();
@@ -97,10 +99,11 @@ export class CodexRequests {
 		await run.ready;
 		if (
 			this.session.active() !== run ||
-			(p.turnId !== null && p.turnId !== run.turnId) ||
-			this.session.snapshot().run !== "running" ||
-			signal.aborted
+			(p.turnId !== null && p.turnId !== run.turnId)
 		) {
+			return empty;
+		}
+		if (this.session.snapshot().run !== "running" || signal.aborted) {
 			return empty;
 		}
 		const combined = AbortSignal.any([signal, run.abort.signal]);

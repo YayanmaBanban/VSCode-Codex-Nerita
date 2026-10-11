@@ -39,22 +39,20 @@ export function radiusProvider() { throw new Error("Nerita に同梱された Pi
 
 /** 互換層の API 登録と呼び出し先の選択処理を維持し、未使用 API と画像生成の公開を除く。 */
 function limitCompat(source) {
-	return source
-		.split("\n")
-		.filter((line) => {
-			const api = line.match(/\.\/api\/([\w-]+)\.lazy\.js/);
-			if (api && !supportedApis.has(api[1])) {
-				return false;
-			}
-			const registration = line.match(/^\s*\["([\w-]+)", \w+Api\(\)\],$/);
-			if (registration && !supportedApis.has(registration[1])) {
-				return false;
-			}
-			return !/^export \* from "\.\/(?:image-models|images|images-api-registry|providers\/images\/register-builtins)\.js";/.test(
-				line,
-			);
-		})
-		.join("\n");
+	const keepSupportedApi = (line) => {
+		const api = line.match(/\.\/api\/([\w-]+)\.lazy\.js/);
+		if (api && !supportedApis.has(api[1])) {
+			return false;
+		}
+		const registration = line.match(/^\s*\["([\w-]+)", \w+Api\(\)\],$/);
+		if (registration && !supportedApis.has(registration[1])) {
+			return false;
+		}
+		return !/^export \* from "\.\/(?:image-models|images|images-api-registry|providers\/images\/register-builtins)\.js";/.test(
+			line,
+		);
+	};
+	return source.split("\n").filter(keepSupportedApi).join("\n");
 }
 
 /** MCP の再送と OAuth 更新を、固定 SDK の Host 境界へ接続する。 */
@@ -86,7 +84,7 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 	return {
 		name: "nerita-pi-runtime",
 		setup(build) {
-			build.onLoad({ filter: /\.js$/ }, async (args) => {
+			const loadPiModule = async (args) => {
 				const sdkFile = path
 					.relative(sdkRoot, args.path)
 					.replaceAll("\\", "/");
@@ -154,7 +152,8 @@ export const loadOpenAIChatGPTOAuth = async () => (await import("./openai-chatgp
 				return contents === undefined
 					? undefined
 					: { contents, loader: "js" };
-			});
+			};
+			build.onLoad({ filter: /\.js$/ }, loadPiModule);
 		},
 	};
 }

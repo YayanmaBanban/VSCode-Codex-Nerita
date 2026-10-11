@@ -164,10 +164,7 @@ async function validateRealPath(root: string, path: string) {
 
 /** 同名の兄弟フォルダーもワークスペース内と誤認しない。 */
 function outsideRoot(path: string) {
-	return (
-		path === ".." ||
-		path.startsWith("../") ||
-		path.startsWith("..\\") ||
-		isAbsolute(path)
-	);
+	const parentPath =
+		path === ".." || path.startsWith("../") || path.startsWith("..\\");
+	return parentPath || isAbsolute(path);
 }

@@ -1,5 +1,6 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
 import { loadPiSdk } from "./PiSdk";
+import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -375,12 +376,16 @@ function runtimeSessionFacade(
 		children,
 		close,
 		...(history ? { history } : {}),
-		storageChanged: () =>
-			!options.resume &&
-			session.messages.length === 0 &&
-			jobs.list().length === 0 &&
-			!!options.getStorage &&
-			options.getStorage() !== storage,
+		storageChanged: () => {
+			if (!(
+				!options.resume &&
+				session.messages.length === 0 &&
+				jobs.list().length === 0
+			)) {
+				return false;
+			}
+			return !!options.getStorage && options.getStorage() !== storage;
+		},
 		account,
 		quota: new PiQuotaService(
 			modelRuntime,
@@ -459,13 +464,16 @@ async function bindRuntimeAccount(
 	const { controls, options, subagents, agentDir } = resources;
 
 	controls.bind(session);
-	controls.bindDelegation(
-		() =>
+	controls.bindDelegation(() => {
+		if (!(
 			!options.signal.aborted &&
 			modelRuntime.hasConfiguredAuth("openai") &&
-			subagents.definitions.length > 0 &&
-			session.getActiveToolNames().includes("subagent"),
-	);
+			subagents.definitions.length > 0
+		)) {
+			return false;
+		}
+		return session.getActiveToolNames().includes("subagent");
+	});
 	const account = new PiAccount(
 		modelRuntime,
 		session,
@@ -722,7 +730,9 @@ async function runtimeExtensions(
 		async (path) => {
 			const allowed =
 				options.workspaceTrusted === true &&
-				(await options.trustStore!.trusted(path));
+				(await backendWorkspaceTrusted("pi", () =>
+					options.trustStore!.trusted(path),
+				));
 			if (!allowed) {
 				options.trustStore!.audit("extension-load-denied", path);
 			}
@@ -762,22 +772,30 @@ export function resolvePiInitialModel(
 	options: PiRuntimeOptions,
 	modelRuntime: PiSdk.ModelRuntime,
 ) {
-	return (
-		resolvePreferredModel(options.preferredModel, modelRuntime) ??
-		(options.preferredModel
-			? ((options.preferredModel.provider === "openai-codex"
-					? modelRuntime
-							.getAvailableSnapshot()
-							.find((model) => model.provider === "openai")
-					: undefined) ??
-				modelRuntime
+	const preferred = resolvePreferredModel(
+		options.preferredModel,
+		modelRuntime,
+	);
+	if (preferred !== undefined) {
+		return preferred;
+	}
+	if (!options.preferredModel) {
+		return undefined;
+	}
+	const openai =
+		options.preferredModel.provider === "openai-codex"
+			? modelRuntime
 					.getAvailableSnapshot()
-					.find(
-						(model) =>
-							model.provider === options.preferredModel?.provider,
-					) ??
-				modelRuntime.getAvailableSnapshot()[0])
-			: undefined)
+					.find((model) => model.provider === "openai")
+			: undefined;
+	return (
+		openai ??
+		modelRuntime
+			.getAvailableSnapshot()
+			.find(
+				(model) => model.provider === options.preferredModel?.provider,
+			) ??
+		modelRuntime.getAvailableSnapshot()[0]
 	);
 }
 
@@ -823,11 +841,13 @@ function validateChildModel(
 	options: PiRuntimeOptions,
 	model: ReturnType<typeof resolvePiInitialModel>,
 ) {
+	if (options.strictModel !== true) {
+		return;
+	}
 	if (
-		options.strictModel === true &&
-		(!model ||
-			model.id !== options.preferredModel?.model ||
-			model.provider !== options.preferredModel.provider)
+		!model ||
+		model.id !== options.preferredModel?.model ||
+		model.provider !== options.preferredModel.provider
 	) {
 		throw new Error("子に指定されたモデルを利用できません。");
 	}

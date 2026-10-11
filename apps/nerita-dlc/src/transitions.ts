@@ -133,11 +133,14 @@ function boundSemanticResult(
 	workItemId: string,
 ): SemanticResult | undefined {
 	const parsed = SemanticResultSchema.safeParse(value);
-	return parsed.success &&
+	if (!(
+		parsed.success &&
 		parsed.data.attemptId === attemptId &&
 		parsed.data.workItemId === workItemId
-		? parsed.data
-		: undefined;
+	)) {
+		return undefined;
+	}
+	return parsed.data;
 }
 
 function boundEvidence(

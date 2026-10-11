@@ -1,5 +1,6 @@
 // Worktree の実行先と管理操作を表示し、パスを直接指定する入力は提供しない。
 import type { useDlcWorkspace } from "./useDlcWorkspace";
+import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 /** 実行先を Intent ごとに選び、実行中の表示切替では変更しない。 */
 export function WorktreeControls({
 	ui,
@@ -36,7 +37,12 @@ export function WorktreeControls({
 					{ui.view.targets.map((item) => (
 						<option key={item.id} value={item.id}>
 							{item.main ? "main" : item.name}
-							{item.trusted ? "" : "（未信頼）"}
+							{backendWorkspaceTrusted(
+								ui.view.backend,
+								() => item.trusted,
+							)
+								? ""
+								: "（未信頼）"}
 						</option>
 					))}
 				</select>
@@ -84,19 +90,23 @@ function WorktreeActions({
 			>
 				Worktree を作成
 			</button>
-			{target && !target.trusted && (
-				<button
-					type="button"
-					onClick={() =>
-						ui.send({
-							type: "dlc/trust",
-							requestId: crypto.randomUUID(),
-						})
-					}
-				>
-					実行先の信頼を確認
-				</button>
-			)}
+			{target &&
+				!backendWorkspaceTrusted(
+					ui.view.backend,
+					() => target.trusted,
+				) && (
+					<button
+						type="button"
+						onClick={() =>
+							ui.send({
+								type: "dlc/trust",
+								requestId: crypto.randomUUID(),
+							})
+						}
+					>
+						実行先の信頼を確認
+					</button>
+				)}
 			{target?.removable === true && (
 				<button
 					type="button"

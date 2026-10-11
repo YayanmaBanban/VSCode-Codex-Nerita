@@ -94,22 +94,21 @@ export function createSearchKeyboardEffect(
 
 /** 検索中の一致箇所を移動するショートカットを判定する。 */
 function isMoveSearchKey(open: boolean, event: KeyboardEvent) {
-	return (
-		open &&
-		(event.key === "F3" ||
-			((event.ctrlKey || event.metaKey) &&
-				event.key.toLowerCase() === "g"))
-	);
+	if (!open) {
+		return false;
+	}
+	if (event.key === "F3") {
+		return true;
+	}
+	return (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "g";
 }
 
 /** 会話内検索を開くショートカットを判定する。 */
 function isOpenSearchKey(event: KeyboardEvent) {
-	return (
-		(event.ctrlKey || event.metaKey) &&
-		!event.altKey &&
-		!event.shiftKey &&
-		event.key.toLowerCase() === "f"
-	);
+	if (!((event.ctrlKey || event.metaKey) && !event.altKey)) {
+		return false;
+	}
+	return !event.shiftKey && event.key.toLowerCase() === "f";
 }
 
 /** 検索を初めて開く時だけ選択文字列と復帰先を保存する。 */

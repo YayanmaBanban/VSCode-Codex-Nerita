@@ -29,12 +29,8 @@ export function AgentRunControls({
 		],
 		agent.threadId,
 	).some((item) => ["running", "pendingInit", "idle"].includes(item.status));
-	if (
-		!active &&
-		!stopping &&
-		stopError === null &&
-		state.permissions.length === 0
-	) {
+	const inactive = !active && !stopping && stopError === null;
+	if (inactive && state.permissions.length === 0) {
 		return null;
 	}
 	return (

@@ -12,11 +12,11 @@ export type McpMessageContent =
 
 /** 未知の接続状態も文字列として受け付け、UI では中立色で表示する。 */
 export function isMcpServerSummary(value: unknown): value is McpServerSummary {
+	if (!(isRecord(value) && typeof value.name === "string")) {
+		return false;
+	}
 	return (
-		isRecord(value) &&
-		typeof value.name === "string" &&
-		(value.runtimeStatus === null ||
-			typeof value.runtimeStatus === "string")
+		value.runtimeStatus === null || typeof value.runtimeStatus === "string"
 	);
 }
 
@@ -24,13 +24,16 @@ export function isMcpServerSummary(value: unknown): value is McpServerSummary {
 export function isMcpMessageContent(
 	value: unknown,
 ): value is McpMessageContent {
+	if (!isRecord(value)) {
+		return false;
+	}
+	if (value.status === "loading" || value.status === "error") {
+		return true;
+	}
 	return (
-		isRecord(value) &&
-		(value.status === "loading" ||
-			value.status === "error" ||
-			(value.status === "ready" &&
-				Array.isArray(value.servers) &&
-				value.servers.every(isMcpServerSummary)))
+		value.status === "ready" &&
+		Array.isArray(value.servers) &&
+		value.servers.every(isMcpServerSummary)
 	);
 }
 

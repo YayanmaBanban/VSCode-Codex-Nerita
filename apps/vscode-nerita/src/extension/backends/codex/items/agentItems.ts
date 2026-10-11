@@ -154,15 +154,21 @@ function isActivityIdentity(item: Record<string, unknown>): item is Record<
 	id: string;
 	kind: "started" | "interacted" | "interrupted" | "completed";
 } {
-	return (
+	if (!(
 		typeof item.agentThreadId === "string" &&
 		item.agentThreadId.length > 0 &&
-		typeof item.agentPath === "string" &&
+		typeof item.agentPath === "string"
+	)) {
+		return false;
+	}
+	if (!(
 		item.agentPath.length > 0 &&
 		typeof item.id === "string" &&
-		typeof item.kind === "string" &&
-		["started", "interacted", "interrupted", "completed"].includes(
-			item.kind,
-		)
+		typeof item.kind === "string"
+	)) {
+		return false;
+	}
+	return ["started", "interacted", "interrupted", "completed"].includes(
+		item.kind,
 	);
 }

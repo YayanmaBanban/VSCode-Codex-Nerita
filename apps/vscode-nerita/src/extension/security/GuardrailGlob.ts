@@ -38,9 +38,8 @@ function advance(row: boolean[], target: string, token: string): boolean[] {
 	next[0] = star && row[0]!;
 	for (let i = 1; i <= target.length; i++) {
 		if (star) {
-			next[i] =
-				row[i]! ||
-				(next[i - 1]! && (token === "**" || target[i - 1] !== "/"));
+			const consumesCharacter = token === "**" || target[i - 1] !== "/";
+			next[i] = row[i]! || (next[i - 1]! && consumesCharacter);
 		} else {
 			next[i] = row[i - 1]! && matchesCharacter(token, target[i - 1]!);
 		}

@@ -44,17 +44,20 @@ export function piToolExposure(
 	if (["subagent", "subagent_job", "subagent_workflow"].includes(tool.name)) {
 		return tool;
 	}
-	return features.toolSearch === true &&
+	if (!(
+		features.toolSearch === true &&
 		(!(tool.exposure !== undefined) || tool.exposure === "direct")
-		? {
-				...tool,
-				exposure: "deferred",
-				namespace: tool.namespace ?? {
-					name: "host",
-					description: "Tools enabled for this conversation",
-				},
-			}
-		: tool;
+	)) {
+		return tool;
+	}
+	return {
+		...tool,
+		exposure: "deferred",
+		namespace: tool.namespace ?? {
+			name: "host",
+			description: "Tools enabled for this conversation",
+		},
+	};
 }
 
 /** SDK のファクトリーを維持し、メタデータと実行の境界を Host に合わせる。 */
@@ -216,7 +219,11 @@ function guardFeatureContext(
 					features.protect(serialized) !== serialized) ||
 				secrets.some(
 					(secret) => !(secret === "") && serialized.includes(secret),
-				) ||
+				)
+			) {
+				throw new Error("認証値を含む引数はコード実行から渡せません。");
+			}
+			if (
 				/"(?:authorization|password|secret|token|credential|api[_-]?key|private[_-]?key)"\s*:/i.test(
 					serialized,
 				)

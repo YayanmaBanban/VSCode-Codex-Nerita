@@ -4,10 +4,12 @@ import {
 	nonEmptyString,
 } from "@nerita/shared/valuePredicates";
 import { cn } from "cnfast";
-import { Check, LoaderCircle, X } from "lucide-react";
 import type { AgentStatus, SubAgentSummary } from "@nerita/shared/subAgents";
+import {
+	StatusIndicator,
+	type StatusIndicatorState,
+} from "../../ui/StatusIndicator";
 import { icons } from "./AgentIcons";
-import "../loaders.css";
 
 const labels: Record<AgentStatus, string> = {
 	pendingInit: "準備中",
@@ -19,6 +21,18 @@ const labels: Record<AgentStatus, string> = {
 	errored: "エラー",
 	systemError: "エラー",
 	notFound: "見つかりません",
+};
+
+const indicatorStates: Record<AgentStatus, StatusIndicatorState> = {
+	pendingInit: "idle",
+	running: "running",
+	idle: "idle",
+	completed: "completed",
+	interrupted: "warning",
+	shutdown: "warning",
+	errored: "error",
+	systemError: "error",
+	notFound: "error",
 };
 
 /** 読み取り待ちでもパス末尾の名前を表示する。 */
@@ -79,7 +93,7 @@ export function AgentCard({
 			onClick={() => onOpen(agent)}
 			aria-label={`${agentName(agent)}の会話を表示 · ${labels[agent.status]}`}
 		>
-			<AgentStatusIndicator status={agent.status} />
+			<StatusIndicator status={indicatorStates[agent.status]} />
 			<AgentIcon iconKey={agent.iconKey} />
 			<span className="min-w-0 flex-1">
 				<span className="block text-[13px] [overflow-wrap:anywhere]">
@@ -100,51 +114,5 @@ export function AgentCard({
 				</span>
 			</span>
 		</button>
-	);
-}
-
-/** 待機と停止は色だけを変えて同じパルスを使い、状態名はカードの読み上げに残す。 */
-function AgentStatusIndicator({ status }: { status: AgentStatus }) {
-	if (status === "running") {
-		return (
-			<LoaderCircle
-				size={16}
-				aria-hidden="true"
-				className="tool-progress shrink-0"
-			/>
-		);
-	}
-	if (status === "completed") {
-		return (
-			<Check
-				size={16}
-				aria-hidden="true"
-				className="shrink-0 text-menu-check"
-			/>
-		);
-	}
-	if (["errored", "systemError", "notFound"].includes(status)) {
-		return (
-			<X
-				size={16}
-				aria-hidden="true"
-				className="shrink-0 text-tool-error"
-			/>
-		);
-	}
-	return (
-		<span
-			aria-hidden="true"
-			className={cn(
-				"agent-status-dots flex h-4 w-4 shrink-0 items-center justify-between",
-				status === "interrupted" || status === "shutdown"
-					? "text-warning"
-					: "text-white",
-			)}
-		>
-			<span className="size-1 rounded-full bg-current" />
-			<span className="size-1 rounded-full bg-current" />
-			<span className="size-1 rounded-full bg-current" />
-		</span>
 	);
 }

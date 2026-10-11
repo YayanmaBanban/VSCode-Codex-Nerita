@@ -52,14 +52,16 @@ async function createTargets(page, editor, findFrame) {
 		).toBeEnabled();
 	}
 	await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-	await editor.getByRole("button", { name: "再読込み", exact: true }).click();
+	await editor
+		.getByRole("button", { name: "再読み込み", exact: true })
+		.click();
 	await expect(select.locator("option")).toHaveCount(3);
 	return targets;
 }
 
 async function addIntent(editor, title, targetId) {
 	await editor
-		.getByRole("button", { name: "新しい Intent", exact: true })
+		.getByRole("button", { name: "Intentの作成", exact: true })
 		.click();
 	const id = await createIntent(editor, title);
 	await editor.getByLabel("DLC のバックエンド").selectOption("pi");

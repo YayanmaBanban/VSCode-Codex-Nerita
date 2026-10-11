@@ -237,9 +237,10 @@ function sessionReferenceNotice(
 	data: SessionReferencePage | null,
 	loading: boolean,
 ) {
+	const loadingEntries = loading && isNonZeroNumber(data?.entries.length);
 	return (
 		nonEmptyString(data?.error) ??
-		(loading && isNonZeroNumber(data?.entries.length)
+		(loadingEntries
 			? "読み込み中…"
 			: "同じ作業フォルダーのセッションを参照します。")
 	);

@@ -18,13 +18,10 @@ export function promptContent(draft: string, parts: ComposerPart[]) {
 	}
 	let text = "";
 	const normalized = parts.map((part) => {
+		const separateText =
+			text !== "" && part.text !== "" && !text.endsWith("\n");
 		const separator =
-			text !== "" &&
-			part.text !== "" &&
-			!text.endsWith("\n") &&
-			!part.text.startsWith("\n")
-				? "\n"
-				: "";
+			separateText && !part.text.startsWith("\n") ? "\n" : "";
 		text += separator + part.text;
 		return {
 			...part,
@@ -70,12 +67,10 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 	if (parts === undefined) {
 		return true;
 	}
-	if (
-		!Array.isArray(parts) ||
-		parts.length === 0 ||
-		parts.length > 201 ||
-		parts.length % 2 !== 1
-	) {
+	if (!Array.isArray(parts) || parts.length === 0 || parts.length > 201) {
+		return false;
+	}
+	if (parts.length % 2 !== 1) {
 		return false;
 	}
 
@@ -90,12 +85,17 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 			if (
 				typeof part.id !== "string" ||
 				part.id === "" ||
-				part.id.length > 256 ||
-				ids.has(part.id) ||
-				part.type !==
-					(isNonZeroNumber(index % 2) ? "pasted" : "text") ||
-				!validPartReferences(part)
+				part.id.length > 256
 			) {
+				return false;
+			}
+			if (
+				ids.has(part.id) ||
+				part.type !== (isNonZeroNumber(index % 2) ? "pasted" : "text")
+			) {
+				return false;
+			}
+			if (!validPartReferences(part)) {
 				return false;
 			}
 
@@ -110,9 +110,11 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 function validPartReferences(
 	part: Record<string, unknown>,
 ): part is Record<string, unknown> & { text: string } {
-	return (
+	if (!(
 		typeof part.text === "string" &&
-		!(part.type === "pasted" && part.references !== undefined) &&
-		validReferences(part.text, part.references)
-	);
+		!(part.type === "pasted" && part.references !== undefined)
+	)) {
+		return false;
+	}
+	return validReferences(part.text, part.references);
 }

@@ -372,11 +372,10 @@ function updatedCharacterCount(
 	previous: number | undefined,
 	source: ToolOutputSource,
 ): number | undefined {
-	if (
-		source.truncated === true ||
-		isNonEmptyString(source.path) ||
-		(source.delta === true && previous === undefined)
-	) {
+	if (source.truncated === true || isNonEmptyString(source.path)) {
+		return undefined;
+	}
+	if (source.delta === true && previous === undefined) {
 		return undefined;
 	}
 	return (

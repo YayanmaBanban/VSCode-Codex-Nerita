@@ -5,27 +5,7 @@ export const DlcPathSchema = z
 	.string()
 	.min(1)
 	.max(1024)
-	.refine(
-		(value) =>
-			![...value].some((character) => character.charCodeAt(0) < 32) &&
-			!/[<>"|?*]/u.test(value) &&
-			!value.includes("\\") &&
-			!value.startsWith("/") &&
-			!value.includes(":") &&
-			value
-				.split("/")
-				.every(
-					(part) =>
-						part !== ".." &&
-						part !== "." &&
-						part !== "" &&
-						!/[. ]$/u.test(part) &&
-						!/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(
-							part,
-						),
-				),
-		"ワークスペース内の相対パスを指定してください。",
-	);
+	.refine(validDlcPath, "ワークスペース内の相対パスを指定してください。");
 export const DlcTaskSchema = z.strictObject({
 	title: z.string().trim().min(1).max(256),
 	instructions: z.string().trim().min(1).max(16000),
@@ -290,3 +270,29 @@ export const DlcViewSchema = z.strictObject({
 		.nullable(),
 });
 export type DlcView = z.infer<typeof DlcViewSchema>;
+
+/** 区切り文字や Windows の予約名を含まない相対パスだけを許可する。 */
+function validDlcPath(value: string): boolean {
+	if (
+		[...value].some((character) => character.charCodeAt(0) < 32) ||
+		/[<>"|?*]/u.test(value) ||
+		value.includes("\\")
+	) {
+		return false;
+	}
+	return (
+		!value.startsWith("/") &&
+		!value.includes(":") &&
+		value.split("/").every(validDlcSegment)
+	);
+}
+/** 空の階層や親参照、末尾の空白と予約デバイス名を拒否する。 */
+function validDlcSegment(part: string): boolean {
+	if (part === ".." || part === "." || part === "") {
+		return false;
+	}
+	return (
+		!/[. ]$/u.test(part) &&
+		!/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(part)
+	);
+}

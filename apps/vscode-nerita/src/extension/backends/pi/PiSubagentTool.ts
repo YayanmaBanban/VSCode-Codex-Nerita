@@ -294,13 +294,16 @@ export function selectAgent(
 	name: string,
 	scope: "user" | "project" | "both",
 ) {
-	const eligible = agents.filter(
-		(agent) =>
-			(agent.name === name || agent.aliases?.includes(name) === true) &&
-			(agent.source === "extension" ||
-				scope === "both" ||
-				agent.source === scope),
-	);
+	const eligible = agents.filter((agent) => {
+		if (!(agent.name === name || agent.aliases?.includes(name) === true)) {
+			return false;
+		}
+		return (
+			agent.source === "extension" ||
+			scope === "both" ||
+			agent.source === scope
+		);
+	});
 	const agent = eligible.at(-1);
 	if (!agent) {
 		throw new Error(`サブエージェント定義がありません: ${name}`);

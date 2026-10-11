@@ -72,13 +72,16 @@ export class SandboxManagement {
 		signal: AbortSignal,
 		onPending?: () => void,
 	): Promise<boolean> {
-		const actionable = report.events.some(
-			(event) =>
-				grantable(event) ||
-				(event.resource?.kind === "cache" &&
-					event.resourceType === "file" &&
-					isNonEmptyString(event.resource.tool)),
-		);
+		const actionable = report.events.some((event) => {
+			if (grantable(event)) {
+				return true;
+			}
+			return (
+				event.resource?.kind === "cache" &&
+				event.resourceType === "file" &&
+				isNonEmptyString(event.resource.tool)
+			);
+		});
 		if (!actionable) {
 			return Promise.resolve(false);
 		}
@@ -233,20 +236,23 @@ export class SandboxManagement {
 					].map((event) => [event.id, event]),
 				).values(),
 			].map((event) => {
-				return {
-					...event,
-					actions: active.has(event.id)
-						? [
-								"deny" as const,
-								...(grantable(event) ? ["allow" as const] : []),
-								...(event.resourceType === "file" &&
-								event.resource?.kind === "cache" &&
-								isNonEmptyString(event.resource.tool)
-									? ["use-sandbox-cache" as const]
-									: []),
-							]
-						: [],
-				};
+				if (!active.has(event.id)) {
+					return { ...event, actions: [] };
+				}
+				const actions: SandboxSnapshot["denials"][number]["actions"] = [
+					"deny",
+				];
+				if (grantable(event)) {
+					actions.push("allow");
+				}
+				if (
+					event.resourceType === "file" &&
+					event.resource?.kind === "cache" &&
+					isNonEmptyString(event.resource.tool)
+				) {
+					actions.push("use-sandbox-cache");
+				}
+				return { ...event, actions };
 			}),
 			reportStatus: this.report?.status ?? "not-run",
 		});

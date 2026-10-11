@@ -42,9 +42,11 @@ export function isToolContent(value: unknown): value is ToolContent {
 
 /** 変更前の `null` は新規ファイルを表し、変更後の本文は文字列を必須とする。 */
 function validFileDiff(value: Record<string, unknown>): boolean {
-	return (
+	if (!(
 		typeof value.path === "string" &&
-		(value.oldText === null || typeof value.oldText === "string") &&
-		typeof value.newText === "string"
-	);
+		(value.oldText === null || typeof value.oldText === "string")
+	)) {
+		return false;
+	}
+	return typeof value.newText === "string";
 }

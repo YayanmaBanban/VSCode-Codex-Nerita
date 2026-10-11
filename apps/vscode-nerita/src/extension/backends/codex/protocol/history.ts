@@ -42,12 +42,13 @@ const item = parseCodexItem;
 /** 復元するターンを検証する。 */
 export function parseHistoryTurn(value: unknown): HistoryTurn {
 	const turn = parseTurn(value);
+	if (!isRecord(value) || !Array.isArray(value.items)) {
+		throw new Error("Invalid history turn");
+	}
 	if (
-		!isRecord(value) ||
-		!Array.isArray(value.items) ||
-		(value.itemsView !== "full" &&
-			value.itemsView !== "summary" &&
-			value.itemsView !== "notLoaded")
+		value.itemsView !== "full" &&
+		value.itemsView !== "summary" &&
+		value.itemsView !== "notLoaded"
 	) {
 		throw new Error("Invalid history turn");
 	}
@@ -64,10 +65,18 @@ export function parseHistoryThread(value: unknown): HistoryThread {
 		!isRecord(value.status) ||
 		!["idle", "active", "notLoaded", "systemError"].includes(
 			text(value.status.type),
-		) ||
+		)
+	) {
+		throw new Error("Invalid history thread");
+	}
+	if (
 		!Array.isArray(value.turns) ||
 		typeof value.updatedAt !== "number" ||
-		!Number.isFinite(value.updatedAt) ||
+		!Number.isFinite(value.updatedAt)
+	) {
+		throw new Error("Invalid history thread");
+	}
+	if (
 		!isThreadName(value.name) ||
 		(value.historyMode !== "legacy" && value.historyMode !== "paginated")
 	) {
@@ -109,11 +118,10 @@ function page<T>(
 	value: unknown,
 	parse: (entry: unknown) => T,
 ): { data: T[]; nextCursor: string | null } {
-	if (
-		!isRecord(value) ||
-		!Array.isArray(value.data) ||
-		!(value.nextCursor === null || typeof value.nextCursor === "string")
-	) {
+	if (!isRecord(value) || !Array.isArray(value.data)) {
+		throw new Error("Invalid history page");
+	}
+	if (!(value.nextCursor === null || typeof value.nextCursor === "string")) {
 		throw new Error("Invalid history page");
 	}
 	return { data: value.data.map(parse), nextCursor: value.nextCursor };

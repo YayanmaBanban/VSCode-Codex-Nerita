@@ -83,9 +83,13 @@ export class ResourceGrantStore {
 			if (
 				!resource ||
 				!isNonEmptyString(resource.tool) ||
-				decision.action !== "allow" ||
-				!grantable(event)
+				decision.action !== "allow"
 			) {
+				throw new Error(
+					"この拒否イベントにはリソース権限を追加できません。",
+				);
+			}
+			if (!grantable(event)) {
 				throw new Error(
 					"この拒否イベントにはリソース権限を追加できません。",
 				);
@@ -109,15 +113,13 @@ export class ResourceGrantStore {
 				denialEventId: event.id,
 				operationId,
 			});
-			const next = this.grants.filter(
-				(item) =>
-					!(
-						item.workspace === grant.workspace &&
-						item.resource.target === target &&
-						item.resource.tool === resource.tool &&
-						item.scope === grant.scope
-					),
-			);
+			const next = this.grants.filter((item) => {
+				const sameTarget =
+					item.workspace === grant.workspace &&
+					item.resource.target === target &&
+					item.resource.tool === resource.tool;
+				return !(sameTarget && item.scope === grant.scope);
+			});
 			next.push(grant);
 			await this.persist(next, this.caches);
 			// 保存中に停止された実行やセッションの一時権限は、公開後直ちに回収する。
@@ -208,13 +210,16 @@ export class ResourceGrantStore {
 			) {
 				continue;
 			}
-			const profile = policy.resources.find(
-				(item) =>
+			const profile = policy.resources.find((item) => {
+				if (!(
 					item.kind === grant.resource.kind &&
 					item.tool === grant.resource.tool &&
-					item.target === grant.resource.profileTarget &&
-					containsPath(item.target, grant.resource.target),
-			);
+					item.target === grant.resource.profileTarget
+				)) {
+					return false;
+				}
+				return containsPath(item.target, grant.resource.target);
+			});
 			if (!profile) {
 				continue;
 			}
@@ -262,10 +267,14 @@ export function workspaceFor(call: ToolCall): string {
 
 /** 認証用ファイルや書込み要求を通常の読取り許可へ変換しない。 */
 export function grantable(event: DenialEvent): boolean {
-	return (
+	if (!(
 		event.resourceType === "file" &&
 		isNonEmptyString(event.resource?.tool) &&
-		["install", "helper", "config"].includes(event.resource.kind) &&
+		["install", "helper", "config"].includes(event.resource.kind)
+	)) {
+		return false;
+	}
+	return (
 		["read", "execute"].includes(event.requestedAccess) &&
 		!/(?:^|[\\/])(?:\.ssh|\.aws|\.azure|\.gnupg|credentials|secrets?)(?:[\\/]|$)/i.test(
 			event.target,
@@ -281,9 +290,11 @@ async function safeGrantTarget(target: string): Promise<string> {
 	if (
 		!isAbsolute(target) ||
 		normalize(target) !== target ||
-		target === parse(target).root ||
-		target.includes("\0")
+		target === parse(target).root
 	) {
+		throw new Error("正規化されたファイルパスだけを許可できます。");
+	}
+	if (target.includes("\0")) {
 		throw new Error("正規化されたファイルパスだけを許可できます。");
 	}
 	if ((await realpath(target)) !== target) {

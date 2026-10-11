@@ -58,10 +58,12 @@ export class CodexHistory {
 	/** 実行中の変更と履歴操作の権限を照合する。 */
 	private historyUnavailable(action: HistoryAction): boolean {
 		const state = this.session.snapshot();
-		return (
+		const pendingSession =
 			this.session.busy() ||
 			state.sessionPending ||
-			state.attachmentPending ||
+			state.attachmentPending;
+		return (
+			pendingSession ||
 			state.configPending ||
 			!(state.sessionCapabilities[action] === true)
 		);
@@ -70,12 +72,13 @@ export class CodexHistory {
 	notification(message: AppServerNotification): void {
 		const operation = this.operation;
 		const restoring = operation?.restoring;
+		const currentRestore =
+			operation && this.current(operation) && restoring !== undefined;
+		const params = message.params;
+		const restoreParams = currentRestore === true && isRecord(params);
 		if (
-			operation &&
-			this.current(operation) &&
-			restoring &&
-			isRecord(message.params) &&
-			message.params.threadId === restoring.id &&
+			restoreParams &&
+			params.threadId === restoring.id &&
 			["turn/started", "thread/archived", "thread/deleted"].includes(
 				message.method,
 			)
@@ -93,13 +96,10 @@ export class CodexHistory {
 		const client = this.session.connection();
 		const cwd = state.cwd;
 		const row = state.sessions.find((item) => item.sessionId === threadId);
-		if (
-			!client ||
-			!isNonEmptyString(cwd) ||
-			!row ||
-			!sameCwd(row.cwd, cwd) ||
-			this.historyUnavailable(action)
-		) {
+		if (!client || !isNonEmptyString(cwd) || !row) {
+			throw new Error("History unavailable");
+		}
+		if (!sameCwd(row.cwd, cwd) || this.historyUnavailable(action)) {
 			throw new Error("History unavailable");
 		}
 		validateHistoryAction(row, action, name);
@@ -321,9 +321,11 @@ function validateRestoredThread(
 	if (
 		!sameCwd(result.cwd, cwd) ||
 		!sameCwd(result.thread.cwd, cwd) ||
-		result.thread.active ||
-		(action === "load" && result.thread.id !== threadId)
+		result.thread.active
 	) {
+		throw new Error("Unexpected restored thread");
+	}
+	if (action === "load" && result.thread.id !== threadId) {
 		throw new Error("Unexpected restored thread");
 	}
 }

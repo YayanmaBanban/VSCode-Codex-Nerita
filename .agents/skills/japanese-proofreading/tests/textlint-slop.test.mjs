@@ -36,7 +36,7 @@ function inspect(text) {
 	);
 }
 
-test("high-confidence expressions are errors and contextual words remain review candidates", () => {
+const checkExpressionConfidence = () => {
 	const errors = [
 		"設定の正本を更新する",
 		"安全側に倒す",
@@ -79,9 +79,13 @@ test("high-confidence expressions are errors and contextual words remain review 
 		),
 		[],
 	);
-});
+};
+test(
+	"high-confidence expressions are errors and contextual words remain review candidates",
+	checkExpressionConfidence,
+);
 
-test("protected Markdown and ignored ranges do not produce issues or shift lines", () => {
+const checkProtectedMarkdown = () => {
 	const source = [
 		"# 検査",
 		"",
@@ -98,7 +102,9 @@ test("protected Markdown and ignored ranges do not produce issues or shift lines
 		"",
 		"土台",
 		"-->",
+		"<!-- texlint-ignore-start -->",
 		"静かに壊れる",
+		"<!-- texlint-ignore-end -->",
 		"",
 		"設定の正本を更新する。",
 	].join("\r\n");
@@ -131,10 +137,14 @@ test("protected Markdown and ignored ranges do not produce issues or shift lines
 		);
 	}
 	assert.throws(
-		() => inspect("正本"),
+		() => inspect("<!-- texlint-ignore-start -->\n正本"),
 		/unclosed/,
 	);
-});
+};
+test(
+	"protected Markdown and ignored ranges do not produce issues or shift lines",
+	checkProtectedMarkdown,
+);
 
 test("TypeScript and Rust comments reuse extraction without inspecting string literals", () => {
 	for (const file of ["sample.ts", "sample.rs"]) {
@@ -165,7 +175,7 @@ test("multiline comments and inline code retain source line numbers", () => {
 	}
 });
 
-test("source strings reuse slop and terminology checks while protecting code and URLs", () => {
+const checkSourceStringTerms = () => {
 	const source = [
 		'console.log("実 Webview: 起動に成功");',
 		'throw new Error("実 Webview の起動に失敗しました。");',
@@ -200,9 +210,13 @@ test("source strings reuse slop and terminology checks while protecting code and
 			["unquoted-identifier", 5],
 		],
 	);
-});
+};
+test(
+	"source strings reuse slop and terminology checks while protecting code and URLs",
+	checkSourceStringTerms,
+);
 
-test("new issue types retain the version 2 schema and twenty-example limit alongside English types", async (t) => {
+const checkIssueSchema = async (t) => {
 	const root = await fs.mkdtemp(path.join(os.tmpdir(), "nerita-slop-"));
 	t.after(() => fs.rm(root, { recursive: true, force: true }));
 	const items = extractDocumentAuditItems(
@@ -245,7 +259,11 @@ test("new issue types retain the version 2 schema and twenty-example limit along
 			text: "正本 土台",
 		});
 	}
-});
+};
+test(
+	"new issue types retain the version 2 schema and twenty-example limit alongside English types",
+	checkIssueSchema,
+);
 
 /** 外部辞書を取得せずに CLI を検証できるよう、一時ディレクトリと辞書キャッシュを用意する。 */
 async function createCliWorkspace(t) {
@@ -368,7 +386,7 @@ async function createNestedIgnoreWorkspace(t) {
 	return root;
 }
 
-test("nested ignores apply to all, changed and explicitly selected CLI targets", async (t) => {
+const checkNestedIgnoreModes = async (t) => {
 	const root = await createNestedIgnoreWorkspace(t);
 	for (const mode of ["all", "changed", "review-all", "review-changed"]) {
 		const result = runCli(root, mode);
@@ -401,9 +419,13 @@ test("nested ignores apply to all, changed and explicitly selected CLI targets",
 	);
 	const included = runCli(root, "changed", "skill/keep.ts");
 	assert.equal(included.status, 1, included.stdout + included.stderr);
-});
+};
+test(
+	"nested ignores apply to all, changed and explicitly selected CLI targets",
+	checkNestedIgnoreModes,
+);
 
-test("all CLI modes inspect source strings without prose presets or rewriting machine values", async (t) => {
+const checkCliSourceStrings = async (t) => {
 	const root = await createCliWorkspace(t);
 	const source = [
 		'const command = "git status", event = "webview.ready", file = "./sample.ts";',
@@ -479,4 +501,8 @@ test("all CLI modes inspect source strings without prose presets or rewriting ma
 			],
 		);
 	}
-});
+};
+test(
+	"all CLI modes inspect source strings without prose presets or rewriting machine values",
+	checkCliSourceStrings,
+);

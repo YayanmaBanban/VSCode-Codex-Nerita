@@ -76,12 +76,10 @@ export async function generateCodexHandoff(
 
 /** 完了したアシスタント本文だけを要約として採用する。 */
 function collectHandoffText(value: unknown, texts: Map<string, string>) {
-	if (
-		isRecord(value) &&
-		value.type === "agentMessage" &&
-		typeof value.id === "string" &&
-		typeof value.text === "string"
-	) {
+	if (!isRecord(value) || value.type !== "agentMessage") {
+		return;
+	}
+	if (typeof value.id === "string" && typeof value.text === "string") {
 		texts.set(value.id, value.text);
 	}
 }

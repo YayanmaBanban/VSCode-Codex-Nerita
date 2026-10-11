@@ -83,7 +83,9 @@ async function main() {
 		// ディレクトリを監視し、エディターの原子的なファイル置換にも追従する。
 		let collecting = Promise.resolve();
 		watchDirectory(path.join(uiRoot, "media"), (_event, name) => {
-			if (name !== null && !brandAssets.includes(String(name))) {
+			const unknownBrandAsset =
+				name !== null && !brandAssets.includes(String(name));
+			if (unknownBrandAsset) {
 				return;
 			}
 			collecting = collecting

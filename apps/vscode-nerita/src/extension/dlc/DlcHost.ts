@@ -1,13 +1,11 @@
 // VS Code の信頼・利用者別選択を、Intent の保存と共通 Runtime の操作へ接続する。
 import * as vscode from "vscode";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import { basename } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { DlcController } from "@nerita/dlc/controller";
-import { migrateLegacy } from "@nerita/dlc/migration";
-import { catalogVersion, profileVersion } from "@nerita/dlc/catalog";
 import type { WorkspaceDetection } from "@nerita/dlc/workspace";
 import type {
 	DlcUiMessage,
@@ -15,13 +13,16 @@ import type {
 	DlcAction,
 	DlcStartHold,
 } from "@nerita/shared/dlc/contracts";
-import type { BackendId } from "@nerita/shared/backend";
+import {
+	backendWorkspaceTrusted,
+	type BackendId,
+} from "@nerita/shared/backend";
 import type { HostMessage } from "@nerita/shared/messages";
 import { errorText } from "@nerita/shared/errorText";
 import { requireLocalWorkspace } from "../workspace";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
 import type { BackendRuntime } from "../session/BackendRuntime";
-import { IntentRepository, currentCatalogDigest } from "./IntentRepository";
+import { IntentRepository } from "./IntentRepository";
 import { SafeDlcFiles } from "./SafeDlcFiles";
 import { initializeWorkspace } from "./WorkspaceDetection";
 import { withDlcLock } from "./DlcLock";
@@ -39,6 +40,7 @@ const execute = promisify(execFile);
 
 type Workspace = {
 	root: string;
+	signal: AbortSignal;
 	repository: IntentRepository;
 	detection: WorkspaceDetection;
 	selectionKey: string;
@@ -57,6 +59,7 @@ export class DlcHost {
 	private environment: DlcView["environment"] = null;
 	private error: string | null = null;
 	private generation = 0;
+	private workspaceAbort = new AbortController();
 	private closed = false;
 	private workspaceOpen = false;
 	private runningIntents = new Set<string>();
@@ -82,8 +85,8 @@ export class DlcHost {
 						.getConfiguration("nerita")
 						.get<BackendId>("backend", "codex");
 		runtime.setDlcHandler((message) => this.receive(message));
-		this.unsubscribeTrust = trust.onChange((root) => {
-			void this.trustChanged(root).catch((error: unknown) => {
+		this.unsubscribeTrust = trust.onChange(() => {
+			void this.trustChanged().catch((error: unknown) => {
 				if (this.closed) {
 					return;
 				}
@@ -174,7 +177,7 @@ export class DlcHost {
 					"実行先を確認できません。再読込みして Worktree を選択してください。",
 			};
 		}
-		if (!target.trusted) {
+		if (this.untrustedTarget(intentId, target)) {
 			return {
 				reason: "trust-required",
 				message: "実行先の Nerita Trust を確認してください。",
@@ -196,6 +199,26 @@ export class DlcHost {
 			};
 		}
 		return undefined;
+	}
+	/** 選択中のバックエンドではなく、各 Intent の保存済み割当に従って表示を判定する。 */
+	private untrustedTarget(
+		intentId: string,
+		target: DlcView["targets"][number] | undefined,
+	): boolean {
+		return (
+			target !== undefined &&
+			!backendWorkspaceTrusted(
+				this.executionForIntent.get(intentId)?.backend ?? this.backend,
+				() => target.trusted,
+			)
+		);
+	}
+	/** 非同期の Store 照合も、表示と同じバックエンド別の信頼規則を使う。 */
+	private workspaceTrusted(
+		backend: BackendId,
+		root: string,
+	): boolean | Promise<boolean> {
+		return backendWorkspaceTrusted(backend, () => this.trust.trusted(root));
 	}
 	private publish(): void {
 		this.runtime.publish({ type: "dlc/state", view: this.view() });
@@ -242,13 +265,18 @@ export class DlcHost {
 			);
 		}
 		const generation = this.generation;
-		const trustSignal = this.trust.signalFor(root);
+		const signal = this.workspaceAbort.signal;
+		if (!(await this.workspaceTrusted(this.backend, root))) {
+			throw new Error(
+				"DLC のワークスペースまたは信頼状態が変更されました。",
+			);
+		}
+		// 保存先は Intent 間で共有する。Pi の実行許可は各 Intent の実行先で照合する。
 		const files = new SafeDlcFiles(root, async () => {
-			trustSignal.throwIfAborted();
+			signal.throwIfAborted();
 			if (
 				this.closed ||
 				generation !== this.generation ||
-				!(await this.trust.trusted(root)) ||
 				(await realpath(
 					requireLocalWorkspace(
 						vscode.workspace.workspaceFolders,
@@ -263,15 +291,16 @@ export class DlcHost {
 			}
 		});
 		const detection = await withDlcLock(files, () =>
-			initializeWorkspace(files, trustSignal),
+			initializeWorkspace(files, signal),
 		);
-		return this.openStorage(root, files, detection, worktrees);
+		return this.openStorage(root, files, detection, worktrees, signal);
 	}
 	private async openStorage(
 		root: string,
 		files: SafeDlcFiles,
 		detection: WorkspaceDetection,
 		worktrees: WorktreeManager,
+		signal: AbortSignal,
 	): Promise<Workspace> {
 		const storage = await ProjectStorage.open(
 			root,
@@ -287,13 +316,9 @@ export class DlcHost {
 		);
 		const hash = storage.id;
 		try {
-			await this.migrateGoal(
-				repository,
-				detection,
-				createHash("sha256").update(root).digest("hex"),
-			);
 			return {
 				root,
+				signal,
 				repository,
 				detection,
 				selectionKey: `dlc.selection.${hash}`,
@@ -318,47 +343,6 @@ export class DlcHost {
 		} catch (error) {
 			await storage.dispose();
 			throw error;
-		}
-	}
-	private async migrateGoal(
-		repository: IntentRepository,
-		detection: WorkspaceDetection,
-		hash: string,
-	): Promise<void> {
-		const legacyKey = `dlc.project.${hash}`;
-		const legacy: unknown = this.context.workspaceState.get(legacyKey);
-		if (legacy !== undefined) {
-			const backupKey = `${legacyKey}.migration-backup`;
-			const backup = this.context.workspaceState.get<{
-				createdAt: string;
-				value: unknown;
-			}>(backupKey) ?? {
-				createdAt: new Date().toISOString(),
-				value: legacy,
-			};
-			const state = migrateLegacy(
-				legacy,
-				{
-					profileId: "classic",
-					profileVersion,
-					catalogVersion,
-					catalogDigest: currentCatalogDigest,
-					workspaceFingerprint: detection.scan.inputFingerprint,
-					workspaceSchemaVersion: detection.schemaVersion,
-					detectorVersion: detection.detectorVersion,
-					projectTypeSource: "detected",
-					effectiveProjectType: detection.classification.detected,
-				},
-				backup.createdAt,
-			);
-			await this.context.workspaceState.update(backupKey, backup);
-			await repository.import(state);
-			await repository.load(state.intentId);
-			await this.context.workspaceState.update(
-				`dlc.selection.${hash}`,
-				state.intentId,
-			);
-			await this.context.workspaceState.update(legacyKey, undefined);
 		}
 	}
 	private controller(
@@ -398,9 +382,14 @@ export class DlcHost {
 								}
 								const target = await workspace.worktrees.target(
 									assignment.targetId,
-									this.trust.signal,
+									workspace.signal,
 								);
-								if (!(await this.trust.trusted(target.root))) {
+								if (
+									!(await this.workspaceTrusted(
+										assignment.backend,
+										target.root,
+									))
+								) {
 									throw new Error(
 										"実行先の Nerita Trust を確認してください。",
 									);
@@ -445,7 +434,7 @@ export class DlcHost {
 		const branch = await execute(
 			"git",
 			["-C", workspace.root, "branch", "--show-current"],
-			{ windowsHide: true, timeout: 10000, signal: this.trust.signal },
+			{ windowsHide: true, timeout: 10000, signal: workspace.signal },
 		);
 		await workspace.repository.files.path(".nerita/dlc");
 		const name = branch.stdout.trim();
@@ -459,11 +448,11 @@ export class DlcHost {
 		// 再照合が失敗した場合に、古い実行先を開始可能として表示し続けない。
 		this.targets = [];
 		const targets = await Promise.all(
-			(await workspace.worktrees.list(this.trust.signal)).map(
+			(await workspace.worktrees.list(workspace.signal)).map(
 				async (target) => ({
 					...target,
 					directory: target.root,
-					trusted: await this.trust.trusted(target.root),
+					trusted: await this.workspaceTrusted("pi", target.root),
 				}),
 			),
 		).then((targets) =>
@@ -501,12 +490,14 @@ export class DlcHost {
 			this.targetsForIntent.set(intentId, assignment.targetId);
 			this.executionForIntent.set(intentId, assignment);
 		}
-		this.targetId =
+		const assignedTarget =
 			this.selectedId !== undefined
-				? (workspace.assignments[this.selectedId]?.targetId ??
-					this.targets.find((target) => target.main)?.id ??
-					null)
-				: (this.targets.find((target) => target.main)?.id ?? null);
+				? workspace.assignments[this.selectedId]?.targetId
+				: undefined;
+		this.targetId =
+			assignedTarget ??
+			this.targets.find((target) => target.main)?.id ??
+			null;
 	}
 	private async assign(
 		workspace: Workspace,
@@ -548,7 +539,7 @@ export class DlcHost {
 		backend: BackendId,
 	): Promise<void> {
 		const generation = this.generation;
-		await workspace.worktrees.target(targetId, this.trust.signal);
+		await workspace.worktrees.target(targetId, workspace.signal);
 		await workspace.repository.locked(async () => {
 			if (generation !== this.generation) {
 				throw new Error("DLC の管理元が変更されています。");
@@ -583,7 +574,7 @@ export class DlcHost {
 		if (message.type === "dlc/worktreeCreate") {
 			// 実行中の Worktree を変更せずに別の Worktree を作り、保留を解消する操作を提供する。
 			const target = await workspace.repository.locked(() =>
-				workspace.worktrees.create(this.trust.signal),
+				workspace.worktrees.create(workspace.signal),
 			);
 			await this.trust.registerWorkspace(target.root);
 			await this.read();
@@ -595,7 +586,7 @@ export class DlcHost {
 				workspace.repository.locked(() =>
 					workspace.worktrees.remove(
 						message.targetId,
-						this.trust.signal,
+						workspace.signal,
 					),
 				),
 			);
@@ -671,8 +662,10 @@ export class DlcHost {
 	private validateBackendSelection(
 		message: Extract<DlcUiMessage, { type: "dlc/backend" }>,
 	): void {
+		if (message.intentId !== (this.selectedId ?? null)) {
+			throw new Error("Intent の選択または版が変更されています。");
+		}
 		if (
-			message.intentId !== (this.selectedId ?? null) ||
 			message.revision !== (this.selected?.projection().revision ?? null)
 		) {
 			throw new Error("Intent の選択または版が変更されています。");
@@ -825,7 +818,7 @@ export class DlcHost {
 			workspace.detection = await workspace.repository.locked(() =>
 				initializeWorkspace(
 					workspace.repository.files,
-					this.trust.signal,
+					workspace.signal,
 				),
 			);
 			const state = await workspace.repository.create(
@@ -1010,7 +1003,7 @@ export class DlcHost {
 			}
 			await collectSourceSnapshot(
 				(await workspace.worktrees.target(target.targetId)).root,
-				this.trust.signal,
+				workspace.signal,
 			);
 		}
 		if (message.action.type !== "run") {
@@ -1054,10 +1047,9 @@ export class DlcHost {
 					(item) =>
 						item.id === this.targetsForIntent.get(message.intentId),
 				);
-				const reason =
-					target?.trusted === false
-						? "trust-required"
-						: "unavailable";
+				const reason = this.untrustedTarget(message.intentId, target)
+					? "trust-required"
+					: "unavailable";
 				this.startHolds.set(message.intentId, {
 					reason:
 						error instanceof DirectoryRunConflictError
@@ -1111,6 +1103,10 @@ export class DlcHost {
 	private async clearWorkspace(): Promise<void> {
 		const workspace = this.workspace;
 		this.generation++;
+		this.workspaceAbort.abort(
+			new Error("DLC のワークスペースが変更されました。"),
+		);
+		this.workspaceAbort = new AbortController();
 		this.selectionSequence++;
 		await Promise.all(
 			this.runtime
@@ -1143,25 +1139,14 @@ export class DlcHost {
 		this.unsubscribeTrust();
 		await this.reset();
 	}
-	/** 管理元の信頼変更では状態をリセットし、個別 Worktree の変更では実行先の表示を更新する。 */
-	private async trustChanged(root?: string): Promise<void> {
+	/** 信頼変更は実行先の表示へ反映する。Pi の実行取消しは Runtime が担当する。 */
+	private async trustChanged(): Promise<void> {
 		const generation = this.generation;
 		if (this.closed) {
 			return;
 		}
-		if (root === undefined) {
-			await this.reset();
-			return;
-		}
 		const workspace = await this.workspace;
 		if (!workspace) {
-			return;
-		}
-		if (
-			containsPath(root, workspace.root) ||
-			containsPath(workspace.root, root)
-		) {
-			await this.reset();
 			return;
 		}
 		await this.trust.waitForChanges();
@@ -1169,6 +1154,7 @@ export class DlcHost {
 			return;
 		}
 		await this.refreshTargets(workspace);
+		this.startHolds.clear();
 		this.publish();
 	}
 }

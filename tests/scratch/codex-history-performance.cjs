@@ -69,12 +69,13 @@ async function main() {
 	let peak = baseline;
 	let lag = 0;
 	let previous = performance.now();
-	const timer = setInterval(() => {
+	const sampleRuntime = () => {
 		const now = performance.now();
 		lag = Math.max(lag, now - previous - 5);
 		previous = now;
 		peak = Math.max(peak, process.memoryUsage().heapUsed);
-	}, 5);
+	};
+	const timer = setInterval(sampleRuntime, 5);
 	const thread = { id: "history", historyMode: "paginated", turns: [] };
 	const started = performance.now();
 	let state;

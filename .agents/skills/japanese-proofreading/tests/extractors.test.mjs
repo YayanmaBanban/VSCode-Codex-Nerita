@@ -8,7 +8,7 @@ import {
 	SOURCE_EXTENSIONS,
 } from "../scripts/extractors/index.mjs";
 
-test("Rust strings and lifetimes do not hide or create comments", () => {
+const checkRustLiteralExclusions = () => {
 	const source = [
 		'let text_value = "// 文字列 fake_name";',
 		'let raw_value = r##""# /* 生文字列 hidden_name */"##;',
@@ -35,9 +35,13 @@ test("Rust strings and lifetimes do not hide or create comments", () => {
 	assert(identifiers.has("read_value"));
 	assert(!identifiers.has("fake_name"));
 	assert(!identifiers.has("hidden_name"));
-});
+};
+test(
+	"Rust strings and lifetimes do not hide or create comments",
+	checkRustLiteralExclusions,
+);
 
-test("Rust nested comments and documentation retain text and positions", () => {
+const checkRustCommentPositions = () => {
 	const source =
 		'let emoji = "😀"; /* 外側 /* 内側 */ 続き */\n//! 内部の説明。\n/// 外部の説明。\n/*! ブロックの説明。 */\n/** 型の説明。 */\nlet r#some_value = 1;';
 	const { items, lintText } = extractSourceComments(source, "sample.rs");
@@ -63,9 +67,13 @@ test("Rust nested comments and documentation retain text and positions", () => {
 			/Unterminated Rust/,
 		);
 	}
-});
+};
+test(
+	"Rust nested comments and documentation retain text and positions",
+	checkRustCommentPositions,
+);
 
-test("TypeScript routing preserves JSX and literal exclusions", () => {
+const checkTypeScriptRouting = () => {
 	const source =
 		'const realName = "// 文字列 fake_name";\nconst view = <div>// 表示文字列{/* コメント。 */}</div>;\n/** 関数の説明。 */\nfunction readValue() {}';
 	const { items } = extractSourceComments(source, "sample.tsx");
@@ -80,9 +88,13 @@ test("TypeScript routing preserves JSX and literal exclusions", () => {
 	assert(!identifiers.has("fake_name"));
 	assert(SOURCE_EXTENSIONS.has(".rs"));
 	assert.throws(() => extractSourceComments("", "sample.py"), /Unsupported/);
-});
+};
+test(
+	"TypeScript routing preserves JSX and literal exclusions",
+	checkTypeScriptRouting,
+);
 
-test("Japanese log and error strings retain positions across JavaScript and TypeScript extensions", () => {
+const checkLogStringPositions = () => {
 	const source = [
 		'const emoji = "😀"; console.log("実 Webview: 起動に成功");',
 		'throw new Error("実 Webview の起動に失敗しました。");',
@@ -135,7 +147,11 @@ test("Japanese log and error strings retain positions across JavaScript and Type
 	}
 	assert.deepEqual(extractSourceTexts(source, "sample.rs"), []);
 	assert.throws(() => extractSourceTexts(source, "sample.py"), /Unsupported/);
-});
+};
+test(
+	"Japanese log and error strings retain positions across JavaScript and TypeScript extensions",
+	checkLogStringPositions,
+);
 
 test("JSX text, attributes and both conditional branches are extracted separately from comments", () => {
 	const source = [

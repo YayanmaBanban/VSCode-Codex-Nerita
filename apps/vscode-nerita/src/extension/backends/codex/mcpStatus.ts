@@ -11,9 +11,11 @@ export function parseMcpStatus(value: unknown): {
 	if (
 		!isRecord(value) ||
 		!Array.isArray(value.data) ||
-		!value.data.every(isMcpServerSummary) ||
-		!(value.nextCursor === null || typeof value.nextCursor === "string")
+		!value.data.every(isMcpServerSummary)
 	) {
+		throw new Error("MCPサーバー一覧の応答が不正です。");
+	}
+	if (!(value.nextCursor === null || typeof value.nextCursor === "string")) {
 		throw new Error("MCPサーバー一覧の応答が不正です。");
 	}
 	return {

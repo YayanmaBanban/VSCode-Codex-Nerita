@@ -78,10 +78,9 @@ export const WorkItemSchema = DlcTaskSchema.extend({
 			message: "作業状態と最後の実行状態が一致しません。",
 		});
 	}
-	if (
-		item.status === "implemented" &&
-		(!last || last.result === null || last.evidence === null)
-	) {
+	const missingEvidence =
+		!last || last.result === null || last.evidence === null;
+	if (item.status === "implemented" && missingEvidence) {
 		context.addIssue({
 			code: "custom",
 			message: "実装済みの作業には結果と根拠が必要です。",

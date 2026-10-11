@@ -162,25 +162,28 @@ export function finishPiTools(
 	cancelled: boolean,
 	error?: string,
 ): ToolSummary[] {
-	return state.tools.map((tool) =>
-		tool.runId === state.runId &&
-		(tool.status === "pending" || tool.status === "in_progress")
-			? {
-					...tool,
-					status: cancelled ? "cancelled" : "failed",
-					content: isNonZeroNumber(tool.content?.length)
-						? tool.content
-						: [
-								textContent(
-									cancelled
-										? "処理を停止しました。"
-										: (nonEmptyString(error) ??
-												"ツールの完了通知を受信できませんでした。"),
-								),
-							],
-				}
-			: tool,
-	);
+	return state.tools.map((tool) => {
+		if (!(
+			tool.runId === state.runId &&
+			(tool.status === "pending" || tool.status === "in_progress")
+		)) {
+			return tool;
+		}
+		return {
+			...tool,
+			status: cancelled ? "cancelled" : "failed",
+			content: isNonZeroNumber(tool.content?.length)
+				? tool.content
+				: [
+						textContent(
+							cancelled
+								? "処理を停止しました。"
+								: (nonEmptyString(error) ??
+										"ツールの完了通知を受信できませんでした。"),
+						),
+					],
+		};
+	});
 }
 
 /** 明示パスを優先し、一覧ツールだけ現在のフォルダーを補う。 */
@@ -233,9 +236,11 @@ function toolKind(toolName: string): NonNullable<ToolSummary["kind"]> {
 	if (
 		toolName === "powershell" ||
 		toolName === "pwsh" ||
-		toolName === "pnpm" ||
-		toolName === "bash"
+		toolName === "pnpm"
 	) {
+		return "execute";
+	}
+	if (toolName === "bash") {
 		return "execute";
 	}
 	if (toolName === "write" || toolName === "edit") {

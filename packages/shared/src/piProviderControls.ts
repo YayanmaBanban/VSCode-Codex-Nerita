@@ -26,14 +26,25 @@ export type PiProviderControls = {
 export function isPiProviderControls(
 	value: unknown,
 ): value is PiProviderControls {
-	return (
+	if (!(
 		isRecord(value) &&
 		Object.keys(value).length === 6 &&
-		isOptionalModelId(value.provider) &&
+		isOptionalModelId(value.provider)
+	)) {
+		return false;
+	}
+	if (!(
 		isOptionalModelId(value.modelId) &&
-		piThinkingLevels.some((level) => level === value.thinkingLevel) &&
-		(value.reasoningOverride === null ||
-			value.reasoningOverride === "ultra") &&
+		piThinkingLevels.some((level) => level === value.thinkingLevel)
+	)) {
+		return false;
+	}
+	if (!(
+		value.reasoningOverride === null || value.reasoningOverride === "ultra"
+	)) {
+		return false;
+	}
+	return (
 		value.effectiveReasoning ===
 			(value.reasoningOverride ?? value.thinkingLevel) &&
 		typeof value.fastMode === "boolean"

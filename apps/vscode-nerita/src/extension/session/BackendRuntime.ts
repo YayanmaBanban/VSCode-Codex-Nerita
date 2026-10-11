@@ -9,7 +9,10 @@ import type { HostMessage, UiMessage } from "@nerita/shared/messages";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import type { BackendSession, ChatSession } from "./chatSession";
 import { RuntimeView } from "./RuntimeView";
-import type { BackendId } from "@nerita/shared/backend";
+import {
+	backendWorkspaceTrusted,
+	type BackendId,
+} from "@nerita/shared/backend";
 import {
 	DlcUiMessageSchema,
 	type DlcUiMessage,
@@ -280,10 +283,12 @@ export class BackendRuntime implements BackendSession {
 		}
 	}
 	private updateChatLease(): void {
-		if (
+		const idleChat =
 			!this.chatStarting &&
 			!this.chatSettling &&
-			this.chatRelease &&
+			this.chatRelease !== undefined;
+		if (
+			idleChat &&
 			this.current &&
 			!sessionWriting(this.current.snapshot())
 		) {
@@ -302,10 +307,12 @@ export class BackendRuntime implements BackendSession {
 	private async settleChatLease(session: BackendSession): Promise<void> {
 		const release = this.chatRelease;
 		await session.waitForShutdown?.();
-		if (
+		const currentChat =
 			this.current === session &&
 			this.chatRelease === release &&
-			!this.chatStarting &&
+			!this.chatStarting;
+		if (
+			currentChat &&
 			!this.disposed &&
 			!sessionWriting(session.snapshot())
 		) {
@@ -527,16 +534,27 @@ export class BackendRuntime implements BackendSession {
 	}
 	/** 個別の信頼変更はそのルートの会話だけに適用し、独立した Worktree の実行は維持する。 */
 	invalidateTrust(root?: string): void {
-		const affected = (cwd: string | null) =>
-			root === undefined ||
-			cwd === null ||
-			containsPath(root, cwd) ||
-			containsPath(cwd, root);
-		if (this.current && affected(this.current.snapshot().cwd)) {
+		const affected = (cwd: string | null) => {
+			const matchingRoot =
+				root === undefined || cwd === null || containsPath(root, cwd);
+			return matchingRoot || containsPath(cwd, root);
+		};
+		if (
+			this.current &&
+			!backendWorkspaceTrusted(
+				this.current.snapshot().uiContributions?.surface ?? "pi",
+				() => !affected(this.current!.snapshot().cwd),
+			)
+		) {
 			this.current.invalidate();
 		}
 		for (const active of this.dlcSessions.values()) {
-			if (affected(active.root)) {
+			if (
+				!backendWorkspaceTrusted(
+					active.backend,
+					() => !affected(active.root),
+				)
+			) {
 				active.abort.abort();
 				active.session.invalidate();
 			}
@@ -623,9 +641,9 @@ export class BackendRuntime implements BackendSession {
 	}
 	private dlcSnapshot(): ChatState {
 		const active = this.visibleDlc();
+		const currentIntent = active && active.intentId === this.selectedIntent;
 		if (
-			active &&
-			active.intentId === this.selectedIntent &&
+			currentIntent === true &&
 			(this.shownAttempt === undefined ||
 				this.shownAttempt === active.attemptId)
 		) {

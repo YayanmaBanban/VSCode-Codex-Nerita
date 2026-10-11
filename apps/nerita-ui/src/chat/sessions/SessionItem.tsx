@@ -180,7 +180,7 @@ function forkDisabled(
 	capabilities: SessionCapabilities,
 	session: SessionSummary,
 ): boolean | undefined {
-	return (
-		disabled || !capabilities.fork || !capabilities.load || session.archived
-	);
+	const unavailableCapabilities =
+		disabled || !capabilities.fork || !capabilities.load;
+	return unavailableCapabilities || session.archived;
 }

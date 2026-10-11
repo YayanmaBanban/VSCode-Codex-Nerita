@@ -2,6 +2,7 @@
 import { WorkspaceTrustStore } from "../../security/trust/WorkspaceTrustStore";
 import { bindTrustContext } from "../../security/trust/TrustGate";
 import type { PiRuntimeOptions } from "./PiRuntime";
+import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 
 /** 保存先の注入がない起動も既定では未信頼とする。 */
 export function preparePiTrust(options: PiRuntimeOptions) {
@@ -32,11 +33,15 @@ export function preparePiTrust(options: PiRuntimeOptions) {
 export async function piWorkspaceTrusted(
 	options: PiRuntimeOptions,
 ): Promise<boolean> {
-	return (
-		(options.trustEnabled?.() ?? options.workspaceTrusted === true) &&
-		!!options.trustStore &&
-		(await options.trustStore.trusted(options.cwd))
-	);
+	return backendWorkspaceTrusted("pi", async () => {
+		if (!(
+			(options.trustEnabled?.() ?? options.workspaceTrusted === true) &&
+			!!options.trustStore
+		)) {
+			return false;
+		}
+		return await options.trustStore.trusted(options.cwd);
+	});
 }
 
 /** 未信頼のセッションは履歴をワークスペースへ書かず、保存先変更による再接続ループも防ぐ。 */

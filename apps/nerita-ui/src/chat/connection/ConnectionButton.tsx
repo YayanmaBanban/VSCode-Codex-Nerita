@@ -50,11 +50,9 @@ export function ConnectionButton({ state, send }: ConnectionButtonProps) {
 		"auth-required",
 		"authenticating",
 	].includes(state.connection);
-	const disabled =
-		!reconnectable ||
-		state.sessionPending ||
-		state.run === "running" ||
-		state.run === "cancelling";
+	const blockedSession =
+		!reconnectable || state.sessionPending || state.run === "running";
+	const disabled = blockedSession || state.run === "cancelling";
 	const action = connectionAction(state.connection);
 	useEffect(() => {
 		if (reduced === true) {
@@ -378,9 +376,12 @@ function connectionBgColor(connection: ChatState["connection"]) {
 
 /** 接続済み・接続中・認証中以外では、マウスカーソルを操作可能な形にする。 */
 function connectionMouseCursor(connection: ChatState["connection"]) {
-	return connection === "ready" ||
+	if (!(
+		connection === "ready" ||
 		connection === "connecting" ||
 		connection === "authenticating"
-		? ""
-		: "cursor-pointer";
+	)) {
+		return "cursor-pointer";
+	}
+	return "";
 }

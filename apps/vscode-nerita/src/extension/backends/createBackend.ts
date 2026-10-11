@@ -31,7 +31,10 @@ import {
 	releaseSandboxManagement,
 } from "../runtime/SandboxPanel";
 import { credentialService } from "../credentials/CredentialService";
-import type { BackendId } from "@nerita/shared/backend";
+import {
+	backendWorkspaceTrusted,
+	type BackendId,
+} from "@nerita/shared/backend";
 
 /** Codex の接続先に VS Code 標準のワークスペース条件を適用する。 */
 function workspaceDirectory(): string {
@@ -61,7 +64,11 @@ export function createBackend(
 	}
 	return new CodexSessionController(
 		async (callbacks, signal) => {
-			const cwd = await explicitDirectory(executionRoot, trustStore);
+			const cwd = await explicitDirectory(
+				executionRoot,
+				trustStore,
+				"codex",
+			);
 			const client = await CodexClient.connect({
 				extensionPath: context.extensionUri.fsPath,
 				cwd,
@@ -169,7 +176,7 @@ async function piDirectory(
 			true,
 			vscode.env.remoteName,
 		);
-	return explicitDirectory(selectedRoot, trustStore);
+	return explicitDirectory(selectedRoot, trustStore, "pi");
 }
 async function piSandbox(
 	context: vscode.ExtensionContext,
@@ -199,12 +206,18 @@ async function piSandbox(
 async function explicitDirectory(
 	root: string | undefined,
 	trust: WorkspaceTrustStore | undefined,
+	backend: BackendId,
 ): Promise<string> {
 	if (!vscode.workspace.isTrusted || vscode.env.remoteName !== undefined) {
 		throw new Error("信頼済みのローカル環境で実行してください。");
 	}
 	const cwd = await realpath(root ?? workspaceDirectory());
-	if (trust && !(await trust.trusted(cwd))) {
+	if (
+		!(await backendWorkspaceTrusted(
+			backend,
+			() => trust?.trusted(cwd) ?? false,
+		))
+	) {
 		throw new Error("実行先の Nerita Trust を確認してください。");
 	}
 	return cwd;
@@ -212,16 +225,17 @@ async function explicitDirectory(
 
 /** Pi の接続に必要なプロバイダーとモデルが揃っている場合だけ復元する。 */
 function storedPiModel(value: unknown): PiModelSelection | undefined {
+	if (typeof value !== "object" || value === null || !("provider" in value)) {
+		return undefined;
+	}
 	if (
-		typeof value !== "object" ||
-		value === null ||
-		!("provider" in value) ||
 		!("model" in value) ||
 		typeof value.provider !== "string" ||
-		typeof value.model !== "string" ||
-		value.provider.trim() === "" ||
-		value.model.trim() === ""
+		typeof value.model !== "string"
 	) {
+		return undefined;
+	}
+	if (value.provider.trim() === "" || value.model.trim() === "") {
 		return undefined;
 	}
 	return {

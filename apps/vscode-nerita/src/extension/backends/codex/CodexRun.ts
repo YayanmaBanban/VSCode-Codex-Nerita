@@ -72,9 +72,11 @@ export class CodexRun {
 		if (
 			this.session.busy() ||
 			!client ||
-			!isNonEmptyString(state.sessionId) ||
-			this.promptPending()
+			!isNonEmptyString(state.sessionId)
 		) {
+			throw new Error("Busy");
+		}
+		if (this.promptPending()) {
 			throw new Error("Busy");
 		}
 
@@ -221,9 +223,11 @@ export class CodexRun {
 		if (
 			!isNonEmptyString(run?.turnId) ||
 			!run.started ||
-			run.interruptSent ||
-			!client
+			run.interruptSent
 		) {
+			return;
+		}
+		if (!client) {
 			return;
 		}
 		run.interruptSent = true;

@@ -10,11 +10,13 @@ function readRequestedVersion(packageName, command) {
 		args.shift();
 	}
 	const requested = args[0];
+	if (args.length > 1) {
+		throw new Error(`使い方: pnpm ${command} [バージョン | --latest]`);
+	}
 	if (
-		args.length > 1 ||
-		(requested !== undefined &&
-			requested !== "--latest" &&
-			!versionPattern.test(requested))
+		requested !== undefined &&
+		requested !== "--latest" &&
+		!versionPattern.test(requested)
 	) {
 		throw new Error(`使い方: pnpm ${command} [バージョン | --latest]`);
 	}

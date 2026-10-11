@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { setTimeout } from "node:timers/promises";
+import * as vscode from "vscode";
+import { createBackend } from "../../apps/vscode-nerita/src/extension/backends/createBackend";
+import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 import type { CodexFactory } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/connection";
 import { codexFixture, codexResponseGate, type Rpc } from "../support/codex";
 import { until } from "../support/pi";
@@ -11,6 +14,65 @@ type Fixture = Awaited<ReturnType<typeof codexFixture>>;
 type Controller = ReturnType<Fixture["controller"]>;
 type Connection = Awaited<ReturnType<CodexFactory>>;
 type Callbacks = Parameters<CodexFactory>[0];
+
+for (const explicitRoot of [false, true]) {
+	void test(`Codex の${explicitRoot ? "明示した実行先" : "通常チャット"}は Nerita Trust 未設定でも認証と再接続へ進む`, async (t) => {
+		const f = await codexFixture(t);
+		f.state.authenticated = false;
+		const trust = new WorkspaceTrustStore({
+			read: () => undefined,
+			write: async () => {},
+		});
+		assert.equal(await trust.trusted(f.cwd), false);
+		Object.assign(vscode.workspace, {
+			isTrusted: true,
+			workspaceFolders: [{ uri: { scheme: "file", fsPath: f.cwd } }],
+		});
+		Object.assign(vscode.env, { remoteName: undefined });
+		// VS Code の起動情報だけを代替し、本番の Factory と JSONL 接続を検証する。
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+		const context = {
+			extensionUri: { fsPath: f.extensionPath },
+		} as unknown as vscode.ExtensionContext;
+		const controller = createBackend(
+			context,
+			trust,
+			"codex",
+			explicitRoot ? f.cwd : undefined,
+		);
+		t.after(() => controller.dispose());
+
+		await controller.receive({
+			type: "connection/retry",
+			requestId: "login",
+		});
+		assert.equal(controller.snapshot().connection, "auth-required");
+		assert.ok(
+			controller
+				.snapshot()
+				.authMethods.some((method) => method.id === "chatgpt"),
+		);
+		assert.equal(f.state.thread, 0);
+
+		f.state.authenticated = true;
+		await controller.receive({
+			type: "connection/retry",
+			requestId: "retry",
+		});
+		assert.equal(controller.snapshot().connection, "ready");
+		assert.equal(controller.snapshot().error, null);
+		assert.equal(await trust.trusted(f.cwd), false);
+		assert.equal(f.state.thread, 1);
+
+		Object.assign(vscode.workspace, { isTrusted: false });
+		await controller.receive({
+			type: "connection/retry",
+			requestId: "restricted",
+		});
+		assert.equal(controller.snapshot().connection, "error");
+		assert.equal(f.state.thread, 1);
+	});
+}
 
 /** UI が持つ現在の会話・実行 ID で、公開入口へ操作を送る。 */
 async function action(

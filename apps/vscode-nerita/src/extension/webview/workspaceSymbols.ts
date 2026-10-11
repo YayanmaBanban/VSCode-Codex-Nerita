@@ -71,12 +71,14 @@ export async function searchWorkspaceSymbols(
 /** 検索対象のワークスペースに属するローカル位置だけを受け付ける。 */
 function unsupportedSymbolLocation(location: vscode.Location | undefined) {
 	const range: unknown = location?.range;
-	return (
-		!location ||
-		!Boolean(range) ||
-		location.uri.scheme !== "file" ||
+	const invalidLocation =
+		!location || !Boolean(range) || location.uri.scheme !== "file";
+	if (
+		invalidLocation ||
 		isNonEmptyString(location.uri.query) ||
-		isNonEmptyString(location.uri.fragment) ||
-		!vscode.workspace.getWorkspaceFolder(location.uri)
-	);
+		isNonEmptyString(location.uri.fragment)
+	) {
+		return true;
+	}
+	return !vscode.workspace.getWorkspaceFolder(location.uri);
 }

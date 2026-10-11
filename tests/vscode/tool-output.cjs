@@ -27,9 +27,10 @@ async function verifyToolOutput(page, chat, model, cwd) {
 	await chat
 		.getByRole("button", { name: "新しいチャット", exact: true })
 		.click();
+	await expect(chat.locator("button[data-connection]")).toHaveCount(0);
 	await expect(
-		chat.getByRole("status", { name: "接続済み", exact: true }),
-	).toBeVisible();
+		chat.getByRole("button", { name: "新しいチャット", exact: true }),
+	).toBeEnabled();
 	await expect(
 		chat.locator(".tool-card").filter({ hasText: "perf-output.txt" }),
 	).toHaveCount(0);

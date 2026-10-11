@@ -69,11 +69,11 @@ async function main() {
 }
 
 async function cleanup(temporary) {
-	if (
+	const unsafeTemporary =
 		path.dirname(temporary) !== os.tmpdir() ||
 		!path.basename(temporary).startsWith("nerita-measurement-") ||
-		(await fs.lstat(temporary)).isSymbolicLink()
-	) {
+		(await fs.lstat(temporary)).isSymbolicLink();
+	if (unsafeTemporary) {
 		throw new Error("計測用一時領域を確認できません。");
 	}
 	await fs.rm(temporary, { recursive: true, force: true });

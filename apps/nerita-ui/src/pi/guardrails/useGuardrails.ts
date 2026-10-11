@@ -143,12 +143,10 @@ function createGuardrailsEditEffect(
 	bridge: GuardBridge,
 ): EffectCallback {
 	return () => {
-		if (
-			!state ||
-			busy ||
-			text === state.text ||
-			isNonEmptyString(reply?.error)
-		) {
+		if (!state || busy || text === state.text) {
+			return;
+		}
+		if (isNonEmptyString(reply?.error)) {
 			return;
 		}
 		const timer = window.setTimeout(() => {

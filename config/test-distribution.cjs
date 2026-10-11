@@ -91,7 +91,9 @@ async function main() {
 			},
 		});
 		if (exitCode !== 0) {
-			throw new Error("実際の Extension Host での配布検証が失敗しました。");
+			throw new Error(
+				"実際の Extension Host での配布検証が失敗しました。",
+			);
 		}
 	} finally {
 		await removeRun(root);
@@ -160,11 +162,11 @@ main().catch((error) => {
 
 /** 自分で生成した展開領域だけを回収する。 */
 async function removeRun(root) {
-	if (
+	const unsafeRoot =
 		path.dirname(root) !== os.tmpdir() ||
 		!path.basename(root).startsWith("nerita-distribution-") ||
-		(await fs.lstat(root)).isSymbolicLink()
-	) {
+		(await fs.lstat(root)).isSymbolicLink();
+	if (unsafeRoot) {
 		throw new Error("一時展開先を確認できません。");
 	}
 	await fs.rm(root, { recursive: true, force: true });

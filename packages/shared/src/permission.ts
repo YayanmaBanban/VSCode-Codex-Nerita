@@ -27,26 +27,32 @@ export type PermissionPresentation = {
 export function isPermissionPresentation(
 	value: unknown,
 ): value is PermissionPresentation {
-	return (
-		isRecord(value) &&
-		typeof value.title === "string" &&
+	const validTitle = isRecord(value) && typeof value.title === "string";
+	if (!(
+		validTitle &&
 		(value.commandPermission === undefined ||
 			commandPermissionKeySchema.safeParse(value.commandPermission)
-				.success) &&
+				.success)
+	)) {
+		return false;
+	}
+	return (
 		["cwd", "command"].every(
 			(key) => value[key] === undefined || typeof value[key] === "string",
 		) &&
 		["fields", "details"].every(
 			(key) =>
 				value[key] === undefined ||
-				everyRecord(
-					value[key],
-					(field) =>
+				everyRecord(value[key], (field) => {
+					const validField =
 						isId(field.id) &&
 						typeof field.label === "string" &&
-						typeof field.value === "string" &&
-						(field.display === "text" || field.display === "code"),
-				),
+						typeof field.value === "string";
+					return (
+						validField &&
+						(field.display === "text" || field.display === "code")
+					);
+				}),
 		)
 	);
 }

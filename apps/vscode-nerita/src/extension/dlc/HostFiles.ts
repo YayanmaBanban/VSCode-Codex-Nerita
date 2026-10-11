@@ -16,9 +16,11 @@ export async function hostFiles(
 		if (
 			(await realpath(target)) !== root ||
 			current.dev !== identity.dev ||
-			current.ino !== identity.ino ||
-			current.birthtimeMs !== identity.birthtimeMs
+			current.ino !== identity.ino
 		) {
+			throw new Error("Host の保存先が差し替えられています。");
+		}
+		if (current.birthtimeMs !== identity.birthtimeMs) {
 			throw new Error("Host の保存先が差し替えられています。");
 		}
 	});

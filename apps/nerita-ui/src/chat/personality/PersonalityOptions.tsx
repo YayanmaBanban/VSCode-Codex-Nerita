@@ -323,10 +323,9 @@ function PersonalityDialog({
 
 /** 実行中と未接続時のログアウトを抑制する。 */
 function logoutDisabled(state: ChatState): boolean | undefined {
-	return (
+	const blockedSession =
 		state.connection !== "ready" ||
 		state.sessionPending ||
-		state.run === "running" ||
-		state.run === "cancelling"
-	);
+		state.run === "running";
+	return blockedSession || state.run === "cancelling";
 }

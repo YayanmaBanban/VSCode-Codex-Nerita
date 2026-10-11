@@ -23,7 +23,11 @@ function collectEnabledSkills(entry: unknown, skills: SkillSummary[]) {
 		if (
 			!isRecord(item) ||
 			typeof item.enabled !== "boolean" ||
-			typeof item.name !== "string" ||
+			typeof item.name !== "string"
+		) {
+			throw new Error("Invalid skill");
+		}
+		if (
 			typeof item.description !== "string" ||
 			typeof item.path !== "string"
 		) {

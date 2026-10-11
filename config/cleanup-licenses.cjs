@@ -11,7 +11,8 @@ async function cleanupLicenses(directory, product, version) {
 		throw new Error("ライセンス削除対象の製品またはバージョンが不正です。");
 	}
 	const root = path.resolve(directory);
-	if ((await fs.realpath(root)) !== root) {
+	const redirectedRoot = (await fs.realpath(root)) !== root;
+	if (redirectedRoot) {
 		throw new Error("ライセンスの保存先にリンクは使用できません。");
 	}
 	const current = `${product}-${version}`;
@@ -36,11 +37,11 @@ module.exports = { cleanupLicenses };
 /** 削除対象が保存先直下の実ディレクトリであることを確認する。 */
 async function removeOldLicense(root, entry) {
 	const target = path.join(root, entry.name);
-	if (
+	const unsafeTarget =
 		path.dirname(target) !== root ||
 		(await fs.realpath(target)) !== target ||
-		(await fs.lstat(target)).isSymbolicLink()
-	) {
+		(await fs.lstat(target)).isSymbolicLink();
+	if (unsafeTarget) {
 		throw new Error(`ライセンス削除先の安全確認に失敗しました: ${target}`);
 	}
 	await fs.rm(target, { recursive: true });
@@ -52,11 +53,11 @@ async function verifyCurrentLicenses(product, root, current) {
 		? ["LICENSE", "NOTICE"]
 		: ["LICENSE"]) {
 		const file = path.join(root, current, name);
-		if (
+		const invalidLicense =
 			(await fs.realpath(file)) !== file ||
 			!(await fs.stat(file)).isFile() ||
-			(await fs.readFile(file)).length === 0
-		) {
+			(await fs.readFile(file)).length === 0;
+		if (invalidLicense) {
 			throw new Error(`更新先のライセンスを確認できません: ${file}`);
 		}
 	}

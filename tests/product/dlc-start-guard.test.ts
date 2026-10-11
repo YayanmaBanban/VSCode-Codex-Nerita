@@ -13,6 +13,30 @@ import type { DlcHost } from "../../apps/vscode-nerita/src/extension/dlc/DlcHost
 import type { DlcAction } from "@nerita/shared/dlc/contracts";
 import type { IntentState } from "@nerita/dlc/state";
 
+void test("Pi DLC は実行先の信頼取消しで承認待ちを停止し、再読込み後も未信頼の実行を拒否する", async (t) => {
+	const { f, runtime, host, intentId } = await dlcHostFixture(t);
+	f.model.replies.push({
+		name: "write",
+		arguments: { path: "hello.txt", content: "denied\n" },
+	});
+	const run = sendAction(host, intentId, { type: "run" });
+	await until(() => runtime.scope("dlc").snapshot().permissions.length === 1);
+	await f.trust.setUserTrust(f.cwd, false);
+	await run;
+	assert.equal(runtime.activeDlcs().length, 0);
+	assert.equal(await readFile(join(f.cwd, "hello.txt"), "utf8"), "before\n");
+	await host.receive({ type: "dlc/read", requestId: "revoked" });
+	assert.equal(host.view().error, null);
+	const item = host.view().selected!.workItems[0]!;
+	assert.ok(["failed", "cancelled"].includes(item.attempts[0]!.status));
+	await sendAction(host, intentId, { type: "retry", workItemId: item.id });
+	assert.equal(host.view().intents[0]?.startHold?.reason, "trust-required");
+	const requests = f.model.requests.length;
+	await sendAction(host, intentId, { type: "run" });
+	assert.match(host.view().error!, /Nerita Trust/);
+	assert.equal(f.model.requests.length, requests);
+});
+
 void test("共有 main の開始を履歴なしで保留し、既存 Run を維持したまま作成・信頼した Worktree から手動で並列実行する", async (t) => {
 	const { f, runtime, host, intentId, action } = await dlcHostFixture(t);
 	f.model.replies.push({

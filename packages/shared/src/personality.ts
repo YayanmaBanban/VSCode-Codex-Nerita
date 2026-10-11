@@ -39,10 +39,14 @@ export type PersonalityMessage =
 export function isPersonalityPreset(
 	value: unknown,
 ): value is PersonalityPreset {
-	return (
+	if (!(
 		isRecord(value) &&
 		typeof value.name === "string" &&
-		value.name.trim().length > 0 &&
+		value.name.trim().length > 0
+	)) {
+		return false;
+	}
+	return (
 		value.name.length <= 200 &&
 		typeof value.text === "string" &&
 		value.text.length <= 100_000
@@ -55,15 +59,20 @@ export function isPersonalitySettings(
 ): value is PersonalitySettings {
 	return (
 		isRecord(value) &&
-		[value.global, value.workspace].every(
-			(scope) =>
+		[value.global, value.workspace].every((scope) => {
+			if (!(
 				isRecord(scope) &&
 				Array.isArray(scope.presets) &&
-				scope.presets.every(isPersonalityPreset) &&
+				scope.presets.every(isPersonalityPreset)
+			)) {
+				return false;
+			}
+			return (
 				typeof scope.selected === "string" &&
 				(scope.configuredText === null ||
-					typeof scope.configuredText === "string"),
-		)
+					typeof scope.configuredText === "string")
+			);
+		})
 	);
 }
 

@@ -1,6 +1,13 @@
 // 一覧には利用者が次の操作を判断できる状態を示し、選択操作だけを Host へ要求する。
 import { cn } from "cnfast";
+import { Plus, RotateCw } from "lucide-react";
+import { useId } from "react";
 import type { IntentSummary } from "@nerita/shared/dlc/contracts";
+import {
+	StatusIndicator,
+	type StatusIndicatorState,
+} from "../../ui/StatusIndicator";
+import { SettingsTooltip } from "../SettingsTooltip";
 import type { useDlcWorkspace } from "./useDlcWorkspace";
 
 const labels: Record<IntentSummary["status"], string> = {
@@ -11,6 +18,16 @@ const labels: Record<IntentSummary["status"], string> = {
 	complete: "完了",
 	archived: "アーカイブ済み",
 	attention: "確認が必要",
+};
+
+const indicatorStates: Record<IntentSummary["status"], StatusIndicatorState> = {
+	idle: "idle",
+	running: "running",
+	stopping: "warning",
+	review: "warning",
+	complete: "completed",
+	archived: "completed",
+	attention: "warning",
 };
 
 const holdLabels: Record<
@@ -32,19 +49,10 @@ export function DlcIntentList({
 			aria-label="Intent 一覧"
 			className="flex min-h-0 flex-col gap-3 overflow-auto border-0 border-r border-solid border-panel-border bg-menu/30 p-3 @max-[600px]:max-h-[32vh] @max-[600px]:border-r-0 @max-[600px]:border-b"
 		>
-			<div className="flex items-center justify-between gap-2">
-				<h1 className="m-0 text-[14px]">Intent</h1>
-				<button
-					type="button"
-					disabled={ui.creation.pending}
-					onClick={() => ui.creation.setCreating(true)}
-				>
-					新しい Intent
-				</button>
-			</div>
+			<IntentListActions ui={ui} />
 			<nav aria-label="Intent の選択" className="flex flex-col gap-2">
 				{ui.view.intents.length === 0 && (
-					<p className="text-muted">まだ Intent がありません。</p>
+					<p className="text-muted">Intent がありません。</p>
 				)}
 				{ui.view.intents.map((intent) => (
 					<div key={intent.intentId} className="flex flex-col gap-2">
@@ -56,21 +64,45 @@ export function DlcIntentList({
 					</div>
 				))}
 			</nav>
-			<button
-				type="button"
-				onClick={() =>
-					ui.send({
-						type: "dlc/read",
-						requestId: crypto.randomUUID(),
-					})
-				}
-			>
-				再読込み
-			</button>
 		</aside>
 	);
 }
 
+/** 作成と再読み込みを隣接するアイコン操作としてまとめる。 */
+function IntentListActions({ ui }: { ui: ReturnType<typeof useDlcWorkspace> }) {
+	return (
+		<div className="flex items-center gap-1">
+			<SettingsTooltip content="Intentの作成">
+				<button
+					type="button"
+					aria-label="Intentの作成"
+					className="inline-flex size-7 items-center justify-center rounded-md border-0 bg-transparent p-0 text-inherit hover:bg-settings-hover"
+					disabled={ui.creation.pending}
+					onClick={() => ui.creation.setCreating(true)}
+				>
+					<Plus size={16} aria-hidden="true" />
+				</button>
+			</SettingsTooltip>
+			<SettingsTooltip content="再読み込み">
+				<button
+					type="button"
+					aria-label="再読み込み"
+					className="inline-flex size-7 items-center justify-center rounded-md border-0 bg-transparent p-0 text-inherit hover:bg-settings-hover"
+					onClick={() =>
+						ui.send({
+							type: "dlc/read",
+							requestId: crypto.randomUUID(),
+						})
+					}
+				>
+					<RotateCw size={16} aria-hidden="true" />
+				</button>
+			</SettingsTooltip>
+		</div>
+	);
+}
+
+/** 状態名は説明として残し、タイトルの隣には共通のインジケーターを表示する。 */
 function IntentButton({
 	intent,
 	ui,
@@ -78,34 +110,50 @@ function IntentButton({
 	intent: IntentSummary;
 	ui: ReturnType<typeof useDlcWorkspace>;
 }) {
+	const statusId = useId();
 	const selected = intent.intentId === ui.selected?.intentId;
 	const target = ui.view.targets.find(
 		(item) => item.id === intent.execution?.targetId,
 	);
+	const statusLabel = intent.startHold
+		? holdLabels[intent.startHold.reason]
+		: labels[intent.status];
 	return (
-		<button
-			type="button"
-			data-intent-id={intent.intentId}
-			aria-label={intent.title}
-			aria-pressed={selected}
-			className={cn(
-				"flex flex-col gap-2 px-3 py-3 text-left",
-				selected && "border-focus bg-message-user",
-			)}
-			onClick={() => ui.select(intent.intentId)}
-		>
-			<strong className="w-full break-words">{intent.title}</strong>
-			<span className="text-[11px] text-muted">
-				{intent.startHold
-					? holdLabels[intent.startHold.reason]
-					: labels[intent.status]}
-			</span>
-			<span className="text-[11px] text-muted">
-				{intent.execution
-					? `${target?.name ?? "消失した Worktree"} · ${intent.execution.backend === "pi" ? "Pi" : "Codex"}`
-					: "実行先未選択"}
-			</span>
-		</button>
+		<SettingsTooltip content={statusLabel}>
+			<button
+				type="button"
+				data-intent-id={intent.intentId}
+				aria-label={intent.title}
+				aria-describedby={statusId}
+				aria-pressed={selected}
+				className={cn(
+					"flex flex-col gap-2 px-3 py-3 text-left",
+					selected && "border-focus bg-message-user",
+				)}
+				onClick={() => ui.select(intent.intentId)}
+			>
+				<span id={statusId} className="sr-only">
+					{statusLabel}
+				</span>
+				<span className="flex w-full items-center gap-2">
+					<StatusIndicator
+						status={
+							intent.startHold
+								? "warning"
+								: indicatorStates[intent.status]
+						}
+					/>
+					<strong className="min-w-0 break-words">
+						{intent.title}
+					</strong>
+				</span>
+				<span className="text-[11px] text-muted">
+					{intent.execution
+						? `${target?.name ?? "ワークツリーが不明です"}`
+						: "ワークスペース"}
+				</span>
+			</button>
+		</SettingsTooltip>
 	);
 }
 

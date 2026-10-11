@@ -67,9 +67,11 @@ async function readReferenceRange(reference: CodeReference) {
 		if (
 			uri.scheme !== "file" ||
 			isNonEmptyString(uri.query) ||
-			isNonEmptyString(uri.fragment) ||
-			isNonEmptyString(vscode.env.remoteName)
+			isNonEmptyString(uri.fragment)
 		) {
+			throw new CodeReferenceError();
+		}
+		if (isNonEmptyString(vscode.env.remoteName)) {
 			throw new CodeReferenceError();
 		}
 		document = await vscode.workspace.openTextDocument(uri);

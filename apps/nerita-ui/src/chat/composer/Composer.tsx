@@ -204,12 +204,9 @@ function sendDisabled(
 	state: ChatState,
 	parts: ComposerPart[],
 ) {
-	return (
-		drop.reading ||
-		!available ||
-		!isNonEmptyString(state.sessionId) ||
-		!parts.some((part) => part.text.trim() !== "")
-	);
+	const unavailableSession =
+		drop.reading || !available || !isNonEmptyString(state.sessionId);
+	return unavailableSession || !parts.some((part) => part.text.trim() !== "");
 }
 
 /** 添付可能な状態でのみ、Host のファイル選択を開く操作を渡す。 */
@@ -221,14 +218,18 @@ function attachmentAction(
 	if (
 		!isNonEmptyString(state.sessionId) ||
 		state.connection !== "ready" ||
-		state.sessionPending ||
+		state.sessionPending
+	) {
+		return undefined;
+	}
+	if (
 		state.configPending ||
 		state.attachmentPending ||
-		!state.attachmentsSupported ||
-		state.run === "running" ||
-		state.run === "cancelling" ||
-		locked
+		!state.attachmentsSupported
 	) {
+		return undefined;
+	}
+	if (state.run === "running" || state.run === "cancelling" || locked) {
 		return undefined;
 	}
 	const sessionId = state.sessionId;

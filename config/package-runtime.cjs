@@ -40,16 +40,17 @@ async function resetRuntime(projectRoot) {
 	const target = path.join(dist, "runtime");
 	await fs.mkdir(dist, { recursive: true });
 	// `dist` や `runtime` が別の場所へのリンクなら、再帰削除を行わずビルドを止める。
-	if (
+	const unsafeDistribution =
 		(await fs.realpath(dist)) !== dist ||
-		path.relative(projectRoot, target) !== path.join("dist", "runtime")
-	) {
+		path.relative(projectRoot, target) !== path.join("dist", "runtime");
+	if (unsafeDistribution) {
 		throw new Error(
 			"runtime の出力先がプロジェクト内の生成先ではありません。",
 		);
 	}
 	try {
-		if ((await fs.lstat(target)).isSymbolicLink()) {
+		const linkedTarget = (await fs.lstat(target)).isSymbolicLink();
+		if (linkedTarget) {
 			throw new Error("runtime にリンクは使用できません。");
 		}
 	} catch (error) {

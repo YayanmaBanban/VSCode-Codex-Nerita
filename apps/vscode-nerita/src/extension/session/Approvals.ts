@@ -94,15 +94,19 @@ export class Approvals {
 	/** 表示中の要求と許可された選択肢の組だけを受理する。 */
 	respond(id: string, decision: string): boolean {
 		const entry = this.pending.get(id);
+		if (!entry) {
+			return false;
+		}
+		const basicDecision =
+			decision === "accept" ||
+			decision === "decline" ||
+			decision === "cancel";
+		const validDecision =
+			basicDecision ||
+			decision === "accept-session" ||
+			decision === "accept-workspace";
 		if (
-			!entry ||
-			!(
-				decision === "accept" ||
-				decision === "decline" ||
-				decision === "cancel" ||
-				decision === "accept-session" ||
-				decision === "accept-workspace"
-			) ||
+			!validDecision ||
 			!entry.permission.options.some((option) => option.id === decision)
 		) {
 			return false;

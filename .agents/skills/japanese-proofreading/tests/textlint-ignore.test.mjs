@@ -61,7 +61,7 @@ test("deeper negations override file exclusions but cannot revive excluded folde
 	}
 });
 
-test("mandatory exclusions and directory links cannot be re-included", async (t) => {
+const checkMandatoryExclusions = async (t) => {
 	const root = await createWorkspace(t, {
 		".textlintignore": "!node_modules/\n!.git/\n!.textlint-cache/\n",
 		"skill/.textlintignore": "!node_modules/\n!node_modules/**\n",
@@ -86,4 +86,8 @@ test("mandatory exclusions and directory links cannot be re-included", async (t)
 		matcher.ignores("../outside.md"),
 		/repository-relative/,
 	);
-});
+};
+test(
+	"mandatory exclusions and directory links cannot be re-included",
+	checkMandatoryExclusions,
+);

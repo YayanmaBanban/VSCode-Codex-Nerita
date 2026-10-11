@@ -25,11 +25,13 @@ export function parseSandbox(value: unknown): SandboxPolicy {
 /** 書き込み可能なサンドボックスの全設定を検証する。 */
 function parseWritableSandbox(value: Record<string, unknown>): SandboxPolicy {
 	if (
-		value.type === "workspaceWrite" &&
-		Array.isArray(value.writableRoots) &&
-		value.writableRoots.every(
-			(path: unknown) => typeof path === "string",
-		) &&
+		value.type !== "workspaceWrite" ||
+		!Array.isArray(value.writableRoots) ||
+		!value.writableRoots.every((path: unknown) => typeof path === "string")
+	) {
+		throw new Error("Invalid sandbox");
+	}
+	if (
 		typeof value.networkAccess === "boolean" &&
 		typeof value.excludeTmpdirEnvVar === "boolean" &&
 		typeof value.excludeSlashTmp === "boolean"

@@ -32,10 +32,10 @@ export function approvePiTool(
 		async execute(id, params, signal, update, context) {
 			await checkOrigin?.();
 			const input = z.record(z.string(), z.unknown()).parse(params);
-			const combined =
-				lifetime && signal
-					? AbortSignal.any([lifetime, signal])
-					: (lifetime ?? signal);
+			const signalPair = lifetime && signal;
+			const combined = signalPair
+				? AbortSignal.any([lifetime, signal])
+				: (lifetime ?? signal);
 			const approved = await approveToolCall(
 				{
 					tool: `extension:${tool.name}`,

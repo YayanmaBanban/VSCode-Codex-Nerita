@@ -80,9 +80,11 @@ async function release(
 	if (
 		current.dev !== identity.dev ||
 		current.ino !== identity.ino ||
-		current.isSymbolicLink() ||
-		(await realpath(target)) !== target
+		current.isSymbolicLink()
 	) {
+		throw new Error("DLC の保存ロックが差し替えられています。");
+	}
+	if ((await realpath(target)) !== target) {
 		throw new Error("DLC の保存ロックが差し替えられています。");
 	}
 	const ownerPath = join(target, "owner.json");

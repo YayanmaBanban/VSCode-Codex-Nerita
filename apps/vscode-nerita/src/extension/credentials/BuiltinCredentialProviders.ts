@@ -25,9 +25,11 @@ abstract class BoundProvider implements CredentialProvider {
 		signal: AbortSignal,
 	) {
 		signal.throwIfAborted();
-		return Promise.resolve(
+		const matchingBinding =
 			binding.provider.type === this.id &&
-				binding.match.kind === requirement.kind &&
+			binding.match.kind === requirement.kind;
+		return Promise.resolve(
+			matchingBinding &&
 				binding.match.target.toLowerCase() ===
 					requirement.target.toLowerCase()
 				? [
@@ -210,14 +212,21 @@ export class BitwardenSecretsProvider extends BoundProvider {
 			} catch {
 				throw new Error("Bitwarden の応答形式が不正です。");
 			}
+			if (!isRecord(secret) || secret.id !== provider.secretId) {
+				throw new Error(
+					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
+				);
+			}
 			if (
-				!isRecord(secret) ||
-				secret.id !== provider.secretId ||
 				(isNonEmptyString(provider.projectId) &&
 					secret.projectId !== provider.projectId) ||
-				typeof secret.value !== "string" ||
-				secret.value === ""
+				typeof secret.value !== "string"
 			) {
+				throw new Error(
+					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
+				);
+			}
+			if (secret.value === "") {
 				throw new Error(
 					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
 				);

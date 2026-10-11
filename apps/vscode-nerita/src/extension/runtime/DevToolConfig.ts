@@ -50,14 +50,14 @@ function sanitizeNpmText(text: string): string {
 function safeRegistry(value: string): boolean {
 	try {
 		const url = new URL(value);
-		return (
+		if (!(
 			url.protocol === "https:" &&
 			url.username === "" &&
-			url.password === "" &&
-			url.search === "" &&
-			url.hash === "" &&
-			!/[${}\s]/.test(value)
-		);
+			url.password === ""
+		)) {
+			return false;
+		}
+		return url.search === "" && url.hash === "" && !/[${}\s]/.test(value);
 	} catch {
 		return false;
 	}

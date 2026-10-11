@@ -107,6 +107,13 @@ function ToolActivity({ state, send }: ToolActivityProps) {
 					!task &&
 					tool.runId === state.runId &&
 					state.run === "running";
+				const stoppable = cancelTurn || canStopTask(task) === true;
+				const stopContext =
+					stoppable && isNonEmptyString(state.sessionId);
+				const canStop =
+					stopContext &&
+					(isNonEmptyString(tool.runId) ||
+						isNonEmptyString(state.runId));
 				return (
 					<ToolCard
 						key={`${tool.runId ?? ""}:${tool.id}`}
@@ -116,11 +123,7 @@ function ToolActivity({ state, send }: ToolActivityProps) {
 						task={task}
 						cancelTurn={cancelTurn}
 						onStop={
-							(cancelTurn || canStopTask(task) === true) &&
-							isNonEmptyString(state.sessionId) &&
-							(isNonEmptyString(tool.runId) ||
-								isNonEmptyString(state.runId)) &&
-							state.connection === "ready"
+							canStop && state.connection === "ready"
 								? () =>
 										send({
 											type: "execution/stop",
@@ -140,7 +143,8 @@ function ToolActivity({ state, send }: ToolActivityProps) {
 
 /** 停止可能で未処理の非同期タスクだけを対象にする。 */
 function canStopTask(task: AsyncTask | undefined) {
-	return (
-		task && taskActive(task) && task.canStop && !(task.stopPending === true)
-	);
+	if (!task) {
+		return task;
+	}
+	return taskActive(task) && task.canStop && !(task.stopPending === true);
 }

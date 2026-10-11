@@ -40,10 +40,14 @@ const hostMessageValidators = new Map<
 		},
 		"agent/view": (value) => {
 			const view = value.view;
-			return (
+			if (!(
 				isId(value.requestId) &&
 				isRecord(view) &&
-				isId(view.threadId) &&
+				isId(view.threadId)
+			)) {
+				return false;
+			}
+			return (
 				(view.parentThreadId === null || isId(view.parentThreadId)) &&
 				["messages", "tools", "agents"].every((key) =>
 					validStateField(key, view[key]),
@@ -53,35 +57,48 @@ const hostMessageValidators = new Map<
 		"agent/stopped": (value) =>
 			isId(value.requestId) && isId(value.threadId),
 		"session/references": (value) => {
-			return (
+			if (!(
 				isId(value.requestId) &&
 				Array.isArray(value.entries) &&
-				value.entries.length <= 50 &&
+				value.entries.length <= 50
+			)) {
+				return false;
+			}
+			if (!(
 				value.entries.every(isSessionReference) &&
-				(value.nextCursor === null || isPathString(value.nextCursor)) &&
-				(value.error === undefined || typeof value.error === "string")
-			);
+				(value.nextCursor === null || isPathString(value.nextCursor))
+			)) {
+				return false;
+			}
+			return value.error === undefined || typeof value.error === "string";
 		},
 		"workspace/symbols": (value) => {
-			return (
+			if (!(
 				isId(value.requestId) &&
 				Array.isArray(value.entries) &&
-				value.entries.length <= 100 &&
+				value.entries.length <= 100
+			)) {
+				return false;
+			}
+			if (!(
 				value.entries.every(
 					(entry: unknown) =>
 						isWorkspacePath(entry) && entry.symbol !== undefined,
-				) &&
-				typeof value.truncated === "boolean" &&
-				(value.error === undefined || typeof value.error === "string")
-			);
+				) && typeof value.truncated === "boolean"
+			)) {
+				return false;
+			}
+			return value.error === undefined || typeof value.error === "string";
 		},
 		"workspace/paths": (value) => {
-			return (
+			if (!(
 				isId(value.requestId) &&
 				Array.isArray(value.entries) &&
-				value.entries.every(isWorkspacePath) &&
-				(value.error === undefined || typeof value.error === "string")
-			);
+				value.entries.every(isWorkspacePath)
+			)) {
+				return false;
+			}
+			return value.error === undefined || typeof value.error === "string";
 		},
 		"workspace/resolvedPath": (value) => {
 			return (
@@ -99,13 +116,21 @@ const hostMessageValidators = new Map<
 			return isSidebarLocation(value.location);
 		},
 		"ui/viewState": (value) => {
-			return (
+			if (!(
 				typeof value.restoreScroll === "boolean" &&
 				typeof value.editor === "boolean" &&
-				typeof value.draft === "string" &&
+				typeof value.draft === "string"
+			)) {
+				return false;
+			}
+			if (!(
 				value.draft.length <= 100_000 &&
 				validDraftParts(value.draft, value.draftParts) &&
-				typeof value.scrollTop === "number" &&
+				typeof value.scrollTop === "number"
+			)) {
+				return false;
+			}
+			return (
 				Number.isFinite(value.scrollTop) &&
 				value.scrollTop >= 0 &&
 				validConversationScrollAnchor(value.scrollAnchor)
@@ -117,20 +142,31 @@ const hostMessageValidators = new Map<
 		"request/failed": (value) => {
 			return isId(value.requestId) && typeof value.error === "string";
 		},
-		"state/patch": (value) =>
-			value.type === "state/patch" &&
-			isRevision(value.revision) &&
-			validBaseRevision(value.baseRevision, value.revision) &&
-			(value.toolUpdates === undefined ||
-				validStateField("tools", value.toolUpdates)) &&
-			isRecord(value.patch) &&
-			!(
-				value.toolUpdates !== undefined &&
-				value.patch.tools !== undefined
-			) &&
-			Object.entries(value.patch).every(([key, item]) =>
-				validStateField(key, item),
-			),
+		"state/patch": (value) => {
+			if (!(
+				value.type === "state/patch" &&
+				isRevision(value.revision) &&
+				validBaseRevision(value.baseRevision, value.revision)
+			)) {
+				return false;
+			}
+			if (!(
+				(value.toolUpdates === undefined ||
+					validStateField("tools", value.toolUpdates)) &&
+				isRecord(value.patch)
+			)) {
+				return false;
+			}
+			return (
+				!(
+					value.toolUpdates !== undefined &&
+					value.patch.tools !== undefined
+				) &&
+				Object.entries(value.patch).every(([key, item]) =>
+					validStateField(key, item),
+				)
+			);
+		},
 	} satisfies Record<string, (value: Record<string, unknown>) => boolean>),
 );
 

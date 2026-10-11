@@ -95,43 +95,44 @@ function instrumentation() {
 	return {
 		name: "codex-numeric-measurement",
 		setup(builder) {
+			const instrumentCodexModule = async ({ path: filename }) => {
+				let content = await fs.readFile(filename, "utf8");
+				const hooks = path.join(
+					repoRoot,
+					"tests/scratch/codex-measurement-support.ts",
+				);
+				content = `import { mark, recordProcess } from ${JSON.stringify(hooks)};\n${content}`;
+				const replacements = [
+					[
+						"\t\tconst child = startAppServerProcess(",
+						'\t\tmark("resolved");\n\t\tconst child = startAppServerProcess(',
+					],
+					[
+						"\t\tlet transport: AppServerTransport;",
+						"\t\trecordProcess(child);\n\t\tlet transport: AppServerTransport;",
+					],
+					[
+						'\t\t\tconst response = await transport.request("initialize", {',
+						'\t\t\tmark("transportReady");\n\t\t\tconst response = await transport.request("initialize", {',
+					],
+					[
+						'\t\t\ttransport.notify({ method: "initialized" });',
+						'\t\t\tmark("initialized");\n\t\t\ttransport.notify({ method: "initialized" });',
+					],
+				];
+				for (const [before, after] of replacements) {
+					assert.equal(
+						content.split(before).length,
+						2,
+						"Codex の計測位置が変わりました。",
+					);
+					content = content.replace(before, after);
+				}
+				return { contents: content, loader: "ts" };
+			};
 			builder.onLoad(
 				{ filter: /[/\\]CodexClient\.ts$/ },
-				async ({ path: filename }) => {
-					let content = await fs.readFile(filename, "utf8");
-					const hooks = path.join(
-						repoRoot,
-						"tests/scratch/codex-measurement-support.ts",
-					);
-					content = `import { mark, recordProcess } from ${JSON.stringify(hooks)};\n${content}`;
-					const replacements = [
-						[
-							"\t\tconst child = startAppServerProcess(",
-							'\t\tmark("resolved");\n\t\tconst child = startAppServerProcess(',
-						],
-						[
-							"\t\tlet transport: AppServerTransport;",
-							"\t\trecordProcess(child);\n\t\tlet transport: AppServerTransport;",
-						],
-						[
-							'\t\t\tconst response = await transport.request("initialize", {',
-							'\t\t\tmark("transportReady");\n\t\t\tconst response = await transport.request("initialize", {',
-						],
-						[
-							'\t\t\ttransport.notify({ method: "initialized" });',
-							'\t\t\tmark("initialized");\n\t\t\ttransport.notify({ method: "initialized" });',
-						],
-					];
-					for (const [before, after] of replacements) {
-						assert.equal(
-							content.split(before).length,
-							2,
-							"Codex の計測位置が変わりました。",
-						);
-						content = content.replace(before, after);
-					}
-					return { contents: content, loader: "ts" };
-				},
+				instrumentCodexModule,
 			);
 		},
 	};

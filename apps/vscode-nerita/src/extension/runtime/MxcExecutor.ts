@@ -110,12 +110,10 @@ export class MxcExecutor implements SandboxCommandExecutor {
 				);
 				stdout += result.stdout;
 				stderr += result.stderr;
-				if (
-					!this.management ||
-					!report ||
-					result.exitCode === 0 ||
-					attempt >= 3
-				) {
+				if (!this.management || !report || result.exitCode === 0) {
+					return { ...result, stdout, stderr };
+				}
+				if (attempt >= 3) {
 					return { ...result, stdout, stderr };
 				}
 				if (
@@ -156,7 +154,9 @@ export async function executeMxcCommand(
 ): Promise<SandboxCommandResult> {
 	signal.throwIfAborted();
 	if (!isNonEmptyString(process.env.SystemRoot)) {
-		throw new Error("Windows のシステムルートを環境変数から取得できません。");
+		throw new Error(
+			"Windows のシステムルートを環境変数から取得できません。",
+		);
 	}
 	const timing = new MxcTiming();
 	const hostTemporary = await timing.measure("temporaryMs", () =>
@@ -300,12 +300,18 @@ function validateCommand(call: ToolCall) {
 	if (
 		!call.policy.shell ||
 		!isNonZeroNumber(call.command?.length) ||
-		!isNonEmptyString(call.command[0]) ||
+		!isNonEmptyString(call.command[0])
+	) {
+		throw new Error("未対応のSandbox要求です。");
+	}
+	if (
 		call.command.some((arg) => arg.includes("\0")) ||
 		!Number.isSafeInteger(call.timeoutMs) ||
-		call.timeoutMs! < 1 ||
-		call.timeoutMs! > 600_000
+		call.timeoutMs! < 1
 	) {
+		throw new Error("未対応のSandbox要求です。");
+	}
+	if (call.timeoutMs! > 600_000) {
 		throw new Error("未対応のSandbox要求です。");
 	}
 }

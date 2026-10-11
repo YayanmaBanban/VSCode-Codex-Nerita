@@ -27,13 +27,16 @@ function supportsPlatform(manifest) {
 	return [
 		[manifest.os, process.platform],
 		[manifest.cpu, process.arch],
-	].every(
-		([allowed, current]) =>
-			!allowed ||
-			(!allowed.includes(`!${current}`) &&
-				(!allowed.some((value) => !value.startsWith("!")) ||
-					allowed.includes(current))),
-	);
+	].every(([allowed, current]) => {
+		if (!allowed) {
+			return true;
+		}
+		return (
+			!allowed.includes(`!${current}`) &&
+			(!allowed.some((value) => !value.startsWith("!")) ||
+				allowed.includes(current))
+		);
+	});
 }
 
 /** `devDependencies` を除き、必須依存の不足は梱包時点でエラーにする。 */

@@ -100,8 +100,10 @@ export function guardPiExtensionTools(
 
 /** 外部拡張が組み込みの名前を騙って登録することを防ぐ。 */
 function isBuiltin(path: string, name: string): boolean {
+	const inlineCodeMode =
+		path === "<inline:nerita-codemode>" && name === "codemode";
 	return (
-		(path === "<inline:nerita-codemode>" && name === "codemode") ||
+		inlineCodeMode ||
 		(path === "<inline:nerita-tool-search>" && name === "tool_search")
 	);
 }

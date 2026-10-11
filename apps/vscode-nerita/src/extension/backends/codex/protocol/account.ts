@@ -24,76 +24,13 @@ export function parseModels(value: unknown): {
 	data: ModelInfo[];
 	nextCursor: string | null;
 } {
-	if (
-		!isRecord(value) ||
-		!Array.isArray(value.data) ||
-		!(value.nextCursor === null || typeof value.nextCursor === "string")
-	) {
+	if (!isRecord(value) || !Array.isArray(value.data)) {
 		throw new Error("Invalid model catalog");
 	}
-	const data = value.data.map((entry: unknown): ModelInfo => {
-		if (
-			!isRecord(entry) ||
-			typeof entry.model !== "string" ||
-			typeof entry.displayName !== "string" ||
-			!isEffort(entry.defaultReasoningEffort) ||
-			!Array.isArray(entry.supportedReasoningEfforts) ||
-			!Array.isArray(entry.inputModalities) ||
-			!Array.isArray(entry.serviceTiers)
-		) {
-			throw new Error("Invalid model");
-		}
-		const supportedReasoningEfforts = entry.supportedReasoningEfforts.map(
-			(effort: unknown) => {
-				if (
-					!isRecord(effort) ||
-					!isEffort(effort.reasoningEffort) ||
-					typeof effort.description !== "string"
-				) {
-					throw new Error("Invalid reasoning option");
-				}
-				return {
-					reasoningEffort: effort.reasoningEffort,
-					description: effort.description,
-				};
-			},
-		);
-		const inputModalities = entry.inputModalities.map(
-			(modality: unknown) => {
-				if (
-					modality !== "text" &&
-					modality !== "image" &&
-					modality !== "audio"
-				) {
-					throw new Error("Invalid modality");
-				}
-				return modality;
-			},
-		);
-		const serviceTiers = entry.serviceTiers.map((tier: unknown) => {
-			if (
-				!isRecord(tier) ||
-				typeof tier.id !== "string" ||
-				typeof tier.name !== "string" ||
-				typeof tier.description !== "string"
-			) {
-				throw new Error("Invalid service tier");
-			}
-			return {
-				id: tier.id,
-				name: tier.name,
-				description: tier.description,
-			};
-		});
-		return {
-			model: entry.model,
-			displayName: entry.displayName,
-			defaultReasoningEffort: entry.defaultReasoningEffort,
-			supportedReasoningEfforts,
-			inputModalities,
-			serviceTiers,
-		};
-	});
+	if (!(value.nextCursor === null || typeof value.nextCursor === "string")) {
+		throw new Error("Invalid model catalog");
+	}
+	const data = value.data.map(parseModel);
 	return { data, nextCursor: value.nextCursor };
 }
 /** クライアントが開始する2つの認証方式だけを検証する。 */
@@ -118,4 +55,75 @@ export function parseLogin(
 		};
 	}
 	throw new Error("Invalid login response");
+}
+
+/** 各モデルの入力形式・推論量・サービス階層を検証して公開属性だけを返す。 */
+function parseModel(entry: unknown): ModelInfo {
+	if (
+		!isRecord(entry) ||
+		typeof entry.model !== "string" ||
+		typeof entry.displayName !== "string"
+	) {
+		throw new Error("Invalid model");
+	}
+	if (
+		!isEffort(entry.defaultReasoningEffort) ||
+		!Array.isArray(entry.supportedReasoningEfforts) ||
+		!Array.isArray(entry.inputModalities)
+	) {
+		throw new Error("Invalid model");
+	}
+	if (!Array.isArray(entry.serviceTiers)) {
+		throw new Error("Invalid model");
+	}
+	const supportedReasoningEfforts = entry.supportedReasoningEfforts.map(
+		(effort: unknown) => {
+			if (
+				!isRecord(effort) ||
+				!isEffort(effort.reasoningEffort) ||
+				typeof effort.description !== "string"
+			) {
+				throw new Error("Invalid reasoning option");
+			}
+			return {
+				reasoningEffort: effort.reasoningEffort,
+				description: effort.description,
+			};
+		},
+	);
+	const inputModalities = entry.inputModalities.map((modality: unknown) => {
+		if (
+			modality !== "text" &&
+			modality !== "image" &&
+			modality !== "audio"
+		) {
+			throw new Error("Invalid modality");
+		}
+		return modality;
+	});
+	const serviceTiers = entry.serviceTiers.map((tier: unknown) => {
+		if (
+			!isRecord(tier) ||
+			typeof tier.id !== "string" ||
+			typeof tier.name !== "string"
+		) {
+			throw new Error("Invalid service tier");
+		}
+		if (typeof tier.description !== "string") {
+			throw new Error("Invalid service tier");
+		}
+		return {
+			id: tier.id,
+			name: tier.name,
+			description: tier.description,
+		};
+	});
+	return {
+		model: entry.model,
+		displayName: entry.displayName,
+		defaultReasoningEffort: entry.defaultReasoningEffort,
+		supportedReasoningEfforts,
+		inputModalities,
+		serviceTiers,
+	};
 }

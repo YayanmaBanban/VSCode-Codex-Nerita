@@ -116,7 +116,7 @@ export function isAgentStatus(value: unknown): value is AgentStatus {
 
 /** Host から渡されるカードの全フィールドを検証する。 */
 export function isSubAgent(value: unknown): value is SubAgentSummary {
-	return (
+	if (!(
 		isRecord(value) &&
 		["threadId", "parentThreadId", "activityItemId", "agentPath"].every(
 			(key) => typeof value[key] === "string" && value[key].length > 0,
@@ -130,7 +130,11 @@ export function isSubAgent(value: unknown): value is SubAgentSummary {
 			"lastAction",
 		].every(
 			(key) => value[key] === undefined || typeof value[key] === "string",
-		) &&
+		)
+	)) {
+		return false;
+	}
+	return (
 		isAgentStatus(value.status) &&
 		agentIconKeys.some((key) => key === value.iconKey) &&
 		Number.isSafeInteger(value.order)

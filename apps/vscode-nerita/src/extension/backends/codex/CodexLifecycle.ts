@@ -57,12 +57,10 @@ export class CodexLifecycle {
 	}
 	/** ログイン完了後も同じ接続で認証を確認する。 */
 	async authenticate(method: string): Promise<void> {
-		if (
-			!this.client ||
-			!this.authService ||
-			!this.abort ||
-			this.session.snapshot().connection !== "auth-required"
-		) {
+		if (!this.client || !this.authService || !this.abort) {
+			throw new Error("Login unavailable");
+		}
+		if (this.session.snapshot().connection !== "auth-required") {
 			throw new Error("Login unavailable");
 		}
 		const epoch = this.epoch;
@@ -106,9 +104,11 @@ export class CodexLifecycle {
 		if (
 			!client ||
 			this.session.snapshot().connection !== "ready" ||
-			this.session.busy() ||
-			this.session.snapshot().sessionPending
+			this.session.busy()
 		) {
+			throw new Error("Logout unavailable");
+		}
+		if (this.session.snapshot().sessionPending) {
 			throw new Error("Logout unavailable");
 		}
 		const epoch = this.epoch;
@@ -212,12 +212,10 @@ export class CodexLifecycle {
 	async newThread(): Promise<void> {
 		const state = this.session.snapshot();
 		const client = this.client;
-		if (
-			!client ||
-			!isNonEmptyString(state.cwd) ||
-			this.session.busy() ||
-			this.session.snapshot().sessionPending
-		) {
+		if (!client || !isNonEmptyString(state.cwd) || this.session.busy()) {
+			throw new Error("Busy");
+		}
+		if (this.session.snapshot().sessionPending) {
 			throw new Error("Busy");
 		}
 		const epoch = this.epoch;

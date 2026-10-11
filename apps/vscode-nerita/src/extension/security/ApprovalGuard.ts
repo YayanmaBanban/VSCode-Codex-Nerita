@@ -30,11 +30,14 @@ export function assessToolCall(call: ToolCall): "allow" | "ask" {
 	if ((call.command || call.hostShell === true) && !call.policy.shell) {
 		throw new Error("このroleではShell実行が禁止されています。");
 	}
-	return !call.command &&
+	if (!(
+		!call.command &&
 		!(call.hostShell === true) &&
 		["read", "ls"].includes(call.tool)
-		? "allow"
-		: "ask";
+	)) {
+		return "ask";
+	}
+	return "allow";
 }
 
 /** `env` の値は表示せず、実行と同一の操作・cwd・実効範囲を提示する。 */

@@ -16,7 +16,6 @@ import {
 import { validStateField } from "@nerita/shared/stateFieldValidation";
 import type { AuthorityRecord } from "../../apps/vscode-nerita/src/extension/dlc/IntentAuthority";
 
-import { plannedIntent } from "../support/dlc";
 import { piFixture, until } from "../support/pi";
 import { codexFixture } from "../support/codex";
 import { dlcRuntimeFixture } from "../support/dlcRuntime";
@@ -51,7 +50,7 @@ void test("Codex の9 MiB の出力が JSON 化で上限を超えても、収集
 			type: "agentMessage",
 			text: JSON.stringify({
 				attemptId: "attempt",
-				workItemId: `${plannedIntent().intentId}:task:1`,
+				workItemId: fixture.planned.workItems[0]!.id,
 				outcome: "implemented",
 				summary: "変更した",
 				changedPaths: ["hello.txt"],
@@ -64,7 +63,7 @@ void test("Codex の9 MiB の出力が JSON 化で上限を超えても、収集
 	});
 	await run;
 	const repository = fixture.createRepository();
-	const state = await repository.load(plannedIntent().intentId);
+	const state = await repository.load(fixture.planned.intentId);
 	const attempt = state.workItems[0]?.attempts[0];
 	assert.equal(attempt?.status, "failed");
 	assert.match(
@@ -148,6 +147,12 @@ for (const boundary of ["会話ファイル", "Host の確定記録"]) {
 	void test(`${boundary}の保存だけが失敗してもファイル変更・結果・根拠を再読込みでき、同じ全文の再保存で履歴を復元する`, async (t) => {
 		const f = await piFixture(t);
 		await prepareRepository(f.cwd);
+		const fixture = await dlcRuntimeFixture(
+			t,
+			f.cwd,
+			() => f.controller(),
+			() => {},
+		);
 		f.model.replies.push(
 			{
 				name: "write",
@@ -155,23 +160,17 @@ for (const boundary of ["会話ファイル", "Host の確定記録"]) {
 			},
 			JSON.stringify({
 				attemptId: "attempt",
-				workItemId: `${plannedIntent().intentId}:task:1`,
+				workItemId: fixture.planned.workItems[0]!.id,
 				outcome: "implemented",
 				summary: "挨拶を更新した",
 				changedPaths: ["hello.txt"],
 			}),
 		);
-		const fixture = await dlcRuntimeFixture(
-			t,
-			f.cwd,
-			() => f.controller(),
-			() => {},
-		);
 		const restore = failConversationStorage(t, fixture, boundary);
 		const controller = await openStoredController(fixture);
 		await controller.dispatch({ type: "run" });
 		const reopened = fixture.createRepository();
-		const state = await reopened.load(plannedIntent().intentId);
+		const state = await reopened.load(fixture.planned.intentId);
 		const attempt = state.workItems[0]?.attempts[0];
 		assert.equal(attempt?.status, "failed");
 		assert.match(attempt.detail ?? "", /会話記録を保存できませんでした/);
@@ -229,7 +228,7 @@ function openStoredController(
 	fixture: Awaited<ReturnType<typeof dlcRuntimeFixture>>,
 ) {
 	return DlcController.open(
-		plannedIntent(),
+		fixture.planned,
 		fixture.runtime,
 		{ save: (state, revision) => fixture.repository.save(state, revision) },
 		() => "attempt",
@@ -272,7 +271,7 @@ function failConversationStorage(
 					failing &&
 					value.metadataDigest ===
 						jsonDigest({
-							intentId: plannedIntent().intentId,
+							intentId: fixture.planned.intentId,
 							attemptId: "attempt",
 							kind: "conversation",
 						})
@@ -340,18 +339,8 @@ async function prepareRepository(cwd: string) {
 void test("実際の Pi 書込みと承認を経て、構造化結果とは別に根拠を保存する", async (t) => {
 	const f = await piFixture(t);
 	await prepareRepository(f.cwd);
-	f.model.replies.push(
-		{ name: "write", arguments: { path: "hello.txt", content: "after\n" } },
-		JSON.stringify({
-			attemptId: "attempt",
-			workItemId: "00000000-0000-4000-8000-000000000023:task:1",
-			outcome: "implemented",
-			summary: "挨拶を更新した",
-			changedPaths: ["hello.txt"],
-		}),
-	);
 	let approvals = 0;
-	const { runtime, repository } = await dlcRuntimeFixture(
+	const { runtime, repository, planned } = await dlcRuntimeFixture(
 		t,
 		f.cwd,
 		() => f.controller(),
@@ -359,9 +348,19 @@ void test("実際の Pi 書込みと承認を経て、構造化結果とは別�
 			approvals += 1;
 		},
 	);
+	f.model.replies.push(
+		{ name: "write", arguments: { path: "hello.txt", content: "after\n" } },
+		JSON.stringify({
+			attemptId: "attempt",
+			workItemId: planned.workItems[0]!.id,
+			outcome: "implemented",
+			summary: "挨拶を更新した",
+			changedPaths: ["hello.txt"],
+		}),
+	);
 	let saved: IntentState | undefined;
 	const controller = await DlcController.open(
-		plannedIntent(),
+		planned,
 		runtime,
 		{
 			save: (state) => {
@@ -392,10 +391,10 @@ void test("承認待ちの Pi 実行を停止しても、確認済みの根拠�
 		name: "write",
 		arguments: { path: "hello.txt", content: "cancelled" },
 	});
-	const { runtime, repository, backend, createRuntime } =
+	const { runtime, repository, backend, createRuntime, planned } =
 		await dlcRuntimeFixture(t, f.cwd, () => f.controller());
 	const controller = await DlcController.open(
-		plannedIntent(),
+		planned,
 		runtime,
 		{
 			save: (state, revision) => repository.save(state, revision),
@@ -409,7 +408,7 @@ void test("承認待ちの Pi 実行を停止しても、確認済みの根拠�
 	assert.ok(managed.runId !== null);
 	await controller.dispatch({ type: "cancel" });
 	await run;
-	const state = await repository.load(plannedIntent().intentId);
+	const state = await repository.load(planned.intentId);
 	const attempt = state.workItems[0]?.attempts[0];
 	assert.equal(attempt?.status, "cancelled");
 	assert.equal(attempt.evidence?.outcome, "cancelled");
@@ -451,18 +450,20 @@ void test("承認待ちの Pi 実行を停止しても、確認済みの根拠�
 void test("Pi が成功を自己申告してもファイル変更がなければ失敗する", async (t) => {
 	const f = await piFixture(t);
 	await prepareRepository(f.cwd);
+	const { runtime, planned } = await dlcRuntimeFixture(t, f.cwd, () =>
+		f.controller(),
+	);
 	f.model.replies.push(
 		JSON.stringify({
 			attemptId: "attempt",
-			workItemId: "00000000-0000-4000-8000-000000000023:task:1",
+			workItemId: planned.workItems[0]!.id,
 			outcome: "implemented",
 			summary: "更新済み",
 			changedPaths: ["hello.txt"],
 		}),
 	);
-	const { runtime } = await dlcRuntimeFixture(t, f.cwd, () => f.controller());
 	const controller = await DlcController.open(
-		plannedIntent(),
+		planned,
 		runtime,
 		{ save: () => Promise.resolve() },
 		() => "attempt",
@@ -477,12 +478,12 @@ void test("未対応の継続方式や権限縮小を実行前に拒否する", 
 	const f = await piFixture(t);
 	await prepareRepository(f.cwd);
 	let created = 0;
-	const { runtime } = await dlcRuntimeFixture(t, f.cwd, () => {
+	const { runtime, planned } = await dlcRuntimeFixture(t, f.cwd, () => {
 		created++;
 		return f.controller();
 	});
 	const request: ExecutionRequest = {
-		intentId: "00000000-0000-4000-8000-000000000023",
+		intentId: planned.intentId,
 		request: "request",
 		workItemId: "work",
 		attemptId: "attempt",
@@ -533,7 +534,7 @@ void test("Codex の通信と完了通知も同じ Runtime Port で実装結果�
 	const f = await codexFixture(t);
 	await prepareRepository(f.cwd);
 	const session = f.controller();
-	const { runtime, backend } = await dlcRuntimeFixture(
+	const { runtime, backend, planned } = await dlcRuntimeFixture(
 		t,
 		f.cwd,
 		() => session,
@@ -541,7 +542,7 @@ void test("Codex の通信と完了通知も同じ Runtime Port で実装結果�
 		"codex",
 	);
 	const dlc = await DlcController.open(
-		plannedIntent(),
+		planned,
 		runtime,
 		{ save: () => Promise.resolve() },
 		() => "attempt",
@@ -564,7 +565,7 @@ void test("Codex の通信と完了通知も同じ Runtime Port で実装結果�
 			type: "agentMessage",
 			text: JSON.stringify({
 				attemptId: "attempt",
-				workItemId: "00000000-0000-4000-8000-000000000023:task:1",
+				workItemId: planned.workItems[0]!.id,
 				outcome: "implemented",
 				summary: "変更した",
 				changedPaths: ["hello.txt"],
@@ -576,10 +577,7 @@ void test("Codex の通信と完了通知も同じ Runtime Port で実装結果�
 		turn: { id: turnId, status: "completed", items: [] },
 	});
 	const result = await run;
-	const conversation = backend.conversation(
-		plannedIntent().intentId,
-		"attempt",
-	);
+	const conversation = backend.conversation(planned.intentId, "attempt");
 	assert.deepEqual(
 		Object.entries(conversation ?? {})
 			.filter(

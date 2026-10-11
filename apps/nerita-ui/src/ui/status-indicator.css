@@ -1,0 +1,36 @@
+/* 進行中の回転と、待機・注意のパルスを共通部品とツールカードで共有する。 */
+.status-indicator-running {
+	color: var(--nerita-description-foreground);
+	animation: status-indicator-spin 1.2s linear infinite;
+}
+@keyframes status-indicator-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+.status-indicator-dots > span {
+	animation: status-indicator-pulse 1.2s ease-in-out infinite;
+}
+.status-indicator-dots > span:nth-child(2) {
+	animation-delay: -1s;
+}
+.status-indicator-dots > span:nth-child(3) {
+	animation-delay: -0.8s;
+}
+@keyframes status-indicator-pulse {
+	0%,
+	100% {
+		opacity: 0.35;
+		transform: scale(0.75);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.status-indicator-running,
+	.status-indicator-dots > span {
+		animation: none;
+	}
+}

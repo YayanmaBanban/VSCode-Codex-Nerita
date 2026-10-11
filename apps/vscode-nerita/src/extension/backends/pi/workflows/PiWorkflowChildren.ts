@@ -87,12 +87,10 @@ export class PiWorkflowChildren {
 		engineSignal: AbortSignal,
 	): Promise<WorkflowResult> {
 		const plan = this.plans.get(key);
-		if (
-			!plan ||
-			this.started.has(key) ||
-			typeof params.task !== "string" ||
-			params.task.length > 32768
-		) {
+		if (!plan || this.started.has(key) || typeof params.task !== "string") {
+			throw new Error("ワークフローの起動要求が不正です。");
+		}
+		if (params.task.length > 32768) {
 			throw new Error("ワークフローの起動要求が不正です。");
 		}
 		this.validateLaunch(plan.step, params);
@@ -167,7 +165,11 @@ export class PiWorkflowChildren {
 		if (
 			params.task !== expected ||
 			params.agent !== step.agent ||
-			params.resume !== this.referenceId(step.resume) ||
+			params.resume !== this.referenceId(step.resume)
+		) {
+			throw new Error("生成したステップと起動条件が一致しません。");
+		}
+		if (
 			params.neritaFork !== this.referenceId(step.fork) ||
 			Object.keys(params).some(
 				(key) =>

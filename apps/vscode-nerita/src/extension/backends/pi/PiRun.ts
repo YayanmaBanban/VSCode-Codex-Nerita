@@ -42,9 +42,11 @@ export abstract class PiRun extends PiLifecycle {
 		if (
 			this.busy() ||
 			this.state.connection !== "ready" ||
-			this.state.configPending ||
-			this.state.sessionPending
+			this.state.configPending
 		) {
+			throw new Error("Pi の内部実行を開始できません。");
+		}
+		if (this.state.sessionPending) {
 			throw new Error("Pi の内部実行を開始できません。");
 		}
 		return executeBackend(
@@ -115,9 +117,11 @@ export abstract class PiRun extends PiLifecycle {
 		if (
 			!runtime?.workflow ||
 			this.state.connection !== "ready" ||
-			this.state.sessionPending ||
-			this.state.configPending
+			this.state.sessionPending
 		) {
+			throw new Error("Pi への接続とモデル設定を完了してください。");
+		}
+		if (this.state.configPending) {
 			throw new Error("Pi への接続とモデル設定を完了してください。");
 		}
 		if (
@@ -231,13 +235,12 @@ export abstract class PiRun extends PiLifecycle {
 	/** SDK の非同期の入力処理中は次の送信を拒否し、遅れて積まれたキューを回収する。 */
 	private steer(message: BackendPrompt, submission: Submission): void {
 		const runtime = this.runtime!;
-		if (
-			!submission.accepted ||
-			submission.cancelled ||
-			submission.ended ||
-			submission.steering ||
-			!runtime.isStreaming
-		) {
+		if (!submission.accepted || submission.cancelled || submission.ended) {
+			throw new Error(
+				"Piの送信・停止処理が終わってから再送してください。",
+			);
+		}
+		if (submission.steering || !runtime.isStreaming) {
 			throw new Error(
 				"Piの送信・停止処理が終わってから再送してください。",
 			);
@@ -383,9 +386,8 @@ export abstract class PiRun extends PiLifecycle {
 
 	/** ユーザーの停止とは別に起きた保存失敗を隠さない。 */
 	private finishedError(cancelled: boolean, error: string | undefined) {
-		const detail =
-			this.runtime?.history?.outputs?.error ??
-			(cancelled ? null : (error ?? null));
+		const runError = cancelled ? null : (error ?? null);
+		const detail = this.runtime?.history?.outputs?.error ?? runError;
 		return detail === null ? null : this.protectText(detail);
 	}
 

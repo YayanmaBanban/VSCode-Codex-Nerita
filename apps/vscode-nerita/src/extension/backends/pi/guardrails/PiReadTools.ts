@@ -143,12 +143,11 @@ function approvedLsOperations(
 			stat: async (path) => {
 				await check();
 				const child = relative(target, path);
-				if (
-					child !== "" &&
-					(child.includes("/") ||
-						child.includes("\\") ||
-						child === "..")
-				) {
+				const nestedChild =
+					child.includes("/") ||
+					child.includes("\\") ||
+					child === "..";
+				if (child !== "" && nestedChild) {
 					throw new Error("一覧の対象外です。");
 				}
 				// 子のリンク先へ追従せず、ディレクトリ項目自体の情報だけを使用する。

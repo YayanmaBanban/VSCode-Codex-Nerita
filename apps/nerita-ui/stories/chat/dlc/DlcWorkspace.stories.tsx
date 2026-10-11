@@ -9,6 +9,7 @@ import { StoryChat, storyBridge } from "../StoryChat";
 import { createChatStoryBridge } from "../mocks/mockBridge";
 import { createStoryBridge, type StoryBridge } from "../mocks/storyBridge";
 import { scenarioState } from "../fixtures/chatState";
+import type { BackendId } from "@nerita/shared/backend";
 
 const first = "00000000-0000-4000-8000-000000000001";
 const second = "00000000-0000-4000-8000-000000000002";
@@ -122,6 +123,73 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Host の未信頼記録が同じでも、Codex と Pi では実行先の信頼表示が異なる。 */
+function untrustedWorktreeView(backend: BackendId): DlcView {
+	return {
+		...view(),
+		backend,
+		targetId: "worktree",
+		targets: [
+			{
+				id: "worktree",
+				name: "work-new",
+				directory: "work-new",
+				branch: "feature/work",
+				main: false,
+				removable: true,
+				trusted: false,
+			},
+		],
+	};
+}
+
+export const CodexUntrustedWorktree: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		workspaceBridge(canvasElement).emit({
+			type: "dlc/state",
+			view: untrustedWorktreeView("codex"),
+		});
+		await waitFor(() =>
+			expect(canvas.getByLabelText("DLC の Worktree")).toHaveValue(
+				"worktree",
+			),
+		);
+		await expect(
+			canvas.getByRole("option", { name: "work-new" }),
+		).toBeInTheDocument();
+		await expect(
+			canvas.queryByRole("button", { name: "実行先の信頼を確認" }),
+		).not.toBeInTheDocument();
+	},
+};
+
+export const PiUntrustedWorktree: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		workspaceBridge(canvasElement).emit({
+			type: "dlc/state",
+			view: untrustedWorktreeView("pi"),
+		});
+		await waitFor(() =>
+			expect(canvas.getByLabelText("DLC の Worktree")).toHaveValue(
+				"worktree",
+			),
+		);
+		await expect(
+			canvas.getByRole("option", {
+				name: "work-new（未信頼）",
+			}),
+		).toBeInTheDocument();
+		await userEvent.click(
+			canvas.getByRole("button", { name: "実行先の信頼を確認" }),
+		);
+		await expect(workspaceBridge(canvasElement).sent.at(-1)).toMatchObject({
+			type: "dlc/trust",
+		});
+	},
+};
+
 export const SelectionAndCreation: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
@@ -162,9 +230,7 @@ async function verifyCreationFailure(
 	bridge: StoryBridge,
 ) {
 	const canvas = within(element);
-	await userEvent.click(
-		canvas.getByRole("button", { name: "新しい Intent" }),
-	);
+	await userEvent.click(canvas.getByRole("button", { name: "Intentの作成" }));
 	await userEvent.type(
 		canvas.getByLabelText("Intent のタイトル"),
 		"新しい作業",
@@ -314,7 +380,11 @@ export const StartHold: Story = {
 			],
 		};
 		bridge.emit({ type: "dlc/state", view: held });
-		await expect(await canvas.findByText("Worktree が必要")).toBeVisible();
+		await waitFor(() =>
+			expect(
+				canvas.getByRole("button", { name: "最初の Intent" }),
+			).toHaveAccessibleDescription("Worktree が必要"),
+		);
 		await userEvent.click(
 			canvas.getByRole("button", { name: /Phase 3 · Construction/ }),
 		);
@@ -351,6 +421,7 @@ async function verifyTrustRelease(
 	const selected = held.selected!;
 	const untrusted: DlcView = {
 		...held,
+		backend: "pi",
 		targetId: "worktree",
 		targetBusy: false,
 		targets: [

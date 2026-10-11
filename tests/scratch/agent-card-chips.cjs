@@ -62,11 +62,11 @@ async function reviewCards(
 			"GPT-5.x",
 			"High",
 		]);
-		await expect(page.locator(".agent-status-dots")).toHaveCount(4);
+		await expect(page.locator(".status-indicator-dots")).toHaveCount(4);
 		await reviewPulse(page, prefix);
 		await page.emulateMedia({ reducedMotion: "reduce" });
 		const count = await page
-			.locator(".agent-status-dots")
+			.locator(".status-indicator-dots")
 			.first()
 			.evaluate(
 				(element) => element.getAnimations({ subtree: true }).length,
@@ -85,9 +85,9 @@ async function reviewPulse(page, prefix) {
 	const frames = [];
 	for (const time of [0, 150, 600, 1050, 1200]) {
 		const opacity = await page
-			.locator(".agent-status-dots")
+			.locator(".status-indicator-dots")
 			.evaluateAll((elements, currentTime) => {
-				return elements.map((element) => {
+				const sampleIndicator = (element) => {
 					for (const animation of element.getAnimations({
 						subtree: true,
 					})) {
@@ -102,7 +102,8 @@ async function reviewPulse(page, prefix) {
 						);
 					}
 					return values;
-				});
+				};
+				return elements.map(sampleIndicator);
 			}, time);
 		frames.push({ time, opacity });
 		await page.screenshot({

@@ -42,13 +42,16 @@ export function isPiAuthRequest(value: unknown): value is PiAuthRequest {
 	if (item.type === "ready" || item.type === "cancel") {
 		return true;
 	}
+	if (!(typeof item.id === "string" && item.id.length <= 4096)) {
+		return false;
+	}
+	if (item.type === "start") {
+		return true;
+	}
 	return (
-		typeof item.id === "string" &&
-		item.id.length <= 4096 &&
-		(item.type === "start" ||
-			(item.type === "answer" &&
-				typeof item.value === "string" &&
-				item.value.length <= 65536))
+		item.type === "answer" &&
+		typeof item.value === "string" &&
+		item.value.length <= 65536
 	);
 }
 /** Host の状態通知を受け入れる前に、描画用の値を確認する。 */
@@ -56,27 +59,42 @@ export function isPiAuthState(value: unknown): value is PiAuthState {
 	if (!isRecord(value)) {
 		return false;
 	}
-	return (
+	if (!(
 		Array.isArray(value.items) &&
 		value.items.every(isAuthItem) &&
-		isNullableString(value.active) &&
+		isNullableString(value.active)
+	)) {
+		return false;
+	}
+	if (!(
 		typeof value.notice === "string" &&
 		isNullableString(value.error) &&
-		validAuthFeedback(value.feedback) &&
-		validAuthPrompt(value.prompt)
-	);
+		validAuthFeedback(value.feedback)
+	)) {
+		return false;
+	}
+	return validAuthPrompt(value.prompt);
 }
 
 /** 未検証のプロバイダー項目と、アカウント・認証方式の配列を検証する。 */
 function isAuthItem(value: unknown): boolean {
-	return (
+	if (!(
 		isRecord(value) &&
 		typeof value.id === "string" &&
-		typeof value.name === "string" &&
-		typeof value.configured === "boolean" &&
-		(value.accounts === undefined ||
-			(Array.isArray(value.accounts) &&
-				value.accounts.every(isAuthAccount))) &&
+		typeof value.name === "string"
+	)) {
+		return false;
+	}
+	if (!(typeof value.configured === "boolean")) {
+		return false;
+	}
+	if (!(
+		value.accounts === undefined ||
+		(Array.isArray(value.accounts) && value.accounts.every(isAuthAccount))
+	)) {
+		return false;
+	}
+	return (
 		Array.isArray(value.methods) &&
 		value.methods.every(
 			(method: unknown) =>
@@ -89,10 +107,14 @@ function isAuthItem(value: unknown): boolean {
 
 /** アカウントの保存方式は公開契約の2種類に限定する。 */
 function isAuthAccount(value: unknown): boolean {
-	return (
+	if (!(
 		isRecord(value) &&
 		typeof value.id === "string" &&
-		typeof value.name === "string" &&
+		typeof value.name === "string"
+	)) {
+		return false;
+	}
+	return (
 		(value.mode === "session" || value.mode === "secret-storage") &&
 		typeof value.active === "boolean"
 	);
@@ -105,20 +127,28 @@ function isNullableString(value: unknown): boolean {
 
 /** 入力要求と選択肢の構造を検証する。 */
 function validAuthPrompt(prompt: unknown): boolean {
+	if (prompt === null) {
+		return true;
+	}
+	if (!(
+		isRecord(prompt) &&
+		typeof prompt.id === "string" &&
+		typeof prompt.message === "string"
+	)) {
+		return false;
+	}
+	if (!(typeof prompt.secret === "boolean")) {
+		return false;
+	}
 	return (
-		prompt === null ||
-		(isRecord(prompt) &&
-			typeof prompt.id === "string" &&
-			typeof prompt.message === "string" &&
-			typeof prompt.secret === "boolean" &&
-			(prompt.options === undefined ||
-				(Array.isArray(prompt.options) &&
-					prompt.options.every(
-						(option: unknown) =>
-							isRecord(option) &&
-							typeof option.id === "string" &&
-							typeof option.label === "string",
-					))))
+		prompt.options === undefined ||
+		(Array.isArray(prompt.options) &&
+			prompt.options.every(
+				(option: unknown) =>
+					isRecord(option) &&
+					typeof option.id === "string" &&
+					typeof option.label === "string",
+			))
 	);
 }
 
@@ -127,11 +157,11 @@ function validAuthFeedback(feedback: unknown) {
 	return (
 		feedback === undefined ||
 		(isRecord(feedback) &&
-			Object.values(feedback).every(
-				(item: unknown) =>
-					isRecord(item) &&
-					typeof item.notice === "string" &&
-					(item.error === null || typeof item.error === "string"),
-			))
+			Object.values(feedback).every((item: unknown) => {
+				if (!(isRecord(item) && typeof item.notice === "string")) {
+					return false;
+				}
+				return item.error === null || typeof item.error === "string";
+			}))
 	);
 }

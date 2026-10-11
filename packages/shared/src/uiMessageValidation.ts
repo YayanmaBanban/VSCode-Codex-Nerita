@@ -72,15 +72,26 @@ const uiMessageValidators = new Map<
 			value.text.length <= 100_000,
 		"ui/setSidebar": (value) => isSidebarLocation(value.location),
 		"personality/read": () => true,
-		"personality/select": (value) =>
-			(value.scope === "global" || value.scope === "workspace") &&
-			typeof value.name === "string" &&
-			value.name.length <= 200,
-		"personality/save": (value) =>
-			(value.scope === "global" || value.scope === "workspace") &&
-			typeof value.originalName === "string" &&
-			value.originalName.length <= 200 &&
-			isPersonalityPreset(value),
+		"personality/select": (value) => {
+			if (!(
+				(value.scope === "global" || value.scope === "workspace") &&
+				typeof value.name === "string"
+			)) {
+				return false;
+			}
+			return value.name.length <= 200;
+		},
+		"personality/save": (value) => {
+			if (!(
+				(value.scope === "global" || value.scope === "workspace") &&
+				typeof value.originalName === "string"
+			)) {
+				return false;
+			}
+			return (
+				value.originalName.length <= 200 && isPersonalityPreset(value)
+			);
+		},
 		"workspace/manageTrust": () => true,
 		"ui/openEditor": () => true,
 		"ui/openSidebar": () => true,
@@ -88,28 +99,48 @@ const uiMessageValidators = new Map<
 			typeof value.draft === "string" &&
 			value.draft.length <= 100_000 &&
 			validDraftParts(value.draft, value.draftParts),
-		"ui/saveScroll": (value) =>
-			typeof value.scrollTop === "number" &&
-			Number.isFinite(value.scrollTop) &&
-			value.scrollTop >= 0 &&
-			validConversationScrollAnchor(value.scrollAnchor),
+		"ui/saveScroll": (value) => {
+			if (!(
+				typeof value.scrollTop === "number" &&
+				Number.isFinite(value.scrollTop) &&
+				value.scrollTop >= 0
+			)) {
+				return false;
+			}
+			return validConversationScrollAnchor(value.scrollAnchor);
+		},
 		"connection/retry": () => true,
 		"auth/logout": () => true,
 		"session/new": () => true,
-		"plan/decide": (value) =>
-			isId(value.sessionId) &&
-			isId(value.runId) &&
-			typeof value.action === "string" &&
-			["current", "new", "continue"].includes(value.action),
-		"session/list": (value) =>
-			(value.archived === undefined ||
-				typeof value.archived === "boolean") &&
-			(value.more === undefined || typeof value.more === "boolean"),
-		"session/rename": (value) =>
-			isId(value.sessionId) &&
-			typeof value.name === "string" &&
-			value.name.trim().length > 0 &&
-			value.name.length <= 200,
+		"plan/decide": (value) => {
+			if (!(
+				isId(value.sessionId) &&
+				isId(value.runId) &&
+				typeof value.action === "string"
+			)) {
+				return false;
+			}
+			return ["current", "new", "continue"].includes(value.action);
+		},
+		"session/list": (value) => {
+			if (!(
+				value.archived === undefined ||
+				typeof value.archived === "boolean"
+			)) {
+				return false;
+			}
+			return value.more === undefined || typeof value.more === "boolean";
+		},
+		"session/rename": (value) => {
+			if (!(
+				isId(value.sessionId) &&
+				typeof value.name === "string" &&
+				value.name.trim().length > 0
+			)) {
+				return false;
+			}
+			return value.name.length <= 200;
+		},
 		"session/unarchive": (value) => isId(value.sessionId),
 		"session/load": (value) => isId(value.sessionId),
 		"session/fork": (value) => isId(value.sessionId),
@@ -125,21 +156,37 @@ const uiMessageValidators = new Map<
 			isId(value.sessionId) && isId(value.attachmentId),
 		"attachment/remove": (value) =>
 			isId(value.sessionId) && isId(value.attachmentId),
-		"prompt/send": (value) =>
-			isId(value.sessionId) &&
-			typeof value.text === "string" &&
-			value.text.trim().length > 0 &&
-			value.text.length <= 100_000 &&
-			validSessionReferences(value.sessionReferences) &&
-			validReferences(value.text, value.references) &&
-			validChangeScopes(value.changeScopes) &&
-			validCodeReferences(value.codeReferences),
+		"prompt/send": (value) => {
+			if (!(
+				isId(value.sessionId) &&
+				typeof value.text === "string" &&
+				value.text.trim().length > 0
+			)) {
+				return false;
+			}
+			if (!(
+				value.text.length <= 100_000 &&
+				validSessionReferences(value.sessionReferences) &&
+				validReferences(value.text, value.references)
+			)) {
+				return false;
+			}
+			return (
+				validChangeScopes(value.changeScopes) &&
+				validCodeReferences(value.codeReferences)
+			);
+		},
 		"prompt/cancel": (value) => isId(value.sessionId) && isId(value.runId),
-		"permission/respond": (value) =>
-			isId(value.sessionId) &&
-			isId(value.runId) &&
-			isId(value.permissionId) &&
-			isId(value.optionId),
+		"permission/respond": (value) => {
+			if (!(
+				isId(value.sessionId) &&
+				isId(value.runId) &&
+				isId(value.permissionId)
+			)) {
+				return false;
+			}
+			return isId(value.optionId);
+		},
 		"execution/stop": (value) =>
 			isId(value.sessionId) && isId(value.runId) && isId(value.toolId),
 	} satisfies Record<string, (value: Record<string, unknown>) => boolean>),

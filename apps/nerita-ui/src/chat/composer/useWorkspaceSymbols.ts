@@ -21,7 +21,10 @@ export function useWorkspaceSymbols(
 	} | null>(null);
 	useEffect(() => {
 		setResult(null);
-		if (!active || !bridge || term === "" || !isSymbolQuery(term)) {
+		if (!active || !bridge || term === "") {
+			return;
+		}
+		if (!isSymbolQuery(term)) {
 			return;
 		}
 		const requestId = crypto.randomUUID();

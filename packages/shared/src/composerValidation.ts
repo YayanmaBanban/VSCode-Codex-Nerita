@@ -24,13 +24,16 @@ export function validComposerField(key: string, value: unknown): boolean {
 	if (key === "attachments") {
 		return (
 			Array.isArray(value) &&
-			value.every(
-				(file: unknown) =>
+			value.every((file: unknown) => {
+				if (!(
 					isRecord(file) &&
 					typeof file.id === "string" &&
-					typeof file.name === "string" &&
-					typeof file.uri === "string",
-			)
+					typeof file.name === "string"
+				)) {
+					return false;
+				}
+				return typeof file.uri === "string";
+			})
 		);
 	}
 	if (key === "configOptions") {
@@ -42,13 +45,19 @@ export function validComposerField(key: string, value: unknown): boolean {
 
 /** 使用量と上限が有効な有限数であることを確認する。 */
 function validUsage(value: unknown): boolean {
-	return (
+	if (!(
 		isRecord(value) &&
 		typeof value.used === "number" &&
-		Number.isFinite(value.used) &&
+		Number.isFinite(value.used)
+	)) {
+		return false;
+	}
+	if (!(
 		value.used >= 0 &&
 		typeof value.size === "number" &&
-		Number.isFinite(value.size) &&
-		value.size > 0
-	);
+		Number.isFinite(value.size)
+	)) {
+		return false;
+	}
+	return value.size > 0;
 }

@@ -173,13 +173,10 @@ function assertReadable(
 	limit: number,
 	path: string,
 ): void {
-	if (
-		!stat.isFile() ||
-		stat.size > limit ||
-		before.dev !== stat.dev ||
-		before.ino !== stat.ino ||
-		stat.nlink !== 1
-	) {
+	if (!stat.isFile() || stat.size > limit || before.dev !== stat.dev) {
+		throw new Error(`DLC のファイル形式または容量が不正です: ${path}`);
+	}
+	if (before.ino !== stat.ino || stat.nlink !== 1) {
 		throw new Error(`DLC のファイル形式または容量が不正です: ${path}`);
 	}
 }
@@ -187,9 +184,11 @@ function assertUnchanged(before: Stats, after: Stats): void {
 	if (
 		after.dev !== before.dev ||
 		after.ino !== before.ino ||
-		after.size !== before.size ||
-		after.mtimeMs !== before.mtimeMs
+		after.size !== before.size
 	) {
+		throw new Error("DLC の読み取り中にファイルが変更されました。");
+	}
+	if (after.mtimeMs !== before.mtimeMs) {
 		throw new Error("DLC の読み取り中にファイルが変更されました。");
 	}
 }

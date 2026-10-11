@@ -89,9 +89,11 @@ function parseResponse(message: Record<string, unknown>): RpcMessage {
 		if (
 			!isRecord(message.error) ||
 			!Number.isInteger(message.error.code) ||
-			typeof message.error.code !== "number" ||
-			typeof message.error.message !== "string"
+			typeof message.error.code !== "number"
 		) {
+			throw new Error("Invalid RPC error");
+		}
+		if (typeof message.error.message !== "string") {
 			throw new Error("Invalid RPC error");
 		}
 		return {

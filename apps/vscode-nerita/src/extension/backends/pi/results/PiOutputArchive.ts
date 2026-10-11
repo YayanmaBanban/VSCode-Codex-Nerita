@@ -274,17 +274,26 @@ function boundedPreview(text: string) {
 
 /** 外部編集された履歴から任意パスや巨大プレビューを取り込まない。 */
 function isOutputRecord(value: unknown): value is OutputRecord {
-	return (
+	if (!(
 		isRecord(value) &&
 		typeof value.toolId === "string" &&
-		typeof value.turnId === "string" &&
+		typeof value.turnId === "string"
+	)) {
+		return false;
+	}
+	if (!(
 		isSafeId(value.ownerSessionId) &&
 		isSafeId(value.outputId) &&
-		typeof value.preview === "string" &&
-		value.preview.length <= 2100 &&
-		typeof value.complete === "boolean" &&
-		(value.exitCode === undefined || Number.isSafeInteger(value.exitCode))
-	);
+		typeof value.preview === "string"
+	)) {
+		return false;
+	}
+	if (!(
+		value.preview.length <= 2100 && typeof value.complete === "boolean"
+	)) {
+		return false;
+	}
+	return value.exitCode === undefined || Number.isSafeInteger(value.exitCode);
 }
 
 /** 保存先の各階層を検証してから次の階層を作る。 */

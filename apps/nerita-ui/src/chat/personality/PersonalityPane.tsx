@@ -267,12 +267,9 @@ function savePresetDisabled(
 	changedName: boolean,
 	initialText: string,
 ): boolean | undefined {
-	return (
-		locked ||
-		pending ||
-		name.trim() === "" ||
-		collision ||
-		text.length > 100000 ||
-		(!changedName && text === initialText)
-	);
+	const unavailableName = locked || pending || name.trim() === "";
+	if (unavailableName || collision || text.length > 100000) {
+		return true;
+	}
+	return !changedName && text === initialText;
 }

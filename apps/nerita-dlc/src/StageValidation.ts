@@ -59,11 +59,13 @@ function validStage(
 	stage: IntentState["workflow"]["stages"][number],
 	index: number,
 ): boolean {
-	return (
+	if (!(
 		stage.id === stageCatalog[index]?.id &&
-		(stage.selection === "skip") === (stage.status === "skipped") &&
-		(stage.selection !== "undetermined" || stage.status === "pending")
-	);
+		(stage.selection === "skip") === (stage.status === "skipped")
+	)) {
+		return false;
+	}
+	return stage.selection !== "undetermined" || stage.status === "pending";
 }
 export function validateStages(
 	state: IntentState,

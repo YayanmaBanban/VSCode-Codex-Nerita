@@ -22,7 +22,7 @@ function tailwindPlugin() {
 	return {
 		name: "tailwind-css",
 		setup(build) {
-			build.onLoad({ filter: /[\\/]tailwind\.css$/ }, async (args) => {
+			const loadTailwindStyles = async (args) => {
 				const result = await postcss([tailwindcss()]).process(
 					await fs.readFile(args.path, "utf8"),
 					{ from: args.path, map: false },
@@ -45,7 +45,8 @@ function tailwindPlugin() {
 					watchFiles,
 					watchDirs,
 				};
-			});
+			};
+			build.onLoad({ filter: /[\\/]tailwind\.css$/ }, loadTailwindStyles);
 		},
 	};
 }

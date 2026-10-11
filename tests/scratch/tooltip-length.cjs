@@ -31,7 +31,7 @@ async function main() {
 				await heading.hover();
 				const tooltip = page.getByRole("tooltip");
 				await expect(tooltip).toBeVisible();
-				const result = await tooltip.evaluate((element) => {
+				const measureTooltip = (element) => {
 					const bounds = element.getBoundingClientRect();
 					const document = element.ownerDocument;
 					const style =
@@ -45,7 +45,8 @@ async function main() {
 						background: style.backgroundColor,
 						color: style.color,
 					};
-				});
+				};
+				const result = await tooltip.evaluate(measureTooltip);
 				results.push({ theme, width, before, ...result });
 				await page.screenshot({
 					path: join(directory, `${theme}-${width}.png`),

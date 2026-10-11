@@ -47,12 +47,12 @@ export abstract class PiHistory extends PiRun {
 	/** 選択済みの ID から Host 内で復元先を決め、ファイルパスを UI へ渡さない。 */
 	protected async loadSession(id: string, fork = false): Promise<void> {
 		const history = this.runtime?.history;
-		if (
-			!history ||
-			this.busy() ||
-			this.state.sessionPending ||
-			!this.state.sessions.some((row) => row.sessionId === id)
-		) {
+		if (!history || this.busy() || this.state.sessionPending) {
+			throw new Error(
+				"Piの処理が終わってから、一覧にある履歴を選択してください。",
+			);
+		}
+		if (!this.state.sessions.some((row) => row.sessionId === id)) {
 			throw new Error(
 				"Piの処理が終わってから、一覧にある履歴を選択してください。",
 			);
@@ -70,12 +70,11 @@ export abstract class PiHistory extends PiRun {
 
 	/** 分岐に成功した同じ接続の履歴一覧を更新する。 */
 	private async refreshForkedHistory(fork: boolean, nextEpoch: number) {
-		if (
+		const currentFork =
 			fork &&
 			this.epoch === nextEpoch &&
-			this.runtime?.history &&
-			!isNonEmptyString(this.state.sessionsError)
-		) {
+			this.runtime?.history !== undefined;
+		if (currentFork && !isNonEmptyString(this.state.sessionsError)) {
 			await this.refreshSessions();
 		}
 	}

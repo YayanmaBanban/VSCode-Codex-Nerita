@@ -34,9 +34,11 @@ export function parseApproval(request: AppServerRequest): ApprovalRequest {
 	if (
 		!isRecord(params) ||
 		typeof params.threadId !== "string" ||
-		typeof params.turnId !== "string" ||
-		typeof params.itemId !== "string"
+		typeof params.turnId !== "string"
 	) {
+		throw new AppServerRpcError(-32602, "Invalid approval request");
+	}
+	if (typeof params.itemId !== "string") {
 		throw new AppServerRpcError(-32602, "Invalid approval request");
 	}
 	const presentation = approvalDetails(request, params);

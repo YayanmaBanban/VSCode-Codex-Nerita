@@ -23,11 +23,11 @@ export function PlanDecisionCard({ state, send }: PlanDecisionCardProps) {
 	) {
 		return null;
 	}
-	const disabled =
+	const runPending =
 		state.run === "running" ||
 		state.run === "cancelling" ||
-		state.sessionPending ||
-		state.configPending;
+		state.sessionPending;
+	const disabled = runPending || state.configPending;
 	const choose = (action: "current" | "new" | "continue") =>
 		send({
 			type: "plan/decide",

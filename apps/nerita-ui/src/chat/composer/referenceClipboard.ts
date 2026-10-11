@@ -82,7 +82,11 @@ export function readClipboardReferences(
 		if (
 			payload.version !== 1 ||
 			payload.text !== text ||
-			!Array.isArray(payload.references) ||
+			!Array.isArray(payload.references)
+		) {
+			return null;
+		}
+		if (
 			payload.references.length === 0 ||
 			!validReferences(text, payload.references)
 		) {

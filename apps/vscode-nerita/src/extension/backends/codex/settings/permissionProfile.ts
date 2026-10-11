@@ -43,10 +43,17 @@ function readFilesystemPermission(
 	const fs = value.fileSystem;
 	if (
 		!isRecord(fs) ||
-		(fs.entries !== undefined && !Array.isArray(fs.entries)) ||
-		(fs.globScanMaxDepth !== undefined &&
-			(!Number.isSafeInteger(fs.globScanMaxDepth) ||
-				Number(fs.globScanMaxDepth) < 0))
+		(fs.entries !== undefined && !Array.isArray(fs.entries))
+	) {
+		throw new AppServerRpcError(
+			-32602,
+			"Unsupported filesystem permission",
+		);
+	}
+	if (
+		fs.globScanMaxDepth !== undefined &&
+		(!Number.isSafeInteger(fs.globScanMaxDepth) ||
+			Number(fs.globScanMaxDepth) < 0)
 	) {
 		throw new AppServerRpcError(
 			-32602,
@@ -69,11 +76,16 @@ function readFilesystemPermission(
 	if (Array.isArray(fs.entries)) {
 		result.fileSystem.entries = fs.entries.map(
 			(entry: unknown): FileSystemSandboxEntry => {
+				if (!isRecord(entry)) {
+					throw new AppServerRpcError(
+						-32602,
+						"Invalid permission entry",
+					);
+				}
 				if (
-					!isRecord(entry) ||
-					(entry.access !== "read" &&
-						entry.access !== "write" &&
-						entry.access !== "deny")
+					entry.access !== "read" &&
+					entry.access !== "write" &&
+					entry.access !== "deny"
 				) {
 					throw new AppServerRpcError(
 						-32602,
@@ -113,12 +125,10 @@ function readNetworkPermission(
 
 /** 特殊パスの種別と相対パスを検証する。 */
 function specialPermissionPath(p: Record<string, unknown>): FileSystemPath {
-	if (
-		p.kind === "root" ||
-		p.kind === "minimal" ||
-		p.kind === "tmpdir" ||
-		p.kind === "slash_tmp"
-	) {
+	if (p.kind === "root" || p.kind === "minimal" || p.kind === "tmpdir") {
+		return { type: "special", value: { kind: p.kind } };
+	}
+	if (p.kind === "slash_tmp") {
 		return { type: "special", value: { kind: p.kind } };
 	}
 	if (

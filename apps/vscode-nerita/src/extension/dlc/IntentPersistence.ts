@@ -102,12 +102,11 @@ export async function restoreState(
 				throw new Error("実行根拠のファイルがありません。");
 			}
 			const record = receiptSchema.parse(JSON.parse(text));
-			if (
+			const invalidIdentity =
 				jsonDigest(record) !== receipt.digest ||
 				record.intentId !== disk.intentId ||
-				record.workItemId !== item.id ||
-				record.attemptId !== attempt.id
-			) {
+				record.workItemId !== item.id;
+			if (invalidIdentity || record.attemptId !== attempt.id) {
 				throw new Error("実行根拠の参照またはハッシュが一致しません。");
 			}
 			attempts.push({

@@ -151,9 +151,11 @@ function prepareCodeBlockSelection(
 		if (
 			!root ||
 			!$isRangeSelection(selection) ||
-			!isNonEmptyString($selectedPlainText(selection)?.trim()) ||
-			$readParts().length >= 201
+			!isNonEmptyString($selectedPlainText(selection)?.trim())
 		) {
+			return;
+		}
+		if ($readParts().length >= 201) {
 			return;
 		}
 		pending = {

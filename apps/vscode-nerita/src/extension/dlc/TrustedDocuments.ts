@@ -119,11 +119,19 @@ export class TrustedDocuments {
 		if (
 			pending.operationId !== record.operationId ||
 			pending.stateRevision !== record.revision ||
-			pending.metadataDigest !== metadataDigest ||
+			pending.metadataDigest !== metadataDigest
+		) {
+			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
+		}
+		if (
 			pending.nextDigest !== record.digest ||
-			jsonDigest(pending.next) !== record.digest ||
-			(current !== undefined &&
-				jsonDigest(current) !== pending.previousDigest)
+			jsonDigest(pending.next) !== record.digest
+		) {
+			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
+		}
+		if (
+			current !== undefined &&
+			jsonDigest(current) !== pending.previousDigest
 		) {
 			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
 		}

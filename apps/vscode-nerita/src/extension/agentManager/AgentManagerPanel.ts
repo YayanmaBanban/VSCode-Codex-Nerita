@@ -57,9 +57,10 @@ export class AgentManagerPanel {
 	}
 	private liveModels(id: "pi" | "codex") {
 		const state = this.backend.snapshot();
-		return configuredBackend() === id && state.connection === "ready"
-			? (this.backend.agentModels?.() ?? [])
-			: [];
+		if (!(configuredBackend() === id && state.connection === "ready")) {
+			return [];
+		}
+		return this.backend.agentModels?.() ?? [];
 	}
 	/** 取得済みのモデル候補を、表示と保存時の検証で共用する。 */
 	private models(id: "pi" | "codex") {

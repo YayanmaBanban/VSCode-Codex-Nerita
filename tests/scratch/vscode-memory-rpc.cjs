@@ -30,7 +30,7 @@ function observeChild(child, diagnostics) {
 		}
 		return originalWrite(data, ...arguments_);
 	};
-	readline.createInterface({ input: child.stdout }).on("line", (line) => {
+	const receiveResponse = (line) => {
 		const response = JSON.parse(line);
 		const method = requests.get(response.id);
 		requests.delete(response.id);
@@ -54,7 +54,10 @@ function observeChild(child, diagnostics) {
 			path.join(process.env.NERITA_UI_ARTIFACTS, "rpc.json"),
 			JSON.stringify(diagnostics, null, 2),
 		);
-	});
+	};
+	readline
+		.createInterface({ input: child.stdout })
+		.on("line", receiveResponse);
 }
 
 module.exports = { observeRpc };

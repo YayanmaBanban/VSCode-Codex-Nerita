@@ -11,13 +11,20 @@ export type ConversationScrollAnchor = {
 
 /** Host へ渡す行 ID・位置・末尾かどうかを通信境界で検証する。 */
 export function validConversationScrollAnchor(value: unknown): boolean {
-	return (
-		value === undefined ||
-		(isRecord(value) &&
-			(value.sessionId === null || typeof value.sessionId === "string") &&
-			(value.entryKey === null || typeof value.entryKey === "string") &&
-			typeof value.offset === "number" &&
-			Number.isFinite(value.offset) &&
-			typeof value.atEnd === "boolean")
-	);
+	if (value === undefined) {
+		return true;
+	}
+	if (!(
+		isRecord(value) &&
+		(value.sessionId === null || typeof value.sessionId === "string")
+	)) {
+		return false;
+	}
+	if (!(
+		(value.entryKey === null || typeof value.entryKey === "string") &&
+		typeof value.offset === "number"
+	)) {
+		return false;
+	}
+	return Number.isFinite(value.offset) && typeof value.atEnd === "boolean";
 }

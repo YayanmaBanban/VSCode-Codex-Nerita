@@ -129,12 +129,9 @@ export function registerComposerCommands(
 					return false;
 				}
 				event.preventDefault();
-				if (
-					!event.ctrlKey ||
-					event.shiftKey ||
-					event.altKey ||
-					event.metaKey
-				) {
+				const plainLineBreak =
+					!event.ctrlKey || event.shiftKey || event.altKey;
+				if (plainLineBreak || event.metaKey) {
 					selection.insertLineBreak();
 				} else {
 					submit();
@@ -159,11 +156,9 @@ export function registerComposerCommands(
 /** 履歴のキー操作を VS Code へ転送せず、Lexical 内で完結させる。 */
 function registerHistoryShortcuts(editor: LexicalEditor): () => void {
 	const handleKey = (event: KeyboardEvent) => {
-		if (
-			(event.ctrlKey || event.metaKey) &&
-			!event.altKey &&
-			["z", "y"].includes(event.key.toLowerCase())
-		) {
+		const historyModifier =
+			(event.ctrlKey || event.metaKey) && !event.altKey;
+		if (historyModifier && ["z", "y"].includes(event.key.toLowerCase())) {
 			// 同じルートの Lexical ハンドラーは実行し、外側への伝播だけを止める。
 			event.stopPropagation();
 		}

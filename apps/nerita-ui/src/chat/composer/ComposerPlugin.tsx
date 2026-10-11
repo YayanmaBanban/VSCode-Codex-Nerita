@@ -94,11 +94,12 @@ function registerDraftUpdates(
 			dirtyLeaves,
 			tags,
 		}) => {
+			if (tags.has("draft-restore") || tags.has("draft-reject")) {
+				return;
+			}
 			if (
-				tags.has("draft-restore") ||
-				tags.has("draft-reject") ||
-				(!isNonZeroNumber(dirtyElements.size) &&
-					!isNonZeroNumber(dirtyLeaves.size))
+				!isNonZeroNumber(dirtyElements.size) &&
+				!isNonZeroNumber(dirtyLeaves.size)
 			) {
 				return;
 			}

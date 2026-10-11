@@ -291,11 +291,9 @@ async function run(source, config, env, tracking) {
 	const marker = output
 		.split(/\r?\n/)
 		.find((line) => line.startsWith("CLI_PROBE="));
-	const passed =
-		exitCode === 0 &&
-		commands.length === 1 &&
-		commands[0].exit_code === 0 &&
-		Boolean(marker);
+	const successfulCommand =
+		exitCode === 0 && commands.length === 1 && commands[0].exit_code === 0;
+	const passed = successfulCommand && Boolean(marker);
 	if (passed) {
 		await verifyOutput(marker, target);
 	}

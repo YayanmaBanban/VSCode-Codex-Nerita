@@ -79,6 +79,45 @@ export default defineConfig([
 					skipComments: true,
 				},
 			],
+			// ASTセレクターを使って特定の構文だけを禁止
+			"no-restricted-syntax": [
+				"error",
+				{
+					selector: "IfStatement > .test AwaitExpression",
+					message:
+						"if条件式内でawaitを使用せず、処理を分離してください。",
+				},
+				{
+					selector:
+						"IfStatement > .test CallExpression > CallExpression",
+					message:
+						"if条件式内で関数呼び出しをネストせず、変数に切り出してください。",
+				},
+				{
+					selector:
+						":matches(CallExpression, NewExpression) > ArrowFunctionExpression.arguments[body.type='BlockStatement'][body.body.length>3]",
+					message:
+						"4文以上のインラインコールバックは、名前付き関数または変数へ切り出してください。",
+				},
+				{
+					selector:
+						"IfStatement > UnaryExpression.test[operator='!'] > LogicalExpression.argument",
+					message:
+						"複合条件全体の否定は禁止です。早期returnで条件を分離してください。",
+				},
+				{
+					selector:
+						"ReturnStatement > LogicalExpression.argument CallExpression[callee.property.name='every']",
+					message:
+						"複合return式内でevery()を組み合わせず、検証を分離してください。",
+				},
+				{
+					selector:
+						"ConditionalExpression:has(ConditionalExpression)",
+					message:
+						"三項演算子の内部に別の三項演算子を含めないでください。if文や関数に分離してください。",
+				},
+			],
 			// 人間にとって理解しにくい関数
 			"sonarjs/cognitive-complexity": ["error", 15],
 			// DRY・AIによる重複実装
@@ -93,6 +132,8 @@ export default defineConfig([
 			"sonarjs/no-identical-expressions": "error",
 			// 不要に複雑な条件構造
 			"sonarjs/no-collapsible-if": "error",
+			// IFの複雑度
+			"sonarjs/expression-complexity": ["error", { max: 2 }],
 		},
 	},
 	{

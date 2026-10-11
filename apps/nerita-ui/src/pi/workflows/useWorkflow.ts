@@ -154,13 +154,10 @@ function createWorkflowEditEffect(
 	bridge: WorkflowBridge,
 ): EffectCallback {
 	return () => {
-		if (
-			!state ||
-			busy ||
-			text === state.text ||
-			isNonEmptyString(reply?.error) ||
-			state.running
-		) {
+		if (!state || busy || text === state.text) {
+			return;
+		}
+		if (isNonEmptyString(reply?.error) || state.running) {
 			return;
 		}
 		const timer = window.setTimeout(() => {

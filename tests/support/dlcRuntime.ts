@@ -10,7 +10,7 @@ import { IntentRepository } from "../../apps/vscode-nerita/src/extension/dlc/Int
 import { SafeDlcFiles } from "../../apps/vscode-nerita/src/extension/dlc/SafeDlcFiles";
 import { initializeWorkspace } from "../../apps/vscode-nerita/src/extension/dlc/WorkspaceDetection";
 import type { IntentAuthority } from "../../apps/vscode-nerita/src/extension/dlc/IntentAuthority";
-import { createTestIntent, plannedIntent, testIntentId } from "./dlc";
+import { plannedIntent } from "./dlc";
 
 export async function dlcRuntimeFixture(
 	t: TestContext,
@@ -21,7 +21,10 @@ export async function dlcRuntimeFixture(
 ) {
 	const records = new Map<string, unknown>();
 	const files = new SafeDlcFiles(cwd, () => Promise.resolve());
-	await initializeWorkspace(files, new AbortController().signal);
+	const detection = await initializeWorkspace(
+		files,
+		new AbortController().signal,
+	);
 	const authority: IntentAuthority = {
 		read: (key) => records.get(key),
 		write: (key, value) => {
@@ -32,8 +35,13 @@ export async function dlcRuntimeFixture(
 	const createRepository = () =>
 		new IntentRepository(files, authority, files);
 	const repository = createRepository();
-	await repository.import(createTestIntent());
-	await repository.save(plannedIntent(), 0);
+	const initial = await repository.create(
+		"挨拶を変更する",
+		"挨拶を変更する",
+		detection,
+	);
+	const planned = plannedIntent(initial);
+	await repository.save(planned, initial.revision);
 	const createRuntime = () =>
 		new BackendRuntime(
 			createSession,
@@ -47,40 +55,13 @@ export async function dlcRuntimeFixture(
 		);
 	const backend = createRuntime();
 	t.after(() => backend.dispose());
-	backend.selectDlc(testIntentId);
+	backend.selectDlc(initial.intentId);
 	backend.selectMode("dlc");
 	if (approve) {
-		const seen = new Set<string>();
-		const unsubscribe = backend.subscribe(() => {
-			const state = backend.snapshot();
-			for (const permission of state.permissions) {
-				if (seen.has(permission.id)) {
-					continue;
-				}
-				seen.add(permission.id);
-				approve(permission);
-				const option = permission.options.find(
-					(option) => option.kind === "allow",
-				);
-				if (
-					option &&
-					state.sessionId !== null &&
-					state.runId !== null
-				) {
-					void backend.receive({
-						type: "permission/respond",
-						requestId: permission.id,
-						sessionId: state.sessionId,
-						runId: state.runId,
-						permissionId: permission.id,
-						optionId: option.id,
-					});
-				}
-			}
-		});
-		t.after(unsubscribe);
+		t.after(subscribeApprovals(backend, approve));
 	}
 	return {
+		planned,
 		createRuntime,
 		createRepository,
 		authority,
@@ -88,4 +69,36 @@ export async function dlcRuntimeFixture(
 		backend,
 		runtime: new DlcRuntime(repository, backend, () => backendId),
 	};
+}
+
+/** 新しい承認要求だけを通知し、許可の応答を同じ会話へ返す。 */
+function subscribeApprovals(
+	backend: BackendRuntime,
+	approve: (permission: Permission) => void,
+) {
+	const seen = new Set<string>();
+	const unsubscribe = backend.subscribe(() => {
+		const state = backend.snapshot();
+		for (const permission of state.permissions) {
+			if (seen.has(permission.id)) {
+				continue;
+			}
+			seen.add(permission.id);
+			approve(permission);
+			const option = permission.options.find(
+				(option) => option.kind === "allow",
+			);
+			if (option && state.sessionId !== null && state.runId !== null) {
+				void backend.receive({
+					type: "permission/respond",
+					requestId: permission.id,
+					sessionId: state.sessionId,
+					runId: state.runId,
+					permissionId: permission.id,
+					optionId: option.id,
+				});
+			}
+		}
+	});
+	return unsubscribe;
 }

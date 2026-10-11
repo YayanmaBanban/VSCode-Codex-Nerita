@@ -194,13 +194,17 @@ export class OpenAIProviderControls implements PiModelControls {
 		model: AgentSession["model"],
 	): boolean {
 		const current = this.openAIModel;
-		return (
-			!!current &&
-			!!model &&
-			!(this.session?.isCompacting === true) &&
+		if (!(!!current && !!model && !(this.session?.isCompacting === true))) {
+			return false;
+		}
+		if (!(
 			model.provider === current.provider &&
 			model.id === current.id &&
-			model.api === current.api &&
+			model.api === current.api
+		)) {
+			return false;
+		}
+		return (
 			model.baseUrl === current.baseUrl &&
 			(typeof payload.model !== "string" || payload.model === model.id)
 		);

@@ -72,7 +72,11 @@ function initializeResponse(value: unknown): InitializeResponse {
 	if (
 		!isRecord(value) ||
 		typeof value.userAgent !== "string" ||
-		typeof value.codexHome !== "string" ||
+		typeof value.codexHome !== "string"
+	) {
+		throw new Error("Codex の初期化応答が不正です。");
+	}
+	if (
 		typeof value.platformFamily !== "string" ||
 		typeof value.platformOs !== "string"
 	) {
@@ -90,9 +94,11 @@ function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
 	if (
 		!isRecord(value) ||
 		!Array.isArray(value.data) ||
-		!value.data.every((id: unknown) => typeof id === "string") ||
-		!(value.nextCursor === null || typeof value.nextCursor === "string")
+		!value.data.every((id: unknown) => typeof id === "string")
 	) {
+		throw new Error("Codex の読み込み済みスレッド一覧が不正です。");
+	}
+	if (!(value.nextCursor === null || typeof value.nextCursor === "string")) {
 		throw new Error("Codex の読み込み済みスレッド一覧が不正です。");
 	}
 	return { data: value.data, nextCursor: value.nextCursor };

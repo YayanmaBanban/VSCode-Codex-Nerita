@@ -70,9 +70,11 @@ function createPastedPathHandler(
 		if (
 			match?.marker !== "#" ||
 			match.query !== "" ||
-			!$isRangeSelection(selection) ||
-			text.trim() === ""
+			!$isRangeSelection(selection)
 		) {
+			return false;
+		}
+		if (text.trim() === "") {
 			return false;
 		}
 		if (pastedContentTooLarge(text)) {
@@ -132,7 +134,11 @@ function insertResolvedPath(
 		if (
 			!$isElementNode(block) ||
 			block.getTextContent() !== expected ||
-			!$isRangeSelection(current) ||
+			!$isRangeSelection(current)
+		) {
+			return;
+		}
+		if (
 			!current.isCollapsed() ||
 			current.anchor.getNode().getTopLevelElement()?.getKey() !==
 				match.key ||

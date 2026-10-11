@@ -10,20 +10,22 @@ export type CodeReference = { uri: string; range: SourceRange };
 export function validCodeReferences(
 	value: unknown,
 ): value is CodeReference[] | undefined {
+	if (value === undefined) {
+		return true;
+	}
 	return (
-		value === undefined ||
-		(Array.isArray(value) &&
-			value.length <= 20 &&
-			value.every((item: unknown) => {
-				if (!isRecord(item)) {
-					return false;
-				}
-				const reference = item;
-				return (
-					isPathString(reference.uri) &&
-					reference.uri.startsWith("file://") &&
-					isSourceRange(reference.range)
-				);
-			}))
+		Array.isArray(value) &&
+		value.length <= 20 &&
+		value.every((item: unknown) => {
+			if (!isRecord(item)) {
+				return false;
+			}
+			const reference = item;
+			return (
+				isPathString(reference.uri) &&
+				reference.uri.startsWith("file://") &&
+				isSourceRange(reference.range)
+			);
+		})
 	);
 }

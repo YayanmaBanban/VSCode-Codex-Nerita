@@ -214,10 +214,10 @@ function chatAvailable(
 	busy: boolean,
 	submissionLocked: boolean,
 ) {
+	if (!(state.connection === "ready" && !busy && !submissionLocked)) {
+		return false;
+	}
 	return (
-		state.connection === "ready" &&
-		!busy &&
-		!submissionLocked &&
 		!state.sessionPending &&
 		!state.configPending &&
 		!state.attachmentPending

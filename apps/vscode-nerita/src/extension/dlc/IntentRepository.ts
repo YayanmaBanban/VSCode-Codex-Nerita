@@ -309,7 +309,7 @@ export class IntentRepository {
 		}
 		if (disk.routing.catalogDigest !== currentCatalogDigest) {
 			throw new Error(
-				"Intent のカタログが現在の定義と異なります。明示的な移行が必要です。",
+				"Intent のカタログが現在の定義と異なります。新しい Intent を作成してください。",
 			);
 		}
 		return restoreState(this.liveFiles, directory, disk, intent);
@@ -571,30 +571,6 @@ export class IntentRepository {
 				await this.saveRegistry(next, registry.revision);
 				registry = next;
 			}
-		});
-	}
-	/** 一方向移行は旧 ID と証跡を保持し、同一 ID の再取り込みを検証して冪等にする。 */
-	import(state: IntentState): Promise<IntentState> {
-		return this.locked(async () => {
-			const registry = await this.registry();
-			await this.assertNoOrphans(registry);
-			const existing = registry.entries.find(
-				(entry) => entry.intentId === state.intentId,
-			);
-			if (existing) {
-				const restored = await this.loadEntry(existing);
-				if (
-					restored.intent.request !== state.intent.request ||
-					jsonDigest(restored.workItems) !==
-						jsonDigest(state.workItems)
-				) {
-					throw new Error(
-						"旧データと移行済み Intent が一致しません。",
-					);
-				}
-				return restored;
-			}
-			return this.register(state, registry);
 		});
 	}
 }

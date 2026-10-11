@@ -71,13 +71,11 @@ export function usePromptSubmission(
 			setLocked(false);
 		}
 	}, [state.connection]);
-	const available =
-		state.connection === "ready" &&
-		state.run !== "cancelling" &&
-		!locked &&
-		!state.sessionPending &&
-		!state.configPending &&
-		!state.attachmentPending;
+	const submissionReady =
+		state.connection === "ready" && state.run !== "cancelling" && !locked;
+	const configurationReady =
+		submissionReady && !state.sessionPending && !state.configPending;
+	const available = configurationReady && !state.attachmentPending;
 	/** 待機中の要求 ID を参照して連打を防ぐ。下書きは受付後だけ消す。 */
 	const submit = () =>
 		createPromptSubmitter(
@@ -114,9 +112,11 @@ function createPromptSubmitter(
 		if (
 			!available ||
 			isNonEmptyString(pending.current) ||
-			draft.trim() === "" ||
-			!isNonEmptyString(state.sessionId)
+			draft.trim() === ""
 		) {
+			return;
+		}
+		if (!isNonEmptyString(state.sessionId)) {
 			return;
 		}
 		const requestId = crypto.randomUUID();

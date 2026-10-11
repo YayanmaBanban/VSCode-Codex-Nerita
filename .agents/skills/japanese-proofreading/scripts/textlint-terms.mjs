@@ -20,12 +20,12 @@ function matchesAllowedPhrase(matches, index, phrase, text) {
 			return false;
 		}
 
-		if (
+		const hasNonSpaceSeparator =
 			offset > 0 &&
 			!/^[ \t]+$/.test(
 				text.slice(previous.index + previous[0].length, match.index),
-			)
-		) {
+			);
+		if (hasNonSpaceSeparator) {
 			return false;
 		}
 	}
@@ -97,9 +97,11 @@ function classifyEnglishTerm(
 	if (
 		allowed.has(term) ||
 		automaticAllowed.has(normalizedTerm) ||
-		isTechnicalAcronym(term) ||
-		isBuiltinTechnicalToken(term)
+		isTechnicalAcronym(term)
 	) {
+		return null;
+	}
+	if (isBuiltinTechnicalToken(term)) {
 		return null;
 	}
 

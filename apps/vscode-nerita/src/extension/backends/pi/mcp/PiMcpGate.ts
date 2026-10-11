@@ -33,15 +33,16 @@ export function resolvedMcpHeaders(entry: PiMcpEntry): Record<string, string> {
 /** HTTP はループバック検証に限定し、遠隔接続では HTTPS を必須にする。 */
 export function mcpHttpUrl(value: string): URL {
 	const url = new URL(value);
-	if (
-		isNonEmptyString(url.username) ||
-		isNonEmptyString(url.password) ||
-		!(
-			url.protocol === "https:" ||
-			(url.protocol === "http:" &&
-				["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
-		)
-	) {
+	if (isNonEmptyString(url.username) || isNonEmptyString(url.password)) {
+		throw new Error(
+			"MCP の接続先には HTTPS またはローカル HTTP を指定してください。",
+		);
+	}
+	if (!(
+		url.protocol === "https:" ||
+		(url.protocol === "http:" &&
+			["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
+	)) {
 		throw new Error(
 			"MCP の接続先には HTTPS またはローカル HTTP を指定してください。",
 		);

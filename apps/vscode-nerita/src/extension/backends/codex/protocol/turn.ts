@@ -21,7 +21,11 @@ export function parseStartedThread(value: unknown): StartedThread {
 	if (
 		!isRecord(value) ||
 		!isRecord(value.thread) ||
-		typeof value.thread.id !== "string" ||
+		typeof value.thread.id !== "string"
+	) {
+		throw new Error("Invalid thread response");
+	}
+	if (
 		value.thread.id === "" ||
 		typeof value.model !== "string" ||
 		typeof value.cwd !== "string"
@@ -74,18 +78,18 @@ function isOptionalSetting(value: unknown): value is string | null {
 }
 /** 応答・通知で共通のターン状態を検証する。 */
 export function parseTurn(value: unknown): TurnInfo {
-	if (
-		!isRecord(value) ||
-		typeof value.id !== "string" ||
-		value.id === "" ||
-		(value.status !== "inProgress" &&
-			value.status !== "completed" &&
-			value.status !== "interrupted" &&
-			value.status !== "failed")
-	) {
+	if (!isRecord(value) || typeof value.id !== "string" || value.id === "") {
 		throw new Error("Invalid turn");
 	}
-	return { id: value.id, status: value.status };
+	const status = value.status;
+	const otherStatus =
+		status !== "inProgress" &&
+		status !== "completed" &&
+		status !== "interrupted";
+	if (otherStatus && status !== "failed") {
+		throw new Error("Invalid turn");
+	}
+	return { id: value.id, status };
 }
 /** `turn/start` は開始受付として検証し、完了判定には使わない。 */
 export function parseStartedTurn(value: unknown): { turn: TurnInfo } {
@@ -117,18 +121,14 @@ export function parseAccount(value: unknown): {
 	authenticated: boolean;
 	requiresOpenaiAuth: boolean;
 } {
-	if (
-		!isRecord(value) ||
-		typeof value.requiresOpenaiAuth !== "boolean" ||
-		!(
-			value.account === null ||
-			(isRecord(value.account) &&
-				typeof value.account.type === "string" &&
-				["apiKey", "chatgpt", "amazonBedrock"].includes(
-					value.account.type,
-				))
-		)
-	) {
+	if (!isRecord(value) || typeof value.requiresOpenaiAuth !== "boolean") {
+		throw new Error("Invalid account response");
+	}
+	const configuredAccount =
+		isRecord(value.account) &&
+		typeof value.account.type === "string" &&
+		["apiKey", "chatgpt", "amazonBedrock"].includes(value.account.type);
+	if (!(value.account === null || configuredAccount)) {
 		throw new Error("Invalid account response");
 	}
 	return {

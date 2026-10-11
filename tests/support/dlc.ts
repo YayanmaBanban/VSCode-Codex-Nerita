@@ -32,8 +32,8 @@ export function createTestIntent() {
 		},
 	);
 }
-export function plannedIntent() {
-	return applyAction(createTestIntent(), {
+export function plannedIntent(initial = createTestIntent()) {
+	return applyAction(initial, {
 		type: "plan",
 		tasks: [
 			{

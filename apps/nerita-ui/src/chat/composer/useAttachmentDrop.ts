@@ -35,14 +35,16 @@ export function useAttachmentDrop(
 	const [reading, setReading] = useState(false);
 	const pending = useRef(false);
 	const depth = useRef(0);
-	const enabled =
+	const connectedSession =
 		!locked &&
 		state.connection === "ready" &&
-		isNonEmptyString(state.sessionId) &&
-		!state.sessionPending &&
-		!state.configPending &&
-		!state.attachmentPending &&
-		state.attachmentsSupported &&
+		isNonEmptyString(state.sessionId);
+	const idleSession =
+		connectedSession && !state.sessionPending && !state.configPending;
+	const attachmentReady =
+		idleSession && !state.attachmentPending && state.attachmentsSupported;
+	const enabled =
+		attachmentReady &&
 		state.run !== "running" &&
 		state.run !== "cancelling";
 	const scope = `${state.connection}:${state.cwd}:${state.sessionId}`;

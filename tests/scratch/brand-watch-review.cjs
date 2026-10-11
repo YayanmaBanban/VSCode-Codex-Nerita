@@ -34,7 +34,8 @@ async function main() {
 async function propagated(target, expected) {
 	const deadline = Date.now() + 10000;
 	while (Date.now() < deadline) {
-		if ((await fs.readFile(target)).equals(expected)) {
+		const matchesExpected = (await fs.readFile(target)).equals(expected);
+		if (matchesExpected) {
 			return;
 		}
 		await setTimeout(25);

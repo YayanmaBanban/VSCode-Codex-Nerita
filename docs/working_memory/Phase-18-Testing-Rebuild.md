@@ -29,6 +29,8 @@
 
 ## 実環境の証拠と未検証範囲
 
+- Nerita Trust のバックエンド別判定の共通化と旧 Goal 移行の削除後、新規 VSIX による Webview 受入は未完了。作業中に追加された ESLint 規則で配布前のリントが失敗し、VSIX 生成の前に停止した。ユーザー指示により ESLint 対応は本件の対象外。規則への対応後に `pnpm test:webview dlc-codex-trust dlc-start-guard chat-trust` を実行する。
+
 新規 VSIX の実際の Host・Webview、準備済み Windows Sandbox、導入済み Web 拡張・ワークフローは実行済み。別の起動と新しい一時領域でも製品経路を確認した。
 
 最終整理後の `pnpm check`、通常版と10種類の不具合を意図的に加えた実装を含む `pnpm test:regressions`、`pnpm test:storybook` は成功した。Storybook 全件を型検査・回帰注入と並行したときは2件が時間切れになった。設定やアサーションを変えず単独で再実行すると全件成功し、約8秒だった。回帰注入は並行負荷がある状態で約62秒。全件のブラウザー検証は重い処理と分けて実行する。

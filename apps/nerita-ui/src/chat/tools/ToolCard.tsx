@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useId, type Dispatch, type SetStateAction } from "react";
 import { useCardExpansion } from "./ToolExpansion";
-import "../loaders.css";
+import "../../ui/status-indicator.css";
 import { SettingsTooltip } from "../SettingsTooltip";
 import {
 	ImageViewTool,
@@ -350,6 +350,7 @@ function renderToolHeading(
 	const title = tool.title;
 	// 圧縮はコマンド実行ではないため、停止ボタンを増やさず進行アイコンだけを共用する。
 	const progress = usesExecutionProgress(tool);
+	const reserveStatusSpace = status === "failed" || (executing && active);
 	return (
 		<SettingsTooltip content={title}>
 			<Heading
@@ -383,9 +384,7 @@ function renderToolHeading(
 						className={cn(
 							"tool-chevron",
 							"group-aria-[expanded=false]:-rotate-90",
-							status === "failed" || (executing && active)
-								? "ml-[26px]"
-								: "",
+							reserveStatusSpace ? "ml-[26px]" : "",
 						)}
 						aria-hidden="true"
 					/>
@@ -397,7 +396,10 @@ function renderToolHeading(
 
 /** Host で制限された出力だけを本文に渡す。 */
 function OutputBody({ tool, send, cwd }: ActivityToolProps) {
-	return tool.output ? (
+	if (!tool.output) {
+		return null;
+	}
+	return (
 		<>
 			{tool.kind !== "execute" && tool.rawInput !== undefined && (
 				<GenericTool tool={tool} send={send} cwd={cwd} />
@@ -409,7 +411,7 @@ function OutputBody({ tool, send, cwd }: ActivityToolProps) {
 				</p>
 			)}
 		</>
-	) : null;
+	);
 }
 
 /** 停止済みと、履歴の完了状態が不明な項目を区別する。 */
@@ -452,9 +454,10 @@ function renderNonExecutionStatus(
 
 /** コマンド実行に加え、元種別または表示種別がコンテキスト圧縮のカードにも進行アイコンを使う。 */
 function usesExecutionProgress(tool: ToolSummary) {
+	const specialTool =
+		tool.kind === "execute" || tool.kind === "contextCompaction";
 	return (
-		tool.kind === "execute" ||
-		tool.kind === "contextCompaction" ||
+		specialTool ||
 		(isRecord(tool.rawItem) && tool.rawItem.type === "contextCompaction")
 	);
 }
@@ -466,7 +469,7 @@ function renderExecutionProgress(executing: boolean, active: boolean) {
 		active && (
 			<LoaderCircle
 				size={16}
-				className="tool-progress"
+				className="status-indicator-running"
 				role="img"
 				aria-label="実行中"
 			/>

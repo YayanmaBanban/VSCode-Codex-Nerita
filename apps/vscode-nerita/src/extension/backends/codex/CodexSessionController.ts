@@ -127,9 +127,11 @@ export class CodexSessionController extends SessionState {
 		if (
 			this.busy() ||
 			this.state.connection !== "ready" ||
-			this.state.configPending ||
-			this.state.sessionPending
+			this.state.configPending
 		) {
+			throw new Error("Codex の内部実行を開始できません。");
+		}
+		if (this.state.sessionPending) {
 			throw new Error("Codex の内部実行を開始できません。");
 		}
 		return executeBackend(
@@ -270,15 +272,14 @@ export class CodexSessionController extends SessionState {
 
 	/** 親の項目はターン処理で待機・再生し、子の通知は親ターンの絞り込み前に届ける。 */
 	private childrenNotification(message: AppServerNotification): void {
-		if (
+		const matchingThread =
 			isRecord(message.params) &&
-			message.params.threadId === this.state.sessionId &&
-			(message.method === "turn/completed" ||
-				(this.run.current &&
-					["item/started", "item/completed"].includes(
-						message.method,
-					)))
-		) {
+			message.params.threadId === this.state.sessionId;
+		const currentItem = this.run.current
+			? ["item/started", "item/completed"].includes(message.method)
+			: false;
+		const relevantTurn = message.method === "turn/completed" || currentItem;
+		if (matchingThread && relevantTurn) {
 			return;
 		}
 		this.agents.notification(message);
@@ -424,9 +425,11 @@ export class CodexSessionController extends SessionState {
 		if (
 			!decision ||
 			message.sessionId !== this.state.sessionId ||
-			message.runId !== decision.runId ||
-			this.busy()
+			message.runId !== decision.runId
 		) {
+			throw new Error("Stale plan");
+		}
+		if (this.busy()) {
 			throw new Error("Stale plan");
 		}
 		if (message.action === "continue") {
@@ -511,12 +514,10 @@ export class CodexSessionController extends SessionState {
 		const cwd = this.state.cwd;
 		const id = this.state.sessionId;
 		const epoch = this.lifecycle.generation;
-		if (
-			!client ||
-			!isNonEmptyString(cwd) ||
-			!isNonEmptyString(id) ||
-			this.state.connection !== "ready"
-		) {
+		if (!client || !isNonEmptyString(cwd) || !isNonEmptyString(id)) {
+			throw new Error("Disconnected");
+		}
+		if (this.state.connection !== "ready") {
 			throw new Error("Disconnected");
 		}
 		const current = () =>
@@ -689,9 +690,11 @@ function requestError(type: UiMessage["type"], error: unknown) {
 	if (
 		error instanceof SessionContextError ||
 		error instanceof HandoffContextError ||
-		error instanceof ChangeContextError ||
-		error instanceof CodeReferenceError
+		error instanceof ChangeContextError
 	) {
+		return error.message;
+	}
+	if (error instanceof CodeReferenceError) {
 		return error.message;
 	}
 	if (type.startsWith("personality/") && error instanceof Error) {

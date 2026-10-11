@@ -65,10 +65,13 @@ function savedDisplay(result: object): Pick<ToolSummary, "resultDisplay"> {
 	}
 	const source = ownValue(display, "source");
 	const omitted = ownValue(display, "omitted");
-	return (source === "content" || source === "structuredContent") &&
+	if (!(
+		(source === "content" || source === "structuredContent") &&
 		typeof omitted === "boolean"
-		? { resultDisplay: { source, omitted } }
-		: {};
+	)) {
+		return {};
+	}
+	return { resultDisplay: { source, omitted } };
 }
 
 /** 包まれた MCP 結果は、Host が明示した経路でのみ展開する。 */

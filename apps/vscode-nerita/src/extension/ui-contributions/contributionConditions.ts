@@ -14,13 +14,22 @@ export function matchesContribution(
 	condition: ContributionCondition | undefined,
 	context: ContributionContext,
 ): boolean {
+	if (!condition) {
+		return true;
+	}
+	if (!(
+		condition.backend === undefined || condition.backend === context.backend
+	)) {
+		return false;
+	}
+	if (!(
+		condition.provider === undefined ||
+		condition.provider === context.provider
+	)) {
+		return false;
+	}
 	return (
-		!condition ||
-		((condition.backend === undefined ||
-			condition.backend === context.backend) &&
-			(condition.provider === undefined ||
-				condition.provider === context.provider) &&
-			(condition.capability === undefined ||
-				context.capabilities.includes(condition.capability)))
+		condition.capability === undefined ||
+		context.capabilities.includes(condition.capability)
 	);
 }

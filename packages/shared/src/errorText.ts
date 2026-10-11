@@ -15,9 +15,11 @@ export function errorText(error: unknown): string {
 	if (
 		typeof error === "number" ||
 		typeof error === "boolean" ||
-		typeof error === "bigint" ||
-		typeof error === "symbol"
+		typeof error === "bigint"
 	) {
+		return String(error);
+	}
+	if (typeof error === "symbol") {
 		return String(error);
 	}
 	return "不明なエラー";

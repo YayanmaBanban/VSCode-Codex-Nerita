@@ -41,12 +41,14 @@ export class CodexAgents {
 		const epoch = this.session.epoch();
 		const current = () => {
 			const state = this.session.snapshot();
-			return (
+			if (!(
 				this.session.epoch() === epoch &&
 				state.sessionId === message.sessionId &&
-				state.connection === "ready" &&
-				!state.sessionPending
-			);
+				state.connection === "ready"
+			)) {
+				return false;
+			}
+			return !state.sessionPending;
 		};
 		if (
 			!client ||
@@ -154,13 +156,10 @@ export class CodexAgents {
 		const known = state.agents.find(
 			(agent) => agent.threadId === message.threadId,
 		);
-		if (
-			!client ||
-			!isNonEmptyString(cwd) ||
-			!known ||
-			sessionId !== message.sessionId ||
-			state.connection !== "ready"
-		) {
+		if (!client || !isNonEmptyString(cwd) || !known) {
+			throw new Error("Unknown agent");
+		}
+		if (sessionId !== message.sessionId || state.connection !== "ready") {
 			throw new Error("Unknown agent");
 		}
 		const current = () =>

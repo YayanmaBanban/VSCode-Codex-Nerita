@@ -46,9 +46,11 @@ export async function resolvePath(
 
 /** ローカルの絶対パスと有効な位置指定だけを受け付ける。 */
 function invalidPathRequest(request: ResolvePathRequest) {
-	return (
+	const invalidPath =
 		!isAbsoluteLocalPath(request.path) ||
-		isNonEmptyString(vscode.env.remoteName) ||
+		isNonEmptyString(vscode.env.remoteName);
+	return (
+		invalidPath ||
 		(request.range !== undefined && !isSourceRange(request.range))
 	);
 }

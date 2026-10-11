@@ -243,10 +243,10 @@ export abstract class PiLifecycle extends SessionState {
 	/** 累積課金量ではなく SDK の現在のコンテキスト推定量を共有形式に変換する。 */
 	protected contextUsage() {
 		const usage = this.runtime?.getContextUsage();
+		if (!usage || usage.tokens === null || !Number.isFinite(usage.tokens)) {
+			return null;
+		}
 		if (
-			!usage ||
-			usage.tokens === null ||
-			!Number.isFinite(usage.tokens) ||
 			usage.tokens < 0 ||
 			!Number.isFinite(usage.contextWindow) ||
 			usage.contextWindow <= 0
@@ -320,12 +320,10 @@ export abstract class PiLifecycle extends SessionState {
 
 	/** 処理中や破棄済みのセッションの再接続を拒否する。 */
 	private assertCanConnect() {
-		if (
-			this.disposed ||
-			this.busy() ||
-			this.state.sessionPending ||
-			this.state.connection === "connecting"
-		) {
+		if (this.disposed || this.busy() || this.state.sessionPending) {
+			throw new Error("Piの処理が終わってから再接続してください。");
+		}
+		if (this.state.connection === "connecting") {
 			throw new Error("Piの処理が終わってから再接続してください。");
 		}
 	}

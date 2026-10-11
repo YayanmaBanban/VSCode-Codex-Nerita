@@ -102,21 +102,28 @@ function isMessageUpdate(
 	previous: ChatMessage[],
 ): boolean {
 	const next = message.patch.messages;
-	return (
+	if (!(
 		next !== undefined &&
 		Object.keys(message.patch).every(
 			(key) => key === "messages" || key === "sessionTitle",
 		) &&
-		next.length === previous.length &&
-		next.every(
-			(item, index) =>
-				item === previous[index] ||
-				(item.id === previous[index]!.id &&
-					item.role === "assistant" &&
-					item.streaming === true &&
-					previous[index]!.streaming === true),
-		)
-	);
+		next.length === previous.length
+	)) {
+		return false;
+	}
+	return next.every((item, index) => {
+		if (item === previous[index]) {
+			return true;
+		}
+		if (!(
+			item.id === previous[index]!.id &&
+			item.role === "assistant" &&
+			item.streaming === true
+		)) {
+			return false;
+		}
+		return previous[index]!.streaming === true;
+	});
 }
 
 /** 状態遷移やカードの追加を含まない本文更新だけを集約する。 */
@@ -125,17 +132,19 @@ function isOutputUpdate(
 	previous: ToolSummary[],
 ): boolean {
 	const next = message.patch.tools;
-	return (
+	if (!(
 		next !== undefined &&
 		Object.keys(message.patch).every(
 			(key) => key === "tools" || key === "sessionTitle",
 		) &&
-		next.length === previous.length &&
-		next.every(
-			(tool, index) =>
-				toolKey(tool) === toolKey(previous[index]!) &&
-				tool.status === previous[index]!.status &&
-				tool.backgrounded === previous[index]!.backgrounded,
-		)
+		next.length === previous.length
+	)) {
+		return false;
+	}
+	return next.every(
+		(tool, index) =>
+			toolKey(tool) === toolKey(previous[index]!) &&
+			tool.status === previous[index]!.status &&
+			tool.backgrounded === previous[index]!.backgrounded,
 	);
 }

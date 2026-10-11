@@ -24,11 +24,9 @@ export const ComposerSettings = memo(function ComposerSettings({
 	onOpenContext,
 }: ComposerSettingsProps) {
 	const connected = settingsConnected(state);
-	const disabled =
-		!connected ||
-		state.configPending ||
-		state.run === "running" ||
-		state.run === "cancelling";
+	const pendingConfiguration =
+		!connected || state.configPending || state.run === "running";
+	const disabled = pendingConfiguration || state.run === "cancelling";
 	/** 操作は現在の会話 ID と一意な要求 ID を添えて送る。 */
 	const change = (configId: string, value: string) => {
 		if (isNonEmptyString(state.sessionId) && !disabled) {
@@ -137,11 +135,11 @@ function ComposerAttachments({
 
 /** 設定を操作できる接続と会話があるか確認する。 */
 function settingsConnected(state: ChatState) {
-	return (
-		(state.connection === "ready" ||
-			(state.piAccount !== null &&
-				state.connection === "auth-required")) &&
-		isNonEmptyString(state.sessionId) &&
-		!state.sessionPending
-	);
+	if (!(
+		state.connection === "ready" ||
+		(state.piAccount !== null && state.connection === "auth-required")
+	)) {
+		return false;
+	}
+	return isNonEmptyString(state.sessionId) && !state.sessionPending;
 }

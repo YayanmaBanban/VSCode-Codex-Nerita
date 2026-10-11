@@ -45,9 +45,11 @@ export function validDroppedAttachments(
 		if (
 			!("name" in item) ||
 			!validAttachmentName(item.name) ||
-			!("data" in item) ||
-			typeof item.data !== "string"
+			!("data" in item)
 		) {
+			return false;
+		}
+		if (typeof item.data !== "string") {
 			return false;
 		}
 
@@ -62,13 +64,15 @@ export function validDroppedAttachments(
 
 /** Windows で利用できるファイル名だけを受け付ける。 */
 function validAttachmentName(name: unknown): boolean {
-	return (
-		typeof name === "string" &&
-		name.length > 0 &&
-		name.length <= 255 &&
+	if (!(typeof name === "string" && name.length > 0 && name.length <= 255)) {
+		return false;
+	}
+	if (!(
 		!/[<>:"/\\|?*]/.test(name) &&
 		!Array.from(name).some((char) => char.charCodeAt(0) < 32) &&
-		!/[. ]$/.test(name) &&
-		!/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)
-	);
+		!/[. ]$/.test(name)
+	)) {
+		return false;
+	}
+	return !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name);
 }

@@ -58,9 +58,7 @@ export function extractReferencedPackageTerms(source) {
 		/(?:manifest|metadata)\.name\s*(?:===|!==|==|!=)\s*["']([^"']+)["']/g,
 	);
 	addMatches(/(@[a-z0-9][\w.-]*\/[a-z0-9][\w.-]*)/gi);
-	addMatches(
-		/`?\b([a-z0-9][\w.]*-[\w\-.]+)\b`?\s+`?v?\d+\.\d+\.\d+\b`?/gi,
-	);
+	addMatches(/`?\b([a-z0-9][\w.]*-[\w\-.]+)\b`?\s+`?v?\d+\.\d+\.\d+\b`?/gi);
 
 	return terms;
 }
@@ -119,9 +117,7 @@ export function extractProjectTerms(packageJson) {
 			addTerm(terms, match[1]);
 		}
 
-		for (const match of script.matchAll(
-			/[\w.-]+(?:[\\/][\w.-]+)+/g,
-		)) {
+		for (const match of script.matchAll(/[\w.-]+(?:[\\/][\w.-]+)+/g)) {
 			for (const segment of match[0].split(/[\\/]/)) {
 				addTerm(terms, segment);
 			}
@@ -132,12 +128,16 @@ export function extractProjectTerms(packageJson) {
 }
 
 function sameStringArray(left, right) {
-	return (
-		Array.isArray(left) &&
-		Array.isArray(right) &&
-		left.length === right.length &&
-		left.every((value, index) => value === right[index])
-	);
+	if (!Array.isArray(left)) {
+		return false;
+	}
+	if (!Array.isArray(right)) {
+		return false;
+	}
+	if (left.length !== right.length) {
+		return false;
+	}
+	return left.every((value, index) => value === right[index]);
 }
 
 async function readDictionaryCache(cachePath, dictionaryConfig) {
@@ -148,9 +148,11 @@ async function readDictionaryCache(cachePath, dictionaryConfig) {
 		if (
 			cache.version !== CACHE_VERSION ||
 			cache.revision !== dictionaryConfig.revision ||
-			!sameStringArray(cache.files, dictionaryConfig.files) ||
-			!Array.isArray(cache.terms)
+			!sameStringArray(cache.files, dictionaryConfig.files)
 		) {
+			return null;
+		}
+		if (!Array.isArray(cache.terms)) {
 			return null;
 		}
 
@@ -165,21 +167,22 @@ async function readDictionaryCache(cachePath, dictionaryConfig) {
 }
 
 async function downloadDictionary(dictionaryConfig, fetchImpl) {
+	const downloadFile = async (file) => {
+		const url = `${CSPELL_RAW_BASE}/${dictionaryConfig.revision}/${file}`;
+		const response = await fetchImpl(url, {
+			signal: AbortSignal.timeout(5000),
+		});
+
+		if (!response.ok) {
+			throw new Error(
+				`${response.status} ${response.statusText}: ${file}`,
+			);
+		}
+
+		return response.text();
+	};
 	const responses = await Promise.all(
-		dictionaryConfig.files.map(async (file) => {
-			const url = `${CSPELL_RAW_BASE}/${dictionaryConfig.revision}/${file}`;
-			const response = await fetchImpl(url, {
-				signal: AbortSignal.timeout(5000),
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`${response.status} ${response.statusText}: ${file}`,
-				);
-			}
-
-			return response.text();
-		}),
+		dictionaryConfig.files.map(downloadFile),
 	);
 
 	const terms = new Set();

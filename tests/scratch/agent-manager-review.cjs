@@ -119,10 +119,10 @@ async function reviewMotion(page, root, label) {
 		root,
 		`${label}-opening`,
 	);
-	if (!(
-		opening[0].height < opening[1].height &&
-		opening[1].height < opening[2].height
-	)) {
+	if (!(opening[0].height < opening[1].height)) {
+		throw new Error("開く途中の高さが補間されていません。");
+	}
+	if (!(opening[1].height < opening[2].height)) {
 		throw new Error("開く途中の高さが補間されていません。");
 	}
 	await page
@@ -147,7 +147,10 @@ async function reviewMotion(page, root, label) {
 		`${label}-checked`,
 	);
 	for (const frames of [fadingOut, fadingIn]) {
-		if (!(frames[1].opacity > 0 && frames[1].opacity < 1)) {
+		if (!(frames[1].opacity > 0)) {
+			throw new Error("チェック表示のフェードが確認できません。");
+		}
+		if (!(frames[1].opacity < 1)) {
 			throw new Error("チェック表示のフェードが確認できません。");
 		}
 	}
@@ -159,10 +162,10 @@ async function reviewMotion(page, root, label) {
 		root,
 		`${label}-closing`,
 	);
-	if (!(
-		closing[0].height > closing[1].height &&
-		closing[1].height > closing[2].height
-	)) {
+	if (!(closing[0].height > closing[1].height)) {
+		throw new Error("閉じる途中の高さが補間されていません。");
+	}
+	if (!(closing[1].height > closing[2].height)) {
 		throw new Error("閉じる途中の高さが補間されていません。");
 	}
 	await fs.writeFile(
@@ -189,12 +192,16 @@ async function reviewGranularMotion(page, section, root, label) {
 		root,
 		`${label}-granular-opening`,
 	);
-	if (!(
+	const closingShrinks =
 		closing[0].height > closing[1].height &&
-		closing[1].height > closing[2].height &&
+		closing[1].height > closing[2].height;
+	const openingGrows =
 		opening[0].height < opening[1].height &&
-		opening[1].height < opening[2].height
-	)) {
+		opening[1].height < opening[2].height;
+	if (!closingShrinks) {
+		throw new Error("granular の開閉が補間されていません。");
+	}
+	if (!openingGrows) {
 		throw new Error("granular の開閉が補間されていません。");
 	}
 	await fs.writeFile(
@@ -207,27 +214,25 @@ async function reviewGranularMotion(page, section, root, label) {
 async function sampleTransition(target, page, root, label) {
 	const frames = [];
 	for (const progress of [0, 0.5, 1]) {
-		frames.push(
-			await target.evaluate((element, fraction) => {
-				const animations = element.getAnimations({ subtree: true });
-				if (!animations.length) {
-					throw new Error("対象のアニメーションがありません。");
-				}
-				for (const animation of animations) {
-					animation.pause();
-					animation.currentTime =
-						Number(animation.effect.getTiming().duration) *
-						fraction;
-				}
-				return {
-					height: element.getBoundingClientRect().height,
-					opacity: Number(
-						globalThis.getComputedStyle(element.lastElementChild)
-							.opacity,
-					),
-				};
-			}, progress),
-		);
+		const sampleAnimation = (element, fraction) => {
+			const animations = element.getAnimations({ subtree: true });
+			if (!animations.length) {
+				throw new Error("対象のアニメーションがありません。");
+			}
+			for (const animation of animations) {
+				animation.pause();
+				animation.currentTime =
+					Number(animation.effect.getTiming().duration) * fraction;
+			}
+			return {
+				height: element.getBoundingClientRect().height,
+				opacity: Number(
+					globalThis.getComputedStyle(element.lastElementChild)
+						.opacity,
+				),
+			};
+		};
+		frames.push(await target.evaluate(sampleAnimation, progress));
 		await page.screenshot({
 			path: `${root}/${label}-${progress}.png`,
 			fullPage: true,

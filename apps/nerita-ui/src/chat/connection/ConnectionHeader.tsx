@@ -173,12 +173,13 @@ function sessionHeaderTitle(state: ChatState) {
 /** 接続と信頼の案内を、操作ヘッダーとは独立して表示する。 */
 function ConnectionNotices(props: ConnectionHeaderProps) {
 	const { state, requestError, send } = props;
+	const visibleError =
+		isNonEmptyString(requestError) ||
+		(state.connection !== "auth-required" && isNonEmptyString(state.error));
 	return (
 		<>
 			{" "}
-			{(isNonEmptyString(requestError) ||
-				(state.connection !== "auth-required" &&
-					isNonEmptyString(state.error))) && (
+			{visibleError && (
 				<div role="alert" className={cn("error-banner", noticeClass)}>
 					{nonEmptyString(requestError) ?? state.error}
 				</div>

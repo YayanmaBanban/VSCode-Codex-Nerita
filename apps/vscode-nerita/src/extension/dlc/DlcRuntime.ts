@@ -117,7 +117,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 				signal,
 				reservation,
 			);
-			// 停止後も実測した変更を残す。信頼の失効時は保存を拒否する。
+			// 停止後も実測した変更を残す。管理元ワークスペースの変更時は保存を拒否する。
 			await files.path(directory);
 			const after = await collectSourceSnapshot(
 				root,
@@ -192,15 +192,15 @@ function toolEvidence(
 	tool: ToolSummary,
 	root: string,
 ): RuntimeEvidence["tools"][number] {
+	const toolStatus = tool.status;
+	const finished =
+		toolStatus === "completed" ||
+		toolStatus === "failed" ||
+		toolStatus === "cancelled";
 	return {
 		id: tool.id,
 		kind: tool.kind ?? "unknown",
-		status:
-			tool.status === "completed" ||
-			tool.status === "failed" ||
-			tool.status === "cancelled"
-				? tool.status
-				: "unknown",
+		status: finished ? toolStatus : "unknown",
 		paths: tool.paths.flatMap((path) => {
 			const value = DlcPathSchema.safeParse(
 				relative(root, resolve(tool.cwd ?? root, path)).replaceAll(

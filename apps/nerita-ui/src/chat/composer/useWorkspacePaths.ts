@@ -78,12 +78,8 @@ function workspaceCompletionItems(
 	const filtered = items.filter((item) =>
 		item.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
 	);
-	if (
-		current &&
-		data &&
-		!isNonEmptyString(data.error) &&
-		query.trim() === ""
-	) {
+	const loadedPaths = current && data && !isNonEmptyString(data.error);
+	if (loadedPaths === true && query.trim() === "") {
 		filtered.unshift({
 			id: "insert-directory",
 			label: "このフォルダのパスを挿入",
@@ -107,9 +103,11 @@ function emptyPathMessage(
 	if (!data) {
 		return "読み込み中…";
 	}
+	const workspacePresent =
+		isNonEmptyString(uri) || isNonZeroNumber(data.entries.length);
 	return (
 		nonEmptyString(data.error) ??
-		(isNonEmptyString(uri) || isNonZeroNumber(data.entries.length)
+		(workspacePresent
 			? "候補がありません。"
 			: "開いているワークスペースがありません。")
 	);

@@ -48,11 +48,11 @@ export function isChangeReference(value: unknown): value is ChangeReference {
 export function validChangeScopes(
 	value: unknown,
 ): value is ChangeScope[] | undefined {
+	if (value === undefined) {
+		return true;
+	}
 	return (
-		value === undefined ||
-		(Array.isArray(value) &&
-			value.length <= 4 &&
-			value.every(isChangeScope))
+		Array.isArray(value) && value.length <= 4 && value.every(isChangeScope)
 	);
 }
 import { isRecord } from "./validation";

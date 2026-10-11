@@ -77,12 +77,16 @@ function fieldPrompt(
 
 /** 数値の型と上下限を照合する。 */
 function invalidNumber(number: number, field: SupportedField) {
-	return (
+	const invalidNumberCheck =
 		!Number.isFinite(number) ||
-		(field.type === "integer" && !Number.isInteger(number)) ||
-		(typeof field.minimum === "number" && number < field.minimum) ||
-		(typeof field.maximum === "number" && number > field.maximum)
-	);
+		(field.type === "integer" && !Number.isInteger(number));
+	if (
+		invalidNumberCheck ||
+		(typeof field.minimum === "number" && number < field.minimum)
+	) {
+		return true;
+	}
+	return typeof field.maximum === "number" && number > field.maximum;
 }
 
 /** 基本フォームとして扱えない型や制約を拒否する。 */
@@ -100,34 +104,49 @@ const supportedFieldSchema = z
 			.nonempty()
 			.optional(),
 	})
-	.refine(
-		(field) =>
-			(field.minimum === undefined ||
-				field.maximum === undefined ||
-				field.minimum <= field.maximum) &&
-			(field.minLength === undefined ||
-				field.maxLength === undefined ||
-				field.minLength <= field.maxLength) &&
-			(field.enum === undefined ||
-				field.enum.every((value) =>
-					field.type === "integer"
-						? typeof value === "number" && Number.isInteger(value)
-						: typeof value === field.type,
-				)),
-	);
+	.refine((field) => {
+		if (!(
+			field.minimum === undefined ||
+			field.maximum === undefined ||
+			field.minimum <= field.maximum
+		)) {
+			return false;
+		}
+		if (!(
+			field.minLength === undefined ||
+			field.maxLength === undefined ||
+			field.minLength <= field.maxLength
+		)) {
+			return false;
+		}
+		return (
+			field.enum === undefined ||
+			field.enum.every((value) =>
+				field.type === "integer"
+					? typeof value === "number" && Number.isInteger(value)
+					: typeof value === field.type,
+			)
+		);
+	});
 type SupportedField = z.infer<typeof supportedFieldSchema>;
 
 /** 未対応の制約を拒否し、対応する型と各制約の値を保証する。 */
 function supportedField(field: unknown): field is SupportedField {
-	return (
+	if (!(
 		isRecord(field) &&
 		supportedFieldSchema.safeParse(field).success &&
-		!Boolean(field.format) &&
+		!Boolean(field.format)
+	)) {
+		return false;
+	}
+	if (!(
 		!Boolean(field.oneOf) &&
 		!Boolean(field.anyOf) &&
-		!Boolean(field.pattern) &&
-		!Boolean(field.items)
-	);
+		!Boolean(field.pattern)
+	)) {
+		return false;
+	}
+	return !Boolean(field.items);
 }
 
 /** 任意項目の省略を `null`、取消や不正な入力を `undefined` で区別する。 */
@@ -168,10 +187,10 @@ function omitField(
 	required: boolean,
 	choices: string[] | undefined,
 ): boolean {
-	return (
-		!required &&
-		(value === "" || (value === "省略" && choices !== undefined))
-	);
+	if (required) {
+		return false;
+	}
+	return value === "" || (value === "省略" && choices !== undefined);
 }
 
 /** 必須・数値・文字数の制約を入力時と送信前に照合する。 */
@@ -189,11 +208,10 @@ function validateField(
 	) {
 		return "指定範囲の数値を入力してください。";
 	}
-	if (
-		(typeof field.minLength === "number" &&
-			value.length < field.minLength) ||
-		(typeof field.maxLength === "number" && value.length > field.maxLength)
-	) {
+	if (typeof field.minLength === "number" && value.length < field.minLength) {
+		return "指定された文字数で入力してください。";
+	}
+	if (typeof field.maxLength === "number" && value.length > field.maxLength) {
 		return "指定された文字数で入力してください。";
 	}
 	return undefined;

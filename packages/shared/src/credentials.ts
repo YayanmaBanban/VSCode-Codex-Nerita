@@ -62,10 +62,11 @@ export const credentialBindingSchema = z
 			"api-token": "env",
 			"username-password": "env",
 		}[value.match.kind];
-		if (
+		const mismatchedInjection =
 			value.injection.type !== expected ||
-			(value.provider.type === "git" &&
-				value.match.kind !== "git-https") ||
+			(value.provider.type === "git" && value.match.kind !== "git-https");
+		if (
+			mismatchedInjection ||
 			(value.provider.type === "npmrc" &&
 				value.match.kind !== "npm-registry")
 		) {

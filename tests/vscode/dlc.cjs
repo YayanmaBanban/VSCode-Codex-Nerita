@@ -54,7 +54,9 @@ async function openConstruction(editor) {
 	const phase = editor.getByRole("button", {
 		name: /Phase 3 · Construction/,
 	});
-	if ((await phase.getAttribute("aria-expanded")) !== "true") {
+	const phaseCollapsed =
+		(await phase.getAttribute("aria-expanded")) !== "true";
+	if (phaseCollapsed) {
 		await phase.click();
 	}
 }
@@ -105,7 +107,7 @@ async function switchPendingIntent(page, chat, editor) {
 	await expect(chat.getByLabel("承認要求")).toHaveCount(0);
 	await expect(chat.getByLabel("Codexへのメッセージ")).toBeVisible();
 	await editor
-		.getByRole("button", { name: "新しい Intent", exact: true })
+		.getByRole("button", { name: "Intentの作成", exact: true })
 		.click();
 	const second = await createIntent(editor, "別の Intent");
 	await expect(editor.getByLabel("承認要求")).toHaveCount(0);
@@ -182,7 +184,9 @@ async function verifyDlc(page, chat, model, cwd, findFrame) {
 	assert.equal(await fs.readFile(path.join(cwd, "dlc.txt"), "utf8"), "dlc\n");
 	await expect(conversation.getByLabel("承認要求")).toHaveCount(0);
 	await screenshot(page, "dlc-result.png");
-	await editor.getByRole("button", { name: "再読込み", exact: true }).click();
+	await editor
+		.getByRole("button", { name: "再読み込み", exact: true })
+		.click();
 	await editor
 		.getByRole("button", { name: "実行 1 · 実行終了", exact: true })
 		.click();

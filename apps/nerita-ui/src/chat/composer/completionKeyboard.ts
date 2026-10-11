@@ -113,12 +113,15 @@ function isCompletionSelectionKey(
 	items: CompletionItem[],
 	index: number,
 ) {
+	if (event.key === "Enter" || event.key === "Tab") {
+		return !event.shiftKey;
+	}
+	if (event.key !== "ArrowRight") {
+		return false;
+	}
 	return (
-		(event.key === "Enter" ||
-			event.key === "Tab" ||
-			(event.key === "ArrowRight" &&
-				(isNonEmptyString(items[index]?.category) ||
-					items[index]?.directory !== undefined))) &&
+		(isNonEmptyString(items[index]?.category) ||
+			items[index]?.directory !== undefined) &&
 		!event.shiftKey
 	);
 }

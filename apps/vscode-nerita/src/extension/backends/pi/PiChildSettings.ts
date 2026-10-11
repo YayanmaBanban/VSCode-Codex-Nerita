@@ -71,9 +71,10 @@ function jobAuthorizer(
 	id: string | undefined,
 	jobs: PiJobs | undefined,
 ) {
-	return authorize && isNonEmptyString(id) && jobs
-		? jobs.authorizer(id, authorize)
-		: authorize;
+	if (!(authorize && isNonEmptyString(id) && jobs)) {
+		return authorize;
+	}
+	return jobs.authorizer(id, authorize);
 }
 
 /** 同名の子エージェントが並列実行されていても、タスクを表示して承認対象を区別する。 */

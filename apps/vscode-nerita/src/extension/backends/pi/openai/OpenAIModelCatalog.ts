@@ -36,13 +36,15 @@ export function normalizeOpenAIModels(
 
 /** 新 OAuth で送信を確認した priority を明示するモデルだけに Fast を公開する。 */
 function supportsPriority(value: unknown): boolean {
-	return (
+	if (!(
 		Array.isArray(value) &&
 		value.length <= 32 &&
-		value.every((entry) => isRecord(entry) && isShortText(entry.id)) &&
-		value.some(
-			(entry: unknown) => isRecord(entry) && entry.id === "priority",
-		)
+		value.every((entry) => isRecord(entry) && isShortText(entry.id))
+	)) {
+		return false;
+	}
+	return value.some(
+		(entry: unknown) => isRecord(entry) && entry.id === "priority",
 	);
 }
 
@@ -86,13 +88,17 @@ function isModelIdentity(item: unknown): item is Record<string, unknown> & {
 	display_name: string;
 	visibility: PiCatalogModel["visibility"];
 } {
-	return (
+	if (!(
 		isRecord(item) &&
 		isShortText(item.slug) &&
-		isShortText(item.display_name) &&
-		(item.visibility === "list" ||
-			item.visibility === "hide" ||
-			item.visibility === "none")
+		isShortText(item.display_name)
+	)) {
+		return false;
+	}
+	return (
+		item.visibility === "list" ||
+		item.visibility === "hide" ||
+		item.visibility === "none"
 	);
 }
 

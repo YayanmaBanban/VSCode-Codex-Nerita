@@ -46,15 +46,17 @@ const configContributions: UiContributionSource = (state, context) => {
 		return [];
 	});
 	options.push(
-		...state.configOptions.filter(
-			(item) =>
+		...state.configOptions.filter((item) => {
+			if (!(
 				!(
 					context.backend === "codex" &&
 					item.id === "approvals_reviewer"
-				) &&
-				!tiers.includes(item.id) &&
-				!options.some((option) => option.id === item.id),
-		),
+				) && !tiers.includes(item.id)
+			)) {
+				return false;
+			}
+			return !options.some((option) => option.id === item.id);
+		}),
 	);
 	const visible = usesModelCard()
 		? options.filter(
@@ -72,11 +74,13 @@ const configContributions: UiContributionSource = (state, context) => {
 	}));
 	/** Codex と Pi の OpenAI 設定を同じモデルカードへまとめる。 */
 	function usesModelCard(): boolean {
+		if (context.backend === "codex") {
+			return true;
+		}
 		return (
-			context.backend === "codex" ||
-			(context.provider === "openai" &&
-				options.some((option) => option.id === "model") &&
-				options.some((option) => option.id === "reasoning_effort"))
+			context.provider === "openai" &&
+			options.some((option) => option.id === "model") &&
+			options.some((option) => option.id === "reasoning_effort")
 		);
 	}
 	/** 権限とモデルの複合設定を、それぞれの表示条件で解決する。 */

@@ -45,9 +45,11 @@ export function validReferences(
 		if (
 			!Number.isSafeInteger(reference.offset) ||
 			typeof reference.offset !== "number" ||
-			reference.offset < end ||
-			!isComposerTarget(reference.path)
+			reference.offset < end
 		) {
+			return false;
+		}
+		if (!isComposerTarget(reference.path)) {
 			return false;
 		}
 

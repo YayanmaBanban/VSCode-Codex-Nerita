@@ -17,18 +17,29 @@ export function taskActive(task: AsyncTask): boolean {
 
 /** AIR タスクの通信値を検証する。 */
 export function isAsyncTask(value: unknown): value is AsyncTask {
-	return (
+	if (!(
 		isRecord(value) &&
 		typeof value.asyncTaskId === "string" &&
-		value.asyncTaskId.length > 0 &&
+		value.asyncTaskId.length > 0
+	)) {
+		return false;
+	}
+	if (!(
 		(value.toolCallId === undefined ||
 			typeof value.toolCallId === "string") &&
-		typeof value.state === "string" &&
+		typeof value.state === "string"
+	)) {
+		return false;
+	}
+	if (!(
 		["running", "paused", "completed", "failed", "stopped"].includes(
 			value.state,
-		) &&
-		typeof value.canStop === "boolean" &&
-		(value.stopPending === undefined ||
-			typeof value.stopPending === "boolean")
+		) && typeof value.canStop === "boolean"
+	)) {
+		return false;
+	}
+	return (
+		value.stopPending === undefined ||
+		typeof value.stopPending === "boolean"
 	);
 }

@@ -168,13 +168,16 @@ function createMcpSynchronizer(
 					return;
 				}
 				const loaded = await config();
-				const entries = loaded.entries.filter(
-					(entry) =>
+				const entries = loaded.entries.filter((entry) => {
+					if (!(
 						entry.config?.enabled === true &&
 						"url" in entry.config &&
-						options.policy.networkAccess &&
-						serverPermitted(entry.name),
-				);
+						options.policy.networkAccess
+					)) {
+						return false;
+					}
+					return serverPermitted(entry.name);
+				});
 				await removeObsolete(entries);
 				for (const entry of entries) {
 					options.signal.throwIfAborted();

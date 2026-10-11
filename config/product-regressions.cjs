@@ -179,7 +179,7 @@ function regressionPlugin(name) {
 	return {
 		name: "product-regression",
 		setup(builder) {
-			builder.onLoad({ filter: /\.ts$/ }, async ({ path }) => {
+			const injectRegression = async ({ path }) => {
 				if (!path.endsWith(entry.file)) {
 					return undefined;
 				}
@@ -195,7 +195,8 @@ function regressionPlugin(name) {
 					contents: contents.replace(entry.before, entry.after),
 					loader: "ts",
 				};
-			});
+			};
+			builder.onLoad({ filter: /\.ts$/ }, injectRegression);
 			builder.onEnd(() => {
 				if (!applied) {
 					throw new Error(`回帰を注入できませんでした: ${name}`);

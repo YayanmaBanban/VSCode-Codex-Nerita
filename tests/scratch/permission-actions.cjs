@@ -116,22 +116,21 @@ async function captureCurtain(page, button, directory, prefix) {
 		["late", 270],
 		["completed", 300],
 	]) {
-		frames.push(
-			await curtain.evaluate((element, time) => {
-				const animations = element.getAnimations();
-				for (const animation of animations) {
-					animation.currentTime = time;
-				}
-				const style = globalThis.getComputedStyle(element);
-				return {
-					time,
-					animations: animations.length,
-					clipPath: style.clipPath,
-					background: style.backgroundColor,
-					color: style.color,
-				};
-			}, time),
-		);
+		const sampleCurtain = (element, time) => {
+			const animations = element.getAnimations();
+			for (const animation of animations) {
+				animation.currentTime = time;
+			}
+			const style = globalThis.getComputedStyle(element);
+			return {
+				time,
+				animations: animations.length,
+				clipPath: style.clipPath,
+				background: style.backgroundColor,
+				color: style.color,
+			};
+		};
+		frames.push(await curtain.evaluate(sampleCurtain, time));
 		await page.screenshot({
 			path: join(directory, `${prefix}-${name}.png`),
 			animations: "allow",
