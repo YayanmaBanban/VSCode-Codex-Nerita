@@ -14,7 +14,9 @@
 
 ### Storybook の通信境界
 
-テスト設定は `apps/nerita-ui/vitest.config.ts`、ストーリーは `apps/nerita-ui/stories/**/*.stories.tsx` に置く。ストーリーは製品のソースに対応する機能別の構成にし、検証開始時の実コンポーネントの状態を用意する。表示用データは `apps/nerita-ui/stories/chat/fixtures/` に置く。
+テスト設定は `apps/nerita-ui/vitest.config.mts`、ストーリーは `apps/nerita-ui/stories/**/*.stories.ts` に置く。必要な状態や操作ラッパーは同じ領域の `.svelte` に置く。ストーリーは製品のソースに対応する機能別の構成にし、検証開始時の実コンポーネントの状態を用意する。表示用データは `apps/nerita-ui/stories/chat/fixtures/` に置く。
+
+`pnpm check` は製品・ストーリーの `svelte-check` と TypeScript の検査を含む。Svelte の警告も修正する。Svelte compiler は Storybook の Vite 設定に一度だけ追加する。
 
 `createStoryBridge()` が返すブリッジの `sent` に送信メッセージを記録する。`emit()` で検証側が指定した Extension Host の応答を配信し、`patchState()` で状態の差分を配信する。
 
@@ -27,6 +29,8 @@
 モデル応答だけをローカルの HTTP サーバーで代替し、画面操作は実際の Extension Host で処理する。承認前にファイルが作られていないこと、承認後のファイル内容、停止後にファイルが作られていないことを確認する。
 
 VS Code の拡張テストモードは確認ダイアログを禁止するため、通常の開発用 Extension Host と一時的な補助拡張で実行する。専用プロファイルの `window.dialogStyle` は `custom` に設定する。利用者のプロファイルには拡張機能をインストールせず、設定も変更しない。
+
+サンドボックス内の起動が ACL エラーになる場合の実行経路は [ACL を変更しない起動](../../docs/working_memory/Phase-25-VSCode-Launch.md)を参照する。
 
 ## 実行コマンド
 

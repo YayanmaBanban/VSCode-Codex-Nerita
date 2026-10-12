@@ -1,7 +1,7 @@
 // Extension Host をビルドし、実行に必要な成果物だけを配布先へ集める。
 const esbuild = require("esbuild");
 const { watch: watchDirectory } = require("node:fs");
-const { cp, copyFile, mkdir } = require("node:fs/promises");
+const { cp, copyFile, mkdir, rm } = require("node:fs/promises");
 const path = require("node:path");
 const { repoRoot, extensionRoot } = require("../../config/workspace-paths.cjs");
 const { packageRuntime } = require("../../config/package-runtime.cjs");
@@ -27,6 +27,10 @@ async function collectBrandAssets() {
 
 /** UI の完成した成果物と、VS Code が直接読むブランド資産を収集する。 */
 async function collectUiArtifacts() {
+	if (production) {
+		// 本番は古い資産を同梱しない。watch 中は表示済み画面が参照する旧チャンクを残す。
+		await rm(path.join(dist, "webview"), { recursive: true, force: true });
+	}
 	await cp(path.join(uiRoot, "dist"), path.join(dist, "webview"), {
 		recursive: true,
 		filter: (file) => !production || !file.endsWith(".map"),

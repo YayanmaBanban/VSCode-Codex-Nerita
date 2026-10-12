@@ -10,7 +10,10 @@ import {
 } from "lexical";
 import type { ComposerPart } from "@nerita/shared/composerContent";
 import { $createPastedBlockNode, PastedBlockNode } from "./PastedBlockNode";
-import { $appendInlineContent, $readReferences } from "./inlineReferences";
+import {
+	$appendInlineContent,
+	$readReferences,
+} from "./inlineReferences";
 
 /** エディタ内部のキーに依存せず、本文とブロック配置の一致を確認する。 */
 export function contentKey(parts: ComposerPart[]): string {

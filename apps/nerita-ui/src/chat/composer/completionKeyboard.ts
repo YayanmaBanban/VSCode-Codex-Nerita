@@ -74,7 +74,7 @@ function backFromCategory(
 }
 
 /** IME 入力中のキーを候補操作から除外する。 */
-function composingCompletion(event: KeyboardEvent, editor: LexicalEditor) {
+export function composingCompletion(event: KeyboardEvent, editor: LexicalEditor) {
 	// IME の確定時に isComposing が先に解除されても、確定キーを処理しない。
 	// eslint-disable-next-line @typescript-eslint/no-deprecated
 	return event.isComposing || event.keyCode === 229 || editor.isComposing();

@@ -67,7 +67,7 @@ for (const example of examples) {
 test("各製品領域の実効設定で全ての独自ルールを有効にする", async () => {
 	for (const file of [
 		"packages/shared/src/validation.ts",
-		"apps/nerita-ui/src/chat/ChatConversation.tsx",
+		"apps/nerita-ui/src/chat/ChatConversation.svelte",
 		"apps/nerita-dlc/src/controller.ts",
 		"apps/vscode-nerita/src/extension/backends/pi/PiRuntime.ts",
 	]) {

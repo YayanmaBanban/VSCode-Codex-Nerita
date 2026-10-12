@@ -1,12 +1,10 @@
 // コンテキストの入口で使う表示と検索語をまとめる。
-import {
-	Paperclip,
-	FolderOpen,
-	Component,
-	MessageSquareMore,
-	MoveUpRight,
-	Diff,
-} from "lucide-react";
+import Paperclip from "@lucide/svelte/icons/paperclip";
+import FolderOpen from "@lucide/svelte/icons/folder-open";
+import Component from "@lucide/svelte/icons/component";
+import MessageSquareMore from "@lucide/svelte/icons/message-square-more";
+import MoveUpRight from "@lucide/svelte/icons/move-up-right";
+import Diff from "@lucide/svelte/icons/diff";
 
 /** ボタンと本文補完で共有するカテゴリ。 */
 export const contextCategories = [

@@ -1,6 +1,6 @@
 ---
 name: development-guidelines
-description: ソースコードの追加・変更、依存調査・レビュー、テスト方針の決定、React UI の実装と表示・操作の検証に適用する開発規約。
+description: ソースコードの追加・変更、依存調査・レビュー、テスト方針の決定、Svelte UI の実装と表示・操作の検証に適用する開発規約。
 ---
 
 # 開発ガイドライン
@@ -20,5 +20,5 @@ description: ソースコードの追加・変更、依存調査・レビュー�
 | 複数ファイルの依存調査・構造変更・コードレビュー | [コード調査・レビュー](references/code-review.md) |
 | 検証方針の決定、テストの追加・変更・削除・レビュー、テスト実行環境の変更 | [テスト方針](references/testing.md) |
 | Storybook・Playwright・UI モック・UI テストの変更 | [UI テストの実装](references/ui-testing.md) |
-| React UI の作成・変更 | [React UI 実装](references/react-ui.md) |
+| Svelte UI の作成・変更 | [Svelte UI 実装](references/svelte-ui.md) |
 | UI の表示・操作・アニメーションの変更、UI レビュー | [UI レビュー](references/ui-review.md) |

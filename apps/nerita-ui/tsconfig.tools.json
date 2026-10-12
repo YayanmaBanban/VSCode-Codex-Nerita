@@ -1,5 +1,13 @@
 {
 	"extends": "./tsconfig.json",
-	"compilerOptions": { "types": ["node", "vite/client"] },
-	"include": [".storybook/**/*.ts", ".storybook/**/*.tsx", "vitest.config.ts"]
+	"compilerOptions": {
+		"allowImportingTsExtensions": true,
+		"types": ["node", "vite/client"]
+	},
+	"include": [
+		"storybookDependencies.mts",
+		".storybook/**/*.ts",
+		".storybook/**/*.svelte",
+		"vitest.config.mts"
+	]
 }

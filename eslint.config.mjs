@@ -1,8 +1,8 @@
+import svelte from "eslint-plugin-svelte";
+import * as extraFileParser from "typescript-eslint-parser-for-extra-files";
 import nerita from "./config/eslint/index.cjs";
 import sonarjs from "eslint-plugin-sonarjs";
-import reactHooks from "eslint-plugin-react-hooks";
 import regexp from "eslint-plugin-regexp";
-import jsxA11yX from "eslint-plugin-jsx-a11y-x";
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from "eslint-plugin-storybook";
 import vitest from "@vitest/eslint-plugin";
@@ -34,7 +34,7 @@ export default defineConfig([
 	prettier,
 	...storybook.configs["flat/recommended"],
 	{
-		files: ["**/*.{js,mjs,cjs,ts,tsx}"],
+		files: ["**/*.{js,mjs,cjs,ts,tsx,mts,svelte}"],
 		plugins: {
 			nerita,
 			sonarjs,
@@ -101,7 +101,10 @@ export default defineConfig([
 	},
 	{
 		// Webview・Extension Host・DLC・共有契約の製品ソースへ適用する。
-		files: ["apps/**/src/**/*.{ts,tsx}", "packages/shared/src/**/*.ts"],
+		files: [
+			"apps/**/src/**/*.{ts,tsx,svelte}",
+			"packages/shared/src/**/*.ts",
+		],
 		rules: {
 			"nerita/no-complex-boolean-expression": "error",
 			"nerita/no-nested-ternary-expression": "error",
@@ -122,11 +125,12 @@ export default defineConfig([
 		},
 	},
 	{
-		files: ["**/*.{ts,tsx}"],
+		files: ["**/*.{ts,tsx,mts,svelte}"],
 		extends: [typescriptEslint.configs.recommendedTypeChecked],
 		languageOptions: {
 			parserOptions: {
 				projectService: true,
+				extraFileExtensions: [".svelte"],
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
@@ -267,26 +271,16 @@ export default defineConfig([
 		// ツールが要求する default export を設定ファイルで許可する。
 		files: [
 			"apps/nerita-ui/.storybook/**/*.{ts,tsx}",
-			"apps/nerita-ui/vitest.config.ts",
+			"apps/nerita-ui/vitest.config.mts",
 			"**/*.stories.tsx",
 		],
 		rules: { "no-restricted-syntax": "off" },
 	},
 	{
 		files: [
-			"apps/nerita-ui/src/**/*.{ts,tsx}",
-			"apps/nerita-ui/stories/**/*.{ts,tsx}",
+			"apps/nerita-ui/vitest.config.mts",
+			"apps/nerita-ui/storybookDependencies.mts",
 		],
-		...jsxA11yX.configs.recommended,
-		languageOptions: {
-			...jsxA11yX.configs.recommended.languageOptions,
-			globals: {
-				...globals.browser,
-			},
-		},
-	},
-	{
-		files: ["apps/nerita-ui/vitest.config.ts"],
 		languageOptions: {
 			parserOptions: {
 				projectService: false,
@@ -296,7 +290,7 @@ export default defineConfig([
 	},
 	{
 		files: [
-			"apps/nerita-ui/src/**/*.{ts,tsx}",
+			"apps/nerita-ui/src/**/*.{ts,tsx,svelte}",
 			"packages/shared/src/**/*.ts",
 		],
 		rules: {
@@ -344,26 +338,12 @@ export default defineConfig([
 		},
 	},
 	{
-		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
+		files: ["apps/nerita-ui/src/**/*.{ts,tsx,svelte}"],
 		ignores: ["apps/nerita-ui/src/bridge/vscodeBridge.ts"],
 		rules: { "no-restricted-globals": ["error", "acquireVsCodeApi"] },
 	},
 	{
-		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
-		plugins: {
-			"react-hooks": reactHooks,
-		},
-		rules: {
-			"react-hooks/rules-of-hooks": "error",
-			"react-hooks/exhaustive-deps": "error",
-			"react-hooks/immutability": "error",
-			"react-hooks/purity": "error",
-			"react-hooks/refs": "error",
-			"react-hooks/set-state-in-render": "error",
-		},
-	},
-	{
-		files: ["apps/nerita-ui/src/**/*.{ts,tsx}"],
+		files: ["apps/nerita-ui/src/**/*.{ts,tsx,svelte}"],
 		plugins: {
 			"better-tailwindcss": betterTailwindcss,
 		},
@@ -410,6 +390,46 @@ export default defineConfig([
 			"vitest/no-focused-tests": "error",
 			"vitest/no-standalone-expect": "error",
 			"vitest/no-conditional-expect": "error",
+		},
+	},
+	...svelte.configs.recommended,
+	{
+		// 製品とストーリーの Svelte では、副作用を登録する理由を明示する。
+		files: [
+			"apps/nerita-ui/{src,stories}/**/*.{svelte,svelte.ts,svelte.js}",
+		],
+		rules: { "nerita/require-effect-reason": "error" },
+	},
+	{
+		files: ["**/*.svelte", "**/*.svelte.ts"],
+		languageOptions: {
+			globals: { ...globals.browser },
+			parserOptions: {
+				parser: extraFileParser,
+				projectService: true,
+				extraFileExtensions: [".svelte"],
+				tsconfigRootDir: import.meta.dirname,
+			},
+		},
+	},
+	{
+		// Svelte CSF が要求するメタ情報の default export だけを許可する。
+		files: ["**/*.stories.ts"],
+		rules: {
+			"no-restricted-syntax": [
+				"error",
+				{
+					selector: "TSEnumDeclaration",
+					message:
+						"Use union types or const objects instead of enum.",
+				},
+				{
+					selector:
+						'CallExpression[callee.property.name="forEach"] > ArrowFunctionExpression[async=true]',
+					message:
+						"Use for...of or Promise.all instead of async forEach callbacks.",
+				},
+			],
 		},
 	},
 ]);

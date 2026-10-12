@@ -2,12 +2,14 @@
 import path from "node:path";
 import * as typeScript from "./typeScript.mjs";
 import * as rust from "./rust.mjs";
+import * as svelte from "./svelte.mjs";
 
 const extractors = new Map([
 	...[".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"].map(
 		(extension) => [extension, typeScript],
 	),
 	[".rs", rust],
+	[".svelte", svelte],
 ]);
 
 export const SOURCE_EXTENSIONS = new Set(extractors.keys());

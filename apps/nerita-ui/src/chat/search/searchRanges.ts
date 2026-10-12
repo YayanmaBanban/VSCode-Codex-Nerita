@@ -1,4 +1,4 @@
-// 描画済みの会話から検索範囲を作り、React の DOM を書き換えずに一致を示す。
+// 描画済みの会話から検索範囲を作り、表示 DOM を書き換えずに一致を示す。
 import {
 	isNonEmptyString,
 	isNonZeroNumber,

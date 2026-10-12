@@ -47,10 +47,9 @@ async function launch(extension, root, environment) {
 				...process.env,
 				...environment,
 				NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
-				NERITA_UI_ENTRY: path.join(
-					repoRoot,
-					"tests/vscode/activation.cjs",
-				),
+				NERITA_UI_ENTRY:
+					process.env.NERITA_UI_ACCEPTANCE_ENTRY ??
+					path.join(repoRoot, "tests/vscode/activation.cjs"),
 				NERITA_UI_RESULT: resultFile,
 			},
 			windowsHide: true,

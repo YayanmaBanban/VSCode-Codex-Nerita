@@ -1,9 +1,12 @@
 {
-	// Story 専用コードと共有検証データを、本体から独立して型検査する。
 	"extends": "../tsconfig.json",
 	"compilerOptions": {
 		"rootDir": "../../.."
 	},
-	"include": ["**/*.ts", "**/*.tsx"],
+	"include": [
+		"**/*.ts",
+		"**/*.tsx",
+		"**/*.svelte"
+	],
 	"exclude": []
 }

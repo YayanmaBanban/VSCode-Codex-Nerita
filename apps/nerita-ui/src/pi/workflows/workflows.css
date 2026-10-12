@@ -77,7 +77,7 @@
 .workflow-graph-layout {
 	grid-template-columns: minmax(0, 1fr) 310px;
 }
-.workflow-canvas .react-flow {
+.workflow-canvas .svelte-flow {
 	--xy-background-color: var(--nerita-editor-background);
 	--xy-node-background-color: var(--workflow-input);
 	--xy-node-color: var(--workflow-fg);
@@ -86,17 +86,17 @@
 	--xy-controls-button-color: var(--workflow-fg);
 	--xy-edge-stroke: #8291ad;
 }
-.workflow-canvas .react-flow__node {
+.workflow-canvas .svelte-flow__node {
 	width: 175px;
 	border-radius: 8px;
 	padding: 14px;
 	font-size: 12px;
 }
-.workflow-canvas .react-flow__handle {
+.workflow-canvas .svelte-flow__handle {
 	width: 10px;
 	height: 10px;
 }
-.workflow-canvas .react-flow__attribution {
+.workflow-canvas .svelte-flow__attribution {
 	font-size: 12px;
 }
 @media (max-width: 720px) {
@@ -117,7 +117,7 @@
 		--workflow-fg: var(--nerita-editor-foreground);
 		background: var(--nerita-editor-background);
 	}
-	.workflow-canvas .react-flow {
+	.workflow-canvas .svelte-flow {
 		--xy-background-color: var(--nerita-editor-background);
 	}
 }

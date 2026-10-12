@@ -5,6 +5,7 @@ import { test } from "node:test";
 import {
 	createTrustBridge,
 	createVsCodeBridge,
+	subscribePiAuth,
 } from "../../apps/nerita-ui/src/bridge/vscodeBridge";
 
 void test("ブリッジは API を共有し、チャットの元参照とパネルの解析値を届け、解除後は通知しない", (t) => {
@@ -68,8 +69,31 @@ void test("ブリッジは API を共有し、チャットの元参照とパネ�
 	window.dispatchEvent(new MessageEvent("message", { data: panel }));
 	assert.equal(chats.length, 1);
 	assert.equal(panels.length, 1);
+	verifyAuthSubscription(window);
 	chat.postMessage({ type: "ui/ready" });
 	trust.postMessage({ type: "refresh" });
 	assert.deepEqual(sent, [{ type: "ui/ready" }, { type: "refresh" }]);
 	assert.equal(acquired, 1);
 });
+
+/** 認証状態も元参照を届け、不正な通知と解除後の応答を表示側へ渡さない。 */
+function verifyAuthSubscription(window: EventTarget) {
+	const received: unknown[] = [];
+	const state = {
+		items: [],
+		active: null,
+		prompt: null,
+		notice: "ready",
+		error: null,
+	};
+	const unsubscribe = subscribePiAuth((message) => received.push(message));
+	window.dispatchEvent(new MessageEvent("message", { data: state }));
+	window.dispatchEvent(
+		new MessageEvent("message", { data: { ...state, items: null } }),
+	);
+	assert.deepEqual(received, [state]);
+	assert.equal(received[0], state);
+	unsubscribe();
+	window.dispatchEvent(new MessageEvent("message", { data: state }));
+	assert.equal(received.length, 1);
+}

@@ -9,4 +9,6 @@
 !dist/handoff.schema.json
 !dist/webview/index.js
 !dist/webview/index.css
+!dist/webview/chunks/**
+!dist/webview/assets/**
 !dist/runtime/**

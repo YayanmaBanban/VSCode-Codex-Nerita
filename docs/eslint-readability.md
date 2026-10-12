@@ -4,14 +4,16 @@
 
 ## 導入範囲と検証
 
-製品ソース全体（`apps/**/src/**/*.{ts,tsx}` と `packages/shared/src/**/*.ts`）へ6つの独自ルールをエラーとして適用する。Webview・Extension Host・DLC・共有契約を含む。
+製品ソース全体（`apps/**/src/**/*.{ts,tsx,svelte}` と `packages/shared/src/**/*.ts`）へ6つの独自ルールをエラーとして適用する。Webview・Extension Host・DLC・共有契約を含む。
+
+`nerita/require-effect-reason` は、`apps/nerita-ui/src/` と `apps/nerita-ui/stories/` の `.svelte`・`.svelte.ts`・`.svelte.js` に追加で適用する。
 
 この範囲では、標準の `no-nested-ternary` を、直接のネストも検出する独自ルールで置き換える。範囲外では標準ルールを維持する。`no-restricted-syntax` の可読性用セレクターは独自ルールへ移し、TypeScript の enum・default export・async forEach の禁止は保持する。既存の Storybook 用の例外も維持する。
 
 - `pnpm test:eslint`: 実例を固定した RuleTester の valid / invalid ケースと、各製品領域の実効設定を検証する。`pnpm check` からも実行する。
-- `pnpm lint:readability`: 製品ソース全体を同じ独自ルールで検査し、ルール別の件数と診断位置を表示する。診断や構文解析エラーがあれば終了コードは1になる。
+- `pnpm lint:readability`: TypeScript の製品ソースを同じ独自ルールで検査し、ルール別の件数と診断位置を表示する。診断や構文解析エラーがあれば終了コードは1になる。`.svelte` コンポーネントを含む通常の検査には `pnpm lint` / `pnpm check` を使う。
 
-全体検査も通常の lint と同じ製品ソースを対象にし、既存の ESLint の生成物・同梱外部ソースの除外を引き継ぐ。テストや Storybook の配置は製品ソースの対象に含めない。
+`lint:readability` は既存の ESLint の生成物・同梱外部ソースの除外を引き継ぐ。テストや Storybook の配置は製品ソースの対象に含めない。
 
 ## 判定の基準
 
@@ -83,6 +85,14 @@ if (!busy) {
 説明は JSDoc・ブロックコメント・行コメントのいずれでもよい。装飾子がある場合は最初の装飾子の直前に置く。コメントと宣言の間に空行を挟まない。前のメンバの行末コメント、関数本体内のコメント、クラス全体のコメント、空のコメント、ESLint / TypeScript の解析指示だけのコメントは説明として数えない。
 
 コメントは既存の規約に従って日本語で書き、関数名の言い換えではなく実装の役割・制約を説明する。ルールはコメントの存在と配置を判定し、内容の妥当性や実装との一致はレビューで確認する。オブジェクトのメソッド、通常の関数、関数の型だけを持つ未初期化のフィールドは対象外。定型文を埋める自動修正は提供しない。
+
+### `nerita/require-effect-reason`
+
+`$effect`・`$effect.pre`・`$effect.root` を登録する文の直前に、扱う副作用と effect が必要な理由を説明するコメントを求める。既存の説明コメントも認め、書式や定型の接頭辞は指定しない。`root` の解除関数を保存する変数宣言や return も対象にする。
+
+コメントは行コメント・ブロックコメント・JSDoc のいずれでもよい。文との間に空行を挟まない。前の処理の行末コメント、コールバック本体内のコメント、空コメント、解析指示、rune 名だけのコメントは説明として数えない。`$effect.tracking()`・`$effect.pending()` は副作用の登録ではないため対象外とし、同名のローカル関数や import も rune と扱わない。
+
+このルールは `$effect` 自体や状態への書き込みを禁止しない。値の計算は `$derived` を優先し、effect の必要性とコメントの内容は開発ガイドラインに従ってレビューする。理由の定型文を埋める自動修正は提供しない。
 
 ## 設定変更の運用
 

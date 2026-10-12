@@ -2,7 +2,7 @@
 import type { ToolSummary } from "@nerita/shared/chatState";
 import type { ToolContent } from "@nerita/shared/toolContent";
 import type { TimelineEntry } from "../messages/messageTimeline";
-import { agentName } from "../agents/AgentCard";
+import { agentName } from "../agents/agentName";
 import { findMatches, matchLimit } from "./findMatches";
 
 /** 行内での一致位置と、折り畳み本文を開く必要があるか。 */

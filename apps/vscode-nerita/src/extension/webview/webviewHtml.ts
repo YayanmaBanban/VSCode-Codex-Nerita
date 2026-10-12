@@ -25,7 +25,7 @@ export function webviewHtml(
 		vscode.Uri.joinPath(extensionUri, "dist", "webview", "index.css"),
 	);
 	return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; img-src ${webview.cspSource}; font-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
     <link rel="stylesheet" href="${style.toString()}"><title>Codex</title></head>
-    <body><div id="root" data-page="${page}"></div><script nonce="${nonce}" src="${script.toString()}"></script></body></html>`;
+    <body><div id="root" data-page="${page}"></div><script type="module" nonce="${nonce}" src="${script.toString()}"></script></body></html>`;
 }

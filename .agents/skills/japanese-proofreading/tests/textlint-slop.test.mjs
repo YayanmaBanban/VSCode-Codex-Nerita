@@ -506,3 +506,73 @@ test(
 	"all CLI modes inspect source strings without prose presets or rewriting machine values",
 	checkCliSourceStrings,
 );
+
+test("Svelte CLI targets report comments, script strings, attributes and markup at original lines", async (t) => {
+	const root = await createCliWorkspace(t);
+	const makeSource = (message) =>
+		[
+			`<!-- ${message} -->`,
+			'<script lang="ts">',
+			`const labelText: string = "${message}";`,
+			"</script>",
+			`<div title="${message}">`,
+			message,
+			"{labelText}",
+			`<span>${"説明".repeat(60)}</span></div>`,
+		].join("\r\n");
+	for (const mode of ["all", "changed", "review-all", "review-changed"]) {
+		const file = path.join(root, "sample.svelte");
+		const failedSource = makeSource("設定の正本を更新する。");
+		await fs.writeFile(file, failedSource);
+		const failed = runCli(root, mode, "sample.svelte");
+		assert.equal(failed.status, 1, failed.stdout + failed.stderr);
+		const scope = mode.includes("changed") ? "changed" : "all";
+		const issuesPath = path.join(
+			root,
+			".textlint-cache",
+			`issues-${scope}.json`,
+		);
+		const saved = JSON.parse(await fs.readFile(issuesPath, "utf8"));
+		assert.deepEqual(
+			saved.issues
+				.filter(({ type }) => type === "ai-slop-pattern")
+				.flatMap(({ occurrences }) => occurrences)
+				.map(({ line }) => line),
+			[1, 3, 5, 6],
+		);
+		assert.equal(await fs.readFile(file, "utf8"), failedSource);
+
+		const passedSource = makeSource("設定を確認します。");
+		await fs.writeFile(file, passedSource);
+		const passed = runCli(root, mode, "sample.svelte");
+		assert.equal(passed.status, 0, passed.stdout + passed.stderr);
+		await assert.rejects(fs.readFile(issuesPath), { code: "ENOENT" });
+		if (mode.startsWith("review")) {
+			const records = (
+				await fs.readFile(
+					path.join(root, ".textlint-cache", `review-${scope}.jsonl`),
+					"utf8",
+				)
+			)
+				.trim()
+				.split("\n")
+				.map((line) => JSON.parse(line));
+			assert.deepEqual(
+				records
+					.slice(1)
+					.map(({ kind, startLine, endLine }) => [
+						kind,
+						startLine,
+						endLine,
+					]),
+				[
+					["comment", 1, 1],
+					["string", 3, 3],
+					["svelte-attribute", 5, 5],
+					["svelte-text", 5, 6],
+					["svelte-text", 8, 8],
+				],
+			);
+		}
+	}
+});
