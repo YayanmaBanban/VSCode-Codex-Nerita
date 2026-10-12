@@ -99,21 +99,21 @@ function createReadyStepFilter(
 function validateStep(step: WorkflowStep, steps: Map<string, WorkflowStep>) {
 	validateMode(step);
 	validateReferences(step, steps);
-	if (
+	const matchesIsNonEmptyString =
 		isNonEmptyString(step.resume) &&
 		[...steps.values()].filter((other) => other.resume === step.resume)
-			.length > 1
-	) {
+			.length > 1;
+	if (matchesIsNonEmptyString) {
 		throw new Error(`同じ完了時点から二重に再開できません: ${step.resume}`);
 	}
 }
 
 /** 新規・複製・継続の指定を相互に矛盾させない。 */
 function validateMode(step: WorkflowStep) {
-	if (
+	const matchesIsNonEmptyString2 =
 		isNonEmptyString(step.resume) &&
-		(isNonEmptyString(step.fork) || isNonEmptyString(step.agent))
-	) {
+		(isNonEmptyString(step.fork) || isNonEmptyString(step.agent));
+	if (matchesIsNonEmptyString2) {
 		throw new Error("resume は agent・fork と併用できません。");
 	}
 	if (!isNonEmptyString(step.resume) && !isNonEmptyString(step.agent)) {
@@ -132,11 +132,11 @@ function validateReferences(
 		...[step.resume, step.fork].filter((ref) => ref !== undefined),
 	];
 	for (const ref of required) {
-		if (
+		const matchesRef =
 			ref === step.id ||
 			!steps.has(ref) ||
-			!ancestors(step, steps).has(ref)
-		) {
+			!ancestors(step, steps).has(ref);
+		if (matchesRef) {
 			throw new Error(`依存先が不正です: ${step.id} → ${ref}`);
 		}
 	}

@@ -254,7 +254,9 @@ async function readWorkflow(
 ) {
 	const root = await paths.resolveWorkspace(".pi/workflows");
 	const path = await paths.resolveWorkspace(join(".pi/workflows", file));
-	if (!containsPath(root, path) || (await stat(path)).size > 262144) {
+	const matchesContainsPath =
+		!containsPath(root, path) || (await stat(path)).size > 262144;
+	if (matchesContainsPath) {
 		throw new Error("定義ファイルの範囲またはサイズが不正です。");
 	}
 	const permit = await approveToolCall(
@@ -270,7 +272,9 @@ async function readWorkflow(
 	consumeApprovedToolCall(permit);
 	const text = await readFile(path, "utf8");
 	permit.signal.throwIfAborted();
-	if ((await realpath(path)) !== path || text.length > 262144) {
+	const matchesValue =
+		(await realpath(path)) !== path || text.length > 262144;
+	if (matchesValue) {
 		throw new Error("読取り中に定義ファイルが変更されました。");
 	}
 	return text;

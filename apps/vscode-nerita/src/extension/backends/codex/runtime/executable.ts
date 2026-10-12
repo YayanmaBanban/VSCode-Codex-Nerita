@@ -17,19 +17,29 @@ export async function resolveCodexExecutable(
 	const codex: unknown = JSON.parse(
 		await readFile(path.join(root, "codex/package.json"), "utf8"),
 	);
-	if (
-		!isRecord(project) ||
-		!isRecord(project.dependencies) ||
-		!isRecord(codex)
-	) {
+
+	if (!isRecord(project)) {
 		throw new Error(
 			"同梱 Codex のバージョンが一致しません。拡張機能を再ビルドしてください。",
 		);
 	}
-	if (
-		typeof codex.version !== "string" ||
-		project.dependencies["@openai/codex"] !== codex.version
-	) {
+	if (!isRecord(project.dependencies)) {
+		throw new Error(
+			"同梱 Codex のバージョンが一致しません。拡張機能を再ビルドしてください。",
+		);
+	}
+	if (!isRecord(codex)) {
+		throw new Error(
+			"同梱 Codex のバージョンが一致しません。拡張機能を再ビルドしてください。",
+		);
+	}
+
+	if (typeof codex.version !== "string") {
+		throw new Error(
+			"同梱 Codex のバージョンが一致しません。拡張機能を再ビルドしてください。",
+		);
+	}
+	if (project.dependencies["@openai/codex"] !== codex.version) {
 		throw new Error(
 			"同梱 Codex のバージョンが一致しません。拡張機能を再ビルドしてください。",
 		);
@@ -38,7 +48,8 @@ export async function resolveCodexExecutable(
 		root,
 		"codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
 	);
-	if (!(await stat(executable)).isFile()) {
+	const matchesIsFile = !(await stat(executable)).isFile();
+	if (matchesIsFile) {
 		throw new Error("同梱 Codex の実行ファイルがありません。");
 	}
 	return executable;

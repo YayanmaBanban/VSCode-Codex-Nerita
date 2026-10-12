@@ -70,7 +70,8 @@ export async function initializeWorkspace(
 			maxBuffer: 1024 * 1024,
 		},
 	);
-	if ((await realpath(git.stdout.trim())) !== root) {
+	const matchesValue = (await realpath(git.stdout.trim())) !== root;
+	if (matchesValue) {
 		throw new Error(
 			"DLC は単一の Git ワークスペースのルートで初期化してください。",
 		);
@@ -79,9 +80,11 @@ export async function initializeWorkspace(
 		await files.directory(`.nerita/dlc/spaces/default/${directory}`);
 	}
 	const result = await new WorkspaceScanner(files, signal).detect();
-	if (
-		!sameDetection(await files.read(".nerita/dlc/workspace.json"), result)
-	) {
+	const matchesSameDetection = !sameDetection(
+		await files.read(".nerita/dlc/workspace.json"),
+		result,
+	);
+	if (matchesSameDetection) {
 		await files.write(".nerita/dlc/workspace.json", result);
 	}
 	return result;
@@ -110,23 +113,26 @@ class WorkspaceScanner {
 	private bytes = 0;
 	private inputs = new Map<string, unknown>();
 	private names: string[] = [];
+	/** 検出のファイルアクセスを許可済みルートへ限定し、親の取消しを走査へ伝える。 */
 	constructor(
 		private files: SafeDlcFiles,
 		private signal: AbortSignal,
 	) {}
+	/** 取消し・走査深さ・件数・読取り量・経過時間を確認し、上限を超えた検出結果は採用しない。 */
 	private budget(depth = 0): void {
 		this.signal.throwIfAborted();
-		if (
+		const matchesDepth =
 			depth > detectionLimits.depth ||
 			this.visited > detectionLimits.files ||
-			this.bytes > detectionLimits.bytes
-		) {
+			this.bytes > detectionLimits.bytes;
+		if (matchesDepth) {
 			throw new Error("ワークスペース検出の走査上限を超えています。");
 		}
 		if (Date.now() - this.started > detectionLimits.durationMs) {
 			throw new Error("ワークスペース検出の走査上限を超えています。");
 		}
 	}
+	/** 総読取り量の残りを上限にし、未作成も含めた入力を指紋の計算へ記録する。 */
 	private async read(path: string): Promise<string | undefined> {
 		this.budget();
 		const text = await this.files.read(
@@ -138,6 +144,7 @@ class WorkspaceScanner {
 		this.budget();
 		return text;
 	}
+	/** 決めた順でファイルを走査し、除外領域を避けてリンクと実体ルート外への逸脱を拒否する。 */
 	private async walk(path: string, depth: number): Promise<void> {
 		this.budget(depth);
 		const target =
@@ -153,13 +160,14 @@ class WorkspaceScanner {
 			}
 			const name = path === "" ? entry.name : `${path}/${entry.name}`;
 			const stat = await lstat(resolve(this.files.root, name));
-			if (
-				stat.isSymbolicLink() ||
-				!containsPath(
-					this.files.root,
-					await realpath(resolve(this.files.root, name)),
-				)
-			) {
+
+			if (stat.isSymbolicLink()) {
+				throw new Error(
+					`リンクを含むワークスペースを検出できません: ${name}`,
+				);
+			}
+			const actualPath = await realpath(resolve(this.files.root, name));
+			if (!containsPath(this.files.root, actualPath)) {
 				throw new Error(
 					`リンクを含むワークスペースを検出できません: ${name}`,
 				);
@@ -171,6 +179,7 @@ class WorkspaceScanner {
 			}
 		}
 	}
+	/** pnpm のパッケージ指定を読み、絶対パスと親・ドライブへの参照を拒否する。 */
 	private async patterns(): Promise<string[] | null> {
 		const workspace = await this.read("pnpm-workspace.yaml");
 		if (workspace === undefined) {
@@ -179,19 +188,19 @@ class WorkspaceScanner {
 		const patterns = z
 			.object({ packages: z.array(z.string().min(1)) })
 			.parse(parseYaml(workspace)).packages;
-		if (
-			patterns.some((pattern) => {
-				const invalidPattern =
-					pattern.startsWith("/") ||
-					pattern.includes("..") ||
-					pattern.includes("\\");
-				return invalidPattern || pattern.includes(":");
-			})
-		) {
+		const matchesSome = patterns.some((pattern) => {
+			const invalidPattern =
+				pattern.startsWith("/") ||
+				pattern.includes("..") ||
+				pattern.includes("\\");
+			return invalidPattern || pattern.includes(":");
+		});
+		if (matchesSome) {
 			throw new Error("ワークスペースのパッケージ指定が不正です。");
 		}
 		return patterns;
 	}
+	/** 対象パッケージのマニフェストだけから構成を抽出し、検出中に消えた入力を黙って省略しない。 */
 	private async projectFacts(patterns: string[] | null) {
 		const projects: WorkspaceDetection["projects"] = [];
 		const frameworks: WorkspaceDetection["frameworks"] = [];
@@ -202,11 +211,11 @@ class WorkspaceScanner {
 			(name) => name.split("/").at(-1) === "package.json",
 		)) {
 			const projectRoot = packageRoot(path);
-			if (
+			const matchesPatterns =
 				patterns !== null &&
 				projectRoot !== "." &&
-				!selectedPackage(projectRoot, patterns)
-			) {
+				!selectedPackage(projectRoot, patterns);
+			if (matchesPatterns) {
 				continue;
 			}
 			const content = await this.read(path);
@@ -247,6 +256,7 @@ class WorkspaceScanner {
 			packageManager,
 		};
 	}
+	/** 設定とソースの名前から言語の根拠を集め、表示用の根拠数を制限する。 */
 	private async languageFacts() {
 		const languages = new Map<string, string[]>();
 		const sources: string[] = [];
@@ -275,6 +285,7 @@ class WorkspaceScanner {
 				})),
 		};
 	}
+	/** 未確定の場合だけロックファイルから管理方式を補い、各ファイルの存在も指紋へ記録する。 */
 	private lockManager(
 		manager: WorkspaceDetection["layout"]["packageManager"],
 	): WorkspaceDetection["layout"]["packageManager"] {
@@ -286,6 +297,7 @@ class WorkspaceScanner {
 		}
 		return manager;
 	}
+	/** 走査と読取りを完了してから検出契約を検証し、同じ入力を照合できる指紋を付ける。 */
 	async detect(): Promise<WorkspaceDetection> {
 		await this.walk("", 0);
 		this.names.sort();

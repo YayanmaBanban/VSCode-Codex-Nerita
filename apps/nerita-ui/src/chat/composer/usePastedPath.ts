@@ -67,11 +67,14 @@ function createPastedPathHandler(
 		const selection = $getSelection();
 		const text = pastedPlainText(event);
 		const target = parsePastedPath(text);
-		if (
-			match?.marker !== "#" ||
-			match.query !== "" ||
-			!$isRangeSelection(selection)
-		) {
+
+		if (match?.marker !== "#") {
+			return false;
+		}
+		if (match.query !== "") {
+			return false;
+		}
+		if (!$isRangeSelection(selection)) {
 			return false;
 		}
 		if (text.trim() === "") {
@@ -89,10 +92,10 @@ function createPastedPathHandler(
 		const expected = completionBlockText(match);
 		const requestId = crypto.randomUUID();
 		const unsubscribe = bridge.subscribe((message) => {
-			if (
+			const matchesType =
 				message.type !== "workspace/resolvedPath" ||
-				message.requestId !== requestId
-			) {
+				message.requestId !== requestId;
+			if (matchesType) {
 				return;
 			}
 			pending.cancel();
@@ -128,26 +131,36 @@ function insertResolvedPath(
 	pasted: Completion,
 	reference: WorkspacePath,
 ) {
-	editor.update(() => {
+	/** 要求時の本文とカーソル位置が維持される場合だけ、解決した参照を挿入する。 */
+	const insertCurrentResolvedPath = () => {
 		const block = $getNodeByKey(match.key);
 		const current = $getSelection();
-		if (
-			!$isElementNode(block) ||
-			block.getTextContent() !== expected ||
-			!$isRangeSelection(current)
-		) {
+
+		if (!$isElementNode(block)) {
 			return;
 		}
-		if (
-			!current.isCollapsed() ||
+		if (block.getTextContent() !== expected) {
+			return;
+		}
+		if (!$isRangeSelection(current)) {
+			return;
+		}
+
+		if (!current.isCollapsed()) {
+			return;
+		}
+		const anchorMovedToAnotherBlock =
 			current.anchor.getNode().getTopLevelElement()?.getKey() !==
-				match.key ||
-			$pointOffset(current.anchor, block) !== pasted.end
-		) {
+			match.key;
+		if (anchorMovedToAnotherBlock) {
+			return;
+		}
+		if ($pointOffset(current.anchor, block) !== pasted.end) {
 			return;
 		}
 		$insertCompletion(pasted, "", reference);
-	});
+	};
+	editor.update(insertCurrentResolvedPath);
 }
 
 /** 非同期照合に使用する補完対象ブロックの本文を保存する。 */

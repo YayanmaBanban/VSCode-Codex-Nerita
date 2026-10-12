@@ -55,6 +55,7 @@ type SubmissionOperation = {
 /** 最新のターン状態に応じて通常送信とフォローアップを選ぶ。 */
 export class CodexSubmission {
 	private operation: SubmissionOperation | undefined;
+	/** 送信時に使う設定と接続生成を保持し、接続の世代確認はセッションから取得する。 */
 	constructor(
 		private readonly session: SubmissionSession,
 		private readonly options: CodexOptions,
@@ -158,11 +159,10 @@ export class CodexSubmission {
 			});
 		} catch (error) {
 			// 接続変更後も同じ待機メッセージが残る場合だけ、取得中表示を終了する。
-			if (
-				this.session
-					.snapshot()
-					.messages.some((message) => message.id === id)
-			) {
+			const matchesSome = this.session
+				.snapshot()
+				.messages.some((message) => message.id === id);
+			if (matchesSome) {
 				this.session.patch({
 					messages: this.session.snapshot().messages.map((message) =>
 						message.id === id
@@ -261,10 +261,10 @@ export class CodexSubmission {
 	/** 停止や失敗の後に待機中の指示で実行を再開しない。 */
 	private createWaitingRunCheck(waitingRun: SubmissionTurn | undefined) {
 		return () => {
-			if (
+			const matchesAborted =
 				waitingRun?.abort.signal.aborted === true &&
-				this.session.snapshot().run !== "completed"
-			) {
+				this.session.snapshot().run !== "completed";
+			if (matchesAborted) {
 				throw new Error("Pending submission cancelled");
 			}
 		};
@@ -286,11 +286,9 @@ export class CodexSubmission {
 			this.session.patch({ run: "running", runId: randomUUID() });
 		}
 		const restore = () => {
-			if (
-				preparing &&
-				this.current(operation) &&
-				!this.session.active()
-			) {
+			const matchesPreparing =
+				preparing && this.current(operation) && !this.session.active();
+			if (matchesPreparing) {
 				this.session.patch(previousRun);
 				preparing = false;
 			}
@@ -316,11 +314,14 @@ export class CodexSubmission {
 	private requireSteerTurn() {
 		const run = this.session.active();
 		const client = this.session.connection()!;
-		if (
-			this.session.snapshot().run !== "running" ||
-			!isNonEmptyString(run?.turnId) ||
-			!run.started
-		) {
+
+		if (this.session.snapshot().run !== "running") {
+			throw new Error("Turn not ready");
+		}
+		if (!isNonEmptyString(run?.turnId)) {
+			throw new Error("Turn not ready");
+		}
+		if (!run.started) {
 			throw new Error("Turn not ready");
 		}
 		return { run, client };
@@ -483,18 +484,18 @@ export class CodexSubmission {
 
 	/** 待機や読み込みをまたいでも送信先と接続世代を固定する。 */
 	private checkSubmission(operation: SubmissionOperation): void {
-		if (
+		const matchesCurrent =
 			!this.current(operation) ||
 			!this.session.connection() ||
-			this.session.snapshot().connection !== "ready"
-		) {
+			this.session.snapshot().connection !== "ready";
+		if (matchesCurrent) {
 			throw new Error("Submission unavailable");
 		}
-		if (
+		const matchesSessionPending =
 			this.session.snapshot().sessionPending ||
 			this.session.snapshot().configPending ||
-			this.session.snapshot().attachmentPending
-		) {
+			this.session.snapshot().attachmentPending;
+		if (matchesSessionPending) {
 			throw new Error("Submission unavailable");
 		}
 	}

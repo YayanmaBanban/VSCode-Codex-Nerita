@@ -29,11 +29,13 @@ const relative = ".nerita/config.toml";
 
 /** 対象ルートを固定し、他の会話や設定ファイルの編集を上書きしない。 */
 export class ModelConfig {
+	/** 設定の保存先をプロジェクトとユーザーに分け、書込みの制約は利用側の確認関数を使う。 */
 	constructor(
 		private readonly root: string,
 		private readonly globalRoot = homedir(),
 		private readonly assertWritable: (file: string) => void = () => {},
 	) {}
+	/** 設定本文と保存先を同じルートで解決し、内容をスキーマで検証してから編集処理へ渡す。 */
 	private async load(root: string) {
 		const text = await readWorkspaceFile(root, relative);
 		return {
@@ -52,7 +54,8 @@ export class ModelConfig {
 	}
 	/** UI の変更は、各項目を既に指定しているスコープへ保存する。 */
 	write(backend: "pi" | "codex", selection: Selection): Promise<void> {
-		return serialized(this.globalRoot, async () => {
+		/** 設定の保存を直列化し、既存の指定範囲を保ちながらユーザーとプロジェクトの保存先を再確認する。 */
+		const saveModelSelection = async () => {
 			const [global, workspace] = await Promise.all([
 				this.load(this.globalRoot),
 				this.load(this.root),
@@ -93,6 +96,7 @@ export class ModelConfig {
 					item.text,
 				);
 			}
-		});
+		};
+		return serialized(this.globalRoot, saveModelSelection);
 	}
 }

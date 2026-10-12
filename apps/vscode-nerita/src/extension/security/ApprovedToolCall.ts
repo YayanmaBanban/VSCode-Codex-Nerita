@@ -74,10 +74,10 @@ export function issueApprovedToolCall(
 /** コピー・改変・再利用された要求は再承認を必要とする。 */
 export function consumeApprovedToolCall(permit: ApprovedToolCall): ToolCall {
 	permit.signal.throwIfAborted();
-	if (
+	const matchesDelete =
 		!permits.delete(permit) ||
-		toolCallFingerprint(permit.call) !== permit.fingerprint
-	) {
+		toolCallFingerprint(permit.call) !== permit.fingerprint;
+	if (matchesDelete) {
 		throw new Error("承認内容が一致しません。再承認が必要です。");
 	}
 	return permit.call;

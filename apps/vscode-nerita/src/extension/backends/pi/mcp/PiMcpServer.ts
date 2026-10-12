@@ -52,6 +52,7 @@ export class PiMcpServer {
 	get active(): boolean {
 		return !this.lifetime.aborted;
 	}
+	/** HTTP 接続だけを受け付け、親の取消しと承認ゲートを認証・通信の両方へ適用する。 */
 	constructor(private readonly options: PiMcpServerOptions) {
 		const { entry, sdk, signal, credentials } = options;
 		if (!entry.config || !("url" in entry.config)) {
@@ -170,11 +171,14 @@ export class PiMcpServer {
 		const { sdk, entry, features } = this.options;
 		const exposure = sdk.getMcpToolExposure(entry.config!, tool.name);
 		const name = this.allocate(`tool:${tool.name}`, tool.name);
-		if (
-			!isNonEmptyString(name) ||
-			exposure === "hidden" ||
-			!piToolPermitted(name, features)
-		) {
+
+		if (!isNonEmptyString(name)) {
+			return;
+		}
+		if (exposure === "hidden") {
+			return;
+		}
+		if (!piToolPermitted(name, features)) {
 			return;
 		}
 		return {
@@ -216,11 +220,14 @@ export class PiMcpServer {
 		const { sdk, entry, features } = this.options;
 		const exposure = entry.config!.exposure ?? "deferred";
 		const name = this.allocate(`resource:${action}`, action);
-		if (
-			!isNonEmptyString(name) ||
-			exposure === "hidden" ||
-			!piToolPermitted(name, features)
-		) {
+
+		if (!isNonEmptyString(name)) {
+			return;
+		}
+		if (exposure === "hidden") {
+			return;
+		}
+		if (!piToolPermitted(name, features)) {
 			return;
 		}
 		return {

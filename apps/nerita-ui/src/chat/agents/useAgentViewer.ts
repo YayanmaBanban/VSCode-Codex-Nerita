@@ -12,7 +12,7 @@ import {
 } from "react";
 
 import type { Bridge } from "@nerita/shared/bridge";
-import type { UiMessage } from "@nerita/shared/messages";
+import type { HostMessage, UiMessage } from "@nerita/shared/messages";
 import type {
 	AgentThreadView,
 	SubAgentSummary,
@@ -99,23 +99,29 @@ function useAgentStop(
 		if (!pending || pending.sessionId !== sessionId) {
 			return;
 		}
-		const unsubscribe = bridge.subscribe((message) => {
-			if (
-				!("requestId" in message) ||
-				message.requestId !== pending.requestId
-			) {
+		/** 停止の要求 ID を照合し、失敗を残してから待機を解除する。 */
+		const receiveStopReply: Parameters<Bridge["subscribe"]>[0] = (
+			message,
+		) => {
+			if (!("requestId" in message)) {
+				return;
+			}
+			if (message.requestId !== pending.requestId) {
 				return;
 			}
 			if (message.type === "request/failed") {
 				setError({ threadId: pending.threadId, text: message.error });
 				setPending(undefined);
-			} else if (
-				message.type === "agent/stopped" &&
-				message.threadId === pending.threadId
-			) {
+				return;
+			}
+			if (message.type !== "agent/stopped") {
+				return;
+			}
+			if (message.threadId === pending.threadId) {
 				setPending(undefined);
 			}
-		});
+		};
+		const unsubscribe = bridge.subscribe(receiveStopReply);
 		const timer = setTimeout(() => {
 			setError({
 				threadId: pending.threadId,
@@ -189,18 +195,11 @@ function createAgentViewPolling(
 				threadId: agent.threadId,
 			});
 		};
-		const unsubscribe = bridge.subscribe((message) => {
-			if (
-				!isNonEmptyString(requestId) ||
-				!("requestId" in message) ||
-				message.requestId !== requestId
-			) {
-				return;
-			}
-			if (
-				message.type !== "agent/view" &&
-				message.type !== "request/failed"
-			) {
+		/** 対象の閲覧応答だけで待機を解除し、同じ子の表示を更新して次の取得を予約する。 */
+		const receiveAgentViewReply: Parameters<Bridge["subscribe"]>[0] = (
+			message,
+		) => {
+			if (!isPendingAgentViewReply(message, requestId)) {
 				return;
 			}
 			clearTimeout(timeout);
@@ -212,7 +211,8 @@ function createAgentViewPolling(
 				setView(message.view);
 				timer = setTimeout(read, 2000);
 			}
-		});
+		};
+		const unsubscribe = bridge.subscribe(receiveAgentViewReply);
 		reload.current = read;
 		read();
 		return () => {
@@ -222,4 +222,21 @@ function createAgentViewPolling(
 			unsubscribe();
 		};
 	};
+}
+
+/** 閲覧要求の ID と応答種別を照合し、タイムアウト後や別用途の応答をポーリングへ渡さない。 */
+function isPendingAgentViewReply(
+	message: HostMessage,
+	requestId: string | undefined,
+): message is Extract<HostMessage, { type: "agent/view" | "request/failed" }> {
+	if (!isNonEmptyString(requestId)) {
+		return false;
+	}
+	if (!("requestId" in message)) {
+		return false;
+	}
+	if (message.requestId !== requestId) {
+		return false;
+	}
+	return message.type === "agent/view" || message.type === "request/failed";
 }

@@ -38,6 +38,7 @@ export class MxcTiming {
 	};
 	private started = performance.now();
 	private cpu = process.cpuUsage();
+	/** 成功・失敗の両方で処理時間を加算し、元の戻り値と例外はそのまま伝える。 */
 	async measure<T>(
 		key:
 			| "temporaryMs"
@@ -55,6 +56,7 @@ export class MxcTiming {
 			this.value[key] += performance.now() - start;
 		}
 	}
+	/** 終了時の実測を複製して通知し、直近の記録だけを保持して Host の状態と外部の参照を分ける。 */
 	finish(notify?: (value: MxcMeasurement) => void): void {
 		const cpu = process.cpuUsage(this.cpu);
 		this.value.totalMs = performance.now() - this.started;

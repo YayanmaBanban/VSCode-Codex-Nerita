@@ -36,34 +36,40 @@ export function GuardrailsFeedback({
 					{warning}
 				</p>
 			))}
-			{result && (
-				<>
-					<strong className="text-lg">判定: {result.action}</strong>
-					<ul className="my-0 pl-5">
-						{result.reasons.map((reason, i) => (
-							<li key={i} className="break-words">
-								{reason}{" "}
-								<span className="text-[12px] text-muted">
-									({result.rules[i]})
-								</span>
-							</li>
-						))}
-					</ul>
-					{result.paths.map((path) => (
-						<p
-							key={path}
-							className="m-0 font-editor text-[12px] break-all"
-						>
-							正規化後: {path}
-						</p>
-					))}
-					{result.uncertainties.map((text) => (
-						<p key={text} className="m-0 text-[13px] text-warning">
-							{text}
-						</p>
-					))}
-				</>
-			)}
+			{result && <GuardrailsDecision result={result} />}
 		</section>
+	);
+}
+
+/** 判定理由・正規化したパス・解析できない範囲をまとめ、実行の成否とは分けて表示する。 */
+function GuardrailsDecision({
+	result,
+}: {
+	result: NonNullable<Extract<GuardReply, { type: "reply" }>["result"]>;
+}) {
+	return (
+		<>
+			<strong className="text-lg">判定: {result.action}</strong>
+			<ul className="my-0 pl-5">
+				{result.reasons.map((reason, i) => (
+					<li key={i} className="break-words">
+						{reason}{" "}
+						<span className="text-[12px] text-muted">
+							({result.rules[i]})
+						</span>
+					</li>
+				))}
+			</ul>
+			{result.paths.map((path) => (
+				<p key={path} className="m-0 font-editor text-[12px] break-all">
+					正規化後: {path}
+				</p>
+			))}
+			{result.uncertainties.map((text) => (
+				<p key={text} className="m-0 text-[13px] text-warning">
+					{text}
+				</p>
+			))}
+		</>
 	);
 }

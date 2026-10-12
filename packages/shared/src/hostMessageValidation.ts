@@ -38,142 +38,180 @@ const hostMessageValidators = new Map<
 		"ui/backendState": (value) => {
 			return isBackendId(value.backend);
 		},
-		"agent/view": (value) => {
-			const view = value.view;
-			if (!(
-				isId(value.requestId) &&
-				isRecord(view) &&
-				isId(view.threadId)
-			)) {
-				return false;
-			}
-			return (
-				(view.parentThreadId === null || isId(view.parentThreadId)) &&
-				["messages", "tools", "agents"].every((key) =>
-					validStateField(key, view[key]),
-				)
-			);
-		},
+		"agent/view": validAgentViewReply,
 		"agent/stopped": (value) =>
 			isId(value.requestId) && isId(value.threadId),
-		"session/references": (value) => {
-			if (!(
-				isId(value.requestId) &&
-				Array.isArray(value.entries) &&
-				value.entries.length <= 50
-			)) {
-				return false;
-			}
-			if (!(
-				value.entries.every(isSessionReference) &&
-				(value.nextCursor === null || isPathString(value.nextCursor))
-			)) {
-				return false;
-			}
-			return value.error === undefined || typeof value.error === "string";
-		},
-		"workspace/symbols": (value) => {
-			if (!(
-				isId(value.requestId) &&
-				Array.isArray(value.entries) &&
-				value.entries.length <= 100
-			)) {
-				return false;
-			}
-			if (!(
-				value.entries.every(
-					(entry: unknown) =>
-						isWorkspacePath(entry) && entry.symbol !== undefined,
-				) && typeof value.truncated === "boolean"
-			)) {
-				return false;
-			}
-			return value.error === undefined || typeof value.error === "string";
-		},
+		"session/references": validSessionReferencesReply,
+		"workspace/symbols": validWorkspaceSymbolsReply,
 		"workspace/paths": (value) => {
-			if (!(
-				isId(value.requestId) &&
-				Array.isArray(value.entries) &&
-				value.entries.every(isWorkspacePath)
-			)) {
+			if (!isId(value.requestId)) {
+				return false;
+			}
+			if (!Array.isArray(value.entries)) {
+				return false;
+			}
+			if (!value.entries.every(isWorkspacePath)) {
 				return false;
 			}
 			return value.error === undefined || typeof value.error === "string";
 		},
 		"workspace/resolvedPath": (value) => {
-			return (
+			const matchesIsId5 =
 				isId(value.requestId) &&
-				(value.entry === null || isWorkspacePath(value.entry))
-			);
+				(value.entry === null || isWorkspacePath(value.entry));
+			return matchesIsId5;
 		},
 		"prompt/accepted": (value) => {
-			return (
+			const matchesIsId6 =
 				isId(value.requestId) &&
-				(value.mode === "start" || value.mode === "steer")
-			);
+				(value.mode === "start" || value.mode === "steer");
+			return matchesIsId6;
 		},
 		"ui/sidebarState": (value) => {
 			return isSidebarLocation(value.location);
 		},
-		"ui/viewState": (value) => {
-			if (!(
-				typeof value.restoreScroll === "boolean" &&
-				typeof value.editor === "boolean" &&
-				typeof value.draft === "string"
-			)) {
-				return false;
-			}
-			if (!(
-				value.draft.length <= 100_000 &&
-				validDraftParts(value.draft, value.draftParts) &&
-				typeof value.scrollTop === "number"
-			)) {
-				return false;
-			}
-			return (
-				Number.isFinite(value.scrollTop) &&
-				value.scrollTop >= 0 &&
-				validConversationScrollAnchor(value.scrollAnchor)
-			);
-		},
+		"ui/viewState": validViewStateReply,
 		"state/snapshot": (value) => {
 			return isState(value.state);
 		},
 		"request/failed": (value) => {
 			return isId(value.requestId) && typeof value.error === "string";
 		},
-		"state/patch": (value) => {
-			if (!(
-				value.type === "state/patch" &&
-				isRevision(value.revision) &&
-				validBaseRevision(value.baseRevision, value.revision)
-			)) {
-				return false;
-			}
-			if (!(
-				(value.toolUpdates === undefined ||
-					validStateField("tools", value.toolUpdates)) &&
-				isRecord(value.patch)
-			)) {
-				return false;
-			}
-			return (
-				!(
-					value.toolUpdates !== undefined &&
-					value.patch.tools !== undefined
-				) &&
-				Object.entries(value.patch).every(([key, item]) =>
-					validStateField(key, item),
-				)
-			);
-		},
+		"state/patch": validStatePatchReply,
 	} satisfies Record<string, (value: Record<string, unknown>) => boolean>),
 );
 
 /** 集約通知は適用元から最新までの前向きな範囲だけを許可する。 */
 function validBaseRevision(base: unknown, revision: unknown): boolean {
-	return (
+	const matchesBase =
 		base === undefined ||
-		(isRevision(base) && Number(base) < Number(revision))
+		(isRevision(base) && Number(base) < Number(revision));
+	return matchesBase;
+}
+
+/** 子の識別子と各会話フィールドを検証し、未検証の閲覧結果を UI へ渡さない。 */
+function validAgentViewReply(value: Record<string, unknown>): boolean {
+	const view = value.view;
+
+	if (!isId(value.requestId)) {
+		return false;
+	}
+	if (!isRecord(view)) {
+		return false;
+	}
+	if (!isId(view.threadId)) {
+		return false;
+	}
+	if (view.parentThreadId !== null && !isId(view.parentThreadId)) {
+		return false;
+	}
+	return ["messages", "tools", "agents"].every((key) =>
+		validStateField(key, view[key]),
 	);
+}
+
+/** ページ件数・参照・カーソルを検証し、不正な一覧を参照候補として公開しない。 */
+function validSessionReferencesReply(value: Record<string, unknown>): boolean {
+	if (!isId(value.requestId)) {
+		return false;
+	}
+	if (!Array.isArray(value.entries)) {
+		return false;
+	}
+	if (!(value.entries.length <= 50)) {
+		return false;
+	}
+
+	if (!value.entries.every(isSessionReference)) {
+		return false;
+	}
+	if (!(value.nextCursor === null || isPathString(value.nextCursor))) {
+		return false;
+	}
+	return value.error === undefined || typeof value.error === "string";
+}
+
+/** 件数とシンボル付きパスを検証し、通常パスをシンボル候補へ混ぜない。 */
+function validWorkspaceSymbolsReply(value: Record<string, unknown>): boolean {
+	if (!isId(value.requestId)) {
+		return false;
+	}
+	if (!Array.isArray(value.entries)) {
+		return false;
+	}
+	if (!(value.entries.length <= 100)) {
+		return false;
+	}
+
+	if (!value.entries.every(isWorkspaceSymbol)) {
+		return false;
+	}
+	if (!(typeof value.truncated === "boolean")) {
+		return false;
+	}
+	return value.error === undefined || typeof value.error === "string";
+}
+
+/** 保存した編集と表示位置を復元前に検証し、本文と断片の不一致を拒否する。 */
+function validViewStateReply(value: Record<string, unknown>): boolean {
+	if (!(typeof value.restoreScroll === "boolean")) {
+		return false;
+	}
+	if (!(typeof value.editor === "boolean")) {
+		return false;
+	}
+	if (!(typeof value.draft === "string")) {
+		return false;
+	}
+
+	if (!(value.draft.length <= 100_000)) {
+		return false;
+	}
+	if (!validDraftParts(value.draft, value.draftParts)) {
+		return false;
+	}
+	if (!(typeof value.scrollTop === "number")) {
+		return false;
+	}
+	return (
+		Number.isFinite(value.scrollTop) &&
+		value.scrollTop >= 0 &&
+		validConversationScrollAnchor(value.scrollAnchor)
+	);
+}
+
+/** 順序番号と差分を検証し、同じ通知でツール配列の置換と差分更新を重ねない。 */
+function validStatePatchReply(value: Record<string, unknown>): boolean {
+	if (!(value.type === "state/patch")) {
+		return false;
+	}
+	if (!isRevision(value.revision)) {
+		return false;
+	}
+	if (!validBaseRevision(value.baseRevision, value.revision)) {
+		return false;
+	}
+
+	const validToolUpdates =
+		value.toolUpdates === undefined ||
+		validStateField("tools", value.toolUpdates);
+	if (!validToolUpdates) {
+		return false;
+	}
+	if (!isRecord(value.patch)) {
+		return false;
+	}
+	const overlappingToolUpdates =
+		value.toolUpdates !== undefined && value.patch.tools !== undefined;
+	if (overlappingToolUpdates) {
+		return false;
+	}
+	return Object.entries(value.patch).every(([key, item]) =>
+		validStateField(key, item),
+	);
+}
+
+/** 通常パスではなくシンボルの座標を持つ候補だけをシンボル一覧へ渡す。 */
+function isWorkspaceSymbol(entry: unknown): boolean {
+	return isWorkspacePath(entry) && entry.symbol !== undefined;
 }

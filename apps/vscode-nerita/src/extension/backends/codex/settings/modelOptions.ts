@@ -57,9 +57,9 @@ export function modelOptions(
 			options: codexReviewerChoices,
 		},
 	];
-	if (
-		selected?.serviceTiers.some((item) => item.id === "priority") === true
-	) {
+	const matchesSome =
+		selected?.serviceTiers.some((item) => item.id === "priority") === true;
+	if (matchesSome) {
 		options.push({
 			id: "fast-mode",
 			name: "Fast mode",

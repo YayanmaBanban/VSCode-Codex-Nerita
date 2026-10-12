@@ -47,11 +47,10 @@ export function createPiSandboxPowerShellTool(
 					"Shell実行ファイルの参照先が変更されました。Piへ再接続してください。",
 				);
 			}
-			if (
-				paths.policy.writableRoots.some((root) =>
-					containsPath(root, executable),
-				)
-			) {
+			const matchesSome = paths.policy.writableRoots.some((root) =>
+				containsPath(root, executable),
+			);
+			if (matchesSome) {
 				throw new Error(
 					"workspace内のPowerShell実行ファイルは使用できません。",
 				);

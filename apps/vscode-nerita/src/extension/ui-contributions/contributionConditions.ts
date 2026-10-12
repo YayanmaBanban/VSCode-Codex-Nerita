@@ -17,15 +17,17 @@ export function matchesContribution(
 	if (!condition) {
 		return true;
 	}
-	if (!(
+	const matchesBackend = !(
 		condition.backend === undefined || condition.backend === context.backend
-	)) {
+	);
+	if (matchesBackend) {
 		return false;
 	}
-	if (!(
+	const matchesProvider = !(
 		condition.provider === undefined ||
 		condition.provider === context.provider
-	)) {
+	);
+	if (matchesProvider) {
 		return false;
 	}
 	return (

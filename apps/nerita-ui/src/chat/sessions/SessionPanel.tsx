@@ -252,11 +252,11 @@ function sessionActionsDisabled(state: ChatState) {
 		state.connection !== "ready" ||
 		state.sessionPending ||
 		state.configPending;
-	if (
+	const matchesSessionPendingCheck =
 		sessionPendingCheck ||
 		state.attachmentPending ||
-		state.run === "running"
-	) {
+		state.run === "running";
+	if (matchesSessionPendingCheck) {
 		return true;
 	}
 	return state.run === "cancelling" || state.asyncTasks.some(taskActive);

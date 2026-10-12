@@ -20,17 +20,20 @@ function collectEnabledSkills(entry: unknown, skills: SkillSummary[]) {
 		throw new Error("Invalid skills entry");
 	}
 	for (const item of entry.skills) {
-		if (
-			!isRecord(item) ||
-			typeof item.enabled !== "boolean" ||
-			typeof item.name !== "string"
-		) {
+		if (!isRecord(item)) {
 			throw new Error("Invalid skill");
 		}
-		if (
-			typeof item.description !== "string" ||
-			typeof item.path !== "string"
-		) {
+		if (typeof item.enabled !== "boolean") {
+			throw new Error("Invalid skill");
+		}
+		if (typeof item.name !== "string") {
+			throw new Error("Invalid skill");
+		}
+
+		if (typeof item.description !== "string") {
+			throw new Error("Invalid skill");
+		}
+		if (typeof item.path !== "string") {
 			throw new Error("Invalid skill");
 		}
 		if (item.enabled) {

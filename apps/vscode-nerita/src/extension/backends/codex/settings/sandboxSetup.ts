@@ -22,46 +22,46 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 	}
 	const lifetime = new AbortController();
 	let running = false;
+	/** セットアップの重複を拒否し、信頼済みローカルルートの作業だけを開始する。 */
+	const setupWindowsSandbox = async () => {
+		if (running || !canSetupCodexSandbox()) {
+			return;
+		}
+		running = true;
+		try {
+			const cwd = requireLocalWorkspace(
+				vscode.workspace.workspaceFolders,
+				vscode.workspace.isTrusted,
+				vscode.env.remoteName,
+			);
+			const mode = await resolveWindowsSandbox(
+				context.extensionUri.fsPath,
+				cwd,
+				lifetime.signal,
+			);
+			await vscode.window.withProgress(
+				{
+					location: vscode.ProgressLocation.Notification,
+					title: `Windows Sandbox (${mode}) セットアップ`,
+				},
+				createSandboxSetupTask(lifetime, context, cwd, mode),
+			);
+			void vscode.window.showInformationMessage(
+				"Windows Sandbox のセットアップが完了しました。Codexへ再接続してください。",
+			);
+		} catch (error) {
+			void vscode.window.showErrorMessage(
+				error instanceof Error ? error.message : errorText(error),
+			);
+		} finally {
+			running = false;
+		}
+	};
 	context.subscriptions.push(
 		{ dispose: () => lifetime.abort() },
 		vscode.commands.registerCommand(
 			"nerita.codex.setupWindowsSandbox",
-			async () => {
-				if (running || !canSetupCodexSandbox()) {
-					return;
-				}
-				running = true;
-				try {
-					const cwd = requireLocalWorkspace(
-						vscode.workspace.workspaceFolders,
-						vscode.workspace.isTrusted,
-						vscode.env.remoteName,
-					);
-					const mode = await resolveWindowsSandbox(
-						context.extensionUri.fsPath,
-						cwd,
-						lifetime.signal,
-					);
-					await vscode.window.withProgress(
-						{
-							location: vscode.ProgressLocation.Notification,
-							title: `Windows Sandbox (${mode}) セットアップ`,
-						},
-						createSandboxSetupTask(lifetime, context, cwd, mode),
-					);
-					void vscode.window.showInformationMessage(
-						"Windows Sandbox のセットアップが完了しました。Codexへ再接続してください。",
-					);
-				} catch (error) {
-					void vscode.window.showErrorMessage(
-						error instanceof Error
-							? error.message
-							: errorText(error),
-					);
-				} finally {
-					running = false;
-				}
-			},
+			setupWindowsSandbox,
 		),
 	);
 }
@@ -120,7 +120,10 @@ function createSandboxSetupTask(
 					),
 				},
 			});
-			if (!(await client.setupWindowsSandbox(cwd, mode)).started) {
+			const matchesStarted = !(
+				await client.setupWindowsSandbox(cwd, mode)
+			).started;
+			if (matchesStarted) {
 				throw new Error("Sandboxセットアップを開始できませんでした。");
 			}
 			await finished;

@@ -18,58 +18,63 @@ export class CopiedCode implements vscode.Disposable {
 	private registration: vscode.Disposable;
 	/** 標準コピーを置き換えず、VS Code のコピー通知に参加する。 */
 	constructor() {
+		/** ローカルの一つの非空選択だけを記録し、本文は保持せず貼り付け時の照合用ハッシュを付ける。 */
+		const captureCopiedCode: NonNullable<
+			vscode.DocumentPasteEditProvider["prepareDocumentPaste"]
+		> = (document, ranges, dataTransfer, token) => {
+			this.copied = undefined;
+			const range = ranges[0];
+
+			if (token.isCancellationRequested) {
+				return;
+			}
+			if (ranges.length !== 1) {
+				return;
+			}
+			if (!range) {
+				return;
+			}
+
+			if (range.isEmpty) {
+				return;
+			}
+			if (document.uri.scheme !== "file") {
+				return;
+			}
+			if (isNonEmptyString(vscode.env.remoteName)) {
+				return;
+			}
+			const text = document.getText(range);
+			if (text.trim() === "" || text.length > 100_000) {
+				return;
+			}
+			const entry: WorkspacePath = {
+				uri: document.uri.toString(),
+				path: document.uri.fsPath,
+				name: win32.basename(document.uri.fsPath),
+				kind: "file",
+				range: {
+					start: {
+						line: range.start.line,
+						character: range.start.character,
+					},
+					end: {
+						line: range.end.line,
+						character: range.end.character,
+					},
+				},
+			};
+			this.copied = { entry, hash: fingerprint(text) };
+			// このメタデータは VS Code 内だけで有効。Webview では Host の記録を照合する。
+			dataTransfer.set(
+				"application/vnd.nerita.code-reference",
+				new vscode.DataTransferItem(entry.uri),
+			);
+		};
 		this.registration = vscode.languages.registerDocumentPasteEditProvider(
 			"*",
 			{
-				prepareDocumentPaste: (
-					document,
-					ranges,
-					dataTransfer,
-					token,
-				) => {
-					this.copied = undefined;
-					const range = ranges[0];
-					if (
-						token.isCancellationRequested ||
-						ranges.length !== 1 ||
-						!range
-					) {
-						return;
-					}
-					if (
-						range.isEmpty ||
-						document.uri.scheme !== "file" ||
-						isNonEmptyString(vscode.env.remoteName)
-					) {
-						return;
-					}
-					const text = document.getText(range);
-					if (text.trim() === "" || text.length > 100_000) {
-						return;
-					}
-					const entry: WorkspacePath = {
-						uri: document.uri.toString(),
-						path: document.uri.fsPath,
-						name: win32.basename(document.uri.fsPath),
-						kind: "file",
-						range: {
-							start: {
-								line: range.start.line,
-								character: range.start.character,
-							},
-							end: {
-								line: range.end.line,
-								character: range.end.character,
-							},
-						},
-					};
-					this.copied = { entry, hash: fingerprint(text) };
-					// このメタデータは VS Code 内だけで有効。Webview では Host の記録を照合する。
-					dataTransfer.set(
-						"application/vnd.nerita.code-reference",
-						new vscode.DataTransferItem(entry.uri),
-					);
-				},
+				prepareDocumentPaste: captureCopiedCode,
 			},
 			{
 				providedPasteEditKinds: [],
@@ -96,11 +101,14 @@ export class CopiedCode implements vscode.Disposable {
 				end.line,
 				end.character,
 			);
-			if (!(
-				this.copied === copied &&
-				document.validateRange(range).isEqual(range) &&
-				fingerprint(document.getText(range)) === copied.hash
-			)) {
+
+			if (!(this.copied === copied)) {
+				return null;
+			}
+			if (!document.validateRange(range).isEqual(range)) {
+				return null;
+			}
+			if (!(fingerprint(document.getText(range)) === copied.hash)) {
 				return null;
 			}
 			return copied.entry;

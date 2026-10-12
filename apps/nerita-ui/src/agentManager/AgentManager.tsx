@@ -133,12 +133,13 @@ function useManagerNavigation(editor: ReturnType<typeof useAgentManager>) {
 				change.backend === "codex"
 					? `.codex/agents/${change.filename}.toml`
 					: `pi:${change.edit.definition?.name}`;
-		} else if (
-			change.type === "agent" &&
-			change.agentId.startsWith("pi:") &&
-			change.edit.definition
-		) {
-			savedSelection.current = `pi:${change.edit.definition.name}`;
+		} else if (change.type === "agent") {
+			const definition = change.edit.definition;
+			const renamedPiAgent =
+				change.agentId.startsWith("pi:") && definition !== undefined;
+			if (renamedPiAgent) {
+				savedSelection.current = `pi:${definition.name}`;
+			}
 		}
 		editor.save(change);
 	};
@@ -240,10 +241,10 @@ function loadedSelection(
 	state: NonNullable<ReturnType<typeof useAgentManager>["state"]>,
 	selected: string,
 ) {
-	if (
+	const matchesSelected =
 		selected === "new" ||
-		(selected === "defaults" && state.activeBackend === "pi")
-	) {
+		(selected === "defaults" && state.activeBackend === "pi");
+	if (matchesSelected) {
 		return selected;
 	}
 	const agents = state.agents.filter(

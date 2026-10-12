@@ -30,11 +30,12 @@ export function assessToolCall(call: ToolCall): "allow" | "ask" {
 	if ((call.command || call.hostShell === true) && !call.policy.shell) {
 		throw new Error("このroleではShell実行が禁止されています。");
 	}
-	if (!(
+	const matchesCommand = !(
 		!call.command &&
 		!(call.hostShell === true) &&
 		["read", "ls"].includes(call.tool)
-	)) {
+	);
+	if (matchesCommand) {
 		return "ask";
 	}
 	return "allow";

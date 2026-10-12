@@ -16,22 +16,21 @@ export function fileIcon(name: string) {
 	if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"].includes(ext)) {
 		return FileImage;
 	}
-	if (
-		[
-			"ts",
-			"tsx",
-			"js",
-			"jsx",
-			"json",
-			"py",
-			"rs",
-			"go",
-			"html",
-			"css",
-			"yml",
-			"yaml",
-		].includes(ext)
-	) {
+	const matchesIncludes = [
+		"ts",
+		"tsx",
+		"js",
+		"jsx",
+		"json",
+		"py",
+		"rs",
+		"go",
+		"html",
+		"css",
+		"yml",
+		"yaml",
+	].includes(ext);
+	if (matchesIncludes) {
 		return FileCode;
 	}
 	if (["csv", "xlsx", "xls", "ods"].includes(ext)) {

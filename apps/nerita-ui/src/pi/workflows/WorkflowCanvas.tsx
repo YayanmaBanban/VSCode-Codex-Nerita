@@ -32,10 +32,10 @@ function nodesFor(workflow: Workflow): Node[] {
 	const levels = new Map<string, number>();
 	for (let pass = 0; pass < workflow.steps.length; pass++) {
 		for (const step of workflow.steps) {
-			if (
+			const matchesHas =
 				!levels.has(step.id) &&
-				step.depends_on.every((id) => levels.has(id))
-			) {
+				step.depends_on.every((id) => levels.has(id));
+			if (matchesHas) {
 				levels.set(
 					step.id,
 					Math.max(

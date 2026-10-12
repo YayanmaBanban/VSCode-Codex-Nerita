@@ -37,30 +37,30 @@ export function usePromptSubmission(
 	useLayoutEffect(() => {
 		latest.current = clearDraft;
 	}, [clearDraft]);
-	useEffect(
-		() =>
-			bridge.subscribe((message) => {
-				if (
-					(message.type !== "prompt/accepted" &&
-						message.type !== "request/failed") ||
-					message.requestId !== pending.current
-				) {
-					return;
-				}
-				pending.current = null;
-				setLocked(false);
-				if (message.type === "prompt/accepted") {
-					latest.current();
-					setNotice(null);
-					return;
-				}
-				setNotice({
-					id: message.requestId,
-					text: message.error,
-				});
-			}),
-		[bridge],
-	);
+	/** 保留中の送信要求だけを解除し、受付と失敗を区別して下書きの更新を通知する。 */
+	const receiveSubmissionReply: Parameters<
+		NonNullable<typeof bridge>["subscribe"]
+	>[0] = (message) => {
+		const matchesType =
+			(message.type !== "prompt/accepted" &&
+				message.type !== "request/failed") ||
+			message.requestId !== pending.current;
+		if (matchesType) {
+			return;
+		}
+		pending.current = null;
+		setLocked(false);
+		if (message.type === "prompt/accepted") {
+			latest.current();
+			setNotice(null);
+			return;
+		}
+		setNotice({
+			id: message.requestId,
+			text: message.error,
+		});
+	};
+	useEffect(() => bridge.subscribe(receiveSubmissionReply), [bridge]);
 	useEffect(() => {
 		if (state.connection !== "ready" && isNonEmptyString(pending.current)) {
 			setNotice({
@@ -109,11 +109,13 @@ function createPromptSubmitter(
 	send: (message: UiMessage) => void,
 ) {
 	return () => {
-		if (
-			!available ||
-			isNonEmptyString(pending.current) ||
-			draft.trim() === ""
-		) {
+		if (!available) {
+			return;
+		}
+		if (isNonEmptyString(pending.current)) {
+			return;
+		}
+		if (draft.trim() === "") {
 			return;
 		}
 		if (!isNonEmptyString(state.sessionId)) {

@@ -32,11 +32,17 @@ function $selectedPlainText(selection: RangeSelection): string | null {
 		: [selection.anchor, selection.focus];
 	const first = start.getNode().getTopLevelElement();
 	const last = end.getNode().getTopLevelElement();
-	if (
-		!$isParagraphNode(first) ||
-		!$isParagraphNode(last) ||
-		selection.getNodes().some((node) => node instanceof PathReferenceNode)
-	) {
+
+	if (!$isParagraphNode(first)) {
+		return null;
+	}
+	if (!$isParagraphNode(last)) {
+		return null;
+	}
+	const containsPathReference = selection
+		.getNodes()
+		.some((node) => node instanceof PathReferenceNode);
+	if (containsPathReference) {
 		return null;
 	}
 	const siblings = first.getParentOrThrow().getChildren();
@@ -91,6 +97,23 @@ export function CodeBlockMenuPlugin({ bridge }: CodeBlockMenuPluginProps) {
 			}
 			pending = prepareCodeBlockSelection(editor, pending);
 		};
+		/** 保留した選択 ID の応答だけを受け取り、編集や IME の状態を再確認して置換する。 */
+		const receiveCodeBlockSelection: Parameters<
+			NonNullable<typeof bridge>["subscribe"]
+		>[0] = (message) => {
+			if (message.type !== "ui/codeBlock") {
+				return;
+			}
+			if (message.requestId !== pending?.id) {
+				return;
+			}
+			const saved = pending.selection;
+			clear();
+			if (!editor.isEditable() || editor.isComposing()) {
+				return;
+			}
+			insertSelectedCodeBlock(editor, saved);
+		};
 		return mergeRegister(
 			editor.registerRootListener((root, previous) => {
 				previous?.removeEventListener("contextmenu", prepare);
@@ -100,28 +123,15 @@ export function CodeBlockMenuPlugin({ bridge }: CodeBlockMenuPluginProps) {
 			}),
 			editor.registerUpdateListener(({ dirtyElements, dirtyLeaves }) => {
 				// 本文変更や下書き復元後に、古いノード位置で置換しない。
-				if (
+				const matchesIsNonZeroNumber =
 					isNonZeroNumber(dirtyElements.size) ||
-					isNonZeroNumber(dirtyLeaves.size)
-				) {
+					isNonZeroNumber(dirtyLeaves.size);
+				if (matchesIsNonZeroNumber) {
 					clear();
 				}
 			}),
 			editor.registerEditableListener(clear),
-			bridge.subscribe((message) => {
-				if (
-					message.type !== "ui/codeBlock" ||
-					message.requestId !== pending?.id
-				) {
-					return;
-				}
-				const saved = pending.selection;
-				clear();
-				if (!editor.isEditable() || editor.isComposing()) {
-					return;
-				}
-				insertSelectedCodeBlock(editor, saved);
-			}),
+			bridge.subscribe(receiveCodeBlockSelection),
 		);
 	}, [bridge, editor]);
 	return null;
@@ -145,14 +155,18 @@ function prepareCodeBlockSelection(
 	editor: LexicalEditor,
 	pending: undefined | { id: string; selection: RangeSelection },
 ) {
-	editor.getEditorState().read(() => {
+	/** 選択と断片数を Lexical の読取り内で確認し、その選択だけを Host の操作へ結び付ける。 */
+	const captureCodeBlockSelection = () => {
 		const selection = $getSelection();
 		const root = editor.getRootElement();
-		if (
-			!root ||
-			!$isRangeSelection(selection) ||
-			!isNonEmptyString($selectedPlainText(selection)?.trim())
-		) {
+
+		if (!root) {
+			return;
+		}
+		if (!$isRangeSelection(selection)) {
+			return;
+		}
+		if (!isNonEmptyString($selectedPlainText(selection)?.trim())) {
 			return;
 		}
 		if ($readParts().length >= 201) {
@@ -167,6 +181,7 @@ function prepareCodeBlockSelection(
 			composerCanCodeBlock: true,
 			composerSelectionId: pending.id,
 		});
-	});
+	};
+	editor.getEditorState().read(captureCodeBlockSelection);
 	return pending;
 }

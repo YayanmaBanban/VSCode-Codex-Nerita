@@ -29,11 +29,17 @@ export function jsonDigest(value: unknown): string {
 
 /** ENOENT だけを不存在として扱い、権限不足や破損を初期値へ変換しない。 */
 export function missingFile(error: unknown): boolean {
-	return error instanceof Error && "code" in error && error.code === "ENOENT";
+	return hasFileErrorCode(error, "ENOENT");
+}
+
+/** ファイル操作の例外が指定したシステムエラーか確認する。 */
+export function hasFileErrorCode(error: unknown, code: string): boolean {
+	return error instanceof Error && "code" in error && error.code === code;
 }
 
 /** 信頼とルートの照合は各操作の前後に行い、初期化中の取消しにも追随する。 */
 export class SafeDlcFiles {
+	/** アクセス対象を指定ルートへ限定し、各操作に利用側の信頼確認を適用する。 */
 	constructor(
 		readonly root: string,
 		private readonly check: () => Promise<void>,
@@ -48,10 +54,14 @@ export class SafeDlcFiles {
 			target = resolve(target, part);
 			try {
 				const stat = await lstat(target);
-				if (
-					stat.isSymbolicLink() ||
-					!containsPath(this.root, await realpath(target))
-				) {
+
+				if (stat.isSymbolicLink()) {
+					throw new Error(
+						`DLC のリンクを経由したアクセスはできません: ${relativePath}`,
+					);
+				}
+				const resolvedTarget = await realpath(target);
+				if (!containsPath(this.root, resolvedTarget)) {
 					throw new Error(
 						`DLC のリンクを経由したアクセスはできません: ${relativePath}`,
 					);
@@ -75,14 +85,11 @@ export class SafeDlcFiles {
 			try {
 				await mkdir(target);
 			} catch (error) {
-				if (!(
-					error instanceof Error &&
-					"code" in error &&
-					error.code === "EEXIST"
-				)) {
+				if (!hasFileErrorCode(error, "EEXIST")) {
 					throw error;
 				}
-				if (!(await lstat(target)).isDirectory()) {
+				const matchesIsDirectory = !(await lstat(target)).isDirectory();
+				if (matchesIsDirectory) {
 					throw new Error(
 						`DLC のディレクトリを作成できません: ${name}`,
 						{ cause: error },
@@ -146,11 +153,11 @@ export class SafeDlcFiles {
 			} finally {
 				await handle.close();
 			}
-			if (
+			const matchesStringify =
 				JSON.stringify(
 					JSON.parse(await readFile(temporaryPath, "utf8")),
-				) !== JSON.stringify(value)
-			) {
+				) !== JSON.stringify(value);
+			if (matchesStringify) {
 				throw new Error("DLC の一時ファイルを検証できません。");
 			}
 			await this.path(relativePath);
@@ -181,11 +188,11 @@ function assertReadable(
 	}
 }
 function assertUnchanged(before: Stats, after: Stats): void {
-	if (
+	const matchesDev =
 		after.dev !== before.dev ||
 		after.ino !== before.ino ||
-		after.size !== before.size
-	) {
+		after.size !== before.size;
+	if (matchesDev) {
 		throw new Error("DLC の読み取り中にファイルが変更されました。");
 	}
 	if (after.mtimeMs !== before.mtimeMs) {

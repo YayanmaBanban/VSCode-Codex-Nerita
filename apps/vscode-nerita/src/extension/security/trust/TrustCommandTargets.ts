@@ -33,11 +33,11 @@ function checkedCommand(command: unknown): string {
 	if (typeof command !== "string") {
 		throw new Error("実行対象のコマンド本文を解決できません。");
 	}
-	if (
+	const matchesTest =
 		/\b(?:invoke-expression|iex|encodedcommand|frombase64string)\b|(?:&|\.)\s*[$(]/i.test(
 			command,
-		)
-	) {
+		);
+	if (matchesTest) {
 		throw new Error("動的なコード実行のTrustを解決できません。");
 	}
 	if (/\bgit\s+(?:[^\s;|]+\s+)*clone\b/i.test(command)) {

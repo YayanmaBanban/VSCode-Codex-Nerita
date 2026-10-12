@@ -43,6 +43,7 @@ type HistoryAction =
 /** アーカイブと恒久削除を区別し、成功後に一覧と現在の会話を更新する。 */
 export class CodexHistory {
 	private operation: HistoryOperation | undefined;
+	/** 履歴操作をセッションと同じ一覧に結び付け、復元結果と表示一覧を同期する。 */
 	constructor(
 		private readonly session: HistorySession,
 		private readonly catalog: CodexCatalog,
@@ -76,13 +77,13 @@ export class CodexHistory {
 			operation && this.current(operation) && restoring !== undefined;
 		const params = message.params;
 		const restoreParams = currentRestore === true && isRecord(params);
-		if (
+		const matchesRestoreParams =
 			restoreParams &&
 			params.threadId === restoring.id &&
 			["turn/started", "thread/archived", "thread/deleted"].includes(
 				message.method,
-			)
-		) {
+			);
+		if (matchesRestoreParams) {
 			restoring.changed = true;
 		}
 	}
@@ -267,11 +268,11 @@ export class CodexHistory {
 		if (!current()) {
 			return;
 		}
-		if (
+		const matchesId =
 			thread.id !== threadId ||
 			!sameCwd(thread.cwd, cwd) ||
-			thread.active
-		) {
+			thread.active;
+		if (matchesId) {
 			throw new Error("Thread unavailable");
 		}
 		if (action === "rename") {
@@ -318,11 +319,11 @@ function validateRestoredThread(
 	action: string,
 	threadId: string,
 ) {
-	if (
+	const matchesSameCwd =
 		!sameCwd(result.cwd, cwd) ||
 		!sameCwd(result.thread.cwd, cwd) ||
-		result.thread.active
-	) {
+		result.thread.active;
+	if (matchesSameCwd) {
 		throw new Error("Unexpected restored thread");
 	}
 	if (action === "load" && result.thread.id !== threadId) {
@@ -336,17 +337,17 @@ function validateHistoryAction(
 	action: string,
 	name: string | undefined,
 ) {
-	if (
+	const matchesValue =
 		row.archived === true
 			? !["unarchive", "delete"].includes(action)
-			: action === "unarchive"
-	) {
+			: action === "unarchive";
+	if (matchesValue) {
 		throw new Error("Invalid archive action");
 	}
-	if (
+	const matchesAction =
 		action === "rename" &&
-		(!isNonEmptyString(name?.trim()) || name.trim().length > 200)
-	) {
+		(!isNonEmptyString(name?.trim()) || name.trim().length > 200);
+	if (matchesAction) {
 		throw new Error("Invalid name");
 	}
 }

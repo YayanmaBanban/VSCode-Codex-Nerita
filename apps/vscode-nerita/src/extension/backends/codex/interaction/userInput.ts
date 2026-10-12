@@ -42,11 +42,7 @@ async function questionAnswer(
 	signal: AbortSignal,
 ) {
 	let answer: string | undefined;
-	if (
-		Array.isArray(question.options) &&
-		question.options.length > 0 &&
-		!Boolean(question.isSecret)
-	) {
+	if (hasSelectableOptions(question)) {
 		const labels = question.options.map((option: unknown) => {
 			if (!isRecord(option)) {
 				throw new AppServerRpcError(-32602, "Invalid option");
@@ -64,4 +60,14 @@ async function questionAnswer(
 		answer = await ui.input(title, question.isSecret === true, signal);
 	}
 	return answer;
+}
+
+/** 秘密入力や空の選択肢は自由入力へ回し、選択処理に渡す配列だけを型保証する。 */
+function hasSelectableOptions(
+	question: Record<string, unknown>,
+): question is Record<string, unknown> & { options: unknown[] } {
+	if (!Array.isArray(question.options)) {
+		return false;
+	}
+	return question.options.length > 0 && !Boolean(question.isSecret);
 }

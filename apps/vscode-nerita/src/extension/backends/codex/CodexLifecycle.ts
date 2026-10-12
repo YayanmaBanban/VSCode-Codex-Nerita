@@ -101,11 +101,11 @@ export class CodexLifecycle {
 	/** 解除の成功後に旧アカウントの表示と接続を破棄し、認証状態を読み直す。 */
 	async logout(): Promise<void> {
 		const client = this.client;
-		if (
+		const matchesClient =
 			!client ||
 			this.session.snapshot().connection !== "ready" ||
-			this.session.busy()
-		) {
+			this.session.busy();
+		if (matchesClient) {
 			throw new Error("Logout unavailable");
 		}
 		if (this.session.snapshot().sessionPending) {
@@ -151,10 +151,10 @@ export class CodexLifecycle {
 			const opening = this.factory(
 				{
 					notification: (message) => {
-						if (
+						const matchesEpoch =
 							epoch === this.epoch &&
-							!this.auth.notification(message)
-						) {
+							!this.auth.notification(message);
+						if (matchesEpoch) {
 							this.session.notification(message);
 						}
 					},
@@ -274,11 +274,12 @@ export class CodexLifecycle {
 		epoch: number,
 	): Promise<void> {
 		try {
-			if (
-				!isNonEmptyString(result.thread.id) ||
-				trustKey(await realpath(result.cwd)) !==
-					trustKey(await realpath(cwd))
-			) {
+			if (!isNonEmptyString(result.thread.id)) {
+				throw new Error("Codex の実行先が要求先と一致しません。");
+			}
+			const connectedRoot = trustKey(await realpath(result.cwd));
+			const requestedRoot = trustKey(await realpath(cwd));
+			if (connectedRoot !== requestedRoot) {
 				throw new Error("Codex の実行先が要求先と一致しません。");
 			}
 		} catch (error) {

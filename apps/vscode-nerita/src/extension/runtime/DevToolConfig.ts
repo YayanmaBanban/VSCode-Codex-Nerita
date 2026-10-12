@@ -5,7 +5,8 @@ import { readFile, stat } from "node:fs/promises";
 /** 入力をそのままログや例外に含めない。最大サイズを超える設定は空の設定として扱う。 */
 export async function sanitizedNpmConfig(path: string): Promise<string> {
 	try {
-		if ((await stat(path)).size > 64 * 1024) {
+		const matchesSize = (await stat(path)).size > 64 * 1024;
+		if (matchesSize) {
 			return "";
 		}
 		return sanitizeNpmText(await readFile(path, "utf8"));
@@ -35,13 +36,16 @@ function sanitizeNpmText(text: string): string {
 			if (safeRegistry(value)) {
 				output.push(`${key}=${value}`);
 			}
-		} else if (
-			/^(?:true|false)$/i.test(value) &&
-			(key !== "strict-ssl" || value.toLowerCase() === "true")
-		) {
-			// ホスト設定から TLS 検証を無効にしない。
-			output.push(`${key}=${value.toLowerCase()}`);
+			continue;
 		}
+		if (!/^(?:true|false)$/i.test(value)) {
+			continue;
+		}
+		// ホスト設定から TLS 検証を無効にしない。
+		if (key === "strict-ssl" && value.toLowerCase() !== "true") {
+			continue;
+		}
+		output.push(`${key}=${value.toLowerCase()}`);
 	}
 	return output.length > 0 ? `${output.join("\n")}\n` : "";
 }
@@ -50,11 +54,12 @@ function sanitizeNpmText(text: string): string {
 function safeRegistry(value: string): boolean {
 	try {
 		const url = new URL(value);
-		if (!(
+		const matchesProtocol = !(
 			url.protocol === "https:" &&
 			url.username === "" &&
 			url.password === ""
-		)) {
+		);
+		if (matchesProtocol) {
 			return false;
 		}
 		return url.search === "" && url.hash === "" && !/[${}\s]/.test(value);

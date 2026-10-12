@@ -13,6 +13,7 @@ const MODEL_CATALOG_CLIENT_VERSION = "0.999.0";
 export class OpenAIModelCatalogService implements PiModelCatalogReader {
 	private credentialKey: string | undefined;
 	private cached: readonly PiCatalogModel[] | null = null;
+	/** モデル一覧の取得には接続の認証を使い、通信経路は検証時に差し替えられるようにする。 */
 	constructor(
 		private models: ModelRuntime,
 		private request: typeof fetch = fetch,

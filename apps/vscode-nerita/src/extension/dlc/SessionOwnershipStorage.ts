@@ -41,10 +41,10 @@ async function withOwnershipLock(
 			await withDlcLock(files, operation);
 			return;
 		} catch (error) {
-			if (
-				!(error instanceof DlcLockBusyError) ||
-				Date.now() >= deadline
-			) {
+			if (!(error instanceof DlcLockBusyError)) {
+				throw error;
+			}
+			if (Date.now() >= deadline) {
 				throw error;
 			}
 			await setTimeout(25);

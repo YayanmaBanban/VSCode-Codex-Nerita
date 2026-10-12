@@ -93,10 +93,10 @@ export function renameStep(
 	source: string,
 	target: string,
 ): Workflow {
-	if (
+	const matchesTest =
 		!/^[A-Z][\w-]{0,63}$/i.test(target) ||
-		workflow.steps.some((step) => step.id === target && step.id !== source)
-	) {
+		workflow.steps.some((step) => step.id === target && step.id !== source);
+	if (matchesTest) {
 		throw new Error(
 			"ステップ ID は重複しない英字から始まる名前にしてください。",
 		);

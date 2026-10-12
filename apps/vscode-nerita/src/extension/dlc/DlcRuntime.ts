@@ -19,6 +19,7 @@ import type { IntentRepository } from "./IntentRepository";
 /** セッションの生成・購読・承認・終了処理を DLC 側へ複製しない。 */
 export class DlcRuntime implements NeritaRuntimePort {
 	private admission: { root: string; reservation: object } | undefined;
+	/** Intent の保存と実行先を結び付け、バックエンドと対象ルートは実行時に利用側から取得する。 */
 	constructor(
 		private repository: IntentRepository,
 		private runtime: BackendRuntime,
@@ -26,6 +27,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 		private target: () => Promise<string> = () =>
 			Promise.resolve(repository.files.root),
 	) {}
+	/** 選択可能な稼働中の DLC 世代だけを状態として返し、通常チャットの実行とは分ける。 */
 	status() {
 		const active = this.runtime.activeDlc();
 		return {
@@ -40,8 +42,10 @@ export class DlcRuntime implements NeritaRuntimePort {
 	): Promise<T> {
 		signal.throwIfAborted();
 		const root = await this.target();
-		return this.runtime.withDirectory(root, async (reservation) => {
-			if ((await this.target()) !== root) {
+		/** 予約後に実行先と管理ルートを再確認し、この処理の寿命だけ開始条件を保持する。 */
+		const runAdmittedOperation = async (reservation: object) => {
+			const matchesValue = (await this.target()) !== root;
+			if (matchesValue) {
 				throw new Error(
 					"実行先が変更されています。再確認してください。",
 				);
@@ -54,14 +58,16 @@ export class DlcRuntime implements NeritaRuntimePort {
 			} finally {
 				this.admission = undefined;
 			}
-		});
+		};
+		return this.runtime.withDirectory(root, runAdmittedOperation);
 	}
+	/** 新規会話と継承した権限だけを受け付け、予約済みのルートを使うか開始前に実行先を予約する。 */
 	run(value: ExecutionRequest, signal: AbortSignal): Promise<RuntimeResult> {
 		const request = ExecutionRequestSchema.parse(value);
-		if (
+		const matchesContinuity =
 			request.continuity !== "fresh" ||
-			request.policy !== "workspace-inherit"
-		) {
+			request.policy !== "workspace-inherit";
+		if (matchesContinuity) {
 			throw new Error(
 				"この Runtime は新規実行と既存のワークスペース方針だけに対応しています。",
 			);
@@ -81,9 +87,11 @@ export class DlcRuntime implements NeritaRuntimePort {
 			),
 		);
 	}
+	/** 停止対象の世代を実行管理へ渡し、終了処理が完了するまで待つ。 */
 	stop(attemptId: string): Promise<void> {
 		return this.runtime.stopDlc(attemptId);
 	}
+	/** 開始入力を固定し、実行前後のソース差分と承認を実測結果へまとめる。失敗しても会話保存を試みる。 */
 	private async execute(
 		request: ExecutionRequest,
 		signal: AbortSignal,
@@ -144,6 +152,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 			await this.saveConversation(request, result);
 		}
 	}
+	/** 取得済みの会話を保存し、保存失敗時も得られた実行結果と根拠をエラーに保持する。 */
 	private async saveConversation(
 		request: ExecutionRequest,
 		result: RuntimeResult | undefined,

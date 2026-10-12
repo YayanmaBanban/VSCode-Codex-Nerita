@@ -47,12 +47,13 @@ const configContributions: UiContributionSource = (state, context) => {
 	});
 	options.push(
 		...state.configOptions.filter((item) => {
-			if (!(
+			const matchesBackend = !(
 				!(
 					context.backend === "codex" &&
 					item.id === "approvals_reviewer"
 				) && !tiers.includes(item.id)
-			)) {
+			);
+			if (matchesBackend) {
 				return false;
 			}
 			return !options.some((option) => option.id === item.id);

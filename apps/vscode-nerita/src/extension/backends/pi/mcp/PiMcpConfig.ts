@@ -150,7 +150,9 @@ async function configText(
 	try {
 		const bytes = Buffer.alloc(256 * 1024 + 1);
 		const { bytesRead } = await file.read(bytes, 0, bytes.length, 0);
-		if (bytesRead > 256 * 1024 || (await realpath(path)) !== target) {
+		const matchesBytesRead =
+			bytesRead > 256 * 1024 || (await realpath(path)) !== target;
+		if (matchesBytesRead) {
 			throw new Error("config changed");
 		}
 		return bytes.subarray(0, bytesRead).toString("utf8");

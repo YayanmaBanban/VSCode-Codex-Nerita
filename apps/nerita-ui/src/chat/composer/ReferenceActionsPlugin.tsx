@@ -16,42 +16,43 @@ export function ReferenceActionsPlugin({
 	bridge: Bridge | undefined;
 }) {
 	const [editor] = useLexicalComposerContext();
-	useEffect(
-		() =>
-			editor.registerCommand(
-				OPEN_REFERENCE_COMMAND,
-				(path) => {
-					if (!bridge) {
-						return false;
-					}
-					if (path.kind === "changes") {
-						bridge.postMessage({
-							type: "changes/open",
-							requestId: crypto.randomUUID(),
-							scope: path.scope,
-						});
-						return true;
-					}
-					if (path.kind === "session") {
-						bridge.postMessage({
-							type: "session/openReference",
-							requestId: crypto.randomUUID(),
-							referencedSessionId: path.sessionId,
-						});
-						return true;
-					}
-					const range = path.range ?? path.symbol?.range;
-					bridge.postMessage({
-						type: "reference/open",
-						requestId: crypto.randomUUID(),
-						uri: path.uri,
-						...(range ? { range } : {}),
-					});
-					return true;
-				},
-				COMMAND_PRIORITY_EDITOR,
-			),
-		[editor, bridge],
-	);
+
+	useEffect(() => {
+		/** 参照の種別ごとに Host へ開く要求を渡し、パスの実行判断は Host に任せる。 */
+		const openComposerReference = (path: ComposerTarget) => {
+			if (!bridge) {
+				return false;
+			}
+			if (path.kind === "changes") {
+				bridge.postMessage({
+					type: "changes/open",
+					requestId: crypto.randomUUID(),
+					scope: path.scope,
+				});
+				return true;
+			}
+			if (path.kind === "session") {
+				bridge.postMessage({
+					type: "session/openReference",
+					requestId: crypto.randomUUID(),
+					referencedSessionId: path.sessionId,
+				});
+				return true;
+			}
+			const range = path.range ?? path.symbol?.range;
+			bridge.postMessage({
+				type: "reference/open",
+				requestId: crypto.randomUUID(),
+				uri: path.uri,
+				...(range ? { range } : {}),
+			});
+			return true;
+		};
+		return editor.registerCommand(
+			OPEN_REFERENCE_COMMAND,
+			openComposerReference,
+			COMMAND_PRIORITY_EDITOR,
+		);
+	}, [editor, bridge]);
 	return null;
 }

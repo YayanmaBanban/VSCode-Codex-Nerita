@@ -32,11 +32,11 @@ export async function getPiDeviceId(agentDir: string): Promise<string> {
 		throw new Error("Pi のインストール識別子を読み込めません。");
 	}
 	const value = (await readFile(file, "utf8")).trim();
-	if (
+	const matchesTest =
 		!/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(
 			value,
-		)
-	) {
+		);
+	if (matchesTest) {
 		throw new Error("Pi のインストール識別子を読み込めません。");
 	}
 	return value;

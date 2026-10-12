@@ -39,6 +39,7 @@ export type CredentialProvider = {
 /** 取得に失敗しても別の Provider を探さない。 */
 export class CredentialProviderRegistry {
 	private readonly providers = new Map<string, CredentialProvider>();
+	/** 取得元の ID を重複なく登録し、参照から一意に取得先を決められるようにする。 */
 	constructor(providers: CredentialProvider[]) {
 		for (const provider of providers) {
 			if (this.providers.has(provider.id)) {
@@ -47,6 +48,7 @@ export class CredentialProviderRegistry {
 			this.providers.set(provider.id, provider);
 		}
 	}
+	/** 未登録の取得元を暗黙に代替せず、設定不足として拒否する。 */
 	get(id: string) {
 		const provider = this.providers.get(id);
 		if (!provider) {

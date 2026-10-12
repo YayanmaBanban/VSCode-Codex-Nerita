@@ -21,7 +21,9 @@ import { throwCredentialError } from "./CredentialErrors";
 /** `root` は Host が確定したワークスペース。リンク経由でワークスペース外へ保存しない。 */
 export class BindingStore {
 	private pending = Promise.resolve();
+	/** 資格情報の参照設定はこのルートの設定ファイルに限定する。 */
 	constructor(readonly root: string) {}
+	/** 保存先の実体がルート直下であることを確認し、リンクによるワークスペース外への逸脱を拒否する。 */
 	private async directory(create = false) {
 		const root = await realpath(this.root);
 		const directory = join(root, ".nerita");
@@ -29,10 +31,12 @@ export class BindingStore {
 			await mkdir(directory, { recursive: true });
 		}
 		try {
-			if (
-				(await lstat(directory)).isSymbolicLink() ||
-				dirname(await realpath(directory)) !== root
-			) {
+			const directoryInfo = await lstat(directory);
+			if (directoryInfo.isSymbolicLink()) {
+				throw new Error("Binding の保存先が Workspace 外です。");
+			}
+			const actualParent = dirname(await realpath(directory));
+			if (actualParent !== root) {
 				throw new Error("Binding の保存先が Workspace 外です。");
 			}
 		} catch (error) {
@@ -42,15 +46,18 @@ export class BindingStore {
 		}
 		return directory;
 	}
+	/** 未作成の設定だけを空として扱い、リンク・上限超過・形式の破損は読取り失敗として通知する。 */
 	async read(): Promise<CredentialBinding[]> {
 		try {
 			const path = join(await this.directory(), "bindings.json");
-			if ((await lstat(path)).isSymbolicLink()) {
+			const matchesIsSymbolicLink2 = (await lstat(path)).isSymbolicLink();
+			if (matchesIsSymbolicLink2) {
 				throw new Error("Binding へのリンクは使用できません。");
 			}
 			const file = await open(path, "r");
 			try {
-				if ((await file.stat()).size > 256 * 1024) {
+				const matchesSize = (await file.stat()).size > 256 * 1024;
+				if (matchesSize) {
 					throw new Error();
 				}
 				return credentialBindingsSchema.parse(
@@ -73,7 +80,8 @@ export class BindingStore {
 	update(
 		change: (bindings: CredentialBinding[]) => CredentialBinding[],
 	): Promise<void> {
-		const result = this.pending.then(async () => {
+		/** 参照設定の更新と除外設定を同じ待機列で行い、保存先を再確認してから一時ファイルを置き換える。 */
+		const commitBindings = async () => {
 			const data = credentialBindingsSchema.parse({
 				version: 1,
 				bindings: change(await this.read()),
@@ -86,7 +94,10 @@ export class BindingStore {
 				if (fsErrorCode(error) !== "EEXIST") {
 					throw error;
 				}
-				if ((await lstat(ignore)).isSymbolicLink()) {
+				const matchesIsSymbolicLink3 = (
+					await lstat(ignore)
+				).isSymbolicLink();
+				if (matchesIsSymbolicLink3) {
 					throwCredentialError(
 						"除外設定へのリンクは使用できません。",
 						error,
@@ -112,7 +123,8 @@ export class BindingStore {
 			} finally {
 				await rm(temporary, { force: true });
 			}
-		});
+		};
+		const result = this.pending.then(commitBindings);
 		this.pending = result.catch(() => {});
 		return result;
 	}

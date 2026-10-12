@@ -135,10 +135,11 @@ function ComposerAttachments({
 
 /** 設定を操作できる接続と会話があるか確認する。 */
 function settingsConnected(state: ChatState) {
-	if (!(
+	const matchesConnection = !(
 		state.connection === "ready" ||
 		(state.piAccount !== null && state.connection === "auth-required")
-	)) {
+	);
+	if (matchesConnection) {
 		return false;
 	}
 	return isNonEmptyString(state.sessionId) && !state.sessionPending;

@@ -19,19 +19,23 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 	let node: Node | null;
 	while ((node = walker.nextNode())) {
 		const parent = node.parentElement;
-		if (
-			!parent ||
-			!isNonEmptyString(node.textContent) ||
-			excludedText(parent)
-		) {
+
+		if (!parent) {
+			continue;
+		}
+		if (!isNonEmptyString(node.textContent)) {
+			continue;
+		}
+		if (excludedText(parent)) {
 			continue;
 		}
 		const range = document.createRange();
 		range.selectNodeContents(node);
-		if (
-			!isNonZeroNumber(range.getClientRects().length) ||
-			getComputedStyle(parent).visibility === "hidden"
-		) {
+
+		if (!isNonZeroNumber(range.getClientRects().length)) {
+			continue;
+		}
+		if (getComputedStyle(parent).visibility === "hidden") {
 			continue;
 		}
 		const element =
@@ -51,13 +55,13 @@ function textBlocks(root: HTMLElement): TextBlock[] {
 
 /** 操作ラベルは除き、検索対象にしたツール名とエージェント名は強調できるようにする。 */
 function excludedText(parent: HTMLElement) {
-	return (
+	const matchesClosest =
 		parent.closest(
 			"input,textarea,select,svg,script,style,[aria-hidden='true'],.sr-only,.message-actions",
 		) !== null ||
 		(parent.closest("button") !== null &&
-			parent.closest(".tool-title,.agent-card") === null)
-	);
+			parent.closest(".tool-title,.agent-card") === null);
+	return matchesClosest;
 }
 
 /** 文字位置を DOM Range へ変換し、一致数が多いときは上限到達も返す。 */
@@ -107,16 +111,16 @@ export function revealMatch(range: Range, root: HTMLElement): void {
 	) {
 		const match = range.getBoundingClientRect();
 		const box = element.getBoundingClientRect();
-		if (
+		const matchesScrollHeight =
 			element.scrollHeight > element.clientHeight &&
-			(match.top < box.top || match.bottom > box.bottom)
-		) {
+			(match.top < box.top || match.bottom > box.bottom);
+		if (matchesScrollHeight) {
 			element.scrollTop += match.top - box.top - element.clientHeight / 2;
 		}
-		if (
+		const matchesScrollWidth =
 			element.scrollWidth > element.clientWidth &&
-			(match.left < box.left || match.right > box.right)
-		) {
+			(match.left < box.left || match.right > box.right);
+		if (matchesScrollWidth) {
 			element.scrollLeft +=
 				match.left - box.left - element.clientWidth / 2;
 		}

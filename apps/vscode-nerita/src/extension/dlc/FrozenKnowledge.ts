@@ -26,14 +26,14 @@ export const FrozenKnowledgeSchema = z
 			.max(100),
 	})
 	.superRefine((value, context) => {
-		if (
+		const matchesDigest =
 			value.digest !== jsonDigest(value.entries) ||
 			new Set(value.entries.map((entry) => entry.source)).size !==
 				value.entries.length ||
 			value.entries.some(
 				(entry) => entry.digest !== textDigest(entry.text),
-			)
-		) {
+			);
+		if (matchesDigest) {
 			context.addIssue({
 				code: "custom",
 				message: "固定した Knowledge のハッシュが一致しません。",

@@ -74,6 +74,7 @@ export function createPiPnpmTool(
 			);
 			const host = route.permission.route === "host";
 			const sandboxInfo = sandbox.describe?.(paths.policy);
+			const sandboxDetails = sandboxInfo ? { sandbox: sandboxInfo } : {};
 			const approved = await approveToolCall(
 				{
 					tool: "pnpm",
@@ -92,7 +93,7 @@ export function createPiPnpmTool(
 								hostShell: true,
 								compatibility: route.compatibility!,
 							}
-						: { ...(sandboxInfo ? { sandbox: sandboxInfo } : {}) }),
+						: sandboxDetails),
 				},
 				authorize,
 				combined,
@@ -150,11 +151,10 @@ async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 		throw new Error("pnpm の実行エントリーポイントを検出できません。");
 	}
 	const executable = await realpath(entrypoint);
-	if (
-		paths.policy.workspaceRoots.some((root) =>
-			containsPath(root, executable),
-		)
-	) {
+	const matchesSome = paths.policy.workspaceRoots.some((root) =>
+		containsPath(root, executable),
+	);
+	if (matchesSome) {
 		throw new Error(
 			"workspace 内の pnpm は実行エントリーポイントとして使用できません。",
 		);
@@ -163,10 +163,11 @@ async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 		return { entrypoint: executable, argv: [executable, ...args] };
 	}
 	const node = tools.executables["node.exe"];
-	if (
-		!isNonEmptyString(node) ||
-		paths.policy.workspaceRoots.some((root) => containsPath(root, node))
-	) {
+
+	if (!isNonEmptyString(node)) {
+		throw new Error("信頼できる Node.js を検出できません。");
+	}
+	if (paths.policy.workspaceRoots.some((root) => containsPath(root, node))) {
 		throw new Error("信頼できる Node.js を検出できません。");
 	}
 	return { entrypoint: executable, argv: [node, executable, ...args] };

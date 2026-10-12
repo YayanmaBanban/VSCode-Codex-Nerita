@@ -207,10 +207,9 @@ function ToolHistoryContent({ tool, send, cwd }: ToolHistoryContentProps) {
 
 /** 保存されない本文や入力、省略された子の記録を明示する。 */
 function renderHistoryNotice(tool: ToolSummary) {
-	if (
-		!(tool.summaryOnly === true) &&
-		!(tool.nestedCallsIncomplete === true)
-	) {
+	const matchesSummaryOnly =
+		!(tool.summaryOnly === true) && !(tool.nestedCallsIncomplete === true);
+	if (matchesSummaryOnly) {
 		return null;
 	}
 	return (
@@ -247,12 +246,12 @@ function usesComboList(
 	if (body === ImageViewTool || body === WebSearchTool) {
 		return true;
 	}
-	return (
+	const matchesBody =
 		body === ThinkTool &&
 		![tool.rawInput, tool.rawOutput].some(
 			(value) => isRecord(value) && isRecord(value.review),
-		)
-	);
+		);
+	return matchesBody;
 }
 
 /** 展開時に使う本文を組み立て、実際の描画と解放は開閉領域に委ねる。 */
@@ -416,11 +415,11 @@ function OutputBody({ tool, send, cwd }: ActivityToolProps) {
 
 /** 停止済みと、履歴の完了状態が不明な項目を区別する。 */
 function renderInactiveStatus(status: ToolSummary["status"]) {
-	if (
+	const matchesStatus =
 		status !== "cancelled" &&
 		status !== "unfinished" &&
-		status !== "unknown"
-	) {
+		status !== "unknown";
+	if (matchesStatus) {
 		return null;
 	}
 	return (
@@ -456,10 +455,10 @@ function renderNonExecutionStatus(
 function usesExecutionProgress(tool: ToolSummary) {
 	const specialTool =
 		tool.kind === "execute" || tool.kind === "contextCompaction";
-	return (
+	const matchesSpecialTool =
 		specialTool ||
-		(isRecord(tool.rawItem) && tool.rawItem.type === "contextCompaction")
-	);
+		(isRecord(tool.rawItem) && tool.rawItem.type === "contextCompaction");
+	return matchesSpecialTool;
 }
 
 /** コマンド実行とコンテキスト圧縮の進行中アイコンを表示する。 */

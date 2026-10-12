@@ -49,11 +49,10 @@ export async function loadSubagentDefinitions(
 			const metadata: unknown = JSON.parse(
 				await readFile(join(candidate, "package.json"), "utf8"),
 			);
-			if (
-				z
-					.object({ name: z.literal("pi-subagents") })
-					.safeParse(metadata).success
-			) {
+			const matchesSuccess = z
+				.object({ name: z.literal("pi-subagents") })
+				.safeParse(metadata).success;
+			if (matchesSuccess) {
 				packages.push(await realpath(candidate));
 			}
 		} catch {
@@ -152,12 +151,15 @@ async function readDefinitions(
 		}
 		throw error;
 	}
-	if (!containsPath(await realpath(base), root)) {
+	const matchesContainsPath = !containsPath(await realpath(base), root);
+	if (matchesContainsPath) {
 		throw new Error("サブエージェント定義のディレクトリが範囲外です。");
 	}
 	const definitions: PiSubagentDefinition[] = [];
 	for (const file of await subagentFiles(root)) {
-		if (!containsPath(root, file) || (await stat(file)).size > 65536) {
+		const matchesContainsPath2 =
+			!containsPath(root, file) || (await stat(file)).size > 65536;
+		if (matchesContainsPath2) {
 			throw new Error(
 				"サブエージェント定義の範囲またはサイズが不正です。",
 			);

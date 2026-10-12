@@ -168,11 +168,20 @@ export class CodexClient {
 			threadId,
 			excludeTurns,
 		});
-		if (
-			!isNonEmptyString(fork.thread.id) ||
-			fork.thread.id === threadId ||
-			(await realpath(fork.cwd)) !== (await realpath(this.cwd))
-		) {
+
+		if (!isNonEmptyString(fork.thread.id)) {
+			throw new Error(
+				"Codex の分岐先の会話 ID または実行先が一致しません。",
+			);
+		}
+		if (fork.thread.id === threadId) {
+			throw new Error(
+				"Codex の分岐先の会話 ID または実行先が一致しません。",
+			);
+		}
+		const forkRoot = await realpath(fork.cwd);
+		const currentRoot = await realpath(this.cwd);
+		if (forkRoot !== currentRoot) {
 			throw new Error(
 				"Codex の分岐先の会話 ID または実行先が一致しません。",
 			);

@@ -98,13 +98,12 @@ export function packageRoot(path: string): string {
 }
 /** 否定パターンは包含パターンより優先する。 */
 export function selectedPackage(root: string, patterns: string[]): boolean {
-	return (
-		patterns.some(
-			(pattern) => !pattern.startsWith("!") && matchesGlob(root, pattern),
-		) &&
-		!patterns.some(
-			(pattern) =>
-				pattern.startsWith("!") && matchesGlob(root, pattern.slice(1)),
-		)
-	);
+	const includesRoot = (pattern: string) =>
+		!pattern.startsWith("!") && matchesGlob(root, pattern);
+	if (!patterns.some(includesRoot)) {
+		return false;
+	}
+	const excludesRoot = (pattern: string) =>
+		pattern.startsWith("!") && matchesGlob(root, pattern.slice(1));
+	return !patterns.some(excludesRoot);
 }

@@ -62,6 +62,7 @@ export class SessionState {
 		}
 		return state;
 	}
+	/** 本文参照を末尾まで取得し、保存上限と進まないカーソルを検出して不完全な出力保存を拒否する。 */
 	private async executionOutput(
 		ref: string,
 		budget: number,
@@ -160,10 +161,10 @@ export class SessionState {
 			this.state,
 			this.contributionContext(),
 		);
-		if (
+		const matchesStringify =
 			JSON.stringify(contributions) !==
-			JSON.stringify(this.state.uiContributions)
-		) {
+			JSON.stringify(this.state.uiContributions);
+		if (matchesStringify) {
 			this.state.uiContributions = contributions;
 			patch.uiContributions = contributions;
 		}
@@ -191,10 +192,10 @@ function finalizeMessages(
 	patch: Partial<ChatState>,
 	state: ChatState,
 ): Partial<ChatState> {
-	if (
-		!(patch.run !== undefined) ||
-		!["completed", "cancelled", "failed"].includes(patch.run)
-	) {
+	if (!(patch.run !== undefined)) {
+		return patch;
+	}
+	if (!["completed", "cancelled", "failed"].includes(patch.run)) {
 		return patch;
 	}
 	return {

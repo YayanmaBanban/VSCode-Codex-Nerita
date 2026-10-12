@@ -43,11 +43,11 @@ export function ComposerPlugin(props: {
 	);
 	useEffect(() => registerDraftUpdates(editor, latest, localParts), [editor]);
 	useEffect(() => {
-		if (
+		const matchesHas =
 			localParts.current.has(props.parts) ||
 			editor.getEditorState().read(() => contentKey($readParts())) ===
-				contentKey(props.parts)
-		) {
+				contentKey(props.parts);
+		if (matchesHas) {
 			return;
 		}
 		const focused = editor
@@ -86,47 +86,48 @@ function registerDraftUpdates(
 	}>,
 	localParts: RefObject<WeakSet<ComposerPart[]>>,
 ): () => void {
-	return editor.registerUpdateListener(
-		({
-			editorState,
-			prevEditorState,
-			dirtyElements,
-			dirtyLeaves,
-			tags,
-		}) => {
-			if (tags.has("draft-restore") || tags.has("draft-reject")) {
-				return;
-			}
-			if (
-				!isNonZeroNumber(dirtyElements.size) &&
-				!isNonZeroNumber(dirtyLeaves.size)
-			) {
-				return;
-			}
-			const parts = editorState.read($readParts);
-			if (
-				parts.reduce((sum, part) => sum + part.text.length, 0) >
-					100000 ||
-				parts.length > 201
-			) {
-				const previous = prevEditorState.read($readParts);
-				editor.update(
-					() => {
-						$writeParts(previous);
-						$getRoot().selectEnd();
-					},
-					{ tag: "draft-reject" },
-				);
-				latest.current.onError(
-					"下書き全体は100,000文字、貼り付けブロックは100個までです。",
-				);
-				return;
-			}
-			latest.current.onError("");
-			if (contentKey(parts) !== contentKey(latest.current.parts)) {
-				localParts.current.add(parts);
-				latest.current.onChange(parts);
-			}
-		},
-	);
+	/** 復元イベントを除外して下書きの差分を公開し、上限を超える編集は直前の本文へ戻す。 */
+	const publishDraftUpdate: Parameters<
+		typeof editor.registerUpdateListener
+	>[0] = ({
+		editorState,
+		prevEditorState,
+		dirtyElements,
+		dirtyLeaves,
+		tags,
+	}) => {
+		if (tags.has("draft-restore") || tags.has("draft-reject")) {
+			return;
+		}
+		const matchesIsNonZeroNumber =
+			!isNonZeroNumber(dirtyElements.size) &&
+			!isNonZeroNumber(dirtyLeaves.size);
+		if (matchesIsNonZeroNumber) {
+			return;
+		}
+		const parts = editorState.read($readParts);
+		const matchesReduce =
+			parts.reduce((sum, part) => sum + part.text.length, 0) > 100000 ||
+			parts.length > 201;
+		if (matchesReduce) {
+			const previous = prevEditorState.read($readParts);
+			editor.update(
+				() => {
+					$writeParts(previous);
+					$getRoot().selectEnd();
+				},
+				{ tag: "draft-reject" },
+			);
+			latest.current.onError(
+				"下書き全体は100,000文字、貼り付けブロックは100個までです。",
+			);
+			return;
+		}
+		latest.current.onError("");
+		if (contentKey(parts) !== contentKey(latest.current.parts)) {
+			localParts.current.add(parts);
+			latest.current.onChange(parts);
+		}
+	};
+	return editor.registerUpdateListener(publishDraftUpdate);
 }

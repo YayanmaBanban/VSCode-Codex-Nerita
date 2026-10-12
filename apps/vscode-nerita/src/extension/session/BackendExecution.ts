@@ -30,6 +30,7 @@ export class BackendExecution {
 		| undefined;
 	private messages: ChatMessage[] = [];
 	private tools: ToolSummary[] = [];
+	/** 内部実行を一度だけ開始し、前の会話とツールの記録を新しい結果へ混ぜない。 */
 	begin(): Promise<BackendExecutionResult> {
 		if (this.pending) {
 			throw new Error("内部実行は既に開始しています。");
@@ -40,6 +41,7 @@ export class BackendExecution {
 			this.pending = { resolve, reject };
 		});
 	}
+	/** 開始済みの内部実行だけに状態を複製して保持し、外部の配列変更で結果を上書きさせない。 */
 	observe(change: { messages?: ChatMessage[]; tools?: ToolSummary[] }): void {
 		if (!this.pending) {
 			return;
@@ -64,6 +66,7 @@ export class BackendExecution {
 			tools: this.tools,
 		});
 	}
+	/** 待機を先に解除してから失敗を通知し、遅い完了と二重に結果を確定しない。 */
 	fail(error: Error): void {
 		const pending = this.pending;
 		this.pending = undefined;

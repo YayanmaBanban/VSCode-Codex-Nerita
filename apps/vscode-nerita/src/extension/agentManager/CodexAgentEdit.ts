@@ -81,28 +81,28 @@ export function editCodexAgent(text: string, edit: AgentEdit): string {
 	if (typeof policy === "object") {
 		values.set("approval_policy", undefined);
 	}
-	const output = statements(text)
-		.map((statement) => {
-			if (/^\s*\[/.test(statement)) {
-				root = false;
-				const table = parse(statement);
-				approvalTable = "approval_policy" in table;
-			}
-			if (approvalTable) {
-				return "";
-			}
-			const name = Object.keys(parse(statement))[0] ?? "";
-			if (root && name === "approval_policy" && !values.has(name)) {
-				return "";
-			}
-			if (!root || !values.has(name)) {
-				return statement;
-			}
-			const value = values.get(name);
-			values.delete(name);
-			return replacement(name, value, statement, eol);
-		})
-		.join("");
+	/** テーブルの境界と対象キーを追跡し、承認設定を除いて指定したルート項目だけを書き換える。 */
+	const rewriteAgentStatement = (statement: string) => {
+		if (/^\s*\[/.test(statement)) {
+			root = false;
+			const table = parse(statement);
+			approvalTable = "approval_policy" in table;
+		}
+		if (approvalTable) {
+			return "";
+		}
+		const name = Object.keys(parse(statement))[0] ?? "";
+		if (root && name === "approval_policy" && !values.has(name)) {
+			return "";
+		}
+		if (!root || !values.has(name)) {
+			return statement;
+		}
+		const value = values.get(name);
+		values.delete(name);
+		return replacement(name, value, statement, eol);
+	};
+	const output = statements(text).map(rewriteAgentStatement).join("");
 	const additions = [...values]
 		.filter(([, value]) => value !== undefined)
 		.map(([key, value]) => `${stringify({ [key]: value }).trimEnd()}${eol}`)

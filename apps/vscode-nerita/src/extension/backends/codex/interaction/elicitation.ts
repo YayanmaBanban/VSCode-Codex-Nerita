@@ -16,11 +16,14 @@ export async function elicitation(
 		return elicitUrl(p, ui, signal, title, empty);
 	}
 	const schema = p.requestedSchema;
-	if (
-		!isRecord(schema) ||
-		schema.type !== "object" ||
-		!isRecord(schema.properties)
-	) {
+
+	if (!isRecord(schema)) {
+		return { ...empty, action: "decline" };
+	}
+	if (schema.type !== "object") {
+		return { ...empty, action: "decline" };
+	}
+	if (!isRecord(schema.properties)) {
 		return { ...empty, action: "decline" };
 	}
 	return elicitForm(schema, schema.properties, ui, signal, title, empty);
@@ -56,10 +59,10 @@ async function elicitForm(
 			content[key] = answer.value;
 		}
 	}
-	if (
+	const matchesValue =
 		(await ui.choose(title, ["送信", "中止"], signal)) !== "送信" ||
-		signal.aborted
-	) {
+		signal.aborted;
+	if (matchesValue) {
 		return empty;
 	}
 	return { action: "accept", content, _meta: null };
@@ -80,10 +83,11 @@ function invalidNumber(number: number, field: SupportedField) {
 	const invalidNumberCheck =
 		!Number.isFinite(number) ||
 		(field.type === "integer" && !Number.isInteger(number));
-	if (
-		invalidNumberCheck ||
-		(typeof field.minimum === "number" && number < field.minimum)
-	) {
+
+	if (invalidNumberCheck) {
+		return true;
+	}
+	if (typeof field.minimum === "number" && number < field.minimum) {
 		return true;
 	}
 	return typeof field.maximum === "number" && number > field.maximum;
@@ -105,45 +109,50 @@ const supportedFieldSchema = z
 			.optional(),
 	})
 	.refine((field) => {
-		if (!(
+		const matchesMinimum = !(
 			field.minimum === undefined ||
 			field.maximum === undefined ||
 			field.minimum <= field.maximum
-		)) {
+		);
+		if (matchesMinimum) {
 			return false;
 		}
-		if (!(
+		const matchesMinLength = !(
 			field.minLength === undefined ||
 			field.maxLength === undefined ||
 			field.minLength <= field.maxLength
-		)) {
+		);
+		if (matchesMinLength) {
 			return false;
 		}
-		return (
+		const matchesEnum =
 			field.enum === undefined ||
 			field.enum.every((value) =>
 				field.type === "integer"
 					? typeof value === "number" && Number.isInteger(value)
 					: typeof value === field.type,
-			)
-		);
+			);
+		return matchesEnum;
 	});
 type SupportedField = z.infer<typeof supportedFieldSchema>;
 
 /** 未対応の制約を拒否し、対応する型と各制約の値を保証する。 */
 function supportedField(field: unknown): field is SupportedField {
-	if (!(
-		isRecord(field) &&
-		supportedFieldSchema.safeParse(field).success &&
-		!Boolean(field.format)
-	)) {
+	if (!isRecord(field)) {
 		return false;
 	}
-	if (!(
+	if (!supportedFieldSchema.safeParse(field).success) {
+		return false;
+	}
+	if (Boolean(field.format)) {
+		return false;
+	}
+	const matchesBoolean = !(
 		!Boolean(field.oneOf) &&
 		!Boolean(field.anyOf) &&
 		!Boolean(field.pattern)
-	)) {
+	);
+	if (matchesBoolean) {
 		return false;
 	}
 	return !Boolean(field.items);
@@ -159,23 +168,24 @@ async function elicitField(
 ) {
 	const choices = fieldChoices(field);
 	const validate = (value: string) => validateField(value, field, required);
-	const value = choices
-		? await ui.choose(
-				prompt,
-				required ? choices : [...choices, "省略"],
-				signal,
-			)
-		: await ui.input(prompt, false, signal, validate);
+	let value: string | undefined;
+	if (choices) {
+		const options = required ? choices : [...choices, "省略"];
+		value = await ui.choose(prompt, options, signal);
+	} else {
+		value = await ui.input(prompt, false, signal, validate);
+	}
 	if (signal.aborted || value === undefined) {
 		return undefined;
 	}
 	if (omitField(value, required, choices)) {
 		return null;
 	}
-	if (
-		isNonEmptyString(validate(value)) ||
-		(choices && !choices.includes(value))
-	) {
+
+	if (isNonEmptyString(validate(value))) {
+		return undefined;
+	}
+	if (choices && !choices.includes(value)) {
 		return undefined;
 	}
 	return { value: fieldValue(field.type, value) };
@@ -202,10 +212,10 @@ function validateField(
 	if (value === "") {
 		return required ? "入力してください。" : undefined;
 	}
-	if (
+	const matchesType =
 		(field.type === "number" || field.type === "integer") &&
-		invalidNumber(Number(value), field)
-	) {
+		invalidNumber(Number(value), field);
+	if (matchesType) {
 		return "指定範囲の数値を入力してください。";
 	}
 	if (typeof field.minLength === "number" && value.length < field.minLength) {
@@ -248,23 +258,22 @@ async function elicitUrl(
 	empty: { action: string; content: null; _meta: null },
 ) {
 	const url = new URL(text(p.url));
-	if (
+	const matchesProtocol =
 		url.protocol !== "https:" &&
 		!(
 			url.protocol === "http:" &&
 			["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
-		)
-	) {
+		);
+	if (matchesProtocol) {
 		return { ...empty, action: "decline" };
 	}
-	if (
+	const matchesValue2 =
 		(await ui.choose(
 			`${title}\n${url.href}`,
 			["ブラウザで開く", "拒否"],
 			signal,
-		)) !== "ブラウザで開く" ||
-		signal.aborted
-	) {
+		)) !== "ブラウザで開く" || signal.aborted;
+	if (matchesValue2) {
 		return empty;
 	}
 	await ui.open(url.href);

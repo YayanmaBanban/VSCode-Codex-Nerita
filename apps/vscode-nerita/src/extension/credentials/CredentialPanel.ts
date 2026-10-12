@@ -33,11 +33,10 @@ async function assertWorkspace(root: string, signal: AbortSignal) {
 	const file = vscode.Uri.file(
 		join(root, ".nerita/bindings.json"),
 	).toString();
-	if (
-		vscode.workspace.textDocuments.some(
-			(document) => document.isDirty && document.uri.toString() === file,
-		)
-	) {
+	const matchesSome = vscode.workspace.textDocuments.some(
+		(document) => document.isDirty && document.uri.toString() === file,
+	);
+	if (matchesSome) {
 		throw new Error("Binding に未保存の編集があります。");
 	}
 }
@@ -197,7 +196,8 @@ function bindCredentialPanel(
 		request: Exclude<CredentialRequest, { type: "ready" }>,
 	) => {
 		try {
-			await handleRequest(
+			await handleCredentialRequestAndReply(
+				post,
 				request,
 				root,
 				context,
@@ -205,19 +205,13 @@ function bindCredentialPanel(
 				bindings,
 				lifetime.signal,
 			);
-			post({ type: "notice", message: "操作が終了しました。" });
-		} catch {
-			post({
-				type: "error",
-				message:
-					"設定を更新できません。信頼・入力内容・保存先を確認してください。",
-			});
 		} finally {
 			busy = false;
 			await publish();
 		}
 	};
-	const listener = panel.webview.onDidReceiveMessage((value: unknown) => {
+	/** 要求の形式を検証し、同時操作を拒否してから管理状態の世代を進める。 */
+	const receiveCredentialRequest = (value: unknown) => {
 		const parsed = credentialRequestSchema.safeParse(value);
 		if (!parsed.success) {
 			post({ type: "error", message: "資格情報の設定形式が不正です。" });
@@ -236,7 +230,10 @@ function bindCredentialPanel(
 			post({ ...current, busy: true });
 		}
 		void runRequest(parsed.data);
-	});
+	};
+	const listener = panel.webview.onDidReceiveMessage(
+		receiveCredentialRequest,
+	);
 	panel.onDidDispose(() => {
 		lifetime.abort();
 		listener.dispose();
@@ -295,5 +292,22 @@ async function migrateAuth(
 		}
 	} finally {
 		await migration.cancel();
+	}
+}
+
+/** 実行結果を画面へ返し、資格情報を含む可能性のある生の例外を公開しない。 */
+async function handleCredentialRequestAndReply(
+	post: (reply: CredentialReply) => void,
+	...args: Parameters<typeof handleRequest>
+): Promise<void> {
+	try {
+		await handleRequest(...args);
+		post({ type: "notice", message: "操作が終了しました。" });
+	} catch {
+		post({
+			type: "error",
+			message:
+				"設定を更新できません。信頼・入力内容・保存先を確認してください。",
+		});
 	}
 }

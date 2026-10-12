@@ -18,6 +18,7 @@ export class CommandPermissions {
 	private pending = Promise.resolve();
 	private readonly lifetimes = new Map<string, AbortController>();
 
+	/** 保存値を検証して復元し、セッション限定の許可を次の起動へ持ち越さない。 */
 	constructor(
 		private readonly storage: CommandGrantStorage,
 		private readonly changed: () => void = () => {},

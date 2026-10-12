@@ -10,10 +10,12 @@ export const workflowViewType = "nerita.pi.workflow";
 
 /** パネルの停止はそのパネルの実行だけに適用する。 */
 class WorkflowEditor implements vscode.CustomTextEditorProvider {
+	/** 編集画面は現在のバックエンドを使い、保存処理と拡張のリソースを同じコンテキストに結び付ける。 */
 	constructor(
 		private context: vscode.ExtensionContext,
 		private backend: BackendSession,
 	) {}
+	/** 検証済みの文書だけを編集画面へ結び付け、破棄時に要求処理と文書の購読を解除する。 */
 	async resolveCustomTextEditor(
 		document: vscode.TextDocument,
 		panel: vscode.WebviewPanel,

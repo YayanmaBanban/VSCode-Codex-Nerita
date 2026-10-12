@@ -1,5 +1,11 @@
 // スナップショット・差分・子エージェント表示で同じ状態フィールドの検証を使う。
-import { isId, isRecord, everyRecord } from "./validation";
+import {
+	isId,
+	isRecord,
+	everyRecord,
+	isOptionalBoolean,
+	isOptionalString,
+} from "./validation";
 import { validToolOutputPreview } from "./toolOutput";
 import { isMcpMessageContent } from "./mcp";
 import { isPersonalitySettings } from "./personality";
@@ -36,35 +42,8 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 		sessionsLoading: (value) => typeof value === "boolean",
 		sessionsArchived: (value) => typeof value === "boolean",
 		sessionPending: (value) => typeof value === "boolean",
-		sessionCapabilities: (value) =>
-			isRecord(value) &&
-			["list", "load", "fork", "delete"].every(
-				(key) => typeof value[key] === "boolean",
-			) &&
-			["rename", "unarchive", "archive"].every(
-				(key) =>
-					value[key] === undefined || typeof value[key] === "boolean",
-			),
-		sessions: (value) =>
-			everyRecord(value, (item) => {
-				if (!(
-					isId(item.sessionId) &&
-					(item.archived === undefined ||
-						typeof item.archived === "boolean")
-				)) {
-					return false;
-				}
-				if (!(
-					typeof item.cwd === "string" &&
-					(item.title === undefined || typeof item.title === "string")
-				)) {
-					return false;
-				}
-				return (
-					item.updatedAt === undefined ||
-					typeof item.updatedAt === "string"
-				);
-			}),
+		sessionCapabilities: validSessionCapabilities,
+		sessions: (value) => everyRecord(value, validSessionSummary),
 		asyncTasks: (value) => Array.isArray(value) && value.every(isAsyncTask),
 		connection: (value) =>
 			typeof value === "string" &&
@@ -101,11 +80,13 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 		error: (value) => value === null || typeof value === "string",
 		messages: (value) =>
 			everyRecord(value, (item) => {
-				if (!(
-					isId(item.id) &&
-					typeof item.role === "string" &&
-					["user", "assistant"].includes(item.role)
-				)) {
+				if (!isId(item.id)) {
+					return false;
+				}
+				if (!(typeof item.role === "string")) {
+					return false;
+				}
+				if (!["user", "assistant"].includes(item.role)) {
 					return false;
 				}
 				return (
@@ -116,11 +97,13 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 			}),
 		tools: (value) =>
 			everyRecord(value, (item) => {
-				if (!(
-					isId(item.id) &&
-					typeof item.title === "string" &&
-					validOptionalFields(item, toolOptionalValidators)
-				)) {
+				if (!isId(item.id)) {
+					return false;
+				}
+				if (!(typeof item.title === "string")) {
+					return false;
+				}
+				if (!validOptionalFields(item, toolOptionalValidators)) {
 					return false;
 				}
 				return (
@@ -143,11 +126,13 @@ const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 				(item) =>
 					isId(item.id) &&
 					everyRecord(item.options, (o) => {
-						if (!(
-							isId(o.id) &&
-							typeof o.name === "string" &&
-							typeof o.kind === "string"
-						)) {
+						if (!isId(o.id)) {
+							return false;
+						}
+						if (!(typeof o.name === "string")) {
+							return false;
+						}
+						if (!(typeof o.kind === "string")) {
 							return false;
 						}
 						return ["allow", "deny", "abort"].includes(o.kind);
@@ -204,9 +189,10 @@ function validOptionalFields(
 	item: Record<string, unknown>,
 	validators: Record<string, (value: unknown) => boolean>,
 ): boolean {
-	return Object.entries(validators).every(
+	const matchesEvery = Object.entries(validators).every(
 		([key, validate]) => item[key] === undefined || validate(item[key]),
 	);
+	return matchesEvery;
 }
 
 /** 表示用メタデータには、生の結果や任意フィールドを許可しない。 */
@@ -214,17 +200,22 @@ function validResultDisplay(value: unknown): boolean {
 	if (value === undefined) {
 		return true;
 	}
-	if (!(
-		isRecord(value) &&
-		typeof value.source === "string" &&
-		["content", "structuredContent"].includes(value.source)
-	)) {
+
+	if (!isRecord(value)) {
 		return false;
 	}
-	return (
+	if (!(typeof value.source === "string")) {
+		return false;
+	}
+	if (!["content", "structuredContent"].includes(value.source)) {
+		return false;
+	}
+	const matchesOmitted =
 		typeof value.omitted === "boolean" &&
-		Object.keys(value).every((key) => key === "source" || key === "omitted")
-	);
+		Object.keys(value).every(
+			(key) => key === "source" || key === "omitted",
+		);
+	return matchesOmitted;
 }
 
 /** 省略サイズは非負の整数だけを受理する。 */
@@ -234,5 +225,39 @@ function validOmittedArgumentBytes(value: unknown) {
 	}
 	return (
 		typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+	);
+}
+
+/** 履歴の識別子・作業先・任意の表示値を検証し、空の識別子と別の型を拒否する。 */
+function validSessionSummary(item: Record<string, unknown>): boolean {
+	if (!isId(item.sessionId)) {
+		return false;
+	}
+	if (!isOptionalBoolean(item.archived)) {
+		return false;
+	}
+
+	if (typeof item.cwd !== "string") {
+		return false;
+	}
+	if (!isOptionalString(item.title)) {
+		return false;
+	}
+	return isOptionalString(item.updatedAt);
+}
+
+/** 基本操作は必須フラグとして検証し、追加操作は未指定または明示した真偽値だけを受け付ける。 */
+function validSessionCapabilities(value: unknown): boolean {
+	if (!isRecord(value)) {
+		return false;
+	}
+	const requiredFlags = ["list", "load", "fork", "delete"].every(
+		(key) => typeof value[key] === "boolean",
+	);
+	if (!requiredFlags) {
+		return false;
+	}
+	return ["rename", "unarchive", "archive"].every((key) =>
+		isOptionalBoolean(value[key]),
 	);
 }

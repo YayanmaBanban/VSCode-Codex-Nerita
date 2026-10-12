@@ -31,6 +31,7 @@ type AgentSession = {
 export class CodexAgents {
 	private readonly agentRegistry = new AgentRegistry();
 	private metadataRequests = new Map<string, Promise<void>>();
+	/** 子の通知と履歴取得の対象を、この接続のセッションに固定する。 */
 	constructor(private readonly session: AgentSession) {}
 
 	/** 親の実行状態は変更せず、既知の対象と子孫の稼働ターンだけを中断する。 */
@@ -41,22 +42,23 @@ export class CodexAgents {
 		const epoch = this.session.epoch();
 		const current = () => {
 			const state = this.session.snapshot();
-			if (!(
+			const matchesEpoch = !(
 				this.session.epoch() === epoch &&
 				state.sessionId === message.sessionId &&
 				state.connection === "ready"
-			)) {
+			);
+			if (matchesEpoch) {
 				return false;
 			}
 			return !state.sessionPending;
 		};
-		if (
+		const matchesClient =
 			!client ||
 			!current() ||
 			!this.session
 				.snapshot()
-				.agents.some((agent) => agent.threadId === message.threadId)
-		) {
+				.agents.some((agent) => agent.threadId === message.threadId);
+		if (matchesClient) {
 			throw new Error("この会話に停止対象のエージェントがありません。");
 		}
 		const stopped = new Set<string>();
@@ -111,11 +113,11 @@ export class CodexAgents {
 				.readThread(agent.threadId)
 				.then(({ thread }) => {
 					const latest = this.session.snapshot();
-					if (
+					const matchesEpoch2 =
 						this.session.epoch() !== epoch ||
 						latest.sessionId !== sessionId ||
-						thread.id !== agent.threadId
-					) {
+						thread.id !== agent.threadId;
+					if (matchesEpoch2) {
 						return;
 					}
 					this.session.patch({
@@ -173,9 +175,12 @@ export class CodexAgents {
 		if (!current()) {
 			return;
 		}
-		if (
-			!matchesAgentThread(thread, message.threadId, known.parentThreadId)
-		) {
+		const matchesMatchesAgentThread = !matchesAgentThread(
+			thread,
+			message.threadId,
+			known.parentThreadId,
+		);
+		if (matchesMatchesAgentThread) {
 			throw new Error("Unexpected agent thread");
 		}
 		// 子が専用 `worktree` を使う場合もあるため、`cwd` ではなく既知の ID と親子関係で限定する。
@@ -272,10 +277,10 @@ async function interruptAgentThread(
 			agent.threadId,
 			current,
 		);
-		if (
+		const matchesCurrent =
 			!current() ||
-			!matchesAgentThread(thread, agent.threadId, agent.parentThreadId)
-		) {
+			!matchesAgentThread(thread, agent.threadId, agent.parentThreadId);
+		if (matchesCurrent) {
 			throw new Error("停止対象の会話を確認できませんでした。");
 		}
 		const turns =
@@ -326,11 +331,11 @@ async function readAgentThread(
 	current: () => boolean,
 ) {
 	const result = await client.readThread(threadId);
-	if (
+	const matchesCurrent2 =
 		current() &&
 		result.thread.id === threadId &&
-		result.thread.historyMode === "legacy"
-	) {
+		result.thread.historyMode === "legacy";
+	if (matchesCurrent2) {
 		return client.readThread(threadId, true);
 	}
 	return result;
@@ -342,9 +347,9 @@ function matchesAgentThread(
 	threadId: string,
 	parentThreadId: string,
 ): boolean {
-	return (
+	const matchesId =
 		thread.id === threadId &&
 		(!isNonEmptyString(thread.parentThreadId) ||
-			thread.parentThreadId === parentThreadId)
-	);
+			thread.parentThreadId === parentThreadId);
+	return matchesId;
 }

@@ -98,18 +98,23 @@ function readExcludedPatterns(cwd: string) {
 	const excluded = vscode.workspace
 		.getConfiguration("nerita.codex", vscode.Uri.file(cwd))
 		.get<unknown>("changes.exclude", []);
-	if (
-		!Array.isArray(excluded) ||
-		!excluded.every(
-			(pattern): pattern is string =>
-				typeof pattern === "string" &&
-				pattern.length > 0 &&
-				!pattern.includes("\0"),
-		)
-	) {
+
+	if (!Array.isArray(excluded)) {
+		throw new Error("Invalid changes.exclude");
+	}
+	if (!excluded.every(isExcludePattern)) {
 		throw new Error("Invalid changes.exclude");
 	}
 	return excluded;
+}
+
+/** Git の引数へ渡す除外指定は、空文字と NUL を含まない文字列だけを受け付ける。 */
+function isExcludePattern(pattern: unknown): pattern is string {
+	return (
+		typeof pattern === "string" &&
+		pattern.length > 0 &&
+		!pattern.includes("\0")
+	);
 }
 
 /** 重複する範囲は一度だけ取得し、差分を信頼しない参照資料として渡す。 */

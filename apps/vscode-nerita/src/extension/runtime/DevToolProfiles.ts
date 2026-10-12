@@ -48,7 +48,8 @@ async function gitResources(executable: string) {
 	const resources = [toolResource("install", installation, "git", "profile")];
 	for (const relative of ["mingw64/libexec/git-core", "usr/bin"]) {
 		const helper = join(installation, relative);
-		if (await exists(helper)) {
+		const matchesValue = await exists(helper);
+		if (matchesValue) {
 			resources.push(
 				toolResource(
 					"helper",
@@ -75,7 +76,8 @@ async function pnpmResources(executable: string) {
 	const candidate = match
 		? resolve(dirname(executable), `.${match[1]}`)
 		: join(dirname(executable), "node_modules/pnpm/bin/pnpm.cjs");
-	if (!(await exists(candidate))) {
+	const matchesValue2 = !(await exists(candidate));
+	if (matchesValue2) {
 		return [];
 	}
 	const target = await realpath(candidate);

@@ -63,11 +63,11 @@ export function privateFeatureResult(
 				};
 			}
 			// 画像のデータや MIME が置換対象なら、破損した画像を返さず非公開の本文へ変える。
-			if (
+			const matchesPrivateFeatureText =
 				privateFeatureText(part.data, secrets, protect) !== part.data ||
 				privateFeatureText(part.mimeType, secrets, protect) !==
-					part.mimeType
-			) {
+					part.mimeType;
+			if (matchesPrivateFeatureText) {
 				return { type: "text", text: "[非公開]" };
 			}
 			return { type: "image", data: part.data, mimeType: part.mimeType };

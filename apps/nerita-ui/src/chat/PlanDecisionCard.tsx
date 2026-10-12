@@ -16,11 +16,14 @@ type PlanDecisionCardProps = {
 export function PlanDecisionCard({ state, send }: PlanDecisionCardProps) {
 	const reduced = useReducedMotion();
 	const decision = state.planDecision;
-	if (
-		!decision ||
-		!isNonEmptyString(state.sessionId) ||
-		state.connection !== "ready"
-	) {
+
+	if (!decision) {
+		return null;
+	}
+	if (!isNonEmptyString(state.sessionId)) {
+		return null;
+	}
+	if (state.connection !== "ready") {
 		return null;
 	}
 	const runPending =

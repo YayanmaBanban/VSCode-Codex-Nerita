@@ -20,11 +20,12 @@ export function restorePiHistory(
 	const state = { ...initialState(), cwd, runId: "history:initial" };
 	let title: string | undefined;
 	for (const entry of entries) {
-		if (
-			entry.type === "session_info" &&
-			isNonEmptyString(entry.name?.trim())
-		) {
-			title = entry.name.trim();
+		if (entry.type === "session_info") {
+			const name = entry.name?.trim();
+			if (isNonEmptyString(name)) {
+				title = name;
+			}
+			continue;
 		}
 		if (entry.type !== "message") {
 			continue;

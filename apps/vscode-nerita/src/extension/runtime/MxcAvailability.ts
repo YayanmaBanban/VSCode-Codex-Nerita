@@ -68,10 +68,10 @@ export async function probeMxc(
 			},
 			signal,
 		);
-		if (
+		const matchesExitCode =
 			result.exitCode !== 0 ||
-			result.stdout.trim() !== "NERITA_MXC_READY"
-		) {
+			result.stdout.trim() !== "NERITA_MXC_READY";
+		if (matchesExitCode) {
 			throw new Error(
 				`MXC 起動 Probe に失敗しました (${result.exitCode}): ${nonEmptyString(result.stderr) ?? result.stdout}`,
 			);

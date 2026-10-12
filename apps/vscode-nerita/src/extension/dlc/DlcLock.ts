@@ -13,7 +13,11 @@ import {
 import { join } from "node:path";
 import type { Stats } from "node:fs";
 import { z } from "zod";
-import { type SafeDlcFiles, missingFile } from "./SafeDlcFiles";
+import {
+	type SafeDlcFiles,
+	missingFile,
+	hasFileErrorCode,
+} from "./SafeDlcFiles";
 
 const ownerSchema = z.strictObject({
 	token: z.uuid(),
@@ -43,11 +47,7 @@ async function acquire(
 	try {
 		await mkdir(target);
 	} catch (error) {
-		if (!(
-			error instanceof Error &&
-			"code" in error &&
-			error.code === "EEXIST"
-		)) {
+		if (!hasFileErrorCode(error, "EEXIST")) {
 			throw error;
 		}
 		const text = await files.read(`${lockPath}/owner.json`);
@@ -77,14 +77,18 @@ async function release(
 	token: string,
 ): Promise<void> {
 	const current = await lstat(target);
-	if (
-		current.dev !== identity.dev ||
-		current.ino !== identity.ino ||
-		current.isSymbolicLink()
-	) {
+
+	if (current.dev !== identity.dev) {
 		throw new Error("DLC の保存ロックが差し替えられています。");
 	}
-	if ((await realpath(target)) !== target) {
+	if (current.ino !== identity.ino) {
+		throw new Error("DLC の保存ロックが差し替えられています。");
+	}
+	if (current.isSymbolicLink()) {
+		throw new Error("DLC の保存ロックが差し替えられています。");
+	}
+	const matchesValue = (await realpath(target)) !== target;
+	if (matchesValue) {
 		throw new Error("DLC の保存ロックが差し替えられています。");
 	}
 	const ownerPath = join(target, "owner.json");
@@ -95,15 +99,17 @@ async function release(
 		throw error;
 	});
 	if (text !== undefined) {
-		if (
-			ownerSchema.parse(JSON.parse(text)).token !== token ||
-			(await lstat(ownerPath)).isSymbolicLink()
-		) {
+		if (ownerSchema.parse(JSON.parse(text)).token !== token) {
+			throw new Error("DLC の保存ロックの所有者が差し替えられています。");
+		}
+		const ownerInfo = await lstat(ownerPath);
+		if (ownerInfo.isSymbolicLink()) {
 			throw new Error("DLC の保存ロックの所有者が差し替えられています。");
 		}
 		await unlink(ownerPath);
 	}
-	if ((await readdir(target)).length > 0) {
+	const matchesLength = (await readdir(target)).length > 0;
+	if (matchesLength) {
 		throw new Error("DLC の保存ロックに未知のファイルがあります。");
 	}
 	await rmdir(target);

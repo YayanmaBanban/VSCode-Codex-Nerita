@@ -35,6 +35,7 @@ export class CodexRun {
 	private cancelTimer: NodeJS.Timeout | undefined;
 	private planText: string | null = null;
 
+	/** 実行対象・ターン設定・子の通知を同じ会話へ結び付ける。 */
 	constructor(
 		private readonly session: RunSession,
 		private readonly options: CodexOptions,
@@ -69,11 +70,14 @@ export class CodexRun {
 	): Promise<void> {
 		const state = this.session.snapshot();
 		const client = this.session.connection();
-		if (
-			this.session.busy() ||
-			!client ||
-			!isNonEmptyString(state.sessionId)
-		) {
+
+		if (this.session.busy()) {
+			throw new Error("Busy");
+		}
+		if (!client) {
+			throw new Error("Busy");
+		}
+		if (!isNonEmptyString(state.sessionId)) {
 			throw new Error("Busy");
 		}
 		if (this.promptPending()) {
@@ -182,10 +186,9 @@ export class CodexRun {
 		for (const event of run.events.splice(0)) {
 			this.applyEvent(event);
 		}
-		if (
-			this.active === run &&
-			this.session.snapshot().run === "cancelling"
-		) {
+		const matchesActive =
+			this.active === run && this.session.snapshot().run === "cancelling";
+		if (matchesActive) {
 			this.interrupt();
 		}
 	}
@@ -220,11 +223,14 @@ export class CodexRun {
 	private interrupt(): void {
 		const run = this.active;
 		const client = this.session.connection();
-		if (
-			!isNonEmptyString(run?.turnId) ||
-			!run.started ||
-			run.interruptSent
-		) {
+
+		if (!isNonEmptyString(run?.turnId)) {
+			return;
+		}
+		if (!run.started) {
+			return;
+		}
+		if (run.interruptSent) {
 			return;
 		}
 		if (!client) {
@@ -257,74 +263,83 @@ export class CodexRun {
 	/** 完了項目・完了ターンの後に届いた `delta` で確定本文を壊さない。 */
 	private applyEvent(event: TurnEvent): void {
 		const run = this.active;
-		if (
+		const matchesRun =
 			!run ||
 			event.threadId !== run.threadId ||
-			event.turnId !== run.turnId
-		) {
+			event.turnId !== run.turnId;
+		if (matchesRun) {
 			return;
 		}
 		this.capturePlan(event);
 
+		/** ターンを終了してから、成功した Plan モードの本文だけを実行判断へ渡す。 */
+		const finishPlanTurn = (
+			status: "completed" | "cancelled" | "failed",
+		) => {
+			const planText = this.planText?.trim();
+			this.finish(status);
+
+			if (!(status === "completed")) {
+				return;
+			}
+			if (!(this.options.mode === "plan")) {
+				return;
+			}
+			if (!isNonEmptyString(planText)) {
+				return;
+			}
+			{
+				this.session.patch({
+					planDecision: {
+						runId: this.session.snapshot().runId!,
+						text: planText,
+					},
+				});
+			}
+		};
 		applyTurnEvent(run, event, {
 			snapshot: () => this.session.snapshot(),
 			patch: (change) => this.session.patch(change),
 			agentNotification: (message) => this.agents.notification(message),
 			interrupt: () => this.interrupt(),
-			finish: (status) => {
-				const planText = this.planText?.trim();
-				this.finish(status);
-				if (
-					status === "completed" &&
-					this.options.mode === "plan" &&
-					isNonEmptyString(planText)
-				) {
-					this.session.patch({
-						planDecision: {
-							runId: this.session.snapshot().runId!,
-							text: planText,
-						},
-					});
-				}
-			},
+			finish: finishPlanTurn,
 		});
 	}
 	/** 完了通知に `Plan` 本文がない場合も項目通知から保持する。 */
 	private capturePlan(event: TurnEvent) {
-		if (
-			event.kind === "item" &&
-			event.item.type === "plan" &&
-			typeof event.item.text === "string"
-		) {
-			this.planText = event.item.text;
+		if (event.kind === "item") {
+			const text = planItemText(event.item);
+			if (text !== undefined) {
+				this.planText = text;
+			}
+			return;
 		}
-		if (event.kind === "turn" && event.completed) {
-			for (let index = event.items.length - 1; index >= 0; index--) {
-				const item: unknown = event.items[index];
-				if (
-					isRecord(item) &&
-					item.type === "plan" &&
-					typeof item.text === "string"
-				) {
-					this.planText = item.text;
-					break;
-				}
+		if (event.kind !== "turn" || !event.completed) {
+			return;
+		}
+		for (let index = event.items.length - 1; index >= 0; index--) {
+			const text = planItemText(event.items[index]);
+			if (text !== undefined) {
+				this.planText = text;
+				break;
 			}
 		}
 	}
 	/** 終了時に未完了カードの状態を確定し、承認待ちを取り消す。会話は保持する。 */
 	private finish(status: "completed" | "cancelled" | "failed"): void {
 		this.session.patch({
-			tools: this.session.snapshot().tools.map((tool) =>
-				tool.runId === this.session.snapshot().runId &&
-				tool.id.startsWith("turn:")
-					? {
-							...tool,
-							status:
-								status === "completed" ? "completed" : "failed",
-						}
-					: tool,
-			),
+			tools: this.session.snapshot().tools.map((tool) => {
+				const isTarget =
+					tool.runId === this.session.snapshot().runId &&
+					tool.id.startsWith("turn:");
+				if (!isTarget) {
+					return tool;
+				}
+				return {
+					...tool,
+					status: status === "completed" ? "completed" : "failed",
+				};
+			}),
 		});
 		this.reset();
 		this.session.patch({
@@ -357,4 +372,12 @@ export class CodexRun {
 			});
 		}
 	}
+}
+
+/** 未検証の完了項目から Plan 本文だけを採用し、不正な項目を計画として表示しない。 */
+function planItemText(item: unknown): string | undefined {
+	if (!isRecord(item) || item.type !== "plan") {
+		return;
+	}
+	return typeof item.text === "string" ? item.text : undefined;
 }

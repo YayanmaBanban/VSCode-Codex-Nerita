@@ -25,17 +25,21 @@ export function normalizeOpenAIQuota(payload: unknown): QuotaWindow[] | null {
 	const windows: QuotaWindow[] = [];
 	for (const key of ["primary_window", "secondary_window"]) {
 		const window = payload.rate_limit[key];
-		if (
-			!isRecord(window) ||
-			!isFiniteNumber(window.used_percent) ||
-			typeof window.limit_window_seconds !== "number"
-		) {
+
+		if (!isRecord(window)) {
 			continue;
 		}
-		if (
-			!Number.isFinite(window.limit_window_seconds) ||
-			window.limit_window_seconds <= 0
-		) {
+		if (!isFiniteNumber(window.used_percent)) {
+			continue;
+		}
+		if (typeof window.limit_window_seconds !== "number") {
+			continue;
+		}
+
+		if (!Number.isFinite(window.limit_window_seconds)) {
+			continue;
+		}
+		if (window.limit_window_seconds <= 0) {
 			continue;
 		}
 		const seconds = window.limit_window_seconds;
@@ -51,6 +55,7 @@ export function normalizeOpenAIQuota(payload: unknown): QuotaWindow[] | null {
 
 /** SDK による OAuth 更新を利用し、接続・設定変更・実行後だけ取得する。 */
 export class OpenAIQuotaService {
+	/** 接続中のアカウントに合う利用枠を取得し、Codex の読取り経路も注入できるようにする。 */
 	constructor(
 		private models: ModelRuntime,
 		private session: AgentSession,
@@ -120,11 +125,13 @@ export class OpenAIQuotaService {
 
 	/** API キーや独自宛先のモデルから利用枠の認証を流用しない。 */
 	private canFetch(model: NonNullable<AgentSession["model"]>): boolean {
-		if (!(
-			model.provider === "openai" &&
-			model.api === "openai-responses" &&
-			isOpenAIEndpoint(model.baseUrl)
-		)) {
+		if (!(model.provider === "openai")) {
+			return false;
+		}
+		if (!(model.api === "openai-responses")) {
+			return false;
+		}
+		if (!isOpenAIEndpoint(model.baseUrl)) {
 			return false;
 		}
 		return this.models.isUsingOAuth(model.provider);

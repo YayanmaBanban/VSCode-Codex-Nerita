@@ -50,10 +50,10 @@ export function DlcWorkspaceHeader({
 						}
 						onChange={(event) => {
 							const backend = event.target.value;
-							if (
+							const matchesBackend =
 								(backend === "pi" || backend === "codex") &&
-								backend !== ui.view.backend
-							) {
+								backend !== ui.view.backend;
+							if (matchesBackend) {
 								ui.send({
 									type: "dlc/backend",
 									requestId: crypto.randomUUID(),

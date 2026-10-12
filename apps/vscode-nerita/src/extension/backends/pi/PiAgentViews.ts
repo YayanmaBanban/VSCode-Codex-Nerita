@@ -137,11 +137,11 @@ export class PiAgentViews {
 					: part,
 			),
 		}));
-		if (
+		const matchesType =
 			event.type === "message_end" ||
 			event.type === "tool_execution_start" ||
-			event.type === "tool_execution_end"
-		) {
+			event.type === "tool_execution_end";
+		if (matchesType) {
 			// SDK の通知先が例外を吸収しても、完了時に保存失敗を必ず報告する。
 			try {
 				this.persist(id);

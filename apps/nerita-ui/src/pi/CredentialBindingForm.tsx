@@ -74,12 +74,13 @@ function parseBindingForm(
 		return typeof value === "string" ? value.trim() : "";
 	};
 	const projectId = field("projectId");
+	const projectScope = projectId !== "" ? { projectId } : {};
 	const reference =
 		provider === "bitwarden-secrets-manager"
 			? {
 					type: provider,
 					secretId: field("secretId"),
-					...(projectId !== "" ? { projectId } : {}),
+					...projectScope,
 					accountId: nonEmptyString(field("accountId")) ?? "default",
 				}
 			: { type: provider };

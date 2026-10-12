@@ -13,14 +13,13 @@ export function useFollowConversation(
 	useLayoutEffect(() => {
 		following.current = true;
 	}, [sessionId, following]);
-	useLayoutEffect(() => {
+	/** 手動の縦移動とブラウザの高さ補正を分け、監視とフレーム予約は破棄時に回収する。 */
+	const observeConversationFollowing = () => {
 		const element = container.current;
 		if (!element) {
 			return;
 		}
-		let previousTop = element.scrollTop;
-		let previousHeight = element.scrollHeight;
-		let previousViewport = element.clientHeight;
+		let previous = scrollMetrics(element);
 		let frame = 0;
 		const toolScroll = registerToolCardScroll(element, () => {
 			following.current = false;
@@ -31,9 +30,7 @@ export function useFollowConversation(
 		const follow = () => {
 			if (following.current && !paused && !toolScroll.active()) {
 				element.scrollTo({ top: element.scrollHeight });
-				previousTop = element.scrollTop;
-				previousHeight = element.scrollHeight;
-				previousViewport = element.clientHeight;
+				previous = scrollMetrics(element);
 			}
 		};
 		const scroll = () => {
@@ -43,18 +40,11 @@ export function useFollowConversation(
 			}
 			if (atBottom()) {
 				following.current = true;
-			} else if (
-				element.scrollTop < previousTop &&
-				element.scrollHeight === previousHeight &&
-				element.clientHeight === previousViewport
-			) {
-				// 仮想行の再計測や、会話が空のときの表示を消す際などに高さが変わる。
-				// 内容や表示領域の高さが変わった場合は、ブラウザの位置補正を手動操作とみなさない。
+			} else if (scrolledUpWithoutResize(element, previous)) {
+				// 高さの変化によるブラウザの位置補正は手動操作とみなさない。
 				following.current = false;
 			}
-			previousTop = element.scrollTop;
-			previousHeight = element.scrollHeight;
-			previousViewport = element.clientHeight;
+			previous = scrollMetrics(element);
 		};
 		// `wheel` 直後の描画更新が、ブラウザの `scroll` 通知より先に追従する競合を防ぐ。
 		const wheel = (event: WheelEvent) => {
@@ -77,7 +67,13 @@ export function useFollowConversation(
 			element.removeEventListener("scroll", scroll);
 			element.removeEventListener("wheel", wheel);
 		};
-	}, [container, sessionId, paused, following]);
+	};
+	useLayoutEffect(observeConversationFollowing, [
+		container,
+		sessionId,
+		paused,
+		following,
+	]);
 }
 
 /** 会話欄とその内容の高さ、行や本文の変更を監視し、末尾への追従処理を次のフレームに予約する。 */
@@ -114,10 +110,11 @@ function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
 		heading = null;
 	};
 	const align = () => {
-		if (
-			!(heading?.isConnected === true) ||
-			heading.getAttribute("aria-expanded") !== "true"
-		) {
+		if (!(heading?.isConnected === true)) {
+			cancel();
+			return;
+		}
+		if (heading.getAttribute("aria-expanded") !== "true") {
 			cancel();
 			return;
 		}
@@ -129,12 +126,12 @@ function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
 			.closest(".tool-card")
 			?.querySelector(".tool-card-collapse, .combo-list-collapse");
 		// スクロールの自動補正で見出しが動いても、展開完了まではクリック時の位置へ戻す。
-		if (
+		const matchesSome =
 			collapse
 				?.getAnimations()
 				.some((animation) => animation.playState !== "finished") ===
-			true
-		) {
+			true;
+		if (matchesSome) {
 			frame = requestAnimationFrame(align);
 		} else {
 			heading = null;
@@ -173,4 +170,25 @@ function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
 			container.removeEventListener("keydown", cancel);
 		},
 	};
+}
+
+/** 会話欄の位置と高さを同じ順序で記録する。 */
+function scrollMetrics(element: HTMLElement) {
+	return {
+		top: element.scrollTop,
+		height: element.scrollHeight,
+		viewport: element.clientHeight,
+	};
+}
+
+/** 高さが変わらずに位置だけ上がった場合を手動スクロールとして扱う。 */
+function scrolledUpWithoutResize(
+	element: HTMLElement,
+	previous: ReturnType<typeof scrollMetrics>,
+) {
+	return (
+		element.scrollTop < previous.top &&
+		element.scrollHeight === previous.height &&
+		element.clientHeight === previous.viewport
+	);
 }

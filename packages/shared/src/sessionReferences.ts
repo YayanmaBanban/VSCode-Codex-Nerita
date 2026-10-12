@@ -1,5 +1,5 @@
 // セッション参照の候補・チップ・読み取り要求を Host と共有する。
-import { isRecord } from "./validation";
+import { isId, isRecord } from "./validation";
 import { isPathString } from "./workspacePaths";
 
 /** 会話を再開せず、送信時に本文を読み取るための参照。 */
@@ -17,18 +17,24 @@ export function isSessionReference(value: unknown): value is SessionReference {
 		return false;
 	}
 	const entry = value;
-	if (!(
-		entry.kind === "session" &&
-		isSessionReferenceMode(entry.mode) &&
-		typeof entry.sessionId === "string"
-	)) {
+
+	if (!(entry.kind === "session")) {
 		return false;
 	}
-	if (!(
-		entry.sessionId.length > 0 &&
-		entry.sessionId.length <= 256 &&
-		isPathString(entry.name)
-	)) {
+	if (!isSessionReferenceMode(entry.mode)) {
+		return false;
+	}
+	if (!(typeof entry.sessionId === "string")) {
+		return false;
+	}
+
+	if (!(entry.sessionId.length > 0)) {
+		return false;
+	}
+	if (!(entry.sessionId.length <= 256)) {
+		return false;
+	}
+	if (!isPathString(entry.name)) {
 		return false;
 	}
 	return isPathString(entry.cwd);
@@ -80,7 +86,7 @@ export function validSessionReferences(
 	if (value === undefined) {
 		return true;
 	}
-	return (
+	const matchesIsArray =
 		Array.isArray(value) &&
 		value.length <= 5 &&
 		value.every((item: unknown) => {
@@ -88,14 +94,10 @@ export function validSessionReferences(
 				return false;
 			}
 			const entry = item;
-			if (!(
-				isSessionReferenceMode(entry.mode) &&
-				typeof entry.sessionId === "string" &&
-				entry.sessionId.length > 0
-			)) {
+			if (!isSessionReferenceMode(entry.mode)) {
 				return false;
 			}
-			return entry.sessionId.length <= 256;
-		})
-	);
+			return isId(entry.sessionId);
+		});
+	return matchesIsArray;
 }

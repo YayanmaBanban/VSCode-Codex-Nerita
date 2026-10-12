@@ -8,11 +8,13 @@ export function parseMcpStatus(value: unknown): {
 	data: McpServerSummary[];
 	nextCursor: string | null;
 } {
-	if (
-		!isRecord(value) ||
-		!Array.isArray(value.data) ||
-		!value.data.every(isMcpServerSummary)
-	) {
+	if (!isRecord(value)) {
+		throw new Error("MCPサーバー一覧の応答が不正です。");
+	}
+	if (!Array.isArray(value.data)) {
+		throw new Error("MCPサーバー一覧の応答が不正です。");
+	}
+	if (!value.data.every(isMcpServerSummary)) {
 		throw new Error("MCPサーバー一覧の応答が不正です。");
 	}
 	if (!(value.nextCursor === null || typeof value.nextCursor === "string")) {

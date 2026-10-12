@@ -2,6 +2,7 @@
 
 /** 起動失敗からの回収も通常の接続失敗と区別し、終了未確認を Runtime まで伝える。 */
 export class BackendShutdownError extends Error {
+	/** 終了確認の失敗を元の原因とともに保持し、実行先の予約を解放できない状態として伝える。 */
 	constructor(cause: unknown) {
 		super("バックエンドの終了を確認できません。", { cause });
 	}
@@ -12,6 +13,7 @@ export class BackendShutdown {
 	private pending = new Set<Promise<void>>();
 	private failure: BackendShutdownError | undefined;
 
+	/** 終了処理の失敗を保持し、処理が完了した場合だけ追跡対象から外す。 */
 	track(operation: Promise<unknown>): void {
 		const settled = operation.then(
 			() => {},

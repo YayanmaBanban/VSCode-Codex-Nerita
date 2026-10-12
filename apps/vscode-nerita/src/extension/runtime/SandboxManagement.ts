@@ -51,6 +51,7 @@ export class SandboxManagement {
 	private resources: ResourcePolicy[] = [];
 	private report: DenialReport | undefined;
 	private sessionSignal: AbortSignal | undefined;
+	/** コマンドとリソースの許可を別の保存先で管理し、保存先のないリソース許可は永続化を拒否する。 */
 	constructor(
 		storage: CommandGrantStorage,
 		resourceStorage: ResourceGrantStorage = {
@@ -119,11 +120,11 @@ export class SandboxManagement {
 				(event) => event.id === decision.denialEventId,
 			),
 		);
-		if (
+		const matchesWaiting =
 			!waiting ||
 			waiting.signal.aborted ||
-			toolCallFingerprint(waiting.call) !== waiting.fingerprint
-		) {
+			toolCallFingerprint(waiting.call) !== waiting.fingerprint;
+		if (matchesWaiting) {
 			throw new Error(
 				"拒否イベントは期限切れです。元の操作を再実行してください。",
 			);
@@ -219,6 +220,27 @@ export class SandboxManagement {
 				active.add(event.id);
 			}
 		}
+		/** 現在の拒否イベントだけに操作候補を付け、許可できない対象へ操作を表示しない。 */
+		const denialWithActions = (event: DenialReport["events"][number]) => {
+			if (!active.has(event.id)) {
+				return { ...event, actions: [] };
+			}
+			const actions: SandboxSnapshot["denials"][number]["actions"] = [
+				"deny",
+			];
+			if (grantable(event)) {
+				actions.push("allow");
+			}
+
+			const isSandboxCache =
+				event.resourceType === "file" &&
+				event.resource?.kind === "cache" &&
+				isNonEmptyString(event.resource.tool);
+			if (isSandboxCache) {
+				actions.push("use-sandbox-cache");
+			}
+			return { ...event, actions };
+		};
 		return structuredClone({
 			selected: "mxc",
 			availability: [this.status, dockerAvailability],
@@ -235,25 +257,7 @@ export class SandboxManagement {
 						),
 					].map((event) => [event.id, event]),
 				).values(),
-			].map((event) => {
-				if (!active.has(event.id)) {
-					return { ...event, actions: [] };
-				}
-				const actions: SandboxSnapshot["denials"][number]["actions"] = [
-					"deny",
-				];
-				if (grantable(event)) {
-					actions.push("allow");
-				}
-				if (
-					event.resourceType === "file" &&
-					event.resource?.kind === "cache" &&
-					isNonEmptyString(event.resource.tool)
-				) {
-					actions.push("use-sandbox-cache");
-				}
-				return { ...event, actions };
-			}),
+			].map(denialWithActions),
 			reportStatus: this.report?.status ?? "not-run",
 		});
 	}

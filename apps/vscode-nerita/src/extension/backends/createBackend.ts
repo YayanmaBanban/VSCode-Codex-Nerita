@@ -52,12 +52,12 @@ export function createBackend(
 	backend?: BackendId,
 	executionRoot?: string,
 ): BackendSession {
-	if (
+	const matchesBackend =
 		(backend ??
 			vscode.workspace
 				.getConfiguration("nerita")
-				.get<string>("backend", "codex")) === "pi"
-	) {
+				.get<string>("backend", "codex")) === "pi";
+	if (matchesBackend) {
 		return new PiSessionController(
 			createPiFactory(context, trustStore, executionRoot),
 		);
@@ -212,12 +212,11 @@ async function explicitDirectory(
 		throw new Error("信頼済みのローカル環境で実行してください。");
 	}
 	const cwd = await realpath(root ?? workspaceDirectory());
-	if (
-		!(await backendWorkspaceTrusted(
-			backend,
-			() => trust?.trusted(cwd) ?? false,
-		))
-	) {
+	const matchesValue = !(await backendWorkspaceTrusted(
+		backend,
+		() => trust?.trusted(cwd) ?? false,
+	));
+	if (matchesValue) {
 		throw new Error("実行先の Nerita Trust を確認してください。");
 	}
 	return cwd;
@@ -228,11 +227,14 @@ function storedPiModel(value: unknown): PiModelSelection | undefined {
 	if (typeof value !== "object" || value === null || !("provider" in value)) {
 		return undefined;
 	}
-	if (
-		!("model" in value) ||
-		typeof value.provider !== "string" ||
-		typeof value.model !== "string"
-	) {
+
+	if (!("model" in value)) {
+		return undefined;
+	}
+	if (typeof value.provider !== "string") {
+		return undefined;
+	}
+	if (typeof value.model !== "string") {
 		return undefined;
 	}
 	if (value.provider.trim() === "" || value.model.trim() === "") {
@@ -249,12 +251,10 @@ function storedPiModel(value: unknown): PiModelSelection | undefined {
 function modelConfig(root: string): ModelConfig {
 	return new ModelConfig(root, undefined, (file) => {
 		const uri = vscode.Uri.file(file).toString();
-		if (
-			vscode.workspace.textDocuments.some(
-				(document) =>
-					document.isDirty && document.uri.toString() === uri,
-			)
-		) {
+		const matchesSome = vscode.workspace.textDocuments.some(
+			(document) => document.isDirty && document.uri.toString() === uri,
+		);
+		if (matchesSome) {
 			throw new Error(
 				"config.toml に未保存の編集があります。保存してから再試行してください。",
 			);

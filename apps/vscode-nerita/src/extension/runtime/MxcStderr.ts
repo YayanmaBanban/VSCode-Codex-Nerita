@@ -12,11 +12,13 @@ const pointerSchema = z.object({
 /** チャンク境界をまたぐ JSON を処理する。通常の出力は、診断情報の開始マーカーより短い末尾だけを保留する。 */
 export class MxcStderr {
 	private pending = "";
+	/** stderr の保存先と通知先を対にして保持し、大きな出力もその経路で回収する。 */
 	constructor(
 		private readonly directory: string,
 		private readonly emit: (text: string) => void,
 	) {}
 
+	/** 分割された内部ポインター行を組み立て、検証した管理用参照だけを通常の stderr 表示から除く。 */
 	write(chunk: string): void {
 		this.pending += chunk;
 		while (isNonZeroNumber(this.pending.length)) {
@@ -51,6 +53,7 @@ export class MxcStderr {
 		this.flush(this.pending.length);
 	}
 
+	/** 確定した通常出力だけを公開し、解析待ちの末尾をバッファへ残す。 */
 	private flush(length: number): void {
 		if (isNonZeroNumber(length)) {
 			this.emit(this.pending.slice(0, length));

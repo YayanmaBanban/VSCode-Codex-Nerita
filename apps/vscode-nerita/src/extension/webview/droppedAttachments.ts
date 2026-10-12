@@ -36,7 +36,8 @@ export async function droppedAttachments(
 			path = join(folder, file.name);
 			await writeFile(path, data);
 		}
-		if (!(await stat(path)).isFile()) {
+		const matchesIsFile = !(await stat(path)).isFile();
+		if (matchesIsFile) {
 			throw new Error("フォルダーは添付できません。");
 		}
 		selected.push({

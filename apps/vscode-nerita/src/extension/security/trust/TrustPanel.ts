@@ -90,29 +90,31 @@ function createTrustRequestListener(
 		if (!parsed.success) {
 			return;
 		}
+		/** 要求を直列化し、フォルダー選択の待機中に閉じた画面から信頼登録を続けない。 */
+		const handleCurrentTrustRequest = async () => {
+			if (panelState.closed) {
+				return;
+			}
+			const request = parsed.data;
+			if (request.type === "add") {
+				const folders = await vscode.window.showOpenDialog({
+					canSelectFiles: false,
+					canSelectFolders: true,
+					canSelectMany: false,
+					title: "Trust を管理するフォルダー",
+				});
+				// フォルダー選択の待機中にパネルが閉じられる場合がある。
+				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+				if (!panelState.closed && folders?.[0]) {
+					await store.registerWorkspace(folders[0].fsPath);
+				}
+			} else if (request.type !== "refresh") {
+				await updateRecord(request);
+			}
+			publish();
+		};
 		pending.queue = pending.queue
-			.then(async () => {
-				if (panelState.closed) {
-					return;
-				}
-				const request = parsed.data;
-				if (request.type === "add") {
-					const folders = await vscode.window.showOpenDialog({
-						canSelectFiles: false,
-						canSelectFolders: true,
-						canSelectMany: false,
-						title: "Trust を管理するフォルダー",
-					});
-					// フォルダー選択の待機中にパネルが閉じられる場合がある。
-					// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-					if (!panelState.closed && folders?.[0]) {
-						await store.registerWorkspace(folders[0].fsPath);
-					}
-				} else if (request.type !== "refresh") {
-					await updateRecord(request);
-				}
-				publish();
-			})
+			.then(handleCurrentTrustRequest)
 			.catch((error: unknown) => publish(errorText(error)));
 	};
 }

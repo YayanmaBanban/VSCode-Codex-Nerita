@@ -38,10 +38,10 @@ export function serialized<T>(
 export async function workspaceFile(root: string, relative: string) {
 	const base = await realpath(root);
 	const target = resolve(base, relative);
-	if (
+	const matchesContainsPath =
 		!containsPath(base, target) ||
-		(await canonicalPath(target, base)) !== target
-	) {
+		(await canonicalPath(target, base)) !== target;
+	if (matchesContainsPath) {
 		throw new Error("設定ファイルのリンク先または保存先が不正です。");
 	}
 	return target;
@@ -74,7 +74,8 @@ export async function writeWorkspaceFile(
 	expected: string | undefined,
 	text: string,
 ) {
-	if ((await readWorkspaceFile(root, relative)) !== expected) {
+	const matchesValue = (await readWorkspaceFile(root, relative)) !== expected;
+	if (matchesValue) {
 		throw new Error("別の編集が保存されています。再読み込みしてください。");
 	}
 	const target = await workspaceFile(root, relative);
@@ -83,7 +84,9 @@ export async function writeWorkspaceFile(
 	const temp = `${target}.${randomUUID()}.tmp`;
 	try {
 		await writeFile(temp, text, { flag: "wx" });
-		if ((await readWorkspaceFile(root, relative)) !== expected) {
+		const matchesValue2 =
+			(await readWorkspaceFile(root, relative)) !== expected;
+		if (matchesValue2) {
 			throw new Error(
 				"保存中に設定が変更されました。再読み込みしてください。",
 			);

@@ -13,7 +13,7 @@ export function validCodeReferences(
 	if (value === undefined) {
 		return true;
 	}
-	return (
+	const matchesIsArray =
 		Array.isArray(value) &&
 		value.length <= 20 &&
 		value.every((item: unknown) => {
@@ -26,6 +26,6 @@ export function validCodeReferences(
 				reference.uri.startsWith("file://") &&
 				isSourceRange(reference.range)
 			);
-		})
-	);
+		});
+	return matchesIsArray;
 }

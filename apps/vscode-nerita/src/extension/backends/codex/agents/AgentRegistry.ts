@@ -34,42 +34,58 @@ export class AgentRegistry {
 		if (!isRecord(p)) {
 			return {};
 		}
-		if (
-			message.method === "thread/status/changed" &&
-			typeof p.threadId === "string"
-		) {
-			const status = threadAgentStatus(p.status);
-			if (!(status !== undefined)) {
-				return {};
-			}
-			this.statuses.set(p.threadId, status);
-			this.trim();
-			return {
-				agents: state.agents.map((agent) =>
-					agent.threadId === p.threadId
-						? withThreadStatus(agent, status)
-						: agent,
-				),
-			};
+		if (message.method === "thread/status/changed") {
+			return this.threadStatusChanged(state, p);
 		}
-		if (
-			message.method === "thread/started" &&
-			isRecord(p.thread) &&
-			typeof p.thread.id === "string"
-		) {
-			const threadId = p.thread.id;
-			const patch = agentMetadata(p.thread);
-			this.metadata.set(p.thread.id, patch);
-			this.trim();
-			return {
-				agents: state.agents.map((agent) =>
-					agent.threadId === threadId
-						? { ...agent, ...patch }
-						: agent,
-				),
-			};
+		if (message.method === "thread/started") {
+			return this.threadStarted(state, p);
 		}
 		return this.activityNotifications(state, message, p);
+	}
+
+	/** カードがまだ存在しなくても、検証済みの状態を後続の活動通知へ引き継ぐ。 */
+	private threadStatusChanged(
+		state: ChatState,
+		p: Record<string, unknown>,
+	): Partial<ChatState> {
+		if (typeof p.threadId !== "string") {
+			return {};
+		}
+		const status = threadAgentStatus(p.status);
+		if (status === undefined) {
+			return {};
+		}
+		this.statuses.set(p.threadId, status);
+		this.trim();
+		return {
+			agents: state.agents.map((agent) =>
+				agent.threadId === p.threadId
+					? withThreadStatus(agent, status)
+					: agent,
+			),
+		};
+	}
+
+	/** 開始通知のメタデータは既存カードを補完し、通知だけでは新しいカードを作らない。 */
+	private threadStarted(
+		state: ChatState,
+		p: Record<string, unknown>,
+	): Partial<ChatState> {
+		if (!isRecord(p.thread)) {
+			return {};
+		}
+		if (typeof p.thread.id !== "string") {
+			return {};
+		}
+		const threadId = p.thread.id;
+		const patch = agentMetadata(p.thread);
+		this.metadata.set(threadId, patch);
+		this.trim();
+		return {
+			agents: state.agents.map((agent) =>
+				agent.threadId === threadId ? { ...agent, ...patch } : agent,
+			),
+		};
 	}
 	/** 親会話と既知の子エージェントの活動だけを反映する。 */
 	private activityNotifications(
@@ -77,22 +93,26 @@ export class AgentRegistry {
 		message: AppServerNotification,
 		p: Record<string, unknown>,
 	): Partial<ChatState> {
-		if (
-			typeof p.threadId !== "string" ||
-			(p.threadId !== state.sessionId &&
-				!state.agents.some((agent) => agent.threadId === p.threadId))
-		) {
+		if (typeof p.threadId !== "string") {
+			return {};
+		}
+		const unrelatedThread =
+			p.threadId !== state.sessionId &&
+			!state.agents.some((agent) => agent.threadId === p.threadId);
+		if (unrelatedThread) {
 			return {};
 		}
 		const items = notificationItems(message.method, p);
 		let current = state;
 		for (const item of items) {
-			if (
-				!isRecord(item) ||
-				!["subAgentActivity", "collabAgentToolCall"].some(
-					(type) => type === item.type,
-				)
-			) {
+			if (!isRecord(item)) {
+				continue;
+			}
+			const agentActivity = [
+				"subAgentActivity",
+				"collabAgentToolCall",
+			].some((type) => type === item.type);
+			if (!agentActivity) {
 				continue;
 			}
 			const key = notificationKey(p, item, message);
@@ -128,13 +148,13 @@ export class AgentRegistry {
 	}
 	/** 再開したエージェントの古い状態キャッシュを消す。 */
 	private clearInteractedStatus(item: Record<string, unknown>) {
-		if (
-			item.type === "subAgentActivity" &&
-			item.kind === "interacted" &&
-			typeof item.agentThreadId === "string"
-		) {
-			this.statuses.delete(item.agentThreadId);
+		if (item.type !== "subAgentActivity" || item.kind !== "interacted") {
+			return;
 		}
+		if (typeof item.agentThreadId !== "string") {
+			return;
+		}
+		this.statuses.delete(item.agentThreadId);
 	}
 
 	/** 無関係なスレッド通知によるキャッシュの無制限な増加を防ぐ。 */
@@ -153,11 +173,14 @@ function notificationKey(
 	message: AppServerNotification,
 ) {
 	const turnId = p.turnId ?? (isRecord(p.turn) ? p.turn.id : "");
-	if (
-		typeof p.threadId !== "string" ||
-		typeof turnId !== "string" ||
-		typeof item.id !== "string"
-	) {
+
+	if (typeof p.threadId !== "string") {
+		throw new Error("Invalid agent notification ID");
+	}
+	if (typeof turnId !== "string") {
+		throw new Error("Invalid agent notification ID");
+	}
+	if (typeof item.id !== "string") {
 		throw new Error("Invalid agent notification ID");
 	}
 	const key = `${p.threadId}:${turnId}:${item.id}:${activityEventKey(item, message.method)}`;
@@ -190,14 +213,16 @@ function notificationItems(
 	if (["item/started", "item/completed"].includes(method)) {
 		return [p.item];
 	}
-	if (
-		method === "turn/completed" &&
-		isRecord(p.turn) &&
-		Array.isArray(p.turn.items)
-	) {
-		return p.turn.items;
+	if (method !== "turn/completed") {
+		return [];
 	}
-	return [];
+	if (!isRecord(p.turn)) {
+		return [];
+	}
+	if (!Array.isArray(p.turn.items)) {
+		return [];
+	}
+	return p.turn.items;
 }
 
 /** 活動の種類と開始・完了を重複検出キーへ反映する。 */

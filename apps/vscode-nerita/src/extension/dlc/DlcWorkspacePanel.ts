@@ -15,6 +15,7 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
 	private unbind: (() => void) | undefined;
 	private initialized = false;
+	/** Workspace 画面の操作を現在の DLC Host と実行状態へ結び付ける。 */
 	constructor(
 		private context: vscode.ExtensionContext,
 		private host: DlcHost,
@@ -86,6 +87,7 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 		}
 	}
 
+	/** DLC 固有の編集状態だけを保存し、通常チャットの下書き・表示位置に DLC の値を混ぜない。 */
 	private async dispatch(
 		panel: vscode.WebviewPanel,
 		key: string,
@@ -99,13 +101,14 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 			await openResource(value.uri, value.range);
 		} else if (value.type === "workspace/manageTrust") {
 			await vscode.commands.executeCommand("nerita.trust.manage");
-		} else if (
-			value.type === "ui/saveScroll" ||
-			value.type === "ui/saveDraft"
-		) {
-			// 通常チャットの表示位置・下書きへ DLC の状態を保存しない。
 		} else {
-			await this.runtime.scope("dlc").receive(value);
+			const isChatViewState =
+				value.type === "ui/saveScroll" || value.type === "ui/saveDraft";
+			if (isChatViewState) {
+				// 通常チャットの表示位置・下書きへ DLC の状態を保存しない。
+			} else {
+				await this.runtime.scope("dlc").receive(value);
+			}
 		}
 	}
 
@@ -134,6 +137,7 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 		});
 	}
 
+	/** 購読とパネルを一度だけ回収し、Workspace の表示が閉じたことを Host へ伝える。 */
 	dispose(): void {
 		this.unbind?.();
 		this.unbind = undefined;

@@ -10,11 +10,14 @@ export async function openResource(
 ): Promise<void> {
 	validateResourceRange(range);
 	let uri = vscode.Uri.parse(value, true);
-	if (
-		uri.scheme !== "file" ||
-		isNonEmptyString(uri.query) ||
-		isNonEmptyString(uri.fragment)
-	) {
+
+	if (uri.scheme !== "file") {
+		throw new Error("Unsupported resource URI");
+	}
+	if (isNonEmptyString(uri.query)) {
+		throw new Error("Unsupported resource URI");
+	}
+	if (isNonEmptyString(uri.fragment)) {
 		throw new Error("Unsupported resource URI");
 	}
 	const location = /:(\d+)(?::(\d+))?(?:-(\d+)(?::(\d+))?)?$/.exec(uri.path);

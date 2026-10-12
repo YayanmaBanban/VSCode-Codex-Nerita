@@ -43,11 +43,10 @@ export async function createPiShellTools(
 		}
 		try {
 			const executable = await resolvePowerShell(name, async (path) => {
-				if (
-					paths.policy.writableRoots.some((root) =>
-						containsPath(root, path),
-					)
-				) {
+				const matchesSome = paths.policy.writableRoots.some((root) =>
+					containsPath(root, path),
+				);
+				if (matchesSome) {
 					return false;
 				}
 				return (

@@ -11,7 +11,9 @@ export class PiProviderControls {
 	private session: AgentSession | undefined;
 	private provider: string | undefined;
 	private active: PiModelControls | undefined;
+	/** 接続へ結び付けるまではカタログを未取得として扱い、利用可能な候補を推測しない。 */
 	private catalog: (provider: string) => PiCatalogSnapshot = () => undefined;
+	/** 接続の委譲可否を結び付けるまでは操作を許可しない。 */
 	private canDelegate = () => false;
 
 	/** 子起動の可否は Host が管理し、設定や要求の直前にも確認する。 */
@@ -29,6 +31,7 @@ export class PiProviderControls {
 		this.catalog = read;
 	}
 
+	/** 操作の可否と表示は、注入したプロバイダーの仕様に従う。 */
 	constructor(private readonly providers: PiProviders = piProviders) {}
 
 	/** SDK セッションを接続し、別セッションの固有設定を破棄する。 */

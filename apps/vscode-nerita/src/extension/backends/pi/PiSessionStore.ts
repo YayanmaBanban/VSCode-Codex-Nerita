@@ -75,11 +75,13 @@ export async function preparePiSessionDirectory(
 				flag: "wx",
 			});
 		} catch (error) {
-			if (!(
-				error instanceof Error &&
-				"code" in error &&
-				error.code === "EEXIST"
-			)) {
+			if (!(error instanceof Error)) {
+				throw error;
+			}
+			if (!("code" in error)) {
+				throw error;
+			}
+			if (!(error.code === "EEXIST")) {
 				throw error;
 			}
 		}
@@ -172,17 +174,18 @@ function createPiContextReader(
 			throw new Error("参照セッションが大きすぎます。");
 		}
 		const header = sdk.parseSessionEntries(before)[0];
-		if (
+		const matchesType =
 			header?.type !== "session" ||
 			header.id !== id ||
-			!sameCwd(header.cwd, cwd)
-		) {
+			!sameCwd(header.cwd, cwd);
+		if (matchesType) {
 			throw new Error("参照セッションが変更されています。");
 		}
 		readSignal.throwIfAborted();
 		const source = sdk.SessionManager.open(file, directory);
 		const context = piSessionContext(sdk, source.getBranch(), mode);
-		if ((await readFile(file, "utf8")) !== before) {
+		const matchesValue = (await readFile(file, "utf8")) !== before;
+		if (matchesValue) {
 			throw new Error("参照セッションが変更されています。");
 		}
 		readSignal.throwIfAborted();
@@ -218,7 +221,9 @@ function createPiHistoryListing(
 		for (const row of rows) {
 			listSignal.throwIfAborted();
 			try {
-				if (dirname(await realpath(row.path)) === root) {
+				const matchesDirname =
+					dirname(await realpath(row.path)) === root;
+				if (matchesDirname) {
 					safe.push(row);
 				}
 			} catch {

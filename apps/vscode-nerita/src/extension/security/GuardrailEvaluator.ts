@@ -96,11 +96,11 @@ export function guardrailWarnings(config: GuardrailsConfig): string[] {
 	for (let i = 0; i < rules.length; i++) {
 		const rule = rules[i]!;
 		for (const other of rules.slice(i + 1)) {
-			if (
+			const matchesPattern =
 				rule.pattern === other.pattern &&
 				rule.action !== other.action &&
-				rule.match === other.match
-			) {
+				rule.match === other.match;
+			if (matchesPattern) {
 				warnings.push(
 					`${rule.id} と ${other.id} は同じパターンで判定が異なります。deny > ask > allow を優先します。`,
 				);

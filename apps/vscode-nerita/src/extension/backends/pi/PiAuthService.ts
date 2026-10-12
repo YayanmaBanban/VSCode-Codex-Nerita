@@ -34,6 +34,7 @@ class PiAuthPanel implements PiAuthService {
 	};
 	private answer: ((id: string, value: string) => void) | undefined;
 	private feedbackOwner: string | undefined;
+	/** 認証画面のリソースは拡張の配置先から読み込む。 */
 	constructor(private readonly extensionUri: vscode.Uri) {}
 
 	/** 通知を認証先に紐付け、他の認証先の結果を上書きしない。 */

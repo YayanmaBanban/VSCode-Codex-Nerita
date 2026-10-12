@@ -48,6 +48,7 @@ export class PiChildRuntimes {
 	private stopping: Promise<void> | undefined;
 	private readonly shutdown = new BackendShutdown();
 
+	/** 親のツール上限とルートをコピーして固定し、呼び出し側の変更で子の権限を広げない。 */
 	constructor(
 		parent: PiRuntimeOptions,
 		policy: AgentAccessPolicy,
@@ -157,7 +158,8 @@ export class PiChildRuntimes {
 
 	/** 起動完了と Stop が競合しても、子の abort と close は一度だけ呼び出す。 */
 	private close(child: Child): Promise<void> {
-		child.closing ??= Promise.resolve().then(async () => {
+		/** 起動待ちを回収し、中止の失敗後も終了確認を行う。失敗を保持して子の登録と取消し購読を外す。 */
+		const closeChildRuntime = async () => {
 			try {
 				const session =
 					child.session ??
@@ -183,7 +185,8 @@ export class PiChildRuntimes {
 				child.detachAbort?.();
 				this.children.delete(child);
 			}
-		});
+		};
+		child.closing ??= Promise.resolve().then(closeChildRuntime);
 		child.abort.abort();
 		return child.closing;
 	}

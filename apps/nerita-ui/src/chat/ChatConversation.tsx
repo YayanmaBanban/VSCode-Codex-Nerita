@@ -101,7 +101,8 @@ function ConversationScrollButton({
 	sessionId: string | null;
 }) {
 	const [awayFromBottom, setAwayFromBottom] = useState(false);
-	useEffect(() => {
+	/** スクロールとサイズ変更の両方で末尾への距離を更新し、破棄時に監視を外す。 */
+	const observeConversationBottom = () => {
 		const element = conversation.current;
 		if (!element) {
 			return;
@@ -123,7 +124,8 @@ function ConversationScrollButton({
 			resize.disconnect();
 			element.removeEventListener("scroll", update);
 		};
-	}, [conversation, sessionId]);
+	};
+	useEffect(observeConversationBottom, [conversation, sessionId]);
 
 	return (
 		<>

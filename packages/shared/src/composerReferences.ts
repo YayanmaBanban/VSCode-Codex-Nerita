@@ -37,16 +37,16 @@ export function validReferences(
 	}
 
 	let end = 0;
-	return value.every((item: unknown) => {
+	/** 直前の参照末尾から順に照合し、位置の重複と本文との不一致を拒否する。 */
+	const validateReference = (item: unknown) => {
 		if (!isRecord(item)) {
 			return false;
 		}
 		const reference = item;
-		if (
-			!Number.isSafeInteger(reference.offset) ||
-			typeof reference.offset !== "number" ||
-			reference.offset < end
-		) {
+		if (!Number.isSafeInteger(reference.offset)) {
+			return false;
+		}
+		if (typeof reference.offset !== "number" || reference.offset < end) {
 			return false;
 		}
 		if (!isComposerTarget(reference.path)) {
@@ -56,5 +56,7 @@ export function validReferences(
 		const expected = pathText(reference.path);
 		end = reference.offset + expected.length;
 		return text.slice(reference.offset, end) === expected;
-	});
+	};
+	const matchesEvery = value.every(validateReference);
+	return matchesEvery;
 }

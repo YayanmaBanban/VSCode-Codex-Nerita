@@ -13,6 +13,7 @@ import { canonicalPath } from "../../../security/WorkspacePathPolicy";
 /** 設定を適用できるワークスペースとファイルを Host 側で確定する。 */
 export class GuardrailsSettings {
 	private queue: Promise<unknown> = Promise.resolve();
+	/** 設定は注入した永続状態へ保存し、別の保存先を暗黙に作らない。 */
 	constructor(private readonly state: vscode.Memento) {}
 	/** ディスクの `guardrails.json` ではなく、利用者が適用した内容だけを復元する。 */
 	async restore() {
@@ -40,7 +41,7 @@ export class GuardrailsSettings {
 	/** 設定ファイルへのリンクを通してワークスペース外へ保存しない。 */
 	async rootFor(uri: vscode.Uri): Promise<string> {
 		const folder = vscode.workspace.getWorkspaceFolder(uri);
-		if (
+		const matchesFolder =
 			!folder ||
 			uri.scheme !== "file" ||
 			uri.toString() !==
@@ -48,24 +49,25 @@ export class GuardrailsSettings {
 					folder.uri,
 					".pi",
 					"guardrails.json",
-				).toString()
-		) {
+				).toString();
+		if (matchesFolder) {
 			throw new Error(
 				"workspace直下の .pi/guardrails.json を開いてください。",
 			);
 		}
 		const root = await realpath(folder.uri.fsPath);
-		if (
+		const matchesValue =
 			(await canonicalPath(uri.fsPath, root)) !==
-			resolve(root, ".pi/guardrails.json")
-		) {
+			resolve(root, ".pi/guardrails.json");
+		if (matchesValue) {
 			throw new Error("ガードレール設定のリンク先が変更されています。");
 		}
 		return root;
 	}
 	/** 文書内容の一致を確認した後に永続化し、同じ内容を実行側へ渡す。 */
 	apply(root: string, text: string, isCurrent: () => boolean): Promise<void> {
-		const operation = this.queue.then(async () => {
+		/** 保存前後で文書の世代を確認し、保存中の変更では以前の有効設定へ戻す。 */
+		const applyCurrentGuardrails = async () => {
 			const config = parseGuardrails(text);
 			if (!isCurrent()) {
 				throw new Error("文書が変更されました。再度適用してください。");
@@ -80,7 +82,8 @@ export class GuardrailsSettings {
 				);
 			}
 			guardrailRegistry.apply(root, config);
-		});
+		};
+		const operation = this.queue.then(applyCurrentGuardrails);
 		this.queue = operation.catch(() => undefined);
 		return operation;
 	}

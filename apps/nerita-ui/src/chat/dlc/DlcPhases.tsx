@@ -44,16 +44,16 @@ function phaseStatus(stages: DlcProjection["stages"]): string {
 	if (stages.every((stage) => stage.status === "skipped")) {
 		return "対象外";
 	}
-	if (
-		stages.every((stage) => ["completed", "skipped"].includes(stage.status))
-	) {
+	const matchesEvery = stages.every((stage) =>
+		["completed", "skipped"].includes(stage.status),
+	);
+	if (matchesEvery) {
 		return "完了";
 	}
-	if (
-		stages.some((stage) =>
-			["active", "awaiting-approval", "revising"].includes(stage.status),
-		)
-	) {
+	const matchesSome = stages.some((stage) =>
+		["active", "awaiting-approval", "revising"].includes(stage.status),
+	);
+	if (matchesSome) {
 		return "進行中";
 	}
 	if (stages.some((stage) => stage.selection === "undetermined")) {
@@ -175,21 +175,22 @@ function phaseExecutionStatus(
 	view: DlcView,
 	selected: DlcProjection | null,
 ): string {
-	if (
+	const matchesPhase =
 		phase < 3 ||
 		!stages.some(
 			(stage) => stage.status === "pending" && stage.selection !== "skip",
-		)
-	) {
+		);
+	if (matchesPhase) {
 		return phaseStatus(stages);
 	}
-	return view.intents.some(
+	const matchesValue = view.intents.some(
 		(intent) =>
 			intent.intentId === selected?.intentId &&
 			intent.startHold !== undefined,
 	)
 		? "実行保留"
 		: phaseStatus(stages);
+	return matchesValue;
 }
 
 function StageList({ stages }: { stages: DlcProjection["stages"] }) {

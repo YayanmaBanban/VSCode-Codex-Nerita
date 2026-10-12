@@ -13,6 +13,7 @@ export class ChatTrustState {
 	private cwd: string | null;
 	private readonly subscriptions: vscode.Disposable[];
 
+	/** 会話のルート変更と信頼・設定の変更を購読し、現在の会話に合う信頼状態を表示する。 */
 	constructor(
 		private readonly session: ChatSession,
 		private readonly store: WorkspaceTrustStore | undefined,

@@ -23,12 +23,14 @@ export function devToolEnvironment(
 ): Record<string, string> {
 	const output: Record<string, string> = {};
 	for (const [key, value] of Object.entries(input)) {
-		if (
-			isNonEmptyString(value) &&
+		if (!isNonEmptyString(value)) {
+			continue;
+		}
+		const systemVariable =
 			/^(?:systemroot|windir|systemdrive|comspec|pathext|os|processor_architecture|number_of_processors)$/i.test(
 				key,
-			)
-		) {
+			);
+		if (systemVariable) {
 			output[key.toUpperCase()] = value;
 		}
 	}
@@ -144,7 +146,8 @@ function toolDirectories(
 async function existingFile(candidate: string): Promise<string | undefined> {
 	try {
 		const resolved = await realpath(candidate);
-		return (await stat(resolved)).isFile() ? resolved : undefined;
+		const fileInfo = await stat(resolved);
+		return fileInfo.isFile() ? resolved : undefined;
 	} catch {
 		return undefined;
 	}
@@ -157,12 +160,16 @@ export function requireInstallDirectory(directory: string): string {
 		process.env.APPDATA,
 		process.env.LOCALAPPDATA,
 	];
-	if (
-		parse(directory).root.toLowerCase() === directory.toLowerCase() ||
-		privateRoots.some(
-			(root) => isNonEmptyString(root) && containsPath(directory, root),
-		)
-	) {
+
+	if (parse(directory).root.toLowerCase() === directory.toLowerCase()) {
+		throw new Error(
+			"ツールのインストール先としてドライブ全体や利用者の設定領域は許可できません。",
+		);
+	}
+	const containsPrivateRoot = (root: string | undefined) =>
+		isNonEmptyString(root) && containsPath(directory, root);
+	const hasPrivateRoot = privateRoots.some(containsPrivateRoot);
+	if (hasPrivateRoot) {
 		throw new Error(
 			"ツールのインストール先としてドライブ全体や利用者の設定領域は許可できません。",
 		);

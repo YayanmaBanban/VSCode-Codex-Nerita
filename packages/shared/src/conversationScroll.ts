@@ -14,16 +14,18 @@ export function validConversationScrollAnchor(value: unknown): boolean {
 	if (value === undefined) {
 		return true;
 	}
-	if (!(
-		isRecord(value) &&
-		(value.sessionId === null || typeof value.sessionId === "string")
-	)) {
+
+	if (!isRecord(value)) {
 		return false;
 	}
-	if (!(
-		(value.entryKey === null || typeof value.entryKey === "string") &&
-		typeof value.offset === "number"
-	)) {
+	if (!(value.sessionId === null || typeof value.sessionId === "string")) {
+		return false;
+	}
+
+	if (!(value.entryKey === null || typeof value.entryKey === "string")) {
+		return false;
+	}
+	if (!(typeof value.offset === "number")) {
 		return false;
 	}
 	return Number.isFinite(value.offset) && typeof value.atEnd === "boolean";

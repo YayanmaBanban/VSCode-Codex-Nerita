@@ -62,19 +62,17 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
-		if (
-			message.type === "auth/start" &&
-			message.methodId === "pi-cancel" &&
-			this.authAbort
-		) {
+		const cancelAuthentication =
+			message.type === "auth/start" && message.methodId === "pi-cancel";
+		if (cancelAuthentication && this.authAbort) {
 			this.authAbort.abort();
 			return;
 		}
-		if (
+		const matchesType2 =
 			message.type === "auth/start" ||
 			message.type === "auth/logout" ||
-			message.type === "config/set"
-		) {
+			message.type === "config/set";
+		if (matchesType2) {
 			await this.configure(message);
 			return;
 		}
@@ -85,7 +83,8 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (this.state.connection !== "ready") {
 			throw new Error("Piへ再接続してから操作してください。");
 		}
-		if (await this.dispatchReferenceAction(message)) {
+		const matchesValue = await this.dispatchReferenceAction(message);
+		if (matchesValue) {
 			return;
 		}
 		await this.dispatchReadyAction(message);
@@ -95,10 +94,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	private async dispatchReferenceAction(
 		message: UiMessage,
 	): Promise<boolean> {
-		if (
+		const matchesType3 =
 			message.type === "session/searchReferences" ||
-			message.type === "session/openReference"
-		) {
+			message.type === "session/openReference";
+		if (matchesType3) {
 			const runtime = this.runtime!;
 			const result = await piReferenceAction(
 				runtime,
@@ -127,10 +126,9 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			await this.refreshSessions();
 			return;
 		}
-		if (
-			message.type === "session/load" ||
-			message.type === "session/fork"
-		) {
+		const matchesType4 =
+			message.type === "session/load" || message.type === "session/fork";
+		if (matchesType4) {
 			await this.loadSession(
 				message.sessionId,
 				message.type === "session/fork",
@@ -142,10 +140,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 
 	/** 現在の会話に対する送信と実行操作を処理する。 */
 	private async dispatchThreadAction(message: UiMessage): Promise<void> {
-		if (
-			!("sessionId" in message) ||
-			message.sessionId !== this.state.sessionId
-		) {
+		if (!("sessionId" in message)) {
+			throw new Error("現在のPi会話では実行できない操作です。");
+		}
+		if (message.sessionId !== this.state.sessionId) {
 			throw new Error("現在のPi会話では実行できない操作です。");
 		}
 		if (message.type === "agent/read") {
@@ -167,11 +165,11 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	private async submitCurrentPrompt(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): Promise<void> {
-		if (
+		const matchesBusy =
 			!this.busy() &&
 			!this.state.sessionPending &&
-			this.runtime?.storageChanged?.() === true
-		) {
+			this.runtime?.storageChanged?.() === true;
+		if (matchesBusy) {
 			await this.refreshStorage();
 		}
 		this.submit(message);
@@ -186,10 +184,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			throw new Error("このPi接続に停止対象のジョブがありません。");
 		}
 		await runtime.jobs.cancelSubtree(message.threadId);
-		if (
+		const matchesRuntime =
 			this.runtime !== runtime ||
-			this.state.sessionId !== message.sessionId
-		) {
+			this.state.sessionId !== message.sessionId;
+		if (matchesRuntime) {
 			throw new Error("会話が切り替わったため、停止を中止しました。");
 		}
 		this.emit({
@@ -213,11 +211,11 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		const previous = this.runtime;
 		const nextEpoch = this.epoch + 1;
 		await this.connect(undefined, true);
-		if (
+		const matchesEpoch =
 			this.epoch !== nextEpoch ||
 			this.runtime === previous ||
-			this.state.connection !== "ready"
-		) {
+			this.state.connection !== "ready";
+		if (matchesEpoch) {
 			throw new Error(
 				nonEmptyString(this.state.error) ??
 					"Piの保存先を更新できませんでした。再送してください。",
@@ -239,18 +237,18 @@ export class PiSessionController extends PiHistory implements BackendSession {
 
 	/** 現在の実行に属する承認と停止だけを受け付ける。 */
 	private dispatchRunAction(message: UiMessage): void {
-		if (
+		const matchesType5 =
 			message.type === "permission/respond" &&
 			message.runId === this.state.runId &&
-			this.approvals.respond(message.permissionId, message.optionId)
-		) {
+			this.approvals.respond(message.permissionId, message.optionId);
+		if (matchesType5) {
 			return;
 		}
-		if (
+		const matchesType6 =
 			message.type === "prompt/cancel" &&
 			message.runId === this.state.runId &&
-			this.canCancelJobs() === true
-		) {
+			this.canCancelJobs() === true;
+		if (matchesType6) {
 			this.cancel();
 			return;
 		}
@@ -360,13 +358,13 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (message.type === "auth/start" && message.methodId !== "pi") {
 			throw new Error("未対応の認証方法です。");
 		}
-		if (
+		const matchesType7 =
 			message.type === "config/set" &&
 			(message.sessionId !== this.state.sessionId ||
 				!this.state.configOptions.some(
 					(option) => option.id === message.configId,
-				))
-		) {
+				));
+		if (matchesType7) {
 			throw new Error("現在のPiモデル・推論レベル設定ではありません。");
 		}
 	}

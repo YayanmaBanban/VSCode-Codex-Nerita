@@ -21,11 +21,11 @@ export async function inspectGuardCommand(
 		"builtin:shell",
 		"Shellの実行には1回限りの承認が必要です。",
 	);
-	if (
+	const matchesTest =
 		/remove-item|\brm\b|\brmdir\b|\bdel\b|\bgit\s+(?:clean\b|reset\b[^\r\n;|]*--hard)/i.test(
 			command,
-		)
-	) {
+		);
+	if (matchesTest) {
 		addFinding(
 			result,
 			"ask",
@@ -34,10 +34,10 @@ export async function inspectGuardCommand(
 		);
 	}
 	for (const rule of config.commandRules) {
-		if (
+		const matchesShell =
 			(rule.shell === "any" || rule.shell === shell) &&
-			command.toLowerCase().includes(rule.pattern.toLowerCase())
-		) {
+			command.toLowerCase().includes(rule.pattern.toLowerCase());
+		if (matchesShell) {
 			addFinding(result, rule.action, rule.id, rule.reason);
 		}
 	}
@@ -113,11 +113,11 @@ function pathOperation(
 	if (/^[;|&\n]$/.test(token)) {
 		return "read";
 	}
-	if (
+	const matchesTest2 =
 		/^(?:set-content|add-content|out-file|remove-item|rm|rmdir|del|move-item|copy-item|mv|cp|new-item|mkdir)$/i.test(
 			token,
-		)
-	) {
+		);
+	if (matchesTest2) {
 		return "write";
 	}
 	return previous;

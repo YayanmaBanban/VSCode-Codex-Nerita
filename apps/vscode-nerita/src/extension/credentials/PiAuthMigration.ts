@@ -17,7 +17,8 @@ export async function readLegacyAuth(file: string): Promise<unknown> {
 	const handle = await open(file, "r");
 	let records: unknown;
 	try {
-		if ((await handle.stat()).size > 64 * 1024) {
+		const matchesSize = (await handle.stat()).size > 64 * 1024;
+		if (matchesSize) {
 			throw new Error("認証ファイルが大きすぎます。");
 		}
 		try {

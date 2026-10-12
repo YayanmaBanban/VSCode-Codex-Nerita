@@ -22,19 +22,21 @@ export function validComposerField(key: string, value: unknown): boolean {
 		return value === null || validUsage(value);
 	}
 	if (key === "attachments") {
-		return (
+		const matchesIsArray =
 			Array.isArray(value) &&
 			value.every((file: unknown) => {
-				if (!(
-					isRecord(file) &&
-					typeof file.id === "string" &&
-					typeof file.name === "string"
-				)) {
+				if (!isRecord(file)) {
+					return false;
+				}
+				if (typeof file.id !== "string") {
+					return false;
+				}
+				if (typeof file.name !== "string") {
 					return false;
 				}
 				return typeof file.uri === "string";
-			})
-		);
+			});
+		return matchesIsArray;
 	}
 	if (key === "configOptions") {
 		return ComposerConfigOptionsSchema.safeParse(value).success;
@@ -45,18 +47,23 @@ export function validComposerField(key: string, value: unknown): boolean {
 
 /** 使用量と上限が有効な有限数であることを確認する。 */
 function validUsage(value: unknown): boolean {
-	if (!(
-		isRecord(value) &&
-		typeof value.used === "number" &&
-		Number.isFinite(value.used)
-	)) {
+	if (!isRecord(value)) {
 		return false;
 	}
-	if (!(
-		value.used >= 0 &&
-		typeof value.size === "number" &&
-		Number.isFinite(value.size)
-	)) {
+	if (!(typeof value.used === "number")) {
+		return false;
+	}
+	if (!Number.isFinite(value.used)) {
+		return false;
+	}
+
+	if (!(value.used >= 0)) {
+		return false;
+	}
+	if (!(typeof value.size === "number")) {
+		return false;
+	}
+	if (!Number.isFinite(value.size)) {
 		return false;
 	}
 	return value.size > 0;

@@ -58,11 +58,10 @@ export abstract class PiLifecycle extends SessionState {
 	protected refreshQuota(): void {
 		this.cancelQuota(false);
 		const runtime = this.runtime;
-		if (
-			!runtime?.quota ||
-			!this.opening ||
-			this.state.connection !== "ready"
-		) {
+		if (!runtime?.quota) {
+			return;
+		}
+		if (!this.opening || this.state.connection !== "ready") {
 			return;
 		}
 		const abort = new AbortController();
@@ -228,14 +227,7 @@ export abstract class PiLifecycle extends SessionState {
 					error instanceof Error
 						? error.message
 						: "Piに接続できませんでした。",
-				...(previous
-					? {
-							sessionsError:
-								error instanceof Error
-									? error.message
-									: "Piの履歴を開けませんでした。",
-						}
-					: {}),
+				...(previous ? restoredHistoryError(error) : {}),
 			});
 		}
 	}
@@ -246,11 +238,14 @@ export abstract class PiLifecycle extends SessionState {
 		if (!usage || usage.tokens === null || !Number.isFinite(usage.tokens)) {
 			return null;
 		}
-		if (
-			usage.tokens < 0 ||
-			!Number.isFinite(usage.contextWindow) ||
-			usage.contextWindow <= 0
-		) {
+
+		if (usage.tokens < 0) {
+			return null;
+		}
+		if (!Number.isFinite(usage.contextWindow)) {
+			return null;
+		}
+		if (usage.contextWindow <= 0) {
 			return null;
 		}
 		return { used: usage.tokens, size: usage.contextWindow };
@@ -381,4 +376,14 @@ function restoredAgents(
 					?.order ?? agent.order,
 		})) ?? []
 	);
+}
+
+/** 履歴を保持した再接続の失敗内容を返す。 */
+function restoredHistoryError(error: unknown) {
+	return {
+		sessionsError:
+			error instanceof Error
+				? error.message
+				: "Piの履歴を開けませんでした。",
+	};
 }

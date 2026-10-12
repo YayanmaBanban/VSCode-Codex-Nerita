@@ -19,18 +19,7 @@ export function SettingsTooltip({
 	if (!(content !== undefined && content !== null && content !== false)) {
 		return children;
 	}
-	// 長文による画面からのはみ出しを抑えつつ、サロゲートペアを分断せずに省略する。
-	const characters =
-		typeof content === "string" ? Array.from(content) : undefined;
-	const tooltipContent = characters ? (
-		<span className="whitespace-pre-wrap">
-			{characters.length > MAX_TOOLTIP_CHARACTERS
-				? `${characters.slice(0, MAX_TOOLTIP_CHARACTERS).join("")}…`
-				: content}
-		</span>
-	) : (
-		content
-	);
+	const tooltipContent = limitTooltipContent(content);
 
 	return (
 		<Tooltip.Root
@@ -87,4 +76,17 @@ export function SettingsTooltip({
 			</Tooltip.Portal>
 		</Tooltip.Root>
 	);
+}
+
+/** 文字列だけを文字数制限し、サロゲートペアを分断せずに省略する。 */
+function limitTooltipContent(content: ReactNode) {
+	if (typeof content !== "string") {
+		return content;
+	}
+	const characters = Array.from(content);
+	const limited =
+		characters.length > MAX_TOOLTIP_CHARACTERS
+			? `${characters.slice(0, MAX_TOOLTIP_CHARACTERS).join("")}…`
+			: content;
+	return <span className="whitespace-pre-wrap">{limited}</span>;
 }

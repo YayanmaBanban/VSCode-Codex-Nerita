@@ -41,20 +41,24 @@ function readFilesystemPermission(
 	result: GrantedPermissionProfile,
 ) {
 	const fs = value.fileSystem;
-	if (
-		!isRecord(fs) ||
-		(fs.entries !== undefined && !Array.isArray(fs.entries))
-	) {
+
+	if (!isRecord(fs)) {
 		throw new AppServerRpcError(
 			-32602,
 			"Unsupported filesystem permission",
 		);
 	}
-	if (
+	if (fs.entries !== undefined && !Array.isArray(fs.entries)) {
+		throw new AppServerRpcError(
+			-32602,
+			"Unsupported filesystem permission",
+		);
+	}
+	const matchesGlobScanMaxDepth =
 		fs.globScanMaxDepth !== undefined &&
 		(!Number.isSafeInteger(fs.globScanMaxDepth) ||
-			Number(fs.globScanMaxDepth) < 0)
-	) {
+			Number(fs.globScanMaxDepth) < 0);
+	if (matchesGlobScanMaxDepth) {
 		throw new AppServerRpcError(
 			-32602,
 			"Unsupported filesystem permission",
@@ -64,10 +68,11 @@ function readFilesystemPermission(
 		if (value === null) {
 			return null;
 		}
-		if (
-			!Array.isArray(value) ||
-			!value.every((path: unknown) => typeof path === "string")
-		) {
+
+		if (!Array.isArray(value)) {
+			throw new AppServerRpcError(-32602, "Invalid permission paths");
+		}
+		if (!value.every((path: unknown) => typeof path === "string")) {
 			throw new AppServerRpcError(-32602, "Invalid permission paths");
 		}
 		return value;
@@ -82,11 +87,12 @@ function readFilesystemPermission(
 						"Invalid permission entry",
 					);
 				}
-				if (
-					entry.access !== "read" &&
-					entry.access !== "write" &&
-					entry.access !== "deny"
-				) {
+				const access = entry.access;
+				const invalidAccess =
+					access !== "read" &&
+					access !== "write" &&
+					access !== "deny";
+				if (invalidAccess) {
 					throw new AppServerRpcError(
 						-32602,
 						"Invalid permission entry",
@@ -94,7 +100,7 @@ function readFilesystemPermission(
 				}
 				return {
 					path: permissionPath(entry.path),
-					access: entry.access,
+					access,
 				};
 			},
 		);
@@ -110,16 +116,14 @@ function readNetworkPermission(
 	result: GrantedPermissionProfile,
 ) {
 	if (value.network !== null && value.network !== undefined) {
-		if (
-			!isRecord(value.network) ||
-			!(
-				value.network.enabled === null ||
-				typeof value.network.enabled === "boolean"
-			)
-		) {
+		if (!isRecord(value.network)) {
 			throw new AppServerRpcError(-32602, "Invalid network permission");
 		}
-		result.network = { enabled: value.network.enabled };
+		const enabled = value.network.enabled;
+		if (enabled !== null && typeof enabled !== "boolean") {
+			throw new AppServerRpcError(-32602, "Invalid network permission");
+		}
+		result.network = { enabled };
 	}
 }
 
@@ -131,14 +135,14 @@ function specialPermissionPath(p: Record<string, unknown>): FileSystemPath {
 	if (p.kind === "slash_tmp") {
 		return { type: "special", value: { kind: p.kind } };
 	}
-	if (
-		p.kind === "project_roots" &&
-		(p.subpath === null || typeof p.subpath === "string")
-	) {
-		return {
-			type: "special",
-			value: { kind: "project_roots", subpath: p.subpath },
-		};
+	if (p.kind !== "project_roots") {
+		throw new AppServerRpcError(-32602, "Unsupported permission path");
 	}
-	throw new AppServerRpcError(-32602, "Unsupported permission path");
+	if (!(p.subpath === null || typeof p.subpath === "string")) {
+		throw new AppServerRpcError(-32602, "Unsupported permission path");
+	}
+	return {
+		type: "special",
+		value: { kind: "project_roots", subpath: p.subpath },
+	};
 }

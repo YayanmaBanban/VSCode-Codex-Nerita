@@ -93,7 +93,8 @@ export async function prepareDevToolStorage(
 async function managedDirectory(root: string, name: string): Promise<string> {
 	const directory = resolve(root, name);
 	await mkdir(directory, { recursive: true });
-	if ((await realpath(directory)) !== directory) {
+	const matchesValue = (await realpath(directory)) !== directory;
+	if (matchesValue) {
 		throw new Error("Sandbox 管理領域のパスが変更されています。");
 	}
 	return directory;

@@ -213,7 +213,10 @@ function createWorkflowSubscription(
 				});
 			}
 		};
-		const unsubscribe = bridge.subscribe((message) => {
+		/** 現在の編集要求の成功だけを入力へ反映し、失敗と要求外の通知は返信表示へ渡す。 */
+		const receiveWorkflowReply: Parameters<
+			NonNullable<typeof bridge>["subscribe"]
+		>[0] = (message) => {
 			if (message.type === "state") {
 				receiveState(message);
 			} else if (message.id === 0) {
@@ -228,7 +231,8 @@ function createWorkflowSubscription(
 				pending.current = null;
 				setBusy(false);
 			}
-		});
+		};
+		const unsubscribe = bridge.subscribe(receiveWorkflowReply);
 		bridge.postMessage({ type: "ready" });
 		return unsubscribe;
 	};

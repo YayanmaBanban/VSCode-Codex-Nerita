@@ -12,7 +12,8 @@ export function compileWorkflow(value: unknown): string {
 	const names = new Map(
 		definition.steps.map((step, index) => [step.id, `p${index}`]),
 	);
-	const lines = definition.steps.map((step) => {
+	/** 依存関係と参照先をコードへ変換し、fork は検証済みの工程 ID を Host に解決させる。 */
+	const compileWorkflowStep = (step: WorkflowStep) => {
 		const dependencies = step.depends_on
 			.map((dep) => names.get(dep))
 			.join(",");
@@ -32,7 +33,8 @@ export function compileWorkflow(value: unknown): string {
 		}
 		// fork はコンパイル済みのステップ ID から Host が解決する。任意の `runId` は受け付けない。
 		return `const ${names.get(step.id)} = Promise.all([${dependencies}]).then(() => runs.run(${JSON.stringify(step.id)}, {${fields.join(",")}})).then(result => { if (!result.ok) throw new Error(result.error || "Step failed"); results[${JSON.stringify(step.id)}] = result; return result; });`;
-	});
+	};
+	const lines = definition.steps.map(compileWorkflowStep);
 	lines.unshift("const results = Object.create(null);");
 	lines.push(
 		`const settled = await Promise.allSettled([${[...names.values()].join(",")}]);`,

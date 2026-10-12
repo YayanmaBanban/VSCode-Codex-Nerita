@@ -24,10 +24,12 @@ export const guardrailsViewType = "nerita.pi.guardrails";
 
 /** 各パネルは自身の文書だけを変更し、受信メッセージにファイルパスを指定させない。 */
 class GuardrailsEditor implements vscode.CustomTextEditorProvider {
+	/** 設定編集の保存と Webview の生成には、同じ拡張コンテキストを使う。 */
 	constructor(
 		private readonly context: vscode.ExtensionContext,
 		private readonly settings: GuardrailsSettings,
 	) {}
+	/** 対象ルートの文書と有効設定を画面へ公開し、保存要求を直列化して編集状態と適用状態を分ける。 */
 	async resolveCustomTextEditor(
 		document: vscode.TextDocument,
 		panel: vscode.WebviewPanel,
@@ -113,7 +115,8 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 				new vscode.Range(0, 0, document.lineCount, 0),
 				message.text,
 			);
-			if (!(await vscode.workspace.applyEdit(edit))) {
+			const matchesValue = !(await vscode.workspace.applyEdit(edit));
+			if (matchesValue) {
 				throw new Error("文書を更新できませんでした。");
 			}
 		} else {
@@ -121,7 +124,8 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 			const config = parseGuardrails(text);
 			warnings = guardrailWarnings(config);
 			if (message.type === "save") {
-				if (!(await document.save())) {
+				const matchesValue2 = !(await document.save());
+				if (matchesValue2) {
 					throw new Error("保存できませんでした。");
 				}
 				notice = "保存しました。実行に反映するには適用してください。";
@@ -212,61 +216,66 @@ export async function registerGuardrailsEditor(
 ) {
 	const settings = new GuardrailsSettings(context.workspaceState);
 	await settings.restore();
+	/** 対象ルートを確認し、未作成の場合だけ既定設定を作って専用画面で開く。 */
+	const openGuardrailsEditor = async () => {
+		const folders = vscode.workspace.workspaceFolders ?? [];
+		const folder =
+			folders.length === 1
+				? folders[0]
+				: await vscode.window.showWorkspaceFolderPick();
+		if (!folder) {
+			return;
+		}
+		try {
+			const uri = vscode.Uri.joinPath(
+				folder.uri,
+				".pi",
+				"guardrails.json",
+			);
+			await settings.rootFor(uri);
+			try {
+				await vscode.workspace.fs.stat(uri);
+			} catch (error) {
+				if (!(error instanceof vscode.FileSystemError)) {
+					throw error;
+				}
+				if (error.code !== "FileNotFound") {
+					throw error;
+				}
+				const edit = new vscode.WorkspaceEdit();
+				edit.createFile(uri, {
+					overwrite: false,
+					ignoreIfExists: false,
+					contents: Buffer.from(
+						`${JSON.stringify(defaultGuardrails(), null, 2)}\n`,
+					),
+				});
+				const matchesValue3 = !(await vscode.workspace.applyEdit(edit));
+				if (matchesValue3) {
+					throw new Error("設定ファイルを作成できませんでした。", {
+						cause: error,
+					});
+				}
+			}
+			await vscode.commands.executeCommand(
+				"vscode.openWith",
+				uri,
+				guardrailsViewType,
+			);
+		} catch (error) {
+			void vscode.window.showErrorMessage(errorText(error));
+		}
+	};
 	context.subscriptions.push(
 		vscode.window.registerCustomEditorProvider(
 			guardrailsViewType,
 			new GuardrailsEditor(context, settings),
 			{ supportsMultipleEditorsPerDocument: false },
 		),
-		vscode.commands.registerCommand("nerita.pi.guardrails", async () => {
-			const folders = vscode.workspace.workspaceFolders ?? [];
-			const folder =
-				folders.length === 1
-					? folders[0]
-					: await vscode.window.showWorkspaceFolderPick();
-			if (!folder) {
-				return;
-			}
-			try {
-				const uri = vscode.Uri.joinPath(
-					folder.uri,
-					".pi",
-					"guardrails.json",
-				);
-				await settings.rootFor(uri);
-				try {
-					await vscode.workspace.fs.stat(uri);
-				} catch (error) {
-					if (
-						!(error instanceof vscode.FileSystemError) ||
-						error.code !== "FileNotFound"
-					) {
-						throw error;
-					}
-					const edit = new vscode.WorkspaceEdit();
-					edit.createFile(uri, {
-						overwrite: false,
-						ignoreIfExists: false,
-						contents: Buffer.from(
-							`${JSON.stringify(defaultGuardrails(), null, 2)}\n`,
-						),
-					});
-					if (!(await vscode.workspace.applyEdit(edit))) {
-						throw new Error(
-							"設定ファイルを作成できませんでした。",
-							{ cause: error },
-						);
-					}
-				}
-				await vscode.commands.executeCommand(
-					"vscode.openWith",
-					uri,
-					guardrailsViewType,
-				);
-			} catch (error) {
-				void vscode.window.showErrorMessage(errorText(error));
-			}
-		}),
+		vscode.commands.registerCommand(
+			"nerita.pi.guardrails",
+			openGuardrailsEditor,
+		),
 		{ dispose: () => guardrailRegistry.dispose() },
 	);
 	return settings;

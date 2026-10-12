@@ -65,11 +65,14 @@ function parseHeaderLine(line: string): { id: string } | undefined {
 	} catch {
 		return;
 	}
-	if (
-		!isRecord(value) ||
-		value.type !== "session" ||
-		typeof value.id !== "string"
-	) {
+
+	if (!isRecord(value)) {
+		throw new Error("Piの履歴ファイルが変更されています。");
+	}
+	if (value.type !== "session") {
+		throw new Error("Piの履歴ファイルが変更されています。");
+	}
+	if (typeof value.id !== "string") {
 		throw new Error("Piの履歴ファイルが変更されています。");
 	}
 	return { id: value.id };

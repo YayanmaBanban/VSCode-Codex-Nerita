@@ -34,11 +34,13 @@ export type ToolOutputResponse = {
 
 /** 不正な範囲や無制限の読み込みを通信境界で拒否する。 */
 export function validToolOutputRequest(value: Record<string, unknown>) {
-	if (!(
-		isId(value.outputRef) &&
-		byteOffset(value.offset) &&
-		byteOffset(value.limit)
-	)) {
+	if (!isId(value.outputRef)) {
+		return false;
+	}
+	if (!byteOffset(value.offset)) {
+		return false;
+	}
+	if (!byteOffset(value.limit)) {
 		return false;
 	}
 	return (
@@ -48,24 +50,28 @@ export function validToolOutputRequest(value: Record<string, unknown>) {
 
 /** 読み込み応答の文字数と、バイト位置が戻らないことを検証する。 */
 export function validToolOutputResponse(value: Record<string, unknown>) {
-	if (!(
-		isId(value.requestId) &&
-		isId(value.outputRef) &&
-		typeof value.text === "string"
-	)) {
+	if (!isId(value.requestId)) {
 		return false;
 	}
-	if (!(
+	if (!isId(value.outputRef)) {
+		return false;
+	}
+	if (!(typeof value.text === "string")) {
+		return false;
+	}
+	const matchesLength = !(
 		value.text.length <= toolOutputChunkBytes &&
 		byteOffset(value.offset) &&
 		byteOffset(value.nextOffset)
-	)) {
+	);
+	if (matchesLength) {
 		return false;
 	}
-	if (!(
-		Number(value.nextOffset) >= Number(value.offset) &&
-		typeof value.eof === "boolean"
-	)) {
+
+	if (!(Number(value.nextOffset) >= Number(value.offset))) {
+		return false;
+	}
+	if (!(typeof value.eof === "boolean")) {
 		return false;
 	}
 	return value.error === undefined || typeof value.error === "string";
@@ -76,17 +82,21 @@ export function validToolOutputPreview(value: unknown) {
 	if (value === undefined) {
 		return true;
 	}
-	if (!(
-		isRecord(value) &&
-		typeof value.preview === "string" &&
-		value.preview.length <= 2200
-	)) {
+
+	if (!isRecord(value)) {
 		return false;
 	}
-	if (!(
-		typeof value.truncated === "boolean" &&
-		(value.outputRef === undefined || isId(value.outputRef))
-	)) {
+	if (!(typeof value.preview === "string")) {
+		return false;
+	}
+	if (!(value.preview.length <= 2200)) {
+		return false;
+	}
+
+	if (!(typeof value.truncated === "boolean")) {
+		return false;
+	}
+	if (!(value.outputRef === undefined || isId(value.outputRef))) {
 		return false;
 	}
 	return value.totalBytes === undefined || byteOffset(value.totalBytes);

@@ -35,9 +35,12 @@ export class PiPermissions extends Approvals {
 			run.cancel();
 		}
 		combined.throwIfAborted();
-		if (
-			!["accept", "accept-session", "accept-workspace"].includes(decision)
-		) {
+		const matchesIncludes = ![
+			"accept",
+			"accept-session",
+			"accept-workspace",
+		].includes(decision);
+		if (matchesIncludes) {
 			throw new Error(
 				"ユーザーが実行を拒否しました。操作は実行されていません。",
 			);

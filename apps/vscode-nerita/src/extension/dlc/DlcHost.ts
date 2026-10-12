@@ -72,6 +72,7 @@ export class DlcHost {
 	private backend: BackendId;
 	private startHolds = new Map<string, DlcStartHold>();
 	private unsubscribeTrust: () => void;
+	/** 保存済みバックエンドを復元し、信頼・チャット・DLC の変更を表示更新へ接続する。 */
 	constructor(
 		private context: vscode.ExtensionContext,
 		private trust: WorkspaceTrustStore,
@@ -96,10 +97,9 @@ export class DlcHost {
 		});
 
 		const publishState = (event: HostMessage) => {
-			if (
-				event.type !== "state/snapshot" &&
-				event.type !== "state/patch"
-			) {
+			const stateChanged =
+				event.type === "state/snapshot" || event.type === "state/patch";
+			if (!stateChanged) {
 				return;
 			}
 			this.publish();
@@ -113,6 +113,7 @@ export class DlcHost {
 			},
 		});
 	}
+	/** 選択・割当・保留と Runtime の実行状態を、Webview 共通の表示データにまとめる。 */
 	view(): DlcView {
 		return {
 			mode: this.workspaceOpen ? "dlc" : "chat",
@@ -183,15 +184,14 @@ export class DlcHost {
 				message: "実行先の Nerita Trust を確認してください。",
 			};
 		}
-		if (
-			this.runtime
-				.runningDirectories()
-				.some(
-					(root) =>
-						containsPath(root, target.directory) ||
-						containsPath(target.directory, root),
-				)
-		) {
+		const targetBusy = this.runtime
+			.runningDirectories()
+			.some(
+				(root) =>
+					containsPath(root, target.directory) ||
+					containsPath(target.directory, root),
+			);
+		if (targetBusy) {
 			return {
 				reason: "worktree-required",
 				message:
@@ -220,6 +220,7 @@ export class DlcHost {
 	): boolean | Promise<boolean> {
 		return backendWorkspaceTrusted(backend, () => this.trust.trusted(root));
 	}
+	/** 現在の DLC 状態を Runtime の通知経路から配信する。 */
 	private publish(): void {
 		this.runtime.publish({ type: "dlc/state", view: this.view() });
 	}
@@ -235,6 +236,7 @@ export class DlcHost {
 		string,
 		{ targetId: string; backend: BackendId }
 	>();
+	/** リセットの完了を待って初期化を共有し、失敗した初期化は次の要求で再試行できるようにする。 */
 	private async open(): Promise<Workspace> {
 		await this.resetting;
 		if (this.closed) {
@@ -246,6 +248,7 @@ export class DlcHost {
 		});
 		return this.workspace;
 	}
+	/** ローカルの管理元 Worktree と信頼を確認し、世代に結び付いた保存境界を開く。 */
 	private async initialize(): Promise<Workspace> {
 		const root = await realpath(
 			requireLocalWorkspace(
@@ -255,46 +258,58 @@ export class DlcHost {
 			),
 		);
 		const worktrees = new WorktreeManager(root, hostStorageRoot());
-		if (
-			!(await worktrees.list()).some(
-				(target) => target.main && target.root === root,
-			)
-		) {
+		const targets = await worktrees.list();
+		const mainWorkspace = targets.some(
+			(target) => target.main && target.root === root,
+		);
+		if (!mainWorkspace) {
 			throw new Error(
 				"DLC の管理元は main の Nerita です。Worktree では通常チャットを使用してください。",
 			);
 		}
 		const generation = this.generation;
 		const signal = this.workspaceAbort.signal;
-		if (!(await this.workspaceTrusted(this.backend, root))) {
+		const trusted = await this.workspaceTrusted(this.backend, root);
+		if (!trusted) {
 			throw new Error(
 				"DLC のワークスペースまたは信頼状態が変更されました。",
 			);
 		}
 		// 保存先は Intent 間で共有する。Pi の実行許可は各 Intent の実行先で照合する。
-		const files = new SafeDlcFiles(root, async () => {
-			signal.throwIfAborted();
-			if (
-				this.closed ||
-				generation !== this.generation ||
-				(await realpath(
-					requireLocalWorkspace(
-						vscode.workspace.workspaceFolders,
-						vscode.workspace.isTrusted,
-						vscode.env.remoteName,
-					),
-				)) !== root
-			) {
-				throw new Error(
-					"DLC のワークスペースまたは信頼状態が変更されました。",
-				);
-			}
-		});
+		const files = new SafeDlcFiles(root, () =>
+			this.assertWorkspaceCurrent(root, generation, signal),
+		);
 		const detection = await withDlcLock(files, () =>
 			initializeWorkspace(files, signal),
 		);
 		return this.openStorage(root, files, detection, worktrees, signal);
 	}
+	/** 失効済みの世代ではファイルシステムへ進まず、呼び出し時点のワークスペースを検証する。 */
+	private async assertWorkspaceCurrent(
+		root: string,
+		generation: number,
+		signal: AbortSignal,
+	): Promise<void> {
+		signal.throwIfAborted();
+		if (this.closed || generation !== this.generation) {
+			throw new Error(
+				"DLC のワークスペースまたは信頼状態が変更されました。",
+			);
+		}
+		const currentRoot = await realpath(
+			requireLocalWorkspace(
+				vscode.workspace.workspaceFolders,
+				vscode.workspace.isTrusted,
+				vscode.env.remoteName,
+			),
+		);
+		if (currentRoot !== root) {
+			throw new Error(
+				"DLC のワークスペースまたは信頼状態が変更されました。",
+			);
+		}
+	}
+	/** 利用者別の保存先と割当を開き、割当の読込みに失敗した場合は保存先を解放する。 */
 	private async openStorage(
 		root: string,
 		files: SafeDlcFiles,
@@ -345,6 +360,7 @@ export class DlcHost {
 			throw error;
 		}
 	}
+	/** Intent ごとの復旧を一つの Promise にまとめ、実行中の復旧を拒否して状態の購読を接続する。 */
 	private controller(
 		workspace: Workspace,
 		intentId: string,
@@ -354,11 +370,10 @@ export class DlcHost {
 			controller = workspace.repository
 				.load(intentId)
 				.then((state) => {
-					if (
-						this.runtime
-							.activeDlcs()
-							.some((run) => run.intentId === intentId)
-					) {
+					const running = this.runtime
+						.activeDlcs()
+						.some((run) => run.intentId === intentId);
+					if (running) {
 						throw new Error(
 							"実行中の Intent は復旧できません。終了後に再読込みしてください。",
 						);
@@ -372,30 +387,7 @@ export class DlcHost {
 							() =>
 								workspace.assignments[intentId]?.backend ??
 								this.backend,
-							async () => {
-								const assignment =
-									workspace.assignments[intentId];
-								if (!assignment) {
-									throw new Error(
-										"実行先の Worktree を選択してください。",
-									);
-								}
-								const target = await workspace.worktrees.target(
-									assignment.targetId,
-									workspace.signal,
-								);
-								if (
-									!(await this.workspaceTrusted(
-										assignment.backend,
-										target.root,
-									))
-								) {
-									throw new Error(
-										"実行先の Nerita Trust を確認してください。",
-									);
-								}
-								return target.root;
-							},
+							() => this.executionRoot(workspace, intentId),
 						),
 						{
 							save: (state, expected) =>
@@ -418,7 +410,30 @@ export class DlcHost {
 		}
 		return controller;
 	}
+	/** 実行ごとに最新の割当を読み、Worktree の確認後にその実行先の信頼を照合する。 */
+	private async executionRoot(
+		workspace: Workspace,
+		intentId: string,
+	): Promise<string> {
+		const assignment = workspace.assignments[intentId];
+		if (!assignment) {
+			throw new Error("実行先の Worktree を選択してください。");
+		}
+		const target = await workspace.worktrees.target(
+			assignment.targetId,
+			workspace.signal,
+		);
+		const trusted = await this.workspaceTrusted(
+			assignment.backend,
+			target.root,
+		);
+		if (!trusted) {
+			throw new Error("実行先の Nerita Trust を確認してください。");
+		}
+		return target.root;
+	}
 
+	/** Controller の通知から該当 Intent の一覧表示だけを置き換え、他の Intent の項目を保つ。 */
 	private updateSummary(projection: DlcView["selected"]): void {
 		if (projection === null) {
 			return;
@@ -429,6 +444,7 @@ export class DlcHost {
 		);
 		this.publish();
 	}
+	/** Git のブランチ取得の前後で保存境界を確認し、切り替わった接続先の情報を採用しない。 */
 	private async refreshEnvironment(workspace: Workspace): Promise<void> {
 		await workspace.repository.files.path(".nerita/dlc");
 		const branch = await execute(
@@ -443,6 +459,7 @@ export class DlcHost {
 			branch: name === "" ? null : name,
 		};
 	}
+	/** Worktree と信頼を再照合し、失敗時の古い実行先や失効した世代の結果を一覧へ残さない。 */
 	private async refreshTargets(workspace: Workspace): Promise<void> {
 		const generation = this.generation;
 		// 再照合が失敗した場合に、古い実行先を開始可能として表示し続けない。
@@ -499,6 +516,7 @@ export class DlcHost {
 			this.targets.find((target) => target.main)?.id ??
 			null;
 	}
+	/** 実行中と同時保存を拒否し、割当の保存が終わるまで対象 Intent の保存中表示を維持する。 */
 	private async assign(
 		workspace: Workspace,
 		intentId: string,
@@ -525,6 +543,7 @@ export class DlcHost {
 			this.publish();
 		}
 	}
+	/** 実行先の保存が完了するまで、その Intent の次の保存・実行操作を拒否する。 */
 	private assertAssignmentReady(intentId: string): void {
 		if (this.assigningIntents.has(intentId)) {
 			throw new Error(
@@ -532,6 +551,7 @@ export class DlcHost {
 			);
 		}
 	}
+	/** Worktree と接続世代を確認して割当を保存し、保存成功後に表示と実行用の参照を切り替える。 */
 	private async persistAssignment(
 		workspace: Workspace,
 		intentId: string,
@@ -563,6 +583,7 @@ export class DlcHost {
 		}
 	}
 
+	/** 信頼・Worktree の作成削除・実行先選択を扱い、対象に応じてロックと実行予約を使う。 */
 	private async worktreeAction(
 		workspace: Workspace,
 		message: DlcUiMessage,
@@ -595,10 +616,10 @@ export class DlcHost {
 			return true;
 		}
 		if (message.type === "dlc/target") {
-			if (
+			const staleSelection =
 				message.intentId !== this.selectedId ||
-				this.selected?.projection().revision !== message.revision
-			) {
+				this.selected?.projection().revision !== message.revision;
+			if (staleSelection) {
 				throw new Error("Intent の選択または版が変更されています。");
 			}
 			await this.assign(
@@ -613,6 +634,7 @@ export class DlcHost {
 		return false;
 	}
 
+	/** 読込み開始後に利用者が選択を変えていない場合だけ、保存済みの Intent を自動復元する。 */
 	private async restoreSelection(
 		workspace: Workspace,
 		sequence: number,
@@ -625,6 +647,7 @@ export class DlcHost {
 			await this.select(workspace, selectedId);
 		}
 	}
+	/** 表示・モード・再読込みを VS Code の画面操作へ接続し、保存操作が不要な要求を処理する。 */
 	private async presentation(message: DlcUiMessage): Promise<boolean> {
 		if (message.type === "dlc/open") {
 			await vscode.commands.executeCommand("nerita.dlc.openWorkspace");
@@ -659,26 +682,27 @@ export class DlcHost {
 		}
 		return this.backendSelection(message);
 	}
+	/** バックエンドの切替前に選択と表示版を照合し、実行中の Intent の切替を拒否する。 */
 	private validateBackendSelection(
 		message: Extract<DlcUiMessage, { type: "dlc/backend" }>,
 	): void {
 		if (message.intentId !== (this.selectedId ?? null)) {
 			throw new Error("Intent の選択または版が変更されています。");
 		}
-		if (
-			message.revision !== (this.selected?.projection().revision ?? null)
-		) {
+		const currentRevision = this.selected?.projection().revision ?? null;
+		if (message.revision !== currentRevision) {
 			throw new Error("Intent の選択または版が変更されています。");
 		}
-		if (
+		const running =
 			this.selectedId !== undefined &&
-			this.runningIntents.has(this.selectedId)
-		) {
+			this.runningIntents.has(this.selectedId);
+		if (running) {
 			throw new Error(
 				"実行が終わってから DLC のバックエンドを変更してください。",
 			);
 		}
 	}
+	/** 実行先がある場合は割当と一緒にバックエンドを保存し、利用者の既定選択も更新する。 */
 	private async backendSelection(message: DlcUiMessage): Promise<boolean> {
 		if (message.type !== "dlc/backend") {
 			return false;
@@ -700,6 +724,7 @@ export class DlcHost {
 		return true;
 	}
 
+	/** 一覧・環境・実行先を再照合し、選択の自動復元には読込み開始時の選択順序を使う。 */
 	private async read(): Promise<void> {
 		if (this.runtime.viewMode() === "chat" && !this.workspace) {
 			this.publish();
@@ -722,10 +747,10 @@ export class DlcHost {
 	private async refreshControllers(): Promise<void> {
 		const retained: Promise<DlcController>[] = [];
 		for (const [intentId, controller] of this.controllers) {
-			if (
+			const inUse =
 				this.controllerActions.has(intentId) ||
-				this.runningIntents.has(intentId)
-			) {
+				this.runningIntents.has(intentId);
+			if (inUse) {
 				retained.push(controller);
 			} else {
 				this.controllers.delete(intentId);
@@ -736,6 +761,7 @@ export class DlcHost {
 			this.updateSummary(controller.projection());
 		}
 	}
+	/** 選択順序と接続世代を照合し、古い非同期結果で最新の Intent 選択を上書きしない。 */
 	private async select(
 		workspace: Workspace,
 		intentId: string,
@@ -769,6 +795,7 @@ export class DlcHost {
 		this.runtime.selectDlc(intentId);
 		await this.restoreAttempt(workspace, controller, intentId);
 	}
+	/** 実行中でない Intent に保存済みの会話があれば、最後の試行を表示へ復元する。 */
 	private async restoreAttempt(
 		workspace: Workspace,
 		controller: DlcController,
@@ -778,11 +805,11 @@ export class DlcHost {
 			.projection()
 			.workItems.flatMap((item) => item.attempts)
 			.at(-1);
-		if (
+		const canRestore =
 			!this.runningIntents.has(intentId) &&
 			attempt !== undefined &&
-			workspace.repository.hasConversation(intentId, attempt.id)
-		) {
+			workspace.repository.hasConversation(intentId, attempt.id);
+		if (canRestore) {
 			await this.attempt(workspace, {
 				type: "dlc/attempt",
 				requestId: randomUUID(),
@@ -806,12 +833,15 @@ export class DlcHost {
 			});
 		}
 	}
+	/** 表示と Worktree の操作を先に処理し、残る作成・復旧・選択・実行要求を振り分ける。 */
 	private async dispatch(message: DlcUiMessage): Promise<void> {
-		if (await this.presentation(message)) {
+		const presented = await this.presentation(message);
+		if (presented) {
 			return;
 		}
 		const workspace = await this.open();
-		if (await this.worktreeAction(workspace, message)) {
+		const worktreeHandled = await this.worktreeAction(workspace, message);
+		if (worktreeHandled) {
 			return;
 		}
 		if (message.type === "dlc/create") {
@@ -845,10 +875,9 @@ export class DlcHost {
 			return;
 		}
 		if (message.type === "dlc/recover") {
-			if (
-				this.runningIntents.size > 0 ||
-				this.controllerActions.size > 0
-			) {
+			const inUse =
+				this.runningIntents.size > 0 || this.controllerActions.size > 0;
+			if (inUse) {
 				throw new Error(
 					"実行が終わってから Intent を復旧してください。",
 				);
@@ -872,6 +901,7 @@ export class DlcHost {
 			await this.action(workspace, message);
 		}
 	}
+	/** 選択世代を固定して試行の会話を表示する。同じ試行が実行中なら現在の会話を維持する。 */
 	private async attempt(
 		workspace: Workspace,
 		message: Extract<DlcUiMessage, { type: "dlc/attempt" }>,
@@ -881,10 +911,10 @@ export class DlcHost {
 		}
 		const selection = this.runtime.beginAttemptSelection(message.intentId);
 		const active = this.runtime.activeDlc();
-		if (
+		const alreadyActive =
 			active?.intentId === message.intentId &&
-			active.attemptId === message.attemptId
-		) {
+			active.attemptId === message.attemptId;
+		if (alreadyActive) {
 			this.runtime.selectDlc(message.intentId);
 			return;
 		}
@@ -916,16 +946,16 @@ export class DlcHost {
 		intentId: string,
 		attemptId: string,
 	): Promise<void> {
-		if (
-			workspace.repository.hasConversation(intentId, attemptId) ||
-			this.runtime
-				.activeDlcs()
-				.some(
-					(run) =>
-						run.intentId === intentId &&
-						run.attemptId === attemptId,
-				)
-		) {
+		if (workspace.repository.hasConversation(intentId, attemptId)) {
+			return;
+		}
+		const running = this.runtime
+			.activeDlcs()
+			.some(
+				(run) =>
+					run.intentId === intentId && run.attemptId === attemptId,
+			);
+		if (running) {
 			return;
 		}
 		const conversation = this.runtime.conversation(intentId, attemptId);
@@ -938,6 +968,7 @@ export class DlcHost {
 			);
 		}
 	}
+	/** 期待版を照合し、操作中の Controller は再読込みから保護して完了時に解放する。 */
 	private async action(
 		workspace: Workspace,
 		message: Extract<DlcUiMessage, { type: "dlc/action" }>,
@@ -948,14 +979,18 @@ export class DlcHost {
 				workspace,
 				message.intentId,
 			);
-			if (
-				message.revision >= 0 &&
-				(message.intentId !== this.selectedId ||
-					controller.projection().revision !== message.revision)
-			) {
-				throw new Error(
-					"表示した Intent の版が古くなっています。再読込みしてください。",
-				);
+			if (message.revision >= 0) {
+				if (message.intentId !== this.selectedId) {
+					throw new Error(
+						"表示した Intent の版が古くなっています。再読込みしてください。",
+					);
+				}
+				const currentRevision = controller.projection().revision;
+				if (currentRevision !== message.revision) {
+					throw new Error(
+						"表示した Intent の版が古くなっています。再読込みしてください。",
+					);
+				}
 			}
 			await this.dispatchAction(workspace, controller, message);
 			this.publish();
@@ -972,14 +1007,15 @@ export class DlcHost {
 		this.controllerActions.set(intentId, actions);
 		return () => {
 			actions.delete(owner);
-			if (
+			const released =
 				actions.size === 0 &&
-				this.controllerActions.get(intentId) === actions
-			) {
+				this.controllerActions.get(intentId) === actions;
+			if (released) {
 				this.controllerActions.delete(intentId);
 			}
 		};
 	}
+	/** 停止は保存版の照合より先に届け、再試行は実行先の実測、開始は Runtime の予約へ進める。 */
 	private async dispatchAction(
 		workspace: Workspace,
 		controller: DlcController,
@@ -1063,6 +1099,7 @@ export class DlcHost {
 			this.runningIntents.delete(message.intentId);
 		}
 	}
+	/** 実行・停止・再試行は Webview と同じ受付経路を使い、その他の操作は作業画面へ誘導する。 */
 	async command(
 		name: "create" | "plan" | "run" | "cancel" | "status" | "retry",
 	): Promise<DlcView> {
@@ -1094,12 +1131,14 @@ export class DlcHost {
 		await vscode.commands.executeCommand("nerita.dlc.openWorkspace");
 		return this.view();
 	}
+	/** 同時のリセットを一つの Promise にまとめ、古い保存先の解放を次の初期化より先に終える。 */
 	reset(): Promise<void> {
 		this.resetting ??= this.clearWorkspace().finally(() => {
 			this.resetting = undefined;
 		});
 		return this.resetting;
 	}
+	/** 接続世代を失効させて実行を停止し、保存先と選択・Controller の参照を解放する。 */
 	private async clearWorkspace(): Promise<void> {
 		const workspace = this.workspace;
 		this.generation++;
@@ -1134,6 +1173,7 @@ export class DlcHost {
 		this.runtime.selectDlc(undefined);
 		this.publish();
 	}
+	/** 新しい要求と信頼通知の受付を閉じてから、リセットを待って保存先を解放する。 */
 	async dispose(): Promise<void> {
 		this.closed = true;
 		this.unsubscribeTrust();

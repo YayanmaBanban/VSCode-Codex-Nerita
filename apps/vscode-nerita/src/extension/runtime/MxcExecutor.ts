@@ -47,6 +47,7 @@ import {
 
 /** SDK のロードと probe に成功した組み立て側だけが生成する。 */
 export class MxcExecutor implements SandboxCommandExecutor {
+	/** SDK と隔離方式を実行経路に固定し、拒否・実測・権限の通知は注入した受信先へ渡す。 */
 	constructor(
 		private readonly sdk: MxcSdk,
 		private readonly isolationTier: string,
@@ -56,6 +57,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 		private readonly onMeasurement?: (value: MxcMeasurement) => void,
 	) {}
 
+	/** 実行器の隔離方式とネットワーク上限を示し、クリップボードと入力注入は許可しない。 */
 	describe(policy: AgentAccessPolicy) {
 		return {
 			name: "Microsoft MXC",
@@ -67,6 +69,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 		};
 	}
 
+	/** 実行と再試行のたびに承認内容・ルート・信頼を照合し、拒否の対応は管理画面の決定を待ってから反映する。 */
 	async execute(
 		approved: ApprovedToolCall,
 		onOutput?: SandboxCommandOutput,
@@ -116,19 +119,18 @@ export class MxcExecutor implements SandboxCommandExecutor {
 				if (attempt >= 3) {
 					return { ...result, stdout, stderr };
 				}
-				if (
-					!(await this.management.waitForDecision(
-						report,
-						call,
-						operationId,
-						signal,
-						() =>
-							onOutput?.(
-								"stderr",
-								"\nSandbox の拒否を確認しました。Sandbox 管理画面で許可・キャッシュ切替・拒否を選択してください。\n",
-							),
-					))
-				) {
+				const matchesValue = !(await this.management.waitForDecision(
+					report,
+					call,
+					operationId,
+					signal,
+					() =>
+						onOutput?.(
+							"stderr",
+							"\nSandbox の拒否を確認しました。Sandbox 管理画面で許可・キャッシュ切替・拒否を選択してください。\n",
+						),
+				));
+				if (matchesValue) {
 					signal.throwIfAborted();
 					return { ...result, stdout, stderr };
 				}
@@ -266,10 +268,10 @@ function assertMxcCompleted(
 			message: `script timed out after ${timeoutMs}ms`,
 		},
 	});
-	if (
+	const matchesExitCode =
 		result.exitCode === 0xffff_ffff &&
-		result.stderr.trimEnd().endsWith(timeoutError)
-	) {
+		result.stderr.trimEnd().endsWith(timeoutError);
+	if (matchesExitCode) {
 		throw new Error("Sandbox 実行がタイムアウトしました。");
 	}
 }
@@ -297,18 +299,23 @@ async function validateMxcCall(call: ToolCall) {
 
 /** SDK へ渡す前に、承認済みの引数と実行時間が許容範囲内か確認する。 */
 function validateCommand(call: ToolCall) {
-	if (
-		!call.policy.shell ||
-		!isNonZeroNumber(call.command?.length) ||
-		!isNonEmptyString(call.command[0])
-	) {
+	if (!call.policy.shell) {
 		throw new Error("未対応のSandbox要求です。");
 	}
-	if (
-		call.command.some((arg) => arg.includes("\0")) ||
-		!Number.isSafeInteger(call.timeoutMs) ||
-		call.timeoutMs! < 1
-	) {
+	if (!isNonZeroNumber(call.command?.length)) {
+		throw new Error("未対応のSandbox要求です。");
+	}
+	if (!isNonEmptyString(call.command[0])) {
+		throw new Error("未対応のSandbox要求です。");
+	}
+
+	if (call.command.some((arg) => arg.includes("\0"))) {
+		throw new Error("未対応のSandbox要求です。");
+	}
+	if (!Number.isSafeInteger(call.timeoutMs)) {
+		throw new Error("未対応のSandbox要求です。");
+	}
+	if (call.timeoutMs! < 1) {
 		throw new Error("未対応のSandbox要求です。");
 	}
 	if (call.timeoutMs! > 600_000) {
@@ -318,17 +325,19 @@ function validateCommand(call: ToolCall) {
 
 /** パス変更や role の権限拡大は再承認でも暗黙に許可しない。 */
 async function validateRoots(call: ToolCall) {
-	if (
-		!call.policy.workspaceRoots.some((root) =>
-			containsPath(root, call.cwd),
-		) ||
-		call.policy.writableRoots.some(
-			(root) =>
-				!call.policy.workspaceRoots.some((workspace) =>
-					containsPath(workspace, root),
-				),
-		)
-	) {
+	const workspaceContainsCwd = call.policy.workspaceRoots.some((root) =>
+		containsPath(root, call.cwd),
+	);
+	if (!workspaceContainsCwd) {
+		throw new Error("Sandbox のワークスペースの範囲外です。");
+	}
+	const invalidWritableRoot = call.policy.writableRoots.some(
+		(root) =>
+			!call.policy.workspaceRoots.some((workspace) =>
+				containsPath(workspace, root),
+			),
+	);
+	if (invalidWritableRoot) {
 		throw new Error("Sandbox のワークスペースの範囲外です。");
 	}
 	for (const path of [
@@ -336,7 +345,8 @@ async function validateRoots(call: ToolCall) {
 		...call.policy.writableRoots,
 		call.cwd,
 	]) {
-		if ((await realpath(path)) !== path) {
+		const matchesValue2 = (await realpath(path)) !== path;
+		if (matchesValue2) {
 			throw new Error("パスが変更されました。再承認が必要です。");
 		}
 	}
@@ -350,7 +360,8 @@ function collectOutput(
 	reportDirectory: string,
 	onOutput?: SandboxCommandOutput,
 ): Promise<SandboxCommandResult> {
-	return new Promise((resolve, reject) => {
+	/** 出力・期限・停止を追跡し、管理用の stderr 参照を除いて終了確認後の結果を返す。 */
+	const waitForMxcOutput: SandboxResultWaiter = (resolve, reject) => {
 		let stdout = "";
 		let stderr = "";
 		let failure: Error | undefined;
@@ -406,7 +417,8 @@ function collectOutput(
 		if (signal.aborted) {
 			abort();
 		}
-	});
+	};
+	return new Promise(waitForMxcOutput);
 }
 /** 通常の開発ツール設定を秘密値の注入より先に用意する。 */
 async function prepareMxcDevTools(
@@ -449,3 +461,9 @@ async function prepareMxcDevTools(
 		),
 	);
 }
+
+/** Promise の完了と拒否を受け取り、終了確認まで結果を待つ処理。 */
+type SandboxResultWaiter = (
+	resolve: (value: SandboxCommandResult) => void,
+	reject: (reason: unknown) => void,
+) => void;

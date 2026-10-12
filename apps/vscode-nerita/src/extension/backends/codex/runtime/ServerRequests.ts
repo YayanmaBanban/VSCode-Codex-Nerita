@@ -61,20 +61,26 @@ export class ServerRequests {
 	}
 	/** サーバー側で解決済みの要求は UI から除去し、遅い回答を送信しない。 */
 	resolved(params: unknown): void {
-		if (
-			!isRecord(params) ||
-			(typeof params.requestId !== "string" &&
-				typeof params.requestId !== "number")
-		) {
+		if (!isRecord(params)) {
 			return;
 		}
-		const entry = this.pending.get(params.requestId);
-		if (
-			entry &&
-			isRecord(entry.request.params) &&
-			entry.request.params.threadId === params.threadId
-		) {
-			this.pending.delete(params.requestId);
+		const requestId = params.requestId;
+		if (typeof requestId !== "string" && typeof requestId !== "number") {
+			return;
+		}
+		const entry = this.pending.get(requestId);
+
+		if (!entry) {
+			return;
+		}
+		if (!isRecord(entry.request.params)) {
+			return;
+		}
+		if (!(entry.request.params.threadId === params.threadId)) {
+			return;
+		}
+		{
+			this.pending.delete(requestId);
 			entry.abort.abort();
 		}
 	}

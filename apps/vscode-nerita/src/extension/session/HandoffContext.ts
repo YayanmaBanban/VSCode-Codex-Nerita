@@ -19,6 +19,7 @@ export type HandoffGenerator = (request: HandoffRequest) => Promise<string>;
 
 /** 設定・生成の失敗を、再送できる参照エラーとして公開する。 */
 export class HandoffContextError extends Error {
+	/** 生成失敗では元の参照を別形式へ黙って変換せず、利用者に再送かセッション参照の選択を促す。 */
 	constructor() {
 		super(
 			"ハンドオフを生成できませんでした。設定を確認して再送するか、#セッションへ切り替えてください。",

@@ -41,10 +41,10 @@ export function CompletionOption({
 				aria-disabled={item.disabled}
 				onMouseDown={(event) => event.preventDefault()}
 				onKeyDown={(event) => {
-					if (
-						event.nativeEvent.isComposing ||
-						item.disabled === true
-					) {
+					if (event.nativeEvent.isComposing) {
+						return;
+					}
+					if (item.disabled === true) {
 						return;
 					}
 					if (event.key === "Enter" || event.key === " ") {

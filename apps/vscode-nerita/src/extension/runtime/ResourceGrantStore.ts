@@ -34,6 +34,7 @@ export class ResourceGrantStore {
 	private grants: ResourceGrant[] = [];
 	private caches: SandboxCache[] = [];
 	private pending = Promise.resolve();
+	/** 保存値を検証し、ワークスペース許可とキャッシュ選択だけを次の起動へ復元する。 */
 	constructor(
 		private readonly storage: ResourceGrantStorage,
 		private readonly changed: () => void,
@@ -77,14 +78,22 @@ export class ResourceGrantStore {
 		operationId: string,
 		signal: AbortSignal,
 	) {
-		return this.enqueue(async () => {
+		/** 拒否対象と権限上限を照合して保存し、保存中に停止された一時許可は公開後に回収する。 */
+		const persistDenialGrant = async () => {
 			signal.throwIfAborted();
 			const resource = event.resource;
-			if (
-				!resource ||
-				!isNonEmptyString(resource.tool) ||
-				decision.action !== "allow"
-			) {
+
+			if (!resource) {
+				throw new Error(
+					"この拒否イベントにはリソース権限を追加できません。",
+				);
+			}
+			if (!isNonEmptyString(resource.tool)) {
+				throw new Error(
+					"この拒否イベントにはリソース権限を追加できません。",
+				);
+			}
+			if (decision.action !== "allow") {
 				throw new Error(
 					"この拒否イベントにはリソース権限を追加できません。",
 				);
@@ -130,18 +139,23 @@ export class ResourceGrantStore {
 				this.changed();
 			}
 			signal.throwIfAborted();
-		});
+		};
+		return this.enqueue(persistDenialGrant);
 	}
 
 	/** ホストキャッシュへの書込み権限は作らず、ワークスペースごとにキャッシュの切替対象のツールを保存する。 */
 	switchCache(event: DenialEvent, call: ToolCall, signal: AbortSignal) {
-		return this.enqueue(async () => {
+		/** キャッシュの拒否だけを対象に、ワークスペースとツールごとの選択を保存する。 */
+		const persistSandboxCacheChoice = async () => {
 			signal.throwIfAborted();
-			if (
-				event.resource?.kind !== "cache" ||
-				!isNonEmptyString(event.resource.tool) ||
-				event.resourceType !== "file"
-			) {
+
+			if (event.resource?.kind !== "cache") {
+				throw new Error("キャッシュ以外の保存先は切り替えられません。");
+			}
+			if (!isNonEmptyString(event.resource.tool)) {
+				throw new Error("キャッシュ以外の保存先は切り替えられません。");
+			}
+			if (event.resourceType !== "file") {
 				throw new Error("キャッシュ以外の保存先は切り替えられません。");
 			}
 			const workspace = workspaceFor(call);
@@ -152,7 +166,8 @@ export class ResourceGrantStore {
 			caches.push({ id: randomUUID(), workspace, tool });
 			await this.persist(this.grants, caches);
 			signal.throwIfAborted();
-		});
+		};
+		return this.enqueue(persistSandboxCacheChoice);
 	}
 
 	/** 保存失敗時はメモリー上の状態と表示を維持する。 */
@@ -204,18 +219,20 @@ export class ResourceGrantStore {
 	): Promise<DevToolPolicy> {
 		const resources = [...policy.resources];
 		for (const grant of this.grants) {
-			if (
+			const matchesWorkspace =
 				grant.workspace !== workspaceFor(call) ||
-				(grant.scope === "process" && grant.operationId !== operationId)
-			) {
+				(grant.scope === "process" &&
+					grant.operationId !== operationId);
+			if (matchesWorkspace) {
 				continue;
 			}
 			const profile = policy.resources.find((item) => {
-				if (!(
+				const matchesKind2 = !(
 					item.kind === grant.resource.kind &&
 					item.tool === grant.resource.tool &&
 					item.target === grant.resource.profileTarget
-				)) {
+				);
+				if (matchesKind2) {
 					return false;
 				}
 				return containsPath(item.target, grant.resource.target);
@@ -236,6 +253,7 @@ export class ResourceGrantStore {
 		}
 		return { ...policy, resources };
 	}
+	/** ワークスペース許可だけを永続化し、保存成功後にメモリー上の許可とキャッシュ選択を公開する。 */
 	private async persist(grants: ResourceGrant[], caches: SandboxCache[]) {
 		await this.storage.write(
 			structuredClone({
@@ -247,6 +265,7 @@ export class ResourceGrantStore {
 		this.caches = [...caches];
 		this.changed();
 	}
+	/** 許可の更新を直列化し、失敗した要求が後続の待機列を止めないようにする。 */
 	private enqueue(operation: () => Promise<void>) {
 		const result = this.pending.then(operation);
 		this.pending = result.catch(() => {});
@@ -267,11 +286,13 @@ export function workspaceFor(call: ToolCall): string {
 
 /** 認証用ファイルや書込み要求を通常の読取り許可へ変換しない。 */
 export function grantable(event: DenialEvent): boolean {
-	if (!(
-		event.resourceType === "file" &&
-		isNonEmptyString(event.resource?.tool) &&
-		["install", "helper", "config"].includes(event.resource.kind)
-	)) {
+	if (!(event.resourceType === "file")) {
+		return false;
+	}
+	if (!isNonEmptyString(event.resource?.tool)) {
+		return false;
+	}
+	if (!["install", "helper", "config"].includes(event.resource.kind)) {
 		return false;
 	}
 	return (
@@ -287,17 +308,20 @@ export function grantable(event: DenialEvent): boolean {
 
 /** Object Manager パス、親への拡張、junction の差替えを拒否する。 */
 async function safeGrantTarget(target: string): Promise<string> {
-	if (
-		!isAbsolute(target) ||
-		normalize(target) !== target ||
-		target === parse(target).root
-	) {
+	if (!isAbsolute(target)) {
+		throw new Error("正規化されたファイルパスだけを許可できます。");
+	}
+	if (normalize(target) !== target) {
+		throw new Error("正規化されたファイルパスだけを許可できます。");
+	}
+	if (target === parse(target).root) {
 		throw new Error("正規化されたファイルパスだけを許可できます。");
 	}
 	if (target.includes("\0")) {
 		throw new Error("正規化されたファイルパスだけを許可できます。");
 	}
-	if ((await realpath(target)) !== target) {
+	const matchesValue = (await realpath(target)) !== target;
+	if (matchesValue) {
 		throw new Error("リソースのパスが変更されています。");
 	}
 	return target;

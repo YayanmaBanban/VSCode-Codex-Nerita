@@ -73,11 +73,14 @@ function unsupportedSymbolLocation(location: vscode.Location | undefined) {
 	const range: unknown = location?.range;
 	const invalidLocation =
 		!location || !Boolean(range) || location.uri.scheme !== "file";
-	if (
-		invalidLocation ||
-		isNonEmptyString(location.uri.query) ||
-		isNonEmptyString(location.uri.fragment)
-	) {
+
+	if (invalidLocation) {
+		return true;
+	}
+	if (isNonEmptyString(location.uri.query)) {
+		return true;
+	}
+	if (isNonEmptyString(location.uri.fragment)) {
 		return true;
 	}
 	return !vscode.workspace.getWorkspaceFolder(location.uri);

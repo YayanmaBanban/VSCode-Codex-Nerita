@@ -49,10 +49,9 @@ function handleBackKey(
 	event: KeyboardEvent,
 	options: CompletionKeyboardOptions,
 ) {
-	if (
-		event.key !== "Escape" &&
-		!(event.altKey && event.key === "ArrowLeft")
-	) {
+	const matchesKey =
+		event.key !== "Escape" && !(event.altKey && event.key === "ArrowLeft");
+	if (matchesKey) {
 		return false;
 	}
 	event.preventDefault();
@@ -89,12 +88,8 @@ function handleCompletionSelection(
 	const { items, index, pick, setSelected } = options;
 	if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 		event.preventDefault();
-		setSelected(
-			items.length > 0
-				? (index + (event.key === "ArrowDown" ? 1 : items.length - 1)) %
-						items.length
-				: 0,
-		);
+		const step = event.key === "ArrowDown" ? 1 : items.length - 1;
+		setSelected(items.length > 0 ? (index + step) % items.length : 0);
 		return true;
 	}
 	if (isCompletionSelectionKey(event, items, index)) {
@@ -119,9 +114,9 @@ function isCompletionSelectionKey(
 	if (event.key !== "ArrowRight") {
 		return false;
 	}
-	return (
+	const matchesIsNonEmptyString =
 		(isNonEmptyString(items[index]?.category) ||
 			items[index]?.directory !== undefined) &&
-		!event.shiftKey
-	);
+		!event.shiftKey;
+	return matchesIsNonEmptyString;
 }

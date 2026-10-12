@@ -38,14 +38,15 @@ export async function preparePiRuntimeTools(
 ) {
 	const windows = process.platform === "win32";
 	const trusted = await piWorkspaceTrusted(options);
+	const unavailableReason = trusted
+		? undefined
+		: "未信頼のWorkspaceではShellを実行できません。";
 	const { executor, unavailable } =
 		windows && trusted
 			? await executionMode(options)
 			: {
 					executor: null,
-					unavailable: trusted
-						? undefined
-						: "未信頼のWorkspaceではShellを実行できません。",
+					unavailable: unavailableReason,
 				};
 	options.signal.throwIfAborted();
 	const paths = await runtimePaths(options);

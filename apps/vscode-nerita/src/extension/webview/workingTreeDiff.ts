@@ -112,10 +112,10 @@ export class WorkingTreeDiff implements vscode.Disposable {
 
 /** ローカルの信頼済みワークスペースに属するファイルパスを確定する。 */
 async function resolveDiffFile(path: string, cwd?: string | null) {
-	if (
-		!vscode.workspace.isTrusted ||
-		isNonEmptyString(vscode.env.remoteName)
-	) {
+	if (!vscode.workspace.isTrusted) {
+		throw new Error("Unsupported diff workspace");
+	}
+	if (isNonEmptyString(vscode.env.remoteName)) {
 		throw new Error("Unsupported diff workspace");
 	}
 	const base = cwd;

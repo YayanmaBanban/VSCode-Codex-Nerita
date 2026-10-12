@@ -14,17 +14,19 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 	const log = vscode.window.createOutputChannel("Nerita Trust", {
 		log: true,
 	});
+	/** 保存中の印を先に残し、信頼記録の保存成功後だけその印を解除する。 */
+	const persistTrustRecords = async (value: unknown) => {
+		await context.globalState.update(`${key}.pending`, true);
+		await context.globalState.update(key, value);
+		await context.globalState.update(`${key}.pending`, false);
+	};
 	const store = new WorkspaceTrustStore(
 		{
 			read: () =>
 				context.globalState.get<boolean>(`${key}.pending`) === true
 					? null
 					: context.globalState.get(key),
-			write: async (value) => {
-				await context.globalState.update(`${key}.pending`, true);
-				await context.globalState.update(key, value);
-				await context.globalState.update(`${key}.pending`, false);
-			},
+			write: persistTrustRecords,
 		},
 		(event, root) =>
 			log.info(

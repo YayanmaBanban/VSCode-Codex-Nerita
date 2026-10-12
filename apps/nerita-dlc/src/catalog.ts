@@ -154,23 +154,22 @@ export function validateCatalog(catalog: readonly StageDefinition[]): void {
 		throw new Error("ステージカタログは重複のない33件が必要です。");
 	}
 	for (const [index, stage] of catalog.entries()) {
-		if (
+		const matchesId =
 			stage.id !== rows[index]?.[0] ||
 			stage.phase !== Number(stage.id[0]) ||
-			stage.dependencies.some((id) => !ids.slice(0, index).includes(id))
-		) {
+			stage.dependencies.some((id) => !ids.slice(0, index).includes(id));
+		if (matchesId) {
 			throw new Error("ステージの順序または依存関係が不正です。");
 		}
-		if (
-			stage.consumes.some(
-				(input) =>
-					!catalog.some(
-						(producer) =>
-							producer.id === input.stageId &&
-							producer.produces.includes(input.artifact),
-					),
-			)
-		) {
+		const matchesSome = stage.consumes.some(
+			(input) =>
+				!catalog.some(
+					(producer) =>
+						producer.id === input.stageId &&
+						producer.produces.includes(input.artifact),
+				),
+		);
+		if (matchesSome) {
 			throw new Error("成果物の参照が未解決です。");
 		}
 		if (new Set(stage.profiles).size !== stage.profiles.length) {

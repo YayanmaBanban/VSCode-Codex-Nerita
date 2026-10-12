@@ -57,7 +57,12 @@ export async function createWorkspaceAccessPolicy(
 	const canonical = await Promise.all(
 		roots.map(async (root) => {
 			validatePath(root);
-			if (!isAbsolute(root) || !(await stat(root)).isDirectory()) {
+
+			if (!isAbsolute(root)) {
+				throw new Error("workspace rootが不正です。");
+			}
+			const rootInfo = await stat(root);
+			if (!rootInfo.isDirectory()) {
 				throw new Error("workspace rootが不正です。");
 			}
 			return realpath(root);
@@ -74,6 +79,7 @@ export async function createWorkspaceAccessPolicy(
 /** 指定された読取り範囲と書込み範囲を、リンク解決後の実体パスへ適用する。 */
 export class WorkspacePathPolicy {
 	readonly policy: AgentAccessPolicy;
+	/** 開始時の権限を固定し、呼び出し側による後の変更でパスの上限を広げない。 */
 	constructor(
 		policy: AgentAccessPolicy,
 		readonly cwd: string,
@@ -83,11 +89,10 @@ export class WorkspacePathPolicy {
 	/** `cwd` はワークスペース内に限定し、シェルでの暗黙 `write` 拡大を別途検査する。 */
 	async resolveWorkspace(input: string): Promise<string> {
 		const target = await this.resolve(input, "read");
-		if (
-			!this.policy.workspaceRoots.some((root) =>
-				containsPath(root, target),
-			)
-		) {
+		const matchesSome = !this.policy.workspaceRoots.some((root) =>
+			containsPath(root, target),
+		);
+		if (matchesSome) {
 			throw new Error("cwdがworkspace境界外です。");
 		}
 		return target;
@@ -99,12 +104,11 @@ export class WorkspacePathPolicy {
 			throw new Error(`読取り許可の範囲外です: ${input}`);
 		}
 		if (operation === "write") {
-			if (
+			const matchesSome2 =
 				!this.policy.writableRoots.some((root) =>
 					containsPath(root, target),
-				) ||
-				this.policy.workspaceRoots.includes(target)
-			) {
+				) || this.policy.workspaceRoots.includes(target);
+			if (matchesSome2) {
 				throw new Error(
 					`workspace境界外またはroot自体への書込みは拒否されました: ${input}`,
 				);
@@ -136,23 +140,28 @@ function readablePath(policy: AgentAccessPolicy, target: string): boolean {
 
 /** Windows が別の対象として解釈する区切り・制御文字・予約名を検出する。 */
 function isWindowsSpecialPath(path: string): boolean {
-	if (
+	const matchesTest =
 		/^[\\/]{2}/.test(path) ||
 		/^[a-z]:(?![\\/])/i.test(path) ||
-		/[:<>"|?*]/.test(path.replace(/^[a-z]:[\\/]/i, ""))
-	) {
+		/[:<>"|?*]/.test(path.replace(/^[a-z]:[\\/]/i, ""));
+	if (matchesTest) {
 		return true;
 	}
-	return (
-		[...path].some((c) => c.charCodeAt(0) < 32) ||
-		path.split(/[\\/]/).some((p) => {
-			const invalidSegment = /[ .]$/.test(p) && p !== "." && p !== "..";
-			return (
-				invalidSegment ||
-				/^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(
-					p,
-				)
-			);
-		})
+	const hasControlCharacter = [...path].some(
+		(char) => char.charCodeAt(0) < 32,
+	);
+	if (hasControlCharacter) {
+		return true;
+	}
+	return path.split(/[\\/]/).some(isWindowsSpecialSegment);
+}
+
+/** Windows が末尾を省略する名前と予約されたデバイス名を拒否し、相対パスの . と .. は別に扱う。 */
+function isWindowsSpecialSegment(segment: string): boolean {
+	if (/[ .]$/.test(segment) && segment !== "." && segment !== "..") {
+		return true;
+	}
+	return /^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(
+		segment,
 	);
 }

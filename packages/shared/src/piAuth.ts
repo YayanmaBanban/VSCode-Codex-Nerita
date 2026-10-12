@@ -59,18 +59,24 @@ export function isPiAuthState(value: unknown): value is PiAuthState {
 	if (!isRecord(value)) {
 		return false;
 	}
-	if (!(
-		Array.isArray(value.items) &&
-		value.items.every(isAuthItem) &&
-		isNullableString(value.active)
-	)) {
+
+	if (!Array.isArray(value.items)) {
 		return false;
 	}
-	if (!(
-		typeof value.notice === "string" &&
-		isNullableString(value.error) &&
-		validAuthFeedback(value.feedback)
-	)) {
+	if (!value.items.every(isAuthItem)) {
+		return false;
+	}
+	if (!isNullableString(value.active)) {
+		return false;
+	}
+
+	if (!(typeof value.notice === "string")) {
+		return false;
+	}
+	if (!isNullableString(value.error)) {
+		return false;
+	}
+	if (!validAuthFeedback(value.feedback)) {
 		return false;
 	}
 	return validAuthPrompt(value.prompt);
@@ -78,40 +84,45 @@ export function isPiAuthState(value: unknown): value is PiAuthState {
 
 /** 未検証のプロバイダー項目と、アカウント・認証方式の配列を検証する。 */
 function isAuthItem(value: unknown): boolean {
-	if (!(
-		isRecord(value) &&
-		typeof value.id === "string" &&
-		typeof value.name === "string"
-	)) {
+	if (!isRecord(value)) {
+		return false;
+	}
+	if (!(typeof value.id === "string")) {
+		return false;
+	}
+	if (!(typeof value.name === "string")) {
 		return false;
 	}
 	if (!(typeof value.configured === "boolean")) {
 		return false;
 	}
-	if (!(
+	const matchesAccounts = !(
 		value.accounts === undefined ||
 		(Array.isArray(value.accounts) && value.accounts.every(isAuthAccount))
-	)) {
+	);
+	if (matchesAccounts) {
 		return false;
 	}
-	return (
+	const matchesIsArray2 =
 		Array.isArray(value.methods) &&
 		value.methods.every(
 			(method: unknown) =>
 				isRecord(method) &&
 				typeof method.id === "string" &&
 				typeof method.name === "string",
-		)
-	);
+		);
+	return matchesIsArray2;
 }
 
 /** アカウントの保存方式は公開契約の2種類に限定する。 */
 function isAuthAccount(value: unknown): boolean {
-	if (!(
-		isRecord(value) &&
-		typeof value.id === "string" &&
-		typeof value.name === "string"
-	)) {
+	if (!isRecord(value)) {
+		return false;
+	}
+	if (!(typeof value.id === "string")) {
+		return false;
+	}
+	if (!(typeof value.name === "string")) {
 		return false;
 	}
 	return (
@@ -130,17 +141,20 @@ function validAuthPrompt(prompt: unknown): boolean {
 	if (prompt === null) {
 		return true;
 	}
-	if (!(
-		isRecord(prompt) &&
-		typeof prompt.id === "string" &&
-		typeof prompt.message === "string"
-	)) {
+
+	if (!isRecord(prompt)) {
+		return false;
+	}
+	if (!(typeof prompt.id === "string")) {
+		return false;
+	}
+	if (!(typeof prompt.message === "string")) {
 		return false;
 	}
 	if (!(typeof prompt.secret === "boolean")) {
 		return false;
 	}
-	return (
+	const matchesOptions =
 		prompt.options === undefined ||
 		(Array.isArray(prompt.options) &&
 			prompt.options.every(
@@ -148,20 +162,25 @@ function validAuthPrompt(prompt: unknown): boolean {
 					isRecord(option) &&
 					typeof option.id === "string" &&
 					typeof option.label === "string",
-			))
-	);
+			));
+	return matchesOptions;
 }
 
 /** 認証結果の通知とエラーを検証する。 */
 function validAuthFeedback(feedback: unknown) {
-	return (
-		feedback === undefined ||
-		(isRecord(feedback) &&
-			Object.values(feedback).every((item: unknown) => {
-				if (!(isRecord(item) && typeof item.notice === "string")) {
-					return false;
-				}
-				return item.error === null || typeof item.error === "string";
-			}))
-	);
+	if (feedback === undefined) {
+		return true;
+	}
+	if (!isRecord(feedback)) {
+		return false;
+	}
+	return Object.values(feedback).every(validAuthFeedbackEntry);
+}
+
+/** 個別操作の通知とエラーは別の値として保持し、未検証の結果を画面へ返さない。 */
+function validAuthFeedbackEntry(item: unknown): boolean {
+	if (!isRecord(item) || typeof item.notice !== "string") {
+		return false;
+	}
+	return isNullableString(item.error);
 }

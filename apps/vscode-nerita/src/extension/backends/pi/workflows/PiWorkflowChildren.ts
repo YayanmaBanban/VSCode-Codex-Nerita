@@ -46,6 +46,7 @@ export class PiWorkflowChildren {
 	private started = new Set<string>();
 	private pending = new Set<Promise<WorkflowResult>>();
 	private retained = new Set<Retained>();
+	/** 各工程の定義とモデルを開始前に固定し、fork のモデルが元の子と異なる計画を拒否する。 */
 	constructor(
 		workflow: Workflow,
 		definitions: PiSubagentDefinition[],
@@ -67,11 +68,11 @@ export class PiWorkflowChildren {
 			const model = isNonEmptyString(step.resume)
 				? source!.model
 				: agentModel(definition, parentModel);
-			if (
+			const matchesIsNonEmptyString =
 				isNonEmptyString(step.fork) &&
 				(model.provider !== source!.model.provider ||
-					model.model !== source!.model.model)
-			) {
+					model.model !== source!.model.model);
+			if (matchesIsNonEmptyString) {
 				throw new Error(
 					"子の fork は同じモデル・プロバイダーだけを使用できます。",
 				);
@@ -162,20 +163,20 @@ export class PiWorkflowChildren {
 			/\{\{\s*([A-Za-z][\w-]{0,63})\.output\s*\}\}/g,
 			(_match, id: string) => this.completed.get(id)!.result.output,
 		);
-		if (
+		const matchesTask =
 			params.task !== expected ||
 			params.agent !== step.agent ||
-			params.resume !== this.referenceId(step.resume)
-		) {
+			params.resume !== this.referenceId(step.resume);
+		if (matchesTask) {
 			throw new Error("生成したステップと起動条件が一致しません。");
 		}
-		if (
+		const matchesNeritaFork =
 			params.neritaFork !== this.referenceId(step.fork) ||
 			Object.keys(params).some(
 				(key) =>
 					!["task", "agent", "resume", "neritaFork"].includes(key),
-			)
-		) {
+			);
+		if (matchesNeritaFork) {
 			throw new Error("生成したステップと起動条件が一致しません。");
 		}
 	}
@@ -195,10 +196,10 @@ export class PiWorkflowChildren {
 		signal: AbortSignal,
 	) {
 		const source = this.source(plan.step);
-		if (
+		const matchesIsNonEmptyString2 =
 			isNonEmptyString(plan.step.resume) &&
-			source!.retained.latest !== plan.step.resume
-		) {
+			source!.retained.latest !== plan.step.resume;
+		if (matchesIsNonEmptyString2) {
 			throw new Error("古い完了時点からは再開できません。");
 		}
 		const permit = await approveToolCall(

@@ -35,10 +35,10 @@ export function piSessionContext(
 	if (mode === "transcript") {
 		const text = branch
 			.flatMap((entry) => {
-				if (
+				const matchesType =
 					entry.type !== "message" ||
-					!["user", "assistant"].includes(entry.message.role)
-				) {
+					!["user", "assistant"].includes(entry.message.role);
+				if (matchesType) {
 					return [];
 				}
 				const message = entry.message;

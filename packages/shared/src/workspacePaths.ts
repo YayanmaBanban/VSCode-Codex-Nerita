@@ -41,11 +41,13 @@ export type ResolvePathResult = {
 
 /** Windows のドライブ絶対パスと UNC を受け付け、改行や相対パスを除外する。 */
 export function isAbsoluteLocalPath(value: unknown): value is string {
-	if (!(
-		isPathString(value) &&
-		![...value].some((character) => character.charCodeAt(0) < 32) &&
-		!/["<>|?*]/.test(value)
-	)) {
+	if (!isPathString(value)) {
+		return false;
+	}
+	if ([...value].some((character) => character.charCodeAt(0) < 32)) {
+		return false;
+	}
+	if (/["<>|?*]/.test(value)) {
 		return false;
 	}
 	return (
@@ -74,29 +76,33 @@ export function isWorkspacePath(value: unknown): value is WorkspacePath {
 		return false;
 	}
 	const entry = value;
-	if (!(
-		isPathString(entry.uri) &&
-		isPathString(entry.name) &&
-		isPathString(entry.path)
-	)) {
+
+	if (!isPathString(entry.uri)) {
 		return false;
 	}
-	return (
+	if (!isPathString(entry.name)) {
+		return false;
+	}
+	if (!isPathString(entry.path)) {
+		return false;
+	}
+	const matchesKind =
 		(entry.kind === "file" || entry.kind === "directory") &&
-		validPathLocation(entry)
-	);
+		validPathLocation(entry);
+	return matchesKind;
 }
 
 /** 位置情報はファイルに限って受け付ける。 */
 function validPathLocation(entry: Record<string, unknown>): boolean {
-	if (!(
+	const matchesRange = !(
 		entry.range === undefined ||
 		(entry.kind === "file" && isSourceRange(entry.range))
-	)) {
+	);
+	if (matchesRange) {
 		return false;
 	}
-	return (
+	const matchesSymbol =
 		entry.symbol === undefined ||
-		(entry.kind === "file" && isSymbolLocation(entry.symbol))
-	);
+		(entry.kind === "file" && isSymbolLocation(entry.symbol));
+	return matchesSymbol;
 }

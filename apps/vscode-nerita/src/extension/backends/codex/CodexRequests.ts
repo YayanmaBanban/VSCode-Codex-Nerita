@@ -31,6 +31,7 @@ export class CodexRequests {
 	private readonly approvals = new Approvals(() =>
 		this.session.patch({ permissions: this.approvals.list() }),
 	);
+	/** 要求の対象セッションと確認 UI を保持し、取消しはこの接続の待機に伝える。 */
 	constructor(
 		private readonly session: RequestSession,
 		private readonly interactions?: InteractionService,
@@ -46,13 +47,12 @@ export class CodexRequests {
 		message: AppServerRequest,
 		signal: AbortSignal,
 	): Promise<unknown> {
-		if (
-			[
-				"item/tool/requestUserInput",
-				"mcpServer/elicitation/request",
-				"item/permissions/requestApproval",
-			].includes(message.method)
-		) {
+		const matchesIncludes = [
+			"item/tool/requestUserInput",
+			"mcpServer/elicitation/request",
+			"item/permissions/requestApproval",
+		].includes(message.method);
+		if (matchesIncludes) {
 			return this.interaction(message, signal);
 		}
 		const approval = parseApproval(message);
@@ -61,11 +61,11 @@ export class CodexRequests {
 			return { decision: "cancel" };
 		}
 		await run.ready;
-		if (
+		const matchesActive =
 			this.session.active() !== run ||
 			approval.turnId !== run.turnId ||
-			this.session.snapshot().run !== "running"
-		) {
+			this.session.snapshot().run !== "running";
+		if (matchesActive) {
 			return { decision: "cancel" };
 		}
 		if (signal.aborted) {
@@ -75,7 +75,12 @@ export class CodexRequests {
 		const tool = state.tools.find(
 			(item) => item.id === approval.itemId && item.runId === state.runId,
 		);
-		if (await managedFileChange(message.method, state, tool)) {
+		const matchesValue = await managedFileChange(
+			message.method,
+			state,
+			tool,
+		);
+		if (matchesValue) {
 			return { decision: "decline" };
 		}
 		approvalPaths(approval, tool);
@@ -97,10 +102,11 @@ export class CodexRequests {
 			return empty;
 		}
 		await run.ready;
-		if (
-			this.session.active() !== run ||
-			(p.turnId !== null && p.turnId !== run.turnId)
-		) {
+
+		if (this.session.active() !== run) {
+			return empty;
+		}
+		if (p.turnId !== null && p.turnId !== run.turnId) {
 			return empty;
 		}
 		if (this.session.snapshot().run !== "running" || signal.aborted) {
@@ -192,23 +198,24 @@ async function managedFileChange(
 	state: Readonly<ChatState>,
 	tool: ChatState["tools"][number] | undefined,
 ): Promise<boolean> {
-	if (
-		method !== "item/fileChange/requestApproval" ||
-		state.cwd === null ||
-		!tool
-	) {
+	if (method !== "item/fileChange/requestApproval") {
+		return false;
+	}
+	if (state.cwd === null) {
+		return false;
+	}
+	if (!tool) {
 		return false;
 	}
 	const cwd = tool.cwd ?? state.cwd;
 	for (const input of tool.paths) {
 		const paths = [resolve(cwd, input), await canonicalPath(input, cwd)];
-		if (
-			paths.some((path) =>
-				isManagedDlcPath(
-					relative(state.cwd ?? cwd, path).replaceAll("\\", "/"),
-				),
-			)
-		) {
+		const matchesSome = paths.some((path) =>
+			isManagedDlcPath(
+				relative(state.cwd ?? cwd, path).replaceAll("\\", "/"),
+			),
+		);
+		if (matchesSome) {
 			return true;
 		}
 	}

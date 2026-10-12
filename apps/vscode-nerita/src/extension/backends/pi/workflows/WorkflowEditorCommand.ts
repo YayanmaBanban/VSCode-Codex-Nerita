@@ -11,44 +11,45 @@ export function registerWorkflowCommand(
 	context: vscode.ExtensionContext,
 	viewType: string,
 ) {
-	context.subscriptions.push(
-		vscode.commands.registerCommand("nerita.pi.workflow", async () => {
-			try {
-				const folders = vscode.workspace.workspaceFolders ?? [];
-				const folder =
-					folders.length === 1
-						? folders[0]
-						: await vscode.window.showWorkspaceFolderPick();
-				if (!folder) {
-					return;
-				}
-				const file = await vscode.window.showInputBox({
-					prompt: "Workflow のファイル名",
-					value: "workflow.toml",
-					validateInput: (value) =>
-						workflowFileSchema.safeParse(value).success
-							? null
-							: "英数字から始まる .toml ファイル名を指定してください。",
-				});
-				if (!isNonEmptyString(file)) {
-					return;
-				}
-				const uri = vscode.Uri.joinPath(
-					folder.uri,
-					".pi/workflows",
-					file,
-				);
-				await workflowDocument(uri);
-				const document = await createDocument(uri);
-				await vscode.commands.executeCommand(
-					"vscode.openWith",
-					document.uri,
-					viewType,
-				);
-			} catch (error) {
-				void vscode.window.showErrorMessage(errorText(error));
+	/** 対象ルートとファイル名を確認し、検証済み文書を作成して専用エディターへ渡す。 */
+	const openWorkflowDocument = async () => {
+		try {
+			const folders = vscode.workspace.workspaceFolders ?? [];
+			const folder =
+				folders.length === 1
+					? folders[0]
+					: await vscode.window.showWorkspaceFolderPick();
+			if (!folder) {
+				return;
 			}
-		}),
+			const file = await vscode.window.showInputBox({
+				prompt: "Workflow のファイル名",
+				value: "workflow.toml",
+				validateInput: (value) =>
+					workflowFileSchema.safeParse(value).success
+						? null
+						: "英数字から始まる .toml ファイル名を指定してください。",
+			});
+			if (!isNonEmptyString(file)) {
+				return;
+			}
+			const uri = vscode.Uri.joinPath(folder.uri, ".pi/workflows", file);
+			await workflowDocument(uri);
+			const document = await createDocument(uri);
+			await vscode.commands.executeCommand(
+				"vscode.openWith",
+				document.uri,
+				viewType,
+			);
+		} catch (error) {
+			void vscode.window.showErrorMessage(errorText(error));
+		}
+	};
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"nerita.pi.workflow",
+			openWorkflowDocument,
+		),
 	);
 }
 
@@ -73,7 +74,8 @@ async function createDocument(uri: vscode.Uri) {
 		});
 		const edit = new vscode.WorkspaceEdit();
 		edit.createFile(uri, { overwrite: false, contents: Buffer.from(text) });
-		if (!(await vscode.workspace.applyEdit(edit))) {
+		const matchesValue = !(await vscode.workspace.applyEdit(edit));
+		if (matchesValue) {
 			throw new Error("Workflow を作成できませんでした。");
 		}
 		return vscode.workspace.openTextDocument(uri);

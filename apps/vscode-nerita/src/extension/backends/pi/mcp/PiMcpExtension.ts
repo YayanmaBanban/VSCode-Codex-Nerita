@@ -56,11 +56,11 @@ export function neritaMcpExtension(options: McpOptions): ExtensionFactory {
 		) => {
 			for (const [name, server] of servers) {
 				const entry = entries.find((item) => item.name === name);
-				if (
+				const matchesEntry =
 					!entry ||
 					!server.active ||
-					mcpIdentity(entry) !== server.identity
-				) {
+					mcpIdentity(entry) !== server.identity;
+				if (matchesEntry) {
 					await server.close();
 					servers.delete(name);
 				}
@@ -161,63 +161,69 @@ function createMcpSynchronizer(
 	pi: ExtensionAPI,
 ) {
 	return () => {
+		/** 取消しと SDK の準備を確認し、現在の設定と権限に合う HTTP サーバーだけを接続する。 */
+		const synchronizePermittedServers = async () => {
+			const matchesAborted =
+				options.signal.aborted || !(await ensureSdk());
+			if (matchesAborted) {
+				return;
+			}
+			const loaded = await config();
+			const entries = loaded.entries.filter((entry) => {
+				if (!(entry.config?.enabled === true)) {
+					return false;
+				}
+				if (!("url" in entry.config)) {
+					return false;
+				}
+				if (!options.policy.networkAccess) {
+					return false;
+				}
+				return serverPermitted(entry.name);
+			});
+			await removeObsolete(entries);
+			for (const entry of entries) {
+				options.signal.throwIfAborted();
+				if (servers.has(entry.name)) {
+					continue;
+				}
+				try {
+					const backend = (connection.backend ??= options.features
+						.mcpBackend
+						? await options.features.mcpBackend()
+						: await SecretAuthBackend.create(
+								new SessionMemoryCredentialStore(),
+								new SecretRedactor(),
+							));
+					connection.credentials ??= lockedMcpCredentials(
+						connection.sdk!,
+						backend,
+					);
+					const server = new PiMcpServer({
+						...options,
+						entry,
+						sdk: connection.sdk!,
+						pi,
+						credentials: connection.credentials,
+						flushCredentials: () => backend.flush(),
+						current: async () =>
+							(await config()).entries.find(
+								(item) => item.name === entry.name,
+							),
+					});
+					servers.set(entry.name, server);
+					await server.connect();
+				} catch {
+					// 生の HTTP エラーには認証値が含まれ得るため、SDK のエラー通知へ渡さない。
+					const server = servers.get(entry.name);
+					await server?.close();
+					servers.delete(entry.name);
+				}
+			}
+		};
 		connection.queue = connection.queue
 			.catch(() => undefined)
-			.then(async () => {
-				if (options.signal.aborted || !(await ensureSdk())) {
-					return;
-				}
-				const loaded = await config();
-				const entries = loaded.entries.filter((entry) => {
-					if (!(
-						entry.config?.enabled === true &&
-						"url" in entry.config &&
-						options.policy.networkAccess
-					)) {
-						return false;
-					}
-					return serverPermitted(entry.name);
-				});
-				await removeObsolete(entries);
-				for (const entry of entries) {
-					options.signal.throwIfAborted();
-					if (servers.has(entry.name)) {
-						continue;
-					}
-					try {
-						const backend = (connection.backend ??= options.features
-							.mcpBackend
-							? await options.features.mcpBackend()
-							: await SecretAuthBackend.create(
-									new SessionMemoryCredentialStore(),
-									new SecretRedactor(),
-								));
-						connection.credentials ??= lockedMcpCredentials(
-							connection.sdk!,
-							backend,
-						);
-						const server = new PiMcpServer({
-							...options,
-							entry,
-							sdk: connection.sdk!,
-							pi,
-							credentials: connection.credentials,
-							flushCredentials: () => backend.flush(),
-							current: async () =>
-								(await config()).entries.find(
-									(item) => item.name === entry.name,
-								),
-						});
-						servers.set(entry.name, server);
-						await server.connect();
-					} catch {
-						// 生の HTTP エラーには認証値が含まれ得るため、SDK のエラー通知へ渡さない。
-						const server = servers.get(entry.name);
-						await server?.close();
-						servers.delete(entry.name);
-					}
-				}
-			});
+			.then(synchronizePermittedServers);
 		return connection.queue;
 	};
 }

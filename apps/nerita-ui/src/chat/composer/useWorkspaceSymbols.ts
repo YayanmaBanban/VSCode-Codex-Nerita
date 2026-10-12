@@ -19,7 +19,8 @@ export function useWorkspaceSymbols(
 		query: string;
 		data: WorkspaceSymbolsResult;
 	} | null>(null);
-	useEffect(() => {
+	/** 有効な検索語だけを遅延送信し、要求の切替と破棄ではタイマーと購読を解除する。 */
+	const searchWorkspaceSymbols = () => {
 		setResult(null);
 		if (!active || !bridge || term === "") {
 			return;
@@ -37,10 +38,10 @@ export function useWorkspaceSymbols(
 			setResult({ query: term, data });
 		};
 		const unsubscribe = bridge.subscribe((message) => {
-			if (
+			const matchesType =
 				message.type === "workspace/symbols" &&
-				message.requestId === requestId
-			) {
+				message.requestId === requestId;
+			if (matchesType) {
 				complete(message);
 			}
 		});
@@ -70,7 +71,8 @@ export function useWorkspaceSymbols(
 			clearTimeout(timeout);
 			unsubscribe();
 		};
-	}, [bridge, active, term]);
+	};
+	useEffect(searchWorkspaceSymbols, [bridge, active, term]);
 	const data = result?.query === term ? result.data : null;
 	const items = symbolCompletionItems(data?.entries ?? []);
 	return {

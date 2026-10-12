@@ -6,11 +6,11 @@ export function classifyToolCommand(
 	tool: string,
 	args: readonly string[],
 ): CommandClass {
-	if (
+	const matchesTool =
 		tool !== "pnpm" ||
 		args.length === 0 ||
-		args.some((arg) => /[\0\r\n]/.test(arg))
-	) {
+		args.some((arg) => /[\0\r\n]/.test(arg));
+	if (matchesTool) {
 		return "installation-network";
 	}
 	if (args.length === 1 && ["--version", "-v"].includes(args[0]!)) {
@@ -21,10 +21,10 @@ export function classifyToolCommand(
 	if (["run", "test", "build", "exec"].includes(command!)) {
 		return "execution";
 	}
-	if (
+	const matchesIncludes =
 		["list", "ls", "why", "root", "bin"].includes(command!) &&
-		safeQueryArguments(tail)
-	) {
+		safeQueryArguments(tail);
+	if (matchesIncludes) {
 		return "read-only-ish";
 	}
 	return "installation-network";
@@ -32,7 +32,7 @@ export function classifyToolCommand(
 
 /** 照会に必要な既知オプションのみを許可し、設定・hook・作業先の上書きを照会扱いしない。 */
 function safeQueryArguments(args: readonly string[]): boolean {
-	return args.every(
+	const matchesEvery = args.every(
 		(arg) =>
 			[
 				"--json",
@@ -48,4 +48,5 @@ function safeQueryArguments(args: readonly string[]): boolean {
 			/^--depth=\d+$/.test(arg) ||
 			/^(?:@[\w.-]+\/)?[a-z0-9][\w.-]*$/i.test(arg),
 	);
+	return matchesEvery;
 }

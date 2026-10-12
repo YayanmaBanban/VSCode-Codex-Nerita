@@ -169,10 +169,10 @@ function createApprovedFileWriter(
 				info.ino === previous.ino &&
 				info.dev === previous.dev &&
 				info.birthtimeMs === previous.birthtimeMs;
-			if (
+			const fileReplaced =
 				info.nlink > 1 ||
-				(snapshot.file && !sameIdentity(snapshot.file))
-			) {
+				(snapshot.file && !sameIdentity(snapshot.file));
+			if (fileReplaced === true) {
 				throw new Error("ファイルが差し替えられました。");
 			}
 			approved.signal.throwIfAborted();

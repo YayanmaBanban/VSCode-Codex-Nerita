@@ -51,18 +51,16 @@ export function applyAction(state: IntentState, value: unknown): IntentState {
 
 /** 実行前に永続化するための状態を作る。同時実行と同一世代の再利用は拒否する。 */
 export function beginWork(state: IntentState, attemptId: string): IntentState {
-	if (
-		state.workItems.some((item) =>
-			["running", "stopping"].includes(item.status),
-		)
-	) {
+	const matchesSome = state.workItems.some((item) =>
+		["running", "stopping"].includes(item.status),
+	);
+	if (matchesSome) {
 		throw new Error("DLC は既に実行中です。");
 	}
-	if (
-		state.workItems.some((item) =>
-			item.attempts.some((attempt) => attempt.id === attemptId),
-		)
-	) {
+	const matchesSome2 = state.workItems.some((item) =>
+		item.attempts.some((attempt) => attempt.id === attemptId),
+	);
+	if (matchesSome2) {
 		throw new Error("実行世代が重複しています。");
 	}
 	const item = nextWork(state);
@@ -133,11 +131,12 @@ function boundSemanticResult(
 	workItemId: string,
 ): SemanticResult | undefined {
 	const parsed = SemanticResultSchema.safeParse(value);
-	if (!(
+	const matchesSuccess = !(
 		parsed.success &&
 		parsed.data.attemptId === attemptId &&
 		parsed.data.workItemId === workItemId
-	)) {
+	);
+	if (matchesSuccess) {
 		return undefined;
 	}
 	return parsed.data;
@@ -149,10 +148,9 @@ function boundEvidence(
 	workItemId: string,
 ): RuntimeEvidence {
 	const evidence = RuntimeEvidenceSchema.parse(value);
-	if (
-		evidence.attemptId !== attemptId ||
-		evidence.workItemId !== workItemId
-	) {
+	const matchesAttemptId =
+		evidence.attemptId !== attemptId || evidence.workItemId !== workItemId;
+	if (matchesAttemptId) {
 		throw new Error("結果と根拠の作業・実行世代が一致しません。");
 	}
 	return evidence;
@@ -250,11 +248,11 @@ function evidenceProblem(
 	claims: string[],
 	evidence: RuntimeResult["evidence"],
 ): string | null {
-	if (
+	const matchesComplete =
 		!evidence.before.complete ||
 		!evidence.after.complete ||
-		evidence.before.baseCommit !== evidence.after.baseCommit
-	) {
+		evidence.before.baseCommit !== evidence.after.baseCommit;
+	if (matchesComplete) {
 		return "ソースの収集が不完全、または基準コミットが変更されています。";
 	}
 	const before = new Map(
@@ -269,10 +267,10 @@ function evidenceProblem(
 	if (paths.length === 0 || claims.length === 0) {
 		return "実際のソース変更を確認できません。";
 	}
-	if (
+	const matchesSome3 =
 		paths.some((path) => !item.paths.includes(path)) ||
-		claims.some((path) => !paths.includes(path))
-	) {
+		claims.some((path) => !paths.includes(path));
+	if (matchesSome3) {
 		return "実測した差分が作業の対象、または申告された変更と一致しません。";
 	}
 	const writes = evidence.tools
@@ -282,46 +280,43 @@ function evidenceProblem(
 				["edit", "write"].includes(tool.kind),
 		)
 		.flatMap((tool) => tool.paths);
-	if (
-		paths.some((path) => !claims.includes(path) || !writes.includes(path))
-	) {
+	const matchesSome4 = paths.some(
+		(path) => !claims.includes(path) || !writes.includes(path),
+	);
+	if (matchesSome4) {
 		return "差分に対応する成功した書込み通知を確認できません。";
 	}
-	if (
-		evidence.tools.some(
-			(tool) =>
-				tool.status !== "completed" ||
-				(tool.exitCode !== undefined && tool.exitCode !== 0),
-		)
-	) {
+	const matchesSome5 = evidence.tools.some(
+		(tool) =>
+			tool.status !== "completed" ||
+			(tool.exitCode !== undefined && tool.exitCode !== 0),
+	);
+	if (matchesSome5) {
 		return "失敗または未完了のツール実行があります。";
 	}
 	return null;
 }
 
 function retryWork(state: IntentState, workItemId: string): IntentState {
-	if (
-		state.workItems.some((item) =>
-			["running", "stopping"].includes(item.status),
-		)
-	) {
+	const matchesSome6 = state.workItems.some((item) =>
+		["running", "stopping"].includes(item.status),
+	);
+	if (matchesSome6) {
 		throw new Error("実行中は再試行できません。");
 	}
 	const item = state.workItems.find((work) => work.id === workItemId);
-	if (
-		!item ||
-		!["failed", "cancelled", "interrupted"].includes(item.status)
-	) {
+	const matchesItem =
+		!item || !["failed", "cancelled", "interrupted"].includes(item.status);
+	if (matchesItem) {
 		throw new Error("この作業は再試行できません。");
 	}
 	return replaceItem(state, { ...item, status: "ready" });
 }
 function archiveIntent(state: IntentState): IntentState {
-	if (
-		state.workItems.some((item) =>
-			["running", "stopping"].includes(item.status),
-		)
-	) {
+	const matchesSome7 = state.workItems.some((item) =>
+		["running", "stopping"].includes(item.status),
+	);
+	if (matchesSome7) {
 		throw new Error("実行中はアーカイブできません。");
 	}
 	if (state.workflow.status === "archived") {

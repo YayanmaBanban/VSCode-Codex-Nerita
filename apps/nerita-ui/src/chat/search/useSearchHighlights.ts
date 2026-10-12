@@ -12,7 +12,8 @@ export function useSearchHighlights(
 	reveal: RefObject<boolean>,
 	selection: number,
 ) {
-	useEffect(() => {
+	/** 仮想行と Markdown の更新に合わせて一致区間を再描画し、終了時にハイライトを除く。 */
+	const observeSearchHighlights = () => {
 		const root = conversation.current;
 		if (!open || !pattern || !root) {
 			return;
@@ -66,7 +67,15 @@ export function useSearchHighlights(
 			cancelAnimationFrame(frame);
 			clearHighlights();
 		};
-	}, [conversation, open, pattern, active, reveal, selection]);
+	};
+	useEffect(observeSearchHighlights, [
+		conversation,
+		open,
+		pattern,
+		active,
+		reveal,
+		selection,
+	]);
 }
 
 /** 画面外の DOM への参照を残さないよう、更新前と終了時に `CSS.highlights` から強調を削除する。 */

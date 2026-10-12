@@ -64,18 +64,7 @@ export class StatePublisher {
 		}
 		const next = message.patch.tools;
 		if (next) {
-			if (
-				message.patch.sessionId === undefined &&
-				next.length >= this.tools.length &&
-				this.tools.every(
-					(tool, index) => toolKey(tool) === toolKey(next[index]!),
-				)
-			) {
-				message.toolUpdates = next.filter(
-					(tool, index) => tool !== this.tools[index],
-				);
-				delete message.patch.tools;
-			}
+			this.appendToolUpdates(message, next);
 			this.tools = next;
 		}
 		this.send(message);
@@ -84,6 +73,28 @@ export class StatePublisher {
 		}
 	}
 
+	/** 同じ会話で既存カードの順序が維持されるときだけ、本文差分へ変換する。 */
+	private appendToolUpdates(
+		message: PatchMessage,
+		next: ToolSummary[],
+	): void {
+		if (message.patch.sessionId !== undefined) {
+			return;
+		}
+		if (next.length < this.tools.length) {
+			return;
+		}
+		const preservesOrder = this.tools.every(
+			(tool, index) => toolKey(tool) === toolKey(next[index]!),
+		);
+		if (!preservesOrder) {
+			return;
+		}
+		message.toolUpdates = next.filter(
+			(tool, index) => tool !== this.tools[index],
+		);
+		delete message.patch.tools;
+	}
 	/** 破棄時にタイマーを解除し、待機中の通知とツール・メッセージの一覧を解放する。 */
 	dispose(): void {
 		if (this.timer) {
@@ -102,28 +113,34 @@ function isMessageUpdate(
 	previous: ChatMessage[],
 ): boolean {
 	const next = message.patch.messages;
-	if (!(
-		next !== undefined &&
-		Object.keys(message.patch).every(
-			(key) => key === "messages" || key === "sessionTitle",
-		) &&
-		next.length === previous.length
-	)) {
+
+	if (next === undefined) {
 		return false;
 	}
-	return next.every((item, index) => {
+	const containsOtherMessageFields = !Object.keys(message.patch).every(
+		(key) => key === "messages" || key === "sessionTitle",
+	);
+	if (containsOtherMessageFields) {
+		return false;
+	}
+	if (next.length !== previous.length) {
+		return false;
+	}
+	const matchesEvery = next.every((item, index) => {
 		if (item === previous[index]) {
 			return true;
 		}
-		if (!(
+		const isDifferentStreamingMessage = !(
 			item.id === previous[index]!.id &&
 			item.role === "assistant" &&
 			item.streaming === true
-		)) {
+		);
+		if (isDifferentStreamingMessage) {
 			return false;
 		}
 		return previous[index]!.streaming === true;
 	});
+	return matchesEvery;
 }
 
 /** 状態遷移やカードの追加を含まない本文更新だけを集約する。 */
@@ -132,19 +149,24 @@ function isOutputUpdate(
 	previous: ToolSummary[],
 ): boolean {
 	const next = message.patch.tools;
-	if (!(
-		next !== undefined &&
-		Object.keys(message.patch).every(
-			(key) => key === "tools" || key === "sessionTitle",
-		) &&
-		next.length === previous.length
-	)) {
+
+	if (next === undefined) {
 		return false;
 	}
-	return next.every(
+	const containsOtherToolFields = !Object.keys(message.patch).every(
+		(key) => key === "tools" || key === "sessionTitle",
+	);
+	if (containsOtherToolFields) {
+		return false;
+	}
+	if (next.length !== previous.length) {
+		return false;
+	}
+	const matchesEvery2 = next.every(
 		(tool, index) =>
 			toolKey(tool) === toolKey(previous[index]!) &&
 			tool.status === previous[index]!.status &&
 			tool.backgrounded === previous[index]!.backgrounded,
 	);
+	return matchesEvery2;
 }

@@ -55,27 +55,26 @@ function builtinProtection(
 	operation: "read" | "write",
 ): string | undefined {
 	const parts = path.replaceAll("\\", "/").toLowerCase().split("/");
-	if (
-		operation === "write" &&
-		roots.some((root) =>
-			isManagedDlcPath(relative(root, path).replaceAll("\\", "/")),
-		)
-	) {
+	const isManagedDlcTarget = (root: string) =>
+		isManagedDlcPath(relative(root, path).replaceAll("\\", "/"));
+	const protectedDlcWrite =
+		operation === "write" && roots.some(isManagedDlcTarget);
+	if (protectedDlcWrite) {
 		return "DLC の管理ファイルは Host が更新します。";
 	}
-	if (
+	const matchesSome =
 		parts.some((part) => [".ssh", ".aws", ".gnupg"].includes(part)) ||
-		parts.at(-1) === ".git-credentials"
-	) {
+		parts.at(-1) === ".git-credentials";
+	if (matchesSome) {
 		return "認証情報の保護対象です。";
 	}
-	if (
+	const matchesOperation2 =
 		operation === "write" &&
 		roots.some(
 			(root) =>
 				relative(resolve(root, ".pi/guardrails.json"), path) === "",
-		)
-	) {
+		);
+	if (matchesOperation2) {
 		return "ガードレール設定は専用エディターから変更してください。";
 	}
 	return undefined;

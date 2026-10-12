@@ -19,6 +19,7 @@ import { runProviderProcess, type ProviderProcess } from "./ProviderProcess";
 /** inspect は参照の一致だけを調べ、CLI や認証ファイルを読まない。 */
 abstract class BoundProvider implements CredentialProvider {
 	abstract readonly id: string;
+	/** 参照と利用先の一致だけを確認し、承認前に CLI の実行や認証ファイルの読取りを行わない。 */
 	inspect(
 		requirement: CredentialRequirement,
 		binding: CredentialBinding,
@@ -42,6 +43,7 @@ abstract class BoundProvider implements CredentialProvider {
 				: [],
 		);
 	}
+	/** 候補の秘密値を取得する。利用側は対象と取消しを確認し、取得後の値を秘密値ラッパーで保持する。 */
 	abstract acquire(
 		candidate: CredentialCandidate,
 		signal: AbortSignal,
@@ -49,9 +51,11 @@ abstract class BoundProvider implements CredentialProvider {
 }
 export class GitCredentialProvider extends BoundProvider {
 	readonly id = "git";
+	/** Git の資格情報取得は注入したプロセス経路を使い、inspect では実行しない。 */
 	constructor(private readonly run: ProviderProcess = runProviderProcess) {
 		super();
 	}
+	/** 対話入力を無効にして対象の資格情報だけを取得し、必要なフィールドが欠けた応答を拒否する。 */
 	async acquire(
 		candidate: CredentialCandidate,
 		signal: AbortSignal,
@@ -74,10 +78,11 @@ export class GitCredentialProvider extends BoundProvider {
 					line.slice(line.indexOf("=") + 1),
 				]),
 		);
-		if (
-			!isNonEmptyString(fields.username) ||
-			!isNonEmptyString(fields.password)
-		) {
+
+		if (!isNonEmptyString(fields.username)) {
+			throw new Error("Git の資格情報を取得できません。");
+		}
+		if (!isNonEmptyString(fields.password)) {
 			throw new Error("Git の資格情報を取得できません。");
 		}
 		return {
@@ -93,7 +98,8 @@ async function npmText(file: string) {
 	try {
 		const handle = await open(file, "r");
 		try {
-			if ((await handle.stat()).size > 64 * 1024) {
+			const matchesSize = (await handle.stat()).size > 64 * 1024;
+			if (matchesSize) {
 				throw new Error();
 			}
 			return await handle.readFile("utf8");
@@ -109,12 +115,14 @@ async function npmText(file: string) {
 }
 export class NpmConfigProvider extends BoundProvider {
 	readonly id = "npmrc";
+	/** ユーザー設定と環境変数の読取り元を固定し、参照の調査と秘密値の取得を分ける。 */
 	constructor(
 		private readonly userConfig = join(homedir(), ".npmrc"),
 		private readonly env: NodeJS.ProcessEnv = process.env,
 	) {
 		super();
 	}
+	/** ユーザー設定の後にプロジェクト設定を適用し、対象レジストリの認証と環境変数だけを解決する。 */
 	async acquire(
 		candidate: CredentialCandidate,
 		signal: AbortSignal,
@@ -177,12 +185,14 @@ export class NpmConfigProvider extends BoundProvider {
 
 export class BitwardenSecretsProvider extends BoundProvider {
 	readonly id = "bitwarden-secrets-manager";
+	/** Bitwarden の認証保存先と CLI 実行経路を結び付け、秘密値を設定ファイルへ持ち込まない。 */
 	constructor(
 		private readonly auth: CredentialStore,
 		private readonly run: ProviderProcess = runProviderProcess,
 	) {
 		super();
 	}
+	/** アカウントのトークンを CLI の環境だけへ渡し、取得した秘密 ID と所属を検証してから返す。 */
 	async acquire(
 		candidate: CredentialCandidate,
 		signal: AbortSignal,
@@ -217,11 +227,16 @@ export class BitwardenSecretsProvider extends BoundProvider {
 					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
 				);
 			}
-			if (
-				(isNonEmptyString(provider.projectId) &&
-					secret.projectId !== provider.projectId) ||
-				typeof secret.value !== "string"
-			) {
+
+			const differentProject =
+				isNonEmptyString(provider.projectId) &&
+				secret.projectId !== provider.projectId;
+			if (differentProject) {
+				throw new Error(
+					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
+				);
+			}
+			if (typeof secret.value !== "string") {
 				throw new Error(
 					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
 				);

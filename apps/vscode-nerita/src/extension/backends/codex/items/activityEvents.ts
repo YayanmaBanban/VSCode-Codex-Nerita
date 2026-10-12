@@ -38,7 +38,13 @@ export function activityPatch(
 	updateActivityTool(tool, update, parts);
 	return {
 		tools: previous
-			? state.tools.map((item) => (item === previous ? tool : item))
+			? state.tools.map((item) => {
+					const isTarget = item === previous;
+					if (!isTarget) {
+						return item;
+					}
+					return tool;
+				})
 			: [...state.tools, tool],
 	};
 }

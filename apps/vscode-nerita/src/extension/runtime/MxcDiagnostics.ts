@@ -11,48 +11,48 @@ export function registerMxcDiagnostics(context: vscode.ExtensionContext): void {
 	const lifetime = new AbortController();
 	const output = vscode.window.createOutputChannel("Nerita Sandbox");
 	let running = false;
+	/** 診断の重複を拒否し、ローカルの信頼済みルートで取消し可能な起動確認を行う。 */
+	const checkMxcAvailability = async () => {
+		if (running) {
+			return;
+		}
+		running = true;
+		try {
+			const cwd = requireLocalWorkspace(
+				vscode.workspace.workspaceFolders,
+				vscode.workspace.isTrusted,
+				vscode.env.remoteName,
+			);
+			return await vscode.window.withProgress(
+				{
+					location: vscode.ProgressLocation.Notification,
+					title: "Microsoft MXC の起動を確認",
+					cancellable: true,
+				},
+				(_progress, token) =>
+					showDiagnostics(
+						context.extensionUri.fsPath,
+						cwd,
+						lifetime.signal,
+						output,
+						token,
+					),
+			);
+		} catch (error) {
+			void vscode.window.showErrorMessage(
+				error instanceof Error ? error.message : errorText(error),
+			);
+			return undefined;
+		} finally {
+			running = false;
+		}
+	};
 	context.subscriptions.push(
 		output,
 		{ dispose: () => lifetime.abort() },
 		vscode.commands.registerCommand(
 			"nerita.pi.checkMxcSandbox",
-			async () => {
-				if (running) {
-					return;
-				}
-				running = true;
-				try {
-					const cwd = requireLocalWorkspace(
-						vscode.workspace.workspaceFolders,
-						vscode.workspace.isTrusted,
-						vscode.env.remoteName,
-					);
-					return await vscode.window.withProgress(
-						{
-							location: vscode.ProgressLocation.Notification,
-							title: "Microsoft MXC の起動を確認",
-							cancellable: true,
-						},
-						(_progress, token) =>
-							showDiagnostics(
-								context.extensionUri.fsPath,
-								cwd,
-								lifetime.signal,
-								output,
-								token,
-							),
-					);
-				} catch (error) {
-					void vscode.window.showErrorMessage(
-						error instanceof Error
-							? error.message
-							: errorText(error),
-					);
-					return undefined;
-				} finally {
-					running = false;
-				}
-			},
+			checkMxcAvailability,
 		),
 	);
 }

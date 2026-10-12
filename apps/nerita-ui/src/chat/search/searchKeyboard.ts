@@ -100,7 +100,9 @@ function isMoveSearchKey(open: boolean, event: KeyboardEvent) {
 	if (event.key === "F3") {
 		return true;
 	}
-	return (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "g";
+	const matchesCtrlKey =
+		(event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "g";
+	return matchesCtrlKey;
 }
 
 /** 会話内検索を開くショートカットを判定する。 */
@@ -124,11 +126,11 @@ function initializeSearchQuery(
 				? document.activeElement
 				: null;
 		const selection = window.getSelection();
-		if (
+		const selectedConversationText =
 			selection?.anchorNode &&
 			conversation.current?.contains(selection.anchorNode) === true &&
-			selection.toString() !== ""
-		) {
+			selection.toString() !== "";
+		if (selectedConversationText === true) {
 			setQuery(selection.toString());
 		}
 	}

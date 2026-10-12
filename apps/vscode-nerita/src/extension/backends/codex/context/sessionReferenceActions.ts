@@ -44,10 +44,11 @@ export async function searchSessionReferences(
 				? { cursor: request.cursor }
 				: {}),
 		});
-		if (
-			!current() ||
-			(page.nextCursor !== null && page.nextCursor === request.cursor)
-		) {
+
+		if (!current()) {
+			throw new Error("Stale or repeated page");
+		}
+		if (page.nextCursor !== null && page.nextCursor === request.cursor) {
 			throw new Error("Stale or repeated page");
 		}
 		result.entries = page.data

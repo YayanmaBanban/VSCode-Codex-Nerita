@@ -89,10 +89,10 @@ export function useCompletionEditor(
 				latest.current.container.current &&
 				event.target instanceof Node &&
 				!latest.current.container.current.contains(event.target);
-			if (
+			const matchesOutsideCompletion =
 				outsideCompletion === true &&
-				!(editor.getRootElement()?.contains(event.target) === true)
-			) {
+				!(editor.getRootElement()?.contains(event.target) === true);
+			if (matchesOutsideCompletion) {
 				latest.current.onMatch(null);
 			}
 		};
@@ -140,39 +140,43 @@ function registerCompletionCommands(
 		selected: number | null;
 	}>,
 ): () => void {
-	return mergeRegister(
-		editor.registerUpdateListener(({ editorState }) => {
-			const current = latest.current;
-			if (
-				current.match &&
-				!editorState.read(() => $getNodeByKey(current.match!.key))
-			) {
-				current.onMatch(null);
-				return;
-			}
-			if (
-				!(
-					editor
-						.getRootElement()
-						?.contains(document.activeElement) === true
-				) ||
-				editor.isComposing()
-			) {
-				return;
-			}
-			const next = editorState.read($completion);
-			if (!next) {
-				current.dismissed.current = "";
-			}
-			if (
-				JSON.stringify(next) === current.dismissed.current ||
-				JSON.stringify(next) === JSON.stringify(current.match)
-			) {
-				return;
-			}
+	/** 候補の対象が消えた場合は閉じ、フォーカスと IME を確認して候補の再計算を行う。 */
+	const updateCompletionMatch: Parameters<
+		typeof editor.registerUpdateListener
+	>[0] = ({ editorState }) => {
+		const current = latest.current;
+		const missingMatchNode =
+			current.match &&
+			!editorState.read(() => $getNodeByKey(current.match!.key));
+		if (missingMatchNode === true) {
+			current.onMatch(null);
+			return;
+		}
+
+		const editorIsUnfocused = !(
+			editor.getRootElement()?.contains(document.activeElement) === true
+		);
+		if (editorIsUnfocused) {
+			return;
+		}
+		if (editor.isComposing()) {
+			return;
+		}
+		const next = editorState.read($completion);
+		if (!next) {
 			current.dismissed.current = "";
-			current.onMatch(next);
-		}),
+		}
+		const matchesStringify =
+			JSON.stringify(next) === current.dismissed.current ||
+			JSON.stringify(next) === JSON.stringify(current.match);
+		if (matchesStringify) {
+			return;
+		}
+		current.dismissed.current = "";
+		current.onMatch(next);
+	};
+	return mergeRegister(
+		editor.registerUpdateListener(updateCompletionMatch),
 		editor.registerCommand(
 			KEY_DOWN_COMMAND,
 			(event) =>

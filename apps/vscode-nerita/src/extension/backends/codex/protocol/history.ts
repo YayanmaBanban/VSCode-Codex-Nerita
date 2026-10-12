@@ -45,41 +45,52 @@ export function parseHistoryTurn(value: unknown): HistoryTurn {
 	if (!isRecord(value) || !Array.isArray(value.items)) {
 		throw new Error("Invalid history turn");
 	}
-	if (
-		value.itemsView !== "full" &&
-		value.itemsView !== "summary" &&
-		value.itemsView !== "notLoaded"
-	) {
+	const itemsView = value.itemsView;
+	const invalidItemsView =
+		itemsView !== "full" &&
+		itemsView !== "summary" &&
+		itemsView !== "notLoaded";
+	if (invalidItemsView) {
 		throw new Error("Invalid history turn");
 	}
 	return {
 		...turn,
 		items: value.items.map(item),
-		itemsView: value.itemsView,
+		itemsView,
 	};
 }
 /** `thread/list`・`thread/read`・`thread/resume`・`thread/fork` で共通のメタデータを検証する。 */
 export function parseHistoryThread(value: unknown): HistoryThread {
-	if (
-		!isRecord(value) ||
-		!isRecord(value.status) ||
-		!["idle", "active", "notLoaded", "systemError"].includes(
-			text(value.status.type),
-		)
-	) {
+	if (!isRecord(value)) {
 		throw new Error("Invalid history thread");
 	}
-	if (
-		!Array.isArray(value.turns) ||
-		typeof value.updatedAt !== "number" ||
-		!Number.isFinite(value.updatedAt)
-	) {
+	if (!isRecord(value.status)) {
 		throw new Error("Invalid history thread");
 	}
-	if (
-		!isThreadName(value.name) ||
-		(value.historyMode !== "legacy" && value.historyMode !== "paginated")
-	) {
+	const unknownThreadStatus = ![
+		"idle",
+		"active",
+		"notLoaded",
+		"systemError",
+	].includes(text(value.status.type));
+	if (unknownThreadStatus) {
+		throw new Error("Invalid history thread");
+	}
+
+	if (!Array.isArray(value.turns)) {
+		throw new Error("Invalid history thread");
+	}
+	if (typeof value.updatedAt !== "number") {
+		throw new Error("Invalid history thread");
+	}
+	if (!Number.isFinite(value.updatedAt)) {
+		throw new Error("Invalid history thread");
+	}
+
+	if (!isThreadName(value.name)) {
+		throw new Error("Invalid history thread");
+	}
+	if (value.historyMode !== "legacy" && value.historyMode !== "paginated") {
 		throw new Error("Invalid history thread");
 	}
 	return {

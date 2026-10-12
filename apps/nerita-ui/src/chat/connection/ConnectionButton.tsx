@@ -54,7 +54,8 @@ export function ConnectionButton({ state, send }: ConnectionButtonProps) {
 		!reconnectable || state.sessionPending || state.run === "running";
 	const disabled = blockedSession || state.run === "cancelling";
 	const action = connectionAction(state.connection);
-	useEffect(() => {
+	/** 最新の接続色へ切り替え、初回表示や動きを減らす設定では接続完了の演出を始めない。 */
+	const synchronizeConnectionFeedback = () => {
 		if (reduced === true) {
 			setDisplayed(state.connection);
 			setCurtain(null);
@@ -75,7 +76,8 @@ export function ConnectionButton({ state, send }: ConnectionButtonProps) {
 		setCelebrating(true);
 		const timer = setTimeout(() => setCelebrating(false), 900);
 		return () => clearTimeout(timer);
-	}, [state.connection, reduced]);
+	};
+	useEffect(synchronizeConnectionFeedback, [state.connection, reduced]);
 	return (
 		<div className="connection-control relative shrink-0">
 			<ConnectionTrigger
@@ -307,10 +309,10 @@ function showConnectionBeam(
 	reconnectable: boolean,
 	disabled: boolean,
 ) {
-	return (
+	const matchesIncludes =
 		["connecting", "authenticating"].includes(connection) ||
-		(reconnectable && !disabled)
-	);
+		(reconnectable && !disabled);
+	return matchesIncludes;
 }
 
 /** 接続状態と、光沢の動きを抑制するかどうかの指定。 */
@@ -364,11 +366,11 @@ function connectionColor(connection: ChatState["connection"]) {
 
 /** 接続済み・接続中・認証中は背景を透明にし、それ以外には背景色を付ける。 */
 function connectionBgColor(connection: ChatState["connection"]) {
-	if (
+	const matchesConnection =
 		connection === "ready" ||
 		connection === "connecting" ||
-		connection === "authenticating"
-	) {
+		connection === "authenticating";
+	if (matchesConnection) {
 		return "bg-transparent";
 	}
 	return "bg-message-user";
@@ -376,11 +378,12 @@ function connectionBgColor(connection: ChatState["connection"]) {
 
 /** 接続済み・接続中・認証中以外では、マウスカーソルを操作可能な形にする。 */
 function connectionMouseCursor(connection: ChatState["connection"]) {
-	if (!(
+	const matchesConnection2 = !(
 		connection === "ready" ||
 		connection === "connecting" ||
 		connection === "authenticating"
-	)) {
+	);
+	if (matchesConnection2) {
 		return "cursor-pointer";
 	}
 	return "";

@@ -64,11 +64,14 @@ async function readReferenceRange(reference: CodeReference) {
 	let range: vscode.Range;
 	try {
 		const uri = vscode.Uri.parse(reference.uri, true);
-		if (
-			uri.scheme !== "file" ||
-			isNonEmptyString(uri.query) ||
-			isNonEmptyString(uri.fragment)
-		) {
+
+		if (uri.scheme !== "file") {
+			throw new CodeReferenceError();
+		}
+		if (isNonEmptyString(uri.query)) {
+			throw new CodeReferenceError();
+		}
+		if (isNonEmptyString(uri.fragment)) {
 			throw new CodeReferenceError();
 		}
 		if (isNonEmptyString(vscode.env.remoteName)) {

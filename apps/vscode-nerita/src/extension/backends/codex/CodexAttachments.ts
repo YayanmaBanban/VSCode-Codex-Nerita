@@ -13,6 +13,7 @@ type AttachmentTarget = {
 
 /** 添付の寿命を接続・設定の継承順から独立させる。 */
 export class CodexAttachments {
+	/** 添付先と読取りサービスを保持し、送信時にはその対象の能力と取消し状態を確認する。 */
 	constructor(
 		private readonly target: AttachmentTarget,
 		private readonly files?: AttachmentService,
@@ -64,10 +65,10 @@ export class CodexAttachments {
 			const selected = message.files
 				? await service.drop!(message.files)
 				: await service.pick();
-			if (
+			const matchesEpoch =
 				epoch !== this.target.epoch() ||
-				threadId !== this.target.snapshot().sessionId
-			) {
+				threadId !== this.target.snapshot().sessionId;
+			if (matchesEpoch) {
 				return;
 			}
 			const files = new Map(
@@ -89,6 +90,7 @@ export class CodexAttachments {
 		}
 	}
 
+	/** 添付読取りサービスの有無だけを返す。モデル側の画像能力は別の判定で確認する。 */
 	get supportsAttachments(): boolean {
 		return !!this.files;
 	}

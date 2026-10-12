@@ -27,6 +27,7 @@ export class CodexCatalog {
 	private readonly pendingThreads = new PendingThreads();
 	private listVersion = 0;
 	private cursors = new Set<string>();
+	/** 履歴一覧の取得・通知反映には、このセッションの接続と世代を使う。 */
 	constructor(private readonly session: CatalogSession) {}
 
 	/** 設定初期化と接続世代の照合を終えた後、新規会話の一覧を公開する。 */
@@ -163,10 +164,10 @@ export class CodexCatalog {
 		archived: boolean,
 		epoch: number,
 	) {
-		if (
+		const matchesNextCursor =
 			page.nextCursor !== null &&
-			(page.nextCursor === cursor || this.cursors.has(page.nextCursor))
-		) {
+			(page.nextCursor === cursor || this.cursors.has(page.nextCursor));
+		if (matchesNextCursor) {
 			throw new Error("Repeated catalog cursor");
 		}
 
@@ -215,12 +216,11 @@ export class CodexCatalog {
 				"turn/completed",
 			].includes(message.method) && state.connection === "ready";
 		if (relevantUpdate && !state.sessionPending) {
-			if (
+			const matchesIncludes =
 				["thread/archived", "thread/deleted"].includes(
 					message.method,
-				) &&
-				message.params.threadId === state.sessionId
-			) {
+				) && message.params.threadId === state.sessionId;
+			if (matchesIncludes) {
 				this.session.clearThread();
 			}
 			void this.refresh();
@@ -229,35 +229,40 @@ export class CodexCatalog {
 
 	/** 履歴の名前とアーカイブ状態を通知から更新する。 */
 	private updateCatalogNotification(message: AppServerNotification) {
-		if (
-			isRecord(message.params) &&
-			typeof message.params.threadId === "string"
-		) {
-			const id = message.params.threadId;
-			if (
-				message.method === "thread/archived" ||
-				message.method === "thread/unarchived"
-			) {
-				this.pendingThreads.update(this.session.epoch(), id, {
-					archived: message.method === "thread/archived",
-				});
-			} else if (message.method === "thread/deleted") {
-				this.pendingThreads.update(this.session.epoch(), id, null);
-			} else if (
-				message.method === "thread/name/updated" &&
-				typeof message.params.threadName === "string"
-			) {
-				this.pendingThreads.update(this.session.epoch(), id, {
-					title: message.params.threadName,
-				});
-				if (id === this.session.snapshot().sessionId) {
-					this.session.patch({
-						sessionTitle:
-							nonEmptyString(message.params.threadName.trim()) ??
-							null,
-					});
-				}
-			}
+		if (!isRecord(message.params)) {
+			return;
+		}
+		if (typeof message.params.threadId !== "string") {
+			return;
+		}
+		const id = message.params.threadId;
+		const archiveChanged =
+			message.method === "thread/archived" ||
+			message.method === "thread/unarchived";
+		if (archiveChanged) {
+			this.pendingThreads.update(this.session.epoch(), id, {
+				archived: message.method === "thread/archived",
+			});
+			return;
+		}
+		if (message.method === "thread/deleted") {
+			this.pendingThreads.update(this.session.epoch(), id, null);
+			return;
+		}
+		if (message.method !== "thread/name/updated") {
+			return;
+		}
+		const threadName = message.params.threadName;
+		if (typeof threadName !== "string") {
+			return;
+		}
+		this.pendingThreads.update(this.session.epoch(), id, {
+			title: threadName,
+		});
+		if (id === this.session.snapshot().sessionId) {
+			this.session.patch({
+				sessionTitle: nonEmptyString(threadName.trim()) ?? null,
+			});
 		}
 	}
 }

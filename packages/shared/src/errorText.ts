@@ -12,11 +12,14 @@ export function errorText(error: unknown): string {
 	if (isRecord(error) && typeof error.message === "string") {
 		return error.message;
 	}
-	if (
-		typeof error === "number" ||
-		typeof error === "boolean" ||
-		typeof error === "bigint"
-	) {
+
+	if (typeof error === "number") {
+		return String(error);
+	}
+	if (typeof error === "boolean") {
+		return String(error);
+	}
+	if (typeof error === "bigint") {
 		return String(error);
 	}
 	if (typeof error === "symbol") {

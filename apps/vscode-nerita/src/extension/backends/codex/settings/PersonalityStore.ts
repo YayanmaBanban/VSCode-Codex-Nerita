@@ -61,19 +61,26 @@ export class PersonalityStore {
 			),
 		]);
 		const presets = data.presets ?? [];
-		if (
-			!Array.isArray(presets) ||
-			!presets.every(isPersonalityPreset) ||
-			new Set(presets.map((p) => p.name)).size !== presets.length
-		) {
+
+		if (!Array.isArray(presets)) {
 			throw new Error(
 				"preset.toml の [[presets]] に重複しない名前と本文を指定してください。",
 			);
 		}
-		if (
+		if (!presets.every(isPersonalityPreset)) {
+			throw new Error(
+				"preset.toml の [[presets]] に重複しない名前と本文を指定してください。",
+			);
+		}
+		if (new Set(presets.map((p) => p.name)).size !== presets.length) {
+			throw new Error(
+				"preset.toml の [[presets]] に重複しない名前と本文を指定してください。",
+			);
+		}
+		const differentDeveloperInstructions =
 			config.developer_instructions !== undefined &&
-			typeof config.developer_instructions !== "string"
-		) {
+			typeof config.developer_instructions !== "string";
+		if (differentDeveloperInstructions) {
 			throw new Error(
 				"developer_instructions は文字列で指定してください。",
 			);
@@ -101,7 +108,8 @@ export class PersonalityStore {
 	async change(
 		message: Exclude<PersonalityMessage, { type: "personality/read" }>,
 	): Promise<PersonalitySettings> {
-		const operation = this.tail.then(async () => {
+		/** 設定の変更を直列化し、既存プリセットと構成を照合してから一時ファイルで置き換える。 */
+		const savePersonalitySelection = async () => {
 			const scope = await this.readScope(message.scope);
 			if (scope.configuredText !== null) {
 				throw new Error(
@@ -126,11 +134,13 @@ export class PersonalityStore {
 				} else {
 					scope.presets[index] = preset;
 				}
-			} else if (
-				message.name !== "" &&
-				!scope.presets.some((p) => p.name === message.name)
-			) {
-				throw new Error("プリセットが見つかりません。");
+			} else {
+				const missingPreset =
+					message.name !== "" &&
+					!scope.presets.some((p) => p.name === message.name);
+				if (missingPreset) {
+					throw new Error("プリセットが見つかりません。");
+				}
 			}
 			const path = this.presetPath(message.scope);
 			const data = await readToml(path);
@@ -150,7 +160,8 @@ export class PersonalityStore {
 			} finally {
 				await unlink(temporary).catch(() => undefined);
 			}
-		});
+		};
+		const operation = this.tail.then(savePersonalitySelection);
 		this.tail = operation.catch(() => undefined);
 		await operation;
 		return this.read();
@@ -160,10 +171,13 @@ export class PersonalityStore {
 /** 選択中のプリセット名を既存一覧に照合する。 */
 function selectedPreset(data: TomlTable, presets: PersonalityPreset[]) {
 	const selected = data.selected ?? presets[0]?.name ?? "";
-	if (
-		typeof selected !== "string" ||
-		(selected !== "" && !presets.some((p) => p.name === selected))
-	) {
+
+	if (typeof selected !== "string") {
+		throw new Error(
+			"preset.toml の selected がプリセット名と一致しません。",
+		);
+	}
+	if (selected !== "" && !presets.some((p) => p.name === selected)) {
 		throw new Error(
 			"preset.toml の selected がプリセット名と一致しません。",
 		);

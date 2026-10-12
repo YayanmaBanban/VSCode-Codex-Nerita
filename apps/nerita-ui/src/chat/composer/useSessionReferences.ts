@@ -14,6 +14,7 @@ import {
 } from "react";
 
 import type { Bridge } from "@nerita/shared/bridge";
+import type { HostMessage } from "@nerita/shared/messages";
 import type {
 	SessionReference,
 	SessionReferencesResult,
@@ -120,21 +121,12 @@ function createSessionReferenceSearch(
 			setLoading(false);
 			setResult(mergeSessionReferencePage(cursor, term, message));
 		};
-		const unsubscribe = bridge.subscribe((message) => {
-			if ("requestId" in message && message.requestId === requestId) {
-				if (message.type === "session/references") {
-					complete(message);
-				} else if (message.type === "request/failed") {
-					complete({
-						type: "session/references",
-						requestId,
-						entries: [],
-						nextCursor: null,
-						error: message.error,
-					});
-				}
-			}
-		});
+		/** 検索要求 ID を照合し、失敗も同じ検索の完了として待機を解除する。 */
+		const receiveReferenceSearch: Parameters<
+			NonNullable<typeof bridge>["subscribe"]
+		>[0] = (message) =>
+			receiveSessionReferenceReply(message, requestId, complete);
+		const unsubscribe = bridge.subscribe(receiveReferenceSearch);
 		const timer = setTimeout(
 			() =>
 				bridge.postMessage({
@@ -199,11 +191,11 @@ function repeatedSessionCursor(
 	cursor: string | undefined,
 	old: SessionReferencePage | null,
 ) {
-	return (
+	const matchesNextCursor =
 		message.nextCursor !== null &&
 		(message.nextCursor === cursor ||
-			old?.seen.includes(message.nextCursor))
-	);
+			old?.seen.includes(message.nextCursor));
+	return matchesNextCursor;
 }
 
 /** 取得済みページのカーソルを記録する。 */
@@ -263,4 +255,31 @@ function emptySessionMessage(
 		return "読み込み中…";
 	}
 	return nonEmptyString(data.error) ?? "参照できるセッションがありません。";
+}
+
+/** 現在の検索への応答だけを受け取り、失敗も一覧取得の終了として通知する。 */
+function receiveSessionReferenceReply(
+	message: HostMessage,
+	requestId: string,
+	complete: (message: SessionReferencesResult) => void,
+): void {
+	if (!("requestId" in message)) {
+		return;
+	}
+	if (message.requestId !== requestId) {
+		return;
+	}
+	if (message.type === "session/references") {
+		complete(message);
+		return;
+	}
+	if (message.type === "request/failed") {
+		complete({
+			type: "session/references",
+			requestId,
+			entries: [],
+			nextCursor: null,
+			error: message.error,
+		});
+	}
 }

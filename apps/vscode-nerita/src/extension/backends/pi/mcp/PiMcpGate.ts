@@ -38,11 +38,12 @@ export function mcpHttpUrl(value: string): URL {
 			"MCP の接続先には HTTPS またはローカル HTTP を指定してください。",
 		);
 	}
-	if (!(
+	const matchesProtocol = !(
 		url.protocol === "https:" ||
 		(url.protocol === "http:" &&
 			["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
-	)) {
+	);
+	if (matchesProtocol) {
 		throw new Error(
 			"MCP の接続先には HTTPS またはローカル HTTP を指定してください。",
 		);
@@ -72,6 +73,7 @@ export class PiMcpGate {
 	>();
 	private pending = new Map<string, Promise<void>>();
 	readonly identity: string;
+	/** 設定の同一性を起動時に固定し、呼び出し時の設定変更と権限を照合する。 */
 	constructor(
 		private readonly options: {
 			entry: PiMcpEntry;
@@ -93,10 +95,10 @@ export class PiMcpGate {
 			throw new Error("この役割では MCP 通信が禁止されています。");
 		}
 		const entry = await current();
-		if (
+		const matchesEnabled =
 			!(entry?.config?.enabled === true) ||
-			mcpIdentity(entry) !== this.identity
-		) {
+			mcpIdentity(entry) !== this.identity;
+		if (matchesEnabled) {
 			throw new Error("MCP の設定が変更されました。再接続してください。");
 		}
 		signal.throwIfAborted();

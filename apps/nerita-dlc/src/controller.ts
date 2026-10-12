@@ -38,6 +38,7 @@ export class DlcController {
 	private writes: Promise<void> = Promise.resolve();
 	private storageFailed = false;
 	private listeners = new Set<() => void>();
+	/** 復旧済み状態だけを受け取り、初期化は保存結果を確認する open 経由に限定する。 */
 	private constructor(
 		private state: IntentState,
 		private runtime: NeritaRuntimePort,
@@ -60,9 +61,11 @@ export class DlcController {
 		return new DlcController(state, runtime, store, newId);
 	}
 
+	/** UI には状態の投影だけを返し、実行結果や状態を直接書き換える参照を渡さない。 */
 	projection(): DlcProjection {
 		return intentProjection(this.state);
 	}
+	/** 保存済み状態の変更だけを通知し、購読解除は呼出し側が行う。 */
 	subscribe(listener: () => void): () => void {
 		this.listeners.add(listener);
 		return () => {
@@ -84,6 +87,7 @@ export class DlcController {
 		return this.projection();
 	}
 
+	/** 実行・保存の重複と保存失敗後の再操作を拒否し、状態を再読込みするまで開始しない。 */
 	private assertAvailable() {
 		if (this.active || this.pendingSaves > 0 || this.storageFailed) {
 			throw new Error(
@@ -91,6 +95,7 @@ export class DlcController {
 			);
 		}
 	}
+	/** 開始前に実行をロックし、同じ tick の二重要求を拒否する。完了時にだけロックを解除する。 */
 	private run(): Promise<DlcProjection> {
 		this.assertAvailable();
 		const id = this.newId();
@@ -105,6 +110,7 @@ export class DlcController {
 			this.active = undefined;
 		});
 	}
+	/** 開始条件の確認を Runtime へ委ね、拒否された実行は作業履歴へ追加しない。 */
 	private async execute(
 		id: string,
 		signal: AbortSignal,
@@ -115,6 +121,7 @@ export class DlcController {
 			? this.runtime.withAdmission(operation, signal)
 			: operation();
 	}
+	/** 開始状態を保存してから実行し、結果と失敗を保存する。保存失敗では後続の状態を上書きしない。 */
 	private async executeAdmitted(
 		id: string,
 		signal: AbortSignal,
@@ -147,6 +154,7 @@ export class DlcController {
 		}
 		return this.projection();
 	}
+	/** 現在の実行世代に属する作業から要求を作り、毎回新しい会話と継承した権限で実行する。 */
 	private executionRequest(attemptId: string): ExecutionRequest {
 		const item = this.state.workItems.find(
 			(work) => work.attempts.at(-1)?.id === attemptId,
@@ -166,6 +174,7 @@ export class DlcController {
 			policy: "workspace-inherit",
 		};
 	}
+	/** 取消しを先に通知し、停止状態の保存が失敗しても Runtime の停止を試みる。 */
 	private async cancel(): Promise<DlcProjection> {
 		const active = this.active;
 		if (!active) {
@@ -179,11 +188,13 @@ export class DlcController {
 		}
 		return active.operation;
 	}
+	/** 遷移と保存を直列化し、保存に成功した状態だけを公開する。待機件数は失敗時も回収する。 */
 	private update(
 		transition: (state: IntentState) => IntentState,
 	): Promise<void> {
 		this.pendingSaves += 1;
-		const operation = this.writes.then(async () => {
+		/** 遷移の計算と保存は待機列の順番で行い、保存成功前に公開状態を置き換えない。 */
+		const persistTransition = async () => {
 			if (this.storageFailed) {
 				throw new Error("状態を保存できません。再読込みしてください。");
 			}
@@ -204,7 +215,8 @@ export class DlcController {
 				this.storageFailed = true;
 				throw error;
 			}
-		});
+		};
+		const operation = this.writes.then(persistTransition);
 		this.writes = operation.catch(() => {});
 		return operation.finally(() => {
 			this.pendingSaves -= 1;

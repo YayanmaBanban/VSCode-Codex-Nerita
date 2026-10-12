@@ -48,10 +48,10 @@ export function WorkflowGraphEditor({
 	const written = useRef(text);
 	const [externalInvalid, setExternalInvalid] = useState(false);
 	useEffect(() => {
-		if (
+		const matchesReplaceAll =
 			written.current.replaceAll("\r\n", "\n") ===
-			text.replaceAll("\r\n", "\n")
-		) {
+			text.replaceAll("\r\n", "\n");
+		if (matchesReplaceAll) {
 			return;
 		}
 		written.current = text;
@@ -356,7 +356,8 @@ function WorkflowSettings({ workflow, update }: WorkflowSettingsProps) {
 
 /** 削除対象の線が依存先と対象ステップを結んでいるか確認する。 */
 function workflowEdgeExists(edges: Edge[], source: string, target: string) {
-	return edges.some(
+	const matchesSome = edges.some(
 		(edge) => edge.source === source && edge.target === target,
 	);
+	return matchesSome;
 }

@@ -65,10 +65,11 @@ function savedDisplay(result: object): Pick<ToolSummary, "resultDisplay"> {
 	}
 	const source = ownValue(display, "source");
 	const omitted = ownValue(display, "omitted");
-	if (!(
-		(source === "content" || source === "structuredContent") &&
-		typeof omitted === "boolean"
-	)) {
+
+	if (!(source === "content" || source === "structuredContent")) {
+		return {};
+	}
+	if (!(typeof omitted === "boolean")) {
 		return {};
 	}
 	return { resultDisplay: { source, omitted } };

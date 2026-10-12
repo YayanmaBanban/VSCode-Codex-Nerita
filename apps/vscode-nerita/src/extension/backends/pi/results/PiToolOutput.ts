@@ -14,18 +14,23 @@ export function registerPiOutput(
 	result: unknown,
 	history: boolean,
 ) {
-	if (
-		!["bash", "powershell", "pwsh", "pnpm"].includes(name) ||
-		!isRecord(result)
-	) {
+	if (!["bash", "powershell", "pwsh", "pnpm"].includes(name)) {
+		return;
+	}
+	if (!isRecord(result)) {
 		return;
 	}
 	const structured = result.structuredContent;
-	if (
-		!isRecord(structured) ||
-		typeof structured.output !== "string" ||
-		typeof structured.truncated !== "boolean"
-	) {
+
+	if (!isRecord(structured)) {
+		registerContentOutput(tool, result, history);
+		return;
+	}
+	if (typeof structured.output !== "string") {
+		registerContentOutput(tool, result, history);
+		return;
+	}
+	if (typeof structured.truncated !== "boolean") {
 		registerContentOutput(tool, result, history);
 		return;
 	}
@@ -57,11 +62,12 @@ function registerContentOutput(
 		)
 		.join("\n");
 	const details = isRecord(result.details) ? result.details : {};
-	if (
-		typeof details.exitCode === "number" &&
-		Number.isSafeInteger(details.exitCode)
-	) {
-		tool.exitCode = details.exitCode;
+
+	const exitCode = details.exitCode;
+	const validExitCode =
+		typeof exitCode === "number" && Number.isSafeInteger(exitCode);
+	if (validExitCode) {
+		tool.exitCode = exitCode;
 	}
 	const truncation =
 		isRecord(details.truncation) && details.truncation.truncated === true;
@@ -77,19 +83,22 @@ function registerContentOutput(
 
 /** Pi の一時出力命名とディレクトリを照合し、リンクや任意パスを拒否する。 */
 function allowedPiOutputPath(value: unknown): string | undefined {
-	if (
-		typeof value !== "string" ||
-		!/^pi-(?:bash|powershell)-[a-f0-9]{16}\.log$/u.test(basename(value))
-	) {
+	if (typeof value !== "string") {
+		return;
+	}
+	if (!/^pi-(?:bash|powershell)-[a-f0-9]{16}\.log$/u.test(basename(value))) {
 		return;
 	}
 	try {
 		const path = resolve(value);
-		if (
-			dirname(path) !== resolve(tmpdir()) ||
-			!lstatSync(path).isFile() ||
-			realpathSync(path) !== path
-		) {
+
+		if (dirname(path) !== resolve(tmpdir())) {
+			return;
+		}
+		if (!lstatSync(path).isFile()) {
+			return;
+		}
+		if (realpathSync(path) !== path) {
 			return;
 		}
 		return path;

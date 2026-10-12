@@ -166,11 +166,11 @@ function useSelectedHit(
 				timeline.entries[
 					timeline.indexByKey.get(active.entryKey) ?? -1
 				];
-			if (
+			const matchesBody =
 				active.body &&
 				entry?.kind === "tool" &&
-				!expansion.open.has(entry.key)
-			) {
+				!expansion.open.has(entry.key);
+			if (matchesBody) {
 				expansion.setOpen(entry.tool, true);
 			}
 			virtual.reveal(active.entryKey);

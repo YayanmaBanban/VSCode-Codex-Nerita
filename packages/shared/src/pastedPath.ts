@@ -19,9 +19,10 @@ export function parsePastedPath(
 		return null;
 	}
 	const range: SourceRange | undefined = parsePathRange(lines, location);
-	return range && !isSourceRange(range)
-		? null
-		: { path, ...(range ? { range } : {}) };
+	if (range && !isSourceRange(range)) {
+		return null;
+	}
+	return { path, ...(range ? { range } : {}) };
 }
 
 /** 引用符で囲まれたパスを正規化する。 */

@@ -111,7 +111,9 @@ function validateDisplayTurn(
 	seen: Set<string>,
 	readonly: boolean,
 ) {
-	if (seen.has(turn.id) || (turn.status === "inProgress" && !readonly)) {
+	const matchesHas =
+		seen.has(turn.id) || (turn.status === "inProgress" && !readonly);
+	if (matchesHas) {
 		throw new Error("Invalid history turn");
 	}
 	seen.add(turn.id);
@@ -206,33 +208,32 @@ function userContent(
 		throw new Error("Invalid user history");
 	}
 	const attachments: Attachment[] = [];
-	const text = content
-		.map((part: unknown, index) => {
-			if (!isRecord(part)) {
-				throw new Error("Invalid user input");
-			}
-			const path = historyAttachmentPath(part, index);
-			if (isNonEmptyString(path)) {
-				attachments.push({
-					id: `attachment:${index}`,
-					name: win32.basename(path),
-					uri: pathToFileURL(path).href,
-				});
-				return "";
-			}
-			if (part.type === "text" && typeof part.text === "string") {
-				return part.text;
-			}
-			if (part.type === "image" || part.type === "localImage") {
-				return "[画像添付]";
-			}
-			if (part.type === "audio") {
-				return "[音声添付]";
-			}
-			return typeof part.name === "string" ? `@${part.name}` : "[添付]";
-		})
-		.filter(Boolean)
-		.join("\n\n");
+	/** 履歴の添付パスは参照へ戻し、再読取りできない種別は本文中の表示値として保持する。 */
+	const restoreUserPart = (part: unknown, index: number) => {
+		if (!isRecord(part)) {
+			throw new Error("Invalid user input");
+		}
+		const path = historyAttachmentPath(part, index);
+		if (isNonEmptyString(path)) {
+			attachments.push({
+				id: `attachment:${index}`,
+				name: win32.basename(path),
+				uri: pathToFileURL(path).href,
+			});
+			return "";
+		}
+		if (part.type === "text" && typeof part.text === "string") {
+			return part.text;
+		}
+		if (part.type === "image" || part.type === "localImage") {
+			return "[画像添付]";
+		}
+		if (part.type === "audio") {
+			return "[音声添付]";
+		}
+		return typeof part.name === "string" ? `@${part.name}` : "[添付]";
+	};
+	const text = content.map(restoreUserPart).filter(Boolean).join("\n\n");
 	return { text, attachments };
 }
 

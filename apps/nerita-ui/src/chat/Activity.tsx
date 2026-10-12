@@ -57,10 +57,13 @@ export function Activity({ state, send }: ActivityProps) {
 										: "quiet group relative isolate overflow-hidden bg-transparent",
 								)}
 								onClick={() => {
-									if (
-										isNonEmptyString(state.sessionId) &&
-										isNonEmptyString(state.runId)
-									) {
+									if (!isNonEmptyString(state.sessionId)) {
+										return;
+									}
+									if (!isNonEmptyString(state.runId)) {
+										return;
+									}
+									{
 										send({
 											type: "permission/respond",
 											requestId: crypto.randomUUID(),

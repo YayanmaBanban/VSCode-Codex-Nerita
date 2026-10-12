@@ -33,10 +33,10 @@ export function useWorkspacePaths(
 		}
 		const requestId = crypto.randomUUID();
 		const unsubscribe = bridge.subscribe((message) => {
-			if (
+			const matchesType =
 				message.type === "workspace/paths" &&
-				message.requestId === requestId
-			) {
+				message.requestId === requestId;
+			if (matchesType) {
 				setResult({ uri, data: message });
 			}
 		});

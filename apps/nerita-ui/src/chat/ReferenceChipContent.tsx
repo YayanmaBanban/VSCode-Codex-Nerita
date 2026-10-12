@@ -9,13 +9,20 @@ export function ReferenceChipContent({ path }: { path: ComposerTarget }) {
 		<>
 			<Icon size={14} aria-hidden="true" />
 			<span className="truncate">
-				{path.kind === "session"
-					? `${path.mode === "handoff" ? "Handoff" : "Session"}: ${path.name}`
-					: path.name}
+				{referenceLabel(path)}
 				{path.kind === "file" && path.range
 					? `(${path.range.start.line}:${path.range.end.line})`
 					: ""}
 			</span>
 		</>
 	);
+}
+
+/** セッションの参照形式を名前に添え、原文の参照と生成するハンドオフを区別する。 */
+function referenceLabel(path: ComposerTarget): string {
+	if (path.kind !== "session") {
+		return path.name;
+	}
+	const kind = path.mode === "handoff" ? "Handoff" : "Session";
+	return `${kind}: ${path.name}`;
 }

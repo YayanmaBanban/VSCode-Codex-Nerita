@@ -168,8 +168,8 @@ function binaryString(value: unknown): boolean {
 		return false;
 	}
 	const prefix = value.slice(0, 1024);
-	return (
+	const matchesTest =
 		/^data:[^,]*;base64,/i.test(prefix) ||
-		(value.length >= 256 && /^[a-z0-9+/=\r\n]+$/i.test(prefix))
-	);
+		(value.length >= 256 && /^[a-z0-9+/=\r\n]+$/i.test(prefix));
+	return matchesTest;
 }

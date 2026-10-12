@@ -84,7 +84,7 @@ export async function verifyFileSnapshot(
 	snapshot: FileSnapshot,
 ): Promise<void> {
 	const current = await snapshotFile(paths, snapshot.input);
-	if (
+	const matchesPath =
 		current.path !== snapshot.path ||
 		JSON.stringify(current.file) !== JSON.stringify(snapshot.file) ||
 		snapshot.ancestors.some(
@@ -92,8 +92,8 @@ export async function verifyFileSnapshot(
 				!current.ancestors.some(
 					(now) => JSON.stringify(now) === JSON.stringify(entry),
 				),
-		)
-	) {
+		);
+	if (matchesPath) {
 		throw new Error(
 			"承認中にファイルまたは祖先が変更されました。再承認が必要です。",
 		);

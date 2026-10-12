@@ -145,10 +145,10 @@ async function persistAttempt(
 			`${directory}/${path}`,
 			80 * 1024 * 1024,
 		);
-		if (
+		const matchesPrevious =
 			previous !== undefined &&
-			jsonDigest(JSON.parse(previous)) !== digest
-		) {
+			jsonDigest(JSON.parse(previous)) !== digest;
+		if (matchesPrevious) {
 			throw new Error("既存の実行根拠が破損しています。");
 		}
 		if (previous === undefined) {

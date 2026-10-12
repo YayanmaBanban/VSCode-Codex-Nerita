@@ -32,6 +32,7 @@ export function ToolOutputView({ output }: { output: ToolOutputPreview }) {
 	const outputRef = output.outputRef;
 	const canExpand =
 		output.truncated && isNonEmptyString(outputRef) && bridge !== undefined;
+	const DisclosureIcon = expanded ? ChevronUp : ChevronRight;
 	const details = canExpand ? (
 		<>
 			<button
@@ -47,11 +48,7 @@ export function ToolOutputView({ output }: { output: ToolOutputPreview }) {
 				aria-controls={rangeId}
 			>
 				詳細出力
-				{expanded ? (
-					<ChevronUp size={14} aria-hidden="true" />
-				) : (
-					<ChevronRight size={14} aria-hidden="true" />
-				)}
+				<DisclosureIcon size={14} aria-hidden="true" />
 			</button>
 			{expanded && (
 				<OutputRange
@@ -151,17 +148,20 @@ function useOutputChunk(bridge: Bridge, outputRef: string, offset: number) {
 	useEffect(() => {
 		const requestId = crypto.randomUUID();
 		pending.current = requestId;
-		const unsubscribe = bridge.subscribe((message) => {
-			if (
-				!("requestId" in message) ||
-				message.requestId !== pending.current
-			) {
+		/** 要求 ID と本文参照を照合し、別の出力の応答で現在の表示を上書きしない。 */
+		const receiveOutputChunk: Parameters<
+			NonNullable<typeof bridge>["subscribe"]
+		>[0] = (message) => {
+			if (!("requestId" in message)) {
 				return;
 			}
-			if (
+			if (message.requestId !== pending.current) {
+				return;
+			}
+			const matchesType =
 				message.type === "tool/outputResult" &&
-				message.outputRef === outputRef
-			) {
+				message.outputRef === outputRef;
+			if (matchesType) {
 				setRange(message);
 				setError(message.error);
 				setLoading(false);
@@ -169,7 +169,8 @@ function useOutputChunk(bridge: Bridge, outputRef: string, offset: number) {
 				setError(message.error);
 				setLoading(false);
 			}
-		});
+		};
+		const unsubscribe = bridge.subscribe(receiveOutputChunk);
 		bridge.postMessage({
 			type: "tool/output",
 			requestId,

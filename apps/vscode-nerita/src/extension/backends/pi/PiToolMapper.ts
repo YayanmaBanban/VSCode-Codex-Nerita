@@ -20,11 +20,11 @@ export function mapPiTool(
 	event: PiEvent,
 	state: ChatState,
 ): Partial<ChatState> | undefined {
-	if (
+	const matchesType =
 		event.type !== "tool_execution_start" &&
 		event.type !== "tool_execution_update" &&
-		event.type !== "tool_execution_end"
-	) {
+		event.type !== "tool_execution_end";
+	if (matchesType) {
 		return;
 	}
 	const existing = state.tools.find(
@@ -55,7 +55,13 @@ export function mapPiTool(
 	);
 	return {
 		tools: existing
-			? state.tools.map((item) => (item === existing ? tool : item))
+			? state.tools.map((item) => {
+					const isTarget = item === existing;
+					if (!isTarget) {
+						return item;
+					}
+					return tool;
+				})
 			: [...state.tools, tool],
 	};
 }
@@ -100,12 +106,7 @@ function piToolSummary(
 		paths: toolPaths(existing, file),
 		rawInput: input,
 		...(result === undefined
-			? {
-					content: existing?.content ?? [],
-					...(existing?.resultDisplay
-						? { resultDisplay: existing.resultDisplay }
-						: {}),
-				}
+			? retainedToolResult(existing)
 			: piResultDisplay(result)),
 	};
 }
@@ -143,17 +144,22 @@ function toolTitle(
 	kind: string,
 	input: unknown,
 ): string {
-	if (
-		kind === "execute" &&
-		isRecord(input) &&
-		typeof input.command === "string"
-	) {
-		return input.command;
+	const command = kind === "execute" ? commandTitle(input) : undefined;
+	if (command !== undefined) {
+		return command;
 	}
 	return (
 		existing?.title ??
 		(isNonEmptyString(file) ? `${label}: ${file}` : label)
 	);
+}
+
+/** 空文字のコマンドも元の表示値として保持し、形式が違う入力だけを見出しの補完へ回す。 */
+function commandTitle(input: unknown): string | undefined {
+	if (!isRecord(input)) {
+		return;
+	}
+	return typeof input.command === "string" ? input.command : undefined;
 }
 
 /** `Stop` や通信障害で終了通知が来ない場合も、当該実行のカードを実行中のまま残さない。 */
@@ -163,25 +169,17 @@ export function finishPiTools(
 	error?: string,
 ): ToolSummary[] {
 	return state.tools.map((tool) => {
-		if (!(
+		const matchesRunId = !(
 			tool.runId === state.runId &&
 			(tool.status === "pending" || tool.status === "in_progress")
-		)) {
+		);
+		if (matchesRunId) {
 			return tool;
 		}
 		return {
 			...tool,
 			status: cancelled ? "cancelled" : "failed",
-			content: isNonZeroNumber(tool.content?.length)
-				? tool.content
-				: [
-						textContent(
-							cancelled
-								? "処理を停止しました。"
-								: (nonEmptyString(error) ??
-										"ツールの完了通知を受信できませんでした。"),
-						),
-					],
+			content: interruptedToolContent(tool, cancelled, error),
 		};
 	});
 }
@@ -233,11 +231,9 @@ function toolKind(toolName: string): NonNullable<ToolSummary["kind"]> {
 	if (toolName === "read") {
 		return "read";
 	}
-	if (
-		toolName === "powershell" ||
-		toolName === "pwsh" ||
-		toolName === "pnpm"
-	) {
+	const matchesToolName =
+		toolName === "powershell" || toolName === "pwsh" || toolName === "pnpm";
+	if (matchesToolName) {
 		return "execute";
 	}
 	if (toolName === "bash") {
@@ -267,4 +263,35 @@ function toolStatus(
 		return "completed";
 	}
 	return "in_progress";
+}
+
+/** 結果のない通知では既存の内容と表示形式を保持する。 */
+function retainedToolResult(
+	existing: ToolSummary | undefined,
+): Pick<ToolSummary, "content" | "resultDisplay"> {
+	return {
+		content: existing?.content ?? [],
+		...(existing?.resultDisplay
+			? { resultDisplay: existing.resultDisplay }
+			: {}),
+	};
+}
+
+/** 中断されたツールに内容がなければ終了理由を補う。 */
+function interruptedToolContent(
+	tool: ToolSummary,
+	cancelled: boolean,
+	error: string | null | undefined,
+) {
+	if (isNonZeroNumber(tool.content?.length)) {
+		return tool.content;
+	}
+	return [
+		textContent(
+			cancelled
+				? "処理を停止しました。"
+				: (nonEmptyString(error) ??
+						"ツールの完了通知を受信できませんでした。"),
+		),
+	];
 }

@@ -19,15 +19,17 @@ export function messagePatch(
 	const existing = state.messages.find((item) => item.id === id);
 	if (existing) {
 		return {
-			messages: state.messages.map((item) =>
-				item.id === id
-					? {
-							...item,
-							text: append ? item.text + text : text,
-							streaming,
-						}
-					: item,
-			),
+			messages: state.messages.map((item) => {
+				const isTarget = item.id === id;
+				if (!isTarget) {
+					return item;
+				}
+				return {
+					...item,
+					text: append ? item.text + text : text,
+					streaming,
+				};
+			}),
 		};
 	}
 	return {
@@ -49,10 +51,10 @@ export function itemPatch(
 	value: CodexItem,
 	completed: boolean,
 ): Partial<ChatState> {
-	if (
+	const matchesType =
 		value.type === "subAgentActivity" ||
-		value.type === "collabAgentToolCall"
-	) {
+		value.type === "collabAgentToolCall";
+	if (matchesType) {
 		return agentItemPatch(state, value);
 	}
 	if (value.type === "agentMessage" || value.type === "plan") {
@@ -72,11 +74,11 @@ function toolPatch(
 	completed: boolean,
 ): Partial<ChatState> {
 	const activity = activityItem(value);
-	if (
+	const matchesType2 =
 		value.type !== "commandExecution" &&
 		value.type !== "fileChange" &&
-		!activity
-	) {
+		!activity;
+	if (matchesType2) {
 		return {};
 	}
 	const previous = state.tools.find(
@@ -99,7 +101,13 @@ function toolPatch(
 	retainStreamingOutput(tool, previous);
 	return {
 		tools: previous
-			? state.tools.map((entry) => (entry === previous ? tool : entry))
+			? state.tools.map((entry) => {
+					const isTarget = entry === previous;
+					if (!isTarget) {
+						return entry;
+					}
+					return tool;
+				})
 			: [...state.tools, tool],
 	};
 }
@@ -109,11 +117,16 @@ function retainStreamingOutput(
 	tool: ToolSummary,
 	previous: ToolSummary | undefined,
 ) {
-	if (
-		tool.kind === "execute" &&
-		tool.rawOutput === undefined &&
-		previous?.output
-	) {
+	if (!(tool.kind === "execute")) {
+		return;
+	}
+	if (!(tool.rawOutput === undefined)) {
+		return;
+	}
+	if (!previous?.output) {
+		return;
+	}
+	{
 		tool.output = previous.output;
 	}
 }
@@ -124,10 +137,10 @@ function updateCommandOrFiles(
 	tool: ToolSummary,
 ) {
 	if (value.type === "commandExecution") {
-		if (
-			typeof value.command !== "string" ||
-			typeof value.cwd !== "string"
-		) {
+		if (typeof value.command !== "string") {
+			throw new Error("Invalid command item");
+		}
+		if (typeof value.cwd !== "string") {
 			throw new Error("Invalid command item");
 		}
 		tool.title = commandTitle(value.command, value.commandActions);
@@ -151,11 +164,13 @@ function updateCommandOrFiles(
 function commandTitle(command: string, actions: unknown): string {
 	const commands = Array.isArray(actions)
 		? actions.flatMap((action: unknown) => {
-				if (!(
-					isRecord(action) &&
-					typeof action.command === "string" &&
-					action.command.trim() !== ""
-				)) {
+				if (!isRecord(action)) {
+					return [];
+				}
+				if (!(typeof action.command === "string")) {
+					return [];
+				}
+				if (!(action.command.trim() !== "")) {
 					return [];
 				}
 				return [powerShellBody(action.command)];
@@ -191,11 +206,13 @@ function itemStatus(
 	completed: boolean,
 ): ToolSummary["status"] {
 	if (completed) {
-		if (
-			(typeof value.status === "string" &&
-				["failed", "declined"].includes(value.status)) ||
-			value.success === false
-		) {
+		const failedStatus =
+			typeof value.status === "string" &&
+			["failed", "declined"].includes(value.status);
+		if (failedStatus) {
+			return "failed";
+		}
+		if (value.success === false) {
 			return "failed";
 		}
 		return "completed";

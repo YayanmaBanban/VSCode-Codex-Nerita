@@ -295,19 +295,17 @@ function readRange(
 
 /** 通常出力だけを対象とし、差分や推論の専用表示は維持する。 */
 function outputSource(tool: ToolSummary): ToolOutputSource | undefined {
-	if (
-		tool.output ||
+	const matchesOutput =
+		Boolean(tool.output) ||
 		["think", "edit", "search", "web_search", "image"].includes(
 			String(tool.kind),
-		)
-	) {
+		);
+	if (matchesOutput) {
 		return;
 	}
-	if (
-		isRecord(tool.rawOutput) &&
-		typeof tool.rawOutput.formatted_output === "string"
-	) {
-		return { text: tool.rawOutput.formatted_output };
+	const formatted = formattedOutput(tool.rawOutput);
+	if (formatted) {
+		return formatted;
 	}
 	const text = contentText(tool.content);
 	if (text !== undefined) {
@@ -322,6 +320,17 @@ function outputSource(tool: ToolSummary): ToolOutputSource | undefined {
 		};
 	}
 	return;
+}
+
+/** App Server の整形済み本文は文字列を検証してから通常出力として扱う。 */
+function formattedOutput(value: unknown): ToolOutputSource | undefined {
+	if (!isRecord(value)) {
+		return;
+	}
+	if (typeof value.formatted_output !== "string") {
+		return;
+	}
+	return { text: value.formatted_output };
 }
 
 /** テキストだけの結果をまとめ、差分や画像をテキストへ誤変換しない。 */

@@ -9,6 +9,7 @@ import { piProviders } from "./PiProviders";
 
 /** 認証方式やエンドポイントはプロバイダー側のサービスが所有する。 */
 export class PiQuotaService implements PiQuotaReader {
+	/** 接続中のモデルに合う取得経路を保持し、Codex の利用枠読取りも差し替え可能にする。 */
 	constructor(
 		private models: ModelRuntime,
 		private session: AgentSession,

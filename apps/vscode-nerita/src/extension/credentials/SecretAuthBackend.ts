@@ -13,10 +13,12 @@ export class SecretAuthBackend {
 	private pending = Promise.resolve();
 	private failure: Error | undefined;
 	private readonly refreshes = new Map<string, Promise<void>>();
+	/** MCP の認証保存先と秘密除去を共有し、生成は保存値の読取りを行う create 経由に限定する。 */
 	private constructor(
 		private readonly store: CredentialStore,
 		private readonly redactor: SecretRedactor,
 	) {}
+	/** 保存値を復元して出力保護へ登録し、読取り用のラッパーは成功・失敗にかかわらず解放する。 */
 	static async create(store: CredentialStore, redactor: SecretRedactor) {
 		const backend = new SecretAuthBackend(store, redactor);
 		const value = await store.get("pi.mcp.auth");
@@ -28,6 +30,7 @@ export class SecretAuthBackend {
 		}
 		return backend;
 	}
+	/** SDK の同期更新をキャッシュへ反映し、永続書込みは直列化する。保存失敗後の更新は拒否する。 */
 	withLock<T>(fn: (current: string | undefined) => Change<T>): T {
 		if (this.failure) {
 			throw this.failure;
@@ -46,6 +49,7 @@ export class SecretAuthBackend {
 		}
 		return changed.result;
 	}
+	/** 待機中の保存を確認し、非同期書込みの失敗も利用側へ伝える。 */
 	async flush() {
 		await this.pending;
 		if (this.failure) {
@@ -69,9 +73,11 @@ export class SecretAuthBackend {
 		});
 		return result;
 	}
+	/** このアダプターの認証文字列への参照を解放し、永続保存済みの認証は削除しない。 */
 	dispose() {
 		this.value = undefined;
 	}
+	/** 認証 JSON を検証して秘密フィールドを出力保護へ登録し、解析に失敗しても元の値をエラーへ含めない。 */
 	private protect() {
 		if (!isNonEmptyString(this.value)) {
 			return;

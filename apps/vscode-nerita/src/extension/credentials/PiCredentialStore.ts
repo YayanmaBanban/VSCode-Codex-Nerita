@@ -58,6 +58,7 @@ export class PiCredentialVault {
 	private active: Record<string, string>;
 	private readonly stagedAccounts = new Set<string>();
 	private pending = Promise.resolve();
+	/** 保存済み索引を検証してから復元し、アカウント情報と秘密値の保存先を分ける。 */
 	constructor(
 		readonly stores: CredentialStores,
 		private readonly metadata: {
@@ -73,6 +74,7 @@ export class PiCredentialVault {
 		this.accounts = index.accounts;
 		this.active = index.active;
 	}
+	/** 管理画面へ返す索引は複製し、外部から保管庫のアカウント状態を変更させない。 */
 	list(provider?: string) {
 		return structuredClone(
 			this.accounts.filter(
@@ -82,6 +84,7 @@ export class PiCredentialVault {
 			),
 		);
 	}
+	/** 選択 ID とプロバイダーが一致する索引だけを複製して返す。 */
 	selected(provider: string) {
 		const account = this.accounts.find(
 			(account) =>
@@ -120,12 +123,14 @@ export class PiCredentialVault {
 			value.dispose();
 		}
 	}
+	/** 資格情報の更新を直列化し、取消し・アカウントの存在・保存値の形式を確認してから書き込む。 */
 	modify(
 		account: PiCredentialAccount | undefined,
 		fn: Parameters<SdkStore["modify"]>[1],
 		options?: OperationOptions,
 	) {
-		return this.enqueue(async () => {
+		/** 待機列の順番で取消しとアカウントを確認し、検証済みの次の資格情報だけを保存する。 */
+		const modifyCurrentCredential = async () => {
 			options?.signal?.throwIfAborted();
 			const current =
 				account && this.writable(account)
@@ -150,8 +155,10 @@ export class PiCredentialVault {
 				value.dispose();
 			}
 			return validated;
-		});
+		};
+		return this.enqueue(modifyCurrentCredential);
 	}
+	/** 認証済みの秘密値を確認してから索引へ公開し、途中失敗では作成した秘密値を削除する。 */
 	async add(
 		provider: string,
 		type: Credential["type"],
@@ -169,7 +176,8 @@ export class PiCredentialVault {
 		this.stagedAccounts.add(account.id);
 		try {
 			await login(account);
-			if (!(await this.read(account))) {
+			const matchesValue = !(await this.read(account));
+			if (matchesValue) {
 				throw new Error("認証情報の保存を検証できません。");
 			}
 			await this.enqueue(() =>
@@ -185,18 +193,21 @@ export class PiCredentialVault {
 			this.stagedAccounts.delete(account.id);
 		}
 	}
+	/** 保存済みアカウントとログイン処理中のアカウントだけを更新対象にする。 */
 	private writable(account: PiCredentialAccount) {
 		return (
 			this.accounts.some((item) => item.id === account.id) ||
 			this.stagedAccounts.has(account.id)
 		);
 	}
+	/** 秘密値を読めるアカウントだけを有効にし、選択と索引の保存を同じ待機列で行う。 */
 	select(provider: string, id: string) {
 		return this.enqueue(async () => {
 			const account = this.accounts.find(
 				(item) => item.provider === provider && item.id === id,
 			);
-			if (!account || !(await this.read(account))) {
+			const matchesAccount = !account || !(await this.read(account));
+			if (matchesAccount) {
 				throw new Error("認証アカウントが利用できません。");
 			}
 			await this.publish(this.accounts, {
@@ -205,11 +216,13 @@ export class PiCredentialVault {
 			});
 		});
 	}
+	/** 対象の秘密値を削除してから索引と選択を更新し、削除したアカウントを利用対象に残さない。 */
 	remove(
 		account: PiCredentialAccount | undefined,
 		options?: OperationOptions,
 	) {
-		return this.enqueue(async () => {
+		/** 秘密値を削除してから索引と選択を更新し、更新の途中で他の要求を進めない。 */
+		const removeCurrentAccount = async () => {
 			options?.signal?.throwIfAborted();
 			if (!account) {
 				return;
@@ -221,7 +234,8 @@ export class PiCredentialVault {
 			}
 			await this.stores.store(account.mode).delete(this.key(account));
 			await this.publish(next, active);
-		});
+		};
+		return this.enqueue(removeCurrentAccount);
 	}
 	/** 読み戻し済みの値だけを確定でき、取消しでは新しい保存値を回収する。 */
 	async stageImport(records: unknown, mode: CredentialStorageMode) {
@@ -250,10 +264,10 @@ export class PiCredentialVault {
 				} finally {
 					value.dispose();
 				}
-				if (
+				const matchesStringify =
 					JSON.stringify(await this.read(account)) !==
-					JSON.stringify(credential)
-				) {
+					JSON.stringify(credential);
+				if (matchesStringify) {
 					throw new Error("移行先の認証情報が一致しません。");
 				}
 			}
@@ -303,9 +317,11 @@ export class PiCredentialVault {
 		this.accounts = accounts;
 		this.active = active;
 	}
+	/** プロバイダー名をエスケープし、アカウントごとに秘密保管のキーを分ける。 */
 	private key(account: PiCredentialAccount) {
 		return `pi.auth.${encodeURIComponent(account.provider)}.${account.id}`;
 	}
+	/** 更新を直列化し、失敗した操作が後続の待機列を止めないようにする。 */
 	private enqueue<T>(operation: () => Promise<T>): Promise<T> {
 		const result = this.pending.then(operation);
 		this.pending = result.then(
@@ -319,16 +335,20 @@ export class PiCredentialVault {
 /** Runtime ごとのログイン先と、Host 全体の選択中アカウントを分けて扱う。 */
 export class PiCredentialStore implements SdkStore {
 	private readonly loginAccounts = new Map<string, PiCredentialAccount>();
+	/** Pi SDK の資格情報操作を Nerita の保管庫へ委ね、SDK 側のファイル保存を使わない。 */
 	constructor(readonly vault: PiCredentialVault) {}
+	/** ログイン中のアカウントを優先し、通常時は保管庫の選択済みアカウントを使う。 */
 	private account(provider: string) {
 		return (
 			this.loginAccounts.get(provider) ?? this.vault.selected(provider)
 		);
 	}
+	/** 取消し済みの読取りを拒否し、対象はこのアダプターの選択済みアカウントに限定する。 */
 	async read(provider: string, options?: OperationOptions) {
 		options?.signal?.throwIfAborted();
 		return this.vault.read(this.account(provider));
 	}
+	/** SDK には有効なアカウントの種別だけを返し、秘密値と他の候補アカウントを列挙しない。 */
 	list(options?: OperationOptions) {
 		options?.signal?.throwIfAborted();
 		return Promise.resolve(
@@ -345,6 +365,7 @@ export class PiCredentialStore implements SdkStore {
 				})),
 		);
 	}
+	/** SDK の更新は対象アカウントとともに保管庫の待機列へ委譲する。 */
 	modify(
 		provider: string,
 		fn: Parameters<SdkStore["modify"]>[1],
@@ -352,6 +373,7 @@ export class PiCredentialStore implements SdkStore {
 	) {
 		return this.vault.modify(this.account(provider), fn, options);
 	}
+	/** SDK の削除も保管庫へ委譲し、索引と秘密値の削除を同じ経路で行う。 */
 	delete(provider: string, options?: OperationOptions) {
 		return this.vault.remove(this.account(provider), options);
 	}

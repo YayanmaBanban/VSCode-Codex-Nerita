@@ -34,10 +34,10 @@ export class AppServerRpcError extends Error {
 }
 /** サーバー発行の文字列 ID と、クライアント発行の数値 ID を保持する。 */
 function isRequestId(value: unknown): value is RequestId {
-	return (
+	const matchesValue =
 		typeof value === "string" ||
-		(typeof value === "number" && Number.isSafeInteger(value))
-	);
+		(typeof value === "number" && Number.isSafeInteger(value));
+	return matchesValue;
 }
 /** `method` を先に判定し、同じ ID のサーバー要求を応答と取り違えない。 */
 export function parseRpcMessage(message: unknown): RpcMessage {
@@ -52,11 +52,13 @@ export function parseRpcMessage(message: unknown): RpcMessage {
 
 /** `method` を持つサーバー要求と通知を検証する。 */
 function parseMethodMessage(message: Record<string, unknown>): RpcMessage {
-	if (
-		typeof message.method !== "string" ||
-		"result" in message ||
-		"error" in message
-	) {
+	if (typeof message.method !== "string") {
+		throw new Error("Invalid method");
+	}
+	if ("result" in message) {
+		throw new Error("Invalid method");
+	}
+	if ("error" in message) {
 		throw new Error("Invalid method");
 	}
 	if ("id" in message) {
@@ -86,11 +88,13 @@ function parseResponse(message: Record<string, unknown>): RpcMessage {
 		throw new Error("Invalid response");
 	}
 	if (hasError) {
-		if (
-			!isRecord(message.error) ||
-			!Number.isInteger(message.error.code) ||
-			typeof message.error.code !== "number"
-		) {
+		if (!isRecord(message.error)) {
+			throw new Error("Invalid RPC error");
+		}
+		if (!Number.isInteger(message.error.code)) {
+			throw new Error("Invalid RPC error");
+		}
+		if (typeof message.error.code !== "number") {
 			throw new Error("Invalid RPC error");
 		}
 		if (typeof message.error.message !== "string") {

@@ -10,12 +10,83 @@ import { validStateField } from "@nerita/shared/stateFieldValidation";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import { isAsyncTask } from "@nerita/shared/asyncTask";
 import { initialState } from "@nerita/shared/chatState";
+import { isPermissionPresentation } from "@nerita/shared/permission";
+import { isSubAgent } from "@nerita/shared/subAgents";
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
 	nonEmptyString,
 	nonZeroNumber,
 } from "@nerita/shared/valuePredicates";
+
+void test("承認表示の検証は任意項目を拒否し、不正な fields の後に details を評価しない", () => {
+	const field = {
+		id: "command",
+		label: "実行",
+		value: "command",
+		display: "code",
+	};
+	const presentation = {
+		title: "承認",
+		cwd: "workspace",
+		fields: [field],
+		details: [],
+	};
+	assert.ok(isPermissionPresentation(presentation));
+	assert.equal(presentation.fields[0], field);
+	for (const invalid of [
+		null,
+		{ ...presentation, title: 42 },
+		{ ...presentation, command: 42 },
+		{ ...presentation, fields: [{ ...field, id: "" }] },
+		{ ...presentation, details: [{ ...field, display: "unknown" }] },
+	]) {
+		assert.equal(isPermissionPresentation(invalid), false);
+	}
+	assert.equal(
+		isPermissionPresentation({
+			title: "承認",
+			fields: [null],
+			get details() {
+				throw new Error("fields が不正なら details を評価しない");
+			},
+		}),
+		false,
+	);
+});
+
+void test("エージェントの検証は必須情報・任意情報・状態を段階的に確認し、拒否後は評価を進めない", () => {
+	const agent = {
+		threadId: "thread",
+		parentThreadId: "parent",
+		activityItemId: "activity",
+		agentPath: "/root/child",
+		status: "completed",
+		iconKey: "cheetah",
+		order: 1,
+	};
+	assert.ok(isSubAgent(agent));
+	for (const invalid of [
+		null,
+		{ ...agent, threadId: "" },
+		{ ...agent, nickname: 42 },
+		{ ...agent, status: "unknown" },
+		{ ...agent, iconKey: "unknown" },
+		{ ...agent, order: NaN },
+	]) {
+		assert.equal(isSubAgent(invalid), false);
+	}
+	assert.equal(
+		isSubAgent({
+			...agent,
+			threadId: "",
+			get nickname() {
+				throw new Error("必須情報が不正なら任意情報を評価しない");
+			},
+		}),
+		false,
+	);
+});
 
 void test("可変高さの会話位置は両方向で検証し、不正なアンカーを拒否する", () => {
 	const scrollAnchor = {

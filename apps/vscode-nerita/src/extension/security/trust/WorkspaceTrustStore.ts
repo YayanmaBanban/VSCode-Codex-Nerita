@@ -62,6 +62,7 @@ export class WorkspaceTrustStore {
 	private failed = false;
 	private pendingRestrictions = new Map<object, string | undefined>();
 	private listeners = new Set<(root?: string) => void>();
+	/** 保存済みの信頼を検証し、破損や重複があれば全件を未信頼として扱う。 */
 	constructor(
 		private readonly storage: TrustStorage,
 		readonly audit: TrustAudit = () => {},
@@ -117,11 +118,11 @@ export class WorkspaceTrustStore {
 		);
 		previous.abort(reason);
 		for (const scoped of this.rootControllers.values()) {
-			if (
+			const matchesRoot =
 				root === undefined ||
 				containsPath(root, scoped.root) ||
-				containsPath(scoped.root, root)
-			) {
+				containsPath(scoped.root, root);
+			if (matchesRoot) {
 				const old = scoped.controller;
 				scoped.controller = new AbortController();
 				old.abort(reason);
@@ -143,24 +144,24 @@ export class WorkspaceTrustStore {
 		}
 		try {
 			const actual = await canonicalPath(path, process.cwd());
-			if (
-				[...this.pendingRestrictions.values()].some(
-					(root) =>
-						root === undefined ||
-						containsPath(root, actual) ||
-						containsPath(actual, root),
-				)
-			) {
+			const matchesSome = [...this.pendingRestrictions.values()].some(
+				(root) =>
+					root === undefined ||
+					containsPath(root, actual) ||
+					containsPath(actual, root),
+			);
+			if (matchesSome) {
 				return false;
 			}
 			const record = this.list()
 				.filter((item) => containsPath(item.root, actual))
 				.sort((a, b) => b.root.length - a.root.length)[0];
-			if (!(
+			const matchesRecord = !(
 				!!record &&
 				record.trust === "trusted" &&
 				(await sameRootIdentity(record))
-			)) {
+			);
+			if (matchesRecord) {
 				return false;
 			}
 			return !(await hasNestedRepository(record.root, actual));
@@ -175,9 +176,9 @@ export class WorkspaceTrustStore {
 	/** キャッシュ全体の信頼では、新しく取得するリポジトリへ許可を継承させない。 */
 	async registerExternalCache(root: string): Promise<void> {
 		const canonical = await canonicalPath(root, process.cwd());
-		if (
-			this.records.get(trustKey(canonical))?.origin !== "external-cache"
-		) {
+		const matchesOrigin =
+			this.records.get(trustKey(canonical))?.origin !== "external-cache";
+		if (matchesOrigin) {
 			await this.change(canonical, false, "external-cache");
 		}
 	}
@@ -201,34 +202,33 @@ export class WorkspaceTrustStore {
 		const scope = this.changeScope(root);
 		const release = this.restrict(scope);
 		this.invalidate(scope);
-		const action = this.queue
-			.then(async () => {
-				const record = this.records.get(trustKey(root));
-				if (!record) {
-					return;
-				}
-				// 拒否の記録を削除して、親の信頼が復活することを防ぐ。
-				if (
-					this.list().some(
-						(parent) =>
-							parent.root !== record.root &&
-							parent.trust === "trusted" &&
-							containsPath(parent.root, record.root),
-					)
-				) {
-					throw new Error(
-						"親フォルダーの信頼を取り消してから、この記録を削除してください。",
-					);
-				}
-				const records = new Map(this.records);
-				records.delete(trustKey(root));
-				await this.persistRecords(records);
-				this.audit("user-removed", root);
-			})
-			.finally(() => {
-				release();
-				this.invalidate(scope);
-			});
+		/** 親の信頼が残る場合は拒否記録を削除せず、削除結果を保存してから監査へ通知する。 */
+		const removeTrustRecord = async () => {
+			const record = this.records.get(trustKey(root));
+			if (!record) {
+				return;
+			}
+			// 拒否の記録を削除して、親の信頼が復活することを防ぐ。
+			const matchesSome2 = this.list().some(
+				(parent) =>
+					parent.root !== record.root &&
+					parent.trust === "trusted" &&
+					containsPath(parent.root, record.root),
+			);
+			if (matchesSome2) {
+				throw new Error(
+					"親フォルダーの信頼を取り消してから、この記録を削除してください。",
+				);
+			}
+			const records = new Map(this.records);
+			records.delete(trustKey(root));
+			await this.persistRecords(records);
+			this.audit("user-removed", root);
+		};
+		const action = this.queue.then(removeTrustRecord).finally(() => {
+			release();
+			this.invalidate(scope);
+		});
 		this.queue = action.catch(() => {});
 		return action;
 	}
@@ -244,36 +244,36 @@ export class WorkspaceTrustStore {
 		if (!trusted) {
 			this.invalidate(scope);
 		}
-		const action = this.queue
-			.then(async () => {
-				const canonical = await canonicalPath(root, process.cwd());
-				const identity = await validateTrustRoot(
-					canonical,
-					trusted,
-					this.records.get(trustKey(canonical)),
-					expected,
-				);
-				const records = new Map(this.records);
-				records.set(trustKey(canonical), {
-					root: canonical,
-					trust: trusted ? "trusted" : "untrusted",
-					origin: recordOrigin(canonical, records, origin),
-					updatedAt: Date.now(),
-					identity,
-				});
-				await this.persistRecords(records);
-				this.failed = false;
-				const event = trusted ? "user-trusted" : "user-revoked";
-				this.audit(registrationEvent(origin, event), canonical);
-				this.invalidate(this.changeScope(canonical, origin));
-			})
-			.finally(() => {
-				// 保存失敗による拒否は `failed` で維持し、保存待ちの制限カウンターだけを減らす。
-				if (!trusted) {
-					release?.();
-					this.invalidate(scope);
-				}
+		/** ルートの実体と信頼条件を検証してから保存し、保存成功後に実行中の対象を無効化する。 */
+		const persistValidatedTrust = async () => {
+			const canonical = await canonicalPath(root, process.cwd());
+			const identity = await validateTrustRoot(
+				canonical,
+				trusted,
+				this.records.get(trustKey(canonical)),
+				expected,
+			);
+			const records = new Map(this.records);
+			records.set(trustKey(canonical), {
+				root: canonical,
+				trust: trusted ? "trusted" : "untrusted",
+				origin: recordOrigin(canonical, records, origin),
+				updatedAt: Date.now(),
+				identity,
 			});
+			await this.persistRecords(records);
+			this.failed = false;
+			const event = trusted ? "user-trusted" : "user-revoked";
+			this.audit(registrationEvent(origin, event), canonical);
+			this.invalidate(this.changeScope(canonical, origin));
+		};
+		const action = this.queue.then(persistValidatedTrust).finally(() => {
+			// 保存失敗による拒否は `failed` で維持し、保存待ちの制限カウンターだけを減らす。
+			if (!trusted) {
+				release?.();
+				this.invalidate(scope);
+			}
+		});
 		this.queue = action.catch(() => {});
 		return action;
 	}
@@ -357,18 +357,22 @@ async function validateTrustRoot(
 
 /** 同じパスへ再作成された一時リポジトリを以前の信頼で実行しない。 */
 async function sameRootIdentity(record: TrustRecord): Promise<boolean> {
-	if (
-		!record.identity ||
-		trustKey(await realpath(record.root)) !== trustKey(record.root)
-	) {
+	if (!record.identity) {
+		return false;
+	}
+	const canonicalRoot = trustKey(await realpath(record.root));
+	if (canonicalRoot !== trustKey(record.root)) {
 		return false;
 	}
 	const info = await stat(record.root);
-	if (!(
-		info.isDirectory() &&
-		info.dev === record.identity.dev &&
-		info.ino === record.identity.ino
-	)) {
+
+	if (!info.isDirectory()) {
+		return false;
+	}
+	if (info.dev !== record.identity.dev) {
+		return false;
+	}
+	if (info.ino !== record.identity.ino) {
 		return false;
 	}
 	return info.birthtimeMs === record.identity.birthtimeMs;

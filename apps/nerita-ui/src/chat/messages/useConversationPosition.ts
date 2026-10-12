@@ -20,22 +20,22 @@ export function useConversationPosition(
 			scrollAnchorRef.current = () => undefined;
 		};
 	}, [scrollAnchorRef, conversation, sessionId]);
-	useEffect(() => {
+	/** 同じ会話の準備済みアンカーだけを一度復元し、未指定なら保存したスクロール位置を使う。 */
+	const restoreConversationPosition = () => {
 		const restore = view.restore;
 		const root = view.conversation.current;
 		if (!restore || restore === applied.current || !root) {
 			return;
 		}
-		if (
+		const anchorFromOtherSession =
 			restore.scrollAnchor &&
-			restore.scrollAnchor.sessionId !== sessionId
-		) {
+			restore.scrollAnchor.sessionId !== sessionId;
+		if (anchorFromOtherSession === true) {
 			return;
 		}
-		if (
-			restore.scrollAnchor &&
-			!canRestore(restore.scrollAnchor, virtual)
-		) {
+		const anchorNotReady =
+			restore.scrollAnchor && !canRestore(restore.scrollAnchor, virtual);
+		if (anchorNotReady === true) {
 			return;
 		}
 		applied.current = restore;
@@ -51,7 +51,14 @@ export function useConversationPosition(
 			root.scrollTop = restore.scrollTop;
 		});
 		return () => cancelAnimationFrame(frame);
-	}, [view.restore, view.conversation, virtual, sessionId, following]);
+	};
+	useEffect(restoreConversationPosition, [
+		view.restore,
+		view.conversation,
+		virtual,
+		sessionId,
+		following,
+	]);
 	useConversationWidth(view.conversation, virtual, following, sessionId);
 }
 

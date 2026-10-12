@@ -21,7 +21,8 @@ export async function collectSourceSnapshot(
 	const gitRoot = (
 		await git(root, ["rev-parse", "--show-toplevel"], signal)
 	).trim();
-	if ((await realpath(gitRoot)) !== (await realpath(root))) {
+	const matchesValue = (await realpath(gitRoot)) !== (await realpath(root));
+	if (matchesValue) {
 		throw new Error("DLC は Git リポジトリのルートで実行してください。");
 	}
 	const baseCommit = (await git(root, ["rev-parse", "HEAD"], signal)).trim();
@@ -74,9 +75,9 @@ export async function collectSourceSnapshot(
 	const id = createHash("sha256")
 		.update(JSON.stringify({ baseCommit, indexDigest, files, artifacts }))
 		.digest("hex");
-	if (
-		(await git(root, ["rev-parse", "HEAD"], signal)).trim() !== baseCommit
-	) {
+	const matchesTrim =
+		(await git(root, ["rev-parse", "HEAD"], signal)).trim() !== baseCommit;
+	if (matchesTrim) {
 		throw new Error("ソースの収集中に基準コミットが変更されました。");
 	}
 	return { id, baseCommit, indexDigest, complete: true, files, artifacts };
@@ -101,20 +102,24 @@ async function sourceFile(root: string, path: string): Promise<Buffer | null> {
 	try {
 		stat = await lstat(target);
 	} catch (error) {
-		if (
+		const matchesError =
 			error instanceof Error &&
 			"code" in error &&
-			error.code === "ENOENT"
-		) {
+			error.code === "ENOENT";
+		if (matchesError) {
 			return null;
 		}
 		throw error;
 	}
-	if (
-		!stat.isFile() ||
-		stat.isSymbolicLink() ||
-		!containsPath(root, await realpath(target))
-	) {
+
+	if (!stat.isFile()) {
+		throw new Error(`ソースを安全に収集できません: ${path}`);
+	}
+	if (stat.isSymbolicLink()) {
+		throw new Error(`ソースを安全に収集できません: ${path}`);
+	}
+	const resolvedTarget = await realpath(target);
+	if (!containsPath(root, resolvedTarget)) {
 		throw new Error(`ソースを安全に収集できません: ${path}`);
 	}
 	if (stat.size > maxBytes) {

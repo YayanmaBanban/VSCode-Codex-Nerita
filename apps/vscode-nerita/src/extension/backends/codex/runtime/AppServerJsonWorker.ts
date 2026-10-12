@@ -23,7 +23,8 @@ export async function runAppServerJsonWorker() {
 	}
 
 	/** 一度に一チャンクだけ受け取り、完了通知を次の受信の許可として返す。 */
-	parentPort.on("message", (chunk: Uint8Array | null) => {
+	/** 受信順に JSONL を復元し、解析失敗では原文や例外を Host へ公開しない。 */
+	const receiveJsonChunk = (chunk: Uint8Array | null) => {
 		if (failed) {
 			return;
 		}
@@ -48,7 +49,8 @@ export async function runAppServerJsonWorker() {
 			failed = true;
 		}
 		parentPort.postMessage({ values, failed });
-	});
+	};
+	parentPort.on("message", receiveJsonChunk);
 
 	/** 一チャンク内の複数行も出現順を維持し、末尾の未完行だけを次回へ持ち越す。 */
 	function consume(chunk: Buffer, values: unknown[]) {

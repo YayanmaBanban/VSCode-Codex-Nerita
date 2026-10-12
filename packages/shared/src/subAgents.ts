@@ -116,22 +116,29 @@ export function isAgentStatus(value: unknown): value is AgentStatus {
 
 /** Host から渡されるカードの全フィールドを検証する。 */
 export function isSubAgent(value: unknown): value is SubAgentSummary {
-	if (!(
-		isRecord(value) &&
-		["threadId", "parentThreadId", "activityItemId", "agentPath"].every(
-			(key) => typeof value[key] === "string" && value[key].length > 0,
-		) &&
-		[
-			"nickname",
-			"role",
-			"statusMessage",
-			"model",
-			"reasoningEffort",
-			"lastAction",
-		].every(
-			(key) => value[key] === undefined || typeof value[key] === "string",
-		)
-	)) {
+	if (!isRecord(value)) {
+		return false;
+	}
+	const validIdentifiers = [
+		"threadId",
+		"parentThreadId",
+		"activityItemId",
+		"agentPath",
+	].every((key) => typeof value[key] === "string" && value[key].length > 0);
+	if (!validIdentifiers) {
+		return false;
+	}
+	const validOptionalText = [
+		"nickname",
+		"role",
+		"statusMessage",
+		"model",
+		"reasoningEffort",
+		"lastAction",
+	].every(
+		(key) => value[key] === undefined || typeof value[key] === "string",
+	);
+	if (!validOptionalText) {
 		return false;
 	}
 	return (

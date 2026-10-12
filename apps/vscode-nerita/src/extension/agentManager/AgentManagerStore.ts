@@ -43,12 +43,14 @@ export type ManagerMutation = Extract<ManagerRequest, { generation: string }>;
 
 /** 保存時点のモデル候補で、新しく指定したモデルと推論レベルを検証する。 */
 export class AgentManagerStore {
+	/** 設定の保存先をこのルートに固定し、Pi 定義とモデル候補は利用側の取得経路を使う。 */
 	constructor(
 		readonly root: string,
 		private pi: PiAgentReader,
 		private models: (backend: "pi" | "codex") => ManagerModel[],
 		private activeBackend?: () => "pi" | "codex",
 	) {}
+	/** 各設定の読取り失敗を表示用のエラーに保持し、世代には設定内容と取得エラーの両方を含める。 */
 	async read() {
 		const errors: string[] = [];
 		const read = async (file: string) => {
@@ -90,10 +92,9 @@ export class AgentManagerStore {
 					typeof value === "object" &&
 					value !== null &&
 					"$schema" in value;
-				if (
-					schemaPresent &&
-					value.$schema === "./handoff.schema.json"
-				) {
+				const matchesSchemaPresent =
+					schemaPresent && value.$schema === "./handoff.schema.json";
+				if (matchesSchemaPresent) {
 					delete value.$schema;
 				}
 				handoff = handoffSchema.parse(value);
@@ -154,7 +155,8 @@ export class AgentManagerStore {
 
 	/** 古い画面や外部編集との競合は、書き込む前にエラーとして返す。 */
 	save(request: ManagerMutation, assertWritable: () => void = () => {}) {
-		return serialized(this.root, async () => {
+		/** 保存処理の順番で世代と書込み権限を再確認し、現在のバックエンドの設定だけを更新する。 */
+		const saveCurrentManagerSettings = async () => {
 			managerRequestSchema.parse(request);
 			assertWritable();
 			const state = await this.read();
@@ -223,7 +225,8 @@ export class AgentManagerStore {
 				return;
 			}
 			await this.saveAgent(request, state);
-		});
+		};
+		return serialized(this.root, saveCurrentManagerSettings);
 	}
 
 	/** 新規作成は既存ファイルと同名の定義を上書きしない。 */
@@ -340,14 +343,13 @@ export class AgentManagerStore {
 		name: string,
 		id?: string,
 	) {
-		if (
-			agents.some(
-				(agent) =>
-					agent.backend === backend &&
-					agent.name === name &&
-					agent.id !== id,
-			)
-		) {
+		const matchesSome = agents.some(
+			(agent) =>
+				agent.backend === backend &&
+				agent.name === name &&
+				agent.id !== id,
+		);
+		if (matchesSome) {
 			throw new Error("同名の Agent が存在します。");
 		}
 	}
@@ -378,11 +380,11 @@ export class AgentManagerStore {
 		model: string | undefined,
 		previous?: string,
 	) {
-		if (
+		const matchesIsNonEmptyString =
 			isNonEmptyString(model) &&
 			model !== previous &&
-			!this.models(backend).some((item) => item.value === model)
-		) {
+			!this.models(backend).some((item) => item.value === model);
+		if (matchesIsNonEmptyString) {
 			throw new Error(
 				"モデル一覧を再読み込みし、利用可能なモデルから選択してください。",
 			);

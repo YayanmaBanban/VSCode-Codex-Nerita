@@ -38,6 +38,7 @@ export class PiJobs {
 	private running = 0;
 	private wake = new Set<() => void>();
 	private stopping = false;
+	/** 実行中の子の表示と、完了後の親履歴への記録を同じ管理先へ結び付ける。 */
 	constructor(
 		private views: PiAgentViews,
 		private manager?: Pick<SessionManager, "appendCustomEntry">,
@@ -46,10 +47,9 @@ export class PiJobs {
 	/** 選択ブランチだけを復元し、別の親へフォークした場合も関連を更新する。 */
 	restore(entries: SessionEntry[], parentId: string) {
 		for (const entry of entries) {
-			if (
-				entry.type !== "custom" ||
-				entry.customType !== "nerita.job.v1"
-			) {
+			const matchesType =
+				entry.type !== "custom" || entry.customType !== "nerita.job.v1";
+			if (matchesType) {
 				continue;
 			}
 			const record = jobSchema.parse(entry.data);
@@ -76,11 +76,11 @@ export class PiJobs {
 		run: (signal: AbortSignal) => Promise<T>,
 		useSlot = true,
 	): Promise<T> {
-		if (
+		const matchesStopping =
 			this.stopping ||
 			this.records.has(record.id) ||
-			this.records.size >= 128
-		) {
+			this.records.size >= 128;
+		if (matchesStopping) {
 			throw new Error("ジョブを受け付けられません。");
 		}
 		signal.throwIfAborted();

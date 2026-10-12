@@ -92,10 +92,10 @@ export class ToolOutputWriter {
 	/** 文字列を小分けにエンコードし、全文サイズの追加 Buffer を作らない。 */
 	private step(file: File, snapshot: Snapshot) {
 		let end = Math.min(snapshot.text.length, snapshot.chars + 16384);
-		if (
+		const matchesEnd =
 			end < snapshot.text.length &&
-			/[\uD800-\uDBFF]/u.test(snapshot.text[end - 1]!)
-		) {
+			/[\uD800-\uDBFF]/u.test(snapshot.text[end - 1]!);
+		if (matchesEnd) {
 			end--;
 		}
 		const bytes = Buffer.from(

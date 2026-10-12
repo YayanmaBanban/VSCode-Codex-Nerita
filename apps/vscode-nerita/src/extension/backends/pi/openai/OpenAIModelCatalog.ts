@@ -7,11 +7,13 @@ import type { PiCatalogModel } from "../PiModelCatalog";
 export function normalizeOpenAIModels(
 	payload: unknown,
 ): PiCatalogModel[] | null {
-	if (
-		!isRecord(payload) ||
-		!Array.isArray(payload.models) ||
-		payload.models.length > 1000
-	) {
+	if (!isRecord(payload)) {
+		return null;
+	}
+	if (!Array.isArray(payload.models)) {
+		return null;
+	}
+	if (payload.models.length > 1000) {
 		return null;
 	}
 	const result: PiCatalogModel[] = [];
@@ -36,16 +38,23 @@ export function normalizeOpenAIModels(
 
 /** 新 OAuth で送信を確認した priority を明示するモデルだけに Fast を公開する。 */
 function supportsPriority(value: unknown): boolean {
-	if (!(
-		Array.isArray(value) &&
-		value.length <= 32 &&
-		value.every((entry) => isRecord(entry) && isShortText(entry.id))
-	)) {
+	if (!Array.isArray(value)) {
 		return false;
 	}
-	return value.some(
-		(entry: unknown) => isRecord(entry) && entry.id === "priority",
-	);
+	if (!(value.length <= 32)) {
+		return false;
+	}
+	if (!value.every(isServiceTierIdentity)) {
+		return false;
+	}
+	return value.some((entry) => entry.id === "priority");
+}
+
+/** サービス階層は短い識別子が検証できる候補だけを能力判定へ渡す。 */
+function isServiceTierIdentity(
+	entry: unknown,
+): entry is Record<string, unknown> & { id: string } {
+	return isRecord(entry) && isShortText(entry.id);
 }
 
 /** Ultra の明示がある場合だけ、委譲用推論レベル・max・最後の通常候補の順で解決する。 */
@@ -75,11 +84,11 @@ function resolveUltraEffort(
 
 /** 不正・巨大な能力欄を使わず、基本のモデル一覧は利用できるようにする。 */
 function validReasoningEntries(value: unknown): value is { effort: string }[] {
-	return (
+	const matchesIsArray2 =
 		Array.isArray(value) &&
 		value.length <= 32 &&
-		value.every((entry) => isRecord(entry) && isShortText(entry.effort))
-	);
+		value.every((entry) => isRecord(entry) && isShortText(entry.effort));
+	return matchesIsArray2;
 }
 
 /** 識別子と名前を短い文字列に限定し、未知の公開状態を拒否する。 */
@@ -88,11 +97,13 @@ function isModelIdentity(item: unknown): item is Record<string, unknown> & {
 	display_name: string;
 	visibility: PiCatalogModel["visibility"];
 } {
-	if (!(
-		isRecord(item) &&
-		isShortText(item.slug) &&
-		isShortText(item.display_name)
-	)) {
+	if (!isRecord(item)) {
+		return false;
+	}
+	if (!isShortText(item.slug)) {
+		return false;
+	}
+	if (!isShortText(item.display_name)) {
 		return false;
 	}
 	return (

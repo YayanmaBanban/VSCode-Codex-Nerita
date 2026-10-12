@@ -13,10 +13,10 @@ export async function workflowDocument(uri: vscode.Uri) {
 		throw new Error("信頼済みワークスペースの Workflow を開いてください。");
 	}
 	const file = workflowFileSchema.parse(basename(uri.fsPath));
-	if (
+	const matchesRelative =
 		relative(folder.uri.fsPath, dirname(uri.fsPath)) !==
-		join(".pi", "workflows")
-	) {
+		join(".pi", "workflows");
+	if (matchesRelative) {
 		throw new Error(".pi/workflows 直下の TOML だけを編集できます。");
 	}
 	const root = await realpath(folder.uri.fsPath);

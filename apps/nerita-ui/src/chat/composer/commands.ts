@@ -68,11 +68,11 @@ function $paste(
 	const inBlock =
 		selection.anchor.getNode().getTopLevelElement() instanceof
 		PastedBlockNode;
-	if (
+	const matchesInBlock =
 		!inBlock &&
 		!editor.isComposing() &&
-		$pasteReferences(event.clipboardData, text)
-	) {
+		$pasteReferences(event.clipboardData, text);
+	if (matchesInBlock) {
 		return true;
 	}
 	if (pasteAsText(inBlock, editor, text)) {
@@ -98,6 +98,36 @@ export function registerComposerCommands(
 	submit: () => void,
 	onError: (message: string) => void,
 ): () => void {
+	/** IME の確定を送信操作にしない。修飾キーの状態に従って改行と送信を選ぶ。 */
+	const handleComposerEnter = (event: KeyboardEvent | null) => {
+		if (!event) {
+			return false;
+		}
+
+		if (event.isComposing) {
+			return true;
+		}
+		// IME の確定時に isComposing が先に解除されても、確定キーを処理しない。
+		// eslint-disable-next-line @typescript-eslint/no-deprecated
+		if (event.keyCode === 229) {
+			return true;
+		}
+		if (editor.isComposing()) {
+			return true;
+		}
+		const selection = $getSelection();
+		if (!$isRangeSelection(selection)) {
+			return false;
+		}
+		event.preventDefault();
+		const plainLineBreak = !event.ctrlKey || event.shiftKey || event.altKey;
+		if (plainLineBreak || event.metaKey) {
+			selection.insertLineBreak();
+		} else {
+			submit();
+		}
+		return true;
+	};
 	return mergeRegister(
 		registerHistoryShortcuts(editor),
 		registerReferenceClipboard(editor),
@@ -111,33 +141,7 @@ export function registerComposerCommands(
 		),
 		editor.registerCommand(
 			KEY_ENTER_COMMAND,
-			(event) => {
-				if (!event) {
-					return false;
-				}
-				if (
-					event.isComposing ||
-					// IME の確定時に isComposing が先に解除されても、確定キーを処理しない。
-					// eslint-disable-next-line @typescript-eslint/no-deprecated
-					event.keyCode === 229 ||
-					editor.isComposing()
-				) {
-					return true;
-				}
-				const selection = $getSelection();
-				if (!$isRangeSelection(selection)) {
-					return false;
-				}
-				event.preventDefault();
-				const plainLineBreak =
-					!event.ctrlKey || event.shiftKey || event.altKey;
-				if (plainLineBreak || event.metaKey) {
-					selection.insertLineBreak();
-				} else {
-					submit();
-				}
-				return true;
-			},
+			handleComposerEnter,
 			COMMAND_PRIORITY_HIGH,
 		),
 		editor.registerCommand(

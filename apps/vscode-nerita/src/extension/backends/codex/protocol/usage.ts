@@ -13,17 +13,21 @@ export function parseQuota(value: unknown): QuotaWindow[] | null {
 		if (window === null || window === undefined) {
 			continue;
 		}
-		if (
-			!isRecord(window) ||
-			typeof window.usedPercent !== "number" ||
-			!Number.isFinite(window.usedPercent)
-		) {
+
+		if (!isRecord(window)) {
 			throw new Error("Invalid rate limit window");
 		}
-		if (
-			!isWindowDuration(window.windowDurationMins) ||
-			!isResetTime(window.resetsAt)
-		) {
+		if (typeof window.usedPercent !== "number") {
+			throw new Error("Invalid rate limit window");
+		}
+		if (!Number.isFinite(window.usedPercent)) {
+			throw new Error("Invalid rate limit window");
+		}
+
+		if (!isWindowDuration(window.windowDurationMins)) {
+			throw new Error("Invalid rate limit window");
+		}
+		if (!isResetTime(window.resetsAt)) {
 			throw new Error("Invalid rate limit window");
 		}
 		appendQuotaWindow(
@@ -72,9 +76,9 @@ function isWindowDuration(value: unknown): value is number | null {
 
 /** リセット時刻は未指定または有限の数値を受け付ける。 */
 function isResetTime(value: unknown): value is number | null {
-	return (
-		value === null || (typeof value === "number" && Number.isFinite(value))
-	);
+	const matchesValue =
+		value === null || (typeof value === "number" && Number.isFinite(value));
+	return matchesValue;
 }
 
 /** 読み取り応答の互換バケットを利用する。 */
@@ -86,27 +90,33 @@ export function parseQuotaResponse(value: unknown): QuotaWindow[] | null {
 }
 /** 累積課金トークンではなく、直近のコンテキスト使用量を表示する。 */
 export function parseUsage(value: unknown): ContextUsage | null {
-	if (
-		!isRecord(value) ||
-		!isRecord(value.last) ||
-		typeof value.last.totalTokens !== "number"
-	) {
+	if (!isRecord(value)) {
 		throw new Error("Invalid token usage");
 	}
-	if (
-		!Number.isFinite(value.last.totalTokens) ||
-		value.last.totalTokens < 0
-	) {
+	if (!isRecord(value.last)) {
+		throw new Error("Invalid token usage");
+	}
+	if (typeof value.last.totalTokens !== "number") {
+		throw new Error("Invalid token usage");
+	}
+
+	if (!Number.isFinite(value.last.totalTokens)) {
+		throw new Error("Invalid token usage");
+	}
+	if (value.last.totalTokens < 0) {
 		throw new Error("Invalid token usage");
 	}
 	if (value.modelContextWindow === null) {
 		return null;
 	}
-	if (
-		typeof value.modelContextWindow !== "number" ||
-		!Number.isFinite(value.modelContextWindow) ||
-		value.modelContextWindow <= 0
-	) {
+
+	if (typeof value.modelContextWindow !== "number") {
+		throw new Error("Invalid context window");
+	}
+	if (!Number.isFinite(value.modelContextWindow)) {
+		throw new Error("Invalid context window");
+	}
+	if (value.modelContextWindow <= 0) {
 		throw new Error("Invalid context window");
 	}
 	return { used: value.last.totalTokens, size: value.modelContextWindow };

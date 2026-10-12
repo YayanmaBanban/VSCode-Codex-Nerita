@@ -15,20 +15,20 @@ export function validateReferences(
 	}
 	const workIds = state.workItems.map((item) => item.id);
 	const attempts = state.workItems.flatMap((item) => item.attempts);
-	if (
+	const matchesSize =
 		new Set(workIds).size !== workIds.length ||
-		new Set(attempts.map((attempt) => attempt.id)).size !== attempts.length
-	) {
+		new Set(attempts.map((attempt) => attempt.id)).size !== attempts.length;
+	if (matchesSize) {
 		context.addIssue({
 			code: "custom",
 			message: "作業または実行世代の識別子が重複しています。",
 		});
 	}
-	if (
+	const matchesLength =
 		state.workItems.filter((item) =>
 			["running", "stopping"].includes(item.status),
-		).length > 1
-	) {
+		).length > 1;
+	if (matchesLength) {
 		context.addIssue({
 			code: "custom",
 			message: "複数の作業が実行中です。",
@@ -43,11 +43,11 @@ function validateAttempts(
 	context: z.RefinementCtx,
 ): void {
 	for (const attempt of item.attempts) {
-		if (
+		const invalidEvidenceReference =
 			attempt.evidence &&
 			(attempt.evidence.attemptId !== attempt.id ||
-				attempt.evidence.workItemId !== item.id)
-		) {
+				attempt.evidence.workItemId !== item.id);
+		if (invalidEvidenceReference === true) {
 			context.addIssue({
 				code: "custom",
 				message: "実行記録の参照が一致しません。",
@@ -59,10 +59,11 @@ function validStage(
 	stage: IntentState["workflow"]["stages"][number],
 	index: number,
 ): boolean {
-	if (!(
+	const matchesId = !(
 		stage.id === stageCatalog[index]?.id &&
 		(stage.selection === "skip") === (stage.status === "skipped")
-	)) {
+	);
+	if (matchesId) {
 		return false;
 	}
 	return stage.selection !== "undetermined" || stage.status === "pending";
@@ -86,9 +87,12 @@ export function validateStages(
 				message: "未完了ステージより先に進行しています。",
 			});
 		}
-		if (
-			["active", "awaiting-approval", "revising"].includes(stage.status)
-		) {
+		const matchesIncludes = [
+			"active",
+			"awaiting-approval",
+			"revising",
+		].includes(stage.status);
+		if (matchesIncludes) {
 			active++;
 		}
 		if (!["completed", "skipped"].includes(stage.status)) {

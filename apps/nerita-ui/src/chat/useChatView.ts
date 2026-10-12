@@ -83,33 +83,36 @@ function createViewStateEffect(
 	setEditor: Dispatch<SetStateAction<boolean>>,
 	setRestore: Dispatch<SetStateAction<ConversationRestore | null>>,
 ): EffectCallback {
-	return () =>
-		bridge.subscribe((message) => {
-			if (message.type === "workspace/trustState") {
-				setUntrusted(message.untrusted);
-				return;
-			}
-			if (message.type === "ui/backendState") {
-				setBackend(message.backend);
-				return;
-			}
-			if (message.type === "ui/sidebarState") {
-				setSidebarLocation(message.location);
-				return;
-			}
-			if (message.type !== "ui/viewState") {
-				return;
-			}
-			setEditor(message.editor);
-			if (message.restoreScroll) {
-				setRestore({
-					scrollTop: message.scrollTop,
-					...(message.scrollAnchor
-						? { scrollAnchor: message.scrollAnchor }
-						: {}),
-				});
-			}
-		});
+	/** 信頼・表示先・編集・復元位置を通知別に更新し、会話の内容と表示状態を分ける。 */
+	const receiveChatViewState: Parameters<
+		NonNullable<typeof bridge>["subscribe"]
+	>[0] = (message) => {
+		if (message.type === "workspace/trustState") {
+			setUntrusted(message.untrusted);
+			return;
+		}
+		if (message.type === "ui/backendState") {
+			setBackend(message.backend);
+			return;
+		}
+		if (message.type === "ui/sidebarState") {
+			setSidebarLocation(message.location);
+			return;
+		}
+		if (message.type !== "ui/viewState") {
+			return;
+		}
+		setEditor(message.editor);
+		if (message.restoreScroll) {
+			setRestore({
+				scrollTop: message.scrollTop,
+				...(message.scrollAnchor
+					? { scrollAnchor: message.scrollAnchor }
+					: {}),
+			});
+		}
+	};
+	return () => bridge.subscribe(receiveChatViewState);
 }
 
 /** 表示先の移動前にスクロール位置を保存する。 */

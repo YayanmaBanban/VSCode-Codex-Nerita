@@ -39,26 +39,27 @@ export async function preparePiWebTrust(
 		const initial = await readWebConfig(configPath);
 		const cache = await canonicalPath(initial.cache, process.cwd());
 		await store.registerExternalCache(cache);
+		/** 設定先と内容・キャッシュの実体を照合し、接続後の設定変更を同じ承認で実行しない。 */
+		const assertCurrentWebConfig = async () => {
+			if (webConfigPath() !== configPath) {
+				throw new Error(
+					"Web取得の設定先が変更されました。再接続してください。",
+				);
+			}
+			const current = await readWebConfig(configPath);
+			const matchesDigest =
+				current.digest !== initial.digest ||
+				(await canonicalPath(current.cache, process.cwd())) !== cache;
+			if (matchesDigest) {
+				throw new Error(
+					"Web取得の設定または保存先が変更されました。再接続してください。",
+				);
+			}
+		};
 		result.push({
 			entry,
 			cache,
-			check: async () => {
-				if (webConfigPath() !== configPath) {
-					throw new Error(
-						"Web取得の設定先が変更されました。再接続してください。",
-					);
-				}
-				const current = await readWebConfig(configPath);
-				if (
-					current.digest !== initial.digest ||
-					(await canonicalPath(current.cache, process.cwd())) !==
-						cache
-				) {
-					throw new Error(
-						"Web取得の設定または保存先が変更されました。再接続してください。",
-					);
-				}
-			},
+			check: assertCurrentWebConfig,
 		});
 	}
 	return result;

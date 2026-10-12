@@ -101,6 +101,21 @@ function privateToolMessage(
 		[],
 		protect,
 	);
+	const protectNestedCall = (
+		call: NonNullable<typeof message.nestedCalls>["calls"][number],
+	) => ({
+		...call,
+		...(call.arguments === undefined
+			? {}
+			: {
+					arguments: z
+						.record(z.string(), z.json())
+						.parse(
+							privateFeatureValue(call.arguments, [], protect),
+						),
+				}),
+		...(call.error === undefined ? {} : { error: protect(call.error) }),
+	});
 	return {
 		...message,
 		content: result.content,
@@ -112,25 +127,7 @@ function privateToolMessage(
 			: {
 					nestedCalls: {
 						...message.nestedCalls,
-						calls: message.nestedCalls.calls.map((call) => ({
-							...call,
-							...(call.arguments === undefined
-								? {}
-								: {
-										arguments: z
-											.record(z.string(), z.json())
-											.parse(
-												privateFeatureValue(
-													call.arguments,
-													[],
-													protect,
-												),
-											),
-									}),
-							...(call.error === undefined
-								? {}
-								: { error: protect(call.error) }),
-						})),
+						calls: message.nestedCalls.calls.map(protectNestedCall),
 					},
 				}),
 	};

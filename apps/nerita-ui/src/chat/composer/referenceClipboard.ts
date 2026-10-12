@@ -23,11 +23,14 @@ export const referenceClipboardType =
 /** 全体が選択範囲内にある参照だけを対象とし、コピー本文での位置を収集する。 */
 function $copyReferences(event: ClipboardEvent): void {
 	const selection = $getSelection();
-	if (
-		!$isRangeSelection(selection) ||
-		selection.isCollapsed() ||
-		!event.clipboardData
-	) {
+
+	if (!$isRangeSelection(selection)) {
+		return;
+	}
+	if (selection.isCollapsed()) {
+		return;
+	}
+	if (!event.clipboardData) {
 		return;
 	}
 	const references: ComposerReference[] = [];
@@ -52,11 +55,11 @@ function $copyReferences(event: ClipboardEvent): void {
 		});
 	}
 	const text = selection.getTextContent();
-	if (
+	const matchesLength =
 		references.length > 0 &&
 		text.length <= 100_000 &&
-		validReferences(text, references)
-	) {
+		validReferences(text, references);
+	if (matchesLength) {
 		event.clipboardData.setData(
 			referenceClipboardType,
 			JSON.stringify({ version: 1, text, references }),
@@ -79,17 +82,20 @@ export function readClipboardReferences(
 			return null;
 		}
 		const payload = value;
-		if (
-			payload.version !== 1 ||
-			payload.text !== text ||
-			!Array.isArray(payload.references)
-		) {
+
+		if (payload.version !== 1) {
 			return null;
 		}
-		if (
-			payload.references.length === 0 ||
-			!validReferences(text, payload.references)
-		) {
+		if (payload.text !== text) {
+			return null;
+		}
+		if (!Array.isArray(payload.references)) {
+			return null;
+		}
+		if (payload.references.length === 0) {
+			return null;
+		}
+		if (!validReferences(text, payload.references)) {
 			return null;
 		}
 		return payload.references;

@@ -41,6 +41,7 @@ export class PiOutputArchive {
 	private pending = new Set<Promise<void>>();
 	private failure: Error | undefined;
 	private saved = new Map<string, OutputRecord>();
+	/** 本文の保存先と、その参照を記録する SessionManager を対にして保持する。 */
 	constructor(
 		private manager: SessionManager,
 		private directory: string,
@@ -81,11 +82,14 @@ export class PiOutputArchive {
 			return;
 		}
 		const source = takeToolOutputSource(tool) ?? textSource(tool);
-		if (
-			!source ||
-			(!isNonEmptyString(event.parentToolCallId) &&
-				!isNonEmptyString(source.path))
-		) {
+
+		if (!source) {
+			return;
+		}
+		const missingOutputIdentity =
+			!isNonEmptyString(event.parentToolCallId) &&
+			!isNonEmptyString(source.path);
+		if (missingOutputIdentity) {
 			return;
 		}
 		const record = this.record(tool, source);
@@ -274,23 +278,30 @@ function boundedPreview(text: string) {
 
 /** 外部編集された履歴から任意パスや巨大プレビューを取り込まない。 */
 function isOutputRecord(value: unknown): value is OutputRecord {
-	if (!(
-		isRecord(value) &&
-		typeof value.toolId === "string" &&
-		typeof value.turnId === "string"
-	)) {
+	if (!isRecord(value)) {
 		return false;
 	}
-	if (!(
-		isSafeId(value.ownerSessionId) &&
-		isSafeId(value.outputId) &&
-		typeof value.preview === "string"
-	)) {
+	if (!(typeof value.toolId === "string")) {
 		return false;
 	}
-	if (!(
-		value.preview.length <= 2100 && typeof value.complete === "boolean"
-	)) {
+	if (!(typeof value.turnId === "string")) {
+		return false;
+	}
+
+	if (!isSafeId(value.ownerSessionId)) {
+		return false;
+	}
+	if (!isSafeId(value.outputId)) {
+		return false;
+	}
+	if (!(typeof value.preview === "string")) {
+		return false;
+	}
+
+	if (!(value.preview.length <= 2100)) {
+		return false;
+	}
+	if (!(typeof value.complete === "boolean")) {
 		return false;
 	}
 	return value.exitCode === undefined || Number.isSafeInteger(value.exitCode);

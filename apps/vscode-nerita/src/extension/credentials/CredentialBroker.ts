@@ -69,12 +69,14 @@ export type ApprovalScope = "process" | Exclude<CommandApprovalScope, "once">;
 /** scope は承認の再利用範囲。秘密値そのものは全 scope で1実行だけ保持する。 */
 export class CredentialLease {
 	private disposed = false;
+	/** 承認範囲と取消しを取得済みの秘密値へ結び付け、一つの実行だけで使用する。 */
 	constructor(
 		readonly requirement: CredentialRequirement,
 		readonly material: CredentialMaterial,
 		readonly scope: ApprovalScope,
 		readonly signal: AbortSignal,
 	) {}
+	/** 使用のたびに取消しと利用期限を確認し、承認が失効した秘密値を実行へ渡さない。 */
 	use<T>(action: (material: CredentialMaterial) => T): T {
 		this.signal.throwIfAborted();
 		if (this.disposed) {
@@ -82,6 +84,7 @@ export class CredentialLease {
 		}
 		return action(this.material);
 	}
+	/** 秘密値とユーザー名の参照を解放し、以後の使用を拒否する。 */
 	dispose() {
 		this.disposed = true;
 		this.material.secret.dispose();
@@ -91,12 +94,14 @@ export class CredentialLease {
 
 /** コマンド承認とは異なるキーを使い、同じ UI・範囲・取消し・保存処理を再利用する。 */
 export class CredentialBroker {
+	/** 参照設定・取得元・秘密除去・承認を結び付け、許可済みの実行へだけ秘密値を渡す。 */
 	constructor(
 		readonly bindings: BindingStore,
 		readonly providers: CredentialProviderRegistry,
 		readonly redactor: SecretRedactor,
 		readonly grants?: CommandPermissions,
 	) {}
+	/** 参照と候補を一意に決め、承認後にも設定の同一性を確認してから秘密値を取得する。 */
 	async acquire(
 		requirement: CredentialRequirement,
 		route: CommandPermissionKey["route"],

@@ -136,11 +136,18 @@ async function handleSandboxRequest(
 		return;
 	}
 	const folder = vscode.workspace.workspaceFolders?.[0];
-	if (
-		!folder ||
-		!vscode.workspace.isTrusted ||
-		folder.uri.scheme !== "file"
-	) {
+
+	if (!folder) {
+		throw new Error(
+			"起動検査には信頼済みのローカルワークスペースが必要です。",
+		);
+	}
+	if (!vscode.workspace.isTrusted) {
+		throw new Error(
+			"起動検査には信頼済みのローカルワークスペースが必要です。",
+		);
+	}
+	if (folder.uri.scheme !== "file") {
 		throw new Error(
 			"起動検査には信頼済みのローカルワークスペースが必要です。",
 		);
@@ -181,7 +188,8 @@ function openSandboxPanel(
 	const publish = () =>
 		post({ type: "state", state: manager.snapshot(), busy });
 	const unsubscribe = manager.subscribe(publish);
-	const listener = panel.webview.onDidReceiveMessage((value: unknown) => {
+	/** 要求を検証して同時操作を拒否し、結果にかかわらず待機状態を解除して最新状態を公開する。 */
+	const receiveSandboxRequest = (value: unknown) => {
 		const parsed = sandboxRequestSchema.safeParse(value);
 		if (!parsed.success) {
 			return;
@@ -209,7 +217,8 @@ function openSandboxPanel(
 				busy = false;
 				publish();
 			});
-	});
+	};
+	const listener = panel.webview.onDidReceiveMessage(receiveSandboxRequest);
 	panel.onDidDispose(() => {
 		abort.abort();
 		unsubscribe();

@@ -17,11 +17,17 @@ export class AuthFlow {
 		if (message.method !== "account/login/completed") {
 			return false;
 		}
-		if (
-			isRecord(message.params) &&
-			typeof message.params.loginId === "string" &&
-			typeof message.params.success === "boolean"
-		) {
+
+		if (!isRecord(message.params)) {
+			return true;
+		}
+		if (!(typeof message.params.loginId === "string")) {
+			return true;
+		}
+		if (!(typeof message.params.success === "boolean")) {
+			return true;
+		}
+		{
 			this.complete?.(message.params.loginId, message.params.success);
 		}
 		return true;
@@ -85,10 +91,9 @@ export class AuthFlow {
 			loginId = result.loginId;
 			signal.throwIfAborted();
 			const url = new URL(result.authUrl);
-			if (
-				url.protocol !== "https:" ||
-				url.hostname !== "auth.openai.com"
-			) {
+			const matchesProtocol =
+				url.protocol !== "https:" || url.hostname !== "auth.openai.com";
+			if (matchesProtocol) {
 				throw new Error("Invalid authentication URL");
 			}
 			await service.open(url.href);

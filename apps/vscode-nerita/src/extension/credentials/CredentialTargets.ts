@@ -40,13 +40,12 @@ export async function credentialRequirements(
 	}
 	return bindings
 		.filter((binding) => {
-			if (
-				![...targets].some(
-					(target) =>
-						target === binding.match.target ||
-						target.startsWith(`${binding.match.target}/`),
-				)
-			) {
+			const matchesSome = ![...targets].some(
+				(target) =>
+					target === binding.match.target ||
+					target.startsWith(`${binding.match.target}/`),
+			);
+			if (matchesSome) {
 				return false;
 			}
 			if (binding.match.kind === "npm-registry") {
@@ -79,11 +78,11 @@ function commandTargets(command: string) {
 	for (const value of command.match(/https:\/\/[^\s'"<>;]+/g) ?? []) {
 		try {
 			const url = new URL(value);
-			if (
+			const matchesUsername =
 				url.username === "" &&
 				url.password === "" &&
-				!/[$`{}]/.test(value)
-			) {
+				!/[$`{}]/.test(value);
+			if (matchesUsername) {
 				targets.add(url.host);
 				targets.add(`${url.host}${url.pathname}`.replace(/\/$/, ""));
 			}
@@ -124,17 +123,20 @@ async function gitTargets(cwd: string, command: string, workspace: string) {
 	}
 	const config = join(cwd, ".git/config");
 	try {
-		if (!containsPath(workspace, await realpath(config))) {
+		const matchesContainsPath = !containsPath(
+			workspace,
+			await realpath(config),
+		);
+		if (matchesContainsPath) {
 			throw new Error(
 				"Git 設定の参照が Workspace 外です。HTTPS URL を指定してください。",
 			);
 		}
 		return remoteUrls(await gitConfigText(config), remotes);
 	} catch (error) {
-		if (
-			fsErrorCode(error) === "ENOENT" ||
-			fsErrorCode(error) === "ENOTDIR"
-		) {
+		const matchesFsErrorCode =
+			fsErrorCode(error) === "ENOENT" || fsErrorCode(error) === "ENOTDIR";
+		if (matchesFsErrorCode) {
 			return [];
 		}
 		throw error;
@@ -163,7 +165,8 @@ function remoteUrls(text: string, names: Set<string>) {
 async function gitConfigText(path: string) {
 	const handle = await open(path, "r");
 	try {
-		if ((await handle.stat()).size > 64 * 1024) {
+		const matchesSize = (await handle.stat()).size > 64 * 1024;
+		if (matchesSize) {
 			throw new Error("Git 設定が大きすぎます。");
 		}
 		return await handle.readFile("utf8");

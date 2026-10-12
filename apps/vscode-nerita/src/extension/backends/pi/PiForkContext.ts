@@ -57,10 +57,10 @@ function validateModel(
 
 /** 待機中に親が更新されても子の入力は変わらない。 */
 function boundedSnapshot(snapshot: PiForkMessage[]) {
-	if (
+	const matchesLength =
 		snapshot.length > 1024 ||
-		JSON.stringify(snapshot).length > 4 * 1024 * 1024
-	) {
+		JSON.stringify(snapshot).length > 4 * 1024 * 1024;
+	if (matchesLength) {
 		throw new Error(
 			"複製する親の会話が上限を超えています。fresh を使用してください。",
 		);

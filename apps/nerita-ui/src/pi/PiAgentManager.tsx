@@ -18,6 +18,7 @@ export function PiAgentManager(props: AgentManagerProps) {
 	const defaults = props.selected === "defaults" || (!creating && !agent);
 	const selectedId = defaults ? "defaults" : (agent?.id ?? "");
 	const editorId = creating ? "new" : selectedId;
+	const editorAgent = creating ? undefined : agent;
 	return (
 		<AgentBrowser
 			agents={agents}
@@ -40,7 +41,7 @@ export function PiAgentManager(props: AgentManagerProps) {
 				<PiAgentEditor
 					key={`${editorId}:${props.state.generation}`}
 					{...props}
-					agent={creating ? undefined : agent}
+					agent={editorAgent}
 				/>
 			)}
 			<details className="mt-6">

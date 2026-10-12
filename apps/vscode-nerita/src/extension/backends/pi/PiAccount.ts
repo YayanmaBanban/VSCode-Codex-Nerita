@@ -28,6 +28,7 @@ export class PiAccount {
 				),
 			);
 	}
+	/** 認証変更後はカタログを更新してモデルを照合し、操作表示にも同じセッションを結び付ける。 */
 	constructor(
 		private models: ModelRuntime,
 		private session: AgentSession,
@@ -62,10 +63,11 @@ export class PiAccount {
 	/** カタログの更新後は利用可能なモデルへ復帰し、選択不能な履歴モデルを残さない。 */
 	async refreshCatalog(signal: AbortSignal): Promise<void> {
 		const provider = this.session.model?.provider;
-		if (
+
+		const existingProvider =
 			isNonEmptyString(provider) &&
-			this.catalog.snapshot(provider) !== undefined
-		) {
+			this.catalog.snapshot(provider) !== undefined;
+		if (existingProvider) {
 			await this.catalog.refresh(provider, signal);
 		}
 		signal.throwIfAborted();
@@ -163,7 +165,7 @@ export class PiAccount {
 			throw new Error("利用可能なPi providerを選択してください。");
 		}
 		signal.throwIfAborted();
-		if (
+		const matchesProvider =
 			this.session.model?.provider === value &&
 			this.catalog
 				.available(available)
@@ -171,8 +173,8 @@ export class PiAccount {
 					(item) =>
 						item.provider === value &&
 						item.id === this.session.model?.id,
-				)
-		) {
+				);
+		if (matchesProvider) {
 			return;
 		}
 		await this.session.setModel(model);
@@ -220,14 +222,14 @@ export class PiAccount {
 		signal.throwIfAborted();
 		const candidates = this.catalog.available(available);
 		const current = this.session.model;
-		if (
+		const currentModelAvailable =
 			current &&
 			candidates.some(
 				(model) =>
 					model.provider === current.provider &&
 					model.id === current.id,
-			)
-		) {
+			);
+		if (currentModelAvailable === true) {
 			return;
 		}
 		const model =

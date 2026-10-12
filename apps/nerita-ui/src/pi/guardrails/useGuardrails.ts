@@ -195,20 +195,23 @@ function createGuardrailsSubscription(
 				});
 			}
 		};
-		const unsubscribe = bridge.subscribe((message) => {
+		/** 編集の受付と失敗を区別して待機を解除し、別の要求の応答を画面へ混ぜない。 */
+		const receiveGuardrailsReply: Parameters<
+			NonNullable<typeof bridge>["subscribe"]
+		>[0] = (message) => {
 			if (message.type === "state") {
 				receiveState(message);
 			} else if (pendingRef.current?.id === message.id) {
-				if (
-					!pendingRef.current.edit ||
-					isNonEmptyString(message.error)
-				) {
+				const matchesEdit =
+					!pendingRef.current.edit || isNonEmptyString(message.error);
+				if (matchesEdit) {
 					setReply(message);
 				}
 				pendingRef.current = null;
 				setBusy(false);
 			}
-		});
+		};
+		const unsubscribe = bridge.subscribe(receiveGuardrailsReply);
 		bridge.postMessage({ type: "ready" });
 		return unsubscribe;
 	};

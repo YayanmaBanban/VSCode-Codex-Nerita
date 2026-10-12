@@ -65,11 +65,11 @@ export const credentialBindingSchema = z
 		const mismatchedInjection =
 			value.injection.type !== expected ||
 			(value.provider.type === "git" && value.match.kind !== "git-https");
-		if (
+		const matchesMismatchedInjection =
 			mismatchedInjection ||
 			(value.provider.type === "npmrc" &&
-				value.match.kind !== "npm-registry")
-		) {
+				value.match.kind !== "npm-registry");
+		if (matchesMismatchedInjection) {
 			ctx.addIssue({
 				code: "custom",
 				message: "対象と Provider・注入方式が一致しません。",

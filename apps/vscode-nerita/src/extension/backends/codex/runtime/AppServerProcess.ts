@@ -41,59 +41,71 @@ export function startAppServerProcess(
 export async function stopAppServerProcess(
 	child: ChildProcessWithoutNullStreams,
 ): Promise<void> {
-	if (
-		isNonZeroNumber(child.pid) &&
-		child.exitCode === null &&
-		child.signalCode === null
-	) {
-		await new Promise<void>((resolve, reject) => {
-			let forced = false;
-			/** 終了通知と監視タイマーを一度だけ解放する。 */
-			const done = () => {
-				clearTimeout(timer);
-				child.off("exit", done);
-				resolve();
-			};
-			/** kill の受付は終了確認ではない。再試行後にも通知がなければ予約を保持させる。 */
-			const timeout = () => {
-				if (!forced) {
-					forced = true;
-					timer = setTimeout(timeout, 5000);
-					child.kill();
-					return;
-				}
-				child.off("exit", done);
-				reject(
-					new BackendShutdownError(
-						new Error("Codex App Server の終了通知がありません。"),
-					),
-				);
-			};
-			let timer = setTimeout(timeout, 5000);
-			child.once("exit", done);
-			if (process.platform === "win32") {
-				const killer = spawn(
-					"taskkill.exe",
-					["/PID", String(child.pid), "/T", "/F"],
-					{
-						windowsHide: true,
-						stdio: "ignore",
-					},
-				);
-				killer.once("error", () => {
-					child.kill();
-				});
-				killer.once("exit", (code) => {
-					if (code !== 0) {
-						child.kill();
-					}
-				});
-			} else {
-				child.kill();
-			}
-		});
-	}
+	await stopRunningAppServer(child);
 	child.stdin.destroy();
 	child.stdout.destroy();
 	child.stderr.destroy();
+}
+
+/** 起動していないプロセスと終了済みプロセスは待機せず、動作中のときだけ終了通知を待つ。 */
+async function stopRunningAppServer(
+	child: ChildProcessWithoutNullStreams,
+): Promise<void> {
+	if (!isNonZeroNumber(child.pid)) {
+		return;
+	}
+	if (child.exitCode !== null || child.signalCode !== null) {
+		return;
+	}
+	/** 待機は通知が来るまで完了せず、二度の期限切れでも成功と扱わない。 */
+	const waitForExit = (
+		resolve: () => void,
+		reject: (reason: unknown) => void,
+	) => {
+		let forced = false;
+		/** 終了通知と監視タイマーを一度だけ解放する。 */
+		const done = () => {
+			clearTimeout(timer);
+			child.off("exit", done);
+			resolve();
+		};
+		/** kill の受付は終了確認ではない。再試行後にも通知がなければ予約を保持させる。 */
+		const timeout = () => {
+			if (!forced) {
+				forced = true;
+				timer = setTimeout(timeout, 5000);
+				child.kill();
+				return;
+			}
+			child.off("exit", done);
+			reject(
+				new BackendShutdownError(
+					new Error("Codex App Server の終了通知がありません。"),
+				),
+			);
+		};
+		let timer = setTimeout(timeout, 5000);
+		child.once("exit", done);
+		if (process.platform === "win32") {
+			const killer = spawn(
+				"taskkill.exe",
+				["/PID", String(child.pid), "/T", "/F"],
+				{
+					windowsHide: true,
+					stdio: "ignore",
+				},
+			);
+			killer.once("error", () => {
+				child.kill();
+			});
+			killer.once("exit", (code) => {
+				if (code !== 0) {
+					child.kill();
+				}
+			});
+		} else {
+			child.kill();
+		}
+	};
+	await new Promise<void>(waitForExit);
 }

@@ -44,10 +44,11 @@ export function piToolExposure(
 	if (["subagent", "subagent_job", "subagent_workflow"].includes(tool.name)) {
 		return tool;
 	}
-	if (!(
-		features.toolSearch === true &&
-		(!(tool.exposure !== undefined) || tool.exposure === "direct")
-	)) {
+
+	if (!(features.toolSearch === true)) {
+		return tool;
+	}
+	if (!(!(tool.exposure !== undefined) || tool.exposure === "direct")) {
 		return tool;
 	}
 	return {
@@ -214,20 +215,24 @@ function guardFeatureContext(
 			}
 			const json: unknown = JSON.stringify(args);
 			const serialized = typeof json === "string" ? json : "";
-			if (
-				(features.protect?.(serialized) !== undefined &&
-					features.protect(serialized) !== serialized) ||
-				secrets.some(
-					(secret) => !(secret === "") && serialized.includes(secret),
-				)
-			) {
+
+			const protectedArgument =
+				features.protect?.(serialized) !== undefined &&
+				features.protect(serialized) !== serialized;
+			if (protectedArgument) {
 				throw new Error("認証値を含む引数はコード実行から渡せません。");
 			}
-			if (
+			const containsCredential = secrets.some(
+				(secret) => !(secret === "") && serialized.includes(secret),
+			);
+			if (containsCredential) {
+				throw new Error("認証値を含む引数はコード実行から渡せません。");
+			}
+			const matchesTest =
 				/"(?:authorization|password|secret|token|credential|api[_-]?key|private[_-]?key)"\s*:/i.test(
 					serialized,
-				)
-			) {
+				);
+			if (matchesTest) {
 				throw new Error("認証値を含む引数はコード実行から渡せません。");
 			}
 			const outcome = await context.executeTool(name, args, {

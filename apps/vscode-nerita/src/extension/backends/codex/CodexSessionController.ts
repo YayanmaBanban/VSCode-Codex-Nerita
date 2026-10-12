@@ -119,16 +119,17 @@ export class CodexSessionController extends SessionState {
 	connect(): Promise<void> {
 		return this.lifecycle.connect();
 	}
+	/** 終了要求の受付ではなく、接続が追跡するバックエンド終了の確認まで待つ。 */
 	waitForShutdown(): Promise<void> {
 		return this.lifecycle.waitForShutdown();
 	}
 	/** 内部入力はスラッシュコマンド・追加指示・チャット用通信を通さず送信する。 */
 	async execute(text: string, signal: AbortSignal) {
-		if (
+		const matchesBusy =
 			this.busy() ||
 			this.state.connection !== "ready" ||
-			this.state.configPending
-		) {
+			this.state.configPending;
+		if (matchesBusy) {
 			throw new Error("Codex の内部実行を開始できません。");
 		}
 		if (this.state.sessionPending) {
@@ -141,6 +142,7 @@ export class CodexSessionController extends SessionState {
 			signal,
 		);
 	}
+	/** 内部実行の取消しも通常ターンと同じ停止・承認取消し経路へ通す。 */
 	cancelExecution(): void {
 		this.cancel();
 	}
@@ -327,18 +329,18 @@ export class CodexSessionController extends SessionState {
 			await this.openRequestedChanges(message);
 			return;
 		}
-		if (
+		const matchesType =
 			message.type === "session/searchReferences" ||
-			message.type === "session/openReference"
-		) {
+			message.type === "session/openReference";
+		if (matchesType) {
 			await this.sessionReferenceAction(message);
 			return;
 		}
-		if (
+		const matchesType2 =
 			message.type === "personality/read" ||
 			message.type === "personality/save" ||
-			message.type === "personality/select"
-		) {
+			message.type === "personality/select";
+		if (matchesType2) {
 			await this.personalityAction(message);
 			return;
 		}
@@ -347,15 +349,15 @@ export class CodexSessionController extends SessionState {
 
 	/** 更新待ちを排除して認証・接続操作を処理する。 */
 	private async dispatchMutableAction(message: UiMessage): Promise<void> {
-		if (
+		const matchesPending =
 			this.submission.pending &&
 			![
 				"prompt/send",
 				"prompt/cancel",
 				"execution/stop",
 				"permission/respond",
-			].includes(message.type)
-		) {
+			].includes(message.type);
+		if (matchesPending) {
 			throw new Error("Submission pending");
 		}
 		if (this.state.sessionPending || this.state.configPending) {
@@ -422,11 +424,13 @@ export class CodexSessionController extends SessionState {
 		message: Extract<UiMessage, { type: "plan/decide" }>,
 	) {
 		const decision = this.state.planDecision;
-		if (
-			!decision ||
-			message.sessionId !== this.state.sessionId ||
-			message.runId !== decision.runId
-		) {
+		if (!decision) {
+			throw new Error("Stale plan");
+		}
+		if (message.sessionId !== this.state.sessionId) {
+			throw new Error("Stale plan");
+		}
+		if (message.runId !== decision.runId) {
 			throw new Error("Stale plan");
 		}
 		if (this.busy()) {
@@ -454,10 +458,10 @@ export class CodexSessionController extends SessionState {
 
 	/** 操作対象が現在の会話であることを確認する。 */
 	private async dispatchThreadAction(message: UiMessage): Promise<void> {
-		if (
-			!("sessionId" in message) ||
-			message.sessionId !== this.state.sessionId
-		) {
+		if (!("sessionId" in message)) {
+			throw new Error("Stale thread");
+		}
+		if (message.sessionId !== this.state.sessionId) {
 			throw new Error("Stale thread");
 		}
 		if (message.type === "prompt/send") {
@@ -468,11 +472,11 @@ export class CodexSessionController extends SessionState {
 			await this.options.rememberSelection(message.configId);
 			return;
 		}
-		if (
+		const matchesType3 =
 			message.type === "attachment/add" ||
 			message.type === "attachment/open" ||
-			message.type === "attachment/remove"
-		) {
+			message.type === "attachment/remove";
+		if (matchesType3) {
 			await this.attachments.attachment(message);
 			return;
 		}
@@ -545,11 +549,14 @@ export class CodexSessionController extends SessionState {
 	) {
 		const { cwd, sessionId } = this.state;
 		const epoch = this.lifecycle.generation;
-		if (
-			!isNonEmptyString(cwd) ||
-			!isNonEmptyString(sessionId) ||
-			this.state.connection !== "ready"
-		) {
+
+		if (!isNonEmptyString(cwd)) {
+			throw new Error("Disconnected");
+		}
+		if (!isNonEmptyString(sessionId)) {
+			throw new Error("Disconnected");
+		}
+		if (this.state.connection !== "ready") {
 			throw new Error("Disconnected");
 		}
 		await openChanges(
@@ -639,11 +646,13 @@ export class CodexSessionController extends SessionState {
 
 	/** 現在の実行に対する停止と承認操作を処理する。 */
 	private runningAction(message: UiMessage): void {
-		if (
-			!("runId" in message) ||
-			message.runId !== this.state.runId ||
-			!this.busy()
-		) {
+		if (!("runId" in message)) {
+			throw new Error("Stale run");
+		}
+		if (message.runId !== this.state.runId) {
+			throw new Error("Stale run");
+		}
+		if (!this.busy()) {
 			throw new Error("Stale run");
 		}
 		if (message.type === "prompt/cancel") {
@@ -655,11 +664,11 @@ export class CodexSessionController extends SessionState {
 			this.cancel();
 			return;
 		}
-		if (
+		const matchesType4 =
 			message.type === "permission/respond" &&
 			this.state.run === "running" &&
-			this.serverRequests.respond(message.permissionId, message.optionId)
-		) {
+			this.serverRequests.respond(message.permissionId, message.optionId);
+		if (matchesType4) {
 			if (message.optionId === "cancel") {
 				this.cancel();
 			}
@@ -672,14 +681,13 @@ export class CodexSessionController extends SessionState {
 	private assertCurrentTool(
 		message: Extract<UiMessage, { type: "execution/stop" }>,
 	) {
-		if (
-			!this.state.tools.some(
-				(tool) =>
-					tool.id === message.toolId &&
-					tool.runId === message.runId &&
-					["pending", "in_progress"].includes(tool.status),
-			)
-		) {
+		const matchesSome = !this.state.tools.some(
+			(tool) =>
+				tool.id === message.toolId &&
+				tool.runId === message.runId &&
+				["pending", "in_progress"].includes(tool.status),
+		);
+		if (matchesSome) {
 			throw new Error("Stale tool");
 		}
 	}
@@ -687,11 +695,13 @@ export class CodexSessionController extends SessionState {
 
 /** 参照の詳細エラーを優先し、操作に応じた復旧方法を返す。 */
 function requestError(type: UiMessage["type"], error: unknown) {
-	if (
-		error instanceof SessionContextError ||
-		error instanceof HandoffContextError ||
-		error instanceof ChangeContextError
-	) {
+	if (error instanceof SessionContextError) {
+		return error.message;
+	}
+	if (error instanceof HandoffContextError) {
+		return error.message;
+	}
+	if (error instanceof ChangeContextError) {
 		return error.message;
 	}
 	if (error instanceof CodeReferenceError) {

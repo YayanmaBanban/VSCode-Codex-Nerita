@@ -22,11 +22,13 @@ export async function piReferenceAction(
 	}
 	if (message.type === "session/searchReferences") {
 		const rows = (await history.list(signal, true)).filter((row) => {
-			if (!(
-				row.sessionId !== runtime.sessionId &&
-				!isPiSessionRunning(row.sessionId) &&
-				sameCwd(row.cwd, cwd)
-			)) {
+			if (!(row.sessionId !== runtime.sessionId)) {
+				return false;
+			}
+			if (isPiSessionRunning(row.sessionId)) {
+				return false;
+			}
+			if (!sameCwd(row.cwd, cwd)) {
 				return false;
 			}
 			return (row.title ?? row.sessionId)

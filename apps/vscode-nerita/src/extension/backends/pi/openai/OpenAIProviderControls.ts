@@ -14,6 +14,7 @@ export class OpenAIProviderControls implements PiModelControls {
 	private ultraBasis?: AgentSession["thinkingLevel"];
 	private fast = false;
 	private key = "";
+	/** 接続の委譲可否を結び付けるまでは外部へ処理を渡す操作を許可しない。 */
 	private canDelegate = () => false;
 	private catalog: PiCatalogSnapshot = null;
 
@@ -38,11 +39,14 @@ export class OpenAIProviderControls implements PiModelControls {
 	/** 能力を取得した OpenAI の公開 API を使うモデルだけを扱う。 */
 	private get openAIModel() {
 		const model = this.session?.model;
-		if (
-			model?.provider !== "openai" ||
-			model.api !== "openai-responses" ||
-			!isOpenAIEndpoint(model.baseUrl)
-		) {
+
+		if (model?.provider !== "openai") {
+			return undefined;
+		}
+		if (model.api !== "openai-responses") {
+			return undefined;
+		}
+		if (!isOpenAIEndpoint(model.baseUrl)) {
 			return undefined;
 		}
 		return model;
@@ -85,31 +89,32 @@ export class OpenAIProviderControls implements PiModelControls {
 	/** Fast は優先処理を要求する設定として公開し、処理速度そのものを保証しない。 */
 	get configOptions(): ConfigOption[] {
 		const state = this.snapshot();
-		return this.metadata?.fastMode === true
-			? [
-					{
-						id: "fast-mode",
-						name: "Fast mode",
-						currentValue: state.fastMode ? "on" : "off",
-						description:
-							"優先処理を要求します。利用枠の消費が増える場合があります。",
-						options: [
-							{ value: "on", name: "On" },
-							{ value: "off", name: "Off" },
-						],
-					},
-				]
-			: [];
+		if (this.metadata?.fastMode !== true) {
+			return [];
+		}
+		return [
+			{
+				id: "fast-mode",
+				name: "Fast mode",
+				currentValue: state.fastMode ? "on" : "off",
+				description:
+					"優先処理を要求します。利用枠の消費が増える場合があります。",
+				options: [
+					{ value: "on", name: "On" },
+					{ value: "off", name: "Off" },
+				],
+			},
+		];
 	}
 	/** 対応が確認できるモデルだけで Fast を変更する。 */
 	configure(id: string, value: string, signal: AbortSignal): boolean {
 		signal.throwIfAborted();
 		this.snapshot();
-		if (
+		const matchesId =
 			id !== "fast-mode" ||
 			!(this.metadata?.fastMode === true) ||
-			!["on", "off"].includes(value)
-		) {
+			!["on", "off"].includes(value);
+		if (matchesId) {
 			return false;
 		}
 		this.fast = value === "on";
@@ -144,11 +149,11 @@ export class OpenAIProviderControls implements PiModelControls {
 		if (key !== this.key) {
 			this.reset();
 		}
-		if (
+		const matchesLevel =
 			!(level !== undefined) ||
 			level !== this.ultraBasis ||
-			this.session?.thinkingLevel !== level
-		) {
+			this.session?.thinkingLevel !== level;
+		if (matchesLevel) {
 			this.ultra = false;
 		}
 		if (!(this.metadata?.fastMode === true)) {
@@ -179,11 +184,14 @@ export class OpenAIProviderControls implements PiModelControls {
 	/** Fast は Codex CLI と同じ priority を送り、Ultra の実推論値は SDK に任せる。 */
 	rewrite(payload: unknown, model: AgentSession["model"]): unknown {
 		const state = this.snapshot();
-		if (
-			!state.fastMode ||
-			!isRecord(payload) ||
-			!this.matchesRequest(payload, model)
-		) {
+
+		if (!state.fastMode) {
+			return undefined;
+		}
+		if (!isRecord(payload)) {
+			return undefined;
+		}
+		if (!this.matchesRequest(payload, model)) {
 			return undefined;
 		}
 		return { ...payload, service_tier: "priority" };
@@ -197,11 +205,12 @@ export class OpenAIProviderControls implements PiModelControls {
 		if (!(!!current && !!model && !(this.session?.isCompacting === true))) {
 			return false;
 		}
-		if (!(
+		const matchesProvider2 = !(
 			model.provider === current.provider &&
 			model.id === current.id &&
 			model.api === current.api
-		)) {
+		);
+		if (matchesProvider2) {
 			return false;
 		}
 		return (

@@ -30,6 +30,7 @@ export class AgentManagerPanel {
 		codex: [],
 	};
 	private modelErrors: string[] = [];
+	/** 管理画面を作業ルートとバックエンドへ結び付け、モデル候補の取得経路も同じルートに固定する。 */
 	constructor(
 		private folder: vscode.WorkspaceFolder,
 		root: string,
@@ -55,6 +56,7 @@ export class AgentManagerPanel {
 			configuredBackend,
 		);
 	}
+	/** 選択バックエンドの接続が完了している場合だけ、現在の会話のモデル候補を使う。 */
 	private liveModels(id: "pi" | "codex") {
 		const state = this.backend.snapshot();
 		if (!(configuredBackend() === id && state.connection === "ready")) {
@@ -96,15 +98,18 @@ export class AgentManagerPanel {
 			}),
 		);
 	}
+	/** 画面を閉じた後の取得を取り消し、遅い結果を Webview へ送らないようにする。 */
 	close() {
 		this.closed = true;
 		this.abort.abort();
 	}
+	/** 破棄済みの管理画面には非同期の結果を配信しない。 */
 	private post(message: ManagerReply) {
 		if (!this.closed) {
 			void this.panel.webview.postMessage(message);
 		}
 	}
+	/** 保存済み設定とモデル候補を公開し、実行中の子の件数は同じ実体ルートの会話だけを数える。 */
 	async publish(refreshModels = true) {
 		if (refreshModels) {
 			await this.refreshModels();
@@ -142,7 +147,8 @@ export class AgentManagerPanel {
 			return;
 		}
 		const request = parsed.data;
-		this.queue = this.queue.then(async () => {
+		/** 要求を待機列の順に処理し、保存前のルートと世代を確認して結果を返信する。 */
+		const handleManagerRequest = async () => {
 			if (this.closed) {
 				return;
 			}
@@ -182,39 +188,44 @@ export class AgentManagerPanel {
 					notice: "",
 				});
 			}
-		});
+		};
+		this.queue = this.queue.then(handleManagerRequest);
 	}
 	/** 未保存のエディタ内容や除外済みワークスペースを上書きしない。 */
 	private assertWritable() {
-		if (
-			this.closed ||
-			!vscode.workspace.isTrusted ||
-			!(
-				vscode.workspace.workspaceFolders?.some(
-					(item) =>
-						item.uri.toString() === this.folder.uri.toString(),
-				) === true
-			)
-		) {
+		if (this.closed) {
+			throw new Error("信頼済みのワークスペースを開いてください。");
+		}
+		if (!vscode.workspace.isTrusted) {
+			throw new Error("信頼済みのワークスペースを開いてください。");
+		}
+		const workspaceWasRemoved = !(
+			vscode.workspace.workspaceFolders?.some(
+				(item) => item.uri.toString() === this.folder.uri.toString(),
+			) === true
+		);
+		if (workspaceWasRemoved) {
 			throw new Error("信頼済みのワークスペースを開いてください。");
 		}
 		for (const document of vscode.workspace.textDocuments) {
-			if (
-				!document.isDirty ||
+			if (!document.isDirty) {
+				continue;
+			}
+			const documentIsOutsideWorkspace =
 				vscode.workspace
 					.getWorkspaceFolder(document.uri)
-					?.uri.toString() !== this.folder.uri.toString()
-			) {
+					?.uri.toString() !== this.folder.uri.toString();
+			if (documentIsOutsideWorkspace) {
 				continue;
 			}
 			const relative = vscode.workspace
 				.asRelativePath(document.uri, false)
 				.replaceAll("\\", "/");
-			if (
+			const matchesTest =
 				/^(?:\.pi\/settings\.json|\.pi\/agents\/.+\.md|\.codex\/agents\/[^/]+\.toml|\.nerita\/handoff(?:\.schema)?\.json)$/.test(
 					relative,
-				)
-			) {
+				);
+			if (matchesTest) {
 				throw new Error(
 					"設定ファイルに未保存の編集があります。エディタで保存してから再読み込みしてください。",
 				);
@@ -229,63 +240,68 @@ export function registerAgentManager(
 	backend: BackendSession,
 ) {
 	const panels = new Map<string, vscode.WebviewPanel>();
-	context.subscriptions.push(
-		vscode.commands.registerCommand("nerita.agents.manage", async () => {
-			try {
-				const selected = await selectLocalWorkspace();
-				if (!selected) {
-					return;
-				}
-				const { folder, root } = selected;
-				const existing = panels.get(root);
-				if (existing) {
-					existing.reveal();
-					return;
-				}
-				const panel = vscode.window.createWebviewPanel(
-					"nerita.agents",
-					`Agent Manager — ${folder.name}`,
-					vscode.ViewColumn.Active,
-					{
-						enableScripts: true,
-						localResourceRoots: [
-							vscode.Uri.joinPath(
-								context.extensionUri,
-								"dist/webview",
-							),
-						],
-					},
-				);
-				panels.set(root, panel);
-				const host = new AgentManagerPanel(
-					folder,
-					root,
-					panel,
-					backend,
-					context.extensionPath,
-					agentModelReader(
-						context.extensionPath,
-						root,
-						credentialService(context).piStore(),
-					),
-				);
-				const receive = panel.webview.onDidReceiveMessage(
-					(value: unknown) => host.receive(value),
-				);
-				panel.onDidDispose(() => {
-					host.close();
-					receive.dispose();
-					panels.delete(root);
-				});
-				panel.webview.html = webviewHtml(
-					panel.webview,
-					context.extensionUri,
-					"agent-manager",
-				);
-				context.subscriptions.push(panel);
-			} catch (error) {
-				void vscode.window.showErrorMessage(errorText(error));
+	/** 選択したルートの管理画面を一つだけ開き、破棄時に購読と登録を回収する。 */
+	const openAgentManager = async () => {
+		try {
+			const selected = await selectLocalWorkspace();
+			if (!selected) {
+				return;
 			}
-		}),
+			const { folder, root } = selected;
+			const existing = panels.get(root);
+			if (existing) {
+				existing.reveal();
+				return;
+			}
+			const panel = vscode.window.createWebviewPanel(
+				"nerita.agents",
+				`Agent Manager — ${folder.name}`,
+				vscode.ViewColumn.Active,
+				{
+					enableScripts: true,
+					localResourceRoots: [
+						vscode.Uri.joinPath(
+							context.extensionUri,
+							"dist/webview",
+						),
+					],
+				},
+			);
+			panels.set(root, panel);
+			const host = new AgentManagerPanel(
+				folder,
+				root,
+				panel,
+				backend,
+				context.extensionPath,
+				agentModelReader(
+					context.extensionPath,
+					root,
+					credentialService(context).piStore(),
+				),
+			);
+			const receive = panel.webview.onDidReceiveMessage(
+				(value: unknown) => host.receive(value),
+			);
+			panel.onDidDispose(() => {
+				host.close();
+				receive.dispose();
+				panels.delete(root);
+			});
+			panel.webview.html = webviewHtml(
+				panel.webview,
+				context.extensionUri,
+				"agent-manager",
+			);
+			context.subscriptions.push(panel);
+		} catch (error) {
+			void vscode.window.showErrorMessage(errorText(error));
+		}
+	};
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"nerita.agents.manage",
+			openAgentManager,
+		),
 	);
 }

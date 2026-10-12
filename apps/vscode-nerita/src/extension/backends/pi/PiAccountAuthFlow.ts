@@ -18,6 +18,7 @@ export type PiAuthService = {
 
 /** 操作前の無効化と成功後の再同期を呼び出し元へ委ねる。 */
 export class PiAccountAuthFlow {
+	/** 認証後のカタログ失効とモデルの再照合を利用側へ委ね、保存先はこのアカウントの資格情報を使う。 */
 	constructor(
 		private readonly models: ModelRuntime,
 		private readonly service: PiAuthService | undefined,
@@ -48,7 +49,11 @@ export class PiAccountAuthFlow {
 
 	/** アカウントの選択と削除にも、モデル・カタログの再同期を適用する。 */
 	private async executeAuthOperation(id: string, signal: AbortSignal) {
-		if (!supportsAuthOperation(await this.items(signal), id)) {
+		const matchesSupportsAuthOperation = !supportsAuthOperation(
+			await this.items(signal),
+			id,
+		);
+		if (matchesSupportsAuthOperation) {
 			throw new Error("未対応の認証操作です。");
 		}
 		const [provider, type, accountId] = z
@@ -233,6 +238,12 @@ function privateAuthEvent(
 		return { type: "progress", message: protect(event.message) };
 	}
 	if (event.type === "info") {
+		const protectAuthLink = (
+			link: NonNullable<typeof event.links>[number],
+		) => ({
+			url: link.url,
+			...(link.label === undefined ? {} : { label: protect(link.label) }),
+		});
 		return {
 			type: "info",
 			message: protect(event.message),
@@ -241,21 +252,16 @@ function privateAuthEvent(
 				: {
 						links: event.links
 							.filter((link) => protect(link.url) === link.url)
-							.map((link) => ({
-								url: link.url,
-								...(link.label === undefined
-									? {}
-									: { label: protect(link.label) }),
-							})),
+							.map(protectAuthLink),
 					}),
 		};
 	}
 	const url = event.type === "auth_url" ? event.url : event.verificationUri;
-	if (
+	const matchesProtect =
 		protect(url) !== url ||
 		(event.type === "device_code" &&
-			protect(event.userCode) !== event.userCode)
-	) {
+			protect(event.userCode) !== event.userCode);
+	if (matchesProtect) {
 		return {
 			type: "info",
 			message: "認証通知に秘密値が含まれるため非公開にしました。",

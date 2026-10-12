@@ -55,17 +55,17 @@ export async function evaluateTrust(
 	const signal = AbortSignal.any(
 		paths.map((path) => context.store.signalFor(path)),
 	);
-	const trusted =
-		context.enabled() &&
-		(
-			await Promise.all(
-				paths.map(async (path) =>
-					backendWorkspaceTrusted("pi", () =>
-						context.store.trusted(path),
-					),
+	let trusted = false;
+	if (context.enabled()) {
+		const decisions = await Promise.all(
+			paths.map(async (path) =>
+				backendWorkspaceTrusted("pi", () =>
+					context.store.trusted(path),
 				),
-			)
-		).every(Boolean);
+			),
+		);
+		trusted = decisions.every(Boolean);
+	}
 	// 任意コマンドは同じルート内の未信頼ツリーにも到達できるため、混在時は実行を止める。
 	const mixed = containsUntrustedCode(call, context, paths);
 	if (!trusted || mixed) {
@@ -80,11 +80,12 @@ export async function evaluateTrust(
 
 /** 複数のルートを許可した実行基盤へ渡す場合は、そのすべてを実行対象として判定する。 */
 function executionRoots(call: ToolCall): string[] {
-	if (!(
-		call.command ||
+	const matchesCommand = !(
+		call.command !== undefined ||
 		call.hostShell === true ||
 		call.tool.startsWith("extension:")
-	)) {
+	);
+	if (matchesCommand) {
 		return [];
 	}
 	return call.policy.workspaceRoots;
@@ -107,18 +108,20 @@ function containsUntrustedCode(
 	context: Context,
 	paths: string[],
 ): boolean {
-	if (!(
+	const matchesCommand2 = !(
 		call.command !== undefined ||
 		call.hostShell === true ||
 		call.tool.startsWith("extension:")
-	)) {
+	);
+	if (matchesCommand2) {
 		return false;
 	}
-	return context.store
+	const matchesSome = context.store
 		.list()
 		.some(
 			(record) =>
 				record.trust === "untrusted" &&
 				paths.some((root) => containsPath(root, record.root)),
 		);
+	return matchesSome;
 }

@@ -21,7 +21,10 @@ async function cancellable<T>(
 }
 /** ブラウザ起動に失敗した場合は認証・入力側へ通知する。 */
 async function open(url: string): Promise<void> {
-	if (!(await vscode.env.openExternal(vscode.Uri.parse(url)))) {
+	const matchesValue = !(await vscode.env.openExternal(
+		vscode.Uri.parse(url),
+	));
+	if (matchesValue) {
 		throw new Error("Browser unavailable");
 	}
 }

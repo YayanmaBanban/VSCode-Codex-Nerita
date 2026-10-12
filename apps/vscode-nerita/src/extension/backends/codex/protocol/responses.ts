@@ -69,17 +69,20 @@ export type AppServerParams<M extends keyof AppServerResponses> =
 		: Extract<ClientRequest, { method: M }>["params"];
 /** 初期化の応答を必要な全フィールドについて検証する。 */
 function initializeResponse(value: unknown): InitializeResponse {
-	if (
-		!isRecord(value) ||
-		typeof value.userAgent !== "string" ||
-		typeof value.codexHome !== "string"
-	) {
+	if (!isRecord(value)) {
 		throw new Error("Codex の初期化応答が不正です。");
 	}
-	if (
-		typeof value.platformFamily !== "string" ||
-		typeof value.platformOs !== "string"
-	) {
+	if (typeof value.userAgent !== "string") {
+		throw new Error("Codex の初期化応答が不正です。");
+	}
+	if (typeof value.codexHome !== "string") {
+		throw new Error("Codex の初期化応答が不正です。");
+	}
+
+	if (typeof value.platformFamily !== "string") {
+		throw new Error("Codex の初期化応答が不正です。");
+	}
+	if (typeof value.platformOs !== "string") {
 		throw new Error("Codex の初期化応答が不正です。");
 	}
 	return {
@@ -91,11 +94,13 @@ function initializeResponse(value: unknown): InitializeResponse {
 }
 /** 読み取り専用の接続確認応答を検証する。 */
 function loadedThreadsResponse(value: unknown): ThreadLoadedListResponse {
-	if (
-		!isRecord(value) ||
-		!Array.isArray(value.data) ||
-		!value.data.every((id: unknown) => typeof id === "string")
-	) {
+	if (!isRecord(value)) {
+		throw new Error("Codex の読み込み済みスレッド一覧が不正です。");
+	}
+	if (!Array.isArray(value.data)) {
+		throw new Error("Codex の読み込み済みスレッド一覧が不正です。");
+	}
+	if (!value.data.every((id: unknown) => typeof id === "string")) {
 		throw new Error("Codex の読み込み済みスレッド一覧が不正です。");
 	}
 	if (!(value.nextCursor === null || typeof value.nextCursor === "string")) {

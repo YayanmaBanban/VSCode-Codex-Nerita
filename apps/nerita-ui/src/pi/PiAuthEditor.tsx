@@ -28,6 +28,7 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 		prompt.options !== undefined,
 	);
 	const [hasValue, setHasValue] = useState(false);
+	const inputType = prompt.secret ? "password" : "text";
 	return (
 		<form
 			className="flex max-w-[560px] flex-col gap-[10px]"
@@ -35,9 +36,7 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 				event.preventDefault();
 				const field = inputRef.current ?? selectRef.current;
 				const value = field?.value ?? "";
-				if (field) {
-					field.value = "";
-				}
+				clearAuthInput(field);
 				setHasValue(false);
 				if (value !== "") {
 					send({ type: "answer", id: prompt.id, value });
@@ -65,7 +64,7 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 			) : (
 				<input
 					id="auth-input"
-					type={prompt.secret ? "password" : "text"}
+					type={inputType}
 					autoComplete="off"
 					spellCheck={false}
 					ref={inputRef}
@@ -88,9 +87,7 @@ function AuthInput({ prompt, send }: AuthInputProps) {
 					type="button"
 					onClick={() => {
 						const field = inputRef.current ?? selectRef.current;
-						if (field) {
-							field.value = "";
-						}
+						clearAuthInput(field);
 						setHasValue(false);
 						send({ type: "cancel" });
 					}}
@@ -343,4 +340,11 @@ function renderProviderFeedback(
 				)}
 		</div>
 	);
+}
+
+/** 送信または中止した認証入力を画面に残さない。 */
+function clearAuthInput(field: HTMLInputElement | HTMLSelectElement | null) {
+	if (field) {
+		field.value = "";
+	}
 }

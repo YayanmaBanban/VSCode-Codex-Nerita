@@ -45,10 +45,10 @@ export const IntentRegistrySchema = z
 	})
 	.superRefine((value, context) => {
 		for (const key of ["intentId", "dirName"] as const) {
-			if (
-				new Set(value.entries.map((entry) => entry[key])).size !==
-				value.entries.length
-			) {
+			const uniqueCount = new Set(
+				value.entries.map((entry) => entry[key]),
+			).size;
+			if (uniqueCount !== value.entries.length) {
 				context.addIssue({
 					code: "custom",
 					message: `Intent レジストリの ${key} が重複しています。`,
@@ -205,29 +205,29 @@ export function intentProjection(state: IntentState): DlcProjection {
 
 /** 異常終了は確認不能として保存し、再送や成功を推測しない。 */
 export function recoverIntent(state: IntentState): IntentState {
-	if (
-		!state.workItems.some((item) =>
-			["running", "stopping"].includes(item.status),
-		)
-	) {
+	const busy = state.workItems.some((item) =>
+		["running", "stopping"].includes(item.status),
+	);
+	if (!busy) {
 		return state;
 	}
-	const workItems = state.workItems.map((item) =>
-		!["running", "stopping"].includes(item.status)
-			? item
-			: {
-					...item,
-					status: "interrupted" as const,
-					attempts: item.attempts.map((attempt) =>
-						["running", "stopping"].includes(attempt.status)
-							? {
-									...attempt,
-									status: "interrupted" as const,
-									detail: "前回の実行は終了を確認できません。変更を確認して再試行してください。",
-								}
-							: attempt,
-					),
-				},
-	);
+	const workItems = state.workItems.map((item) => {
+		if (!["running", "stopping"].includes(item.status)) {
+			return item;
+		}
+		return {
+			...item,
+			status: "interrupted" as const,
+			attempts: item.attempts.map((attempt) =>
+				["running", "stopping"].includes(attempt.status)
+					? {
+							...attempt,
+							status: "interrupted" as const,
+							detail: "前回の実行は終了を確認できません。変更を確認して再試行してください。",
+						}
+					: attempt,
+			),
+		};
+	});
 	return { ...state, workItems, revision: state.revision + 1 };
 }

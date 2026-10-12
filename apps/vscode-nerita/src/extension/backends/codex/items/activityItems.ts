@@ -10,17 +10,16 @@ export function activityItem(
 	value: Record<string, unknown>,
 ): Partial<ToolSummary> | null {
 	const type = value.type;
-	if (
-		[
-			"userMessage",
-			"agentMessage",
-			"commandExecution",
-			"fileChange",
-			"hookPrompt",
-			"subAgentActivity",
-			"collabAgentToolCall",
-		].some((itemType) => itemType === type)
-	) {
+	const matchesSome = [
+		"userMessage",
+		"agentMessage",
+		"commandExecution",
+		"fileChange",
+		"hookPrompt",
+		"subAgentActivity",
+		"collabAgentToolCall",
+	].some((itemType) => itemType === type);
+	if (matchesSome) {
 		return null;
 	}
 	const title = typeof value.tool === "string" ? value.tool : string(type);

@@ -34,11 +34,14 @@ export function $moveAcrossBlock(
 	up: boolean,
 ): boolean {
 	const selection = $getSelection();
-	if (
-		!$isRangeSelection(selection) ||
-		!selection.isCollapsed() ||
-		event.shiftKey
-	) {
+
+	if (!$isRangeSelection(selection)) {
+		return false;
+	}
+	if (!selection.isCollapsed()) {
+		return false;
+	}
+	if (event.shiftKey) {
 		return false;
 	}
 	if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -64,18 +67,20 @@ function moveSelectedBlock(
 	const offset = $pointOffset(selection.anchor, block);
 	const text = block.getTextContent();
 	const adjacent = up ? block.getPreviousSibling() : block.getNextSibling();
-	if (
-		!$isElementNode(adjacent) ||
-		(!(block instanceof PastedBlockNode) &&
-			!(adjacent instanceof PastedBlockNode))
-	) {
+
+	if (!$isElementNode(adjacent)) {
 		return false;
 	}
-	if (
-		up
-			? text.slice(0, offset).includes("\n")
-			: text.slice(offset).includes("\n")
-	) {
+	const neitherBlockIsPasted =
+		!(block instanceof PastedBlockNode) &&
+		!(adjacent instanceof PastedBlockNode);
+	if (neitherBlockIsPasted) {
+		return false;
+	}
+	const matchesValue = up
+		? text.slice(0, offset).includes("\n")
+		: text.slice(offset).includes("\n");
+	if (matchesValue) {
 		return false;
 	}
 	const element = editor.getElementByKey(block.getKey());

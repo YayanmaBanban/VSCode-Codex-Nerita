@@ -20,7 +20,9 @@ export async function resolvePowerShell(
 	}
 	for (const path of candidates(name)) {
 		const executable = await canonicalExecutable(path);
-		if (isNonEmptyString(executable) && (await usable(executable))) {
+		const matchesIsNonEmptyString =
+			isNonEmptyString(executable) && (await usable(executable));
+		if (matchesIsNonEmptyString) {
 			return executable;
 		}
 	}
@@ -55,11 +57,10 @@ function candidates(name: PowerShellKind): string[] {
 async function canonicalExecutable(path: string): Promise<string | undefined> {
 	try {
 		const executable = await realpath(path);
-		if (
-			[path, executable].some((value) =>
-				/[\\/]WindowsApps[\\/]/i.test(value),
-			)
-		) {
+		const matchesSome = [path, executable].some((value) =>
+			/[\\/]WindowsApps[\\/]/i.test(value),
+		);
+		if (matchesSome) {
 			return undefined;
 		}
 		await access(executable);

@@ -95,10 +95,10 @@ function applyItemEvent(
 			},
 		});
 	}
-	if (
+	const matchesHas =
 		!run.completedItems.has(id) &&
-		!["subAgentActivity", "collabAgentToolCall"].includes(event.item.type)
-	) {
+		!["subAgentActivity", "collabAgentToolCall"].includes(event.item.type);
+	if (matchesHas) {
 		target.patch(itemPatch(target.snapshot(), event.item, event.completed));
 	}
 	if (event.completed) {

@@ -50,6 +50,7 @@ type TurnOptions = Pick<
 
 /** 設定は次のターンに適用し、CLI のユーザー設定ファイルを書き換えない。 */
 export class CodexOptions {
+	/** 実効設定の反映先をセッションへ固定し、保存機能の有無は注入した保存先で決める。 */
 	constructor(
 		private readonly session: OptionsSession,
 		private readonly selectionStore?: CodexSelectionStore,
@@ -70,6 +71,7 @@ export class CodexOptions {
 	private initialSandbox: StartedThread["sandbox"];
 	private initialTier: string | null = null;
 	private collaborationMode = "default";
+	/** 次のターンで使う協調モードを返し、サーバーの実効設定と表示の同期に使う。 */
 	get mode(): string {
 		return this.collaborationMode;
 	}
@@ -84,6 +86,7 @@ export class CodexOptions {
 			""
 		);
 	}
+	/** 選択モデルのカタログに画像能力が明示された場合だけ添付を許可する。 */
 	get supportsImages(): boolean {
 		return (
 			this.models
@@ -119,11 +122,9 @@ export class CodexOptions {
 
 	/** 新しい会話の候補を検証し、最初のターンより前に設定を復元する。 */
 	async restorePlanSettings(settings: PlanSettings): Promise<void> {
-		if (
-			settings.approvalsReviewer !== undefined &&
-			settings.approvalsReviewer !== null
-		) {
-			this.turnOptions.approvalsReviewer = settings.approvalsReviewer;
+		const reviewer = settings.approvalsReviewer;
+		if (reviewer !== undefined && reviewer !== null) {
+			this.turnOptions.approvalsReviewer = reviewer;
 		}
 		await this.setConfig("model", settings.model);
 		if (settings.effort !== "") {
@@ -325,15 +326,17 @@ export class CodexOptions {
 	}
 	/** 提示済みの選択肢と設定変更可能な状態を照合する。 */
 	private invalidSetting(id: string, value: string) {
+		if (this.session.busy()) {
+			return true;
+		}
+		if (this.session.snapshot().configPending) {
+			return true;
+		}
+		const option = this.session
+			.snapshot()
+			.configOptions.find((item) => item.id === id);
 		return (
-			this.session.busy() ||
-			this.session.snapshot().configPending ||
-			!(
-				this.session
-					.snapshot()
-					.configOptions.find((item) => item.id === id)
-					?.options.some((choice) => choice.value === value) === true
-			)
+			option?.options.some((choice) => choice.value === value) !== true
 		);
 	}
 
@@ -361,17 +364,17 @@ export class CodexOptions {
 					sessionId,
 					this.collaborationSettings("default"),
 				);
-				if (
+				const matchesEpoch =
 					epoch !== this.session.epoch() ||
-					sessionId !== this.session.snapshot().sessionId
-				) {
+					sessionId !== this.session.snapshot().sessionId;
+				if (matchesEpoch) {
 					throw new Error("Thread changed");
 				}
 			} finally {
-				if (
+				const matchesEpoch2 =
 					epoch === this.session.epoch() &&
-					sessionId === this.session.snapshot().sessionId
-				) {
+					sessionId === this.session.snapshot().sessionId;
+				if (matchesEpoch2) {
 					this.session.patch({ configPending: false });
 				}
 			}
@@ -427,19 +430,19 @@ export class CodexOptions {
 		if (!isRecord(p)) {
 			return;
 		}
-		if (
+		const matchesMethod =
 			message.method === "thread/settings/updated" &&
-			p.threadId === this.session.snapshot().sessionId
-		) {
+			p.threadId === this.session.snapshot().sessionId;
+		if (matchesMethod) {
 			this.applyThreadPermissions(p.threadSettings);
 		}
 		if (message.method === "account/rateLimits/updated") {
 			this.session.patch({ quota: parseQuota(p.rateLimits) });
 		}
-		if (
+		const matchesMethod2 =
 			message.method === "thread/tokenUsage/updated" &&
-			p.threadId === this.session.snapshot().sessionId
-		) {
+			p.threadId === this.session.snapshot().sessionId;
+		if (matchesMethod2) {
 			this.session.patch({ usage: parseUsage(p.tokenUsage) });
 		}
 	}

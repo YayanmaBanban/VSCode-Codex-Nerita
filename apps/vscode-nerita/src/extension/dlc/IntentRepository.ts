@@ -61,6 +61,7 @@ export class IntentRepository {
 		);
 		return pending;
 	}
+	/** 管理状態の保存先と文書の作業ルートを分け、信頼済み文書の記録は作業ルート単位で隔離する。 */
 	constructor(
 		readonly files: SafeDlcFiles,
 		private readonly authority: IntentAuthority,
@@ -72,6 +73,7 @@ export class IntentRepository {
 			`dlc.${createHash("sha256").update(liveFiles.root).digest("hex")}`,
 		);
 	}
+	/** 登録済みの Intent だけを保存先へ解決し、任意の ID から未登録領域を参照させない。 */
 	private async directoryFor(intentId: string): Promise<string> {
 		const registry = await this.registry();
 		const entry = registry.entries.find(
@@ -82,12 +84,15 @@ export class IntentRepository {
 		}
 		return `${intentsDirectory}/${entry.dirName}`;
 	}
+	/** 保存先の解決も排他処理へ通し、レジストリ更新中の不整合を避ける。 */
 	directory(intentId: string): Promise<string> {
 		return this.locked(() => this.directoryFor(intentId));
 	}
+	/** 作業ルート・Intent・世代・記録種別をキーへ含め、異なる実行の承認記録を流用しない。 */
 	private runKey(intentId: string, attemptId: string, kind: string): string {
 		return `dlc.run.${jsonDigest({ root: this.liveFiles.root, intentId, attemptId, kind })}`;
 	}
+	/** 実体を書いてからハッシュを固定し、既に確定した実行記録の上書きと未確定記録の競合を拒否する。 */
 	private async writeRun(
 		intentId: string,
 		attemptId: string,
@@ -102,10 +107,10 @@ export class IntentRepository {
 		const file = `${directory}/runs/${jsonDigest({ attemptId, kind }).slice(7)}.json`;
 		await this.liveFiles.directory(`${directory}/runs`);
 		const existing = await this.liveFiles.read(file, runRecordLimit);
-		if (
+		const matchesExisting =
 			existing !== undefined &&
-			jsonDigest(JSON.parse(existing)) !== jsonDigest(value)
-		) {
+			jsonDigest(JSON.parse(existing)) !== jsonDigest(value);
+		if (matchesExisting) {
 			throw new Error("未確定の実行記録が競合しています。");
 		}
 		await this.liveFiles.write(file, value, runRecordLimit);
@@ -116,6 +121,7 @@ export class IntentRepository {
 			metadataDigest: jsonDigest({ intentId, attemptId, kind }),
 		});
 	}
+	/** 承認記録と実体のハッシュ・参照を照合し、改変された実行記録を復元に使わない。 */
 	private async readRun(
 		intentId: string,
 		attemptId: string,
@@ -136,16 +142,17 @@ export class IntentRepository {
 			throw new Error("保存した実行記録がありません。");
 		}
 		const value: unknown = JSON.parse(record);
-		if (
+		const matchesRevision =
 			anchor.revision !== 0 ||
 			anchor.metadataDigest !==
 				jsonDigest({ intentId, attemptId, kind }) ||
-			anchor.digest !== jsonDigest(value)
-		) {
+			anchor.digest !== jsonDigest(value);
+		if (matchesRevision) {
 			throw new Error("実行記録のハッシュが一致しません。");
 		}
 		return value;
 	}
+	/** 開始前の入力を検証して固定し、同じ世代の入力を後から差し替えない。 */
 	freezeRun(context: RunContext): Promise<void> {
 		const value = RunContextSchema.parse(context);
 		return this.locked(() =>
@@ -157,12 +164,13 @@ export class IntentRepository {
 			),
 		);
 	}
+	/** 終了した会話を排他処理で保存し、保存済みの場合は同じ内容の再送だけを受け入れる。 */
 	saveConversation(
 		intentId: string,
 		attemptId: string,
 		state: ChatState,
 	): Promise<void> {
-		return this.locked(async () => {
+		const commitConversation = async () => {
 			const value = RunConversationSchema.parse(state);
 			if (this.hasConversation(intentId, attemptId)) {
 				const saved = await this.readRun(
@@ -176,8 +184,10 @@ export class IntentRepository {
 				return;
 			}
 			await this.writeRun(intentId, attemptId, "conversation", value);
-		});
+		};
+		return this.locked(commitConversation);
 	}
+	/** 実行入力と会話の両記録を検証して復元し、会話ファイルだけでは信頼済みとして扱わない。 */
 	conversation(intentId: string, attemptId: string): Promise<ChatState> {
 		return this.locked(async () => {
 			RunContextSchema.parse(
@@ -188,20 +198,22 @@ export class IntentRepository {
 			);
 		});
 	}
+	/** 保存された入力を検証し、要求した Intent と世代に対応する記録だけを返す。 */
 	runContext(intentId: string, attemptId: string): Promise<RunContext> {
 		return this.locked(async () => {
 			const context = RunContextSchema.parse(
 				await this.readRun(intentId, attemptId, "context"),
 			);
-			if (
+			const matchesIntentId =
 				context.request.intentId !== intentId ||
-				context.request.attemptId !== attemptId
-			) {
+				context.request.attemptId !== attemptId;
+			if (matchesIntentId) {
 				throw new Error("実行入力の参照が一致しません。");
 			}
 			return context;
 		});
 	}
+	/** 信頼済み会話の承認記録の有無を確認する。実体の整合性は読取り時に別途検証する。 */
 	hasConversation(intentId: string, attemptId: string): boolean {
 		return (
 			this.authority.read(
@@ -209,16 +221,16 @@ export class IntentRepository {
 			) !== undefined
 		);
 	}
+	/** 進行中の作業がある場合だけ文書の復旧条件を確認し、未確定の文書から実行を再開しない。 */
 	assertResumable(state: IntentState): void {
-		if (
-			state.workItems.some(
-				(item) =>
-					item.status === "running" || item.status === "stopping",
-			)
-		) {
+		const matchesSome = state.workItems.some(
+			(item) => item.status === "running" || item.status === "stopping",
+		);
+		if (matchesSome) {
 			this.documents.assertResumable(state.intentId);
 		}
 	}
+	/** Space の形式と信頼済み索引を確認し、索引が未作成の場合だけ初期状態を保存する。 */
 	private async registry(): Promise<IntentRegistry> {
 		await this.liveFiles.directory(intentsDirectory);
 		const existing = await this.liveFiles.read(
@@ -247,6 +259,7 @@ export class IntentRepository {
 		await this.saveRegistry(initial, -1);
 		return initial;
 	}
+	/** 期待する版と Space のハッシュを付けて索引を確定し、競合更新を上書きしない。 */
 	private saveRegistry(
 		registry: IntentRegistry,
 		expected: number,
@@ -262,6 +275,7 @@ export class IntentRepository {
 			jsonDigest(space),
 		);
 	}
+	/** リンクと未登録領域を検出し、途中まで作成された Intent を無視して後続操作を進めない。 */
 	private async assertNoOrphans(registry: IntentRegistry): Promise<void> {
 		const entries = await readdir(
 			await this.liveFiles.path(intentsDirectory),
@@ -282,6 +296,7 @@ export class IntentRepository {
 			);
 		}
 	}
+	/** レジストリ・本文・保存状態・カタログの参照を検証し、一致した状態だけを復元する。 */
 	private async loadEntry(
 		entry: IntentRegistry["entries"][number],
 	): Promise<IntentState> {
@@ -291,10 +306,10 @@ export class IntentRepository {
 			throw new Error("Intent の本文がありません。");
 		}
 		const intent = IntentMetadataSchema.parse(JSON.parse(text));
-		if (
+		const matchesIntentId2 =
 			intent.intentId !== entry.intentId ||
-			intent.createdAt !== entry.createdAt
-		) {
+			intent.createdAt !== entry.createdAt;
+		if (matchesIntentId2) {
 			throw new Error("Intent レジストリと本文の参照が一致しません。");
 		}
 		const disk = await this.documents.load(
@@ -323,7 +338,7 @@ export class IntentRepository {
 		conditions: RoutingConditions = {},
 		projectType?: WorkspaceDetection["classification"]["detected"],
 	): Promise<IntentState> {
-		return this.locked(async () => {
+		const registerDetectedIntent = async () => {
 			await this.validateDetection(workspace);
 			const registry = await this.registry();
 			await this.assertNoOrphans(registry);
@@ -353,17 +368,24 @@ export class IntentRepository {
 				conditions,
 			);
 			return this.register(state, registry);
-		});
+		};
+		return this.locked(registerDetectedIntent);
 	}
+	/** 保存済みの検出結果と開始要求の結果を照合し、検出変更後の古い入力で Intent を作らない。 */
 	private async validateDetection(
 		workspace: WorkspaceDetection,
 	): Promise<void> {
 		const text = await this.files.read(".nerita/dlc/workspace.json");
-		if (
-			text === undefined ||
+
+		if (text === undefined) {
+			throw new Error(
+				"ワークスペースの検出が未完了、または変更されています。再検出してください。",
+			);
+		}
+		const detectionChanged =
 			jsonDigest(WorkspaceDetectionSchema.parse(JSON.parse(text))) !==
-				jsonDigest(WorkspaceDetectionSchema.parse(workspace))
-		) {
+			jsonDigest(WorkspaceDetectionSchema.parse(workspace));
+		if (detectionChanged) {
 			throw new Error(
 				"ワークスペースの検出が未完了、または変更されています。再検出してください。",
 			);
@@ -371,7 +393,7 @@ export class IntentRepository {
 	}
 	/** Git 側へは停止した状態の写しだけを出力する。読込み・復旧には一切使わない。 */
 	exportSnapshot(intentId: string): Promise<void> {
-		return this.locked(async () => {
+		const writeHistoricalSnapshot = async () => {
 			const registry = await this.registry();
 			const entry = registry.entries.find(
 				(item) => item.intentId === intentId,
@@ -380,12 +402,11 @@ export class IntentRepository {
 				throw new Error("出力する Intent が登録されていません。");
 			}
 			const state = await this.loadEntry(entry);
-			if (
-				state.workItems.some(
-					(item) =>
-						item.status === "running" || item.status === "stopping",
-				)
-			) {
+			const matchesSome2 = state.workItems.some(
+				(item) =>
+					item.status === "running" || item.status === "stopping",
+			);
+			if (matchesSome2) {
 				throw new Error("実行中の状態は Git の履歴へ出力できません。");
 			}
 			const directory = `${intentsDirectory}/${entry.dirName}`;
@@ -399,8 +420,10 @@ export class IntentRepository {
 				intentId,
 				revision: state.revision,
 			});
-		});
+		};
+		return this.locked(writeHistoricalSnapshot);
 	}
+	/** 保存先の名前の競合を避け、本文と状態を確定してから索引へ登録する。 */
 	private async register(
 		state: IntentState,
 		registry: IntentRegistry,
@@ -460,7 +483,7 @@ export class IntentRepository {
 	}
 	/** 古い書き込みは、ロック取得後に期待版を照合して拒否する。 */
 	save(value: IntentState, expectedRevision: number): Promise<void> {
-		return this.locked(async () => {
+		const commitIntentState = async () => {
 			const state = IntentStateSchema.parse(value);
 			const registry = await this.registry();
 			const entry = registry.entries.find(
@@ -470,17 +493,17 @@ export class IntentRepository {
 				throw new Error("保存する Intent が登録されていません。");
 			}
 			const previous = await this.loadEntry(entry);
-			if (
+			const matchesRevision2 =
 				previous.revision !== expectedRevision ||
 				jsonDigest(previous.intent) !== jsonDigest(state.intent) ||
-				jsonDigest(previous.routing) !== jsonDigest(state.routing)
-			) {
+				jsonDigest(previous.routing) !== jsonDigest(state.routing);
+			if (matchesRevision2) {
 				throw new Error("Intent の状態または版が競合しています。");
 			}
-			if (
+			const matchesJsonDigest =
 				jsonDigest(previous.workflow.stages) !==
-				jsonDigest(state.workflow.stages)
-			) {
+				jsonDigest(state.workflow.stages);
+			if (matchesJsonDigest) {
 				throw new Error("未実装の工程の進行状態は変更できません。");
 			}
 			const directory = `${intentsDirectory}/${entry.dirName}`;
@@ -495,8 +518,10 @@ export class IntentRepository {
 				expectedRevision,
 				jsonDigest(state.intent),
 			);
-		});
+		};
+		return this.locked(commitIntentState);
 	}
+	/** 未登録領域の確認と対象の復元を同じロック内で行い、破損した状態を公開しない。 */
 	load(intentId: string): Promise<IntentState> {
 		return this.locked(async () => {
 			const registry = await this.registry();
@@ -510,6 +535,7 @@ export class IntentRepository {
 			return this.loadEntry(entry);
 		});
 	}
+	/** 検証済み状態からメタデータだけを取り出し、未検証の索引を一覧として公開しない。 */
 	list(): Promise<IntentMetadata[]> {
 		return this.states().then((states) =>
 			states.map((state) => state.intent),
@@ -519,8 +545,9 @@ export class IntentRepository {
 	projections() {
 		return this.states().then((states) => states.map(intentProjection));
 	}
+	/** 未登録領域を確認してから登録順に全状態を検証し、不正な一件を黙って一覧から落とさない。 */
 	private states(): Promise<IntentState[]> {
-		return this.locked(async () => {
+		const loadRegisteredStates = async () => {
 			const registry = await this.registry();
 			await this.assertNoOrphans(registry);
 			const values: IntentState[] = [];
@@ -528,23 +555,25 @@ export class IntentRepository {
 				values.push(await this.loadEntry(entry));
 			}
 			return values;
-		});
+		};
+		return this.locked(loadRegisteredStates);
 	}
 	/** 明示的な復旧操作だけが未登録領域を登録する。信頼済み根拠のない領域は保持して拒否する。 */
 	recoverOrphans(): Promise<void> {
-		return this.locked(async () => {
+		const registerRecoveredIntents = async () => {
 			let registry = await this.registry();
 			const entries = await readdir(
 				await this.liveFiles.path(intentsDirectory),
 				{ withFileTypes: true },
 			);
 			for (const entry of entries) {
-				if (
-					!entry.isDirectory() ||
-					registry.entries.some(
-						(value) => value.dirName === entry.name,
-					)
-				) {
+				if (!entry.isDirectory()) {
+					continue;
+				}
+				const registeredDirectory = registry.entries.some(
+					(value) => value.dirName === entry.name,
+				);
+				if (registeredDirectory) {
 					continue;
 				}
 				const dirName = IntentDirectorySchema.parse(entry.name);
@@ -571,6 +600,7 @@ export class IntentRepository {
 				await this.saveRegistry(next, registry.revision);
 				registry = next;
 			}
-		});
+		};
+		return this.locked(registerRecoveredIntents);
 	}
 }

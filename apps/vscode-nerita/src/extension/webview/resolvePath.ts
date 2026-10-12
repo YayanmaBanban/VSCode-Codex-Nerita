@@ -49,10 +49,10 @@ function invalidPathRequest(request: ResolvePathRequest) {
 	const invalidPath =
 		!isAbsoluteLocalPath(request.path) ||
 		isNonEmptyString(vscode.env.remoteName);
-	return (
+	const matchesInvalidPath =
 		invalidPath ||
-		(request.range !== undefined && !isSourceRange(request.range))
-	);
+		(request.range !== undefined && !isSourceRange(request.range));
+	return matchesInvalidPath;
 }
 
 /** ディレクトリを優先して VS Code のファイル種別を判定する。 */

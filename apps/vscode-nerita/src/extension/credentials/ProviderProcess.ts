@@ -35,10 +35,11 @@ export async function providerExecutable(
 				),
 			);
 			const local = relative(root, file);
-			if (
-				local === "" ||
-				(!local.startsWith("..") && !isAbsolute(local))
-			) {
+
+			if (local === "") {
+				continue;
+			}
+			if (!local.startsWith("..") && !isAbsolute(local)) {
 				continue;
 			}
 			return file;
@@ -70,7 +71,11 @@ export const runProviderProcess: ProviderProcess = async (
 	);
 	const directory = await mkdtemp(join(tmpdir(), "nerita-provider-"));
 	try {
-		return await new Promise<string>((resolve, reject) => {
+		/** 取得プロセスの期限・取消し・出力上限を監視し、秘密値を含む stderr や生の失敗を公開しない。 */
+		const runCredentialProvider = (
+			resolve: (value: string) => void,
+			reject: (reason: unknown) => void,
+		) => {
 			const child = spawn(executable, args, {
 				cwd: directory,
 				env: { ...env, ...extraEnv },
@@ -119,18 +124,23 @@ export const runProviderProcess: ProviderProcess = async (
 			if (signal.aborted) {
 				stop();
 			}
-		});
+		};
+		return await new Promise<string>(runCredentialProvider);
 	} finally {
 		await rm(directory, { recursive: true, force: true });
 	}
 };
 /** Provider のヘルパーも終了してから一時領域を削除する。 */
 function stopProvider(child: ReturnType<typeof spawn>) {
-	if (
-		process.platform !== "win32" ||
-		!isNonEmptyString(process.env.SystemRoot) ||
-		!isNonZeroNumber(child.pid)
-	) {
+	if (process.platform !== "win32") {
+		child.kill();
+		return;
+	}
+	if (!isNonEmptyString(process.env.SystemRoot)) {
+		child.kill();
+		return;
+	}
+	if (!isNonZeroNumber(child.pid)) {
 		child.kill();
 		return;
 	}

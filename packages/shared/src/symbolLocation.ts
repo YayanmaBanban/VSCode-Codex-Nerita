@@ -17,12 +17,13 @@ export function isSourceRange(value: unknown): value is SourceRange {
 			return false;
 		}
 		const p = point;
-		return [p.line, p.character].every((n) => {
+		const matchesEvery = [p.line, p.character].every((n) => {
 			if (!(typeof n === "number" && Number.isSafeInteger(n) && n >= 0)) {
 				return false;
 			}
 			return n <= 2_147_483_647;
 		});
+		return matchesEvery;
 	};
 	if (!(position(range.start) && position(range.end))) {
 		return false;
@@ -43,11 +44,14 @@ export function isSymbolLocation(value: unknown): value is SymbolLocation {
 		return false;
 	}
 	const symbol = value;
-	if (!(
-		typeof symbol.kind === "number" &&
-		Number.isInteger(symbol.kind) &&
-		symbol.kind >= 0
-	)) {
+
+	if (!(typeof symbol.kind === "number")) {
+		return false;
+	}
+	if (!Number.isInteger(symbol.kind)) {
+		return false;
+	}
+	if (!(symbol.kind >= 0)) {
 		return false;
 	}
 	return symbol.kind <= 25 && isSourceRange(symbol.range);

@@ -6,11 +6,13 @@ export type CodexItem = Record<string, unknown> & { id: string; type: string };
 
 /** 識別子を持たない項目は通知・履歴の入口で拒否する。 */
 export function parseCodexItem(value: unknown): CodexItem {
-	if (
-		!isRecord(value) ||
-		typeof value.id !== "string" ||
-		typeof value.type !== "string"
-	) {
+	if (!isRecord(value)) {
+		throw new Error("Invalid item identity");
+	}
+	if (typeof value.id !== "string") {
+		throw new Error("Invalid item identity");
+	}
+	if (typeof value.type !== "string") {
 		throw new Error("Invalid item identity");
 	}
 	return { ...value, id: value.id, type: value.type };

@@ -31,11 +31,12 @@ export async function openAIOAuth(models: ModelRuntime, signal: AbortSignal) {
 export function isOpenAIEndpoint(baseUrl: string): boolean {
 	try {
 		const url = new URL(baseUrl);
-		if (!(
+		const matchesOrigin = !(
 			url.origin === "https://api.openai.com" &&
 			url.pathname.replace(/\/$/, "") === "/v1" &&
 			url.username === ""
-		)) {
+		);
+		if (matchesOrigin) {
 			return false;
 		}
 		return url.password === "" && url.search === "" && url.hash === "";

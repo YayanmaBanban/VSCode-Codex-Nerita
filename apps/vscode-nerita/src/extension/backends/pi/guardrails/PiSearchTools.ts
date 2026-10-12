@@ -125,7 +125,8 @@ async function searchFiles(
 			signal,
 		);
 		consumeApprovedToolCall(permit);
-		if ((await realpath(path)) !== path) {
+		const matchesValue = (await realpath(path)) !== path;
+		if (matchesValue) {
 			throw new Error("検索対象が変更されました。");
 		}
 		const info = await lstat(path);

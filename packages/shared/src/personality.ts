@@ -39,11 +39,13 @@ export type PersonalityMessage =
 export function isPersonalityPreset(
 	value: unknown,
 ): value is PersonalityPreset {
-	if (!(
-		isRecord(value) &&
-		typeof value.name === "string" &&
-		value.name.trim().length > 0
-	)) {
+	if (!isRecord(value)) {
+		return false;
+	}
+	if (!(typeof value.name === "string")) {
+		return false;
+	}
+	if (!(value.name.trim().length > 0)) {
 		return false;
 	}
 	return (
@@ -57,22 +59,29 @@ export function isPersonalityPreset(
 export function isPersonalitySettings(
 	value: unknown,
 ): value is PersonalitySettings {
+	if (!isRecord(value)) {
+		return false;
+	}
+	return [value.global, value.workspace].every(isPersonalityScope);
+}
+
+/** 保存先ごとのプリセットと選択を検証し、設定ファイル由来の指示は null または文字列に限定する。 */
+function isPersonalityScope(scope: unknown): scope is PersonalityScope {
+	if (!isRecord(scope)) {
+		return false;
+	}
+	if (!Array.isArray(scope.presets)) {
+		return false;
+	}
+	if (!scope.presets.every(isPersonalityPreset)) {
+		return false;
+	}
+	if (typeof scope.selected !== "string") {
+		return false;
+	}
 	return (
-		isRecord(value) &&
-		[value.global, value.workspace].every((scope) => {
-			if (!(
-				isRecord(scope) &&
-				Array.isArray(scope.presets) &&
-				scope.presets.every(isPersonalityPreset)
-			)) {
-				return false;
-			}
-			return (
-				typeof scope.selected === "string" &&
-				(scope.configuredText === null ||
-					typeof scope.configuredText === "string")
-			);
-		})
+		scope.configuredText === null ||
+		typeof scope.configuredText === "string"
 	);
 }
 

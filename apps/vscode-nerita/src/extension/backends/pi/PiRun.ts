@@ -39,11 +39,11 @@ type Submission = {
 export abstract class PiRun extends PiLifecycle {
 	/** DLC は通常の受信・追加指示処理を通さず、新規の入力だけを実行する。 */
 	async execute(text: string, signal: AbortSignal) {
-		if (
+		const matchesBusy =
 			this.busy() ||
 			this.state.connection !== "ready" ||
-			this.state.configPending
-		) {
+			this.state.configPending;
+		if (matchesBusy) {
 			throw new Error("Pi の内部実行を開始できません。");
 		}
 		if (this.state.sessionPending) {
@@ -56,6 +56,7 @@ export abstract class PiRun extends PiLifecycle {
 			signal,
 		);
 	}
+	/** 内部実行の取消しも現在ターンの停止処理へ通し、別の終了経路を作らない。 */
 	cancelExecution(): void {
 		this.cancel();
 	}
@@ -114,20 +115,23 @@ export abstract class PiRun extends PiLifecycle {
 	/** 文書と同じルートの会話だけを使い、親モデルへの送信なしで子を起動する。 */
 	async workflow(request: WorkflowExecution, signal: AbortSignal) {
 		const runtime = this.runtime;
-		if (
-			!runtime?.workflow ||
-			this.state.connection !== "ready" ||
-			this.state.sessionPending
-		) {
+		if (!runtime?.workflow) {
+			throw new Error("Pi への接続とモデル設定を完了してください。");
+		}
+		if (this.state.connection !== "ready" || this.state.sessionPending) {
 			throw new Error("Pi への接続とモデル設定を完了してください。");
 		}
 		if (this.state.configPending) {
 			throw new Error("Pi への接続とモデル設定を完了してください。");
 		}
-		if (
-			!isNonEmptyString(this.state.cwd) ||
-			(await realpath(this.state.cwd)) !== request.root
-		) {
+
+		if (!isNonEmptyString(this.state.cwd)) {
+			throw new Error(
+				"Workflow と同じワークスペースの Pi 会話を開いてください。",
+			);
+		}
+		const workspaceRoot = await realpath(this.state.cwd);
+		if (workspaceRoot !== request.root) {
 			throw new Error(
 				"Workflow と同じワークスペースの Pi 会話を開いてください。",
 			);
@@ -246,7 +250,8 @@ export abstract class PiRun extends PiLifecycle {
 			);
 		}
 		const epoch = this.epoch;
-		const operation = Promise.resolve().then(async () => {
+		/** 参照の準備前後で同じ実行を確認し、拡張の受付と通常の追加指示を区別して通知する。 */
+		const submitCurrentSteering = async () => {
 			try {
 				if (this.staleSubmission(submission, epoch)) {
 					throw new Error(
@@ -284,10 +289,13 @@ export abstract class PiRun extends PiLifecycle {
 					return;
 				}
 
-				if (
-					this.staleSubmission(submission, epoch) ||
-					!runtime.isStreaming
-				) {
+				if (this.staleSubmission(submission, epoch)) {
+					runtime.clearQueue();
+					throw new Error(
+						"追加指示の対象の実行は終了しました。再送してください。",
+					);
+				}
+				if (!runtime.isStreaming) {
 					runtime.clearQueue();
 					throw new Error(
 						"追加指示の対象の実行は終了しました。再送してください。",
@@ -304,7 +312,8 @@ export abstract class PiRun extends PiLifecycle {
 			} finally {
 				delete submission.steering;
 			}
-		});
+		};
+		const operation = Promise.resolve().then(submitCurrentSteering);
 		submission.steering = operation;
 		this.track(operation);
 	}

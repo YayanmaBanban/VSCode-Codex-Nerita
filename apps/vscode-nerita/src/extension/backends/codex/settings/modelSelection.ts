@@ -50,11 +50,14 @@ export function codexSelectionStore(storage: {
 	return {
 		read: async () => {
 			const value = await storage.read();
-			if (
-				!isRecord(value) ||
-				typeof value.model !== "string" ||
-				value.model.trim() === ""
-			) {
+
+			if (!isRecord(value)) {
+				return undefined;
+			}
+			if (typeof value.model !== "string") {
+				return undefined;
+			}
+			if (value.model.trim() === "") {
 				return undefined;
 			}
 			return {

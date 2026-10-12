@@ -1,5 +1,5 @@
 // 下書き内の通常文と貼り付けブロックを、表示先をまたいで保持する。
-import { isRecord } from "./validation";
+import { isId, isRecord } from "./validation";
 import { isNonZeroNumber } from "./valuePredicates";
 import { validReferences, type ComposerReference } from "./composerReferences";
 
@@ -76,44 +76,40 @@ export function validDraftParts(draft: string, parts: unknown): boolean {
 
 	const ids = new Set<string>();
 	let text = "";
-	return (
-		(parts as unknown[]).every((value, index) => {
-			if (!isRecord(value)) {
-				return false;
-			}
-			const part = value;
-			if (
-				typeof part.id !== "string" ||
-				part.id === "" ||
-				part.id.length > 256
-			) {
-				return false;
-			}
-			if (
-				ids.has(part.id) ||
-				part.type !== (isNonZeroNumber(index % 2) ? "pasted" : "text")
-			) {
-				return false;
-			}
-			if (!validPartReferences(part)) {
-				return false;
-			}
+	/** 入力順に ID と本文を蓄積し、重複と断片の交互配置を検証する。 */
+	const validatePart = (value: unknown, index: number) => {
+		if (!isRecord(value)) {
+			return false;
+		}
+		const part = value;
+		if (!isId(part.id)) {
+			return false;
+		}
+		const expectedType = isNonZeroNumber(index % 2) ? "pasted" : "text";
+		if (ids.has(part.id) || part.type !== expectedType) {
+			return false;
+		}
+		if (!validPartReferences(part)) {
+			return false;
+		}
 
-			ids.add(part.id);
-			text += part.text;
-			return true;
-		}) && text === draft
-	);
+		ids.add(part.id);
+		text += part.text;
+		return true;
+	};
+	const matchesEvery =
+		(parts as unknown[]).every(validatePart) && text === draft;
+	return matchesEvery;
 }
 
 /** 通常文の参照位置を検証し、貼り付けブロック内の参照を拒否する。 */
 function validPartReferences(
 	part: Record<string, unknown>,
 ): part is Record<string, unknown> & { text: string } {
-	if (!(
-		typeof part.text === "string" &&
-		!(part.type === "pasted" && part.references !== undefined)
-	)) {
+	if (!(typeof part.text === "string")) {
+		return false;
+	}
+	if (part.type === "pasted" && part.references !== undefined) {
 		return false;
 	}
 	return validReferences(part.text, part.references);

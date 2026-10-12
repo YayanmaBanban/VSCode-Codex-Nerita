@@ -19,23 +19,25 @@ export type ApprovalRequest = {
 };
 /** 対応する要求の範囲と表示情報を検証する。 */
 export function parseApproval(request: AppServerRequest): ApprovalRequest {
-	if (
-		![
-			"item/commandExecution/requestApproval",
-			"item/fileChange/requestApproval",
-		].includes(request.method)
-	) {
+	const matchesIncludes = ![
+		"item/commandExecution/requestApproval",
+		"item/fileChange/requestApproval",
+	].includes(request.method);
+	if (matchesIncludes) {
 		throw new AppServerRpcError(
 			-32601,
 			"Method not supported by this client",
 		);
 	}
 	const params = request.params;
-	if (
-		!isRecord(params) ||
-		typeof params.threadId !== "string" ||
-		typeof params.turnId !== "string"
-	) {
+
+	if (!isRecord(params)) {
+		throw new AppServerRpcError(-32602, "Invalid approval request");
+	}
+	if (typeof params.threadId !== "string") {
+		throw new AppServerRpcError(-32602, "Invalid approval request");
+	}
+	if (typeof params.turnId !== "string") {
 		throw new AppServerRpcError(-32602, "Invalid approval request");
 	}
 	if (typeof params.itemId !== "string") {
@@ -62,10 +64,11 @@ function approvalDetails(
 	};
 	if (isRecord(params.networkApprovalContext)) {
 		const context = params.networkApprovalContext;
-		if (
-			typeof context.host !== "string" ||
-			typeof context.protocol !== "string"
-		) {
+
+		if (typeof context.host !== "string") {
+			throw new AppServerRpcError(-32602, "Invalid network approval");
+		}
+		if (typeof context.protocol !== "string") {
 			throw new AppServerRpcError(-32602, "Invalid network approval");
 		}
 		presentation.title = "ネットワーク接続の承認";
@@ -78,18 +81,19 @@ function approvalDetails(
 	}
 	for (const field of ["command", "cwd", "reason", "grantRoot"] as const) {
 		const value = approvalString(params[field]);
-		if (isNonEmptyString(value)) {
-			if (field === "command" || field === "cwd") {
-				presentation[field] = value;
-			} else {
-				presentation.fields.push({
-					id: field,
-					label: field === "reason" ? "理由" : "書込み許可",
-					value,
-					display: "text",
-				});
-			}
+		if (!isNonEmptyString(value)) {
+			continue;
 		}
+		if (field === "command" || field === "cwd") {
+			presentation[field] = value;
+			continue;
+		}
+		presentation.fields.push({
+			id: field,
+			label: field === "reason" ? "理由" : "書込み許可",
+			value,
+			display: "text",
+		});
 	}
 	return presentation;
 }

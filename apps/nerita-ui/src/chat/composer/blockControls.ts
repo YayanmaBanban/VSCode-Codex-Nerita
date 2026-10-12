@@ -79,42 +79,41 @@ export function connectBlockScroll(
 	element: HTMLElement,
 	editor: LexicalEditor,
 ): void {
-	element.addEventListener(
-		"wheel",
-		(event) => {
-			// ズームと横方向のスクロールはブラウザの標準操作を保つ。
-			if (
-				event.ctrlKey ||
-				event.shiftKey ||
-				Math.abs(event.deltaX) > Math.abs(event.deltaY)
-			) {
-				return;
-			}
-			if (event.deltaY === 0) {
-				return;
-			}
-			const root = editor.getRootElement();
-			if (!root || !event.cancelable) {
-				return;
-			}
-			const unit = wheelUnit(event, element);
-			const delta = event.deltaY * unit;
-			const maximum = Math.max(
-				0,
-				element.scrollHeight - element.clientHeight,
-			);
-			const next = element.scrollTop + delta;
-			if (next > 0 && next < maximum) {
-				return;
-			}
-			event.preventDefault();
-			const inside =
-				Math.max(0, Math.min(maximum, next)) - element.scrollTop;
-			element.scrollTop += inside;
-			root.scrollTop += delta - inside;
-		},
-		{ passive: false },
-	);
+	/** ブロック内で消費できない縦スクロールだけを入力欄へ渡し、ズームと横移動は標準操作を保つ。 */
+	const transferBoundaryScroll = (event: WheelEvent) => {
+		// ズームと横方向のスクロールはブラウザの標準操作を保つ。
+		const matchesCtrlKey =
+			event.ctrlKey ||
+			event.shiftKey ||
+			Math.abs(event.deltaX) > Math.abs(event.deltaY);
+		if (matchesCtrlKey) {
+			return;
+		}
+		if (event.deltaY === 0) {
+			return;
+		}
+		const root = editor.getRootElement();
+		if (!root || !event.cancelable) {
+			return;
+		}
+		const unit = wheelUnit(event, element);
+		const delta = event.deltaY * unit;
+		const maximum = Math.max(
+			0,
+			element.scrollHeight - element.clientHeight,
+		);
+		const next = element.scrollTop + delta;
+		if (next > 0 && next < maximum) {
+			return;
+		}
+		event.preventDefault();
+		const inside = Math.max(0, Math.min(maximum, next)) - element.scrollTop;
+		element.scrollTop += inside;
+		root.scrollTop += delta - inside;
+	};
+	element.addEventListener("wheel", transferBoundaryScroll, {
+		passive: false,
+	});
 }
 
 /** ホイールの行・ページ単位をピクセルへ換算する。 */

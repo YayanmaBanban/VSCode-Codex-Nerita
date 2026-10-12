@@ -39,11 +39,14 @@ export async function listWorkspacePaths(
 			};
 		}
 		const uri = vscode.Uri.parse(request.uri, true);
-		if (
-			isNonEmptyString(uri.query) ||
-			isNonEmptyString(uri.fragment) ||
-			!vscode.workspace.getWorkspaceFolder(uri)
-		) {
+
+		if (isNonEmptyString(uri.query)) {
+			throw new Error("Outside workspace");
+		}
+		if (isNonEmptyString(uri.fragment)) {
+			throw new Error("Outside workspace");
+		}
+		if (!vscode.workspace.getWorkspaceFolder(uri)) {
 			throw new Error("Outside workspace");
 		}
 		const children = await vscode.workspace.fs.readDirectory(uri);

@@ -274,11 +274,11 @@ export class ChatViewProvider
 			state.run === "running" ||
 			state.run === "cancelling" ||
 			state.connection === "connecting";
-		if (
+		const matchesPendingSession =
 			pendingSession ||
 			state.connection === "authenticating" ||
-			state.sessionPending
-		) {
+			state.sessionPending;
+		if (matchesPendingSession) {
 			return true;
 		}
 		return state.configPending;
@@ -364,10 +364,10 @@ export class ChatViewProvider
 		} satisfies HostMessage);
 		this.viewState(webview);
 		// 保存した配置は最初のサイドバー表示時に復元する。
-		if (
+		const matchesEditor =
 			!(this.views.get(webview)?.editor === true) &&
-			!this.placement.initialized
-		) {
+			!this.placement.initialized;
+		if (matchesEditor) {
 			await this.placement.sync();
 		}
 	}

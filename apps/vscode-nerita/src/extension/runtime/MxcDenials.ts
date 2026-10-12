@@ -51,10 +51,10 @@ export async function readMxcDenials(
 		throw new Error("MXC 拒否レポートを一意に特定できません。");
 	}
 	const path = join(directory, names[0]!);
-	if (
+	const matchesValue =
 		(await realpath(path)) !== path ||
-		(await stat(path)).size > 8 * 1024 * 1024
-	) {
+		(await stat(path)).size > 8 * 1024 * 1024;
+	if (matchesValue) {
 		throw new Error("MXC 拒否レポートが不正です。");
 	}
 	const report = reportSchema.parse(JSON.parse(await readFile(path, "utf8")));

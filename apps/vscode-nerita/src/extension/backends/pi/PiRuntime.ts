@@ -377,11 +377,12 @@ function runtimeSessionFacade(
 		close,
 		...(history ? { history } : {}),
 		storageChanged: () => {
-			if (!(
+			const matchesResume = !(
 				!options.resume &&
 				session.messages.length === 0 &&
 				jobs.list().length === 0
-			)) {
+			);
+			if (matchesResume) {
 				return false;
 			}
 			return !!options.getStorage && options.getStorage() !== storage;
@@ -465,11 +466,12 @@ async function bindRuntimeAccount(
 
 	controls.bind(session);
 	controls.bindDelegation(() => {
-		if (!(
+		const matchesAborted = !(
 			!options.signal.aborted &&
 			modelRuntime.hasConfiguredAuth("openai") &&
 			subagents.definitions.length > 0
-		)) {
+		);
+		if (matchesAborted) {
 			return false;
 		}
 		return session.getActiveToolNames().includes("subagent");
@@ -748,9 +750,8 @@ function sessionStorage(options: PiRuntimeOptions) {
 
 /** 未信頼の会話履歴はワークスペース内へ書き込まない。 */
 async function trustedSessionStorage(options: PiRuntimeOptions) {
-	return (await piWorkspaceTrusted(options))
-		? sessionStorage(options)
-		: "global";
+	const trusted = await piWorkspaceTrusted(options);
+	return trusted ? sessionStorage(options) : "global";
 }
 
 /** 拡張由来のプロバイダーを初期モデル選択前に登録する。 */
@@ -804,10 +805,10 @@ function resolvePreferredModel(
 	selection: PiModelSelection | undefined,
 	modelRuntime: PiSdk.ModelRuntime,
 ) {
-	if (
-		!isNonEmptyString(selection?.provider.trim()) ||
-		selection.model.trim() === ""
-	) {
+	if (!isNonEmptyString(selection?.provider.trim())) {
+		return undefined;
+	}
+	if (selection.model.trim() === "") {
 		return undefined;
 	}
 	return modelRuntime
@@ -844,11 +845,11 @@ function validateChildModel(
 	if (options.strictModel !== true) {
 		return;
 	}
-	if (
+	const matchesModel =
 		!model ||
 		model.id !== options.preferredModel?.model ||
-		model.provider !== options.preferredModel.provider
-	) {
+		model.provider !== options.preferredModel.provider;
+	if (matchesModel) {
 		throw new Error("子に指定されたモデルを利用できません。");
 	}
 }

@@ -43,34 +43,41 @@ export function parseLogin(
 	if (value.type === "apiKey") {
 		return { type: "apiKey" };
 	}
-	if (
-		value.type === "chatgpt" &&
-		typeof value.loginId === "string" &&
-		typeof value.authUrl === "string"
-	) {
-		return {
-			type: "chatgpt",
-			loginId: value.loginId,
-			authUrl: value.authUrl,
-		};
+	if (value.type !== "chatgpt") {
+		throw new Error("Invalid login response");
 	}
-	throw new Error("Invalid login response");
+	if (typeof value.loginId !== "string") {
+		throw new Error("Invalid login response");
+	}
+	if (typeof value.authUrl !== "string") {
+		throw new Error("Invalid login response");
+	}
+	return {
+		type: "chatgpt",
+		loginId: value.loginId,
+		authUrl: value.authUrl,
+	};
 }
 
 /** 各モデルの入力形式・推論量・サービス階層を検証して公開属性だけを返す。 */
 function parseModel(entry: unknown): ModelInfo {
-	if (
-		!isRecord(entry) ||
-		typeof entry.model !== "string" ||
-		typeof entry.displayName !== "string"
-	) {
+	if (!isRecord(entry)) {
 		throw new Error("Invalid model");
 	}
-	if (
-		!isEffort(entry.defaultReasoningEffort) ||
-		!Array.isArray(entry.supportedReasoningEfforts) ||
-		!Array.isArray(entry.inputModalities)
-	) {
+	if (typeof entry.model !== "string") {
+		throw new Error("Invalid model");
+	}
+	if (typeof entry.displayName !== "string") {
+		throw new Error("Invalid model");
+	}
+
+	if (!isEffort(entry.defaultReasoningEffort)) {
+		throw new Error("Invalid model");
+	}
+	if (!Array.isArray(entry.supportedReasoningEfforts)) {
+		throw new Error("Invalid model");
+	}
+	if (!Array.isArray(entry.inputModalities)) {
 		throw new Error("Invalid model");
 	}
 	if (!Array.isArray(entry.serviceTiers)) {
@@ -78,11 +85,13 @@ function parseModel(entry: unknown): ModelInfo {
 	}
 	const supportedReasoningEfforts = entry.supportedReasoningEfforts.map(
 		(effort: unknown) => {
-			if (
-				!isRecord(effort) ||
-				!isEffort(effort.reasoningEffort) ||
-				typeof effort.description !== "string"
-			) {
+			if (!isRecord(effort)) {
+				throw new Error("Invalid reasoning option");
+			}
+			if (!isEffort(effort.reasoningEffort)) {
+				throw new Error("Invalid reasoning option");
+			}
+			if (typeof effort.description !== "string") {
 				throw new Error("Invalid reasoning option");
 			}
 			return {
@@ -92,32 +101,14 @@ function parseModel(entry: unknown): ModelInfo {
 		},
 	);
 	const inputModalities = entry.inputModalities.map((modality: unknown) => {
-		if (
-			modality !== "text" &&
-			modality !== "image" &&
-			modality !== "audio"
-		) {
+		const matchesModality =
+			modality !== "text" && modality !== "image" && modality !== "audio";
+		if (matchesModality) {
 			throw new Error("Invalid modality");
 		}
 		return modality;
 	});
-	const serviceTiers = entry.serviceTiers.map((tier: unknown) => {
-		if (
-			!isRecord(tier) ||
-			typeof tier.id !== "string" ||
-			typeof tier.name !== "string"
-		) {
-			throw new Error("Invalid service tier");
-		}
-		if (typeof tier.description !== "string") {
-			throw new Error("Invalid service tier");
-		}
-		return {
-			id: tier.id,
-			name: tier.name,
-			description: tier.description,
-		};
-	});
+	const serviceTiers = entry.serviceTiers.map(parseServiceTier);
 	return {
 		model: entry.model,
 		displayName: entry.displayName,
@@ -126,4 +117,21 @@ function parseModel(entry: unknown): ModelInfo {
 		inputModalities,
 		serviceTiers,
 	};
+}
+
+/** モデルのサービス階層は表示に使う属性を全て検証してから返す。 */
+function parseServiceTier(tier: unknown): ModelInfo["serviceTiers"][number] {
+	if (!isRecord(tier)) {
+		throw new Error("Invalid service tier");
+	}
+	if (typeof tier.id !== "string") {
+		throw new Error("Invalid service tier");
+	}
+	if (typeof tier.name !== "string") {
+		throw new Error("Invalid service tier");
+	}
+	if (typeof tier.description !== "string") {
+		throw new Error("Invalid service tier");
+	}
+	return { id: tier.id, name: tier.name, description: tier.description };
 }

@@ -28,10 +28,10 @@ export function withThreadStatus(
 	agent: SubAgentSummary,
 	status: AgentStatus,
 ): SubAgentSummary {
-	if (
+	const matchesStatus =
 		status === "idle" &&
-		!["running", "idle", "pendingInit"].includes(agent.status)
-	) {
+		!["running", "idle", "pendingInit"].includes(agent.status);
+	if (matchesStatus) {
 		return agent;
 	}
 	return { ...agent, status };
@@ -154,18 +154,23 @@ function isActivityIdentity(item: Record<string, unknown>): item is Record<
 	id: string;
 	kind: "started" | "interacted" | "interrupted" | "completed";
 } {
-	if (!(
-		typeof item.agentThreadId === "string" &&
-		item.agentThreadId.length > 0 &&
-		typeof item.agentPath === "string"
-	)) {
+	if (!(typeof item.agentThreadId === "string")) {
 		return false;
 	}
-	if (!(
-		item.agentPath.length > 0 &&
-		typeof item.id === "string" &&
-		typeof item.kind === "string"
-	)) {
+	if (!(item.agentThreadId.length > 0)) {
+		return false;
+	}
+	if (!(typeof item.agentPath === "string")) {
+		return false;
+	}
+
+	if (!(item.agentPath.length > 0)) {
+		return false;
+	}
+	if (!(typeof item.id === "string")) {
+		return false;
+	}
+	if (!(typeof item.kind === "string")) {
 		return false;
 	}
 	return ["started", "interacted", "interrupted", "completed"].includes(

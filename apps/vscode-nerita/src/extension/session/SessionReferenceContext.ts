@@ -19,10 +19,10 @@ export async function buildSessionReferenceContext(options: {
 	generate: HandoffGenerator;
 }) {
 	const { references, currentId, check, signal } = options;
-	if (
+	const matchesValidSessionReferences =
 		!validSessionReferences(references) ||
-		references.some((ref) => ref.sessionId === currentId)
-	) {
+		references.some((ref) => ref.sessionId === currentId);
+	if (matchesValidSessionReferences) {
 		throw new Error(
 			"参照は現在の会話以外から、原文とハンドオフを合わせて5件まで選んでください。",
 		);

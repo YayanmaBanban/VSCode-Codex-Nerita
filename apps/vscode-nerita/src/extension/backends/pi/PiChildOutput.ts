@@ -6,6 +6,7 @@ import type { PiAgentViews } from "./PiAgentViews";
 export class PiChildOutput {
 	output = "";
 	failed = false;
+	/** 子の出力と活動通知を指定した子 ID へ結び付ける。 */
 	constructor(
 		private views: PiAgentViews,
 		private id: string,
@@ -17,18 +18,17 @@ export class PiChildOutput {
 		if (event.type === "tool_execution_end" && event.isError) {
 			this.failed = true;
 		}
-		if (
-			event.type === "message_end" &&
-			event.message.role === "assistant"
-		) {
-			this.output = event.message.content
-				.filter((part) => part.type === "text")
-				.map((part) => part.text)
-				.join("\n")
-				.slice(0, 32768);
-			this.failed ||= ["error", "aborted"].includes(
-				event.message.stopReason,
-			);
+		if (event.type !== "message_end") {
+			return;
 		}
+		if (event.message.role !== "assistant") {
+			return;
+		}
+		this.output = event.message.content
+			.filter((part) => part.type === "text")
+			.map((part) => part.text)
+			.join("\n")
+			.slice(0, 32768);
+		this.failed ||= ["error", "aborted"].includes(event.message.stopReason);
 	}
 }

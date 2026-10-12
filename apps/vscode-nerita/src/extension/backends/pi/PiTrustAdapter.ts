@@ -34,10 +34,12 @@ export async function piWorkspaceTrusted(
 	options: PiRuntimeOptions,
 ): Promise<boolean> {
 	return backendWorkspaceTrusted("pi", async () => {
-		if (!(
-			(options.trustEnabled?.() ?? options.workspaceTrusted === true) &&
-			!!options.trustStore
-		)) {
+		const trustEnabled =
+			options.trustEnabled?.() ?? options.workspaceTrusted === true;
+		if (!trustEnabled) {
+			return false;
+		}
+		if (!options.trustStore) {
 			return false;
 		}
 		return await options.trustStore.trusted(options.cwd);
@@ -48,7 +50,8 @@ export async function piWorkspaceTrusted(
 export async function restrictPiStorage(
 	options: PiRuntimeOptions,
 ): Promise<PiRuntimeOptions> {
-	if (await piWorkspaceTrusted(options)) {
+	const workspaceTrusted = await piWorkspaceTrusted(options);
+	if (workspaceTrusted) {
 		return options;
 	}
 	if (options.resume?.storage === "workspace") {

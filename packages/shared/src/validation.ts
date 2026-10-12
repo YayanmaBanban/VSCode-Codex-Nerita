@@ -5,6 +5,18 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** 通信の任意文字列は未指定を許可し、null や他の型を文字列へ変換しない。 */
+export function isOptionalString(value: unknown): value is string | undefined {
+	return value === undefined || typeof value === "string";
+}
+
+/** 通信の任意フラグは未指定を許可し、文字列や数値を真偽値として受け付けない。 */
+export function isOptionalBoolean(
+	value: unknown,
+): value is boolean | undefined {
+	return value === undefined || typeof value === "boolean";
+}
+
 /** 通信用の識別子を制限する。 */
 export function isId(value: unknown): value is string {
 	return typeof value === "string" && value.length > 0 && value.length <= 256;
@@ -15,10 +27,10 @@ export function everyRecord(
 	value: unknown,
 	test: (item: Record<string, unknown>) => boolean,
 ): boolean {
-	return (
+	const matchesIsArray =
 		Array.isArray(value) &&
-		value.every((item: unknown) => isRecord(item) && test(item))
-	);
+		value.every((item: unknown) => isRecord(item) && test(item));
+	return matchesIsArray;
 }
 
 /** 通信値の範囲だけを検証し、新旧の比較は受信側の状態管理に委ねる。 */

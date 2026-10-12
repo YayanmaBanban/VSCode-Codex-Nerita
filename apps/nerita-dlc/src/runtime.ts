@@ -66,6 +66,7 @@ export type ExecutionRequest = z.infer<typeof ExecutionRequestSchema>;
 export type RuntimeResult = { semantic: unknown; evidence: RuntimeEvidence };
 /** 会話の保存に失敗しても、実行要求に結び付いた収集済みの結果をエラーに含めて渡す。 */
 export class RuntimeResultError extends Error {
+	/** 失敗時にも実測結果を上位へ渡し、エラーメッセージだけで実行結果を失わない。 */
 	constructor(
 		message: string,
 		readonly result: RuntimeResult,

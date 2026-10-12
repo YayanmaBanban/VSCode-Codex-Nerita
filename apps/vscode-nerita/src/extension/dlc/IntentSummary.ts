@@ -15,14 +15,17 @@ export function intentSummary(projection: DlcProjection): IntentSummary {
 		status = "archived";
 	} else if (projection.workflowStatus === "complete") {
 		status = "complete";
-	} else if (
-		statuses.some((value) =>
-			["interrupted", "failed", "cancelled"].includes(value),
-		)
-	) {
+	} else if (hasInterruptedWork(statuses)) {
 		status = "attention";
 	} else if (projection.stage === "awaiting-review") {
 		status = "review";
 	}
 	return { intentId: projection.intentId, title: projection.title, status };
+}
+
+/** 失敗または停止した作業があれば確認を促す。 */
+function hasInterruptedWork(statuses: readonly string[]) {
+	return statuses.some((value) =>
+		["interrupted", "failed", "cancelled"].includes(value),
+	);
 }

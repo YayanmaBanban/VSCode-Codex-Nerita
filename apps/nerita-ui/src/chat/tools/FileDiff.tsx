@@ -26,6 +26,8 @@ export function FileDiff({ oldText, newText, ...location }: FileDiffProps) {
 			),
 		[path, oldText, newText],
 	);
+	const emptyMessage =
+		oldText === null ? "空のファイルを作成" : "変更はありません。";
 	return (
 		<DiffView {...location} hunks={patch?.hunks}>
 			{!patch ? (
@@ -40,11 +42,7 @@ export function FileDiff({ oldText, newText, ...location }: FileDiffProps) {
 				</>
 			) : (
 				patch.hunks.length === 0 && (
-					<p className="text-[12px] text-muted">
-						{oldText === null
-							? "空のファイルを作成"
-							: "変更はありません。"}
-					</p>
+					<p className="text-[12px] text-muted">{emptyMessage}</p>
 				)
 			)}
 		</DiffView>

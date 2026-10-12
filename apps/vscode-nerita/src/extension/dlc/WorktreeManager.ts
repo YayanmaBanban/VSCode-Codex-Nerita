@@ -20,10 +20,12 @@ export type WorktreeTarget = {
 
 /** Git の登録情報と実体を毎回照合し、Worktree の消失や別リポジトリへの差替えを拒否する。 */
 export class WorktreeManager {
+	/** Git の操作元と Nerita の Worktree 保存先を分けて固定する。 */
 	constructor(
 		private root: string,
 		private storageRoot: string,
 	) {}
+	/** Git の操作元を登録ルートへ固定し、取消しと時間・出力の上限を適用する。 */
 	private async git(args: string[], signal?: AbortSignal): Promise<string> {
 		return (
 			await execute("git", ["-C", this.root, ...args], {
@@ -34,6 +36,7 @@ export class WorktreeManager {
 			})
 		).stdout;
 	}
+	/** Git の登録とリポジトリの実体を照合し、Nerita の管理領域にある未ロックの子だけを削除候補にする。 */
 	async list(signal?: AbortSignal): Promise<WorktreeTarget[]> {
 		const project = await projectIdentity(this.root, signal);
 		const output = await this.git(
@@ -47,14 +50,17 @@ export class WorktreeManager {
 			const directory = fields
 				.find((field) => field.startsWith("worktree "))
 				?.slice(9);
-			if (
-				directory === undefined ||
-				fields.some((field) => field.startsWith("prunable"))
-			) {
+
+			if (directory === undefined) {
+				continue;
+			}
+			if (fields.some((field) => field.startsWith("prunable"))) {
 				continue;
 			}
 			const root = await realpath(directory);
-			if ((await projectIdentity(root, signal)).id !== project.id) {
+			const matchesId =
+				(await projectIdentity(root, signal)).id !== project.id;
+			if (matchesId) {
 				throw new Error(
 					"Worktree のリポジトリが差し替えられています。",
 				);
@@ -101,9 +107,9 @@ export class WorktreeManager {
 		main: boolean,
 	): Promise<void> {
 		if (main) {
-			if (
-				trustKey(await realpath(gitDir)) !== trustKey(commonDirectory)
-			) {
+			const matchesTrustKey =
+				trustKey(await realpath(gitDir)) !== trustKey(commonDirectory);
+			if (matchesTrustKey) {
 				throw new Error(
 					"main の Git 登録が別の Worktree を指しています。",
 				);
@@ -112,15 +118,16 @@ export class WorktreeManager {
 		}
 		const backlink = await readFile(join(gitDir, "gitdir"), "utf8");
 		const gitFile = await realpath(resolve(gitDir, backlink.trim()));
-		if (
+		const matchesTrustKey2 =
 			trustKey(gitFile) !== trustKey(join(root, ".git")) ||
-			trustKey(await realpath(dirname(gitFile))) !== trustKey(root)
-		) {
+			trustKey(await realpath(dirname(gitFile))) !== trustKey(root);
+		if (matchesTrustKey2) {
 			throw new Error(
 				"Worktree の個別 Git 登録が別の作業ディレクトリを指しています。",
 			);
 		}
 	}
+	/** 各作業ルートの実体 Git 領域を取得し、Worktree の登録確認に使う。 */
 	private async gitDirectory(
 		root: string,
 		signal?: AbortSignal,
@@ -143,6 +150,7 @@ export class WorktreeManager {
 			)
 		).stdout.trim();
 	}
+	/** 選択 ID を最新の検証済み一覧から解決し、削除された対象を実行先へ使わない。 */
 	async target(id: string, signal?: AbortSignal): Promise<WorktreeTarget> {
 		const target = (await this.list(signal)).find((item) => item.id === id);
 		if (!target) {
@@ -156,23 +164,21 @@ export class WorktreeManager {
 	async create(signal?: AbortSignal): Promise<WorktreeTarget> {
 		const project = await projectIdentity(this.root, signal);
 		const targets = await this.list(signal);
-		if (
-			!targets.some(
-				(target) =>
-					target.main &&
-					trustKey(target.root) === trustKey(project.root),
-			)
-		) {
+		const matchesSome = !targets.some(
+			(target) =>
+				target.main && trustKey(target.root) === trustKey(project.root),
+		);
+		if (matchesSome) {
 			throw new Error(
 				"Worktree の作成は main の管理画面から実行してください。",
 			);
 		}
 		const parent = join(this.storageRoot, "worktrees", project.id);
 		await mkdir(parent, { recursive: true });
-		if (
+		const matchesTrustKey3 =
 			trustKey(await realpath(parent)) !== trustKey(parent) ||
-			containsPath(project.root, parent)
-		) {
+			containsPath(project.root, parent);
+		if (matchesTrustKey3) {
 			throw new Error(
 				"Worktree の作成先が作業ディレクトリ内にあるか、リンクを経由しています。",
 			);
@@ -195,7 +201,12 @@ export class WorktreeManager {
 	/** Git の登録情報・リンク・未コミット・未追跡・除外対象のファイルを確認し、強制削除は行わない。実行中の削除は呼び出し側で防ぐ。 */
 	async remove(id: string, signal?: AbortSignal): Promise<void> {
 		const target = await this.target(id, signal);
-		if (!target.removable || (await lstat(target.root)).isSymbolicLink()) {
+
+		if (!target.removable) {
+			throw new Error("この Worktree は安全な削除の対象ではありません。");
+		}
+		const targetInfo = await lstat(target.root);
+		if (targetInfo.isSymbolicLink()) {
 			throw new Error("この Worktree は安全な削除の対象ではありません。");
 		}
 		const status = await execute(

@@ -31,6 +31,7 @@ export class CredentialService {
 	private readonly bindingStores = new Map<string, BindingStore>();
 	private bwsPending = Promise.resolve();
 	private mcp: Promise<SecretAuthBackend> | undefined;
+	/** 秘密値は SecretStorage、アカウント索引と保存モードは globalState に分けて保持する。 */
 	constructor(
 		private readonly context: Pick<
 			vscode.ExtensionContext,
@@ -58,6 +59,7 @@ export class CredentialService {
 			delete: (key) => this.logoutBws(key.slice("bws.auth.".length)),
 		};
 	}
+	/** バックエンドごとの SDK アダプターも、同じ保管庫と更新待機列を使う。 */
 	piStore() {
 		return new PiCredentialStore(this.vault);
 	}
@@ -78,12 +80,14 @@ export class CredentialService {
 		this.bwsPending = result.catch(() => {});
 		return result;
 	}
+	/** MCP の保管先は初回だけ生成し、複数の接続で永続保存と秘密除去を共有する。 */
 	mcpBackend() {
 		return (this.mcp ??= SecretAuthBackend.create(
 			this.stores.persistent,
 			this.stores.redactor,
 		));
 	}
+	/** 同じルートの設定ストアを共有し、別ルートの参照設定と混ぜない。 */
 	bindings(root: string) {
 		let store = this.bindingStores.get(root);
 		if (!store) {
@@ -92,6 +96,7 @@ export class CredentialService {
 		}
 		return store;
 	}
+	/** ルート別の参照設定へ組込みの取得元と共有の秘密除去を結び付ける。 */
 	broker(root: string, grants?: CommandPermissions) {
 		return new CredentialBroker(
 			this.bindings(root),
@@ -104,6 +109,7 @@ export class CredentialService {
 			grants,
 		);
 	}
+	/** Host 内の一時保存を優先し、未設定のアカウントは保存先を推測しない。 */
 	bwsMode(id: string) {
 		return this.bwsSession.get(id) ?? this.bwsModes[id] ?? null;
 	}
@@ -117,9 +123,11 @@ export class CredentialService {
 			]),
 		];
 	}
+	/** ログインと削除を同じ待機列へ通し、保存モードの更新を競合させない。 */
 	loginBws(id: string, mode: CredentialStorageMode, token: string) {
 		return this.enqueueBws(() => this.saveBws(id, mode, token));
 	}
+	/** トークンの形式と保存を確認してからモードを公開し、旧モードに残った秘密値を削除する。 */
 	private async saveBws(
 		id: string,
 		mode: CredentialStorageMode,
@@ -172,9 +180,11 @@ export class CredentialService {
 			value.dispose();
 		}
 	}
+	/** ログインと同じ待機列で削除し、遅い保存処理が削除後の状態を上書きしないようにする。 */
 	logoutBws(id: string) {
 		return this.enqueueBws(() => this.removeBws(id));
 	}
+	/** 両保存先の秘密値を削除してからモード索引を更新し、利用不能な保存先を残さない。 */
 	private async removeBws(id: string) {
 		await this.stores.memory.delete(`bws.auth.${id}`);
 		await this.stores.persistent.delete(`bws.auth.${id}`);
@@ -184,6 +194,7 @@ export class CredentialService {
 		this.bwsSession.delete(id);
 		delete this.bwsModes[id];
 	}
+	/** MCP の保管処理と Host 内の秘密値を解放し、永続アカウントの情報は保持する。 */
 	dispose() {
 		void this.mcp?.then(
 			(backend) => backend.dispose(),

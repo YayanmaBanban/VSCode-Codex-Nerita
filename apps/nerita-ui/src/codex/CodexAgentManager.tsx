@@ -19,6 +19,8 @@ export function CodexAgentManager(props: AgentManagerProps) {
 	const agent =
 		agents.find((item) => item.id === props.selected) ?? agents[0];
 	const creating = props.selected === "new";
+	const editorId = creating ? "new" : agent?.id;
+	const editorAgent = creating ? undefined : agent;
 	return (
 		<AgentBrowser
 			agents={agents}
@@ -28,9 +30,9 @@ export function CodexAgentManager(props: AgentManagerProps) {
 		>
 			{creating || agent ? (
 				<CodexAgentEditor
-					key={`${creating ? "new" : agent?.id}:${props.state.generation}`}
+					key={`${editorId}:${props.state.generation}`}
 					{...props}
-					agent={creating ? undefined : agent}
+					agent={editorAgent}
 				/>
 			) : (
 				<p className="text-sm text-muted">

@@ -4,10 +4,12 @@ import type { SecretRedactor } from "./CredentialStore";
 /** 秘密値の最大長を基に末尾を留保し、重なる一致区間もまとめて保持する。 */
 export class CredentialStream {
 	private pending = "";
+	/** 分割された出力にも同じ秘密除去を適用し、公開先へ送る前に処理する。 */
 	constructor(
 		private readonly redactor: SecretRedactor,
 		private readonly emit: (text: string) => void,
 	) {}
+	/** 秘密値がチャンク境界をまたいでも伏字にできるよう、末尾の候補文字列を次の出力まで保持する。 */
 	write(chunk: string) {
 		this.pending += chunk;
 		const variants = this.redactor.variants();
@@ -24,9 +26,11 @@ export class CredentialStream {
 		}
 		this.publish(boundary);
 	}
+	/** 出力の終了時にも伏字処理を通して、保留した末尾を公開する。 */
 	end() {
 		this.publish(this.pending.length);
 	}
+	/** 確定した範囲だけを保護して公開し、未確定の末尾は次のチャンクへ残す。 */
 	private publish(boundary: number) {
 		if (!isNonZeroNumber(boundary)) {
 			return;

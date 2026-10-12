@@ -16,16 +16,19 @@ export class WorkflowPanel {
 	private abort: AbortController | undefined;
 	private disposed = false;
 	private stopped = 0;
+	/** 表示する文書と実行先をこのパネルへ固定し、受信した操作の対象確認に使う。 */
 	constructor(
 		private document: vscode.TextDocument,
 		private panel: vscode.WebviewPanel,
 		private backend: BackendSession,
 	) {}
+	/** 画面の破棄後に遅い結果を配信しない。 */
 	post(message: WorkflowReply) {
 		if (!this.disposed) {
 			void this.panel.webview.postMessage(message);
 		}
 	}
+	/** 保存前の編集バッファ・文書の版・実行状態を一緒に公開し、保存済み文書とは区別する。 */
 	publish() {
 		this.post({
 			type: "state",
@@ -36,6 +39,7 @@ export class WorkflowPanel {
 			running: !!this.abort,
 		});
 	}
+	/** 停止世代を進めて待機中の開始要求を失効させ、現在の実行にも取消しを伝える。 */
 	stop() {
 		this.stopped++;
 		this.abort?.abort();
@@ -45,6 +49,7 @@ export class WorkflowPanel {
 		this.disposed = true;
 		this.stop();
 	}
+	/** 要求を検証して直列化し、停止は待機列を待たずに処理する。操作失敗も画面へ返信する。 */
 	receive(value: unknown) {
 		if (this.disposed) {
 			return;
@@ -96,11 +101,13 @@ export class WorkflowPanel {
 				new vscode.Range(0, 0, this.document.lineCount, 0),
 				message.text,
 			);
-			if (!(await vscode.workspace.applyEdit(edit))) {
+			const matchesValue = !(await vscode.workspace.applyEdit(edit));
+			if (matchesValue) {
 				throw new Error("文書を更新できませんでした。");
 			}
 		} else if (message.type === "save") {
-			if (!(await this.document.save())) {
+			const matchesValue2 = !(await this.document.save());
+			if (matchesValue2) {
 				throw new Error("保存できませんでした。");
 			}
 			notice = "保存しました。";
@@ -132,10 +139,10 @@ export class WorkflowPanel {
 		message: Extract<WorkflowRequest, { id: number }>,
 		stopVersion: number,
 	) {
-		if (
+		const matchesDisposed =
 			this.disposed ||
-			(message.type === "run" && stopVersion !== this.stopped)
-		) {
+			(message.type === "run" && stopVersion !== this.stopped);
+		if (matchesDisposed) {
 			throw new Error("実行を停止しました。");
 		}
 		if (message.version !== this.document.version) {

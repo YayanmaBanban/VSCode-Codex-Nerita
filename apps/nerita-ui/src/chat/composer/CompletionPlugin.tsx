@@ -224,11 +224,11 @@ function createCompletionMatchUpdater(
 		state.setSource("inline");
 		state.setMatch(next);
 		state.setSearch(null);
-		if (
+		const matchesMarker =
 			next?.marker !== state.match?.marker ||
 			next?.key !== state.match?.key ||
-			next?.start !== state.match?.start
-		) {
+			next?.start !== state.match?.start;
+		if (matchesMarker) {
 			state.setCategory("");
 		}
 		state.setSelected(0);

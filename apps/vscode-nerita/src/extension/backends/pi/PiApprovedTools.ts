@@ -68,11 +68,13 @@ function isRawPublicFetch(
 	name: string,
 	params: Record<string, unknown>,
 ): boolean {
-	if (
-		name !== "fetch_content" ||
-		params.mode !== "raw" ||
-		typeof params.url !== "string"
-	) {
+	if (name !== "fetch_content") {
+		return false;
+	}
+	if (params.mode !== "raw") {
+		return false;
+	}
+	if (typeof params.url !== "string") {
 		return false;
 	}
 	if (Object.keys(params).some((key) => !["url", "mode"].includes(key))) {

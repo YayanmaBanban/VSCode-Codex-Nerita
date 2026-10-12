@@ -34,19 +34,27 @@ export async function resolveTrustedExtensions(
 				cause: error,
 			});
 		}
-		if (path !== resolve(input) || !(await stat(path)).isFile()) {
+
+		if (path !== resolve(input)) {
 			throw new Error(
 				`信頼するPi拡張はcanonicalな単一ファイルで指定してください: ${input}`,
 			);
 		}
-		if (await isRootRestricted(path, roots, rootTrusted)) {
+		const fileInfo = await stat(path);
+		if (!fileInfo.isFile()) {
+			throw new Error(
+				`信頼するPi拡張はcanonicalな単一ファイルで指定してください: ${input}`,
+			);
+		}
+		const matchesValue = await isRootRestricted(path, roots, rootTrusted);
+		if (matchesValue) {
 			continue;
 		}
-		if (
+		const matchesRootTrusted =
 			!rootTrusted &&
 			!workspaceTrusted &&
-			roots.some((root) => containsPath(root, path))
-		) {
+			roots.some((root) => containsPath(root, path));
+		if (matchesRootTrusted) {
 			throw new Error(
 				"workspace内のPi拡張にはWorkspace Trustも必要です。",
 			);

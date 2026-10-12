@@ -273,11 +273,11 @@ export type DlcView = z.infer<typeof DlcViewSchema>;
 
 /** 区切り文字や Windows の予約名を含まない相対パスだけを許可する。 */
 function validDlcPath(value: string): boolean {
-	if (
+	const matchesSome =
 		[...value].some((character) => character.charCodeAt(0) < 32) ||
 		/[<>"|?*]/u.test(value) ||
-		value.includes("\\")
-	) {
+		value.includes("\\");
+	if (matchesSome) {
 		return false;
 	}
 	return (

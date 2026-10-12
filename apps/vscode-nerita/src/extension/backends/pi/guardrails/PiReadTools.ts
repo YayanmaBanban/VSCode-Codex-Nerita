@@ -89,10 +89,10 @@ async function executePiReadTool(
 	}
 	const check = async () => {
 		permit.signal.throwIfAborted();
-		if (
+		const matchesValue =
 			(await paths.resolve(requested, "read")) !== target ||
-			(await realpath(target)) !== target
-		) {
+			(await realpath(target)) !== target;
+		if (matchesValue) {
 			throw new Error("読取り対象が変更されました。再承認が必要です。");
 		}
 		permit.signal.throwIfAborted();
@@ -169,11 +169,14 @@ async function readApprovedFile(target: string, check: () => Promise<void>) {
 		await check();
 		const actual = await handle.stat();
 		const expected = await lstat(target);
-		if (
-			!actual.isFile() ||
-			actual.ino !== expected.ino ||
-			actual.dev !== expected.dev
-		) {
+
+		if (!actual.isFile()) {
+			throw new Error("読取り対象が差し替えられました。");
+		}
+		if (actual.ino !== expected.ino) {
+			throw new Error("読取り対象が差し替えられました。");
+		}
+		if (actual.dev !== expected.dev) {
 			throw new Error("読取り対象が差し替えられました。");
 		}
 		content = await handle.readFile();
@@ -185,11 +188,10 @@ async function readApprovedFile(target: string, check: () => Promise<void>) {
 
 /** SDK の画像読取りを保ち、拡張子の偽装では画像扱いしない。 */
 function imageMime(bytes: Buffer): string | undefined {
-	if (
-		bytes
-			.subarray(0, 8)
-			.equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
-	) {
+	const matchesEquals = bytes
+		.subarray(0, 8)
+		.equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+	if (matchesEquals) {
 		return "image/png";
 	}
 	if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) {
@@ -198,10 +200,10 @@ function imageMime(bytes: Buffer): string | undefined {
 	if (["GIF87a", "GIF89a"].includes(bytes.subarray(0, 6).toString())) {
 		return "image/gif";
 	}
-	if (
+	const matchesToString =
 		bytes.subarray(0, 4).toString() === "RIFF" &&
-		bytes.subarray(8, 12).toString() === "WEBP"
-	) {
+		bytes.subarray(8, 12).toString() === "WEBP";
+	if (matchesToString) {
 		return "image/webp";
 	}
 	return undefined;

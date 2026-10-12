@@ -88,7 +88,8 @@ function HunkView({ hunk }: { hunk: DiffHunk }) {
 	const range = `L${start}–${end}`;
 	let oldLine = hunk.oldStart;
 	let newLine = hunk.newStart;
-	const numbered = hunk.lines.map((line) => {
+	/** 追加・削除・文脈行ごとに元と新しい行番号を進め、改行なしのマーカーには番号を付けない。 */
+	const numberDiffLine = (line: string) => {
 		const marker = line[0];
 		let number: number | null = marker === "-" ? oldLine : newLine;
 		if (marker === "\\") {
@@ -101,7 +102,8 @@ function HunkView({ hunk }: { hunk: DiffHunk }) {
 			newLine++;
 		}
 		return { line, number };
-	});
+	};
+	const numbered = hunk.lines.map(numberDiffLine);
 	const digits = String(end - 1).length;
 	return (
 		<div className="file-diff-block my-[8px] overflow-hidden rounded-[4px] border border-solid border-panel-border">

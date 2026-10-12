@@ -134,10 +134,11 @@ function ExecutionDetails({
 }
 function HistorySelector({ view, send }: Pick<RunInfoProps, "view" | "send">) {
 	const selected = view.selected;
-	if (
-		selected === null ||
-		!selected.workItems.some((item) => item.attempts.length > 0)
-	) {
+
+	if (selected === null) {
+		return null;
+	}
+	if (!selected.workItems.some((item) => item.attempts.length > 0)) {
 		return null;
 	}
 	return (

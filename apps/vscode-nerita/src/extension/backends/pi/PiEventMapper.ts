@@ -15,6 +15,7 @@ export class PiEventMapper {
 	error: string | undefined;
 	aborted = false;
 
+	/** 本文を状態へ公開する前の秘密除去を注入できるようにする。 */
 	constructor(private readonly protect = (value: string) => value) {}
 
 	/** 差分通知の累積本文を使い、確定通知との重複を避ける。 */
@@ -23,21 +24,25 @@ export class PiEventMapper {
 		if (tools) {
 			return tools;
 		}
-		if (
-			!["message_start", "message_update", "message_end"].includes(
-				event.type,
-			) ||
-			!("message" in event) ||
-			event.message.role !== "assistant"
-		) {
+
+		const isOtherEvent = ![
+			"message_start",
+			"message_update",
+			"message_end",
+		].includes(event.type);
+		if (isOtherEvent) {
 			return;
 		}
-		if (
-			event.type === "message_start" ||
-			!isNonEmptyString(this.messageId)
-		) {
-			this.messageId = randomUUID();
+		if (!("message" in event)) {
+			return;
 		}
+		if (event.message.role !== "assistant") {
+			return;
+		}
+		this.messageId =
+			event.type === "message_start" || !isNonEmptyString(this.messageId)
+				? randomUUID()
+				: this.messageId;
 		const text = this.protect(
 			event.message.content
 				.filter((part) => part.type === "text")
@@ -60,9 +65,13 @@ export class PiEventMapper {
 		}
 		return {
 			messages: existing
-				? state.messages.map((item) =>
-						item.id === id ? message : item,
-					)
+				? state.messages.map((item) => {
+						const isTarget = item.id === id;
+						if (!isTarget) {
+							return item;
+						}
+						return message;
+					})
 				: [...state.messages, message],
 		};
 	}

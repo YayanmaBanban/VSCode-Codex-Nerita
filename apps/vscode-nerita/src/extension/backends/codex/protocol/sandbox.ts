@@ -9,12 +9,19 @@ export function parseSandbox(value: unknown): SandboxPolicy {
 	if (value.type === "dangerFullAccess") {
 		return { type: "dangerFullAccess" };
 	}
-	if (
-		value.type === "externalSandbox" &&
-		(value.networkAccess === "enabled" ||
-			value.networkAccess === "restricted")
-	) {
-		return { type: "externalSandbox", networkAccess: value.networkAccess };
+	if (value.type === "externalSandbox") {
+		if (value.networkAccess === "enabled") {
+			return {
+				type: "externalSandbox",
+				networkAccess: value.networkAccess,
+			};
+		}
+		if (value.networkAccess === "restricted") {
+			return {
+				type: "externalSandbox",
+				networkAccess: value.networkAccess,
+			};
+		}
 	}
 	if (value.type === "readOnly" && typeof value.networkAccess === "boolean") {
 		return { type: "readOnly", networkAccess: value.networkAccess };
@@ -24,25 +31,34 @@ export function parseSandbox(value: unknown): SandboxPolicy {
 
 /** 書き込み可能なサンドボックスの全設定を検証する。 */
 function parseWritableSandbox(value: Record<string, unknown>): SandboxPolicy {
-	if (
-		value.type !== "workspaceWrite" ||
-		!Array.isArray(value.writableRoots) ||
-		!value.writableRoots.every((path: unknown) => typeof path === "string")
-	) {
+	if (value.type !== "workspaceWrite") {
 		throw new Error("Invalid sandbox");
 	}
-	if (
-		typeof value.networkAccess === "boolean" &&
-		typeof value.excludeTmpdirEnvVar === "boolean" &&
-		typeof value.excludeSlashTmp === "boolean"
-	) {
-		return {
-			type: "workspaceWrite",
-			writableRoots: value.writableRoots,
-			networkAccess: value.networkAccess,
-			excludeTmpdirEnvVar: value.excludeTmpdirEnvVar,
-			excludeSlashTmp: value.excludeSlashTmp,
-		};
+	if (!Array.isArray(value.writableRoots)) {
+		throw new Error("Invalid sandbox");
 	}
-	throw new Error("Invalid sandbox");
+	if (!containsOnlyStrings(value.writableRoots)) {
+		throw new Error("Invalid sandbox");
+	}
+	if (typeof value.networkAccess !== "boolean") {
+		throw new Error("Invalid sandbox");
+	}
+	if (typeof value.excludeTmpdirEnvVar !== "boolean") {
+		throw new Error("Invalid sandbox");
+	}
+	if (typeof value.excludeSlashTmp !== "boolean") {
+		throw new Error("Invalid sandbox");
+	}
+	return {
+		type: "workspaceWrite",
+		writableRoots: value.writableRoots,
+		networkAccess: value.networkAccess,
+		excludeTmpdirEnvVar: value.excludeTmpdirEnvVar,
+		excludeSlashTmp: value.excludeSlashTmp,
+	};
+}
+
+/** 配列の各要素も検証し、未知の値を権限パスとして公開しない。 */
+function containsOnlyStrings(values: unknown[]): values is string[] {
+	return values.every((value) => typeof value === "string");
 }

@@ -10,13 +10,17 @@ export function useChat(bridge: Bridge) {
 	const dedicatedRequests = useRef(new Set<string>());
 	const [state, setState] = useState(initialState);
 	const [requestError, setRequestError] = useState<string | null>(null);
-	useEffect(() => {
+	/** 接続ごとに購読状態を初期化し、購読の準備後に初回のスナップショットを要求する。 */
+	const subscribeConversationState = () => {
 		let current = initialState();
 		let ready = false;
 		setState(current);
 		setRequestError(null);
 		dedicatedRequests.current.clear();
-		const unsubscribe = bridge.subscribe((message) => {
+		/** 専用要求と古い版を除外して状態を適用し、差分の基準が不一致ならスナップショットを求める。 */
+		const receiveConversationState: Parameters<
+			NonNullable<typeof bridge>["subscribe"]
+		>[0] = (message) => {
 			if (consumeDedicatedResult(message, dedicatedRequests.current)) {
 				return;
 			}
@@ -49,17 +53,18 @@ export function useChat(bridge: Bridge) {
 				setRequestError(null);
 			}
 			setState(current);
-		});
+		};
+		const unsubscribe = bridge.subscribe(receiveConversationState);
 		bridge.postMessage({ type: "ui/ready" });
 		return unsubscribe;
-	}, [bridge]);
+	};
+	useEffect(subscribeConversationState, [bridge]);
 	/** 操作直前に個別要求の古いエラーを消す。参照を固定して過去の本文の再描画を防ぐ。 */
 	const send = useCallback(
 		(message: UiMessage) => {
-			if (
-				message.type === "prompt/send" ||
-				message.type === "agent/stop"
-			) {
+			const matchesType =
+				message.type === "prompt/send" || message.type === "agent/stop";
+			if (matchesType) {
 				dedicatedRequests.current.add(message.requestId);
 			}
 			setRequestError(null);
@@ -83,10 +88,9 @@ function consumeDedicatedResult(
 	message: HostMessage,
 	requests: Set<string>,
 ): boolean {
-	if (
-		message.type === "prompt/accepted" ||
-		message.type === "agent/stopped"
-	) {
+	const matchesType2 =
+		message.type === "prompt/accepted" || message.type === "agent/stopped";
+	if (matchesType2) {
 		requests.delete(message.requestId);
 		return true;
 	}

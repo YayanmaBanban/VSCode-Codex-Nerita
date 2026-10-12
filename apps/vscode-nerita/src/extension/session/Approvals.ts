@@ -105,10 +105,10 @@ export class Approvals {
 			basicDecision ||
 			decision === "accept-session" ||
 			decision === "accept-workspace";
-		if (
+		const matchesValidDecision =
 			!validDecision ||
-			!entry.permission.options.some((option) => option.id === decision)
-		) {
+			!entry.permission.options.some((option) => option.id === decision);
+		if (matchesValidDecision) {
 			return false;
 		}
 		entry.finish(decision);

@@ -12,6 +12,7 @@ export class PiModelCatalogService {
 	private readers = new Map<string, PiModelCatalogReader>();
 	private catalogs = new Map<string, PiCatalogSnapshot>();
 	private abort: AbortController | undefined;
+	/** 接続中の認証とモデル一覧を使い、プロバイダー仕様と通信経路は注入できるようにする。 */
 	constructor(
 		private models: ModelRuntime,
 		private session: AgentSession,
@@ -68,14 +69,14 @@ export class PiModelCatalogService {
 	available(available = this.models.getAvailableSnapshot()) {
 		const result = available.filter((model) => {
 			const catalog = this.snapshot(model.provider);
-			return (
+			const matchesCatalog =
 				catalog === null ||
 				catalog === undefined ||
 				catalog.some(
 					(item) =>
 						item.slug === model.id && item.visibility === "list",
-				)
-			);
+				);
+			return matchesCatalog;
 		});
 		const indexes = new Map<string, number[]>();
 		for (const [index, model] of result.entries()) {

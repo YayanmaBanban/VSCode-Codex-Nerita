@@ -59,10 +59,9 @@ export function parseTurnEvent(
 	const threadId = text(params.threadId);
 	if (["turn/started", "turn/completed"].includes(message.method)) {
 		const turn = parseTurn(params.turn);
-		if (
-			message.method === "turn/completed" &&
-			turn.status === "inProgress"
-		) {
+		const matchesMethod =
+			message.method === "turn/completed" && turn.status === "inProgress";
+		if (matchesMethod) {
 			throw new Error("Invalid completion");
 		}
 		return {
@@ -75,12 +74,11 @@ export function parseTurnEvent(
 		};
 	}
 	const turnId = text(params.turnId);
-	if (
-		[
-			"item/autoApprovalReview/started",
-			"item/autoApprovalReview/completed",
-		].includes(message.method)
-	) {
+	const matchesIncludes = [
+		"item/autoApprovalReview/started",
+		"item/autoApprovalReview/completed",
+	].includes(message.method);
+	if (matchesIncludes) {
 		const completed = message.method.endsWith("/completed");
 		return {
 			kind: "item",
@@ -90,14 +88,13 @@ export function parseTurnEvent(
 			completed,
 		};
 	}
-	if (
-		![
-			"item/agentMessage/delta",
-			"item/plan/delta",
-			"item/started",
-			"item/completed",
-		].includes(message.method)
-	) {
+	const matchesIncludes2 = ![
+		"item/agentMessage/delta",
+		"item/plan/delta",
+		"item/started",
+		"item/completed",
+	].includes(message.method);
+	if (matchesIncludes2) {
 		return {
 			kind: "activity",
 			threadId,
@@ -105,10 +102,10 @@ export function parseTurnEvent(
 			update: parseActivityUpdate(message.method, params),
 		};
 	}
-	if (
+	const matchesMethod2 =
 		message.method === "item/agentMessage/delta" ||
-		message.method === "item/plan/delta"
-	) {
+		message.method === "item/plan/delta";
+	if (matchesMethod2) {
 		return {
 			kind: "delta",
 			threadId,

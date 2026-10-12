@@ -18,18 +18,23 @@ export type StartedThread = Pick<ThreadStartResponse, "model" | "cwd"> & {
 export type TurnInfo = Pick<Turn, "id" | "status">;
 /** `thread/start` の必要フィールドを検証する。 */
 export function parseStartedThread(value: unknown): StartedThread {
-	if (
-		!isRecord(value) ||
-		!isRecord(value.thread) ||
-		typeof value.thread.id !== "string"
-	) {
+	if (!isRecord(value)) {
 		throw new Error("Invalid thread response");
 	}
-	if (
-		value.thread.id === "" ||
-		typeof value.model !== "string" ||
-		typeof value.cwd !== "string"
-	) {
+	if (!isRecord(value.thread)) {
+		throw new Error("Invalid thread response");
+	}
+	if (typeof value.thread.id !== "string") {
+		throw new Error("Invalid thread response");
+	}
+
+	if (value.thread.id === "") {
+		throw new Error("Invalid thread response");
+	}
+	if (typeof value.model !== "string") {
+		throw new Error("Invalid thread response");
+	}
+	if (typeof value.cwd !== "string") {
 		throw new Error("Invalid thread response");
 	}
 	return {
@@ -100,11 +105,13 @@ export function parseStartedTurn(value: unknown): { turn: TurnInfo } {
 }
 /** 追加指示が受け付けられたターンの識別子を検証する。 */
 export function parseSteeredTurn(value: unknown): { turnId: string } {
-	if (
-		!isRecord(value) ||
-		typeof value.turnId !== "string" ||
-		value.turnId === ""
-	) {
+	if (!isRecord(value)) {
+		throw new Error("Invalid steer response");
+	}
+	if (typeof value.turnId !== "string") {
+		throw new Error("Invalid steer response");
+	}
+	if (value.turnId === "") {
 		throw new Error("Invalid steer response");
 	}
 	return { turnId: value.turnId };

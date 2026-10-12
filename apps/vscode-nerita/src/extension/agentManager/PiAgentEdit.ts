@@ -42,11 +42,13 @@ function piDocument(text: string | undefined) {
 
 /** Pi の保存要求に Codex 専用の設定が含まれていたら、エラーを返す。 */
 export function assertPiEdit(edit: AgentEdit) {
-	if (
-		edit.reasoningEffort !== undefined ||
-		edit.sandboxMode !== undefined ||
-		edit.approvalsReviewer !== undefined
-	) {
+	if (edit.reasoningEffort !== undefined) {
+		throw new Error("Pi に Codex 専用設定は保存できません。");
+	}
+	if (edit.sandboxMode !== undefined) {
+		throw new Error("Pi に Codex 専用設定は保存できません。");
+	}
+	if (edit.approvalsReviewer !== undefined) {
 		throw new Error("Pi に Codex 専用設定は保存できません。");
 	}
 	if (edit.approvalPolicy !== undefined) {

@@ -35,18 +35,18 @@ export function validDroppedAttachments(
 	}
 
 	let total = 0;
-	return value.every((item: unknown) => {
+	/** URI を優先して検証し、内容転送の場合だけ合計量を加算する。 */
+	const validateAttachment = (item: unknown) => {
 		if (item === null || typeof item !== "object") {
 			return false;
 		}
 		if ("uri" in item) {
 			return isLocalFileUri(item.uri);
 		}
-		if (
-			!("name" in item) ||
-			!validAttachmentName(item.name) ||
-			!("data" in item)
-		) {
+		if (!("name" in item)) {
+			return false;
+		}
+		if (!validAttachmentName(item.name) || !("data" in item)) {
 			return false;
 		}
 		if (typeof item.data !== "string") {
@@ -59,7 +59,9 @@ export function validDroppedAttachments(
 			item.data.length % 4 === 0 &&
 			/^[A-Z0-9+/]*={0,2}$/i.test(item.data)
 		);
-	});
+	};
+	const matchesEvery = value.every(validateAttachment);
+	return matchesEvery;
 }
 
 /** Windows で利用できるファイル名だけを受け付ける。 */
@@ -67,11 +69,12 @@ function validAttachmentName(name: unknown): boolean {
 	if (!(typeof name === "string" && name.length > 0 && name.length <= 255)) {
 		return false;
 	}
-	if (!(
+	const matchesTest = !(
 		!/[<>:"/\\|?*]/.test(name) &&
 		!Array.from(name).some((char) => char.charCodeAt(0) < 32) &&
 		!/[. ]$/.test(name)
-	)) {
+	);
+	if (matchesTest) {
 		return false;
 	}
 	return !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name);

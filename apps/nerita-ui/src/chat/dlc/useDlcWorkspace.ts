@@ -65,11 +65,11 @@ function useIntentCreation(bridge: Bridge, view: DlcView) {
 		existing: string[];
 	} | null>(null);
 	useEffect(() => {
-		if (
+		const newIntentAppeared =
 			pending &&
 			view.selected &&
-			!pending.existing.includes(view.selected.intentId)
-		) {
+			!pending.existing.includes(view.selected.intentId);
+		if (newIntentAppeared === true) {
 			setPending(null);
 			setCreating(false);
 		}
@@ -77,10 +77,10 @@ function useIntentCreation(bridge: Bridge, view: DlcView) {
 	useEffect(
 		() =>
 			bridge.subscribe((message) => {
-				if (
+				const matchesType =
 					message.type === "request/failed" &&
-					message.requestId === pending?.requestId
-				) {
+					message.requestId === pending?.requestId;
+				if (matchesType) {
 					setPending(null);
 				}
 			}),

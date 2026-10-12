@@ -49,6 +49,7 @@ export async function projectIdentity(root: string, signal?: AbortSignal) {
 
 /** 永続状態とその検証根拠を同じ管理元が所有する。Git 内の状態は読み込まない。 */
 export class ProjectStorage {
+	/** 検証と排他取得を済ませた保存先だけを保持し、生成は open 経由に限定する。 */
 	private constructor(
 		readonly id: string,
 		readonly files: SafeDlcFiles,
@@ -56,6 +57,7 @@ export class ProjectStorage {
 		private release: () => Promise<void>,
 	) {}
 
+	/** チェックアウト外の保存先を検証して予約し、実体の差替えを各アクセスで確認する。初期化失敗時は予約を戻す。 */
 	static async open(
 		root: string,
 		storageRoot: string,
@@ -65,29 +67,31 @@ export class ProjectStorage {
 		const target = join(storageRoot, "projects", project.id);
 		await mkdir(target, { recursive: true });
 		const actual = await realpath(target);
-		if (
+		const matchesContainsPath =
 			containsPath(project.root, actual) ||
-			containsPath(actual, project.root)
-		) {
+			containsPath(actual, project.root);
+		if (matchesContainsPath) {
 			throw new Error(
 				"実行状態の保存先はチェックアウトの外にしてください。",
 			);
 		}
 		const identity = await stat(actual);
-		const files = new SafeDlcFiles(actual, async () => {
+		/** 利用側の信頼を確認してから保存先の実体を照合し、開始後の差替えを拒否する。 */
+		const assertProjectStorageIdentity = async () => {
 			await check();
 			const current = await stat(actual);
-			if (
+			const matchesTrustKey =
 				trustKey(await realpath(target)) !== trustKey(actual) ||
 				current.dev !== identity.dev ||
-				current.ino !== identity.ino
-			) {
+				current.ino !== identity.ino;
+			if (matchesTrustKey) {
 				throw new Error("実行状態の保存先が差し替えられています。");
 			}
 			if (current.birthtimeMs !== identity.birthtimeMs) {
 				throw new Error("実行状態の保存先が差し替えられています。");
 			}
-		});
+		};
+		const files = new SafeDlcFiles(actual, assertProjectStorageIdentity);
 		const release = await acquireDlcLease(files, ".controller");
 		try {
 			const text = await files.read(".nerita/dlc/authority.json");

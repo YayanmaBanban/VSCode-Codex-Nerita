@@ -107,6 +107,7 @@ export class BackendRuntime implements BackendSession {
 	scope(mode: "chat" | "dlc"): ChatSession {
 		return mode === "chat" ? this.chatView : this.dlcView;
 	}
+	/** 通常チャットと DLC の状態を分けて取得し、通常接続のエラーで独立した DLC を上書きしない。 */
 	private snapshotState(mode = this.mode): ChatState {
 		const state =
 			mode === "dlc"
@@ -145,25 +146,25 @@ export class BackendRuntime implements BackendSession {
 		}
 		await this.receive(value, mode);
 	}
+	/** 表示中の会話と受信した操作の対象を照合し、通常画面から DLC 会話を操作させない。 */
 	private assertViewSession(value: UiMessage, mode: "chat" | "dlc"): void {
 		if (!("sessionId" in value)) {
 			return;
 		}
-		if (
-			mode === "dlc" &&
-			value.sessionId !== this.dlcSnapshot().sessionId
-		) {
+		const matchesMode =
+			mode === "dlc" && value.sessionId !== this.dlcSnapshot().sessionId;
+		if (matchesMode) {
 			throw new Error(
 				"表示中の会話が変更されています。対象を再確認してください。",
 			);
 		}
-		if (
+		const matchesMode2 =
 			mode === "chat" &&
 			[...this.dlcSessions.values()].some(
 				(active) =>
 					active.session.snapshot().sessionId === value.sessionId,
-			)
-		) {
+			);
+		if (matchesMode2) {
 			throw new Error("DLC の会話は Phase 3 から操作してください。");
 		}
 	}
@@ -179,18 +180,20 @@ export class BackendRuntime implements BackendSession {
 			() => {},
 		);
 		await admission;
-		if (isUiMessage(value) && (await this.routeDlc(value, mode))) {
+		const matchesIsUiMessage =
+			isUiMessage(value) && (await this.routeDlc(value, mode));
+		if (matchesIsUiMessage) {
 			return;
 		}
 		if (this.restarting) {
 			this.rejectSwitching(value, mode);
 			return;
 		}
-		if (
+		const matchesCurrent =
 			!this.current &&
 			isUiMessage(value) &&
-			value.type === "connection/retry"
-		) {
+			value.type === "connection/retry";
+		if (matchesCurrent) {
 			await this.restart();
 			return;
 		}
@@ -204,11 +207,13 @@ export class BackendRuntime implements BackendSession {
 			(active) => active.intentId === this.selectedIntent,
 		);
 	}
+	/** 実行中の Intent と世代の識別子だけを公開し、内部セッションを外部へ渡さない。 */
 	activeDlcs(): { intentId: string; attemptId: string }[] {
 		return [...this.dlcSessions.values()].map(
 			({ intentId, attemptId }) => ({ intentId, attemptId }),
 		);
 	}
+	/** 開始予約・DLC 実行・通常チャットの予約をまとめ、実行先の競合確認に使う。 */
 	runningDirectories(): string[] {
 		return [
 			...this.reservations.values(),
@@ -236,19 +241,20 @@ export class BackendRuntime implements BackendSession {
 			}
 		}
 	}
+	/** 通常会話の操作を現在の接続へ渡し、書き込み中の会話切替と未予約の送信を防ぐ。 */
 	private async receiveChat(value: unknown): Promise<void> {
 		const current = this.current;
 		if (!current) {
 			return;
 		}
 		if (!isUiMessage(value) || value.type !== "prompt/send") {
-			if (
+			const matchesIsUiMessage2 =
 				isUiMessage(value) &&
 				["session/new", "session/load", "session/fork"].includes(
 					value.type,
 				) &&
-				sessionWriting(current.snapshot())
-			) {
+				sessionWriting(current.snapshot());
+			if (matchesIsUiMessage2) {
 				throw new Error("実行が終わってから会話を切り替えてください。");
 			}
 			await current.receive(value);
@@ -256,6 +262,7 @@ export class BackendRuntime implements BackendSession {
 		}
 		await this.submitChat(current, value);
 	}
+	/** 送信前に実行先を予約し、接続変更を再確認する。失敗しても終了確認に従って予約を回収する。 */
 	private async submitChat(
 		current: BackendSession,
 		value: Extract<UiMessage, { type: "prompt/send" }>,
@@ -282,26 +289,27 @@ export class BackendRuntime implements BackendSession {
 			this.updateChatLease();
 		}
 	}
+	/** 書き込み中の会話が終了したときだけ予約の回収を始める。開始・回収の重複は避ける。 */
 	private updateChatLease(): void {
 		const idleChat =
 			!this.chatStarting &&
 			!this.chatSettling &&
 			this.chatRelease !== undefined;
-		if (
-			idleChat &&
-			this.current &&
-			!sessionWriting(this.current.snapshot())
-		) {
-			this.chatSettling = this.settleChatLease(this.current)
-				.catch(() => {
-					this.error =
-						"バックエンドの終了を確認できないため、実行先の予約を保持しています。";
-					this.publishChatSnapshot();
-				})
-				.finally(() => {
-					this.chatSettling = undefined;
-				});
+		if (!idleChat || !this.current) {
+			return;
 		}
+		if (sessionWriting(this.current.snapshot())) {
+			return;
+		}
+		this.chatSettling = this.settleChatLease(this.current)
+			.catch(() => {
+				this.error =
+					"バックエンドの終了を確認できないため、実行先の予約を保持しています。";
+				this.publishChatSnapshot();
+			})
+			.finally(() => {
+				this.chatSettling = undefined;
+			});
 	}
 	/** 表示だけ先に終了しても、旧バックエンドの終了確認が済むまで予約を保持する。 */
 	private async settleChatLease(session: BackendSession): Promise<void> {
@@ -311,14 +319,15 @@ export class BackendRuntime implements BackendSession {
 			this.current === session &&
 			this.chatRelease === release &&
 			!this.chatStarting;
-		if (
+		const matchesCurrentChat =
 			currentChat &&
 			!this.disposed &&
-			!sessionWriting(session.snapshot())
-		) {
+			!sessionWriting(session.snapshot());
+		if (matchesCurrentChat) {
 			await this.releaseChat();
 		}
 	}
+	/** 通常チャットの予約を一度だけ取り出して解放する。終了確認の判断は呼出し側で行う。 */
 	private async releaseChat(): Promise<void> {
 		const release = this.chatRelease;
 		this.chatRelease = undefined;
@@ -339,6 +348,7 @@ export class BackendRuntime implements BackendSession {
 			);
 		}
 	}
+	/** DLC 操作と内部会話の操作を先に扱い、DLC の表示中に通常チャットへ入力が流れることを防ぐ。 */
 	private async routeDlc(
 		value: UiMessage,
 		mode: "chat" | "dlc",
@@ -352,10 +362,11 @@ export class BackendRuntime implements BackendSession {
 			await this.dlcOutput(value);
 			return true;
 		}
-		if (await this.routeManaged(value)) {
+		const matchesValue = await this.routeManaged(value);
+		if (matchesValue) {
 			return true;
 		}
-		if (
+		const matchesMode3 =
 			mode === "dlc" &&
 			[
 				"prompt/send",
@@ -366,8 +377,8 @@ export class BackendRuntime implements BackendSession {
 				"plan/decide",
 				"permission/respond",
 				"prompt/cancel",
-			].includes(value.type)
-		) {
+			].includes(value.type);
+		if (matchesMode3) {
 			throw new Error("現在の Intent と実行を選択して操作してください。");
 		}
 		if (mode === "dlc") {
@@ -375,12 +386,14 @@ export class BackendRuntime implements BackendSession {
 		}
 		return false;
 	}
+	/** 有効な会話 ID だけを DLC の所有記録へ登録し、終了後も通常履歴からの操作を防ぐ。 */
 	private rememberOwnership(sessionId: string | null | undefined): void {
 		if (isNonEmptyString(sessionId)) {
 			this.managedSessionIds.add(sessionId);
 			this.ownership?.remember(sessionId);
 		}
 	}
+	/** 実行中の内部会話へ操作を振り分け、終了した DLC の会話へ手動ターンを追加させない。 */
 	private async routeManaged(value: UiMessage): Promise<boolean> {
 		for (const active of this.dlcSessions.values()) {
 			this.rememberOwnership(active.session.snapshot().sessionId);
@@ -393,26 +406,27 @@ export class BackendRuntime implements BackendSession {
 							value.sessionId,
 					)
 				: undefined;
-		if (
+		const activeManagedSession =
 			active &&
 			"sessionId" in value &&
-			value.sessionId === active.session.snapshot().sessionId
-		) {
+			value.sessionId === active.session.snapshot().sessionId;
+		if (activeManagedSession === true) {
 			await this.routeDlcSession(active, value);
 			return true;
 		}
 		// 表示モードを戻しても、終了・復元済みの DLC 会話へ手動ターンを追加させない。
-		if (
+		const matchesValue2 =
 			"sessionId" in value &&
 			(this.managedSessionIds.has(value.sessionId) ||
-				this.ownership?.has(value.sessionId) === true)
-		) {
+				this.ownership?.has(value.sessionId) === true);
+		if (matchesValue2) {
 			throw new Error(
 				"この DLC セッションへの操作は、対象の実行が終了したため受け付けられません。",
 			);
 		}
 		return false;
 	}
+	/** 実行中の本文参照はそのセッションへ渡し、終了済みの参照は保存した出力から取得する。 */
 	private async dlcOutput(
 		value: Extract<UiMessage, { type: "tool/output" }>,
 	): Promise<void> {
@@ -423,18 +437,19 @@ export class BackendRuntime implements BackendSession {
 					(tool) => tool.output?.outputRef === value.outputRef,
 				),
 		);
-		if (
+		const matchesSome =
 			active?.session
 				.snapshot()
 				.tools.some(
 					(tool) => tool.output?.outputRef === value.outputRef,
-				) === true
-		) {
+				) === true;
+		if (matchesSome) {
 			await active.session.receive(value);
 		} else {
 			this.emitConversation(await this.historyOutputs.read(value), "dlc");
 		}
 	}
+	/** 内部会話では承認・停止・子の閲覧だけを許可し、実行中の入力と設定変更を拒否する。 */
 	private async routeDlcSession(
 		active: DlcSession,
 		value: UiMessage,
@@ -456,16 +471,17 @@ export class BackendRuntime implements BackendSession {
 			});
 			return;
 		}
-		if (
+		const matchesType =
 			value.type === "execution/stop" ||
 			value.type === "agent/read" ||
-			value.type === "agent/stop"
-		) {
+			value.type === "agent/stop";
+		if (matchesType) {
 			await active.session.receive(value);
 			return;
 		}
 		throw new Error("DLC の実行中に会話の入力や設定を変更できません。");
 	}
+	/** 現在の実行に属する選択肢だけを受け付け、バックエンドが要求を解決した場合に承認記録を残す。 */
 	private async dlcPermission(
 		active: DlcSession,
 		value: Extract<UiMessage, { type: "permission/respond" }>,
@@ -481,11 +497,10 @@ export class BackendRuntime implements BackendSession {
 			throw new Error("この承認要求は現在の実行に属していません。");
 		}
 		await active.session.receive(value);
-		if (
-			!active.session
-				.snapshot()
-				.permissions.some((item) => item.id === value.permissionId)
-		) {
+		const matchesSome2 = !active.session
+			.snapshot()
+			.permissions.some((item) => item.id === value.permissionId);
+		if (matchesSome2) {
 			active.approvals.push({
 				requestId: permission.id,
 				optionId: option.id,
@@ -493,6 +508,7 @@ export class BackendRuntime implements BackendSession {
 			});
 		}
 	}
+	/** バックエンドの専用カタログを優先し、未提供の場合は表示済みのモデル候補を使う。 */
 	agentModels() {
 		return (
 			this.current?.agentModels?.() ??
@@ -539,34 +555,44 @@ export class BackendRuntime implements BackendSession {
 				root === undefined || cwd === null || containsPath(root, cwd);
 			return matchingRoot || containsPath(cwd, root);
 		};
-		if (
-			this.current &&
-			!backendWorkspaceTrusted(
-				this.current.snapshot().uiContributions?.surface ?? "pi",
-				() => !affected(this.current!.snapshot().cwd),
-			)
-		) {
-			this.current.invalidate();
-		}
+		this.invalidateChatTrust(affected);
 		for (const active of this.dlcSessions.values()) {
-			if (
-				!backendWorkspaceTrusted(
-					active.backend,
-					() => !affected(active.root),
-				)
-			) {
+			const matchesBackendWorkspaceTrusted = !backendWorkspaceTrusted(
+				active.backend,
+				() => !affected(active.root),
+			);
+			if (matchesBackendWorkspaceTrusted) {
 				active.abort.abort();
 				active.session.invalidate();
 			}
 		}
 	}
 
+	/** Pi の信頼が取り消された会話だけを無効化し、Codex の信頼方針は維持する。 */
+	private invalidateChatTrust(
+		affected: (cwd: string | null) => boolean,
+	): void {
+		if (!this.current) {
+			return;
+		}
+		const trusted = backendWorkspaceTrusted(
+			this.current.snapshot().uiContributions?.surface ?? "pi",
+			() => !affected(this.current!.snapshot().cwd),
+		);
+		if (!trusted) {
+			this.current.invalidate();
+		}
+	}
+
+	/** 内部会話の停止なども DLC コントローラーへ届け、独立した状態遷移を作らない。 */
 	setDlcHandler(handler: (message: DlcUiMessage) => Promise<void>): void {
 		this.dlcHandler = handler;
 	}
+	/** 操作の振分けに使う表示モードを返し、実行中バックエンドの状態とは区別する。 */
 	viewMode(): "chat" | "dlc" {
 		return this.mode;
 	}
+	/** 選択世代を進めて古い履歴取得を失効させ、実行中ならライブ状態、それ以外は最新履歴を表示する。 */
 	selectDlc(intentId: string | undefined): void {
 		this.attemptSelection++;
 		this.selectedIntent = intentId;
@@ -577,10 +603,12 @@ export class BackendRuntime implements BackendSession {
 			: this.latestAttempts.get(intentId ?? "");
 		this.publishDlcSnapshot();
 	}
+	/** 表示を切り替えて状態を配信し、独立した会話の実行を停止しない。 */
 	selectMode(mode: "chat" | "dlc"): void {
 		this.mode = mode;
 		this.emit({ type: "state/snapshot", state: this.snapshot() });
 	}
+	/** 共通通知を表示へ配信し、要求失敗を通常チャットへ重ねて送らない。 */
 	publish(event: HostMessage): void {
 		this.emit(event);
 		this.dlcView.publish(event);
@@ -588,6 +616,7 @@ export class BackendRuntime implements BackendSession {
 			this.chatView.publish(event);
 		}
 	}
+	/** 表示中の実行を優先し、未選択の場合は稼働中の一件を操作対象の候補として返す。 */
 	activeDlc(): { intentId: string; attemptId: string } | null {
 		const active =
 			this.visibleDlc() ?? this.dlcSessions.values().next().value;
@@ -595,12 +624,13 @@ export class BackendRuntime implements BackendSession {
 			? { intentId: active.intentId, attemptId: active.attemptId }
 			: null;
 	}
+	/** 通常会話の書込みと DLC の実行をまとめ、実行中の設定変更を防ぐ判定に使う。 */
 	busy(): boolean {
 		const state = this.current?.snapshot();
-		return (
+		const matchesSize =
 			this.dlcSessions.size > 0 ||
-			(state !== undefined && sessionWriting(state))
-		);
+			(state !== undefined && sessionWriting(state));
+		return matchesSize;
 	}
 	/** 表示要求の受付時に世代を確定し、遅い履歴取得が新しい選択を上書きしないようにする。 */
 	beginAttemptSelection(intentId: string): number {
@@ -609,6 +639,7 @@ export class BackendRuntime implements BackendSession {
 		}
 		return ++this.attemptSelection;
 	}
+	/** Intent と選択世代が一致する復元結果だけを公開し、古い取得結果で新しい表示を上書きしない。 */
 	showAttempt(
 		intentId: string,
 		attemptId: string,
@@ -616,10 +647,10 @@ export class BackendRuntime implements BackendSession {
 		prompt: string,
 		selection: number,
 	): void {
-		if (
+		const matchesSelectedIntent =
 			this.selectedIntent !== intentId ||
-			selection !== this.attemptSelection
-		) {
+			selection !== this.attemptSelection;
+		if (matchesSelectedIntent) {
 			return;
 		}
 		this.rememberOwnership(state.sessionId);
@@ -631,6 +662,7 @@ export class BackendRuntime implements BackendSession {
 		this.prompts.set(`${intentId}:${attemptId}`, prompt);
 		this.publishDlcSnapshot();
 	}
+	/** 表示対象の世代に対応した元の指示だけを返し、別の実行の入力と混ぜない。 */
 	dlcPrompt(): { attemptId: string; prompt: string } | null {
 		const attemptId = this.shownAttempt ?? this.visibleDlc()?.attemptId;
 		if (attemptId === undefined) {
@@ -639,14 +671,15 @@ export class BackendRuntime implements BackendSession {
 		const prompt = this.prompts.get(`${this.selectedIntent}:${attemptId}`);
 		return prompt === undefined ? null : { attemptId, prompt };
 	}
+	/** 表示中の世代がライブ実行と一致する場合だけ現在状態を使い、それ以外は保存した履歴を返す。 */
 	private dlcSnapshot(): ChatState {
 		const active = this.visibleDlc();
 		const currentIntent = active && active.intentId === this.selectedIntent;
-		if (
+		const matchesCurrentIntent =
 			currentIntent === true &&
 			(this.shownAttempt === undefined ||
-				this.shownAttempt === active.attemptId)
-		) {
+				this.shownAttempt === active.attemptId);
+		if (matchesCurrentIntent) {
 			return active.session.snapshot();
 		}
 		return (
@@ -666,12 +699,12 @@ export class BackendRuntime implements BackendSession {
 		conversation: ChatState;
 		approvals: DlcSession["approvals"];
 	}> {
-		if (
+		const matchesDisposed =
 			this.disposed ||
 			[...this.dlcSessions.values()].some(
 				(active) => active.intentId === input.intentId,
-			)
-		) {
+			);
+		if (matchesDisposed) {
 			throw new Error("DLC は既に実行中、または終了しています。");
 		}
 		signal.throwIfAborted();
@@ -691,6 +724,7 @@ export class BackendRuntime implements BackendSession {
 		this.publishDlcSnapshot();
 		return completed;
 	}
+	/** 取消しと期限を実行へ結び付け、予約の照合または取得を済ませてからバックエンドを実行する。 */
 	private startDlcSession(
 		input: DlcInput,
 		signal: AbortSignal,
@@ -705,15 +739,17 @@ export class BackendRuntime implements BackendSession {
 		]);
 		const unsubscribe = session.subscribe((event) => {
 			this.rememberOwnership(session.snapshot().sessionId);
-			if (
+
+			const showingLiveAttempt =
 				this.selectedIntent === input.intentId &&
-				this.shownAttempt === undefined
-			) {
+				this.shownAttempt === undefined;
+			if (showingLiveAttempt) {
 				this.emitConversation(event, "dlc");
 			}
 		});
 		let releaseDirectory: (() => Promise<void>) | undefined;
-		const operation = Promise.resolve().then(async () => {
+		/** 予約の照合と実行開始は次のマイクロタスクで行い、呼出し元へ実行状態を先に返す。 */
+		const executeReservedSession = async () => {
 			const execute = () =>
 				this.executeSession(
 					session,
@@ -722,17 +758,18 @@ export class BackendRuntime implements BackendSession {
 					combined,
 				);
 			if (reservation !== undefined) {
-				if (
+				const matchesGet =
 					this.reservations.get(reservation) !==
-					(await realpath(input.root))
-				) {
+					(await realpath(input.root));
+				if (matchesGet) {
 					throw new Error("実行先の予約が一致しません。");
 				}
 				return execute();
 			}
 			releaseDirectory = await this.directories.acquire(input.root);
 			return execute();
-		});
+		};
+		const operation = Promise.resolve().then(executeReservedSession);
 		void operation.catch(() => {});
 		return {
 			...input,
@@ -744,6 +781,7 @@ export class BackendRuntime implements BackendSession {
 			releaseDirectory: () => releaseDirectory?.() ?? Promise.resolve(),
 		};
 	}
+	/** 成功した実行の会話と承認記録を保持し、成功・失敗の両方で終了処理を完了させる。 */
 	private completeDlcSession(active: DlcSession) {
 		const input = active;
 		const session = active.session;
@@ -770,6 +808,7 @@ export class BackendRuntime implements BackendSession {
 			})
 			.finally(() => this.finishSession(active));
 	}
+	/** 接続後の実効ルートを DLC の対象と照合し、接続中の取消しも伝えてから指示を送る。 */
 	private async executeSession(
 		session: BackendSession,
 		prompt: string,
@@ -794,7 +833,14 @@ export class BackendRuntime implements BackendSession {
 			this.rememberOwnership(session.snapshot().sessionId);
 			await this.ownership?.flush();
 			const cwd = session.snapshot().cwd;
-			if (cwd === null || (await realpath(cwd)) !== root) {
+
+			if (cwd === null) {
+				throw new Error(
+					"DLC とバックエンドのワークスペースが一致しません。",
+				);
+			}
+			const connectedRoot = await realpath(cwd);
+			if (connectedRoot !== root) {
 				throw new Error(
 					"DLC とバックエンドのワークスペースが一致しません。",
 				);
@@ -804,6 +850,7 @@ export class BackendRuntime implements BackendSession {
 			combined.removeEventListener("abort", interrupted);
 		}
 	}
+	/** 会話を保持して購読を外し、バックエンド終了の確認後に実行先を解放する。失敗時も表示状態は回収する。 */
 	private async finishSession(active: DlcSession): Promise<void> {
 		try {
 			await this.rememberSession(active);
@@ -816,16 +863,18 @@ export class BackendRuntime implements BackendSession {
 				if (this.dlcSessions.get(active.attemptId) === active) {
 					this.dlcSessions.delete(active.attemptId);
 				}
-				if (
+
+				const selectFinishedAttempt =
 					this.selectedIntent === active.intentId &&
-					this.shownAttempt === undefined
-				) {
+					this.shownAttempt === undefined;
+				if (selectFinishedAttempt) {
 					this.shownAttempt = active.attemptId;
 				}
 				this.publishDlcSnapshot();
 			}
 		}
 	}
+	/** 終了確認に失敗したルートを記録し、確認できない実行先を新たな実行へ再利用しない。 */
 	private async disposeSession(active: DlcSession): Promise<void> {
 		try {
 			await active.session.dispose();
@@ -834,6 +883,7 @@ export class BackendRuntime implements BackendSession {
 			throw error;
 		}
 	}
+	/** 成功結果が保存されていない場合も終了時の会話を保持し、失敗・停止後の履歴を失わない。 */
 	private async rememberSession(active: DlcSession): Promise<void> {
 		if (!this.history.has(`${active.intentId}:${active.attemptId}`)) {
 			const conversation =
@@ -851,15 +901,18 @@ export class BackendRuntime implements BackendSession {
 			this.history.set(`${active.intentId}:latest`, projected);
 		}
 	}
+	/** 実行世代に対応した元の会話を取得し、別の Intent や世代の会話を返さない。 */
 	conversation(intentId: string, attemptId: string): ChatState | undefined {
 		return this.records.get(`${intentId}:${attemptId}`);
 	}
+	/** 大きなツール出力を本文参照へ投影し、履歴の表示に必要な状態を保持する。 */
 	private projectConversation(state: ChatState): ChatState {
 		return {
 			...state,
 			tools: state.tools.map((tool) => this.historyOutputs.project(tool)),
 		};
 	}
+	/** 指定した世代だけを取り消し、停止の通知ではなく終了処理の完了まで待つ。 */
 	async stopDlc(attemptId: string): Promise<void> {
 		const active = this.dlcSessions.get(attemptId);
 		if (!active) {
@@ -941,6 +994,7 @@ export class BackendRuntime implements BackendSession {
 		}
 		this.display.publish(event);
 	}
+	/** 破棄後の通知を止め、各会話の状態は専用表示へ、選択中のモードだけを共通表示へ配信する。 */
 	private emitConversation(event: HostMessage, mode: "chat" | "dlc"): void {
 		if (this.disposed) {
 			return;
@@ -950,6 +1004,7 @@ export class BackendRuntime implements BackendSession {
 			this.emit(event);
 		}
 	}
+	/** DLC 専用表示を更新し、共通表示には現在選択しているモードの状態を配信する。 */
 	private publishDlcSnapshot(): void {
 		this.dlcView.publish({
 			type: "state/snapshot",
@@ -957,6 +1012,7 @@ export class BackendRuntime implements BackendSession {
 		});
 		this.emit({ type: "state/snapshot", state: this.snapshotState() });
 	}
+	/** 通常チャット専用表示を更新し、共通表示には現在選択しているモードの状態を配信する。 */
 	private publishChatSnapshot(): void {
 		this.chatView.publish({
 			type: "state/snapshot",

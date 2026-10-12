@@ -23,6 +23,7 @@ export type PiAgentRecord = {
 /** SDK のカスタムレコードはモデルの入力文脈に含まれない。 */
 export class PiAgentHistory {
 	private previous = new Map<string, PiAgentRecord>();
+	/** 子の履歴は親の SessionManager の追加エントリーへ保存する。 */
 	constructor(
 		private readonly manager: Pick<SessionManager, "appendCustomEntry">,
 	) {}
@@ -74,18 +75,23 @@ export function restorePiAgentRecords(
 
 /** 外部から編集された JSONL も画面の通信と同じ項目検証へ通す。 */
 function isAgentRecord(value: unknown): value is PiAgentRecord {
-	if (!(
-		isRecord(value) &&
-		value.version === 1 &&
-		typeof value.cwd === "string"
-	)) {
+	if (!isRecord(value)) {
 		return false;
 	}
-	if (!(
-		!isAbsolute(value.cwd) &&
-		isSubAgent(value.summary) &&
-		validItems("messages", value.messages, 256)
-	)) {
+	if (!(value.version === 1)) {
+		return false;
+	}
+	if (!(typeof value.cwd === "string")) {
+		return false;
+	}
+
+	if (isAbsolute(value.cwd)) {
+		return false;
+	}
+	if (!isSubAgent(value.summary)) {
+		return false;
+	}
+	if (!validItems("messages", value.messages, 256)) {
 		return false;
 	}
 	return validItems("tools", value.tools, 128);

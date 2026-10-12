@@ -159,10 +159,13 @@ function ComposerFooter({
 							aria-label="停止"
 							disabled={state.run === "cancelling"}
 							onClick={() => {
-								if (
-									isNonEmptyString(state.sessionId) &&
-									isNonEmptyString(state.runId)
-								) {
+								if (!isNonEmptyString(state.sessionId)) {
+									return;
+								}
+								if (!isNonEmptyString(state.runId)) {
+									return;
+								}
+								{
 									send({
 										type: "prompt/cancel",
 										requestId: crypto.randomUUID(),
@@ -215,18 +218,20 @@ function attachmentAction(
 	locked: boolean,
 	send: (message: UiMessage) => void,
 ) {
-	if (
-		!isNonEmptyString(state.sessionId) ||
-		state.connection !== "ready" ||
-		state.sessionPending
-	) {
+	if (!isNonEmptyString(state.sessionId)) {
 		return undefined;
 	}
-	if (
+	if (state.connection !== "ready") {
+		return undefined;
+	}
+	if (state.sessionPending) {
+		return undefined;
+	}
+	const matchesConfigPending =
 		state.configPending ||
 		state.attachmentPending ||
-		!state.attachmentsSupported
-	) {
+		!state.attachmentsSupported;
+	if (matchesConfigPending) {
 		return undefined;
 	}
 	if (state.run === "running" || state.run === "cancelling" || locked) {

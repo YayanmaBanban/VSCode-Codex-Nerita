@@ -28,10 +28,10 @@ export function isUiMessage(value: unknown): value is UiMessage {
 	if (!isId(value.requestId)) {
 		return false;
 	}
-	if (
+	const matchesType =
 		typeof value.type === "string" &&
-		(value.type.startsWith("dlc/") || value.type === "ui/setMode")
-	) {
+		(value.type.startsWith("dlc/") || value.type === "ui/setMode");
+	if (matchesType) {
 		return DlcUiMessageSchema.safeParse(value).success;
 	}
 
@@ -73,19 +73,19 @@ const uiMessageValidators = new Map<
 		"ui/setSidebar": (value) => isSidebarLocation(value.location),
 		"personality/read": () => true,
 		"personality/select": (value) => {
-			if (!(
-				(value.scope === "global" || value.scope === "workspace") &&
-				typeof value.name === "string"
-			)) {
+			if (!(value.scope === "global" || value.scope === "workspace")) {
+				return false;
+			}
+			if (!(typeof value.name === "string")) {
 				return false;
 			}
 			return value.name.length <= 200;
 		},
 		"personality/save": (value) => {
-			if (!(
-				(value.scope === "global" || value.scope === "workspace") &&
-				typeof value.originalName === "string"
-			)) {
+			if (!(value.scope === "global" || value.scope === "workspace")) {
+				return false;
+			}
+			if (!(typeof value.originalName === "string")) {
 				return false;
 			}
 			return (
@@ -100,11 +100,13 @@ const uiMessageValidators = new Map<
 			value.draft.length <= 100_000 &&
 			validDraftParts(value.draft, value.draftParts),
 		"ui/saveScroll": (value) => {
-			if (!(
-				typeof value.scrollTop === "number" &&
-				Number.isFinite(value.scrollTop) &&
-				value.scrollTop >= 0
-			)) {
+			if (!(typeof value.scrollTop === "number")) {
+				return false;
+			}
+			if (!Number.isFinite(value.scrollTop)) {
+				return false;
+			}
+			if (!(value.scrollTop >= 0)) {
 				return false;
 			}
 			return validConversationScrollAnchor(value.scrollAnchor);
@@ -113,30 +115,35 @@ const uiMessageValidators = new Map<
 		"auth/logout": () => true,
 		"session/new": () => true,
 		"plan/decide": (value) => {
-			if (!(
-				isId(value.sessionId) &&
-				isId(value.runId) &&
-				typeof value.action === "string"
-			)) {
+			if (!isId(value.sessionId)) {
+				return false;
+			}
+			if (!isId(value.runId)) {
+				return false;
+			}
+			if (!(typeof value.action === "string")) {
 				return false;
 			}
 			return ["current", "new", "continue"].includes(value.action);
 		},
 		"session/list": (value) => {
-			if (!(
+			const matchesArchived = !(
 				value.archived === undefined ||
 				typeof value.archived === "boolean"
-			)) {
+			);
+			if (matchesArchived) {
 				return false;
 			}
 			return value.more === undefined || typeof value.more === "boolean";
 		},
 		"session/rename": (value) => {
-			if (!(
-				isId(value.sessionId) &&
-				typeof value.name === "string" &&
-				value.name.trim().length > 0
-			)) {
+			if (!isId(value.sessionId)) {
+				return false;
+			}
+			if (!(typeof value.name === "string")) {
+				return false;
+			}
+			if (!(value.name.trim().length > 0)) {
 				return false;
 			}
 			return value.name.length <= 200;
@@ -156,33 +163,16 @@ const uiMessageValidators = new Map<
 			isId(value.sessionId) && isId(value.attachmentId),
 		"attachment/remove": (value) =>
 			isId(value.sessionId) && isId(value.attachmentId),
-		"prompt/send": (value) => {
-			if (!(
-				isId(value.sessionId) &&
-				typeof value.text === "string" &&
-				value.text.trim().length > 0
-			)) {
-				return false;
-			}
-			if (!(
-				value.text.length <= 100_000 &&
-				validSessionReferences(value.sessionReferences) &&
-				validReferences(value.text, value.references)
-			)) {
-				return false;
-			}
-			return (
-				validChangeScopes(value.changeScopes) &&
-				validCodeReferences(value.codeReferences)
-			);
-		},
+		"prompt/send": validPromptRequest,
 		"prompt/cancel": (value) => isId(value.sessionId) && isId(value.runId),
 		"permission/respond": (value) => {
-			if (!(
-				isId(value.sessionId) &&
-				isId(value.runId) &&
-				isId(value.permissionId)
-			)) {
+			if (!isId(value.sessionId)) {
+				return false;
+			}
+			if (!isId(value.runId)) {
+				return false;
+			}
+			if (!isId(value.permissionId)) {
 				return false;
 			}
 			return isId(value.optionId);
@@ -191,3 +181,28 @@ const uiMessageValidators = new Map<
 			isId(value.sessionId) && isId(value.runId) && isId(value.toolId),
 	} satisfies Record<string, (value: Record<string, unknown>) => boolean>),
 );
+
+/** 本文の上限と全ての参照を検証し、空入力や本文と不一致の参照を Host へ渡さない。 */
+function validPromptRequest(value: Record<string, unknown>): boolean {
+	if (!isId(value.sessionId)) {
+		return false;
+	}
+	if (!(typeof value.text === "string")) {
+		return false;
+	}
+	if (!(value.text.trim().length > 0)) {
+		return false;
+	}
+	const matchesLength = !(
+		value.text.length <= 100_000 &&
+		validSessionReferences(value.sessionReferences) &&
+		validReferences(value.text, value.references)
+	);
+	if (matchesLength) {
+		return false;
+	}
+	return (
+		validChangeScopes(value.changeScopes) &&
+		validCodeReferences(value.codeReferences)
+	);
+}

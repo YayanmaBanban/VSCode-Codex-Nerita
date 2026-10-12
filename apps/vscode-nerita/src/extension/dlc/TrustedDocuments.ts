@@ -20,6 +20,7 @@ const journalSchema = z.strictObject({
 
 /** 呼び出し側がウィンドウ間のロックを取得してから使う。 */
 export class TrustedDocuments {
+	/** 文書の実体と承認記録の保存先を結び付け、索引のキーは指定した領域へ隔離する。 */
 	constructor(
 		private files: SafeDlcFiles,
 		private authority: IntentAuthority,
@@ -42,11 +43,11 @@ export class TrustedDocuments {
 		try {
 			process.kill(pid, 0);
 		} catch (error) {
-			if (
+			const matchesError =
 				error instanceof Error &&
 				"code" in error &&
-				error.code === "ESRCH"
-			) {
+				error.code === "ESRCH";
+			if (matchesError) {
 				return;
 			}
 			throw new Error("実行担当の終了を確認できません。", {
@@ -101,6 +102,7 @@ export class TrustedDocuments {
 		return value;
 	}
 
+	/** 未完了の監査記録と前後のハッシュを照合し、承認された次状態だけを安全に復旧する。 */
 	private async recover<T>(
 		path: string,
 		audit: string,
@@ -116,29 +118,30 @@ export class TrustedDocuments {
 			throw new Error(`DLC の状態と信頼済み記録が一致しません: ${path}`);
 		}
 		const pending = journalSchema.parse(JSON.parse(pendingText));
-		if (
+		const matchesOperationId =
 			pending.operationId !== record.operationId ||
 			pending.stateRevision !== record.revision ||
-			pending.metadataDigest !== metadataDigest
-		) {
+			pending.metadataDigest !== metadataDigest;
+		if (matchesOperationId) {
 			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
 		}
-		if (
+		const matchesNextDigest =
 			pending.nextDigest !== record.digest ||
-			jsonDigest(pending.next) !== record.digest
-		) {
+			jsonDigest(pending.next) !== record.digest;
+		if (matchesNextDigest) {
 			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
 		}
-		if (
+		const matchesCurrent =
 			current !== undefined &&
-			jsonDigest(current) !== pending.previousDigest
-		) {
+			jsonDigest(current) !== pending.previousDigest;
+		if (matchesCurrent) {
 			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
 		}
 		const recovered = schema.parse(pending.next);
 		await this.files.write(path, recovered);
 		return recovered;
 	}
+	/** 確定イベントを未作成の場合だけ保存し、既存の監査記録との不一致を拒否する。 */
 	private async confirmAudit(
 		audit: string,
 		record: AuthorityRecord,
@@ -154,10 +157,12 @@ export class TrustedDocuments {
 		const committedText = await this.files.read(committed);
 		if (committedText === undefined) {
 			await this.files.write(committed, event);
-		} else if (
-			jsonDigest(JSON.parse(committedText)) !== jsonDigest(event)
-		) {
-			throw new Error("DLC の監査記録が一致しません。");
+		} else {
+			const auditChanged =
+				jsonDigest(JSON.parse(committedText)) !== jsonDigest(event);
+			if (auditChanged) {
+				throw new Error("DLC の監査記録が一致しません。");
+			}
 		}
 	}
 	/** 監査準備 → Host の確定 → 状態 → 監査確定の順。途中失敗は load が照合して回復する。 */
@@ -177,10 +182,9 @@ export class TrustedDocuments {
 			previous === undefined
 				? undefined
 				: AuthorityRecordSchema.parse(previous);
-		if (
-			(record?.revision ?? -1) !== expected ||
-			revision !== expected + 1
-		) {
+		const matchesRevision =
+			(record?.revision ?? -1) !== expected || revision !== expected + 1;
+		if (matchesRevision) {
 			throw new Error(
 				"DLC の保存が競合しています。最新の状態を再読込みしてください。",
 			);

@@ -29,11 +29,10 @@ function readFile(file: File): Promise<DroppedAttachment> {
 export async function readDroppedAttachments(
 	transfer: DataTransfer,
 ): Promise<DroppedAttachment[]> {
-	if (
-		Array.from(transfer.items).some(
-			(item) => item.webkitGetAsEntry()?.isDirectory === true,
-		)
-	) {
+	const matchesSome = Array.from(transfer.items).some(
+		(item) => item.webkitGetAsEntry()?.isDirectory === true,
+	);
+	if (matchesSome) {
 		throw new Error("フォルダーは添付できません。");
 	}
 
@@ -63,10 +62,10 @@ export async function readDroppedAttachments(
 	}
 
 	const files = Array.from(transfer.files);
-	if (
+	const matchesMax =
 		Math.max(uris.length, files.length) > 20 ||
-		files.reduce((sum, file) => sum + file.size, 0) > MAX_DROP_BYTES
-	) {
+		files.reduce((sum, file) => sum + file.size, 0) > MAX_DROP_BYTES;
+	if (matchesMax) {
 		throw new Error(
 			"一度に添付できるのは20ファイル、内容の転送は合計20MBまでです。",
 		);

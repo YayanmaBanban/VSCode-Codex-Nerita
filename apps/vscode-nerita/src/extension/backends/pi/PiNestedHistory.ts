@@ -45,32 +45,33 @@ export function restorePiNestedTools(
 				state,
 			),
 		);
-		state.tools = state.tools.map((tool): ToolSummary =>
-			tool.id === call.id && tool.runId === state.runId
-				? {
-						...tool,
-						status:
-							call.error?.includes(MCP_RESULT_UNKNOWN_TEXT) ===
-							true
-								? "unknown"
-								: nestedStatuses[call.status],
-						summaryOnly: true,
-						...(call.argumentsBytes === undefined
-							? {}
-							: { omittedArgumentBytes: call.argumentsBytes }),
-						content: isNonEmptyString(call.error)
-							? [
-									{
-										type: "content",
-										content: {
-											type: "text",
-											text: call.error,
-										},
-									},
-								]
-							: [],
-					}
-				: tool,
-		);
+		state.tools = state.tools.map((tool): ToolSummary => {
+			const isTarget = tool.id === call.id && tool.runId === state.runId;
+			if (!isTarget) {
+				return tool;
+			}
+			return {
+				...tool,
+				status:
+					call.error?.includes(MCP_RESULT_UNKNOWN_TEXT) === true
+						? "unknown"
+						: nestedStatuses[call.status],
+				summaryOnly: true,
+				...(call.argumentsBytes === undefined
+					? {}
+					: { omittedArgumentBytes: call.argumentsBytes }),
+				content: isNonEmptyString(call.error)
+					? [
+							{
+								type: "content",
+								content: {
+									type: "text",
+									text: call.error,
+								},
+							},
+						]
+					: [],
+			};
+		});
 	}
 }
