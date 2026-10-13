@@ -13,6 +13,7 @@ import globals from "globals";
 import typescriptEslint from "typescript-eslint";
 import { builtinModules } from "node:module";
 import betterTailwindcss from "eslint-plugin-better-tailwindcss";
+import importPlugin from "eslint-plugin-import";
 
 const platformImports = [
 	"vscode",
@@ -38,6 +39,7 @@ export default defineConfig([
 		plugins: {
 			nerita,
 			sonarjs,
+			import: importPlugin,
 		},
 		languageOptions: {
 			globals: {
@@ -54,6 +56,8 @@ export default defineConfig([
 			eqeqeq: ["error", "always"],
 			// 同じモジュールからの重複したインポートを禁止する。
 			"no-duplicate-imports": "error",
+			// import・require のまとまりと後続の処理の間に空行を入れる。
+			"import/newline-after-import": ["error", { count: 1 }],
 			// 三項演算子の入れ子を禁止する。
 			"no-nested-ternary": "error",
 			// オブジェクトで使える短縮記法を必須にする。
@@ -112,6 +116,9 @@ export default defineConfig([
 			"nerita/no-await-in-condition": "error",
 			"nerita/no-multiline-if-condition": "error",
 			"nerita/require-member-function-comment": "error",
+			// 各ファイルの役割を、コードや要素より前のコメントで説明する。
+			"nerita/require-file-comment": "error",
+			"nerita/require-declaration-comment": "error",
 			// 独自ルールが標準ルールの対象も検査するため、同じ式を二重報告しない。
 			"no-nested-ternary": "off",
 		},

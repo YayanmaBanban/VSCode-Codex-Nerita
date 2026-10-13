@@ -1,3 +1,4 @@
+<!-- 入力欄の URL をリンク化し、クリック時の既定動作を抑えて Host へリンクを開く要求を送る。 -->
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { type ElementNode, mergeRegister } from "lexical";

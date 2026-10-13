@@ -1,6 +1,5 @@
+<!-- パスルールを一覧表示し、追加と各項目の編集を親の設定へ反映する。 -->
 <script lang="ts">
-	// パスルールを一覧表示し、追加と各項目の編集を親の設定へ反映する。
-
 	import {
 		buttonStyle,
 		type PathRuleGroupProps,

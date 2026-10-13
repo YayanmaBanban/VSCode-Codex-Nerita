@@ -5,6 +5,7 @@ import type * as PiSdk from "@earendil-works/pi-coding-agent";
 import { isRecord } from "@nerita/shared/validation";
 import { z } from "zod";
 
+/** 実行に使う Pi SDK とモデル別の推論候補の取得 API をまとめた内部契約。 */
 type RuntimePiSdk = typeof PiSdk & {
 	getSupportedThinkingLevels(
 		model: NonNullable<PiSdk.AgentSession["model"]>,

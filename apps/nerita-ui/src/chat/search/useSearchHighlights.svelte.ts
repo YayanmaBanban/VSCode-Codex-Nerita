@@ -21,6 +21,7 @@ export function useSearchHighlights(
 			return;
 		}
 		let frame = 0;
+		/** 描画済みの検索箇所を再走査し、全候補と選択中の候補のハイライトを更新する。 */
 		const update = () => {
 			const highlight = new Highlight();
 			let selected: Range | undefined;
@@ -53,6 +54,7 @@ export function useSearchHighlights(
 				reveal.current = false;
 			}
 		};
+		/** 旧ハイライトと更新予約を解除し、次の描画で検索結果の位置を計算し直す。 */
 		const schedule = () => {
 			clearHighlights();
 			cancelAnimationFrame(frame);

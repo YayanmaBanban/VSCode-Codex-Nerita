@@ -1,6 +1,5 @@
+<!-- パスルールを適用する読み取り・書き込み操作を選び、変更を親へ伝える。 -->
 <script lang="ts">
-	// パスルールを適用する読み取り・書き込み操作を選び、変更を親へ伝える。
-
 	import { type PathRuleOperationsProps } from "./GuardrailsRulesParts";
 
 	let { rule, updatePath, index }: PathRuleOperationsProps = $props();

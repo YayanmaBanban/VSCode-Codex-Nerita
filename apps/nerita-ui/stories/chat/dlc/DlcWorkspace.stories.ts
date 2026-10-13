@@ -13,6 +13,7 @@ import {
 	view,
 	untrustedWorktreeView,
 } from "./workspaceState";
+
 function workspaceBridge(canvas: HTMLElement): StoryBridge {
 	const element = canvas.querySelector<HTMLElement & { bridge: StoryBridge }>(
 		"[data-story-dlc]",

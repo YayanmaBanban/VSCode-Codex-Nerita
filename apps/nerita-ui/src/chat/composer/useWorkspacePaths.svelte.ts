@@ -15,6 +15,7 @@ import type {
 import type { CompletionItem } from "./completionItems";
 
 import { pathText } from "@nerita/shared/composerReferences";
+/** ワークスペース内のパス候補を取得する。Svelte の寿命管理内で呼び出し、接続と検索条件は最新値を参照できるようにする。 */
 export function useWorkspacePaths(input: {
 	bridge: Bridge | undefined;
 	active: boolean;
@@ -25,6 +26,7 @@ export function useWorkspacePaths(input: {
 	const query = $derived(input.query);
 
 	let stack = $state.raw<WorkspacePath[]>([]);
+	/** 閲覧中のディレクトリ階層を、直接値または前の階層からの更新で保持する。 */
 	const setStack = (
 		value: typeof stack | ((previous: typeof stack) => typeof stack),
 	) => {
@@ -34,6 +36,7 @@ export function useWorkspacePaths(input: {
 		uri: string | null;
 		data: WorkspacePathsResult;
 	} | null>(null);
+	/** 取得元のディレクトリに結び付いたパス候補を、直接値または更新処理で保持する。 */
 	const setResult = (
 		value: typeof result | ((previous: typeof result) => typeof result),
 	) => {

@@ -112,6 +112,7 @@ function restorePosition(
 	}
 	let frame = 0;
 	let attempts = 0;
+	/** 描画を待ちながら保存した行位置または会話末尾へ復元し、試行回数を上限で打ち切る。 */
 	const align = () => {
 		if (anchor.atEnd) {
 			root.scrollTop = root.scrollHeight;
@@ -130,6 +131,7 @@ function restorePosition(
 			frame = requestAnimationFrame(align);
 		}
 	};
+	/** 会話位置の復元予約を取り消し、旧画面への補正が続かないようにする。 */
 	const cancel = () => cancelAnimationFrame(frame);
 	root.addEventListener("wheel", cancel, { passive: true });
 	root.addEventListener("pointerdown", cancel);
@@ -160,6 +162,7 @@ export function useConversationWidth(
 		}
 		let width = root.clientWidth;
 		let dispose: (() => void) | undefined;
+		/** 幅の変化で仮想リストを再計測し、表示中の行を基準にスクロール位置を維持する。 */
 		const updateWidth = () => {
 			if (root.clientWidth === width || root.clientWidth === 0) {
 				return;

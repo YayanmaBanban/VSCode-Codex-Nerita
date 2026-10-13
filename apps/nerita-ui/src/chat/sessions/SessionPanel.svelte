@@ -12,6 +12,7 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import SessionItem from "./SessionItem.svelte";
 	import SessionPanelHeader from "./SessionPanelHeader.svelte";
+
 	let {
 		state: chatState,
 		send,

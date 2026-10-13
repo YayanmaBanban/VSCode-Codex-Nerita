@@ -1,6 +1,5 @@
+<!-- Bitwarden の秘密情報を参照する ID とアカウントを入力し、秘密値は扱わない。 -->
 <script lang="ts">
-	// Bitwarden の秘密情報を参照する ID とアカウントを入力し、秘密値は扱わない。
-
 	import { type CredentialBinding } from "@nerita/shared/credentials";
 
 	let {

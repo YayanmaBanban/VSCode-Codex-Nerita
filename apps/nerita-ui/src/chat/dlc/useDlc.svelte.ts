@@ -4,6 +4,7 @@ import { untrack } from "svelte";
 import type { Bridge } from "@nerita/shared/bridge";
 import type { DlcView } from "@nerita/shared/dlc/contracts";
 
+/** DLC の表示状態を購読する。Svelte の寿命管理内で呼び出し、接続を交換する場合は取得関数を渡す。 */
 export function useDlc(bridge: Bridge | (() => Bridge)) {
 	const getBridge = typeof bridge === "function" ? bridge : () => bridge;
 	const initialView: DlcView = {

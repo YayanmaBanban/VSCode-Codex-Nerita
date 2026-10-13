@@ -1,5 +1,5 @@
+<!-- Intent 一覧と Phase 作業領域を組み立て、実行の寿命は Host に委ねる。 -->
 <script lang="ts">
-	// Intent 一覧と Phase 作業領域を組み立て、実行の寿命は Host に委ねる。
 	import type { Bridge } from "@nerita/shared/bridge";
 	import IntentForm from "./IntentForm.svelte";
 	import IntentOverview from "./IntentOverview.svelte";
@@ -10,6 +10,7 @@
 	import { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 	import "./dlc.css";
 	import "../chat.css";
+
 	let { bridge }: { bridge: Bridge } = $props();
 	// Bridge の切替では旧接続の購読を解除する。
 	const ui = useDlcWorkspace(() => bridge);

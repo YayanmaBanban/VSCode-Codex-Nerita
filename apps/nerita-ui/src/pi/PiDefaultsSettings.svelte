@@ -1,3 +1,4 @@
+<!-- Pi の既定設定を下書きとして編集し、モデルの推論設定を検証して保存を要求する。 -->
 <script lang="ts">
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import {
@@ -7,6 +8,7 @@
 	import { effortError } from "@nerita/shared/agentManager/effort";
 
 	import { untrack } from "svelte";
+
 	let { defaults, models, busy, save }: PiDefaultsSettingsProps = $props();
 	let edit = $state.raw(untrack(() => defaults));
 

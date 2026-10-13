@@ -7,6 +7,7 @@
 	import ToolOutputBridge from "../../../src/chat/tools/ToolOutputProvider.svelte";
 	import { createStoryBridge } from "../mocks/storyBridge";
 	import "../../../src/chat/chat.css";
+
 	let completed = $state.raw(false);
 	function setCompleted(
 		value:

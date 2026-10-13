@@ -1,6 +1,6 @@
+<!-- 選択ステップとワークフロー全体の設定を編集し、検証結果と操作エラーを表示する。 -->
 <script lang="ts">
 	import type { Workflow } from "@nerita/shared/workflows/definition";
-	// 選択ステップとワークフロー全体の設定を編集し、検証結果と操作エラーを表示する。
 
 	import {
 		isNonEmptyString,
@@ -16,6 +16,7 @@
 	import { type WorkflowInspectorProps } from "./WorkflowGraphEditorParts";
 
 	import WorkflowSettings from "./WorkflowSettings.svelte";
+
 	let {
 		workflow,
 		update,

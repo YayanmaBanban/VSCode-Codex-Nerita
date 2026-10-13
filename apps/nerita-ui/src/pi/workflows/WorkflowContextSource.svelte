@@ -1,6 +1,5 @@
+<!-- 会話の継承元を選び、現在のステップ自身は候補から除外する。 -->
 <script lang="ts">
-	// 会話の継承元を選び、現在のステップ自身は候補から除外する。
-
 	import { type WorkflowContextSourceProps } from "./WorkflowStepFormParts";
 
 	let {

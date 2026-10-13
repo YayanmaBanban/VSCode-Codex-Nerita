@@ -1,5 +1,5 @@
+<!-- 文字の光沢を WAAPI で動かし、方向・往復・待機・一時停止を制御する。 -->
 <script lang="ts">
-	// 文字の光沢を WAAPI で動かし、方向・往復・待機・一時停止を制御する。
 	import { cn } from "cnfast";
 	import { MediaQuery } from "svelte/reactivity";
 	/** 表示文言と光沢の色・再生条件を指定する。 */
@@ -109,6 +109,7 @@
 			hovering = true;
 			syncPlayback();
 		}
+		/** ホバーによる一時停止を解除し、現在の再生条件を光沢のアニメーションへ反映する。 */
 		function leave() {
 			hovering = false;
 			syncPlayback();

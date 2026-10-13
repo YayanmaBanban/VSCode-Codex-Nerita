@@ -1,8 +1,10 @@
+<!-- 添付ファイルを一覧表示し、ファイルを開く操作と入力から取り外す操作を親へ伝える。 -->
 <script lang="ts">
 	import X from "@lucide/svelte/icons/x";
 	import type { Attachment } from "@nerita/shared/composer";
 	import { fileIcon } from "./fileIcon";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+
 	let {
 		files,
 		disabled,

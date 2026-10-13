@@ -123,6 +123,7 @@ async function snapshot(
 	};
 }
 
+/** 資格情報の管理画面を開くコマンドを登録する。拡張機能の初期化時に一度呼び出す。 */
 export function registerCredentialPanel(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("nerita.credentials.manage", () =>
@@ -172,11 +173,13 @@ function bindCredentialPanel(
 	let busy = false;
 	let generation = 0;
 	let current: Extract<CredentialReply, { type: "state" }> | undefined;
+	/** 資格情報の画面が有効な間だけ応答を送信し、閉じた画面へ秘密情報の操作結果を送らない。 */
 	const post = (reply: CredentialReply) => {
 		if (!lifetime.signal.aborted) {
 			void panel.webview.postMessage(reply);
 		}
 	};
+	/** 資格情報の状態を取得し、最後に要求した世代の結果だけで表示を更新する。 */
 	const publish = async () => {
 		const revision = ++generation;
 		try {
@@ -192,6 +195,7 @@ function bindCredentialPanel(
 			});
 		}
 	};
+	/** 資格情報の変更要求を処理し、成功・失敗にかかわらず待機表示を解除して状態を再取得する。 */
 	const runRequest = async (
 		request: Exclude<CredentialRequest, { type: "ready" }>,
 	) => {

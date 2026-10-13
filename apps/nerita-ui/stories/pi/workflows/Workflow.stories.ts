@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, waitFor, within } from "storybook/test";
 import WorkflowPreview from "./WorkflowPreview.svelte";
+
 const meta = {
 	title: "Pi/Workflow",
 	component: WorkflowPreview,
@@ -15,7 +16,10 @@ export const Invalid: Story = { args: { invalid: true } };
 // agent のない定義は、実行条件の検証によって TOML 編集へ切り替わる。
 const missingAgent =
 	'version=1\nname="Phase25"\noutputs=["review"]\n[[steps]]\nid="review"\ntask="表示検証"\n';
-const minimal = missingAgent.replace('id="review"\n', 'id="review"\nagent="reviewer"\n');
+const minimal = missingAgent.replace(
+	'id="review"\n',
+	'id="review"\nagent="reviewer"\n',
+);
 
 export const Minimal: Story = {
 	args: { text: minimal },
@@ -25,7 +29,9 @@ export const Minimal: Story = {
 		await waitFor(async () => {
 			await expect(within(graph).getByText("review")).toBeVisible();
 		});
-		await expect(graph.querySelectorAll(".svelte-flow__node")).toHaveLength(1);
+		await expect(graph.querySelectorAll(".svelte-flow__node")).toHaveLength(
+			1,
+		);
 	},
 };
 
@@ -36,7 +42,9 @@ export const MissingAgent: Story = {
 		await expect(
 			await canvas.findByRole("textbox", { name: "Workflow TOML" }),
 		).toHaveValue(missingAgent);
-		await expect(canvas.queryByLabelText("Workflow グラフ")).not.toBeInTheDocument();
+		await expect(
+			canvas.queryByLabelText("Workflow グラフ"),
+		).not.toBeInTheDocument();
 		await expect(
 			canvas.getByText("TOML を修正するとグラフ編集を利用できます。"),
 		).toBeVisible();

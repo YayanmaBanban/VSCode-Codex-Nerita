@@ -12,6 +12,7 @@ import { canonicalPath } from "./WorkspacePathPolicy";
 import { containsPath } from "./AgentAccessPolicy";
 import { matchPath } from "./GuardrailGlob";
 import { isManagedDlcPath } from "@nerita/shared/dlc/managedPaths";
+
 export { matchPath } from "./GuardrailGlob";
 
 /** 複数ルールのうち強い制限を残し、1つの allow で別の deny を解除しない。 */
@@ -55,6 +56,7 @@ function builtinProtection(
 	operation: "read" | "write",
 ): string | undefined {
 	const parts = path.replaceAll("\\", "/").toLowerCase().split("/");
+	/** 検査対象が、指定ルート内の DLC 管理領域に属するかを判定する。 */
 	const isManagedDlcTarget = (root: string) =>
 		isManagedDlcPath(relative(root, path).replaceAll("\\", "/"));
 	const protectedDlcWrite =

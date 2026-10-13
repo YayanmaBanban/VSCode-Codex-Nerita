@@ -1,3 +1,4 @@
+<!-- ガードレールの操作結果・警告・判定シミュレーションの結果を表示する。 -->
 <script lang="ts">
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import { cn } from "cnfast";

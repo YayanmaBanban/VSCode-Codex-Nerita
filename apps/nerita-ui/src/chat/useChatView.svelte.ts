@@ -16,6 +16,7 @@ export function useChatView(getBridge: () => Bridge) {
 	return new ChatViewController(getBridge);
 }
 
+/** チャットの表示状態と復元位置を保持し、接続の交換や画面の破棄で旧通知を失効させる。 */
 class ChatViewController {
 	untrusted = $state(false);
 	backend = $state<BackendId | undefined>();

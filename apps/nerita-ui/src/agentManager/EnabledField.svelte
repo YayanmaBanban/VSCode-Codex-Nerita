@@ -2,6 +2,7 @@
 <script lang="ts">
 	import Field from "./Field.svelte";
 	import { inputStyle } from "./managerFields";
+
 	let {
 		value,
 		onChange,

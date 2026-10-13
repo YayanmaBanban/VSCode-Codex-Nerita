@@ -1,3 +1,4 @@
+<!-- 資格情報の状態と操作結果を Host から購読し、編集画面の要求を送信する。 -->
 <script lang="ts">
 	import {
 		type CredentialBridge,
@@ -7,10 +8,12 @@
 
 	import "../chat/chat.css";
 
+	/** 資格情報の状態応答だけを保持し、操作のエラーや通知は別に表示する。 */
 	type State = Extract<CredentialReply, { type: "state" }>;
 
 	import { onMount } from "svelte";
 	import CredentialEditor from "./CredentialEditor.svelte";
+
 	let { bridge }: { bridge: CredentialBridge } = $props();
 	let snapshot = $state.raw<State>({
 		type: "state",

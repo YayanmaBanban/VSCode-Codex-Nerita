@@ -37,6 +37,7 @@ export class DocumentEditorBridge<Reply> {
 				this.receive(reply);
 			}
 		});
+		/** 現在の購読世代だけを解除し、保留中の編集と旧応答を失効させる。 */
 		const release = () => {
 			if (this.generation !== generation) {
 				return;

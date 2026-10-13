@@ -1,3 +1,4 @@
+<!-- ワークフローのグラフ・TOML 編集を切り替え、保存・実行と Host の応答を共通の状態で扱う。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { type WorkflowBridge } from "@nerita/shared/workflows/messages";
@@ -12,6 +13,7 @@
 	import WorkflowError from "./WorkflowError.svelte";
 	import "./workflows.css";
 
+	/** 文書をグラフ用の定義へ解析し、解析できない間はグラフ編集を提供しない。 */
 	function readGraph(text: string) {
 		try {
 			return parseWorkflow(text);
@@ -27,12 +29,15 @@
 	let parsed = $derived(readGraph(editor.text));
 	let graph = $derived(initial ?? parsed);
 	let locked = $derived(editor.locked);
+	/** グラフを再生成するときの初期定義を保持する。 */
 	const setInitial = (value: Workflow | null) => {
 		initial = value;
 	};
+	/** グラフの再生成を識別する世代を更新し、以前の編集部品を破棄する。 */
 	const setGeneration = (change: (value: number) => number) => {
 		generation = change(generation);
 	};
+	/** 解析済みの文書だけをグラフへ切り替え、再生成時は現在の定義を初期値にする。 */
 	const switchMode = () => {
 		if (mode === "graph") {
 			mode = "toml";

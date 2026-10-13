@@ -2,6 +2,7 @@
 <script lang="ts">
 	import NotificationCard from "../../src/chat/NotificationCard.svelte";
 	import "../../src/chat/chat.css";
+
 	let { backgroundColor }: { backgroundColor?: string | undefined } =
 		$props();
 	let open = $state(true);

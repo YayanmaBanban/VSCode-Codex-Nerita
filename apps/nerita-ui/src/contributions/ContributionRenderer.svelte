@@ -6,6 +6,7 @@
 	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
 	import QuotaBar from "../chat/composer/QuotaBar.svelte";
+
 	let {
 		control,
 		disabled,

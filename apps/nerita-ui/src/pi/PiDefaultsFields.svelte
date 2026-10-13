@@ -1,6 +1,5 @@
+<!-- Pi の既定モデル・推論・起動上限を編集し、保存は親の操作へ委ねる。 -->
 <script lang="ts">
-	// Pi の既定モデル・推論・起動上限を編集し、保存は親の操作へ委ねる。
-
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 	import {

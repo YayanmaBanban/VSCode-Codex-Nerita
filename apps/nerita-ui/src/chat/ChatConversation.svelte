@@ -51,6 +51,7 @@
 		if (!element) {
 			return;
 		}
+		/** 会話欄の高さとスクロール位置から、末尾へ戻る操作を表示するか判定する。 */
 		const update = () => {
 			awayFromBottom =
 				element.clientHeight > 0 &&

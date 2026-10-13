@@ -9,6 +9,7 @@
 	import type { BackendId } from "@nerita/shared/backend";
 	import { createCodexLifecycleBridge } from "../mocks/codexLifecycleBridge";
 	import { createChatStoryBridge } from "../mocks/mockBridge";
+
 	let {
 		title = "",
 		error = false,

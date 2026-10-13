@@ -1,8 +1,11 @@
-import { contentKey } from "./content";
-type Reference<T> = { current: T };
-type SetStateAction<T> = T | ((previous: T) => T);
-type Dispatch<T> = (value: T) => void;
 // 送信の受付・失敗・切断で入力ロックを解除し、失敗した下書きは編集可能なまま残す。
+import { contentKey } from "./content";
+/** 外部へ登録したコールバックから最新値を参照するための可変の参照先。 */
+type Reference<T> = { current: T };
+/** 直接指定した値と、前の状態から計算する更新処理を共通に扱う。 */
+type SetStateAction<T> = T | ((previous: T) => T);
+/** 状態の更新要求を受け取る通知関数。呼び出し元は戻り値を利用しない。 */
+type Dispatch<T> = (value: T) => void;
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { Bridge } from "@nerita/shared/bridge";
@@ -15,6 +18,7 @@ import {
 } from "@nerita/shared/composerContent";
 
 import type { UiMessage } from "@nerita/shared/messages";
+/** 送信先の会話・下書きと通知先。送信中も最新の接続状態を参照する。 */
 type SubmissionInput = {
 	bridge: Bridge;
 	state: ChatState;
@@ -29,6 +33,7 @@ export function usePromptSubmission(input: SubmissionInput) {
 	return new PromptSubmission(input);
 }
 
+/** 送信の受付待ちと入力ロックを保持し、失敗時は送信対象だった下書きを編集可能なまま残す。 */
 class PromptSubmission {
 	private readonly input: SubmissionInput;
 	locked = $state(false);

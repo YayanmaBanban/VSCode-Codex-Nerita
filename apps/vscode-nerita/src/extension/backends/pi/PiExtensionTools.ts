@@ -40,6 +40,7 @@ export function guardPiExtensionTools(
 ): void {
 	const tools = extension.tools;
 	const set = tools.set.bind(tools);
+	/** 拡張ツールの登録を安全性検査用の一覧にも反映し、実行対象と照合対象を揃える。 */
 	const register = (
 		name: string,
 		registration: Parameters<typeof tools.set>[1],

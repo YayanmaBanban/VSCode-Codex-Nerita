@@ -2,6 +2,7 @@
 <script lang="ts">
 	import type { ToolSummary } from "@nerita/shared/chatState";
 	import MessageText from "../messages/MessageText.svelte";
+
 	let { tool }: { tool: ToolSummary } = $props();
 </script>
 

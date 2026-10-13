@@ -5,6 +5,7 @@
 	import ConnectionHeader from "./connection/ConnectionHeader.svelte";
 	import ConnectionButton from "./connection/ConnectionButton.svelte";
 	import SettingsTooltip from "./SettingsTooltip.svelte";
+
 	let {
 		view,
 		chat,

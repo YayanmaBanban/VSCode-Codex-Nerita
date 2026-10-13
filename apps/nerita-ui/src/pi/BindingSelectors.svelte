@@ -1,6 +1,5 @@
+<!-- 資格情報の用途と取得元を選び、検証した選択値を親へ返す。 -->
 <script lang="ts">
-	// 資格情報の用途と取得元を選び、検証した選択値を親へ返す。
-
 	import {
 		credentialKindSchema,
 		credentialBindingSchema,

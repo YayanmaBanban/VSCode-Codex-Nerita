@@ -1,3 +1,4 @@
+<!-- 性格設定のプリセットを選択・編集し、設定ファイルで固定された指示を保護して保存を要求する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import type {
@@ -6,6 +7,7 @@
 	} from "@nerita/shared/personality";
 	import ConfigControl from "../composer/ConfigControl.svelte";
 	import InstructionEditor from "./InstructionEditor.svelte";
+
 	let {
 		scope,
 		settings,
@@ -45,6 +47,7 @@
 			initialText,
 		),
 	);
+	/** 現在の適用範囲を付けて、性格設定のプリセット選択を Host へ要求する。 */
 	function select(name: string) {
 		send({
 			type: "personality/select",
@@ -53,6 +56,7 @@
 			requestId: crypto.randomUUID(),
 		});
 	}
+	/** プリセット名を整えて保存を要求し、更新前の名前を付けて新規作成と名前変更を区別する。 */
 	function save() {
 		send({
 			type: "personality/save",

@@ -1,6 +1,5 @@
+<!-- Host の判定結果・理由・正規化したパス・解析できない範囲を表示する。 -->
 <script lang="ts">
-	// Host の判定結果・理由・正規化したパス・解析できない範囲を表示する。
-
 	import { type GuardReply } from "@nerita/shared/guardrails/messages";
 
 	let {

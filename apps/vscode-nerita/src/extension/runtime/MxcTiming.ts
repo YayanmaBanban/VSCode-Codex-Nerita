@@ -1,6 +1,7 @@
 // コマンド実行の各区間を数値だけで記録する。コマンド・入力・パス・資格情報は計測記録に含めない。
 import { performance } from "node:perf_hooks";
 
+/** MXC 実行の計測結果。時間はミリ秒、最大常駐メモリーは KiB で扱い、未取得の初回出力は `null` とする。 */
 export type MxcMeasurement = {
 	temporaryMs: number;
 	discoveryMs: number;
@@ -16,6 +17,7 @@ export type MxcMeasurement = {
 	hostPeakRssKiB: number;
 };
 const recent: MxcMeasurement[] = [];
+/** 最近の MXC 計測結果を返す。取得側による変更が内部の記録へ反映されないよう複製する。 */
 export function mxcMeasurements(): MxcMeasurement[] {
 	return structuredClone(recent);
 }

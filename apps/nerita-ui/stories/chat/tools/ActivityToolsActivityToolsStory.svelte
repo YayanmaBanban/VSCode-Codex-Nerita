@@ -7,6 +7,7 @@
 	import Activity from "../../../src/chat/Activity.svelte";
 	import "../../../src/chat/chat.css";
 	import { tools } from "./ActivityToolsData";
+
 	let request = $state.raw<UiMessage | undefined>(undefined);
 	function setRequest(
 		value: typeof request | ((current: typeof request) => typeof request),

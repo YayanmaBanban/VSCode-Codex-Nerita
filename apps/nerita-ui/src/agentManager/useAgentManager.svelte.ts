@@ -6,6 +6,7 @@ import type {
 	ManagerReply,
 	ManagerState,
 } from "@nerita/shared/agentManager/messages";
+/** 現在の設定世代を照合してから適用する、エージェント設定の変更要求。 */
 type Mutation = Extract<ManagerRequest, { generation: string }>;
 /** 保存する内容のみを受け取り、要求 ID と世代は管理画面側で付加する。 */
 export type ManagerSave = (
@@ -27,6 +28,7 @@ export function useAgentManager(
 	let notice = $state("");
 	let sequence = 0;
 	onMount(() => {
+		/** 設定状態を更新し、現在の要求に対応する操作結果だけで待機表示を解除する。 */
 		const receive = (message: ManagerReply) => {
 			if (message.type === "state") {
 				state = message;
@@ -43,6 +45,7 @@ export function useAgentManager(
 		bridge.postMessage({ type: "ready" });
 		return unsubscribe;
 	});
+	/** 現在の設定世代と要求番号を付けて保存を送り、未取得・要求中の状態では送信しない。 */
 	const save: ManagerSave = (change) => {
 		if (!state || busy) {
 			return;

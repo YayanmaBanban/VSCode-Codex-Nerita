@@ -1,3 +1,4 @@
+<!-- グラフの編集内容を TOML と同期し、選択ステップと定義の検証結果を保持する。 -->
 <script lang="ts">
 	import { errorText } from "@nerita/shared/errorText";
 
@@ -10,6 +11,7 @@
 	import { stringify } from "smol-toml";
 
 	import { untrack } from "svelte";
+
 	let { initial, text, change }: WorkflowGraphEditorProps = $props();
 	let draft = $state.raw(
 		untrack(() => ({ workflow: initial, written: text })),

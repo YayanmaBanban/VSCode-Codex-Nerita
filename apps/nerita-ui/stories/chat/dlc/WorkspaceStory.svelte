@@ -7,6 +7,7 @@
 	import { first, second, view } from "./workspaceState";
 	import StoryChat from "../StoryChat.svelte";
 	import { createChatStoryBridge } from "../mocks/mockBridge";
+
 	let { chatModes = false }: { chatModes?: boolean } = $props();
 	const chatBridge = createChatStoryBridge("empty");
 	const mock = createStoryBridge(scenarioState("empty"));

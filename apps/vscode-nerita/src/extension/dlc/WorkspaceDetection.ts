@@ -89,6 +89,7 @@ export async function initializeWorkspace(
 	}
 	return result;
 }
+/** 保存した検出結果を検証して比較し、未保存・破損した値は現在の検出結果と一致させない。 */
 function sameDetection(
 	text: string | undefined,
 	result: WorkspaceDetection,
@@ -358,6 +359,7 @@ class WorkspaceScanner {
 	}
 }
 
+/** ルートのパッケージ設定で明示された管理ツールだけを、検出結果へ反映する。 */
 function declaredManager(
 	root: string,
 	declared: string | undefined,

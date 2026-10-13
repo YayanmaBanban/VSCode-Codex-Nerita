@@ -10,6 +10,7 @@
 	import ShinyText from "../../ui/ShinyText.svelte";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import "./connectionButton.css";
+
 	let {
 		state: chatState,
 		send,

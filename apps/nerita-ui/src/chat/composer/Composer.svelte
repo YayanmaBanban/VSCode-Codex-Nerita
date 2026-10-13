@@ -1,3 +1,4 @@
+<!-- チャットの入力・添付・設定・送信・停止を組み立て、接続状態と入力ロックに合わせて操作を制御する。 -->
 <script lang="ts">
 	import type { Bridge } from "@nerita/shared/bridge";
 	import type { ChatState } from "@nerita/shared/chatState";
@@ -11,6 +12,7 @@
 	import ComposerInput from "./ComposerInput.svelte";
 	import ComposerSettings from "./ComposerSettings.svelte";
 	import { useAttachmentDrop } from "./useAttachmentDrop.svelte";
+
 	let props: {
 		bridge?: Bridge;
 		parts: ComposerPart[];
@@ -39,6 +41,7 @@
 	let attach = $derived(
 		attachmentAction(props.state, inputLocked, props.send),
 	);
+	/** 現在の会話と Run を明示して停止を要求し、対象が確定していなければ送信しない。 */
 	function cancel() {
 		if (!isNonEmptyString(props.state.sessionId)) {
 			return;
@@ -87,6 +90,7 @@
 			});
 	}
 
+	/** 添付の読み取り・接続・本文の準備が揃っている場合だけ送信を有効にする。 */
 	function sendDisabled() {
 		const unavailable =
 			drop.reading ||

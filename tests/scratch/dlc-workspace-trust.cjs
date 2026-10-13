@@ -2,6 +2,7 @@
 const { chromium, expect } = require("@playwright/test");
 const { mkdir, writeFile } = require("node:fs/promises");
 const { join } = require("node:path");
+
 const storybookUrl = process.argv[2] ?? "http://localhost:6007";
 
 async function main() {

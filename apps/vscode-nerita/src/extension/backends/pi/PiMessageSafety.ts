@@ -101,6 +101,7 @@ function privateToolMessage(
 		[],
 		protect,
 	);
+	/** 入れ子のツール呼び出しの引数とエラーから秘密値を保護し、構造化した値として検証する。 */
 	const protectNestedCall = (
 		call: NonNullable<typeof message.nestedCalls>["calls"][number],
 	) => ({

@@ -1,3 +1,4 @@
+<!-- 資格情報の参照設定を一覧・編集し、保存・削除と取得元の操作を Host へ要求する。 -->
 <script lang="ts">
 	import {
 		type CredentialBinding,
@@ -8,9 +9,11 @@
 	import "../chat/chat.css";
 	import BindingForm from "./CredentialBindingForm.svelte";
 
+	/** 資格情報の状態応答だけを保持し、操作のエラーや通知は別に表示する。 */
 	type State = Extract<CredentialReply, { type: "state" }>;
 
 	import CredentialProviderSettings from "./CredentialProviderSettings.svelte";
+
 	let {
 		state: hostState,
 		send,
@@ -23,6 +26,7 @@
 		error?: string;
 	} = $props();
 	let editing = $state.raw<CredentialBinding>();
+	/** 編集対象の資格情報の参照設定を保持し、未選択時は新規作成の入力へ切り替える。 */
 	const setEditing = (value: CredentialBinding | undefined) => {
 		editing = value;
 	};

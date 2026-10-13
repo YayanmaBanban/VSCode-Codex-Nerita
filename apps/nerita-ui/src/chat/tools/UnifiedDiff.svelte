@@ -4,6 +4,7 @@
 	import DiffView from "./DiffView.svelte";
 	import type { DiffLocationProps } from "./diffPresentation";
 	import { toolOutputClass } from "./toolStyles";
+
 	let { diff, ...location }: DiffLocationProps & { diff: string } = $props();
 	const hunks = $derived.by(() => {
 		try {

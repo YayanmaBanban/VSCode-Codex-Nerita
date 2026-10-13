@@ -7,6 +7,7 @@
 	import { scenarioState } from "../fixtures/chatState";
 	import { createStoryBridge } from "../mocks/storyBridge";
 	import "../../../src/chat/chat.css";
+
 	let { view }: { view: DlcView } = $props();
 	const bridge = createStoryBridge(scenarioState("empty"));
 	const ui = useDlcWorkspace(bridge);

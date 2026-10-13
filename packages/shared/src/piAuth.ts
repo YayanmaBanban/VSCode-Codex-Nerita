@@ -1,6 +1,7 @@
 // 認証専用 Webview の公開状態と、入力を Host へ渡す通信契約。
 import { isRecord } from "./validation";
 
+/** 認証先の表示情報。秘密値を含めず、取得済みの状態と操作用 ID を渡す。 */
 export type PiAuthItem = {
 	id: string;
 	name: string;
@@ -20,6 +21,7 @@ export type PiAuthPrompt = {
 	secret: boolean;
 	options?: { id: string; label: string }[];
 };
+/** 認証画面の状態。入力要求がない場合は `prompt` を `null` にする。 */
 export type PiAuthState = {
 	items: PiAuthItem[];
 	active: string | null;
@@ -28,6 +30,7 @@ export type PiAuthState = {
 	error: string | null;
 	feedback?: Record<string, { notice: string; error: string | null }>;
 };
+/** 認証画面からの操作。回答は Host が発行した入力要求 ID に対して送る。 */
 export type PiAuthRequest =
 	| { type: "ready" }
 	| { type: "start"; id: string }

@@ -2,6 +2,7 @@
 import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 import { untrack } from "svelte";
 
+/** 会話末尾への追従を登録する。Svelte の寿命管理内で呼び出し、表示要素と会話 ID は最新値を返す関数で渡す。 */
 export function useFollowConversation(
 	container: () => HTMLElement | null,
 	sessionId: () => string | null,
@@ -31,15 +32,18 @@ export function useFollowConversation(
 		const toolScroll = registerToolCardScroll(element, () => {
 			following.current = false;
 		});
+		/** ブラウザーの小数点誤差を許容して、会話欄が末尾にあるかを判定する。 */
 		const atBottom = () =>
 			element.scrollHeight - element.clientHeight - element.scrollTop <=
 			4;
+		/** 手動スクロールやツール展開を妨げない条件で、会話欄を末尾へ追従させる。 */
 		const follow = () => {
 			if (following.current && !pause && !toolScroll.active()) {
 				element.scrollTo({ top: element.scrollHeight });
 				previous = scrollMetrics(element);
 			}
 		};
+		/** 表示の高さ変化による位置補正を除き、利用者のスクロールに応じて末尾への追従を切り替える。 */
 		const scroll = () => {
 			// サブエージェントの表示中に会話欄が隠れたことによる位置変化は、手動操作として扱わない。
 			if (!isNonZeroNumber(element.clientHeight) || toolScroll.active()) {
@@ -59,6 +63,7 @@ export function useFollowConversation(
 				following.current = false;
 			}
 		};
+		/** 既存の追従予約を取り消し、次の描画で一度だけ会話末尾へ移動する。 */
 		const schedule = () => {
 			cancelAnimationFrame(frame);
 			frame = requestAnimationFrame(follow);
@@ -86,6 +91,7 @@ export function useFollowConversation(
 /** 会話欄とその内容の高さ、行や本文の変更を監視し、末尾への追従処理を次のフレームに予約する。 */
 function observeConversation(element: HTMLElement, schedule: () => void) {
 	const resize = new ResizeObserver(schedule);
+	/** 会話欄とその子要素の高さを監視し直し、追従する位置の再計算を予約する。 */
 	const observe = () => {
 		resize.disconnect();
 		resize.observe(element);
@@ -112,10 +118,12 @@ function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
 	let heading: HTMLElement | null = null;
 	let headingOffset = 0;
 	let frame = 0;
+	/** ツール展開に合わせた位置補正の予約を取り消し、対象の見出しを解除する。 */
 	const cancel = () => {
 		cancelAnimationFrame(frame);
 		heading = null;
 	};
+	/** ツールの展開中だけ、開く操作をした見出しの画面内位置を維持する。 */
 	const align = () => {
 		if (!(heading?.isConnected === true)) {
 			cancel();
@@ -144,6 +152,7 @@ function registerToolCardScroll(container: HTMLElement, onOpen: () => void) {
 			heading = null;
 		}
 	};
+	/** 開く対象の見出しと位置を記録し、展開時の自動追従を止めて位置補正を予約する。 */
 	const click = (event: MouseEvent) => {
 		const target =
 			event.target instanceof Element

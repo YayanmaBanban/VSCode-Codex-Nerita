@@ -42,6 +42,7 @@ export function parseQuota(value: unknown): QuotaWindow[] | null {
 	}
 	return nonEmptyQuota(windows);
 }
+/** 利用枠が未取得の状態を空配列ではなく `null` とし、取得済みの一覧と区別する。 */
 function nonEmptyQuota(windows: QuotaWindow[]): QuotaWindow[] | null {
 	return windows.length === 0 ? null : windows;
 }

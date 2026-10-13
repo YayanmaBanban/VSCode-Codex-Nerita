@@ -2,6 +2,7 @@
 <script lang="ts">
 	import type { ContributionSlotProps } from "./contributionProps";
 	import ContributionSlot from "./ContributionSlot.svelte";
+
 	let props: ContributionSlotProps = $props();
 </script>
 

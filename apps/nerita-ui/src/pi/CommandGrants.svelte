@@ -1,6 +1,5 @@
+<!-- 保持中のコマンド承認と有効範囲を表示し、選択した承認の取り消しを要求する。 -->
 <script lang="ts">
-	// 保持中のコマンド承認と有効範囲を表示し、選択した承認の取り消しを要求する。
-
 	import {
 		commandPermissionLabel,
 		type CommandPermissionKey,

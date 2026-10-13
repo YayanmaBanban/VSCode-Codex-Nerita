@@ -1,6 +1,7 @@
 // DLC の操作検証に用いる初期表示だけを定義する。
 import type { DlcProjection, DlcView } from "@nerita/shared/dlc/contracts";
 import type { BackendId } from "@nerita/shared/backend";
+
 export const first = "00000000-0000-4000-8000-000000000001";
 export const second = "00000000-0000-4000-8000-000000000002";
 export const third = "00000000-0000-4000-8000-000000000003";

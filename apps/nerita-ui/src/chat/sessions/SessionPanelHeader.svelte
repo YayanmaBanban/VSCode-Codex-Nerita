@@ -6,6 +6,7 @@
 	import type { ChatState } from "@nerita/shared/chatState";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import { sessionActionClass } from "./sessionStyles";
+
 	let {
 		state,
 		close = $bindable(),

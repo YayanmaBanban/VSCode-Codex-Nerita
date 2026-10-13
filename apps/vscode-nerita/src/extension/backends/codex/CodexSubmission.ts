@@ -123,6 +123,7 @@ export class CodexSubmission {
 		const operation = this.begin(sessionId);
 		const id = randomUUID();
 		try {
+			/** 現在の Codex 送信要求に処理を固定し、失効した要求の後続処理を止める。 */
 			const check = () => this.checkSubmission(operation);
 			check();
 			const order = nextTimelineOrder(this.session.snapshot());
@@ -285,6 +286,7 @@ export class CodexSubmission {
 		if (preparing) {
 			this.session.patch({ run: "running", runId: randomUUID() });
 		}
+		/** 送信準備が失敗した場合だけ以前の Run 表示へ戻し、既に開始した実行の状態は巻き戻さない。 */
 		const restore = () => {
 			const matchesPreparing =
 				preparing && this.current(operation) && !this.session.active();
@@ -387,6 +389,7 @@ export class CodexSubmission {
 		checkWaitingRun: () => void,
 		goal: string,
 	) {
+		/** Codex の現在の送信と完了状態を照合し、中断された旧実行の通知を適用しない。 */
 		const current = () =>
 			this.current(operation) &&
 			!(

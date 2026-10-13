@@ -2,6 +2,7 @@
 import type { UiContributionRegistry } from "../../../vscode-nerita/src/extension/ui-contributions/UiContributionRegistry";
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { createBuiltinUiRegistry } from "../../../vscode-nerita/src/extension/ui-contributions/builtinContributions";
+
 const models = [
 	{ value: "openai/demo", name: "OpenAI" },
 	{ value: "anthropic/demo", name: "Anthropic Claude" },

@@ -1,5 +1,6 @@
 // Host から通知済みの Pi 設定 DTO の表示例を提供する。
 import type { ConfigOption } from "@nerita/shared/composer";
+
 const provider: ConfigOption = {
 	id: "provider",
 	name: "Provider",

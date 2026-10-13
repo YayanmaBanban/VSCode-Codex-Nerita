@@ -1,3 +1,4 @@
+<!-- チャットの表示先・バックエンド・認証・性格設定の操作をメニューにまとめ、要求中の状態を管理する。 -->
 <script lang="ts">
 	import { Dialog, DropdownMenu } from "bits-ui";
 	import Ellipsis from "@lucide/svelte/icons/ellipsis";
@@ -14,6 +15,7 @@
 	import BackendMenu from "../connection/BackendMenu.svelte";
 	import SidebarMenu from "../connection/SidebarMenu.svelte";
 	import PersonalityPane from "./PersonalityPane.svelte";
+
 	let {
 		backend,
 		state: chatState,
@@ -47,10 +49,12 @@
 			pending = false;
 		}
 	});
+	/** 性格設定の要求を送る前に待機状態へ移り、連打による重複操作を抑止する。 */
 	function request(message: PersonalityMessage) {
 		pending = true;
 		send(message);
 	}
+	/** 表示先の変更を利用側の操作へ渡し、操作先がなければ Host へ変更を要求する。 */
 	function selectSidebar(location: SidebarLocation) {
 		if (onSelectSidebar) {
 			onSelectSidebar(location);
@@ -62,6 +66,7 @@
 			});
 		}
 	}
+	/** 指定したバックエンドへの切り替えを Host へ要求する。 */
 	function selectBackend(value: BackendId) {
 		send({
 			type: "ui/setBackend",
@@ -71,6 +76,7 @@
 	}
 	const itemClass =
 		"flex cursor-pointer items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[12px] outline-none data-disabled:cursor-default data-disabled:opacity-50 data-highlighted:bg-menu-hover";
+	/** Host から新しい性格設定が届いたときに、操作の待機状態を解除する。 */
 	function resetPending(_settings: ChatState["personality"]) {
 		pending = false;
 	}

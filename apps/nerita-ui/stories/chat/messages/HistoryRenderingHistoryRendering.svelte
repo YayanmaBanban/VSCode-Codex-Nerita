@@ -5,6 +5,7 @@
 	import StoryChat from "../StoryChat.svelte";
 	import { createChatStoryBridge } from "../mocks/mockBridge";
 	import { messages } from "./HistoryRenderingData";
+
 	const bridge = (() => {
 		const bridge = createChatStoryBridge();
 		bridge.patchState({ messages });

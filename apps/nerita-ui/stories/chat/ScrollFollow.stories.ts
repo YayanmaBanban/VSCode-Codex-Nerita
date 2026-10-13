@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, userEvent, within, waitFor } from "storybook/test";
 import ScrollFollowScrollFollowStory from "./ScrollFollowScrollFollowStory.svelte";
 import ScrollFollowExample1 from "./ScrollFollowExample1.svelte";
+
 const meta = {
 	title: "Chat/Scroll Follow",
 	component: ScrollFollowScrollFollowStory,

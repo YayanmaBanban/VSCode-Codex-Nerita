@@ -6,6 +6,7 @@ import type { TurnEvent } from "./turnEvents";
 import { itemPatch, messagePatch } from "./chatItems";
 import { activityPatch } from "./activityEvents";
 
+/** ターン通知の適用先。更新ごとに最新状態を取得し、同じ通知内の変更も後続の更新へ反映する。 */
 type TurnTarget = {
 	// 同一通知内でも適用済みの項目を次の更新に含めるため、状態は都度取得する。
 	snapshot(): ChatState;

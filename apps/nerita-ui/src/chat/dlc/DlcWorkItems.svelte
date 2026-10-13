@@ -1,5 +1,5 @@
+<!-- 手動タスクの実行履歴と工程の進行を分けて表示する。 -->
 <script lang="ts">
-	// 手動タスクの実行履歴と工程の進行を分けて表示する。
 	import type {
 		DlcAction,
 		DlcProjection,
@@ -7,6 +7,7 @@
 	} from "@nerita/shared/dlc/contracts";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import TaskForm from "./TaskForm.svelte";
+
 	let {
 		selected,
 		active,

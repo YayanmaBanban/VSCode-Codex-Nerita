@@ -1,8 +1,10 @@
+<!-- 補完候補の検索欄と一覧を表示し、入力欄の位置に合わせて配置とフォーカスを調整する。 -->
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { cn } from "cnfast";
 	import type { CompletionMenuProps } from "./completionMenuProps";
 	import CompletionOption from "./CompletionOption.svelte";
+
 	let {
 		id,
 		title,
@@ -23,6 +25,7 @@
 	let panel: HTMLDivElement | undefined = $state();
 	let input: HTMLInputElement | undefined = $state();
 	let above = $state(true);
+	/** 候補パネルの高さを測り、入力欄の上に表示できる空間があるかを判定する。 */
 	function position() {
 		if (panel) {
 			above =
@@ -30,6 +33,7 @@
 				panel.offsetHeight + 12;
 		}
 	}
+	/** 候補数や見出しの変化を監視の入力にして、候補パネルの配置を再計算する。 */
 	function positionFor(_count: number, _title: string) {
 		position();
 	}

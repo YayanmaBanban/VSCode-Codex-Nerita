@@ -1,8 +1,10 @@
+<!-- パスとコマンドのルールをフォームで編集し、識別子の重複を避けて設定全体へ反映する。 -->
 <script lang="ts">
 	import { type PathRule } from "@nerita/shared/guardrails/config";
 
 	let { config, onChange }: GuardrailsRulesProps = $props();
 
+	/** パスとコマンドの両ルールに重複しない ID を採番する。 */
 	const nextId = (prefix: string) => {
 		const ids = new Set(
 			[...config.pathRules, ...config.commandRules].map(
@@ -45,7 +47,8 @@
 		}}
 	/>
 	<p class="m-0 text-[12px] text-muted">
-		ワークスペース外の書き込みは拒否します。シェル・write/edit・拡張ツールの承認は維持します。SSH などの組み込み保護は緩和できません。
+		ワークスペース外の書き込みは拒否します。シェル・write/edit・拡張ツールの承認は維持します。SSH
+		などの組み込み保護は緩和できません。
 	</p>
 	<PathRuleGroup
 		{...{

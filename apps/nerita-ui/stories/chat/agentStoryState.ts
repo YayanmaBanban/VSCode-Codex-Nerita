@@ -1,5 +1,6 @@
 // 子と孫のネスト閲覧を再現する固定状態。
 import type { SubAgentSummary } from "@nerita/shared/subAgents";
+
 export const child: SubAgentSummary = {
 	threadId: "child",
 	parentThreadId: "story-session",

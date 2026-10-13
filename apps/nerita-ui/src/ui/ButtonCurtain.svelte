@@ -1,5 +1,5 @@
+<!-- ホバーとキーボードフォーカスでボタンを覆うカーテンを共有する。 -->
 <script lang="ts">
-	// ホバーとキーボードフォーカスでボタンを覆うカーテンを共有する。
 	import { cn } from "cnfast";
 	/** 親ボタンに group・relative・overflow-hidden を指定し、色を渡す。 */
 	type Props = { name: string; className: string };

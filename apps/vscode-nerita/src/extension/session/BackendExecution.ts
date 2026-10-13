@@ -14,6 +14,7 @@ export type BackendPrompt = {
 	changeScopes?: ChangeScope[];
 	codeReferences?: CodeReference[];
 };
+/** バックエンドの終了結果。正常完了・失敗・中断を区別し、応答の存在だけで成功と判断しない。 */
 export type BackendExecutionResult = {
 	outcome: "completed" | "failed" | "cancelled";
 	response: string | null;
@@ -84,6 +85,7 @@ export async function executeBackend(
 	signal.throwIfAborted();
 	const result = execution.begin();
 	void result.catch(() => {});
+	/** 中断シグナルをセッションの停止処理へ接続する。 */
 	const stopped = () => cancel();
 	signal.addEventListener("abort", stopped, { once: true });
 	try {

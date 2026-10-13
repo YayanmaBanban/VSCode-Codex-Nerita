@@ -1,5 +1,5 @@
+<!-- 連続したドラッグ表示と、解放時だけの段階確定を分ける汎用スライダー。 -->
 <script lang="ts">
-	// 連続したドラッグ表示と、解放時だけの段階確定を分ける汎用スライダー。
 	import { untrack } from "svelte";
 	import { cn } from "cnfast";
 	import "./stepSlider.css";

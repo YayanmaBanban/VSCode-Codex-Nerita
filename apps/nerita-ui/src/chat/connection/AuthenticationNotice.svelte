@@ -3,6 +3,7 @@
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import ActionNotice from "../../ui/ActionNotice.svelte";
+
 	let {
 		state,
 		send,

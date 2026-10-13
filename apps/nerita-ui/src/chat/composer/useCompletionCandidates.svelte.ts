@@ -1,3 +1,4 @@
+// 現在のカテゴリーを getter で参照し、非同期に取得した別のカテゴリーの候補を混ぜない。
 type CandidateInput = {
 	bridge: Bridge | undefined;
 	marker: string | undefined;
@@ -8,7 +9,6 @@ type CandidateInput = {
 	collaborationModes: boolean | undefined;
 	canAttach: boolean;
 };
-// 現在のカテゴリーを getter で参照し、非同期に取得した別のカテゴリーの候補を混ぜない。
 import type { Attachment } from "@nerita/shared/composer";
 import type { SkillSummary } from "@nerita/shared/skills";
 import type { Bridge } from "@nerita/shared/bridge";

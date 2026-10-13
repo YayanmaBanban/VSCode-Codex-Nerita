@@ -14,10 +14,12 @@ export function useAgentEditor(
 	backend: BackendId,
 	initialEdit: () => AgentEdit,
 ) {
+	/** 引数の形式にかかわらず、最新の管理画面の状態と操作先を取得する。 */
 	const props = () => (typeof input === "function" ? input() : input);
 	let edit = $state.raw<AgentEdit>(initialEdit());
 	let filename = $state("");
 	const effortKey = backend === "pi" ? "thinking" : "reasoningEffort";
+	/** エージェントの下書きを更新し、未保存の変更があることを親へ伝える。 */
 	const change = (next: AgentEdit) => {
 		edit = next;
 		props().onDirty();

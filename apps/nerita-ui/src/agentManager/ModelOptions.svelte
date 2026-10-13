@@ -1,6 +1,7 @@
 <!-- 一覧にない保存済みモデルも、利用者が変更するまで候補として保持する。 -->
 <script lang="ts">
 	import type { ManagerModel } from "@nerita/shared/agentManager/messages";
+
 	let { value, models }: { value: string; models: ManagerModel[] } = $props();
 </script>
 

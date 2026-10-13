@@ -170,6 +170,7 @@ export class IntentRepository {
 		attemptId: string,
 		state: ChatState,
 	): Promise<void> {
+		/** 会話記録を実行世代へ固定し、既に保存した異なる内容を上書きしない。 */
 		const commitConversation = async () => {
 			const value = RunConversationSchema.parse(state);
 			if (this.hasConversation(intentId, attemptId)) {
@@ -338,6 +339,7 @@ export class IntentRepository {
 		conditions: RoutingConditions = {},
 		projectType?: WorkspaceDetection["classification"]["detected"],
 	): Promise<IntentState> {
+		/** ワークスペースの検出と登録状態を確認してから、新しい依頼と初期工程を登録する。 */
 		const registerDetectedIntent = async () => {
 			await this.validateDetection(workspace);
 			const registry = await this.registry();
@@ -393,6 +395,7 @@ export class IntentRepository {
 	}
 	/** Git 側へは停止した状態の写しだけを出力する。読込み・復旧には一切使わない。 */
 	exportSnapshot(intentId: string): Promise<void> {
+		/** 実行中でない依頼状態だけを Git で追跡できる履歴へ出力する。 */
 		const writeHistoricalSnapshot = async () => {
 			const registry = await this.registry();
 			const entry = registry.entries.find(
@@ -483,6 +486,7 @@ export class IntentRepository {
 	}
 	/** 古い書き込みは、ロック取得後に期待版を照合して拒否する。 */
 	save(value: IntentState, expectedRevision: number): Promise<void> {
+		/** 保存済みの世代・依頼本文・工程の選択を照合してから、競合のない状態更新だけを保存する。 */
 		const commitIntentState = async () => {
 			const state = IntentStateSchema.parse(value);
 			const registry = await this.registry();
@@ -547,6 +551,7 @@ export class IntentRepository {
 	}
 	/** 未登録領域を確認してから登録順に全状態を検証し、不正な一件を黙って一覧から落とさない。 */
 	private states(): Promise<IntentState[]> {
+		/** 未登録の保存領域がないことを確認し、登録済みの依頼状態を順に読み込む。 */
 		const loadRegisteredStates = async () => {
 			const registry = await this.registry();
 			await this.assertNoOrphans(registry);
@@ -560,6 +565,7 @@ export class IntentRepository {
 	}
 	/** 明示的な復旧操作だけが未登録領域を登録する。信頼済み根拠のない領域は保持して拒否する。 */
 	recoverOrphans(): Promise<void> {
+		/** 未登録の依頼ディレクトリを検証して登録し、既に登録された領域は保持する。 */
 		const registerRecoveredIntents = async () => {
 			let registry = await this.registry();
 			const entries = await readdir(

@@ -1,3 +1,4 @@
+<!-- 設定の選択肢を共通のメニューで表示し、現在値と選択項目の説明を利用側へ提供する。 -->
 <script lang="ts">
 	import { Select } from "bits-ui";
 	import type { ConfigOption } from "@nerita/shared/composer";
@@ -8,6 +9,7 @@
 	import User from "@lucide/svelte/icons/user";
 	import { cn } from "cnfast";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+
 	let {
 		option,
 		disabled,
@@ -29,6 +31,7 @@
 	let Icon = $derived(icon === "user" ? User : Bot);
 	let Chevron = $derived(chevron === "right" ? ChevronRight : ChevronDown);
 	let tooltip = $derived(controlTooltip());
+	/** アイコンだけの操作には現在値を示し、通常の選択欄には候補の説明を表示する。 */
 	function controlTooltip() {
 		if (icon !== undefined) {
 			return current?.name ?? option.currentValue;

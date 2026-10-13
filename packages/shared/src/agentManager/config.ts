@@ -56,6 +56,7 @@ export const agentEditSchema = z.strictObject({
 	approvalsReviewer: z.enum(["user", "auto_review"]).optional(),
 	approvalPolicy: approvalPolicySchema.optional(),
 });
+/** 保存前に編集するエージェント定義。外部入力は `agentEditSchema` で検証してから扱う。 */
 export type AgentEdit = z.infer<typeof agentEditSchema>;
 export const piDefaultsSchema = z.strictObject({
 	defaultModel: modelSchema.optional(),
@@ -63,6 +64,7 @@ export const piDefaultsSchema = z.strictObject({
 	maxThinking: piThinkingSchema.optional(),
 	maxSubagentSpawnsPerSession: z.number().int().min(0).max(100000).optional(),
 });
+/** Pi のワークスペース既定設定。外部入力は `piDefaultsSchema` で検証してから扱う。 */
 export type PiDefaults = z.infer<typeof piDefaultsSchema>;
 
 /** `current` に固定モデルが残らないよう、保存形式を別々に検証する。 */
@@ -98,6 +100,7 @@ export const handoffSchema = z.strictObject({
 		codex: codexHandoffSchema,
 	}),
 });
+/** 引き継ぎ先のバックエンドとモデルの設定。外部入力は `handoffSchema` で検証してから扱う。 */
 export type HandoffConfig = z.infer<typeof handoffSchema>;
 
 /** ファイルがない場合だけ表示する初期値。閲覧ではファイルを作らない。 */

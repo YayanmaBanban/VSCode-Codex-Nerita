@@ -1,3 +1,4 @@
+<!-- 性格設定の指示を Lexical の入力欄で編集し、本文の変更を親へ通知する。 -->
 <script lang="ts">
 	import {
 		$getRoot as getRoot,
@@ -7,6 +8,7 @@
 	import LexicalComposer from "../composer/LexicalComposer.svelte";
 	import LexicalEditable from "../composer/LexicalEditable.svelte";
 	import InstructionChanges from "./InstructionChanges.svelte";
+
 	let {
 		text,
 		disabled,

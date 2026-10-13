@@ -1,6 +1,7 @@
 // 元の表示状態と操作アサーションを Svelte UI へ移行する。
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import TimelineTimelineStory from "./TimelineTimelineStory.svelte";
+
 const meta = {
 	title: "Chat/Timeline",
 	component: TimelineTimelineStory,

@@ -1,5 +1,5 @@
-type EffectSetup = () => void | (() => void);
 // `#` 直後のパス・コピーしたコードを Host で照合し、編集位置が変わっていない場合だけ参照にする。
+type EffectSetup = () => void | (() => void);
 
 import {
 	type PasteCommandType,
@@ -31,6 +31,7 @@ import {
 	$pointOffset as pointOffset,
 	$readParts as readParts,
 } from "./content";
+/** パスの貼り付けを参照へ変換する。Svelte の寿命管理内で呼び出し、入力欄と接続の交換を最新値で通知する。 */
 export function usePastedPath(input: {
 	editor: LexicalEditor;
 	bridge: Bridge | undefined;

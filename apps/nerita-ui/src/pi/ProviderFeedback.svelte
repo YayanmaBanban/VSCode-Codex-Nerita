@@ -1,6 +1,5 @@
+<!-- 認証先の操作結果を通知とエラーに分けて表示し、結果がない場合も通知欄の高さを保つ。 -->
 <script lang="ts">
-	// 認証先の操作結果を通知とエラーに分けて表示し、結果がない場合も通知欄の高さを保つ。
-
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 	import { type PiAuthItem } from "@nerita/shared/piAuth";

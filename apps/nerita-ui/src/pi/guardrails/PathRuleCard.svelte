@@ -1,6 +1,5 @@
+<!-- パスルールの条件・判定・理由を編集し、更新と削除を親へ伝える。 -->
 <script lang="ts">
-	// パスルールの条件・判定・理由を編集し、更新と削除を親へ伝える。
-
 	import { cn } from "cnfast";
 	import {
 		inputStyle,

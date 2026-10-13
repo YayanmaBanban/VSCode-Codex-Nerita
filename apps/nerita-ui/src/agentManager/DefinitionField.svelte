@@ -4,6 +4,7 @@
 	import { cn } from "cnfast";
 	import Field from "./Field.svelte";
 	import { inputStyle } from "./managerFields";
+
 	let {
 		edit,
 		onChange,
@@ -20,6 +21,7 @@
 		limit: number;
 	} = $props();
 	let definition = $derived(edit.definition);
+	/** 編集対象の定義がある場合だけ、指定された項目を更新して親へ伝える。 */
 	function update(value: string) {
 		if (definition) {
 			onChange({

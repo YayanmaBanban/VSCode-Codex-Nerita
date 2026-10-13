@@ -3,6 +3,7 @@
 	import type { ManagerRequest } from "@nerita/shared/agentManager/messages";
 	import AgentManager from "../../src/agentManager/AgentManager.svelte";
 	import { mockBridge } from "./managerStoryBridge";
+
 	let {
 		mode,
 		onRequest,

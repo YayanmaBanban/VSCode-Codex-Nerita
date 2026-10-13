@@ -5,6 +5,7 @@
 	import { virtualizationData } from "./fixtures/virtualization";
 	import type { StoryBridge } from "./mocks/storyBridge";
 	import { scenarioState } from "./fixtures/chatState";
+
 	let { bridge }: { bridge: StoryBridge } = $props();
 </script>
 

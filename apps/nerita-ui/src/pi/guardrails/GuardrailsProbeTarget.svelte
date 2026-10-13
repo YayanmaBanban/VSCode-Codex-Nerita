@@ -1,6 +1,5 @@
+<!-- 判定シミュレーションに使うツールと作業ディレクトリを入力する。 -->
 <script lang="ts">
-	// 判定シミュレーションに使うツールと作業ディレクトリを入力する。
-
 	import { guardProbeSchema } from "@nerita/shared/guardrails/messages";
 
 	import { cn } from "cnfast";

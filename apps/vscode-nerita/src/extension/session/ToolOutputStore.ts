@@ -29,6 +29,7 @@ import {
 	type ToolOutputSource,
 } from "./toolOutputSource";
 
+/** ツール出力の参照・抜粋・サイズ。全文未取得のときは確定した文字数を持たせない。 */
 type Entry = {
 	ref: string;
 	path: string;

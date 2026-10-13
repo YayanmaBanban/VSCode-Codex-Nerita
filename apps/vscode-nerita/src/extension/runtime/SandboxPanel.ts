@@ -32,6 +32,7 @@ export function sandboxManagement(
 			? registry.get(id)?.manager
 			: undefined;
 	if (!manager) {
+		/** 同じ権限範囲を使う管理画面へ、コマンド承認とリソース権限の変更を反映する。 */
 		const notify = () => {
 			for (const entry of registry.values()) {
 				if (entry.scope === scope) {
@@ -180,11 +181,13 @@ function openSandboxPanel(
 	);
 	const abort = new AbortController();
 	let busy = false;
+	/** パネルの寿命が続いている場合だけ、実行環境の応答を Webview へ送る。 */
 	const post = (reply: SandboxReply) => {
 		if (!abort.signal.aborted) {
 			void panel.webview.postMessage(reply);
 		}
 	};
+	/** 現在の実行環境と要求中の状態を、同じ時点の表示スナップショットとして通知する。 */
 	const publish = () =>
 		post({ type: "state", state: manager.snapshot(), busy });
 	const unsubscribe = manager.subscribe(publish);

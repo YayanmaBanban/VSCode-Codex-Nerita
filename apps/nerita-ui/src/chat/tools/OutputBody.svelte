@@ -4,6 +4,7 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import ToolContent from "./ToolContent.svelte";
 	import ToolOutputView from "./ToolOutputView.svelte";
+
 	let {
 		tool,
 		send,

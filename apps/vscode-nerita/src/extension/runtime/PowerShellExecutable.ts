@@ -5,6 +5,7 @@ import { delimiter, isAbsolute, join } from "node:path";
 
 /** ツール名と実行ファイルを承認前に対応付ける。 */
 export type PowerShellKind = "powershell" | "pwsh";
+/** 起動する PowerShell の種類と実行ファイル。解決した組み合わせを変えずに実行へ渡す。 */
 export type PowerShellExecutable = { name: PowerShellKind; executable: string };
 
 /** `pwsh` の利用確認には、呼出元が所有するサンドボックス接続を使用する。 */

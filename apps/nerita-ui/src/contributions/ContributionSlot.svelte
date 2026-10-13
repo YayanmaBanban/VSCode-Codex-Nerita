@@ -4,6 +4,7 @@
 	import type { NeritaUiSlot } from "@nerita/shared/uiContributions";
 	import type { ContributionSlotProps } from "./contributionProps";
 	import ContributionRenderer from "./ContributionRenderer.svelte";
+
 	let {
 		name,
 		contributions,

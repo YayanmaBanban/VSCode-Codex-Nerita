@@ -13,6 +13,7 @@
 		projection,
 		first as firstIntent,
 	} from "./dlc/workspaceState";
+
 	function source() {
 		const mock = createStoryBridge(scenarioState("empty"));
 		const listeners = new SvelteSet<Parameters<typeof mock.subscribe>[0]>();

@@ -1,5 +1,5 @@
+<!-- マスクで内側を抜き、親要素の外周に沿って動く光を表示する。 -->
 <script lang="ts">
-	// マスクで内側を抜き、親要素の外周に沿って動く光を表示する。
 	import { cn } from "cnfast";
 	import { animate, type AnimationOptions } from "motion";
 	import { MediaQuery } from "svelte/reactivity";

@@ -3,6 +3,7 @@
 	import type { ToolSummary } from "@nerita/shared/chatState";
 	import CommandOutput from "./CommandOutput.svelte";
 	import ToolContent from "./ToolContent.svelte";
+
 	let { tool }: { tool: ToolSummary } = $props();
 	const visibleTool = $derived({
 		...tool,

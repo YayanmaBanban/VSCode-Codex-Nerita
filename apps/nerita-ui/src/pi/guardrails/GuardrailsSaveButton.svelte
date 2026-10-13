@@ -1,10 +1,11 @@
+<!-- 未保存の文書を枠で示し、動きを減らす設定では静止させる。 -->
 <script lang="ts">
-	// 未保存の文書を枠で示し、動きを減らす設定では静止させる。
 	import { cn } from "cnfast";
 	import { MediaQuery } from "svelte/reactivity";
 	import SettingsTooltip from "../../chat/SettingsTooltip.svelte";
 	import BorderBeam from "../../ui/BorderBeam.svelte";
 	import { buttonStyle } from "./fields";
+
 	let {
 		dirty,
 		busy,

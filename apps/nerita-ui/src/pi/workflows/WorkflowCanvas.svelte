@@ -1,6 +1,5 @@
+<!-- グラフの手動配置を保持し、接続だけを `depends_on` の編集経路へ返す。 -->
 <script lang="ts">
-	// グラフの手動配置を保持し、接続だけを `depends_on` の編集経路へ返す。
-
 	import type { Workflow } from "@nerita/shared/workflows/definition";
 	import {
 		Background,

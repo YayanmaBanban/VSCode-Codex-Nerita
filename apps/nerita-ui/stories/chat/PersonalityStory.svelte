@@ -2,6 +2,7 @@
 	import ChatApp from "./StoryChat.svelte";
 	import { createChatStoryBridge } from "./mocks/mockBridge";
 	import type { PersonalitySettings } from "@nerita/shared/personality";
+
 	let { configured = false }: { configured?: boolean } = $props();
 	const bridge = $derived.by(() => {
 		const mock = createChatStoryBridge();

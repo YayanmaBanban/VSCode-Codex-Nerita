@@ -38,9 +38,13 @@ export const workflowReplySchema = z.union([
 		script: z.string().optional(),
 	}),
 ]);
+/** ワークフロー文書の編集・実行要求。外部入力は `workflowRequestSchema` で検証してから扱う。 */
 export type WorkflowRequest = z.infer<typeof workflowRequestSchema>;
+/** ワークフローの操作結果。外部入力は `workflowReplySchema` で検証してから扱う。 */
 export type WorkflowReply = z.infer<typeof workflowReplySchema>;
+/** ワークフロー文書と実行の状態。外部入力は `workflowStateSchema` で検証してから扱う。 */
 export type WorkflowState = z.infer<typeof workflowStateSchema>;
+/** ワークフローの通信境界。利用側は `subscribe` が返す解除関数を破棄時に呼び出す。 */
 export type WorkflowBridge = {
 	postMessage: (message: WorkflowRequest) => void;
 	subscribe: (listener: (message: WorkflowReply) => void) => () => void;

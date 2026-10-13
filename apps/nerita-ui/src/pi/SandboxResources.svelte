@@ -1,6 +1,5 @@
+<!-- 最後の実行で使った権限とアクセス拒否を表示し、拒否への対応を Host へ要求する。 -->
 <script lang="ts">
-	// 最後の実行で使った権限とアクセス拒否を表示し、拒否への対応を Host へ要求する。
-
 	import { type SandboxSnapshot } from "@nerita/shared/sandboxManagement";
 
 	import { type ResourceDecision } from "@nerita/shared/sandboxPolicy";

@@ -2,6 +2,7 @@
 	// 本体と同じ Markdown 表示で、外部データと累積ストリームを検証する。
 	import MessageText from "../../src/chat/messages/MessageText.svelte";
 	import { unsafeMarkdown } from "./markdownOutputFixture";
+
 	let { mode }: { mode: "security" | "stream" } = $props();
 	let text = $state("先頭 👩‍💻\n\n```ts\nconst answer =");
 	let streaming = $state(true);

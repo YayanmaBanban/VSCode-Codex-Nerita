@@ -6,6 +6,7 @@
 	import { createChatStoryBridge } from "./mocks/mockBridge";
 	import { virtualizationData } from "./fixtures/virtualization";
 	import UpdateControls from "./VirtualizationUpdateControls.svelte";
+
 	let { updates = false }: { updates?: boolean } = $props();
 	const bridge = (() => {
 		const mock = createChatStoryBridge("empty");

@@ -1,3 +1,4 @@
+<!-- Pi のエージェント定義とモデル・推論設定を編集し、共通の保存処理へ渡す。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { agentEditSchema } from "@nerita/shared/agentManager/config";

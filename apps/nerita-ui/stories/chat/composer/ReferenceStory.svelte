@@ -4,6 +4,7 @@
 	import type { ComposerPart } from "@nerita/shared/composerContent";
 	import { pathText } from "@nerita/shared/composerReferences";
 	import { createChatStoryBridge } from "../mocks/mockBridge";
+
 	let opened = $state.raw("");
 	const setOpened = (
 		value: typeof opened | ((previous: typeof opened) => typeof opened),

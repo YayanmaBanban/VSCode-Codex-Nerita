@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const { ESLint } = require("eslint");
 const { repoRoot } = require("../../../config/workspace-paths.cjs");
+
 const eslint = new ESLint({ cwd: repoRoot });
 const filePath = "apps/nerita-ui/src/chat/ChatWorkspace.svelte";
 const prefix =
@@ -40,8 +41,12 @@ const examples = [
 
 for (const example of examples) {
 	test(`Svelte script で ${example.rule} の違反を検出する`, async () => {
+		const description =
+			example.rule === "require-effect-reason"
+				? ""
+				: "/** 本来の可読性ルールを検証する処理。 */\n";
 		const [result] = await eslint.lintText(
-			`<script lang="ts">${prefix}\n${example.code}</script>`,
+			`<!-- 可読性の違反を含む検証用コンポーネント。 -->\n<script lang="ts">${prefix}\n${description}${example.code}</script>`,
 			{ filePath },
 		);
 		assert.equal(
@@ -59,10 +64,12 @@ for (const example of examples) {
 }
 
 test("Svelte の正当な runes・説明付き操作・単純な条件を受理する", async () => {
-	const code = `<script lang="ts">${prefix}
+	const code = `<!-- 説明付きの操作と単純な条件を検証する。 -->
+<script lang="ts">${prefix}
 let count = $state(0);
 /** 入力に応じて表示値を選ぶ。 */
 function choose() { const allowed = a && b; return allowed ? c : d; }
+/** 説明付きのメンバ操作を検証する状態モデル。 */
 class Model {
  /** 確定値を読み出す。 */
  get value() { return count; }
@@ -115,11 +122,11 @@ for (const file of [
 		const config = await eslint.calculateConfigForFile(file);
 		assert.deepEqual(config.rules["nerita/require-effect-reason"], [2]);
 		const code =
-			"function observe() {\n$effect(() => { document.title = 'chat'; });\n}";
+			"/** 外部 DOM の監視を登録する。 */\nfunction observe() {\n$effect(() => { document.title = 'chat'; });\n}";
 		const wrap = (body) =>
 			file.endsWith(".svelte")
-				? `<script lang="ts">${body}</script>`
-				: body;
+				? `<!-- 外部 DOM の監視を検証する。 -->\n<script lang="ts">${body}</script>`
+				: `// 外部 DOM の監視を検証する。\n${body}`;
 		const [missing] = await eslint.lintText(wrap(code), { filePath: file });
 		assert.equal(
 			missing.messages.some((message) => message.fatal),

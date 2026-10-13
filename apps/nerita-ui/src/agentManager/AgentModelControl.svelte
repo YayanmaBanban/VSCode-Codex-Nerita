@@ -5,6 +5,7 @@
 	import { modelControl, reasoningLabel } from "@nerita/shared/settingsCards";
 	import SliderCard from "../contributions/SliderCard.svelte";
 	import { managerOption } from "./modelOptions";
+
 	let {
 		models,
 		model,

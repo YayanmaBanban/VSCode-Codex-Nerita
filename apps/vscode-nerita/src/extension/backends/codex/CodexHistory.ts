@@ -37,6 +37,7 @@ type HistoryOperation = {
 	restoring?: { id: string; changed: boolean };
 };
 
+/** Codex の履歴操作を区別し、履歴取得と変更操作の実行条件を切り替える。 */
 type HistoryAction =
 	"load" | "fork" | "delete" | "archive" | "rename" | "unarchive";
 
@@ -112,6 +113,7 @@ export class CodexHistory {
 			operation.restoring = { id: threadId, changed: false };
 		}
 		this.operation = operation;
+		/** 履歴操作が現在の要求に属するかを、その操作を固定した判定で確認する。 */
 		const current = () => this.current(operation);
 		this.catalog.invalidate();
 		this.session.patch({ sessionPending: true, sessionsError: null });

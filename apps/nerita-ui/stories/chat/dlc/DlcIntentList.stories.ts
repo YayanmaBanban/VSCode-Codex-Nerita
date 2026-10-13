@@ -4,6 +4,7 @@ import { expect, userEvent, within, waitFor } from "storybook/test";
 import IntentListStory from "./IntentListStory.svelte";
 import { intentHoldView, intentExecutionView } from "../fixtures/dlcIntentList";
 import type { StoryBridge } from "../mocks/storyBridge";
+
 const meta = {
 	title: "Chat/DLC Intent List",
 	component: IntentListStory,

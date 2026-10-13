@@ -3,6 +3,7 @@ import type { z } from "zod";
 import { stageCatalog } from "./catalog";
 import type { IntentState } from "./state";
 
+/** 依頼・作業・実行記録の参照整合性を検証する。構造検証後の状態を渡し、失敗は検証コンテキストへ記録する。 */
 export function validateReferences(
 	state: IntentState,
 	context: z.RefinementCtx,
@@ -38,6 +39,7 @@ export function validateReferences(
 		validateAttempts(item, context);
 	}
 }
+/** 実行記録に添付された根拠が、その実行世代と所属作業を参照しているかを検証する。 */
 function validateAttempts(
 	item: IntentState["workItems"][number],
 	context: z.RefinementCtx,
@@ -55,6 +57,7 @@ function validateAttempts(
 		}
 	}
 }
+/** 工程の順序と選択・実行状態の組み合わせが、カタログの定義と一致するかを判定する。 */
 function validStage(
 	stage: IntentState["workflow"]["stages"][number],
 	index: number,
@@ -68,6 +71,7 @@ function validStage(
 	}
 	return stage.selection !== "undetermined" || stage.status === "pending";
 }
+/** 工程の順序と進行の整合性を検証する。構造検証後の状態を渡し、失敗は検証コンテキストへ記録する。 */
 export function validateStages(
 	state: IntentState,
 	context: z.RefinementCtx,

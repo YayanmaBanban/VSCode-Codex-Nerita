@@ -49,6 +49,7 @@ export const lockManagers = {
 	"bun.lock": "bun",
 } as const;
 
+/** 検証済みのパッケージ設定からフレームワークの宣言を抽出する。パスとプロジェクトルートはワークスペース相対で渡す。 */
 export function declaredFrameworks(
 	path: string,
 	projectRoot: string,
@@ -76,6 +77,7 @@ export function declaredFrameworks(
 			],
 		}));
 }
+/** 既存コードの根拠からプロジェクトを分類する。空の構成と説明ファイルだけの構成以外は、根拠がなければ未確定とする。 */
 export function classification(
 	names: string[],
 	evidence: string[],
@@ -92,17 +94,20 @@ export function classification(
 		? "greenfield"
 		: "unknown";
 }
+/** パッケージ定義の相対パスから所属ルートを返す。入力は `/` 区切りとし、ルート直下は `.` とする。 */
 export function packageRoot(path: string): string {
 	const root = path.split("/").slice(0, -1).join("/");
 	return root === "" ? "." : root;
 }
 /** 否定パターンは包含パターンより優先する。 */
 export function selectedPackage(root: string, patterns: string[]): boolean {
+	/** ワークスペースの配置先が、否定指定でないパターンに含まれるかを判定する。 */
 	const includesRoot = (pattern: string) =>
 		!pattern.startsWith("!") && matchesGlob(root, pattern);
 	if (!patterns.some(includesRoot)) {
 		return false;
 	}
+	/** 否定パターンだけでワークスペースの配置先を照合し、収集対象からの除外を判定する。 */
 	const excludesRoot = (pattern: string) =>
 		pattern.startsWith("!") && matchesGlob(root, pattern.slice(1));
 	return !patterns.some(excludesRoot);

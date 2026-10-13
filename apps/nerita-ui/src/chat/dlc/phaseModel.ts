@@ -1,5 +1,6 @@
 // 工程の保存状態を変更せず、展開位置と表示用の集計を算出する。
 import type { DlcProjection, DlcView } from "@nerita/shared/dlc/contracts";
+
 export const phases = [
 	"Initialization",
 	"Ideation",
@@ -29,6 +30,7 @@ export function currentPhase(selected: DlcProjection | null): number {
 	return next ? Number(next.id.split(".")[0]) : 0;
 }
 
+/** Phase の工程状態から表示用の要約を返す。実行可否の判断には工程の状態を直接使う。 */
 export function phaseStatus(stages: DlcProjection["stages"]): string {
 	if (stages.length === 0) {
 		return "未着手";
@@ -54,6 +56,7 @@ export function phaseStatus(stages: DlcProjection["stages"]): string {
 	return "未着手";
 }
 
+/** 表示対象の依頼に実行中・開始保留・実行先変更待ちがあるかを判定する。最新の画面状態を渡す。 */
 export function executionBusy(view: DlcView, selected: DlcProjection): boolean {
 	const intentPending =
 		view.targetBusy ||

@@ -11,6 +11,7 @@
 	import { useAgentEditor } from "../agentManager/useAgentEditor.svelte";
 	import type { AgentManagerProps } from "../agentManager/managerProps";
 	import CodexAgentPermissions from "./CodexAgentPermissions.svelte";
+
 	let {
 		agent,
 		...props

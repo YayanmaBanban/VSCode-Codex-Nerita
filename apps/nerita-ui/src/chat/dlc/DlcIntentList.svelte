@@ -1,10 +1,11 @@
+<!-- Intent の状態を表示し、作成・選択・保留の解消を Host へ要求する。 -->
 <script lang="ts">
-	// Intent の状態を表示し、作成・選択・保留の解消を Host へ要求する。
 	import Plus from "@lucide/svelte/icons/plus";
 	import RotateCw from "@lucide/svelte/icons/rotate-cw";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import DlcIntentButton from "./DlcIntentButton.svelte";
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
+
 	let { ui }: { ui: ReturnType<typeof useDlcWorkspace> } = $props();
 </script>
 

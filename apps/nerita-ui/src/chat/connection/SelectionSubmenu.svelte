@@ -4,6 +4,7 @@
 	import Check from "@lucide/svelte/icons/check";
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import type { Snippet } from "svelte";
+
 	let {
 		label,
 		icon,

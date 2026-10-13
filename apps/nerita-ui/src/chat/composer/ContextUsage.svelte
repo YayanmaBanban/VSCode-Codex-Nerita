@@ -1,3 +1,4 @@
+<!-- 会話のコンテキスト使用率を円形ゲージで表示し、使用量の詳細と動きを減らす設定を反映する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { Tween } from "svelte/motion";
@@ -5,6 +6,7 @@
 	import { MediaQuery } from "svelte/reactivity";
 	import type { ContextUsage as Usage } from "@nerita/shared/composer";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+
 	let { usage }: { usage: Usage | null } = $props();
 	const progress = new Tween(0);
 	const reduced = new MediaQuery("(prefers-reduced-motion: reduce)");

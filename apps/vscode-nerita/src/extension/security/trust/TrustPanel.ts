@@ -36,6 +36,7 @@ export function trustPanel(
 		panel = current;
 		const panelState = { closed: false };
 		const pending = { queue: Promise.resolve() };
+		/** 信頼記録と操作エラーを表示中のパネルへ送り、閉じた画面には応答しない。 */
 		const publish = (error: string | null = null) => {
 			if (!panelState.closed) {
 				void current.webview.postMessage({

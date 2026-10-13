@@ -5,6 +5,7 @@
 		createSessionBridge,
 		type SessionScenario,
 	} from "./mocks/mockSessionBridge";
+
 	let { scenario }: { scenario: SessionScenario } = $props();
 	const bridge = $derived(createSessionBridge(scenario));
 </script>

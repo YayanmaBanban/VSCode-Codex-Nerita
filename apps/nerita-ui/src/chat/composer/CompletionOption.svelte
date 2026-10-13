@@ -1,3 +1,4 @@
+<!-- 補完候補の種類と説明を表示し、選択と階層移動の操作をメニューへ伝える。 -->
 <script lang="ts">
 	import FolderOpen from "@lucide/svelte/icons/folder-open";
 	import { cn } from "cnfast";
@@ -5,6 +6,7 @@
 	import { contextCategories } from "./contextCategories";
 	import { referenceIcon } from "./referencePresentation";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+
 	let {
 		id,
 		item,
@@ -19,6 +21,7 @@
 		onPick: (item: CompletionItem) => void;
 	} = $props();
 	let Icon = $derived(completionIcon());
+	/** コンテキスト候補の参照・ディレクトリ・カテゴリーに対応するアイコンを選ぶ。 */
 	function completionIcon() {
 		if (!context) {
 			return undefined;
@@ -32,6 +35,7 @@
 		return contextCategories.find((entry) => entry.label === item.category)
 			?.icon;
 	}
+	/** 文字入力の変換中を除き、有効な候補を Enter または空白キーで確定する。 */
 	function selectKey(event: KeyboardEvent) {
 		if (event.isComposing || item.disabled === true) {
 			return;
@@ -43,6 +47,7 @@
 		event.stopPropagation();
 		pick();
 	}
+	/** 有効な候補だけを親へ通知し、無効な項目の確定を抑止する。 */
 	function pick() {
 		if (item.disabled !== true) {
 			onPick(item);

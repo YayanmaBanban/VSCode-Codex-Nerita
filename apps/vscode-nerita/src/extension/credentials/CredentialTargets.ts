@@ -66,6 +66,7 @@ export async function credentialRequirements(
 		}));
 }
 
+/** コマンドが必要とする資格情報の用途を、npm・Git・通常コマンドの順で分類する。 */
 function operation(npm: boolean, git: boolean) {
 	if (npm) {
 		return "npm-network";

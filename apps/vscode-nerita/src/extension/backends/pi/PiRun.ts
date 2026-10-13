@@ -184,6 +184,7 @@ export abstract class PiRun extends PiLifecycle {
 		};
 		this.submission = submission;
 		setPiSessionRunning(runtime.sessionId, true);
+		/** Pi の送信要求が同じ接続世代の現在の要求であるかを確認する。 */
 		const current = () =>
 			this.epoch === epoch && this.submission === submission;
 		const mapper = new PiEventMapper(runtime.protect);
@@ -200,6 +201,7 @@ export abstract class PiRun extends PiLifecycle {
 			submission,
 			message,
 		);
+		/** Pi の送信要求の失効とキャンセルを確認し、無効な要求の準備を続けない。 */
 		const check = () => {
 			if (!current() || submission.cancelled) {
 				throw new Error("送信を停止しました。");

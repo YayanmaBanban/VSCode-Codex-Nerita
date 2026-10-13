@@ -1,6 +1,6 @@
+<!-- ステップの追加・選択・接続をグラフで操作し、定義の更新を親へ伝える。 -->
 <script lang="ts">
 	import type { Connection, Edge } from "@xyflow/svelte";
-	// ステップの追加・選択・接続をグラフで操作し、定義の更新を親へ伝える。
 
 	import { cn } from "cnfast";
 

@@ -3,6 +3,7 @@
 	import type { ToolSummary } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+
 	let {
 		tool,
 		send,

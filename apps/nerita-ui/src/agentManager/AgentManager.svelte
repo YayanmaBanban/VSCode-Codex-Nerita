@@ -21,6 +21,7 @@
 	import ActionNotice from "../ui/ActionNotice.svelte";
 	import { buttonStyle } from "./managerFields";
 	import "../chat/chat.css";
+
 	let { bridge }: { bridge: ManagerBridge } = $props();
 	let tab = $state<"agents" | "handoff">("agents");
 	let selected = $state("");
@@ -45,6 +46,7 @@
 		"focus-visible:outline-2 focus-visible:outline-focus enabled:hover:bg-settings-hover",
 		"disabled:cursor-not-allowed disabled:opacity-50",
 	);
+	/** 未保存の変更がある場合は画面移動を保留し、変更がなければその場で移動する。 */
 	function navigate(action: () => void) {
 		if (dirty) {
 			pending = action;
@@ -52,11 +54,13 @@
 			action();
 		}
 	}
+	/** 未保存の変更を破棄して保留先へ移動し、保留した操作を解除する。 */
 	function discard() {
 		dirty = false;
 		pending?.();
 		pending = null;
 	}
+	/** 保存後に選び直すエージェントを記録し、保存要求を共通の管理処理へ渡す。 */
 	const save: ManagerSave = (change) => {
 		if (change.type === "createAgent") {
 			savedSelection =

@@ -1,10 +1,11 @@
+<!-- Phase の開閉によって会話の接続を再生成せず、承認・停止・履歴を共通部品で扱う。 -->
 <script lang="ts">
-	// Phase の開閉によって会話の接続を再生成せず、承認・停止・履歴を共通部品で扱う。
 	import type { Bridge } from "@nerita/shared/bridge";
 	import type { useChat } from "../useChat.svelte";
 	import type { DlcView } from "@nerita/shared/dlc/contracts";
 	import ChatWorkspace from "../ChatWorkspace.svelte";
 	import DlcRunInfo from "./DlcRunInfo.svelte";
+
 	let { bridge, view }: { bridge: Bridge; view: DlcView } = $props();
 </script>
 

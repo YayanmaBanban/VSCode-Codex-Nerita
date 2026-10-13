@@ -15,6 +15,7 @@
 	import Field from "./Field.svelte";
 	import HandoffBackendSettings from "./HandoffBackendSettings.svelte";
 	import { buttonStyle, inputStyle } from "./managerFields";
+
 	let {
 		state: hostState,
 		busy,
@@ -40,10 +41,12 @@
 			hostState.activeBackend,
 		),
 	);
+	/** 引き継ぎ設定の下書きを保持し、未保存の変更を親へ通知する。 */
 	function change(next: HandoffConfig) {
 		config = next;
 		onDirty?.();
 	}
+	/** 引き継ぎ設定と推論候補を検証して保存を要求し、変更できない状態では送信しない。 */
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (locked || isNonEmptyString(effortError)) {

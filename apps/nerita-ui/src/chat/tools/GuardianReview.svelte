@@ -5,6 +5,7 @@
 	import ToolContent from "./ToolContent.svelte";
 	import Value from "./Value.svelte";
 	import { toolLabelClass } from "./toolStyles";
+
 	let { tool }: { tool: ToolSummary } = $props();
 	const input = $derived(isRecord(tool.rawInput) ? tool.rawInput : {});
 	const output = $derived(isRecord(tool.rawOutput) ? tool.rawOutput : {});

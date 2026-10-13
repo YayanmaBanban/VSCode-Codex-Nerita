@@ -3,6 +3,7 @@
 	import SvelteMarkdown, {
 		type ParagraphSnippetProps,
 	} from "@humanspeak/svelte-markdown";
+
 	let markdownSource = $state("最初の下書き");
 </script>
 

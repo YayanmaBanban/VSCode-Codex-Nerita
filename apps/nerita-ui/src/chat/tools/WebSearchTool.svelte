@@ -1,6 +1,7 @@
 <!-- 検索語は検索リンクにし、URL は HTTP(S) だけを直接開く。 -->
 <script lang="ts">
 	import type { ToolSummary } from "@nerita/shared/chatState";
+
 	let { tool }: { tool: ToolSummary } = $props();
 	const label = $derived(tool.searchLabel ?? "");
 	const href = $derived(

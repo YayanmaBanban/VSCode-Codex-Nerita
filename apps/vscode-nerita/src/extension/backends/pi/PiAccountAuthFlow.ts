@@ -99,6 +99,7 @@ export class PiAccountAuthFlow {
 				? await this.deviceId?.()
 				: undefined;
 		const interaction = this.authInteraction(signal);
+		/** 選択した認証方式と対話先を Pi のログイン処理へ渡し、デバイス ID がある場合だけ指定する。 */
 		const login = () =>
 			this.models.login(
 				provider,
@@ -238,6 +239,7 @@ function privateAuthEvent(
 		return { type: "progress", message: protect(event.message) };
 	}
 	if (event.type === "info") {
+		/** 認証リンクの URL は維持し、表示ラベルから保護対象の秘密値を取り除く。 */
 		const protectAuthLink = (
 			link: NonNullable<typeof event.links>[number],
 		) => ({

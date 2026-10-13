@@ -82,6 +82,7 @@ export class CodexCatalog {
 		const cursor = more ? state.sessionsNextCursor! : undefined;
 		const epoch = this.session.epoch();
 		const version = ++this.listVersion;
+		/** モデル一覧の取得時の接続世代と要求世代を照合し、古い一覧を表示へ反映しない。 */
 		const current = () =>
 			epoch === this.session.epoch() && version === this.listVersion;
 		if (!more) {

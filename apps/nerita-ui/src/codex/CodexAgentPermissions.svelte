@@ -15,6 +15,7 @@
 	import SliderCard from "../contributions/SliderCard.svelte";
 	import { managerOption } from "../agentManager/modelOptions";
 	import ApprovalPolicyField from "./ApprovalPolicyField.svelte";
+
 	let {
 		edit,
 		onChange,
@@ -44,6 +45,7 @@
 			false,
 		),
 	);
+	/** 選択した権限設定を検証し、他のエージェント設定を保って親へ伝える。 */
 	function change(key: string, value: string) {
 		onChange(
 			key === "mode"

@@ -11,6 +11,7 @@
 		anthropic,
 	} from "./fixtures/piProviderControls";
 	import "../../src/chat/chat.css";
+
 	let { noMetadata = false }: { noMetadata?: boolean } = $props();
 	const registry = createBuiltinUiRegistry();
 	let chatState = $state.raw<ChatState>(

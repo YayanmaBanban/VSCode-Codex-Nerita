@@ -12,6 +12,7 @@ export function isSourceRange(value: unknown): value is SourceRange {
 		return false;
 	}
 	const range = value;
+	/** 行と文字位置が、非負の安全な整数かつプロトコルの上限以内かを検証する。 */
 	const position = (point: unknown): point is SourcePosition => {
 		if (!isRecord(point)) {
 			return false;

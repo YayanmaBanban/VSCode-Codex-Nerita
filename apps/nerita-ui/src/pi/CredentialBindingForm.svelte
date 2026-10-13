@@ -1,3 +1,4 @@
+<!-- 資格情報の取得元・用途・注入先を編集し、入力を検証して参照設定を親へ返す。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { type CredentialBinding } from "@nerita/shared/credentials";

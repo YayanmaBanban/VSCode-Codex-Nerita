@@ -1,6 +1,5 @@
+<!-- 検査対象の入力と Host の判定結果を表示し、ファイル操作やコマンドの実行は要求しない。 -->
 <script lang="ts">
-	// 検査対象の入力と Host の判定結果を表示し、ファイル操作やコマンドの実行は要求しない。
-
 	import { cn } from "cnfast";
 
 	import "../../chat/chat.css";

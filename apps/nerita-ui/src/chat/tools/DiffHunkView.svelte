@@ -7,6 +7,7 @@
 		type DiffHunk,
 	} from "./diffPresentation";
 	import { diffLineClass, toolCodeClass } from "./toolStyles";
+
 	let { hunk }: { hunk: DiffHunk } = $props();
 	const presentation = $derived(hunkPresentation(hunk));
 	const changed = $derived(changeCount(hunk.lines));

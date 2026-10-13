@@ -1,6 +1,5 @@
+<!-- コマンドルールの対象シェルを選び、検証した選択値を親へ返す。 -->
 <script lang="ts">
-	// コマンドルールの対象シェルを選び、検証した選択値を親へ返す。
-
 	import { commandRuleSchema } from "@nerita/shared/guardrails/config";
 
 	import {

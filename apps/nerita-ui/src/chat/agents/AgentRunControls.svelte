@@ -1,5 +1,5 @@
+<!-- 閲覧中の子孫の停止と、親セッションの承認を個別に操作する。 -->
 <script lang="ts">
-	// 閲覧中の子孫の停止と、親セッションの承認を個別に操作する。
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import {
 		agentSubtree,
@@ -8,6 +8,7 @@
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import Activity from "../Activity.svelte";
+
 	let {
 		state,
 		send,

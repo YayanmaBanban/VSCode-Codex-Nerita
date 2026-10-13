@@ -4,6 +4,7 @@
 <script lang="ts">
 	import Messages from "../../../src/chat/messages/Messages.svelte";
 	import "../../../src/chat/chat.css";
+
 	const path = {
 		kind: "file" as const,
 		name: "とても長いファイル名を持つ日本語のメッセージコンポーネント.tsx",

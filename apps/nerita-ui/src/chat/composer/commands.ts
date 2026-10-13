@@ -159,6 +159,7 @@ export function registerComposerCommands(
 
 /** 履歴のキー操作を VS Code へ転送せず、Lexical 内で完結させる。 */
 function registerHistoryShortcuts(editor: LexicalEditor): () => void {
+	/** 入力欄の履歴操作を Lexical に任せたまま、外側の VS Code へのキー伝播を止める。 */
 	const handleKey = (event: KeyboardEvent) => {
 		const historyModifier =
 			(event.ctrlKey || event.metaKey) && !event.altKey;

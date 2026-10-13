@@ -1,8 +1,11 @@
-import { onDestroy } from "svelte";
-type Reference<T> = { current: T };
-type SetStateAction<T> = T | ((previous: T) => T);
-type Dispatch<T> = (value: T) => void;
 // ファイルドロップと画像ペーストを、会話を固定した添付要求へ変換する。
+import { onDestroy } from "svelte";
+/** 外部へ登録したコールバックから最新値を参照するための可変の参照先。 */
+type Reference<T> = { current: T };
+/** 直接指定した値と、前の状態から計算する更新処理を共通に扱う。 */
+type SetStateAction<T> = T | ((previous: T) => T);
+/** 状態の更新要求を受け取る通知関数。呼び出し元は戻り値を利用しない。 */
+type Dispatch<T> = (value: T) => void;
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
@@ -29,6 +32,7 @@ export function useAttachmentDrop(input: {
 	return new AttachmentDrop(input);
 }
 
+/** 添付の読み取りを会話の寿命に結び付け、会話変更や入力欄の破棄後の結果を送信しない。 */
 class AttachmentDrop {
 	private readonly input: {
 		state: ChatState;

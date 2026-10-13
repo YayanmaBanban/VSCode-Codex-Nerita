@@ -1,6 +1,5 @@
+<!-- リソースへのアクセス拒否を説明し、Host が提示した許可・キャッシュ切替・拒否だけを要求する。 -->
 <script lang="ts">
-	// リソースへのアクセス拒否を説明し、Host が提示した許可・キャッシュ切替・拒否だけを要求する。
-
 	import { type SandboxSnapshot } from "@nerita/shared/sandboxManagement";
 
 	import { type ResourceDecision } from "@nerita/shared/sandboxPolicy";

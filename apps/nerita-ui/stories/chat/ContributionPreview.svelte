@@ -9,6 +9,7 @@
 	} from "./contributionStoryModel";
 	import ComposerSettings from "../../src/chat/composer/ComposerSettings.svelte";
 	import "../../src/chat/chat.css";
+
 	let { backend, provider }: { backend: BackendId; provider: string } =
 		$props();
 	const registry = createStoryContributions();

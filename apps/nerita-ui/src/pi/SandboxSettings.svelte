@@ -1,3 +1,4 @@
+<!-- Pi の実行環境と承認状態を購読し、起動確認・権限の取り消し・拒否への対応を Host へ要求する。 -->
 <script lang="ts">
 	import type { ResourceDecision } from "@nerita/shared/sandboxPolicy";
 
@@ -9,6 +10,7 @@
 	} from "@nerita/shared/sandboxManagement";
 
 	import { onMount } from "svelte";
+
 	let { bridge }: { bridge: SandboxBridge } = $props();
 	let snapshot = $state.raw<SandboxSnapshot>();
 	let busy = $state(false);

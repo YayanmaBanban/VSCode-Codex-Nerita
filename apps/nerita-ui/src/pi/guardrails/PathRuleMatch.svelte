@@ -1,6 +1,5 @@
+<!-- パスの照合方式を選び、検証した選択値を親へ返す。 -->
 <script lang="ts">
-	// パスの照合方式を選び、検証した選択値を親へ返す。
-
 	import { pathRuleSchema } from "@nerita/shared/guardrails/config";
 
 	import {

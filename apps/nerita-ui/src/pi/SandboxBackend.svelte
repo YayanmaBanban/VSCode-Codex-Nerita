@@ -1,6 +1,5 @@
+<!-- 実行環境の利用可否と対応機能を表示し、起動確認を Host へ要求する。 -->
 <script lang="ts">
-	// 実行環境の利用可否と対応機能を表示し、起動確認を Host へ要求する。
-
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 	import { type SandboxSnapshot } from "@nerita/shared/sandboxManagement";

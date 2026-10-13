@@ -5,6 +5,7 @@
 	import type { Snippet } from "svelte";
 	import { prefersReducedMotion } from "svelte/motion";
 	import type { TransitionConfig } from "svelte/transition";
+	/** ツールチップとトリガーの表示契約。トリガーには受け取った属性を適用する。 */
 	type Props = {
 		children: Snippet<[{ props: Record<string, unknown> }]>;
 		content?: string | Snippet | false | null | undefined;

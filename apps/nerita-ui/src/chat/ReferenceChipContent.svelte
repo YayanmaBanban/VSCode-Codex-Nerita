@@ -2,6 +2,7 @@
 <script lang="ts">
 	import type { ComposerTarget } from "@nerita/shared/composerTargets";
 	import { referenceIcon } from "./composer/referencePresentation";
+
 	let { path }: { path: ComposerTarget } = $props();
 	const Icon = $derived(referenceIcon(path));
 	const label = $derived(referenceLabel());

@@ -19,6 +19,7 @@ export type StageCondition =
 	| "observability"
 	| "incident"
 	| "performance";
+/** 工程の依存先・入出力・承認・適用条件。利用前にカタログ全体の参照関係を検証する。 */
 export type StageDefinition = {
 	id: string;
 	name: string;
@@ -181,6 +182,7 @@ export function validateCatalog(catalog: readonly StageDefinition[]): void {
 	}
 }
 
+/** 初期化工程の特別な成果物名を扱い、他の工程は ID に対応する成果物名へ変換する。 */
 function stageArtifact(id: string): string {
 	if (id === "0.2") {
 		return "workspace";

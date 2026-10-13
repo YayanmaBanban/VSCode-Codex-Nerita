@@ -1,3 +1,4 @@
+<!-- 入力欄の参照をチップで表示し、編集状態に応じて参照を開く操作と削除操作を提供する。 -->
 <script lang="ts">
 	import { onMount, untrack } from "svelte";
 	import X from "@lucide/svelte/icons/x";
@@ -16,6 +17,7 @@
 	} from "./referencePresentation";
 	import { OPEN_REFERENCE_COMMAND } from "./ReferenceActionsPlugin.svelte";
 	import ReferenceChipContent from "../ReferenceChipContent.svelte";
+
 	let {
 		nodeKey,
 		path,
@@ -28,11 +30,13 @@
 			editable = value;
 		}),
 	);
+	/** 既定のクリック動作と外側への伝播を抑え、参照を開く操作を Lexical のコマンドへ渡す。 */
 	function open(event: MouseEvent) {
 		event.preventDefault();
 		event.stopPropagation();
 		editor.dispatchCommand(OPEN_REFERENCE_COMMAND, path);
 	}
+	/** 参照ノードだけを履歴に残る操作として削除し、選択位置と入力欄のフォーカスを復元する。 */
 	function remove(event: MouseEvent) {
 		event.preventDefault();
 		event.stopPropagation();
@@ -49,7 +53,9 @@
 		editor.getRootElement()?.focus({ preventScroll: true });
 		editor.focus();
 	}
+	/** 参照チップのキー操作を、外側の入力や VS Code へ伝播させない。 */
 	const stopKey = (event: KeyboardEvent) => event.stopPropagation();
+	/** 参照チップのマウス操作で、入力欄の選択位置が既定動作により移動することを防ぐ。 */
 	const keepSelection = (event: MouseEvent) => event.preventDefault();
 </script>
 

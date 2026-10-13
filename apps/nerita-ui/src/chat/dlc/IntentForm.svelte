@@ -1,5 +1,5 @@
+<!-- 依頼原文と明示的な設定をそのまま Host の検証境界へ渡す。 -->
 <script lang="ts">
-	// 依頼原文と明示的な設定をそのまま Host の検証境界へ渡す。
 	import {
 		ExecutionProfileSchema,
 		DlcProjectTypeSchema,
@@ -7,6 +7,7 @@
 		type DlcProjectType,
 	} from "@nerita/shared/dlc/contracts";
 	import type { UiMessage } from "@nerita/shared/messages";
+
 	let {
 		send,
 		onSubmitted,
@@ -20,6 +21,7 @@
 	let request = $state("");
 	let profile = $state<ExecutionProfile>("classic");
 	let projectType = $state<DlcProjectType | "detected">("detected");
+	/** 依頼作成の要求番号を先に通知し、入力中の本文と明示的な設定を Host へ送る。 */
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (pending) {

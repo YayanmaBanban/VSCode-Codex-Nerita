@@ -103,6 +103,7 @@ export class CodexOptions {
 	}
 	/** 新規会話で初期化される設定を、Plan 会話から退避する。 */
 	capturePlanSettings(): PlanSettings {
+		/** 設定 ID に対応する現在の選択値を、その都度のセッション状態から取得する。 */
 		const selected = (id: string) =>
 			this.session.snapshot().configOptions.find((item) => item.id === id)
 				?.currentValue;

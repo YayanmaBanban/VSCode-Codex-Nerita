@@ -1,7 +1,9 @@
-type SetStateAction<T> = T | ((previous: T) => T);
-type Dispatch<T> = (value: T) => void;
-type EffectSetup = () => void | (() => void);
 // セッション候補を履歴パネルと独立して検索し、次ページを明示操作で取得する。
+type SetStateAction<T> = T | ((previous: T) => T);
+/** 状態の更新要求を受け取る通知関数。呼び出し元は戻り値を利用しない。 */
+type Dispatch<T> = (value: T) => void;
+/** 購読や外部操作を登録し、必要なら破棄時の解除処理を返す。 */
+type EffectSetup = () => void | (() => void);
 import {
 	isNonEmptyString,
 	isNonZeroNumber,
@@ -27,6 +29,7 @@ type SessionReferencePage = {
 	seen: string[];
 	error?: string;
 };
+/** 会話の参照候補を検索する。Svelte の寿命管理内で呼び出し、検索条件を最新値で渡し、追加ページは明示的に要求する。 */
 export function useSessionReferences(input: {
 	bridge: Bridge | undefined;
 	active: boolean;
@@ -43,18 +46,21 @@ export function useSessionReferences(input: {
 	let page = $derived<{ query: string; cursor?: string }>({
 		query: term,
 	});
+	/** 検索語と次のページのカーソルを保持し、別の検索結果を混ぜない。 */
 	const setPage = (
 		value: typeof page | ((previous: typeof page) => typeof page),
 	) => {
 		page = typeof value === "function" ? value(page) : value;
 	};
 	let result = $state.raw<SessionReferencePage | null>(null);
+	/** 会話候補の取得結果を、直接値または前のページからの更新で保持する。 */
 	const setResult = (
 		value: typeof result | ((previous: typeof result) => typeof result),
 	) => {
 		result = typeof value === "function" ? value(result) : value;
 	};
 	let loading = $state.raw(false);
+	/** 会話候補の取得中かどうかを、直接値または更新処理で切り替える。 */
 	const setLoading = (
 		value: typeof loading | ((previous: typeof loading) => typeof loading),
 	) => {
@@ -133,6 +139,7 @@ function createSessionReferenceSearch(
 		setLoading(true);
 		const requestId = crypto.randomUUID();
 		let finished = false;
+		/** 応答を一度だけ確定し、要求した検索語とカーソルに対応するページとして統合する。 */
 		const complete = (message: SessionReferencesResult) => {
 			if (finished) {
 				return;

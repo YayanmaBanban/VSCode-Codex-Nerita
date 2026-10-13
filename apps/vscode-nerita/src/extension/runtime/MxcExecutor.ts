@@ -220,6 +220,7 @@ export async function executeMxcCommand(
 	}
 }
 
+/** MXC の専用一時領域を回収し、回収の成功・失敗にかかわらず計測を完了する。 */
 async function cleanupMxc(
 	hostTemporary: string,
 	timing: MxcTiming,
@@ -235,6 +236,7 @@ async function cleanupMxc(
 	}
 }
 
+/** MXC の起動・初回出力・終了までを計測し、途中出力を利用側へ通知する。 */
 async function measuredMxcOutput(
 	sdk: MxcSdk,
 	config: ContainerConfig,
@@ -247,6 +249,7 @@ async function measuredMxcOutput(
 	const launchStarted = performance.now();
 	const child = spawnMxcLauncher(sdk, config, call.cwd);
 	timing.value.spawnMs = performance.now() - launchStarted;
+	/** 初回出力までの時間を一度だけ記録し、元のストリーム種別で出力を通知する。 */
 	const output = (stream: "stdout" | "stderr", chunk: string) => {
 		timing.value.firstOutputMs ??= performance.now() - launchStarted;
 		onOutput?.(stream, chunk);
@@ -256,6 +259,7 @@ async function measuredMxcOutput(
 	);
 }
 
+/** MXC が自身の期限で停止した終了結果を識別し、Host 側のタイマーより早い終了も失敗として扱う。 */
 function assertMxcCompleted(
 	result: SandboxCommandResult,
 	timeoutMs: number,
@@ -366,6 +370,7 @@ function collectOutput(
 		let stderr = "";
 		let failure: Error | undefined;
 		const stop = createProcessTreeStopper(child);
+		/** 中断理由を実行失敗へ保持してから、MXC の起動プロセスを停止する。 */
 		const abort = () => {
 			failure = new Error("Sandbox 実行を停止しました。", {
 				cause: signal.reason,
@@ -376,6 +381,7 @@ function collectOutput(
 			failure = new Error("Sandbox 実行がタイムアウトしました。");
 			stop();
 		}, timeoutMs + 1000);
+		/** 途中出力を通知し、通知先の失敗も保持して MXC の実行を停止する。 */
 		const notify = (stream: "stdout" | "stderr", chunk: string) => {
 			try {
 				onOutput?.(stream, chunk);

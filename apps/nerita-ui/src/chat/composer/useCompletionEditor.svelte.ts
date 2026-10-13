@@ -1,6 +1,7 @@
-import { composingCompletion } from "./completionKeyboard";
-type Reference<T> = { current: T };
 // 候補表示の検出と Tab 操作を Lexical へ登録し、解除時に購読も解除する。
+import { composingCompletion } from "./completionKeyboard";
+/** 外部へ登録したコールバックから最新値を参照するための可変の参照先。 */
+type Reference<T> = { current: T };
 import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 
 import {
@@ -57,9 +58,12 @@ function indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
 
 /** 通常の Tab 入力だけを字下げ操作として受け付ける。 */
 function ignoreIndentKey(event: KeyboardEvent, editor: LexicalEditor) {
-const ignoredTab = event.key !== "Tab" || composingCompletion(event, editor);
-if (ignoredTab || event.ctrlKey) {return true;}
-return event.metaKey || event.altKey;
+	const ignoredTab =
+		event.key !== "Tab" || composingCompletion(event, editor);
+	if (ignoredTab || event.ctrlKey) {
+		return true;
+	}
+	return event.metaKey || event.altKey;
 }
 
 /** Svelte の getter から最新状態を参照し、検索欄への移動でも本文の置換範囲を保つ。 */
@@ -80,6 +84,7 @@ export function useCompletionEditor(
 	$effect(() => registerCompletionCommands(editor, latest));
 	// この controller が持つ補完パネルの外側操作を捕捉し、破棄時に document の監視を外す。
 	$effect(() => {
+		/** 入力欄と補完パネルの両方から離れた操作だけで補完を閉じ、初回のフォーカス移動は維持する。 */
 		const outside = (event: Event) => {
 			// 初回表示中の検索欄へのフォーカスを、パネル外への移動と判定しない。
 			const outsideCompletion =

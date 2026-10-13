@@ -1,5 +1,6 @@
 // 抽出済みの日本語から英単語と識別子の表記を検査する。
 import { maskHtmlComments, maskProtectedText } from "./textlint-protected.mjs";
+
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 

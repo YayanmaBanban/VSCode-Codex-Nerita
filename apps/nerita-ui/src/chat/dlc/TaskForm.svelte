@@ -1,6 +1,7 @@
+<!-- 手動タスクの編集内容を保持し、工程状態の変更は Host に委ねる。 -->
 <script lang="ts">
-	// 手動タスクの編集内容を保持し、工程状態の変更は Host に委ねる。
 	import type { DlcTask } from "@nerita/shared/dlc/contracts";
+
 	let { onPlan }: { onPlan: (tasks: DlcTask[]) => void } = $props();
 	let tasks = $state.raw<DlcTask[]>([]);
 	let title = $state("");
@@ -11,6 +12,7 @@
 			instructions.trim() !== "" &&
 			paths.trim() !== "",
 	);
+	/** 手動タスクの入力を組み立て、対象パスの区切りと前後の空白を統一する。 */
 	function task(): DlcTask {
 		return {
 			title,
@@ -20,12 +22,14 @@
 				.map((value) => value.trim().replaceAll("\\", "/")),
 		};
 	}
+	/** 入力中のタスクを計画へ追加し、次のタスク用に入力欄を空にする。 */
 	function add() {
 		tasks = [...tasks, task()];
 		title = "";
 		instructions = "";
 		paths = "";
 	}
+	/** 有効な計画だけを親へ渡し、ブラウザーによるフォーム送信を抑止する。 */
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (valid) {

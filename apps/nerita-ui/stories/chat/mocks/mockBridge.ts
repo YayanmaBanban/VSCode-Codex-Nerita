@@ -5,6 +5,7 @@ import { scenarioState, type Scenario } from "../fixtures/chatState";
 import { createStoryBridge } from "./storyBridge";
 import { withAttachmentResources } from "./attachmentResources";
 import { withWorkspaceResources } from "./workspaceResources";
+
 export type { Scenario } from "../fixtures/chatState";
 
 /** 本番の表示宣言を使い、操作による状態遷移は持たない。 */

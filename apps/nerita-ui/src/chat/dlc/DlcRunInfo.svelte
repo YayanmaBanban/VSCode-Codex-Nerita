@@ -1,9 +1,10 @@
+<!-- 閲覧中の Run と入力の参照先を示し、停止要求をその Run だけに限定する。 -->
 <script lang="ts">
-	// 閲覧中の Run と入力の参照先を示し、停止要求をその Run だけに限定する。
 	import type { DlcView } from "@nerita/shared/dlc/contracts";
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+
 	let {
 		view,
 		state,
@@ -28,6 +29,7 @@
 		state.run === "running" || state.run === "cancelling",
 	);
 	const canStop = $derived(active && validIds && running);
+	/** 表示中の会話と Run を指定して停止を要求し、別の実行先へ停止を送らない。 */
 	function stop() {
 		const sessionId = state.sessionId;
 		const runId = state.runId;

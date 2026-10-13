@@ -3,6 +3,7 @@
 	import { cn } from "cnfast";
 	import CopyButton from "../CopyButton.svelte";
 	import { toolOutputClass } from "./toolStyles";
+
 	let {
 		text,
 		copyDisabled = false,

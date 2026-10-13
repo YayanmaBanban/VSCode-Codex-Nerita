@@ -142,6 +142,7 @@ function boundSemanticResult(
 	return parsed.data;
 }
 
+/** 実行根拠を検証し、作業 ID と実行世代が結果の対象に一致することを確認する。 */
 function boundEvidence(
 	value: unknown,
 	attemptId: string,
@@ -202,6 +203,7 @@ export function requestStop(
 		: state;
 }
 
+/** 実行中または停止中の作業から、指定した最新の実行世代に一致するものだけを探す。 */
 function currentItem(state: IntentState, attemptId: string) {
 	return state.workItems.find(
 		(item) =>
@@ -209,6 +211,7 @@ function currentItem(state: IntentState, attemptId: string) {
 			item.attempts.at(-1)?.id === attemptId,
 	);
 }
+/** 対象の作業だけを置き換え、他の作業を保ったまま状態のリビジョンを進める。 */
 function replaceItem(state: IntentState, item: WorkItem): IntentState {
 	const workItems = state.workItems.map((work) =>
 		work.id === item.id ? item : work,
@@ -219,6 +222,7 @@ function replaceItem(state: IntentState, item: WorkItem): IntentState {
 		revision: state.revision + 1,
 	};
 }
+/** 対象作業と最新の実行記録へ完了状態と根拠を反映し、以前の実行記録は保持する。 */
 function finishItem(
 	state: IntentState,
 	item: WorkItem,
@@ -297,6 +301,7 @@ function evidenceProblem(
 	return null;
 }
 
+/** 他の作業が実行中でないことを確認し、失敗・中断した作業だけを再試行可能に戻す。 */
 function retryWork(state: IntentState, workItemId: string): IntentState {
 	const matchesSome6 = state.workItems.some((item) =>
 		["running", "stopping"].includes(item.status),
@@ -312,6 +317,7 @@ function retryWork(state: IntentState, workItemId: string): IntentState {
 	}
 	return replaceItem(state, { ...item, status: "ready" });
 }
+/** 実行中の作業がない依頼だけをアーカイブし、既にアーカイブ済みなら状態を維持する。 */
 function archiveIntent(state: IntentState): IntentState {
 	const matchesSome7 = state.workItems.some((item) =>
 		["running", "stopping"].includes(item.status),
@@ -329,6 +335,7 @@ function archiveIntent(state: IntentState): IntentState {
 	};
 }
 
+/** 作業の状態を実行記録の状態へ変換し、再試行可能な状態を完了として記録しない。 */
 function attemptStatus(
 	status: WorkItem["status"],
 ): WorkItem["attempts"][number]["status"] {

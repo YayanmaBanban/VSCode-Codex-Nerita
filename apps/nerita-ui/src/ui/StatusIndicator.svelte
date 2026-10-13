@@ -1,5 +1,5 @@
+<!-- 機能に依存せず、進行・完了・注意・エラー・待機を共通アイコンで表示する。 -->
 <script lang="ts">
-	// 機能に依存せず、進行・完了・注意・エラー・待機を共通アイコンで表示する。
 	import { cn } from "cnfast";
 	import Check from "@lucide/svelte/icons/check";
 	import LoaderCircle from "@lucide/svelte/icons/loader-circle";

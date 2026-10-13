@@ -11,6 +11,7 @@
 	import CopyButton from "../CopyButton.svelte";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
+
 	let {
 		message,
 		send,

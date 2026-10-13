@@ -4,6 +4,7 @@
 	import DiffView from "./DiffView.svelte";
 	import type { DiffLocationProps } from "./diffPresentation";
 	import { toolLabelClass, toolOutputClass } from "./toolStyles";
+
 	let {
 		oldText,
 		newText,

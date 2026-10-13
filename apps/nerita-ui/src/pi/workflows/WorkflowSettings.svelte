@@ -1,6 +1,5 @@
+<!-- ワークフローの名前・同時実行数・制限時間を編集し、変更を親へ伝える。 -->
 <script lang="ts">
-	// ワークフローの名前・同時実行数・制限時間を編集し、変更を親へ伝える。
-
 	import { type WorkflowSettingsProps } from "./WorkflowGraphEditorParts";
 
 	let { workflow, update }: WorkflowSettingsProps = $props();

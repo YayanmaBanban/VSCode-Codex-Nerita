@@ -1,6 +1,5 @@
+<!-- 資格情報の参照 ID と利用先を入力し、既存の参照 ID は変更できないようにする。 -->
 <script lang="ts">
-	// 資格情報の参照 ID と利用先を入力し、既存の参照 ID は変更できないようにする。
-
 	import { type CredentialBinding } from "@nerita/shared/credentials";
 
 	let {

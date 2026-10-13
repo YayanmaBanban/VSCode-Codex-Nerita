@@ -4,6 +4,7 @@ import type { LexicalEditor } from "lexical";
 import type { Completion } from "./completions";
 import type { CompletionItem } from "./completionItems";
 
+/** 補完のキー操作で使う選択状態と操作先。登録中は最新の状態を渡す。 */
 type CompletionKeyboardOptions = {
 	editor: LexicalEditor;
 	match: Completion | null;
@@ -74,7 +75,10 @@ function backFromCategory(
 }
 
 /** IME 入力中のキーを候補操作から除外する。 */
-export function composingCompletion(event: KeyboardEvent, editor: LexicalEditor) {
+export function composingCompletion(
+	event: KeyboardEvent,
+	editor: LexicalEditor,
+) {
 	// IME の確定で `isComposing` が先に解除されても、確定キーを候補操作として処理しない。
 	// eslint-disable-next-line @typescript-eslint/no-deprecated
 	return event.isComposing || event.keyCode === 229 || editor.isComposing();

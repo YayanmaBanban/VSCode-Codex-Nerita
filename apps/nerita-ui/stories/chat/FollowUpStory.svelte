@@ -2,6 +2,7 @@
 	// 同じ入力欄で、受付待ち・失敗・再送を観察する。
 	import StoryChat from "./StoryChat.svelte";
 	import { createFollowUpScenario } from "./followUpStoryModel";
+
 	let {
 		failFirst = false,
 		completed = false,

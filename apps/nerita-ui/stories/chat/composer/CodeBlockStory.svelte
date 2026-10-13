@@ -5,6 +5,7 @@
 	import ComposerInput from "../../../src/chat/composer/ComposerInput.svelte";
 	import { createChatStoryBridge } from "../mocks/mockBridge";
 	import "../../../src/chat/chat.css";
+
 	const bridge = (() => createChatStoryBridge())();
 	let locked = $state.raw(false);
 	const setLocked = (

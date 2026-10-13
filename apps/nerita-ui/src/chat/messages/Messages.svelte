@@ -8,6 +8,7 @@
 	import type { ConversationVirtualizer } from "./useConversationVirtualizer.svelte";
 	import TimelineEntryView from "./TimelineEntryView.svelte";
 	import { SvelteMap } from "svelte/reactivity";
+
 	let {
 		messages,
 		busy: _busy,

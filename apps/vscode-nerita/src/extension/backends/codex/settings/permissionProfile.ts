@@ -64,6 +64,7 @@ function readFilesystemPermission(
 			"Unsupported filesystem permission",
 		);
 	}
+	/** 権限対象のパス配列を検証し、未指定の `null` と不正な値を区別する。 */
 	const paths = (value: unknown): string[] | null => {
 		if (value === null) {
 			return null;

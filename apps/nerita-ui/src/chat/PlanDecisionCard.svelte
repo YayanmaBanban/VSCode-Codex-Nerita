@@ -6,6 +6,7 @@
 	import { prefersReducedMotion } from "svelte/motion";
 	import BorderBeam from "../ui/BorderBeam.svelte";
 	import ButtonCurtain from "../ui/ButtonCurtain.svelte";
+
 	let {
 		state,
 		send,

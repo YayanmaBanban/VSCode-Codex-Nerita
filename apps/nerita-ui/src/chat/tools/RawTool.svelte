@@ -2,6 +2,7 @@
 <script lang="ts">
 	import type { ToolSummary } from "@nerita/shared/chatState";
 	import Value from "./Value.svelte";
+
 	let {
 		tool,
 		scrollable = false,

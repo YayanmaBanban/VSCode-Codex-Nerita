@@ -1,6 +1,8 @@
+<!-- 入力欄の選択位置を保ったまま、コンテキストを追加するメニューを開く。 -->
 <script lang="ts">
 	import Plus from "@lucide/svelte/icons/plus";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+
 	let {
 		disabled,
 		onOpen,

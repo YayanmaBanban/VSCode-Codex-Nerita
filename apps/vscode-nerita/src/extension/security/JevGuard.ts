@@ -107,6 +107,7 @@ export async function reviewWithJev(
 ): Promise<JevReviewResult> {
 	signal.throwIfAborted();
 	const deadline = AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]);
+	/** 検査中断の処理を、準備が完了した後で差し替えるための初期ハンドラー。 */
 	let abort: () => void = () => {};
 	try {
 		const cancelled = new Promise<never>((_resolve, reject) => {

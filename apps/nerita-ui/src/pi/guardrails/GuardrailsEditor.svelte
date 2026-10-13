@@ -1,3 +1,4 @@
+<!-- ガードレールのフォーム・JSON 編集と判定シミュレーションを組み立て、文書の保存状態を共有する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { type GuardProbe } from "@nerita/shared/guardrails/messages";

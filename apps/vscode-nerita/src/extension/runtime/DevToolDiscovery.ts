@@ -166,6 +166,7 @@ export function requireInstallDirectory(directory: string): string {
 			"ツールのインストール先としてドライブ全体や利用者の設定領域は許可できません。",
 		);
 	}
+	/** 探索したツールの配置先が、保護する私有領域を内包しているかを判定する。 */
 	const containsPrivateRoot = (root: string | undefined) =>
 		isNonEmptyString(root) && containsPath(directory, root);
 	const hasPrivateRoot = privateRoots.some(containsPrivateRoot);

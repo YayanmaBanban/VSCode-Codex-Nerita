@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, userEvent, within, waitFor } from "storybook/test";
 import ChatStory from "./ChatStory.svelte";
 import { storyBridge } from "./storyBridgeElement";
+
 const meta = {
 	title: "Chat/App",
 	component: ChatStory,
@@ -90,4 +91,3 @@ function approvalPlay(
 		);
 	};
 }
-

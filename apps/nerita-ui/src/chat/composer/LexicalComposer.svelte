@@ -1,3 +1,4 @@
+<!-- Lexical のエディター・履歴・参照チップを生成し、子の入力部品へ共有して破棄時に解放する。 -->
 <script lang="ts">
 	import { SvelteMap } from "svelte/reactivity";
 	import {
@@ -36,6 +37,7 @@
 	const context = getAllContexts();
 	editor.update(() => initialize(), { discrete: true });
 	const history = createEmptyHistoryState();
+	/** 外部から本文を復元した後の状態を履歴の基準にし、前の会話の編集履歴を持ち越さない。 */
 	function resetHistory() {
 		editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
 		history.current = { editor, editorState: editor.getEditorState() };
@@ -49,6 +51,7 @@
 			{ target: HTMLElement; instance: ReturnType<typeof mount> }
 		>();
 		let disposed = false;
+		/** Lexical の描画ノードに参照チップを取り付け、不要になった表示部品を解放する。 */
 		const renderDecorations = () => {
 			if (disposed) {
 				return;

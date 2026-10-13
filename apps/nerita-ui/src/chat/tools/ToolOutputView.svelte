@@ -7,6 +7,7 @@
 	import { useToolOutputBridge } from "./ToolExpansion.svelte";
 	import CommandOutput from "./CommandOutput.svelte";
 	import OutputRange from "./OutputRange.svelte";
+
 	let { output }: { output: ToolOutputPreview } = $props();
 	const getBridge = useToolOutputBridge();
 	const rangeId = $props.id();

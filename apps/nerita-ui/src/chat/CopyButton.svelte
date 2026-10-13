@@ -7,6 +7,7 @@
 	import { prefersReducedMotion } from "svelte/motion";
 	import SettingsTooltip from "./SettingsTooltip.svelte";
 	import "./copyButton.css";
+
 	let {
 		text,
 		label,

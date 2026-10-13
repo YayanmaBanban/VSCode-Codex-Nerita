@@ -16,6 +16,7 @@ export type CredentialInjection = {
 	signal: AbortSignal;
 	dispose(): Promise<void>;
 };
+/** 注入する資格情報の使用権と参照設定。利用側は実行終了時に使用権を解放する。 */
 export type CredentialInjectionEntry = {
 	lease: CredentialLease;
 	binding: CredentialBinding;

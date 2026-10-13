@@ -6,6 +6,7 @@ import {
 	type SecretRedactor,
 } from "./CredentialStore";
 
+/** 認証操作の結果と、保存内容の変更がある場合だけ次の値を返す。 */
 type Change<T> = { result: T; next?: string };
 /** 初期読込みと flush を必ず待ち、保存失敗を次の同期操作でも検出する。 */
 export class SecretAuthBackend {

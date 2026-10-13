@@ -1,3 +1,4 @@
+<!-- モデル設定・添付・コンテキスト・利用枠を表示し、接続状態に応じて設定変更を Host へ要求する。 -->
 <script lang="ts">
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import type { ChatState } from "@nerita/shared/chatState";
@@ -7,6 +8,7 @@
 	import Attachments from "./Attachments.svelte";
 	import ContextPickerTrigger from "./ContextPickerTrigger.svelte";
 	import ContextUsage from "./ContextUsage.svelte";
+
 	let {
 		state,
 		send,
@@ -21,6 +23,7 @@
 		!connected || state.configPending || state.run === "running",
 	);
 	let disabled = $derived(configurationPending || state.run === "cancelling");
+	/** 設定変更が可能な会話に、対象設定と選択値を指定して変更を要求する。 */
 	function change(configId: string, value: string) {
 		if (isNonEmptyString(state.sessionId) && !disabled) {
 			send({
@@ -32,6 +35,7 @@
 			});
 		}
 	}
+	/** 現在の会話に属する添付の表示・削除を要求し、会話がない場合は送らない。 */
 	function attachment(
 		type: "attachment/open" | "attachment/remove",
 		attachmentId: string,

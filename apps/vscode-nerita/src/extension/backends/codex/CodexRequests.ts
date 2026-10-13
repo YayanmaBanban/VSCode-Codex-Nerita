@@ -175,6 +175,7 @@ export class CodexRequests {
 	}
 }
 
+/** 承認対象のツールに既知のパスがある場合だけ、承認画面の対象ファイル欄へ追記する。 */
 function approvalPaths(
 	approval: ApprovalRequest,
 	tool: ChatState["tools"][number] | undefined,

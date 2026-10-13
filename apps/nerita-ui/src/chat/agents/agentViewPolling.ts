@@ -4,7 +4,9 @@ import type { HostMessage } from "@nerita/shared/messages";
 import type { AgentThreadView } from "@nerita/shared/subAgents";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
+/** 閲覧中の会話と子スレッドを指定する、定期取得の対象。 */
 type PollingTarget = { sessionId: string; threadId: string };
+/** 子スレッドの取得結果・エラー・待機状態を、それぞれ表示へ通知する処理。 */
 type PollingReceiver = {
 	view: (view: AgentThreadView) => void;
 	error: (error: string | null) => void;

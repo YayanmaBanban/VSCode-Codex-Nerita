@@ -1,11 +1,12 @@
+<!-- ノード内の識別子と会話の継承状態を読みやすい短い表記で表示する。 -->
 <script lang="ts">
-	// ノード内の識別子と会話の継承状態を読みやすい短い表記で表示する。
 	import {
 		Handle,
 		Position,
 		type NodeProps,
 		type Node,
 	} from "@xyflow/svelte";
+	/** ワークフローの描画ノード。表示用の情報だけを持ち、工程の実行状態は変更しない。 */
 	type StepNode = Node<
 		{ id: string; agent: string; context: string; output: boolean },
 		"step"

@@ -21,8 +21,11 @@ export const trustReplySchema = z.object({
 	),
 	error: z.string().nullable(),
 });
+/** 信頼記録の操作要求。外部入力は `trustRequestSchema` で検証してから扱う。 */
 export type TrustRequest = z.infer<typeof trustRequestSchema>;
+/** 信頼記録の状態応答。外部入力は `trustReplySchema` で検証してから扱う。 */
 export type TrustReply = z.infer<typeof trustReplySchema>;
+/** 信頼記録の通信境界。利用側は `subscribe` が返す解除関数を破棄時に呼び出す。 */
 export type TrustBridge = {
 	postMessage(message: TrustRequest): void;
 	subscribe(listener: (message: TrustReply) => void): () => void;

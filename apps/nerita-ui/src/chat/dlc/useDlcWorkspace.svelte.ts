@@ -8,6 +8,7 @@ import { useDlc } from "./useDlc.svelte";
 import { useDlcEditor } from "./useDlcEditor.svelte";
 import { currentPhase } from "./phaseModel";
 
+/** DLC の依頼作成・選択・展開状態を共有する。Svelte の寿命管理内で呼び出し、最新の接続を参照できるようにする。 */
 export function useDlcWorkspace(bridge: Bridge | (() => Bridge)) {
 	const getBridge = typeof bridge === "function" ? bridge : () => bridge;
 	const dlc = useDlc(getBridge);
@@ -81,6 +82,7 @@ function useIntentCreation(getBridge: () => Bridge, getView: () => DlcView) {
 	let pending = $state.raw<{ requestId: string; existing: string[] } | null>(
 		null,
 	);
+	/** 依頼作成の失敗か新しい依頼の出現を確認して待機を解除し、無関係の状態更新では入力を閉じない。 */
 	function receiveCreation(message: HostMessage) {
 		const failed =
 			message.type === "request/failed" &&
@@ -154,6 +156,7 @@ function useIntentSelection(getBridge: () => Bridge, getView: () => DlcView) {
 	const waiting = $derived(
 		selecting !== null && selecting !== getView().selected?.intentId,
 	);
+	/** 依頼の選択結果かエラーが届いたときだけ、選択の待機状態を解除する。 */
 	function receive(message: HostMessage) {
 		if (message.type !== "dlc/state") {
 			return;

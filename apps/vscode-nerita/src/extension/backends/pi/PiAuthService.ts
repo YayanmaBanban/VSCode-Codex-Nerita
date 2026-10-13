@@ -91,6 +91,7 @@ class PiAuthPanel implements PiAuthService {
 	/** 破棄時に購読と入力待ちを解除し、実行の終了を待つ。 */
 	private waitForPanel(run: AuthPanelRun) {
 		return new Promise<void>((resolve) => {
+			/** 認証の中断時に、対応する入力パネルを閉じる。 */
 			const abort = () => {
 				run.panel.dispose();
 			};
@@ -205,6 +206,7 @@ class PiAuthPanel implements PiAuthService {
 		};
 		this.publish();
 		return new Promise<string>((resolve, reject) => {
+			/** 対象の認証入力要求だけを解除し、中断の購読と回答先を破棄する。 */
 			const clean = () => {
 				combined.removeEventListener("abort", abort);
 				if (this.state.prompt?.id === id) {
@@ -213,6 +215,7 @@ class PiAuthPanel implements PiAuthService {
 					this.publish();
 				}
 			};
+			/** 認証入力を片付けてから、待機中の処理をキャンセルとして拒否する。 */
 			const abort = () => {
 				clean();
 				reject(new Error("認証をキャンセルしました。"));
@@ -262,6 +265,7 @@ class PiAuthPanel implements PiAuthService {
 				this.state.error = "認証URLはHTTPSである必要があります。";
 				return;
 			}
+			/** 認証ページを開けない失敗を画面へ通知し、既に中断した要求にはエラーを追加しない。 */
 			const failed = () => {
 				if (!signal.aborted) {
 					this.state.error = "認証ページを開けませんでした。";

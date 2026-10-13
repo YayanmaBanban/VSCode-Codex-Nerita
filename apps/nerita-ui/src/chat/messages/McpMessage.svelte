@@ -4,6 +4,7 @@
 	import type { McpMessageContent } from "@nerita/shared/mcp";
 	import ShinyText from "../../ui/ShinyText.svelte";
 	import RunStatusIcon from "../RunStatusIcon.svelte";
+
 	let { content, text }: { content: McpMessageContent; text: string } =
 		$props();
 	const servers = $derived(content.status === "ready" ? content.servers : []);

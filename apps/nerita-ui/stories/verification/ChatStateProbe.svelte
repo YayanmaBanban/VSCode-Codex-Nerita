@@ -6,6 +6,7 @@
 	import type { HostMessage } from "@nerita/shared/messages";
 	import { useChat } from "../../src/chat/useChat.svelte";
 	import { createStoryBridge } from "../chat/mocks/storyBridge";
+
 	const initial = { ...initialState(), sessionId: "first", revision: 10 };
 	const first = createStoryBridge(initial);
 	const second = createStoryBridge({

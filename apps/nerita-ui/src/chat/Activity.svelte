@@ -9,6 +9,7 @@
 	import ButtonCurtain from "../ui/ButtonCurtain.svelte";
 	import PermissionContent from "./PermissionContent.svelte";
 	import ToolCard from "./tools/ToolCard.svelte";
+
 	let {
 		state,
 		send,

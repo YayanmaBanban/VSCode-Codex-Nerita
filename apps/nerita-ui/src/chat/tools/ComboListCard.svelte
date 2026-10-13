@@ -5,6 +5,7 @@
 	import type { ToolSummary } from "@nerita/shared/chatState";
 	import ToolCardCollapse from "./ToolCardCollapse.svelte";
 	import "./comboListCard.css";
+
 	let {
 		tool,
 		icon: Icon,

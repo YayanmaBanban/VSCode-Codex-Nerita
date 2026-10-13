@@ -14,6 +14,7 @@
 	import StepSlider from "../ui/StepSlider.svelte";
 	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 	import FastModeButton from "./FastModeButton.svelte";
+
 	let {
 		control,
 		disabled,

@@ -5,6 +5,7 @@
 	import { timelineMessages } from "./fixtures/timeline";
 	import ChatApp from "./StoryChat.svelte";
 	import { createChatStoryBridge } from "./mocks/mockBridge";
+
 	const bridge = (() => {
 		const bridge = createChatStoryBridge();
 		bridge.patchState({

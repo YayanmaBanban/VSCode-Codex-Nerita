@@ -5,6 +5,7 @@
 	import Zap from "@lucide/svelte/icons/zap";
 	import type { NeritaUiControl } from "@nerita/shared/uiContributions";
 	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+
 	let {
 		control,
 		disabled,

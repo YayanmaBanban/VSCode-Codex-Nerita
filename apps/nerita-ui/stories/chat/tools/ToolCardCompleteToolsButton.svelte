@@ -5,6 +5,7 @@
 	import type { ToolSummary } from "@nerita/shared/chatState";
 	import type { AsyncTask } from "@nerita/shared/asyncTask";
 	import "../../../src/chat/chat.css";
+
 	let {
 		setTasks,
 		setTools,

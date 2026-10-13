@@ -1,5 +1,5 @@
+<!-- 会話・検索・子エージェント・入力を、通常チャットと DLC の埋め込み表示で共用する。 -->
 <script lang="ts">
-	// 会話・検索・子エージェント・入力を、通常チャットと DLC の埋め込み表示で共用する。
 	import type { Snippet } from "svelte";
 	import type { Bridge } from "@nerita/shared/bridge";
 	import type { ChatState } from "@nerita/shared/chatState";
@@ -24,6 +24,7 @@
 	import { useChatView } from "./useChatView.svelte";
 	import "./chat.css";
 	import "./dlc/dlc.css";
+
 	let {
 		bridge,
 		managed = false,

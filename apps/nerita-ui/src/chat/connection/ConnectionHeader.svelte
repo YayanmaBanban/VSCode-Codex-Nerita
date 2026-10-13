@@ -20,6 +20,7 @@
 	import ConnectionButton from "./ConnectionButton.svelte";
 	import ActionNotice from "../../ui/ActionNotice.svelte";
 	import { noticeClass } from "../../ui/actionNoticeModel";
+	/** 接続・会話・表示先の操作をヘッダーへ渡す。接続や送信の状態は呼び出し元が保持する。 */
 	type Props = {
 		connectionControl?: Snippet;
 		title?: string | undefined;

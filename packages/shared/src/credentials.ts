@@ -5,6 +5,7 @@ export const credentialStorageModeSchema = z.enum([
 	"session",
 	"secret-storage",
 ]);
+/** 認証情報の保存期間と保存先。外部入力は `credentialStorageModeSchema` で検証してから扱う。 */
 export type CredentialStorageMode = z.infer<typeof credentialStorageModeSchema>;
 const id = z.string().regex(/^[a-z0-9][\w.-]{0,127}$/i);
 const target = z
@@ -17,6 +18,7 @@ export const credentialKindSchema = z.enum([
 	"api-token",
 	"username-password",
 ]);
+/** 資格情報の利用用途。外部入力は `credentialKindSchema` で検証してから扱う。 */
 export type CredentialKind = z.infer<typeof credentialKindSchema>;
 /** 未知の項目を捨てて保存せず、秘密値を含む可能性がある入力全体を拒否する。 */
 export const credentialBindingSchema = z
@@ -76,6 +78,7 @@ export const credentialBindingSchema = z
 			});
 		}
 	});
+/** 秘密値の取得元と利用先を結び付ける参照設定。外部入力は `credentialBindingSchema` で検証してから扱う。 */
 export type CredentialBinding = z.infer<typeof credentialBindingSchema>;
 export const credentialBindingsSchema = z
 	.object({
@@ -116,6 +119,7 @@ export const credentialRequestSchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("migrate-pi") }).strict(),
 	z.object({ type: z.literal("migrate-mcp") }).strict(),
 ]);
+/** 資格情報の参照設定と認証の操作要求。外部入力は `credentialRequestSchema` で検証してから扱う。 */
 export type CredentialRequest = z.infer<typeof credentialRequestSchema>;
 export const credentialReplySchema = z.discriminatedUnion("type", [
 	z
@@ -139,7 +143,9 @@ export const credentialReplySchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("error"), message: z.string() }).strict(),
 	z.object({ type: z.literal("notice"), message: z.string() }).strict(),
 ]);
+/** 資格情報の状態または操作結果の応答。外部入力は `credentialReplySchema` で検証してから扱う。 */
 export type CredentialReply = z.infer<typeof credentialReplySchema>;
+/** 資格情報の通信境界。利用側は `subscribe` が返す解除関数を破棄時に呼び出す。 */
 export type CredentialBridge = {
 	postMessage: (request: CredentialRequest) => void;
 	subscribe: (listener: (reply: CredentialReply) => void) => () => void;

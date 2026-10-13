@@ -1,6 +1,5 @@
+<!-- 許可・承認・拒否を選び、検証した判定値を親へ返す。 -->
 <script lang="ts">
-	// 許可・承認・拒否を選び、検証した判定値を親へ返す。
-
 	import { guardActionSchema } from "@nerita/shared/guardrails/config";
 
 	import { inputStyle, type ActionProps } from "./GuardrailsRulesParts";

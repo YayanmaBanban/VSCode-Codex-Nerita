@@ -2,6 +2,7 @@
 <script lang="ts">
 	import StoryChat from "./StoryChat.svelte";
 	import { createChatStoryBridge } from "./mocks/mockBridge";
+
 	const bridge = (() => {
 		const mock = createChatStoryBridge("empty", "pi");
 		const options = [

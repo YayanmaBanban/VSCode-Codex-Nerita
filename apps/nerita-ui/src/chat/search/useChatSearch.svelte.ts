@@ -174,6 +174,7 @@ class ConversationSearch {
 
 	/** エディターのキー処理より先に捕捉し、破棄時に解除する。 */
 	observeKeyboard() {
+		/** 会話欄のキー操作を検索の操作へ接続し、登録と解除で同じハンドラーを使う。 */
 		const onKey = (event: KeyboardEvent) => this.handleKey(event);
 		window.addEventListener("keydown", onKey, true);
 		return () => window.removeEventListener("keydown", onKey, true);
@@ -290,4 +291,5 @@ export function useChatSearch(
 ) {
 	return new ConversationSearch(conversation, timeline, virtual, expansion);
 }
+/** 会話内検索の状態と操作。利用側は検索欄と会話の表示要素を接続し、破棄時に監視を解除する。 */
 export type ChatSearch = ReturnType<typeof useChatSearch>;

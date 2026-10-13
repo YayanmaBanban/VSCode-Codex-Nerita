@@ -1,12 +1,12 @@
+<!-- 認証先のアカウント・通知・入力要求を表示し、認証開始を Host へ要求する。 -->
 <script lang="ts">
-	// 認証先のアカウント・通知・入力要求を表示し、認証開始を Host へ要求する。
-
 	import "../chat/chat.css";
 
 	import AuthInput from "./AuthInput.svelte";
 	import { type AuthProviderContentProps } from "./PiAuthEditorParts";
 
 	import ProviderFeedback from "./ProviderFeedback.svelte";
+
 	let { item, feedback, active, hostState, send }: AuthProviderContentProps =
 		$props();
 </script>

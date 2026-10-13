@@ -1,6 +1,5 @@
+<!-- ステップの会話を新規作成・継続・複製のいずれにするか選ぶ。 -->
 <script lang="ts">
-	// ステップの会話を新規作成・継続・複製のいずれにするか選ぶ。
-
 	import { type WorkflowContextModeProps } from "./WorkflowStepFormParts";
 
 	let { mode, switchMode, workflow, step }: WorkflowContextModeProps =

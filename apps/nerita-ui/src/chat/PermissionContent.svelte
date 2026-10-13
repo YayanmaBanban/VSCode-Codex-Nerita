@@ -3,6 +3,7 @@
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import { cn } from "cnfast";
 	import type { PermissionPresentation } from "@nerita/shared/permission";
+
 	let { permission }: { permission: PermissionPresentation } = $props();
 	let detailsOpen = $state(false);
 	const detailsId = $props.id();

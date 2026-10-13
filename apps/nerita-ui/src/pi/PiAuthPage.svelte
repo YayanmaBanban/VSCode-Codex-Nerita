@@ -1,3 +1,4 @@
+<!-- Pi の認証状態を Host から購読し、認証操作を設定画面へ接続する。 -->
 <script lang="ts">
 	import {
 		type PiAuthState,
@@ -7,6 +8,7 @@
 	import { subscribePiAuth } from "../bridge/vscodeBridge";
 
 	import { onMount } from "svelte";
+
 	let { post }: { post: (request: PiAuthRequest) => void } = $props();
 	let snapshot = $state.raw<PiAuthState>({
 		items: [],

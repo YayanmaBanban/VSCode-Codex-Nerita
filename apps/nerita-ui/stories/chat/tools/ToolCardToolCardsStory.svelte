@@ -10,6 +10,7 @@
 	import "../../../src/chat/chat.css";
 	import { initialTools } from "./ToolCardData";
 	import CompleteToolsButton from "./ToolCardCompleteToolsButton.svelte";
+
 	let {
 		background = false,
 		commands = false,

@@ -1,3 +1,4 @@
+<!-- Lexical の編集を下書きへ通知し、外部からの復元と送信・貼り付けのコマンドを入力欄へ反映する。 -->
 <script lang="ts">
 	import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
 	import type { ComposerPart } from "@nerita/shared/composerContent";
@@ -14,7 +15,9 @@
 		$writeParts as writeParts,
 		contentKey,
 	} from "./content";
+	/** 外部へ登録したコールバックから最新値を参照するための可変の参照先。 */
 	type Reference<T> = { current: T };
+	/** 入力ロック・本文と操作の通知先。外部復元とローカル編集は本文の更新経路で区別する。 */
 	type ComposerPluginProps = {
 		locked?: boolean | undefined;
 		parts: ComposerPart[];

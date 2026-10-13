@@ -65,6 +65,7 @@ function credentialApproval(
 	};
 }
 
+/** 再利用できる資格情報承認の範囲。一度限りの承認とは分け、プロセス・会話・作業先の寿命に結び付ける。 */
 export type ApprovalScope = "process" | Exclude<CommandApprovalScope, "once">;
 /** scope は承認の再利用範囲。秘密値そのものは全 scope で1実行だけ保持する。 */
 export class CredentialLease {

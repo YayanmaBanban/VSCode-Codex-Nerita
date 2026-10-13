@@ -47,6 +47,7 @@ export function bindPiRuntimeLifetime(
 		}
 		return closing;
 	};
+	/** 実行管理の中断時に、接続と関連する資源の終了処理を開始する。 */
 	const onAbort = () => {
 		void close().catch(() => undefined);
 	};

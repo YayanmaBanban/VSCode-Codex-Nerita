@@ -1,5 +1,6 @@
 // 呼び出し引数に埋め込む処理の量・分岐の深さ・非同期処理の重なりを検査する。
 const { walk, isFunction, isInlineCallback } = require("./ast.cjs");
+
 const controls = new Set([
 	"IfStatement",
 	"ForStatement",

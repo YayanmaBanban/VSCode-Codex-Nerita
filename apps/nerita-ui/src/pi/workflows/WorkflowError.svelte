@@ -1,3 +1,4 @@
+<!-- ワークフロー文書の操作エラーを表示し、入力を破棄して再読み込みする操作を提供する。 -->
 <script lang="ts">
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import { cn } from "cnfast";

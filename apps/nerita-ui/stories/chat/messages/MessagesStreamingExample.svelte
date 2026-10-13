@@ -4,6 +4,7 @@
 <script lang="ts">
 	import Messages from "../../../src/chat/messages/Messages.svelte";
 	import "../../../src/chat/chat.css";
+
 	let message = $state.raw({
 		id: "stream",
 		role: "assistant" as const,

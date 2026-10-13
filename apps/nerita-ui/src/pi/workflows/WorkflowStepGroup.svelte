@@ -1,6 +1,5 @@
+<!-- ステップをまとめる表示用のグループ名を入力し、変更を親へ伝える。 -->
 <script lang="ts">
-	// ステップをまとめる表示用のグループ名を入力し、変更を親へ伝える。
-
 	import { type WorkflowStepGroupProps } from "./WorkflowStepFormParts";
 
 	let { step, change }: WorkflowStepGroupProps = $props();

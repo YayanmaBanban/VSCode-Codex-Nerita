@@ -4,7 +4,9 @@ import type { Bridge } from "@nerita/shared/bridge";
 import type { HostMessage, UiMessage } from "@nerita/shared/messages";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
+/** 停止要求と対象の会話・スレッドを保持し、別の実行先の応答を混同しない。 */
 type PendingStop = { requestId: string; threadId: string; sessionId: string };
+/** 子スレッドの停止要求を管理する。Svelte の寿命管理内で呼び出し、会話 ID と接続は最新値を返す関数で渡す。 */
 export function useAgentStop(
 	getBridge: () => Bridge,
 	getSessionId: () => string | null,

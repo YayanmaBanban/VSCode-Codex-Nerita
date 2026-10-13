@@ -1,6 +1,8 @@
+<!-- コンテキストの選択階層をパンくずで示し、カテゴリーや親ディレクトリへ戻る操作を提供する。 -->
 <script lang="ts">
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import type { WorkspacePath } from "@nerita/shared/workspacePaths";
+
 	let {
 		title,
 		ancestors,

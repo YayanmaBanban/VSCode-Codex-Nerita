@@ -1,6 +1,5 @@
+<!-- 先に完了するステップを選び、現在のステップの依存先を更新する。 -->
 <script lang="ts">
-	// 先に完了するステップを選び、現在のステップの依存先を更新する。
-
 	import { type WorkflowDependenciesProps } from "./WorkflowStepFormParts";
 
 	let { workflow, step, change }: WorkflowDependenciesProps = $props();

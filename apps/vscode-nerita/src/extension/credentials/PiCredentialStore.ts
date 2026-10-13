@@ -6,10 +6,13 @@ import { z } from "zod";
 import type { CredentialStorageMode } from "@nerita/shared/credentials";
 import { type CredentialStores, SecretValue } from "./CredentialStore";
 
+/** Pi SDK が要求する資格情報の読み書き契約を、実際の SDK の型から取得する。 */
 type SdkStore = NonNullable<
 	NonNullable<Parameters<typeof PiSdk.ModelRuntime.create>[0]>["credentials"]
 >;
+/** Pi SDK が読み出す資格情報。未取得の場合の値を除いた取得済みの内容を扱う。 */
 type Credential = NonNullable<Awaited<ReturnType<SdkStore["read"]>>>;
+/** Pi SDK の資格情報操作に渡す条件を、SDK の読み取り引数から取得する。 */
 type OperationOptions = Parameters<SdkStore["read"]>[1];
 const accountSchema = z
 	.object({
@@ -20,6 +23,7 @@ const accountSchema = z
 		type: z.enum(["api_key", "oauth"]),
 	})
 	.strict();
+/** Pi の認証アカウントの表示情報。外部入力は `accountSchema` で検証し、秘密値を表示へ渡さない。 */
 export type PiCredentialAccount = z.infer<typeof accountSchema>;
 const indexSchema = z
 	.object({
@@ -243,6 +247,7 @@ export class PiCredentialVault {
 			.record(z.string().min(1).max(128), credentialSchema)
 			.parse(records);
 		const staged: PiCredentialAccount[] = [];
+		/** 移行途中に保存したアカウントを削除し、失敗した移行の秘密値を残さない。 */
 		const clean = async () => {
 			for (const account of staged) {
 				await this.stores.store(mode).delete(this.key(account));

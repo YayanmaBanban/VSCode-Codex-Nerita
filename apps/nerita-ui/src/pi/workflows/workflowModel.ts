@@ -101,6 +101,7 @@ export function renameStep(
 			"ステップ ID は重複しない英字から始まる名前にしてください。",
 		);
 	}
+	/** 指定した旧 ID に一致する参照だけを新 ID へ置き換え、他の参照は保持する。 */
 	const rename = (id: string) => (id === source ? target : id);
 	return {
 		...workflow,

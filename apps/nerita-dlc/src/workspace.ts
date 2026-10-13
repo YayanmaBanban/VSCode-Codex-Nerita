@@ -62,6 +62,7 @@ const WorkspaceDetectionShapeSchema = z.strictObject({
 /** フィールドの形式に加え、プロジェクト参照とマニフェストの整合性を検証する。 */
 export const WorkspaceDetectionSchema =
 	WorkspaceDetectionShapeSchema.superRefine(validateWorkspaceReferences);
+/** プロジェクトの検出事実と分類。外部入力は `WorkspaceDetectionSchema` で検証してから扱う。 */
 export type WorkspaceDetection = z.infer<typeof WorkspaceDetectionSchema>;
 
 /** 重複と未解決の参照を全件報告し、個々のフィールドだけでは分からない構成の不一致を拒否する。 */

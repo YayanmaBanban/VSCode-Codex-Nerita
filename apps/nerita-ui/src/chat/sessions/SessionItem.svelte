@@ -17,6 +17,7 @@
 	import SessionRename from "./SessionRename.svelte";
 	import { relativeTime } from "./relativeTime";
 	import { sessionActionClass } from "./sessionStyles";
+
 	let {
 		session,
 		selected,

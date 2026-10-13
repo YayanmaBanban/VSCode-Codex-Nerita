@@ -10,6 +10,7 @@ export const piThinkingLevels = [
 	"xhigh",
 	"max",
 ] as const;
+/** Pi の推論レベル。選択時には対象モデルが対応する候補であることも確認する。 */
 export type PiThinkingLevel = (typeof piThinkingLevels)[number];
 
 /** SDK のモデル・推論と、セッション内のプロバイダー固有設定。 */

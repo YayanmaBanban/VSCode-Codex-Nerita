@@ -6,6 +6,7 @@
 	import EditingFiles from "../../../src/chat/tools/EditingFiles.svelte";
 	import "../../../src/chat/chat.css";
 	import { path, oldLines, newLines } from "./FileDiffData";
+
 	let request = $state.raw<UiMessage | undefined>(undefined);
 	function setRequest(
 		value: typeof request | ((current: typeof request) => typeof request),

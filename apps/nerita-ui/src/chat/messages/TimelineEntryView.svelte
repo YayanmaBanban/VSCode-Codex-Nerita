@@ -6,6 +6,7 @@
 	import type { SubAgentSummary } from "@nerita/shared/subAgents";
 	import type { TimelineEntry } from "./messageTimeline";
 	import MessageEntry from "./MessageEntry.svelte";
+
 	let {
 		entry,
 		renderTool,

@@ -8,6 +8,7 @@
 	import EffortField from "./EffortField.svelte";
 	import HandoffModelField from "./HandoffModelField.svelte";
 	import { inputStyle } from "./managerFields";
+
 	let {
 		backend,
 		config,
@@ -23,6 +24,7 @@
 	let currentOptions = $derived(
 		effortOptions(state.models[backend], state.currentModels?.[backend]),
 	);
+	/** 引き継ぎのモデル選択方式を切り替え、固定モデルの指定を現在モデルへ持ち越さない。 */
 	function strategy(value: string) {
 		const { model: _model, ...rest } = {
 			...item,
@@ -39,12 +41,14 @@
 			},
 		});
 	}
+	/** 対象バックエンドの固定モデルだけを更新し、他の引き継ぎ設定は保持する。 */
 	function setModel(model: string) {
 		onChange({
 			...config,
 			backends: { ...config.backends, [backend]: { ...item, model } },
 		});
 	}
+	/** 対象バックエンドの推論設定を、バックエンドに対応する保存キーで更新する。 */
 	function setEffort(value: string | undefined) {
 		onChange({
 			...config,

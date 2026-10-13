@@ -4,6 +4,7 @@
 	import { isRecord } from "@nerita/shared/validation";
 	import Value from "./Value.svelte";
 	import { toolLabelClass } from "./toolStyles";
+
 	let { tool }: { tool: ToolSummary } = $props();
 	const input = $derived(isRecord(tool.rawInput) ? tool.rawInput : {});
 	const limitUnit = $derived(tool.kind === "list" ? "件" : "行");

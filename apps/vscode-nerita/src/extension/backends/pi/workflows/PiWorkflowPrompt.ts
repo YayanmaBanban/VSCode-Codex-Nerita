@@ -13,6 +13,7 @@ export async function promptWorkflowChild(
 	id: string,
 ) {
 	const outcome = new PiChildOutput(views, id);
+	/** ワークフローの中断時に、実行中の子エージェントを停止する。 */
 	const stop = () => {
 		void child.abort().catch(() => undefined);
 	};

@@ -3,6 +3,7 @@
 	import ChatApp from "../StoryChat.svelte";
 
 	import { createChatStoryBridge } from "../mocks/mockBridge";
+
 	let sent = $state.raw("");
 	const setSent = (
 		value: typeof sent | ((previous: typeof sent) => typeof sent),

@@ -13,6 +13,7 @@
 	import Field from "../agentManager/Field.svelte";
 	import { inputStyle } from "../agentManager/managerFields";
 	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+
 	let {
 		edit,
 		onChange,
@@ -46,6 +47,7 @@
 		}
 		return "on-request";
 	});
+	/** 選択欄からの変更だけを承認ポリシーの更新処理へ渡す。 */
 	function policyChanged(event: Event) {
 		if (event.currentTarget instanceof HTMLSelectElement) {
 			changePolicy(event.currentTarget.value);
@@ -53,6 +55,7 @@
 	}
 	// 閉じるアニメーション中も最後の内容を維持し、閉じた入力は inert にする。
 
+	/** 現在の詳細な承認設定を保持してポリシーを切り替え、選択値を検証して親へ返す。 */
 	function changePolicy(value: string) {
 		if (granular) {
 			retained = granular;

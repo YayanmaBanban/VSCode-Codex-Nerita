@@ -5,6 +5,7 @@
 	import ToolCard from "../../../src/chat/tools/ToolCard.svelte";
 	import { useFollowConversation } from "../../../src/chat/messages/useFollowConversation.svelte";
 	import "../../../src/chat/chat.css";
+
 	let container = $state<HTMLDivElement | null>(null);
 	useFollowConversation(
 		() => container,

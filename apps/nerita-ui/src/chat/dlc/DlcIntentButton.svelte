@@ -1,11 +1,12 @@
+<!-- 保留理由を説明として残し、実行先とバックエンドを併記する。 -->
 <script lang="ts">
-	// 保留理由を説明として残し、実行先とバックエンドを併記する。
 	import { cn } from "cnfast";
 	import type { IntentSummary } from "@nerita/shared/dlc/contracts";
 	import StatusIndicator from "../../ui/StatusIndicator.svelte";
 	import type { StatusIndicatorState } from "../../ui/statusIndicatorModel";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
+
 	let {
 		intent,
 		ui,

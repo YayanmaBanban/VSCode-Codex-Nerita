@@ -1,3 +1,4 @@
+<!-- コンテキストの候補一覧に最近使った参照と階層移動を加え、共通の補完メニューへ渡す。 -->
 <script lang="ts">
 	import type { CompletionMenuProps } from "./completionMenuProps";
 	import type { WorkspacePath } from "@nerita/shared/workspacePaths";
@@ -6,6 +7,7 @@
 	import CompletionMenu from "./CompletionMenu.svelte";
 	import ContextPickerBreadcrumbs from "./ContextPickerBreadcrumbs.svelte";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+
 	let {
 		recent,
 		onCategories,

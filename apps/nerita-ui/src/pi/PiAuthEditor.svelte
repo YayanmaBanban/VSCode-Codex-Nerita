@@ -1,3 +1,4 @@
+<!-- Pi の認証先を検索・展開し、アカウント設定と認証中の入力要求を表示する。 -->
 <script lang="ts">
 	import { cn } from "cnfast";
 	import Search from "@lucide/svelte/icons/search";

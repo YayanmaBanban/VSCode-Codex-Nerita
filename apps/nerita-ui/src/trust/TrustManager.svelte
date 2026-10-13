@@ -1,3 +1,4 @@
+<!-- 信頼記録を検索・表示し、信頼の変更要求と Host の応答を一覧へ反映する。 -->
 <script lang="ts">
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import { cn } from "cnfast";
@@ -5,6 +6,7 @@
 	import "../chat/chat.css";
 
 	import { onMount } from "svelte";
+
 	let { bridge }: TrustManagerProps = $props();
 	let snapshot = $state.raw<TrustReply>();
 	let query = $state("");

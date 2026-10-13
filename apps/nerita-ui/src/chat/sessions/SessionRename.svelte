@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { onMount, untrack } from "svelte";
 	import type { UiMessage } from "@nerita/shared/messages";
+
 	let {
 		sessionId,
 		title,

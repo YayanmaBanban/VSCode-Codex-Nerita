@@ -2,6 +2,7 @@
 <script lang="ts">
 	import type { PermissionField } from "@nerita/shared/permission";
 	import PermissionCode from "./PermissionCode.svelte";
+
 	let { fields }: { fields: PermissionField[] } = $props();
 </script>
 

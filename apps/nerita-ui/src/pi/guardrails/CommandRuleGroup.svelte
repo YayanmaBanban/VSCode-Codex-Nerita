@@ -1,6 +1,5 @@
+<!-- コマンドルールを一覧表示し、追加・個別編集の結果を設定全体へ反映する。 -->
 <script lang="ts">
-	// コマンドルールを一覧表示し、追加・個別編集の結果を設定全体へ反映する。
-
 	import {
 		buttonStyle,
 		type CommandRuleGroupProps,
@@ -36,6 +35,7 @@
 			</button>
 		</div>
 		{#each config.commandRules as rule, index (index)}
+			<!-- 対象のコマンドルールだけを更新し、他のルールを保った設定を親へ返す。 -->
 			{@const update = (patch: Partial<typeof rule>) =>
 				onChange({
 					...config,

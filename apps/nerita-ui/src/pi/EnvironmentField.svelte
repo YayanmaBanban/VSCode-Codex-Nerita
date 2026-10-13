@@ -1,6 +1,5 @@
+<!-- 資格情報の注入先となる環境変数名を入力し、保存処理は親へ任せる。 -->
 <script lang="ts">
-	// 資格情報の注入先となる環境変数名を入力し、保存処理は親へ任せる。
-
 	import { type CredentialBinding } from "@nerita/shared/credentials";
 
 	let {

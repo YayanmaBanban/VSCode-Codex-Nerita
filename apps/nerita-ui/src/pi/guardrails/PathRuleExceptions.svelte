@@ -1,6 +1,5 @@
+<!-- パスルールの例外一覧を表示し、例外の追加・更新・削除を親へ伝える。 -->
 <script lang="ts">
-	// パスルールの例外一覧を表示し、例外の追加・更新・削除を親へ伝える。
-
 	import { cn } from "cnfast";
 	import {
 		buttonStyle,
@@ -8,6 +7,7 @@
 	} from "./GuardrailsRulesParts";
 
 	import PathRuleException from "./PathRuleException.svelte";
+
 	let props: PathRuleExceptionsProps = $props();
 	let { rule, updatePath, index } = $derived(props);
 </script>

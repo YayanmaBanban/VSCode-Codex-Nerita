@@ -6,6 +6,7 @@
 	import { mergeProps } from "bits-ui";
 	import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+
 	let {
 		agents,
 		selected,

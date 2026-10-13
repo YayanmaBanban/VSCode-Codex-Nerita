@@ -1,6 +1,5 @@
+<!-- 認証先の設定状態と開閉操作を表示し、閉じた内容への操作を無効にする。 -->
 <script lang="ts">
-	// 認証先の設定状態と開閉操作を表示し、閉じた内容への操作を無効にする。
-
 	import { cn } from "cnfast";
 
 	import Check from "@lucide/svelte/icons/check";

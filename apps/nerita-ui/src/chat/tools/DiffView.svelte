@@ -12,6 +12,7 @@
 		type DiffLocationProps,
 	} from "./diffPresentation";
 	import DiffHunkView from "./DiffHunkView.svelte";
+
 	let {
 		path,
 		cwd,

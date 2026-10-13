@@ -1,3 +1,4 @@
+<!-- Pi のエージェント一覧と編集画面を組み立て、既定値の編集とユーザー設定の閲覧を切り替える。 -->
 <script lang="ts">
 	import AgentBrowser from "../agentManager/AgentBrowser.svelte";
 
@@ -5,6 +6,7 @@
 	import PiDefaultsSettings from "./PiDefaultsSettings.svelte";
 
 	import PiAgentEditor from "./PiAgentEditor.svelte";
+
 	let props: AgentManagerProps = $props();
 	let agents = $derived(
 		props.state.agents.filter((agent) => agent.backend === "pi"),

@@ -1,5 +1,7 @@
+<!-- ステップのタスク・会話の継承・依存先・出力を編集し、変更を親へ伝える。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
+
 	let props: WorkflowStepFormProps = $props();
 	let { step, workflow, change, rename, remove, output } = $derived(props);
 	let id = $state(untrack(() => step.id));

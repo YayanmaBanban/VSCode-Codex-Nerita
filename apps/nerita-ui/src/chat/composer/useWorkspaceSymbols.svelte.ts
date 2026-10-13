@@ -9,6 +9,7 @@ import {
 } from "@nerita/shared/workspaceSymbols";
 
 import { symbolCompletionItems } from "./completionItems";
+/** ワークスペースのシンボル候補を検索する。Svelte の寿命管理内で呼び出し、接続と検索条件は最新値を参照できるようにする。 */
 export function useWorkspaceSymbols(input: {
 	bridge: Bridge | undefined;
 	active: boolean;
@@ -23,6 +24,7 @@ export function useWorkspaceSymbols(input: {
 		query: string;
 		data: WorkspaceSymbolsResult;
 	} | null>(null);
+	/** 検索語に結び付いたシンボルの取得結果を、直接値または更新処理で保持する。 */
 	const setResult = (
 		value: typeof result | ((previous: typeof result) => typeof result),
 	) => {
@@ -90,6 +92,7 @@ function searchWorkspaceSymbols(
 	const requestedTerm = term;
 	const requestId = crypto.randomUUID();
 	let finished = false;
+	/** シンボルの応答を要求時の検索語に結び付け、一度だけ取得結果として確定する。 */
 	const complete = (data: WorkspaceSymbolsResult) => {
 		if (finished) {
 			return;

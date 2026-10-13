@@ -1,3 +1,4 @@
+<!-- Lexical の入力欄へ補完・参照・貼り付けの処理を組み込み、本文の変更と送信操作を親へ伝える。 -->
 <script lang="ts">
 	import { AutoLinkNode, LinkNode } from "@lexical/link";
 	import type { Bridge } from "@nerita/shared/bridge";
@@ -52,6 +53,7 @@
 			throw cause;
 		},
 	};
+	/** 入力欄のフォーカスを外してから、親へ送信を要求する。 */
 	function submit() {
 		input?.blur();
 		props.onSubmit();

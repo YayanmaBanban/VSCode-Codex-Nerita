@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { type createChatStoryBridge } from "../mocks/mockBridge";
+
 	let { mock }: { mock: ReturnType<typeof createChatStoryBridge> } = $props();
 </script>
 

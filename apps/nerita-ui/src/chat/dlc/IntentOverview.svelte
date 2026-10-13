@@ -1,9 +1,10 @@
+<!-- 保存された依頼原文を表示し、工程確認とアーカイブを明示的に要求する。 -->
 <script lang="ts">
-	// 保存された依頼原文を表示し、工程確認とアーカイブを明示的に要求する。
 	import type {
 		DlcAction,
 		DlcProjection,
 	} from "@nerita/shared/dlc/contracts";
+
 	let {
 		selected,
 		action,

@@ -1,3 +1,4 @@
+<!-- 会話の下書きと送信の受付状態を入力欄へ接続し、送信ロックと失敗の通知を表示へ反映する。 -->
 <script lang="ts">
 	import { onDestroy } from "svelte";
 	import type { Bridge } from "@nerita/shared/bridge";
@@ -7,6 +8,7 @@
 	import Composer from "./Composer.svelte";
 	import { useComposerDraft } from "./useComposerDraft.svelte";
 	import { usePromptSubmission } from "./usePromptSubmission.svelte";
+
 	let props: {
 		bridge: Bridge;
 		state: ChatState;

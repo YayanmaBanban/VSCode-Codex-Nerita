@@ -1,5 +1,5 @@
+<!-- 標準コンテキストメニューへ選択状態を渡し、Host からの変換要求を処理する。 -->
 <script lang="ts">
-	// 標準コンテキストメニューへ選択状態を渡し、Host からの変換要求を処理する。
 	import {
 		isNonEmptyString,
 		isNonZeroNumber,
@@ -28,6 +28,7 @@
 
 	import { $insertPastedBlock as insertPastedBlock } from "./insertPastedBlock";
 	import { getLexicalEditor } from "./lexicalContext";
+
 	let { bridge }: { bridge?: Bridge | undefined } = $props();
 
 	const editor = getLexicalEditor();

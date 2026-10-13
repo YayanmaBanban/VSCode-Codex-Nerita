@@ -7,6 +7,7 @@
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import type { ChatSearch } from "./useChatSearch.svelte";
 	import "./chatSearch.css";
+
 	let { search }: { search: ChatSearch } = $props();
 	const buttonClass =
 		"chat-search-button inline-grid h-6 w-[22px] shrink-0 place-items-center rounded-[3px] border border-solid border-transparent bg-transparent p-0 text-[12px]";

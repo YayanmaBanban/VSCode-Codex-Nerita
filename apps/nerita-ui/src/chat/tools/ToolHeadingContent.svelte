@@ -5,6 +5,7 @@
 	import Check from "@lucide/svelte/icons/check";
 	import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 	import type { ToolSummary } from "@nerita/shared/chatState";
+
 	let {
 		tool,
 		status,

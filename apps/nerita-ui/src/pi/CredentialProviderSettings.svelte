@@ -1,3 +1,4 @@
+<!-- 資格情報の取得元の状態を表示し、Bitwarden 認証の設定・削除と既存認証の移行を要求する。 -->
 <script lang="ts">
 	import {
 		credentialStorageModeSchema,

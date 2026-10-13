@@ -3,6 +3,7 @@
 	import type { ComposerTarget } from "@nerita/shared/composerTargets";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import MessageReferenceChip from "./MessageReferenceChip.svelte";
+
 	let {
 		value,
 		targets,

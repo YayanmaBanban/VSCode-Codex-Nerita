@@ -1,5 +1,6 @@
 // 個人の環境に依存しない表示データと、Host 通知を注入する操作。
 import type { ToolSummary } from "@nerita/shared/chatState";
+
 export const tools: ToolSummary[] = [
 	{
 		id: "think",

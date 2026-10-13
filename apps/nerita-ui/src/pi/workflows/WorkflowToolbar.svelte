@@ -1,3 +1,4 @@
+<!-- ワークフローの編集方式と保存・検証・実行の操作を、文書の状態に合わせて提供する。 -->
 <script lang="ts">
 	import { type WorkflowBridge } from "@nerita/shared/workflows/messages";
 

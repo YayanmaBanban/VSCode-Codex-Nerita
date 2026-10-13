@@ -29,6 +29,7 @@ export function messageReferences(
 	const pattern = new RegExp(`(${prefix}[0-9]+END)`, "g");
 	/** テキストだけを置換し、生の HTML や外部 URL を生成しない。 */
 	const plugin = () => (tree: HtmlNode) => {
+		/** HTML の本文を走査して参照をチップにし、属性内では元の参照文字列を復元する。 */
 		const visit = (node: HtmlNode): void => {
 			// リンク先や画像の代替文ではチップを挿入せず、元の参照文字列を保つ。
 			const restore = (value: string) =>

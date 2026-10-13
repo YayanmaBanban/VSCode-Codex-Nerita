@@ -1,3 +1,4 @@
+<!-- グローバルとワークスペースの性格設定を、範囲ごとの開閉可能な編集欄にまとめる。 -->
 <script lang="ts">
 	import type {
 		PersonalityMessage,
@@ -7,6 +8,7 @@
 	import ChevronUp from "@lucide/svelte/icons/chevron-up";
 	import { cn } from "cnfast";
 	import PersonalityPaneEditor from "./PersonalityPaneEditor.svelte";
+
 	let {
 		scope,
 		settings,

@@ -1,5 +1,5 @@
+<!-- 工程の保存状態を進めず、Phase ごとに集計と利用者の展開位置を表示する。 -->
 <script lang="ts">
-	// 工程の保存状態を進めず、Phase ごとに集計と利用者の展開位置を表示する。
 	import type { Snippet } from "svelte";
 	import type {
 		DlcAction,
@@ -15,6 +15,7 @@
 		executionBusy,
 		phaseExecutionStatus,
 	} from "./phaseModel";
+
 	let {
 		selected,
 		view,

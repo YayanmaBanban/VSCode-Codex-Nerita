@@ -1,6 +1,5 @@
+<!-- 追加したリソース権限とキャッシュの選択を表示し、選択した許可や切替の取り消しを要求する。 -->
 <script lang="ts">
-	// 追加したリソース権限とキャッシュの選択を表示し、選択した許可や切替の取り消しを要求する。
-
 	import {
 		type SandboxSnapshot,
 		type SandboxRequest,

@@ -1,7 +1,8 @@
+<!-- Worktree の実行先と管理操作を表示し、パスの任意入力は提供しない。 -->
 <script lang="ts">
-	// Worktree の実行先と管理操作を表示し、パスの任意入力は提供しない。
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 	import { backendWorkspaceTrusted } from "@nerita/shared/backend";
+
 	let { ui }: { ui: ReturnType<typeof useDlcWorkspace> } = $props();
 	let selected = $derived(ui.selected);
 	let target = $derived(

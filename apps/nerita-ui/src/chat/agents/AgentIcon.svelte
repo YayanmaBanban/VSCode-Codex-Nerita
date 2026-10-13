@@ -1,7 +1,8 @@
+<!-- サーバー由来の HTML を使わず、同梱アイコンを表示キーで解決する。 -->
 <script lang="ts">
-	// サーバー由来の HTML を使わず、同梱アイコンを表示キーで解決する。
 	import type { SubAgentSummary } from "@nerita/shared/subAgents";
 	import { icons } from "./agentIconSources";
+
 	let { iconKey }: { iconKey: SubAgentSummary["iconKey"] } = $props();
 </script>
 

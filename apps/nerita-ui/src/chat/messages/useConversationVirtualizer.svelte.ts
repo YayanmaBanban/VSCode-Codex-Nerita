@@ -1,7 +1,10 @@
 // 可変高さの会話を仮想化し、画面外の移動先も行 ID で解決する。
 import { onDestroy, untrack } from "svelte";
 import { fromStore } from "svelte/store";
-import { createVirtualizer, type SvelteVirtualizer } from "@tanstack/svelte-virtual";
+import {
+	createVirtualizer,
+	type SvelteVirtualizer,
+} from "@tanstack/svelte-virtual";
 import type { MessageTimeline } from "./messageTimeline";
 
 /** 呼び出し側の runes と接続するため、変更可能な入力は getter で受け取る。 */
@@ -18,7 +21,8 @@ export function useConversationVirtualizer(
 	const store = createVirtualizer<HTMLElement, HTMLElement>({
 		count: 0,
 		getScrollElement: conversation,
-		estimateSize: (index) => estimateRowHeight(timeline().entries[index]?.kind),
+		estimateSize: (index) =>
+			estimateRowHeight(timeline().entries[index]?.kind),
 		getItemKey: (index) => timeline().entries[index]!.key,
 		overscan: 5,
 		followOnAppend: false,
@@ -31,19 +35,13 @@ export function useConversationVirtualizer(
 		const element = conversation();
 		const scrollMargin = margin;
 		untrack(() => {
-			instance.current.setOptions({
-				count: data.entries.length,
-				getScrollElement: () => element,
-				getItemKey: (index) => data.entries[index]!.key,
+			synchronizeVirtualizer(
+				instance.current,
+				data,
+				element,
 				scrollMargin,
-			});
-			instance.current.shouldAdjustScrollPositionOnItemSizeChange = (
-				item,
-				_delta,
-				virtualizer,
-			) =>
-				!following.current &&
-				item.end <= (virtualizer.scrollOffset ?? 0);
+				following,
+			);
 		});
 	});
 	// 会話の交換時は外部の高さキャッシュを捨て、再マウントされない行も DOM から測り直す。
@@ -91,16 +89,43 @@ export function useConversationVirtualizer(
 	};
 }
 
+/** 仮想リストの項目設定と、過去の会話を閲覧するときの位置補正方針を同期する。 */
+function synchronizeVirtualizer(
+	instance: SvelteVirtualizer<HTMLElement, HTMLElement>,
+	data: MessageTimeline,
+	element: HTMLElement | null,
+	scrollMargin: number,
+	following: { current: boolean },
+) {
+	instance.setOptions({
+		count: data.entries.length,
+		getScrollElement: () => element,
+		getItemKey: (index) => data.entries[index]!.key,
+		scrollMargin,
+	});
+	instance.shouldAdjustScrollPositionOnItemSizeChange = (
+		item,
+		_delta,
+		virtualizer,
+	) => !following.current && item.end <= (virtualizer.scrollOffset ?? 0);
+}
+
 /** メッセージ本文と見出しだけのツール行で、初期測定の高さを分ける。 */
-function estimateRowHeight(kind: MessageTimeline["entries"][number]["kind"] | undefined) {
+function estimateRowHeight(
+	kind: MessageTimeline["entries"][number]["kind"] | undefined,
+) {
 	return kind === "message" ? 180 : 64;
 }
 
 /** 高さキャッシュの破棄後も、再マウントされない表示中の行を測り直す。 */
-function measureMountedRows(instance: SvelteVirtualizer<HTMLElement, HTMLElement>) {
+function measureMountedRows(
+	instance: SvelteVirtualizer<HTMLElement, HTMLElement>,
+) {
 	instance.measure();
 	for (const node of instance.elementsCache.values()) {
-		if (node.isConnected) { instance.measureElement(node); }
+		if (node.isConnected) {
+			instance.measureElement(node);
+		}
 	}
 }
 
@@ -112,6 +137,7 @@ function focusRow(
 ) {
 	cancelAnimationFrame(frame.current);
 	let attempts = 0;
+	/** 仮想リストの行が描画されるまで待ち、追加のスクロールを起こさずメッセージへフォーカスを移す。 */
 	const focus = () => {
 		const row = conversation()?.querySelector<HTMLElement>(
 			`[data-entry-key="${CSS.escape(key)}"]`,

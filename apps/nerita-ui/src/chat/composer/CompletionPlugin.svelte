@@ -1,3 +1,4 @@
+<!-- 入力位置に応じたコマンド・スキル・参照候補を取得し、選択した候補を Lexical の本文へ挿入する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import type { Bridge } from "@nerita/shared/bridge";
@@ -18,6 +19,7 @@
 	import { useCompletionCandidates } from "./useCompletionCandidates.svelte";
 	import { useCompletionEditor } from "./useCompletionEditor.svelte";
 	import { usePastedPath } from "./usePastedPath.svelte";
+
 	let props: {
 		bridge?: Bridge | undefined;
 		attachments: Attachment[];
@@ -50,6 +52,7 @@
 	const id = $props.id();
 	let query = $derived(search ?? match?.query ?? "");
 	let title = $derived(completionTitle());
+	/** 補完の起点と選択カテゴリーに応じて、候補メニューの見出しを選ぶ。 */
 	function completionTitle() {
 		if (match?.marker === "/") {
 			return "スラッシュコマンド";
@@ -88,6 +91,7 @@
 	let index = $derived(
 		Math.min(selected, Math.max(0, candidates.items.length - 1)),
 	);
+	/** 新しいコンテキスト追加要求だけを現在の選択位置で開き、同じ要求を繰り返し処理しない。 */
 	function openRequestedContext() {
 		const request = props.contextRequest;
 		if (request === lastRequest) {
@@ -102,12 +106,14 @@
 	}
 	// 外部からの Context 要求を Lexical の選択位置へ接続し、要求番号ごとに一度だけ開く。
 	$effect(openRequestedContext);
+	/** 閉じたときの入力位置を記録し、同じ位置の補完をすぐに再表示しない。 */
 	function close() {
 		dismissed.current = JSON.stringify(
 			editor.getEditorState().read(completion),
 		);
 		match = null;
 	}
+	/** ディレクトリの親またはカテゴリー一覧へ戻り、検索語と候補の選択位置を初期化する。 */
 	function back() {
 		if (candidates.browsing && candidates.paths.hasParent) {
 			candidates.paths.back();
@@ -117,6 +123,7 @@
 		search = "";
 		selected = 0;
 	}
+	/** 入力中の補完起点を取り除いて候補を閉じ、親へ添付ファイルの選択を要求する。 */
 	function addAttachment() {
 		if (!props.onAttach) {
 			return;
@@ -129,6 +136,7 @@
 		props.onAttach();
 		return;
 	}
+	/** 候補の種類に応じて階層を移動し、候補を追加取得または本文へ挿入する。無効な候補は選ばない。 */
 	function pick(item: CompletionItem) {
 		if (item.disabled === true) {
 			return;
@@ -173,6 +181,7 @@
 		match = null;
 		editor.focus();
 	}
+	/** 現在の補完状態を共通のキー処理へ渡し、選択位置と確定操作を候補表示へ反映する。 */
 	function handleKey(event: KeyboardEvent, inSearch = false) {
 		return handleCompletionKey(
 			event,
@@ -192,6 +201,7 @@
 			inSearch,
 		);
 	}
+	/** 入力位置の変化を補完へ反映し、起点が移動した場合は以前のカテゴリーを引き継がない。 */
 	function onMatch(next: Completion | null) {
 		const moved =
 			next?.marker !== match?.marker ||
@@ -218,22 +228,26 @@
 		},
 		onMatch,
 	});
+	/** 参照の階層と検索を初期化してカテゴリー一覧へ戻す。 */
 	function categories() {
 		candidates.paths.reset();
 		category = "";
 		search = "";
 		selected = 0;
 	}
+	/** 指定した祖先ディレクトリへ移動し、新しい一覧の先頭から選択する。 */
 	function ancestor(depth: number) {
 		candidates.paths.goTo(depth);
 		search = "";
 		selected = 0;
 	}
+	/** 検索欄で処理した補完のキー操作を、外側の入力欄へ伝播させない。 */
 	function searchKey(event: KeyboardEvent) {
 		if (handleKey(event, true)) {
 			event.stopPropagation();
 		}
 	}
+	/** 候補パネル内では閉じる・戻る操作だけを受け取り、他のキー操作は各項目に任せる。 */
 	function panelKey(event: KeyboardEvent) {
 		const dismissKey =
 			event.key === "Escape" ||
@@ -242,6 +256,7 @@
 			event.stopPropagation();
 		}
 	}
+	/** 補完の検索語を更新し、絞り込んだ候補の先頭へ選択を戻す。 */
 	function setSearch(value: string) {
 		search = value;
 		selected = 0;

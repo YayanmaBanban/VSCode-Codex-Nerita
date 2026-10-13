@@ -7,6 +7,7 @@
 	import Value from "./Value.svelte";
 	import RawTool from "./RawTool.svelte";
 	import { toolLabelClass } from "./toolStyles";
+
 	let {
 		tool,
 		scrollable = false,

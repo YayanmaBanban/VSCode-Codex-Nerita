@@ -2,6 +2,7 @@
 import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { textToolContent } from "@nerita/shared/toolContent";
 import { createStoryBridge } from "./mocks/storyBridge";
+
 export function createScrollControl() {
 	let state: ChatState = {
 		...initialState(),

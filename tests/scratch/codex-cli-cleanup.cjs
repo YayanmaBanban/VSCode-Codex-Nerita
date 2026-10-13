@@ -7,6 +7,7 @@ const { createInterface } = require("node:readline");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
+
 const execute = promisify(execFile);
 
 async function cleanup(binary, cwd, managedRoot, record) {

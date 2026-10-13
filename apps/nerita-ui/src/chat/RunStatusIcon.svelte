@@ -3,6 +3,7 @@
 	import "./thinkingIndicator.css";
 	import "./catLoaf.css";
 	import "./catStartled.css";
+
 	let { kind }: { kind: "writing" | "loaf" | "startled" } = $props();
 </script>
 

@@ -3,6 +3,7 @@
 	import ChatApp from "../../src/chat/ChatApp.svelte";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import type { StoryBridge } from "./mocks/storyBridge";
+
 	let { bridge }: { bridge: StoryBridge } = $props();
 	const observed = $derived.by(() => {
 		const sent: UiMessage[] = [];

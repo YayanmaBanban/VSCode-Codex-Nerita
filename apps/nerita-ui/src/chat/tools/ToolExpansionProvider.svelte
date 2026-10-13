@@ -7,6 +7,7 @@
 		provideToolOutputBridge,
 		type ToolExpansionState,
 	} from "./ToolExpansion.svelte";
+
 	let {
 		expansion,
 		bridge,

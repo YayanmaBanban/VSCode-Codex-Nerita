@@ -2,6 +2,7 @@
 <script lang="ts">
 	import ToolContent from "./ToolContent.svelte";
 	import type { ToolContentProps } from "./toolContentProps";
+
 	let { tool, send, cwd }: ToolContentProps = $props();
 </script>
 

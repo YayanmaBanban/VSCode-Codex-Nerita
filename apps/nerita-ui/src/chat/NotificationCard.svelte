@@ -2,6 +2,7 @@
 <script lang="ts">
 	import X from "@lucide/svelte/icons/x";
 	import { prefersReducedMotion } from "svelte/motion";
+
 	let {
 		children,
 		onClose,

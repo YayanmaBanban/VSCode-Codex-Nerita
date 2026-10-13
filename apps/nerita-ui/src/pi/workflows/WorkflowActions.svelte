@@ -1,6 +1,5 @@
+<!-- 文書の保存・検証・実行・停止を要求し、編集状態に応じて操作を無効にする。 -->
 <script lang="ts">
-	// 文書の保存・検証・実行・停止を要求し、編集状態に応じて操作を無効にする。
-
 	import { cn } from "cnfast";
 
 	import { type WorkflowBridge } from "@nerita/shared/workflows/messages";

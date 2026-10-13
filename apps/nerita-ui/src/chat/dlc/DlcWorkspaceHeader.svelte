@@ -1,8 +1,10 @@
+<!-- 実行環境の設定を依頼本文から切り離し、Intent ごとの割当を要求する。 -->
 <script lang="ts">
-	// 実行環境の設定を依頼本文から切り離し、Intent ごとの割当を要求する。
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 	import WorktreeControls from "./DlcWorktrees.svelte";
+
 	let { ui }: { ui: ReturnType<typeof useDlcWorkspace> } = $props();
+	/** 選択したバックエンドを検証し、現在の依頼とリビジョンを付けて変更を要求する。 */
 	function backendChanged(event: Event) {
 		if (!(event.currentTarget instanceof HTMLSelectElement)) {
 			return;

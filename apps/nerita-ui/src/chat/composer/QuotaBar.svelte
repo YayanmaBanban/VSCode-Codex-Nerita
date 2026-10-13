@@ -1,7 +1,9 @@
+<!-- 取得した利用枠の最小残量をバーで表示し、各利用枠の詳細をツールチップで示す。 -->
 <script lang="ts">
 	import type { QuotaWindow } from "@nerita/shared/composer";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import "./quotaBar.css";
+
 	let { windows }: { windows: QuotaWindow[] | null } = $props();
 	let remaining = $derived(
 		windows !== null && windows.length > 0

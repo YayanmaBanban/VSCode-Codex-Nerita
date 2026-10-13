@@ -1,7 +1,9 @@
+<!-- Lexical の編集領域を DOM に接続し、編集の可否と入力欄の寿命を同期する。 -->
 <script lang="ts">
 	import { onMount } from "svelte";
 	import type { HTMLAttributes } from "svelte/elements";
 	import { getLexicalEditor } from "./lexicalContext";
+
 	let {
 		disabled = false,
 		element = $bindable(),

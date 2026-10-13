@@ -3,6 +3,7 @@
 	import type { AgentManagerProps } from "../agentManager/managerProps";
 	import AgentBrowser from "../agentManager/AgentBrowser.svelte";
 	import CodexAgentEditor from "./CodexAgentEditor.svelte";
+
 	let props: AgentManagerProps = $props();
 	let agents = $derived(
 		props.state.agents.filter((agent) => agent.backend === "codex"),

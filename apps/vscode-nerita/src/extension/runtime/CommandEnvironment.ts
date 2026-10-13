@@ -1,5 +1,6 @@
 // シェルへ必要な OS 変数だけを渡し、RPC の上書き仕様に合わせて不要な継承値を除去する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+
 const allowed =
 	/^(?:systemroot|windir|systemdrive|comspec|path|pathext|temp|tmp|programfiles|programfiles\(x86\)|programw6432|programdata|userprofile|homedrive|homepath|localappdata|appdata|os|processor_architecture|number_of_processors)$/i;
 

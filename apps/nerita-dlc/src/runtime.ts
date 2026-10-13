@@ -16,6 +16,7 @@ export const SourceSnapshotSchema = z.strictObject({
 		)
 		.optional(),
 });
+/** 実行対象のソース識別情報。外部入力は `SourceSnapshotSchema` で検証してから扱う。 */
 export type SourceSnapshot = z.infer<typeof SourceSnapshotSchema>;
 
 export const RuntimeEvidenceSchema = z.strictObject({
@@ -42,6 +43,7 @@ export const RuntimeEvidenceSchema = z.strictObject({
 	),
 	policy: z.literal("workspace-inherit"),
 });
+/** 作業と実行世代に結び付いた実行根拠。外部入力は `RuntimeEvidenceSchema` で検証してから扱う。 */
 export type RuntimeEvidence = z.infer<typeof RuntimeEvidenceSchema>;
 
 export const SemanticResultSchema = z.strictObject({
@@ -51,6 +53,7 @@ export const SemanticResultSchema = z.strictObject({
 	summary: z.string().min(1).max(16000),
 	changedPaths: z.array(DlcPathSchema).max(100),
 });
+/** 実行結果の内容。外部入力は `SemanticResultSchema` で検証してから扱う。 */
 export type SemanticResult = z.infer<typeof SemanticResultSchema>;
 
 /** 方針の拡張や未対応の継続方式は、実行前に Runtime が拒否する。 */
@@ -62,7 +65,9 @@ export const ExecutionRequestSchema = DlcTaskSchema.extend({
 	continuity: z.enum(["fresh", "continue", "handoff"]),
 	policy: z.enum(["workspace-inherit", "read-only"]),
 });
+/** 実行世代と対象を指定する要求。実行境界では `ExecutionRequestSchema` で検証する。 */
 export type ExecutionRequest = z.infer<typeof ExecutionRequestSchema>;
+/** 内容未検証の実行結果と根拠。利用側は結果を検証し、根拠の作業 ID と実行世代も照合する。 */
 export type RuntimeResult = { semantic: unknown; evidence: RuntimeEvidence };
 /** 会話の保存に失敗しても、実行要求に結び付いた収集済みの結果をエラーに含めて渡す。 */
 export class RuntimeResultError extends Error {
@@ -76,6 +81,7 @@ export class RuntimeResultError extends Error {
 		this.name = "RuntimeResultError";
 	}
 }
+/** 実行中の世代と稼働状態。実行世代がない場合は `attemptId` を `null` にする。 */
 export type RuntimeStatus = { attemptId: string | null; running: boolean };
 
 /** 根拠は Runtime が発行する。エージェントの JSON を根拠として受け付けない。 */

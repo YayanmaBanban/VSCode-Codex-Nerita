@@ -1,5 +1,6 @@
 // 個人の環境に依存しない表示データと、Host 通知を注入する操作。
 import type { ChatMessage } from "@nerita/shared/chatState";
+
 export const messages: ChatMessage[] = Array.from({ length: 8 }, (_, index) => [
 	{
 		id: `user-${index}`,

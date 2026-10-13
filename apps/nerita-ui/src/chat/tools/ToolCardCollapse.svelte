@@ -1,6 +1,7 @@
 <!-- 閉じる遷移の完了後に本文と購読を解放し、開き直しは終了待ちを無効化する。 -->
 <script lang="ts">
 	import { tick, type Snippet } from "svelte";
+
 	let {
 		open,
 		id,

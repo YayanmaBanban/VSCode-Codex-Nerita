@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, within } from "storybook/test";
 import MarkdownMarkdownStory from "./MarkdownMarkdownStory.svelte";
+
 const meta = {
 	title: "Chat/Markdown",
 	component: MarkdownMarkdownStory,
@@ -16,10 +17,22 @@ export const Preview: Story = {
 		await expect(checkboxes).toHaveLength(2);
 		await expect(checkboxes[0]).toBeChecked();
 		await expect(checkboxes[1]).not.toBeChecked();
-		for (const checkbox of checkboxes) { await expect(checkbox).toBeDisabled(); }
-		await expect(canvas.getByText('<script>alert("実行しない")</script>', { exact: false })).toBeInTheDocument();
+		for (const checkbox of checkboxes) {
+			await expect(checkbox).toBeDisabled();
+		}
+		await expect(
+			canvas.getByText('<script>alert("実行しない")</script>', {
+				exact: false,
+			}),
+		).toBeInTheDocument();
 		await expect(canvas.getByText("コマンド")).not.toHaveAttribute("href");
-		await expect(canvas.getByText("無効なリンク")).not.toHaveAttribute("href");
-		await expect(canvasElement.querySelector(".message-markdown img, .message-markdown script")).toBeNull();
+		await expect(canvas.getByText("無効なリンク")).not.toHaveAttribute(
+			"href",
+		);
+		await expect(
+			canvasElement.querySelector(
+				".message-markdown img, .message-markdown script",
+			),
+		).toBeNull();
 	},
 };

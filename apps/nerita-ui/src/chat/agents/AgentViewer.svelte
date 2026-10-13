@@ -1,5 +1,5 @@
+<!-- 閲覧中の子スレッドを仮想化し、親の下書きと表示の開閉状態から分離する。 -->
 <script lang="ts">
-	// 閲覧中の子スレッドを仮想化し、親の下書きと表示の開閉状態から分離する。
 	import ArrowLeft from "@lucide/svelte/icons/arrow-left";
 	import RefreshCw from "@lucide/svelte/icons/refresh-cw";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
@@ -20,6 +20,7 @@
 		useToolExpansion,
 		provideToolExpansion,
 	} from "../tools/ToolExpansion.svelte";
+
 	let {
 		viewer,
 		state: chatState,

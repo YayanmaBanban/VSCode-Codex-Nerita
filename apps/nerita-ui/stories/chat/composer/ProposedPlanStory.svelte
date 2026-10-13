@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ChatApp from "../StoryChat.svelte";
 	import { createChatStoryBridge } from "../mocks/mockBridge";
+
 	let { mode, reviewer }: { mode?: string; reviewer?: string } = $props();
 	const bridge = $derived(createPlanBridge(mode, reviewer));
 	function createPlanBridge(

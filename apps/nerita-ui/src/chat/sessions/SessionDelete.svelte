@@ -6,6 +6,7 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import type { SessionSummary } from "@nerita/shared/sessionHistory";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+
 	let {
 		session,
 		disabled,

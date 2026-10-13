@@ -1,6 +1,7 @@
+<!-- 狭いパネルでは選択ノードを読める倍率で中央へ表示する。 -->
 <script lang="ts">
-	// 狭いパネルでは選択ノードを読める倍率で中央へ表示する。
 	import { useNodesInitialized, useSvelteFlow } from "@xyflow/svelte";
+
 	let { selected }: { selected: string } = $props();
 	const { fitView } = useSvelteFlow();
 	const initialized = useNodesInitialized();

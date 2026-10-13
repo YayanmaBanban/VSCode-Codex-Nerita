@@ -6,6 +6,7 @@
 	} from "@nerita/shared/valuePredicates";
 	import Field from "./Field.svelte";
 	import { inputStyle } from "./managerFields";
+
 	let {
 		label,
 		value,

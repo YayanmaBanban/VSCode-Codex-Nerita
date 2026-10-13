@@ -4,6 +4,7 @@
 <script lang="ts">
 	import ChatApp from "./StoryChat.svelte";
 	import { createEmptyScrollControl } from "./ScrollFollowData";
+
 	const control = createEmptyScrollControl();
 </script>
 

@@ -12,6 +12,7 @@ export function parseBindingForm(
 	provider: CredentialBinding["provider"]["type"],
 	kind: CredentialBinding["match"]["kind"],
 ) {
+	/** フォームから文字列の項目だけを取得し、ファイル値や未入力は空文字列として扱う。 */
 	const field = (name: string) => {
 		const value = form.get(name);
 		return typeof value === "string" ? value.trim() : "";

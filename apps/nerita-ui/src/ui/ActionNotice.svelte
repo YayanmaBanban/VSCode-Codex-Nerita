@@ -1,5 +1,5 @@
+<!-- 説明と操作ボタンを持つ固定通知の見た目を共有する。 -->
 <script lang="ts">
-	// 説明と操作ボタンを持つ固定通知の見た目を共有する。
 	import { cn } from "cnfast";
 	import Info from "@lucide/svelte/icons/info";
 	import { MediaQuery } from "svelte/reactivity";

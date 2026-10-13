@@ -1,6 +1,8 @@
+<!-- 入力欄の参照を開くコマンドを登録し、参照の種類に応じた要求を Host へ送る。 -->
 <script module lang="ts">
 	import { createCommand, COMMAND_PRIORITY_EDITOR } from "lexical";
 	import type { ComposerTarget } from "@nerita/shared/composerTargets";
+
 	export const OPEN_REFERENCE_COMMAND =
 		createCommand<ComposerTarget>("open-reference");
 </script>
@@ -8,6 +10,7 @@
 <script lang="ts">
 	import type { Bridge } from "@nerita/shared/bridge";
 	import { getLexicalEditor } from "./lexicalContext";
+
 	let { bridge }: { bridge: Bridge | undefined } = $props();
 
 	const editor = getLexicalEditor();

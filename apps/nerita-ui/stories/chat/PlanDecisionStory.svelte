@@ -4,6 +4,7 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import PlanDecisionCard from "../../src/chat/PlanDecisionCard.svelte";
 	import "../../src/chat/chat.css";
+
 	let chatState = $state.raw<ChatState>({
 		...initialState(),
 		connection: "ready",

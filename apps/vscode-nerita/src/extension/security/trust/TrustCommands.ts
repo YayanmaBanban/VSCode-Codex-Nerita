@@ -39,6 +39,7 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 	);
 	badge.command = "nerita.trust.manage";
 	let revision = 0;
+	/** Pi の信頼状態をステータス欄へ反映し、古い非同期取得が新しい表示を上書きしないようにする。 */
 	const refresh = async () => {
 		const current = ++revision;
 		if (configuredBackend() !== "pi") {

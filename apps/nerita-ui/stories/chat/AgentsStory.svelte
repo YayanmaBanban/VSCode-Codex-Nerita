@@ -6,6 +6,7 @@
 	import AgentSourceStory from "./AgentSourceStory.svelte";
 	import { createChatStoryBridge } from "./mocks/mockBridge";
 	import { child, grandchild } from "./agentStoryState";
+
 	let {
 		running = false,
 		display = "viewer",

@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, userEvent, within } from "storybook/test";
 import { path, oldLines, newLines } from "./FileDiffData";
 import FileDiffFileDiffStory from "./FileDiffFileDiffStory.svelte";
+
 oldLines[71] = "/** マスクで内側を抜き、光の軌道を親要素の外周に限定する。 */";
 oldLines[91] = "// 枠線を持つマスク要素で overflow を切ると...";
 newLines[71] =

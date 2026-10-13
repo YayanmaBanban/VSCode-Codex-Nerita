@@ -48,12 +48,14 @@ type VsCodeApi = {
 			| ManagerRequest,
 	) => void;
 };
+/** VS Code が Webview に注入する API の宣言。取得したインスタンスは通信境界内で共有する。 */
 declare function acquireVsCodeApi(): VsCodeApi;
 import {
 	credentialReplySchema,
 	type CredentialBridge,
 	type CredentialRequest,
 } from "@nerita/shared/credentials";
+
 let api: VsCodeApi | undefined;
 
 /** 資格情報管理では秘密値を含まない専用契約で通信する。 */
@@ -121,6 +123,7 @@ function subscribeMessages<T>(
 	parse: (value: unknown) => T | undefined,
 	listener: (message: T) => void,
 ) {
+	/** 受信値を検証し、正しい Host メッセージだけを購読先へ通知する。 */
 	const receive = (event: MessageEvent<unknown>) => {
 		const message = parse(event.data);
 		if (message !== undefined) {

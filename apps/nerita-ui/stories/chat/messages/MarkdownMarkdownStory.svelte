@@ -7,6 +7,7 @@
 	import ToolCard from "../../../src/chat/tools/ToolCard.svelte";
 	import "../../../src/chat/chat.css";
 	import { markdown } from "./MarkdownData";
+
 	let streaming = $state.raw(false);
 	function setStreaming(
 		value:

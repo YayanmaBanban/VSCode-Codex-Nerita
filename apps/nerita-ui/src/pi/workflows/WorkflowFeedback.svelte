@@ -1,3 +1,4 @@
+<!-- ワークフローの実行状態と操作結果を表示し、生成スクリプトを確認できるようにする。 -->
 <script lang="ts">
 	import {
 		isNonEmptyString,
@@ -7,9 +8,11 @@
 
 	import { type useWorkflow } from "./useWorkflow.svelte";
 
+	/** ワークフロー編集の状態と操作。利用側は編集用の購読と実行の寿命を画面の破棄に合わせて管理する。 */
 	export type WorkflowEditorState = ReturnType<typeof useWorkflow>;
 	let { editor }: { editor: WorkflowEditorState } = $props();
 	let showScript = $state(false);
+	/** 生成スクリプトの表示状態を、直前の開閉状態に基づいて更新する。 */
 	const setShowScript = (change: (value: boolean) => boolean) => {
 		showScript = change(showScript);
 	};

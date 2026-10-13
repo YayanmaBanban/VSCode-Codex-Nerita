@@ -2,6 +2,7 @@
 <script lang="ts">
 	import CommandOutput from "./CommandOutput.svelte";
 	import { toolOutputClass } from "./toolStyles";
+
 	let {
 		value,
 		scrollable = false,

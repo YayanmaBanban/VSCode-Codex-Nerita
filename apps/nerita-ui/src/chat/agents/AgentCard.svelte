@@ -1,5 +1,5 @@
+<!-- エージェントの状態と会話への入口をキーボードで操作できるカードとして表示する。 -->
 <script lang="ts">
-	// エージェントの状態と会話への入口をキーボードで操作できるカードとして表示する。
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import type {
 		AgentStatus,
@@ -9,6 +9,7 @@
 	import type { StatusIndicatorState } from "../../ui/statusIndicatorModel";
 	import { agentName } from "./agentName";
 	import AgentIcon from "./AgentIcon.svelte";
+
 	let {
 		agent,
 		onOpen,

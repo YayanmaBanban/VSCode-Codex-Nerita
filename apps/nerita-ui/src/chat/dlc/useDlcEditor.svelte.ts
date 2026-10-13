@@ -1,9 +1,10 @@
-import { untrack } from "svelte";
 // 展開位置だけを保存し、UI の破棄によって実行中の Run を変更しない。
+import { untrack } from "svelte";
 
 import type { Bridge } from "@nerita/shared/bridge";
 import type { DlcEditorState } from "@nerita/shared/dlc/contracts";
 
+/** DLC の展開位置を購読する。Svelte の寿命管理内で呼び出し、接続を交換する場合は取得関数を渡す。 */
 export function useDlcEditor(bridge: Bridge | (() => Bridge)) {
 	const getBridge = typeof bridge === "function" ? bridge : () => bridge;
 	let state = $state.raw<DlcEditorState>({ expanded: {} });

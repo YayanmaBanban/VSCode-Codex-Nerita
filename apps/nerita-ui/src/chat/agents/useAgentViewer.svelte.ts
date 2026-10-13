@@ -10,6 +10,7 @@ import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { AgentViewPolling } from "./agentViewPolling";
 import { useAgentStop } from "./useAgentStop.svelte";
 
+/** 子スレッドの閲覧状態を保持する。Svelte の寿命管理内で呼び出し、会話 ID と接続は最新値を参照できるようにする。 */
 export function useAgentViewer(
 	bridge: Bridge | (() => Bridge),
 	getSessionId: () => string | null,

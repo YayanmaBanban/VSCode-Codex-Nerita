@@ -3,6 +3,7 @@
 	import Columns2 from "@lucide/svelte/icons/columns-2";
 	import type { SidebarLocation } from "@nerita/shared/sidebar";
 	import SelectionSubmenu from "./SelectionSubmenu.svelte";
+
 	let {
 		location,
 		onSelect,

@@ -1,6 +1,5 @@
+<!-- コマンドに含まれる文字列の条件を入力し、対象ルールの更新を親へ伝える。 -->
 <script lang="ts">
-	// コマンドに含まれる文字列の条件を入力し、対象ルールの更新を親へ伝える。
-
 	import { type GuardrailsConfig } from "@nerita/shared/guardrails/config";
 
 	import { inputStyle } from "./GuardrailsRulesParts";
