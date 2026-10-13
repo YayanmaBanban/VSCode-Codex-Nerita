@@ -1,5 +1,6 @@
 <!-- コンテキストの選択階層をパンくずで示し、カテゴリーや親ディレクトリへ戻る操作を提供する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import type { WorkspacePath } from "@nerita/shared/workspacePaths";
 
@@ -55,8 +56,11 @@
 						type="button"
 						onmousedown={(event) => event.preventDefault()}
 						onclick={crumb.onClick}
-						class="min-w-0 rounded border-0 bg-transparent px-1 py-2 text-left break-all text-muted hover:bg-settings-hover hover:text-input-text focus-visible:outline-2 focus-visible:outline-focus"
-						>{crumb.label}</button
+						class={cn(
+							"min-w-0 rounded border-0 bg-transparent px-1 py-2 text-left break-all text-muted",
+							"hover:bg-settings-hover hover:text-input-text",
+							"focus-visible:outline-2 focus-visible:outline-focus",
+						)}>{crumb.label}</button
 					>{/if}
 			</li>{/each}
 	</ol>

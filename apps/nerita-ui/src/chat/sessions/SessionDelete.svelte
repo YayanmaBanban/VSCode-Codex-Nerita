@@ -1,5 +1,6 @@
 <!-- 永久削除の前に取り消せないことを説明し、確認後だけ要求を送る。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import { AlertDialog } from "bits-ui";
 	import Trash from "@lucide/svelte/icons/trash";
 	import { nonEmptyString } from "@nerita/shared/valuePredicates";
@@ -36,15 +37,23 @@
 				{...props}
 				{disabled}
 				aria-label={`${title}を削除`}
-				class="inline-flex size-[28px] shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-red-500 hover:bg-red-500/10 focus-visible:outline-offset-[-2px]"
-				><Trash size={14} aria-hidden="true" /></AlertDialog.Trigger
+				class={cn(
+					"inline-flex size-[28px] shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent",
+					"p-0 text-red-500",
+					"hover:bg-red-500/10",
+					"focus-visible:outline-offset-[-2px]",
+				)}><Trash size={14} aria-hidden="true" /></AlertDialog.Trigger
 			>
 		{/snippet}</SettingsTooltip
 	>
 	<AlertDialog.Portal>
 		<AlertDialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
 		<AlertDialog.Content
-			class="fixed top-1/2 left-1/2 z-50 w-[min(360px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-[10px] border border-solid border-menu-border bg-menu p-[20px] text-menu-text shadow-[0_8px_32px_#0004]"
+			class={cn(
+				"fixed top-1/2 left-1/2 z-50 w-[min(360px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2",
+				"rounded-[10px] border border-solid border-menu-border bg-menu p-[20px] text-menu-text",
+				"shadow-[0_8px_32px_#0004]",
+			)}
 			onkeydown={dialogKeydown}
 		>
 			<AlertDialog.Title class="m-0 text-[14px] font-semibold"

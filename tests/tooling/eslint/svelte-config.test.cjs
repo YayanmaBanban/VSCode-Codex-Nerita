@@ -8,6 +8,34 @@ const eslint = new ESLint({ cwd: repoRoot });
 const filePath = "apps/nerita-ui/src/chat/ChatWorkspace.svelte";
 const prefix =
 	"let { a, b, c, d }: { a: boolean; b: boolean; c: boolean; d: boolean } = $props();";
+
+test("製品 Svelte の長い class を cn() へ分割するようエラーにする", async () => {
+	const code = `<!-- 長い class の直接指定を検証する。 -->\n<div class="${"a".repeat(121)}" />`;
+	const [result] = await eslint.lintText(code, { filePath });
+	assert.equal(
+		result.messages.some((message) => message.fatal),
+		false,
+	);
+	const findings = result.messages.filter(
+		(message) => message.ruleId === "nerita/require-cn-for-long-class",
+	);
+	assert.equal(findings.length, 1);
+	assert.equal(findings[0].severity, 2);
+});
+
+test("長い class のルールをストーリーや Host へ適用しない", async () => {
+	for (const file of [
+		"apps/nerita-ui/stories/chat/StoryChat.svelte",
+		"apps/vscode-nerita/src/extension/extension.ts",
+	]) {
+		const config = await eslint.calculateConfigForFile(file);
+		assert.equal(
+			config.rules["nerita/require-cn-for-long-class"],
+			undefined,
+		);
+	}
+});
+
 const examples = [
 	{
 		rule: "no-complex-boolean-expression",

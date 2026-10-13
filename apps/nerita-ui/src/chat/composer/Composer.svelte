@@ -120,7 +120,10 @@
 	}}
 >
 	{#if drop.active}<div
-			class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[10px] bg-input p-3 text-center text-input-text"
+			class={cn(
+				"pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[10px] bg-input",
+				"p-3 text-center text-input-text",
+			)}
 			role="status"
 		>
 			ドロップしてファイルを添付

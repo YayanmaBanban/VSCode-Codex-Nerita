@@ -1,5 +1,6 @@
 <!-- コンテキストの候補一覧に最近使った参照と階層移動を加え、共通の補完メニューへ渡す。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import type { CompletionMenuProps } from "./completionMenuProps";
 	import type { WorkspacePath } from "@nerita/shared/workspacePaths";
 	import type { CompletionItem } from "./completionItems";
@@ -37,7 +38,12 @@
 								type="button"
 								onmousedown={(event) => event.preventDefault()}
 								onclick={() => props.onPick(item)}
-								class="inline-flex max-w-full items-center gap-1 rounded border border-solid border-panel-border bg-transparent px-2 py-1 text-[12px] text-input-text hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus"
+								class={cn(
+									"inline-flex max-w-full items-center gap-1 rounded border border-solid border-panel-border",
+									"bg-transparent px-2 py-1 text-[12px] text-input-text",
+									"hover:bg-settings-hover",
+									"focus-visible:outline-2 focus-visible:outline-focus",
+								)}
 								>{#if Icon}<Icon
 										size={14}
 										class="shrink-0"

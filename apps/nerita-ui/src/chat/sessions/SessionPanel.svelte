@@ -1,5 +1,6 @@
 <!-- 作業フォルダと履歴を右ペインに表示し、閉じる途中の操作を防ぐ。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import { onMount } from "svelte";
 	import { prefersReducedMotion } from "svelte/motion";
 	import { cubicBezier } from "motion";
@@ -85,11 +86,19 @@
 	aria-hidden={exiting}
 	id="session-panel"
 	aria-label="セッション一覧"
-	class="absolute inset-y-0 right-0 z-20 w-[350px] max-w-full shrink-0 overflow-hidden text-menu-text drop-shadow-[-8px_0_12px_#0002] [@media(min-width:760px)]:static [@media(min-width:760px)]:drop-shadow-none"
+	class={cn(
+		"absolute inset-y-0 right-0 z-20 w-[350px] max-w-full shrink-0 overflow-hidden text-menu-text",
+		"drop-shadow-[-8px_0_12px_#0002]",
+		"[@media(min-width:760px)]:static [@media(min-width:760px)]:drop-shadow-none",
+	)}
 	onkeydown={keydown}
 >
 	<div
-		class="flex h-full w-[350px] max-w-[var(--session-panel-width,100%)] [transform:translateX(var(--session-panel-offset,0%))] flex-col border-0 border-l border-solid border-panel-border bg-menu"
+		class={cn(
+			"flex h-full w-[350px] max-w-[var(--session-panel-width,100%)]",
+			"[transform:translateX(var(--session-panel-offset,0%))]",
+			"flex-col border-0 border-l border-solid border-panel-border bg-menu",
+		)}
 	>
 		<SessionPanelHeader state={chatState} bind:close {onClose} />
 		{#if capabilities.unarchive === true}
@@ -100,7 +109,11 @@
 			>
 				{#each [false, true] as archived (archived)}<button
 						type="button"
-						class="inline-flex items-center gap-[6px] text-[12px] aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4"
+						class={cn(
+							"inline-flex items-center gap-[6px] text-[12px]",
+							"aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline",
+							"aria-pressed:underline-offset-4",
+						)}
 						aria-pressed={chatState.sessionsArchived === archived}
 						disabled={chatState.sessionPending ||
 							chatState.connection !== "ready"}

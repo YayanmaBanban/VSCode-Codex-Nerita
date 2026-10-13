@@ -139,10 +139,19 @@
 												class="peer sr-only"
 											/><span
 												aria-hidden="true"
-												class="size-5 rounded-full border border-solid border-input-border bg-transparent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus peer-disabled:opacity-50"
+												class={cn(
+													"size-5 rounded-full border border-solid border-input-border bg-transparent",
+													"peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus",
+													"peer-disabled:opacity-50",
+												)}
 											></span><span
 												aria-hidden="true"
-												class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-emerald-700 text-white opacity-0 transition-opacity duration-160 ease-out peer-checked:opacity-100 motion-reduce:transition-none"
+												class={cn(
+													"pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-emerald-700",
+													"text-white opacity-0 transition-opacity duration-160 ease-out",
+													"peer-checked:opacity-100",
+													"motion-reduce:transition-none",
+												)}
 												><Check
 													size={14}
 													strokeWidth={3}

@@ -72,7 +72,11 @@
 		aria-expanded={open}
 		aria-controls={id}
 		onclick={() => (open = !open)}
-		class="flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-focus"
+		class={cn(
+			"flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm font-semibold",
+			"text-foreground",
+			"focus-visible:outline-2 focus-visible:outline-focus",
+		)}
 		><ChevronRight
 			size={14}
 			aria-hidden="true"

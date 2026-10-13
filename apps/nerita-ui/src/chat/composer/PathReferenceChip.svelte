@@ -70,7 +70,11 @@
 		type="button"
 		disabled={!editable}
 		aria-label={referenceActionLabel(path)}
-		class="inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus"
+		class={cn(
+			"inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px]",
+			"hover:bg-settings-hover",
+			"focus-visible:outline-2 focus-visible:outline-focus",
+		)}
 		onmousedown={keepSelection}
 		onkeydown={stopKey}
 		onkeyup={stopKey}
@@ -80,7 +84,11 @@
 		type="button"
 		disabled={!editable}
 		aria-label={`${path.name} の参照を取り外す`}
-		class="inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px] hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus"
+		class={cn(
+			"inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px]",
+			"hover:bg-settings-hover",
+			"focus-visible:outline-2 focus-visible:outline-focus",
+		)}
 		onmousedown={keepSelection}
 		onkeydown={stopKey}
 		onkeyup={stopKey}

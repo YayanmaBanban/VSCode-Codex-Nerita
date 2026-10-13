@@ -95,7 +95,14 @@
 						<Select.Item
 							value={choice.value}
 							label={choice.name}
-							class="config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px] px-[10px] py-[8px] text-[12px] leading-[1.5] [overflow-wrap:anywhere] [outline:none] hover:bg-menu-hover data-highlighted:bg-menu-hover"
+							class={cn(
+								"config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px]",
+								"px-[10px] py-[8px] text-[12px] leading-[1.5]",
+								"[overflow-wrap:anywhere]",
+								"[outline:none]",
+								"hover:bg-menu-hover",
+								"data-highlighted:bg-menu-hover",
+							)}
 							title={choice.icon !== undefined
 								? undefined
 								: choice.description}

@@ -1,5 +1,6 @@
 <!-- 入力欄の上に送信結果と残り表示時間を示し、閉じる操作を提供する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import X from "@lucide/svelte/icons/x";
 	import { prefersReducedMotion } from "svelte/motion";
 
@@ -52,8 +53,11 @@
 			type="button"
 			aria-label="通知を閉じる"
 			onclick={onClose}
-			class="flex h-5 w-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0 text-muted hover:text-input-text focus-visible:outline-2 focus-visible:outline-focus"
-			><X size={14} aria-hidden="true" /></button
+			class={cn(
+				"flex h-5 w-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0 text-muted",
+				"hover:text-input-text",
+				"focus-visible:outline-2 focus-visible:outline-focus",
+			)}><X size={14} aria-hidden="true" /></button
 		>
 	</div>
 	<div

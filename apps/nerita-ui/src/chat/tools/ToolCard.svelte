@@ -1,5 +1,6 @@
 <!-- ツールの状態・停止操作・専用本文を表示し、手動の開閉を会話側に残す。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import Square from "@lucide/svelte/icons/square";
 	import X from "@lucide/svelte/icons/x";
 	import ToolHeadingContent from "./ToolHeadingContent.svelte";
@@ -161,7 +162,14 @@
 									expansion.setOpen(!expansion.open),
 							})}
 							type="button"
-							class="tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent p-[10px] text-left hover:bg-menu-hover focus-visible:outline-offset-[-3px] data-highlighted:bg-menu-hover [&_svg]:shrink-0"
+							class={cn(
+								"tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent",
+								"p-[10px] text-left",
+								"hover:bg-menu-hover",
+								"focus-visible:outline-offset-[-3px]",
+								"data-highlighted:bg-menu-hover",
+								"[&_svg]:shrink-0",
+							)}
 							aria-expanded={expansion.open}
 							aria-controls={bodyId}
 							><ToolHeadingContent
@@ -176,7 +184,12 @@
 						>
 					{:else}<div
 							{...props}
-							class="tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent p-[10px] text-left hover:bg-menu-hover [&_svg]:shrink-0"
+							class={cn(
+								"tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent",
+								"p-[10px] text-left",
+								"hover:bg-menu-hover",
+								"[&_svg]:shrink-0",
+							)}
 						>
 							<ToolHeadingContent
 								{tool}
@@ -199,7 +212,11 @@
 					>{#snippet children({ props })}<button
 							{...mergeProps(props, { onclick: onStop })}
 							type="button"
-							class="tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center rounded-[5px] border border-solid border-tool-error/30 bg-tool-error/14 p-0 text-tool-error enabled:hover:bg-tool-error/12"
+							class={cn(
+								"tool-stop absolute right-[30px] inline-flex size-[26px] items-center justify-center rounded-[5px]",
+								"border border-solid border-tool-error/30 bg-tool-error/14 p-0 text-tool-error",
+								"enabled:hover:bg-tool-error/12",
+							)}
 							aria-label={`${tool.title} を停止`}
 							disabled={!onStop}
 							><Square

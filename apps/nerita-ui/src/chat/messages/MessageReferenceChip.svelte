@@ -1,5 +1,6 @@
 <!-- 送信済みの構造化参照を、削除操作のないチップとして表示する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import type { ComposerTarget } from "@nerita/shared/composerTargets";
 	import { pathText } from "@nerita/shared/composerReferences";
 	import type { UiMessage } from "@nerita/shared/messages";
@@ -46,7 +47,13 @@
 			type="button"
 			aria-label={referenceActionLabel(path)}
 			disabled={!send}
-			class="message-reference inline-flex max-w-full items-center gap-[5px] rounded-[5px] border border-solid border-panel-border bg-input px-[5px] py-[4px] align-middle text-[12px] leading-normal hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus [&_svg]:shrink-0"
+			class={cn(
+				"message-reference inline-flex max-w-full items-center gap-[5px] rounded-[5px] border border-solid",
+				"border-panel-border bg-input px-[5px] py-[4px] align-middle text-[12px] leading-normal",
+				"hover:bg-settings-hover",
+				"focus-visible:outline-2 focus-visible:outline-focus",
+				"[&_svg]:shrink-0",
+			)}
 		>
 			<ReferenceChipContent {path} />
 		</button>

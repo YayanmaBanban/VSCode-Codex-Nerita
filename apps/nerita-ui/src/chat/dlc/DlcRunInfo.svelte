@@ -1,5 +1,6 @@
 <!-- 閲覧中の Run と入力の参照先を示し、停止要求をその Run だけに限定する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import type { DlcView } from "@nerita/shared/dlc/contracts";
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
@@ -103,7 +104,11 @@
 			>実行履歴
 			<select
 				aria-label="DLC の実行履歴"
-				class="min-w-0 flex-1 rounded border border-solid border-input-border bg-input px-2 py-1 text-[11px] text-input-text focus-visible:outline-1 focus-visible:outline-focus"
+				class={cn(
+					"min-w-0 flex-1 rounded border border-solid border-input-border bg-input px-2 py-1 text-[11px]",
+					"text-input-text",
+					"focus-visible:outline-1 focus-visible:outline-focus",
+				)}
 				value={view.execution?.attemptId ?? ""}
 				onchange={(event) => {
 					if (view.selected && event.currentTarget.value !== "") {

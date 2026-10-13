@@ -1,7 +1,8 @@
 // 差分の変更数・行番号・対象パスを入力形式によらず揃える。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-import type { structuredPatch } from "diff";
+import { structuredPatch, parsePatch } from "diff";
 import type { UiMessage } from "@nerita/shared/messages";
+import type { ToolContent } from "@nerita/shared/toolContent";
 
 /** 文脈行を含む1つの変更ブロック。 */
 export type DiffHunk = ReturnType<typeof structuredPatch>["hunks"][number];
@@ -18,6 +19,47 @@ export function changeCount(lines: string[]) {
 		added: lines.filter((line) => line.startsWith("+")).length,
 		removed: lines.filter((line) => line.startsWith("-")).length,
 	};
+}
+
+/** 見出しと本文で共通の処理を使い、計算時間の超過や解析できない差分を `undefined` で返す。 */
+export function contentHunks(content: ToolContent): DiffHunk[] | undefined {
+	if (content.type === "diff") {
+		return structuredPatch(
+			content.path,
+			content.path,
+			content.oldText ?? "",
+			content.newText,
+			undefined,
+			undefined,
+			{ context: 3, timeout: 100 },
+		)?.hunks;
+	}
+	if (content.type !== "unifiedDiff") {
+		return undefined;
+	}
+	try {
+		const hunks = parsePatch(content.diff).flatMap((patch) => patch.hunks);
+		return hunks.length > 0 ? hunks : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+/** ツール全体の変更件数を、表示できる差分のハンクだけから集計する。 */
+export function toolChangeCount(content: ToolContent[] | undefined) {
+	let total: ReturnType<typeof changeCount> | undefined;
+	for (const value of content ?? []) {
+		const hunks = contentHunks(value);
+		if (!hunks) {
+			continue;
+		}
+		const count = changeCount(hunks.flatMap((hunk) => hunk.lines));
+		total = {
+			added: (total?.added ?? 0) + count.added,
+			removed: (total?.removed ?? 0) + count.removed,
+		};
+	}
+	return total;
 }
 
 /** 変更前後で存在する側の範囲と、表示に使う1つの行番号を求める。 */
@@ -53,7 +95,7 @@ export function hunkPresentation(hunk: DiffHunk) {
 	};
 	const numbered = hunk.lines.map(numberDiffLine);
 	return {
-		range: `L${start}–${end}`,
+		range: `${start}:${end}`,
 		digits: String(end - 1).length,
 		numbered,
 	};

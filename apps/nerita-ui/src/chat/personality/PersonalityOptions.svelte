@@ -1,5 +1,6 @@
 <!-- チャットの表示先・バックエンド・認証・性格設定の操作をメニューにまとめ、要求中の状態を管理する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import { Dialog, DropdownMenu } from "bits-ui";
 	import Ellipsis from "@lucide/svelte/icons/ellipsis";
 	import FileUser from "@lucide/svelte/icons/file-user";
@@ -98,7 +99,10 @@
 			align="end"
 			sideOffset={6}
 			collisionPadding={8}
-			class="z-30 min-w-[180px] rounded-[6px] border border-solid border-menu-border bg-menu p-[5px] text-menu-text shadow-[0_6px_24px_#0003]"
+			class={cn(
+				"z-30 min-w-[180px] rounded-[6px] border border-solid border-menu-border bg-menu p-[5px]",
+				"text-menu-text shadow-[0_6px_24px_#0003]",
+			)}
 		>
 			<SidebarMenu location={sidebarLocation} onSelect={selectSidebar} />
 			<BackendMenu {backend} onSelect={selectBackend} />
@@ -154,7 +158,10 @@
 				event.preventDefault();
 				trigger?.focus();
 			}}
-			class="fixed inset-y-[12px] right-[12px] z-50 flex w-[min(460px,calc(100vw-24px))] flex-col rounded-[8px] border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003] outline-none"
+			class={cn(
+				"fixed inset-y-[12px] right-[12px] z-50 flex w-[min(460px,calc(100vw-24px))] flex-col rounded-[8px]",
+				"border border-solid border-menu-border bg-menu text-menu-text shadow-[0_6px_24px_#0003] outline-none",
+			)}
 		>
 			<div class="flex items-center justify-between px-[16px] py-[12px]">
 				<Dialog.Title class="m-0 text-[14px] font-medium"

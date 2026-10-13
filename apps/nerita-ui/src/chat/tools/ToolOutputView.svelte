@@ -1,5 +1,6 @@
 <!-- 出力プレビューと詳細取得の開閉を表示し、閉じると範囲本文を解放する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import type { ToolOutputPreview } from "@nerita/shared/toolOutput";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
@@ -26,7 +27,12 @@
 		{#if canExpand && bridge && isNonEmptyString(output.outputRef)}
 			<button
 				type="button"
-				class="mt-[8px] inline-flex items-center gap-[6px] rounded-[5px] border-0 bg-transparent px-[6px] py-[4px] text-[12px] text-muted hover:bg-settings-hover focus-visible:outline-1 focus-visible:outline-settings-focus"
+				class={cn(
+					"mt-[8px] inline-flex items-center gap-[6px] rounded-[5px] border-0 bg-transparent px-[6px] py-[4px]",
+					"text-[12px] text-muted",
+					"hover:bg-settings-hover",
+					"focus-visible:outline-1 focus-visible:outline-settings-focus",
+				)}
 				onclick={() => (expanded = !expanded)}
 				aria-expanded={expanded}
 				aria-controls={rangeId}

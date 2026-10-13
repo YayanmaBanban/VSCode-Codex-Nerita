@@ -1,5 +1,6 @@
 <!-- 会話のコンテキスト使用率を円形ゲージで表示し、使用量の詳細と動きを減らす設定を反映する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import { untrack } from "svelte";
 	import { Tween } from "svelte/motion";
 	import { cubicOut } from "svelte/easing";
@@ -43,7 +44,11 @@
 		<button
 			{...props}
 			type="button"
-			class="context-usage inline-flex flex-[0_0_24px] border-0 bg-transparent p-0 text-muted data-[warning=true]:text-warning [&_circle]:fill-none [&_circle]:stroke-current [&_circle]:stroke-2"
+			class={cn(
+				"context-usage inline-flex flex-[0_0_24px] border-0 bg-transparent p-0 text-muted",
+				"data-[warning=true]:text-warning",
+				"[&_circle]:fill-none [&_circle]:stroke-current [&_circle]:stroke-2",
+			)}
 			role="progressbar"
 			aria-label="コンテキスト使用量"
 			aria-valuemin={0}

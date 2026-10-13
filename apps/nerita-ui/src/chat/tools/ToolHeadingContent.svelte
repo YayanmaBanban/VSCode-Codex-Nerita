@@ -5,6 +5,8 @@
 	import Check from "@lucide/svelte/icons/check";
 	import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 	import type { ToolSummary } from "@nerita/shared/chatState";
+	import { toolChangeCount } from "./diffPresentation";
+	import ChangeCount from "./ChangeCount.svelte";
 
 	let {
 		tool,
@@ -29,10 +31,14 @@
 		unfinished: "未完了",
 	};
 	const inactiveLabel = $derived(inactiveLabels[status] ?? "");
+	const changes = $derived(toolChangeCount(tool.content));
 </script>
 
 <Icon size={16} aria-hidden="true" /><span
-	class="tool-title min-w-0 flex-1 truncate">{tool.title}</span
+	class="tool-title flex min-w-0 flex-1 items-center gap-[8px]"
+	><span class="truncate">{tool.title}</span>{#if changes}<ChangeCount
+			{...changes}
+		/>{/if}</span
 >
 {#if progress && active}<LoaderCircle
 		size={16}

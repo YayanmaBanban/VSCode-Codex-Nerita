@@ -1,5 +1,6 @@
 <!-- Intent の状態を表示し、作成・選択・保留の解消を Host へ要求する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import Plus from "@lucide/svelte/icons/plus";
 	import RotateCw from "@lucide/svelte/icons/rotate-cw";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
@@ -11,7 +12,11 @@
 
 <aside
 	aria-label="Intent 一覧"
-	class="flex min-h-0 flex-col gap-3 overflow-auto border-0 border-r border-solid border-panel-border bg-menu/30 p-3 @max-[600px]:max-h-[32vh] @max-[600px]:border-r-0 @max-[600px]:border-b"
+	class={cn(
+		"flex min-h-0 flex-col gap-3 overflow-auto border-0 border-r border-solid border-panel-border",
+		"bg-menu/30 p-3",
+		"@max-[600px]:max-h-[32vh] @max-[600px]:border-r-0 @max-[600px]:border-b",
+	)}
 >
 	<div class="flex items-center gap-1">
 		<SettingsTooltip content="Intentの作成"
@@ -19,7 +24,10 @@
 					{...props}
 					type="button"
 					aria-label="Intentの作成"
-					class="inline-flex size-7 items-center justify-center rounded-md border-0 bg-transparent p-0 text-inherit hover:bg-settings-hover"
+					class={cn(
+						"inline-flex size-7 items-center justify-center rounded-md border-0 bg-transparent p-0 text-inherit",
+						"hover:bg-settings-hover",
+					)}
 					disabled={ui.creation.pending}
 					onclick={() => ui.creation.setCreating(true)}
 					><Plus size={16} aria-hidden="true" /></button
@@ -30,7 +38,10 @@
 					{...props}
 					type="button"
 					aria-label="再読み込み"
-					class="inline-flex size-7 items-center justify-center rounded-md border-0 bg-transparent p-0 text-inherit hover:bg-settings-hover"
+					class={cn(
+						"inline-flex size-7 items-center justify-center rounded-md border-0 bg-transparent p-0 text-inherit",
+						"hover:bg-settings-hover",
+					)}
 					onclick={() =>
 						ui.send({
 							type: "dlc/read",

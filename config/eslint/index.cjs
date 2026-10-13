@@ -15,5 +15,6 @@ module.exports = {
 		"require-file-comment": require("./require-file-comment.cjs"),
 		"require-declaration-comment": require("./require-declaration-comment.cjs"),
 		"require-effect-reason": require("./require-effect-reason.cjs"),
+		"require-cn-for-long-class": require("./require-cn-for-long-class.cjs"),
 	},
 };

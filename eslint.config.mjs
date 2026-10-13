@@ -401,6 +401,11 @@ export default defineConfig([
 	},
 	...svelte.configs.recommended,
 	{
+		// 製品 UI の長い class は cn() の複数引数へ分割する。
+		files: ["apps/nerita-ui/src/**/*.svelte"],
+		rules: { "nerita/require-cn-for-long-class": "error" },
+	},
+	{
 		// 製品とストーリーの Svelte では、副作用を登録する理由を明示する。
 		files: [
 			"apps/nerita-ui/{src,stories}/**/*.{svelte,svelte.ts,svelte.js}",

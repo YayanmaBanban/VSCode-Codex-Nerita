@@ -108,7 +108,11 @@
 				id={helpId}
 				role="tooltip"
 				hidden={!showHelp}
-				class="absolute bottom-full left-0 z-30 mb-2 w-max max-w-full rounded-[6px] border border-solid border-tooltip-border bg-tooltip px-3 py-2 text-[12px] leading-[1.5] text-tooltip-text shadow-[0_4px_16px_#0003]"
+				class={cn(
+					"absolute bottom-full left-0 z-30 mb-2 w-max max-w-full rounded-[6px] border border-solid",
+					"border-tooltip-border bg-tooltip px-3 py-2 text-[12px] leading-[1.5] text-tooltip-text",
+					"shadow-[0_4px_16px_#0003]",
+				)}
 				>Ctrl+Enter で送信・Enter / Shift+Enter で改行・Shift +
 				ドロップでファイル添付</span
 			>

@@ -1,5 +1,6 @@
 <!-- 性格設定の指示を Lexical の入力欄で編集し、本文の変更を親へ通知する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import {
 		$getRoot as getRoot,
 		$createParagraphNode as createParagraphNode,
@@ -47,7 +48,11 @@
 			aria-label={label}
 			aria-describedby={helpId}
 			aria-readonly={disabled}
-			class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-[6px] border border-solid border-input-border bg-input p-[10px] leading-[1.7] text-input-text focus-visible:outline-2 focus-visible:outline-focus"
+			class={cn(
+				"max-h-[240px] min-h-[120px] overflow-y-auto rounded-[6px] border border-solid border-input-border",
+				"bg-input p-[10px] leading-[1.7] text-input-text",
+				"focus-visible:outline-2 focus-visible:outline-focus",
+			)}
 		/>
 		<InstructionChanges {onChange} />
 	</LexicalComposer>

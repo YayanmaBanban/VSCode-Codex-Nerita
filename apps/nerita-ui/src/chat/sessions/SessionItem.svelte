@@ -67,7 +67,10 @@
 						}),
 				})}
 				type="button"
-				class="block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px] pb-[5px] text-left focus-visible:outline-offset-[-2px]"
+				class={cn(
+					"block w-full rounded-[6px] border-0 bg-transparent px-[12px] pt-[12px] pb-[5px] text-left",
+					"focus-visible:outline-offset-[-2px]",
+				)}
 				disabled={disabled || !capabilities.load || session.archived}
 				aria-current={selected ? "true" : undefined}
 				aria-label={`${title}を開く`}

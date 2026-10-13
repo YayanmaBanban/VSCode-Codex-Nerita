@@ -163,7 +163,10 @@
 			sideOffset={8}
 			collisionPadding={12}
 			aria-label={option.name}
-			class="z-20 w-[min(256px,calc(100vw-24px))] rounded-[18px] border border-solid border-menu-border bg-menu p-[12px] text-menu-text shadow-[0_6px_24px_#0003]"
+			class={cn(
+				"z-20 w-[min(256px,calc(100vw-24px))] rounded-[18px] border border-solid border-menu-border bg-menu",
+				"p-[12px] text-menu-text shadow-[0_6px_24px_#0003]",
+			)}
 		>
 			<div
 				class="relative flex min-h-[36px] items-center justify-center pb-[8px]"

@@ -1,5 +1,6 @@
 <!-- エージェントの状態と会話への入口をキーボードで操作できるカードとして表示する。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import type {
 		AgentStatus,
@@ -49,7 +50,12 @@
 
 <button
 	type="button"
-	class="agent-card mb-3 flex w-full min-w-0 items-center gap-3 rounded-[9px] border border-solid border-message-border bg-transparent px-[14px] py-3 text-left text-inherit hover:bg-message-user focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+	class={cn(
+		"agent-card mb-3 flex w-full min-w-0 items-center gap-3 rounded-[9px] border border-solid",
+		"border-message-border bg-transparent px-[14px] py-3 text-left text-inherit",
+		"hover:bg-message-user",
+		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+	)}
 	onclick={() => onOpen(agent)}
 	aria-label={`${agentName(agent)}の会話を表示 · ${labels[agent.status]}`}
 >

@@ -1,5 +1,6 @@
 <!-- 空の名前を送信せず、Escape では名前の入力だけを閉じる。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import { onMount, untrack } from "svelte";
 	import type { UiMessage } from "@nerita/shared/messages";
 
@@ -50,7 +51,11 @@
 		bind:this={input}
 		onkeydown={handleKey}
 		aria-label="新しいセッション名"
-		class="box-border w-full min-w-0 rounded-[4px] border border-solid border-input-border bg-input px-[8px] py-[6px] text-[12px] text-input-text focus-visible:outline-2 focus-visible:outline-focus"
+		class={cn(
+			"box-border w-full min-w-0 rounded-[4px] border border-solid border-input-border bg-input px-[8px]",
+			"py-[6px] text-[12px] text-input-text",
+			"focus-visible:outline-2 focus-visible:outline-focus",
+		)}
 		bind:value={name}
 		maxlength={200}
 		{disabled}

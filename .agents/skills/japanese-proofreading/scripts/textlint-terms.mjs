@@ -192,16 +192,24 @@ export function findEnglishTermIssues(
 
 	for (const item of items) {
 		const lines = item.text.split(/\r?\n/);
+		const sourceString =
+			item.kind === "string" || item.kind === "template-text";
 		// 抽出時に残したエスケープを語に含めず、元の本文と行番号は維持する。
 		// バックスラッシュの対も消費し、\\n の n は改行と誤認しない。
-		const protectedText =
-			item.kind === "string" || item.kind === "template-text"
-				? item.text.replace(
-						/\\(?:u\{[\dA-Fa-f]+\}|u[\dA-Fa-f]{4}|x[\dA-Fa-f]{2}|[\\nrtbfv0])/g,
-						(value) => " ".repeat(value.length),
-					)
-				: item.text;
-		const maskedLines = maskHtmlComments(protectedText).split(/\r?\n/);
+		const protectedText = sourceString
+			? item.text.replace(
+					/\\(?:u\{[\dA-Fa-f]+\}|u[\dA-Fa-f]{4}|x[\dA-Fa-f]{2}|[\\nrtbfv0])/g,
+					(value) => " ".repeat(value.length),
+				)
+			: item.text;
+		// 文字列内の置換名だけを保護し、同じ識別子が通常の文章に現れた場合は検査する。
+		const placeholderText = sourceString
+			? protectedText.replace(
+					/\{\{[ \t]*[a-z_$][\w$]*[ \t]*\}\}/gi,
+					(value) => " ".repeat(value.length),
+				)
+			: protectedText;
+		const maskedLines = maskHtmlComments(placeholderText).split(/\r?\n/);
 
 		for (let index = 0; index < lines.length; index += 1) {
 			issues.push(

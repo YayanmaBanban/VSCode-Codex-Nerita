@@ -1,5 +1,6 @@
 <!-- 取得した利用枠の最小残量をバーで表示し、各利用枠の詳細をツールチップで示す。 -->
 <script lang="ts">
+	import { cn } from "cnfast";
 	import type { QuotaWindow } from "@nerita/shared/composer";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import "./quotaBar.css";
@@ -26,7 +27,12 @@
 			<button
 				{...props}
 				type="button"
-				class="quota-bar inline-flex h-[24px] w-[76px] items-center rounded-[4px] border-0 bg-transparent p-0 hover:brightness-[1.12] focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-quota-focus focus-visible:outline-solid"
+				class={cn(
+					"quota-bar inline-flex h-[24px] w-[76px] items-center rounded-[4px] border-0 bg-transparent p-0",
+					"hover:brightness-[1.12]",
+					"focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-quota-focus",
+					"focus-visible:outline-solid",
+				)}
 				role="progressbar"
 				aria-label="利用枠の残量"
 				aria-valuemin={0}

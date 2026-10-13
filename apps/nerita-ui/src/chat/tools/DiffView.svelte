@@ -1,62 +1,28 @@
-<!-- 差分の見出し・範囲・行番号を表示し、作業ツリーの差分を Host で開く。 -->
+<!-- 各ハンクのファイル操作と行範囲をまとめ、解析できない差分にもファイル操作を残す。 -->
 <script lang="ts">
-	import { nonEmptyString } from "@nerita/shared/valuePredicates";
-	import ChangeCount from "./ChangeCount.svelte";
 	import type { Snippet } from "svelte";
-	import { mergeProps } from "bits-ui";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
-	import {
-		changeCount,
-		diffPath,
-		type DiffHunk,
-		type DiffLocationProps,
-	} from "./diffPresentation";
+	import type { DiffHunk, DiffLocationProps } from "./diffPresentation";
 	import DiffHunkView from "./DiffHunkView.svelte";
+	import DiffFileButton from "./DiffFileButton.svelte";
 
 	let {
-		path,
-		cwd,
-		send,
 		hunks,
 		children,
+		...location
 	}: DiffLocationProps & {
 		hunks: DiffHunk[] | undefined;
 		children?: Snippet;
 	} = $props();
-	const name = $derived(
-		nonEmptyString(path.replaceAll("\\", "/").split("/").at(-1)) ?? path,
-	);
-	const fullPath = $derived(diffPath(path, cwd));
-	const total = $derived(
-		hunks && changeCount(hunks.flatMap((hunk) => hunk.lines)),
-	);
 </script>
 
-<section class="tool-diff" aria-label={`${path} の差分`}>
-	<div
-		class="my-[8px] flex min-w-0 items-center justify-between gap-[12px] text-[12px]"
-	>
-		<SettingsTooltip content={fullPath}
-			>{#snippet children({ props })}<button
-					{...mergeProps(props, {
-						onclick: () =>
-							send?.({
-								type: "diff/open",
-								requestId: crypto.randomUUID(),
-								path: fullPath,
-							}),
-					})}
-					type="button"
-					aria-label={`${name} の作業ツリー差分を開く`}
-					disabled={!send}
-					class="border-button-border min-w-0 cursor-pointer truncate rounded-[4px] border border-solid bg-transparent px-[8px] py-[5px] text-left text-[12px] focus-visible:outline-2 focus-visible:outline-focus enabled:hover:border-focus disabled:cursor-default disabled:opacity-60"
-					>{name}</button
-				>{/snippet}</SettingsTooltip
+<section class="tool-diff min-w-0" aria-label={`${location.path} の差分`}>
+	{#if !hunks || hunks.length === 0}<div
+			class="my-[8px] flex min-w-0 items-center text-[12px]"
 		>
-		{#if total}<ChangeCount {...total} />{/if}
-	</div>
+			<DiffFileButton {...location} />
+		</div>{/if}
 	{#each hunks ?? [] as hunk, index (index)}
-		<DiffHunkView {hunk} />
+		<DiffHunkView {hunk} {...location} />
 	{/each}
 	{@render children?.()}
 </section>

@@ -217,6 +217,65 @@ test(
 	checkSourceStringTerms,
 );
 
+test("source placeholders protect replacement names without hiding surrounding terms", () => {
+	const source = [
+		'const message = "上限は {{maxLength}} 文字です。maxLength を確認する。";',
+		'const spaced = "件数は {{ maxLength }} と {{\textra_limit\t}} です。";',
+		'const preferred = "{{owner}} を使い、owner を確認する。";',
+		"const template = `上限は {{maxLength}} です。${count}日本語 strangerword`;",
+	].join("\r\n");
+	const issues = findEnglishTermIssues(
+		extractSourceTexts(source, "sample.cjs"),
+		{ preferredJapanese: { owner: "所有者" } },
+		new Set(),
+		new Set(["maxLength", "extra_limit"]),
+	);
+	assert.deepEqual(
+		issues.map(({ type, term, line }) => [type, term, line]),
+		[
+			["unquoted-identifier", "maxLength", 1],
+			["preferred-japanese", "owner", 3],
+			["unknown-english", "strangerword", 4],
+		],
+	);
+	assert.equal(
+		issues[0].text,
+		"上限は {{maxLength}} 文字です。maxLength を確認する。",
+	);
+});
+
+test("incomplete placeholders and identifiers in comments or prose remain checked", () => {
+	const source = [
+		'const single = "上限は {maxLength} です。";',
+		'const incomplete = "上限は {{maxLength} です。";',
+		'const expression = "上限は {{maxLength + 1}} です。";',
+		"// 上限は {{maxLength}} です。",
+		"/** 上限は {{maxLength}} です。 */",
+		"const value = 0;",
+	].join("\n");
+	const items = [
+		...extractSourceTexts(source, "sample.cjs"),
+		...extractSourceComments(source, "sample.cjs").items,
+		...extractDocumentAuditItems(
+			"上限は {{maxLength}} です。",
+			"sample.md",
+		),
+	];
+	assert.deepEqual(
+		findEnglishTermIssues(items, {}, new Set(), new Set(["maxLength"]))
+			.filter((issue) => issue.type === "unquoted-identifier")
+			.map(({ file, term, line }) => [file, term, line]),
+		[
+			["sample.cjs", "maxLength", 1],
+			["sample.cjs", "maxLength", 2],
+			["sample.cjs", "maxLength", 3],
+			["sample.cjs", "maxLength", 4],
+			["sample.cjs", "maxLength", 5],
+			["sample.md", "maxLength", 1],
+		],
+	);
+});
+
 test("source escapes do not become English terms or hide the following words", () => {
 	const source = [
 		String.raw`const omitted = "\n… 出力を省略 …\n";`,
