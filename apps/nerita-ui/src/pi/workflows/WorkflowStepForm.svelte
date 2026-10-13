@@ -17,7 +17,7 @@
 	import WorkflowContextSource from "./WorkflowContextSource.svelte";
 	import WorkflowContextMode from "./WorkflowContextMode.svelte";
 	import WorkflowDependencies from "./WorkflowDependencies.svelte";
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 名前変更を確定する前のステップ ID を入力欄に保持する。 */
 	const setId = (value: string) => {
 		id = value;
 	};

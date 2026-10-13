@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 判定シミュレーションに使うツールと作業ディレクトリを入力する。
 
 	import { guardProbeSchema } from "@nerita/shared/guardrails/messages";
 
@@ -34,7 +34,7 @@
 			{/each}</select
 		></label
 	><label
-		>cwd（workspace基準）
+		>cwd（ワークスペース基準）
 		<input
 			class={inputStyle}
 			value={probe.cwd}

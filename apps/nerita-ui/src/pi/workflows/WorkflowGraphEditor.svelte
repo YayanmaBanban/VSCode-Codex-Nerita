@@ -49,7 +49,7 @@
 	import WorkflowGraphPane from "./WorkflowGraphPane.svelte";
 	import WorkflowInspector from "./WorkflowInspector.svelte";
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** グラフの編集結果を TOML に変換し、下書きを更新して以前の操作エラーを消す。 */
 	const update = (value: Workflow) => {
 		const written = stringify(value);
 		draft = { workflow: value, written };
@@ -57,7 +57,7 @@
 		error = "";
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** グラフの編集操作を実行し、失敗した場合は設定欄にエラーを表示する。 */
 	const attempt = (operation: () => void) => {
 		try {
 			operation();
@@ -66,7 +66,7 @@
 		}
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 設定欄で編集するステップの ID を保持する。 */
 	const setSelected = (value: string) => {
 		selected = value;
 	};

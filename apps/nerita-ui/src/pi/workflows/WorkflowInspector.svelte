@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Workflow } from "@nerita/shared/workflows/definition";
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 選択ステップとワークフロー全体の設定を編集し、検証結果と操作エラーを表示する。
 
 	import {
 		isNonEmptyString,

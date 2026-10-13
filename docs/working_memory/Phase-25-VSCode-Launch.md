@@ -1,8 +1,8 @@
-# Phase 25：ACL を変更しない実 Webview 検証の起動
+# Phase 25：ACL を変更せずに VS Code 上で Webview を検証する起動方法
 
 ## 次回の起動方針
 
-VS Code の実機検証でサンドボックス内からの起動が ACL エラーになる場合は、Codex の `exec_command` に `sandbox_permissions: "require_escalated"` を指定し、サンドボックス外の実行経路を試す。2026-10-12 の25-0では、この経路で既存の実 Webview 受け入れが成功した。VS Code の公開バイナリのコピーと、検証用の隔離プロファイルを使用し、ACL は変更していない。
+VS Code の実機検証でサンドボックス内からの起動が ACL エラーになる場合は、サンドボックス外の実行経路を試す。その際は Codex の `exec_command` に `sandbox_permissions: "require_escalated"` を指定する。2026-10-12 の25-0では、この経路で既存の VS Code 上の Webview の受け入れ検証が成功した。VS Code の公開バイナリのコピーと、検証用の隔離プロファイルを使用し、ACL は変更していない。
 
 `require_escalated` はエージェントの実行経路を切り替える指定であり、Windows の「管理者として実行」を指定するものではない。ファイルの ACL 変更や `ALL APPLICATION PACKAGES` への権限追加を起動の前提にしない。
 
@@ -27,12 +27,12 @@ VS Code の実機検証でサンドボックス内からの起動が ACL エラ�
 
 一時ラッパー `phase25-webview-baseline.cjs` は、次の2点だけを既存の検証経路へ差し込んだ。
 
-- `@vscode/test-electron` の `downloadAndUnzipVSCode` の戻り値を、`NERITA_BASELINE_VSCODE` で指定したコピー内の `Code.exe` に変更した。
-- 同じコミットで直前に生成した VSIX があることを確認し、`runPnpm(["run", "package:vsix"])` の再生成だけを省略した。
+- VS Code の取得先は、`NERITA_BASELINE_VSCODE` が指すコピー内の `Code.exe` へ変更した。`@vscode/test-electron` の `downloadAndUnzipVSCode` の戻り値を差し替えた。
+- 同じコミットで直前に生成した VSIX があることを確認した。`runPnpm(["run", "package:vsix"])` の再生成だけを省略した。
 
-製品ソース、受け入れのアサーション、VSIX の展開、隔離プロファイル、実 Webview の検証処理は維持した。生成済み VSIX が現在のソースと一致しない場合は、この再生成の省略を使わない。
+製品ソース、受け入れのアサーション、VSIX の展開、隔離プロファイル、VS Code 上の Webview の検証処理は維持した。生成済み VSIX が現在のソースと一致しない場合は、この再生成の省略を使わない。
 
-次の PowerShell を上記の一時クローンで、`exec_command` の `sandbox_permissions: "require_escalated"` を指定して実行した。パスは作業ディレクトリから解決する。
+次の PowerShell を上記の一時クローンで実行した。`exec_command` には `sandbox_permissions: "require_escalated"` を指定した。パスは作業ディレクトリから解決する。
 
 ```powershell
 $env:CACHE_DIR = Join-Path (Get-Location) '..\isolated-cache'
@@ -52,14 +52,14 @@ rtk proxy node phase25-webview-baseline.cjs
 
 ## 本番 UI の検証
 
-移行専用の一時検証コードと追加コマンドは削除した。実 Webview の検証には既存の `pnpm test:webview` を使い、新規 VSIX と隔離プロファイルを用意する。サンドボックス内の起動で ACL エラーが出る場合は、上記の `sandbox_permissions: "require_escalated"` を指定する実行経路を試す。
+移行専用の一時検証コードと追加コマンドは削除した。VS Code 上の Webview の検証には既存の `pnpm test:webview` を使い、新規 VSIX と隔離プロファイルを用意する。サンドボックス内の起動で ACL エラーが出る場合は、上記の `sandbox_permissions: "require_escalated"` を指定する実行経路を試す。
 
 本番 UI の監視は `pnpm watch`、表示・操作の回帰検証は既存の Storybook を使う。
 
 ## 維持する配布判断
 
 - Vite の `base` は `./`、入口 JS は `index.js`、全 CSS は `index.css` とする。`cssCodeSplit: false` で動的な JS に付随する CSS も固定ファイルへ集約する。動的 JS は `chunks/`、画像・フォントは `assets/` へ出力し、VSIX の対象にも含める。
-- Webview の入口は nonce 付きの module script とする。`script-src` は nonce の許可を維持し、画像・フォントは Webview の `cspSource` から読む。実 Webview で動的 import が通ることを確認済み。外部サーバーや SvelteKit のルーティングは使わない。
+- Webview の入口は nonce 付きの module script とする。`script-src` は nonce の許可を維持し、画像・フォントは Webview の `cspSource` から読む。VS Code 上の Webview で動的 import が通ることを確認済み。外部サーバーや SvelteKit のルーティングは使わない。
 - Vite は `nerita-source` 条件で既存の共有ソースを解決する。各画面は既存の Bridge へ接続する。製品 UI から `tests/scratch/` を参照しない。
 - 本番の Host 集約先はビルド時に整理し、以前の試作資産を通常版の VSIX に混ぜない。watch 中の集約先では、表示済み画面が参照する旧チャンクを残す。
 - `.svelte` の Lint・Storybook・ルート型検査は統合済み。TypeScript の既存規則と Phase 24 の独自規則を保持し、Svelte の正常・異常コードと通信境界も回帰テストで確認する。

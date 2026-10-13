@@ -81,7 +81,7 @@ export class DocumentEditorBridge<Reply> {
 /** Host の文書と UI の未送信入力。変更は Svelte のアクセサーを通して反映する。 */
 type DocumentDraft<State> = { state: State | null; text: string };
 
-/** 更新前の正本と照合し、編集中の下書きを残したまま最新の Host 文書を受け取る。 */
+/** 更新前の Host 文書と下書きを照合し、編集中の下書きを残したまま最新の Host 文書を受け取る。 */
 export function applyDocumentSnapshot<State extends { text: string }>(
 	draft: DocumentDraft<State>,
 	snapshot: State,

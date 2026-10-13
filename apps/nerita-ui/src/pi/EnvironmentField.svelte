@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 資格情報の注入先となる環境変数名を入力し、保存処理は親へ任せる。
 
 	import { type CredentialBinding } from "@nerita/shared/credentials";
 

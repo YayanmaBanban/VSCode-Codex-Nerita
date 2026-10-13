@@ -33,7 +33,7 @@
 	function positionFor(_count: number, _title: string) {
 		position();
 	}
-	// 候補や見出しの変更後に実 DOM の高さを測り、パネルを置ける側を決める。
+	// 候補や見出しの変更後に DOM の高さを測り、パネルを置ける側を決める。
 	$effect(() => {
 		positionFor(items.length, title);
 	});

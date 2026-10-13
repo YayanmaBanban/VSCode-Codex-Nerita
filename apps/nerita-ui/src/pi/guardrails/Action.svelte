@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 許可・承認・拒否を選び、検証した判定値を親へ返す。
 
 	import { guardActionSchema } from "@nerita/shared/guardrails/config";
 

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { findSlopIssues } from "../scripts/textlint-slop.mjs";
+import { loadSourceTextPolicy } from "../scripts/textlint-policy.mjs";
 import { findEnglishTermIssues } from "../scripts/textlint-terms.mjs";
 import {
 	extractDocumentAuditItems,
@@ -506,6 +507,169 @@ test(
 	"all CLI modes inspect source strings without prose presets or rewriting machine values",
 	checkCliSourceStrings,
 );
+
+test("source-text policy defaults to static inspection and rejects invalid configuration", async (t) => {
+	const root = await createCliWorkspace(t);
+	const file = path.join(root, ".textlint-policy.json");
+	const defaultPolicy = await loadSourceTextPolicy(root);
+	assert.equal(defaultPolicy("stories/sample.ts"), false);
+
+	await fs.writeFile(
+		file,
+		JSON.stringify({ reviewOnlySourceTexts: ["stories/"] }),
+	);
+	const configured = await loadSourceTextPolicy(root);
+	assert.equal(configured("stories/nested/sample.svelte"), true);
+	assert.equal(configured("stories\\nested\\sample.tsx"), true);
+	assert.equal(configured("stories-copy/sample.ts"), false);
+	assert.equal(configured("src/sample.ts"), false);
+
+	for (const invalid of [
+		null,
+		[],
+		{ reviewOnlySourceText: ["stories/"] },
+		{ reviewOnlySourceTexts: null },
+		{ reviewOnlySourceTexts: "stories/" },
+		{ reviewOnlySourceTexts: [false] },
+		{ reviewOnlySourceTexts: [""] },
+		{ reviewOnlySourceTexts: ["stories/\nsrc/"] },
+	]) {
+		await fs.writeFile(file, JSON.stringify(invalid));
+		await assert.rejects(loadSourceTextPolicy(root), Error);
+	}
+	await fs.writeFile(file, "{");
+	await assert.rejects(loadSourceTextPolicy(root), SyntaxError);
+});
+
+/** 全モードで文言を検査から外し、レビューでは元の位置と値を保持することを確認する。 */
+async function checkReviewOnlySourceModes(root, fixture, text) {
+	const file = path.join(root, fixture.file);
+	await fs.writeFile(file, fixture.source);
+	for (const mode of ["all", "changed", "review-all", "review-changed"]) {
+		const result = runCli(root, mode, fixture.file);
+		assert.equal(result.status, 0, result.stdout + result.stderr);
+		const scope = mode.includes("changed") ? "changed" : "all";
+		await assert.rejects(
+			fs.readFile(
+				path.join(root, ".textlint-cache", `issues-${scope}.json`),
+			),
+			{ code: "ENOENT" },
+		);
+		if (mode.startsWith("review")) {
+			const records = (
+				await fs.readFile(
+					path.join(root, ".textlint-cache", `review-${scope}.jsonl`),
+					"utf8",
+				)
+			)
+				.trim()
+				.split("\n")
+				.map((line) => JSON.parse(line))
+				.slice(1);
+			assert(records.some((item) => item.kind === "comment"));
+			assert(
+				records.some(
+					(item) =>
+						item.kind === "string" &&
+						item.text === text &&
+						item.startLine === fixture.stringLine,
+				),
+			);
+			assert(records.some((item) => item.text.includes("の結果")));
+			assert(
+				records.some(
+					(item) =>
+						item.kind === "svelte-attribute" ||
+						(item.kind === "string" && item.startLine === 3),
+				),
+			);
+		}
+		assert.equal(await fs.readFile(file, "utf8"), fixture.source);
+	}
+}
+
+/** 同じ対象でもコメントの用語と文体の指摘はエラーになることを確認する。 */
+async function checkStoryComment(root, fixture) {
+	const file = path.join(root, fixture.file);
+	await fs.writeFile(
+		file,
+		fixture.source.replace(
+			"検証用の入力を用意する。",
+			"workspace の正本を確認する。",
+		),
+	);
+	const commentResult = runCli(root, "review-changed", fixture.file);
+	assert.equal(
+		commentResult.status,
+		1,
+		commentResult.stdout + commentResult.stderr,
+	);
+	const saved = JSON.parse(
+		await fs.readFile(
+			path.join(root, ".textlint-cache", "issues-changed.json"),
+			"utf8",
+		),
+	);
+	assert.deepEqual(saved.issues.map((issue) => issue.type).sort(), [
+		"ai-slop-pattern",
+		"preferred-japanese",
+	]);
+	assert(saved.issues.every((issue) => issue.occurrences[0].line === 1));
+}
+
+test("review-only source texts retain review data while comments and other sources still fail", async (t) => {
+	const root = await createCliWorkspace(t);
+	await fs.writeFile(
+		path.join(root, ".textlint-policy.json"),
+		JSON.stringify({ reviewOnlySourceTexts: ["stories/"] }),
+	);
+	await fs.mkdir(path.join(root, "stories"));
+	await fs.mkdir(path.join(root, "src"));
+	const text = "workspace の正本と readValue を確認する。";
+	const sources = [
+		{
+			file: "stories/sample.tsx",
+			source: [
+				"// 検証用の入力を用意する。",
+				`const readValue = "${text}";`,
+				`const view = <div title="${text}">{readValue}の結果</div>;`,
+			].join("\n"),
+			stringLine: 2,
+		},
+		{
+			file: "stories/sample.svelte",
+			source: [
+				"<!-- 検証用の入力を用意する。 -->",
+				'<script lang="ts">',
+				`const readValue = "${text}";`,
+				"</script>",
+				`<div title="${text}">{readValue}の結果</div>`,
+			].join("\n"),
+			stringLine: 3,
+		},
+	];
+	for (const fixture of sources) {
+		await checkReviewOnlySourceModes(root, fixture, text);
+		await checkStoryComment(root, fixture);
+	}
+	await fs.writeFile(path.join(root, "src/sample.tsx"), sources[0].source);
+	const outside = runCli(root, "changed", "src/sample.tsx");
+	assert.equal(outside.status, 1, outside.stdout + outside.stderr);
+	const saved = JSON.parse(
+		await fs.readFile(
+			path.join(root, ".textlint-cache", "issues-changed.json"),
+			"utf8",
+		),
+	);
+	assert(saved.issues.some((issue) => issue.type === "unquoted-identifier"));
+
+	await fs.writeFile(
+		path.join(root, "stories/notes.md"),
+		"設定の正本を更新する。\n",
+	);
+	const document = runCli(root, "changed", "stories/notes.md");
+	assert.equal(document.status, 1, document.stdout + document.stderr);
+});
 
 test("Svelte CLI targets report comments, script strings, attributes and markup at original lines", async (t) => {
 	const root = await createCliWorkspace(t);

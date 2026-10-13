@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 検査対象の入力と Host の判定結果を表示し、ファイル操作やコマンドの実行は要求しない。
 
 	import { cn } from "cnfast";
 
@@ -45,7 +45,7 @@
 					})}></textarea></label
 		>
 		<p class="m-0 text-[12px] text-muted">
-			Shellの動的なパスやスクリプト内部は完全には解析できません。判定不能な範囲は承認時にも表示します。
+			シェルの動的なパスやスクリプト内部は完全には解析できません。判定不能な範囲は承認時にも表示します。
 		</p>
 		<GuardrailsFeedback reply={editor.reply} />
 	</div>

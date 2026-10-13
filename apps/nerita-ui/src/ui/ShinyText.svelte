@@ -101,7 +101,7 @@
 			previousDirection = direction;
 			syncPlayback();
 		}
-		// attachment 内で設定の変化を実 DOM のアニメーションへ渡し、旧再生を停止する。
+		// attachment 内で設定の変化を DOM のアニメーションへ反映し、取り外し時に再生を停止する。
 		$effect(updateAnimation);
 
 		/** ホバー状態はイベントだけで更新し、毎フレーム描画には持ち込まない。 */

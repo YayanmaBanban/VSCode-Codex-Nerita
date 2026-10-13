@@ -18,7 +18,7 @@
 	});
 	/** 通信窓口の所有者は、このストーリーの描画要素に限定する。 */
 	function attachBridge(element: HTMLElement) {
-		// Bridge の交換後も実 DOM の検証窓口が最新の通信先を公開するように同期する。
+		// Bridge の交換後も DOM の検証窓口が最新の通信先を公開するように同期する。
 		$effect(() => {
 			Object.assign(element, { storyBridge: observed });
 		});

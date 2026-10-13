@@ -8,7 +8,7 @@ type CandidateInput = {
 	collaborationModes: boolean | undefined;
 	canAttach: boolean;
 };
-// 現在のカテゴリをgetterで参照し、非同期の候補一覧を混ぜない。
+// 現在のカテゴリーを getter で参照し、非同期に取得した別のカテゴリーの候補を混ぜない。
 import type { Attachment } from "@nerita/shared/composer";
 import type { SkillSummary } from "@nerita/shared/skills";
 import type { Bridge } from "@nerita/shared/bridge";
@@ -89,7 +89,7 @@ function referenceUri(item: CompletionItem) {
 		: undefined;
 }
 
-/** 選択された一覧だけを公開し、添付と同一のURIを二重に表示しない。 */
+/** 選択された一覧だけを公開し、添付と同一の URI を二重に表示しない。 */
 function currentCandidates(
 	input: CandidateInput,
 	paths: ReturnType<typeof useWorkspacePaths>,

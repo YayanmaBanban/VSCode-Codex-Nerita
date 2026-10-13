@@ -8,7 +8,7 @@ export function createPiAgentScenario(background: boolean) {
 	const { agents, permissions } = piAgentState();
 	mock.patchState({ agents, permissions, ...(background ? { run: "completed" as const } : {}) });
 	const post = mock.postMessage.bind(mock);
-	/** 子の取得要求は、選択した threadId に対応する内容を返す。 */
+	/** 子の取得要求は、選択した `threadId` に対応する内容を返す。 */
 	function postMessage(message: Parameters<typeof post>[0]) {
 		post(message);
 		if (message.type !== "agent/read") { return; }

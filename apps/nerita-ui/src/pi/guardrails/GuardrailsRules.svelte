@@ -21,7 +21,7 @@
 	import CommandRuleGroup from "./CommandRuleGroup.svelte";
 	import PathRuleGroup from "./PathRuleGroup.svelte";
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 指定したパスルールだけを更新し、他のルールを保持した設定を親へ返す。 */
 	const updatePath = (index: number, patch: Partial<PathRule>) =>
 		onChange({
 			...config,
@@ -34,7 +34,7 @@
 <div class="flex flex-col gap-5">
 	<Action
 		{...{
-			label: "workspace外の読取り",
+			label: "ワークスペース外の読み取り",
 			className: "flex flex-col gap-2",
 			value: config.pathAccess.outsideRead,
 			onChange: (outsideRead: "allow" | "ask" | "deny") =>
@@ -45,7 +45,7 @@
 		}}
 	/>
 	<p class="m-0 text-[12px] text-muted">
-		workspace外の書込みは拒否します。Shell・write/edit・拡張Toolの承認は維持します。SSHなどの組込み保護は緩和できません。
+		ワークスペース外の書き込みは拒否します。シェル・write/edit・拡張ツールの承認は維持します。SSH などの組み込み保護は緩和できません。
 	</p>
 	<PathRuleGroup
 		{...{

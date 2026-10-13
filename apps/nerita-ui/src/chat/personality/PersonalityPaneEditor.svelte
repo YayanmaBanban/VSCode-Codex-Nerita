@@ -109,7 +109,7 @@
 		/></label
 	>
 	{#if locked}<p class="m-0 text-[11px] text-muted">
-			config.toml の developer_instructions を使用しています（変更不可）。
+			config.toml の <code>developer_instructions</code> を使用しています（変更不可）。
 		</p>{/if}
 	<InstructionEditor
 		text={initialText}

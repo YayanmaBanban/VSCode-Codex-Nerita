@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 認証先の操作結果を通知とエラーに分けて表示し、結果がない場合も通知欄の高さを保つ。
 
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 

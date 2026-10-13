@@ -1,4 +1,4 @@
-// 表示用の型と文書変換を共有し、各入力欄では状態を複製しない。
+// 資格情報の参照フォームを、検証済みの保存形式へ変換する。
 
 import {
 	credentialBindingSchema,
@@ -6,7 +6,7 @@ import {
 } from "@nerita/shared/credentials";
 
 import { nonEmptyString } from "@nerita/shared/valuePredicates";
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** フォームの入力を資格情報の参照設定へ変換し、用途と取得元に合う保存形式を検証する。 */
 export function parseBindingForm(
 	form: FormData,
 	provider: CredentialBinding["provider"]["type"],

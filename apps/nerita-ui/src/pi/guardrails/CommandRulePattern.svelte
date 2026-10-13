@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// コマンドに含まれる文字列の条件を入力し、対象ルールの更新を親へ伝える。
 
 	import { type GuardrailsConfig } from "@nerita/shared/guardrails/config";
 

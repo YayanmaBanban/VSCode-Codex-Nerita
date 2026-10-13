@@ -18,12 +18,12 @@
 	import { type PiAuthEditorProps } from "./PiAuthEditorParts";
 	import AuthProviderItem from "./AuthProviderItem.svelte";
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 認証先一覧を絞り込む検索語を保持する。 */
 	const setQuery = (value: string) => {
 		query = value;
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 開く認証先を保持し、閉じた場合は選択を解除する。 */
 	const setExpanded = (value: string | null) => {
 		expanded = value;
 	};

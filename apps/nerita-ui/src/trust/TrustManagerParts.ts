@@ -1,4 +1,4 @@
-// 表示用の型と文書変換を共有し、各入力欄では状態を複製しない。
+// 信頼記録の表示と操作に使う入力型、登録元の表示名、共通スタイルを定義する。
 
 import {
 	type TrustBridge,
@@ -7,18 +7,18 @@ import {
 
 import "../chat/chat.css";
 
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 操作ボタンの枠と、フォーカス・無効状態の表示を揃える。 */
 export const buttonStyle =
 	"rounded border border-input-border px-3 py-1.5 text-sm hover:bg-hover disabled:opacity-50 focus-visible:outline focus-visible:outline-2";
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 信頼記録の登録元を管理画面の表示名へ変換する。 */
 export const origins = {
 	workspace: "ワークスペース",
 	external: "外部フォルダー",
 	"external-cache": "外部キャッシュ",
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 信頼記録の取得と、追加・変更・削除に使う通信窓口。 */
 export type TrustManagerProps = { bridge: TrustBridge };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** フォルダーの信頼記録と、その記録を変更・削除する要求の送信先。 */
 export type TrustRecordProps = {
 	record: {
 		root: string;
@@ -29,7 +29,7 @@ export type TrustRecordProps = {
 	busy: boolean;
 	send: (message: TrustRequest) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 信頼記録の追加・再取得に使う要求の送信先と待機状態。 */
 export type TrustManagerHeaderProps = {
 	busy: boolean;
 	send: (message: TrustRequest) => void;

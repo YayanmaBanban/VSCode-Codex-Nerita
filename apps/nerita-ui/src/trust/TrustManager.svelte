@@ -27,13 +27,13 @@
 	import { type TrustManagerProps } from "./TrustManagerParts";
 	import TrustManagerHeader from "./TrustManagerHeader.svelte";
 	import TrustRecord from "./TrustRecord.svelte";
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 信頼記録の操作を Host へ送り、応答が届くまで待機状態にする。 */
 	const send = (message: TrustRequest) => {
 		busy = true;
 		bridge.postMessage(message);
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 信頼記録をフォルダーのパスで絞り込む検索語を保持する。 */
 	const setQuery = (value: string) => {
 		query = value;
 	};

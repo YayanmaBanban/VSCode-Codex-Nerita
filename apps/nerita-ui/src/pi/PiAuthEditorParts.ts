@@ -1,4 +1,4 @@
-// 表示用の型と文書変換を共有し、各入力欄では状態を複製しない。
+// 認証先の一覧・詳細へ渡す状態と、認証要求の送信操作を定義する。
 
 import {
 	type PiAuthItem,
@@ -8,12 +8,12 @@ import {
 
 import "../chat/chat.css";
 
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** Host の認証状態と認証要求の送信先を渡し、画面だけで認証結果を確定しない。 */
 export type PiAuthEditorProps = {
 	state: PiAuthState;
 	send: (request: PiAuthRequest) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 認証先の状態・開閉位置と、認証操作の送信先を渡す。 */
 export type AuthProviderItemProps = {
 	item: PiAuthItem;
 	open: boolean;
@@ -23,7 +23,7 @@ export type AuthProviderItemProps = {
 	hostState: PiAuthState;
 	send: (request: PiAuthRequest) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** アカウント一覧・操作結果・入力要求を表示するための認証状態。 */
 export type AuthProviderContentProps = {
 	item: PiAuthItem;
 	feedback: undefined | { notice: string; error: string | null };

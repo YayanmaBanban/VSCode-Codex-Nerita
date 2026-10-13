@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { createTextlintIgnore } from "./textlint-ignore.mjs";
+import { loadSourceTextPolicy } from "./textlint-policy.mjs";
 import {
 	extractSourceComments,
 	extractSourceIdentifiers,
@@ -276,6 +277,7 @@ function printTermIssues(issues) {
 
 const targetSpecs = await resolveTextlintTargets(ROOT, positionals);
 const ignoreMatcher = createTextlintIgnore(ROOT);
+const reviewOnlySourceTexts = await loadSourceTextPolicy(ROOT);
 
 await clearTextlintCacheForScope({
 	root: ROOT,
@@ -294,6 +296,7 @@ if (files.length === 0) {
 }
 
 const auditItems = [];
+const staticAuditItems = [];
 const referencedPackageTerms = new Set();
 const sourceIdentifiers = new Set();
 
@@ -345,7 +348,9 @@ for (const file of files) {
 	 */
 	if (DOCUMENT_EXTENSIONS.has(extension)) {
 		const lintSource = maskIgnoredDocument(source, file);
-		auditItems.push(...extractDocumentAuditItems(lintSource, file));
+		const items = extractDocumentAuditItems(lintSource, file);
+		auditItems.push(...items);
+		staticAuditItems.push(...items);
 
 		// 日本語を含まない文書には日本語用の校正規則を適用しない。
 		if (!JAPANESE_PATTERN.test(lintSource)) {
@@ -359,16 +364,15 @@ for (const file of files) {
 	}
 
 	/**
-	 * 文字列を用語・スロップ検査と、意味を確認するレビュー用データに含める。
+	 * 全文言をレビュー用データに残し、設定で選んだ非コメント部分は静的検査から外す。
 	 * 文章用の textlint プリセットはコメント本文にだけ適用する。
 	 */
 	if (SOURCE_EXTENSIONS.has(extension)) {
 		const extracted = extractSourceComments(source, file);
-
-		auditItems.push(
-			...extracted.items,
-			...extractSourceTexts(source, file),
-		);
+		const texts = extractSourceTexts(source, file);
+		const staticTexts = reviewOnlySourceTexts(file) ? [] : texts;
+		auditItems.push(...extracted.items, ...texts);
+		staticAuditItems.push(...extracted.items, ...staticTexts);
 
 		if (!JAPANESE_PATTERN.test(extracted.lintText)) {
 			continue;
@@ -404,7 +408,7 @@ const automaticAllowed = new Set([
 	...referencedPackageTerms,
 ]);
 const termIssues = findEnglishTermIssues(
-	auditItems,
+	staticAuditItems,
 	termsConfig,
 	automaticAllowed,
 	sourceIdentifiers,
@@ -415,7 +419,7 @@ const slopConfig = JSON.parse(
 		"utf8",
 	),
 );
-termIssues.push(...findSlopIssues(auditItems, slopConfig));
+termIssues.push(...findSlopIssues(staticAuditItems, slopConfig));
 const issuePath = await writeTextlintIssues({
 	root: ROOT,
 	scope: mode.scope,

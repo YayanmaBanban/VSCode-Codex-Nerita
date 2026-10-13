@@ -138,7 +138,7 @@ function registerCompletionCommands(
 		selected: number | null;
 	}>,
 ): () => void {
-	/** 候補の対象が消えた場合は閉じ、フォーカスと IME を確認して候補の再計算を行う。 */
+	/** 候補の対象が消えた場合は閉じ、フォーカスと IME を確認して候補を再計算する。 */
 	const updateCompletionMatch: Parameters<
 		typeof editor.registerUpdateListener
 	>[0] = ({ editorState }) => {

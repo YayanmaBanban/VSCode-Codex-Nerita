@@ -46,12 +46,12 @@ export function useConversationVirtualizer(
 				item.end <= (virtualizer.scrollOffset ?? 0);
 		});
 	});
-	// 会話の交換時は外部の高さキャッシュを捨て、再マウントされない行も実 DOM から測り直す。
+	// 会話の交換時は外部の高さキャッシュを捨て、再マウントされない行も DOM から測り直す。
 	$effect(() => {
 		void session;
 		untrack(() => measureMountedRows(instance.current));
 	});
-	// 行数の変更後に実 DOM のリスト開始位置を測り、仮想行の配置へ反映する。
+	// 行数の変更後に DOM のリスト開始位置を測り、仮想行の配置へ反映する。
 	$effect(() => {
 		void timeline().entries.length;
 		const root = conversation();

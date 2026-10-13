@@ -1,4 +1,4 @@
-// 表示用の型と文書変換を共有し、各入力欄では状態を複製しない。
+// Pi の既定設定の編集欄と保存操作へ渡す入力型を定義する。
 
 import { type PiDefaults } from "@nerita/shared/agentManager/config";
 
@@ -6,14 +6,14 @@ import { type ManagerModel } from "@nerita/shared/agentManager/messages";
 
 import { type ManagerSave } from "../agentManager/useAgentManager.svelte";
 
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** Pi の既定設定とモデル候補を渡し、保存は管理画面の要求経路を使う。 */
 export type PiDefaultsSettingsProps = {
 	defaults: PiDefaults;
 	models: ManagerModel[];
 	busy: boolean;
 	save: ManagerSave;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** Pi の既定設定の下書きと、モデル・推論の検証エラーを入力欄へ渡す。 */
 export type PiDefaultsFieldsProps = {
 	busy: boolean;
 	edit: PiDefaults;

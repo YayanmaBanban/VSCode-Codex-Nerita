@@ -79,7 +79,7 @@ export const KeyboardSelection: Story = {
 	},
 };
 
-/** 合成されたIMEキーを送信にせず、通常の改行と明示的な送信を保つ。 */
+/** 合成された IME キーを送信にせず、通常の改行と明示的な送信を保つ。 */
 export const CompositionAndLineBreaks: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);

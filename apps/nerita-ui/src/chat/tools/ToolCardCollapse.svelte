@@ -10,7 +10,7 @@
 		$props();
 	let element = $state<HTMLDivElement>();
 	let present = $state(false);
-	/** 取り消されたアニメーションも allSettled が回収する。 */
+	/** アニメーションの完了を待つ Promise を返し、取り消しによる拒否は呼び出し側で処理する。 */
 	function animationFinished(animation: Animation) {
 		return animation.finished;
 	}

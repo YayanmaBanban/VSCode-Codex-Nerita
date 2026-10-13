@@ -11,7 +11,7 @@ import type {
 	GuardReply,
 	GuardState,
 } from "@nerita/shared/guardrails/messages";
-/** 画面インスタンスごとの未保存入力と要求状態。Host の文書を正本とする。 */
+/** 画面ごとに未保存入力と要求状態を保持し、Host から受信した文書を下書きとの比較に使う。 */
 class GuardrailsEditorState {
 	state = $state.raw<GuardState | null>(null);
 	text = $state("");

@@ -73,7 +73,7 @@ export function useSearchHighlights(
 			clearHighlights();
 		};
 	};
-	// 検索条件や選択の変更で実 DOM の強調範囲を作り直し、旧 DOM の監視と参照を解除する。
+	// 検索条件や選択の変更で DOM の強調範囲を作り直し、旧 DOM の監視と参照を解除する。
 	$effect(() => {
 		selection();
 		return observeSearchHighlights();

@@ -1,18 +1,18 @@
-// 表示用の型と文書変換を共有し、各入力欄では状態を複製しない。
+// ステップ編集の入力型を共有し、会話の継承方式に合う定義へ変換する。
 
 import {
 	type Workflow,
 	type WorkflowStep,
 } from "@nerita/shared/workflows/definition";
 
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 会話の継承設定を表示用の方式へ変換し、継承がなければ新しい会話として扱う。 */
 export function contextMode(step: WorkflowStep): "resume" | "fork" | "fresh" {
 	if (step.resume !== undefined) {
 		return "resume";
 	}
 	return step.fork !== undefined ? "fork" : "fresh";
 }
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 選択ステップの内容と、ID 変更・削除・出力指定を親へ伝える操作を渡す。 */
 export type WorkflowStepFormProps = {
 	step: WorkflowStep;
 	workflow: Workflow;
@@ -21,7 +21,7 @@ export type WorkflowStepFormProps = {
 	remove: () => void;
 	output: (checked: boolean) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 継承元の選択に必要なステップ一覧と、会話の継承方式を変更する操作を渡す。 */
 export type WorkflowContextSourceProps = {
 	source: string;
 	switchMode: (value: string, ref?: string) => void;
@@ -29,12 +29,12 @@ export type WorkflowContextSourceProps = {
 	workflow: Workflow;
 	step: WorkflowStep;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** ステップの表示用グループ名と、変更を親へ伝える操作を渡す。 */
 export type WorkflowStepGroupProps = {
 	step: WorkflowStep;
 	change: (step: WorkflowStep) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 会話の継承方式に合う設定へ切り替え、継承する場合は継承元を依存先にも追加する。 */
 export function createContextModeChange(
 	source: string,
 	step: WorkflowStep,
@@ -60,14 +60,14 @@ export function createContextModeChange(
 		}
 	};
 }
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 会話の継承方式と、継承元の有無に応じた選択操作を渡す。 */
 export type WorkflowContextModeProps = {
 	mode: "resume" | "fork" | "fresh";
 	switchMode: (value: string, ref?: string) => void;
 	workflow: Workflow;
 	step: WorkflowStep;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 現在のステップ以外を依存先候補とし、選択の変更を親へ伝える。 */
 export type WorkflowDependenciesProps = {
 	workflow: Workflow;
 	step: WorkflowStep;

@@ -36,12 +36,12 @@
 	import GuardrailsProbePane from "./GuardrailsProbePane.svelte";
 
 	import GuardrailsRulePane from "./GuardrailsRulePane.svelte";
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** ルール編集の表示をフォームと JSON の間で切り替える。 */
 	const setTab = (value: "form" | "json") => {
 		tab = value;
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 判定シミュレーションに使うツール・作業ディレクトリ・入力を保持する。 */
 	const setProbe = (value: GuardProbe) => {
 		probe = value;
 	};

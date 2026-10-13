@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 先に完了するステップを選び、現在のステップの依存先を更新する。
 
 	import { type WorkflowDependenciesProps } from "./WorkflowStepFormParts";
 

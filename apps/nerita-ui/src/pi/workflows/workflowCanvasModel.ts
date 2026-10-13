@@ -49,7 +49,7 @@ export function nodesFor(workflow: Workflow): Node[] {
 		};
 	});
 }
-/** 保存する depends_on だけから表示用の接続線を組み立てる。 */
+/** 保存する `depends_on` だけから表示用の接続線を組み立てる。 */
 export function workflowEdges(workflow: Workflow): Edge[] {
 	return workflow.steps.flatMap((step) =>
 		step.depends_on.map((dep) => ({

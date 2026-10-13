@@ -22,7 +22,7 @@
 
 	import { type PiDefaultsSettingsProps } from "./PiDefaultsSettingsParts";
 	import PiDefaultsFields from "./PiDefaultsFields.svelte";
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 入力欄から受け取った Pi の既定設定を、保存前の下書きとして保持する。 */
 	const setEdit = (value: PiDefaults) => {
 		edit = value;
 	};

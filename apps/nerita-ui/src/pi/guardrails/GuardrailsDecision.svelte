@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// Host の判定結果・理由・正規化したパス・解析できない範囲を表示する。
 
 	import { type GuardReply } from "@nerita/shared/guardrails/messages";
 

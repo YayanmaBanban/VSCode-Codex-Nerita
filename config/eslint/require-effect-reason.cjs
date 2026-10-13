@@ -1,6 +1,6 @@
 // Svelte の effect を使う理由が、登録箇所から読めることを確認する。
 
-/** 観測用 API は含めず、副作用を登録する三つの rune を検査する。 */
+/** 観測用 API は含めず、副作用を登録する3つの rune を検査する。 */
 function effectName(callee) {
 	if (callee.type === "Identifier" && callee.name === "$effect") {
 		return "$effect";

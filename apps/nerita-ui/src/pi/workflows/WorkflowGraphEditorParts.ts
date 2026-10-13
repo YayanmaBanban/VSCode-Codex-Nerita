@@ -1,16 +1,16 @@
-// 表示用の型と文書変換を共有し、各入力欄では状態を複製しない。
+// グラフと設定欄の入力型を共有し、削除した接続を依存関係へ反映する。
 
 import { type Workflow } from "@nerita/shared/workflows/definition";
 
 import { type Edge } from "@xyflow/svelte";
 
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 解析済みの定義と TOML 本文を渡し、グラフ編集の結果を本文へ反映する。 */
 export type WorkflowGraphEditorProps = {
 	initial: Workflow;
 	text: string;
 	change: (text: string) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 定義と選択ステップを渡し、グラフの編集結果と操作エラーを親へ伝える。 */
 export type WorkflowGraphPaneProps = {
 	workflow: Workflow;
 	update: (value: Workflow) => void;
@@ -18,7 +18,7 @@ export type WorkflowGraphPaneProps = {
 	step: Workflow["steps"][number];
 	attempt: (operation: () => void) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 削除した接続に対応する依存先を各ステップから除き、残りの依存関係を保持する。 */
 export function disconnectWorkflowSteps(
 	workflow: Workflow,
 	edges: Edge[],
@@ -30,7 +30,7 @@ export function disconnectWorkflowSteps(
 		),
 	}));
 }
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 選択ステップの編集操作と、定義の検証結果・操作エラーを設定欄へ渡す。 */
 export type WorkflowInspectorProps = {
 	workflow: Workflow;
 	update: (value: Workflow) => void;
@@ -40,12 +40,12 @@ export type WorkflowInspectorProps = {
 	error: string;
 	validation: string;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** ワークフロー全体の設定を渡し、名前・同時実行数・制限時間の変更を親へ伝える。 */
 export type WorkflowSettingsProps = {
 	workflow: Workflow;
 	update: (value: Workflow) => void;
 };
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** 接続元と接続先の両方に一致する線の有無を確認する。 */
 export function workflowEdgeExists(
 	edges: Edge[],
 	source: string,

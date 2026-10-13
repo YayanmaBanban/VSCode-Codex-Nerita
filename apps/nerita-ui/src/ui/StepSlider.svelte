@@ -3,7 +3,7 @@
 	import { untrack } from "svelte";
 	import { cn } from "cnfast";
 	import "./stepSlider.css";
-	/** プレビューは表示だけに使い、onChange で設定を確定する。 */
+	/** プレビューは表示だけに使い、`onChange` で設定を確定する。 */
 	type Props = {
 		value: number;
 		count: number;

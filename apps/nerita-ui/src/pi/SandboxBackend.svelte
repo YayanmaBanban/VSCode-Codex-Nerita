@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 実行環境の利用可否と対応機能を表示し、起動確認を Host へ要求する。
 
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 

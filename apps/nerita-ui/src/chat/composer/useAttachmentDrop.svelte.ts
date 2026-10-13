@@ -88,7 +88,7 @@ class AttachmentDrop {
 		this.activeState =
 			typeof value === "function" ? value(this.activeState) : value;
 	};
-	/** ブラウザーやLexicalがファイルを挿入する前に処理する。 */
+	/** ブラウザーや Lexical がファイルを挿入する前に処理する。 */
 	private readonly stop = (event: DragEvent | ClipboardEvent) => {
 		event.preventDefault();
 		event.stopPropagation();

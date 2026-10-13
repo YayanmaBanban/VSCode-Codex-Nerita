@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// Bitwarden の秘密情報を参照する ID とアカウントを入力し、秘密値は扱わない。
 
 	import { type CredentialBinding } from "@nerita/shared/credentials";
 

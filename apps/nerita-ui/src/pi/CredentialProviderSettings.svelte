@@ -16,12 +16,12 @@
 
 	import { type State } from "./CredentialProviderSettingsParts";
 	import ProviderStates from "./ProviderStates.svelte";
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** Bitwarden の認証設定に使う保存方法を保持する。 */
 	const setMode = (value: CredentialStorageMode) => {
 		mode = value;
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** Bitwarden の認証設定・削除で指定するアカウント ID を保持する。 */
 	const setAccountId = (value: string) => {
 		accountId = value;
 	};

@@ -3,7 +3,7 @@ import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { structuredPatch } from "diff";
 import type { UiMessage } from "@nerita/shared/messages";
 
-/** 文脈行を含む一つの変更ブロック。 */
+/** 文脈行を含む1つの変更ブロック。 */
 export type DiffHunk = ReturnType<typeof structuredPatch>["hunks"][number];
 /** 相対パスの基準と Host の差分を開く操作。 */
 export type DiffLocationProps = {
@@ -20,7 +20,7 @@ export function changeCount(lines: string[]) {
 	};
 }
 
-/** 変更前後で存在する側の範囲と、表示に使う一つの行番号を求める。 */
+/** 変更前後で存在する側の範囲と、表示に使う1つの行番号を求める。 */
 export function hunkPresentation(hunk: DiffHunk) {
 	const starts: number[] = [];
 	const ends: number[] = [];

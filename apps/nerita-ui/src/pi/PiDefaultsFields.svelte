@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// Pi の既定モデル・推論・起動上限を編集し、保存は親の操作へ委ねる。
 
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 

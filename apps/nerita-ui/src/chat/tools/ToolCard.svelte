@@ -127,7 +127,7 @@
 			value.rawItem.type === "contextCompaction"
 		);
 	}
-	/** 文字列と引数配列を表示用の一つの文へ揃える。 */
+	/** 文字列と引数配列を表示用の1つの文へ揃える。 */
 	function commandLabel(command: unknown, title: string) {
 		if (typeof command === "string") {
 			return command;

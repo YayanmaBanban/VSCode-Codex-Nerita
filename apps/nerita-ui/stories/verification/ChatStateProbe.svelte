@@ -17,7 +17,7 @@
 	let readyRequests = $state(0);
 	let delayed: ((message: HostMessage) => void) | undefined;
 	const tracked: Bridge = {
-		/** ready の再要求だけを観測し、外部応答は既存の mock を使う。 */
+		/** 初期状態の再取得要求だけを観測し、外部応答は既存のモックを使う。 */
 		postMessage(message) {
 			if (message.type === "ui/ready") {
 				readyRequests += 1;

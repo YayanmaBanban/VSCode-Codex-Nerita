@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// ステップの会話を新規作成・継続・複製のいずれにするか選ぶ。
 
 	import { type WorkflowContextModeProps } from "./WorkflowStepFormParts";
 

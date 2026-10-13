@@ -89,7 +89,7 @@ test("ツール・検証コードでは既存の三項演算子ルールを維�
 	}
 });
 
-test("enum・default export・async forEach の既存の禁止を維持する", async () => {
+test("enum・default export・async `forEach` の既存の禁止を維持する", async () => {
 	const config = await eslint.calculateConfigForFile(
 		"packages/shared/src/permission.ts",
 	);
@@ -140,7 +140,7 @@ test("ルールの回帰テストを pnpm check から実行できる", () => {
 	);
 });
 
-test("DlcHost に適用する実効設定で説明のない private async メソッドを拒否する", async () => {
+test("`DlcHost` に適用する実効設定で説明のない private async メソッドを拒否する", async () => {
 	const [result] = await eslint.lintText(
 		"export class DlcHost { private async attempt() {} }",
 		{

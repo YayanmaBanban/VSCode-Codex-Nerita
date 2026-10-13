@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 資格情報の参照 ID と利用先を入力し、既存の参照 ID は変更できないようにする。
 
 	import { type CredentialBinding } from "@nerita/shared/credentials";
 

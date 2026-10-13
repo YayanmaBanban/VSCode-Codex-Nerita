@@ -15,7 +15,7 @@ export type ManagerSave = (
 			: never
 		: never,
 ) => void;
-/** Host の状態は immutable snapshot とし、編集バッファにはコピーしない。 */
+/** Host の状態は変更しないスナップショットとして保持し、編集用の下書きと分ける。 */
 export function useAgentManager(
 	bridge: ManagerBridge,
 	onState?: (state: ManagerState) => void,

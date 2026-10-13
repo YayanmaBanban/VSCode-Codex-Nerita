@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 資格情報の取得元ごとに利用可否・認証状態・エラーを表示する。
 
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 

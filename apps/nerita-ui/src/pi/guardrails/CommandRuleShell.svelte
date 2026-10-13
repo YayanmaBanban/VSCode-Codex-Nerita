@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// コマンドルールの対象シェルを選び、検証した選択値を親へ返す。
 
 	import { commandRuleSchema } from "@nerita/shared/guardrails/config";
 

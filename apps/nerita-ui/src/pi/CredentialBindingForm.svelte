@@ -24,17 +24,17 @@
 	import EnvironmentField from "./EnvironmentField.svelte";
 	import BindingIdentity from "./BindingIdentity.svelte";
 	import BindingSelectors from "./BindingSelectors.svelte";
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 選択した資格情報の取得元を保持し、対応する入力欄へ切り替える。 */
 	const setProvider = (value: CredentialBinding["provider"]["type"]) => {
 		provider = value;
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 資格情報の用途を保持し、用途に合う注入先の入力欄へ切り替える。 */
 	const setKind = (value: CredentialBinding["match"]["kind"]) => {
 		kind = value;
 	};
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 参照設定の入力検証結果をフォームに表示する。 */
 	const setError = (value: string) => {
 		error = value;
 	};

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Connection, Edge } from "@xyflow/svelte";
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// ステップの追加・選択・接続をグラフで操作し、定義の更新を親へ伝える。
 
 	import { cn } from "cnfast";
 

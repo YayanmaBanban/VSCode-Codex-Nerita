@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// リソースへのアクセス拒否を説明し、Host が提示した許可・キャッシュ切替・拒否だけを要求する。
 
 	import { type SandboxSnapshot } from "@nerita/shared/sandboxManagement";
 

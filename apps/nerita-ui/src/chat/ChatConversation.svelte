@@ -1,4 +1,4 @@
-<!-- 会話・承認・進行状態を一つのスクロール領域に配置する。 -->
+<!-- 会話・承認・進行状態を1つのスクロール領域に配置する。 -->
 <script lang="ts">
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";

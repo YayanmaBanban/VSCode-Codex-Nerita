@@ -10,7 +10,7 @@ type PollingReceiver = {
 	error: (error: string | null) => void;
 	loading: (loading: boolean) => void;
 };
-/** 読み取りのポーリングは会話表示の寿命だけに紐付け、Run の停止を行わない。 */
+/** 読み取りのポーリングは会話を表示している間だけ続け、実行自体は停止しない。 */
 export class AgentViewPolling {
 	private requestId: string | undefined;
 	private timer: ReturnType<typeof setTimeout> | undefined;

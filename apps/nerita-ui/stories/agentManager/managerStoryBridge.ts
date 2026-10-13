@@ -154,7 +154,7 @@ const sampleAgents: ManagerState["agents"] = [
 		tools: [],
 		edit: { disabled: true },
 		editable: true,
-		unavailableReason: "外部 runner は Nerita では非対応です。",
+		unavailableReason: "外部ランナーは Nerita では非対応です。",
 	},
 	{
 		id: ".codex/agents/reviewer.toml",

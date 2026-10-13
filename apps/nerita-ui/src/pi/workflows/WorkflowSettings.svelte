@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// ワークフローの名前・同時実行数・制限時間を編集し、変更を親へ伝える。
 
 	import { type WorkflowSettingsProps } from "./WorkflowGraphEditorParts";
 

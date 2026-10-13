@@ -1,5 +1,5 @@
 <script lang="ts">
-	// 編集対象の値と操作を、親の文書状態から受け取る。
+	// 保持中のコマンド承認と有効範囲を表示し、選択した承認の取り消しを要求する。
 
 	import {
 		commandPermissionLabel,

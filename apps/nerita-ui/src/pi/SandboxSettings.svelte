@@ -32,17 +32,17 @@
 
 	import ResourceGrants from "./ResourceGrants.svelte";
 	import SandboxBackend from "./SandboxBackend.svelte";
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 以前のエラーを消して待機状態へ移り、実行環境の操作を Host へ要求する。 */
 	function request(message: SandboxRequest) {
 		error = "";
 		busy = true;
 		bridge.postMessage(message);
 	}
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 現在の実行環境の起動確認を Host へ要求する。 */
 	const probe = () => request({ type: "probe" });
 
-	/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+	/** 指定したコマンドの承認を取り消すよう Host へ要求する。 */
 	const revoke = (permission: CommandPermissionKey) =>
 		request({ type: "revoke", permission });
 </script>

@@ -129,6 +129,23 @@ JavaScript・TypeScript では、日本語の文字列リテラル、テンプ�
 pnpm --dir .agents/skills/japanese-proofreading textlint:clean --root ../../..
 ```
 
+## 非コメント部分をレビューだけで扱う設定
+
+検証用の文字列やコード例を多く含む領域では、対象リポジトリのルートに `.textlint-policy.json` を置いてください。
+`reviewOnlySourceTexts` に対象のパターンを指定します。
+
+```json
+{
+  "reviewOnlySourceTexts": ["apps/nerita-ui/stories/"]
+}
+```
+
+パターンはリポジトリルートを基準にした Git の除外パターン形式です。この設定は全モードに適用されます。設定がない場合や、パターンに一致しないソースファイルでは、従来どおり文言も静的に検査します。
+
+一致するソースファイルでもコメントは通常どおり検査します。文字列・テンプレートの固定部分・JSX 本文・Svelte の本文と属性値は、用語・AI スロップの静的検査から外します。`textlint:review*` の JSONL にはこれらも残し、必要な場合だけ校正します。パス・生成コード・検証入力の値は維持してください。
+
+Markdown・テキスト文書と `.textlintignore` によるファイルの選別には影響しません。不正な設定や、設定ファイルのシンボリックリンクはエラーになります。
+
 ## 参考にした考え方
 
 [yomiyasu の意味保持・文体調整の指針](https://github.com/nanaism/yomiyasu/blob/main/SKILL.md)を参考に、`references/Proofreading.md` のルールを技術文書向けに整理しました。

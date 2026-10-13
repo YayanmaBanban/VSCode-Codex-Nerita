@@ -1,5 +1,5 @@
-// 表示用の型と文書変換を共有し、各入力欄では状態を複製しない。
+// 文書編集の状態と操作を、ワークフローのツールバーへ渡す。
 
 import { type useWorkflow } from "./useWorkflow.svelte";
-/** 編集対象と表示結果の対応を、各欄で同じ契約として扱う。 */
+/** ツールバーから文書の保存・検証・実行を要求するための編集状態。 */
 export type WorkflowEditorState = ReturnType<typeof useWorkflow>;

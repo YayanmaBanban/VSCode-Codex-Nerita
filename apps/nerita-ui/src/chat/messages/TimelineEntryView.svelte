@@ -1,4 +1,4 @@
-<!-- 一つのタイムライン行をメッセージ・ツール・子スレッドへ振り分ける。 -->
+<!-- 1つのタイムライン行をメッセージ・ツール・子スレッドへ振り分ける。 -->
 <script lang="ts">
 	import type { Snippet } from "svelte";
 	import type { ToolSummary } from "@nerita/shared/chatState";
