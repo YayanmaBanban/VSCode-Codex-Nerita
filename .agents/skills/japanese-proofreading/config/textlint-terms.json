@@ -1,7 +1,8 @@
 {
 	"allowedEnglish": [
-		"\\n",
+		"Approval",
 		"Astra",
+		"Bitwarden",
 		"Bridge",
 		"canary",
 		"Chrome",
@@ -24,6 +25,7 @@
 		"Intent",
 		"Issue",
 		"Jev",
+		"Knowledge",
 		"low",
 		"Luna",
 		"no-op",

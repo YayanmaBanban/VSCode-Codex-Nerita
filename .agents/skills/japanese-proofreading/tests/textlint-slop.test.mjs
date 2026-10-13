@@ -217,6 +217,79 @@ test(
 	checkSourceStringTerms,
 );
 
+test("source escapes do not become English terms or hide the following words", () => {
+	const source = [
+		String.raw`const omitted = "\n… 出力を省略 …\n";`,
+		String.raw`const shell = "\nPowerShell の実行が可能になります。";`,
+		String.raw`const sandbox = "\nSandbox の拒否を確認しました。\n";`,
+		String.raw`const terms = "日本語\r\nstrangelexeme\tfallback\breadValue\f\v\0";`,
+		"const template = `日本語\\nstrangelexeme${count}",
+		"日本語\\r\\nstrangelexeme`;",
+		String.raw`const encoded = "日本語\x0Astrangelexeme\u000Astrangelexeme\u{A}strangelexeme";`,
+	].join("\r\n");
+	const items = extractSourceTexts(source, "sample.ts");
+	const issues = findEnglishTermIssues(
+		items,
+		{
+			preferredJapanese: {
+				sandbox: "サンドボックス",
+				fallback: "代替処理",
+			},
+		},
+		new Set(),
+		new Set(["readValue"]),
+	);
+
+	assert.deepEqual(
+		issues.map(({ type, term, line }) => [type, term, line]),
+		[
+			["preferred-japanese", "Sandbox", 3],
+			["unknown-english", "strangelexeme", 4],
+			["preferred-japanese", "fallback", 4],
+			["unquoted-identifier", "readValue", 4],
+			["unknown-english", "strangelexeme", 5],
+			["unknown-english", "strangelexeme", 6],
+			["unknown-english", "strangelexeme", 7],
+			["unknown-english", "strangelexeme", 7],
+			["unknown-english", "strangelexeme", 7],
+		],
+	);
+	assert.equal(
+		issues[0].text,
+		String.raw`\nSandbox の拒否を確認しました。\n`,
+	);
+	assert.equal(items[0].text, String.raw`\n… 出力を省略 …\n`);
+});
+
+test("escaped backslashes and prose keep literal English terms", () => {
+	const source = [
+		String.raw`const literal = "日本語\\nPowerShell";`,
+		String.raw`const newline = "日本語\\\nPowerShell";`,
+		String.raw`// 日本語\nPowerShell`,
+	].join("\n");
+	const items = [
+		...extractSourceTexts(source, "sample.ts"),
+		...extractSourceComments(source, "sample.ts").items,
+		...extractDocumentAuditItems(
+			String.raw`日本語\nPowerShell`,
+			"sample.md",
+		),
+	];
+
+	assert.deepEqual(
+		findEnglishTermIssues(items, {}).map(({ file, term, line }) => [
+			file,
+			term,
+			line,
+		]),
+		[
+			["sample.ts", "nPowerShell", 1],
+			["sample.ts", "nPowerShell", 3],
+			["sample.md", "nPowerShell", 1],
+		],
+	);
+});
+
 const checkIssueSchema = async (t) => {
 	const root = await fs.mkdtemp(path.join(os.tmpdir(), "nerita-slop-"));
 	t.after(() => fs.rm(root, { recursive: true, force: true }));
