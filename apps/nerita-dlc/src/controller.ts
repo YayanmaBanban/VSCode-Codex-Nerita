@@ -22,9 +22,11 @@ import {
 	requestStop,
 } from "./transitions";
 
+/** 依頼状態の保存境界。保存時は期待するリビジョンを照合し、競合した更新を上書きしない。 */
 export type IntentStore = {
 	save(state: IntentState, expectedRevision: number): Promise<void>;
 };
+/** 実行世代の識別子・中断制御・完了待ちをまとめ、同時実行の管理に使う。 */
 type ActiveRun = {
 	id: string;
 	abort: AbortController;
@@ -115,6 +117,7 @@ export class DlcController {
 		id: string,
 		signal: AbortSignal,
 	): Promise<DlcProjection> {
+		/** 承認済みの実行世代と中断シグナルを固定して実行処理へ渡す。 */
 		const operation = () => this.executeAdmitted(id, signal);
 		// 開始条件を満たさない場合は、実行履歴を追加しない。
 		return this.runtime.withAdmission

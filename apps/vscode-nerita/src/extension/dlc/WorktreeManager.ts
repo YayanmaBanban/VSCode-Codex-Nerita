@@ -9,6 +9,7 @@ import { trustKey } from "../security/trust/WorkspaceTrustStore";
 import { projectIdentity } from "./ProjectStorage";
 
 const execute = promisify(execFile);
+/** 選択できる Worktree の情報。削除の可否は表示情報だけで決めず、操作時にも Host で検証する。 */
 export type WorktreeTarget = {
 	id: string;
 	root: string;

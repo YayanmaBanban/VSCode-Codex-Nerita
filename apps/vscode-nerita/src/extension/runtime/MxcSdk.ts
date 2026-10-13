@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type * as Sdk from "@microsoft/mxc-sdk";
 
+/** 起動経路を解決した MXC SDK。利用側は解決済みのランチャーと設定に対応する引数を使う。 */
 export type MxcSdk = typeof Sdk & {
 	launcherPath: string;
 	resolveLaunch: (config: Sdk.ContainerConfig) => {

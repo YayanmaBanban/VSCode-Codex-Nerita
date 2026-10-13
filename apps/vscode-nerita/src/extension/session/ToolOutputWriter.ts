@@ -1,6 +1,7 @@
 // 追記は開いたファイルへ送り、累積結果は最新の一件だけを小分けに書き出す。
 import { closeSync, ftruncateSync, openSync, writeSync } from "node:fs";
 
+/** ツール出力の遅延書き込みと完了待ち。文字数・バイト数を本文と同じ時点で保持する。 */
 type Snapshot = {
 	text: string;
 	chars: number;
@@ -9,6 +10,7 @@ type Snapshot = {
 	resolve: () => void;
 	timer?: NodeJS.Immediate;
 };
+/** 開いた出力ファイルの書き込み状態。保留中の本文と失敗をファイル記述子に結び付ける。 */
 type File = { fd: number; bytes: number; snapshot?: Snapshot; error?: Error };
 
 /** 現在の会話の一時ファイルだけを所有し、外部の保存本文は書き換えない。 */

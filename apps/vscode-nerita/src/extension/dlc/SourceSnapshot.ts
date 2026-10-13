@@ -83,6 +83,7 @@ export async function collectSourceSnapshot(
 	return { id, baseCommit, indexDigest, complete: true, files, artifacts };
 }
 
+/** 指定ルートで Git を時間・出力容量・中断の制限付きで実行し、標準出力を返す。 */
 async function git(
 	root: string,
 	args: string[],
@@ -96,6 +97,7 @@ async function git(
 	});
 	return result.stdout;
 }
+/** 存在する通常ファイルだけをルート内から収集し、リンクや領域外への差し替えを拒否する。 */
 async function sourceFile(root: string, path: string): Promise<Buffer | null> {
 	const target = resolve(root, path);
 	let stat;
@@ -128,6 +130,7 @@ async function sourceFile(root: string, path: string): Promise<Buffer | null> {
 	return readFile(target);
 }
 
+/** DLC の管理領域を除いたステージ済み差分の指紋を計算し、実行対象の変更を識別する。 */
 async function stagedDigest(
 	root: string,
 	signal: AbortSignal,

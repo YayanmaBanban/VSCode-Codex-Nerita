@@ -18,7 +18,11 @@ import {
 	type WorkflowBridge,
 	type WorkflowRequest,
 } from "@nerita/shared/workflows/messages";
-import type { PiAuthRequest } from "@nerita/shared/piAuth";
+import {
+	isPiAuthState,
+	type PiAuthState,
+	type PiAuthRequest,
+} from "@nerita/shared/piAuth";
 import {
 	managerReplySchema,
 	type ManagerBridge,
@@ -44,12 +48,14 @@ type VsCodeApi = {
 			| ManagerRequest,
 	) => void;
 };
+/** VS Code が Webview に注入する API の宣言。取得したインスタンスは通信境界内で共有する。 */
 declare function acquireVsCodeApi(): VsCodeApi;
 import {
 	credentialReplySchema,
 	type CredentialBridge,
 	type CredentialRequest,
 } from "@nerita/shared/credentials";
+
 let api: VsCodeApi | undefined;
 
 /** 資格情報管理では秘密値を含まない専用契約で通信する。 */
@@ -81,6 +87,13 @@ export function createPiAuthPost(): (request: PiAuthRequest) => void {
 	const acquired = (api ??= acquireVsCodeApi());
 	return (request) => acquired.postMessage(request);
 }
+/** 認証の受信検証と解除もブラウザ境界にまとめ、表示側には確定状態だけを渡す。 */
+export function subscribePiAuth(listener: (state: PiAuthState) => void) {
+	return subscribeMessages(
+		(value) => (isPiAuthState(value) ? value : undefined),
+		listener,
+	);
+}
 /** API を一度だけ取得し、購読解除可能な Bridge を返す。 */
 export function createVsCodeBridge(): Bridge {
 	return createBridge((value) => (isHostMessage(value) ? value : undefined));
@@ -100,16 +113,25 @@ function createBridge<T>(parse: (value: unknown) => T | undefined) {
 		postMessage: (message: Parameters<VsCodeApi["postMessage"]>[0]) =>
 			acquired.postMessage(message),
 		subscribe(listener: (message: T) => void) {
-			const receive = (event: MessageEvent<unknown>) => {
-				const message = parse(event.data);
-				if (message !== undefined) {
-					listener(message);
-				}
-			};
-			window.addEventListener("message", receive);
-			return () => window.removeEventListener("message", receive);
+			return subscribeMessages(parse, listener);
 		},
 	};
+}
+
+/** 不正な外部通知を捨て、購読元の破棄時に同じ listener を解除する。 */
+function subscribeMessages<T>(
+	parse: (value: unknown) => T | undefined,
+	listener: (message: T) => void,
+) {
+	/** 受信値を検証し、正しい Host メッセージだけを購読先へ通知する。 */
+	const receive = (event: MessageEvent<unknown>) => {
+		const message = parse(event.data);
+		if (message !== undefined) {
+			listener(message);
+		}
+	};
+	window.addEventListener("message", receive);
+	return () => window.removeEventListener("message", receive);
 }
 
 /** 専用パネルはスキーマが返す解析値を通知し、不正な入力を捨てる。 */

@@ -9,6 +9,7 @@ export async function handoffWithDeadline(
 	const abort = new AbortController();
 	const signal = AbortSignal.any([request.signal, abort.signal]);
 	const timer = setTimeout(() => abort.abort(), request.timeoutMs);
+	/** 中断時の待機拒否処理を後から登録するための初期ハンドラー。 */
 	let rejectAbort: () => void = () => {};
 	try {
 		signal.throwIfAborted();

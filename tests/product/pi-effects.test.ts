@@ -14,6 +14,7 @@ import { defaultGuardrails } from "@nerita/shared/guardrails/config";
 import { validStateField } from "@nerita/shared/stateFieldValidation";
 import { guardrailRegistry } from "../../apps/vscode-nerita/src/extension/security/GuardrailRegistry";
 import { piFixture, send, permission, finished, until } from "../support/pi";
+
 void test("許可前には書かず、許可後は一度だけ書く。重複要求を再実行しない", async (t) => {
 	const f = await piFixture(t);
 	f.model.replies.push(

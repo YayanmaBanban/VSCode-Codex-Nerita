@@ -297,6 +297,7 @@ export class PiMcpServer {
 			throw new Error("この MCP ツールは現在利用できません。");
 		}
 		this.operation = signal;
+		/** 中断シグナルを MCP 接続の終了処理へ接続する。 */
 		const cancel = () => {
 			void this.close();
 		};

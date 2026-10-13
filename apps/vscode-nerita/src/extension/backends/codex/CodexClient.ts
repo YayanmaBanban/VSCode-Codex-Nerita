@@ -73,6 +73,7 @@ export class CodexClient {
 			void transport.dispose().catch(() => {});
 		};
 		options.signal?.addEventListener("abort", abort, { once: true });
+		/** 完了した RPC 要求の中断購読を解除し、後から届く中断を処理しない。 */
 		const detachAbort = () =>
 			options.signal?.removeEventListener("abort", abort);
 		try {

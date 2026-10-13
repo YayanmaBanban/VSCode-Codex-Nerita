@@ -1,5 +1,8 @@
 // 入力欄と送信済みメッセージで参照のアイコンとラベルを揃える。
-import { Braces, Folder, MessageSquare, GitCompare } from "lucide-react";
+import Braces from "@lucide/svelte/icons/braces";
+import Folder from "@lucide/svelte/icons/folder";
+import MessageSquare from "@lucide/svelte/icons/message-square";
+import GitCompare from "@lucide/svelte/icons/git-compare";
 import type { ComposerTarget } from "@nerita/shared/composerTargets";
 import { fileIcon } from "./fileIcon";
 

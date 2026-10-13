@@ -124,6 +124,7 @@ export function $pasteReferences(data: DataTransfer, text: string): boolean {
 
 /** 本文・HTML のコピーとカットの削除は標準処理へ渡し、付加情報だけを書く。 */
 export function registerReferenceClipboard(editor: LexicalEditor): () => void {
+	/** クリップボードへのコピーで参照情報を補い、Lexical の通常のコピー処理も継続させる。 */
 	const copy = (event: ClipboardEvent | KeyboardEvent | null) => {
 		if (event instanceof ClipboardEvent) {
 			$copyReferences(event);

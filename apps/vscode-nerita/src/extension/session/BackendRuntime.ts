@@ -22,6 +22,7 @@ import { ToolOutputStore } from "./ToolOutputStore";
 import type { DlcSessionOwnership } from "./DlcSessionOwnership";
 import { containsPath } from "../security/AgentAccessPolicy";
 
+/** 依頼と実行世代を固定したバックエンド入力。実行先のルートも同じ組で保持する。 */
 type DlcInput = {
 	intentId: string;
 	attemptId: string;
@@ -30,6 +31,7 @@ type DlcInput = {
 	root: string;
 };
 
+/** DLC 実行のセッションと解除処理。実行結果・承認・ディレクトリの予約を同じ世代に結び付ける。 */
 type DlcSession = DlcInput & {
 	intentId: string;
 	attemptId: string;
@@ -550,6 +552,7 @@ export class BackendRuntime implements BackendSession {
 	}
 	/** 個別の信頼変更はそのルートの会話だけに適用し、独立した Worktree の実行は維持する。 */
 	invalidateTrust(root?: string): void {
+		/** 停止対象のルートと親子関係にある実行先を判定し、作業場所が未確定の実行も停止対象に含める。 */
 		const affected = (cwd: string | null) => {
 			const matchingRoot =
 				root === undefined || cwd === null || containsPath(root, cwd);
@@ -750,6 +753,7 @@ export class BackendRuntime implements BackendSession {
 		let releaseDirectory: (() => Promise<void>) | undefined;
 		/** 予約の照合と実行開始は次のマイクロタスクで行い、呼出し元へ実行状態を先に返す。 */
 		const executeReservedSession = async () => {
+			/** DLC の入力とセッションを固定し、ディレクトリの予約後に実行を開始する。 */
 			const execute = () =>
 				this.executeSession(
 					session,
@@ -819,6 +823,7 @@ export class BackendRuntime implements BackendSession {
 			throw new Error("このバックエンドは内部実行に対応していません。");
 		}
 		let connected = false;
+		/** 中断時に現在の実行を取り消し、接続前ならセッションも失効させる。 */
 		const interrupted = () => {
 			session.cancelExecution?.();
 			if (!connected) {

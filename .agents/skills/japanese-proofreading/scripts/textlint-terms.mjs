@@ -1,5 +1,6 @@
 // 抽出済みの日本語から英単語と識別子の表記を検査する。
 import { maskHtmlComments, maskProtectedText } from "./textlint-protected.mjs";
+
 const JAPANESE_PATTERN =
 	/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
@@ -191,7 +192,16 @@ export function findEnglishTermIssues(
 
 	for (const item of items) {
 		const lines = item.text.split(/\r?\n/);
-		const maskedLines = maskHtmlComments(item.text).split(/\r?\n/);
+		// 抽出時に残したエスケープを語に含めず、元の本文と行番号は維持する。
+		// バックスラッシュの対も消費し、\\n の n は改行と誤認しない。
+		const protectedText =
+			item.kind === "string" || item.kind === "template-text"
+				? item.text.replace(
+						/\\(?:u\{[\dA-Fa-f]+\}|u[\dA-Fa-f]{4}|x[\dA-Fa-f]{2}|[\\nrtbfv0])/g,
+						(value) => " ".repeat(value.length),
+					)
+				: item.text;
+		const maskedLines = maskHtmlComments(protectedText).split(/\r?\n/);
 
 		for (let index = 0; index < lines.length; index += 1) {
 			issues.push(

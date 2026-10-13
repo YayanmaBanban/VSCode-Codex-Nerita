@@ -22,7 +22,9 @@ export const DlcActionSchema = z.discriminatedUnion("type", [
 	z.strictObject({ type: z.literal("archive") }),
 	z.strictObject({ type: z.literal("retry"), workItemId: z.string().min(1) }),
 ]);
+/** DLC の工程操作。外部入力は `DlcActionSchema` で検証してから扱う。 */
 export type DlcAction = z.infer<typeof DlcActionSchema>;
+/** 手動タスクの入力。外部入力は `DlcTaskSchema` で検証してから扱う。 */
 export type DlcTask = z.infer<typeof DlcTaskSchema>;
 
 /** 選択は LLM に推定させず、未指定の場合は classic を使う。 */
@@ -39,12 +41,14 @@ export const ExecutionProfileSchema = z.enum([
 	"workshop",
 	"express",
 ]);
+/** 実行する工程の範囲を選ぶプロファイル。外部入力は `ExecutionProfileSchema` で検証してから扱う。 */
 export type ExecutionProfile = z.infer<typeof ExecutionProfileSchema>;
 export const DlcProjectTypeSchema = z.enum([
 	"greenfield",
 	"brownfield",
 	"unknown",
 ]);
+/** 新規・既存のプロジェクト分類。外部入力は `DlcProjectTypeSchema` で検証してから扱う。 */
 export type DlcProjectType = z.infer<typeof DlcProjectTypeSchema>;
 
 /** 状態と適用の判断を別に表示し、未確定をスキップと混同しない。 */
@@ -108,6 +112,7 @@ export const DlcProjectionSchema = z.strictObject({
 	canRun: z.boolean(),
 	canCancel: z.boolean(),
 });
+/** 工程の選択と実行状態をまとめた表示情報。外部入力は `DlcProjectionSchema` で検証してから扱う。 */
 export type DlcProjection = z.infer<typeof DlcProjectionSchema>;
 
 /** 開始保留は実行結果や工程の失敗とは別に、Host が現在の実行条件から生成する。 */
@@ -115,6 +120,7 @@ export const DlcStartHoldSchema = z.strictObject({
 	reason: z.enum(["worktree-required", "trust-required", "unavailable"]),
 	message: z.string().min(1),
 });
+/** 実行開始を保留する理由と解消操作。外部入力は `DlcStartHoldSchema` で検証してから扱う。 */
 export type DlcStartHold = z.infer<typeof DlcStartHoldSchema>;
 
 /** 一覧の表示は保存済み進捗と Host の開始条件から生成し、UI の選択状態は含めない。 */
@@ -138,6 +144,7 @@ export const IntentSummarySchema = z.strictObject({
 		"attention",
 	]),
 });
+/** 依頼一覧に表示する状態の要約。外部入力は `IntentSummarySchema` で検証してから扱う。 */
 export type IntentSummary = z.infer<typeof IntentSummarySchema>;
 
 /** 展開位置はエディタ専用の利用者状態で、Intent の管理ファイルには保存しない。 */
@@ -147,6 +154,7 @@ export const DlcEditorStateSchema = z.strictObject({
 		z.array(z.number().int().min(0).max(4)).max(5),
 	),
 });
+/** 依頼ごとの表示・展開状態。外部入力は `DlcEditorStateSchema` で検証してから扱う。 */
 export type DlcEditorState = z.infer<typeof DlcEditorStateSchema>;
 
 /** DLC の要求は Intent の識別子と期待版を伴い、遅延した画面操作を拒否できる。 */
@@ -231,6 +239,7 @@ export const DlcUiMessageSchema = z.discriminatedUnion("type", [
 		attemptId: z.string().min(1),
 	}),
 ]);
+/** DLC の画面から Host へ送る操作。外部入力は `DlcUiMessageSchema` で検証してから扱う。 */
 export type DlcUiMessage = z.infer<typeof DlcUiMessageSchema>;
 export const DlcViewSchema = z.strictObject({
 	mode: z.enum(["chat", "dlc"]),
@@ -269,6 +278,7 @@ export const DlcViewSchema = z.strictObject({
 		.strictObject({ attemptId: z.string(), prompt: z.string() })
 		.nullable(),
 });
+/** DLC の一覧と実行領域の表示状態。外部入力は `DlcViewSchema` で検証してから扱う。 */
 export type DlcView = z.infer<typeof DlcViewSchema>;
 
 /** 区切り文字や Windows の予約名を含まない相対パスだけを許可する。 */

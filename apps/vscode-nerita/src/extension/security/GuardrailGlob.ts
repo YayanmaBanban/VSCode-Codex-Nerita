@@ -3,6 +3,7 @@ import { basename } from "node:path";
 
 /** 単一の * は一階層、二重の * は階層をまたいで一致する。 */
 export function matchPath(pattern: string, input: string): boolean {
+	/** Windows のパス照合でだけ大文字・小文字を揃え、他の環境では表記を維持する。 */
 	const normalize = (value: string) =>
 		process.platform === "win32" ? value.toLowerCase() : value;
 	const target = normalize(pattern.includes("/") ? input : basename(input));

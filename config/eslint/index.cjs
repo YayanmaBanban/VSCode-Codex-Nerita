@@ -12,5 +12,8 @@ module.exports = {
 		"no-await-in-condition": require("./no-await-in-condition.cjs"),
 		"no-multiline-if-condition": require("./no-multiline-if-condition.cjs"),
 		"require-member-function-comment": require("./require-member-function-comment.cjs"),
+		"require-file-comment": require("./require-file-comment.cjs"),
+		"require-declaration-comment": require("./require-declaration-comment.cjs"),
+		"require-effect-reason": require("./require-effect-reason.cjs"),
 	},
 };

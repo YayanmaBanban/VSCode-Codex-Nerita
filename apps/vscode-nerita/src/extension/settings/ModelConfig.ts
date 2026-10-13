@@ -20,6 +20,7 @@ const section = z
 const schema = z
 	.object({ pi: section.optional(), codex: section.optional() })
 	.loose();
+/** モデル・取得元・推論の選択状態。省略された項目は既定値へ委ねる。 */
 type Selection = {
 	model?: string | undefined;
 	provider?: string | undefined;

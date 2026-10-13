@@ -174,6 +174,7 @@ export class SafeDlcFiles {
 	}
 }
 
+/** 読み取り対象のファイル形式・容量・識別情報を照合し、複数リンクを持つファイルを拒否する。 */
 function assertReadable(
 	before: Stats,
 	stat: Stats,
@@ -187,6 +188,7 @@ function assertReadable(
 		throw new Error(`DLC のファイル形式または容量が不正です: ${path}`);
 	}
 }
+/** 読み取り前後のファイル識別情報・容量・更新時刻を比べ、途中の変更を拒否する。 */
 function assertUnchanged(before: Stats, after: Stats): void {
 	const matchesDev =
 		after.dev !== before.dev ||

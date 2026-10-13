@@ -16,6 +16,7 @@ import {
 	SessionMemoryCredentialStore,
 } from "../credentials/CredentialStore";
 
+/** バックエンド別のモデル取得処理。中断シグナルを尊重し、選択できるモデルと推論候補を返す。 */
 export type AgentModelReader = (
 	backend: "pi" | "codex",
 	signal: AbortSignal,

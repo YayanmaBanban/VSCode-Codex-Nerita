@@ -21,6 +21,7 @@ export async function generateCodexHandoff(
 	});
 	// 接続準備中の取消でも未処理の拒否を残さない。
 	void done.catch(() => {});
+	/** 引き継ぎ文の生成が中断された場合は、結果の待機をキャンセルとして拒否する。 */
 	const abort = () => rejectResult(new Error("Handoff cancelled"));
 	request.signal.addEventListener("abort", abort, { once: true });
 	try {

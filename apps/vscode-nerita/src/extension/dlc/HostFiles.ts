@@ -3,6 +3,7 @@ import { mkdir, realpath, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { SafeDlcFiles } from "./SafeDlcFiles";
 
+/** Host 専用の実行管理ファイルを開く。利用側はワークスペースではなく専用の保存先を渡す。 */
 export async function hostFiles(
 	storageRoot: string,
 	name: "directory-runs" | "session-ownership",

@@ -36,9 +36,11 @@ import {
 	handoffEffortError,
 } from "@nerita/shared/agentManager/effort";
 
+/** Pi のエージェント定義の取得境界。保存元と編集可否を保持した読み取り結果を返す。 */
 export type PiAgentReader = () => Promise<
 	Awaited<ReturnType<typeof readPiAgents>>
 >;
+/** 設定世代の照合が必要な変更要求。利用側は取得した世代をそのまま保存要求へ渡す。 */
 export type ManagerMutation = Extract<ManagerRequest, { generation: string }>;
 
 /** 保存時点のモデル候補で、新しく指定したモデルと推論レベルを検証する。 */
@@ -53,6 +55,7 @@ export class AgentManagerStore {
 	/** 各設定の読取り失敗を表示用のエラーに保持し、世代には設定内容と取得エラーの両方を含める。 */
 	async read() {
 		const errors: string[] = [];
+		/** 設定ファイルの読み取り失敗を一覧へ集約し、他の設定の取得は続ける。 */
 		const read = async (file: string) => {
 			try {
 				return await readWorkspaceFile(this.root, file);

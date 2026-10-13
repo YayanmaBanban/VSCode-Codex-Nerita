@@ -85,6 +85,7 @@ function createSandboxSetupTask(
 		});
 		// 完了待ちを始める前に接続失敗や通知が届いても、Promise の拒否を未処理にしない。
 		void finished.catch(() => undefined);
+		/** サンドボックスの設定中に接続が終了した場合は、完了待ちを失敗として解除する。 */
 		const cancel = () =>
 			fail(new Error("Sandboxセットアップの接続が終了しました。"));
 		lifetime.signal.addEventListener("abort", cancel, {

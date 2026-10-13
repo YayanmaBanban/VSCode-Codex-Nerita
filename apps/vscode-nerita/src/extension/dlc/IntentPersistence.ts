@@ -38,6 +38,7 @@ export const StateDiskSchema = IntentStateBodySchema.extend({
 		)
 		.max(50),
 });
+/** ディスクに保存する依頼状態。読み込み時は `StateDiskSchema` と状態の参照整合性を検証する。 */
 export type StateDisk = z.infer<typeof StateDiskSchema>;
 const receiptSchema = z.strictObject({
 	schemaVersion: z.literal(1),
@@ -120,6 +121,7 @@ export async function restoreState(
 	return IntentStateSchema.parse({ ...disk, intent, workItems });
 }
 
+/** 実行結果と根拠を別の記録へ保存し、作業の要約には参照と指紋だけを保持する。 */
 async function persistAttempt(
 	files: SafeDlcFiles,
 	directory: string,

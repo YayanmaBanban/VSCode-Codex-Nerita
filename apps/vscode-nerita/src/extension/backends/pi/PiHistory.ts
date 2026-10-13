@@ -15,6 +15,7 @@ export abstract class PiHistory extends PiRun {
 		const epoch = this.epoch;
 		const listing = ++this.listing;
 		this.patch({ sessionsLoading: true, sessionsError: null });
+		/** 履歴の取得世代・要求・実行管理が同じままかを照合し、旧取得の結果を適用しない。 */
 		const current = () =>
 			this.epoch === epoch &&
 			this.listing === listing &&

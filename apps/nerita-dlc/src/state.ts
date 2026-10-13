@@ -30,6 +30,7 @@ export const IntentMetadataSchema = z.strictObject({
 	request: z.string().min(1).max(16000),
 	createdAt: z.iso.datetime(),
 });
+/** 依頼本文と入力の参照情報。保存値は `IntentMetadataSchema` で検証してから扱う。 */
 export type IntentMetadata = z.infer<typeof IntentMetadataSchema>;
 export const IntentRegistrySchema = z
 	.strictObject({
@@ -56,6 +57,7 @@ export const IntentRegistrySchema = z
 			}
 		}
 	});
+/** 登録済み依頼の一覧。保存値は `IntentRegistrySchema` で検証してから扱う。 */
 export type IntentRegistry = z.infer<typeof IntentRegistrySchema>;
 
 export const AttemptSchema = z.strictObject({
@@ -87,6 +89,7 @@ export const WorkItemSchema = DlcTaskSchema.extend({
 		});
 	}
 });
+/** 手動作業と実行履歴。保存値は `WorkItemSchema` で検証してから扱う。 */
 export type WorkItem = z.infer<typeof WorkItemSchema>;
 
 /** 本文は intent.json から結合する。工程と手動タスクの状態はここだけで保持する。 */
@@ -117,6 +120,7 @@ export const IntentStateSchema = IntentStateBodySchema.extend({
 	validateReferences(state, context);
 	validateStages(state, context);
 });
+/** 依頼・工程・作業の保存状態。読み込み時は個別フィールドだけでなく状態全体の参照関係も検証する。 */
 export type IntentState = z.infer<typeof IntentStateBodySchema> & {
 	intent: IntentMetadata;
 };

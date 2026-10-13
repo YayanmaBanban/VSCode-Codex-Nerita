@@ -11,6 +11,7 @@ import { webviewHtml } from "../webview/webviewHtml";
 import { openResource } from "../webview/openResource";
 import type { DlcHost } from "./DlcHost";
 
+/** DLC の表示パネルと通信を保持する。利用側は VS Code の破棄処理へ登録し、再表示で実行を生成し直さない。 */
 export class DlcWorkspacePanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
 	private unbind: (() => void) | undefined;

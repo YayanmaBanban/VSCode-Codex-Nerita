@@ -90,12 +90,14 @@ export class SandboxManagement {
 		onPending?.();
 		return new Promise((resolve) => {
 			const id = randomUUID();
+			/** 拒否への回答待ちを解除し、中断の購読を外して再試行の可否を返す。 */
 			const finish = (retry: boolean) => {
 				this.waiting.delete(id);
 				signal.removeEventListener("abort", abort);
 				this.changed();
 				resolve(retry);
 			};
+			/** 実行が中断されたときは、拒否された操作を再試行せずに回答待ちを完了させる。 */
 			const abort = () => finish(false);
 			this.waiting.set(id, {
 				report: structuredClone(report),

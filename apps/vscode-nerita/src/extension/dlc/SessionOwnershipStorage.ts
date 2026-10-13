@@ -8,12 +8,14 @@ import { DlcSessionOwnership } from "../session/DlcSessionOwnership";
 
 const schema = z.array(z.string().min(1).max(8192));
 
+/** Host の会話所有記録を開く。Host 専用の保存先を渡し、所有記録の更新は排他制御を通して行う。 */
 export async function sessionOwnershipStorage(
 	storageRoot: string,
 ): Promise<DlcSessionOwnership> {
 	const files = await hostFiles(storageRoot, "session-ownership");
 	await files.directory(".nerita/dlc");
 	const file = ".nerita/dlc/sessions.json";
+	/** 保存した会話 ID の一覧を読み取り、欠落時の空一覧もスキーマで検証する。 */
 	const read = async () =>
 		schema.parse(JSON.parse((await files.read(file)) ?? "[]"));
 	const initial = await read();

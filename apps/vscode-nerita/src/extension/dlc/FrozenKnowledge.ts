@@ -40,7 +40,9 @@ export const FrozenKnowledgeSchema = z
 			});
 		}
 	});
+/** 実行時に固定した知識の記録。読み込み時は `FrozenKnowledgeSchema` で検証する。 */
 export type FrozenKnowledge = z.infer<typeof FrozenKnowledgeSchema>;
+/** 固定した知識の本文から、内容を照合するための SHA-256 の指紋を生成する。 */
 function textDigest(text: string): string {
 	return `sha256:${createHash("sha256").update(text).digest("hex")}`;
 }
@@ -57,6 +59,7 @@ export async function freezeKnowledge(
 	let total = 0;
 	let visited = 0;
 	const deadline = Date.now() + 30_000;
+	/** 知識の階層を決まった順序で収集し、中断・時間・件数・深さの上限を守る。 */
 	const walk = async (
 		directory: string,
 		scope: FrozenKnowledge["entries"][number]["scope"],

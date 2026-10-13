@@ -26,6 +26,7 @@ const ownerSchema = z.strictObject({
 
 /** 取得前の一時競合だけを区別する。破損、書込み失敗、解放失敗は再試行しない。 */
 export class DlcLockBusyError extends Error {}
+/** プロセスの不在が明確な場合だけ終了済みと判定し、権限エラーを終了とみなさない。 */
 function exited(pid: number): boolean {
 	try {
 		process.kill(pid, 0);
@@ -36,6 +37,7 @@ function exited(pid: number): boolean {
 		);
 	}
 }
+/** 保存ロックを取得し、所有者の終了を確認できる古いロックだけを回収する。 */
 async function acquire(
 	files: SafeDlcFiles,
 	target: string,

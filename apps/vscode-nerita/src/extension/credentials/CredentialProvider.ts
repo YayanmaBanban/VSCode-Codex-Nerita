@@ -14,16 +14,19 @@ export type CredentialRequirement = {
 	operation: string;
 	workspace: string;
 };
+/** 取得前の資格情報候補。要求・参照設定・取得元を同じ組のまま承認と取得へ渡す。 */
 export type CredentialCandidate = {
 	requirement: CredentialRequirement;
 	binding: CredentialBinding;
 	providerId: string;
 };
+/** 取得した秘密値と認証方式。利用側は表示やログへ渡さず、指定された注入先だけで使用する。 */
 export type CredentialMaterial = {
 	type: "token" | "username-password" | "npm-basic";
 	secret: SecretValue;
 	username?: SecretValue;
 };
+/** 候補の調査と秘密値の取得を分ける境界。調査では秘密値を取得せず、承認後の候補だけを取得へ渡す。 */
 export type CredentialProvider = {
 	readonly id: string;
 	inspect(

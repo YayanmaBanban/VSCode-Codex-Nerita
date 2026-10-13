@@ -147,6 +147,7 @@ function collectHostOutput(
 		let stderr = "";
 		let failure: Error | undefined;
 		const stop = createProcessTreeStopper(child);
+		/** 中断理由を実行失敗へ保持してから、Host で起動したプロセスを停止する。 */
 		const abort = () => {
 			failure = new Error("Host 実行を停止しました。", {
 				cause: signal.reason,
@@ -157,6 +158,7 @@ function collectHostOutput(
 			failure = new Error("Host 実行がタイムアウトしました。");
 			stop();
 		}, timeout);
+		/** Host 実行の途中出力を通知し、通知先の失敗時には実行を停止する。 */
 		const notify = (stream: "stdout" | "stderr", text: string) => {
 			try {
 				output?.(stream, text);

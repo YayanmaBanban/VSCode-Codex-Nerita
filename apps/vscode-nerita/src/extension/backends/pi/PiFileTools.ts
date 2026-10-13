@@ -163,6 +163,7 @@ function createApprovedFileWriter(
 		const handle = await open(path, snapshot.file ? "r+" : "wx");
 		try {
 			const info = await handle.stat();
+			/** 以前のスナップショットと現在のファイル識別情報を比べ、別ファイルへの差し替えを検出する。 */
 			const sameIdentity = (
 				previous: NonNullable<typeof snapshot.file>,
 			) =>

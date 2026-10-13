@@ -19,6 +19,7 @@ export const RunContextSchema = z.strictObject({
 		.max(3 * 1024 * 1024),
 	knowledge: FrozenKnowledgeSchema,
 });
+/** DLC 実行時の入力コンテキスト。外部入力は `RunContextSchema` で検証してから扱う。 */
 export type RunContext = z.infer<typeof RunContextSchema>;
 export const RunConversationSchema = z.custom<ChatState>(
 	isState,

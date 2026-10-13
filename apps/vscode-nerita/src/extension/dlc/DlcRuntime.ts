@@ -186,6 +186,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 		}
 	}
 }
+/** JSON として読める応答だけを解析し、解析できない本文は検証前の文字列として残す。 */
 function semanticResult(text: string | null): unknown {
 	if (text === null) {
 		return null;
@@ -197,6 +198,7 @@ function semanticResult(text: string | null): unknown {
 		return text;
 	}
 }
+/** 完了状態を区別してツールの根拠を作り、対象ルート内で検証できるパスだけを記録する。 */
 function toolEvidence(
 	tool: ToolSummary,
 	root: string,
@@ -222,6 +224,7 @@ function toolEvidence(
 		...(tool.exitCode === undefined ? {} : { exitCode: tool.exitCode }),
 	};
 }
+/** DLC の出力契約と固定した作業内容から指示を組み立てる。要求と知識は検証・固定済みの値を渡す。 */
 export function executionPrompt(
 	request: ExecutionRequest,
 	knowledge: FrozenKnowledge,

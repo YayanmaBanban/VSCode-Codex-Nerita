@@ -10,6 +10,7 @@ async function cancellable<T>(
 ): Promise<T> {
 	signal.throwIfAborted();
 	const source = new vscode.CancellationTokenSource();
+	/** RPC の中断シグナルを、VS Code の操作キャンセルへ接続する。 */
 	const abort = () => source.cancel();
 	signal.addEventListener("abort", abort, { once: true });
 	try {

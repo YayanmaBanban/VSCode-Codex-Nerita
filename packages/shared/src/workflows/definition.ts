@@ -38,6 +38,7 @@ export const workflowSchema = z
 	.strict();
 /** 表示設定は依存順と子の実行条件へ影響しない。 */
 export type Workflow = z.infer<typeof workflowSchema>;
+/** ワークフロー内の単一ステップ。依存関係と会話の継承先は、所属するワークフロー全体で検証する。 */
 export type WorkflowStep = Workflow["steps"][number];
 
 /** 任意の式を認めず、結果参照の構文だけを解析する。 */

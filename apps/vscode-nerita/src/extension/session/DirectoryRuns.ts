@@ -5,7 +5,9 @@ import { containsPath } from "../security/AgentAccessPolicy";
 import type { ChatState } from "@nerita/shared/chatState";
 import { taskActive } from "@nerita/shared/asyncTask";
 
+/** 実行中のディレクトリ予約。保存したトークンで予約を識別し、プロセス ID だけで解放しない。 */
 export type DirectoryRun = { token: string; root: string; pid: number };
+/** ディレクトリ予約の更新境界。記録の読み取りと更新を排他制御の中で実行する。 */
 export type DirectoryRunStorage = {
 	update(
 		operation: (records: DirectoryRun[]) => DirectoryRun[],
@@ -33,6 +35,7 @@ export class DirectoryRunConflictError extends Error {
 	}
 }
 
+/** 重複するディレクトリの同時実行を防ぐ。利用側は取得した解除関数を実行終了時に待機して呼び出す。 */
 export class DirectoryRuns {
 	/** 実行予約の保存先を共有し、同じディレクトリを別の実行が使用しないよう照合する。 */
 	constructor(private storage: DirectoryRunStorage = localStorage) {}

@@ -87,6 +87,7 @@ async function executePiReadTool(
 			"検査中に読取り対象が変更されました。再承認が必要です。",
 		);
 	}
+	/** 承認時の読み取り対象と実体を再照合し、パスが変化していれば再承認を求める。 */
 	const check = async () => {
 		permit.signal.throwIfAborted();
 		const matchesValue =

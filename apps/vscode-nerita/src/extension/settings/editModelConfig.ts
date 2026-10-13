@@ -68,6 +68,7 @@ export function editModelConfig(
 	let active = false;
 	let found = false;
 	let output = "";
+	/** 既存の設定へ書けなかった項目をまとめて出力し、同じ追加項目を繰り返し挿入しない。 */
 	const additions = () => {
 		const result = [...remaining]
 			.map(([key, value]) => `${key} = ${JSON.stringify(value)}${eol}`)

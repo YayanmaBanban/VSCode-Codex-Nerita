@@ -219,3 +219,117 @@ test("template fragments preserve multiline source positions without evaluating 
 		["式のコメント。"],
 	);
 });
+
+test("Svelte file and embedded comments preserve CRLF and UTF-16 positions without matching literals or CSS", () => {
+	const source = [
+		"<!-- ファイルの説明。 -->",
+		'<script module lang="ts">',
+		"/** 公開する型の説明。 */",
+		'export const moduleName = "共通の値";',
+		"</script>",
+		'<script lang="ts">',
+		'const realName: string = "😀 // 文字列 fakeName <!-- 偽コメント。 -->"; // 値の説明。',
+		"/*",
+		" * 複数行の説明。",
+		" */",
+		"</script>",
+		'<div>{ /* 式の説明。 */ realName ? "表示" : "非表示"}</div>',
+		"<!-- 末尾の説明。 -->",
+		'<style>/* CSS の説明。 */ div::before { content: "CSS の文字列"; }</style>',
+	].join("\r\n");
+	const { items, lintText } = extractSourceComments(source, "sample.svelte");
+	assert(SOURCE_EXTENSIONS.has(".svelte"));
+	assert.deepEqual(
+		items.map(({ kind, text, startLine, endLine }) => [
+			kind,
+			text,
+			startLine,
+			endLine,
+		]),
+		[
+			["comment", "ファイルの説明。", 1, 1],
+			["jsdoc", "公開する型の説明。", 3, 3],
+			["comment", "値の説明。", 7, 7],
+			["comment", "\n複数行の説明。", 8, 10],
+			["comment", "式の説明。", 12, 12],
+			["comment", "末尾の説明。", 13, 13],
+		],
+	);
+	assert.equal(
+		lintText.split("\r\n")[6].indexOf("値の説明"),
+		source.split("\r\n")[6].indexOf("値の説明"),
+	);
+	assert(!lintText.includes("fakeName"));
+	assert(!lintText.includes("CSS"));
+	const identifiers = extractSourceIdentifiers(source, "sample.svelte");
+	assert(identifiers.has("moduleName"));
+	assert(identifiers.has("realName"));
+	assert(!identifiers.has("fakeName"));
+	const multiline = extractSourceComments(
+		"<!--\r\n次の説明。\r\n-->",
+		"sample.svelte",
+	);
+	assert.equal(multiline.items[0].text, "\r\n次の説明。");
+	assert.equal(multiline.items[0].startLine, 1);
+	assert.equal(multiline.lintText.split("\r\n")[1], "次の説明。");
+	assert.deepEqual(
+		extractSourceTexts(
+			'<div><style>div::before { content: "除外"; }</style>本文</div>',
+			"sample.svelte",
+		).map(({ text }) => text),
+		["本文"],
+	);
+	assert.throws(() => extractSourceTexts("<div>{</div>", "broken.svelte"));
+});
+
+test("Svelte markup and TypeScript strings keep raw fragments and line numbers across attributes and blocks", () => {
+	const source = [
+		'<script lang="ts">',
+		'const isReady = true, userName = "利用者";',
+		"const message = `開始${userName}終了`;",
+		"</script>",
+		'<div title="説明{userName}の続き" aria-label={isReady ? "送信" : "待機"}>',
+		"本文 &amp; // コメントではない",
+		"{#if isReady}",
+		"{`接続${userName}",
+		"完了`}",
+		"{:else}未接続{/if}",
+		'{#each ["候補"] as itemName (itemName)}<span>{itemName}</span>{/each}',
+		'{#if isReady}{@const localName = { label: "補足" }}',
+		"{#snippet renderLabel()}{localName.label}断片{/snippet}",
+		"{@render renderLabel()}{/if}",
+		"</div>",
+		'<style>div::before { content: "除外"; }</style>',
+	].join("\r\n");
+	assert.deepEqual(
+		extractSourceTexts(source, "sample.svelte").map(
+			({ kind, text, startLine, endLine }) => [
+				kind,
+				text,
+				startLine,
+				endLine,
+			],
+		),
+		[
+			["string", "利用者", 2, 2],
+			["template-text", "開始", 3, 3],
+			["template-text", "終了", 3, 3],
+			["svelte-attribute", "説明", 5, 5],
+			["svelte-attribute", "の続き", 5, 5],
+			["string", "送信", 5, 5],
+			["string", "待機", 5, 5],
+			["svelte-text", "\r\n本文 &amp; // コメントではない\r\n", 5, 6],
+			["template-text", "接続", 8, 8],
+			["template-text", "\r\n完了", 8, 9],
+			["svelte-text", "未接続", 10, 10],
+			["string", "候補", 11, 11],
+			["string", "補足", 12, 12],
+			["svelte-text", "断片", 13, 13],
+		],
+	);
+	assert.deepEqual(extractSourceComments(source, "sample.svelte").items, []);
+	const identifiers = extractSourceIdentifiers(source, "sample.svelte");
+	assert(identifiers.has("itemName"));
+	assert(identifiers.has("localName"));
+	assert(identifiers.has("renderLabel"));
+});

@@ -9,6 +9,7 @@ export const AuthorityRecordSchema = z.strictObject({
 	metadataDigest: DigestSchema,
 	ownerProcessId: z.number().int().positive().optional(),
 });
+/** 依頼の保存先と所有を照合する記録。読み込み時は `AuthorityRecordSchema` で検証する。 */
 export type AuthorityRecord = z.infer<typeof AuthorityRecordSchema>;
 
 /** 保存先の例は VS Code の `globalState`。管理ファイルやエージェントが注入できる値を使わない。 */

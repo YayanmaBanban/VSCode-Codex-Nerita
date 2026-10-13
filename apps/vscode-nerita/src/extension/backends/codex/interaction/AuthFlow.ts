@@ -76,6 +76,7 @@ export class AuthFlow {
 				}
 			}
 		};
+		/** 進行中のログインがあれば取り消し、認証完了の待機もキャンセルとして拒否する。 */
 		const abort = () => {
 			if (isNonEmptyString(loginId)) {
 				void client.cancelLogin(loginId).catch(() => undefined);

@@ -15,15 +15,15 @@
 
 ## 静的解析ルールの変更制限
 
-- ESLint設定、独自ルール、ルールのテストは、ユーザーの明示的な承認なしに変更しない。
-- ESLintエラーを解消するためにルールを無効化・緩和・除外してはならない。
+- ESLint 設定、独自ルール、ルールのテストは、ユーザーの明示的な承認なしに変更しない。
+- ESLint エラーを解消するためにルールを無効化・緩和・除外してはならない。
 - `eslint-disable` による回避を原則禁止する。
 - 誤検出が疑われる場合は、対象コード・該当ルール・理由をユーザーに提示する。
 - ルール変更が承認された場合は、正常系と異常系の回帰テストを追加・更新する。
 
 # プロジェクトの指示
 
-React の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `apps/vscode-nerita/src/extension/` に置く。共通の通信型・検証処理は `packages/shared/src/` に置く。
+Svelte 5 の Webview は `apps/nerita-ui/src/`、Extension Host の処理は `apps/vscode-nerita/src/extension/` に置く。共通の通信型・検証処理は `packages/shared/src/` に置く。Webview は Vite でビルドし、`src/index.ts` から mount する。SvelteKit は使用しない。
 
 Webview と Extension Host は責務を分け、検証済みのメッセージで通信する。
 
@@ -36,6 +36,7 @@ Webview と Extension Host は責務を分け、検証済みのメッセージ�
 | 作業 | 参照先 |
 | --- | --- |
 | コードの追加・変更、依存調査・構造変更・コードレビュー、検証方針の決定・テスト作業、UI の変更・レビュー | [開発ガイドラインのスキルを使用](.agents/skills/development-guidelines/SKILL.md) |
+| Svelte コンポーネント・runes モジュールの追加・変更・解析 | `svelte:svelte-code-writer` と `svelte:svelte-core-bestpractices` のスキルを使用し、公式 autofixer で確認する |
 | ソースファイルの追加・分割・移動・フォルダ整理、領域間の依存・通信境界、テーマ定義の変更 | [ディレクトリ構成](.agents/docs/Directory-Structure.md) |
 | 検証方針の決定、テストや Webview UI の変更・レビュー | [プロジェクト固有の検証環境](.agents/docs/Project-Verification.md) |
 

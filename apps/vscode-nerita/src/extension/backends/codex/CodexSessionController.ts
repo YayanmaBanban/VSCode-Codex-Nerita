@@ -524,6 +524,7 @@ export class CodexSessionController extends SessionState {
 		if (this.state.connection !== "ready") {
 			throw new Error("Disconnected");
 		}
+		/** 会話状態の更新が同じ接続世代と会話に属するかを確認する。 */
 		const current = () =>
 			epoch === this.lifecycle.generation && id === this.state.sessionId;
 		if (message.type === "session/searchReferences") {

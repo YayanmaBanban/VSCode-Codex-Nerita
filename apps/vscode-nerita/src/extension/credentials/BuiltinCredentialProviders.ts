@@ -49,6 +49,7 @@ abstract class BoundProvider implements CredentialProvider {
 		signal: AbortSignal,
 	): Promise<CredentialMaterial>;
 }
+/** Git の非対話認証から秘密値を取得する。利用側は承認済みの候補と中断シグナルを渡す。 */
 export class GitCredentialProvider extends BoundProvider {
 	readonly id = "git";
 	/** Git の資格情報取得は注入したプロセス経路を使い、inspect では実行しない。 */
@@ -113,6 +114,7 @@ async function npmText(file: string) {
 		return throwCredentialError("npm 認証設定を読み込めません。", error);
 	}
 }
+/** npm 設定から対象レジストリの認証を取得する。利用側は承認済みの候補と中断シグナルを渡す。 */
 export class NpmConfigProvider extends BoundProvider {
 	readonly id = "npmrc";
 	/** ユーザー設定と環境変数の読取り元を固定し、参照の調査と秘密値の取得を分ける。 */
@@ -147,6 +149,7 @@ export class NpmConfigProvider extends BoundProvider {
 		}
 		const target = candidate.requirement.target.replace(/\/$/, "");
 		const scope = `//${target}/:`;
+		/** npm の認証設定にある環境変数参照を展開し、未設定の値を秘密値として扱わない。 */
 		const expand = (value: string) =>
 			value.replace(/\$\{([A-Z_]\w*)\}/gi, (_match, name: string) => {
 				const resolved = this.env[name];
@@ -183,6 +186,7 @@ export class NpmConfigProvider extends BoundProvider {
 	}
 }
 
+/** 指定アカウントの Bitwarden 参照から秘密値を取得する。利用側は承認済みの候補と中断シグナルを渡す。 */
 export class BitwardenSecretsProvider extends BoundProvider {
 	readonly id = "bitwarden-secrets-manager";
 	/** Bitwarden の認証保存先と CLI 実行経路を結び付け、秘密値を設定ファイルへ持ち込まない。 */

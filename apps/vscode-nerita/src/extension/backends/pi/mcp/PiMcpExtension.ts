@@ -135,6 +135,7 @@ function bindMcpLifetime(
 		servers.clear();
 		await Promise.all(pending);
 	});
+	/** 設定ファイルの監視を解除し、中断後に MCP の古い構成を再利用しないよう失効させる。 */
 	const aborted = () => {
 		for (const path of paths) {
 			unwatchFile(path, changed);

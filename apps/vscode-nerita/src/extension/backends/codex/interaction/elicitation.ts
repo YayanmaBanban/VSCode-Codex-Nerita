@@ -134,6 +134,7 @@ const supportedFieldSchema = z
 			);
 		return matchesEnum;
 	});
+/** 対応する入力要求のフィールド。外部入力は `supportedFieldSchema` で検証してから扱う。 */
 type SupportedField = z.infer<typeof supportedFieldSchema>;
 
 /** 未対応の制約を拒否し、対応する型と各制約の値を保証する。 */
@@ -167,6 +168,7 @@ async function elicitField(
 	signal: AbortSignal,
 ) {
 	const choices = fieldChoices(field);
+	/** 要求されたフィールドと必須条件を固定し、対話入力を共通の検証処理へ渡す。 */
 	const validate = (value: string) => validateField(value, field, required);
 	let value: string | undefined;
 	if (choices) {

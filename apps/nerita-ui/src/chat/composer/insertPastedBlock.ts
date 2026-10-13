@@ -8,7 +8,10 @@ import {
 } from "lexical";
 import { $createPastedBlockNode } from "./PastedBlockNode";
 import { $pointOffset } from "./content";
-import { $appendInlineContent, $readReferences } from "./inlineReferences";
+import {
+	$appendInlineContent,
+	$readReferences,
+} from "./inlineReferences";
 
 /** 現在の選択だけを置換し、後続の通常段落へカーソルを戻す。 */
 export function $insertPastedBlock(text: string): void {

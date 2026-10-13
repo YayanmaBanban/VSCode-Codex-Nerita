@@ -39,6 +39,7 @@ export class Approvals {
 				resolve({ decision });
 				this.changed();
 			};
+			/** 承認待ちをキャンセルとして完了させ、通常の完了経路で待機を解除する。 */
 			const cancel = () => finish("cancel");
 			this.pending.set(id, {
 				finish,

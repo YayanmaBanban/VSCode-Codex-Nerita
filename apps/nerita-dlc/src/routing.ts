@@ -12,10 +12,13 @@ import {
 } from "./catalog";
 import type { WorkspaceDetection } from "./workspace";
 
+/** 工程選択に使う条件。未指定は未確定として扱い、常時実行とプロジェクト分類は別に判定する。 */
 export type RoutingConditions = Partial<
 	Record<Exclude<StageCondition, "always" | "brownfield">, boolean>
 >;
+/** 工程の表示状態。外部入力は `StageProjectionSchema` で検証してから扱う。 */
 export type StageState = z.infer<typeof StageProjectionSchema>;
+/** 常時実行とプロジェクト分類を先に判定し、情報がない条件は未確定として返す。 */
 function conditionValue(
 	condition: StageCondition,
 	projectType: WorkspaceDetection["classification"]["detected"],
@@ -31,6 +34,7 @@ function conditionValue(
 	}
 	return conditions[condition];
 }
+/** 工程の選択理由を、分類・条件・実行プロファイルのいずれかに結び付けて記録する。 */
 function selectionReason(
 	stage: StageDefinition,
 	profile: ExecutionProfile,
@@ -47,6 +51,7 @@ function selectionReason(
 		? "initialization:always"
 		: `profile:${profile}`;
 }
+/** 実行プロファイルと条件から工程を選び、未確定の条件を実行可能とみなさない。 */
 function selectStage(
 	stage: StageDefinition,
 	profile: ExecutionProfile,
@@ -84,6 +89,7 @@ export function selectStages(
 		selectStage(stage, profile, projectType, conditions),
 	);
 }
+/** 依存工程・処理の対応状況・成果物を確認し、次の工程を開始できない理由を返す。 */
 function readiness(
 	stage: StageState,
 	stages: readonly StageState[],

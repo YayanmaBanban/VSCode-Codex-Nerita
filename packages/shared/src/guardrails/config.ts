@@ -43,8 +43,11 @@ export const guardrailsConfigSchema = z.strictObject({
 	pathRules: z.array(pathRuleSchema).max(100),
 	commandRules: z.array(commandRuleSchema).max(100),
 });
+/** パス・コマンドのアクセス判定設定。外部入力は `guardrailsConfigSchema` で検証してから扱う。 */
 export type GuardrailsConfig = z.infer<typeof guardrailsConfigSchema>;
+/** パス条件と操作別の判定を指定するルール。外部入力は `pathRuleSchema` で検証してから扱う。 */
 export type PathRule = z.infer<typeof pathRuleSchema>;
+/** 許可・承認・拒否の判定値。外部入力は `guardActionSchema` で検証してから扱う。 */
 export type GuardAction = z.infer<typeof guardActionSchema>;
 
 /** 初回も外部読取りを拒否し、書込みとシェルの承認は既存経路で維持する。 */

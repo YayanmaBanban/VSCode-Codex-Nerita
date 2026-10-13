@@ -142,6 +142,7 @@ export class PiJobs {
 		while (this.running >= 4) {
 			signal.throwIfAborted();
 			await new Promise<void>((resolve) => {
+				/** 待機ハンドラーと中断の購読を解除し、ジョブの状態更新待ちを完了させる。 */
 				const wake = () => {
 					this.wake.delete(wake);
 					signal.removeEventListener("abort", wake);

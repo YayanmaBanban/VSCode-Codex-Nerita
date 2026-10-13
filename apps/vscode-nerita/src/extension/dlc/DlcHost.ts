@@ -38,6 +38,7 @@ import { DirectoryRunConflictError } from "../session/DirectoryRuns";
 
 const execute = promisify(execFile);
 
+/** DLC の保存先・検出結果・実行割当を、同じルートと中断シグナルで保持する。 */
 type Workspace = {
 	root: string;
 	signal: AbortSignal;
@@ -96,6 +97,7 @@ export class DlcHost {
 			});
 		});
 
+		/** 会話状態が変化した通知だけで、DLC の画面状態を再配信する。 */
 		const publishState = (event: HostMessage) => {
 			const stateChanged =
 				event.type === "state/snapshot" || event.type === "state/patch";
@@ -1199,6 +1201,7 @@ export class DlcHost {
 	}
 }
 
+/** 実行・停止・再試行を操作要求へ変換し、対象作業が不明な再試行は生成しない。 */
 function commandAction(
 	name: "run" | "cancel" | "retry",
 	workItemId: string | undefined,

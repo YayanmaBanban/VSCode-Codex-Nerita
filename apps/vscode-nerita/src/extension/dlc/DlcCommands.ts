@@ -5,6 +5,7 @@ import type { BackendRuntime } from "../session/BackendRuntime";
 import { DlcHost } from "./DlcHost";
 import { DlcWorkspacePanel } from "./DlcWorkspacePanel";
 
+/** DLC のコマンドと画面を登録する。拡張機能の初期化時に呼び出し、同じ Host と実行管理を共有する。 */
 export function registerDlcCommands(
 	context: vscode.ExtensionContext,
 	trust: WorkspaceTrustStore,

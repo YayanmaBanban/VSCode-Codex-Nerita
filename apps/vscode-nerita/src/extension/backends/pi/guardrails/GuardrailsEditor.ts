@@ -46,9 +46,11 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 			this.context.extensionUri,
 			"pi-guardrails",
 		);
+		/** ガードレールの応答を、対応する編集画面へ送信する。 */
 		const post = (message: GuardReply) => {
 			void panel.webview.postMessage(message);
 		};
+		/** 編集中の文書と適用中の設定を別の値として通知し、保存状態を実行への適用と混同しない。 */
 		const publish = () => {
 			const active = guardrailRegistry.snapshot(root, [root]);
 			post({

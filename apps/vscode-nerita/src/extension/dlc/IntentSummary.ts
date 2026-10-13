@@ -4,6 +4,7 @@ import type {
 	IntentSummary,
 } from "@nerita/shared/dlc/contracts";
 
+/** 検証済みの工程表示から依頼一覧の要約を作る。表示用の要約だけで実行可否を判断しない。 */
 export function intentSummary(projection: DlcProjection): IntentSummary {
 	const statuses = projection.workItems.map((item) => item.status);
 	let status: IntentSummary["status"] = "idle";

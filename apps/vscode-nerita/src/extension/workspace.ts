@@ -8,6 +8,7 @@ import { WorkspaceError } from "./workspaceError";
 
 /** Windows の大小文字・区切り・末尾スラッシュの差を吸収する。 */
 export function sameCwd(left: string, right: string): boolean {
+	/** 比較用のパスを絶対化し、末尾の区切りと Windows の大文字・小文字の違いを吸収する。 */
 	const normalize = (value: string) =>
 		path
 			.resolve(value)

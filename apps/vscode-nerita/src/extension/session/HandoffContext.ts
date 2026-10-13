@@ -15,6 +15,7 @@ export type HandoffRequest = {
 	prompt: string;
 	signal: AbortSignal;
 };
+/** 引き継ぎ文の生成境界。要求の中断と期限を尊重し、保存用の本文を返す。 */
 export type HandoffGenerator = (request: HandoffRequest) => Promise<string>;
 
 /** 設定・生成の失敗を、再送できる参照エラーとして公開する。 */

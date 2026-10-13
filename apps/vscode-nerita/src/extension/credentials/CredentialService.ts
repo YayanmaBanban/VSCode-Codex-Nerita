@@ -205,6 +205,7 @@ export class CredentialService {
 	}
 }
 
+/** 拡張機能ごとの資格情報サービスを共有する。同じ拡張機能コンテキストを渡し、破棄は登録先に任せる。 */
 export function credentialService(context: vscode.ExtensionContext) {
 	let service = services.get(context);
 	if (!service) {

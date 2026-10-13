@@ -47,10 +47,9 @@ async function launch(extension, root, environment) {
 				...process.env,
 				...environment,
 				NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
-				NERITA_UI_ENTRY: path.join(
-					repoRoot,
-					"tests/vscode/activation.cjs",
-				),
+				NERITA_UI_ENTRY:
+					process.env.NERITA_UI_ACCEPTANCE_ENTRY ??
+					path.join(repoRoot, "tests/vscode/activation.cjs"),
 				NERITA_UI_RESULT: resultFile,
 			},
 			windowsHide: true,
@@ -61,7 +60,7 @@ async function launch(extension, root, environment) {
 	if (!report.passed) {
 		throw new Error(report.error);
 	}
-	console.log("実 Webview の受入: 成功", environment.NERITA_UI_ARTIFACTS);
+	console.log("VS Code 上の Webview の受け入れ検証: 成功", environment.NERITA_UI_ARTIFACTS);
 }
 
 /** 期限切れでも起動したウィンドウと Host のプロセスツリーを回収する。 */
@@ -80,7 +79,7 @@ async function runEditor(executable, args, options) {
 	try {
 		const [code] = await once(child, "exit");
 		if (timedOut || code !== 0) {
-			throw new Error("実 Webview の起動・終了に失敗しました。");
+			throw new Error("VS Code 上の Webview の起動・終了に失敗しました。");
 		}
 	} finally {
 		clearTimeout(timer);

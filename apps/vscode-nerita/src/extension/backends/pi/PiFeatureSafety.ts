@@ -108,6 +108,7 @@ export function abortableFeatureApproval<T>(
 		return promise;
 	}
 	return new Promise<T>((resolve, reject) => {
+		/** 中断の購読を解除し、実行停止の理由を待機中の処理へ返す。 */
 		const abort = () => {
 			signal.removeEventListener("abort", abort);
 			reject(

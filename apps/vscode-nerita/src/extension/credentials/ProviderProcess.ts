@@ -9,6 +9,7 @@ import { delimiter, join, relative, isAbsolute } from "node:path";
 import { tmpdir } from "node:os";
 import { commandEnvironment } from "../runtime/CommandEnvironment";
 
+/** 資格情報の取得プロセス。非対話で実行し、中断シグナルと指定した作業先を尊重する。 */
 export type ProviderProcess = (
 	name: "git" | "bws",
 	args: string[],
@@ -85,6 +86,7 @@ export const runProviderProcess: ProviderProcess = async (
 			});
 			let output = "";
 			let failed = false;
+			/** 取得プロセスを一度だけ停止し、失敗経路が重なっても終了処理を繰り返さない。 */
 			const stop = () => {
 				if (failed) {
 					return;

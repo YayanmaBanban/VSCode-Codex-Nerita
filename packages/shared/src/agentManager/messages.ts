@@ -22,12 +22,14 @@ export const managedAgentSchema = z.strictObject({
 	editable: z.boolean(),
 	unavailableReason: z.string().optional(),
 });
+/** 保存元と編集可否を含むエージェントの表示情報。外部入力は `managedAgentSchema` で検証してから扱う。 */
 export type ManagedAgent = z.infer<typeof managedAgentSchema>;
 export const managerModelSchema = z.strictObject({
 	value: z.string(),
 	name: z.string(),
 	efforts: z.array(z.string()).optional(),
 });
+/** エージェントに選択できるモデルと推論候補。外部入力は `managerModelSchema` で検証してから扱う。 */
 export type ManagerModel = z.infer<typeof managerModelSchema>;
 export const managerStateSchema = z.strictObject({
 	type: z.literal("state"),
@@ -56,6 +58,7 @@ export const managerStateSchema = z.strictObject({
 	spawned: z.number().int(),
 	errors: z.array(z.string()),
 });
+/** エージェント管理画面に渡す設定と世代。外部入力は `managerStateSchema` で検証してから扱う。 */
 export type ManagerState = z.infer<typeof managerStateSchema>;
 const mutation = {
 	id: z.number().int(),
@@ -91,6 +94,7 @@ export const managerRequestSchema = z.discriminatedUnion("type", [
 		config: handoffSchema,
 	}),
 ]);
+/** エージェント設定の取得・保存・削除要求。外部入力は `managerRequestSchema` で検証してから扱う。 */
 export type ManagerRequest = z.infer<typeof managerRequestSchema>;
 export const managerReplySchema = z.union([
 	managerStateSchema,
@@ -101,7 +105,9 @@ export const managerReplySchema = z.union([
 		notice: z.string(),
 	}),
 ]);
+/** エージェント設定の状態または操作結果。外部入力は `managerReplySchema` で検証してから扱う。 */
 export type ManagerReply = z.infer<typeof managerReplySchema>;
+/** エージェント管理の通信境界。利用側は `subscribe` が返す解除関数を破棄時に呼び出す。 */
 export type ManagerBridge = {
 	postMessage: (message: ManagerRequest) => void;
 	subscribe: (listener: (message: ManagerReply) => void) => () => void;

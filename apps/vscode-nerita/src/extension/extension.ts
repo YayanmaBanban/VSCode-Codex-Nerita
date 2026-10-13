@@ -21,6 +21,7 @@ import { userTrustedExtensionPaths } from "./backends/pi/PiExtensionTrust";
 import { registerDlcCommands } from "./dlc/DlcCommands";
 import { directoryRunStorage } from "./dlc/DirectoryRunStorage";
 import { hostStorageRoot } from "./session/HostStorage";
+
 let controller: BackendSession | undefined;
 let dlc: { dispose(): Promise<void> } | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
@@ -105,6 +106,7 @@ export async function deactivate(): Promise<void> {
 	await disposeDroppedAttachments();
 }
 
+/** バックエンドの生成経路と Host の所有・ディレクトリ予約の保存先を結び付ける。 */
 async function createRuntime(
 	context: vscode.ExtensionContext,
 	trust: ReturnType<typeof registerTrustCommands>,

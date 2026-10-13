@@ -51,6 +51,7 @@ export const sandboxSnapshotSchema = z.object({
 	denials: z.array(sandboxDenialSchema),
 	reportStatus: z.enum(["not-run", "reported", "empty", "unavailable"]),
 });
+/** 実行環境・承認・直近の拒否をまとめた表示状態。外部入力は `sandboxSnapshotSchema` で検証してから扱う。 */
 export type SandboxSnapshot = z.infer<typeof sandboxSnapshotSchema>;
 export const sandboxRequestSchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("ready") }).strict(),
@@ -74,6 +75,7 @@ export const sandboxRequestSchema = z.discriminatedUnion("type", [
 		})
 		.strict(),
 ]);
+/** 実行環境の確認と権限の変更要求。外部入力は `sandboxRequestSchema` で検証してから扱う。 */
 export type SandboxRequest = z.infer<typeof sandboxRequestSchema>;
 export const sandboxReplySchema = z.discriminatedUnion("type", [
 	z.object({
@@ -83,6 +85,7 @@ export const sandboxReplySchema = z.discriminatedUnion("type", [
 	}),
 	z.object({ type: z.literal("error"), message: z.string() }),
 ]);
+/** 実行環境の状態または操作エラーの応答。外部入力は `sandboxReplySchema` で検証してから扱う。 */
 export type SandboxReply = z.infer<typeof sandboxReplySchema>;
 /** 実装と Storybook は同じ検証済みメッセージ契約を使う。 */
 export type SandboxBridge = {

@@ -30,6 +30,7 @@ export type ToolCall = {
 	guardrailsPaths?: string[];
 	jevReview?: JevReviewResult;
 };
+/** 承認されたツール入力と照合用の指紋。利用側は承認後の入力を変更せず、対応する中断シグナルを使う。 */
 export type ApprovedToolCall = Readonly<{
 	call: ToolCall;
 	fingerprint: string;
@@ -40,6 +41,7 @@ const permits = new WeakSet<ApprovedToolCall>();
 /** 入力の参照を切り、配列・ネストも変更不能にする。 */
 export function freezeToolCall<T>(value: T): T {
 	const copy = structuredClone(value);
+	/** 承認対象の入力を子要素まで固定し、承認後の内容変更を防ぐ。 */
 	const freeze = (item: unknown): void => {
 		if (item !== null && typeof item === "object") {
 			Object.values(item).forEach(freeze);

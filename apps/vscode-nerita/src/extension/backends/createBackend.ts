@@ -155,6 +155,7 @@ function createPiFactory(
 	};
 }
 
+/** Pi の作業フォルダーを選び、ローカルの実体と信頼状態を確認してから実行先を返す。 */
 async function piDirectory(
 	executionRoot: string | undefined,
 	trustStore: WorkspaceTrustStore | undefined,
@@ -178,6 +179,7 @@ async function piDirectory(
 		);
 	return explicitDirectory(selectedRoot, trustStore, "pi");
 }
+/** 作業フォルダーに限定したサンドボックスの状態を作り、セッションの中断時に解放する。 */
 async function piSandbox(
 	context: vscode.ExtensionContext,
 	sandboxId: string,

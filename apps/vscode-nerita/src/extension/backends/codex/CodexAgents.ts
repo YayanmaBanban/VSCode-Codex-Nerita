@@ -40,6 +40,7 @@ export class CodexAgents {
 	): Promise<void> {
 		const client = this.session.connection();
 		const epoch = this.session.epoch();
+		/** 子エージェント操作が同じ会話と接続世代に属し、会話の切り替え中でないかを確認する。 */
 		const current = () => {
 			const state = this.session.snapshot();
 			const matchesEpoch = !(
@@ -164,6 +165,7 @@ export class CodexAgents {
 		if (sessionId !== message.sessionId || state.connection !== "ready") {
 			throw new Error("Unknown agent");
 		}
+		/** 子エージェントの取得結果が、要求時の会話と接続世代に対応するかを確認する。 */
 		const current = () =>
 			epoch === this.session.epoch() &&
 			sessionId === this.session.snapshot().sessionId;

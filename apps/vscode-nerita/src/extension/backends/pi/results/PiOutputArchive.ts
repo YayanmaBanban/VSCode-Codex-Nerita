@@ -23,6 +23,7 @@ import {
 
 const customType = "nerita.tool-output.v1";
 const safeId = /^[a-f0-9-]{36}$/u;
+/** Pi のツール出力を会話とターンに結び付け、完了した出力と途中の抜粋を区別する。 */
 type OutputRecord = {
 	toolId: string;
 	turnId: string;
