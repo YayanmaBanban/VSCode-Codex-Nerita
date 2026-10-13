@@ -119,6 +119,30 @@ for (const source of ["structuredContent", "content"] as const) {
 	});
 }
 
+for (const structuredContent of [["公開値", 3], "公開値", 42, null] as const) {
+	void test(`MCP の structuredContent=${JSON.stringify(structuredContent)} を正常な結果として受け取る`, async (t) => {
+		const f = await fixture(t);
+		f.mcp.state.result = { content: [], structuredContent };
+		f.model.replies.push(
+			{ name: "mcp__fixture__change", arguments: {} },
+			"受領",
+		);
+		await send(f.controller, "MCP の任意の構造化結果を受け取る");
+		await permission(f.controller, "accept");
+		await permission(f.controller, "accept");
+		const state = await finished(f.controller);
+		assert.equal(state.run, "completed", JSON.stringify(state));
+		assert.equal(
+			state.tools[0]?.status,
+			"completed",
+			JSON.stringify(state.tools),
+		);
+		assert.equal(f.mcp.calls.length, 1);
+		const displayed: unknown = JSON.parse(state.tools[0].output!.preview);
+		assert.deepEqual(displayed, structuredContent);
+	});
+}
+
 for (const outcome of ["deny", "error", "lost"]) {
 	void test(`MCP の ${outcome} を成功とせず、自動再送しない`, async (t) => {
 		const f = await fixture(t);
@@ -172,7 +196,11 @@ void test("コード実行内の MCP 応答喪失を、子の保存・復元・�
 	f.model.replies.push(
 		{
 			name: "codemode",
-			arguments: { code: "text(await tools.mcp__fixture__change({}));" },
+			arguments: {
+				code: `const matches = await searchTools('change', { namespace: 'fixture' });
+if (!JSON.stringify(matches).includes('mcp__fixture__change')) throw new Error('MCP namespace alias missing');
+text(await tools.mcp__fixture__change({}));`,
+			},
 		},
 		"確認が必要",
 	);

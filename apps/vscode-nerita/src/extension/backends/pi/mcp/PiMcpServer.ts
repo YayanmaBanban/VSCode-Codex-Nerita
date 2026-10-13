@@ -187,7 +187,7 @@ export class PiMcpServer {
 			description: (tool.description ?? tool.name).slice(0, 8192),
 			parameters: tool.inputSchema,
 			exposure: sdk.toToolExposure(exposure),
-			namespace: { name: `mcp__${entry.name}` },
+			namespace: { name: `mcp__${entry.name}`, aliases: [entry.name] },
 			execute: async (_id, args, signal) => {
 				if (!signal) {
 					throw new Error("MCP 実行の取消しが接続されていません。");
@@ -244,7 +244,7 @@ export class PiMcpServer {
 				additionalProperties: false,
 			},
 			exposure: sdk.toToolExposure(exposure),
-			namespace: { name: `mcp__${entry.name}` },
+			namespace: { name: `mcp__${entry.name}`, aliases: [entry.name] },
 			execute: async (_id, args, signal) => {
 				if (!signal) {
 					throw new Error("MCP 実行の取消しが接続されていません。");

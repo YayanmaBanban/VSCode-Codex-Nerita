@@ -74,6 +74,7 @@ async function bundlePi(projectRoot, target) {
 		await fs.readFile(path.join(source, "package.json"), "utf8"),
 	);
 	const aiRoot = await fs.realpath(path.join(source, "../pi-ai"));
+	const codemodeRoot = await fs.realpath(path.join(source, "../pi-codemode"));
 	const mcpRoot = await fs.realpath(path.join(source, "../pi-mcp"));
 	const aiManifest = JSON.parse(
 		await fs.readFile(path.join(aiRoot, "package.json"), "utf8"),
@@ -87,7 +88,7 @@ async function bundlePi(projectRoot, target) {
 	) {
 		throw new Error("Pi SDK のバージョンを完全固定してください。");
 	}
-	await verifyPiSources({ sdk: source, ai: aiRoot });
+	await verifyPiSources({ sdk: source, ai: aiRoot, codemode: codemodeRoot });
 	const destination = path.join(target, "pi");
 	const result = await build({
 		absWorkingDir: projectRoot,
@@ -95,10 +96,6 @@ async function bundlePi(projectRoot, target) {
 		alias: piBundleAliases(source, aiRoot, mcpRoot),
 		entryPoints: {
 			core: path.join(__dirname, "runtime/pi-entry.mjs"),
-			"codemode-worker": path.join(
-				source,
-				"dist/extensions/codemode/worker.js",
-			),
 			"image-resize-worker": path.join(
 				source,
 				"dist/utils/image-resize-worker.js",
@@ -123,6 +120,20 @@ async function bundlePi(projectRoot, target) {
 		external: ["@silvia-odwyer/photon-node"],
 		plugins: [piBundlePlugin(source, aiRoot)],
 	});
+	const worker = await bundleCodemodeWorker(
+		projectRoot,
+		source,
+		aiRoot,
+		destination,
+	);
+	result.metafile.inputs = {
+		...result.metafile.inputs,
+		...worker.metafile.inputs,
+	};
+	result.metafile.outputs = {
+		...result.metafile.outputs,
+		...worker.metafile.outputs,
+	};
 	await copyPiDistribution(
 		source,
 		destination,
@@ -134,6 +145,23 @@ async function bundlePi(projectRoot, target) {
 	return result.metafile;
 }
 module.exports = { bundlePi, SUPPORTED_PI_VERSION };
+
+/** Pi 1.2 の data URL 起動に合わせ、相対チャンクと import.meta を持たない Worker を生成する。 */
+function bundleCodemodeWorker(projectRoot, source, aiRoot, destination) {
+	return build({
+		absWorkingDir: projectRoot,
+		entryPoints: [path.join(source, "dist/extensions/codemode/worker.js")],
+		outfile: path.join(destination, "codemode-worker.mjs"),
+		bundle: true,
+		format: "esm",
+		platform: "node",
+		target: "node22",
+		minify: true,
+		metafile: true,
+		legalComments: "linked",
+		plugins: [piBundlePlugin(source, aiRoot)],
+	});
+}
 
 /** SDK と依存資産を同じ配布先へ保存する。 */
 async function copyPiDistribution(

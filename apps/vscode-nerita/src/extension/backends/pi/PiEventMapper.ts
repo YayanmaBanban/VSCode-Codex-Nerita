@@ -20,11 +20,23 @@ export class PiEventMapper {
 
 	/** 差分通知の累積本文を使い、確定通知との重複を避ける。 */
 	apply(event: PiEvent, state: ChatState): Partial<ChatState> | undefined {
+		// 応答本文が作られる前の停止も SDK の確定通知で拾う。
+		if (event.type === "agent_settled") {
+			this.aborted ||= event.aborted;
+			return;
+		}
 		const tools = mapPiTool(event, state);
 		if (tools) {
 			return tools;
 		}
+		return this.applyMessage(event, state);
+	}
 
+	/** 本文通知だけを処理し、ツールや実行終了の状態とは独立してメッセージを更新する。 */
+	private applyMessage(
+		event: PiEvent,
+		state: ChatState,
+	): Partial<ChatState> | undefined {
 		const isOtherEvent = ![
 			"message_start",
 			"message_update",

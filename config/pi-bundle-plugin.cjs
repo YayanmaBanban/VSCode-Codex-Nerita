@@ -72,8 +72,8 @@ async function mcpHostContents(file, sdkFile) {
 	} else if (sdkFile === "dist/extensions/mcp/oauth.js") {
 		contents = replaceRequired(
 			contents,
-			"fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(REFRESH_REQUEST_TIMEOUT_MS) }),",
-			"fetch: (input, init) => (options.fetch ?? fetch)(input, { ...init, signal: AbortSignal.timeout(REFRESH_REQUEST_TIMEOUT_MS) }),",
+			"fetch: timedFetch(fetch),",
+			"fetch: timedFetch(options.fetch ?? fetch),",
 		);
 	}
 	return contents;
@@ -117,7 +117,8 @@ function piBundlePlugin(sdkRoot, aiRoot) {
 				} else if (aiFile === "dist/auth/oauth/load.js") {
 					// OAuth の認証処理も ESM チャンクへ分離する。変数を使うインポートを固定パスに変え、ビルド時の追跡漏れを防ぐ。
 					contents = `export const loadAnthropicOAuth = async () => (await import("./anthropic.js")).anthropicOAuth;
-export const loadOpenAIChatGPTOAuth = async () => (await import("./openai-chatgpt.js")).openaiChatGPTOAuth;`;
+export const loadOpenAIChatGPTOAuth = async () => (await import("./openai-chatgpt.js")).openaiChatGPTOAuth;
+export const loadOpenRouterOAuth = async () => (await import("./openrouter.js")).openRouterOAuth;`;
 				} else if (sdkFile === "dist/index.js") {
 					// `Extensions` 用名前空間から CLI 起動・対話モードを到達不能にする。
 					contents = (await fs.readFile(args.path, "utf8"))

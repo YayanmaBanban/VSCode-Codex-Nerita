@@ -30,7 +30,7 @@ function limitHost(source) {
                 return;
             }
         }
-        if (message.type === "done" && message.ok && ((message.value?.length ?? 0) + this.outputChars > 32768 || message.writes.length > 65536)) {
+        if (message.type === "done" && message.ok && ((message.value?.length ?? 0) + this.outputChars > 32768 || JSON.stringify(message.writes).length > 65536)) {
             this.finish({ kind: "sandbox", message: "Codemode return or store exceeds its limit" });
             return;
         }
@@ -54,28 +54,13 @@ function limitPrelude(source) {
 	result = replaceRequired(result, "1024 * 1024", "64 * 1024");
 	result = replaceRequired(
 		result,
-		"let nextId = 1;",
-		"let nextId = 1;\n\tlet outputChars = 0;\n\tlet outputItems = 0;",
+		"export const MAX_OUTPUT_CHARS = 16 * 1024 * 1024;",
+		"export const MAX_OUTPUT_CHARS = 32768;",
 	);
 	result = replaceRequired(
 		result,
-		'bridge("output", "text", rendered);',
-		'emit("text", rendered);',
-	);
-	result = replaceRequired(
-		result,
-		'bridge("output", "text", args.map(format).join(" "));',
-		'emit("text", args.map(format).join(" "));',
-	);
-	result = replaceRequired(
-		result,
-		"function text(value) {",
-		`function emit(kind, data, mimeType) {
-        outputChars += data.length;
-        if (++outputItems > 128 || outputChars > 32768) throw new ErrorCtor("Codemode output limit exceeded");
-        bridge("output", kind, data, mimeType);
-    }
-    function text(value) {`,
+		"export const MAX_OUTPUT_ITEMS = 100_000;",
+		"export const MAX_OUTPUT_ITEMS = 128;",
 	);
 	result = replaceRequired(
 		result,
@@ -83,11 +68,7 @@ function limitPrelude(source) {
 		`checkKey("store", key);
         if (key.length > 256 || (!writes.has(key) && writes.size >= 128)) throw new ErrorCtor("Codemode store key limit exceeded");`,
 	);
-	// 画像も同じ総量を消費し、大きな base64 を Host へ送り続けられないようにする。
-	result = result.replace(
-		/bridge\("output", "image", ([^;]+)\);/g,
-		'emit("image", $1);',
-	);
+	// Pi 1.2 の共通出力処理で text・console・image を同じ上限へ集計する。
 	return result;
 }
 
@@ -124,7 +105,7 @@ function limitExecutor(source) {
 async function codemodeContents(file, sdkFile, aiFile) {
 	const normalized = file.replaceAll("\\", "/");
 	let transform;
-	if (/\/pi-codemode\/dist\/runtime\/host\.js$/.test(normalized)) {
+	if (/\/pi-codemode\/dist\/runtime\/execution\.js$/.test(normalized)) {
 		transform = limitHost;
 	}
 	if (/\/pi-codemode\/dist\/runtime\/prelude-source\.js$/.test(normalized)) {
@@ -167,8 +148,8 @@ function localSearchProtocol(source) {
 function limitSessionOptions(source) {
 	let result = replaceRequired(
 		source,
-		"const initialActiveToolNames = (options.tools ??",
-		"const initialActiveToolNames = (options.neritaActiveToolNames ?? options.tools ??",
+		"const initialActiveToolNames = (selectedToolNames ?? defaultToolNames)",
+		"const initialActiveToolNames = (options.neritaActiveToolNames ?? selectedToolNames ?? defaultToolNames)",
 	);
 	return replaceRequired(
 		result,
@@ -181,8 +162,12 @@ function limitSessionOptions(source) {
 function limitSessionRegistry(source) {
 	return replaceRequired(
 		source,
-		"this._allowedToolNames = config.allowedToolNames ? new Set(config.allowedToolNames) : undefined;",
-		"this._allowedToolNames = config.neritaAllowedToolNames ?? (config.allowedToolNames ? new Set(config.allowedToolNames) : undefined);",
+		"this._excludedTools = config.excludedToolNames ? createToolNameMatcher(config.excludedToolNames) : undefined;",
+		`if (config.neritaAllowedToolNames) {
+            this._allowedTools = (name) => config.neritaAllowedToolNames.has(name);
+            this._allowlistFiltersMcp = true;
+        }
+        this._excludedTools = config.excludedToolNames ? createToolNameMatcher(config.excludedToolNames) : undefined;`,
 	);
 }
 

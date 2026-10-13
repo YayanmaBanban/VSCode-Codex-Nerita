@@ -94,7 +94,8 @@ main().catch((error) => {
 async function readSdkContract(contractPath, sdk, ai) {
 	const previous = await readJson(contractPath);
 	const contract = {};
-	const roots = { sdk, ai };
+	const codemode = await fs.realpath(path.join(sdk, "../pi-codemode"));
+	const roots = { sdk, ai, codemode };
 	for (const [name, files] of Object.entries(previous)) {
 		contract[name] = {};
 		for (const [file, expected] of Object.entries(files)) {
