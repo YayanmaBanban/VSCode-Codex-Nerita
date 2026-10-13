@@ -11,21 +11,22 @@ export type ComposerPart = {
 	references?: ComposerReference[];
 };
 
-/** ブロック境界の改行を補い、送信本文と参照位置をまとめて生成する。 */
+/** 貼り付け部分を Markdown のコードブロックへ変換し、送信本文と参照位置を生成する。 */
 export function promptContent(draft: string, parts: ComposerPart[]) {
 	if (!validDraftParts(draft, parts)) {
 		return { text: draft.trim(), references: [] };
 	}
 	let text = "";
 	const normalized = parts.map((part) => {
+		const content =
+			part.type === "pasted" ? fencedCode(part.text) : part.text;
 		const separateText =
-			text !== "" && part.text !== "" && !text.endsWith("\n");
-		const separator =
-			separateText && !part.text.startsWith("\n") ? "\n" : "";
-		text += separator + part.text;
+			text !== "" && content !== "" && !text.endsWith("\n");
+		const separator = separateText && !content.startsWith("\n") ? "\n" : "";
+		text += separator + content;
 		return {
 			...part,
-			text: separator + part.text,
+			text: separator + content,
 			...(part.references
 				? {
 						references: part.references.map((reference) => ({
@@ -40,6 +41,16 @@ export function promptContent(draft: string, parts: ComposerPart[]) {
 		text: text.trim(),
 		references: promptReferences(text, normalized),
 	};
+}
+
+/** コード内のバッククォートで閉じない長さのフェンスを使い、本文の空白を保持する。 */
+function fencedCode(code: string): string {
+	let length = 3;
+	for (const run of code.matchAll(/`+/g)) {
+		length = Math.max(length, run[0].length + 1);
+	}
+	const fence = "`".repeat(length);
+	return `${fence}\n${code}${code.endsWith("\n") ? "" : "\n"}${fence}`;
 }
 
 /** 送信時の前後空白除去に合わせ、各断片の参照を本文全体の位置へ変換する。 */

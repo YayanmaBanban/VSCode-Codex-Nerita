@@ -8,6 +8,9 @@
 	import Attachments from "./Attachments.svelte";
 	import ContextPickerTrigger from "./ContextPickerTrigger.svelte";
 	import ContextUsage from "./ContextUsage.svelte";
+	import { provideSettingsPopupGroup } from "../../ui/settingsPopup.svelte";
+
+	provideSettingsPopupGroup();
 
 	let {
 		state,

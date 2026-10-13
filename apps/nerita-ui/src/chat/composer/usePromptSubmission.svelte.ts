@@ -170,13 +170,6 @@ function createPromptSubmitter(
 		}
 		const requestId = crypto.randomUUID();
 		const codeReferences = promptCodeReferences(parts);
-		if (codeReferences.length > 20) {
-			setNotice({
-				id: requestId,
-				text: "コード参照は20件までにしてください。",
-			});
-			return;
-		}
 		const changeScopes = [
 			...new Set(
 				parts.flatMap(
@@ -188,11 +181,14 @@ function createPromptSubmitter(
 			),
 		];
 		const sessionReferences = promptSessionReferences(parts);
-		if (sessionReferences.length > 5) {
-			setNotice({
-				id: requestId,
-				text: "参照するセッションは5件までにしてください。",
-			});
+		const content = promptContent(draft, parts);
+		const error = promptLimitError(
+			content.text.length,
+			codeReferences.length,
+			sessionReferences.length,
+		);
+		if (error !== undefined) {
+			setNotice({ id: requestId, text: error });
 			return;
 		}
 		pending.current = requestId;
@@ -202,12 +198,30 @@ function createPromptSubmitter(
 			type: "prompt/send",
 			requestId,
 			sessionId: state.sessionId,
-			...promptContent(draft, parts),
+			...content,
 			...(sessionReferences.length > 0 ? { sessionReferences } : {}),
 			...(changeScopes.length > 0 ? { changeScopes } : {}),
 			...(codeReferences.length > 0 ? { codeReferences } : {}),
 		});
 	};
+}
+
+/** 参照件数と Markdown 変換後の文字数を確認し、送信できない理由を返す。 */
+function promptLimitError(
+	characters: number,
+	codeReferences: number,
+	sessionReferences: number,
+): string | undefined {
+	if (codeReferences > 20) {
+		return "コード参照は20件までにしてください。";
+	}
+	if (sessionReferences > 5) {
+		return "参照するセッションは5件までにしてください。";
+	}
+	if (characters > 100_000) {
+		return "本文は100,000文字以内にしてください。";
+	}
+	return undefined;
 }
 
 /** 参照する会話と参照方式の重複を取り除く。 */

@@ -16,6 +16,8 @@ import type { HistoryThread, HistoryTurn } from "../protocol/history";
 import { itemPatch } from "../items/chatItems";
 import { ToolOutputStore } from "../../../session/ToolOutputStore";
 import { setImmediate } from "node:timers/promises";
+import type { ComposerReference } from "@nerita/shared/composerReferences";
+import { restoreReferenceElements } from "./referenceElements";
 
 /** 接続世代とカーソルの循環を確認しながら全ページを取得する。 */
 async function* historyPages<T>(
@@ -203,7 +205,7 @@ export async function hydrateHistory(
 /** ユーザー本文を復元し、添付は内容を本文へ含めず、表示用の名前と URI に変換する。 */
 function userContent(
 	content: unknown,
-): Pick<ChatMessage, "text" | "attachments"> {
+): Pick<ChatMessage, "text" | "attachments" | "references"> {
 	if (!Array.isArray(content)) {
 		throw new Error("Invalid user history");
 	}
@@ -233,8 +235,32 @@ function userContent(
 		}
 		return typeof part.name === "string" ? `@${part.name}` : "[添付]";
 	};
-	const text = content.map(restoreUserPart).filter(Boolean).join("\n\n");
-	return { text, attachments };
+	let text = "";
+	const references: ComposerReference[] = [];
+	for (const [index, part] of content.entries()) {
+		const value = restoreUserPart(part, index);
+		if (value === "") {
+			continue;
+		}
+		const separator = text === "" ? "" : "\n\n";
+		const offset = text.length + separator.length;
+		if (isRecord(part) && part.type === "text") {
+			references.push(
+				...restoreReferenceElements(value, part.text_elements).map(
+					(reference) => ({
+						...reference,
+						offset: offset + reference.offset,
+					}),
+				),
+			);
+		}
+		text += `${separator}${value}`;
+	}
+	return {
+		text,
+		attachments,
+		...(references.length > 0 ? { references } : {}),
+	};
 }
 
 /** 通常のユーザー本文を添付と誤認しないよう、テキスト添付は2番目以降から取り出す。 */

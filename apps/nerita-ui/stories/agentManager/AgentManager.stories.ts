@@ -22,7 +22,7 @@ export const Settings: Story = {};
 export const Codex: Story = { args: { mode: "codex" } };
 export const CodexDefaults: Story = {
 	args: { mode: "codex-defaults" },
-	play: async ({ canvasElement }) => {
+	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
 		const page = within(canvasElement.ownerDocument.body);
 		await expect(
@@ -44,6 +44,29 @@ export const CodexDefaults: Story = {
 		await expect(
 			page.queryByRole("combobox", { name: "承認者" }),
 		).not.toBeInTheDocument();
+		await userEvent.click(
+			page.getByRole("button", { name: "サンドボックスモード: 2" }),
+		);
+		const reviewer = await page.findByRole("combobox", { name: "承認者" });
+		await userEvent.click(reviewer);
+		await expect(
+			page.getByRole("option", { name: /代わりに承認/ }),
+		).toHaveAttribute("aria-selected", "true");
+		await userEvent.keyboard("{Escape}");
+		await userEvent.keyboard("{Escape}");
+		await userEvent.click(
+			canvas.getByRole("button", { name: "変更を保存" }),
+		);
+		const saved = args.onRequest.mock.calls.find(
+			([request]) => request.type === "agent",
+		)?.[0];
+		if (saved?.type !== "agent") {
+			throw new Error("エージェント設定の保存要求がありません。");
+		}
+		await expect(saved.edit).toMatchObject({
+			sandboxMode: "workspace-write",
+			approvalsReviewer: "auto_review",
+		});
 	},
 };
 export const CodexPermissions: Story = {
@@ -283,7 +306,7 @@ export const NewCodex: Story = {
 					model: "gpt-6.1-sol",
 					reasoningEffort: "medium",
 					sandboxMode: "read-only",
-					approvalsReviewer: "user",
+					approvalsReviewer: "auto_review",
 					approvalPolicy: "on-request",
 					definition: {
 						name: "new-agent",

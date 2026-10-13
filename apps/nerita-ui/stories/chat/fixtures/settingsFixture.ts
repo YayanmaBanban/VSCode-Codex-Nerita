@@ -25,7 +25,7 @@ const sampleSettings: ConfigOption[] = [
 	{
 		id: "approvals_reviewer",
 		name: "ApprovalsReviewer",
-		currentValue: "user",
+		currentValue: "auto_review",
 		options: [
 			{
 				value: "user",

@@ -90,6 +90,44 @@ async function action(
 	});
 }
 
+void test("Codex の新規会話は自動レビューを表示と送信へ反映し、利用者が承認者を切り替えられる", async (t) => {
+	const f = await codexFixture(t);
+	const controller = f.controller();
+	await controller.connect();
+	const thread = f.requests.find(
+		(request) => request.method === "thread/start",
+	)!;
+	assert.equal(thread.params?.approvalsReviewer, "auto_review");
+	assert.equal(
+		controller
+			.snapshot()
+			.configOptions.find((option) => option.id === "approvals_reviewer")
+			?.currentValue,
+		"auto_review",
+	);
+	await action(controller, "prompt/send", { text: "既定の承認者で送信" });
+	assert.equal(
+		f.requests.find((request) => request.method === "turn/start")!.params
+			?.approvalsReviewer,
+		"auto_review",
+	);
+	f.notify("turn/completed", {
+		threadId: controller.snapshot().sessionId,
+		turn: { id: "turn-1", status: "completed", items: [] },
+	});
+	await until(() => controller.snapshot().run === "completed");
+	await action(controller, "config/set", {
+		configId: "approvals_reviewer",
+		value: "user",
+	});
+	await action(controller, "prompt/send", { text: "ユーザー承認で送信" });
+	assert.equal(
+		f.requests.filter((request) => request.method === "turn/start").at(-1)!
+			.params?.approvalsReviewer,
+		"user",
+	);
+});
+
 for (const reconnect of [false, true]) {
 	void test(`Codex は取消し後の遅い起動結果を回収し、回収前に${reconnect ? "再接続を始めない" : "終了完了を返さない"}`, async (t) => {
 		const gate = codexResponseGate();

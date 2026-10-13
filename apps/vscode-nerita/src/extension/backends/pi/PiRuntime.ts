@@ -33,6 +33,7 @@ import { preparePiRuntimeTools } from "./PiRuntimeTools";
 import { resolveTrustedExtensions } from "./PiExtensionTrust";
 import { PiAgentViews } from "./PiAgentViews";
 import { PiAgentHistory, restorePiAgentRecords } from "./PiAgentHistory";
+import { PiReferenceHistory } from "./PiReferenceHistory";
 import { PiChildRuntimes } from "./PiChildRuntimes";
 import { PiJobs } from "./PiJobs";
 import type { PiForkMessage } from "./PiForkContext";
@@ -101,6 +102,7 @@ export type PiSession = Pick<
 	contextSource?: Pick<PiSdk.SessionManager, "buildSessionContext">;
 	jobs?: PiJobs;
 	history?: PiHistoryAccess;
+	referenceHistory?: PiReferenceHistory;
 	generateHandoff?: HandoffGenerator;
 	account?: PiAccount;
 	quota?: PiQuotaService;
@@ -346,6 +348,10 @@ function runtimeSessionFacade(
 	const { subagents, runtimeTools, options, resourceLoader } = resources;
 
 	return Object.assign(session, {
+		referenceHistory: resources.referenceHistory,
+		clearQueue: resources.referenceHistory.wrapQueue(
+			session.clearQueue.bind(session),
+		),
 		protect: (value: string) =>
 			options.credentials!.vault.stores.redactor.text(value),
 		generateHandoff: (request: Parameters<HandoffGenerator>[0]) =>
@@ -648,6 +654,7 @@ async function prepareRuntimeResources(
 	);
 	const controls = new PiProviderControls();
 	const toolRegistry = new Set<string>();
+	const referenceHistory = new PiReferenceHistory();
 	const resourceLoader = await loadPiResources(
 		sdk,
 		options.cwd,
@@ -671,9 +678,11 @@ async function prepareRuntimeResources(
 			protect: (value: string) =>
 				options.credentials!.vault.stores.redactor.text(value),
 		},
+		referenceHistory,
 	);
 	return {
 		agentDir,
+		referenceHistory,
 		resourceLoader,
 		runtimeTools,
 		subagents,

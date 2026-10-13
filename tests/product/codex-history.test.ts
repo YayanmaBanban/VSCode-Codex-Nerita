@@ -127,6 +127,13 @@ void test("Codex の履歴再開応答に含まれるフルアクセス権限を
 	}));
 	await historyAction(f.controller, "saved");
 	assertPermissionDisplay(f.controller, "danger-full-access", true);
+	assert.equal(
+		f.controller
+			.snapshot()
+			.configOptions.find((option) => option.id === "approvals_reviewer")
+			?.currentValue,
+		"user",
+	);
 });
 
 void test("Codex の履歴復元は保存済みのモデル選択に置き換えず、次の新規会話には保存選択を適用する", async (t) => {

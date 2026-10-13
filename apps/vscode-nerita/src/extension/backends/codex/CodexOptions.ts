@@ -148,7 +148,7 @@ export class CodexOptions {
 		const epoch = this.session.epoch();
 		this.models = [];
 		this.turnOptions = {
-			approvalsReviewer: thread.approvalsReviewer ?? "user",
+			approvalsReviewer: thread.approvalsReviewer ?? "auto_review",
 		};
 		this.collaborationMode = "default";
 		this.initialSandbox = thread.sandbox;
@@ -262,7 +262,7 @@ export class CodexOptions {
 					this.turnOptions.sandboxPolicy ?? this.initialSandbox,
 				),
 				this.collaborationMode,
-				this.turnOptions.approvalsReviewer ?? "user",
+				this.turnOptions.approvalsReviewer ?? "auto_review",
 			),
 		});
 	}

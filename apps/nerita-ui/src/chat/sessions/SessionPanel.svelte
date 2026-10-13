@@ -45,22 +45,19 @@
 			chatState.asyncTasks.some(taskActive),
 	);
 	onMount(() => {
-		close?.focus();
 		const timer = setInterval(() => {
 			now = Date.now();
 		}, 30000);
 		return () => clearInterval(timer);
 	});
-	/** 広い画面では会話の幅も動かし、狭い画面では会話の上をスライドする。 */
+	/** 内容の幅を保ち、広い画面では表示枠の幅、狭い画面では位置を変えて横スクロールを防ぐ。 */
 	function pane(node: HTMLElement): TransitionConfig {
 		const width = node.getBoundingClientRect().width;
 		return {
 			duration: prefersReducedMotion.current ? 0 : 220,
 			easing: panelEasing,
 			css: (t) =>
-				`transform:translateX(${(1 - t) * 100}%);margin-right:${
-					!compact ? -(1 - t) * width : 0
-				}px`,
+				`width:${compact ? width : t * width}px;--session-panel-width:${width}px;--session-panel-offset:${compact ? (1 - t) * 100 : 0}%`,
 		};
 	}
 	/** IME の変換中とダイアログからの Escape を履歴の閉じる操作と混同しない。 */
@@ -80,90 +77,101 @@
 	onintrostart={() => {
 		exiting = false;
 	}}
+	onintroend={() => {
+		// 移動中のボタンへの自動スクロールと、ツールチップの位置ずれを避ける。
+		close?.focus({ preventScroll: true });
+	}}
 	inert={exiting}
 	aria-hidden={exiting}
 	id="session-panel"
 	aria-label="セッション一覧"
-	class="absolute inset-y-0 right-0 z-20 flex w-[350px] max-w-full shrink-0 flex-col border-0 border-l border-solid border-panel-border bg-menu text-menu-text shadow-[-8px_0_24px_#0002] [@media(min-width:760px)]:static [@media(min-width:760px)]:shadow-none"
+	class="absolute inset-y-0 right-0 z-20 w-[350px] max-w-full shrink-0 overflow-hidden text-menu-text drop-shadow-[-8px_0_12px_#0002] [@media(min-width:760px)]:static [@media(min-width:760px)]:drop-shadow-none"
 	onkeydown={keydown}
 >
-	<SessionPanelHeader state={chatState} bind:close {onClose} />
-	{#if capabilities.unarchive === true}
-		<div
-			class="flex gap-[8px] px-[12px] py-[8px]"
-			role="group"
-			aria-label="履歴の表示範囲"
-		>
-			{#each [false, true] as archived (archived)}<button
-					type="button"
-					class="inline-flex items-center gap-[6px] text-[12px] aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4"
-					aria-pressed={chatState.sessionsArchived === archived}
-					disabled={chatState.sessionPending ||
-						chatState.connection !== "ready"}
-					onclick={() =>
-						send({
-							type: "session/list",
-							archived,
-							requestId: crypto.randomUUID(),
-						})}
-					>{#if archived}<Archive
-							size={14}
-							aria-hidden="true"
-						/>{:else}<List
-							size={14}
-							aria-hidden="true"
-						/>{/if}{archived ? "アーカイブ" : "履歴"}</button
-				>{/each}
-		</div>
-	{/if}
-	<div class="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-[8px]">
-		{#if isNonEmptyString(chatState.sessionsError)}<div
-				role="alert"
-				class="m-[4px] rounded-[6px] border border-solid border-alert-border bg-alert p-[10px] text-[12px] leading-[1.7]"
+	<div
+		class="flex h-full w-[350px] max-w-[var(--session-panel-width,100%)] [transform:translateX(var(--session-panel-offset,0%))] flex-col border-0 border-l border-solid border-panel-border bg-menu"
+	>
+		<SessionPanelHeader state={chatState} bind:close {onClose} />
+		{#if capabilities.unarchive === true}
+			<div
+				class="flex gap-[8px] px-[12px] py-[8px]"
+				role="group"
+				aria-label="履歴の表示範囲"
 			>
-				{chatState.sessionsError}{#if capabilities.list}<button
+				{#each [false, true] as archived (archived)}<button
 						type="button"
-						class="mt-[8px] block text-[12px]"
-						disabled={chatState.sessionsLoading ||
-							chatState.sessionPending}
+						class="inline-flex items-center gap-[6px] text-[12px] aria-pressed:border-focus aria-pressed:font-semibold aria-pressed:underline aria-pressed:underline-offset-4"
+						aria-pressed={chatState.sessionsArchived === archived}
+						disabled={chatState.sessionPending ||
+							chatState.connection !== "ready"}
 						onclick={() =>
 							send({
 								type: "session/list",
+								archived,
 								requestId: crypto.randomUUID(),
-							})}>再試行</button
-					>{/if}
-			</div>{/if}
-		{#if chatState.sessionPending}<p
-				role="status"
-				class="mx-[8px] text-[12px] text-muted"
-			>
-				セッションを更新しています…
-			</p>{/if}
-		{#if chatState.sessions.length === 0 && !chatState.sessionsLoading && !isNonEmptyString(chatState.sessionsError)}<p
-				class="px-[12px] py-[24px] text-center text-[12px] text-muted"
-			>
-				このフォルダのセッションはありません
-			</p>{/if}
-		<ul class="m-0 list-none p-0" aria-label="セッション履歴">
-			{#each chatState.sessions as session (session.sessionId)}<SessionItem
-					{session}
-					selected={session.sessionId === chatState.sessionId}
-					{capabilities}
-					{send}
-					{now}
-					{disabled}
-				/>{/each}
-		</ul>
-		{#if chatState.sessionsNextCursor !== null}<button
-				type="button"
-				class="mx-[12px] my-[8px] text-[12px]"
-				disabled={chatState.sessionsLoading || chatState.sessionPending}
-				onclick={() =>
-					send({
-						type: "session/list",
-						more: true,
-						requestId: crypto.randomUUID(),
-					})}>さらに読み込む</button
-			>{/if}
+							})}
+						>{#if archived}<Archive
+								size={14}
+								aria-hidden="true"
+							/>{:else}<List
+								size={14}
+								aria-hidden="true"
+							/>{/if}{archived ? "アーカイブ" : "履歴"}</button
+					>{/each}
+			</div>
+		{/if}
+		<div
+			class="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-[8px]"
+		>
+			{#if isNonEmptyString(chatState.sessionsError)}<div
+					role="alert"
+					class="m-[4px] rounded-[6px] border border-solid border-alert-border bg-alert p-[10px] text-[12px] leading-[1.7]"
+				>
+					{chatState.sessionsError}{#if capabilities.list}<button
+							type="button"
+							class="mt-[8px] block text-[12px]"
+							disabled={chatState.sessionsLoading ||
+								chatState.sessionPending}
+							onclick={() =>
+								send({
+									type: "session/list",
+									requestId: crypto.randomUUID(),
+								})}>再試行</button
+						>{/if}
+				</div>{/if}
+			{#if chatState.sessionPending}<p
+					role="status"
+					class="mx-[8px] text-[12px] text-muted"
+				>
+					セッションを更新しています…
+				</p>{/if}
+			{#if chatState.sessions.length === 0 && !chatState.sessionsLoading && !isNonEmptyString(chatState.sessionsError)}<p
+					class="px-[12px] py-[24px] text-center text-[12px] text-muted"
+				>
+					このフォルダのセッションはありません
+				</p>{/if}
+			<ul class="m-0 list-none p-0" aria-label="セッション履歴">
+				{#each chatState.sessions as session (session.sessionId)}<SessionItem
+						{session}
+						selected={session.sessionId === chatState.sessionId}
+						{capabilities}
+						{send}
+						{now}
+						{disabled}
+					/>{/each}
+			</ul>
+			{#if chatState.sessionsNextCursor !== null}<button
+					type="button"
+					class="mx-[12px] my-[8px] text-[12px]"
+					disabled={chatState.sessionsLoading ||
+						chatState.sessionPending}
+					onclick={() =>
+						send({
+							type: "session/list",
+							more: true,
+							requestId: crypto.randomUUID(),
+						})}>さらに読み込む</button
+				>{/if}
+		</div>
 	</div>
 </aside>

@@ -10,8 +10,14 @@
 		children: Snippet<[{ props: Record<string, unknown> }]>;
 		content?: string | Snippet | false | null | undefined;
 		aboveMenu?: boolean;
+		disabled?: boolean;
 	};
-	let { children, content, aboveMenu = false }: Props = $props();
+	let {
+		children,
+		content,
+		aboveMenu = false,
+		disabled = false,
+	}: Props = $props();
 	let trigger = $state<HTMLButtonElement | null>(null);
 	let open = $state(false);
 	const limited = $derived(
@@ -41,8 +47,13 @@
 
 <svelte:window onkeydown={handleKeydown} />
 {#if content !== undefined && content !== null && content !== false}
-	<Tooltip.Provider delayDuration={10}>
-		<Tooltip.Root bind:open>
+	<Tooltip.Provider
+		delayDuration={100}
+		skipDelayDuration={0}
+		ignoreNonKeyboardFocus
+		disableHoverableContent
+	>
+		<Tooltip.Root bind:open {disabled}>
 			<Tooltip.Trigger bind:ref={trigger}>
 				{#snippet child({
 					props,

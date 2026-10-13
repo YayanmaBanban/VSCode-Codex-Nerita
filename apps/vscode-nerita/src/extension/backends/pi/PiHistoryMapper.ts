@@ -8,6 +8,7 @@ import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { mapPiTool, finishPiTools } from "./PiToolMapper";
 import { restorePiNestedTools } from "./PiNestedHistory";
+import { restorePiReferences } from "./PiReferenceHistory";
 
 /** 保存履歴の本文とツール結果を表す。 */
 type HistoryMessage = Extract<SessionEntry, { type: "message" }>["message"];
@@ -19,6 +20,9 @@ export function restorePiHistory(
 ): Pick<ChatState, "messages" | "tools" | "sessionTitle"> {
 	const state = { ...initialState(), cwd, runId: "history:initial" };
 	let title: string | undefined;
+	const byId = new Map<string | null, SessionEntry>(
+		entries.map((entry) => [entry.id, entry]),
+	);
 	for (const entry of entries) {
 		if (entry.type === "session_info") {
 			const name = entry.name?.trim();
@@ -36,7 +40,7 @@ export function restorePiHistory(
 			state.runId = `history:${entry.id}`;
 		}
 		if (message.role === "user" || message.role === "assistant") {
-			restoreChatMessage(message, state, entry);
+			restoreChatMessage(message, state, entry, byId.get(entry.parentId));
 		} else if (message.role === "toolResult") {
 			// SDK は停止を `isError` と定型本文で保存するため、その形式だけを停止へ戻す。
 			restoreToolResult(message, state);
@@ -99,6 +103,7 @@ function restoreChatMessage(
 	message: Extract<HistoryMessage, { role: "user" | "assistant" }>,
 	state: ChatState,
 	entry: Extract<SessionEntry, { type: "message" }>,
+	parent: SessionEntry | undefined,
 ) {
 	const text =
 		typeof message.content === "string"
@@ -108,10 +113,15 @@ function restoreChatMessage(
 					.map((part) => part.text)
 					.join("");
 	if (text !== "") {
+		const references =
+			message.role === "user"
+				? restorePiReferences(parent, text)
+				: undefined;
 		state.messages.push({
 			id: entry.id,
 			role: message.role,
 			text,
+			...(references ? { references } : {}),
 			order: nextTimelineOrder(state),
 			streaming: false,
 		});

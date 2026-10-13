@@ -274,7 +274,11 @@ export abstract class PiRun extends PiLifecycle {
 						}
 					},
 				);
-				const disposition = await runtime.steer(text);
+				const disposition = await this.steerWithReferences(
+					runtime,
+					text,
+					message,
+				);
 				if (disposition === "handled") {
 					// 実行が直後に終わっても、拡張が引き受けた入力を再送させない。
 					if (this.epoch !== epoch) {
@@ -466,30 +470,74 @@ export abstract class PiRun extends PiLifecycle {
 		submission: Submission,
 		message: BackendPrompt,
 	) {
-		return (text: string) =>
-			runtime.prompt(text, {
-				expandPromptTemplates: false,
-				preflightResult: (disposition) => {
-					if (!current() || submission.cancelled) {
-						throw new Error("送信を停止しました。");
+		return (text: string) => {
+			const release = runtime.referenceHistory?.prepare(
+				runtime.protect?.(text) ?? text,
+				message.references ?? [],
+			);
+			let queued = false;
+			return runtime
+				.prompt(text, {
+					expandPromptTemplates: false,
+					preflightResult: (disposition) => {
+						this.acceptPrompt(
+							current,
+							submission,
+							message,
+							disposition,
+						);
+						queued = disposition === "queued";
+					},
+				})
+				.finally(() => {
+					if (!queued) {
+						release?.();
 					}
-					// 拡張が処理した入力も下書きを解放するが、通常の会話本文には追加しない。
-					switch (disposition) {
-						case "started":
-						case "queued":
-							this.appendUserMessage(message);
-							break;
-						case "handled":
-							break;
-					}
-					submission.accepted = true;
-					this.emit({
-						type: "prompt/accepted",
-						requestId: message.requestId,
-						mode: disposition === "queued" ? "steer" : "start",
-					});
-				},
-			});
+				});
+		};
+	}
+
+	/** 拡張が処理した入力も下書きを解放するが、通常の会話本文には追加しない。 */
+	private acceptPrompt(
+		current: () => boolean,
+		submission: Submission,
+		message: BackendPrompt,
+		disposition: "started" | "queued" | "handled",
+	) {
+		if (!current() || submission.cancelled) {
+			throw new Error("送信を停止しました。");
+		}
+		if (disposition !== "handled") {
+			this.appendUserMessage(message);
+		}
+		submission.accepted = true;
+		this.emit({
+			type: "prompt/accepted",
+			requestId: message.requestId,
+			mode: disposition === "queued" ? "steer" : "start",
+		});
+	}
+
+	/** 拡張が処理した入力や失敗した追加指示は、後の履歴の参照に流用しない。 */
+	private async steerWithReferences(
+		runtime: PiSession,
+		text: string,
+		message: BackendPrompt,
+	) {
+		const release = runtime.referenceHistory?.prepare(
+			runtime.protect?.(text) ?? text,
+			message.references ?? [],
+		);
+		try {
+			const disposition = await runtime.steer(text);
+			if (disposition === "handled") {
+				release?.();
+			}
+			return disposition;
+		} catch (error) {
+			release?.();
+			throw error;
+		}
 	}
 
 	/** 現在の送信だけへ SDK のイベントと利用量を反映する。 */

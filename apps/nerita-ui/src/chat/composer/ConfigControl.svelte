@@ -9,6 +9,9 @@
 	import User from "@lucide/svelte/icons/user";
 	import { cn } from "cnfast";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import { useSettingsPopup } from "../../ui/settingsPopup.svelte";
+
+	const popup = useSettingsPopup();
 
 	let {
 		option,
@@ -42,12 +45,13 @@
 
 <div class="config-control relative inline-flex max-w-full min-w-0 text-muted">
 	<Select.Root
+		bind:open={popup.open}
 		type="single"
 		value={option.currentValue}
 		disabled={disabled || option.options.length === 0}
 		onValueChange={onChange}
 	>
-		<SettingsTooltip content={tooltip}>
+		<SettingsTooltip content={tooltip} disabled={popup.open}>
 			{#snippet children({ props: triggerProps })}
 				<Select.Trigger
 					{...triggerProps}

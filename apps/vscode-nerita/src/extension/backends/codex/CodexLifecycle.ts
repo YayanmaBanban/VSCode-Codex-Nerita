@@ -221,7 +221,10 @@ export class CodexLifecycle {
 		const epoch = this.epoch;
 		this.session.patch({ sessionPending: true, error: null });
 		try {
-			const result = await client.startThread({ cwd: state.cwd });
+			const result = await client.startThread({
+				cwd: state.cwd,
+				approvalsReviewer: "auto_review",
+			});
 			if (epoch !== this.epoch) {
 				return;
 			}

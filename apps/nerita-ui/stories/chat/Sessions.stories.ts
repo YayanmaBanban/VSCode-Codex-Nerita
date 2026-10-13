@@ -65,6 +65,59 @@ export const History: Story = {
 	},
 };
 export const Paginated: Story = { args: { scenario: "paginated" } };
+
+/** 開閉の各フレームで横スクロールを増やさず、表示完了後に閉じる操作へフォーカスする。 */
+export const OpeningWithoutHorizontalScroll: Story = {
+	args: { scenario: "paginated" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const document = canvasElement.ownerDocument;
+		const samples: { width: number; scrollWidth: number }[] = [];
+		let sampling = true;
+		/** 終点だけでなく、スライド中に一時的に現れるスクロール領域も記録する。 */
+		function sample() {
+			if (!sampling) {
+				return;
+			}
+			const root = document.documentElement;
+			samples.push({
+				width: root.clientWidth,
+				scrollWidth: root.scrollWidth,
+			});
+			requestAnimationFrame(sample);
+		}
+		sample();
+		try {
+			const toggle = canvas.getByRole("button", {
+				name: "セッション一覧",
+			});
+			toggle.focus();
+			await userEvent.keyboard("{Enter}");
+			const panel = await canvas.findByRole("complementary", {
+				name: "セッション一覧",
+			});
+			await waitFor(() => expect(panel.getAnimations()).toHaveLength(0));
+			await expect(
+				within(panel).getByRole("button", {
+					name: "セッション一覧を閉じる",
+				}),
+			).toHaveFocus();
+			await expect(samples.length).toBeGreaterThan(1);
+			await expect(
+				samples.every(({ width, scrollWidth }) => scrollWidth <= width),
+			).toBe(true);
+
+			await userEvent.keyboard("{Escape}");
+			await waitFor(() => expect(panel).not.toBeInTheDocument());
+			await expect(toggle).toHaveFocus();
+			await expect(
+				samples.every(({ width, scrollWidth }) => scrollWidth <= width),
+			).toBe(true);
+		} finally {
+			sampling = false;
+		}
+	},
+};
 export const Empty: Story = { args: { scenario: "empty" } };
 export const Error: Story = { args: { scenario: "error" } };
 export const Unsupported: Story = { args: { scenario: "unsupported" } };

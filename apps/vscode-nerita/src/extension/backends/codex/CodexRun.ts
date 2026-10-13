@@ -17,6 +17,7 @@ import type { AdditionalContext } from "./context/additionalContext";
 import { type Attachment } from "@nerita/shared/composer";
 import { type TurnInfo } from "./protocol/turn";
 import { isRecord } from "@nerita/shared/validation";
+import { referenceElements } from "./history/referenceElements";
 
 /** 状態と接続はコントローラーから取得し、ターン処理で複製して保持しない。 */
 type RunSession = {
@@ -121,7 +122,11 @@ export class CodexRun {
 				threadId: run.threadId,
 				clientUserMessageId: userId,
 				input: [
-					{ type: "text", text, text_elements: [] },
+					{
+						type: "text",
+						text,
+						text_elements: referenceElements(text, references),
+					},
 					...attachments,
 					...skillInput(text, this.session.snapshot().skills),
 				],

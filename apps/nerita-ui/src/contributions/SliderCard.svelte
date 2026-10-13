@@ -14,6 +14,10 @@
 	import StepSlider from "../ui/StepSlider.svelte";
 	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 	import FastModeButton from "./FastModeButton.svelte";
+	import { useSettingsPopup } from "../ui/settingsPopup.svelte";
+
+	const popup = useSettingsPopup();
+	let card = $state<HTMLDivElement | null>(null);
 
 	let {
 		control,
@@ -68,6 +72,16 @@
 			item.name
 		);
 	}
+	/** 最初の補助ボタンではなく、カードの主操作へフォーカスを移す。 */
+	function focusSlider(event: Event) {
+		const slider = card?.querySelector<HTMLInputElement>(
+			'input[type="range"]:not(:disabled)',
+		);
+		if (slider) {
+			event.preventDefault();
+			slider.focus();
+		}
+	}
 </script>
 
 {#snippet tooltip()}{#if model}<span class="whitespace-pre-line"
@@ -80,10 +94,11 @@
 				>{label}</span
 			></span
 		>{/if}{/snippet}
-<Popover.Root onOpenChange={() => (preview = null)}
+<Popover.Root bind:open={popup.open} onOpenChange={() => (preview = null)}
 	><Popover.Trigger
 		>{#snippet child({ props: triggerProps })}<SettingsTooltip
 				content={tooltip}
+				disabled={popup.open}
 				>{#snippet children({ props: tooltipProps })}<button
 						{...mergeProps(
 							{ ...triggerProps },
@@ -140,6 +155,9 @@
 			>{/snippet}</Popover.Trigger
 	><Popover.Portal
 		><Popover.Content
+			bind:ref={card}
+			onOpenAutoFocus={focusSlider}
+			onCloseAutoFocus={popup.onCloseAutoFocus}
 			side="top"
 			align="start"
 			sideOffset={8}

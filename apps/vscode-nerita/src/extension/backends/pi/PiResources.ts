@@ -12,6 +12,7 @@ import { guardPiExtensionTools } from "./PiExtensionTools";
 import { neritaMcpExtension } from "./mcp/PiMcpExtension";
 import type { PiMcpSdk } from "./mcp/PiMcpSdk";
 import { privatePiMessage } from "./PiMessageSafety";
+import type { PiReferenceHistory } from "./PiReferenceHistory";
 
 /** 本文をファイルパスと解釈させず、定義の指定どおり基底プロンプトへ反映する。 */
 function agentPromptOverride(
@@ -44,6 +45,7 @@ export async function loadPiResources(
 	promptMode: "append" | "replace" = "append",
 	webTrust: PiWebTrust[] = [],
 	features: PiToolFeatures = {},
+	referenceHistory?: PiReferenceHistory,
 ): Promise<PiSdk.DefaultResourceLoader> {
 	const mcpSdk = sdk as typeof PiSdk & {
 		loadPiMcp?: () => Promise<PiMcpSdk>;
@@ -72,6 +74,7 @@ export async function loadPiResources(
 			agentDir,
 			settingsManager,
 			trustedExtensionPaths,
+			referenceHistory,
 		),
 		// ターミナル用のテーマは VS Code Webview には適用しない。
 		noThemes: true,
@@ -88,11 +91,10 @@ export async function loadPiResources(
 					webTrust,
 				);
 			}
-			// 外部拡張が確定メッセージを変更した場合も、公開・保存直前の最後のハンドラーで保護する。
+			// 外部拡張の本文を保護してから、直後に保存される本文の参照情報を追加する。
 			result.extensions.sort(
 				(a, b) =>
-					Number(a.path === "<inline:nerita-secret-protection>") -
-					Number(b.path === "<inline:nerita-secret-protection>"),
+					extensionTailOrder(a.path) - extensionTailOrder(b.path),
 			);
 			return result;
 		},
@@ -121,6 +123,7 @@ function resourceExtensionFactories(
 	agentDir: string,
 	settingsManager: PiSdk.SettingsManager,
 	trustedExtensionPaths: string[],
+	referenceHistory: PiReferenceHistory | undefined,
 ): PiSdk.InlineExtension[] {
 	return [
 		...neritaExtensionFactories(controls, {
@@ -161,5 +164,14 @@ function resourceExtensionFactories(
 				}));
 			},
 		},
+		...(referenceHistory ? [referenceHistory.extension()] : []),
 	];
+}
+
+/** 本文を書き換える外部拡張、秘密値保護、参照保存の順序を維持する。 */
+function extensionTailOrder(path: string): number {
+	return [
+		"<inline:nerita-secret-protection>",
+		"<inline:nerita-reference-history>",
+	].indexOf(path);
 }

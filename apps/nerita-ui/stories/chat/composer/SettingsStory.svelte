@@ -32,8 +32,10 @@
 			return bridge;
 		};
 	}
-	let { mode = "workspace-write", reviewer = "user" }: SettingsStoryProps =
-		$props();
+	let {
+		mode = "workspace-write",
+		reviewer = "auto_review",
+	}: SettingsStoryProps = $props();
 	const mock = $derived.by(() => createSettingsStoryBridge(mode, reviewer)());
 	let last = $state.raw<UiMessage | undefined>(undefined);
 	const setLast = (

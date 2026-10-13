@@ -33,7 +33,7 @@
 			model: edit.model ?? "gpt-6.1-sol",
 			reasoningEffort: edit.reasoningEffort ?? "medium",
 			sandboxMode: edit.sandboxMode ?? "read-only",
-			approvalsReviewer: edit.approvalsReviewer ?? "user",
+			approvalsReviewer: edit.approvalsReviewer ?? "auto_review",
 			approvalPolicy: edit.approvalPolicy ?? "on-request",
 		};
 	}

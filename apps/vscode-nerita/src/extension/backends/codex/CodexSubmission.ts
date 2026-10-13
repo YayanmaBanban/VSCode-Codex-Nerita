@@ -22,6 +22,7 @@ import { readSessionContext } from "./context/sessionContext";
 import { skillInput } from "./context/skillInput";
 import { listMcpServers } from "./mcpStatus";
 import { type CodexConnection, type CodexFactory } from "./runtime/connection";
+import { referenceElements } from "./history/referenceElements";
 
 /** 開始状態と取消しを参照し、ターン自体の生成・更新は実行管理へ委ねる。 */
 type SubmissionTurn = Readonly<
@@ -202,7 +203,9 @@ export class CodexSubmission {
 		try {
 			this.checkSubmission(operation);
 			// `Goal` は API のモードではなく、送信する指示の接頭辞として扱う。
-			text = this.submissionText(text);
+			const content = this.submissionText(text, references);
+			text = content.text;
+			references = content.references;
 			const context = this.needsSubmissionContext(
 				sessionReferences,
 				changeScopes,
@@ -305,11 +308,17 @@ export class CodexSubmission {
 	}
 
 	/** `Goal` モードの入力に必要な接頭辞だけを補う。 */
-	private submissionText(text: string) {
+	private submissionText(text: string, references: ComposerReference[]) {
 		if (this.options.mode === "goal" && !/^\s*\/goal(?:\s|$)/u.test(text)) {
-			text = `/goal ${text}`;
+			return {
+				text: `/goal ${text}`,
+				references: references.map((reference) => ({
+					...reference,
+					offset: reference.offset + 6,
+				})),
+			};
 		}
-		return text;
+		return { text, references };
 	}
 
 	/** 追加入力を受け取れる開始済みターンを確認する。 */
@@ -350,7 +359,11 @@ export class CodexSubmission {
 			expectedTurnId: run.turnId!,
 			clientUserMessageId: id,
 			input: [
-				{ type: "text", text, text_elements: [] },
+				{
+					type: "text",
+					text,
+					text_elements: referenceElements(text, references),
+				},
 				...attachments,
 				...skillInput(text, this.session.snapshot().skills),
 			],
