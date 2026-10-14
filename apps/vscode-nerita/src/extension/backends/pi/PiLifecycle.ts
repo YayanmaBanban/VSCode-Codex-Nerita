@@ -135,6 +135,7 @@ export abstract class PiLifecycle extends SessionState {
 					return this.authorize(title, signal);
 				},
 				resume,
+				this.questions.ask,
 			).then(async (result) => {
 				if (epoch !== this.epoch) {
 					const closing = closePiSession(result.session);

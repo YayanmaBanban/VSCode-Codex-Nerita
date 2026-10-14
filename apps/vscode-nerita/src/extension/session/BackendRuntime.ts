@@ -473,10 +473,12 @@ export class BackendRuntime implements BackendSession {
 			});
 			return;
 		}
-		const matchesType =
-			value.type === "execution/stop" ||
-			value.type === "agent/read" ||
-			value.type === "agent/stop";
+		const matchesType = [
+			"question/respond",
+			"execution/stop",
+			"agent/read",
+			"agent/stop",
+		].includes(value.type);
 		if (matchesType) {
 			await active.session.receive(value);
 			return;

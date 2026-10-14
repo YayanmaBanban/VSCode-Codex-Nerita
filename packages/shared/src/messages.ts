@@ -1,5 +1,6 @@
 // Host と Webview の要求・通知の通信契約を定義し、実行環境の API に依存させない。
 import type { ChatState } from "./chatState";
+import type { QuestionResponse } from "./questions";
 import type { ConversationScrollAnchor } from "./conversationScroll";
 import type { ToolOutputRequest, ToolOutputResponse } from "./toolOutput";
 import type { BackendId } from "./backend";
@@ -33,6 +34,7 @@ import type { DlcEditorState, DlcUiMessage, DlcView } from "./dlc/contracts";
 
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| QuestionResponse
 	| DlcUiMessage
 	| { type: "workspace/manageTrust"; requestId: string }
 	| ToolOutputRequest

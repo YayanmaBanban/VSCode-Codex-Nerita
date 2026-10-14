@@ -106,7 +106,7 @@ function createPiFactory(
 	executionRoot: string | undefined,
 ): PiFactory {
 	const sandboxId = executionRoot !== undefined ? randomUUID() : "chat";
-	return async (signal, authorize, resume) => {
+	return async (signal, authorize, resume, askQuestion) => {
 		const cwd = await piDirectory(executionRoot, trustStore);
 		const sandbox = await piSandbox(context, sandboxId, cwd, signal);
 		const commandPermissions = sandbox.commands;
@@ -140,6 +140,7 @@ function createPiFactory(
 				.get<boolean>("toolSearch", false),
 			signal,
 			authorize,
+			...(askQuestion ? { askQuestion } : {}),
 			authService: createPiAuthService(context.extensionUri),
 			getStorage: () =>
 				vscode.workspace

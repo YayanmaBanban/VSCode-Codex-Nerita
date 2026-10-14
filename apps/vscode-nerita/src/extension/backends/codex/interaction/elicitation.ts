@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { isRecord } from "@nerita/shared/validation";
 import { text, type InteractionService } from "./interactionService";
+import type { QuestionField } from "@nerita/shared/questions";
 
 /** MCP の基本フォームを型と制約で検証し、未対応形式は承諾しない。 */
 export async function elicitation(
@@ -39,6 +40,9 @@ async function elicitForm(
 	empty: { action: string; content: null; _meta: null },
 ) {
 	const content: Record<string, unknown> = { __proto__: null };
+	if (ui.ask) {
+		return elicitChatForm(schema, properties, ui.ask, signal, title, empty);
+	}
 	for (const [key, field] of Object.entries(properties)) {
 		if (!supportedField(field)) {
 			return { ...empty, action: "decline" };
@@ -66,6 +70,72 @@ async function elicitForm(
 		return empty;
 	}
 	return { action: "accept", content, _meta: null };
+}
+
+/** フォーム全体を1枚のカードで確認し、指定された型に回答を変換して MCP に返す。 */
+async function elicitChatForm(
+	schema: Record<string, unknown>,
+	properties: Record<string, unknown>,
+	ask: NonNullable<InteractionService["ask"]>,
+	signal: AbortSignal,
+	title: string,
+	empty: { action: string; content: null; _meta: null },
+) {
+	const fields: QuestionField[] = [];
+	for (const [key, field] of Object.entries(properties)) {
+		if (!supportedField(field)) {
+			return { ...empty, action: "decline" };
+		}
+		fields.push(
+			chatFormField(
+				key,
+				field,
+				Array.isArray(schema.required) && schema.required.includes(key),
+			),
+		);
+	}
+	const result = await ask(
+		{ title, source: "MCP", fields, allowDecline: true },
+		signal,
+	);
+	if (signal.aborted || result.action !== "accept") {
+		return { ...empty, action: result.action };
+	}
+	const content: Record<string, unknown> = { __proto__: null };
+	for (const [key, field] of Object.entries(properties)) {
+		const value = result.answers[key] ?? "";
+		if (value !== "" && supportedField(field)) {
+			content[key] = fieldValue(field.type, value);
+		}
+	}
+	return { action: "accept", content, _meta: null };
+}
+
+/** 型と制約を Webview に渡し、任意項目は空入力で省略できるようにする。 */
+function chatFormField(
+	key: string,
+	field: SupportedField,
+	required: boolean,
+): QuestionField {
+	const choices = fieldChoices(field);
+	return {
+		id: key,
+		title: field.title ?? key,
+		required,
+		...(field.description !== undefined
+			? { description: field.description }
+			: {}),
+		...(choices ? { options: choices.map((label) => ({ label })) } : {}),
+		...(field.type !== "boolean" ? { inputType: field.type } : {}),
+		...(field.minimum !== undefined ? { minimum: field.minimum } : {}),
+		...(field.maximum !== undefined ? { maximum: field.maximum } : {}),
+		...(field.minLength !== undefined
+			? { minLength: field.minLength }
+			: {}),
+		...(field.maxLength !== undefined
+			? { maxLength: field.maxLength }
+			: {}),
+	};
 }
 
 /** フォーム項目の説明と必須表示を組み立てる。 */
@@ -269,6 +339,9 @@ async function elicitUrl(
 	if (matchesProtocol) {
 		return { ...empty, action: "decline" };
 	}
+	if (ui.ask) {
+		return elicitChatUrl(url, ui, signal, title, empty);
+	}
 	const matchesValue2 =
 		(await ui.choose(
 			`${title}\n${url.href}`,
@@ -283,10 +356,64 @@ async function elicitUrl(
 	return {
 		...empty,
 		action:
-			// 確認待ちの間に AbortSignal は変更されるため、返答後にも取消しを確認する。
+			// 確認待ちの間に `AbortSignal` の状態が変わることもあるため、返答後にも取り消しを確認する。
 			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 			answer === "入力を完了した" && !signal.aborted
 				? "accept"
 				: "cancel",
+	};
+}
+
+/** URL を開く承諾と入力完了を同じチャットで確認し、拒否と取消を区別する。 */
+async function elicitChatUrl(
+	url: URL,
+	ui: InteractionService,
+	signal: AbortSignal,
+	title: string,
+	empty: { action: string; content: null; _meta: null },
+) {
+	const ask = ui.ask!;
+	const requested = await ask(
+		{
+			title,
+			source: "MCP",
+			allowDecline: true,
+			fields: [
+				{
+					id: "open",
+					title: "ブラウザーで開きますか？",
+					description: url.href,
+					required: true,
+					options: [{ label: "ブラウザーで開く" }],
+				},
+			],
+		},
+		signal,
+	);
+	if (requested.action !== "accept") {
+		return { ...empty, action: requested.action };
+	}
+	if (signal.aborted) {
+		return empty;
+	}
+	await ui.open(url.href);
+	const completed = await ask(
+		{
+			title,
+			source: "MCP",
+			fields: [
+				{
+					id: "done",
+					title: "ブラウザーでの入力を完了したら回答してください。",
+					required: true,
+					options: [{ label: "入力を完了した" }],
+				},
+			],
+		},
+		signal,
+	);
+	return {
+		...empty,
+		action: completed.action === "accept" ? "accept" : "cancel",
 	};
 }

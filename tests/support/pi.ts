@@ -63,7 +63,7 @@ export async function piFixture(t: TestContext) {
 			afterCreate?: (session: PiSession) => Promise<void> | void,
 			executionRoot = cwd,
 		): PiFactory =>
-		async (signal, authorize, resume) => {
+		async (signal, authorize, resume, askQuestion) => {
 			const session = await createPiRuntime({
 				extensionPath: process.env.NERITA_TEST_EXTENSION!,
 				cwd: executionRoot,
@@ -77,6 +77,7 @@ export async function piFixture(t: TestContext) {
 				...options,
 				signal,
 				authorize,
+				...(askQuestion ? { askQuestion } : {}),
 				...(resume ? { resume } : {}),
 			});
 			await afterCreate?.(session);

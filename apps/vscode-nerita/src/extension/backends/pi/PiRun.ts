@@ -505,7 +505,9 @@ export abstract class PiRun extends PiLifecycle {
 		disposition: "started" | "queued" | "handled",
 	) {
 		if (!current() || submission.cancelled) {
-			throw new Error("送信を停止しました。");
+			// SDK の開始通知は終了処理の `try/finally` より前に呼ばれる。ここで例外を投げると `abort` の完了を待ち続ける。
+			// 停止は `cancel` が SDK へ伝えているため、通知を受理せず、この処理を終了する。
+			return;
 		}
 		if (disposition !== "handled") {
 			this.appendUserMessage(message);

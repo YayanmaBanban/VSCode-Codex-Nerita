@@ -1,5 +1,7 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
 import { loadPiSdk } from "./PiSdk";
+import type { QuestionAsk } from "../../session/ChatQuestions";
+import { createPiQuestionTool, piQuestionUI } from "./PiQuestionUI";
 import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 import {
 	isNonEmptyString,
@@ -124,10 +126,12 @@ export type PiFactory = (
 	signal: AbortSignal,
 	authorize: PiAuthorize,
 	resume?: PiResumeTarget,
+	askQuestion?: QuestionAsk,
 ) => Promise<{ session: PiSession; cwd: string }>;
 
 /** 通常実行と隔離した疎通テストで使う起動条件。 */
 export type PiRuntimeOptions = {
+	askQuestion?: QuestionAsk;
 	credentials?: PiCredentialStore;
 	credentialBroker?: CredentialBroker;
 	mcpBackend?: () => Promise<SecretAuthBackend>;
@@ -495,7 +499,18 @@ async function bindRuntimeAccount(
 		options.credentials,
 	);
 	try {
-		await session.bindExtensions({ mode: "print" });
+		await session.bindExtensions({
+			mode: "print",
+			...(options.askQuestion
+				? {
+						uiContext: piQuestionUI(
+							session.extensionRunner.getUIContext(),
+							options.askQuestion,
+							options.signal,
+						),
+					}
+				: {}),
+		});
 		// 起動処理の完了前に取得したカタログの候補と保存推論を適用し、SDK 既定値を公開しない。
 		await account.refreshCatalog(options.signal);
 		options.signal.throwIfAborted();
@@ -578,7 +593,12 @@ function runtimeCustomTools(
 		.extensions.flatMap((extension) => [...extension.tools.keys()]);
 	// 非 Windows では、明示的に信頼した `bash` 拡張が SDK 標準ツールを置き換えられる。
 	const customTools = permittedTools(
-		runtimeTools.tools,
+		[
+			...runtimeTools.tools,
+			...(options.askQuestion
+				? [createPiQuestionTool(options.askQuestion, options.signal)]
+				: []),
+		],
 		options.allowedTools,
 	).filter(
 		(tool) =>

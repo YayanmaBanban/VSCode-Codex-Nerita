@@ -18,6 +18,7 @@ import { isPermissionPresentation } from "./permission";
 import { validReferences } from "./composerReferences";
 import type { ChatMessage, ToolSummary } from "./chatState";
 import { isToolContent } from "./toolContent";
+import { isQuestionRequest } from "./questions";
 
 /** 差分通知に未知のフィールドが混入した場合も拒否する。 */
 export function validStateField(key: string, value: unknown): boolean {
@@ -28,6 +29,8 @@ export function validStateField(key: string, value: unknown): boolean {
 /** 各フィールドの検証を独立させ、未知のキーは受け付けない。 */
 const stateFieldValidators = new Map<unknown, (value: unknown) => boolean>(
 	Object.entries({
+		questions: (value) =>
+			Array.isArray(value) && value.every(isQuestionRequest),
 		piProviderControls: (value) =>
 			value === null || isPiProviderControls(value),
 		uiContributions: (value) => value === null || isUiContributions(value),

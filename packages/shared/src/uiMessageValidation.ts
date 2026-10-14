@@ -16,6 +16,7 @@ import { validSessionReferences } from "./sessionReferences";
 import { isChangeScope, validChangeScopes } from "./changeReferences";
 import { validCodeReferences } from "./codeReferences";
 import { DlcUiMessageSchema } from "./dlc/contracts";
+import { isQuestionResponse } from "./questions";
 
 /** UI からの要求は実行前に検証する。 */
 export function isUiMessage(value: unknown): value is UiMessage {
@@ -45,6 +46,7 @@ const uiMessageValidators = new Map<
 	(value: Record<string, unknown>) => boolean
 >(
 	Object.entries({
+		"question/respond": isQuestionResponse,
 		"tool/output": validToolOutputRequest,
 		"diff/open": (value) =>
 			isPathString(value.path) &&

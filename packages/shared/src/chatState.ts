@@ -3,6 +3,7 @@ import type { McpMessageContent } from "./mcp";
 import type { ToolContent } from "./toolContent";
 import type { ToolOutputPreview } from "./toolOutput";
 import type { PermissionPresentation } from "./permission";
+import type { QuestionRequest } from "./questions";
 import type { ComposerReference } from "./composerReferences";
 import type { PiProviderControls } from "./piProviderControls";
 import type { UiContributions } from "./uiContributions";
@@ -118,6 +119,7 @@ export type ChatState = {
 	agents: SubAgentSummary[];
 	asyncTasks: AsyncTask[];
 	permissions: Permission[];
+	questions: QuestionRequest[];
 	error: string | null;
 	authMethods: { id: string; name: string }[];
 	piAccount: string | null;
@@ -157,6 +159,7 @@ export function initialState(): ChatState {
 		agents: [],
 		asyncTasks: [],
 		permissions: [],
+		questions: [],
 		error: null,
 		authMethods: [],
 		piAccount: null,

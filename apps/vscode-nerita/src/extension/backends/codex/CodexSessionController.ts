@@ -23,6 +23,7 @@ import type { CodexFactory } from "./runtime/connection";
 import type { AttachmentService } from "../../session/attachmentService";
 import type { AuthService } from "./interaction/AuthFlow";
 import type { InteractionService } from "./interaction/interactionService";
+import { chatInteractionService } from "./interaction/chatInteractionService";
 import type { CodexSelectionStore } from "./settings/modelSelection";
 import { isRecord } from "@nerita/shared/validation";
 import type { StartedThread } from "./protocol/turn";
@@ -87,7 +88,7 @@ export class CodexSessionController extends SessionState {
 		};
 		this.serverRequests = new CodexRequests(
 			{ ...stateAccess, active: () => this.run.current },
-			interactions,
+			chatInteractionService(this.questions.ask, interactions?.open),
 		);
 		this.options = new CodexOptions(session, selectionStore);
 		this.attachments = new CodexAttachments(session, files);
@@ -313,16 +314,12 @@ export class CodexSessionController extends SessionState {
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
 	): Promise<void> {
-		if (message.type === "tool/output") {
-			await this.readToolOutput(message);
+		if (message.type === "question/respond") {
+			this.questions.respond(message);
 			return;
 		}
-		if (message.type === "agent/read") {
-			await this.agents.read(message);
-			return;
-		}
-		if (message.type === "agent/stop") {
-			await this.agents.stop(message);
+		const toolAction = await this.dispatchToolAction(message);
+		if (toolAction) {
 			return;
 		}
 		if (message.type === "changes/open") {
@@ -345,6 +342,23 @@ export class CodexSessionController extends SessionState {
 			return;
 		}
 		await this.dispatchMutableAction(message);
+	}
+
+	/** ツール出力と子エージェントの操作は、親の入力・設定待ちと独立して受け付ける。 */
+	private async dispatchToolAction(message: UiMessage): Promise<boolean> {
+		if (message.type === "tool/output") {
+			await this.readToolOutput(message);
+			return true;
+		}
+		if (message.type === "agent/read") {
+			await this.agents.read(message);
+			return true;
+		}
+		if (message.type === "agent/stop") {
+			await this.agents.stop(message);
+			return true;
+		}
+		return false;
 	}
 
 	/** 更新待ちを排除して認証・接続操作を処理する。 */

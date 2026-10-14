@@ -367,23 +367,15 @@ void test("Codex は再接続前の承認を次の会話で受け付けず、新
 for (const stopped of [false, true]) {
 	void test(`Codex の質問を直列に表示し、停止後の入力と待機中の質問を返さない（停止=${stopped}）`, async (t) => {
 		const f = await codexFixture(t);
-		let release!: (answer: string) => void;
-		const first = new Promise<string>((resolve) => {
-			release = resolve;
-		});
-		t.after(() => release("終了時の入力"));
 		const shown: string[] = [];
-		const controller = f.controller(undefined, undefined, {
-			input: async (title) => {
-				shown.push(title);
-				return shown.length === 1 ? first : "次の回答";
-			},
-			choose: () => {
-				assert.fail("自由入力の質問を選択 UI へ渡さない");
-			},
-			open: () => {
-				assert.fail("自由入力の質問で URL を開かない");
-			},
+		const controller = f.controller();
+		controller.subscribe((event) => {
+			if (
+				event.type === "state/patch" &&
+				event.patch.questions?.length === 1
+			) {
+				shown.push(event.patch.questions[0]!.fields[0]!.title);
+			}
 		});
 		await controller.connect();
 		await action(controller, "prompt/send", { text: "質問を受ける" });
@@ -407,7 +399,24 @@ for (const stopped of [false, true]) {
 		if (stopped) {
 			await action(controller, "prompt/cancel");
 		}
-		release("最初の回答");
+		if (!stopped) {
+			const question = controller.snapshot().questions[0]!;
+			await action(controller, "question/respond", {
+				questionId: question.id,
+				action: "accept",
+				answers: { answer: "最初の回答" },
+			});
+			await until(
+				() =>
+					controller.snapshot().questions[0]?.fields[0]?.title ===
+					"次の質問",
+			);
+			await action(controller, "question/respond", {
+				questionId: controller.snapshot().questions[0]!.id,
+				action: "accept",
+				answers: { answer: "次の回答" },
+			});
+		}
 		assert.deepEqual(
 			await reply(f, ids[0]!),
 			stopped

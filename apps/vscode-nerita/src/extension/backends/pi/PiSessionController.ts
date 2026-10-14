@@ -45,6 +45,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			return;
 		}
 		try {
+			if (value.type === "question/respond") {
+				this.questions.respond(value);
+				return;
+			}
 			await this.dispatch(value);
 		} catch (error) {
 			this.emit({

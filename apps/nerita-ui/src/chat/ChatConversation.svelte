@@ -5,11 +5,13 @@
 	import type { SubAgentSummary } from "@nerita/shared/subAgents";
 	import ArrowDown from "@lucide/svelte/icons/arrow-down";
 	import { mergeProps } from "bits-ui";
+	import { cn } from "cnfast";
 	import SettingsTooltip from "./SettingsTooltip.svelte";
 	import Activity from "./Activity.svelte";
 	import AgentCard from "./agents/AgentCard.svelte";
 	import Messages from "./messages/Messages.svelte";
 	import PlanDecisionCard from "./PlanDecisionCard.svelte";
+	import QuestionCard from "./QuestionCard.svelte";
 	import RunStatusIcon from "./RunStatusIcon.svelte";
 	import ThinkingIndicator from "./ThinkingIndicator.svelte";
 	import type { MessageTimeline } from "./messages/messageTimeline";
@@ -89,7 +91,7 @@
 		aria-label="会話"
 		tabindex="-1"
 	>
-		{#if chatState.messages.length === 0}<div
+		{#if chatState.messages.length === 0 && chatState.questions.length === 0}<div
 				class="empty-state px-0 pt-[10vh] pb-[30px] text-center"
 			>
 				<p class="text-[12px] text-muted">
@@ -129,8 +131,12 @@
 			</Messages>
 		</div>
 		<Activity state={{ ...chatState, tools: [] }} {send} />
+		{#each chatState.questions as question (question.id)}
+			<QuestionCard {question} {send} />
+		{/each}
 		<PlanDecisionCard state={chatState} {send} />
-		{#if chatState.run === "running"}<ThinkingIndicator />{/if}
+		{#if chatState.run === "running" && chatState.questions.length === 0}<ThinkingIndicator
+			/>{/if}
 		{#if runLabels[chatState.run] !== ""}<p
 				class="run-status my-2 flex items-center gap-1 text-[12px] text-muted"
 				role="status"
@@ -149,8 +155,17 @@
 						{...mergeProps(props, { onclick: toBottom })}
 						type="button"
 						aria-label="メッセージの末尾へ移動"
-						class={`${messageIconButtonClass} size-9 rounded-full border border-solid border-panel-border bg-secondary hover:bg-settings-hover`}
-						><ArrowDown size={18} aria-hidden="true" /></button
+						class={cn(
+							messageIconButtonClass,
+							"size-9 rounded-full border border-solid border-blue-400 bg-blue-500",
+							"hover:bg-blue-600 hover:brightness-100 focus-visible:bg-blue-600",
+							"focus-visible:outline-blue-500 active:bg-blue-700",
+						)}
+						><ArrowDown
+							size={18}
+							class="text-white"
+							aria-hidden="true"
+						/></button
 					>{/snippet}</SettingsTooltip
 			>
 		</div>{/if}

@@ -1,8 +1,10 @@
 // Host の入力 UI を注入する契約と、入力要求の共通検証を定義する。
 import { AppServerRpcError } from "../protocol/rpcMessage";
+import type { QuestionAsk } from "../../../session/ChatQuestions";
 
 /** 秘密入力や選択を Webview の永続状態に残さないための境界。 */
 export type InteractionService = {
+	ask?: QuestionAsk;
 	input: (
 		title: string,
 		secret: boolean,

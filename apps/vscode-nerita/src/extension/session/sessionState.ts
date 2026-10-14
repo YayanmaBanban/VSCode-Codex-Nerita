@@ -8,6 +8,7 @@ import { StatePublisher } from "./statePublisher";
 import { BackendExecution } from "./BackendExecution";
 import { ToolOutputStore } from "./ToolOutputStore";
 import type { ToolOutputRequest } from "@nerita/shared/toolOutput";
+import { ChatQuestions } from "./ChatQuestions";
 /** 接続と実行が共有する状態・承認管理。 */
 export class SessionState {
 	protected readonly execution = new BackendExecution();
@@ -17,6 +18,10 @@ export class SessionState {
 		this.emit(await this.outputs.read(request));
 	}
 	protected state = initialState();
+	protected readonly questions = new ChatQuestions(
+		() => this.state,
+		(questions) => this.patch({ questions }),
+	);
 	protected readonly uiRegistry = createBuiltinUiRegistry();
 	/** Pi は SDK セッションの現在のプロバイダーに合わせて、このメソッドを上書きする。 */
 	protected contributionContext(): ContributionContext {
@@ -125,6 +130,7 @@ export class SessionState {
 		patch: Partial<Omit<ChatState, "revision">>,
 		outputs?: ToolOutputStore,
 	): void {
+		this.cancelChangedQuestions(patch);
 		this.execution.observe(patch);
 		patch = finalizeMessages(patch, this.state);
 		// 一覧の絞り込みや再取得で現在のタイトルを失わないよう、会話状態に保持する。
@@ -180,10 +186,28 @@ export class SessionState {
 	}
 	/** 終了時に UI 購読を解放する。 */
 	protected clearListeners(): void {
+		this.questions.cancelAll();
 		this.execution.fail(new Error("内部実行の接続が終了しました。"));
 		this.outputs.dispose();
 		this.publisher.dispose();
 		this.listeners.clear();
+	}
+	/** 実行終了・会話切替でカードと待機を一緒に破棄する。 */
+	private cancelChangedQuestions(patch: Partial<ChatState>): void {
+		const changedSession =
+			patch.sessionId !== undefined &&
+			patch.sessionId !== this.state.sessionId;
+		const changedRun =
+			patch.runId !== undefined && patch.runId !== this.state.runId;
+		const finished =
+			patch.run !== undefined &&
+			["cancelling", "completed", "cancelled", "failed"].includes(
+				patch.run,
+			);
+		const changedContext = changedSession || changedRun;
+		if (changedContext || finished || patch.connection === "disconnected") {
+			this.questions.cancelAll();
+		}
 	}
 }
 
