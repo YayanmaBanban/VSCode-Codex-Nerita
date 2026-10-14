@@ -36,10 +36,10 @@
 			disabled={!send}
 			class={cn(
 				"border-button-border inline-flex min-w-0 items-center gap-[4px] rounded-[4px] border border-solid",
-				"bg-secondary px-[6px] py-[2px] text-left text-[12px]",
+				"bg-gray-700 px-[6px] py-[2px] text-left text-[12px] text-white",
 				"focus-visible:outline-2 focus-visible:outline-focus",
 				"enabled:cursor-pointer",
-				"enabled:hover:border-focus",
+				"enabled:hover:border-focus enabled:hover:bg-gray-600",
 				"disabled:cursor-default disabled:opacity-60",
 			)}
 			><span class="truncate">{name}</span
