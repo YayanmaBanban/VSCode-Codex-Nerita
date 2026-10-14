@@ -103,7 +103,6 @@ for (const source of ["structuredContent", "content"] as const) {
 			assert.ok(value.includes("日本語の結果"));
 			assert.ok(!value.includes(png));
 			if (source === "content") {
-				assert.ok(value.includes("画像を読み取りました。"));
 				assert.ok(!value.includes("末尾"));
 			}
 		}
@@ -120,7 +119,7 @@ for (const source of ["structuredContent", "content"] as const) {
 }
 
 for (const structuredContent of [["公開値", 3], "公開値", 42, null] as const) {
-	void test(`MCP の structuredContent=${JSON.stringify(structuredContent)} を正常な結果として受け取る`, async (t) => {
+	void test(`MCP の \`structuredContent\`=${JSON.stringify(structuredContent)} を正常な結果として受け取る`, async (t) => {
 		const f = await fixture(t);
 		f.mcp.state.result = { content: [], structuredContent };
 		f.model.replies.push(

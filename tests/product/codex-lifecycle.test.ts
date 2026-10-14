@@ -153,7 +153,7 @@ for (const reconnect of [false, true]) {
 				return opened;
 			}
 			assert.ok(opened);
-			await assert.rejects(opened.client.readAccount(), /切断/u);
+			await assert.rejects(opened.client.readAccount());
 			return f.factory(callbacks, signal);
 		};
 		const controller = f.controller(
@@ -189,7 +189,7 @@ for (const reconnect of [false, true]) {
 			assert.equal(f.requests.filter(isThreadStart).length, 1);
 			await verifyObsoleteCallbacks(controller, oldCallbacks);
 		} else {
-			await assert.rejects(opened.client.readAccount(), /切断/u);
+			await assert.rejects(opened.client.readAccount());
 			assert.equal(published, before);
 		}
 	});

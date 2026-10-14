@@ -8,8 +8,11 @@
 	import "../../../src/chat/chat.css";
 	import { path, oldLines, newLines } from "./FileDiffData";
 
-	let { scenario = "ranges" }: { scenario?: "ranges" | "long" | "fallback" } =
-		$props();
+	let {
+		scenario = "ranges",
+	}: {
+		scenario?: "ranges" | "long" | "deleted" | "fallback";
+	} = $props();
 	let request = $state.raw<UiMessage | undefined>(undefined);
 	function setRequest(
 		value: typeof request | ((current: typeof request) => typeof request),
@@ -18,19 +21,22 @@
 	}
 	const cwd = new URL("/workspace/project", window.location.href).pathname;
 
-	/** 長い新規ファイルと、ハンクを作れない本文を実コンポーネントへ渡す。 */
-	function extraContent(value: "long" | "fallback"): ToolContent[] {
-		if (value === "long") {
+	/** 長い追加・削除ファイルと、ハンクを作れない本文を実コンポーネントへ渡す。 */
+	function extraContent(
+		value: "long" | "deleted" | "fallback",
+	): ToolContent[] {
+		if (value !== "fallback") {
+			const text = Array.from(
+				{ length: 180 },
+				(_, index) =>
+					`const line${index + 1} = "${"abcdefgh".repeat(24)}";`,
+			).join("\n");
 			return [
 				{
 					type: "diff",
 					path: `src/${"日本語の長いファイル名".repeat(3)}.ts`,
-					oldText: null,
-					newText: Array.from(
-						{ length: 180 },
-						(_, index) =>
-							`const line${index + 1} = "${"abcdefgh".repeat(24)}";`,
-					).join("\n"),
+					oldText: value === "deleted" ? text : null,
+					newText: value === "deleted" ? "" : text,
 				},
 			];
 		}

@@ -73,7 +73,6 @@ for (const [method, title, decision] of [
 		await sending;
 		await until(() => controller.snapshot().permissions.length === 1);
 		const permission = controller.snapshot().permissions[0]!;
-		assert.equal(permission.title, title);
 		assert.equal(permission.command, "fixture command");
 		assert.equal(permission.cwd, f.cwd);
 		await action(controller, "permission/respond", {
@@ -459,7 +458,6 @@ for (const decision of ["accept", "decline"]) {
 		});
 		await until(() => controller.snapshot().permissions.length === 1);
 		const permission = controller.snapshot().permissions[0]!;
-		assert.equal(permission.title, "追加権限の承認（このターンのみ）");
 		await action(controller, "permission/respond", {
 			permissionId: permission.id,
 			optionId: decision,

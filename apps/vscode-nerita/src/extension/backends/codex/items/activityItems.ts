@@ -142,7 +142,7 @@ function strings(value: unknown): string[] {
 	}
 	return value.map(string);
 }
-/** unified diff から変更前後の本文を再構築せず、受信した差分をそのまま保持する。 */
+/** 追加・削除の本文を変更前後へ振り分け、更新の unified diff はそのまま保持する。 */
 export function fileChanges(changes: unknown): {
 	paths: string[];
 	content: ToolContent[];
@@ -150,17 +150,28 @@ export function fileChanges(changes: unknown): {
 	if (!Array.isArray(changes)) {
 		throw new Error("Invalid file changes");
 	}
-	const paths: string[] = [];
-	const content = changes.map((change: unknown): ToolContent => {
-		if (!isRecord(change)) {
-			throw new Error("Invalid file change");
-		}
-		const path = string(change.path),
-			diff = string(change.diff);
-		paths.push(path);
-		return { type: "unifiedDiff", path, diff };
-	});
-	return { paths, content };
+	const content = changes.map(fileChangeContent);
+	return { paths: content.map((change) => change.path), content };
+}
+
+/** 変更種別に応じて本文とパッチを区別し、ファイル内容の文字列は加工しない。 */
+function fileChangeContent(
+	change: unknown,
+): Extract<ToolContent, { type: "diff" | "unifiedDiff" }> {
+	if (!isRecord(change)) {
+		throw new Error("Invalid file change");
+	}
+	const path = string(change.path),
+		diff = string(change.diff);
+	// App Server は、追加・削除の `diff` にパッチではなくファイル本文を格納する。
+	const kind = isRecord(change.kind) ? change.kind.type : undefined;
+	if (kind === "add") {
+		return { type: "diff", path, oldText: null, newText: diff };
+	}
+	if (kind === "delete") {
+		return { type: "diff", path, oldText: diff, newText: "" };
+	}
+	return { type: "unifiedDiff", path, diff };
 }
 
 /** 検索語と URL の優先順位は Host で決め、バックエンドの `action` を UI に解釈させない。 */

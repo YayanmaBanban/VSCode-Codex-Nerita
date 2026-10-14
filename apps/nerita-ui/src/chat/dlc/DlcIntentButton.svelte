@@ -1,4 +1,4 @@
-<!-- 保留理由を説明として残し、実行先とバックエンドを併記する。 -->
+<!-- 保留理由を説明として残し、実行先のワークツリー名を併記する。 -->
 <script lang="ts">
 	import { cn } from "cnfast";
 	import type { IntentSummary } from "@nerita/shared/dlc/contracts";
@@ -35,9 +35,10 @@
 		attention: "warning",
 	};
 	const holdLabels = {
-		"worktree-required": "Worktree が必要",
-		"trust-required": "信頼の確認が必要",
-		unavailable: "開始条件の確認が必要",
+		"worktree-required":
+			"ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
+		"trust-required": "ワークスペースを信頼してください",
+		unavailable: "実行を開始できません",
 	};
 	let selected = $derived(intent.intentId === ui.selected?.intentId);
 	let target = $derived(
@@ -50,10 +51,9 @@
 	);
 	const executionLabel = $derived.by(() => {
 		if (!intent.execution) {
-			return "実行先未選択";
+			return "バックエンドが未指定";
 		}
-		const backend = intent.execution.backend === "pi" ? "Pi" : "Codex";
-		return `${target?.name ?? "消失した Worktree"} · ${backend}`;
+		return `${target?.name ?? "ワークツリーが不明です"}`;
 	});
 </script>
 
@@ -67,8 +67,8 @@
 			aria-describedby={id}
 			aria-pressed={selected}
 			class={cn(
-				"flex flex-col gap-2 px-3 py-3 text-left",
-				selected && "border-focus bg-message-user",
+				"flex w-full flex-col gap-2 rounded-none border-0 bg-transparent px-3 py-3 text-left",
+				"hover:bg-settings-hover/50 focus-visible:outline-offset-[-2px]",
 			)}
 			onclick={() => ui.select(intent.intentId)}
 		>

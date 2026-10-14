@@ -39,7 +39,7 @@ const binding = credentialBindingSchema.parse({
 });
 
 void test(
-	"BWS は inspect で取得せず、承認後の単一 ID 取得と projectId 検証だけを行う",
+	"BWS は `inspect` で取得せず、承認後の単一 ID 取得と `projectId` の検証だけを行う",
 	verifyBwsBroker,
 );
 
@@ -120,7 +120,6 @@ async function verifyBwsBroker(t: TestContext) {
 			() => Promise.resolve(signal),
 			signal,
 		),
-		/所属/,
 	);
 	assert.equal(calls.length, 2);
 }
@@ -157,7 +156,6 @@ async function verifyBindingChange(t: TestContext) {
 			},
 			signal,
 		),
-		/Binding が変更/,
 	);
 	assert.equal(calls, 0);
 }

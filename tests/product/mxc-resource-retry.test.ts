@@ -93,9 +93,8 @@ async function verifyRetry(t: TestContext, outcome: "retry" | "cancel") {
 			action: "allow",
 			scope: "process",
 		}),
-		/期限切れ/,
 	);
-	await assert.rejects(executor.execute(call), /再承認|abort/i);
+	await assert.rejects(executor.execute(call));
 }
 
 /** 追加するファイル許可以外の実行条件が変わらないことを照合する。 */

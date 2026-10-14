@@ -88,13 +88,17 @@ void test("認証フローは秘密入力を通知前に保護し、成功後に
 	await flow.authenticate(new AbortController().signal);
 	assert.equal(invalidated, true);
 	assert.deepEqual(changed, [provider.id, undefined]);
-	assert.deepEqual(events, [
-		{ type: "progress", message: "key [REDACTED]" },
-		{
-			type: "info",
-			message: "認証通知に秘密値が含まれるため非公開にしました。",
-		},
-	]);
+	assert.deepEqual(
+		events.map((event) => event.type),
+		["progress", "info"],
+	);
+	assert.deepEqual(events[0], {
+		type: "progress",
+		message: "key [REDACTED]",
+	});
+	const notice = events[1]!;
+	assert.ok(notice.type === "info" && isNonEmptyString(notice.message));
+	assert.ok(!notice.message.includes("progress"));
 	assert.equal((await models.getAuth(provider.id))?.auth.apiKey, "progress");
 	assert.equal(storage.vault.list(provider.id)[0]?.name, "Fixture");
 	assert.equal(storage.vault.list(provider.id)[0]?.mode, "session");

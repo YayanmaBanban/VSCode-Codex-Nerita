@@ -5,6 +5,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { QuestionRequest } from "@nerita/shared/questions";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import type { BackendSession } from "../../apps/vscode-nerita/src/extension/session/chatSession";
 import { codexFixture } from "../support/codex";
 import { piFixture, send, finished, until } from "../support/pi";
@@ -142,10 +143,7 @@ for (const action of ["accept", "decline", "cancel"]) {
 			count: "1.5",
 			confirmed: "unknown",
 		});
-		assert.match(
-			controller.snapshot().questions[0]?.error ?? "",
-			/指定範囲の数値/,
-		);
+		assert.ok(isNonEmptyString(controller.snapshot().questions[0]?.error));
 		assert.equal(
 			f.clientResponses.some((response) => response.id === requestId),
 			false,
@@ -196,7 +194,7 @@ void test("Piのモデルが質問ツールを呼び、回答後に同じ実行�
 	const runId = controller.snapshot().runId;
 	const question = controller.snapshot().questions[0]!;
 	await answer(controller, question, { method: "unknown" });
-	assert.match(controller.snapshot().questions[0]?.error ?? "", /選択肢から/);
+	assert.ok(isNonEmptyString(controller.snapshot().questions[0]?.error));
 	await answer(controller, question, { method: "方式B" });
 	const state = await finished(controller);
 	assert.equal(state.run, "completed", JSON.stringify(state));

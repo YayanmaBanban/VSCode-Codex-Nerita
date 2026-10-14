@@ -58,17 +58,18 @@ void test("UTF-8 の連続取得で日本語と絵文字を分断せず、参照
 	}
 	assert.equal(reconstructed, text);
 	store.dispose();
-	assert.match(
-		(
-			await store.read({
-				type: "tool/output",
-				requestId: "expired",
-				outputRef: tool.output.outputRef,
-				offset: 0,
-				limit: 64,
-			})
-		).error!,
-		/取得できません/u,
+	assert.ok(
+		isNonEmptyString(
+			(
+				await store.read({
+					type: "tool/output",
+					requestId: "expired",
+					outputRef: tool.output.outputRef,
+					offset: 0,
+					limit: 64,
+				})
+			).error,
+		),
 	);
 });
 
@@ -149,17 +150,20 @@ void test("全文がある出力は省略文字数を表示し、絵文字を一
 	const store = new ToolOutputStore();
 	t.after(() => store.dispose());
 	for (const [id, text, expected] of [
-		["ascii", "a".repeat(20420), "… 18,420文字を省略 …"],
-		["emoji", "🐈".repeat(1500), "… 500文字を省略 …"],
-	]) {
+		["ascii", "a".repeat(20420), 18420],
+		["emoji", "🐈".repeat(1500), 500],
+	] as const) {
 		const output = store.project({
-			id: id!,
+			id,
 			title: "command",
 			status: "completed",
 			paths: [],
 			rawOutput: { formatted_output: text },
 		}).output!;
-		assert.ok(output.preview.includes(expected!));
+		assert.equal(
+			Number(output.preview.match(/\d[\d,]*/u)?.[0]?.replaceAll(",", "")),
+			expected,
+		);
 	}
 	const streamed: ToolSummary = {
 		id: "streamed-count",
@@ -171,8 +175,14 @@ void test("全文がある出力は省略文字数を表示し、絵文字を一
 	store.project(streamed);
 	const next = { ...streamed };
 	setToolOutputSource(next, { text: "猫".repeat(10000), delta: true });
-	assert.ok(
-		store.project(next).output!.preview.includes("… 9,200文字を省略 …"),
+	assert.equal(
+		Number(
+			store
+				.project(next)
+				.output!.preview.match(/\d[\d,]*/u)?.[0]
+				?.replaceAll(",", ""),
+		),
+		9200,
 	);
 });
 
@@ -186,7 +196,7 @@ void test("省略済みの出力や全文を読まない外部ファイルでは
 		paths: [],
 	};
 	setToolOutputSource(base, { text: "先頭".repeat(1100), truncated: true });
-	assert.ok(store.project(base).output!.preview.includes("… 出力を省略 …"));
+	assert.doesNotMatch(store.project(base).output!.preview, /\d/u);
 	const path = join(
 		process.env.NERITA_TEST_ROOT!,
 		`output-count-${randomBytes(8).toString("hex")}.log`,
@@ -195,9 +205,7 @@ void test("省略済みの出力や全文を読まない外部ファイルでは
 	t.after(() => unlinkSync(path));
 	const external = { ...base, id: "external-count" };
 	setToolOutputSource(external, { text: "先頭…末尾", path });
-	assert.ok(
-		store.project(external).output!.preview.includes("… 出力を省略 …"),
-	);
+	assert.doesNotMatch(store.project(external).output!.preview, /\d/u);
 });
 
 void test("範囲要求は負数・小数・過大な取得量・任意パスを拒否する", async () => {

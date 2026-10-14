@@ -11,15 +11,16 @@ const holds: Record<DlcStartHold["reason"], DlcStartHold> = {
 	"worktree-required": {
 		reason: "worktree-required",
 		message:
-			"この実行先は別の処理で使用中です。独立した Worktree を選択してください。",
+			"ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
 	},
 	"trust-required": {
 		reason: "trust-required",
-		message: "実行先の Nerita Trust を確認してください。",
+		message: "ワークスペースを信頼してください",
 	},
 	unavailable: {
 		reason: "unavailable",
-		message: "実行先の状態を取得できません。開始条件を再確認してください。",
+		message:
+			"実行先を確認できません。再読込みして Worktree を選択してください。",
 	},
 };
 
@@ -59,7 +60,7 @@ function listView(
 	};
 }
 
-/** 同じ保留理由の未選択 Intent も並べ、選択中だけに解消操作が出ることを確認する。 */
+/** 同じ保留理由の未選択 Intent も並べ、選択中だけに保留理由が出ることを確認する。 */
 export function intentHoldView(reason: DlcStartHold["reason"]): DlcView {
 	return listView([
 		{

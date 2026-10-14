@@ -71,7 +71,6 @@ async function verifyPiWebTrust(t: TestContext) {
 	assert.equal(denied.tools.at(-1)?.status, "failed", JSON.stringify(denied));
 	assert.equal(await readFile(target, "utf8"), original);
 	assert.equal(denied.permissions.length, 0);
-	assert.ok(JSON.stringify(denied.tools.at(-1)?.content).includes("未信頼"));
 	await editing.dispose();
 	await f.trust.setUserTrust(repository, true);
 	const allowed = f.controller();

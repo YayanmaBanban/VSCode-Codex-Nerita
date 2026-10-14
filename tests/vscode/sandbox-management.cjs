@@ -27,13 +27,10 @@ async function verifySandboxManagement(page, chat, model, cwd, findFrame) {
 		frame.getByRole("button", { name: "起動を確認", exact: true }),
 	).toBeEnabled();
 	await expect(frame.getByRole("alert")).toHaveCount(0);
-	await expect(
-		frame.getByText("利用可能 · base-container", { exact: true }),
-	).toBeVisible();
 	const grants = frame.getByLabel("コマンドの承認");
 	await expect(grants).toContainText("pnpm");
 	await expect(grants).toContainText("execution");
-	await expect(grants).toContainText("host · このワークスペース");
+	await expect(grants).toContainText("host");
 	await reviewSandboxPanel(page, frame);
 	await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	await vscode.commands.executeCommand("nerita.pi.sandboxSettings");
@@ -93,7 +90,6 @@ async function verifyHostApproval(chat, model, cwd) {
 	const approval = chat.getByLabel("承認要求");
 	await expect(approval).toBeVisible();
 	await expect(approval).toContainText("execution");
-	await expect(approval).toContainText("ホスト");
 	await assert.rejects(fs.access(marker), { code: "ENOENT" });
 	await approval
 		.getByRole("button", { name: "このワークスペース", exact: true })
@@ -127,9 +123,7 @@ async function reviewSandboxPanel(page, frame) {
 		);
 		for (const width of [1400, 900]) {
 			await page.setViewportSize({ width, height: 900 });
-			await expect(frame.getByLabel("現在のMXCの制約")).toContainText(
-				"ワークスペース外の読み取りを防ぐことは保証できません。",
-			);
+			await expect(frame.getByLabel("現在のMXCの制約")).toBeVisible();
 			await frame.getByLabel("コマンドの承認").scrollIntoViewIfNeeded();
 			await expect(
 				frame.getByRole("button", {

@@ -242,9 +242,8 @@ async function verifyPiSessionReferences(t: TestContext) {
 		sessionReferences: [{ sessionId: source.sessionId, mode: "handoff" }],
 	});
 	const failed = await finished(controller);
-	assert.match(
-		failed.error ?? "",
-		/ハンドオフ/,
+	assert.ok(
+		isNonEmptyString(failed.error),
 		"要約失敗は原文へ代替せず通知する",
 	);
 	assert.deepEqual(failed.messages, before);

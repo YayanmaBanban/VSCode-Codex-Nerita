@@ -194,7 +194,7 @@ void test("App Server は kill の受付だけで終了済みにせず、終了�
 			ended = true;
 		},
 	);
-	const rejected = assert.rejects(closing, /終了を確認できません/);
+	const rejected = assert.rejects(closing);
 	t.mock.timers.tick(5000);
 	await Promise.resolve();
 	assert.equal(ended, false);

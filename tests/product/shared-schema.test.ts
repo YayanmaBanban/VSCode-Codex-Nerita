@@ -275,15 +275,17 @@ void test("エラー表示は名前と本文を保持し、未知のオブジェ
 		"remote error",
 	);
 	assert.equal(errorText(42), "42");
-	assert.equal(errorText(null), "不明なエラー");
-	assert.equal(errorText(undefined), "不明なエラー");
+	assert.ok(isNonEmptyString(errorText(null)));
+	assert.ok(isNonEmptyString(errorText(undefined)));
 	const error = {
 		privateValue: "secret",
 		toString() {
 			throw new Error("文字列化してはいけない");
 		},
 	};
-	assert.equal(errorText(error), "不明なエラー");
+	const fallback = errorText(error);
+	assert.ok(isNonEmptyString(fallback));
+	assert.ok(!fallback.includes(error.privateValue));
 });
 
 void test("Composer の既存の緩い条件を維持する", () => {

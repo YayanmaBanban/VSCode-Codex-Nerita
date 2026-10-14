@@ -8,18 +8,15 @@ const storybookUrl = process.argv[2] ?? "http://localhost:6006";
 const stories = [
 	{
 		id: "worktree-required",
-		label: "Worktree が必要",
-		lastAction: "dlc/read",
+		label: "ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
 	},
 	{
 		id: "trust-required",
-		label: "信頼の確認が必要",
-		lastAction: "dlc/trust",
+		label: "ワークスペースを信頼してください",
 	},
 	{
 		id: "unavailable",
-		label: "開始条件の確認が必要",
-		lastAction: "dlc/read",
+		label: "実行を開始できません",
 	},
 	{ id: "execution-targets" },
 ];
@@ -78,15 +75,11 @@ async function capture(browser, { directory, theme, width, story }, errors) {
 			"360px",
 		);
 		if (story.label) {
-			await expect
-				.poll(() =>
-					page
-						.locator("[data-story-intent-list]")
-						.evaluate(
-							(element) => element.bridge.sent.at(-1)?.type,
-						),
-				)
-				.toBe(story.lastAction);
+			await page.waitForFunction(() =>
+				globalThis.__STORYBOOK_PREVIEW__?.storyRenders?.some(
+					(render) => render.phase === "finished",
+				),
+			);
 			await expect(page.getByLabel("実行開始の保留")).toBeVisible();
 			const selected = page.getByRole("button", {
 				name: "開始を保留している Intent",

@@ -9,6 +9,7 @@ import { piFixture, until } from "../support/pi";
 import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
 import {
 	DirectoryRuns,
+	DirectoryRunConflictError,
 	type DirectoryRun,
 	type DirectoryRunStorage,
 } from "../../apps/vscode-nerita/src/extension/session/DirectoryRuns";
@@ -144,9 +145,9 @@ async function verifyScopedConversations(
 		permissionId: permission.id,
 		optionId: permission.options[0]!.id,
 	};
-	await assert.rejects(chat.receive(response), /Phase 3/);
+	await assert.rejects(chat.receive(response));
 	runtime.selectDlc(ids[0]);
-	await assert.rejects(conversation.receive(response), /表示中の会話/);
+	await assert.rejects(conversation.receive(response));
 	assert.equal(runtime.activeDlcs().length, 3);
 	runtime.selectDlc(ids[2]);
 	await conversation.receive({ type: "ui/ready" });
@@ -158,7 +159,6 @@ async function verifyScopedConversations(
 			sessionId: states[2]!.sessionId!,
 			text: "追加の指示",
 		}),
-		/DLC の実行中/,
 	);
 }
 
@@ -199,7 +199,6 @@ void test("main/A/B を並行実行し、A の停止が B の承認・書込み�
 			},
 			new AbortController().signal,
 		),
-		/別の実行/,
 	);
 	runtime.selectMode("chat");
 	await assert.rejects(
@@ -209,7 +208,6 @@ void test("main/A/B を並行実行し、A の停止が B の承認・書込み�
 			sessionId: runtime.snapshot().sessionId,
 			text: "write",
 		}),
-		/別の実行/,
 	);
 	runtime.selectMode("dlc");
 	await runtime.stopDlc("attempt-1");
@@ -229,7 +227,7 @@ void test("main/A/B を並行実行し、A の停止が B の承認・書込み�
 		await readFile(join(main.cwd, "hello.txt"), "utf8"),
 		"before\n",
 	);
-	await assert.rejects(allow(runtime, states[1]!), /DLC セッション/);
+	await assert.rejects(allow(runtime, states[1]!));
 	await allow(runtime, states[0]!);
 	await runs[0];
 	assert.equal(
@@ -243,15 +241,18 @@ void test("Worktree の削除は Git の除外対象のファイルと書込み�
 	const runs = await directoryRunStorage(join(main.root, "host"));
 	const release = await runs.acquire(a.root);
 	const otherWindow = await directoryRunStorage(join(main.root, "host"));
-	await assert.rejects(otherWindow.acquire(a.root), /別の実行/);
+	await assert.rejects(
+		otherWindow.acquire(a.root),
+		DirectoryRunConflictError,
+	);
 	await release();
 	await writeFile(join(main.cwd, ".git/info/exclude"), "*.tmp\n");
 	await writeFile(join(a.root, "private.tmp"), "keep");
-	await assert.rejects(manager.remove(a.id), /Git の除外対象/);
+	await assert.rejects(manager.remove(a.id));
 	assert.equal(await readFile(join(a.root, "private.tmp"), "utf8"), "keep");
 	await unlink(join(a.root, "private.tmp"));
 	await manager.remove(a.id);
-	await assert.rejects(manager.target(a.id), /存在しません/);
+	await assert.rejects(manager.target(a.id));
 	await assert.rejects(
 		new WorktreeManager(
 			(await manager.list()).find((target) => !target.main)!.root,
@@ -282,7 +283,7 @@ void test("バックエンドの終了を確認できなかった場合は、入
 			};
 		}),
 	);
-	t.after(() => assert.rejects(failed.dispose(), /終了を確認/));
+	t.after(() => assert.rejects(failed.dispose()));
 	const runtime = new BackendRuntime(
 		(_backend, root) => {
 			return root === undefined ? f.controller() : failed;
@@ -305,9 +306,11 @@ void test("バックエンドの終了を確認できなかった場合は、入
 				reservation,
 			),
 		),
-		/終了を確認/,
 	);
-	await assert.rejects(new DirectoryRuns(storage).acquire(f.cwd), /別の実行/);
+	await assert.rejects(
+		new DirectoryRuns(storage).acquire(f.cwd),
+		DirectoryRunConflictError,
+	);
 	assert.deepEqual(runtime.runningDirectories(), [f.cwd]);
 });
 
@@ -319,8 +322,8 @@ void test("同一プロジェクトの別 Worktree の Git 管理情報に差し
 		join(a.root, ".git"),
 		await readFile(join(b.root, ".git"), "utf8"),
 	);
-	await assert.rejects(manager.list(), /個別 Git 登録/);
-	await assert.rejects(manager.target(a.id), /個別 Git 登録/);
+	await assert.rejects(manager.list());
+	await assert.rejects(manager.target(a.id));
 	await unlink(join(a.root, ".git"));
 	await writeFile(join(a.root, ".git"), original);
 	assert.equal((await manager.target(a.id)).root, a.root);
@@ -335,10 +338,13 @@ void test("実体パス・大小文字・junction・親子ディレクトリで 
 	await mkdir(child);
 	const alias = join(main.root, "alias");
 	await symlink(a.root, alias, "junction");
-	await assert.rejects(runs.acquire(alias), /別の実行/);
-	await assert.rejects(runs.acquire(child), /別の実行/);
+	await assert.rejects(runs.acquire(alias), DirectoryRunConflictError);
+	await assert.rejects(runs.acquire(child), DirectoryRunConflictError);
 	if (process.platform === "win32") {
-		await assert.rejects(runs.acquire(a.root.toUpperCase()), /別の実行/);
+		await assert.rejects(
+			runs.acquire(a.root.toUpperCase()),
+			DirectoryRunConflictError,
+		);
 	}
 	const independent = await runs.acquire(b.root);
 	await independent();

@@ -56,10 +56,10 @@ void test("子 Pi のネイティブ終了が失敗したら親の Stop へ伝�
 		},
 	);
 	await children.open({ role: {} });
-	await assert.rejects(children.stop(), /終了を確認/);
+	await assert.rejects(children.stop());
 	assert.equal(closed, 1);
-	await assert.rejects(children.stop(), /終了を確認/);
-	await assert.rejects(children.open({ role: {} }), /終了を確認/);
+	await assert.rejects(children.stop());
+	await assert.rejects(children.open({ role: {} }));
 	children.dispose();
 });
 

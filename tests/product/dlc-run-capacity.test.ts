@@ -62,7 +62,6 @@ void test("エスケープ・日本語・整形を含む JSON 全体の容量が
 	assert.equal(size(), limit + 1);
 	await assert.rejects(
 		reopened.saveConversation(intentId, "oversize", conversation),
-		/保存上限/,
 	);
 	assert.equal(reopened.hasConversation(intentId, "oversize"), false);
 	assert.equal(
@@ -73,7 +72,6 @@ void test("エスケープ・日本語・整形を含む JSON 全体の容量が
 	assert.ok(size() > limit);
 	await assert.rejects(
 		reopened.saveConversation(intentId, "oversize", conversation),
-		/保存上限/,
 	);
 	assert.equal(reopened.hasConversation(intentId, "oversize"), false);
 });

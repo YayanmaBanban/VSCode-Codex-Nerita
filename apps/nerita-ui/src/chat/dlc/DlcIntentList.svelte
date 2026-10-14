@@ -1,13 +1,18 @@
-<!-- Intent の状態を表示し、作成・選択・保留の解消を Host へ要求する。 -->
+<!-- Intent の状態と保留理由を表示し、作成・選択・再読み込みを Host へ要求する。 -->
 <script lang="ts">
 	import { cn } from "cnfast";
 	import Plus from "@lucide/svelte/icons/plus";
 	import RotateCw from "@lucide/svelte/icons/rotate-cw";
+	import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
+	import { cubicBezier } from "motion";
+	import { prefersReducedMotion } from "svelte/motion";
+	import { slide } from "svelte/transition";
 	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import DlcIntentButton from "./DlcIntentButton.svelte";
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 
 	let { ui }: { ui: ReturnType<typeof useDlcWorkspace> } = $props();
+	const holdEasing = cubicBezier(0.22, 1, 0.36, 1);
 </script>
 
 <aside
@@ -52,44 +57,43 @@
 	</div>
 	<nav aria-label="Intent の選択" class="flex flex-col gap-2">
 		{#if ui.view.intents.length === 0}<p class="text-muted">
-				Intent がありません。
+				Intentを新規作成してください
 			</p>{/if}
 		{#each ui.view.intents as intent (intent.intentId)}
-			<div class="flex flex-col gap-2">
+			{@const selected = intent.intentId === ui.selected?.intentId}
+			<div
+				class={cn(
+					"dlc-intent-card min-w-0 overflow-hidden rounded-md border border-solid",
+					selected
+						? "border-focus bg-message-user"
+						: "border-panel-border bg-secondary",
+				)}
+			>
 				<DlcIntentButton {intent} {ui} />
-				{#if intent.startHold && intent.intentId === ui.selected?.intentId}
+				{#if intent.startHold && selected}
+					<!-- 閉じる途中の操作無効化は Svelte のトランジションに委ねる。 -->
 					<div
+						transition:slide={{
+							duration: prefersReducedMotion.current ? 0 : 220,
+							easing: holdEasing,
+						}}
 						aria-label="実行開始の保留"
-						class="flex flex-col gap-2 rounded-md border border-solid border-panel-border p-2 text-[11px]"
+						class="dlc-intent-hold overflow-hidden"
 					>
-						<p role="status" class="m-0 break-words text-muted">
-							{intent.startHold.message}
-						</p>
-						<a href="#dlc-worktree">実行先を選択</a>
-						{#if intent.startHold.reason === "worktree-required"}<button
-								type="button"
-								onclick={() =>
-									ui.send({
-										type: "dlc/worktreeCreate",
-										requestId: crypto.randomUUID(),
-									})}>新しい Worktree を作成</button
-							>{/if}
-						{#if intent.startHold.reason === "trust-required"}<button
-								type="button"
-								onclick={() =>
-									ui.send({
-										type: "dlc/trust",
-										requestId: crypto.randomUUID(),
-									})}>信頼設定を開く</button
-							>{/if}
-						<button
-							type="button"
-							onclick={() =>
-								ui.send({
-									type: "dlc/read",
-									requestId: crypto.randomUUID(),
-								})}>開始条件を再確認</button
+						<div
+							class="mx-3 flex flex-col gap-2 border-0 border-t border-solid border-panel-border pt-2 pb-3 text-[11px]"
 						>
+							<p role="status" class="m-0 flex items-start gap-2">
+								<TriangleAlert
+									size={16}
+									class="mt-0.5 shrink-0 text-warning"
+									aria-hidden="true"
+								/>
+								<span class="min-w-0 break-words text-muted"
+									>{intent.startHold.message}</span
+								>
+							</p>
+						</div>
 					</div>
 				{/if}
 			</div>

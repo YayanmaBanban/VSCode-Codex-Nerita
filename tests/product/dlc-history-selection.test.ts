@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { IntentRepository } from "../../apps/vscode-nerita/src/extension/dlc/IntentRepository";
 import { SafeDlcFiles } from "../../apps/vscode-nerita/src/extension/dlc/SafeDlcFiles";
 import { isState } from "@nerita/shared/stateValidation";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { dlcHostFixture } from "../support/dlcHost";
 import { until } from "../support/pi";
 
@@ -60,10 +61,7 @@ void test("会話の保存失敗の原因を解消した後に履歴を開くと
 	await run;
 	const before = host.view().selected!;
 	assert.equal(before.workItems[0]?.status, "failed");
-	assert.match(
-		before.workItems[0].detail ?? "",
-		/会話記録を保存できませんでした/,
-	);
+	assert.ok(isNonEmptyString(before.workItems[0].detail));
 	const showHistory = () =>
 		host.receive({
 			type: "dlc/attempt",

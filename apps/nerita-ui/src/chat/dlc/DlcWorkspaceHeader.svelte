@@ -26,25 +26,9 @@
 </script>
 
 <header class="mb-5">
-	<div class="flex flex-wrap items-start justify-between gap-3">
-		<div class="min-w-0">
-			<p class="m-0 text-[11px] text-muted">DLC Workspace</p>
-			<h1 class="my-2 text-[20px] font-semibold break-words">
-				{ui.newIntent
-					? "新しい Intent"
-					: (ui.selected?.title ?? "Intent を選択")}
-			</h1>
-		</div>
-		<button
-			type="button"
-			disabled={ui.selected === null}
-			onclick={() => {
-				if (!ui.expanded.includes(3)) {
-					ui.toggle(3);
-				}
-			}}>Phase 3 の会話を表示</button
-		>
-	</div>
+	<h1 class="my-2 text-[20px] font-semibold break-words">
+		{ui.selected?.title ?? ""}
+	</h1>
 	<div class="flex flex-wrap items-center gap-3 text-muted">
 		<span
 			>管理元: {ui.view.environment?.workspace ?? "確認中"} / {ui.view

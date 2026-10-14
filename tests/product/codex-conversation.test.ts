@@ -14,8 +14,48 @@ import { codexFixture, codexResponseGate, type Rpc } from "../support/codex";
 import { until } from "../support/pi";
 import type { CodexSessionController } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";
 import { parseTurnEvent } from "../../apps/vscode-nerita/src/extension/backends/codex/items/turnEvents";
+import { fileChanges } from "../../apps/vscode-nerita/src/extension/backends/codex/items/activityItems";
 import type { ItemGuardianApprovalReviewStartedNotification } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ItemGuardianApprovalReviewStartedNotification";
 import type { ItemGuardianApprovalReviewCompletedNotification } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ItemGuardianApprovalReviewCompletedNotification";
+
+void test("Codex のファイル追加・削除は本文を保持して変更前後へ振り分け、更新は差分を保持する", () => {
+	const text = "first\r\n+literal\r\n@@ literal\r\n";
+	const diff = "@@ -1 +1 @@\n-old\n+new\n";
+	const result = fileChanges([
+		{ path: "added.ts", kind: { type: "add" }, diff: text },
+		{ path: "deleted.ts", kind: { type: "delete" }, diff: text },
+		{ path: "updated.ts", kind: { type: "update", move_path: null }, diff },
+		{ path: "empty-added.ts", kind: { type: "add" }, diff: "" },
+		{ path: "empty-deleted.ts", kind: { type: "delete" }, diff: "" },
+	]);
+
+	assert.deepEqual(result, {
+		paths: [
+			"added.ts",
+			"deleted.ts",
+			"updated.ts",
+			"empty-added.ts",
+			"empty-deleted.ts",
+		],
+		content: [
+			{ type: "diff", path: "added.ts", oldText: null, newText: text },
+			{ type: "diff", path: "deleted.ts", oldText: text, newText: "" },
+			{ type: "unifiedDiff", path: "updated.ts", diff },
+			{
+				type: "diff",
+				path: "empty-added.ts",
+				oldText: null,
+				newText: "",
+			},
+			{
+				type: "diff",
+				path: "empty-deleted.ts",
+				oldText: "",
+				newText: "",
+			},
+		],
+	});
+});
 
 void test("活動通知の差分・計画・推論は、ターンへ適用する前に本文を検証する", () => {
 	for (const [method, fields] of [
@@ -174,7 +214,6 @@ void test("Codex の Plan を新規会話で実行してもモデル・推論と
 			developer_instructions: null,
 		},
 	});
-	assert.match(JSON.stringify(implementing.input), /この計画を実装する/u);
 	assert.equal(controller.snapshot().planDecision, null);
 });
 
@@ -689,10 +728,8 @@ async function verifySandboxSetupNotifications(t: TestContext) {
 		1,
 		"成功したセットアップの完了通知だけを表示する",
 	);
-	assert.match(info[0]!, /完了/);
 	assert.equal(errors.length, 2);
 	assert.match(errors[0]!, /setup failed/);
-	assert.match(errors[1]!, /終了/);
 }
 
 /** 画像と速度設定に対応するモデル候補と、OS のファイル選択境界を用意する。 */

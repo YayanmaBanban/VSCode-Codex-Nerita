@@ -183,7 +183,7 @@ export class DlcHost {
 		if (this.untrustedTarget(intentId, target)) {
 			return {
 				reason: "trust-required",
-				message: "実行先の Nerita Trust を確認してください。",
+				message: "ワークスペースを信頼してください",
 			};
 		}
 		const targetBusy = this.runtime
@@ -197,7 +197,7 @@ export class DlcHost {
 			return {
 				reason: "worktree-required",
 				message:
-					"この実行先は別の処理で使用中です。独立した Worktree を選択するか、終了後に再確認してください。",
+					"ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
 			};
 		}
 		return undefined;
@@ -362,7 +362,7 @@ export class DlcHost {
 			throw error;
 		}
 	}
-	/** Intent ごとの復旧を一つの Promise にまとめ、実行中の復旧を拒否して状態の購読を接続する。 */
+	/** Intent ごとの復旧を1つの Promise にまとめ、実行中の復旧を拒否して状態の購読を接続する。 */
 	private controller(
 		workspace: Workspace,
 		intentId: string,
@@ -1085,15 +1085,25 @@ export class DlcHost {
 					(item) =>
 						item.id === this.targetsForIntent.get(message.intentId),
 				);
-				const reason = this.untrustedTarget(message.intentId, target)
+				const fallbackReason = this.untrustedTarget(
+					message.intentId,
+					target,
+				)
 					? "trust-required"
 					: "unavailable";
+				const reason =
+					error instanceof DirectoryRunConflictError
+						? "worktree-required"
+						: fallbackReason;
+				const holdMessages = {
+					"worktree-required":
+						"ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
+					"trust-required": "ワークスペースを信頼してください",
+					unavailable: errorText(error),
+				};
 				this.startHolds.set(message.intentId, {
-					reason:
-						error instanceof DirectoryRunConflictError
-							? "worktree-required"
-							: reason,
-					message: errorText(error),
+					reason,
+					message: holdMessages[reason],
 				});
 			}
 			throw error;
@@ -1133,7 +1143,7 @@ export class DlcHost {
 		await vscode.commands.executeCommand("nerita.dlc.openWorkspace");
 		return this.view();
 	}
-	/** 同時のリセットを一つの Promise にまとめ、古い保存先の解放を次の初期化より先に終える。 */
+	/** 同時のリセットを1つの Promise にまとめ、古い保存先の解放を次の初期化より先に終える。 */
 	reset(): Promise<void> {
 		this.resetting ??= this.clearWorkspace().finally(() => {
 			this.resetting = undefined;

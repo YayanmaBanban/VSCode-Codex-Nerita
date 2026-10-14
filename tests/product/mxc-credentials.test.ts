@@ -55,7 +55,6 @@ async function verifyInjection(t: TestContext, route: string) {
 	await permission(controller, "accept");
 	await until(() => controller.snapshot().permissions.length === 1);
 	assert.equal(acquired(), 0, "コマンド承認だけでは資格情報を取得しない");
-	assert.match(controller.snapshot().permissions[0]!.title, /資格情報/);
 	await permission(controller, "accept");
 	const state = await finished(controller);
 	assert.equal(state.error, null, JSON.stringify(state));

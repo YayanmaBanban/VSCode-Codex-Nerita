@@ -87,10 +87,7 @@ void test("一時シェル出力を保存し、元ファイルの削除後も全
 		...record,
 		data: { ...record.data, ownerSessionId: "../outside" },
 	};
-	assert.throws(
-		() => archive.restore([{ ...tool }], [invalid]),
-		/保存情報が破損/u,
-	);
+	assert.throws(() => archive.restore([{ ...tool }], [invalid]));
 });
 
 /** 配布用に束ねた SDK を使い、ユーザー環境の Pi は読み込まない。 */

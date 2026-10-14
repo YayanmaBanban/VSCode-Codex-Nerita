@@ -109,7 +109,7 @@ void test("出力の保存失敗を通知し、存在しない本文への参照
 	await permission(controller, "accept");
 	await permission(controller, "accept");
 	const state = await finished(controller);
-	assert.match(state.error!, /ツール出力を保存できません/u);
+	assert.ok(isNonEmptyString(state.error));
 	assert.equal(state.run, "failed");
 	const saved = await sessionFiles(f.cwd);
 	assert.ok(!saved[0]!.text.includes("nerita.tool-output.v1"));

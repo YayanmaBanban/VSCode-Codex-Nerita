@@ -65,7 +65,6 @@ void test("保存済み権限の対象が junction に差し替わったら再�
 			call,
 			"operation",
 		),
-		/パスが変更/,
 	);
 });
 
@@ -123,7 +122,6 @@ for (const scope of ["process", "session", "workspace"] as const) {
 		assert.equal(await waiting, true);
 		await assert.rejects(
 			manager.decide({ denialEventId: event.id, action: "allow", scope }),
-			/期限切れ/,
 		);
 
 		const policy = {
@@ -340,7 +338,6 @@ void test("停止済みイベントと資格情報・診断情報には権限を
 			action: "allow",
 			scope: "process",
 		}),
-		/期限切れ/,
 	);
 	for (const kind of ["credential", "environment"] as const) {
 		assert.equal(

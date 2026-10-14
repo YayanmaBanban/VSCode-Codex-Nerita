@@ -44,7 +44,7 @@ void test("実体 PATH を再構築し API キー・Node 起動フック・相�
 	);
 });
 
-void test("新しいツールは既存 ResourcePolicy のプロファイルとして追加できる", async () => {
+void test("新しいツールは既存の `ResourcePolicy` のプロファイルとして追加できる", async () => {
 	const executable = await realpath(process.execPath);
 	const policy = await discoverDevTools(
 		{},
@@ -69,7 +69,7 @@ void test("新しいツールは既存 ResourcePolicy のプロファイルと�
 	);
 });
 
-void test("キャッシュは同じ workspace で永続化し、別 workspace とホスト設定から分離する", async () => {
+void test("キャッシュは同じワークスペースで永続化し、別のワークスペースやホスト設定から分離する", async () => {
 	const root = await mkdtemp(join(tmpdir(), "nerita-devtools-"));
 	try {
 		const first = await storageFixture(root, "run-one", "workspace-one");
@@ -118,10 +118,7 @@ void test("Sandbox キャッシュがリンクに置換されていたら別領�
 		await mkdir(outside);
 		await rm(cache, { recursive: true });
 		await symlink(outside, cache, "junction");
-		await assert.rejects(
-			storageFixture(root, "run-two", "workspace"),
-			/パスが変更/,
-		);
+		await assert.rejects(storageFixture(root, "run-two", "workspace"));
 	} finally {
 		await rm(root, { recursive: true, force: true });
 	}

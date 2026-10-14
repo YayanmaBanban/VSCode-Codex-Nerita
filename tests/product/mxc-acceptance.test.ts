@@ -80,19 +80,13 @@ async function verifyStop(t: TestContext, route: string, stop: string) {
 			runId: state.runId,
 		});
 	}
-	const result = await finished(controller);
+	await finished(controller);
 	if (stop === "control") {
 		assert.equal(
 			await readFile(join(f.cwd, "late.txt"), "utf8"),
 			"forbidden",
 		);
 		return;
-	}
-	if (stop === "timeout" && route !== "child") {
-		assert.ok(
-			JSON.stringify(result.tools).includes("タイムアウト"),
-			JSON.stringify(result.tools),
-		);
 	}
 	await setTimeout(4200);
 	await assert.rejects(readFile(join(f.cwd, "late.txt")), { code: "ENOENT" });

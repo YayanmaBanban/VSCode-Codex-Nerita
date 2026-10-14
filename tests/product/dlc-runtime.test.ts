@@ -9,6 +9,7 @@ import { DlcController } from "@nerita/dlc/controller";
 import { type IntentState } from "@nerita/dlc/state";
 import { type ExecutionRequest } from "@nerita/dlc/runtime";
 import { isState } from "@nerita/shared/stateValidation";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	SafeDlcFiles,
 	jsonDigest,
@@ -66,10 +67,7 @@ void test("Codex の9 MiB の出力が JSON 化で上限を超えても、収集
 	const state = await repository.load(fixture.planned.intentId);
 	const attempt = state.workItems[0]?.attempts[0];
 	assert.equal(attempt?.status, "failed");
-	assert.match(
-		attempt.detail ?? "",
-		/会話記録を保存できませんでした.*保存上限/,
-	);
+	assert.ok(isNonEmptyString(attempt.detail));
 	assert.equal(attempt.result?.summary, "変更した");
 	assert.ok(attempt.evidence);
 	assert.notEqual(attempt.evidence.before.id, attempt.evidence.after.id);
@@ -173,7 +171,7 @@ for (const boundary of ["会話ファイル", "Host の確定記録"]) {
 		const state = await reopened.load(fixture.planned.intentId);
 		const attempt = state.workItems[0]?.attempts[0];
 		assert.equal(attempt?.status, "failed");
-		assert.match(attempt.detail ?? "", /会話記録を保存できませんでした/);
+		assert.ok(isNonEmptyString(attempt.detail));
 		assert.equal(attempt.result?.summary, "挨拶を更新した");
 		assert.ok(attempt.evidence);
 		assert.notEqual(attempt.evidence.before.id, attempt.evidence.after.id);
@@ -200,7 +198,6 @@ for (const boundary of ["会話ファイル", "Host の確定記録"]) {
 					"attempt",
 					replacement,
 				),
-				/未確定の実行記録が競合/,
 			);
 		}
 		restore();
@@ -216,7 +213,6 @@ for (const boundary of ["会話ファイル", "Host の確定記録"]) {
 		);
 		await assert.rejects(
 			reopened.saveConversation(state.intentId, "attempt", replacement),
-			/既に固定/,
 		);
 		assert.deepEqual(await reopened.load(state.intentId), state);
 		assert.equal(f.model.requests.length, 2);
@@ -432,7 +428,6 @@ void test("承認待ちの Pi 実行を停止しても、確認済みの根拠�
 			sessionId: managed.sessionId,
 			text: "手動ターン",
 		}),
-		/DLC セッション/,
 	);
 	await assert.rejects(
 		restarted.receive({
@@ -443,7 +438,6 @@ void test("承認待ちの Pi 実行を停止しても、確認済みの根拠�
 			permissionId: managed.permissions[0]!.id,
 			optionId: managed.permissions[0]!.options[0]!.id,
 		}),
-		/DLC セッション/,
 	);
 });
 
@@ -470,7 +464,7 @@ void test("Pi が成功を自己申告してもファイル変更がなければ
 	);
 	const result = await controller.dispatch({ type: "run" });
 	assert.equal(result.workItems[0]?.status, "failed");
-	assert.match(result.workItems[0].detail ?? "", /実際のソース変更/);
+	assert.ok(isNonEmptyString(result.workItems[0].detail));
 	assert.equal(await readFile(join(f.cwd, "hello.txt"), "utf8"), "before\n");
 });
 
@@ -493,17 +487,12 @@ void test("未対応の継続方式や権限縮小を実行前に拒否する", 
 		continuity: "continue",
 		policy: "workspace-inherit",
 	};
-	assert.throws(
-		() => runtime.run(request, new AbortController().signal),
-		/対応しています/,
-	);
-	assert.throws(
-		() =>
-			runtime.run(
-				{ ...request, continuity: "fresh", policy: "read-only" },
-				new AbortController().signal,
-			),
-		/対応しています/,
+	assert.throws(() => runtime.run(request, new AbortController().signal));
+	assert.throws(() =>
+		runtime.run(
+			{ ...request, continuity: "fresh", policy: "read-only" },
+			new AbortController().signal,
+		),
 	);
 	assert.equal(created, 1);
 });

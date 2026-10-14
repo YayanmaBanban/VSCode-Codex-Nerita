@@ -9,7 +9,7 @@
 	const dlc = useDlc(() => bridge);
 </script>
 
-<main class="m-auto h-dvh min-h-[360px] max-w-[1350px]">
+<main class="h-dvh min-h-[360px] w-full">
 	<ChatWorkspace {bridge}>
 		{#snippet header(props)}
 			<ChatModeHeader {...props} mode={dlc.view.mode} />

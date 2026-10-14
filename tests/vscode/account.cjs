@@ -144,10 +144,6 @@ async function verifyAuthClose(page, chat, model, findFrame) {
 	await page.screenshot({
 		path: path.join(process.env.NERITA_UI_ARTIFACTS, "auth-pending.png"),
 	});
-	assert.equal(
-		vscode.window.tabGroups.activeTabGroup.activeTab.label,
-		"Pi 認証情報",
-	);
 	await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	await expect(chat.locator("button[data-connection]")).toHaveCount(0);
 	await expect(

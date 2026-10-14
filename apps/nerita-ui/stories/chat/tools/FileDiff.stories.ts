@@ -79,18 +79,36 @@ export const Ranges: Story = {
 /** 長い新規ファイルを縦横にスクロールしても、ファイル操作と変更件数を表示し続ける。 */
 export const LongNewFile: Story = {
 	args: { scenario: "long" },
-	play: async ({ canvasElement }) => {
+	play: longFilePlay("added"),
+};
+
+/** 長い削除ファイルも削除行の背景とスクロール枠を使い、本文を折り返さない。 */
+export const LongDeletedFile: Story = {
+	args: { scenario: "deleted" },
+	play: longFilePlay("removed"),
+};
+
+/** 追加・削除の行表示と縦横のスクロールを、同じ表示経路で検証する。 */
+function longFilePlay(change: "added" | "removed"): NonNullable<Story["play"]> {
+	return async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const heading = canvas.getByRole("button", {
-			name: /^長い新規ファイル/,
+			name: change === "added" ? /^長い新規ファイル/ : /^Editing files/,
 		});
-		await expect(
-			within(heading).getByLabelText("180 行追加、0 行削除"),
-		).toBeVisible();
 		await userEvent.click(heading);
 		const code = await canvas.findByRole("region", {
-			name: "1:181 の差分コード",
+			name: /の差分コード$/,
 		});
+		const rows = code.querySelectorAll<HTMLElement>(`.file-diff-${change}`);
+		await expect(rows).toHaveLength(180);
+		await expect(
+			code.querySelectorAll(
+				change === "added" ? ".file-diff-removed" : ".file-diff-added",
+			),
+		).toHaveLength(0);
+		await expect(getComputedStyle(rows[0]!).backgroundColor).not.toBe(
+			"rgba(0, 0, 0, 0)",
+		);
 		await waitFor(async () => {
 			const rect = code.getBoundingClientRect();
 			await expect(rect.height).toBeGreaterThan(0);
@@ -112,8 +130,8 @@ export const LongNewFile: Story = {
 				}),
 			).toBeVisible(),
 		);
-	},
-};
+	};
+}
 
 /** 空ファイル・変更なし・解析できない本文にも、無効なファイルボタンを残す。 */
 export const Fallbacks: Story = {

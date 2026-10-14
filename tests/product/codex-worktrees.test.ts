@@ -10,7 +10,10 @@ import { until } from "../support/pi";
 import { WorktreeManager } from "../../apps/vscode-nerita/src/extension/dlc/WorktreeManager";
 import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
 import type { ChatState } from "@nerita/shared/chatState";
-import { DirectoryRuns } from "../../apps/vscode-nerita/src/extension/session/DirectoryRuns";
+import {
+	DirectoryRuns,
+	DirectoryRunConflictError,
+} from "../../apps/vscode-nerita/src/extension/session/DirectoryRuns";
 import { CodexSessionController } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexSessionController";
 import type { CodexFactory } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/connection";
 import { setTimeout } from "node:timers/promises";
@@ -222,11 +225,11 @@ void test("Codex の分岐は移動先 cwd を送り、新しい ID と応答の
 	target.responses.set("thread/fork", () =>
 		forkResponse("source", target.cwd),
 	);
-	await assert.rejects(client.forkThread("source"), /会話 ID/);
+	await assert.rejects(client.forkThread("source"));
 	target.responses.set("thread/fork", () =>
 		forkResponse("different", source.cwd),
 	);
-	await assert.rejects(client.forkThread("source"), /実行先/);
+	await assert.rejects(client.forkThread("source"));
 });
 
 function forkResponse(id: string, cwd: string) {
@@ -281,7 +284,7 @@ for (const failure of [false, true]) {
 		t.after(async () => {
 			gate.release({});
 			if (failure) {
-				await assert.rejects(runtime.dispose(), /終了を確認/);
+				await assert.rejects(runtime.dispose());
 			} else {
 				await runtime.dispose();
 			}
@@ -302,16 +305,26 @@ for (const failure of [false, true]) {
 		await setTimeout(50);
 		assert.equal(runtime.snapshot().run, "failed");
 		assert.equal((await client!.readAccount()).authenticated, true);
-		await assert.rejects(directories.acquire(f.cwd), /別の実行/);
+		await assert.rejects(
+			directories.acquire(f.cwd),
+			DirectoryRunConflictError,
+		);
+		const revisionBeforeDisposal = runtime.snapshot().revision;
 		gate.release({});
 		if (failure) {
 			await until(
-				() => runtime.snapshot().error?.includes("予約を保持") === true,
+				() => runtime.snapshot().revision > revisionBeforeDisposal,
 			);
-			await assert.rejects(directories.acquire(f.cwd), /別の実行/);
+			await assert.rejects(
+				directories.acquire(f.cwd),
+				DirectoryRunConflictError,
+			);
 			await runtime.restart();
 			await runtime.restart();
-			await assert.rejects(directories.acquire(f.cwd), /別の実行/);
+			await assert.rejects(
+				directories.acquire(f.cwd),
+				DirectoryRunConflictError,
+			);
 		} else {
 			await until(() => runtime.runningDirectories().length === 0);
 			const release = await directories.acquire(f.cwd);
@@ -341,7 +354,6 @@ void test("Codex の新規 Thread の実効 cwd が別 Worktree なら接続を�
 			},
 			new AbortController().signal,
 		),
-		/接続できません|開始できません/,
 	);
 	assert.equal(
 		f.requests.some((request) => request.method === "turn/start"),
@@ -365,7 +377,7 @@ void test("Codex の起動失敗後に下位層が終了未確認を返した場
 		directories,
 	);
 	t.after(() => runtime.dispose());
-	t.after(() => assert.rejects(failed.dispose(), /終了を確認/));
+	t.after(() => assert.rejects(failed.dispose()));
 	await assert.rejects(
 		runtime.withDirectory(f.cwd, (reservation) =>
 			runtime.executeDlc(
@@ -380,8 +392,7 @@ void test("Codex の起動失敗後に下位層が終了未確認を返した場
 				reservation,
 			),
 		),
-		/終了を確認/,
 	);
-	await assert.rejects(directories.acquire(f.cwd), /別の実行/);
+	await assert.rejects(directories.acquire(f.cwd), DirectoryRunConflictError);
 	assert.equal(f.state.turn, 0);
 });

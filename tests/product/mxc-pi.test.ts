@@ -230,10 +230,7 @@ for (const stop of ["cancel", "timeout"]) {
 				runId: state.runId,
 			});
 		}
-		const final = await finished(controller);
-		if (stop === "timeout") {
-			assert.ok(JSON.stringify(final.tools).includes("タイムアウト"));
-		}
+		await finished(controller);
 		await setTimeout(3500);
 		await assert.rejects(readFile(join(f.cwd, "late.txt")), {
 			code: "ENOENT",

@@ -262,7 +262,7 @@ export const StartHold: Story = {
 					startHold: {
 						reason: "worktree-required",
 						message:
-							"この実行先は別の処理で使用中です。独立した Worktree を選択してください。",
+							"ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
 					},
 				},
 				{ intentId: second, title: "別の Intent", status: "running" },
@@ -272,7 +272,14 @@ export const StartHold: Story = {
 		await waitFor(() =>
 			expect(
 				canvas.getByRole("button", { name: "最初の Intent" }),
-			).toHaveAccessibleDescription("Worktree が必要"),
+			).toHaveAccessibleDescription(
+				"ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
+			),
+		);
+		await expect(
+			within(canvas.getByLabelText("実行開始の保留")).getByRole("status"),
+		).toHaveTextContent(
+			"ワークスペースでエージェントが実行中です。並行して実行するには、ワークツリーを作成してください",
 		);
 		await userEvent.click(
 			canvas.getByRole("button", { name: /Phase 3 · Construction/ }),
@@ -287,13 +294,13 @@ export const StartHold: Story = {
 			canvas.getByRole("button", { name: /Phase 0 · Initialization/ }),
 		).toHaveTextContent("完了");
 		await userEvent.click(
-			canvas.getByRole("button", { name: "新しい Worktree を作成" }),
+			canvas.getByRole("button", { name: "Worktree を作成" }),
 		);
 		await expect(bridge.sent.at(-1)).toMatchObject({
 			type: "dlc/worktreeCreate",
 		});
 		await userEvent.click(
-			canvas.getByRole("button", { name: "開始条件を再確認" }),
+			canvas.getByRole("button", { name: "再読み込み" }),
 		);
 		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/read" });
 		await verifyTrustRelease(canvasElement, bridge, held);
@@ -332,7 +339,7 @@ async function verifyTrustRelease(
 				status: "idle",
 				startHold: {
 					reason: "trust-required",
-					message: "実行先の Nerita Trust を確認してください。",
+					message: "ワークスペースを信頼してください",
 				},
 			},
 			held.intents[1]!,
@@ -340,9 +347,14 @@ async function verifyTrustRelease(
 	};
 	bridge.emit({ type: "dlc/state", view: untrusted });
 	await userEvent.click(
-		await canvas.findByRole("button", { name: "信頼設定を開く" }),
+		await canvas.findByRole("button", { name: "実行先の信頼を確認" }),
 	);
 	await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/trust" });
+	await expect(
+		within(canvas.getByLabelText("実行開始の保留")).getByRole("status"),
+	).toHaveTextContent(
+		"ワークスペースを信頼してください",
+	);
 	bridge.emit({
 		type: "dlc/state",
 		view: {
