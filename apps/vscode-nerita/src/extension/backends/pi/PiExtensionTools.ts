@@ -66,7 +66,7 @@ export function guardPiExtensionTools(
 				: undefined;
 		if (reserved.has(name) && !shell) {
 			throw new Error(
-				`Pi拡張による組み込みToolの上書きは拒否されました: ${name}`,
+				`Pi 拡張による組み込みツールの上書きは拒否されました: ${name}`,
 			);
 		}
 		const definition = shell

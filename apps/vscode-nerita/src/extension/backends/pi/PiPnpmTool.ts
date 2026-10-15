@@ -156,7 +156,7 @@ async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 	);
 	if (matchesSome) {
 		throw new Error(
-			"workspace 内の pnpm は実行エントリーポイントとして使用できません。",
+			"ワークスペース内の pnpm は実行エントリーポイントとして使用できません。",
 		);
 	}
 	if (basename(executable).toLowerCase().endsWith(".exe")) {
@@ -165,10 +165,10 @@ async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 	const node = tools.executables["node.exe"];
 
 	if (!isNonEmptyString(node)) {
-		throw new Error("信頼できる Node.js を検出できません。");
+		throw new Error("pnpm の実行に必要な Node.js が見つかりません。");
 	}
 	if (paths.policy.workspaceRoots.some((root) => containsPath(root, node))) {
-		throw new Error("信頼できる Node.js を検出できません。");
+		throw new Error("ワークスペース内の Node.js は pnpm の実行に使用できません。");
 	}
 	return { entrypoint: executable, argv: [node, executable, ...args] };
 }

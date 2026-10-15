@@ -197,7 +197,7 @@ async function resolveWindowsSandbox(
 		if (sandbox === "elevated" || sandbox === "unelevated") {
 			return sandbox;
 		}
-		throw new Error(`Windows Sandboxの設定に対応していません: ${sandbox}`);
+		throw new Error(`未対応の Windows サンドボックス設定です: ${sandbox}`);
 	} finally {
 		await client.dispose();
 	}

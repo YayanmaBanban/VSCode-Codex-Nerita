@@ -257,7 +257,7 @@ async function readWorkflow(
 	const matchesContainsPath =
 		!containsPath(root, path) || (await stat(path)).size > 262144;
 	if (matchesContainsPath) {
-		throw new Error("定義ファイルの範囲またはサイズが不正です。");
+		throw new Error("ワークフロー定義の参照先が .pi/workflows の外にあるか、256 KiB の上限を超えています。");
 	}
 	const permit = await approveToolCall(
 		{

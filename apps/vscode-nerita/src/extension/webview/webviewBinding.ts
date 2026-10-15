@@ -2,22 +2,16 @@
 import * as vscode from "vscode";
 import type { ChatSession } from "../session/chatSession";
 
-/** `ready` 通知を取りこぼさないよう、HTML の設定より先に購読を完了する。 */
+/** 購読の登録後に CSP 付きの HTML を設定してから、スクリプト実行を有効にする。 */
 export function bindWebview(
 	view: vscode.WebviewView | vscode.WebviewPanel,
 	extensionUri: vscode.Uri,
 	session: ChatSession,
 	receive: (message: unknown) => Promise<void>,
 	onDispose: () => void,
+	html: string,
 ): () => void {
 	const webview = view.webview;
-	webview.options = {
-		enableScripts: true,
-		localResourceRoots: [
-			vscode.Uri.joinPath(extensionUri, "dist", "webview"),
-		],
-	};
-
 	const unsubscribe = session.subscribe((event) => {
 		void webview.postMessage(event);
 	});
@@ -25,6 +19,14 @@ export function bindWebview(
 		void receive(message);
 	});
 	const disposed = view.onDidDispose(onDispose);
+	// `options` の変更でも VS Code は現在の HTML を再読み込みするため、空の HTML を先に送らない。
+	webview.html = html;
+	webview.options = {
+		enableScripts: true,
+		localResourceRoots: [
+			vscode.Uri.joinPath(extensionUri, "dist", "webview"),
+		],
+	};
 
 	return () => {
 		unsubscribe();

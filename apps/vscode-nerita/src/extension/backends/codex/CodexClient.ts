@@ -194,19 +194,19 @@ export class CodexClient {
 
 		if (!isNonEmptyString(fork.thread.id)) {
 			throw new Error(
-				"Codex の分岐先の会話 ID または実行先が一致しません。",
+				"Codex が返した分岐先の会話 ID が空です。",
 			);
 		}
 		if (fork.thread.id === threadId) {
 			throw new Error(
-				"Codex の分岐先の会話 ID または実行先が一致しません。",
+				"Codex が返した分岐先の会話 ID が分岐元と同じです。",
 			);
 		}
 		const forkRoot = await realpath(fork.cwd);
 		const currentRoot = await realpath(this.cwd);
 		if (forkRoot !== currentRoot) {
 			throw new Error(
-				"Codex の分岐先の会話 ID または実行先が一致しません。",
+				"Codex の分岐先の作業フォルダが、現在の作業フォルダと一致しません。",
 			);
 		}
 		return fork;

@@ -98,7 +98,7 @@ export function renameStep(
 		workflow.steps.some((step) => step.id === target && step.id !== source);
 	if (matchesTest) {
 		throw new Error(
-			"ステップ ID は重複しない英字から始まる名前にしてください。",
+			"ステップ ID は英字で始まり、他のステップと重複しない名前にしてください。",
 		);
 	}
 	/** 指定した旧 ID に一致する参照だけを新 ID へ置き換え、他の参照は保持する。 */

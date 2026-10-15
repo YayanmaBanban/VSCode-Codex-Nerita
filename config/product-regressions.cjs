@@ -173,7 +173,7 @@ const regressions = {
 function regressionPlugin(name) {
 	const entry = regressions[name];
 	if (!entry) {
-		throw new Error(`未知の回帰: ${name}`);
+		throw new Error(`指定された回帰検証が登録されていません: ${name}`);
 	}
 	let applied = false;
 	return {

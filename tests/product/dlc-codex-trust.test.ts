@@ -1,10 +1,13 @@
-// App Server だけを代替し、未信頼の main・Worktree で本番の DLC と Codex 接続を検証する。
+// VS Code API と App Server を代替し、Nerita Trust 未設定の main・Worktree で製品の DLC と Codex 接続を検証する。
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import { readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
+import * as vscode from "vscode";
 import type { BackendId } from "@nerita/shared/backend";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import { isHostMessage } from "@nerita/shared/hostMessageValidation";
 import { createBackend } from "../../apps/vscode-nerita/src/extension/backends/createBackend";
 import { DlcHost } from "../../apps/vscode-nerita/src/extension/dlc/DlcHost";
 import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
@@ -39,8 +42,63 @@ void test("Codex 側が非信頼の main では DLC の作成を拒否する", a
 	assert.notEqual(f.runtime.scope("chat").snapshot().connection, "ready");
 });
 
+void test("未信頼で初期化できなくても信頼管理を開き、信頼変更後に初期化できる", async (t) => {
+	const f = await prepare(t);
+	f.main.state.projects[f.main.cwd] = { trust_level: "untrusted" };
+	f.host.setWorkspaceOpen(true);
+	await f.host.receive({ type: "dlc/read", requestId: "untrusted" });
+	assert.ok(isNonEmptyString(f.host.view().error));
+	assert.equal(
+		f.host.view().targets.find((item) => item.main)?.trusted,
+		false,
+	);
+	assert.ok(f.host.view().environment);
+	const workspaceFile = join(f.main.cwd, ".nerita/dlc/workspace.json");
+	assert.equal(existsSync(workspaceFile), false);
+	const commands: unknown[][] = [];
+	const original = vscode.commands.executeCommand;
+	Object.assign(vscode.commands, {
+		executeCommand: (...args: unknown[]) => {
+			commands.push(args);
+			return Promise.resolve();
+		},
+	});
+	t.after(() => Object.assign(vscode.commands, { executeCommand: original }));
+	await f.host.receive({ type: "dlc/trust", requestId: "manage" });
+	assert.deepEqual(commands, [["nerita.trust.manage", "codex"]]);
+	f.main.responses.set("config/batchWrite", () => {
+		f.main.state.projects[f.main.cwd] = { trust_level: "trusted" };
+		return { status: "ok", version: "1", filePath: "config.toml" };
+	});
+	await f.trust.setBackendTrust(f.main.cwd, "trusted", "codex");
+	await until(() => f.host.view().targets[0]?.trusted === true);
+	await until(() => existsSync(workspaceFile));
+	await planIntent(f.host);
+});
+
+void test("保存済みバックエンドでワークスペースが未信頼でも、別のバックエンドへ切り替えて初期化できる", async (t) => {
+	const f = await prepare(t, "pi");
+	f.host.setWorkspaceOpen(true);
+	await f.host.receive({ type: "dlc/read", requestId: "untrusted-pi" });
+	assert.ok(isNonEmptyString(f.host.view().error));
+	assert.equal(f.host.view().backend, "pi");
+	await f.host.receive({
+		type: "dlc/backend",
+		requestId: "switch-codex",
+		backend: "codex",
+		intentId: null,
+		revision: null,
+	});
+	assert.equal(f.host.view().error, null);
+	assert.equal(
+		f.host.view().targets.find((item) => item.main)?.trusted,
+		true,
+	);
+	await planIntent(f.host);
+});
+
 /** VS Code と App Server の境界を用意し、Host の信頼変更購読も本番と同じ経路へ接続する。 */
-async function prepare(t: TestContext) {
+async function prepare(t: TestContext, savedBackend: BackendId = "codex") {
 	const main = await codexFixture(t);
 	await prepareRepository(main.cwd);
 	const previousLocal = process.env.LOCALAPPDATA;
@@ -53,6 +111,7 @@ async function prepare(t: TestContext) {
 		}
 	});
 	const context = hostContext(main.cwd, "codex");
+	await context.globalState.update("dlc.backend", savedBackend);
 	Object.assign(context, { extensionUri: { fsPath: main.extensionPath } });
 	let failSave = false;
 	const trust = new WorkspaceTrustStore(
@@ -75,6 +134,7 @@ async function prepare(t: TestContext) {
 		runtime.invalidateTrust(root, backend),
 	);
 	const host = new DlcHost(context, trust, runtime);
+	verifyUiMessages(t, runtime);
 	t.after(async () => {
 		unsubscribe();
 		await host.dispose();
@@ -91,6 +151,24 @@ async function prepare(t: TestContext) {
 			failSave = true;
 		},
 	};
+}
+
+/** Host 内部の状態だけでなく、Webview の受信検証を通る通知が配信されることを確認する。 */
+function verifyUiMessages(t: TestContext, runtime: BackendRuntime) {
+	const invalid: string[] = [];
+	const unsubscribe = runtime.scope("dlc").subscribe((message) => {
+		if (message.type === "dlc/state" && !isHostMessage(message)) {
+			invalid.push(JSON.stringify(message));
+		}
+	});
+	t.after(() => {
+		unsubscribe();
+		assert.deepEqual(
+			invalid,
+			[],
+			"DLC の通知が Webview の受信検証で拒否されました",
+		);
+	});
 }
 
 /** 作成・計画の操作は未信頼の main から受け付けられる。 */

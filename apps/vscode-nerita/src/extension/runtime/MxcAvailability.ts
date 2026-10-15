@@ -33,7 +33,7 @@ export async function probeMxc(
 		const root = await realpath(cwd);
 		const systemRoot = process.env.SystemRoot;
 		if (!isNonEmptyString(systemRoot)) {
-			throw new Error("Windows の SystemRoot を取得できません。");
+			throw new Error("環境変数 `SystemRoot` が設定されていません。");
 		}
 		const body =
 			"if ((Get-Location).Path -ne [Environment]::CurrentDirectory) { [Console]::Error.Write('PowerShell cwd differs from the requested workspace'); exit 1 }; Write-Output 'NERITA_MXC_READY'";

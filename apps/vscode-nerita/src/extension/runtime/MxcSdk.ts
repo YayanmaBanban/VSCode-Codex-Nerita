@@ -17,7 +17,7 @@ export type MxcSdk = typeof Sdk & {
 /** Node の要件不足を、App Server や非 Sandbox 実行へ切り替えずに通知する。 */
 export async function loadMxcSdk(extensionPath: string): Promise<MxcSdk> {
 	if (process.platform !== "win32" || process.arch !== "x64") {
-		throw new Error("Microsoft MXC は Windows x64 で利用できます。");
+		throw new Error("Microsoft MXC の実行には Windows x64 が必要です。");
 	}
 	if (Number(process.versions.node.split(".")[0]) < 24) {
 		throw new Error(

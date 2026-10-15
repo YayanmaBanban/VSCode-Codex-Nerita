@@ -1,4 +1,4 @@
-// 実際の TrustPanel とストアを接続し、確認・通知・削除を Webview の通信境界から検証する。
+// 製品の `trustPanel` と信頼ストアを接続し、確認・通知・削除を Webview の通信境界から検証する。
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { mkdir } from "node:fs/promises";
@@ -7,6 +7,28 @@ import * as vscode from "vscode";
 import type { TrustReply, TrustRequest } from "@nerita/shared/workspaceTrust";
 import { trustPanel } from "../../apps/vscode-nerita/src/extension/security/trust/TrustPanel";
 import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
+import { CodexWorkspaceTrust } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/CodexWorkspaceTrust";
+import { codexFixture } from "../support/codex";
+import type { BackendId } from "@nerita/shared/backend";
+
+void test("DLC から指定したバックエンドで開き、既存パネルも指定に合わせる", async (t) => {
+	const codex = await codexFixture(t);
+	const f = await fixture(
+		new CodexWorkspaceTrust(codex.extensionPath, () => {}),
+		"codex",
+	);
+	const initial = await f.request({ type: "refresh" });
+	assert.equal(initial.backend, "codex");
+	assert.equal(initial.error, null);
+	f.open("pi");
+	const switched = await f.request({ type: "refresh" });
+	assert.equal(switched.backend, "pi");
+	assert.equal(switched.error, null);
+	assert.equal(switched.records.length, 2);
+	f.open("codex");
+	assert.equal((await f.request({ type: "refresh" })).backend, "codex");
+	f.close();
+});
 
 void test("確認前には信頼を変更せず、確定・取消し・削除を1回の応答で反映する", async () => {
 	const f = await fixture();
@@ -66,7 +88,7 @@ void test("制限モードとキャンセル後の信頼確定を拒否する", 
 });
 
 /** VS Code API と Webview の配送だけを代替し、保存と確認判定は製品実装を使う。 */
-async function fixture() {
+async function fixture(codex?: CodexWorkspaceTrust, backend?: BackendId) {
 	const root = join(
 		process.env.NERITA_TEST_ROOT!,
 		`panel-${crypto.randomUUID()}`,
@@ -75,10 +97,14 @@ async function fixture() {
 	const second = join(root, "b-project");
 	await mkdir(first, { recursive: true });
 	await mkdir(second);
-	const store = new WorkspaceTrustStore({
-		read: () => undefined,
-		write: async () => {},
-	});
+	const store = new WorkspaceTrustStore(
+		{
+			read: () => undefined,
+			write: async () => {},
+		},
+		undefined,
+		codex,
+	);
 	await store.registerWorkspace(second);
 	await store.registerWorkspace(first);
 	const messages: TrustReply[] = [];
@@ -96,36 +122,25 @@ async function fixture() {
 			close = listener;
 		},
 	);
-	Object.assign(vscode.window, { createWebviewPanel: () => panel });
-	Object.assign(vscode.workspace, {
-		isTrusted: true,
-		getConfiguration: () => ({ get: () => "pi" }),
-	});
-	Object.assign(vscode.ViewColumn, { Active: 1 });
-	Object.assign(vscode.Uri, {
-		file: (fsPath: string) => ({ fsPath, toString: () => fsPath }),
-		joinPath: (base: vscode.Uri, ...parts: string[]) => ({
-			fsPath: join(base.fsPath, ...parts),
-			toString: () => parts.join("/"),
-		}),
-	});
-	trustPanel(
+	configureVsCode(panel);
+	const open = trustPanel(
 		{
 			extensionUri: vscode.Uri.file(root),
 			globalStorageUri: vscode.Uri.file(join(root, "storage", "nerita")),
 			subscriptions: [],
 		},
 		store,
-	)();
+	);
+	open(backend);
 	/** 要求と同じ ID の応答だけを受け取り、途中通知では完了させない。 */
 	const request = (message: TrustRequest): Promise<TrustReply> =>
 		new Promise((resolve) => {
 			const requestId = crypto.randomUUID();
 			waiting.set(requestId, resolve);
 			requests.push(message);
-			receive({ ...message, backend: "pi", requestId });
+			receive({ ...message, requestId });
 		});
-	/** Host の確認 token を変更せず返し、実際のユーザー確定を代替する。 */
+	/** Host が発行した確認用トークンを変更せずに返し、ユーザーによる信頼の確定操作を代替する。 */
 	const promote = async (path: string) => {
 		const prepared = await request({ type: "trust", root: path });
 		assert.ok(prepared.confirmation);
@@ -141,10 +156,29 @@ async function fixture() {
 		store,
 		messages,
 		requests,
+		open,
 		request,
 		promote,
 		close: () => close(),
 	};
+}
+
+/** パネル生成と URI・ワークスペース情報だけを VS Code 境界で代替する。 */
+function configureVsCode(panel: ReturnType<typeof panelBoundary>) {
+	Object.assign(vscode.window, { createWebviewPanel: () => panel });
+	Object.assign(vscode.workspace, {
+		isTrusted: true,
+		workspaceFolders: [],
+		getConfiguration: () => ({ get: () => "pi" }),
+	});
+	Object.assign(vscode.ViewColumn, { Active: 1 });
+	Object.assign(vscode.Uri, {
+		file: (fsPath: string) => ({ fsPath, toString: () => fsPath }),
+		joinPath: (base: vscode.Uri, ...parts: string[]) => ({
+			fsPath: join(base.fsPath, ...parts),
+			toString: () => parts.join("/"),
+		}),
+	});
 }
 
 /** パネルの受信・応答・破棄を接続し、ネイティブの確認 API は提供しない。 */

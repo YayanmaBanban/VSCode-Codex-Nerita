@@ -203,7 +203,7 @@ export class BitwardenSecretsProvider extends BoundProvider {
 	): Promise<CredentialMaterial> {
 		const provider = candidate.binding.provider;
 		if (provider.type !== this.id) {
-			throw new Error("Bitwarden の参照が一致しません。");
+			throw new Error("指定された資格情報のプロバイダーが Bitwarden ではありません。");
 		}
 		const token = await this.auth.get(`bws.auth.${provider.accountId}`);
 		if (!token) {
@@ -228,7 +228,7 @@ export class BitwardenSecretsProvider extends BoundProvider {
 			}
 			if (!isRecord(secret) || secret.id !== provider.secretId) {
 				throw new Error(
-					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
+					"Bitwarden の応答に、指定した ID の秘密情報が含まれていません。",
 				);
 			}
 
@@ -237,17 +237,17 @@ export class BitwardenSecretsProvider extends BoundProvider {
 				secret.projectId !== provider.projectId;
 			if (differentProject) {
 				throw new Error(
-					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
+					"Bitwarden の秘密情報が、指定したプロジェクトに属していません。",
 				);
 			}
 			if (typeof secret.value !== "string") {
 				throw new Error(
-					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
+					"Bitwarden の秘密情報の値が文字列ではありません。",
 				);
 			}
 			if (secret.value === "") {
 				throw new Error(
-					"Bitwarden の秘密情報またはプロジェクトの所属が一致しません。",
+					"Bitwarden の秘密情報の値が空です。",
 				);
 			}
 			signal.throwIfAborted();

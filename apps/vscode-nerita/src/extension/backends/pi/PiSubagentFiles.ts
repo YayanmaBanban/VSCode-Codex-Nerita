@@ -37,7 +37,7 @@ async function collectDirectory(
 	for (const name of (await readdir(directory)).sort()) {
 		const file = await realpath(join(directory, name));
 		if (!containsPath(root, file)) {
-			throw new Error("サブエージェント定義が範囲外です。");
+			throw new Error("サブエージェント定義の参照先が、定義フォルダの外にあります。");
 		}
 		const info = await stat(file);
 		if (info.isDirectory()) {

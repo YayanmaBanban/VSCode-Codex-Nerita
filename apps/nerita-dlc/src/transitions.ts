@@ -61,7 +61,7 @@ export function beginWork(state: IntentState, attemptId: string): IntentState {
 		item.attempts.some((attempt) => attempt.id === attemptId),
 	);
 	if (matchesSome2) {
-		throw new Error("実行世代が重複しています。");
+		throw new Error("同じ ID の実行記録が既にあります。");
 	}
 	const item = nextWork(state);
 	if (!item) {
@@ -152,7 +152,7 @@ function boundEvidence(
 	const matchesAttemptId =
 		evidence.attemptId !== attemptId || evidence.workItemId !== workItemId;
 	if (matchesAttemptId) {
-		throw new Error("結果と根拠の作業・実行世代が一致しません。");
+		throw new Error("実行根拠の作業 ID または試行 ID が、処理対象と一致しません。");
 	}
 	return evidence;
 }

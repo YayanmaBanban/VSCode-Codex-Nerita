@@ -17,7 +17,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"Workspace 全体の状態確認用。実際の UI と controller を使用します。Host の状態は固定応答です。ボタンの要求は通信窓口に記録され、保存や実行は行いません。既存の Chat/DLC Workspace には作成・選択・実行先変更・信頼・長押し削除の操作シナリオがあります。",
+					"DLC の作業画面全体の状態を確認します。製品の UI と状態管理処理を使い、Host の応答はストーリーで指定します。ボタン操作による要求は通信のモックに記録され、保存や実行は行いません。Chat/DLC Workspace には、作成・選択・実行先変更・信頼・長押し削除の操作シナリオがあります。",
 			},
 		},
 	},
@@ -26,22 +26,27 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const ErrorRecovery: Story = {
-	name: "エラー・状態再確認・保存記録から復旧",
+	name: "画面上部のエラー・実行環境の操作",
 	args: { initialView: failed },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const bridge = workspaceBridge(canvasElement);
 		const alert = await canvas.findByRole("alert");
 		await expect(alert).toHaveTextContent(failed.error);
+		await expect(
+			within(alert).queryByRole("button"),
+		).not.toBeInTheDocument();
 		await userEvent.click(
-			within(alert).getByRole("button", { name: "状態を再確認" }),
+			canvas.getByRole("combobox", { name: "DLC の Worktree" }),
 		);
-		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/read" });
-		await expect(alert).toBeVisible();
 		await userEvent.click(
-			within(alert).getByRole("button", { name: "保存記録から復旧" }),
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "新しいWorktreeを作成",
+			}),
 		);
-		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/recover" });
+		await expect(bridge.sent.at(-1)).toMatchObject({
+			type: "dlc/worktreeCreate",
+		});
 		await expect(alert).toBeVisible();
 	},
 };
@@ -52,10 +57,7 @@ export const RecoverySucceeded: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const bridge = workspaceBridge(canvasElement);
-		await userEvent.click(
-			await canvas.findByRole("button", { name: "保存記録から復旧" }),
-		);
-		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/recover" });
+		await canvas.findByRole("alert");
 		bridge.emit({ type: "dlc/state", view: environmentView() });
 		await waitFor(() =>
 			expect(canvas.queryByRole("alert")).not.toBeInTheDocument(),
@@ -63,6 +65,39 @@ export const RecoverySucceeded: Story = {
 		await expect(
 			canvas.getByRole("button", { name: "最初の Intent" }),
 		).toHaveAttribute("aria-pressed", "true");
+	},
+};
+
+export const UntrustedStartup: Story = {
+	name: "未信頼で起動しても信頼管理を開ける",
+	args: {
+		initialView: {
+			...environmentView(),
+			selected: null,
+			intents: [],
+			error: "DLC のワークスペースを信頼してください。信頼管理画面で設定できます。",
+			targets: environmentView().targets.map((target) => ({
+				...target,
+				trusted: false,
+			})),
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = workspaceBridge(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", {
+				name: "ワークスペースを信頼する",
+			}),
+		);
+		await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/trust" });
+		await expect(
+			canvas.getByRole("combobox", { name: "DLC のバックエンド" }),
+		).toBeDisabled();
+		await expect(
+			canvas.getByRole("combobox", { name: "DLC の Worktree" }),
+		).toBeDisabled();
+		await expect(canvas.getByRole("alert")).toBeVisible();
 	},
 };
 
@@ -153,5 +188,14 @@ export const EmptyWorkspace: Story = {
 		await expect(
 			canvas.getByRole("button", { name: "Intent を作成" }),
 		).toBeDisabled();
+		await expect(
+			canvas.getByRole("combobox", { name: "DLC のバックエンド" }),
+		).toBeDisabled();
+		await expect(
+			canvas.getByRole("combobox", { name: "DLC の Worktree" }),
+		).toBeDisabled();
+		await expect(canvas.getByRole("status")).toHaveTextContent(
+			"Intentの作成・選択を待っています",
+		);
 	},
 };

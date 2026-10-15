@@ -34,7 +34,7 @@ export class TrustedDocuments {
 		const pid = record.ownerProcessId;
 		if (pid === undefined) {
 			throw new Error(
-				"実行担当を確認できません。保存記録を保持して確認してください。",
+				"実行元プロセスの ID を確認できません。保存記録を残して確認してください。",
 			);
 		}
 		if (pid === process.pid) {
@@ -50,7 +50,7 @@ export class TrustedDocuments {
 			if (matchesError) {
 				return;
 			}
-			throw new Error("実行担当の終了を確認できません。", {
+			throw new Error("実行元プロセスの終了を確認できません。", {
 				cause: error,
 			});
 		}
@@ -72,7 +72,7 @@ export class TrustedDocuments {
 		if (saved === undefined) {
 			if (text !== undefined) {
 				throw new Error(
-					`Host に承認された保存記録がありません: ${path}`,
+					`このファイルに対応する Host 側の保存記録がありません: ${path}`,
 				);
 			}
 			return undefined;
@@ -115,7 +115,7 @@ export class TrustedDocuments {
 			`${audit}/${record.operationId}.pending.json`,
 		);
 		if (pendingText === undefined) {
-			throw new Error(`DLC の状態と信頼済み記録が一致しません: ${path}`);
+			throw new Error(`DLC の復旧に必要な保存処理中の監査記録がありません: ${path}`);
 		}
 		const pending = journalSchema.parse(JSON.parse(pendingText));
 		const matchesOperationId =
@@ -123,19 +123,19 @@ export class TrustedDocuments {
 			pending.stateRevision !== record.revision ||
 			pending.metadataDigest !== metadataDigest;
 		if (matchesOperationId) {
-			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
+			throw new Error(`DLC の復旧用記録が、保存処理または本文の識別情報と一致しません: ${path}`);
 		}
 		const matchesNextDigest =
 			pending.nextDigest !== record.digest ||
 			jsonDigest(pending.next) !== record.digest;
 		if (matchesNextDigest) {
-			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
+			throw new Error(`DLC の復旧用データのハッシュが、Host 側の保存記録と一致しません: ${path}`);
 		}
 		const matchesCurrent =
 			current !== undefined &&
 			jsonDigest(current) !== pending.previousDigest;
 		if (matchesCurrent) {
-			throw new Error(`DLC の保存を安全に復旧できません: ${path}`);
+			throw new Error(`DLC の現在の保存内容が、復旧用記録にある変更前の内容と一致しません: ${path}`);
 		}
 		const recovered = schema.parse(pending.next);
 		await this.files.write(path, recovered);
@@ -161,7 +161,7 @@ export class TrustedDocuments {
 			const auditChanged =
 				jsonDigest(JSON.parse(committedText)) !== jsonDigest(event);
 			if (auditChanged) {
-				throw new Error("DLC の監査記録が一致しません。");
+				throw new Error("DLC の確定済み監査記録が、確定する保存処理の内容と一致しません。");
 			}
 		}
 	}

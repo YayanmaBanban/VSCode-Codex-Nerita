@@ -95,7 +95,7 @@ export async function verifyFileSnapshot(
 		);
 	if (matchesPath) {
 		throw new Error(
-			"承認中にファイルまたは祖先が変更されました。再承認が必要です。",
+			"承認中にファイルまたは上位フォルダが変更されました。再承認が必要です。",
 		);
 	}
 }

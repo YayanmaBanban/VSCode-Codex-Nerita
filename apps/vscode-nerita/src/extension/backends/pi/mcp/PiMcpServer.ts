@@ -56,7 +56,7 @@ export class PiMcpServer {
 	constructor(private readonly options: PiMcpServerOptions) {
 		const { entry, sdk, signal, credentials } = options;
 		if (!entry.config || !("url" in entry.config)) {
-			throw new Error("stdio MCP は上流対応の対象です。");
+			throw new Error("この MCP 接続処理には、HTTP 接続先の URL が必要です。");
 		}
 		const url = entry.config.url;
 		mcpHttpUrl(url);
@@ -190,7 +190,7 @@ export class PiMcpServer {
 			namespace: { name: `mcp__${entry.name}`, aliases: [entry.name] },
 			execute: async (_id, args, signal) => {
 				if (!signal) {
-					throw new Error("MCP 実行の取消しが接続されていません。");
+					throw new Error("MCP の実行を取り消すためのシグナルが渡されていません。");
 				}
 				await abortableFeatureApproval(
 					this.connection.getClient(),
@@ -247,7 +247,7 @@ export class PiMcpServer {
 			namespace: { name: `mcp__${entry.name}`, aliases: [entry.name] },
 			execute: async (_id, args, signal) => {
 				if (!signal) {
-					throw new Error("MCP 実行の取消しが接続されていません。");
+					throw new Error("MCP の実行を取り消すためのシグナルが渡されていません。");
 				}
 				return this.run(
 					name,

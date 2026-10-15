@@ -164,13 +164,13 @@ class WorkspaceScanner {
 
 			if (stat.isSymbolicLink()) {
 				throw new Error(
-					`リンクを含むワークスペースを検出できません: ${name}`,
+					`シンボリックリンクを含むため、ワークスペースを検出できません: ${name}`,
 				);
 			}
 			const actualPath = await realpath(resolve(this.files.root, name));
 			if (!containsPath(this.files.root, actualPath)) {
 				throw new Error(
-					`リンクを含むワークスペースを検出できません: ${name}`,
+					`参照先がワークスペースの外にあるため、検出できません: ${name}`,
 				);
 			}
 			if (stat.isDirectory()) {

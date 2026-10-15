@@ -266,11 +266,18 @@ export class DlcHost {
 		);
 		if (!mainWorkspace) {
 			throw new Error(
-				"DLC の管理元は main の Nerita です。Worktree では通常チャットを使用してください。",
+				"DLC はリポジトリのメイン作業ディレクトリで使用してください。追加の Worktree では通常チャットを使用してください。",
 			);
 		}
 		const generation = this.generation;
 		const signal = this.workspaceAbort.signal;
+		// 保存領域を開けない場合も、実行環境の表示と信頼操作を利用できるようにする。
+		await this.refreshTargets({ worktrees, signal, assignments: {} });
+		this.environment = {
+			workspace: basename(root),
+			branch: targets.find((target) => target.main)?.branch ?? null,
+		};
+		this.publish();
 		const trusted = await this.workspaceTrusted(this.backend, root);
 		if (!trusted) {
 			throw new Error(
@@ -307,7 +314,7 @@ export class DlcHost {
 		);
 		if (currentRoot !== root) {
 			throw new Error(
-				"DLC のワークスペースまたは信頼状態が変更されました。",
+				"DLC のワークスペースが操作開始時から変更されました。",
 			);
 		}
 	}
@@ -462,7 +469,9 @@ export class DlcHost {
 		};
 	}
 	/** Worktree と信頼を再照合し、失敗時の古い実行先や失効した世代の結果を一覧へ残さない。 */
-	private async refreshTargets(workspace: Workspace): Promise<void> {
+	private async refreshTargets(
+		workspace: Pick<Workspace, "worktrees" | "signal" | "assignments">,
+	): Promise<void> {
 		const generation = this.generation;
 		// 再照合が失敗した場合に、古い実行先を開始可能として表示し続けない。
 		this.targets = [];
@@ -481,40 +490,31 @@ export class DlcHost {
 					};
 				},
 			),
-		).then((targets) =>
-			targets.map(
-				({
-					id,
-					directory,
-					name,
-					branch,
-					main,
-					removable,
-					trusted,
-					trust,
-				}) => ({
-					id,
-					directory,
-					name,
-					branch,
-					main,
-					removable,
-					trusted,
-					trust,
-				}),
-			),
 		);
 		if (generation !== this.generation || this.closed) {
 			return;
 		}
-		this.targets = targets;
+		// 内部処理用の `root`・`trust` は送信しない。受信側は通信契約にないキーを拒否する。
+		this.targets = targets.map(
+			({ id, directory, name, branch, main, removable, trusted }) => ({
+				id,
+				directory,
+				name,
+				branch,
+				main,
+				removable,
+				trusted,
+			}),
+		);
 		this.targetTrust = new Map(
 			targets.map((target) => [target.id, target.trust]),
 		);
 		this.restoreAssignments(workspace);
 	}
 	/** 割当は Host の保存値を使い、一覧を更新しても利用者の実行先を選び直さない。 */
-	private restoreAssignments(workspace: Workspace): void {
+	private restoreAssignments(
+		workspace: Pick<Workspace, "assignments">,
+	): void {
 		for (const [intentId, assignment] of Object.entries(
 			workspace.assignments,
 		)) {
@@ -597,15 +597,11 @@ export class DlcHost {
 		}
 	}
 
-	/** 信頼・Worktree の作成削除・実行先選択を扱い、対象に応じてロックと実行予約を使う。 */
+	/** Worktree の作成・削除と実行先の選択を扱い、対象に応じてロックと実行予約を使う。 */
 	private async worktreeAction(
 		workspace: Workspace,
 		message: DlcUiMessage,
 	): Promise<boolean> {
-		if (message.type === "dlc/trust") {
-			await vscode.commands.executeCommand("nerita.trust.manage");
-			return true;
-		}
 		if (message.type === "dlc/worktreeCreate") {
 			// 実行中の Worktree を変更せずに別の Worktree を作り、保留を解消する操作を提供する。
 			const target = await workspace.repository.locked(() =>
@@ -634,7 +630,7 @@ export class DlcHost {
 				message.intentId !== this.selectedId ||
 				this.selected?.projection().revision !== message.revision;
 			if (staleSelection) {
-				throw new Error("Intent の選択または版が変更されています。");
+				throw new Error("Intent の選択または保存内容が変更されています。再読み込みしてください。");
 			}
 			await this.assign(
 				workspace,
@@ -661,8 +657,15 @@ export class DlcHost {
 			await this.select(workspace, selectedId);
 		}
 	}
-	/** 表示・モード・再読込みを VS Code の画面操作へ接続し、保存操作が不要な要求を処理する。 */
+	/** 信頼管理・表示・モード切替・再読み込みの要求を、対応する画面操作や状態更新へ振り分ける。 */
 	private async presentation(message: DlcUiMessage): Promise<boolean> {
+		if (message.type === "dlc/trust") {
+			await vscode.commands.executeCommand(
+				"nerita.trust.manage",
+				this.backend,
+			);
+			return true;
+		}
 		if (message.type === "dlc/open") {
 			await vscode.commands.executeCommand("nerita.dlc.openWorkspace");
 			return true;
@@ -701,11 +704,11 @@ export class DlcHost {
 		message: Extract<DlcUiMessage, { type: "dlc/backend" }>,
 	): void {
 		if (message.intentId !== (this.selectedId ?? null)) {
-			throw new Error("Intent の選択または版が変更されています。");
+			throw new Error("選択中の Intent が変更されています。再読み込みしてください。");
 		}
 		const currentRevision = this.selected?.projection().revision ?? null;
 		if (message.revision !== currentRevision) {
-			throw new Error("Intent の選択または版が変更されています。");
+			throw new Error("Intent の保存内容が変更されています。再読み込みしてください。");
 		}
 		const running =
 			this.selectedId !== undefined &&
@@ -734,6 +737,9 @@ export class DlcHost {
 			this.backend = message.backend;
 		}
 		await this.context.globalState.update("dlc.backend", message.backend);
+		if (!this.workspace && this.workspaceOpen) {
+			await this.read();
+		}
 		this.publish();
 		return true;
 	}
@@ -921,7 +927,7 @@ export class DlcHost {
 		message: Extract<DlcUiMessage, { type: "dlc/attempt" }>,
 	): Promise<void> {
 		if (message.intentId !== this.selectedId) {
-			throw new Error("Intent が変更されています。");
+			throw new Error("選択中の Intent が変更されています。対象を選び直してください。");
 		}
 		const selection = this.runtime.beginAttemptSelection(message.intentId);
 		const active = this.runtime.activeDlc();
@@ -1177,12 +1183,16 @@ export class DlcHost {
 		if (this.closed) {
 			return;
 		}
-		const workspace = await this.workspace;
-		if (!workspace) {
-			return;
-		}
+		const workspace = await this.workspace?.catch(() => undefined);
 		await this.trust.waitForChanges();
 		if (generation !== this.generation) {
+			return;
+		}
+		if (!workspace) {
+			if (this.workspaceOpen) {
+				this.error = null;
+				await this.read();
+			}
 			return;
 		}
 		await this.refreshTargets(workspace);

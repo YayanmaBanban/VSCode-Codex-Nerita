@@ -130,7 +130,7 @@ async function gitTargets(cwd: string, command: string, workspace: string) {
 		);
 		if (matchesContainsPath) {
 			throw new Error(
-				"Git 設定の参照が Workspace 外です。HTTPS URL を指定してください。",
+				"Git 設定の参照先がワークスペースの外にあります。HTTPS URL を指定してください。",
 			);
 		}
 		return remoteUrls(await gitConfigText(config), remotes);

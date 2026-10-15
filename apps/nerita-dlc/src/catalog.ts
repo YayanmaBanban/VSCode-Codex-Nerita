@@ -152,7 +152,7 @@ export const stageCatalog: readonly StageDefinition[] = rows.map(
 export function validateCatalog(catalog: readonly StageDefinition[]): void {
 	const ids = catalog.map((stage) => stage.id);
 	if (catalog.length !== 33 || new Set(ids).size !== 33) {
-		throw new Error("ステージカタログは重複のない33件が必要です。");
+		throw new Error("ステージカタログには、重複のない33件のステージが必要です。");
 	}
 	for (const [index, stage] of catalog.entries()) {
 		const matchesId =

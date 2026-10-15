@@ -37,13 +37,13 @@ export async function resolveTrustedExtensions(
 
 		if (path !== resolve(input)) {
 			throw new Error(
-				`信頼するPi拡張はcanonicalな単一ファイルで指定してください: ${input}`,
+				`Pi 拡張は、実際のファイルの絶対パスで指定してください: ${input}`,
 			);
 		}
 		const fileInfo = await stat(path);
 		if (!fileInfo.isFile()) {
 			throw new Error(
-				`信頼するPi拡張はcanonicalな単一ファイルで指定してください: ${input}`,
+				`信頼する Pi 拡張には通常のファイルを指定してください: ${input}`,
 			);
 		}
 		const matchesValue = await isRootRestricted(path, roots, rootTrusted);
@@ -56,7 +56,7 @@ export async function resolveTrustedExtensions(
 			roots.some((root) => containsPath(root, path));
 		if (matchesRootTrusted) {
 			throw new Error(
-				"workspace内のPi拡張にはWorkspace Trustも必要です。",
+				"ワークスペース内の Pi 拡張には、ワークスペースの信頼設定も必要です。",
 			);
 		}
 		result.push(path);

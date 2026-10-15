@@ -54,7 +54,7 @@ export function outputReferences(task: string) {
 /** 未知の設定項目や未対応の結果参照構文を、実行前の検証で拒否する。 */
 export function parseWorkflow(text: string): Workflow {
 	if (text.length > 262144) {
-		throw new Error("ワークフロー定義が上限を超えています。");
+		throw new Error("ワークフロー定義は262144文字以内にしてください。");
 	}
 	return validateWorkflow(parse(text));
 }
@@ -71,7 +71,7 @@ export function validateWorkflow(value: unknown): Workflow {
 	}
 	for (const output of definition.outputs) {
 		if (!steps.has(output)) {
-			throw new Error(`出力先がありません: ${output}`);
+			throw new Error(`出力するステップが定義されていません: ${output}`);
 		}
 	}
 	const ordered: WorkflowStep[] = [];
@@ -105,7 +105,7 @@ function validateStep(step: WorkflowStep, steps: Map<string, WorkflowStep>) {
 		[...steps.values()].filter((other) => other.resume === step.resume)
 			.length > 1;
 	if (matchesIsNonEmptyString) {
-		throw new Error(`同じ完了時点から二重に再開できません: ${step.resume}`);
+		throw new Error(`同じステップの会話を複数のステップで再開することはできません: ${step.resume}`);
 	}
 }
 
@@ -118,7 +118,7 @@ function validateMode(step: WorkflowStep) {
 		throw new Error("resume は agent・fork と併用できません。");
 	}
 	if (!isNonEmptyString(step.resume) && !isNonEmptyString(step.agent)) {
-		throw new Error(`agent がありません: ${step.id}`);
+		throw new Error(`再開する会話を指定しない場合は、実行するエージェントを指定してください: ${step.id}`);
 	}
 }
 

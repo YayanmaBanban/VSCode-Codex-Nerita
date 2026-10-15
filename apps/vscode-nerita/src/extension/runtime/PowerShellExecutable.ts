@@ -37,7 +37,7 @@ function candidates(name: PowerShellKind): string[] {
 	if (name === "powershell") {
 		const root = process.env.SystemRoot;
 		if (!isNonEmptyString(root) || !isAbsolute(root)) {
-			throw new Error("WindowsのSystemRootを解決できません。");
+			throw new Error("環境変数 `SystemRoot` に Windows のシステムフォルダの絶対パスを指定してください。");
 		}
 		return [join(root, "System32/WindowsPowerShell/v1.0/powershell.exe")];
 	}

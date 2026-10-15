@@ -62,7 +62,7 @@ async function collectPackages(source, packages) {
 				continue;
 			}
 			throw new Error(
-				`${manifest.name}: 実行依存 ${name} が見つかりません。`,
+				`${manifest.name}: 実行に必要な依存パッケージ ${name} が見つかりません。`,
 			);
 		}
 		const dependencyManifest = JSON.parse(

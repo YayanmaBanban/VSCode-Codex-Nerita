@@ -45,13 +45,13 @@ async function resetRuntime(projectRoot) {
 		path.relative(projectRoot, target) !== path.join("dist", "runtime");
 	if (unsafeDistribution) {
 		throw new Error(
-			"runtime の出力先がプロジェクト内の生成先ではありません。",
+			"ランタイムの出力先が所定の dist/runtime ではないか、リンクを経由しています。",
 		);
 	}
 	try {
 		const linkedTarget = (await fs.lstat(target)).isSymbolicLink();
 		if (linkedTarget) {
-			throw new Error("runtime にリンクは使用できません。");
+			throw new Error("ランタイムの出力先にシンボリックリンクは使用できません。");
 		}
 	} catch (error) {
 		if (error.code !== "ENOENT") {
@@ -79,7 +79,7 @@ async function packageRuntime() {
 		generated.experimental !== false
 	) {
 		throw new Error(
-			"Codex の依存を完全固定し、pnpm codex:generate を実行してください。",
+			"Codex の依存バージョンを固定し、pnpm codex:generate でバージョン情報と配布設定を再生成してください。",
 		);
 	}
 	// 入力パッケージを解決してから生成先を更新する。

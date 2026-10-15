@@ -267,7 +267,7 @@ export class BackendRuntime implements BackendSession {
 		value: Extract<UiMessage, { type: "prompt/send" }>,
 	): Promise<void> {
 		if (this.chatStarting) {
-			throw new Error("実行の開始中です。完了後に再試行してください。");
+			throw new Error("実行の開始処理中です。開始処理の完了後に再試行してください。");
 		}
 		this.chatStarting = true;
 		try {
@@ -635,7 +635,7 @@ export class BackendRuntime implements BackendSession {
 	/** 表示要求の受付時に世代を確定し、遅い履歴取得が新しい選択を上書きしないようにする。 */
 	beginAttemptSelection(intentId: string): number {
 		if (this.selectedIntent !== intentId) {
-			throw new Error("Intent が変更されています。");
+			throw new Error("選択中の Intent が変更されています。対象を選び直してください。");
 		}
 		return ++this.attemptSelection;
 	}
@@ -705,7 +705,7 @@ export class BackendRuntime implements BackendSession {
 				(active) => active.intentId === input.intentId,
 			);
 		if (matchesDisposed) {
-			throw new Error("DLC は既に実行中、または終了しています。");
+			throw new Error("この Intent は既に実行中か、DLC が終了しています。");
 		}
 		signal.throwIfAborted();
 		const active = this.startDlcSession(input, signal, reservation);
@@ -838,7 +838,7 @@ export class BackendRuntime implements BackendSession {
 
 			if (cwd === null) {
 				throw new Error(
-					"DLC とバックエンドのワークスペースが一致しません。",
+					"バックエンドの作業フォルダを取得できません。",
 				);
 			}
 			const connectedRoot = await realpath(cwd);

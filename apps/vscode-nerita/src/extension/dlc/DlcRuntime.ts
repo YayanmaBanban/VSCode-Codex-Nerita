@@ -69,7 +69,7 @@ export class DlcRuntime implements NeritaRuntimePort {
 			request.policy !== "workspace-inherit";
 		if (matchesContinuity) {
 			throw new Error(
-				"この Runtime は新規実行と既存のワークスペース方針だけに対応しています。",
+				"DLC では新しい会話で実行し、ワークスペースの既存設定を引き継ぐ必要があります。",
 			);
 		}
 		signal.throwIfAborted();

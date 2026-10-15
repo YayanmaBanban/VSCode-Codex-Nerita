@@ -15,6 +15,7 @@ export function useDlcWorkspace(bridge: Bridge | (() => Bridge)) {
 	const editor = useDlcEditor(getBridge);
 	const creation = useIntentCreation(getBridge, () => dlc.view);
 	const selection = useIntentSelection(getBridge, () => dlc.view);
+	const removals = useWorktreeRemoval(getBridge);
 	const newIntent = $derived(
 		creation.creating || dlc.view.intents.length === 0,
 	);
@@ -41,6 +42,7 @@ export function useDlcWorkspace(bridge: Bridge | (() => Bridge)) {
 			return dlc.view;
 		},
 		editor,
+		removals,
 		creation,
 		get newIntent() {
 			return newIntent;
@@ -72,6 +74,55 @@ export function useDlcWorkspace(bridge: Bridge | (() => Bridge)) {
 			if (selected) {
 				editor.toggle(selected.intentId, phase, expanded);
 			}
+		},
+	};
+}
+
+/** 削除要求を応答まで保持し、無関係な更新では処理中の表示を解除しない。 */
+function useWorktreeRemoval(getBridge: () => Bridge) {
+	let requests = $state.raw<Record<string, string>>({});
+	/** 削除要求の失敗、または対象が一覧からなくなったことを確認して待機状態を解除する。 */
+	function receive(message: HostMessage) {
+		if (message.type === "request/failed") {
+			requests = Object.fromEntries(
+				Object.entries(requests).filter(
+					([, id]) => id !== message.requestId,
+				),
+			);
+		} else if (message.type === "dlc/state") {
+			const remaining = new Set(
+				message.view.targets.map((target) => target.id),
+			);
+			requests = Object.fromEntries(
+				Object.entries(requests).filter(([targetId]) =>
+					remaining.has(targetId),
+				),
+			);
+		}
+	}
+	// 接続の切替や破棄では旧要求の待機と購読を残さない。
+	$effect.pre(() => {
+		const bridge = getBridge();
+		untrack(() => {
+			requests = {};
+		});
+		return guardedSubscription(bridge, receive);
+	});
+	return {
+		pending(this: void, targetId: string) {
+			return requests[targetId] !== undefined;
+		},
+		remove(this: void, targetId: string) {
+			if (requests[targetId] !== undefined) {
+				return;
+			}
+			const requestId = crypto.randomUUID();
+			requests = { ...requests, [targetId]: requestId };
+			getBridge().postMessage({
+				type: "dlc/worktreeRemove",
+				requestId,
+				targetId,
+			});
 		},
 	};
 }
@@ -133,7 +184,7 @@ function useIntentCreation(getBridge: () => Bridge, getView: () => DlcView) {
 	};
 }
 
-/** 解除済みの接続から後着した応答を、選択と作成の待機状態へ渡さない。 */
+/** 解除済みの接続から遅れて届いた応答を、選択・作成・削除の待機状態へ渡さない。 */
 function guardedSubscription(
 	bridge: Bridge,
 	receive: (message: HostMessage) => void,

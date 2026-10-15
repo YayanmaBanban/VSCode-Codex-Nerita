@@ -256,7 +256,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			this.cancel();
 			return;
 		}
-		throw new Error("この操作はPiの最小版では対応していません。");
+		throw new Error("この操作は Pi では利用できません。");
 	}
 
 	/** 認証中の再接続・送信を止め、古い接続の結果を公開しない。 */
@@ -302,7 +302,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		} catch {
 			// プロバイダーの例外は認証値を含む可能性があるため、そのまま表示しない。
 			throw new Error(
-				"Piの認証・モデル・推論レベル設定を完了できませんでした。取消または設定内容を確認してください。",
+				"Pi の認証・モデル・推論レベルの設定を完了できませんでした。操作を取り消していないか、設定内容に誤りがないか確認してください。",
 			);
 		} finally {
 			if (this.authAbort === abort) {
@@ -369,7 +369,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 					(option) => option.id === message.configId,
 				));
 		if (matchesType7) {
-			throw new Error("現在のPiモデル・推論レベル設定ではありません。");
+			throw new Error("操作対象の会話または設定項目が、現在の表示と一致しません。");
 		}
 	}
 }

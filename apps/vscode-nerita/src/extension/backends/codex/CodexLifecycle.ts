@@ -278,7 +278,7 @@ export class CodexLifecycle {
 	): Promise<void> {
 		try {
 			if (!isNonEmptyString(result.thread.id)) {
-				throw new Error("Codex の実行先が要求先と一致しません。");
+				throw new Error("Codex が返した会話 ID が空です。");
 			}
 			const connectedRoot = trustKey(await realpath(result.cwd));
 			const requestedRoot = trustKey(await realpath(cwd));

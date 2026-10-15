@@ -162,7 +162,7 @@ export class PiAccount {
 			.available(available)
 			.find((item) => item.provider === value);
 		if (!model) {
-			throw new Error("利用可能なPi providerを選択してください。");
+			throw new Error("利用可能な Pi のプロバイダーを選択してください。");
 		}
 		signal.throwIfAborted();
 		const matchesProvider =

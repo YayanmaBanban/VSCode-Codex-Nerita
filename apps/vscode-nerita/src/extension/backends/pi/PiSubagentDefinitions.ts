@@ -153,7 +153,7 @@ async function readDefinitions(
 	}
 	const matchesContainsPath = !containsPath(await realpath(base), root);
 	if (matchesContainsPath) {
-		throw new Error("サブエージェント定義のディレクトリが範囲外です。");
+		throw new Error("サブエージェント定義の保存フォルダが、指定された基準フォルダの外を参照しています。");
 	}
 	const definitions: PiSubagentDefinition[] = [];
 	for (const file of await subagentFiles(root)) {
@@ -161,7 +161,7 @@ async function readDefinitions(
 			!containsPath(root, file) || (await stat(file)).size > 65536;
 		if (matchesContainsPath2) {
 			throw new Error(
-				"サブエージェント定義の範囲またはサイズが不正です。",
+				"サブエージェント定義が保存フォルダの外を参照しているか、64 KiB の上限を超えています。",
 			);
 		}
 		const parsed = sdk.parseFrontmatter<Record<string, unknown>>(
@@ -179,7 +179,7 @@ async function readDefinitions(
 				? {}
 				: {
 						unavailableReason:
-							"外部 runner は Nerita では非対応です。",
+							"外部ランナーを指定したエージェントは、Nerita では実行できません。",
 					}),
 			...(tools === undefined
 				? {}

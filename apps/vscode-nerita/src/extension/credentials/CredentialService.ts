@@ -31,7 +31,7 @@ export class CredentialService {
 	private readonly bindingStores = new Map<string, BindingStore>();
 	private bwsPending = Promise.resolve();
 	private mcp: Promise<SecretAuthBackend> | undefined;
-	/** 秘密値は SecretStorage、アカウント索引と保存モードは globalState に分けて保持する。 */
+	/** 秘密値は `SecretStorage` に、アカウント索引と保存モードは `globalState` に分けて保持する。 */
 	constructor(
 		private readonly context: Pick<
 			vscode.ExtensionContext,

@@ -11,7 +11,7 @@ export function commandTrustTargets(call: ToolCall): string[] {
 	const tokens =
 		command.match(/"[^"\r\n]*"|'[^'\r\n]*'|[^\s;|&()<>]+/g) ?? [];
 	if (tokens.length > 256) {
-		throw new Error("コマンドのTrust対象が多すぎます。");
+		throw new Error("コマンドの要素数が256件を超えているため、信頼する対象を特定できません。");
 	}
 	const targets: string[] = [];
 	for (const [index, raw] of tokens.entries()) {
@@ -21,7 +21,7 @@ export function commandTrustTargets(call: ToolCall): string[] {
 			continue;
 		}
 		if (/[$`{}*?]/.test(token) || token.startsWith("~")) {
-			throw new Error("動的な対象パスのTrustを解決できません。");
+			throw new Error("変数やワイルドカードなどを含むパスは、信頼する対象を特定できません。");
 		}
 		targets.push(resolve(call.cwd, token));
 	}
@@ -38,7 +38,7 @@ function checkedCommand(command: unknown): string {
 			command,
 		);
 	if (matchesTest) {
-		throw new Error("動的なコード実行のTrustを解決できません。");
+		throw new Error("動的に生成・実行するコードは、信頼する対象を特定できません。");
 	}
 	if (/\bgit\s+(?:[^\s;|]+\s+)*clone\b/i.test(command)) {
 		throw new Error(

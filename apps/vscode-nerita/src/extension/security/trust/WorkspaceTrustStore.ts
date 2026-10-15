@@ -391,7 +391,7 @@ async function validateTrustRoot(
 	}
 	const info = await stat(root);
 	if (!info.isDirectory()) {
-		throw new Error("Trust対象はディレクトリにしてください。");
+		throw new Error("信頼する対象にはフォルダを指定してください。");
 	}
 	const identity = {
 		dev: info.dev,
@@ -400,7 +400,7 @@ async function validateTrustRoot(
 	};
 	if (expected && JSON.stringify(identity) !== JSON.stringify(expected)) {
 		throw new Error(
-			"Trust確認中に対象が変更されました。もう一度確認してください。",
+			"信頼の確認中に対象が変更されました。もう一度確認してください。",
 		);
 	}
 	return identity;

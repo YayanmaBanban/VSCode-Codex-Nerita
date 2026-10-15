@@ -56,7 +56,7 @@ export async function readWorkspaceFile(
 	try {
 		const info = await stat(file);
 		if (!info.isFile() || info.size > 262144) {
-			throw new Error(`設定ファイルのサイズが不正です: ${relative}`);
+			throw new Error(`設定ファイルが通常のファイルではないか、256 KiB の上限を超えています: ${relative}`);
 		}
 		return await readFile(file, "utf8");
 	} catch (error) {

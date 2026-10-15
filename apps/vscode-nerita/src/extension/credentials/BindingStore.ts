@@ -33,11 +33,11 @@ export class BindingStore {
 		try {
 			const directoryInfo = await lstat(directory);
 			if (directoryInfo.isSymbolicLink()) {
-				throw new Error("Binding の保存先が Workspace 外です。");
+				throw new Error("Binding の保存先にシンボリックリンクは使用できません。");
 			}
 			const actualParent = dirname(await realpath(directory));
 			if (actualParent !== root) {
-				throw new Error("Binding の保存先が Workspace 外です。");
+				throw new Error("Binding の保存先である .nerita フォルダの実際の配置先が、ワークスペース直下ではありません。");
 			}
 		} catch (error) {
 			if (fsErrorCode(error) !== "ENOENT" || create) {

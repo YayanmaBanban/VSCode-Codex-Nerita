@@ -93,7 +93,7 @@ export class DlcController {
 	private assertAvailable() {
 		if (this.active || this.pendingSaves > 0 || this.storageFailed) {
 			throw new Error(
-				"実行または保存中、または保存に失敗しています。状態を再読込みしてください。",
+				"DLC は実行中または保存中か、直前の保存に失敗しています。状態を再読み込みしてください。",
 			);
 		}
 	}

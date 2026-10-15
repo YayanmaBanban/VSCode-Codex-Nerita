@@ -283,7 +283,7 @@ async function probePnpm(context, safeCwd) {
 	const pnpmExe = process.env.PNPM_EXE ?? process.env.npm_execpath;
 	if (!pnpmExe || path.extname(pnpmExe).toLowerCase() !== ".exe") {
 		throw new Error(
-			"PNPM_EXE に pnpm 単体実行ファイルを指定してください。",
+			"`PNPM_EXE` に pnpm の単体実行ファイル（.exe）を指定してください。",
 		);
 	}
 	const pnpmCjs = path.join(root, "config/run-pnpm.cjs");

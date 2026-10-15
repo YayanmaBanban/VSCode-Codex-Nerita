@@ -28,7 +28,7 @@ export type ToolAuthorizer = (
 /** シェル実行の可否を確認し、Host の読取り・一覧操作以外は承認を求める。 */
 export function assessToolCall(call: ToolCall): "allow" | "ask" {
 	if ((call.command || call.hostShell === true) && !call.policy.shell) {
-		throw new Error("このroleではShell実行が禁止されています。");
+		throw new Error("この役割ではシェルの実行が禁止されています。");
 	}
 	const matchesCommand = !(
 		!call.command &&

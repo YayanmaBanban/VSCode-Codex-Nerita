@@ -33,7 +33,7 @@ export function createPiSandboxPowerShellTool(
 		executionMode: "sequential",
 		async execute(_id, params, signal, update) {
 			if (!paths.policy.shell) {
-				throw new Error("このroleではShell実行が禁止されています。");
+				throw new Error("この役割ではシェルの実行が禁止されています。");
 			}
 			const { command, timeout } = powerShellInput.parse(params);
 			const executionSignal = signal
@@ -44,7 +44,7 @@ export function createPiSandboxPowerShellTool(
 			const executable = await realpath(shell.executable);
 			if (executable !== shell.executable) {
 				throw new Error(
-					"Shell実行ファイルの参照先が変更されました。Piへ再接続してください。",
+					"シェル実行ファイルの参照先が変更されました。Pi へ再接続してください。",
 				);
 			}
 			const matchesSome = paths.policy.writableRoots.some((root) =>
@@ -52,7 +52,7 @@ export function createPiSandboxPowerShellTool(
 			);
 			if (matchesSome) {
 				throw new Error(
-					"workspace内のPowerShell実行ファイルは使用できません。",
+					"ワークスペース内の PowerShell 実行ファイルは使用できません。",
 				);
 			}
 			const approved = await approveToolCall(

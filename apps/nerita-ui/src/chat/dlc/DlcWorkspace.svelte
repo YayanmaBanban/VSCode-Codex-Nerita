@@ -1,6 +1,8 @@
 <!-- Intent 一覧と Phase 作業領域を組み立て、実行の寿命は Host に委ねる。 -->
 <script lang="ts">
 	import type { Bridge } from "@nerita/shared/bridge";
+	import { cn } from "cnfast";
+	import { noticeClass } from "../../ui/actionNoticeModel";
 	import IntentForm from "./IntentForm.svelte";
 	import IntentOverview from "./IntentOverview.svelte";
 	import DlcPhases from "./DlcPhases.svelte";
@@ -19,37 +21,22 @@
 
 <main
 	aria-label="DLC Workspace"
-	class="dlc-workspace dlc-panel @container h-dvh text-[12px]"
+	class="dlc-workspace dlc-panel @container flex h-dvh flex-col text-[12px]"
 >
+	{#if error !== null}
+		<div role="alert" class={cn(noticeClass, "shrink-0 break-words")}>
+			{error}
+		</div>
+	{/if}
 	<div
-		class="grid h-full grid-cols-[200px_minmax(0,1fr)] @max-[600px]:grid-cols-1 @max-[600px]:grid-rows-[auto_minmax(0,1fr)]"
+		class={cn(
+			"grid min-h-0 flex-1 grid-cols-[200px_minmax(0,1fr)]",
+			"@max-[600px]:grid-cols-1 @max-[600px]:grid-rows-[auto_minmax(0,1fr)]",
+		)}
 	>
 		<DlcIntentList {ui} />
 		<div class="min-h-0 min-w-0 overflow-auto p-5 @max-[600px]:p-3">
 			<DlcWorkspaceHeader {ui} />
-			{#if error !== null}<div
-					role="alert"
-					class="dlc-error mb-3 rounded-md border border-solid border-panel-border"
-				>
-					{error}
-					<div class="dlc-toolbar mt-2">
-						<button
-							type="button"
-							onclick={() =>
-								ui.send({
-									type: "dlc/read",
-									requestId: crypto.randomUUID(),
-								})}>状態を再確認</button
-						><button
-							type="button"
-							onclick={() =>
-								ui.send({
-									type: "dlc/recover",
-									requestId: crypto.randomUUID(),
-								})}>保存記録から復旧</button
-						>
-					</div>
-				</div>{/if}
 			{#if ui.view.active && ui.view.active.intentId !== ui.selected?.intentId}<p
 					role="status"
 					class="mb-3 text-muted"

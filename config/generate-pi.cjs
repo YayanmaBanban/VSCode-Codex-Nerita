@@ -47,12 +47,12 @@ async function main() {
 		aiManifest.version !== version
 	) {
 		throw new Error(
-			"指定版・固定依存・インストール済みの Pi SDK・pi-ai のバージョンを揃えてください。",
+			"Pi SDK の依存定義と、インストール済みの Pi SDK・pi-ai のバージョンを揃えてください。",
 		);
 	}
 	if (requested !== undefined && requested !== version) {
 		throw new Error(
-			"指定版・固定依存・インストール済みの Pi SDK・pi-ai のバージョンを揃えてください。",
+			"指定した Pi SDK のバージョンと、インストール済みのバージョンが一致しません。",
 		);
 	}
 	const contractPath = path.join(__dirname, "pi-sdk-contract.json");

@@ -149,7 +149,7 @@ function approvedLsOperations(
 					child.includes("\\") ||
 					child === "..";
 				if (child !== "" && nestedChild) {
-					throw new Error("一覧の対象外です。");
+					throw new Error("一覧で参照できるのは、承認されたフォルダとその直下の項目だけです。");
 				}
 				// 子のリンク先へ追従せず、ディレクトリ項目自体の情報だけを使用する。
 				return lstat(join(target, child));

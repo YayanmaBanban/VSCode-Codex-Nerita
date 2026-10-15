@@ -8,7 +8,7 @@ export async function resolveCodexExecutable(
 	extensionPath: string,
 ): Promise<string> {
 	if (process.platform !== "win32" || process.arch !== "x64") {
-		throw new Error("Codex App Server は Windows x64 に対応しています。");
+		throw new Error("Codex App Server の実行には Windows x64 が必要です。");
 	}
 	const root = path.join(extensionPath, "dist/runtime/node_modules/@openai");
 	const project: unknown = JSON.parse(

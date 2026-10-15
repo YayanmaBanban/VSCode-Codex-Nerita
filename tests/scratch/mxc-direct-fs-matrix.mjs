@@ -1,14 +1,13 @@
-// Nerita の MxcExecutor / MxcPolicy を一切通さず、
-// @microsoft/mxc-sdk を直接使って filesystem isolation を確認する。
-//
-// 実行:
-//   node tests/scratch/mxc-sdk-direct-fs-matrix.mjs
-//
-// 見たいこと:
-//   - 明示 RW path は read/write できる
-//   - 明示 RO path は read のみできる
-//   - policy に一切含まれない control path は read/write とも拒否される
-//   - workspace volume root を RO に加えた時だけ control read が通ってしまうか
+/*
+ * Nerita の `MxcExecutor`・`MxcPolicy` を通さず、@microsoft/mxc-sdk でファイルアクセスの制限を確認する。
+ * 実行コマンドは `node tests/scratch/mxc-direct-fs-matrix.mjs`。
+ *
+ * 確認する内容は次のとおり。
+ * - 読み書きを許可したパスでは、読み取り・書き込みができること。
+ * - 読み取りだけを許可したパスでは、書き込みが拒否されること。
+ * - 個別に許可していない比較用パスでは、読み取り・書き込みが拒否されること。
+ * - ワークスペースがあるドライブのルートに読み取りを許可した場合だけ、比較用パスも読み取れるか。
+ */
 
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -52,7 +51,7 @@ function commandEnvironment(nodeDirectory, sandboxHome) {
 	const systemRoot = process.env.SystemRoot;
 
 	if (!systemRoot) {
-		throw new Error("SystemRoot がありません。");
+		throw new Error("環境変数 `SystemRoot` が設定されていません。");
 	}
 
 	return [
@@ -74,7 +73,7 @@ function commandEnvironment(nodeDirectory, sandboxHome) {
 			systemRoot,
 		].join(path.delimiter)}`,
 
-		// 必須ではないが、Host profileを参照させない。
+		// 起動の必須条件ではないが、ホストのユーザープロファイルを参照させない。
 		`USERPROFILE=${sandboxHome}`,
 		`APPDATA=${sandboxHome}`,
 		`HOME=${sandboxHome}`,
@@ -163,7 +162,7 @@ async function spawnAndCollect(sdk, config, cwd) {
 
 		child.once("close", (code) => {
 			if (code === null) {
-				reject(new Error("MXC process の終了コードを取得できません。"));
+				reject(new Error("MXC プロセスの終了コードを取得できません。"));
 				return;
 			}
 
@@ -236,13 +235,8 @@ function createCaseConfig({
 	}
 
 	/*
-	 * Nerita と同じ方針:
-	 *
-	 * filesystem:
-	 *   workspace       RW
-	 *   volume root     RO compatibility grant
-	 *
-	 * ただし control は明示的には一切入れない。
+	 * ワークスペースに相当する `rw` は読み書きを許可し、検証条件に応じて同じドライブのルートの読み取りも許可する。
+	 * 比較用の `control` は個別には許可リストへ追加しない。
 	 */
 	const config = sdk.createConfigFromPolicy(
 		{
@@ -293,11 +287,9 @@ function configureLeastPrivilege(config) {
 	};
 
 	/*
-	 * leastPrivilege は BaseContainer/PSEC では表現できないため、
-	 * MXC は AppContainer fallback tier を選択する。
+	 * BaseContainer の代わりに AppContainer を使う条件として、`leastPrivilege` を指定する。
 	 *
-	 * T3 AppContainer+DACL に落ちた場合、policy path のHost DACLを
-	 * 一時変更する必要があるため明示的に許可する。
+	 * DACL を使う方式（T3）への切り替えに備え、ポリシー対象パスのホスト側 DACL の一時変更も明示的に許可する。
 	 */
 	config.fallback = {
 		...(config.fallback ?? {}),
@@ -398,10 +390,8 @@ async function runCase(options) {
 
 async function runWithoutVolumeRoot({ sdk, rw, ro, control, nodeExe }) {
 	/*
-	 * Case A:
-	 *
-	 * Issue #1109 の対照。
-	 * このHostではcwd解決に失敗する可能性がある。
+	 * 条件 A はドライブのルートに読み取りを許可せず、Issue #1109 の比較対象にする。
+	 * このホスト環境では、作業フォルダのパスの解決に失敗する可能性がある。
 	 */
 	let withoutRoot;
 
@@ -452,13 +442,13 @@ function reportOutsideRead(withRoot) {
 
 		console.error(
 			`
-Nerita の MxcExecutor / MxcPolicy を通していない
-@microsoft/mxc-sdk 直接実行でも、
-policy に含めていない control path を読み取れました。
+Nerita の実行処理やポリシー変換を通さず、
+@microsoft/mxc-sdk を直接使用した場合も、
+個別には読み取りを許可していない比較用パスを読み取れました。
 
-この場合、ResourceGrant の問題ではありません。
-MXC / ProcessContainer / Windows filesystem enforcement
-の再現として扱えます。
+Nerita のリソース権限追加処理を経由せずに再現しています。
+SDK に渡した設定と、MXC・ProcessContainer・Windows による
+ファイルアクセス制御を確認するための再現結果です。
 `.trim(),
 		);
 	}
@@ -468,10 +458,7 @@ async function runMatrixCases({ sdk, rw, ro, control, nodeExe }) {
 	const withoutRoot = await runWithoutVolumeRoot({ sdk, rw, ro, control, nodeExe });
 
 	/*
-	 * Case B:
-	 *
-	 * Nerita の現在の workspace volume-root compatibility
-	 * grant に近い条件。
+	 * 条件 B はドライブのルートに読み取りを許可し、Nerita のパス解決用の互換設定に近い条件を再現する。
 	 */
 	const withRoot = await runCase({
 		sdk,
@@ -514,13 +501,13 @@ async function runMatrixCases({ sdk, rw, ro, control, nodeExe }) {
 		control,
 		nodeExe,
 
-		// 重要: CではC:\をROに入れない
+		// 条件 C ではドライブのルートに読み取りを許可しない。
 		withVolumeRoot: false,
 
-		// BaseContainerを使わせない
+		// BaseContainer の代わりに AppContainer での実行を要求する。
 		leastPrivilege: true,
 
-		// Node/Winsock互換性をfilesystem検証から除外
+		// Node.js と Winsock の互換性の影響を避け、ファイルアクセスの制限を検証する。
 		useCmd: true,
 	});
 

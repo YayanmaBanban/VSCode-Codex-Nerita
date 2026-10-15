@@ -27,8 +27,13 @@ export function trustPanel(
 	store: WorkspaceTrustStore,
 ) {
 	let panel: vscode.WebviewPanel | undefined;
-	return () => {
+	let selectBackend: ((backend: BackendId) => void) | undefined;
+	return (value?: unknown) => {
+		const backend = value === "pi" || value === "codex" ? value : undefined;
 		if (panel) {
+			if (backend !== undefined) {
+				selectBackend?.(backend);
+			}
 			panel.reveal();
 			return;
 		}
@@ -46,24 +51,18 @@ export function trustPanel(
 		panel = current;
 		const panelState: PanelState = {
 			closed: false,
-			backend: configuredBackend(),
+			backend: backend ?? configuredBackend(),
 		};
 		const pending: PendingRequests = {
 			queue: Promise.resolve(),
 			active: false,
 		};
 		const confirmation = new TrustConfirmationState(store);
-		// `globalState` はプロファイルの `globalStorage` にある VS Code 管理の DB に保存される。
-		const piStoragePath = vscode.Uri.joinPath(
-			context.globalStorageUri,
-			"..",
-			"state.vscdb",
-		).fsPath;
 		const publish = createTrustPublisher(
 			current,
 			store,
 			panelState,
-			piStoragePath,
+			context.globalStorageUri,
 			confirmation,
 		);
 		const unsubscribe = store.onChange(() => {
@@ -71,16 +70,17 @@ export function trustPanel(
 				pending.queue = pending.queue.then(() => publish());
 			}
 		});
-		const receive = current.webview.onDidReceiveMessage(
-			createTrustRequestListener(
-				pending,
-				panelState,
-				store,
-				createTrustRecordUpdater(store, confirmation, panelState),
-				publish,
-				confirmation,
-			),
+		const handleRequest = createTrustRequestListener(
+			pending,
+			panelState,
+			store,
+			createTrustRecordUpdater(store, confirmation, panelState),
+			publish,
+			confirmation,
 		);
+		selectBackend = (backend) =>
+			handleRequest({ type: "refresh", backend });
+		const receive = current.webview.onDidReceiveMessage(handleRequest);
 		current.onDidDispose(() => {
 			panelState.closed = true;
 			confirmation.clear();
@@ -217,9 +217,15 @@ function createTrustPublisher(
 	panel: vscode.WebviewPanel,
 	store: WorkspaceTrustStore,
 	state: PanelState,
-	piStoragePath: string,
+	globalStorageUri: vscode.Uri,
 	confirmation: TrustConfirmationState,
 ) {
+	// `globalState` はプロファイルの `globalStorage` にある VS Code 管理の DB に保存される。
+	const piStoragePath = vscode.Uri.joinPath(
+		globalStorageUri,
+		"..",
+		"state.vscdb",
+	).fsPath;
 	let revision = 0;
 	return async (error: string | null = null, requestId?: string) => {
 		const current = ++revision;

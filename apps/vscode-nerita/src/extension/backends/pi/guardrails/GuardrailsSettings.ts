@@ -52,7 +52,7 @@ export class GuardrailsSettings {
 				).toString();
 		if (matchesFolder) {
 			throw new Error(
-				"workspace直下の .pi/guardrails.json を開いてください。",
+				"ワークスペース直下の .pi/guardrails.json を開いてください。",
 			);
 		}
 		const root = await realpath(folder.uri.fsPath);

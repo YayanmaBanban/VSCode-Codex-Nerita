@@ -42,7 +42,7 @@ export class PiOutputArchive {
 	private pending = new Set<Promise<void>>();
 	private failure: Error | undefined;
 	private saved = new Map<string, OutputRecord>();
-	/** 本文の保存先と、その参照を記録する SessionManager を対にして保持する。 */
+	/** 本文の保存先と、その参照を記録する `SessionManager` を対にして保持する。 */
 	constructor(
 		private manager: SessionManager,
 		private directory: string,

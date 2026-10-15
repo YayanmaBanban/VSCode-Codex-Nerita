@@ -30,6 +30,7 @@
 	let selectionDisabled = $derived(
 		!selected || active || ui.view.assignmentPending,
 	);
+	let targetBlocked = $derived(ui.view.targetBusy && !active);
 	let targetName = $derived(
 		target ? displayName(target) : "現在のワークスペース",
 	);
@@ -78,11 +79,7 @@
 		if (removalDisabled(targetId)) {
 			return;
 		}
-		ui.send({
-			type: "dlc/worktreeRemove",
-			requestId: crypto.randomUUID(),
-			targetId,
-		});
+		ui.removals.remove(targetId);
 	}
 </script>
 
@@ -92,7 +89,7 @@
 		<Popover.Trigger
 			role="combobox"
 			aria-label="DLC の Worktree"
-			disabled={ui.view.assignmentPending}
+			disabled={!selected || ui.view.assignmentPending}
 			class={cn(
 				"flex min-h-[52px] w-full min-w-0 items-center gap-3 rounded-[6px] border border-solid border-input-border bg-transparent px-3 py-3 text-left text-[13px] text-foreground",
 				"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus enabled:hover:bg-settings-hover",
@@ -175,7 +172,8 @@
 							<button
 								type="button"
 								class={rowClass}
-								disabled={selectionDisabled}
+								disabled={selectionDisabled ||
+									ui.removals.pending(item.id)}
 								aria-pressed={target?.id === item.id}
 								onclick={() => selectTarget(item.id)}
 							>
@@ -198,6 +196,7 @@
 							</button>
 							{#if item.removable}<DlcWorktreeDelete
 									name={item.name}
+									pending={ui.removals.pending(item.id)}
 									disabled={removalDisabled(item.id)}
 									onDelete={() => removeWorktree(item.id)}
 								/>{/if}
@@ -269,11 +268,16 @@
 			</SettingsTooltip>
 		{/if}
 	</div>
-	{#if (ui.view.targetBusy && !active) || ui.view.assignmentPending}
+	{#if !selected || targetBlocked || ui.view.assignmentPending}
 		<div
 			class="mt-3 space-y-2 border-0 border-t border-solid border-panel-border pt-3"
 		>
-			{#if ui.view.targetBusy && !active}<p
+			{#if !selected}
+				<p role="status" class="m-0 text-[12px] text-muted">
+					Intentの作成・選択を待っています
+				</p>
+			{/if}
+			{#if targetBlocked}<p
 					role="status"
 					class="m-0 flex items-start gap-1 text-[12px]"
 				>

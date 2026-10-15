@@ -70,7 +70,7 @@ export type ApprovalScope = "process" | Exclude<CommandApprovalScope, "once">;
 /** scope は承認の再利用範囲。秘密値そのものは全 scope で1実行だけ保持する。 */
 export class CredentialLease {
 	private disposed = false;
-	/** 承認範囲と取消しを取得済みの秘密値へ結び付け、一つの実行だけで使用する。 */
+	/** 承認範囲と取消しを取得済みの秘密値へ結び付け、1つの実行だけで使用する。 */
 	constructor(
 		readonly requirement: CredentialRequirement,
 		readonly material: CredentialMaterial,
@@ -81,7 +81,7 @@ export class CredentialLease {
 	use<T>(action: (material: CredentialMaterial) => T): T {
 		this.signal.throwIfAborted();
 		if (this.disposed) {
-			throw new Error("資格情報の利用期限が終了しました。");
+			throw new Error("利用を終了した資格情報は使用できません。");
 		}
 		return action(this.material);
 	}
@@ -121,7 +121,7 @@ export class CredentialBroker {
 		const provider = this.providers.get(binding.provider.type);
 		const candidates = await provider.inspect(requirement, binding, signal);
 		if (candidates.length !== 1) {
-			throw new Error("資格情報の候補を確定できません。");
+			throw new Error("対象に一致する資格情報の候補がないか、複数あります。");
 		}
 		const permission = credentialPermission(requirement, route, binding);
 		const approved = await authorize(

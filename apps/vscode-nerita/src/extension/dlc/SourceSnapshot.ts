@@ -115,14 +115,14 @@ async function sourceFile(root: string, path: string): Promise<Buffer | null> {
 	}
 
 	if (!stat.isFile()) {
-		throw new Error(`ソースを安全に収集できません: ${path}`);
+		throw new Error(`収集対象が通常のファイルではありません: ${path}`);
 	}
 	if (stat.isSymbolicLink()) {
-		throw new Error(`ソースを安全に収集できません: ${path}`);
+		throw new Error(`シンボリックリンクはソースの収集対象にできません: ${path}`);
 	}
 	const resolvedTarget = await realpath(target);
 	if (!containsPath(root, resolvedTarget)) {
-		throw new Error(`ソースを安全に収集できません: ${path}`);
+		throw new Error(`ソースの参照先がリポジトリの外にあります: ${path}`);
 	}
 	if (stat.size > maxBytes) {
 		throw new Error(`ソース収集容量を超えています: ${path}`);

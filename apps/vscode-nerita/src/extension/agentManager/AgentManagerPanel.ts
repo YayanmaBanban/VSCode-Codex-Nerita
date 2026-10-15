@@ -240,7 +240,7 @@ export function registerAgentManager(
 	backend: BackendSession,
 ) {
 	const panels = new Map<string, vscode.WebviewPanel>();
-	/** 選択したルートの管理画面を一つだけ開き、破棄時に購読と登録を回収する。 */
+	/** 選択したルートの管理画面を1つだけ開き、破棄時に購読と登録を回収する。 */
 	const openAgentManager = async () => {
 		try {
 			const selected = await selectLocalWorkspace();

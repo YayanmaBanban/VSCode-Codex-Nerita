@@ -35,7 +35,7 @@ export function mcpHttpUrl(value: string): URL {
 	const url = new URL(value);
 	if (isNonEmptyString(url.username) || isNonEmptyString(url.password)) {
 		throw new Error(
-			"MCP の接続先には HTTPS またはローカル HTTP を指定してください。",
+			"MCP の接続先 URL にユーザー名やパスワードを含めることはできません。",
 		);
 	}
 	const matchesProtocol = !(

@@ -16,7 +16,7 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
 	private unbind: (() => void) | undefined;
 	private initialized = false;
-	/** Workspace 画面の操作を現在の DLC Host と実行状態へ結び付ける。 */
+	/** ワークスペース画面の操作を現在の DLC Host と実行状態へ結び付ける。 */
 	constructor(
 		private context: vscode.ExtensionContext,
 		private host: DlcHost,
@@ -59,11 +59,11 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 				this.panel = undefined;
 				this.host.setWorkspaceOpen(false);
 			},
-		);
-		panel.webview.html = webviewHtml(
-			panel.webview,
-			this.context.extensionUri,
-			"dlc-workspace",
+			webviewHtml(
+				panel.webview,
+				this.context.extensionUri,
+				"dlc-workspace",
+			),
 		);
 		this.host.setWorkspaceOpen(true);
 	}
@@ -138,7 +138,7 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 		});
 	}
 
-	/** 購読とパネルを一度だけ回収し、Workspace の表示が閉じたことを Host へ伝える。 */
+	/** 購読の解除とパネルの破棄を一度だけ行い、ワークスペース画面を閉じたことを Host へ伝える。 */
 	dispose(): void {
 		this.unbind?.();
 		this.unbind = undefined;

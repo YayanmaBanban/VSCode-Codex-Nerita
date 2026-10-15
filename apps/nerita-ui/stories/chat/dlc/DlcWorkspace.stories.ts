@@ -79,6 +79,10 @@ export const LongPressRemoval: Story = {
 			{ timeout: 3000 },
 		);
 		await user.keyboard("{/Enter}");
+		await expect(document.getByRole("status")).toHaveTextContent("削除中");
+		await expect(
+			document.queryByRole("button", { name: "work-newを削除" }),
+		).not.toBeInTheDocument();
 		await expect(
 			bridge.sent.filter(
 				(message) => message.type === "dlc/worktreeRemove",
@@ -135,6 +139,68 @@ export const RunningWorktreeRemoval: Story = {
 		await userEvent.keyboard("{Escape}");
 	},
 };
+
+export const RemovalPending: Story = {
+	args: { initialView: environmentView() },
+	play: async ({ canvasElement }) => {
+		const { bridge, document } =
+			await requestWorktreeRemoval(canvasElement);
+		bridge.emit({ type: "dlc/state", view: environmentView() });
+		await expect(document.getByRole("status")).toHaveTextContent("削除中");
+		await expect(
+			document.queryByRole("button", { name: "work-newを削除" }),
+		).not.toBeInTheDocument();
+	},
+};
+
+export const RemovalFailed: Story = {
+	args: { initialView: environmentView() },
+	play: async ({ canvasElement }) => {
+		const { bridge, document } =
+			await requestWorktreeRemoval(canvasElement);
+		const request = bridge.sent.at(-1);
+		if (request?.type !== "dlc/worktreeRemove") {
+			throw new Error("削除要求がありません");
+		}
+		bridge.emit({
+			type: "request/failed",
+			requestId: request.requestId,
+			error: "削除に失敗しました",
+		});
+		await waitFor(() =>
+			expect(
+				document.getByRole("button", { name: "work-newを削除" }),
+			).toBeEnabled(),
+		);
+		await expect(document.queryByRole("status")).not.toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+	},
+};
+
+/** 長押しで削除を要求し、応答を保留して製品の UI を削除処理中の状態にする。 */
+async function requestWorktreeRemoval(canvasElement: HTMLElement) {
+	const canvas = within(canvasElement);
+	const document = within(canvasElement.ownerDocument.body);
+	const bridge = workspaceBridge(canvasElement);
+	const user = userEvent.setup();
+	await user.click(
+		await canvas.findByRole("combobox", { name: "DLC の Worktree" }),
+	);
+	// `Popover` を開いた直後のフォーカス移動で長押しが中断されないよう、移動完了後に削除ボタンへフォーカスを移す。
+	await waitFor(() =>
+		expect(
+			document.getByRole("button", { name: /現在のワークスペース/ }),
+		).toHaveFocus(),
+	);
+	document.getByRole("button", { name: "work-newを削除" }).focus();
+	await user.keyboard("{Enter>}");
+	await waitFor(
+		() => expect(document.getByRole("status")).toHaveTextContent("削除中"),
+		{ timeout: 3000 },
+	);
+	await user.keyboard("{/Enter}");
+	return { bridge, document };
+}
 
 export const CodexUntrustedWorktree: Story = {
 	play: async ({ canvasElement }) => {
@@ -236,44 +302,61 @@ export const AssignmentSelection: Story = {
 		await waitFor(() =>
 			expect(worktree).toHaveTextContent("現在のワークスペース"),
 		);
-		for (const state of [
-			{ ...assigned, assignmentPending: true },
-			{
-				...assigned,
-				running: [
-					{
-						intentId: first,
-						attemptId: "active-run",
-						targetId: "worktree",
-					},
-				],
-			},
-			{ ...assigned, selected: null },
-		]) {
-			bridge.emit({ type: "dlc/state", view: state });
-			await waitFor(() => expect(backend).toBeDisabled());
-			if (state.assignmentPending) {
-				await waitFor(() => expect(worktree).toBeDisabled());
-			} else {
-				await userEvent.click(worktree);
-				await expect(
-					document.getByRole("button", {
-						name: /現在のワークスペース/,
-					}),
-				).toBeDisabled();
-				await expect(
-					document.getByRole("button", { name: /^work-new$/ }),
-				).toBeDisabled();
-				await expect(
-					document.getByRole("button", {
-						name: "新しいWorktreeを作成",
-					}),
-				).toBeEnabled();
-				await userEvent.keyboard("{Escape}");
-			}
-		}
+		await verifyAssignmentAvailability(canvasElement, assigned);
 	},
 };
+
+/** 保存中・実行中・未選択時の操作可否を Host 応答ごとに確認する。 */
+async function verifyAssignmentAvailability(
+	canvasElement: HTMLElement,
+	assigned: DlcView,
+) {
+	const canvas = within(canvasElement);
+	const document = within(canvasElement.ownerDocument.body);
+	const bridge = workspaceBridge(canvasElement);
+	const backend = canvas.getByRole("combobox", {
+		name: "DLC のバックエンド",
+	});
+	const worktree = canvas.getByRole("combobox", { name: "DLC の Worktree" });
+	for (const state of [
+		{ ...assigned, assignmentPending: true },
+		{
+			...assigned,
+			running: [
+				{
+					intentId: first,
+					attemptId: "active-run",
+					targetId: "worktree",
+				},
+			],
+		},
+		{ ...assigned, selected: null },
+	]) {
+		bridge.emit({ type: "dlc/state", view: state });
+		await waitFor(() => expect(backend).toBeDisabled());
+		if (state.assignmentPending || state.selected === null) {
+			await waitFor(() => expect(worktree).toBeDisabled());
+		} else {
+			await userEvent.click(worktree);
+			await expect(
+				document.getByRole("button", {
+					name: /現在のワークスペース/,
+				}),
+			).toBeDisabled();
+			await expect(
+				document.getByRole("button", {
+					name: "work-new（未信頼）",
+				}),
+			).toBeDisabled();
+			await expect(
+				document.getByRole("button", {
+					name: "新しいWorktreeを作成",
+				}),
+			).toBeEnabled();
+			await userEvent.keyboard("{Escape}");
+		}
+	}
+}
 
 export const SelectionAndCreation: Story = {
 	play: async ({ canvasElement }) => {

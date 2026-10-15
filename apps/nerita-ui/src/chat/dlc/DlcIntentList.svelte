@@ -57,7 +57,7 @@
 	</div>
 	<nav aria-label="Intent の選択" class="flex flex-col gap-2">
 		{#if ui.view.intents.length === 0}<p class="text-muted">
-				Intentを新規作成してください
+				Intentがありません
 			</p>{/if}
 		{#each ui.view.intents as intent (intent.intentId)}
 			{@const selected = intent.intentId === ui.selected?.intentId}

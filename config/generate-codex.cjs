@@ -58,7 +58,7 @@ async function main() {
 		] !== version
 	) {
 		throw new Error(
-			"直接依存の Codex を完全固定し、pnpm install を実行してください。",
+			"Codex の依存バージョンをインストール済みのバージョンに固定し、pnpm install を実行してください。",
 		);
 	}
 	const licenses = await downloadLicenses(version);

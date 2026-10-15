@@ -46,7 +46,7 @@ export async function codexAgentFiles(root: string) {
 		try {
 			const text = await readWorkspaceFile(root, file);
 			if (text === undefined) {
-				throw new Error("定義が削除されました。");
+				throw new Error("Codex エージェントの定義ファイルが見つかりません。");
 			}
 			files[file] = text;
 			const data = definitionSchema.parse(parse(text));

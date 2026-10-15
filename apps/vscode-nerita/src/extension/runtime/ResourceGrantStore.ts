@@ -309,16 +309,16 @@ export function grantable(event: DenialEvent): boolean {
 /** Object Manager パス、親への拡張、junction の差替えを拒否する。 */
 async function safeGrantTarget(target: string): Promise<string> {
 	if (!isAbsolute(target)) {
-		throw new Error("正規化されたファイルパスだけを許可できます。");
+		throw new Error("許可するファイルは絶対パスで指定してください。");
 	}
 	if (normalize(target) !== target) {
 		throw new Error("正規化されたファイルパスだけを許可できます。");
 	}
 	if (target === parse(target).root) {
-		throw new Error("正規化されたファイルパスだけを許可できます。");
+		throw new Error("ドライブや共有フォルダのルート全体へのアクセスは許可できません。");
 	}
 	if (target.includes("\0")) {
-		throw new Error("正規化されたファイルパスだけを許可できます。");
+		throw new Error("許可するファイルパスにヌル文字を含めることはできません。");
 	}
 	const matchesValue = (await realpath(target)) !== target;
 	if (matchesValue) {

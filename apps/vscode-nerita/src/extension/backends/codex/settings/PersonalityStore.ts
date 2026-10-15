@@ -82,7 +82,7 @@ export class PersonalityStore {
 			typeof config.developer_instructions !== "string";
 		if (differentDeveloperInstructions) {
 			throw new Error(
-				"developer_instructions は文字列で指定してください。",
+				"`developer_instructions` は文字列で指定してください。",
 			);
 		}
 		const selected = selectedPreset(data, presets);

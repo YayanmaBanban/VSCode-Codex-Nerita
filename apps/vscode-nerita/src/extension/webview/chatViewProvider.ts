@@ -132,6 +132,7 @@ export class ChatViewProvider
 					this.sidebar = undefined;
 				}
 			},
+			webviewHtml(webview, this.extensionUri),
 		);
 		this.views.set(webview, {
 			editor,
@@ -140,7 +141,6 @@ export class ChatViewProvider
 				this.views.delete(webview);
 			},
 		});
-		webview.html = webviewHtml(webview, this.extensionUri);
 	}
 	/** 下書きと移動時の位置を、会話の更新番号とは独立して通知する。 */
 	private viewState(webview: vscode.Webview, restoreScroll = true): void {

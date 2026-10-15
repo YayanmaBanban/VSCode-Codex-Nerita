@@ -126,7 +126,7 @@ function validateHostLimits(call: ToolCall) {
 	);
 	if (matchesSome2) {
 		throw new Error(
-			"書込み範囲を制限した role では Host 実行を利用できません。",
+			"書き込み範囲を制限した役割では、Host での実行を利用できません。",
 		);
 	}
 }

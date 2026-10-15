@@ -167,7 +167,7 @@ export abstract class PiRun extends PiLifecycle {
 			throw new Error("Piへ接続してから送信してください。");
 		}
 		if (isNonZeroNumber(message.changeScopes?.length)) {
-			throw new Error("Piの最小版では変更点の添付には対応していません。");
+			throw new Error("Pi は変更点の添付に対応していません。");
 		}
 		if (this.submission) {
 			this.steer(message, this.submission);

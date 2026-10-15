@@ -40,7 +40,7 @@ export async function canonicalPath(
 		}
 		const parent = dirname(ancestor);
 		if (parent === ancestor) {
-			throw new Error("パスの実在する祖先を解決できません。");
+			throw new Error("指定パス、またはその上位フォルダの実際の場所を確認できません。");
 		}
 		missing.unshift(basename(ancestor));
 		ancestor = parent;
@@ -52,18 +52,18 @@ export async function createWorkspaceAccessPolicy(
 	roots: readonly string[],
 ): Promise<AgentAccessPolicy> {
 	if (roots.length === 0) {
-		throw new Error("workspace rootsを解決できません。");
+		throw new Error("アクセスを許可するワークスペースのルートフォルダが指定されていません。");
 	}
 	const canonical = await Promise.all(
 		roots.map(async (root) => {
 			validatePath(root);
 
 			if (!isAbsolute(root)) {
-				throw new Error("workspace rootが不正です。");
+				throw new Error("ワークスペースのルートフォルダは絶対パスで指定してください。");
 			}
 			const rootInfo = await stat(root);
 			if (!rootInfo.isDirectory()) {
-				throw new Error("workspace rootが不正です。");
+				throw new Error("ワークスペースのルートにはフォルダを指定してください。");
 			}
 			return realpath(root);
 		}),
@@ -93,7 +93,7 @@ export class WorkspacePathPolicy {
 			containsPath(root, target),
 		);
 		if (matchesSome) {
-			throw new Error("cwdがworkspace境界外です。");
+			throw new Error("作業フォルダがワークスペースの範囲外にあります。");
 		}
 		return target;
 	}
@@ -110,14 +110,14 @@ export class WorkspacePathPolicy {
 				) || this.policy.workspaceRoots.includes(target);
 			if (matchesSome2) {
 				throw new Error(
-					`workspace境界外またはroot自体への書込みは拒否されました: ${input}`,
+					`書き込みが許可された範囲の外、またはワークスペースのルート自体には書き込めません: ${input}`,
 				);
 			}
 			try {
 				const info = await stat(target);
 				if (!info.isFile() || info.nlink > 1) {
 					throw new Error(
-						"通常ファイル以外・複数hard linkへの書込みは拒否されました。",
+						"通常のファイル以外、またはハードリンクが複数あるファイルには書き込めません。",
 					);
 				}
 			} catch (error) {

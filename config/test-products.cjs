@@ -87,7 +87,7 @@ function verifyRegression(result, regression) {
 	if (result.status === 0 || result.status === null) {
 		console.error(result.stdout, result.stderr);
 		throw new Error(
-			`狙った回帰をアサーションで検出できません: ${regression}`,
+			`意図的に加えた不具合を、想定したアサーションの失敗として検出できません: ${regression}`,
 		);
 	}
 	if (
@@ -96,7 +96,7 @@ function verifyRegression(result, regression) {
 	) {
 		console.error(result.stdout, result.stderr);
 		throw new Error(
-			`狙った回帰をアサーションで検出できません: ${regression}`,
+			`意図的に加えた不具合を、想定したアサーションの失敗として検出できません: ${regression}`,
 		);
 	}
 	if (
@@ -107,7 +107,7 @@ function verifyRegression(result, regression) {
 	) {
 		console.error(result.stdout, result.stderr);
 		throw new Error(
-			`狙った回帰をアサーションで検出できません: ${regression}`,
+			`意図的に加えた不具合を、想定したアサーションの失敗として検出できません: ${regression}`,
 		);
 	}
 	console.log(`回帰検出: ${regression}（通常版成功 → アサーション失敗）`);

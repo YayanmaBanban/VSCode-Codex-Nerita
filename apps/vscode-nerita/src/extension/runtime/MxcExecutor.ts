@@ -290,7 +290,7 @@ function assertPrivateReport(config: ContainerConfig, directory: string): void {
 	];
 	if (roots.some((root) => containsPath(root, directory))) {
 		throw new Error(
-			"拒否レポートを Sandbox の公開範囲から分離できません。",
+			"拒否レポートの保存先が、サンドボックスからアクセスできる範囲内にあります。",
 		);
 	}
 }

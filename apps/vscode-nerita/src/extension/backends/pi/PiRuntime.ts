@@ -521,7 +521,7 @@ async function bindRuntimeAccount(
 		session.dispose();
 		options.signal.throwIfAborted();
 		throw new Error(
-			"Piの認証・モデルを設定してください。Pi CLIのログイン、またはproviderのAPIキーを設定後に再接続してください。",
+			"Pi の初期化が取り消されました。",
 		);
 	}
 	return account;

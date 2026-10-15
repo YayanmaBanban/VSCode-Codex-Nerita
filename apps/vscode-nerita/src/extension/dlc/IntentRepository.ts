@@ -102,7 +102,7 @@ export class IntentRepository {
 		const directory = await this.directoryFor(intentId);
 		const key = this.runKey(intentId, attemptId, kind);
 		if (this.authority.read(key) !== undefined) {
-			throw new Error("実行記録は既に固定されています。");
+			throw new Error("確定済みの実行記録は上書きできません。");
 		}
 		const file = `${directory}/runs/${jsonDigest({ attemptId, kind }).slice(7)}.json`;
 		await this.liveFiles.directory(`${directory}/runs`);
@@ -180,7 +180,7 @@ export class IntentRepository {
 					"conversation",
 				);
 				if (jsonDigest(saved) !== jsonDigest(value)) {
-					throw new Error("実行記録は既に固定されています。");
+					throw new Error("確定済みの実行記録は上書きできません。");
 				}
 				return;
 			}
@@ -209,7 +209,7 @@ export class IntentRepository {
 				context.request.intentId !== intentId ||
 				context.request.attemptId !== attemptId;
 			if (matchesIntentId) {
-				throw new Error("実行入力の参照が一致しません。");
+				throw new Error("実行入力に記録された Intent ID または実行 ID が、要求された対象と一致しません。");
 			}
 			return context;
 		});
@@ -293,7 +293,7 @@ export class IntentRepository {
 		);
 		if (orphan) {
 			throw new Error(
-				`未登録の Intent が復旧または確認待ちです: ${orphan.name}`,
+				`登録一覧にない Intent のフォルダがあります。復旧するか、内容を確認してください: ${orphan.name}`,
 			);
 		}
 	}
@@ -588,7 +588,7 @@ export class IntentRepository {
 				);
 				if (text === undefined) {
 					throw new Error(
-						`Intent の作成が未完了です。既存領域を保持して確認してください: ${dirName}`,
+						`Intent の本文ファイルがありません。保存フォルダを残して内容を確認してください: ${dirName}`,
 					);
 				}
 				const intent = IntentMetadataSchema.parse(JSON.parse(text));

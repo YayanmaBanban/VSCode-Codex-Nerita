@@ -119,7 +119,7 @@ export class WorkflowPanel {
 				}
 				this.start(target, this.document.getText());
 				notice =
-					"実行を開始しました。承認と進捗は AgentViewer で確認できます。";
+					"実行を開始しました。承認と進捗はチャット画面で確認できます。";
 			} else {
 				notice =
 					"TOML と依存関係を検証しました。Agent と Pi の検証は実行開始時に行います。";
@@ -170,7 +170,7 @@ export class WorkflowPanel {
 						type: "reply",
 						id: 0,
 						error: null,
-						notice: "実行が完了しました。結果は AgentViewer で確認できます。",
+						notice: "実行が完了しました。結果はチャット画面で確認できます。",
 					}),
 				(error: unknown) =>
 					this.post({

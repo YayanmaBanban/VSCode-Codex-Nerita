@@ -23,7 +23,7 @@ export type PiAgentRecord = {
 /** SDK のカスタムレコードはモデルの入力文脈に含まれない。 */
 export class PiAgentHistory {
 	private previous = new Map<string, PiAgentRecord>();
-	/** 子の履歴は親の SessionManager の追加エントリーへ保存する。 */
+	/** 子の履歴は親の `SessionManager` のカスタムエントリーへ保存する。 */
 	constructor(
 		private readonly manager: Pick<SessionManager, "appendCustomEntry">,
 	) {}
