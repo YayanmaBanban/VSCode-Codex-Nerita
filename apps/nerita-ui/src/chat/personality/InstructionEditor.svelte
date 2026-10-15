@@ -56,7 +56,7 @@
 		/>
 		<InstructionChanges {onChange} />
 	</LexicalComposer>
-	<p id={helpId} class="mt-[6px] mb-0 text-[11px] leading-[1.7] text-muted">
+	<p id={helpId} class="mt-[6px] mb-0 text-[12px] leading-[1.7] text-muted">
 		ルールや性格を記載する場所です。使用させたいコマンドなどは、AGENTS.md
 		に記載してください。
 	</p>

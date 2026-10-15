@@ -49,8 +49,18 @@ export function view(selected = projection(first, "最初の Intent")): DlcView 
 		backend: "codex",
 		error: null,
 		active: null,
-		targets: [],
-		targetId: null,
+		targets: [
+			{
+				id: "main",
+				name: "sample",
+				directory: "sample",
+				branch: "main",
+				main: true,
+				removable: false,
+				trusted: true,
+			},
+		],
+		targetId: "main",
 		targetBusy: false,
 		assignmentPending: false,
 		running: [],
@@ -64,13 +74,14 @@ export function view(selected = projection(first, "最初の Intent")): DlcView 
 	};
 }
 
-/** Host の未信頼記録が同じでも、Codex と Pi では実行先の信頼表示が異なる。 */
+/** 選択したバックエンドで実行先が未信頼の場合の Host 応答を用意する。 */
 export function untrustedWorktreeView(backend: BackendId): DlcView {
 	return {
 		...view(),
 		backend,
 		targetId: "worktree",
 		targets: [
+			...view().targets,
 			{
 				id: "worktree",
 				name: "work-new",
@@ -79,6 +90,26 @@ export function untrustedWorktreeView(backend: BackendId): DlcView {
 				main: false,
 				removable: true,
 				trusted: false,
+			},
+		],
+	};
+}
+
+/** メニューの作成・削除と既定の現在ワークスペース表示を検証する実行先一覧。 */
+export function environmentView(): DlcView {
+	const initial = untrustedWorktreeView("codex");
+	const worktree = initial.targets.find((item) => !item.main)!;
+	return {
+		...initial,
+		targetId: "main",
+		targets: [
+			...initial.targets,
+			{
+				...worktree,
+				id: "feature-auth",
+				name: "feature-auth",
+				directory: "feature-auth",
+				branch: "feature/auth",
 			},
 		],
 	};

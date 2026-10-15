@@ -10,7 +10,7 @@ import {
 	parseSandboxReadiness,
 	parseSandboxSetup,
 } from "./command";
-import { parseSandboxConfig } from "./config";
+import { parseConfig, parseConfigWrite } from "./config";
 import { parseMcpStatus } from "../mcpStatus";
 import { parseModels, parseLogin } from "./account";
 import { parseQuotaResponse } from "./usage";
@@ -35,7 +35,8 @@ export type AppServerResponses = {
 	"command/exec/terminate": Record<string, never>;
 	"windowsSandbox/readiness": ReturnType<typeof parseSandboxReadiness>;
 	"windowsSandbox/setupStart": ReturnType<typeof parseSandboxSetup>;
-	"config/read": ReturnType<typeof parseSandboxConfig>;
+	"config/read": ReturnType<typeof parseConfig>;
+	"config/batchWrite": ReturnType<typeof parseConfigWrite>;
 	"thread/settings/update": Record<string, never>;
 	"mcpServerStatus/list": ReturnType<typeof parseMcpStatus>;
 	"skills/list": ReturnType<typeof parseSkills>;
@@ -116,7 +117,8 @@ export const responseParsers: {
 	"command/exec/terminate": parseInterrupt,
 	"windowsSandbox/readiness": parseSandboxReadiness,
 	"windowsSandbox/setupStart": parseSandboxSetup,
-	"config/read": parseSandboxConfig,
+	"config/read": parseConfig,
+	"config/batchWrite": parseConfigWrite,
 	"thread/settings/update": parseInterrupt,
 	"mcpServerStatus/list": parseMcpStatus,
 	"skills/list": parseSkills,

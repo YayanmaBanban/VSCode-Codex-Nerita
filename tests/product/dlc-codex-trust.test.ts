@@ -9,6 +9,7 @@ import { createBackend } from "../../apps/vscode-nerita/src/extension/backends/c
 import { DlcHost } from "../../apps/vscode-nerita/src/extension/dlc/DlcHost";
 import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
 import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
+import { CodexWorkspaceTrust } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/CodexWorkspaceTrust";
 import { codexFixture } from "../support/codex";
 import { hostContext, prepareRepository } from "../support/dlcHost";
 import { until } from "../support/pi";
@@ -18,6 +19,24 @@ void test("Codex DLC は Nerita Trust 未設定の main と Worktree を使い�
 	const intentId = await planIntent(fixture.host);
 	await verifyPiHold(fixture, intentId);
 	await runCodex(t, fixture, intentId);
+});
+
+void test("Codex 側が非信頼の main では DLC の作成を拒否する", async (t) => {
+	const f = await prepare(t);
+	f.main.state.projects[f.main.cwd] = { trust_level: "untrusted" };
+	await f.host.receive({
+		type: "dlc/create",
+		requestId: "denied",
+		title: "Untrusted",
+		request: "変更する",
+		profile: "classic",
+		projectType: "brownfield",
+	});
+	assert.ok(isNonEmptyString(f.host.view().error));
+	assert.equal(f.host.view().selected, null);
+	assert.equal(f.main.state.turn, 0);
+	f.trust.invalidate(undefined, "codex");
+	assert.notEqual(f.runtime.scope("chat").snapshot().connection, "ready");
 });
 
 /** VS Code と App Server の境界を用意し、Host の信頼変更購読も本番と同じ経路へ接続する。 */
@@ -36,17 +55,25 @@ async function prepare(t: TestContext) {
 	const context = hostContext(main.cwd, "codex");
 	Object.assign(context, { extensionUri: { fsPath: main.extensionPath } });
 	let failSave = false;
-	const trust = new WorkspaceTrustStore({
-		read: () => undefined,
-		write: () =>
-			failSave
-				? Promise.reject(new Error("Trust 保存失敗"))
-				: Promise.resolve(),
-	});
+	const trust = new WorkspaceTrustStore(
+		{
+			read: () => undefined,
+			write: () =>
+				failSave
+					? Promise.reject(new Error("Trust 保存失敗"))
+					: Promise.resolve(),
+		},
+		undefined,
+		new CodexWorkspaceTrust(main.extensionPath, () =>
+			trust.invalidate(undefined, "codex"),
+		),
+	);
 	const runtime = new BackendRuntime((backend, root) =>
 		createBackend(context, trust, backend ?? "codex", root),
 	);
-	const unsubscribe = trust.onChange((root) => runtime.invalidateTrust(root));
+	const unsubscribe = trust.onChange((root, backend) =>
+		runtime.invalidateTrust(root, backend),
+	);
 	const host = new DlcHost(context, trust, runtime);
 	t.after(async () => {
 		unsubscribe();

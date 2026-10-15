@@ -1,31 +1,23 @@
 <script lang="ts">
 	// Host の初期応答だけをモックし、以後の操作は検証側が明示的に応答する。
-	import type { UiMessage } from "@nerita/shared/messages";
+	import type { DlcView } from "@nerita/shared/dlc/contracts";
 	import DlcWorkspace from "../../../src/chat/dlc/DlcWorkspace.svelte";
-	import { createStoryBridge } from "../mocks/storyBridge";
-	import { scenarioState } from "../fixtures/chatState";
-	import { first, second, view } from "./workspaceState";
+	import { view } from "./workspaceState";
+	import { createWorkspaceBridge } from "./workspaceBridge";
 	import StoryChat from "../StoryChat.svelte";
 	import { createChatStoryBridge } from "../mocks/mockBridge";
 
-	let { chatModes = false }: { chatModes?: boolean } = $props();
+	let {
+		chatModes = false,
+		initialView = view(),
+		expanded = [0],
+	}: {
+		chatModes?: boolean;
+		initialView?: DlcView;
+		expanded?: number[];
+	} = $props();
 	const chatBridge = createChatStoryBridge("empty");
-	const mock = createStoryBridge(scenarioState("empty"));
-	let initialized = false;
-	const bridge = {
-		...mock,
-		postMessage(message: UiMessage) {
-			mock.postMessage(message);
-			if (message.type === "ui/ready" && !initialized) {
-				initialized = true;
-				mock.emit({
-					type: "dlc/editorState",
-					state: { expanded: { [first]: [0], [second]: [0] } },
-				});
-				mock.emit({ type: "dlc/state", view: view() });
-			}
-		},
-	};
+	const bridge = $derived(createWorkspaceBridge(initialView, expanded));
 </script>
 
 {#if chatModes}

@@ -27,6 +27,7 @@
 		onOpenAgent,
 		timeline,
 		virtual,
+		following,
 	}: {
 		state: ChatState;
 		busy: boolean;
@@ -36,6 +37,7 @@
 		onOpenAgent: (agent: SubAgentSummary) => void;
 		timeline: MessageTimeline;
 		virtual: ConversationVirtualizer;
+		following: { current: boolean };
 	} = $props();
 	let awayFromBottom = $state(false);
 	const runLabels = {
@@ -75,6 +77,7 @@
 	$effect(observeConversationBottom);
 	/** 末尾移動後は会話へフォーカスを戻し、スクロール追従を再開する。 */
 	function toBottom() {
+		following.current = true;
 		conversation?.scrollTo({
 			top: conversation.scrollHeight,
 			behavior: "instant",
@@ -147,7 +150,8 @@
 			</p>{/if}
 		<div bind:this={bottom}></div>
 	</section>
-	{#if awayFromBottom}<div
+	<!-- 高さの再計測から次フレームの追従までのずれでは、末尾ボタンを表示しない。 -->
+	{#if awayFromBottom && !following.current}<div
 			class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2"
 		>
 			<SettingsTooltip content="メッセージの末尾へ移動"

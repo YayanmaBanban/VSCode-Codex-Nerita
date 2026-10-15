@@ -6,6 +6,7 @@ import { setTimeout } from "node:timers/promises";
 import * as vscode from "vscode";
 import { createBackend } from "../../apps/vscode-nerita/src/extension/backends/createBackend";
 import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
+import { CodexWorkspaceTrust } from "../../apps/vscode-nerita/src/extension/backends/codex/settings/CodexWorkspaceTrust";
 import type { CodexFactory } from "../../apps/vscode-nerita/src/extension/backends/codex/runtime/connection";
 import { codexFixture, codexResponseGate, type Rpc } from "../support/codex";
 import { until } from "../support/pi";
@@ -19,10 +20,14 @@ for (const explicitRoot of [false, true]) {
 	void test(`Codex の${explicitRoot ? "明示した実行先" : "通常チャット"}は Nerita Trust 未設定でも認証と再接続へ進む`, async (t) => {
 		const f = await codexFixture(t);
 		f.state.authenticated = false;
-		const trust = new WorkspaceTrustStore({
-			read: () => undefined,
-			write: async () => {},
-		});
+		const trust = new WorkspaceTrustStore(
+			{
+				read: () => undefined,
+				write: async () => {},
+			},
+			undefined,
+			new CodexWorkspaceTrust(f.extensionPath, () => {}),
+		);
 		assert.equal(await trust.trusted(f.cwd), false);
 		Object.assign(vscode.workspace, {
 			isTrusted: true,

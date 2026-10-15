@@ -12,6 +12,7 @@ import {
 	projection,
 	view,
 	untrustedWorktreeView,
+	environmentView,
 } from "./workspaceState";
 
 function workspaceBridge(canvas: HTMLElement): StoryBridge {
@@ -32,6 +33,109 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const ExecutionEnvironment: Story = {
+	play: ({ canvasElement }) => {
+		workspaceBridge(canvasElement).emit({
+			type: "dlc/state",
+			view: environmentView(),
+		});
+	},
+};
+
+export const LongPressRemoval: Story = {
+	play: async ({ canvasElement }) => {
+		const user = userEvent.setup({ document: canvasElement.ownerDocument });
+		const canvas = within(canvasElement);
+		const document = within(canvasElement.ownerDocument.body);
+		const bridge = workspaceBridge(canvasElement);
+		const initial = environmentView();
+		bridge.emit({ type: "dlc/state", view: initial });
+		await userEvent.click(
+			canvas.getByRole("combobox", { name: "DLC の Worktree" }),
+		);
+		const remove = document.getByRole("button", { name: "work-newを削除" });
+		await waitFor(() =>
+			expect(
+				document.getByRole("button", { name: /現在のワークスペース/ }),
+			).toHaveFocus(),
+		);
+		remove.focus();
+		await user.keyboard("{Enter>}{/Enter}");
+		// 短い押下を解除した後、削除の期限を過ぎても要求が送られないことを確認する。
+		await new Promise((resolve) => setTimeout(resolve, 2100));
+		await expect(
+			bridge.sent.some(
+				(message) => message.type === "dlc/worktreeRemove",
+			),
+		).toBe(false);
+		remove.focus();
+		await user.keyboard("{Enter>}");
+		await waitFor(
+			() =>
+				expect(bridge.sent.at(-1)).toMatchObject({
+					type: "dlc/worktreeRemove",
+					targetId: "worktree",
+				}),
+			{ timeout: 3000 },
+		);
+		await user.keyboard("{/Enter}");
+		await expect(
+			bridge.sent.filter(
+				(message) => message.type === "dlc/worktreeRemove",
+			),
+		).toHaveLength(1);
+		bridge.emit({
+			type: "dlc/state",
+			view: {
+				...initial,
+				targets: initial.targets.filter(
+					(item) => item.id !== "worktree",
+				),
+			},
+		});
+		await waitFor(() =>
+			expect(
+				document.queryByRole("button", { name: "work-newを削除" }),
+			).not.toBeInTheDocument(),
+		);
+		await userEvent.keyboard("{Escape}");
+	},
+};
+
+export const RunningWorktreeRemoval: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const document = within(canvasElement.ownerDocument.body);
+		const bridge = workspaceBridge(canvasElement);
+		bridge.emit({
+			type: "dlc/state",
+			view: {
+				...environmentView(),
+				running: [
+					{
+						intentId: second,
+						attemptId: "other-run",
+						targetId: "worktree",
+					},
+				],
+			},
+		});
+		await userEvent.click(
+			canvas.getByRole("combobox", { name: "DLC の Worktree" }),
+		);
+		await expect(
+			document.getByRole("button", { name: "work-newを削除" }),
+		).toBeDisabled();
+		await expect(
+			document.getByRole("button", { name: "feature-authを削除" }),
+		).toBeEnabled();
+		await expect(
+			document.queryByRole("button", { name: "sampleを削除" }),
+		).not.toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+	},
+};
+
 export const CodexUntrustedWorktree: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
@@ -39,17 +143,23 @@ export const CodexUntrustedWorktree: Story = {
 			type: "dlc/state",
 			view: untrustedWorktreeView("codex"),
 		});
-		await waitFor(() =>
-			expect(canvas.getByLabelText("DLC の Worktree")).toHaveValue(
-				"worktree",
-			),
-		);
+		const worktree = canvas.getByRole("combobox", {
+			name: "DLC の Worktree",
+		});
+		await waitFor(() => expect(worktree).toHaveTextContent("work-new"));
+		await userEvent.click(worktree);
 		await expect(
-			canvas.getByRole("option", { name: "work-new" }),
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "work-new（未信頼）",
+			}),
 		).toBeInTheDocument();
-		await expect(
-			canvas.queryByRole("button", { name: "実行先の信頼を確認" }),
-		).not.toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await userEvent.click(
+			canvas.getByRole("button", { name: "ワークスペースを信頼する" }),
+		);
+		await expect(workspaceBridge(canvasElement).sent.at(-1)).toMatchObject({
+			type: "dlc/trust",
+		});
 	},
 };
 
@@ -60,22 +170,108 @@ export const PiUntrustedWorktree: Story = {
 			type: "dlc/state",
 			view: untrustedWorktreeView("pi"),
 		});
+		const worktree = canvas.getByRole("combobox", {
+			name: "DLC の Worktree",
+		});
 		await waitFor(() =>
-			expect(canvas.getByLabelText("DLC の Worktree")).toHaveValue(
-				"worktree",
-			),
+			expect(worktree).toHaveTextContent("work-new（未信頼）"),
 		);
+		await userEvent.click(worktree);
 		await expect(
-			canvas.getByRole("option", {
+			within(canvasElement.ownerDocument.body).getByRole("button", {
 				name: "work-new（未信頼）",
 			}),
 		).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
 		await userEvent.click(
-			canvas.getByRole("button", { name: "実行先の信頼を確認" }),
+			canvas.getByRole("button", { name: "ワークスペースを信頼する" }),
 		);
 		await expect(workspaceBridge(canvasElement).sent.at(-1)).toMatchObject({
 			type: "dlc/trust",
 		});
+	},
+};
+
+export const AssignmentSelection: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const document = within(canvasElement.ownerDocument.body);
+		const bridge = workspaceBridge(canvasElement);
+		const initial = untrustedWorktreeView("codex");
+		const assigned = initial;
+		bridge.emit({ type: "dlc/state", view: assigned });
+		const backend = canvas.getByRole("combobox", {
+			name: "DLC のバックエンド",
+		});
+		const worktree = canvas.getByRole("combobox", {
+			name: "DLC の Worktree",
+		});
+		await userEvent.click(backend);
+		await userEvent.click(document.getByRole("option", { name: /^Pi$/ }));
+		await expect(bridge.sent.at(-1)).toMatchObject({
+			type: "dlc/backend",
+			intentId: first,
+			revision: 0,
+			backend: "pi",
+		});
+		bridge.emit({
+			type: "dlc/state",
+			view: { ...assigned, backend: "pi" },
+		});
+		await waitFor(() => expect(backend).toHaveTextContent("Pi"));
+		await userEvent.click(worktree);
+		await userEvent.click(
+			document.getByRole("button", { name: /現在のワークスペース/ }),
+		);
+		await expect(bridge.sent.at(-1)).toMatchObject({
+			type: "dlc/target",
+			intentId: first,
+			revision: 0,
+			targetId: "main",
+		});
+		bridge.emit({
+			type: "dlc/state",
+			view: { ...assigned, backend: "pi", targetId: "main" },
+		});
+		await waitFor(() =>
+			expect(worktree).toHaveTextContent("現在のワークスペース"),
+		);
+		for (const state of [
+			{ ...assigned, assignmentPending: true },
+			{
+				...assigned,
+				running: [
+					{
+						intentId: first,
+						attemptId: "active-run",
+						targetId: "worktree",
+					},
+				],
+			},
+			{ ...assigned, selected: null },
+		]) {
+			bridge.emit({ type: "dlc/state", view: state });
+			await waitFor(() => expect(backend).toBeDisabled());
+			if (state.assignmentPending) {
+				await waitFor(() => expect(worktree).toBeDisabled());
+			} else {
+				await userEvent.click(worktree);
+				await expect(
+					document.getByRole("button", {
+						name: /現在のワークスペース/,
+					}),
+				).toBeDisabled();
+				await expect(
+					document.getByRole("button", { name: /^work-new$/ }),
+				).toBeDisabled();
+				await expect(
+					document.getByRole("button", {
+						name: "新しいWorktreeを作成",
+					}),
+				).toBeEnabled();
+				await userEvent.keyboard("{Escape}");
+			}
+		}
 	},
 };
 
@@ -240,17 +436,6 @@ export const StartHold: Story = {
 			...view(selected),
 			targetId: "main",
 			targetBusy: true,
-			targets: [
-				{
-					id: "main",
-					name: "sample",
-					directory: "sample",
-					branch: "main",
-					main: true,
-					removable: false,
-					trusted: true,
-				},
-			],
 			running: [
 				{ intentId: second, attemptId: "other-run", targetId: "main" },
 			],
@@ -294,7 +479,12 @@ export const StartHold: Story = {
 			canvas.getByRole("button", { name: /Phase 0 · Initialization/ }),
 		).toHaveTextContent("完了");
 		await userEvent.click(
-			canvas.getByRole("button", { name: "Worktree を作成" }),
+			canvas.getByRole("combobox", { name: "DLC の Worktree" }),
+		);
+		await userEvent.click(
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "新しいWorktreeを作成",
+			}),
 		);
 		await expect(bridge.sent.at(-1)).toMatchObject({
 			type: "dlc/worktreeCreate",
@@ -347,14 +537,12 @@ async function verifyTrustRelease(
 	};
 	bridge.emit({ type: "dlc/state", view: untrusted });
 	await userEvent.click(
-		await canvas.findByRole("button", { name: "実行先の信頼を確認" }),
+		await canvas.findByRole("button", { name: "ワークスペースを信頼する" }),
 	);
 	await expect(bridge.sent.at(-1)).toMatchObject({ type: "dlc/trust" });
 	await expect(
 		within(canvas.getByLabelText("実行開始の保留")).getByRole("status"),
-	).toHaveTextContent(
-		"ワークスペースを信頼してください",
-	);
+	).toHaveTextContent("ワークスペースを信頼してください");
 	bridge.emit({
 		type: "dlc/state",
 		view: {

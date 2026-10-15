@@ -61,7 +61,7 @@
 				>
 					<span aria-hidden="true">{open ? "▾" : "▸"}</span><span
 						class="flex-1">Phase {phase} · {name}</span
-					><span class="text-[11px] font-normal text-muted"
+					><span class="text-[12px] font-normal text-muted"
 						>{phaseExecutionStatus(
 							stages,
 							phase,
@@ -94,7 +94,7 @@
 									>
 								</div>
 								<p
-									class="m-0 mt-1 text-[11px] break-words text-muted"
+									class="m-0 mt-1 text-[12px] break-words text-muted"
 								>
 									{stage.reason}
 								</p>

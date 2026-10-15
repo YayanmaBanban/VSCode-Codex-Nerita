@@ -184,7 +184,7 @@ export function finishPiTools(
 	});
 }
 
-/** 明示パスを優先し、一覧ツールだけ現在のフォルダーを補う。 */
+/** 明示パスを優先し、一覧ツールだけ現在のフォルダを補う。 */
 function toolPath(args: Record<string, unknown>, toolName: string) {
 	if (typeof args.path === "string") {
 		return args.path;
@@ -201,7 +201,7 @@ function toolLabel(toolName: string) {
 		return "ファイルを読む";
 	}
 	if (toolName === "ls") {
-		return "フォルダーを確認";
+		return "フォルダを確認";
 	}
 	if (toolName === "write") {
 		return "ファイルを書き込む";

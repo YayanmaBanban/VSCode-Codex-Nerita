@@ -81,7 +81,7 @@
 				/><strong class="min-w-0 break-words">{intent.title}</strong
 				></span
 			>
-			<span class="text-[11px] text-muted">{executionLabel}</span>
+			<span class="text-[12px] text-muted">{executionLabel}</span>
 		</button>
 	{/snippet}
 </SettingsTooltip>

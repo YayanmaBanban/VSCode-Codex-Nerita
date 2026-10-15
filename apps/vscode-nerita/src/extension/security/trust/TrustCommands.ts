@@ -2,11 +2,9 @@
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { WorkspaceTrustStore } from "./WorkspaceTrustStore";
-import { canonicalPath } from "../WorkspacePathPolicy";
-import { containsPath } from "../AgentAccessPolicy";
-import { stat } from "node:fs/promises";
 import { configuredBackend } from "../../webview/backendSettings";
 import { trustPanel } from "./TrustPanel";
+import { CodexWorkspaceTrust } from "../../backends/codex/settings/CodexWorkspaceTrust";
 
 /** 信頼記録は `globalState` に保存し、ワークスペース設定で信頼済みと指定させない。 */
 export function registerTrustCommands(context: vscode.ExtensionContext) {
@@ -32,6 +30,9 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 			log.info(
 				`${event} root=${createHash("sha256").update(root).digest("hex").slice(0, 16)}`,
 			),
+		new CodexWorkspaceTrust(context.extensionUri.fsPath, (root) =>
+			store.invalidate(root, "codex"),
+		),
 	);
 	const badge = vscode.window.createStatusBarItem(
 		vscode.StatusBarAlignment.Left,
@@ -39,16 +40,13 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 	);
 	badge.command = "nerita.trust.manage";
 	let revision = 0;
-	/** Pi の信頼状態をステータス欄へ反映し、古い非同期取得が新しい表示を上書きしないようにする。 */
+	/** 選択中バックエンドの信頼状態を表示し、古い非同期取得を破棄する。 */
 	const refresh = async () => {
 		const current = ++revision;
-		if (configuredBackend() !== "pi") {
-			badge.hide();
-			return;
-		}
+		const backend = configuredBackend();
 		const roots = vscode.workspace.workspaceFolders ?? [];
 		const trusted = await Promise.all(
-			roots.map((root) => store.trusted(root.uri.fsPath)),
+			roots.map((root) => store.trusted(root.uri.fsPath, backend)),
 		);
 		if (current !== revision) {
 			return;
@@ -56,14 +54,12 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 		const count = vscode.workspace.isTrusted
 			? trusted.filter(Boolean).length
 			: 0;
-		badge.text = `$(shield) Nerita Trust ${count}/${roots.length}`;
+		badge.text = `$(shield) ${backend === "codex" ? "Codex" : "Nerita"} Trust ${count}/${roots.length}`;
 		badge.tooltip =
 			"rootごとの信頼状態を管理します。未信頼のコードは実行できません。";
 		badge.show();
 	};
-	const openPanel = trustPanel(context, store, (root, active) =>
-		confirmTrust(store, root, active),
-	);
+	const openPanel = trustPanel(context, store);
 	const unsubscribe = store.onChange(() => {
 		void refresh();
 	});
@@ -72,7 +68,6 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 		badge,
 		{ dispose: unsubscribe },
 		vscode.commands.registerCommand("nerita.trust.manage", openPanel),
-		vscode.commands.registerCommand("nerita.trust.revoke", openPanel),
 		vscode.workspace.onDidGrantWorkspaceTrust(() => store.invalidate()),
 		vscode.workspace.onDidChangeWorkspaceFolders(() => store.invalidate()),
 		vscode.workspace.onDidChangeConfiguration((event) => {
@@ -83,43 +78,4 @@ export function registerTrustCommands(context: vscode.ExtensionContext) {
 	);
 	void refresh();
 	return store;
-}
-
-/** 確認画面に表示した実体だけを信頼し、待機中の差替えを拒否する。 */
-async function confirmTrust(
-	store: WorkspaceTrustStore,
-	root: string,
-	active: () => boolean,
-) {
-	if (!vscode.workspace.isTrusted) {
-		await vscode.window.showWarningMessage(
-			"VS CodeのWorkspace Trustも必要です。制限モードを解除してから再試行してください。",
-		);
-		return;
-	}
-	const canonical = await canonicalPath(root, process.cwd());
-	const info = await stat(canonical);
-	const identity = {
-		dev: info.dev,
-		ino: info.ino,
-		birthtimeMs: info.birthtimeMs,
-	};
-	const external = store
-		.list()
-		.some(
-			(record) =>
-				record.origin !== "workspace" &&
-				containsPath(record.root, canonical),
-		);
-	const answer = await vscode.window.showWarningMessage(
-		`このコードを信頼しますか？\n${canonical}`,
-		{
-			modal: true,
-			detail: `出所: ${external ? "外部取得物" : "ユーザーが選択したフォルダー"}\nPowerShell・test・build・installなどの実行が可能になります。コマンドのApprovalとSandboxは引き続き必要です。認証情報やネットワークの利用許可は増えません。`,
-		},
-		"Trust this root",
-	);
-	if (active() && answer === "Trust this root") {
-		await store.setUserTrust(canonical, true, identity);
-	}
 }

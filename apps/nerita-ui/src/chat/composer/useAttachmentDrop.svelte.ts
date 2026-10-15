@@ -60,7 +60,7 @@ class AttachmentDrop {
 	get active() {
 		return this.activeState && this.enabled;
 	}
-	/** 読み取り開始時と同じ会話・作業フォルダーか判定する識別子。 */
+	/** 読み取り開始時と同じ会話・作業フォルダか判定する識別子。 */
 	private get scope() {
 		const state = this.input.state;
 		return `${state.connection}:${state.cwd}:${state.sessionId}`;

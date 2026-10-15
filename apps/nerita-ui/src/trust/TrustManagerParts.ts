@@ -3,34 +3,36 @@
 import {
 	type TrustBridge,
 	type TrustRequest,
+	type TrustReply,
 } from "@nerita/shared/workspaceTrust";
+import type { BackendId } from "@nerita/shared/backend";
 
 import "../chat/chat.css";
 
 /** 操作ボタンの枠と、フォーカス・無効状態の表示を揃える。 */
 export const buttonStyle =
-	"rounded border border-input-border px-3 py-1.5 text-sm hover:bg-hover disabled:opacity-50 focus-visible:outline focus-visible:outline-2";
+	"rounded-full border border-input-border bg-transparent px-3 py-1 text-xs font-medium whitespace-nowrap enabled:hover:bg-settings-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+/** 検索欄と高さを揃え、操作をツールチップで説明する四角いボタン。 */
+export const iconButtonStyle =
+	"inline-flex size-9 shrink-0 items-center justify-center rounded border border-input-border bg-transparent p-0 text-foreground enabled:hover:bg-settings-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 /** 信頼記録の登録元を管理画面の表示名へ変換する。 */
 export const origins = {
 	workspace: "ワークスペース",
-	external: "外部フォルダー",
+	external: "外部フォルダ",
 	"external-cache": "外部キャッシュ",
 };
 /** 信頼記録の取得と、追加・変更・削除に使う通信窓口。 */
 export type TrustManagerProps = { bridge: TrustBridge };
-/** フォルダーの信頼記録と、その記録を変更・削除する要求の送信先。 */
+/** フォルダの信頼記録と、その記録を変更・削除する要求の送信先。 */
 export type TrustRecordProps = {
-	record: {
-		root: string;
-		trust: "trusted" | "untrusted";
-		origin: "workspace" | "external" | "external-cache";
-		updatedAt: number;
-	};
+	record: TrustReply["records"][number];
 	busy: boolean;
 	send: (message: TrustRequest) => void;
 };
-/** 信頼記録の追加・再取得に使う要求の送信先と待機状態。 */
+/** バックエンドの切替に使う要求の送信先と待機状態。 */
 export type TrustManagerHeaderProps = {
+	backend: BackendId;
+	piStoragePath?: string | undefined;
 	busy: boolean;
 	send: (message: TrustRequest) => void;
 };

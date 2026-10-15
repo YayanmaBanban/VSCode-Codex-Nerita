@@ -26,7 +26,7 @@
 <CompletionMenu {...props} context>
 	{#snippet header()}
 		<div class="mb-2">
-			<p class="m-0 mb-2 text-[11px] text-muted">最近使用</p>
+			<p class="m-0 mb-2 text-[12px] text-muted">最近使用</p>
 			<div class="flex flex-wrap gap-1" aria-label="最近使用">
 				{#each recent as item (JSON.stringify(item.reference))}
 					{@const Icon = item.reference

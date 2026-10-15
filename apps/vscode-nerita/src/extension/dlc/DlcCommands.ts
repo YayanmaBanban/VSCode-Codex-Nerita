@@ -1,4 +1,4 @@
-// コマンドは Webview と共通の Intent 操作へ委譲し、別の会話や承認画面を生成しない。
+// DLC 作業画面の開閉と復元を、共通の Host と実行管理へ接続する。
 import * as vscode from "vscode";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
 import type { BackendRuntime } from "../session/BackendRuntime";
@@ -28,20 +28,6 @@ export function registerDlcCommands(
 			},
 		}),
 	);
-	for (const name of [
-		"create",
-		"plan",
-		"run",
-		"cancel",
-		"status",
-		"retry",
-	] as const) {
-		context.subscriptions.push(
-			vscode.commands.registerCommand(`nerita.dlc.${name}`, () =>
-				host.command(name),
-			),
-		);
-	}
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeWorkspaceFolders(() => {
 			editor.dispose();

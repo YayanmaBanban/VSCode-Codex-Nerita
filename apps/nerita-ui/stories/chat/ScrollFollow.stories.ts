@@ -12,6 +12,56 @@ const meta = {
 export default meta;
 type Story = StoryObj<Record<string, never>>;
 export const Updates: Story = {};
+export const StreamingUpdates: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const conversation = canvas.getByRole("region", { name: /^会話$/ });
+		const receive = canvas.getByRole("button", {
+			name: "マークダウンを受信",
+		});
+		const jumpSelector = 'button[aria-label="メッセージの末尾へ移動"]';
+		await waitFor(() =>
+			expect(
+				conversation.scrollHeight -
+					conversation.clientHeight -
+					conversation.scrollTop,
+			).toBeLessThan(5),
+		);
+		let appearances = 0;
+		// 最終状態だけでは一瞬の表示を見逃すため、受信中に追加されたボタンを記録する。
+		const observer = new MutationObserver((records) => {
+			for (const record of records) {
+				for (const node of record.addedNodes) {
+					if (
+						node instanceof Element &&
+						(node.matches(jumpSelector) ||
+							node.querySelector(jumpSelector))
+					) {
+						appearances++;
+					}
+				}
+			}
+		});
+		observer.observe(canvasElement, { childList: true, subtree: true });
+		try {
+			await userEvent.click(receive);
+			await waitFor(() =>
+				expect(canvas.getByText("配信が完了しました。")).toBeVisible(),
+			);
+			await waitFor(() => expect(receive).toBeEnabled());
+			await waitFor(() =>
+				expect(
+					conversation.scrollHeight -
+						conversation.clientHeight -
+						conversation.scrollTop,
+				).toBeLessThan(5),
+			);
+			await expect(appearances).toBe(0);
+		} finally {
+			observer.disconnect();
+		}
+	},
+};
 export const EmptyUpdates: Story = {
 	render: () => ({ Component: ScrollFollowExample1 }),
 };

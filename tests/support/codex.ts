@@ -32,6 +32,26 @@ export type Rpc = {
 	params?: Record<string, unknown>;
 };
 
+/** 外部 App Server の認証・実行カウンターと設定データを独立に保持する。 */
+type FixtureState = {
+	authenticated: boolean;
+	thread: number;
+	turn: number;
+	failSteer: boolean;
+	projects: Record<string, { trust_level: string }>;
+};
+
+/** 通常の会話テストでは Codex 側だけを信頼済みにし、Nerita Trust は変更しない。 */
+function createCodexState(cwd: string): FixtureState {
+	return {
+		authenticated: true,
+		thread: 0,
+		turn: 0,
+		failSteer: false,
+		projects: { [cwd]: { trust_level: "trusted" } },
+	};
+}
+
 /** サーバー発の要求へ、本番のクライアントが JSONL で返した応答。 */
 type ClientResponse = Extract<
 	ReturnType<typeof parseRpcMessage>,
@@ -64,7 +84,7 @@ export async function codexFixture(t: TestContext, executionRoot?: string) {
 	const responses = new Map<string, (message: Rpc) => unknown>();
 	const streams: ServerResponse[] = [];
 	const unexpected: string[] = [];
-	const state = { authenticated: true, thread: 0, turn: 0, failSteer: false };
+	const state = createCodexState(cwd);
 	const server = createServer(
 		createCodexRelayHandler(
 			streams,
@@ -85,11 +105,7 @@ export async function codexFixture(t: TestContext, executionRoot?: string) {
 	});
 	const address = server.address();
 	assert.ok(address !== null && typeof address !== "string");
-	await writeFile(
-		join(cwd, "control-url"),
-		`http://127.0.0.1:${address.port}`,
-	);
-	await writeFile(join(cwd, "app-server"), relay);
+	await writeCodexRelay(root, cwd, address.port);
 	const executableRoot = join(root, "dist/runtime/node_modules/@openai");
 	const bin = join(
 		executableRoot,
@@ -132,6 +148,17 @@ export async function codexFixture(t: TestContext, executionRoot?: string) {
 			controllers,
 		),
 	};
+}
+
+/** 会話用と設定専用の接続から、同じ外部 App Server の応答へ到達させる。 */
+async function writeCodexRelay(root: string, cwd: string, port: number) {
+	for (const directory of [root, cwd]) {
+		await writeFile(
+			join(directory, "control-url"),
+			`http://127.0.0.1:${port}`,
+		);
+		await writeFile(join(directory, "app-server"), relay);
+	}
 }
 
 /** 現在の接続へ通知とサーバー要求を送信し、再接続しても要求 ID を重複させない。 */
@@ -226,12 +253,7 @@ function createCodexRelayHandler(
 	streams: ServerResponse<IncomingMessage>[],
 	requests: Rpc[],
 	cwd: string,
-	state: {
-		authenticated: boolean;
-		thread: number;
-		turn: number;
-		failSteer: boolean;
-	},
+	state: FixtureState,
 	unexpected: string[],
 	responses: Map<string, (message: Rpc) => unknown>,
 	clientResponses: ClientResponse[],
@@ -342,18 +364,15 @@ export function codexResponseGate() {
 }
 
 /** 応答は公開プロトコルの最小データに限定し、画面状態を生成しない。 */
-function reply(
-	message: Rpc,
-	cwd: string,
-	state: {
-		authenticated: boolean;
-		thread: number;
-		turn: number;
-		failSteer: boolean;
-	},
-): unknown {
+function reply(message: Rpc, cwd: string, state: FixtureState): unknown {
 	const fixed: Record<string, unknown> = {
-		"config/read": { config: { windows: { sandbox: "elevated" } } },
+		"config/read": {
+			config: {
+				windows: { sandbox: "elevated" },
+				projects: state.projects,
+			},
+			layers: [],
+		},
 		"windowsSandbox/setupStart": { started: true },
 		"skills/list": { data: [] },
 		"thread/list": { data: [], nextCursor: null },

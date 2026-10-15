@@ -33,7 +33,7 @@ export async function readDroppedAttachments(
 		(item) => item.webkitGetAsEntry()?.isDirectory === true,
 	);
 	if (matchesSome) {
-		throw new Error("フォルダーは添付できません。");
+		throw new Error("フォルダは添付できません。");
 	}
 
 	let uris = transfer

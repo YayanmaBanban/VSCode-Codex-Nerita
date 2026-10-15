@@ -35,11 +35,16 @@
 		>
 	</div>
 	<div class="mt-[8px] flex items-start gap-[8px]">
-		<span
-			class="min-w-0 flex-1 font-editor text-[12px] leading-[1.6] break-all text-muted"
-			title={state.cwd ?? undefined}
-			>{state.cwd ?? "ワークスペース未接続"}</span
-		>
+		<SettingsTooltip content={state.cwd ?? undefined}>
+			{#snippet children({ props: tooltipProps })}
+				<span
+					{...tooltipProps}
+					tabindex="-1"
+					class="min-w-0 flex-1 font-editor text-[12px] leading-[1.6] break-all text-muted"
+					>{state.cwd ?? "ワークスペース未接続"}</span
+				>
+			{/snippet}
+		</SettingsTooltip>
 		{#if state.sessionsLoading}<span
 				role="progressbar"
 				aria-label="セッション一覧を取得中"

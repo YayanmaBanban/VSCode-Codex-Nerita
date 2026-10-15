@@ -8,4 +8,5 @@ module.exports = {
 	ProgressLocation: {},
 	languages: {},
 	ConfigurationTarget: {},
+	ViewColumn: {},
 };

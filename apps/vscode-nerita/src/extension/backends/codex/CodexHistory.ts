@@ -88,7 +88,7 @@ export class CodexHistory {
 			restoring.changed = true;
 		}
 	}
-	/** 表示済みの同一フォルダーの履歴だけを、実行していない間に操作する。 */
+	/** 表示済みの同一フォルダの履歴だけを、実行していない間に操作する。 */
 	async manage(
 		action: HistoryAction,
 		threadId: string,

@@ -14,6 +14,7 @@
 	import CodeBlockMenuPlugin from "./CodeBlockMenuPlugin.svelte";
 	import CompletionPlugin from "./CompletionPlugin.svelte";
 	import ComposerLinksPlugin from "./ComposerLinksPlugin.svelte";
+	import ComposerTooltipsPlugin from "./ComposerTooltipsPlugin.svelte";
 	import ComposerPlugin from "./ComposerPlugin.svelte";
 	import { $writeParts as writeParts } from "./content";
 	import { PastedBlockNode } from "./PastedBlockNode";
@@ -146,6 +147,7 @@
 		</SettingsTooltip>
 	</div>
 	<ComposerLinksPlugin />
+	<ComposerTooltipsPlugin />
 	<CodeBlockMenuPlugin bridge={props.bridge} />
 	<ReferenceActionsPlugin bridge={props.bridge} />
 	<ComposerPlugin

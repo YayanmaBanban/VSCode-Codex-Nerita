@@ -16,7 +16,7 @@ import { preparePiAuthMigration } from "./PiAuthMigration";
 import { selectLocalWorkspace } from "../webview/selectLocalWorkspace";
 import { webviewHtml } from "../webview/webviewHtml";
 
-/** フォルダーを開き直した後やパネル破棄後の保存は拒否する。 */
+/** フォルダを開き直した後やパネル破棄後の保存は拒否する。 */
 async function assertWorkspace(root: string, signal: AbortSignal) {
 	signal.throwIfAborted();
 	if (!vscode.workspace.isTrusted) {

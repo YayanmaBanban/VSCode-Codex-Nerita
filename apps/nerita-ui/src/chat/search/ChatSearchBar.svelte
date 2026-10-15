@@ -73,23 +73,28 @@
 				<div
 					class="flex min-w-0 flex-1 items-center rounded border border-solid border-input-border bg-input focus-within:border-focus"
 				>
-					<input
-						{@attach (element: HTMLInputElement) => {
-							search.setInput(element);
-							return () => search.setInput(null);
-						}}
-						aria-label="会話を検索"
-						aria-invalid={search.result.error !== ""}
-						title="会話を検索 (Ctrl+F)"
-						class="w-full min-w-0 border-0 bg-transparent px-2 py-1 text-[12px] text-input-text outline-none"
-						placeholder="検索"
-						autocomplete="off"
-						spellcheck={false}
-						value={search.query}
-						oninput={(event) =>
-							search.setQuery(event.currentTarget.value)}
-						onkeydown={handleSearchKey}
-					/>
+					<SettingsTooltip content="会話を検索 (Ctrl+F)">
+						{#snippet children({ props: tooltipProps })}
+							<input
+								{...tooltipProps}
+								type="text"
+								{@attach (element: HTMLInputElement) => {
+									search.setInput(element);
+									return () => search.setInput(null);
+								}}
+								aria-label="会話を検索"
+								aria-invalid={search.result.error !== ""}
+								class="w-full min-w-0 border-0 bg-transparent px-2 py-1 text-[12px] text-input-text outline-none"
+								placeholder="検索"
+								autocomplete="off"
+								spellcheck={false}
+								value={search.query}
+								oninput={(event) =>
+									search.setQuery(event.currentTarget.value)}
+								onkeydown={handleSearchKey}
+							/>
+						{/snippet}
+					</SettingsTooltip>
 					{#each optionButtons as [key, label, icon] (key)}<SettingsTooltip
 							content={label}
 							>{#snippet children({ props })}<button

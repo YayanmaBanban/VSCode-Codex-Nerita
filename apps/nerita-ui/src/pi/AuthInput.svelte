@@ -5,6 +5,7 @@
 		type PiAuthRequest,
 	} from "@nerita/shared/piAuth";
 	import { cn } from "cnfast";
+	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
 
 	import "../chat/chat.css";
 
@@ -79,20 +80,25 @@
 			{/each}</select
 		>
 	{:else}
-		<input
-			id="auth-input"
-			type={inputType}
-			autocomplete="off"
-			spellcheck={false}
-			{@attach focusInput}
-			title={prompt.message}
-			placeholder={prompt.message}
-			oninput={(event) => setHasValue(Boolean(event.currentTarget.value))}
-			class={cn(
-				"min-w-0 rounded-[4px] border border-menu-border bg-menu p-[10px]",
-				"text-menu-text outline-settings-focus",
-			)}
-		/>
+		<SettingsTooltip content={prompt.message}>
+			{#snippet children({ props: tooltipProps })}
+				<input
+					{...tooltipProps}
+					id="auth-input"
+					type={inputType}
+					autocomplete="off"
+					spellcheck={false}
+					{@attach focusInput}
+					placeholder={prompt.message}
+					oninput={(event) =>
+						setHasValue(Boolean(event.currentTarget.value))}
+					class={cn(
+						"min-w-0 rounded-[4px] border border-menu-border bg-menu p-[10px]",
+						"text-menu-text outline-settings-focus",
+					)}
+				/>
+			{/snippet}
+		</SettingsTooltip>
 	{/if}
 	<div class="mb-[16px] flex flex-wrap items-baseline gap-[8px]">
 		<button type="submit" disabled={!hasValue}>送信 </button><button

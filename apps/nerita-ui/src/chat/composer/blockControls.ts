@@ -45,7 +45,7 @@ export function createBlockControls(
 	controls.className = "flex h-7 items-center justify-end px-1";
 	const button = document.createElement("button");
 	button.type = "button";
-	button.title = "コードブロックを削除";
+	button.setAttribute("data-composer-block-delete", "");
 	button.setAttribute("aria-label", "コードブロックを削除");
 	button.className =
 		"flex h-6 w-6 items-center justify-center border-0 bg-transparent p-1 text-muted hover:text-input-text";

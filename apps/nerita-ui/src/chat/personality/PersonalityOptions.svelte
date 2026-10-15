@@ -174,7 +174,7 @@
 			</div>
 			<div class="min-h-0 flex-1 overflow-y-auto px-[16px] pb-[16px]">
 				<Dialog.Description
-					class="mt-0 text-[11px] leading-[1.7] text-muted"
+					class="mt-0 text-[12px] leading-[1.7] text-muted"
 					>グローバルとワークスペースの指示を、この順で結合します。変更は会話の開始・分岐・再開時に反映されます。</Dialog.Description
 				>
 				{#if error !== null && error !== ""}<p

@@ -4,7 +4,7 @@ import type {
 	SessionReferencesRequest,
 	SessionReferencesResult,
 } from "@nerita/shared/sessionReferences";
-/** 作業フォルダーで絞った結果を、サーバーのページ順で返す。 */
+/** 作業フォルダで絞った結果を、サーバーのページ順で返す。 */
 export function mockSessionReferences(
 	request: SessionReferencesRequest,
 ): SessionReferencesResult {

@@ -5,6 +5,9 @@ import { containsPath } from "../AgentAccessPolicy";
 import { canonicalPath } from "../WorkspacePathPolicy";
 import { z } from "zod";
 import { hasNestedRepository } from "./TrustRepositoryBoundary";
+import type { BackendId } from "@nerita/shared/backend";
+import type { TrustReply } from "@nerita/shared/workspaceTrust";
+import type { CodexWorkspaceTrust } from "../../backends/codex/settings/CodexWorkspaceTrust";
 
 const savedTrust = z
 	.object({
@@ -61,11 +64,12 @@ export class WorkspaceTrustStore {
 	private queue: Promise<void> = Promise.resolve();
 	private failed = false;
 	private pendingRestrictions = new Map<object, string | undefined>();
-	private listeners = new Set<(root?: string) => void>();
+	private listeners = new Set<(root?: string, backend?: BackendId) => void>();
 	/** 保存済みの信頼を検証し、破損や重複があれば全件を未信頼として扱う。 */
 	constructor(
 		private readonly storage: TrustStorage,
 		readonly audit: TrustAudit = () => {},
+		private readonly codex?: CodexWorkspaceTrust,
 	) {
 		try {
 			const data = storage.read();
@@ -110,7 +114,13 @@ export class WorkspaceTrustStore {
 		return [...this.records.values()].map((record) => ({ ...record }));
 	}
 	/** VS Code 側の状態変更でも待機中の要求を失効させる。 */
-	invalidate(root?: string): void {
+	invalidate(root?: string, backend: BackendId = "pi"): void {
+		if (backend === "codex") {
+			for (const listener of this.listeners) {
+				listener(root, backend);
+			}
+			return;
+		}
 		const previous = this.controller;
 		this.controller = new AbortController();
 		const reason = new Error(
@@ -129,16 +139,25 @@ export class WorkspaceTrustStore {
 			}
 		}
 		for (const listener of this.listeners) {
-			listener(root);
+			listener(root, backend);
 		}
 	}
 	/** 信頼状態の変更を購読し、UI の表示更新とセッションの取り消しに使う。 */
-	onChange(listener: (root?: string) => void): () => void {
+	onChange(
+		listener: (root?: string, backend?: BackendId) => void,
+	): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
 	}
 	/** 実体パスを照合し、最も深い登録ルートの状態を採用する。 */
-	async trusted(path: string): Promise<boolean> {
+	async trusted(path: string, backend: BackendId = "pi"): Promise<boolean> {
+		if (backend === "codex") {
+			return this.codex?.trusted(path) ?? false;
+		}
+		return this.trustedPi(path);
+	}
+	/** Pi の実体識別と外部取得物の境界は Nerita の記録で照合する。 */
+	private async trustedPi(path: string): Promise<boolean> {
 		if (this.failed) {
 			return false;
 		}
@@ -183,7 +202,14 @@ export class WorkspaceTrustStore {
 		}
 	}
 	/** 初めて開いたルートを登録し、既存の明示的な信頼を上書きしない。 */
-	async registerWorkspace(root: string): Promise<void> {
+	async registerWorkspace(
+		root: string,
+		backend: BackendId = "pi",
+	): Promise<void> {
+		if (backend === "codex") {
+			await this.requireCodex().registerWorkspace(root);
+			return;
+		}
 		const canonical = await canonicalPath(root, process.cwd());
 		if (!this.records.has(trustKey(canonical))) {
 			await this.change(canonical, false, "workspace");
@@ -197,7 +223,32 @@ export class WorkspaceTrustStore {
 	): Promise<void> {
 		return this.change(root, trusted, undefined, expected);
 	}
-	/** 存在しなくなったフォルダーも保存済みのキーで削除する。 */
+	/** 表示するバックエンドの保存先から最新の一覧を取得する。 */
+	async listFor(backend: BackendId): Promise<TrustReply["records"]> {
+		return backend === "codex" ? this.requireCodex().list() : this.list();
+	}
+	/** 信頼変更は選択したバックエンドの保存先へだけ反映する。 */
+	setBackendTrust(
+		root: string,
+		trust: "trusted" | "untrusted" | "unset",
+		backend: BackendId,
+		expected?: TrustRecord["identity"],
+	): Promise<void> {
+		if (backend === "codex") {
+			return this.requireCodex().change(root, trust, expected);
+		}
+		return trust === "unset"
+			? this.remove(root)
+			: this.setUserTrust(root, trust === "trusted", expected);
+	}
+	/** Codex の設定 API がない環境を、無条件の信頼へ切り替えない。 */
+	private requireCodex(): CodexWorkspaceTrust {
+		if (!this.codex) {
+			throw new Error("Codex の信頼管理を初期化できません。");
+		}
+		return this.codex;
+	}
+	/** 存在しなくなったフォルダも保存済みのキーで削除する。 */
 	remove(root: string): Promise<void> {
 		const scope = this.changeScope(root);
 		const release = this.restrict(scope);
@@ -217,7 +268,7 @@ export class WorkspaceTrustStore {
 			);
 			if (matchesSome2) {
 				throw new Error(
-					"親フォルダーの信頼を取り消してから、この記録を削除してください。",
+					"親フォルダの信頼を取り消してから、この記録を削除してください。",
 				);
 			}
 			const records = new Map(this.records);

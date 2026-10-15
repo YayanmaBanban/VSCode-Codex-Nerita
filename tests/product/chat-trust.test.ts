@@ -42,7 +42,8 @@ void test("信頼の付与・取消し、会話ルートとバックエンドの
 		await host.notices.refresh();
 		assert.equal(host.messages.at(-1)?.untrusted, true);
 		host.changeBackend("codex");
-		assert.equal(host.messages.at(-1)?.untrusted, false);
+		await host.notices.refresh();
+		assert.equal(host.messages.at(-1)?.untrusted, true);
 		assert.ok(host.messages.every(isHostMessage));
 	} finally {
 		host.notices.dispose();

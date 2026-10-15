@@ -8,6 +8,9 @@
 
 /* 実行時に変わる VS Code の色変数を各ユーティリティから参照する。 */
 @theme inline {
+	/* VS Code の基準サイズが小さくても、補助テキストを 12px 未満にしない。 */
+	--text-xs: max(12px, 0.75rem);
+	--text-sm: max(12px, 0.875rem);
 	--color-muted: var(--nerita-description-foreground);
 	--color-input: var(--nerita-input-background);
 	--color-input-text: var(--nerita-input-foreground);

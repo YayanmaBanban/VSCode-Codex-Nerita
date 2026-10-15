@@ -5,15 +5,18 @@
 	import type { Snippet } from "svelte";
 	import { prefersReducedMotion } from "svelte/motion";
 	import type { TransitionConfig } from "svelte/transition";
+	import SettingsTooltipDomAnchor from "./SettingsTooltipDomAnchor.svelte";
 	/** ツールチップとトリガーの表示契約。トリガーには受け取った属性を適用する。 */
 	type Props = {
-		children: Snippet<[{ props: Record<string, unknown> }]>;
+		children?: Snippet<[{ props: Record<string, unknown> }]>;
+		externalTrigger?: HTMLElement;
 		content?: string | Snippet | false | null | undefined;
 		aboveMenu?: boolean;
 		disabled?: boolean;
 	};
 	let {
 		children,
+		externalTrigger,
 		content,
 		aboveMenu = false,
 		disabled = false,
@@ -53,15 +56,26 @@
 		ignoreNonKeyboardFocus
 		disableHoverableContent
 	>
-		<Tooltip.Root bind:open {disabled}>
+		<Tooltip.Root
+			bind:open={
+				() => open && !disabled,
+				(value: boolean) => {
+					open = value;
+				}
+			}
+			{disabled}
+		>
 			<Tooltip.Trigger bind:ref={trigger}>
 				{#snippet child({
 					props,
 				}: {
 					props: Record<string, unknown>;
-				})}{@render children({
-						props,
-					})}{/snippet}
+				})}{#if externalTrigger}<SettingsTooltipDomAnchor
+							element={externalTrigger}
+							{props}
+						/>{:else}{@render children?.({
+							props,
+						})}{/if}{/snippet}
 			</Tooltip.Trigger>
 			<Tooltip.Portal>
 				<Tooltip.Content
@@ -94,4 +108,4 @@
 			</Tooltip.Portal>
 		</Tooltip.Root>
 	</Tooltip.Provider>
-{:else}{@render children({ props: {} })}{/if}
+{:else}{@render children?.({ props: {} })}{/if}

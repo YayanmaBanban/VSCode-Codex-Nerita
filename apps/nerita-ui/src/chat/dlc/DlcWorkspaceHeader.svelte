@@ -2,14 +2,11 @@
 <script lang="ts">
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 	import WorktreeControls from "./DlcWorktrees.svelte";
+	import ConfigControl from "../composer/ConfigControl.svelte";
 
 	let { ui }: { ui: ReturnType<typeof useDlcWorkspace> } = $props();
 	/** 選択したバックエンドを検証し、現在の依頼とリビジョンを付けて変更を要求する。 */
-	function backendChanged(event: Event) {
-		if (!(event.currentTarget instanceof HTMLSelectElement)) {
-			return;
-		}
-		const backend = event.currentTarget.value;
+	function backendChanged(backend: string) {
 		if (backend !== "pi" && backend !== "codex") {
 			return;
 		}
@@ -29,26 +26,44 @@
 	<h1 class="my-2 text-[20px] font-semibold break-words">
 		{ui.selected?.title ?? ""}
 	</h1>
-	<div class="flex flex-wrap items-center gap-3 text-muted">
+	<div class="flex flex-wrap gap-2 text-[12px]">
 		<span
-			>管理元: {ui.view.environment?.workspace ?? "確認中"} / {ui.view
-				.environment?.branch ?? "ブランチ未取得"}</span
+			class="max-w-full rounded-[5px] bg-message-code px-2 py-[6px] leading-none [overflow-wrap:anywhere] text-foreground"
+			>{ui.view.environment?.workspace ?? "ワークスペースの確認中"}</span
 		>
-		<label class="flex items-center gap-2"
-			>バックエンド<select
-				aria-label="DLC のバックエンド"
-				value={ui.view.backend}
+		<span
+			class="max-w-full rounded-[5px] bg-message-code px-2 py-[6px] leading-none [overflow-wrap:anywhere] text-foreground"
+			>{ui.view.environment?.branch ?? "ブランチの確認中"}</span
+		>
+	</div>
+	<section
+		class="mt-4 rounded-[8px] border border-solid border-input-border p-3"
+		aria-label="実行環境"
+	>
+		<h2 class="m-0 mb-4 text-[13px] font-semibold">実行環境</h2>
+		<div
+			class="grid min-w-0 grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] items-center gap-3 text-[13px]"
+		>
+			<span>バックエンド</span>
+			<ConfigControl
+				appearance="field"
+				option={{
+					id: "dlc-backend",
+					name: "DLC のバックエンド",
+					currentValue: ui.view.backend,
+					options: [
+						{ name: "Codex", value: "codex" },
+						{ name: "Pi", value: "pi" },
+					],
+				}}
 				disabled={ui.selected === null ||
 					ui.view.assignmentPending ||
 					ui.view.running.some(
 						(run) => run.intentId === ui.selected?.intentId,
 					)}
-				onchange={backendChanged}
-				><option value="codex">Codex</option><option value="pi"
-					>Pi</option
-				></select
-			></label
-		>
-	</div>
-	<WorktreeControls {ui} />
+				onChange={backendChanged}
+			/>
+		</div>
+		<WorktreeControls {ui} />
+	</section>
 </header>

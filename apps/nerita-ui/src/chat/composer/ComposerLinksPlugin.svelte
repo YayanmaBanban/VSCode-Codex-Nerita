@@ -18,7 +18,6 @@
 					attributes: {
 						target: "_blank",
 						rel: "noopener noreferrer",
-						title: "Ctrl＋クリックでリンクを開く",
 					},
 				}
 			: null;

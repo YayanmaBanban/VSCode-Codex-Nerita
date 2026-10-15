@@ -4,7 +4,6 @@ import type { BackendSession } from "../../../session/chatSession";
 import { webviewHtml } from "../../../webview/webviewHtml";
 import { WorkflowPanel } from "./WorkflowPanel";
 import { workflowDocument } from "./WorkflowDocument";
-import { registerWorkflowCommand } from "./WorkflowEditorCommand";
 
 export const workflowViewType = "nerita.pi.workflow";
 
@@ -57,7 +56,7 @@ class WorkflowEditor implements vscode.CustomTextEditorProvider {
 	}
 }
 
-/** 通常のエディタグループと新規作成コマンドを登録する。 */
+/** 既存の Workflow 定義を通常のエディタグループで開けるようにする。 */
 export function registerWorkflowEditor(
 	context: vscode.ExtensionContext,
 	backend: BackendSession,
@@ -69,5 +68,4 @@ export function registerWorkflowEditor(
 			{ supportsMultipleEditorsPerDocument: false },
 		),
 	);
-	registerWorkflowCommand(context, workflowViewType);
 }

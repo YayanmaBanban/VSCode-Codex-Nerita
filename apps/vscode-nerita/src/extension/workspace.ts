@@ -16,10 +16,10 @@ export function sameCwd(left: string, right: string): boolean {
 			.toLowerCase();
 	return normalize(left) === normalize(right);
 }
-/** VS Code に依存せず検査できるフォルダー情報。 */
+/** VS Code に依存せず検査できるフォルダ情報。 */
 type WorkspaceFolder = { uri: { scheme: string; fsPath: string } };
 
-/** 単一の信頼済みローカルフォルダーだけを Codex の作業場所にする。 */
+/** 単一の信頼済みローカルフォルダだけを Codex の作業場所にする。 */
 export function requireLocalWorkspace(
 	folders: readonly WorkspaceFolder[] | undefined,
 	trusted: boolean,
@@ -27,28 +27,28 @@ export function requireLocalWorkspace(
 ): string {
 	if (!isNonZeroNumber(folders?.length)) {
 		throw new WorkspaceError(
-			"作業フォルダーが開かれていません。VS Codeで「ファイル → フォルダーを開く」を選択してから、再接続してください。",
+			"作業フォルダが開かれていません。VS Codeで「ファイル → フォルダを開く」を選択してから、再接続してください。",
 		);
 	}
 	if (!trusted) {
 		throw new WorkspaceError(
-			"ワークスペースが制限モードです。フォルダーの内容を確認して信頼を設定してから、再接続してください。",
+			"ワークスペースが制限モードです。フォルダの内容を確認して信頼を設定してから、再接続してください。",
 		);
 	}
 	if (isNonEmptyString(remoteName)) {
 		throw new WorkspaceError(
-			"Remote・WSL・Dev Containersには未対応です。ローカルのVS Codeウィンドウでフォルダーを開いてください。",
+			"Remote・WSL・Dev Containersには未対応です。ローカルのVS Codeウィンドウでフォルダを開いてください。",
 		);
 	}
 	if (folders.length !== 1) {
 		throw new WorkspaceError(
-			"現在は一つの作業フォルダーに対応しています。フォルダーを一つだけ開いてから、再接続してください。",
+			"現在は一つの作業フォルダに対応しています。フォルダを一つだけ開いてから、再接続してください。",
 		);
 	}
 	const folder = folders[0];
 	if (!folder || folder.uri.scheme !== "file") {
 		throw new WorkspaceError(
-			"仮想ワークスペースには未対応です。ローカルディスクのフォルダーを開いてください。",
+			"仮想ワークスペースには未対応です。ローカルディスクのフォルダを開いてください。",
 		);
 	}
 	return folder.uri.fsPath;

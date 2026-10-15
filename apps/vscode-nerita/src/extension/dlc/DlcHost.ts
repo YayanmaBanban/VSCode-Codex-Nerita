@@ -10,13 +10,9 @@ import type { WorkspaceDetection } from "@nerita/dlc/workspace";
 import type {
 	DlcUiMessage,
 	DlcView,
-	DlcAction,
 	DlcStartHold,
 } from "@nerita/shared/dlc/contracts";
-import {
-	backendWorkspaceTrusted,
-	type BackendId,
-} from "@nerita/shared/backend";
+import type { BackendId } from "@nerita/shared/backend";
 import type { HostMessage } from "@nerita/shared/messages";
 import { errorText } from "@nerita/shared/errorText";
 import { requireLocalWorkspace } from "../workspace";
@@ -67,6 +63,7 @@ export class DlcHost {
 	private controllerActions = new Map<string, Set<object>>();
 	private assigningIntents = new Set<string>();
 	private targets: DlcView["targets"] = [];
+	private targetTrust = new Map<string, Record<BackendId, boolean>>();
 	private targetId: string | null = null;
 	private resetting: Promise<void> | undefined;
 	private selectionSequence = 0;
@@ -134,7 +131,11 @@ export class DlcHost {
 						}
 					: {}),
 			})),
-			targets: this.targets,
+			targets: this.targets.map((target) => ({
+				...target,
+				trusted:
+					this.targetTrust.get(target.id)?.[this.backend] ?? false,
+			})),
 			targetId: this.targetId,
 			assignmentPending: this.assigningIntents.has(this.selectedId ?? ""),
 			targetBusy: this.targets.some(
@@ -209,10 +210,9 @@ export class DlcHost {
 	): boolean {
 		return (
 			target !== undefined &&
-			!backendWorkspaceTrusted(
-				this.executionForIntent.get(intentId)?.backend ?? this.backend,
-				() => target.trusted,
-			)
+			this.targetTrust.get(target.id)?.[
+				this.executionForIntent.get(intentId)?.backend ?? this.backend
+			] !== true
 		);
 	}
 	/** 非同期の Store 照合も、表示と同じバックエンド別の信頼規則を使う。 */
@@ -220,7 +220,7 @@ export class DlcHost {
 		backend: BackendId,
 		root: string,
 	): boolean | Promise<boolean> {
-		return backendWorkspaceTrusted(backend, () => this.trust.trusted(root));
+		return this.trust.trusted(root, backend);
 	}
 	/** 現在の DLC 状態を Runtime の通知経路から配信する。 */
 	private publish(): void {
@@ -274,7 +274,7 @@ export class DlcHost {
 		const trusted = await this.workspaceTrusted(this.backend, root);
 		if (!trusted) {
 			throw new Error(
-				"DLC のワークスペースまたは信頼状態が変更されました。",
+				"DLC のワークスペースを信頼してください。信頼管理画面で設定できます。",
 			);
 		}
 		// 保存先は Intent 間で共有する。Pi の実行許可は各 Intent の実行先で照合する。
@@ -430,7 +430,7 @@ export class DlcHost {
 			target.root,
 		);
 		if (!trusted) {
-			throw new Error("実行先の Nerita Trust を確認してください。");
+			throw new Error("実行先のワークスペースの信頼を確認してください。");
 		}
 		return target.root;
 	}
@@ -468,11 +468,18 @@ export class DlcHost {
 		this.targets = [];
 		const targets = await Promise.all(
 			(await workspace.worktrees.list(workspace.signal)).map(
-				async (target) => ({
-					...target,
-					directory: target.root,
-					trusted: await this.workspaceTrusted("pi", target.root),
-				}),
+				async (target) => {
+					const [pi, codex] = await Promise.all([
+						this.trust.trusted(target.root, "pi"),
+						this.trust.trusted(target.root, "codex"),
+					]);
+					return {
+						...target,
+						directory: target.root,
+						trusted: pi,
+						trust: { pi, codex },
+					};
+				},
 			),
 		).then((targets) =>
 			targets.map(
@@ -484,6 +491,7 @@ export class DlcHost {
 					main,
 					removable,
 					trusted,
+					trust,
 				}) => ({
 					id,
 					directory,
@@ -492,6 +500,7 @@ export class DlcHost {
 					main,
 					removable,
 					trusted,
+					trust,
 				}),
 			),
 		);
@@ -499,6 +508,9 @@ export class DlcHost {
 			return;
 		}
 		this.targets = targets;
+		this.targetTrust = new Map(
+			targets.map((target) => [target.id, target.trust]),
+		);
 		this.restoreAssignments(workspace);
 	}
 	/** 割当は Host の保存値を使い、一覧を更新しても利用者の実行先を選び直さない。 */
@@ -1111,38 +1123,6 @@ export class DlcHost {
 			this.runningIntents.delete(message.intentId);
 		}
 	}
-	/** 実行・停止・再試行は Webview と同じ受付経路を使い、その他の操作は作業画面へ誘導する。 */
-	async command(
-		name: "create" | "plan" | "run" | "cancel" | "status" | "retry",
-	): Promise<DlcView> {
-		await this.receive({
-			type: "ui/setMode",
-			requestId: randomUUID(),
-			mode: "dlc",
-		});
-		if (name === "run" || name === "cancel" || name === "retry") {
-			const projection = this.selected?.projection();
-			if (projection) {
-				const item = projection.workItems.find((item) =>
-					["failed", "cancelled", "interrupted"].includes(
-						item.status,
-					),
-				);
-				const action = commandAction(name, item?.id);
-				if (action) {
-					await this.receive({
-						type: "dlc/action",
-						requestId: randomUUID(),
-						intentId: projection.intentId,
-						revision: projection.revision,
-						action,
-					});
-				}
-			}
-		}
-		await vscode.commands.executeCommand("nerita.dlc.openWorkspace");
-		return this.view();
-	}
 	/** 同時のリセットを1つの Promise にまとめ、古い保存先の解放を次の初期化より先に終える。 */
 	reset(): Promise<void> {
 		this.resetting ??= this.clearWorkspace().finally(() => {
@@ -1209,15 +1189,4 @@ export class DlcHost {
 		this.startHolds.clear();
 		this.publish();
 	}
-}
-
-/** 実行・停止・再試行を操作要求へ変換し、対象作業が不明な再試行は生成しない。 */
-function commandAction(
-	name: "run" | "cancel" | "retry",
-	workItemId: string | undefined,
-): DlcAction | undefined {
-	if (name !== "retry") {
-		return { type: name };
-	}
-	return workItemId === undefined ? undefined : { type: "retry", workItemId };
 }

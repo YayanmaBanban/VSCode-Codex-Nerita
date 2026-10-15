@@ -95,7 +95,7 @@
 	/>
 	<output
 		aria-label="送信した要求"
-		class="mt-[12px] block text-[11px] [overflow-wrap:anywhere]"
+		class="mt-[12px] block text-[12px] [overflow-wrap:anywhere]"
 		>{JSON.stringify(requests)}</output
 	>
 </div>

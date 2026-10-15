@@ -1,4 +1,4 @@
-// Codex の履歴一覧を作業フォルダー単位で取得し、ページと接続世代を管理する。
+// Codex の履歴一覧を作業フォルダ単位で取得し、ページと接続世代を管理する。
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -65,7 +65,7 @@ export class CodexCatalog {
 	): void {
 		this.pendingThreads.update(epoch, id, change);
 	}
-	/** 次ページは明示操作時だけ追加し、別フォルダーの行を除外する。 */
+	/** 次ページは明示操作時だけ追加し、別フォルダの行を除外する。 */
 	async refresh(
 		archived = this.session.snapshot().sessionsArchived,
 		more = false,
@@ -156,7 +156,7 @@ export class CodexCatalog {
 			}
 		}
 	}
-	/** カーソルの循環を検出し、同じ作業フォルダーの履歴を統合する。 */
+	/** カーソルの循環を検出し、同じ作業フォルダの履歴を統合する。 */
 	private applyCatalogPage(
 		page: { data: HistoryThread[]; nextCursor: string | null },
 		cursor: string | undefined,

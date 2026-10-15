@@ -31,10 +31,7 @@ import {
 	releaseSandboxManagement,
 } from "../runtime/SandboxPanel";
 import { credentialService } from "../credentials/CredentialService";
-import {
-	backendWorkspaceTrusted,
-	type BackendId,
-} from "@nerita/shared/backend";
+import type { BackendId } from "@nerita/shared/backend";
 
 /** Codex の接続先に VS Code 標準のワークスペース条件を適用する。 */
 function workspaceDirectory(): string {
@@ -156,7 +153,7 @@ function createPiFactory(
 	};
 }
 
-/** Pi の作業フォルダーを選び、ローカルの実体と信頼状態を確認してから実行先を返す。 */
+/** Pi の作業フォルダを選び、ローカルの実体と信頼状態を確認してから実行先を返す。 */
 async function piDirectory(
 	executionRoot: string | undefined,
 	trustStore: WorkspaceTrustStore | undefined,
@@ -165,10 +162,10 @@ async function piDirectory(
 	let folder = folders?.[0];
 	if (executionRoot === undefined && folders && folders.length > 1) {
 		folder = await vscode.window.showWorkspaceFolderPick({
-			placeHolder: "この会話の作業フォルダーを選択してください",
+			placeHolder: "この会話の作業フォルダを選択してください",
 		});
 		if (!folder) {
-			throw new Error("作業フォルダーの選択を取り消しました。");
+			throw new Error("作業フォルダの選択を取り消しました。");
 		}
 	}
 	const selectedRoot =
@@ -180,7 +177,7 @@ async function piDirectory(
 		);
 	return explicitDirectory(selectedRoot, trustStore, "pi");
 }
-/** 作業フォルダーに限定したサンドボックスの状態を作り、セッションの中断時に解放する。 */
+/** 作業フォルダに限定したサンドボックスの状態を作り、セッションの中断時に解放する。 */
 async function piSandbox(
 	context: vscode.ExtensionContext,
 	sandboxId: string,
@@ -215,12 +212,9 @@ async function explicitDirectory(
 		throw new Error("信頼済みのローカル環境で実行してください。");
 	}
 	const cwd = await realpath(root ?? workspaceDirectory());
-	const matchesValue = !(await backendWorkspaceTrusted(
-		backend,
-		() => trust?.trusted(cwd) ?? false,
-	));
+	const matchesValue = (await trust?.trusted(cwd, backend)) !== true;
 	if (matchesValue) {
-		throw new Error("実行先の Nerita Trust を確認してください。");
+		throw new Error("実行先のワークスペースの信頼を確認してください。");
 	}
 	return cwd;
 }

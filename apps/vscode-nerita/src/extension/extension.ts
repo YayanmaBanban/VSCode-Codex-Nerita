@@ -55,7 +55,9 @@ export async function activate(
 	}
 	const session = await createRuntime(context, trust);
 	context.subscriptions.push({
-		dispose: trust.onChange((root) => session.invalidateTrust(root)),
+		dispose: trust.onChange((root, backend) =>
+			session.invalidateTrust(root, backend),
+		),
 	});
 	controller = session;
 	dlc = registerDlcCommands(context, trust, session);
@@ -75,9 +77,6 @@ export async function activate(
 		),
 		vscode.commands.registerCommand("nerita.codex.openChat", () =>
 			vscode.commands.executeCommand("nerita.codex.chat.focus"),
-		),
-		vscode.commands.registerCommand("nerita.codex.newSession", () =>
-			session.receive({ type: "session/new", requestId: randomUUID() }),
 		),
 		vscode.commands.registerCommand(
 			"nerita.codex.codeBlock",

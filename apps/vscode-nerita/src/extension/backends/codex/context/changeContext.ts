@@ -41,7 +41,7 @@ export async function readChangeContext(
 	scope: ChangeScope,
 ): Promise<string> {
 	try {
-		// `cwd` を指定してフォルダー設定も解決し、取得のたびに最新値を使う。
+		// `cwd` を指定してフォルダ設定も解決し、取得のたびに最新値を使う。
 		const excluded = readExcludedPatterns(cwd);
 		const refs = diffRefs(scope);
 		const paths = [
@@ -93,7 +93,7 @@ export async function readChangeContext(
 	}
 }
 
-/** フォルダーごとの差分除外設定を検証する。 */
+/** フォルダごとの差分除外設定を検証する。 */
 function readExcludedPatterns(cwd: string) {
 	const excluded = vscode.workspace
 		.getConfiguration("nerita.codex", vscode.Uri.file(cwd))

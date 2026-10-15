@@ -6,7 +6,6 @@ import type { ToolCall } from "../ApprovedToolCall";
 import { containsPath } from "../AgentAccessPolicy";
 import { type WorkspaceTrustStore } from "./WorkspaceTrustStore";
 import { commandTrustTargets } from "./TrustCommandTargets";
-import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 
 /** 子は親のコンテキストを共有し、信頼の上限を拡大しない。 */
 type Context = {
@@ -58,11 +57,7 @@ export async function evaluateTrust(
 	let trusted = false;
 	if (context.enabled()) {
 		const decisions = await Promise.all(
-			paths.map(async (path) =>
-				backendWorkspaceTrusted("pi", () =>
-					context.store.trusted(path),
-				),
-			),
+			paths.map((path) => context.store.trusted(path)),
 		);
 		trusted = decisions.every(Boolean);
 	}

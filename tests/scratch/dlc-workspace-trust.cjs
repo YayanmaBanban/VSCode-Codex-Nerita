@@ -60,24 +60,41 @@ async function capture(
 		await page.goto(
 			`${storybookUrl}/iframe.html?id=${storyId}&viewMode=story&globals=theme:${theme}`,
 		);
-		await expect(page.getByLabel("DLC の Worktree")).toHaveValue(
-			"worktree",
-		);
+		const worktree = page.getByRole("combobox", {
+			name: "DLC の Worktree",
+		});
+		await expect(worktree).toBeVisible({ timeout: 30000 });
+	await expect(worktree).toHaveText("work-new（未信頼）");
 		const trust = page.getByRole("button", {
-			name: "実行先の信頼を確認",
+			name: "ワークスペースを信頼する",
 			exact: true,
 		});
-		await expect(trust).toHaveCount(backend === "pi" ? 1 : 0);
+	await expect(trust).toHaveCount(1);
+		await worktree.click();
 		await expect(
-			page.getByRole("option", {
-				name: backend === "pi" ? "work-new（未信頼）" : "work-new",
+			page.getByRole("button", {
+			name: "work-new（未信頼）",
 				exact: true,
 			}),
 		).toHaveCount(1);
+		await page.keyboard.press("Escape");
 		await page.screenshot({
 			path: join(directory, `${theme}-${width}-${backend}.png`),
 			fullPage: true,
 		});
+		if (backend === "pi") {
+			await trust.hover();
+			await expect(
+				page.getByRole("tooltip", { name: "ワークスペースを信頼する" }),
+			).toBeVisible();
+			await page.screenshot({
+				path: join(
+					directory,
+					`${theme}-${width}-${backend}-tooltip.png`,
+				),
+				fullPage: true,
+			});
+		}
 	} catch (error) {
 		await page.screenshot({
 			path: join(directory, `${theme}-${width}-${backend}-failed.png`),

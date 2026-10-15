@@ -44,7 +44,7 @@
 {:else}<SettingsTooltip content={control.description}
 		>{#snippet children({ props })}<div
 				{...props}
-				class="inline-flex max-w-full min-w-0 items-center gap-[5px] px-[5px] text-[11px] text-muted"
+				class="inline-flex max-w-full min-w-0 items-center gap-[5px] px-[5px] text-[12px] text-muted"
 			>
 				<span class="truncate">{control.label}</span><progress
 					aria-label={control.label}

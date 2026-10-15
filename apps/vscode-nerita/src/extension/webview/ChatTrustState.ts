@@ -5,7 +5,6 @@ import type { HostMessage } from "@nerita/shared/messages";
 import type { ChatSession } from "../session/chatSession";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
 import { configuredBackend } from "./backendSettings";
-import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 
 /** 信頼・作業ルート・バックエンドの変更を追跡し、古い非同期結果を破棄する。 */
 export class ChatTrustState {
@@ -57,14 +56,12 @@ export class ChatTrustState {
 		const cwd =
 			this.session.snapshot().cwd ??
 			vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-		const trusted = isNonEmptyString(cwd)
-			? backendWorkspaceTrusted(
-					configuredBackend(),
-					() =>
-						vscode.workspace.isTrusted &&
-						(this.store?.trusted(cwd) ?? false),
-				)
-			: true;
+		let trusted: boolean | Promise<boolean> = true;
+		if (isNonEmptyString(cwd)) {
+			trusted =
+				vscode.workspace.isTrusted &&
+				(this.store?.trusted(cwd, configuredBackend()) ?? false);
+		}
 		const untrusted = !(typeof trusted === "boolean"
 			? trusted
 			: await trusted);

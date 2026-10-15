@@ -145,7 +145,7 @@ async function git(cwd: string, args: string[]) {
 	return stdout;
 }
 
-/** 削除済みファイルは親フォルダーの実体を確認し、リンク先がワークスペース外にある場合も拒否する。 */
+/** 削除済みファイルは親フォルダの実体を確認し、リンク先がワークスペース外にある場合も拒否する。 */
 async function validateRealPath(root: string, path: string) {
 	const actualRoot = await realpath(root);
 	let actualPath: string;
@@ -162,7 +162,7 @@ async function validateRealPath(root: string, path: string) {
 	}
 }
 
-/** 同名の兄弟フォルダーもワークスペース内と誤認しない。 */
+/** 同名の兄弟フォルダもワークスペース内と誤認しない。 */
 function outsideRoot(path: string) {
 	const parentPath =
 		path === ".." || path.startsWith("../") || path.startsWith("..\\");

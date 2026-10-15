@@ -22,7 +22,7 @@
 			fields={[
 				{
 					id: "cwd",
-					label: "作業フォルダー",
+					label: "作業フォルダ",
 					value: permission.cwd,
 					display: "text",
 				},

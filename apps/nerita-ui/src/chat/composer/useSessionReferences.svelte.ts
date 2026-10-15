@@ -261,7 +261,7 @@ function sessionReferenceNotice(
 		nonEmptyString(data?.error) ??
 		(loadingEntries
 			? "読み込み中…"
-			: "同じ作業フォルダーのセッションを参照します。")
+			: "同じ作業フォルダのセッションを参照します。")
 	);
 }
 

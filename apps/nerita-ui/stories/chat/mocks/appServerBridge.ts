@@ -23,7 +23,7 @@ export function createAppServerBridge(scenario: Scenario) {
 						{
 							id: "reason",
 							label: "理由",
-							value: "作業フォルダーでの実行を確認してください。",
+							value: "作業フォルダでの実行を確認してください。",
 							display: "text",
 						},
 					],

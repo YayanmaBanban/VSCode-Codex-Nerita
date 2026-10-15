@@ -54,7 +54,7 @@
 	>
 		<Icon size={16} class="shrink-0" aria-hidden="true" /><span
 			class="min-w-0 [overflow-wrap:anywhere]">{tool.title}</span
-		>{#if tool.status !== "completed"}<span class="shrink-0 text-[11px]"
+		>{#if tool.status !== "completed"}<span class="shrink-0 text-[12px]"
 				>{labels[tool.status]}</span
 			>{/if}<ChevronDown
 			size={12}

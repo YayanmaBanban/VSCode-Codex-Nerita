@@ -17,6 +17,7 @@
 	} from "./referencePresentation";
 	import { OPEN_REFERENCE_COMMAND } from "./ReferenceActionsPlugin.svelte";
 	import ReferenceChipContent from "../ReferenceChipContent.svelte";
+	import SettingsTooltip from "../SettingsTooltip.svelte";
 
 	let {
 		nodeKey,
@@ -59,39 +60,44 @@
 	const keepSelection = (event: MouseEvent) => event.preventDefault();
 </script>
 
-<span
-	title={pathText(path)}
-	aria-label={`${referenceKindLabel(path)}: ${pathText(path)}`}
-	class={cn(
-		"inline-flex max-w-full items-center rounded-[5px] border border-solid border-panel-border bg-input align-middle text-[12px] leading-normal [&_svg]:shrink-0",
-	)}
->
-	<button
-		type="button"
-		disabled={!editable}
-		aria-label={referenceActionLabel(path)}
-		class={cn(
-			"inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px]",
-			"hover:bg-settings-hover",
-			"focus-visible:outline-2 focus-visible:outline-focus",
-		)}
-		onmousedown={keepSelection}
-		onkeydown={stopKey}
-		onkeyup={stopKey}
-		onclick={open}><ReferenceChipContent {path} /></button
-	>
-	<button
-		type="button"
-		disabled={!editable}
-		aria-label={`${path.name} の参照を取り外す`}
-		class={cn(
-			"inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px]",
-			"hover:bg-settings-hover",
-			"focus-visible:outline-2 focus-visible:outline-focus",
-		)}
-		onmousedown={keepSelection}
-		onkeydown={stopKey}
-		onkeyup={stopKey}
-		onclick={remove}><X size={12} aria-hidden="true" /></button
-	>
-</span>
+<SettingsTooltip content={pathText(path)}>
+	{#snippet children({ props: tooltipProps })}
+		<span
+			{...tooltipProps}
+			tabindex="-1"
+			aria-label={`${referenceKindLabel(path)}: ${pathText(path)}`}
+			class={cn(
+				"inline-flex max-w-full items-center rounded-[5px] border border-solid border-panel-border bg-input align-middle text-[12px] leading-normal [&_svg]:shrink-0",
+			)}
+		>
+			<button
+				type="button"
+				disabled={!editable}
+				aria-label={referenceActionLabel(path)}
+				class={cn(
+					"inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px]",
+					"hover:bg-settings-hover",
+					"focus-visible:outline-2 focus-visible:outline-focus",
+				)}
+				onmousedown={keepSelection}
+				onkeydown={stopKey}
+				onkeyup={stopKey}
+				onclick={open}><ReferenceChipContent {path} /></button
+			>
+			<button
+				type="button"
+				disabled={!editable}
+				aria-label={`${path.name} の参照を取り外す`}
+				class={cn(
+					"inline-flex shrink-0 items-center border-0 bg-transparent px-[5px] py-[4px]",
+					"hover:bg-settings-hover",
+					"focus-visible:outline-2 focus-visible:outline-focus",
+				)}
+				onmousedown={keepSelection}
+				onkeydown={stopKey}
+				onkeyup={stopKey}
+				onclick={remove}><X size={12} aria-hidden="true" /></button
+			>
+		</span>
+	{/snippet}
+</SettingsTooltip>

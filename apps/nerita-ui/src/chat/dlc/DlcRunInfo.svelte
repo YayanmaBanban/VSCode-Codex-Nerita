@@ -47,7 +47,7 @@
 
 <section
 	aria-label="DLC の実行情報"
-	class="border-0 border-b border-solid border-panel-border px-3 py-2 text-[11px]"
+	class="border-0 border-b border-solid border-panel-border px-3 py-2 text-[12px]"
 >
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<span class="text-muted"
@@ -105,7 +105,7 @@
 			<select
 				aria-label="DLC の実行履歴"
 				class={cn(
-					"min-w-0 flex-1 rounded border border-solid border-input-border bg-input px-2 py-1 text-[11px]",
+					"min-w-0 flex-1 rounded border border-solid border-input-border bg-input px-2 py-1 text-[12px]",
 					"text-input-text",
 					"focus-visible:outline-1 focus-visible:outline-focus",
 				)}

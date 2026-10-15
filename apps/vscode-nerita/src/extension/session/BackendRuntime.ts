@@ -9,10 +9,7 @@ import type { HostMessage, UiMessage } from "@nerita/shared/messages";
 import { isUiMessage } from "@nerita/shared/uiMessageValidation";
 import type { BackendSession, ChatSession } from "./chatSession";
 import { RuntimeView } from "./RuntimeView";
-import {
-	backendWorkspaceTrusted,
-	type BackendId,
-} from "@nerita/shared/backend";
+import type { BackendId } from "@nerita/shared/backend";
 import {
 	DlcUiMessageSchema,
 	type DlcUiMessage,
@@ -553,19 +550,17 @@ export class BackendRuntime implements BackendSession {
 		}
 	}
 	/** 個別の信頼変更はそのルートの会話だけに適用し、独立した Worktree の実行は維持する。 */
-	invalidateTrust(root?: string): void {
+	invalidateTrust(root?: string, backend: BackendId = "pi"): void {
 		/** 停止対象のルートと親子関係にある実行先を判定し、作業場所が未確定の実行も停止対象に含める。 */
 		const affected = (cwd: string | null) => {
 			const matchingRoot =
 				root === undefined || cwd === null || containsPath(root, cwd);
 			return matchingRoot || containsPath(cwd, root);
 		};
-		this.invalidateChatTrust(affected);
+		this.invalidateChatTrust(affected, backend);
 		for (const active of this.dlcSessions.values()) {
-			const matchesBackendWorkspaceTrusted = !backendWorkspaceTrusted(
-				active.backend,
-				() => !affected(active.root),
-			);
+			const matchesBackendWorkspaceTrusted =
+				active.backend === backend && affected(active.root);
 			if (matchesBackendWorkspaceTrusted) {
 				active.abort.abort();
 				active.session.invalidate();
@@ -573,18 +568,18 @@ export class BackendRuntime implements BackendSession {
 		}
 	}
 
-	/** Pi の信頼が取り消された会話だけを無効化し、Codex の信頼方針は維持する。 */
+	/** 信頼を変更したバックエンドの会話だけを無効化する。 */
 	private invalidateChatTrust(
 		affected: (cwd: string | null) => boolean,
+		backend: BackendId,
 	): void {
 		if (!this.current) {
 			return;
 		}
-		const trusted = backendWorkspaceTrusted(
-			this.current.snapshot().uiContributions?.surface ?? "pi",
-			() => !affected(this.current!.snapshot().cwd),
-		);
-		if (!trusted) {
+		const state = this.current.snapshot();
+		const matchesBackend =
+			(state.uiContributions?.surface ?? "pi") === backend;
+		if (matchesBackend && affected(state.cwd)) {
 			this.current.invalidate();
 		}
 	}

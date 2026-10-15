@@ -52,7 +52,7 @@
 			agents.filter((agent) => agent.parentThreadId === sessionId),
 		),
 	);
-	const following = { current: true };
+	const following = $state({ current: true });
 	const virtual = useConversationVirtualizer(
 		() => timeline,
 		() => view.conversation,
@@ -124,6 +124,7 @@
 					{busy}
 					{timeline}
 					{virtual}
+					{following}
 					bind:conversation={view.conversation}
 					bind:bottom={view.bottom}
 					onOpenAgent={agentViewer.open}

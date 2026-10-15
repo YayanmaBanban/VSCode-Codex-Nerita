@@ -22,7 +22,7 @@ const meta = {
 				{
 					id: "long",
 					title: "Pi: powershell の実行承認",
-					cwd: "workspace/長いフォルダー名/project",
+					cwd: "workspace/長いフォルダ名/project",
 					command,
 					fields: [
 						{

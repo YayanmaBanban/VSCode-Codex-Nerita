@@ -131,15 +131,15 @@ async function run() {
 		page.setDefaultTimeout(15000);
 		await vscode.commands.executeCommand("nerita.trust.manage");
 		// 信頼管理画面は独立した Webview として表示される。
-		const manager = await findFrame(
-			page,
-			'input[placeholder="名前またはパスで検索"]',
-		);
+		const manager = await findFrame(page, 'input[type="search"]');
 		await manager
 			.getByRole("button", { name: "信頼する", exact: true })
 			.click();
-		await page
-			.getByRole("button", { name: "Trust this root", exact: true })
+		await manager
+			.getByRole("button", {
+				name: "このフォルダを信頼する",
+				exact: true,
+			})
 			.click();
 		await vscode.commands.executeCommand("nerita.codex.openChat");
 		const chat = await findFrame(

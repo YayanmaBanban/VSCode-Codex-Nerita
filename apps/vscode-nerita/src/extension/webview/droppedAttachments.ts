@@ -38,7 +38,7 @@ export async function droppedAttachments(
 		}
 		const matchesIsFile = !(await stat(path)).isFile();
 		if (matchesIsFile) {
-			throw new Error("フォルダーは添付できません。");
+			throw new Error("フォルダは添付できません。");
 		}
 		selected.push({
 			id: randomUUID(),

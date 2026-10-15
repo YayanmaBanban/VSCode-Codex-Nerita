@@ -107,6 +107,28 @@ export class CodexClient {
 			includeLayers: false,
 		});
 	}
+	/** 信頼判定では無効化された project 層も取得する。 */
+	readTrustConfig(cwd?: string) {
+		return this.transport.request("config/read", {
+			...(cwd === undefined ? {} : { cwd }),
+			includeLayers: true,
+		});
+	}
+	/** 保存先を省略し、ユーザーの config.toml の指定プロジェクトだけを変更する。 */
+	writeProjectTrust(
+		root: string,
+		trust: "trusted" | "untrusted" | null,
+		aliases: string[] = [],
+	) {
+		return this.transport.request("config/batchWrite", {
+			edits: [...new Set([root, ...aliases])].map((path) => ({
+				keyPath: `projects.${JSON.stringify(path)}.trust_level`,
+				value: path === root ? trust : null,
+				mergeStrategy: "replace",
+			})),
+			reloadUserConfig: true,
+		});
+	}
 	/** `readiness` は実行基盤の準備状態で、通信遮断の実測ではない。 */
 	readSandboxReadiness() {
 		return this.transport.request("windowsSandbox/readiness", undefined);
@@ -230,7 +252,7 @@ export class CodexClient {
 	unarchiveThread(threadId: string) {
 		return this.transport.request("thread/unarchive", { threadId });
 	}
-	/** 作業フォルダーで利用可能なスキルを取得する。 */
+	/** 作業フォルダで利用可能なスキルを取得する。 */
 	listSkills(cwd: string) {
 		return this.transport.request("skills/list", { cwds: [cwd] });
 	}

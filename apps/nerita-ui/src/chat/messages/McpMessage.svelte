@@ -4,6 +4,7 @@
 	import type { McpMessageContent } from "@nerita/shared/mcp";
 	import ShinyText from "../../ui/ShinyText.svelte";
 	import RunStatusIcon from "../RunStatusIcon.svelte";
+	import SettingsTooltip from "../SettingsTooltip.svelte";
 
 	let { content, text }: { content: McpMessageContent; text: string } =
 		$props();
@@ -53,12 +54,20 @@
 				{#each servers as server, index (`${server.name}:${index}`)}<li
 						class="flex items-start gap-2"
 					>
-						<span
-							role="img"
-							aria-label={server.runtimeStatus ?? "不明"}
-							title={server.runtimeStatus ?? "不明"}
-							class={`mt-[0.6em] size-2 shrink-0 rounded-full ${serverStatusColor(server.runtimeStatus)}`}
-						></span><span class="min-w-0 [overflow-wrap:anywhere]"
+						<SettingsTooltip
+							content={server.runtimeStatus ?? "不明"}
+						>
+							{#snippet children({ props: tooltipProps })}
+								<span
+									{...tooltipProps}
+									tabindex="-1"
+									role="img"
+									aria-label={server.runtimeStatus ?? "不明"}
+									class={`mt-[0.6em] size-2 shrink-0 rounded-full ${serverStatusColor(server.runtimeStatus)}`}
+								></span>
+							{/snippet}
+						</SettingsTooltip><span
+							class="min-w-0 [overflow-wrap:anywhere]"
 							>{server.name}</span
 						>
 					</li>{/each}

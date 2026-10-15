@@ -81,7 +81,7 @@
 						class="dlc-intent-hold overflow-hidden"
 					>
 						<div
-							class="mx-3 flex flex-col gap-2 border-0 border-t border-solid border-panel-border pt-2 pb-3 text-[11px]"
+							class="mx-3 flex flex-col gap-2 border-0 border-t border-solid border-panel-border pt-2 pb-3 text-[12px]"
 						>
 							<p role="status" class="m-0 flex items-start gap-2">
 								<TriangleAlert

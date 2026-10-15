@@ -29,10 +29,7 @@ async function createTargets(page, editor, findFrame) {
 		targets.push(current.find((id) => !previous.includes(id)));
 	}
 	await vscode.commands.executeCommand("nerita.trust.manage");
-	const trust = await findFrame(
-		page,
-		'input[placeholder="名前またはパスで検索"]',
-	);
+	const trust = await findFrame(page, 'input[type="search"]');
 	const articles = trust.locator("article").filter({
 		has: trust.getByRole("heading", { name: /work-[a-f0-9]+/ }),
 	});
@@ -42,8 +39,11 @@ async function createTargets(page, editor, findFrame) {
 			.nth(index)
 			.getByRole("button", { name: "信頼する", exact: true })
 			.click();
-		await page
-			.getByRole("button", { name: "Trust this root", exact: true })
+		await trust
+			.getByRole("button", {
+				name: "このフォルダを信頼する",
+				exact: true,
+			})
 			.click();
 		await expect(
 			articles

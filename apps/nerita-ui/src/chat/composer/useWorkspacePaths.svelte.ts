@@ -121,7 +121,7 @@ function workspaceCompletionItems(
 	return filtered;
 }
 
-/** 接続・取得状態とフォルダーの有無から候補がない理由を返す。 */
+/** 接続・取得状態とフォルダの有無から候補がない理由を返す。 */
 function emptyPathMessage(
 	bridge: Bridge | undefined,
 	data: WorkspacePathsResult | null,

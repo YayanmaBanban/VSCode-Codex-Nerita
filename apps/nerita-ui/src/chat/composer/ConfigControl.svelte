@@ -20,6 +20,7 @@
 		inDialog = false,
 		icon,
 		chevron = "down",
+		appearance = "compact",
 	}: {
 		option: ConfigOption;
 		disabled: boolean;
@@ -27,6 +28,7 @@
 		inDialog?: boolean;
 		icon?: "user" | "bot" | undefined;
 		chevron?: "down" | "right";
+		appearance?: "compact" | "field";
 	} = $props();
 	let current = $derived(
 		option.options.find((choice) => choice.value === option.currentValue),
@@ -43,7 +45,12 @@
 	}
 </script>
 
-<div class="config-control relative inline-flex max-w-full min-w-0 text-muted">
+<div
+	class={cn(
+		"config-control relative inline-flex max-w-full min-w-0",
+		appearance === "field" ? "w-full text-foreground" : "text-muted",
+	)}
+>
 	<Select.Root
 		bind:open={popup.open}
 		type="single"
@@ -56,10 +63,14 @@
 				<Select.Trigger
 					{...triggerProps}
 					class={cn(
-						"config-trigger inline-flex max-w-[170px] cursor-pointer items-center gap-[6px] rounded-[4px] [&_svg]:shrink-0",
-						icon !== undefined
-							? "border border-solid border-input-border bg-input px-[4px] py-[5px]"
-							: "border-0 bg-transparent px-[5px] py-[6px]",
+						"config-trigger inline-flex cursor-pointer items-center gap-[6px] rounded-[4px] [&_svg]:shrink-0",
+						appearance === "field"
+							? "min-h-[38px] w-full justify-between border border-solid border-input-border bg-transparent px-3 py-2"
+							: "max-w-[170px]",
+						appearance === "compact" &&
+							(icon !== undefined
+								? "border border-solid border-input-border bg-input px-[4px] py-[5px]"
+								: "border-0 bg-transparent px-[5px] py-[6px]"),
 						"text-[12px] text-ellipsis text-inherit focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-settings-focus focus-visible:outline-solid enabled:hover:bg-settings-hover",
 					)}
 					aria-label={option.name}
@@ -92,49 +103,59 @@
 					class="config-list max-h-[inherit] scroll-p-[5px] overflow-y-auto p-[5px]"
 				>
 					{#each option.options as choice (choice.value)}
-						<Select.Item
-							value={choice.value}
-							label={choice.name}
-							class={cn(
-								"config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px]",
-								"px-[10px] py-[8px] text-[12px] leading-[1.5]",
-								"[overflow-wrap:anywhere]",
-								"[outline:none]",
-								"hover:bg-menu-hover",
-								"data-highlighted:bg-menu-hover",
-							)}
-							title={choice.icon !== undefined
+						<SettingsTooltip
+							content={choice.icon !== undefined
 								? undefined
 								: choice.description}
+							aboveMenu
 						>
-							{#snippet children({ selected })}
-								{#if choice.icon !== undefined}
-									{@const ChoiceIcon =
-										choice.icon === "user" ? User : Bot}
-									<span
-										class="flex min-w-0 items-center gap-[10px]"
-										><ChoiceIcon
-											size={18}
-											class="shrink-0"
-											aria-hidden="true"
-										/><span
-											class="flex min-w-0 flex-col gap-[3px]"
-											><span>{choice.name}</span><span
-												class="text-[11px] whitespace-pre-line text-muted"
-												>{choice.description}</span
-											></span
-										></span
-									>
-								{:else}<span>{choice.name}</span>{/if}
-								<span
-									class="config-check inline-flex flex-[0_0_15px] text-menu-check"
-									>{#if selected}<Check
-											size={15}
-											aria-hidden="true"
-										/>{/if}</span
+							{#snippet children({ props: tooltipProps })}
+								<Select.Item
+									{...tooltipProps}
+									value={choice.value}
+									label={choice.name}
+									class={cn(
+										"config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px]",
+										"px-[10px] py-[8px] text-[12px] leading-[1.5]",
+										"[overflow-wrap:anywhere]",
+										"[outline:none]",
+										"hover:bg-menu-hover",
+										"data-highlighted:bg-menu-hover",
+									)}
 								>
+									{#snippet children({ selected })}
+										{#if choice.icon !== undefined}
+											{@const ChoiceIcon =
+												choice.icon === "user"
+													? User
+													: Bot}
+											<span
+												class="flex min-w-0 items-center gap-[10px]"
+												><ChoiceIcon
+													size={18}
+													class="shrink-0"
+													aria-hidden="true"
+												/><span
+													class="flex min-w-0 flex-col gap-[3px]"
+													><span>{choice.name}</span
+													><span
+														class="text-[12px] whitespace-pre-line text-muted"
+														>{choice.description}</span
+													></span
+												></span
+											>
+										{:else}<span>{choice.name}</span>{/if}
+										<span
+											class="config-check inline-flex flex-[0_0_15px] text-menu-check"
+											>{#if selected}<Check
+													size={15}
+													aria-hidden="true"
+												/>{/if}</span
+										>
+									{/snippet}
+								</Select.Item>
 							{/snippet}
-						</Select.Item>
+						</SettingsTooltip>
 					{/each}
 				</Select.Viewport>
 			</Select.Content>

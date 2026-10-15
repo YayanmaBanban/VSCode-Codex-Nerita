@@ -84,7 +84,8 @@ export function useFollowConversation(
 	$effect(() => {
 		void session;
 		void pause;
-		return observeConversationFollowing();
+		// 追従フラグの変更では監視を張り替えず、直前の高さと位置の記録を保つ。
+		return untrack(observeConversationFollowing);
 	});
 }
 

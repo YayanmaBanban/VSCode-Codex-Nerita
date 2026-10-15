@@ -51,7 +51,7 @@ class PromptSubmission {
 			this.reconcileConnection(input.state.connection, this.scope),
 		);
 	}
-	/** 送信先の会話と作業フォルダーを識別する。 */
+	/** 送信先の会話と作業フォルダを識別する。 */
 	private get scope() {
 		return `${this.input.state.cwd}:${this.input.state.sessionId}`;
 	}

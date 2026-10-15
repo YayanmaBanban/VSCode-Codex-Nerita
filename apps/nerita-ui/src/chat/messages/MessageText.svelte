@@ -20,6 +20,7 @@
 	import { cn } from "cnfast";
 	import { messageReferences } from "./messageReferences";
 	import ReferenceText from "./ReferenceText.svelte";
+	import SettingsTooltip from "../SettingsTooltip.svelte";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 	let {
@@ -162,29 +163,39 @@
 		{#snippet image({ text: alt }: ImageSnippetProps)}<span
 				>{restoreReferences(isNonEmptyString(alt) ? alt : "画像")}</span
 			>{/snippet}
-		{#snippet link({ href = "", title, children }: LinkSnippetProps)}
+		{#snippet link({
+			href = "",
+			title,
+			children: linkChildren,
+		}: LinkSnippetProps)}
 			{@const local = /^file:\/\//i.test(href)}
-			<a
-				href={isNonEmptyString(href) ? href : undefined}
-				title={isNonEmptyString(title)
+			<SettingsTooltip
+				content={isNonEmptyString(title)
 					? restoreReferences(title)
 					: undefined}
-				target={local ? undefined : "_blank"}
-				rel="noreferrer noopener"
-				class="text-link underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
-				onclick={(event) => {
-					if (local && isNonEmptyString(href)) {
-						event.preventDefault();
-						send?.({
-							type: "reference/open",
-							requestId: crypto.randomUUID(),
-							uri: href,
-						});
-					}
-				}}
 			>
-				{@render children?.()}
-			</a>
+				{#snippet children({ props: tooltipProps })}
+					<a
+						{...tooltipProps}
+						href={isNonEmptyString(href) ? href : undefined}
+						target={local ? undefined : "_blank"}
+						rel="noreferrer noopener"
+						class="text-link underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
+						onclick={(event) => {
+							if (local && isNonEmptyString(href)) {
+								event.preventDefault();
+								send?.({
+									type: "reference/open",
+									requestId: crypto.randomUUID(),
+									uri: href,
+								});
+							}
+						}}
+					>
+						{@render linkChildren?.()}
+					</a>
+				{/snippet}
+			</SettingsTooltip>
 		{/snippet}
 	</SvelteMarkdown>
 </div>

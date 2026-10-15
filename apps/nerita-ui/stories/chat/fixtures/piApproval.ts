@@ -13,11 +13,11 @@ export function piApprovalState(name: string): Partial<ChatState> {
 				command:
 					name === "bash"
 						? "node --version"
-						: "Get-Content -LiteralPath 'src/長いフォルダー名/README.md'",
+						: "Get-Content -LiteralPath 'src/長いフォルダ名/README.md'",
 				timeout: 30,
 			}
 		: {
-				path: "src/長いフォルダー名/README.md",
+				path: "src/長いフォルダ名/README.md",
 				content: "変更する本文\n次の行",
 			};
 	return {
@@ -37,7 +37,7 @@ export function piApprovalState(name: string): Partial<ChatState> {
 				runId,
 				title: shell
 					? name
-					: "ファイルを書き込む: src/長いフォルダー名/README.md",
+					: "ファイルを書き込む: src/長いフォルダ名/README.md",
 				kind: shell ? "execute" : "edit",
 				status: "in_progress",
 				paths: shell ? [] : [input.path!],

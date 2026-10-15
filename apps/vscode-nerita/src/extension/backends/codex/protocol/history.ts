@@ -13,7 +13,7 @@ export type HistoryTurn = TurnInfo & {
 	items: CodexItem[];
 	itemsView: "notLoaded" | "summary" | "full";
 };
-/** 履歴操作前に作業フォルダーと稼働状態を照合するメタデータ。 */
+/** 履歴操作前に作業フォルダと稼働状態を照合するメタデータ。 */
 export type HistoryThread = {
 	id: string;
 	cwd: string;

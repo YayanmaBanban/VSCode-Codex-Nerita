@@ -78,11 +78,11 @@ export function piNestedState(summaryOnly = false): ChatState {
 			parentToolCallId: "outer",
 			runId: "pi-story-run",
 			order: 3,
-			title: "ファイルを読む: src/長い名前のフォルダー/child.txt",
+			title: "ファイルを読む: src/長い名前のフォルダ/child.txt",
 			kind: "read",
-			paths: ["src/長い名前のフォルダー/child.txt"],
+			paths: ["src/長い名前のフォルダ/child.txt"],
 			status,
-			rawInput: { path: "src/長い名前のフォルダー/child.txt" },
+			rawInput: { path: "src/長い名前のフォルダ/child.txt" },
 			...(summaryOnly ? { summaryOnly: true } : {}),
 			content: summaryOnly
 				? []
@@ -133,7 +133,7 @@ const samplePiTools: ChatState["tools"] = [
 		id: "pi-list",
 		runId: "pi-story-run",
 		order: 2,
-		title: "フォルダーを確認: src",
+		title: "フォルダを確認: src",
 		kind: "list",
 		status: "completed",
 		paths: ["src"],
@@ -151,12 +151,12 @@ const samplePiTools: ChatState["tools"] = [
 		id: "pi-read",
 		runId: "pi-story-run",
 		order: 3,
-		title: "ファイルを読む: src/長いディレクトリ名の折り返しを確認するためのフォルダー/README.md",
+		title: "ファイルを読む: src/長いディレクトリ名の折り返しを確認するためのフォルダ/README.md",
 		kind: "read",
 		status: "completed",
 		rawInput: { offset: 1, limit: 20 },
 		paths: [
-			"src/長いディレクトリ名の折り返しを確認するためのフォルダー/README.md",
+			"src/長いディレクトリ名の折り返しを確認するためのフォルダ/README.md",
 		],
 		content: [
 			{

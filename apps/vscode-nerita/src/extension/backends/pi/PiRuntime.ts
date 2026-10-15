@@ -2,7 +2,6 @@
 import { loadPiSdk } from "./PiSdk";
 import type { QuestionAsk } from "../../session/ChatQuestions";
 import { createPiQuestionTool, piQuestionUI } from "./PiQuestionUI";
-import { backendWorkspaceTrusted } from "@nerita/shared/backend";
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -761,9 +760,7 @@ async function runtimeExtensions(
 		async (path) => {
 			const allowed =
 				options.workspaceTrusted === true &&
-				(await backendWorkspaceTrusted("pi", () =>
-					options.trustStore!.trusted(path),
-				));
+				(await options.trustStore!.trusted(path));
 			if (!allowed) {
 				options.trustStore!.audit("extension-load-denied", path);
 			}

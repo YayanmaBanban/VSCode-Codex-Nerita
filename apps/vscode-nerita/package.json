@@ -129,7 +129,7 @@
 						"**/*.generated.*"
 					],
 					"scope": "resource",
-					"markdownDescription": "変更点のプレビュー・送信から除外するGit globパターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダー単位で設定でき、次回の差分取得から反映されます。"
+					"markdownDescription": "変更点のプレビュー・送信から除外するGit globパターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダ単位で設定でき、次回の差分取得から反映されます。"
 				},
 				"nerita.codex.sidebarLocation": {
 					"type": "string",
@@ -150,69 +150,43 @@
 		"commands": [
 			{
 				"command": "nerita.dlc.openWorkspace",
-				"title": "Nerita DLC: 作業画面を開く"
-			},
-			{
-				"command": "nerita.dlc.create",
-				"title": "Nerita DLC: Intent の作成・選択を開く",
-				"enablement": "isWorkspaceTrusted"
-			},
-			{
-				"command": "nerita.dlc.plan",
-				"title": "Nerita DLC: プランを登録",
-				"enablement": "isWorkspaceTrusted"
-			},
-			{
-				"command": "nerita.dlc.run",
-				"title": "Nerita DLC: 次の作業を実行",
-				"enablement": "isWorkspaceTrusted"
-			},
-			{
-				"command": "nerita.dlc.cancel",
-				"title": "Nerita DLC: 実行を停止"
-			},
-			{
-				"command": "nerita.dlc.status",
-				"title": "Nerita DLC: 状態を表示"
-			},
-			{
-				"command": "nerita.dlc.retry",
-				"title": "Nerita DLC: 作業を再試行",
-				"enablement": "isWorkspaceTrusted"
+				"title": "Nerita DLC: 作業画面を開く",
+				"icon": "dist/media/nerita.svg"
 			},
 			{
 				"command": "nerita.credentials.manage",
-				"title": "Nerita: 資格情報を管理"
+				"title": "Nerita: 資格情報を管理",
+				"icon": "dist/media/nerita.svg"
 			},
 			{
 				"command": "nerita.pi.sandboxSettings",
-				"title": "Nerita: Sandbox 設定を開く"
-			},
-			{
-				"command": "nerita.pi.checkMxcSandbox",
-				"title": "Nerita: Microsoft MXC Sandbox の起動を確認",
-				"enablement": "isWindows && isWorkspaceTrusted"
+				"title": "Nerita: Sandbox 設定を開く",
+				"icon": "dist/media/nerita.svg"
 			},
 			{
 				"command": "nerita.agents.manage",
-				"title": "Nerita: Agent Manager を開く"
+				"title": "Nerita: Agent Manager を開く",
+				"icon": "dist/media/nerita.svg"
 			},
 			{
 				"command": "nerita.trust.manage",
-				"title": "Nerita: Workspace Trustを管理"
-			},
-			{
-				"command": "nerita.trust.revoke",
-				"title": "Nerita: Workspace Trustを取消し"
+				"title": "Nerita: Workspace Trustを管理",
+				"icon": "dist/media/nerita.svg"
 			},
 			{
 				"command": "nerita.pi.guardrails",
-				"title": "Nerita: Pi ガードレールを編集"
+				"title": "Nerita: Pi ガードレールを編集",
+				"icon": "dist/media/nerita.svg"
 			},
 			{
 				"command": "nerita.codex.setupWindowsSandbox",
 				"title": "Nerita: Codex Windows Sandboxをセットアップ",
 				"enablement": "isWindows && config.nerita.backend == codex"
+			},
+			{
+				"command": "nerita.pi.checkMxcSandbox",
+				"title": "Nerita: Microsoft MXC Sandbox の起動を確認",
+				"enablement": "isWindows && isWorkspaceTrusted"
 			},
 			{
 				"command": "nerita.codex.codeBlock",
@@ -221,14 +195,6 @@
 			{
 				"command": "nerita.codex.openChat",
 				"title": "Nerita: チャットを開く"
-			},
-			{
-				"command": "nerita.codex.newSession",
-				"title": "Nerita: 新規会話"
-			},
-			{
-				"command": "nerita.pi.workflow",
-				"title": "Nerita: Pi Workflow を作成"
 			}
 		],
 		"menus": {
@@ -242,10 +208,22 @@
 			"commandPalette": [
 				{
 					"command": "nerita.codex.setupWindowsSandbox",
-					"when": "isWindows && config.nerita.backend == codex"
+					"when": "false"
 				},
 				{
 					"command": "nerita.codex.codeBlock",
+					"when": "false"
+				},
+				{
+					"command": "nerita.codex.openChat",
+					"when": "false"
+				},
+				{
+					"command": "nerita.pi.checkMxcSandbox",
+					"when": "false"
+				},
+				{
+					"command": "nerita.dlc.openWorkspace",
 					"when": "false"
 				}
 			]

@@ -82,7 +82,7 @@
 		{send}
 	/><output
 		aria-label="最後の要求"
-		class="mt-[12px] block text-[11px] [overflow-wrap:anywhere]"
+		class="mt-[12px] block text-[12px] [overflow-wrap:anywhere]"
 		>{last ? JSON.stringify(last) : "未操作"}</output
 	>
 </div>
