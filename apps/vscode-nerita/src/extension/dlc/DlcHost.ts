@@ -630,7 +630,9 @@ export class DlcHost {
 				message.intentId !== this.selectedId ||
 				this.selected?.projection().revision !== message.revision;
 			if (staleSelection) {
-				throw new Error("Intent の選択または保存内容が変更されています。再読み込みしてください。");
+				throw new Error(
+					"Intent の選択または保存内容が変更されています。再読み込みしてください。",
+				);
 			}
 			await this.assign(
 				workspace,
@@ -704,11 +706,15 @@ export class DlcHost {
 		message: Extract<DlcUiMessage, { type: "dlc/backend" }>,
 	): void {
 		if (message.intentId !== (this.selectedId ?? null)) {
-			throw new Error("選択中の Intent が変更されています。再読み込みしてください。");
+			throw new Error(
+				"選択中の Intent が変更されています。再読み込みしてください。",
+			);
 		}
 		const currentRevision = this.selected?.projection().revision ?? null;
 		if (message.revision !== currentRevision) {
-			throw new Error("Intent の保存内容が変更されています。再読み込みしてください。");
+			throw new Error(
+				"Intent の保存内容が変更されています。再読み込みしてください。",
+			);
 		}
 		const running =
 			this.selectedId !== undefined &&
@@ -927,7 +933,9 @@ export class DlcHost {
 		message: Extract<DlcUiMessage, { type: "dlc/attempt" }>,
 	): Promise<void> {
 		if (message.intentId !== this.selectedId) {
-			throw new Error("選択中の Intent が変更されています。対象を選び直してください。");
+			throw new Error(
+				"選択中の Intent が変更されています。対象を選び直してください。",
+			);
 		}
 		const selection = this.runtime.beginAttemptSelection(message.intentId);
 		const active = this.runtime.activeDlc();
@@ -1002,13 +1010,13 @@ export class DlcHost {
 			if (message.revision >= 0) {
 				if (message.intentId !== this.selectedId) {
 					throw new Error(
-						"表示した Intent の版が古くなっています。再読込みしてください。",
+						"表示中の Intent が現在の状態と一致しません。再読み込みしてください。",
 					);
 				}
 				const currentRevision = controller.projection().revision;
 				if (currentRevision !== message.revision) {
 					throw new Error(
-						"表示した Intent の版が古くなっています。再読込みしてください。",
+						"表示中の Intent が現在の状態と一致しません。再読み込みしてください。",
 					);
 				}
 			}
