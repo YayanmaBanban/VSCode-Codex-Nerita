@@ -150,6 +150,7 @@ const regressions = {
 	"broken-result": {
 		expected: [
 			...[
+				[false, false],
 				[true, false],
 				[false, true],
 				[true, true],
