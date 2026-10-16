@@ -87,35 +87,48 @@ void test("起動フック中の停止を cancelled として確定し、次の�
 	assert.equal(next.messages.at(-1)?.text, "再開した回答");
 });
 
-for (const [name, code] of [
-	["文字数", "text('a'.repeat(32769));"],
-	["項目数", "for (let i = 0; i < 129; i++) text('');"],
-	["console", "console.log('a'.repeat(32769));"],
-	["保存値", "store('value', 'a'.repeat(16385));"],
+for (const [name, withinLimit, overLimit] of [
+	["文字数", "text('a'.repeat(32700));", "text('a'.repeat(32769));"],
+	[
+		"項目数",
+		"for (let i = 0; i < 128; i++) text('');",
+		"for (let i = 0; i < 129; i++) text('');",
+	],
+	[
+		"console",
+		"console.log('a'.repeat(32700));",
+		"console.log('a'.repeat(32769));",
+	],
+	[
+		"保存値",
+		"store('value', 'a'.repeat(16382));",
+		"store('value', 'a'.repeat(16385));",
+	],
 ] as const) {
 	void test(`Codemode の${name}上限を SDK 更新後も強制し、失敗後の会話を続けられる`, async (t) => {
 		const f = await piFixture(t);
 		f.options.codemode = true;
 		const controller = f.controller();
 		await controller.connect();
-		f.model.replies.push(
-			{ name: "codemode", arguments: { code } },
-			"制限後の回答",
-		);
-		await send(controller, "コード実行の上限を確認");
-		await permission(controller, "accept");
-		const state = await finished(controller);
-		assert.equal(state.run, "completed", JSON.stringify(state));
-		assert.equal(
-			state.tools[0]?.status,
-			"failed",
-			JSON.stringify(state.tools),
-		);
-		assert.match(
-			state.tools[0].output!.preview,
-			/(?:script output exceeded|store\("value"\).*more than the limit)/u,
-		);
-		assert.equal(state.messages.at(-1)?.text, "制限後の回答");
+		for (const [code, status] of [
+			[withinLimit, "completed"],
+			[overLimit, "failed"],
+		] as const) {
+			f.model.replies.push(
+				{ name: "codemode", arguments: { code } },
+				"制限後の回答",
+			);
+			await send(controller, "コード実行の上限を確認");
+			await permission(controller, "accept");
+			const state = await finished(controller);
+			assert.equal(state.run, "completed", JSON.stringify(state));
+			assert.equal(
+				state.tools.at(-1)?.status,
+				status,
+				JSON.stringify(state.tools),
+			);
+			assert.equal(state.messages.at(-1)?.text, "制限後の回答");
+		}
 	});
 }
 

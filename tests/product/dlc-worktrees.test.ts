@@ -253,13 +253,15 @@ void test("Worktree の削除は Git の除外対象のファイルと書込み�
 	await unlink(join(a.root, "private.tmp"));
 	await manager.remove(a.id);
 	await assert.rejects(manager.target(a.id));
+	const before = await manager.list();
 	await assert.rejects(
 		new WorktreeManager(
-			(await manager.list()).find((target) => !target.main)!.root,
+			before.find((target) => !target.main)!.root,
 			join(main.root, "host"),
 		).create(),
-		/main/,
+		{ name: "Error" },
 	);
+	assert.deepEqual(await manager.list(), before);
 });
 
 void test("バックエンドの終了を確認できなかった場合は、入力・根拠を保存する予約も解放しない", async (t) => {

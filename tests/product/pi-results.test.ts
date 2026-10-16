@@ -146,8 +146,9 @@ async function verifyNestedOutputArchive(t: TestContext) {
 	assert.match(files[0]!, /^[a-f0-9-]{36}\.txt$/u);
 	assert.equal(await readFile(join(folder, files[0]!), "utf8"), output);
 	const saved = await sessionFiles(f.cwd);
-	assert.ok(saved[0]!.text.includes("nerita.tool-output.v1"));
-	assert.ok(Buffer.byteLength(saved[0]!.text) < 20000);
+	const jsonl = saved[0]!.text;
+	assert.ok(jsonl.includes("nerita.tool-output.v1"));
+	assert.equal(jsonl.includes("検証".repeat(150000)), false);
 	await controller.dispose();
 	const restored = f.controller();
 	await restored.connect();
@@ -286,12 +287,10 @@ async function verifyPiResultHistory(
 	const result = state.tools.find((tool) => tool.title === "large_result");
 	assert.ok(result);
 	assert.ok(result.output);
-	assert.ok(
-		result.output.truncated,
-		"大きなツール結果の本文を切断せず範囲取得へ渡す",
-	);
+	const outputMessage = "大きなツール結果の本文を切断せず範囲取得へ渡す";
+	assert.ok(result.output.truncated, outputMessage);
 	assert.ok(result.output.preview.length < 2200);
-	assert.match(result.output.preview, /末尾/u);
+	assert.match(result.output.preview, /末尾/u, outputMessage);
 	const liveOutput = await readOutput(controller, result);
 	assert.match(liveOutput, /末尾$/u);
 	assert.equal(

@@ -465,7 +465,7 @@ async function verifyApprovalReviewNotifications(t: TestContext) {
 	await until(() => controller.snapshot().tools.length === 2);
 	const started = controller
 		.snapshot()
-		.tools.find((tool) => tool.title === "Guardian Review")!;
+		.tools.find((tool) => tool.kind === "think")!;
 	assert.equal(started.status, "in_progress");
 	assert.equal(started.kind, "think");
 	assert.deepEqual(started.rawOutput, {
@@ -557,9 +557,8 @@ async function verifyAdditionalApprovalReviews(
 		"in_progress",
 	);
 	assert.equal(
-		controller
-			.snapshot()
-			.tools.filter((tool) => tool.title === "Guardian Review").length,
+		controller.snapshot().tools.filter((tool) => tool.kind === "think")
+			.length,
 		3,
 	);
 }

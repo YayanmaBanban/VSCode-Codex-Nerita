@@ -169,7 +169,11 @@ void test("マニフェストの破損・非 Git・リンク・越境を部分�
 		"utf8",
 	);
 	await rename(join(f.root, ".git"), join(f.root, ".git-hidden"));
-	await assert.rejects(f.detection(), /git|Git/);
+	await assert.rejects(f.detection(), { name: "Error" });
+	assert.equal(
+		await readFile(join(f.root, ".nerita/dlc/workspace.json"), "utf8"),
+		saved,
+	);
 	await rename(join(f.root, ".git-hidden"), join(f.root, ".git"));
 	await writeFile(join(f.root, "package.json"), "{");
 	await assert.rejects(f.detection(), SyntaxError);

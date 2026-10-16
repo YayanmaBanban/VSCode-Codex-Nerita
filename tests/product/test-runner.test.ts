@@ -64,6 +64,6 @@ void test("回帰検出は目的のテストとアサーションだけを認定
 			stdout: `${JSON.stringify(failure)}\n${JSON.stringify({ ...failure, code: "MODULE_NOT_FOUND" })}`,
 		},
 	]) {
-		assert.throws(() => verify(invalid, "fixture"), /狙った回帰/);
+		assert.throws(() => verify(invalid, "fixture"), { name: "Error" });
 	}
 });

@@ -198,7 +198,8 @@ void test("MXC の大量 stdout/stderr は逐次プレビューと保存後の�
 	});
 	const recovered = restored.snapshot().tools[0]!;
 	const tail = await readOutputTail(restored, recovered);
-	assert.ok(tail.includes("ERR:") && tail.includes("Exit code: 7"));
+	assert.ok(tail.includes("ERR:"));
+	assert.equal(recovered.exitCode, 7);
 });
 
 /** モデル境界だけを代替し、実際の登録ツールと承認処理を経由する。 */

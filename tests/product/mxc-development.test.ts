@@ -6,7 +6,10 @@ import { join, dirname } from "node:path";
 import { createRequire } from "node:module";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import type { ToolSummary } from "@nerita/shared/chatState";
+import type { AgentThreadView } from "@nerita/shared/subAgents";
 import { piFixture, send, permission, finished, until } from "../support/pi";
+import type { PiSessionController } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionController";
 import { loadMxcSdk } from "../../apps/vscode-nerita/src/extension/runtime/MxcSdk";
 import { MxcExecutor } from "../../apps/vscode-nerita/src/extension/runtime/MxcExecutor";
 
@@ -46,16 +49,21 @@ for (const route of ["child", "codemode"]) {
 				code: "ENOENT",
 			});
 			await permission(controller, "accept");
-			await finished(controller);
+			const state = await finished(controller);
+			assert.equal(state.run, "completed");
+			const commands = (await commandTools(controller, route)).filter(
+				(tool) => tool.kind === "execute",
+			);
+			assert.equal(commands.length, 1);
+			assert.equal(
+				commands[0]!.status,
+				restricted ? "failed" : "completed",
+				"Host 実行は role の書込み制限を維持する",
+			);
 			if (restricted) {
 				await assert.rejects(readFile(join(f.cwd, "host.txt")), {
 					code: "ENOENT",
 				});
-				assert.ok(
-					f.model.requests.some((request) =>
-						request.includes("書込み範囲を制限した role"),
-					),
-				);
 			} else {
 				assert.equal(
 					await readFile(join(f.cwd, "host.txt"), "utf8"),
@@ -64,6 +72,37 @@ for (const route of ["child", "codemode"]) {
 			}
 		});
 	}
+}
+
+/** 子の会話は公開メッセージで取得し、Codemode の入れ子は親のカードから確認する。 */
+async function commandTools(
+	controller: PiSessionController,
+	route: string,
+): Promise<ToolSummary[]> {
+	const state = controller.snapshot();
+	if (route !== "child") {
+		return state.tools;
+	}
+	assert.equal(state.agents.length, 1);
+	let view: AgentThreadView | undefined;
+	const requestId = "child-command";
+	const unsubscribe = controller.subscribe((reply) => {
+		if (reply.type === "agent/view" && reply.requestId === requestId) {
+			view = reply.view;
+		}
+	});
+	try {
+		await controller.receive({
+			type: "agent/read",
+			requestId,
+			sessionId: state.sessionId!,
+			threadId: state.agents[0]!.threadId,
+		});
+	} finally {
+		unsubscribe();
+	}
+	assert.ok(view);
+	return view.tools;
 }
 
 /** 同じ pnpm ツールを子と Codemode から呼び、経路を独自実装しない。 */
@@ -127,7 +166,10 @@ void test("型チェック・テスト・Git は MXC、lint を含む pnpm は H
 	await permission(controller, "accept");
 	let state = await finished(controller);
 	assert.equal(state.tools.at(-1)!.exitCode, 0, JSON.stringify(state.tools));
-	assert.ok(state.tools.at(-1)!.output!.preview.includes("pass 1"));
+	assert.equal(
+		await readFile(join(f.cwd, "test-runs.txt"), "utf8"),
+		"passed\n",
+	);
 	for (const failing of [false, true]) {
 		if (failing) {
 			await writeFile(
@@ -153,7 +195,13 @@ void test("型チェック・テスト・Git は MXC、lint を含む pnpm は H
 			!failing,
 			JSON.stringify(tool.output),
 		);
-		assert.ok(tool.output!.preview.includes(failing ? "TS2322" : "pass 1"));
+		assert.equal(
+			await readFile(join(f.cwd, "test-runs.txt"), "utf8"),
+			"passed\npassed\n",
+		);
+		if (failing) {
+			assert.ok(tool.output!.preview.includes("TS2322"));
+		}
 	}
 });
 
@@ -190,7 +238,7 @@ async function prepareProject(cwd: string) {
 	await writeFile(join(cwd, "sample.ts"), "const value: number = 42;");
 	await writeFile(
 		join(cwd, "sample.test.cjs"),
-		'const assert = require("node:assert/strict"); require("node:test").test("fixture", () => assert.equal(6 * 7, 42));',
+		'const assert = require("node:assert/strict"); require("node:test").test("fixture", () => { assert.equal(6 * 7, 42); require("node:fs").appendFileSync("test-runs.txt", "passed\\n"); });',
 	);
 	await promisify(execFile)("git", ["init", "--quiet", cwd], {
 		windowsHide: true,

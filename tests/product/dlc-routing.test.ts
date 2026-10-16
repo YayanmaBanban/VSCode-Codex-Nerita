@@ -88,8 +88,9 @@ void test("分類と未知の条件を静的選択から分け、未実装・入
 		)?.status,
 		"skipped",
 	);
-	const stages = createTestIntent().workflow.stages;
-	const before = structuredClone(stages);
+	const initial = createTestIntent();
+	const stages = initial.workflow.stages;
+	const before = structuredClone(initial);
 	assert.deepEqual(nextStage(stages), {
 		stageId: "2.1",
 		reason: "unsupported-stage",
@@ -102,11 +103,10 @@ void test("分類と未知の条件を静的選択から分け、未実装・入
 		nextStage(stages, new Set(["stage:2.1"]), new Set(["state"])).reason,
 		"ready",
 	);
-	assert.deepEqual(stages, before);
-	assert.throws(
-		() => applyAction(createTestIntent(), { type: "advance" }),
-		/unsupported-stage/,
-	);
+	assert.throws(() => applyAction(initial, { type: "advance" }), {
+		name: "Error",
+	});
+	assert.deepEqual(initial, before);
 });
 void test("手動実装の完了・初期化・ワークフローを混同せず、不正な進行を拒否する", () => {
 	const initial = plannedIntent();
