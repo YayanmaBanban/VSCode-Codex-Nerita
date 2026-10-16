@@ -1,18 +1,19 @@
 // MXC の OS 境界だけを代替し、消費済み承認の再実行・同一性・一時権限の回収を確認する。
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
-import childProcess, { type SpawnOptions } from "node:child_process";
-import { realpath } from "node:fs/promises";
-import type { createMxcConfig } from "../../apps/vscode-nerita/src/extension/runtime/MxcPolicy";
+import { PassThrough } from "node:stream";
+import { realpath, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import type { createMxcRequest } from "../../apps/vscode-nerita/src/extension/runtime/MxcPolicy";
 import { piFixture, until } from "../support/pi";
 import { SandboxManagement } from "../../apps/vscode-nerita/src/extension/runtime/SandboxManagement";
 import { MxcExecutor } from "../../apps/vscode-nerita/src/extension/runtime/MxcExecutor";
-import { loadMxcSdk } from "../../apps/vscode-nerita/src/extension/runtime/MxcSdk";
+import { loadMxcSdk, type MxcSdk } from "../../apps/vscode-nerita/src/extension/runtime/MxcSdk";
 import { bindTrustContext } from "../../apps/vscode-nerita/src/extension/security/trust/TrustGate";
 import { issueApprovedToolCall } from "../../apps/vscode-nerita/src/extension/security/ApprovedToolCall";
 import { commandEnvironment } from "../../apps/vscode-nerita/src/extension/runtime/CommandEnvironment";
 
-type ContainerConfig = ReturnType<typeof createMxcConfig>;
+type ContainerConfig = ReturnType<typeof createMxcRequest>;
 
 for (const outcome of ["retry", "cancel"] as const) {
 	void test(`拒否後も同じ承認内容だけを再実行し、一時許可を回収する（${outcome}）`, (t) =>
@@ -31,9 +32,9 @@ async function verifyRetry(t: TestContext, outcome: "retry" | "cancel") {
 		{ read: () => undefined, write: () => Promise.resolve() },
 	);
 	const policies: ContainerConfig[] = [];
-	mockLauncher(t, policies, executable);
+	const sdk = await loadMxcSdk(process.env.NERITA_TEST_EXTENSION!);
 	const executor = new MxcExecutor(
-		await loadMxcSdk(process.env.NERITA_TEST_EXTENSION!),
+		mockProcess(sdk, policies, executable),
 		"base-container",
 		undefined,
 		undefined,
@@ -99,41 +100,68 @@ async function verifyRetry(t: TestContext, outcome: "retry" | "cancel") {
 
 /** 追加するファイル許可以外の実行条件が変わらないことを照合する。 */
 function retryIdentity(policy: ContainerConfig) {
-	return [policy.process?.commandLine, policy.process?.cwd, policy.network];
+	return [policy.command, policy.workingDirectory, policy.network];
 }
 
-/** ランチャーの stdin 契約で拒否レポートを作り、本番の分類・保存・承認・出力処理を残す。 */
-function mockLauncher(
-	t: TestContext,
+/** SDK のプロセス境界だけを代替し、分類・承認・出力・再実行は本番経路を使う。 */
+function mockProcess(
+	sdk: MxcSdk,
 	policies: ContainerConfig[],
 	target: string,
-) {
-	const original = childProcess.spawn;
-	let launches = 0;
-	t.mock.method(
-		childProcess,
-		"spawn",
-		(file: string, args: readonly string[], options: SpawnOptions) => {
-			if (!args.some((arg) => arg.endsWith("nerita-mxc-launcher.ps1"))) {
-				return original(file, args, options);
+): MxcSdk {
+	return {
+		...sdk,
+		async spawn(request) {
+			const config = request.containment;
+			assert.equal(config?.type, "processcontainer");
+			const outputPath = config.config?.captureDenials?.outputPath;
+			assert.equal(typeof outputPath, "string");
+			if (outputPath === undefined) {
+				throw new Error("missing capture output");
 			}
-			const denied = launches++ === 0;
-			const body = `let input=''; process.stdin.setEncoding('utf8'); process.stdin.on('data',s=>input+=s); process.stdin.on('end',()=>{
-const config=JSON.parse(input); const fs=require('node:fs'); const path=require('node:path');
-const report={denials:${denied ? JSON.stringify([{ resource: target, resourceType: "file", accessType: "execute" }]) : "[]"}, summary:{totalDenials:${denied ? 1 : 0},deniedResourcesTruncated:false}};
-fs.writeFileSync(path.join(path.dirname(config.processContainer.captureDenials.outputPath),'denials.fixture.json'),JSON.stringify(report)); process.stdout.write('${denied ? "DENIED" : "RETRIED"}'); process.exitCode=${denied ? 1 : 0}; });`;
-			const child = original(process.execPath, ["-e", body], options);
-			const stdin = child.stdin!;
-			const write = stdin.end.bind(stdin);
-			// ランチャーが使う文字列入力だけを捕捉し、元のストリームへ渡す。
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-			stdin.end = ((input: string, encoding: BufferEncoding) => {
-				// 製品が生成した MXC ポリシーを観測し、その内容の比較は試験本体で行う。
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-				policies.push(JSON.parse(input) as ContainerConfig);
-				return write(input, encoding);
-			}) as typeof stdin.end;
-			return child;
+			policies.push({ ...structuredClone(request), containment: config });
+			const denied = policies.length === 1;
+			await writeFile(
+				join(dirname(outputPath), "denials.fixture.json"),
+				JSON.stringify({
+					denials: denied
+						? [
+								{
+									resource: target,
+									resourceType: "file",
+									accessType: "execute",
+								},
+							]
+						: [],
+					summary: {
+						totalDenials: denied ? 1 : 0,
+						deniedResourcesTruncated: false,
+					},
+				}),
+			);
+			const output = new PassThrough();
+			output.end(denied ? "DENIED" : "RETRIED");
+			return new sdk.MxcProcess({
+				id: 0,
+				standardInput: null,
+				standardOutput: output,
+				standardError: null,
+				poll: () => ({
+					running: false,
+					exitCode: denied ? 1 : 0,
+					timedOut: false,
+				}),
+				wait: () =>
+					Promise.resolve({
+						exitCode: denied ? 1 : 0,
+						timedOut: false,
+					}),
+				warnings: () => [],
+				outputMetadata: () => undefined,
+				kill() {},
+				killForTimeout() {},
+				free: () => Promise.resolve(),
+			});
 		},
-	);
+	};
 }

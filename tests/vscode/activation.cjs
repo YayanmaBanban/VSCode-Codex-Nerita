@@ -53,11 +53,11 @@ async function verifyMxcRuntime(root) {
 		pathToFileURL(
 			path.join(
 				root,
-				"dist/runtime/node_modules/@microsoft/mxc-sdk/dist/index.js",
+				"dist/runtime/node_modules/@microsoft/mxc-sdk/dist/v1/index.js",
 			),
 		).href
 	);
-	assert.equal(typeof mxc.spawnSandboxFromConfig, "function");
+	assert.equal(typeof mxc.spawn, "function");
 	const support = mxc.getPlatformSupport();
 	assert.equal(typeof support.isSupported, "boolean");
 	const diagnosis = await vscode.commands.executeCommand(

@@ -6,12 +6,11 @@ import {
 	isNonEmptyString,
 	isNonZeroNumber,
 } from "@nerita/shared/valuePredicates";
-import { createProcessTreeStopper } from "./ProcessTreeStopper";
+import { finished } from "node:stream/promises";
 import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type ChildProcess } from "node:child_process";
-import type { ContainerConfig } from "@microsoft/mxc-sdk";
+import type { ContainerRequest, MxcProcess } from "@microsoft/mxc-sdk/v1";
 import {
 	consumeApprovedToolCall,
 	toolCallFingerprint,
@@ -29,13 +28,11 @@ import type {
 	SandboxCommandOutput,
 } from "./SandboxCommandExecutor";
 import type { MxcSdk } from "./MxcSdk";
-import { spawnMxcLauncher } from "./MxcLauncher";
-import { createMxcConfig, isVolumeRoot } from "./MxcPolicy";
+import { createMxcRequest, isVolumeRoot } from "./MxcPolicy";
 import { discoverDevTools, toolResource } from "./DevToolDiscovery";
 import { initialDevToolProfiles } from "./DevToolProfiles";
 import { prepareDevToolStorage } from "./DevToolStorage";
 import { readMxcDenials, type DenialReport } from "./MxcDenials";
-import { MxcStderr } from "./MxcStderr";
 import type { ResourcePolicy } from "@nerita/shared/sandboxPolicy";
 import { randomUUID } from "node:crypto";
 import type { SandboxManagement } from "./SandboxManagement";
@@ -181,7 +178,7 @@ export async function executeMxcCommand(
 				operationId,
 			);
 		}
-		const config = createMxcConfig(sdk, call, temporary, devTools);
+		const config = createMxcRequest(call, temporary, devTools);
 		applyCredentialInjection(config, injection);
 		signal = AbortSignal.any([
 			signal,
@@ -190,8 +187,8 @@ export async function executeMxcCommand(
 		onPolicy?.(structuredClone(devTools.resources));
 		management?.policy(devTools.resources);
 		assertPrivateReport(config, hostTemporary);
-		config.processContainer = {
-			...config.processContainer,
+		config.containment.config = {
+			...config.containment.config,
 			captureDenials: {
 				mode: "block",
 				outputPath: join(hostTemporary, "denials.json"),
@@ -205,11 +202,9 @@ export async function executeMxcCommand(
 			config,
 			call,
 			signal,
-			hostTemporary,
 			timing,
 			onOutput,
 		);
-		assertMxcCompleted(result, call.timeoutMs!);
 		const report = await timing.measure("denialsMs", () =>
 			readMxcDenials(hostTemporary, devTools),
 		);
@@ -236,52 +231,11 @@ async function cleanupMxc(
 	}
 }
 
-/** MXC の起動・初回出力・終了までを計測し、途中出力を利用側へ通知する。 */
-async function measuredMxcOutput(
-	sdk: MxcSdk,
-	config: ContainerConfig,
-	call: ToolCall,
-	signal: AbortSignal,
-	reportDirectory: string,
-	timing: MxcTiming,
-	onOutput?: SandboxCommandOutput,
-): Promise<SandboxCommandResult> {
-	const launchStarted = performance.now();
-	const child = spawnMxcLauncher(sdk, config, call.cwd);
-	timing.value.spawnMs = performance.now() - launchStarted;
-	/** 初回出力までの時間を一度だけ記録し、元のストリーム種別で出力を通知する。 */
-	const output = (stream: "stdout" | "stderr", chunk: string) => {
-		timing.value.firstOutputMs ??= performance.now() - launchStarted;
-		onOutput?.(stream, chunk);
-	};
-	return timing.measure("executionMs", () =>
-		collectOutput(child, signal, call.timeoutMs!, reportDirectory, output),
-	);
-}
-
-/** MXC が自身の期限で停止した終了結果を識別し、Host 側のタイマーより早い終了も失敗として扱う。 */
-function assertMxcCompleted(
-	result: SandboxCommandResult,
-	timeoutMs: number,
-): void {
-	// MXC 本体が先にタイムアウトすると、起動用プロセスは終了コードと構造化エラーを返す。
-	// Host 側のタイマーより先に `close` イベントが届いても、正常終了として扱わない。
-	const timeoutError = JSON.stringify({
-		error: {
-			code: "backend_error",
-			message: `script timed out after ${timeoutMs}ms`,
-		},
-	});
-	const matchesExitCode =
-		result.exitCode === 0xffff_ffff &&
-		result.stderr.trimEnd().endsWith(timeoutError);
-	if (matchesExitCode) {
-		throw new Error("Sandbox 実行がタイムアウトしました。");
-	}
-}
-
 /** ワークスペースが一時領域の祖先だった場合も、子からレポートを改変できる構成を起動しない。 */
-function assertPrivateReport(config: ContainerConfig, directory: string): void {
+function assertPrivateReport(
+	config: ContainerRequest,
+	directory: string,
+): void {
 	const roots = [
 		...(config.filesystem?.readonlyPaths ?? []).filter(
 			(root) => !isVolumeRoot(root),
@@ -356,76 +310,6 @@ async function validateRoots(call: ToolCall) {
 	}
 }
 
-/** 子孫も終了させ、close まで待ってから専用 temp を削除する。 */
-function collectOutput(
-	child: ChildProcess,
-	signal: AbortSignal,
-	timeoutMs: number,
-	reportDirectory: string,
-	onOutput?: SandboxCommandOutput,
-): Promise<SandboxCommandResult> {
-	/** 出力・期限・停止を追跡し、管理用の stderr 参照を除いて終了確認後の結果を返す。 */
-	const waitForMxcOutput: SandboxResultWaiter = (resolve, reject) => {
-		let stdout = "";
-		let stderr = "";
-		let failure: Error | undefined;
-		const stop = createProcessTreeStopper(child);
-		/** 中断理由を実行失敗へ保持してから、MXC の起動プロセスを停止する。 */
-		const abort = () => {
-			failure = new Error("Sandbox 実行を停止しました。", {
-				cause: signal.reason,
-			});
-			stop();
-		};
-		const timer = setTimeout(() => {
-			failure = new Error("Sandbox 実行がタイムアウトしました。");
-			stop();
-		}, timeoutMs + 1000);
-		/** 途中出力を通知し、通知先の失敗も保持して MXC の実行を停止する。 */
-		const notify = (stream: "stdout" | "stderr", chunk: string) => {
-			try {
-				onOutput?.(stream, chunk);
-			} catch (error) {
-				failure =
-					error instanceof Error
-						? error
-						: new Error(errorText(error));
-				stop();
-			}
-		};
-		child.stdout?.setEncoding("utf8").on("data", (chunk: string) => {
-			stdout += chunk;
-			notify("stdout", chunk);
-		});
-		const stderrFilter = new MxcStderr(reportDirectory, (chunk) => {
-			stderr += chunk;
-			notify("stderr", chunk);
-		});
-		child.stderr
-			?.setEncoding("utf8")
-			.on("data", (chunk: string) => stderrFilter.write(chunk));
-		child.once("error", (error) => {
-			failure = error;
-		});
-		child.once("close", (exitCode) => {
-			stderrFilter.end();
-			clearTimeout(timer);
-			signal.removeEventListener("abort", abort);
-			if (failure) {
-				reject(failure);
-			} else if (exitCode === null) {
-				reject(new Error("MXC プロセスの終了コードを取得できません。"));
-			} else {
-				resolve({ stdout, stderr, exitCode });
-			}
-		});
-		signal.addEventListener("abort", abort, { once: true });
-		if (signal.aborted) {
-			abort();
-		}
-	};
-	return new Promise(waitForMxcOutput);
-}
 /** 通常の開発ツール設定を秘密値の注入より先に用意する。 */
 async function prepareMxcDevTools(
 	call: ToolCall,
@@ -468,8 +352,96 @@ async function prepareMxcDevTools(
 	);
 }
 
-/** Promise の完了と拒否を受け取り、終了確認まで結果を待つ処理。 */
-type SandboxResultWaiter = (
-	resolve: (value: SandboxCommandResult) => void,
-	reject: (reason: unknown) => void,
-) => void;
+/** V1 のネイティブプロセスを起動し、初回出力と終了までを計測する。 */
+async function measuredMxcOutput(
+	sdk: MxcSdk,
+	config: ContainerRequest,
+	call: ToolCall,
+	signal: AbortSignal,
+	timing: MxcTiming,
+	onOutput?: SandboxCommandOutput,
+): Promise<SandboxCommandResult> {
+	const launchStarted = performance.now();
+	// 設定と資格情報は FFI に直接渡す。コマンドラインや設定ファイルへ直列化しない。
+	const child = await sdk.spawn(config);
+	timing.value.spawnMs = performance.now() - launchStarted;
+	/** 初回出力だけを計測し、呼出し側へ元のストリーム種別で通知する。 */
+	const output: SandboxCommandOutput = (stream, chunk) => {
+		timing.value.firstOutputMs ??= performance.now() - launchStarted;
+		onOutput?.(stream, chunk);
+	};
+	try {
+		return await timing.measure("executionMs", () =>
+			collectOutput(child, signal, call.timeoutMs!, output),
+		);
+	} finally {
+		child.dispose();
+	}
+}
+
+/** SDK でコンテナ全体を停止し、終了とパイプの EOF を待ってから temp を回収する。 */
+async function collectOutput(
+	child: MxcProcess,
+	signal: AbortSignal,
+	timeoutMs: number,
+	onOutput: SandboxCommandOutput,
+): Promise<SandboxCommandResult> {
+	let stdout = "";
+	let stderr = "";
+	let failure: Error | undefined;
+	/** 最初の失敗理由を保持し、SDK のコンテナ停止を要求する。 */
+	const stop = (error: Error) => {
+		failure ??= error;
+		child.kill();
+	};
+	/** 信頼や資格情報の取消しも、同じ停止経路で扱う。 */
+	const abort = () =>
+		stop(
+			new Error("Sandbox 実行を停止しました。", { cause: signal.reason }),
+		);
+	const timer = setTimeout(
+		() => stop(new Error("Sandbox 実行がタイムアウトしました。")),
+		timeoutMs + 1000,
+	);
+	const drains = [];
+	for (const [stream, pipe] of [
+		["stdout", child.standardOutput],
+		["stderr", child.standardError],
+	] as const) {
+		if (!pipe) {continue;}
+		pipe.setEncoding("utf8").on("data", (chunk: string) => {
+			if (stream === "stdout") {stdout += chunk;}
+			else {stderr += chunk;}
+			try {
+				onOutput(stream, chunk);
+			} catch (error) {
+				stop(
+					error instanceof Error
+						? error
+						: new Error(errorText(error)),
+				);
+			}
+		});
+		drains.push(finished(pipe, { cleanup: true }));
+	}
+	signal.addEventListener("abort", abort, { once: true });
+	try {
+		if (signal.aborted) {abort();}
+		const [result] = await Promise.all([child.wait(), ...drains]);
+		if (failure) {throw failure;}
+		if (result.timedOut)
+			{throw new Error("Sandbox 実行がタイムアウトしました。");}
+		const captureError = child.outputMetadata?.captureDenialsError;
+		if (captureError) {throw new Error(captureError.message);}
+		// 警告は SDK の構造化された値から取得し、ツールの stderr を解析しない。
+		for (const warning of child.warnings) {
+			const text = `[MXC] ${warning}\n`;
+			stderr += text;
+			onOutput("stderr", text);
+		}
+		return { stdout, stderr, exitCode: result.exitCode };
+	} finally {
+		clearTimeout(timer);
+		signal.removeEventListener("abort", abort);
+	}
+}

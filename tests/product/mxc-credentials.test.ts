@@ -2,12 +2,8 @@
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
-import childProcess, {
-	type ChildProcess,
-	type SpawnOptions,
-} from "node:child_process";
+import childProcess from "node:child_process";
 import { promisify } from "node:util";
-import { createConnection } from "node:net";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -25,7 +21,7 @@ import { CredentialProviderRegistry } from "../../apps/vscode-nerita/src/extensi
 import { BitwardenSecretsProvider } from "../../apps/vscode-nerita/src/extension/credentials/BuiltinCredentialProviders";
 import { SecretValue } from "../../apps/vscode-nerita/src/extension/credentials/CredentialStore";
 import { credentialBindingSchema } from "../../packages/shared/src/credentials";
-import { loadMxcSdk } from "../../apps/vscode-nerita/src/extension/runtime/MxcSdk";
+import { loadMxcSdk, type MxcSdk } from "../../apps/vscode-nerita/src/extension/runtime/MxcSdk";
 import { MxcExecutor } from "../../apps/vscode-nerita/src/extension/runtime/MxcExecutor";
 
 for (const route of ["mxc", "host", "codemode", "child"]) {
@@ -35,7 +31,8 @@ for (const route of ["mxc", "host", "codemode", "child"]) {
 
 /** 子や Codemode の内部操作も、親のブローカーと承認経路を通す。 */
 async function verifyInjection(t: TestContext, route: string) {
-	const checkLauncher = route === "mxc" ? observeLauncher(t) : async () => {};
+	const sdk = await loadMxcSdk(process.env.NERITA_TEST_EXTENSION!);
+	const observed = route === "mxc" ? observeProcess(t, sdk) : undefined;
 	const f = await piFixture(t);
 	const storage = credentialFixture();
 	f.options.credentials = storage.credentials;
@@ -94,138 +91,7 @@ async function verifyInjection(t: TestContext, route: string) {
 				!file.text.includes("BWS_AUTH_PRIVATE"),
 		),
 	);
-	await checkLauncher();
-}
-
-/** 起動を代替せず呼出しを記録し、Sandbox と別にランチャーの引数・環境を検査する。 */
-function observeLauncher(t: TestContext) {
-	const previous = process.env.BWS_ACCESS_TOKEN;
-	const previousApiKey = process.env.OPENAI_API_KEY;
-	process.env.BWS_ACCESS_TOKEN = "HOST_BWS_PRIVATE";
-	process.env.OPENAI_API_KEY = "HOST_API_PRIVATE";
-	t.after(() => {
-		if (previous === undefined) {
-			delete process.env.BWS_ACCESS_TOKEN;
-		} else {
-			process.env.BWS_ACCESS_TOKEN = previous;
-		}
-		if (previousApiKey === undefined) {
-			delete process.env.OPENAI_API_KEY;
-		} else {
-			process.env.OPENAI_API_KEY = previousApiKey;
-		}
-	});
-	const launches: {
-		args: readonly string[];
-		env: NodeJS.ProcessEnv | undefined;
-		cli: Promise<string>;
-	}[] = [];
-	const spawn = childProcess.spawn;
-	t.mock.method(
-		childProcess,
-		"spawn",
-		(file: string, args: readonly string[], options: SpawnOptions) => {
-			const child = spawn(file, args, options);
-			if (args.some((arg) => arg.endsWith("nerita-mxc-launcher.ps1"))) {
-				launches.push({
-					args,
-					env: options.env,
-					cli: observeCli(child),
-				});
-			}
-			return child;
-		},
-	);
-	return async () => {
-		assert.equal(
-			launches.length,
-			1,
-			"実際の MXC ランチャーの起動を確認する",
-		);
-		const launch = launches[0]!;
-		assert.ok(
-			!launch.args.includes("--config-base64"),
-			"設定を引数へ載せない",
-		);
-		assert.ok(!JSON.stringify(launch).includes("TOOL_PRIVATE_VALUE"));
-		assert.ok(!JSON.stringify(launch).includes("HOST_BWS_PRIVATE"));
-		assert.ok(!JSON.stringify(launch).includes("HOST_API_PRIVATE"));
-		assert.ok(!JSON.stringify(launch).includes("BWS_AUTH_PRIVATE"));
-		assert.equal(launch.env?.BWS_ACCESS_TOKEN, undefined);
-		assert.equal(launch.env?.OPENAI_API_KEY, undefined);
-		assert.equal(launch.env?.FIXTURE_API_TOKEN, undefined);
-		assert.equal(launch.env?.SystemRoot, process.env.SystemRoot);
-		const cli = await launch.cli;
-		assert.ok(cli.includes("--config \\\\.\\pipe\\nerita-mxc-"), cli);
-		assert.ok(!cli.includes("--config-base64"), cli);
-		assert.ok(!cli.includes("TOOL_PRIVATE_VALUE"), cli);
-		assert.ok(
-			!cli.includes(Buffer.from("TOOL_PRIVATE_VALUE").toString("base64")),
-			cli,
-		);
-	};
-}
-
-/** 実行中の子 CLI を OS から確認し、ラッパーの引数だけを検証して終わらない。 */
-function observeCli(child: ChildProcess): Promise<string> {
-	return new Promise((resolve, reject) => {
-		let started = false;
-		child.once("close", () => {
-			if (!started) {
-				reject(new Error("MXC CLI の実行を観測できません。"));
-			}
-		});
-		child.stdout!.once("data", () => {
-			started = true;
-			void queryCli(child.pid!).then(resolve, reject);
-		});
-	});
-}
-
-/** 固定名の SDK CLI について、実行中のコマンドラインだけを取得する。 */
-async function queryCli(parentPid: number): Promise<string> {
-	const { stdout } = await promisify(childProcess.execFile)(
-		join(
-			process.env.SystemRoot!,
-			"System32/WindowsPowerShell/v1.0/powershell.exe",
-		),
-		[
-			"-NoProfile",
-			"-NonInteractive",
-			"-Command",
-			`Get-CimInstance Win32_Process -Filter 'ParentProcessId = ${parentPid} AND Name = "wxc-exec.exe"' | Select-Object -ExpandProperty CommandLine`,
-		],
-		{ windowsHide: true, timeout: 5000 },
-	);
-	const pipe = stdout.match(
-		/--config (\\\\\.\\pipe\\nerita-mxc-[a-f0-9]+)/,
-	)?.[1];
-	assert.ok(isNonEmptyString(pipe), stdout);
-	assert.equal(
-		await readConfigPipe(pipe),
-		"",
-		"起動した CLI 以外へ設定を渡さない",
-	);
-	return stdout;
-}
-
-/** 同じユーザーの別 PID で接続しても、秘密値を受け取れないことを確認する。 */
-function readConfigPipe(path: string): Promise<string> {
-	return new Promise((resolve, reject) => {
-		let output = "";
-		const socket = createConnection(path);
-		socket.setEncoding("utf8");
-		socket.on("data", (chunk: string) => {
-			output += chunk;
-		});
-		socket.once("end", () => resolve(output));
-		socket.once("error", reject);
-		socket.setTimeout(1000, () =>
-			socket.destroy(
-				new Error("設定パイプの拒否待ちがタイムアウトしました。"),
-			),
-		);
-	});
+	await observed?.check();
 }
 
 /** 実行経路の外部境界は置き換えず、ローカルモデルの応答だけで操作を指定する。 */
@@ -335,4 +201,73 @@ async function configureBroker(
 		storage.stores.redactor,
 	);
 	return () => acquired;
+}
+
+/** 本物の V1 spawn を観測し、Host の秘密を継承せず設定を argv へ公開しないことを確認する。 */
+function observeProcess(t: TestContext, sdk: MxcSdk) {
+	const previous = process.env.BWS_ACCESS_TOKEN;
+	const previousApiKey = process.env.OPENAI_API_KEY;
+	process.env.BWS_ACCESS_TOKEN = "HOST_BWS_PRIVATE";
+	process.env.OPENAI_API_KEY = "HOST_API_PRIVATE";
+	t.after(() => {
+		if (previous === undefined) {delete process.env.BWS_ACCESS_TOKEN;}
+		else {process.env.BWS_ACCESS_TOKEN = previous;}
+		if (previousApiKey === undefined) {delete process.env.OPENAI_API_KEY;}
+		else {process.env.OPENAI_API_KEY = previousApiKey;}
+	});
+	const launches: Promise<string>[] = [];
+	return {
+		sdk: {
+			...sdk,
+			async spawn(request: Parameters<MxcSdk["spawn"]>[0]) {
+				assert.equal(request.inheritDefaultEnvironment, false);
+				assert.equal(request.environment?.BWS_ACCESS_TOKEN, undefined);
+				assert.equal(request.environment?.OPENAI_API_KEY, undefined);
+				assert.equal(
+					request.environment?.FIXTURE_API_TOKEN,
+					"TOOL_PRIVATE_VALUE",
+				);
+				const child = await sdk.spawn(request);
+				launches.push(queryCommandLine(child.id));
+				return child;
+			},
+		},
+		async check() {
+			assert.equal(launches.length, 1);
+			const commandLine = await launches[0]!;
+			assert.ok(isNonEmptyString(commandLine));
+			for (const value of [
+				"--config",
+				"TOOL_PRIVATE_VALUE",
+				"HOST_BWS_PRIVATE",
+				"HOST_API_PRIVATE",
+				"BWS_AUTH_PRIVATE",
+			]) {
+				assert.ok(!commandLine.includes(value));
+			}
+			assert.ok(
+				!commandLine.includes(
+					Buffer.from("TOOL_PRIVATE_VALUE").toString("base64"),
+				),
+			);
+		},
+	};
+}
+
+/** ネイティブ起動した実プロセスを OS から取得し、設定が引数へ漏れないことを検証する。 */
+async function queryCommandLine(pid: number): Promise<string> {
+	const { stdout } = await promisify(childProcess.execFile)(
+		join(
+			process.env.SystemRoot!,
+			"System32/WindowsPowerShell/v1.0/powershell.exe",
+		),
+		[
+			"-NoProfile",
+			"-NonInteractive",
+			"-Command",
+			`Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}' | Select-Object -ExpandProperty CommandLine`,
+		],
+		{ windowsHide: true, timeout: 5000 },
+	);
+	return stdout;
 }

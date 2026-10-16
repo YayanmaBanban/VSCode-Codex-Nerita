@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { realpath } from "node:fs/promises";
 import { join, parse } from "node:path";
 import { loadMxcSdk } from "../../apps/vscode-nerita/src/extension/runtime/MxcSdk";
-import { createMxcConfig } from "../../apps/vscode-nerita/src/extension/runtime/MxcPolicy";
+import { createMxcRequest } from "../../apps/vscode-nerita/src/extension/runtime/MxcPolicy";
 import { MxcExecutor } from "../../apps/vscode-nerita/src/extension/runtime/MxcExecutor";
 import { probeMxc } from "../../apps/vscode-nerita/src/extension/runtime/MxcAvailability";
 import { dockerAvailability } from "../../apps/vscode-nerita/src/extension/runtime/SandboxBackend";
@@ -40,10 +40,10 @@ async function fixture() {
 }
 
 void test("MXC は既定で通信・Clipboard・入力注入を拒否し、明示した領域だけへ書き込める", async () => {
-	const { sdk, call } = await fixture();
+	const { call } = await fixture();
 	const temporary = join(call.cwd, "dedicated-temp");
-	const config = createMxcConfig(sdk, call, temporary);
-	assert.equal(config.containment, "processcontainer");
+	const config = createMxcRequest(call, temporary);
+	assert.equal(config.containment.type, "processcontainer");
 	assert.deepEqual(config.network, {
 		egress: { default: "deny" },
 		ingress: { default: "deny", hostLoopback: "deny" },
@@ -58,30 +58,28 @@ void test("MXC は既定で通信・Clipboard・入力注入を拒否し、明�
 		"同じ root を readonly に重複登録して書込みを妨げない",
 	);
 	assert.equal(config.ui!.clipboard, "none");
-	assert.equal(config.ui!.injection, false);
-	assert.equal(config.process!.cwd, call.cwd);
-	assert.equal(config.process!.timeout, 5000);
+	assert.equal(config.ui!.allowInputInjection, false);
+	assert.equal(config.workingDirectory, call.cwd);
+	assert.equal(config.timeoutMs, 5000);
 	assert.ok(
-		!config.process!.env!.some(
-			(entry) =>
-				entry.includes("secret") || entry.startsWith("API_TOKEN="),
-		),
+		!Object.values(config.environment!).includes("secret") &&
+			!("API_TOKEN" in config.environment!),
 	);
-	assert.ok(config.process!.env!.includes(`TEMP=${temporary}`));
-	assert.ok(config.process!.env!.includes(`TMP=${temporary}`));
-	assert.equal(config.process!.inheritDefaultEnv, undefined);
+	assert.ok(config.environment!.TEMP === temporary);
+	assert.ok(config.environment!.TMP === temporary);
+	assert.equal(config.inheritDefaultEnvironment, false);
 	assert.equal(
-		config.process!.commandLine,
+		config.command,
 		'"tool.exe" "with spaces" "a\\"b" "trailing\\\\"',
 	);
 });
 
 void test("通信許可と readOnly の権限を変換してもホストのループバック通信とワークスペースへの書込みを許可しない", async () => {
-	const { sdk, call } = await fixture();
+	const { call } = await fixture();
 	call.policy.networkAccess = true;
 	call.policy.writableRoots = [];
 	const temporary = join(call.cwd, "dedicated-temp");
-	const config = createMxcConfig(sdk, call, temporary);
+	const config = createMxcRequest(call, temporary);
 	assert.equal(config.network?.egress?.default, "allow");
 	assert.equal(config.network.ingress?.hostLoopback, "deny");
 	assert.deepEqual(config.filesystem!.readwritePaths, [temporary]);
@@ -113,7 +111,7 @@ void test("SDK の欠落を利用不可理由として返し、Docker は常に�
 });
 
 void test("開発ツールの分類から許可する経路を限定し、資格情報の許可を生成しない", async () => {
-	const { sdk, call } = await fixture();
+	const { call } = await fixture();
 	const install = join(call.cwd, "tool-install");
 	const cache = join(call.cwd, "managed-cache");
 	const credential = join(call.cwd, "..", "host-credential");
@@ -143,7 +141,7 @@ void test("開発ツールの分類から許可する経路を限定し、資格
 			source: "profile" as const,
 		},
 	];
-	const config = createMxcConfig(sdk, call, join(call.cwd, "temp"), {
+	const config = createMxcRequest(call, join(call.cwd, "temp"), {
 		resources,
 		environment: {},
 		executables: {},

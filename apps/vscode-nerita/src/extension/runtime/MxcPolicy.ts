@@ -1,8 +1,7 @@
 // 承認済み要求を MXC ポリシーへ変換し、Host 環境の秘密や暗黙の書込み許可を持ち込まない。
-import type { ContainerConfig } from "@microsoft/mxc-sdk";
+import type { ContainerRequest, Containment } from "@microsoft/mxc-sdk/v1";
 import { win32 } from "node:path";
 import type { ToolCall } from "../security/ApprovedToolCall";
-import type { MxcSdk } from "./MxcSdk";
 import type { DevToolPolicy, SandboxPolicy } from "./DevToolPolicy";
 import { devToolEnvironment } from "./DevToolDiscovery";
 
@@ -12,12 +11,11 @@ function quoteWindowsArgument(value: string): string {
 }
 
 /** ツールの補助書込み許可は採用しない。一時領域は呼出しごとの専用領域だけを許可する。 */
-export function createMxcConfig(
-	sdk: MxcSdk,
+export function createMxcRequest(
 	call: ToolCall,
 	temporary: string,
 	devTools?: DevToolPolicy,
-): ContainerConfig {
+): ContainerRequest & { containment: Containment.ProcessContainer } {
 	const policy = resolveSandboxPolicy(call, devTools);
 	const env = policy.devTools.environment;
 	const readonly = policy.devTools.resources
@@ -33,54 +31,42 @@ export function createMxcConfig(
 				resource.kind === "cache" && resource.access === "readwrite",
 		)
 		.map((resource) => resource.target);
-	const config = sdk.createConfigFromPolicy(
-		{
-			version: "0.9.0-alpha",
-			filesystem: {
-				readonlyPaths: [
-					...new Set([
-						...readonly,
-						...policy.workspace.readonlyRoots,
-						...workspaceVolumeRoots(call.policy.workspaceRoots),
-					]),
-				].filter(
-					(root) => !policy.workspace.writableRoots.includes(root),
-				),
-				readwritePaths: [
-					...policy.workspace.writableRoots,
-					temporary,
-					...caches,
-				],
-			},
-			network: {
-				egress: {
-					default: policy.network.internet,
-				},
-				ingress: {
-					default: "deny",
-					hostLoopback: policy.network.localhost,
-				},
-			},
-			ui: {
-				allowWindows: policy.ui.allowWindows,
-				clipboard: "none",
-				allowInputInjection: false,
-			},
-			timeoutMs: call.timeoutMs!,
+	return {
+		containment: { type: "processcontainer" },
+		filesystem: {
+			readonlyPaths: [
+				...new Set([
+					...readonly,
+					...policy.workspace.readonlyRoots,
+					...workspaceVolumeRoots(call.policy.workspaceRoots),
+				]),
+			].filter((root) => !policy.workspace.writableRoots.includes(root)),
+			readwritePaths: [
+				...policy.workspace.writableRoots,
+				temporary,
+				...caches,
+			],
 		},
-		"process",
-	);
-	// SDK 0.9.0 の変換関数は "process" を要求するため、生成後に実行バックエンドを固定する。
-	config.containment = "processcontainer";
-	config.process = {
-		...config.process,
-		commandLine: call.command!.map(quoteWindowsArgument).join(" "),
-		cwd: call.cwd,
-		env: Object.entries({ ...env, TEMP: temporary, TMP: temporary }).map(
-			([key, value]) => `${key}=${value}`,
-		),
+		network: {
+			egress: {
+				default: policy.network.internet,
+			},
+			ingress: {
+				default: "deny",
+				hostLoopback: policy.network.localhost,
+			},
+		},
+		ui: {
+			disable: !policy.ui.allowWindows,
+			clipboard: "none",
+			allowInputInjection: false,
+		},
+		timeoutMs: call.timeoutMs!,
+		command: call.command!.map(quoteWindowsArgument).join(" "),
+		workingDirectory: call.cwd,
+		environment: { ...env, TEMP: temporary, TMP: temporary },
+		inheritDefaultEnvironment: false,
 	};
-	return config;
 }
 
 /** BaseContainer のドライブ直下 RO は非再帰。cwd 解決に必要な volume handle だけを許可する。 */

@@ -3,7 +3,7 @@ import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import { mkdtemp, writeFile, appendFile, rm } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
-import type { ContainerConfig } from "@microsoft/mxc-sdk";
+import type { ContainerRequest } from "@microsoft/mxc-sdk/v1";
 import type { CredentialBinding } from "@nerita/shared/credentials";
 import type { CredentialLease } from "./CredentialBroker";
 import { providerExecutable } from "./ProviderProcess";
@@ -141,7 +141,7 @@ async function prepareGitHelper(
 
 /** `DevToolPolicy` の通常環境を確定した後で、承認済みの値だけを追加する。 */
 export function applyCredentialInjection(
-	config: ContainerConfig,
+	config: ContainerRequest,
 	injection?: CredentialInjection,
 ) {
 	if (!injection) {
@@ -150,17 +150,14 @@ export function applyCredentialInjection(
 	const keys = new Set(
 		Object.keys(injection.env).map((key) => key.toLowerCase()),
 	);
-	const original = (config.process?.env ?? []).filter(
-		(entry) => !keys.has(entry.slice(0, entry.indexOf("=")).toLowerCase()),
+	const original = Object.fromEntries(
+		Object.entries(config.environment ?? {}).filter(
+			([key]) => !keys.has(key.toLowerCase()),
+		),
 	);
-	config.process = {
-		...config.process!,
-		env: [
-			...original,
-			...Object.entries(injection.env).map(
-				([key, value]) => `${key}=${value}`,
-			),
-		],
+	config.environment = {
+		...original,
+		...injection.env,
 	};
 	config.filesystem = {
 		...config.filesystem,
