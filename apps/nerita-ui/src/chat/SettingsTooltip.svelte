@@ -40,7 +40,7 @@
 			css: (t) => `opacity:${t};transform:scale(${0.95 + t * 0.05})`,
 		};
 	}
-	/** ツールチップを閉じても、履歴や検索欄の Escape 操作へイベントを届ける。 */
+	/** 親が Escape の伝播を止める前に閉じ、履歴や検索欄の操作も続けられるようにする。 */
 	function handleKeydown(event: KeyboardEvent) {
 		if (open && event.key === "Escape") {
 			open = false;
@@ -48,7 +48,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydowncapture={handleKeydown} />
 {#if content !== undefined && content !== null && content !== false}
 	<Tooltip.Provider
 		delayDuration={100}

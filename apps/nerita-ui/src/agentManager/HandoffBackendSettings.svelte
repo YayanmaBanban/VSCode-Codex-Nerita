@@ -1,6 +1,7 @@
 <!-- バックエンドごとの引継ぎモデルの方式と、推論の設定を編集する。 -->
 <script lang="ts">
 	import type { BackendId } from "@nerita/shared/backend";
+	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import type { HandoffConfig } from "@nerita/shared/agentManager/config";
 	import { effortOptions } from "@nerita/shared/agentManager/effort";
 	import type { ManagerState } from "@nerita/shared/agentManager/messages";
@@ -14,11 +15,13 @@
 		config,
 		state,
 		onChange,
+		effortError,
 	}: {
 		backend: BackendId;
 		config: HandoffConfig;
 		state: ManagerState;
 		onChange: (config: HandoffConfig) => void;
+		effortError?: string | undefined;
 	} = $props();
 	let item = $derived(config.backends[backend]);
 	let currentOptions = $derived(
@@ -73,9 +76,8 @@
 			class={inputStyle}
 			value={item.strategy}
 			onchange={(event) => strategy(event.currentTarget.value)}
-			><option value="current">current — 現在のセッション</option><option
-				value="fixed">fixed — 固定モデル</option
-			></select
+			><option value="current">現在のセッションのモデルを使用</option
+			><option value="fixed">モデルを固定する</option></select
 		></Field
 	>
 	{#if item.strategy === "fixed"}<HandoffModelField
@@ -94,7 +96,10 @@
 			: currentOptions}
 		onChange={setEffort}
 	/>
+	{#if isNonEmptyString(effortError)}
+		<p role="alert" class="m-0 text-sm">{effortError}</p>
+	{/if}
 	{#if item.strategy === "current"}<p class="m-0 text-xs text-muted">
-			未指定なら現在のモデルに従います。推論を指定した場合は、実行時の対応確認が必要です。
+			モデルは現在のセッションと同じものを使い、推論レベルは個別に設定します。
 		</p>{/if}
 </section>

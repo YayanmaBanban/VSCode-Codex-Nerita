@@ -132,10 +132,29 @@
 		reportStatus: "reported",
 	};
 
-	let { unavailable = false }: { unavailable?: boolean } = $props();
+	let {
+		unavailable = false,
+		loading = false,
+		empty = false,
+		error = false,
+		busy = false,
+	}: {
+		unavailable?: boolean;
+		loading?: boolean;
+		empty?: boolean;
+		error?: boolean;
+		busy?: boolean;
+	} = $props();
 	const bridge = untrack<SandboxBridge>(() => {
 		let listener: ((reply: SandboxReply) => void) | undefined;
 		const state = structuredClone(snapshot);
+		if (empty) {
+			state.grants = [];
+			state.resources = [];
+			state.resourceGrants = [];
+			state.denials = [];
+			state.cacheSwitches = [];
+		}
 		if (unavailable) {
 			state.availability[0] = {
 				...state.availability[0]!,
@@ -151,13 +170,23 @@
 				};
 			},
 			postMessage: (message) => {
+				if (loading) {
+					return;
+				}
+				if (error) {
+					listener?.({
+						type: "error",
+						message:
+							"実行環境の状態を取得できませんでした。起動確認を再試行してください。",
+					});
+				}
 				if (message.type !== "ready" && message.type !== "probe") {
 					listener?.({
 						type: "error",
 						message: "保存に失敗しました。承認は保持されています。",
 					});
 				}
-				listener?.({ type: "state", state, busy: false });
+				listener?.({ type: "state", state, busy });
 			},
 		};
 	});

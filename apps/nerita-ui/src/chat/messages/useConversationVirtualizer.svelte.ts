@@ -26,6 +26,8 @@ export function useConversationVirtualizer(
 		getItemKey: (index) => timeline().entries[index]!.key,
 		overscan: 5,
 		followOnAppend: false,
+		// サイズ通知中の再描画で再び高さが変わるため、計測を次の描画フレームへ送る。
+		useAnimationFrameWithResizeObserver: true,
 	});
 	const instance = fromStore(store);
 

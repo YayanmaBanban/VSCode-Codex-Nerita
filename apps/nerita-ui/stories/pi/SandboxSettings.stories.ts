@@ -22,3 +22,14 @@ export const Default: Story = {
 	},
 };
 export const Unavailable: Story = { args: { unavailable: true } };
+export const Loading: Story = { args: { loading: true } };
+export const Empty: Story = { args: { empty: true } };
+export const Busy: Story = { args: { busy: true } };
+export const HostError: Story = {
+	args: { error: true },
+	play: async ({ canvasElement }) => {
+		await expect(
+			await within(canvasElement).findByRole("alert"),
+		).toBeVisible();
+	},
+};

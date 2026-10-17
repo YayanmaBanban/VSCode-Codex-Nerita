@@ -13,7 +13,11 @@ import ToolCardExample7 from "./ToolCardExample7.svelte";
 const meta = {
 	title: "Chat/Tool Cards",
 	component: ToolCardToolCardsStory,
-	parameters: { layout: "fullscreen" },
+	argTypes: { background: { control: "boolean" } },
+	parameters: {
+		layout: "fullscreen",
+		controls: { matchers: { color: /Color$/i } },
+	},
 } satisfies Meta<typeof ToolCardToolCardsStory>;
 export default meta;
 type Story = StoryObj<{ background?: boolean; commands?: boolean }>;
@@ -104,6 +108,36 @@ export const ScrollExpansion: StoryObj<typeof ToolCardExample3> = {
 export const LargeOutput: StoryObj<typeof ToolCardExample4> = {
 	render: () => ({ Component: ToolCardExample4 }),
 };
+export const OutputLoading: StoryObj<typeof ToolCardExample5> = {
+	render: () => ({ Component: ToolCardExample5 }),
+	play: openOutput,
+};
+export const OutputError: StoryObj<typeof ToolCardExample5> = {
+	render: () => ({ Component: ToolCardExample5 }),
+	play: async (context) => {
+		await openOutput(context);
+		const canvas = within(context.canvasElement);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "出力取得を失敗" }),
+		);
+		await waitFor(() => expect(canvas.getByRole("alert")).toBeVisible());
+		await expect(
+			canvas.getByRole("button", { name: "次の範囲を表示" }),
+		).toBeDisabled();
+	},
+};
+
+/** 読み込み中の詳細を残し、応答ボタンで成功・失敗を選べるようにする。 */
+async function openOutput({ canvasElement }: { canvasElement: HTMLElement }) {
+	const canvas = within(canvasElement);
+	await userEvent.click(
+		canvas.getByRole("button", { name: /^Get-Content/, expanded: false }),
+	);
+	await userEvent.click(canvas.getByRole("button", { name: "詳細出力" }));
+	await expect(
+		canvas.getByRole("region", { name: "詳細出力" }),
+	).toHaveAttribute("aria-busy", "true");
+}
 export const OutputControls: StoryObj<typeof ToolCardExample5> = {
 	render: () => ({ Component: ToolCardExample5 }),
 	play: async ({ canvasElement }) => {

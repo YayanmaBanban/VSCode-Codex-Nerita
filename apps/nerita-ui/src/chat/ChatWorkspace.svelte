@@ -86,6 +86,10 @@
 	function onSubmissionLock(locked: boolean) {
 		submissionLocked = locked;
 	}
+	/** 会話のスクロール位置を管理するこの画面で、末尾への追従を再開する。 */
+	function resumeFollowing() {
+		following.current = true;
+	}
 	/** 実行と設定の待機中は会話操作を無効にする。 */
 	function chatAvailable(host: ChatState, running: boolean, locked: boolean) {
 		const ready = host.connection === "ready" && !running && !locked;
@@ -128,6 +132,7 @@
 					bind:conversation={view.conversation}
 					bind:bottom={view.bottom}
 					onOpenAgent={agentViewer.open}
+					onResumeFollowing={resumeFollowing}
 				/>
 				{#if chat.state.connection === "auth-required" && isNonEmptyString(chat.state.error)}
 					{#key chat.state.error}<AuthenticationFailureNotification

@@ -1,6 +1,6 @@
 // 既存の画面状態を Svelte コンポーネントで検証する。
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import WorkflowPreview from "./WorkflowPreview.svelte";
 
 const meta = {
@@ -12,6 +12,33 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Editor: Story = {};
 export const Invalid: Story = { args: { invalid: true } };
+export const Loading: Story = { args: { loading: true } };
+export const Running: Story = { args: { running: true } };
+export const SaveError: Story = {
+	args: { failure: "save" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "保存" }),
+		);
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+		await expect(
+			canvas.getByRole("button", {
+				name: "文書を再読み込み（入力を破棄）",
+			}),
+		).toBeEnabled();
+	},
+};
+export const ValidationError: Story = {
+	args: { failure: "check" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "検証" }),
+		);
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+	},
+};
 
 // agent のない定義は、実行条件の検証によって TOML 編集へ切り替わる。
 const missingAgent =

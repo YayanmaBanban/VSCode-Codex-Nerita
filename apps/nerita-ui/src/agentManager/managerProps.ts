@@ -6,6 +6,10 @@ import type { ManagerSave } from "./useAgentManager.svelte";
 export type AgentManagerProps = {
 	state: ManagerState;
 	busy: boolean;
+	dirty: boolean;
+	saved: boolean;
+	/** 保存で編集フォームが再生成されても維持する表示状態。 */
+	advancedSettings: { open: boolean };
 	save: ManagerSave;
 	selected: string;
 	onSelect: (id: string) => void;

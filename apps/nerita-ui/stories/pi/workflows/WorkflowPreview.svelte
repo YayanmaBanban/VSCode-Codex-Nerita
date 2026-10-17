@@ -61,7 +61,7 @@
 			version: 1,
 			dirty: false,
 			file: ".pi/workflows/implementation-review.toml",
-			running: false,
+			running,
 		};
 		const listeners = new SvelteSet<(message: WorkflowReply) => void>();
 		const post = (message: WorkflowReply) => {
@@ -75,6 +75,11 @@
 				notice: "",
 			};
 			try {
+				if (message.type === failure) {
+					throw new Error(
+						"ワークフローの処理に失敗しました。定義を確認して再試行してください。",
+					);
+				}
 				if (message.type === "edit") {
 					state = {
 						...state,
@@ -110,7 +115,9 @@
 			},
 			postMessage(message) {
 				if (message.type === "ready") {
-					post(state);
+					if (!loading) {
+						post(state);
+					}
 				} else if (message.type === "stop") {
 					state = { ...state, running: false };
 					post(state);
@@ -126,8 +133,19 @@
 			},
 		};
 	}
-	let { invalid = false, text }: { invalid?: boolean; text?: string } =
-		$props();
+	let {
+		invalid = false,
+		text,
+		failure,
+		loading = false,
+		running = false,
+	}: {
+		invalid?: boolean;
+		text?: string;
+		failure?: "save" | "check" | "run" | "edit";
+		loading?: boolean;
+		running?: boolean;
+	} = $props();
 	const bridge = untrack<WorkflowBridge>(() =>
 		mockBridge(text ?? (invalid ? "version = [" : sample)),
 	);

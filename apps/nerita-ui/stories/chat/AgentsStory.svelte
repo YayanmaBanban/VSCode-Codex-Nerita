@@ -10,11 +10,14 @@
 	let {
 		running = false,
 		display = "viewer",
+		readState = "ready",
 	}: {
 		running?: boolean;
 		display?: "viewer" | "states" | "icons" | "sources";
+		readState?: "ready" | "loading" | "error" | "empty";
 	} = $props();
-	function createBridge() {
+	/** 親会話と子・孫の初期表示をストーリーごとに独立して用意する。 */
+	function initialBridge() {
 		const mock = createChatStoryBridge();
 		mock.patchState({
 			...(running ? { run: "running" as const, runId: "story-run" } : {}),
@@ -34,6 +37,10 @@
 				},
 			],
 		});
+		return mock;
+	}
+	function createBridge() {
+		const mock = initialBridge();
 		const post = mock.postMessage.bind(mock);
 		mock.postMessage = (message) => {
 			if (message.type !== "agent/read") {
@@ -41,6 +48,18 @@
 				return;
 			}
 			mock.sent.push(message);
+			if (readState !== "ready" && readState !== "empty") {
+				if (readState === "error") {
+					queueMicrotask(() =>
+						mock.emit({
+							type: "request/failed",
+							requestId: message.requestId,
+							error: "子エージェントの会話を取得できませんでした。",
+						}),
+					);
+				}
+				return;
+			}
 			queueMicrotask(() =>
 				mock.emit({
 					type: "agent/view",
@@ -51,26 +70,32 @@
 							message.threadId === "child"
 								? "story-session"
 								: "child",
-						messages: [
-							{
-								id: "child-question",
-								role: "user",
-								text: "通知処理を調査してください。",
-								order: 1,
-							},
-							{
-								id: "child-answer",
-								role: "assistant",
-								text:
-									message.threadId === "child"
-										? "通知の処理を確認しました。"
-										: "孫エージェントの調査結果です。",
-								order: 3,
-							},
-						],
+						messages:
+							readState === "empty"
+								? []
+								: [
+										{
+											id: "child-question",
+											role: "user",
+											text: "通知処理を調査してください。",
+											order: 1,
+										},
+										{
+											id: "child-answer",
+											role: "assistant",
+											text:
+												message.threadId === "child"
+													? "通知の処理を確認しました。"
+													: "孫エージェントの調査結果です。",
+											order: 3,
+										},
+									],
 						tools: [],
 						agents:
-							message.threadId === "child" ? [grandchild] : [],
+							message.threadId === "child" &&
+							readState !== "empty"
+								? [grandchild]
+								: [],
 					},
 				}),
 			);

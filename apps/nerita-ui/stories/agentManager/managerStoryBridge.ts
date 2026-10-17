@@ -7,7 +7,7 @@ import type {
 	ManagerRequest,
 } from "@nerita/shared/agentManager/messages";
 /** 未接続でも既存値が失われない表示用の状態を作る。 */
-function sampleState(): ManagerState {
+export function sampleState(): ManagerState {
 	return {
 		type: "state",
 		workspace: "workspace-id",
@@ -29,11 +29,8 @@ function sampleState(): ManagerState {
 	};
 }
 
-/** 編集内容をメモリに保持する。競合は固定応答で、保存規則や世代判定は持たない。 */
-export function mockBridge(
-	mode: string,
-	onRequest: (message: ManagerRequest) => void,
-): ManagerBridge {
+/** 各エラーやバックエンドの初期状態を、ストーリーごとに独立して用意する。 */
+function storyState(mode: string): ManagerState {
 	const state = sampleState();
 	if (mode === "codex" || mode === "codex-defaults") {
 		state.activeBackend = "codex";
@@ -49,10 +46,29 @@ export function mockBridge(
 		state.agents = [];
 		state.models = { pi: [], codex: [] };
 	}
+	if (mode === "load-errors") {
+		state.errors = [
+			"エージェント定義の読み込みに失敗しました: .pi/agents/broken.md",
+			"モデル一覧を取得できませんでした。接続を確認して再読み込みしてください。",
+		];
+	}
+	return state;
+}
+
+/** 編集内容をメモリに保持する。競合は固定応答で、保存規則や世代判定は持たない。 */
+export function mockBridge(
+	mode: string,
+	onRequest: (message: ManagerRequest) => void,
+	initialState?: Partial<ManagerState>,
+): ManagerBridge {
+	const state = { ...storyState(mode), ...structuredClone(initialState) };
 	const listeners = new Set<(message: ManagerReply) => void>();
 	const publish = (message: ManagerReply) =>
 		listeners.forEach((listener) => listener(structuredClone(message)));
 	const save = (message: Extract<ManagerRequest, { generation: string }>) => {
+		if (mode === "saving") {
+			return;
+		}
 		if (mode === "conflict") {
 			publish({
 				type: "reply",
@@ -71,16 +87,7 @@ export function mockBridge(
 			state.piDefaults = message.defaults;
 		}
 		if (message.type === "agent") {
-			const agent = state.agents.find(
-				(item) => item.id === message.agentId,
-			);
-			if (agent) {
-				agent.edit = message.edit;
-				if (message.edit.definition) {
-					agent.name = message.edit.definition.name;
-					agent.description = message.edit.definition.description;
-				}
-			}
+			applyAgentEdit(state, message);
 		}
 		state.generation = String(Number(state.generation) + 1);
 		publish(state);
@@ -103,12 +110,41 @@ export function mockBridge(
 			queueMicrotask(() => {
 				if (message.type === "ready" || message.type === "reload") {
 					publish(state);
+					if (mode === "initialization-error") {
+						publish({
+							type: "reply",
+							id: 0,
+							error: "管理画面の初期化に失敗しました。再読み込みしてください。",
+							notice: "",
+						});
+					}
 				} else if ("generation" in message) {
 					save(message);
 				}
 			});
 		},
 	};
+}
+
+/** 名前変更後の ID も含め、保存後の表示用スナップショットへ編集値を反映する。 */
+function applyAgentEdit(
+	state: ManagerState,
+	message: Extract<ManagerRequest, { type: "agent" }>,
+) {
+	const agent = state.agents.find((item) => item.id === message.agentId);
+	if (!agent) {
+		return;
+	}
+	agent.edit = message.edit;
+	const definition = message.edit.definition;
+	if (!definition) {
+		return;
+	}
+	agent.name = definition.name;
+	agent.description = definition.description;
+	if (agent.backend === "pi") {
+		agent.id = `pi:${definition.name}`;
+	}
 }
 
 /** ストーリー間で編集内容を共有しないため、使用時に複製する。 */

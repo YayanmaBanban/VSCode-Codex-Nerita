@@ -13,7 +13,8 @@
 	import { reasoningLabel } from "@nerita/shared/settingsCards";
 	import Field from "./Field.svelte";
 	import DefinitionField from "./DefinitionField.svelte";
-	import { inputStyle, buttonStyle } from "./managerFields";
+	import { inputStyle } from "./managerFields";
+	import SaveFooter from "./SaveFooter.svelte";
 
 	let {
 		agent,
@@ -21,6 +22,8 @@
 		edit,
 		onChange,
 		busy,
+		dirty,
+		saved,
 		onSubmit,
 		children,
 		error: inputError,
@@ -32,6 +35,8 @@
 		edit: AgentEdit;
 		onChange: (edit: AgentEdit) => void;
 		busy: boolean;
+		dirty: boolean;
+		saved: boolean;
 		onSubmit: () => void;
 		children: Snippet;
 		error?: string | undefined;
@@ -56,7 +61,7 @@
 </script>
 
 <form
-	class="grid gap-5"
+	class="grid gap-5 pb-24"
 	onsubmit={(event) => {
 		event.preventDefault();
 		if (!isNonEmptyString(error)) {
@@ -73,6 +78,7 @@
 				{onChange}
 				field="name"
 				label="名前"
+				placeholder="エージェント名"
 				limit={80}
 			/>{:else}<h2 class="m-0 text-lg font-semibold">
 				{agent?.name}
@@ -81,6 +87,7 @@
 				><input
 					class={inputStyle}
 					required
+					placeholder="拡張子を含まない名前"
 					pattern={"[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}"}
 					value={filename ?? ""}
 					oninput={(event) =>
@@ -103,6 +110,7 @@
 				{onChange}
 				field="description"
 				label="説明"
+				placeholder="ユーザー向けの説明"
 				rows={3}
 				limit={2000}
 			/>{:else}<p class="m-0 text-sm text-muted">
@@ -123,15 +131,17 @@
 			{onChange}
 			field="prompt"
 			label="システムプロンプト"
+			placeholder="エージェントに追加で渡す指示"
 			rows={10}
 			limit={60000}
 		/>
 		{#if isNonEmptyString(error)}<p role="alert" class="text-sm">
 				{error}
-			</p>{/if}<button
-			type="submit"
-			class={`${buttonStyle} justify-self-end`}
-			disabled={isNonEmptyString(error)}>変更を保存</button
-		>
+			</p>{/if}
 	</fieldset>
+	<SaveFooter
+		{dirty}
+		{saved}
+		disabled={busy || agent?.editable === false || isNonEmptyString(error)}
+	/>
 </form>

@@ -13,11 +13,23 @@
 	let {
 		backend = "pi",
 		manual = false,
-	}: { backend?: BackendId; manual?: boolean } = $props();
+		empty = false,
+		error = false,
+	}: {
+		backend?: BackendId;
+		manual?: boolean;
+		empty?: boolean;
+		error?: boolean;
+	} = $props();
 	const sent: TrustRequest[] = [];
 	let deliver: (reply: TrustReply) => void = () => {};
 	let confirmation: TrustConfirmation | null = null;
 	let revision = 0;
+	const storyError = $derived(
+		error
+			? "信頼設定を更新できませんでした。再読み込みしてから再試行してください。"
+			: null,
+	);
 	/** Host の確認応答だけを代替し、確定前には保存結果を変更しない。 */
 	function confirmRequest(
 		message: TrustRequest,
@@ -103,7 +115,7 @@
 					return;
 				}
 				selectedBackend = message.backend ?? selectedBackend ?? backend;
-				let records = recordsByBackend[selectedBackend];
+				let records = empty ? [] : recordsByBackend[selectedBackend];
 				if (message.type === "remove") {
 					records = records.filter(
 						(record) => record.root !== message.root,
@@ -135,7 +147,7 @@
 					backend: selectedBackend,
 					piStoragePath: "User/globalStorage/state.vscdb",
 					records,
-					error: null,
+					error: storyError,
 				});
 			},
 		};

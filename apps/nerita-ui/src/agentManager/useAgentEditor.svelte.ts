@@ -7,7 +7,7 @@ import {
 import { effortError } from "@nerita/shared/agentManager/effort";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import type { AgentManagerProps } from "./managerProps";
-/** 初期値は keyed editor の生成時だけ読み込み、失敗応答では下書きを維持する。 */
+/** `{#key}` 内の編集フォームが生成されたときだけ初期値を読み込み、保存失敗時は下書きを維持する。 */
 export function useAgentEditor(
 	input: AgentManagerProps | (() => AgentManagerProps),
 	agent: ManagedAgent | undefined,
@@ -41,6 +41,8 @@ export function useAgentEditor(
 				models,
 				onChange: change,
 				busy: current.busy,
+				dirty: current.dirty,
+				saved: current.saved,
 				error: effortError(
 					models,
 					edit.model,

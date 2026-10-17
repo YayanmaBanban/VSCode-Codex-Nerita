@@ -3,7 +3,15 @@
 	import { createChatStoryBridge } from "./mocks/mockBridge";
 	import type { PersonalitySettings } from "@nerita/shared/personality";
 
-	let { configured = false }: { configured?: boolean } = $props();
+	let {
+		configured = false,
+		pending = false,
+		failure = false,
+	}: {
+		configured?: boolean;
+		pending?: boolean;
+		failure?: boolean;
+	} = $props();
 	const bridge = $derived.by(() => {
 		const mock = createChatStoryBridge();
 		const settings: PersonalitySettings = {
@@ -30,6 +38,17 @@
 			postMessage(message: Parameters<typeof mock.postMessage>[0]) {
 				mock.postMessage(message);
 				if (message.type === "personality/read") {
+					if (pending) {
+						return;
+					}
+					if (failure) {
+						mock.emit({
+							type: "request/failed",
+							requestId: message.requestId,
+							error: "性格設定を取得できませんでした。再試行してください。",
+						});
+						return;
+					}
 					mock.patchState({ personality: settings });
 				}
 			},

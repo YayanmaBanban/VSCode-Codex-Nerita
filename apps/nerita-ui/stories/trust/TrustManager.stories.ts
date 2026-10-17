@@ -11,6 +11,30 @@ const meta = { title: "Trust/Manager", component: TrustPreview } satisfies Meta<
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const Empty: Story = { args: { empty: true } };
+export const Loading: Story = { args: { manual: true } };
+export const HostError: Story = {
+	args: { error: true },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+		await expect(
+			canvas.getByRole("button", { name: "再読み込み" }),
+		).toBeEnabled();
+	},
+};
+export const NoSearchResults: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.type(
+			await canvas.findByRole("searchbox", { name: "フォルダを検索" }),
+			"missing-workspace",
+		);
+		await expect(
+			canvas.queryByRole("button", { name: "信頼" }),
+		).not.toBeInTheDocument();
+	},
+};
 export const Codex: Story = { args: { backend: "codex" } };
 
 export const Confirmation: Story = {
@@ -72,7 +96,7 @@ export const DelayedReplies: Story = {
 			}
 		>("[data-story-trust]");
 		if (!fixture) {
-			throw new Error("信頼管理の通信境界がありません。");
+			throw new Error("信頼管理のテスト用要素が見つかりません。");
 		}
 		const first = {
 			root: "projects/a",
@@ -149,7 +173,7 @@ export const KeyboardRemoval: Story = {
 			HTMLElement & { sent: TrustRequest[] }
 		>("[data-story-trust]");
 		if (!fixture) {
-			throw new Error("信頼管理の通信境界がありません。");
+			throw new Error("信頼管理のテスト用要素が見つかりません。");
 		}
 		const remove = await canvas.findByRole("button", {
 			name: /projects\/codex-unset.*削除/,

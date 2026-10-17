@@ -39,6 +39,89 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const ExistingBinding: Story = {
+	args: {
+		state: {
+			...meta.args.state,
+			bindings: [
+				{
+					id: "packages",
+					match: {
+						kind: "npm-registry",
+						target: "npm.pkg.github.com",
+					},
+					provider: { type: "npmrc" },
+					injection: { type: "npm-auth-token" },
+				},
+			],
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: "編集" }));
+		await expect(
+			canvas.getByRole("textbox", { name: "Binding ID" }),
+		).toBeDisabled();
+		await expect(
+			canvas.getByRole("textbox", { name: "Binding ID" }),
+		).toHaveValue("packages");
+	},
+};
+export const EnvironmentInjection: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.selectOptions(
+			canvas.getByRole("combobox", { name: "用途" }),
+			"api-token",
+		);
+		await expect(
+			canvas.getByRole("textbox", { name: "注入先の環境変数名" }),
+		).toBeVisible();
+	},
+};
+export const HostError: Story = {
+	args: {
+		error: "資格情報の保存に失敗しました。設定を確認して再試行してください。",
+	},
+	play: async ({ canvasElement }) => {
+		await expect(within(canvasElement).getByRole("alert")).toBeVisible();
+	},
+};
+export const OperationNotice: Story = {
+	args: { notice: "資格情報の参照を更新しました。" },
+};
+export const Busy: Story = {
+	args: { state: { ...meta.args.state, busy: true } },
+	play: async ({ canvasElement }) => {
+		await expect(
+			within(canvasElement).getByRole("button", {
+				name: "Binding を保存",
+			}),
+		).toBeDisabled();
+	},
+};
+export const InvalidBinding: Story = {
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		await userEvent.type(
+			canvas.getByRole("textbox", { name: "Binding ID" }),
+			" ",
+		);
+		await userEvent.type(
+			canvas.getByRole("textbox", { name: "対象" }),
+			"npm.pkg.github.com",
+		);
+		await userEvent.type(
+			canvas.getByRole("textbox", { name: "シークレット ID" }),
+			"fixture-secret",
+		);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "Binding を保存" }),
+		);
+		await expect(canvas.getByRole("alert")).toBeVisible();
+		await expect(args.send).not.toHaveBeenCalled();
+	},
+};
 export const SaveBinding: Story = {
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);

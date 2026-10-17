@@ -14,6 +14,17 @@ export default meta;
 
 /** 入力候補を操作できるストーリー。 */
 type Story = StoryObj<typeof meta>;
+export const NoCommandMatches: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.type(
+			canvas.getByRole("textbox", { name: "Codexへのメッセージ" }),
+			"/missing-command",
+		);
+		await expect(await canvas.findByRole("listbox")).toBeVisible();
+		await expect(canvas.queryAllByRole("option")).toHaveLength(0);
+	},
+};
 
 export const Ready: Story = {
 	play: async ({ canvasElement }) => {

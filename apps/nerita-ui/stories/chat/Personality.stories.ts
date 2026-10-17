@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import PersonalityStory from "./PersonalityStory.svelte";
 import { storyBridge } from "./storyBridgeElement";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, within, waitFor } from "storybook/test";
 
 const meta = {
 	title: "Chat/Personality",
@@ -52,4 +52,66 @@ export const Editable: Story = {
 	},
 };
 
-export const Configured: Story = { args: { configured: true } };
+export const Configured: Story = {
+	args: { configured: true },
+	play: openPersonality,
+};
+export const Loading: Story = {
+	args: { pending: true },
+	play: openPersonality,
+};
+export const LoadError: Story = {
+	args: { failure: true },
+	play: async (context) => {
+		await openPersonality(context);
+		await expect(
+			await within(
+				within(context.canvasElement.ownerDocument.body).getByRole(
+					"dialog",
+					{ name: "性格設定" },
+				),
+			).findByRole("alert"),
+		).toBeVisible();
+	},
+};
+export const NameCollision: Story = {
+	play: async (context) => {
+		await openPersonality(context);
+		const dialog = within(context.canvasElement.ownerDocument.body);
+		const input = dialog.getByRole("textbox", {
+			name: "グローバルのプリセット名",
+		});
+		await userEvent.clear(input);
+		await userEvent.type(input, "レビュー");
+		await expect(dialog.getByRole("alert")).toBeVisible();
+		await expect(
+			within(
+				dialog.getByRole("region", { name: "グローバル" }),
+			).getByRole("button", { name: "保存" }),
+		).toBeDisabled();
+	},
+};
+
+/** 確認対象の設定パネルを開いた状態で操作を終える。 */
+async function openPersonality({
+	canvasElement,
+}: {
+	canvasElement: HTMLElement;
+}) {
+	const trigger = within(canvasElement).getByRole("button", {
+		name: "オプション",
+	});
+	await waitFor(() =>
+		expect(globalThis.getComputedStyle(trigger).pointerEvents).not.toBe(
+			"none",
+		),
+	);
+	await userEvent.click(trigger);
+	const body = within(canvasElement.ownerDocument.body);
+	await userEvent.click(
+		await body.findByRole("menuitem", { name: "性格設定" }),
+	);
+	await expect(
+		await body.findByRole("dialog", { name: "性格設定" }),
+	).toBeVisible();
+}

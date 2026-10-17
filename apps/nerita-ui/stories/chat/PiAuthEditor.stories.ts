@@ -47,6 +47,29 @@ export default meta;
 /** 通信結果ごとに明示的な表示状態を指定する。 */
 type Story = StoryObj<typeof meta>;
 export const Providers: Story = {};
+export const OptionPrompt: Story = {
+	args: {
+		state: {
+			...authInitialState,
+			active: "openai-oauth",
+			prompt: {
+				id: "openai-oauth",
+				message: "認証先を選択",
+				secret: false,
+				options: [
+					{ id: "work", label: "仕事用" },
+					{ id: "personal", label: "個人用" },
+				],
+			},
+		},
+	},
+	play: async ({ canvasElement }) => {
+		await expect(within(canvasElement).getByRole("combobox")).toBeVisible();
+		await expect(
+			within(canvasElement).getByRole("button", { name: "送信" }),
+		).toBeDisabled();
+	},
+};
 export const Accounts: Story = {
 	args: {
 		state: {
@@ -146,6 +169,12 @@ export const OAuthPending: Story = {
 	},
 };
 export const Configured: Story = {
+	play: async ({ canvasElement }) => {
+		await userEvent.click(
+			within(canvasElement).getByRole("button", { name: /^OpenAI/ }),
+		);
+		await expect(within(canvasElement).getByRole("status")).toBeVisible();
+	},
 	args: {
 		state: {
 			...authInitialState,
@@ -161,6 +190,12 @@ export const Configured: Story = {
 	},
 };
 export const Cancelled: Story = {
+	play: async ({ canvasElement }) => {
+		await userEvent.click(
+			within(canvasElement).getByRole("button", { name: /^OpenAI/ }),
+		);
+		await expect(within(canvasElement).getByRole("alert")).toBeVisible();
+	},
 	args: {
 		state: {
 			...authInitialState,
@@ -168,5 +203,29 @@ export const Cancelled: Story = {
 				openai: { notice: "", error: "認証をキャンセルしました。" },
 			},
 		},
+	},
+};
+export const NoProviders: Story = {
+	args: { state: { ...authInitialState, items: [] } },
+};
+export const ProviderError: Story = {
+	args: {
+		state: {
+			...authInitialState,
+			feedback: {
+				openai: {
+					error: "認証サービスへ接続できません。再試行してください。",
+					notice: "",
+				},
+			},
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: /^OpenAI/ }));
+		await expect(canvas.getByRole("alert")).toBeVisible();
+		await expect(
+			canvas.getByRole("button", { name: "APIキーを設定" }),
+		).toBeEnabled();
 	},
 };

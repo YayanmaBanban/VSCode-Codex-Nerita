@@ -34,7 +34,8 @@
 			>{/if}{#each options as option (option)}<option value={option}
 				>{option}</option
 			>{/each}</select
-	>{#if options.length === 0}<span class="text-xs text-muted"
-			>推論候補を確認できません。モデルの指定と一覧の再読み込みを確認してください。</span
+	>{#if options.length === 0}<span
+			class="text-xs leading-relaxed text-warning"
+			>選択できる推論レベルを確認できません。モデルの指定を確認し、一覧を再読み込みしてください。</span
 		>{/if}</Field
 >

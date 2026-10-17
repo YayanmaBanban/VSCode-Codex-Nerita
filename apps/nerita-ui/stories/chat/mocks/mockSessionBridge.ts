@@ -3,7 +3,7 @@ import { sessionRows } from "../fixtures/sessions";
 import { createChatStoryBridge } from "./mockBridge";
 /** 履歴ペインの表示条件。 */
 export type SessionScenario =
-	"history" | "empty" | "error" | "unsupported" | "paginated";
+	"history" | "empty" | "error" | "unsupported" | "paginated" | "loading";
 /** 読み取り境界の応答だけを返す。 */
 export function createSessionBridge(scenario: SessionScenario) {
 	const bridge = createChatStoryBridge();
@@ -37,6 +37,9 @@ export function createSessionBridge(scenario: SessionScenario) {
 				return;
 			}
 			bridge.patchState({ sessionsLoading: true, sessionsError: null });
+			if (scenario === "loading") {
+				return;
+			}
 			const archived = message.archived ?? false;
 			const page =
 				scenario === "paginated" && !(message.more === true)

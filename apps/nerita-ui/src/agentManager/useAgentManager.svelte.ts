@@ -25,10 +25,10 @@ export function useAgentManager(
 	let revision = $state(0);
 	let busy = $state(false);
 	let error = $state<string | null>(null);
-	let notice = $state("");
+	let saved = $state(false);
 	let sequence = 0;
 	onMount(() => {
-		/** 設定状態を更新し、現在の要求に対応する操作結果だけで待機表示を解除する。 */
+		/** 設定を受信した場合や、初期化または現在の保存要求への応答を受けた場合に待機状態を解除する。 */
 		const receive = (message: ManagerReply) => {
 			if (message.type === "state") {
 				state = message;
@@ -37,7 +37,7 @@ export function useAgentManager(
 				onState?.(message);
 			} else if (message.id === 0 || message.id === sequence) {
 				error = message.error;
-				notice = message.notice;
+				saved = message.id !== 0 && message.error === null;
 				busy = false;
 			}
 		};
@@ -52,7 +52,7 @@ export function useAgentManager(
 		}
 		busy = true;
 		error = null;
-		notice = "";
+		saved = false;
 		bridge.postMessage({
 			...change,
 			id: ++sequence,
@@ -73,8 +73,8 @@ export function useAgentManager(
 		get error() {
 			return error;
 		},
-		get notice() {
-			return notice;
+		get saved() {
+			return saved;
 		},
 		save,
 		reload() {
@@ -82,7 +82,7 @@ export function useAgentManager(
 				return;
 			}
 			error = null;
-			notice = "";
+			saved = false;
 			busy = true;
 			bridge.postMessage({ type: "reload" });
 		},

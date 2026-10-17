@@ -10,6 +10,7 @@
 		onChange,
 		field,
 		label,
+		placeholder,
 		rows,
 		limit,
 	}: {
@@ -17,6 +18,7 @@
 		onChange: (edit: AgentEdit) => void;
 		field: "name" | "description" | "prompt";
 		label: string;
+		placeholder?: string;
 		rows?: number;
 		limit: number;
 	} = $props();
@@ -36,12 +38,14 @@
 		>{#if rows}<textarea
 				class={cn(inputStyle, "resize-none")}
 				{rows}
+				{placeholder}
 				maxlength={limit}
 				value={definition[field]}
 				oninput={(event) => update(event.currentTarget.value)}
 			></textarea>{:else}<input
 				class={inputStyle}
 				required
+				{placeholder}
 				maxlength={limit}
 				value={definition[field]}
 				oninput={(event) => update(event.currentTarget.value)}

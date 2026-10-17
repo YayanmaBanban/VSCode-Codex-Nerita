@@ -41,6 +41,35 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const ValidationError: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "回答を送信" }),
+		);
+		await expect(canvas.getByRole("alert")).toBeVisible();
+		await expect(
+			storyBridge(canvasElement).sent.some(
+				(message) => message.type === "question/respond",
+			),
+		).toBe(false);
+	},
+};
+export const HostError: Story = {
+	args: {
+		question: {
+			...codex,
+			error: "回答を送信できませんでした。入力内容を確認して再試行してください。",
+			allowDecline: true,
+		},
+	},
+	play: async ({ canvasElement }) => {
+		await expect(
+			await within(canvasElement).findByRole("alert"),
+		).toBeVisible();
+	},
+};
+
 export const Codex: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);

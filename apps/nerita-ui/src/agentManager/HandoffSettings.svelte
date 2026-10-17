@@ -1,6 +1,8 @@
 <!-- 引継ぎに使うモデルを保存し、モデル実行やセッション移行は開始しない。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
+	import ChevronDown from "@lucide/svelte/icons/chevron-down";
+	import { cn } from "cnfast";
 	import {
 		isNonEmptyString,
 		nonZeroNumber,
@@ -15,21 +17,28 @@
 	import Field from "./Field.svelte";
 	import HandoffBackendSettings from "./HandoffBackendSettings.svelte";
 	import { buttonStyle, inputStyle } from "./managerFields";
+	import HelpHeader from "../ui/HelpHeader.svelte";
+	import SaveFooter from "./SaveFooter.svelte";
 
 	let {
 		state: hostState,
 		busy,
+		dirty,
+		saved,
 		save,
 		onDirty,
 	}: {
 		state: ManagerState;
 		busy: boolean;
+		dirty: boolean;
+		saved: boolean;
 		save: ManagerSave;
 		onDirty?: () => void;
 	} = $props();
 	let config = $state.raw<HandoffConfig>(untrack(() => hostState.handoff));
 	let repair = $state(false);
 	let error = $state<string>();
+	const timeoutHelpId = $props.id();
 	let locked = $derived(
 		busy || (isNonEmptyString(hostState.handoffError) && !repair),
 	);
@@ -54,7 +63,7 @@
 		}
 		const parsed = handoffSchema.safeParse(config);
 		if (!parsed.success) {
-			error = "固定モデルと正の整数の timeout を指定してください。";
+			error = "モデルとタイムアウトの設定を確認してください。";
 			return;
 		}
 		error = undefined;
@@ -66,14 +75,13 @@
 	}
 </script>
 
-<form class="grid gap-5" onsubmit={submit}>
-	<div>
-		<h2 class="m-0 text-lg font-semibold">ハンドオフ設定</h2>
-		<p class="text-sm text-muted">
-			引継ぎに使うモデルを保存します。実行開始時のモデルを使う場合は
-			current を選びます。
+<form class="grid gap-5 pb-24" onsubmit={submit}>
+	<HelpHeader title="ハンドオフ設定" helpLabel="ハンドオフ設定のヘルプ">
+		<p class="m-0">
+			セッションの内容を要約し、引き継ぎ文を生成するモデルを設定します。
 		</p>
-	</div>
+		<p class="m-0 mt-1">保存先: <code>.nerita/handoff.json</code></p>
+	</HelpHeader>
 	{#if isNonEmptyString(hostState.handoffError)}<div
 			role="alert"
 			class="grid gap-3 rounded-md border border-input-border p-3 text-sm break-words"
@@ -92,39 +100,73 @@
 			{error}
 		</p>{/if}
 	<fieldset disabled={locked} class="m-0 grid min-w-0 gap-5 border-0 p-0">
-		<Field label="Timeout (ms)"
-			><input
-				class={inputStyle}
-				type="number"
-				required
-				min={1}
-				max={2147483647}
-				step={1}
-				value={nonZeroNumber(config.defaults.timeoutMs) ?? ""}
-				oninput={(event) =>
-					change({
-						...config,
-						defaults: {
-							timeoutMs: Number(event.currentTarget.value),
-						},
-					})}
-			/></Field
-		>
 		<div class="grid gap-5">
 			<HandoffBackendSettings
 				backend={hostState.activeBackend}
 				{config}
 				state={hostState}
+				{effortError}
 				onChange={change}
 			/>
 		</div>
-		<button
-			disabled={isNonEmptyString(effortError)}
-			class={`${buttonStyle} justify-self-start`}
-			type="submit">ハンドオフ設定を保存</button
-		>{#if isNonEmptyString(effortError)}<p role="alert" class="text-sm">
-				{effortError}
-			</p>{/if}
+		<details
+			open
+			class="group min-w-0 rounded-lg border border-input-border p-4"
+		>
+			<summary
+				class={cn(
+					"flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold",
+					"focus-visible:outline-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden",
+				)}
+			>
+				実行設定
+				<ChevronDown
+					size={16}
+					aria-hidden="true"
+					class="shrink-0 group-open:rotate-180"
+				/>
+			</summary>
+			<div class="grid gap-2 pt-3">
+				<Field label="タイムアウト">
+					<span class="flex items-center gap-2">
+						<input
+							class={inputStyle}
+							type="number"
+							aria-label="タイムアウト（秒）"
+							aria-describedby={timeoutHelpId}
+							required
+							min={0.001}
+							max={2147483.647}
+							step={0.001}
+							value={nonZeroNumber(
+								config.defaults.timeoutMs / 1000,
+							) ?? ""}
+							oninput={(event) =>
+								change({
+									...config,
+									defaults: {
+										timeoutMs: Math.round(
+											Number(event.currentTarget.value) *
+												1000,
+										),
+									},
+								})}
+						/>
+						<span class="shrink-0 text-sm" aria-hidden="true"
+							>秒</span
+						>
+					</span>
+				</Field>
+				<p id={timeoutHelpId} class="m-0 text-xs text-muted">
+					ハンドオフの完了を待つ最大時間です。
+				</p>
+			</div>
+		</details>
 	</fieldset>
-	<p class="m-0 text-xs text-muted">保存先: .nerita/handoff.json</p>
+	<SaveFooter
+		{dirty}
+		{saved}
+		disabled={locked || isNonEmptyString(effortError)}
+		label="ハンドオフ設定を保存"
+	/>
 </form>

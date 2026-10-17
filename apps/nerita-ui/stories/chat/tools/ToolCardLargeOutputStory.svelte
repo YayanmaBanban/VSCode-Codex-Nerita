@@ -20,6 +20,20 @@
 </script>
 
 <main style:padding="16px">
+	<button
+		onclick={() => {
+			const request = [...bridge.sent]
+				.reverse()
+				.find((message) => message.type === "tool/output");
+			if (request?.type === "tool/output") {
+				bridge.emit({
+					type: "request/failed",
+					requestId: request.requestId,
+					error: "詳細出力を取得できませんでした。閉じて開き直すと再取得できます。",
+				});
+			}
+		}}>出力取得を失敗</button
+	>
 	<button onclick={() => setCompleted(true)}>完了通知を受信</button>
 	<button
 		onclick={() => {

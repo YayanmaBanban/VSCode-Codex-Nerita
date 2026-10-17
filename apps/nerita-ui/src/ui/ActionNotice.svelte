@@ -67,17 +67,8 @@
 				"[color:light-dark(var(--nerita-foreground),color-mix(in_srgb,var(--nerita-foreground)_40%,white))]",
 			)}
 		>
-			<Info
-				size={16}
-				aria-hidden="true"
-				class="drop-shadow-[0_0_6px_var(--nerita-focus-border)]"
-			/>
-			<h2
-				class={cn(
-					"m-0 text-4xl text-[13px] font-black font-medium",
-					"[text-shadow:0_0_3px_var(--nerita-focus-border)]",
-				)}
-			>
+			<Info size={16} aria-hidden="true" />
+			<h2 class="m-0 text-[13px] font-medium">
 				{title}
 			</h2>
 		</div>
@@ -98,7 +89,10 @@
 					onclick={method.onClick}
 				>
 					{method.name}
-					<ButtonCurtain name={method.name} className="bg-sky-300" />
+					<ButtonCurtain
+						name={method.name}
+						className={method.curtainClassName ?? "bg-sky-300"}
+					/>
 				</button>
 			{/each}
 		</div>

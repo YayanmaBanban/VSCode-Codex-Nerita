@@ -10,6 +10,34 @@ const meta = {
 } satisfies Meta<typeof SearchSearchStory>;
 export default meta;
 type Story = StoryObj<Record<string, never>>;
+export const InvalidRegex: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		canvas.getByRole("region", { name: "会話" }).focus();
+		await userEvent.keyboard("{Control>}f{/Control}");
+		const input = await canvas.findByRole("textbox", {
+			name: "会話を検索",
+		});
+		await userEvent.click(canvas.getByRole("button", { name: "正規表現" }));
+		await userEvent.type(input, "[[");
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+		await expect(input).toHaveAttribute("aria-invalid", "true");
+	},
+};
+export const NoResults: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		canvas.getByRole("region", { name: "会話" }).focus();
+		await userEvent.keyboard("{Control>}f{/Control}");
+		await userEvent.type(
+			await canvas.findByRole("textbox", { name: "会話を検索" }),
+			"missing-search-result",
+		);
+		await expect(
+			canvas.getByRole("button", { name: "次の一致" }),
+		).toBeDisabled();
+	},
+};
 export const Ready: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);

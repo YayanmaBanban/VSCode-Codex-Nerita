@@ -3,8 +3,10 @@ import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import SessionsStory from "./SessionsStory.svelte";
 import { expect, userEvent, within, waitFor } from "storybook/test";
 import { storyBridge } from "./storyBridgeElement";
+import { runtimeDiagnostics } from "../runtimeDiagnostics";
 
 const meta = {
+	...runtimeDiagnostics(),
 	title: "Chat/Sessions",
 	component: SessionsStory,
 	parameters: { layout: "fullscreen" },
@@ -64,7 +66,10 @@ export const History: Story = {
 		await expect(requests[0]?.requestId).toMatch(/^[0-9a-f-]{36}$/);
 	},
 };
-export const Paginated: Story = { args: { scenario: "paginated" } };
+export const Paginated: Story = {
+	args: { scenario: "paginated" },
+	play: openSessions,
+};
 
 /** 開閉の各フレームで横スクロールを増やさず、表示完了後に閉じる操作へフォーカスする。 */
 export const OpeningWithoutHorizontalScroll: Story = {
@@ -118,6 +123,127 @@ export const OpeningWithoutHorizontalScroll: Story = {
 		}
 	},
 };
-export const Empty: Story = { args: { scenario: "empty" } };
-export const Error: Story = { args: { scenario: "error" } };
-export const Unsupported: Story = { args: { scenario: "unsupported" } };
+export const Empty: Story = { args: { scenario: "empty" }, play: openSessions };
+/** 説明が開いた状態から Escape と閉じるボタンで閉じても、破棄後の参照や説明が残らない。 */
+export const ClosingWithTooltip: Story = {
+	play: async (context) => {
+		const canvas = within(context.canvasElement);
+		const page = within(context.canvasElement.ownerDocument.body);
+		const toggle = canvas.getByRole("button", { name: "セッション一覧" });
+		for (const method of ["keyboard", "pointer"]) {
+			await openSessions(context);
+			const panel = await canvas.findByRole("complementary", {
+				name: "セッション一覧",
+			});
+			const close = within(panel).getByRole("button", {
+				name: "セッション一覧を閉じる",
+			});
+			await waitFor(() => expect(close).toHaveFocus());
+			await waitFor(() =>
+				expect(
+					page.getByRole("tooltip", { name: /^閉じる$/ }),
+				).toBeVisible(),
+			);
+			if (method === "keyboard") {
+				await userEvent.keyboard("{Escape}");
+			} else {
+				await userEvent.click(close);
+			}
+			await waitFor(() => expect(panel).not.toBeInTheDocument());
+			await expect(toggle).toHaveFocus();
+			await waitFor(() =>
+				expect(
+					page.queryByRole("tooltip", {
+						name: /^閉じる$/,
+					}),
+				).not.toBeInTheDocument(),
+			);
+		}
+	},
+};
+export const Error: Story = {
+	args: { scenario: "error" },
+	play: async (context) => {
+		await openSessions(context);
+		const canvas = within(context.canvasElement);
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+		await expect(
+			canvas.getByRole("button", { name: "再試行" }),
+		).toBeEnabled();
+	},
+};
+export const Unsupported: Story = {
+	args: { scenario: "unsupported" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(
+			canvas.getByRole("button", { name: "セッション一覧" }),
+		).toBeDisabled();
+		await expect(
+			canvas.queryByRole("complementary", { name: "セッション一覧" }),
+		).not.toBeInTheDocument();
+	},
+};
+export const Loading: Story = {
+	args: { scenario: "loading" },
+	play: openSessions,
+};
+export const Rename: Story = {
+	play: async (context) => {
+		await openSessions(context);
+		const canvas = within(context.canvasElement);
+		await userEvent.click(
+			(
+				await canvas.findAllByRole("button", { name: /の名前を変更$/ })
+			)[0]!,
+		);
+		await expect(
+			canvas.getByRole("textbox", { name: "新しいセッション名" }),
+		).toBeVisible();
+	},
+};
+export const DeleteConfirmation: Story = {
+	play: async (context) => {
+		await openSessions(context);
+		const canvas = within(context.canvasElement);
+		await userEvent.click(
+			(await canvas.findAllByRole("button", { name: /を削除$/ }))[0]!,
+		);
+		await expect(
+			await within(context.canvasElement.ownerDocument.body).findByRole(
+				"alertdialog",
+			),
+		).toBeVisible();
+	},
+};
+export const Archived: Story = {
+	play: async (context) => {
+		await openSessions(context);
+		const canvas = within(context.canvasElement);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "アーカイブ" }),
+		);
+		await expect(
+			(
+				await canvas.findAllByRole("button", {
+					name: /をアーカイブから戻す$/,
+				})
+			)[0],
+		).toBeEnabled();
+	},
+};
+
+/** 一覧を閉じずに、対象状態の表示と操作を確認できるようにする。 */
+async function openSessions({ canvasElement }: { canvasElement: HTMLElement }) {
+	const canvas = within(canvasElement);
+	const trigger = canvas.getByRole("button", { name: "セッション一覧" });
+	await waitFor(() =>
+		expect(globalThis.getComputedStyle(trigger).pointerEvents).not.toBe(
+			"none",
+		),
+	);
+	await userEvent.click(trigger);
+	await expect(
+		await canvas.findByRole("complementary", { name: "セッション一覧" }),
+	).toBeVisible();
+}

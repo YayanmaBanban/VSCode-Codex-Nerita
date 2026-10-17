@@ -2,8 +2,10 @@
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, userEvent, within, waitFor } from "storybook/test";
 import VirtualizationVirtualizationStory from "./VirtualizationVirtualizationStory.svelte";
+import { runtimeDiagnostics } from "../runtimeDiagnostics";
 
 const meta = {
+	...runtimeDiagnostics(),
 	title: "Chat/Virtualization",
 	component: VirtualizationVirtualizationStory,
 	parameters: { layout: "fullscreen" },
@@ -34,11 +36,13 @@ export const RestoreAndAppend: Story = {
 		await waitFor(() =>
 			expect(canvas.getByLabelText("検索結果")).toHaveTextContent("1/1"),
 		);
-		await userEvent.keyboard("{Escape}");
 		const row = () =>
 			conversation.querySelector<HTMLElement>(
 				'[data-entry-key="message:virtual-message-80"]',
 			);
+		// 件数の更新に続く仮想行の描画を待ってから検索を閉じる。
+		await waitFor(() => expect(row()).toBeVisible());
+		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(row()).toBeVisible());
 		const offset =
 			row()!.getBoundingClientRect().top -
@@ -137,6 +141,13 @@ export const SearchAndExpansion: Story = {
 				canvas.queryByRole("button", { name: /^冒頭ツール/ }),
 			).not.toBeInTheDocument(),
 		);
+		// 実際の手動スクロールと同じく、上方向の入力で末尾追従を止めてから位置を変える。
+		conversation.dispatchEvent(
+			new WheelEvent("wheel", {
+				deltaY: -conversation.scrollTop,
+				bubbles: true,
+			}),
+		);
 		conversation.scrollTop = 0;
 		conversation.dispatchEvent(new Event("scroll"));
 		await waitFor(() =>
@@ -147,6 +158,9 @@ export const SearchAndExpansion: Story = {
 				}),
 			).toBeVisible(),
 		);
+		await expect(canvas.getByText(/折り畳み検索対象/)).toBeVisible();
+		await new Promise(requestAnimationFrame);
+		await new Promise(requestAnimationFrame);
 		await expect(canvas.getByText(/折り畳み検索対象/)).toBeVisible();
 	},
 };

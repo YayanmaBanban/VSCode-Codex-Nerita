@@ -192,7 +192,7 @@ async function verifyDisclosureFrames(browser, directory, errors) {
 			"http://localhost:6007/iframe.html?id=trust-manager--default&viewMode=story&globals=theme:dark2026",
 		);
 		const button = page.getByRole("button", { name: "信頼設定の保存先" });
-		const help = page.locator(".storage-help");
+		const help = page.locator(".header-help");
 		await expect(button).toBeVisible();
 		for (const direction of ["open", "close"]) {
 			await button.evaluate((element) => element.click());
@@ -269,7 +269,7 @@ function verifyHeightProgress(heights, direction) {
 
 async function verifyHelp(page, directory, name, backend) {
 	const button = page.getByRole("button", { name: "信頼設定の保存先" });
-	const help = page.locator(".storage-help");
+	const help = page.locator(".header-help");
 	await expect(button).toHaveAttribute("aria-expanded", "false");
 	await button.click();
 	await expect(button).toHaveAttribute("aria-expanded", "true");

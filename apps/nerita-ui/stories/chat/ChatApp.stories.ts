@@ -14,6 +14,59 @@ export default meta;
 /** チャット画面のストーリー定義。 */
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const AttachmentDropActive: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		bridge.patchState({ attachmentsSupported: true });
+		const input = await canvas.findByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		const transfer = new DataTransfer();
+		transfer.items.add(
+			new File(["fixture"], "example.txt", { type: "text/plain" }),
+		);
+		input.dispatchEvent(
+			new DragEvent("dragenter", {
+				bubbles: true,
+				cancelable: true,
+				dataTransfer: transfer,
+			}),
+		);
+		await expect(
+			await within(input.closest("form")!).findByRole("status"),
+		).toBeVisible();
+	},
+};
+export const AttachmentLimitError: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		bridge.patchState({ attachmentsSupported: true });
+		const input = await canvas.findByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		const transfer = new DataTransfer();
+		for (let index = 0; index < 21; index++) {
+			transfer.items.add(
+				new File(["fixture"], `example-${index}.txt`, {
+					type: "text/plain",
+				}),
+			);
+		}
+		input.dispatchEvent(
+			new DragEvent("drop", {
+				bubbles: true,
+				cancelable: true,
+				dataTransfer: transfer,
+			}),
+		);
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+		await expect(
+			bridge.sent.some((message) => message.type === "attachment/add"),
+		).toBe(false);
+	},
+};
 
 /** 貼り付けたコードをフェンス付きで送り、Host から戻ったユーザー本文をコードとして描画する。 */
 export const PastedCodeMessage: Story = {

@@ -7,8 +7,10 @@ import { child, grandchild } from "./agentStoryState";
 import type { HostMessage } from "@nerita/shared/messages";
 import type { StoryBridge } from "./mocks/storyBridge";
 import { view, projection, first, second } from "./dlc/workspaceState";
+import { runtimeDiagnostics } from "../runtimeDiagnostics";
 
 const meta = {
+	...runtimeDiagnostics(),
 	title: "Chat/Agents",
 	component: AgentsStory,
 	parameters: { layout: "fullscreen" },
@@ -16,6 +18,40 @@ const meta = {
 export default meta;
 /** ネスト閲覧を確認するストーリー。 */
 type Story = StoryObj<typeof meta>;
+export const ViewerLoading: Story = {
+	args: { readState: "loading" },
+	play: openChild,
+};
+export const ViewerEmpty: Story = {
+	args: { readState: "empty" },
+	play: openChild,
+};
+export const ViewerError: Story = {
+	args: { readState: "error" },
+	play: async (context) => {
+		await openChild(context);
+		const canvas = within(context.canvasElement);
+		await expect(
+			await within(
+				canvas.getByRole("region", { name: "サブエージェントの会話" }),
+			).findByRole("alert"),
+		).toBeVisible();
+		await expect(
+			canvas.getByRole("button", { name: "再試行" }),
+		).toBeEnabled();
+	},
+};
+
+/** 親へ戻らず、子会話の確認対象を表示したままにする。 */
+async function openChild({ canvasElement }: { canvasElement: HTMLElement }) {
+	const canvas = within(canvasElement);
+	await userEvent.click(
+		await canvas.findByRole("button", { name: /swift-cheetahの会話/ }),
+	);
+	await expect(
+		canvas.getByRole("region", { name: "サブエージェントの会話" }),
+	).toBeVisible();
+}
 export const Viewer: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);

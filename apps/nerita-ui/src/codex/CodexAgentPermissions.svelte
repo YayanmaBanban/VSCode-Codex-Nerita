@@ -20,12 +20,13 @@
 		edit,
 		onChange,
 		disabled,
+		open = $bindable(false),
 	}: {
 		edit: AgentEdit;
 		onChange: (edit: AgentEdit) => void;
 		disabled: boolean;
+		open: boolean;
 	} = $props();
-	let open = $state(false);
 	const id = $props.id();
 	let mode = $derived(
 		managerOption(
@@ -106,7 +107,7 @@
 						onChange={change}
 					/>
 				</div>
-				<ApprovalPolicyField {edit} {onChange} />
+				<ApprovalPolicyField {edit} {onChange} {disabled} />
 			</div>
 		</div>
 	</div>

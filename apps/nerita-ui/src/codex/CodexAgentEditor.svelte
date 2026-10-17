@@ -62,6 +62,7 @@
 						},
 			)}
 	/><CodexAgentPermissions
+		bind:open={props.advancedSettings.open}
 		edit={editor.edit}
 		onChange={editor.change}
 		disabled={props.busy || agent?.editable === false}

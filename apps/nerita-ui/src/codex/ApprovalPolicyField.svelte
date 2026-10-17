@@ -1,7 +1,6 @@
 <!-- 承認ポリシーと granular の要求種類を、独立した設定値として編集する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
-	import { mergeProps } from "bits-ui";
 	import Check from "@lucide/svelte/icons/check";
 	import { cn } from "cnfast";
 	import { nonEmptyString } from "@nerita/shared/valuePredicates";
@@ -11,13 +10,19 @@
 		type AgentEdit,
 	} from "@nerita/shared/agentManager/config";
 	import Field from "../agentManager/Field.svelte";
-	import { inputStyle } from "../agentManager/managerFields";
+	import { managerOption } from "../agentManager/modelOptions";
+	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
 
 	let {
 		edit,
 		onChange,
-	}: { edit: AgentEdit; onChange: (edit: AgentEdit) => void } = $props();
+		disabled,
+	}: {
+		edit: AgentEdit;
+		onChange: (edit: AgentEdit) => void;
+		disabled: boolean;
+	} = $props();
 	const labels = {
 		sandbox_approval: "サンドボックス外での実行",
 		rules: "ルールによる承認要求",
@@ -47,12 +52,19 @@
 		}
 		return "on-request";
 	});
-	/** 選択欄からの変更だけを承認ポリシーの更新処理へ渡す。 */
-	function policyChanged(event: Event) {
-		if (event.currentTarget instanceof HTMLSelectElement) {
-			changePolicy(event.currentTarget.value);
-		}
-	}
+	let option = $derived(
+		managerOption(
+			"approval_policy",
+			"承認ポリシー",
+			policy,
+			Object.entries(descriptions).map(([value, description]) => ({
+				value,
+				name: value,
+				description,
+			})),
+			false,
+		),
+	);
 	// 閉じるアニメーション中も最後の内容を維持し、閉じた入力は inert にする。
 
 	/** 現在の詳細な承認設定を保持してポリシーを切り替え、選択値を検証して親へ返す。 */
@@ -82,19 +94,12 @@
 
 <div class="grid">
 	<Field label="承認ポリシー"
-		><SettingsTooltip content={descriptions[policy]}
-			>{#snippet children({ props })}<select
-					{...mergeProps(props, { onchange: policyChanged })}
-					class={inputStyle}
-					value={policy}
-					><option value="on-request">on-request</option><option
-						value="never">never</option
-					><option value="granular">granular</option
-					>{#if edit.approvalPolicy === "untrusted"}<option
-							value="untrusted">untrusted（保存済み）</option
-						>{/if}</select
-				>{/snippet}</SettingsTooltip
-		></Field
+		><ConfigControl
+			{option}
+			{disabled}
+			appearance="field"
+			onChange={changePolicy}
+		/></Field
 	>
 	<div
 		inert={!open}

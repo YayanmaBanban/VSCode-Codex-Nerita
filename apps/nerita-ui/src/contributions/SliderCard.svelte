@@ -18,6 +18,8 @@
 
 	const popup = useSettingsPopup();
 	let card = $state<HTMLDivElement | null>(null);
+	let trigger = $state<HTMLButtonElement | null>(null);
+	let returnFocus = false;
 
 	let {
 		control,
@@ -79,8 +81,19 @@
 		);
 		if (slider) {
 			event.preventDefault();
-			slider.focus();
+			slider.focus({ preventScroll: true });
 		}
+	}
+	/** カード切り替え時のフォーカスを奪わず、通常の閉じ操作ではスクロールせずに戻す。 */
+	function restoreFocus(event: Event) {
+		popup.onCloseAutoFocus(event);
+		if (!event.defaultPrevented) {
+			event.preventDefault();
+			if (returnFocus) {
+				trigger?.focus({ preventScroll: true });
+			}
+		}
+		returnFocus = false;
 	}
 </script>
 
@@ -100,6 +113,7 @@
 				content={tooltip}
 				disabled={popup.open}
 				>{#snippet children({ props: tooltipProps })}<button
+						bind:this={trigger}
 						{...mergeProps(
 							{ ...triggerProps },
 							{ ...tooltipProps },
@@ -157,7 +171,8 @@
 		><Popover.Content
 			bind:ref={card}
 			onOpenAutoFocus={focusSlider}
-			onCloseAutoFocus={popup.onCloseAutoFocus}
+			onCloseAutoFocus={restoreFocus}
+			onEscapeKeydown={() => (returnFocus = true)}
 			side="top"
 			align="start"
 			sideOffset={8}

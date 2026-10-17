@@ -25,6 +25,7 @@
 		conversation = $bindable(null),
 		bottom = $bindable(null),
 		onOpenAgent,
+		onResumeFollowing,
 		timeline,
 		virtual,
 		following,
@@ -35,6 +36,7 @@
 		conversation?: HTMLElement | null;
 		bottom?: HTMLDivElement | null;
 		onOpenAgent: (agent: SubAgentSummary) => void;
+		onResumeFollowing: () => void;
 		timeline: MessageTimeline;
 		virtual: ConversationVirtualizer;
 		following: { current: boolean };
@@ -77,7 +79,7 @@
 	$effect(observeConversationBottom);
 	/** 末尾移動後は会話へフォーカスを戻し、スクロール追従を再開する。 */
 	function toBottom() {
-		following.current = true;
+		onResumeFollowing();
 		conversation?.scrollTo({
 			top: conversation.scrollHeight,
 			behavior: "instant",

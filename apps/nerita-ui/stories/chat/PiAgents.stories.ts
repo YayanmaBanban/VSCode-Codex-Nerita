@@ -5,7 +5,11 @@ import PiAgentsStory from "./PiAgentsStory.svelte";
 const meta = {
 	title: "Chat/Pi Agents",
 	component: PiAgentsStory,
-	parameters: { layout: "fullscreen" },
+	argTypes: { background: { control: "boolean" } },
+	parameters: {
+		layout: "fullscreen",
+		controls: { matchers: { color: /Color$/i } },
+	},
 } satisfies Meta<typeof PiAgentsStory>;
 export default meta;
 type Story = StoryObj<typeof meta>;
