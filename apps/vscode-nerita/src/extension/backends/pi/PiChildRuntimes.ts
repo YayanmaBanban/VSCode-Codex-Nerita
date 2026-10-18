@@ -8,6 +8,9 @@ import { freezeToolCall } from "../../security/ApprovedToolCall";
 import type { PiRuntimeOptions, PiRuntimeSession } from "./PiRuntime";
 import type { PiForkMessage } from "./PiForkContext";
 import type { PiJobs } from "./PiJobs";
+import type { PiDefaults } from "@nerita/shared/agentManager/config";
+import type { SessionManager } from "@earendil-works/pi-coding-agent";
+import { isRecord } from "@nerita/shared/validation";
 import {
 	BackendShutdown,
 	BackendShutdownError,
@@ -38,6 +41,35 @@ type Child = {
 	detachAbort?: () => void;
 };
 
+/** 同じ会話の起動回数だけを復元し、fork 先には元の会話の消費数を持ち込まない。 */
+function sessionSpawns(manager: SessionManager | undefined) {
+	let count = 0;
+	for (const entry of manager?.getBranch() ?? []) {
+		const unrelated =
+			entry.type !== "custom" ||
+			entry.customType !== "nerita.subagent-spawns.v1";
+		if (unrelated) {
+			continue;
+		}
+		const data = isRecord(entry.data) ? entry.data : {};
+		if (data.sessionId !== manager!.getSessionId()) {
+			continue;
+		}
+		const value = data.count;
+		if (validSpawnCount(value)) {
+			count = Math.max(count, value);
+		}
+	}
+	return count;
+}
+
+/** 復元値は非負の安全な整数だけを受け付ける。 */
+function validSpawnCount(value: unknown): value is number {
+	return (
+		typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+	);
+}
+
 /** 外部 Pi 拡張を使わず、Host が所有する実効 `policy` で子を起動する。 */
 export class PiChildRuntimes {
 	private readonly children = new Set<Child>();
@@ -47,6 +79,7 @@ export class PiChildRuntimes {
 	private stoppingNow = false;
 	private stopping: Promise<void> | undefined;
 	private readonly shutdown = new BackendShutdown();
+	private spawned: number;
 
 	/** 親のツール上限とルートをコピーして固定し、呼び出し側の変更で子の権限を広げない。 */
 	constructor(
@@ -57,6 +90,8 @@ export class PiChildRuntimes {
 			options: PiRuntimeOptions,
 		) => Promise<PiRuntimeSession>,
 		private readonly jobs?: PiJobs,
+		private readonly readSettings?: () => Promise<PiDefaults>,
+		private readonly manager?: SessionManager,
 	) {
 		this.parent = {
 			...parent,
@@ -66,11 +101,13 @@ export class PiChildRuntimes {
 				: {}),
 		};
 		this.policy = freezeToolCall(policy);
+		this.spawned = sessionSpawns(manager);
 	}
 
 	/** 親と role の両方で許可される権限だけを残す。会話の複製と外部拡張の継承は分ける。 */
 	async open(options: PiChildOptions): Promise<PiRuntimeSession> {
 		await this.shutdown.wait();
+		const settings = await this.readSettings?.();
 		this.lifetime.throwIfAborted();
 		if (this.disposed || this.stoppingNow) {
 			throw new Error("終了中の親Runtimeから子を起動できません。");
@@ -97,10 +134,12 @@ export class PiChildRuntimes {
 			ephemeral: true,
 			trustedExtensionPaths: [],
 			...childSettings(this.parent, options, this.jobs),
+			maximumThinking: this.maximumThinking(settings),
 		};
 		delete childOptions.resume;
 		delete childOptions.getStorage;
 		delete childOptions.saveModel;
+		this.reserveSpawn(settings);
 		const child: Child = {
 			abort,
 			opening: this.create(childOptions),
@@ -137,6 +176,26 @@ export class PiChildRuntimes {
 			this.children.delete(child);
 			throw error;
 		}
+	}
+
+	/** 親の上限を継承し、最新の保存設定がある場合はそちらを適用する。 */
+	private maximumThinking(settings: PiDefaults | undefined) {
+		return settings?.maxThinking ?? this.parent.maximumThinking;
+	}
+
+	/** 並列起動も受付時に枠を消費する。失敗した起動を再試行して上限を迂回させない。 */
+	private reserveSpawn(settings: PiDefaults | undefined) {
+		const maximum = settings?.maxSubagentSpawnsPerSession;
+		if (maximum !== undefined && this.spawned >= maximum) {
+			throw new Error(
+				"このセッションのエージェント起動上限に達しました。",
+			);
+		}
+		this.spawned++;
+		this.manager?.appendCustomEntry("nerita.subagent-spawns.v1", {
+			sessionId: this.manager.getSessionId(),
+			count: this.spawned,
+		});
 	}
 
 	/** 起動待ち・承認待ち・実行中の子をすべて止め、終了まで待つ。 */

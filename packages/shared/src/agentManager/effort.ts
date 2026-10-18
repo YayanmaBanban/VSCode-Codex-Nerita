@@ -38,7 +38,7 @@ export function handoffEffortError(
 			backendEffort(old),
 		);
 		if (isNonEmptyString(error)) {
-			return `${backend}: ${error}`;
+			return error;
 		}
 	}
 	return undefined;

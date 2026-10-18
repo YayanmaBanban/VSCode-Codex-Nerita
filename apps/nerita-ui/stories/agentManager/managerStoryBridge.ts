@@ -22,7 +22,11 @@ export function sampleState(): ManagerState {
 		handoffError: null,
 		models: structuredClone(sampleModels),
 		activeBackend: "pi",
-		currentModels: { pi: "openai/gpt-6-sol" },
+		currentModels: { pi: "openai/gpt-6-sol", codex: "gpt-6-sol" },
+		currentEfforts: {
+			pi: ["low", "medium", "high", "max"],
+			codex: ["low", "medium", "high", "ultra"],
+		},
 		running: 1,
 		spawned: 3,
 		errors: [],
@@ -60,7 +64,7 @@ export function mockBridge(
 	mode: string,
 	onRequest: (message: ManagerRequest) => void,
 	initialState?: Partial<ManagerState>,
-): ManagerBridge {
+): ManagerBridge & { update: (patch: Partial<ManagerState>) => void } {
 	const state = { ...storyState(mode), ...structuredClone(initialState) };
 	const listeners = new Set<(message: ManagerReply) => void>();
 	const publish = (message: ManagerReply) =>
@@ -99,6 +103,11 @@ export function mockBridge(
 		});
 	};
 	return {
+		/** Host の候補更新を保存応答と分け、編集を続けている画面へ通知する。 */
+		update(patch) {
+			Object.assign(state, structuredClone(patch));
+			publish(state);
+		},
 		subscribe(listener) {
 			listeners.add(listener);
 			return () => {
@@ -109,6 +118,13 @@ export function mockBridge(
 			onRequest(message);
 			queueMicrotask(() => {
 				if (message.type === "ready" || message.type === "reload") {
+					if (
+						mode === "backend-switch" &&
+						message.type === "reload"
+					) {
+						state.activeBackend =
+							state.activeBackend === "pi" ? "codex" : "pi";
+					}
 					publish(state);
 					if (mode === "initialization-error") {
 						publish({

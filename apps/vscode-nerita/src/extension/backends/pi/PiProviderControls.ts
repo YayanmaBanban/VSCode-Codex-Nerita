@@ -1,5 +1,6 @@
 // 現在のプロバイダーへ設定を委譲し、未登録プロバイダーでは Pi 標準の推論設定を使う。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import { reasoningLabel } from "@nerita/shared/settingsCards";
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { PiProviderControls as ControlsState } from "@nerita/shared/piProviderControls";
 import type { PiModelControls, PiProviders } from "./PiProvider";
@@ -92,7 +93,7 @@ export class PiProviderControls {
 			this.resolve()?.reasoningOptions ??
 			this.session
 				?.getAvailableThinkingLevels()
-				.map((value) => ({ value, name: value })) ??
+				.map((value) => ({ value, name: reasoningLabel(value) })) ??
 			[]
 		);
 	}

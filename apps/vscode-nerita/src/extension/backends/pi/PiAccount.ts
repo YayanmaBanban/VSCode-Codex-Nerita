@@ -23,7 +23,10 @@ export class PiAccount {
 			.map((model) =>
 				piAgentModel(
 					model,
-					this.supportedThinking?.(model),
+					model.provider === this.session.model?.provider &&
+						model.id === this.session.model.id
+						? this.session.getAvailableThinkingLevels()
+						: this.supportedThinking?.(model),
 					this.catalog.metadata(model.provider, model.id),
 				),
 			);
@@ -50,10 +53,15 @@ export class PiAccount {
 			credentials,
 			() => catalog.invalidate(),
 			async (provider, signal) => {
-				if (provider !== undefined) {
-					await catalog.refresh(provider, signal);
-				}
+				await this.refreshAvailableCatalogs(signal, provider);
 				await this.reconcileModel(signal, provider);
+				const failure =
+					provider === undefined
+						? undefined
+						: catalog.failure(provider);
+				if (failure) {
+					throw failure;
+				}
 			},
 		);
 		controls.bind(session);
@@ -64,18 +72,32 @@ export class PiAccount {
 	async refreshCatalog(signal: AbortSignal): Promise<void> {
 		const provider = this.session.model?.provider;
 
-		const existingProvider =
-			isNonEmptyString(provider) &&
-			this.catalog.snapshot(provider) !== undefined;
-		if (existingProvider) {
-			await this.catalog.refresh(provider, signal);
-		}
+		await this.refreshAvailableCatalogs(signal);
 		signal.throwIfAborted();
 		if (isNonEmptyString(provider)) {
 			await this.reconcileModel(signal);
 		}
 		this.restoreReasoning(signal);
 		this.controls.snapshot();
+	}
+
+	/** 未選択の認証済みプロバイダーも検証し、取得前の候補を公開せず切替先を用意する。 */
+	private async refreshAvailableCatalogs(
+		signal: AbortSignal,
+		additionalProvider?: string,
+	) {
+		const providers = new Set(
+			this.models.getAvailableSnapshot().map((model) => model.provider),
+		);
+		if (additionalProvider !== undefined) {
+			providers.add(additionalProvider);
+		}
+		for (const provider of providers) {
+			signal.throwIfAborted();
+			if (this.catalog.snapshot(provider) !== undefined) {
+				await this.catalog.refresh(provider, signal);
+			}
+		}
 	}
 
 	/** 起動時に保存済みの推論レベルを一度だけ適用し、使えない値は現在の候補から選び直す。 */

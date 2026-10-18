@@ -9,13 +9,18 @@ import {
 	type ManagerModel,
 } from "@nerita/shared/agentManager/messages";
 import type { BackendSession } from "../session/chatSession";
+import type { ChatState } from "@nerita/shared/chatState";
 import { configuredBackend } from "../webview/backendSettings";
 import { selectLocalWorkspace } from "../webview/selectLocalWorkspace";
 import { webviewHtml } from "../webview/webviewHtml";
 import { AgentManagerStore } from "./AgentManagerStore";
 import { readPiAgents } from "./PiAgentSettings";
 import { generation, readWorkspaceFile } from "./WorkspaceFiles";
-import { agentModelReader, type AgentModelReader } from "./AgentModelCatalog";
+import {
+	agentModelReader,
+	currentAgentModel,
+	type AgentModelReader,
+} from "./AgentModelCatalog";
 import { credentialService } from "../credentials/CredentialService";
 
 /** パネルを閉じた後のキューは保存しない。 */
@@ -30,11 +35,15 @@ export class AgentManagerPanel {
 		codex: [],
 	};
 	private modelErrors: string[] = [];
+	private readonly configuration: vscode.Disposable;
+	private readonly unsubscribeBackend: () => void;
+	private connectedBackend: string | undefined;
+	private connectedOptions = "";
 	/** 管理画面を作業ルートとバックエンドへ結び付け、モデル候補の取得経路も同じルートに固定する。 */
 	constructor(
 		private folder: vscode.WorkspaceFolder,
 		root: string,
-		private panel: vscode.WebviewPanel,
+		private panel: { webview: Pick<vscode.Webview, "postMessage"> },
 		private backend: BackendSession,
 		extensionPath: string,
 		private readModels: AgentModelReader = agentModelReader(
@@ -55,11 +64,66 @@ export class AgentManagerPanel {
 			(id) => this.models(id),
 			configuredBackend,
 		);
+		const initial = backend.snapshot();
+		this.connectedBackend =
+			initial.connection === "ready"
+				? initial.uiContributions?.surface
+				: undefined;
+		this.connectedOptions = this.modelSignature(initial);
+		this.configuration = vscode.workspace.onDidChangeConfiguration(
+			(event) => {
+				if (event.affectsConfiguration("nerita.backend")) {
+					this.receive({ type: "reload" });
+				}
+			},
+		);
+		this.unsubscribeBackend = backend.subscribe(() =>
+			this.backendChanged(),
+		);
+	}
+	/** 接続先やモデル・推論候補の変更時だけ管理画面を更新し、通常の会話通知で編集内容を消さない。 */
+	private backendChanged() {
+		const state = this.backend.snapshot();
+		if (state.connection !== "ready") {
+			this.connectedBackend = undefined;
+			this.connectedOptions = "";
+			return;
+		}
+		const surface = state.uiContributions?.surface;
+		const options = this.modelSignature(state);
+		const changed =
+			surface !== this.connectedBackend ||
+			options !== this.connectedOptions;
+		if (changed) {
+			this.connectedBackend = surface;
+			this.connectedOptions = options;
+			this.receive({ type: "reload" });
+		}
+	}
+	/** 接続後に遅れて届くモデル・推論候補を区別し、応答本文や推論の選択値は更新契機にしない。 */
+	private modelSignature(state: ChatState) {
+		return JSON.stringify(
+			state.configOptions
+				.filter((option) =>
+					["model", "reasoning_effort"].includes(option.id),
+				)
+				.map((option) => ({
+					id: option.id,
+					model:
+						option.id === "model" ? option.currentValue : undefined,
+					options: option.options,
+				})),
+		);
 	}
 	/** 選択バックエンドの接続が完了している場合だけ、現在の会話のモデル候補を使う。 */
 	private liveModels(id: "pi" | "codex") {
 		const state = this.backend.snapshot();
-		if (!(configuredBackend() === id && state.connection === "ready")) {
+		const matchesBackend = state.uiContributions?.surface === id;
+		const live =
+			matchesBackend &&
+			configuredBackend() === id &&
+			state.connection === "ready";
+		if (!live) {
 			return [];
 		}
 		return this.backend.agentModels?.() ?? [];
@@ -102,6 +166,8 @@ export class AgentManagerPanel {
 	close() {
 		this.closed = true;
 		this.abort.abort();
+		this.configuration.dispose();
+		this.unsubscribeBackend();
 	}
 	/** 破棄済みの管理画面には非同期の結果を配信しない。 */
 	private post(message: ManagerReply) {
@@ -111,6 +177,7 @@ export class AgentManagerPanel {
 	}
 	/** 保存済み設定とモデル候補を公開し、実行中の子の件数は同じ実体ルートの会話だけを数える。 */
 	async publish(refreshModels = true) {
+		const activeBackend = configuredBackend();
 		if (refreshModels) {
 			await this.refreshModels();
 		}
@@ -119,18 +186,19 @@ export class AgentManagerPanel {
 		const sameWorkspace =
 			state.cwd !== null &&
 			(await realpath(state.cwd).catch(() => "")) === this.store.root;
+		if (activeBackend !== configuredBackend()) {
+			return;
+		}
 		this.post({
 			...data,
 			errors: [...data.errors, ...this.modelErrors],
 			type: "state",
 			workspace: this.workspace,
 			label: this.store.root,
-			activeBackend: configuredBackend(),
-			currentModels: {
-				[configuredBackend()]: state.configOptions.find(
-					(item) => item.id === "model",
-				)?.currentValue,
-			},
+			activeBackend,
+			...(state.uiContributions?.surface === activeBackend
+				? currentAgentModel(state, activeBackend)
+				: {}),
 			models: { pi: this.models("pi"), codex: this.models("codex") },
 			running: sameWorkspace
 				? state.agents.filter((agent) =>

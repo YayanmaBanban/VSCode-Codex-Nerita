@@ -5,6 +5,7 @@
 	import { modelControl, reasoningLabel } from "@nerita/shared/settingsCards";
 	import SliderCard from "../contributions/SliderCard.svelte";
 	import { managerOption } from "./modelOptions";
+	import FieldErrorTooltip from "../ui/FieldErrorTooltip.svelte";
 
 	let {
 		models,
@@ -13,12 +14,14 @@
 		disabled,
 		onChange,
 		allowUnspecified = true,
+		error,
 	}: {
 		models: ManagerModel[];
 		model?: string | undefined;
 		effort?: string | undefined;
 		disabled: boolean;
 		allowUnspecified?: boolean;
+		error?: string | undefined;
 		onChange: (
 			key: "model" | "reasoning_effort",
 			value: string | undefined,
@@ -40,14 +43,18 @@
 	);
 </script>
 
-<div>
-	<SliderCard
-		control={modelControl(option, [reasoning])}
-		{disabled}
-		onChange={(key: string, value: string) =>
-			onChange(
-				key === "model" ? "model" : "reasoning_effort",
-				nonEmptyString(value) ?? undefined,
-			)}
-	/>
-</div>
+<FieldErrorTooltip message={error}
+	>{#snippet children({ props })}
+		<div role="group" aria-label="モデルと推論の設定" {...props}>
+			<SliderCard
+				control={modelControl(option, [reasoning])}
+				{disabled}
+				onChange={(key: string, value: string) =>
+					onChange(
+						key === "model" ? "model" : "reasoning_effort",
+						nonEmptyString(value) ?? undefined,
+					)}
+			/>
+		</div>
+	{/snippet}</FieldErrorTooltip
+>

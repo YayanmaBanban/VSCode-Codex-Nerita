@@ -18,7 +18,6 @@
 	import CodexAgentManager from "../codex/CodexAgentManager.svelte";
 	import PiAgentManager from "../pi/PiAgentManager.svelte";
 	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
-	import ActionNotice from "../ui/ActionNotice.svelte";
 	import { provideSettingsPopupGroup } from "../ui/settingsPopup.svelte";
 	import "../chat/chat.css";
 
@@ -101,7 +100,7 @@
 		if (change.type === "agent") {
 			return savedSelection ?? change.agentId;
 		}
-		return change.type === "handoff" ? "handoff" : undefined;
+		return change.type === "handoff" ? "handoff" : "defaults";
 	}
 	/** 保存済みの項目を選び、見つからなければ使用バックエンドの先頭へ移動する。 */
 	function loadedSelection(state: ManagerState, current: string) {
@@ -124,7 +123,12 @@
 
 <main class="mx-auto grid w-full max-w-5xl gap-6 p-4 text-foreground sm:p-6">
 	<header class="grid gap-3 border-b border-input-border pb-4">
-		<h1 class="m-0 text-xl font-semibold">Agent Manager</h1>
+		<h1 class="m-0 text-xl font-semibold">
+			{#if editor.state}Agent Manager - {editor.state.activeBackend ===
+				"pi"
+					? "Pi"
+					: "Codex"}{:else}Agent Manager{/if}
+		</h1>
 
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<nav aria-label="管理対象" class="flex gap-1">
@@ -184,24 +188,6 @@
 			</div>
 		</div>
 	</header>
-	{#if pending}<ActionNotice
-			label="未保存の変更"
-			title="未保存の変更"
-			description="未保存の変更を破棄して移動しますか？"
-			actions={[
-				{
-					id: "continue",
-					name: "編集を続ける",
-					onClick: () => (pending = null),
-				},
-				{
-					id: "discard",
-					name: "変更を破棄",
-					onClick: discard,
-					curtainClassName: "bg-yellow-300",
-				},
-			]}
-		/>{/if}
 	{#if isNonEmptyString(editor.error)}<p
 			role="alert"
 			class="m-0 text-sm break-words"
@@ -220,6 +206,7 @@
 					saved={editor.saved && savedTarget === "handoff"}
 					{save}
 					onDirty={() => (dirty = true)}
+					onDiscard={pending ? discard : undefined}
 				/>{:else}<BackendManager
 					state={editor.state}
 					busy={editor.busy}
@@ -234,6 +221,7 @@
 						}
 					}}
 					onDirty={() => (dirty = true)}
+					onDiscard={pending ? discard : undefined}
 				/>{/if}{/key}{/if}
 </main>
 

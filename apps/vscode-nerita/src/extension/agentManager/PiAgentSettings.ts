@@ -6,27 +6,13 @@ import { loadSubagentDefinitions } from "../backends/pi/PiSubagentDefinitions";
 import {
 	agentEditSchema,
 	piDefaultsSchema,
+	piSubagentSettingsSchema,
 } from "@nerita/shared/agentManager/config";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import { readWorkspaceFile } from "./WorkspaceFiles";
 
 const settingsSchema = z.object({
-	subagents: z
-		.object({
-			...piDefaultsSchema.shape,
-			agentOverrides: z
-				.record(
-					z.string(),
-					z.object({
-						model: agentEditSchema.shape.model,
-						thinking: agentEditSchema.shape.thinking,
-						disabled: agentEditSchema.shape.disabled,
-					}),
-				)
-				.optional(),
-			modelScope: z.unknown().optional(),
-		})
-		.optional(),
+	subagents: piSubagentSettingsSchema.optional(),
 });
 
 /** 構造を検証するが、継承値や実効モデルは生成しない。 */

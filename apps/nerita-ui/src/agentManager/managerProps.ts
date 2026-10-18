@@ -14,4 +14,5 @@ export type AgentManagerProps = {
 	selected: string;
 	onSelect: (id: string) => void;
 	onDirty: () => void;
+	onDiscard?: (() => void) | undefined;
 };

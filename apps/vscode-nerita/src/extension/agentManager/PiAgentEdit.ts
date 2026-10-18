@@ -45,13 +45,4 @@ export function assertPiEdit(edit: AgentEdit) {
 	if (edit.reasoningEffort !== undefined) {
 		throw new Error("Pi に Codex 専用設定は保存できません。");
 	}
-	if (edit.sandboxMode !== undefined) {
-		throw new Error("Pi に Codex 専用設定は保存できません。");
-	}
-	if (edit.approvalsReviewer !== undefined) {
-		throw new Error("Pi に Codex 専用設定は保存できません。");
-	}
-	if (edit.approvalPolicy !== undefined) {
-		throw new Error("Pi に Codex 専用設定は保存できません。");
-	}
 }

@@ -15,7 +15,7 @@ export class PiModelCatalogService {
 	/** 接続中の認証とモデル一覧を使い、プロバイダー仕様と通信経路は注入できるようにする。 */
 	constructor(
 		private models: ModelRuntime,
-		private session: AgentSession,
+		private session: Pick<AgentSession, "model">,
 		private request: typeof fetch = fetch,
 		private providers: PiProviders = piProviders,
 	) {}
@@ -69,8 +69,10 @@ export class PiModelCatalogService {
 	available(available = this.models.getAvailableSnapshot()) {
 		const result = available.filter((model) => {
 			const catalog = this.snapshot(model.provider);
+			if (catalog === null) {
+				return !this.models.isUsingOAuth(model.provider);
+			}
 			const matchesCatalog =
-				catalog === null ||
 				catalog === undefined ||
 				catalog.some(
 					(item) =>
@@ -105,5 +107,10 @@ export class PiModelCatalogService {
 	/** 取得したカタログの `visibility` に関わらず、同じ `slug` の補助メタデータを返す。 */
 	metadata(provider: string, modelId: string) {
 		return this.snapshot(provider)?.find((item) => item.slug === modelId);
+	}
+
+	/** 認証操作の結果にだけ安全な失敗分類を返し、生の SDK 例外は公開しない。 */
+	failure(provider: string) {
+		return this.readers.get(provider)?.failure;
 	}
 }

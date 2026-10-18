@@ -38,7 +38,6 @@ import { PiReferenceHistory } from "./PiReferenceHistory";
 import { PiChildRuntimes } from "./PiChildRuntimes";
 import { PiJobs } from "./PiJobs";
 import type { PiForkMessage } from "./PiForkContext";
-import { loadSubagentDefinitions } from "./PiSubagentDefinitions";
 import { createPiSubagentTools } from "./PiSubagentTool";
 import {
 	createPiWorkflowTools,
@@ -50,6 +49,12 @@ import type { PiAuthService } from "./PiAccountAuthFlow";
 import { getPiDeviceId } from "./PiDeviceId";
 import { loadPiResources } from "./PiResources";
 import { PiProviderControls } from "./PiProviderControls";
+import {
+	readPiSubagentConfiguration,
+	limitPiThinking,
+} from "./PiSubagentSettings";
+import type { PiThinkingLevel } from "@nerita/shared/piProviderControls";
+import type { PiDefaults } from "@nerita/shared/agentManager/config";
 import { PiQuotaService } from "./PiQuotaService";
 import { openAICodexQuota } from "./openai/OpenAICodexQuota";
 import { PiModelCatalogService } from "./PiModelCatalogService";
@@ -141,6 +146,7 @@ export type PiRuntimeOptions = {
 	agentDir?: string;
 	/** 最後に UI で選択したモデルと推論レベル。 */
 	preferredModel?: PiModelSelection;
+	maximumThinking?: PiThinkingLevel | undefined;
 	/** UI で確定したモデルを次回の新規セッション用に保存する。 */
 	saveModel?: (selection: PiModelSelection) => Promise<void>;
 	signal: AbortSignal;
@@ -447,6 +453,7 @@ function createRuntimeWorkflow(
 			agentViews,
 			jobs,
 			manager,
+			subagents.readDefinitions,
 		);
 		if (!run) {
 			throw new Error(
@@ -512,6 +519,7 @@ async function bindRuntimeAccount(
 		});
 		// 起動処理の完了前に取得したカタログの候補と保存推論を適用し、SDK 既定値を公開しない。
 		await account.refreshCatalog(options.signal);
+		limitPiThinking(session, options.maximumThinking);
 		options.signal.throwIfAborted();
 	} catch (error) {
 		session.dispose();
@@ -520,9 +528,7 @@ async function bindRuntimeAccount(
 	if (options.signal.aborted) {
 		session.dispose();
 		options.signal.throwIfAborted();
-		throw new Error(
-			"Pi の初期化が取り消されました。",
-		);
+		throw new Error("Pi の初期化が取り消されました。");
 	}
 	return account;
 }
@@ -544,7 +550,13 @@ function prepareRuntimeDelegation(
 	);
 	const jobs = new PiJobs(agentViews, manager);
 	jobs.restore(manager.getBranch(), manager.getSessionId());
-	const children = createChildren(options, runtimeTools, jobs);
+	const children = createChildren(
+		options,
+		runtimeTools,
+		jobs,
+		subagents.readSettings,
+		manager,
+	);
 	customTools.push(
 		...permittedTools(
 			createPiSubagentTools(
@@ -557,6 +569,7 @@ function prepareRuntimeDelegation(
 				agentViews,
 				jobs,
 				manager,
+				subagents.readDefinitions,
 			),
 			options.allowedTools,
 		),
@@ -574,6 +587,7 @@ function prepareRuntimeDelegation(
 				agentViews,
 				jobs,
 				manager,
+				subagents.readDefinitions,
 			),
 			options.allowedTools,
 		),
@@ -698,6 +712,7 @@ async function prepareRuntimeResources(
 				options.credentials!.vault.stores.redactor.text(value),
 		},
 		referenceHistory,
+		subagents.readDefinitions,
 	);
 	return {
 		agentDir,
@@ -729,6 +744,8 @@ function createChildren(
 	options: PiRuntimeOptions,
 	tools: Awaited<ReturnType<typeof preparePiRuntimeTools>>,
 	jobs: PiJobs,
+	readSettings: (() => Promise<PiDefaults>) | undefined,
+	manager: PiSdk.SessionManager,
 ) {
 	return new PiChildRuntimes(
 		{
@@ -742,6 +759,8 @@ function createChildren(
 		options.signal,
 		createPiRuntime,
 		jobs,
+		readSettings,
+		manager,
 	);
 }
 
@@ -853,15 +872,32 @@ async function runtimeSubagents(
 	settings: PiSdk.SettingsManager,
 	trusted: string[],
 ) {
-	return options.parentPolicy
-		? { definitions: [], trusted, workflowPackage: undefined }
-		: loadSubagentDefinitions(
-				sdk,
-				options.cwd,
-				agentDir,
-				settings,
-				trusted,
-			);
+	if (options.parentPolicy) {
+		return {
+			definitions: [],
+			trusted,
+			workflowPackage: undefined,
+			readDefinitions: undefined,
+			readSettings: undefined,
+		};
+	}
+	/** 許可済みの導入先を保ち、保存済みデータだけを読み直す。 */
+	const read = () =>
+		readPiSubagentConfiguration(
+			sdk,
+			options.cwd,
+			agentDir,
+			settings.isProjectTrusted(),
+			trusted,
+		);
+	const current = await read();
+	return Object.assign(current, {
+		readDefinitions: async () => {
+			current.definitions = (await read()).definitions;
+			return current.definitions;
+		},
+		readSettings: async () => (await read()).settings,
+	});
 }
 /** 指定モデルの不在を別モデルへの自動切替で隠さない。 */
 function validateChildModel(

@@ -10,7 +10,6 @@
 	import AgentModelControl from "../agentManager/AgentModelControl.svelte";
 	import { useAgentEditor } from "../agentManager/useAgentEditor.svelte";
 	import type { AgentManagerProps } from "../agentManager/managerProps";
-	import CodexAgentPermissions from "./CodexAgentPermissions.svelte";
 
 	let {
 		agent,
@@ -32,39 +31,36 @@
 			...edit,
 			model: edit.model ?? "gpt-6.1-sol",
 			reasoningEffort: edit.reasoningEffort ?? "medium",
-			sandboxMode: edit.sandboxMode ?? "read-only",
-			approvalsReviewer: edit.approvalsReviewer ?? "auto_review",
-			approvalPolicy: edit.approvalPolicy ?? "on-request",
 		};
 	}
 </script>
 
 <AgentSettings {...editor.settings}
-	><AgentModelControl
-		allowUnspecified={false}
-		models={editor.models}
-		model={editor.edit.model}
-		effort={editor.edit.reasoningEffort}
-		disabled={props.busy || agent?.editable === false}
-		onChange={(
-			key: "model" | "reasoning_effort",
-			value: string | undefined,
-		) =>
-			editor.change(
-				key === "model"
-					? { ...editor.edit, model: value }
-					: {
-							...editor.edit,
-							reasoningEffort:
-								agentEditSchema.shape.reasoningEffort.parse(
-									value,
-								),
-						},
-			)}
-	/><CodexAgentPermissions
-		bind:open={props.advancedSettings.open}
-		edit={editor.edit}
-		onChange={editor.change}
-		disabled={props.busy || agent?.editable === false}
-	/></AgentSettings
->
+	>{#snippet children({ error })}<AgentModelControl
+			{error}
+			allowUnspecified={false}
+			models={editor.models}
+			model={editor.edit.model}
+			effort={editor.edit.reasoningEffort}
+			disabled={props.busy || agent?.editable === false}
+			onChange={(
+				key: "model" | "reasoning_effort",
+				value: string | undefined,
+			) =>
+				editor.change(
+					key === "model"
+						? { ...editor.edit, model: value }
+						: {
+								...editor.edit,
+								reasoningEffort:
+									agentEditSchema.shape.reasoningEffort.parse(
+										value,
+									),
+							},
+				)}
+		/>
+		<p class="m-0 text-xs text-muted">
+			権限と承認設定は親セッションから引き継ぎます。
+		</p>
+	{/snippet}
+</AgentSettings>

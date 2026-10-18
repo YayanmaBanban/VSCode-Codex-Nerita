@@ -30,6 +30,36 @@
 			],
 			"sourceMaps": true,
 			"preLaunchTask": "build: extension"
+		},
+		{
+			"name": "Run Extension (No Debug)",
+			"type": "extensionHost",
+			"request": "launch",
+			"noDebug": true,
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--new-window",
+				"--skip-welcome",
+				"--skip-release-notes",
+				"--extensionDevelopmentPath=${workspaceFolder}/apps/vscode-nerita",
+				"${workspaceFolder}/.vscode/development.code-workspace",
+				// 旧拡張とコマンド・ビューの ID が重複するため、開発用 Host では無効にする。
+				"--disable-extension",
+				"nerita-local.nerita-codex",
+				"--disable-extension",
+				"jgclark.vscode-todo-highlight",
+				"--disable-extension",
+				"bradlc.vscode-tailwindcss",
+				"--disable-extension",
+				"GitHub.vscode-pull-request-github",
+				"--disable-extension",
+				"vscode.markdown-language-features"
+			],
+			"outFiles": [
+				"${workspaceFolder}/apps/vscode-nerita/dist/extension.js"
+			],
+			"sourceMaps": true,
+			"preLaunchTask": "build: extension"
 		}
 	]
 }

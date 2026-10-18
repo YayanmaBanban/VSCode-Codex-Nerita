@@ -2,10 +2,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-	import {
-		agentEditSchema,
-		type AgentEdit,
-	} from "@nerita/shared/agentManager/config";
+	import { type AgentEdit } from "@nerita/shared/agentManager/config";
 	import type {
 		ManagedAgent,
 		ManagerModel,
@@ -15,6 +12,8 @@
 	import DefinitionField from "./DefinitionField.svelte";
 	import { inputStyle } from "./managerFields";
 	import SaveFooter from "./SaveFooter.svelte";
+	import FieldErrorTooltip from "../ui/FieldErrorTooltip.svelte";
+	import { agentFieldErrors, agentFilenameError } from "./agentValidation";
 
 	let {
 		agent,
@@ -25,10 +24,11 @@
 		dirty,
 		saved,
 		onSubmit,
-		children,
+		children: settingsFields,
 		error: inputError,
 		filename,
 		onFilenameChange,
+		onDiscard,
 	}: {
 		agent?: ManagedAgent | undefined;
 		models: ManagerModel[];
@@ -38,16 +38,21 @@
 		dirty: boolean;
 		saved: boolean;
 		onSubmit: () => void;
-		children: Snippet;
+		children: Snippet<[{ error: string | undefined }]>;
 		error?: string | undefined;
 		filename?: string | undefined;
 		onFilenameChange?: ((name: string) => void) | undefined;
+		onDiscard?: (() => void) | undefined;
 	} = $props();
-	let error = $derived(
-		inputError ??
-			(agentEditSchema.safeParse(edit).success
-				? undefined
-				: "名前と入力内容を確認してください。"),
+	let errors = $derived(agentFieldErrors(edit));
+	let filenameError = $derived(
+		onFilenameChange ? agentFilenameError(filename ?? "") : undefined,
+	);
+	let settingsError = $derived(inputError ?? errors.settings);
+	let invalid = $derived(
+		Object.keys(errors).length > 0 ||
+			isNonEmptyString(inputError) ||
+			isNonEmptyString(filenameError),
 	);
 	let badges = $derived([
 		agent?.source ?? "project",
@@ -64,7 +69,7 @@
 	class="grid gap-5 pb-24"
 	onsubmit={(event) => {
 		event.preventDefault();
-		if (!isNonEmptyString(error)) {
+		if (!invalid) {
 			onSubmit();
 		}
 	}}
@@ -77,22 +82,26 @@
 				{edit}
 				{onChange}
 				field="name"
+				error={errors.name}
 				label="名前"
 				placeholder="エージェント名"
 				limit={80}
 			/>{:else}<h2 class="m-0 text-lg font-semibold">
 				{agent?.name}
 			</h2>{/if}
-		{#if onFilenameChange}<Field label="ファイル名"
-				><input
-					class={inputStyle}
-					required
-					placeholder="拡張子を含まない名前"
-					pattern={"[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}"}
-					value={filename ?? ""}
-					oninput={(event) =>
-						onFilenameChange(event.currentTarget.value)}
-				/></Field
+		{#if onFilenameChange}<FieldErrorTooltip message={filenameError}
+				>{#snippet children({ props })}<Field label="ファイル名"
+						><input
+							class={inputStyle}
+							{...props}
+							required
+							placeholder="拡張子を含まない名前"
+							pattern={"[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}"}
+							value={filename ?? ""}
+							oninput={(event) =>
+								onFilenameChange(event.currentTarget.value)}
+						/></Field
+					>{/snippet}</FieldErrorTooltip
 			>{/if}
 		{#if isNonEmptyString(agent?.definitionPath)}<p
 				class="m-0 text-xs break-all text-muted"
@@ -109,6 +118,7 @@
 				{edit}
 				{onChange}
 				field="description"
+				error={errors.description}
 				label="説明"
 				placeholder="ユーザー向けの説明"
 				rows={3}
@@ -124,24 +134,27 @@
 			</p>{/if}
 		<section class="grid gap-4 border-t border-input-border pt-4">
 			<h3 class="m-0 text-sm font-semibold">Agent 設定</h3>
-			{@render children()}
+			{@render settingsFields({ error: settingsError })}
+			<p class="m-0 text-xs text-muted">
+				未指定の場合、モデルは親のモデルを使用し、推論レベルはバックエンドの既定値に任せます。
+			</p>
 		</section>
 		<DefinitionField
 			{edit}
 			{onChange}
 			field="prompt"
+			error={errors.prompt}
 			label="システムプロンプト"
 			placeholder="エージェントに追加で渡す指示"
 			rows={10}
 			limit={60000}
 		/>
-		{#if isNonEmptyString(error)}<p role="alert" class="text-sm">
-				{error}
-			</p>{/if}
 	</fieldset>
 	<SaveFooter
+		{onDiscard}
+		discardDisabled={busy}
 		{dirty}
 		{saved}
-		disabled={busy || agent?.editable === false || isNonEmptyString(error)}
+		disabled={busy || agent?.editable === false || invalid}
 	/>
 </form>

@@ -11,8 +11,9 @@
 			"properties": {
 				"timeoutMs": {
 					"type": "integer",
-					"exclusiveMinimum": 0,
-					"maximum": 2147483647
+					"minimum": 1000,
+					"maximum": 600000,
+					"multipleOf": 1000
 				}
 			},
 			"required": ["timeoutMs"],

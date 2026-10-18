@@ -51,6 +51,8 @@ export function createPiWorkflowRunner(
 		lifetime,
 		views,
 		jobs,
+		_contextSource,
+		readDefinitions,
 	] = args;
 	if (!views || !jobs) {
 		throw new Error("ワークフローのジョブ管理がありません。");
@@ -65,6 +67,7 @@ export function createPiWorkflowRunner(
 		children,
 		views,
 		jobs,
+		readDefinitions,
 	);
 }
 
@@ -79,6 +82,7 @@ function createWorkflowExecution(
 	children: PiChildRuntimes,
 	views: PiAgentViews,
 	jobs: PiJobs,
+	readDefinitions?: () => Promise<PiSubagentDefinition[]>,
 ) {
 	return async (
 		callId: string,
@@ -99,9 +103,12 @@ function createWorkflowExecution(
 				packagePath,
 			);
 		// エージェントとモデルの検査は `validate` でも実施し、子の起動や承認要求は行わない。
+		const currentDefinitions = readDefinitions
+			? await readDefinitions()
+			: definitions;
 		const preflight = new PiWorkflowChildren(
 			definition,
-			definitions,
+			currentDefinitions,
 			model,
 			children,
 			views,
@@ -113,10 +120,7 @@ function createWorkflowExecution(
 			combined,
 		);
 		if (input.action === "validate") {
-			return {
-				content: [{ type: "text" as const, text: script }],
-				details: { ok: true, definition },
-			};
+			return workflowValidation(script, definition);
 		}
 		await preflight.close();
 		const id = views.start(
@@ -132,7 +136,7 @@ function createWorkflowExecution(
 			input,
 			combined,
 			definition,
-			definitions,
+			currentDefinitions,
 			model,
 			children,
 			policy,
@@ -146,6 +150,17 @@ function createWorkflowExecution(
 			content: [{ type: "text" as const, text: JSON.stringify(result) }],
 			details: result,
 		};
+	};
+}
+
+/** 検証操作は生成結果だけを返し、ジョブや子を起動しない。 */
+function workflowValidation(
+	script: string,
+	definition: ReturnType<typeof parseWorkflow>,
+) {
+	return {
+		content: [{ type: "text" as const, text: script }],
+		details: { ok: true, definition },
 	};
 }
 
@@ -257,7 +272,9 @@ async function readWorkflow(
 	const matchesContainsPath =
 		!containsPath(root, path) || (await stat(path)).size > 262144;
 	if (matchesContainsPath) {
-		throw new Error("ワークフロー定義の参照先が .pi/workflows の外にあるか、256 KiB の上限を超えています。");
+		throw new Error(
+			"ワークフロー定義の参照先が .pi/workflows の外にあるか、256 KiB の上限を超えています。",
+		);
 	}
 	const permit = await approveToolCall(
 		{

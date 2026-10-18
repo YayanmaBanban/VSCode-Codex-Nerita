@@ -11,12 +11,18 @@
 		mode,
 		onRequest,
 		initialState,
+		onConnect,
 	}: {
 		mode: string;
 		onRequest: (message: ManagerRequest) => void;
 		initialState?: Partial<ManagerState>;
+		onConnect?: (update: (patch: Partial<ManagerState>) => void) => void;
 	} = $props();
 	let bridge = $derived(mockBridge(mode, onRequest, initialState));
+	// ストーリーの引数変更でブリッジが変わるため、Host 更新用コールバックを再登録する。
+	$effect(() => {
+		onConnect?.(bridge.update);
+	});
 </script>
 
 {#key bridge}<AgentManager {bridge} />{/key}

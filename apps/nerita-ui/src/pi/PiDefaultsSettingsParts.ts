@@ -12,6 +12,9 @@ export type PiDefaultsSettingsProps = {
 	models: ManagerModel[];
 	busy: boolean;
 	save: ManagerSave;
+	dirty?: boolean;
+	saved?: boolean;
+	onDiscard?: (() => void) | undefined;
 };
 /** Pi の既定設定の下書きと、モデル・推論の検証エラーを入力欄へ渡す。 */
 export type PiDefaultsFieldsProps = {

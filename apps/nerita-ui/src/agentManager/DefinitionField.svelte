@@ -4,6 +4,7 @@
 	import { cn } from "cnfast";
 	import Field from "./Field.svelte";
 	import { inputStyle } from "./managerFields";
+	import FieldErrorTooltip from "../ui/FieldErrorTooltip.svelte";
 
 	let {
 		edit,
@@ -13,6 +14,7 @@
 		placeholder,
 		rows,
 		limit,
+		error,
 	}: {
 		edit: AgentEdit;
 		onChange: (edit: AgentEdit) => void;
@@ -21,6 +23,7 @@
 		placeholder?: string;
 		rows?: number;
 		limit: number;
+		error?: string | undefined;
 	} = $props();
 	let definition = $derived(edit.definition);
 	/** 編集対象の定義がある場合だけ、指定された項目を更新して親へ伝える。 */
@@ -34,20 +37,24 @@
 	}
 </script>
 
-{#if definition}<Field {label}
-		>{#if rows}<textarea
-				class={cn(inputStyle, "resize-none")}
-				{rows}
-				{placeholder}
-				maxlength={limit}
-				value={definition[field]}
-				oninput={(event) => update(event.currentTarget.value)}
-			></textarea>{:else}<input
-				class={inputStyle}
-				required
-				{placeholder}
-				maxlength={limit}
-				value={definition[field]}
-				oninput={(event) => update(event.currentTarget.value)}
-			/>{/if}</Field
+{#if definition}<FieldErrorTooltip message={error}>
+		{#snippet children({ props })}<Field {label}
+				>{#if rows}<textarea
+						class={cn(inputStyle, "resize-none")}
+						{...props}
+						{rows}
+						{placeholder}
+						maxlength={limit}
+						value={definition[field]}
+						oninput={(event) => update(event.currentTarget.value)}
+					></textarea>{:else}<input
+						class={inputStyle}
+						{...props}
+						required
+						{placeholder}
+						maxlength={limit}
+						value={definition[field]}
+						oninput={(event) => update(event.currentTarget.value)}
+					/>{/if}</Field
+			>{/snippet}</FieldErrorTooltip
 	>{/if}

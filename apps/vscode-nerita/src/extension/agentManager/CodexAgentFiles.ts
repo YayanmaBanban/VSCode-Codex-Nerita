@@ -1,4 +1,4 @@
-// `.codex/agents` 直下の TOML を読み、定義・モデル・承認設定を編集用の状態へ変換する。
+// `.codex/agents` 直下の TOML を読み、定義とモデル設定を編集用の状態へ変換する。
 import { errorText } from "@nerita/shared/errorText";
 import { fsErrorCode } from "../runtime/FsError";
 import { readdir } from "node:fs/promises";
@@ -6,7 +6,6 @@ import { parse } from "smol-toml";
 import { z } from "zod";
 import {
 	codexReasoningSchema,
-	agentEditSchema,
 } from "@nerita/shared/agentManager/config";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import { readWorkspaceFile, workspaceFile } from "./WorkspaceFiles";
@@ -17,9 +16,6 @@ const definitionSchema = z.object({
 	developer_instructions: z.string(),
 	model: z.string().optional(),
 	model_reasoning_effort: z.string().optional(),
-	sandbox_mode: agentEditSchema.shape.sandboxMode,
-	approvals_reviewer: agentEditSchema.shape.approvalsReviewer,
-	approval_policy: agentEditSchema.shape.approvalPolicy,
 });
 /** ワークスペースの Agent だけを編集対象として返す。 */
 export async function codexAgentFiles(root: string) {
@@ -86,9 +82,6 @@ function agentView(
 				description: data.description,
 				prompt: data.developer_instructions,
 			},
-			sandboxMode: data.sandbox_mode,
-			approvalsReviewer: data.approvals_reviewer,
-			approvalPolicy: data.approval_policy,
 			model: data.model,
 			reasoningEffort: reasoning.success ? reasoning.data : undefined,
 		},

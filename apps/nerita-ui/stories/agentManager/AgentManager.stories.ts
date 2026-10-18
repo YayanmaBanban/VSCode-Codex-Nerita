@@ -19,6 +19,30 @@ type Story = StoryObj<{
 	onRequest: ReturnType<typeof fn<(message: ManagerRequest) => void>>;
 }>;
 export const Settings: Story = {};
+export const BackendSwitch: Story = {
+	args: { mode: "backend-switch" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(
+			await canvas.findByRole("textbox", { name: "名前" }),
+		).toHaveValue("writer");
+		await userEvent.click(
+			canvas.getByRole("button", { name: "再読み込み" }),
+		);
+		await expect(canvas.getByRole("textbox", { name: "名前" })).toHaveValue(
+			"codex-reviewer",
+		);
+		await expect(
+			canvas.queryByRole("button", { name: "writer" }),
+		).not.toBeInTheDocument();
+		await userEvent.click(
+			canvas.getByRole("button", { name: "再読み込み" }),
+		);
+		await expect(canvas.getByRole("textbox", { name: "名前" })).toHaveValue(
+			"writer",
+		);
+	},
+};
 export const Codex: Story = { args: { mode: "codex" } };
 export const LoadErrors: Story = {
 	args: { mode: "load-errors" },
@@ -76,32 +100,32 @@ export const HandoffEffortValidation: Story = {
 			canvas.getByRole("region", { name: "codex ハンドオフ" }),
 		);
 		await userEvent.selectOptions(
-			backend.getByRole("combobox", { name: "codex Strategy" }),
+			backend.getByRole("combobox", { name: "モデル選択のモード" }),
 			"fixed",
 		);
 		await userEvent.selectOptions(
-			backend.getByRole("combobox", { name: "codex Model" }),
+			backend.getByRole("combobox", { name: "モデル" }),
 			"gpt-6-sol",
 		);
 		await userEvent.selectOptions(
-			backend.getByRole("combobox", { name: "Reasoning effort" }),
+			backend.getByRole("combobox", { name: "推論レベル" }),
 			"ultra",
 		);
 		await userEvent.selectOptions(
-			backend.getByRole("combobox", { name: "codex Model" }),
+			backend.getByRole("combobox", { name: "モデル" }),
 			"gpt-6-luna",
 		);
 		await expect(backend.getByRole("alert")).toBeVisible();
 		await expect(
-			canvas.getByRole("button", { name: "ハンドオフ設定を保存" }),
+			canvas.getByRole("button", { name: "変更を保存" }),
 		).toBeDisabled();
 		await userEvent.selectOptions(
-			backend.getByRole("combobox", { name: "Reasoning effort" }),
+			backend.getByRole("combobox", { name: "推論レベル" }),
 			"high",
 		);
 		await expect(backend.queryByRole("alert")).not.toBeInTheDocument();
 		await userEvent.click(
-			canvas.getByRole("button", { name: "ハンドオフ設定を保存" }),
+			canvas.getByRole("button", { name: "変更を保存" }),
 		);
 		await waitFor(() =>
 			expect(
@@ -149,40 +173,22 @@ export const CodexDefaults: Story = {
 	args: { mode: "codex-defaults" },
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
-		const page = within(canvasElement.ownerDocument.body);
 		await expect(
 			await canvas.findByRole("button", { name: "モデルと推論レベル" }),
 		).toHaveTextContent("GPT-6.1 Sol Medium");
-		await userEvent.click(canvas.getByText("高度な設定", { exact: true }));
-		await userEvent.click(
-			canvas.getByRole("combobox", { name: "承認ポリシー" }),
-		);
 		await expect(
-			page.getByRole("option", { name: "on-request" }),
-		).toHaveAttribute("aria-selected", "true");
-		await expect(
-			page.queryByRole("option", { name: "未指定" }),
+			canvas.queryByRole("button", { name: "高度な設定" }),
 		).not.toBeInTheDocument();
-		await userEvent.keyboard("{Escape}");
-		await userEvent.click(
-			canvas.getByRole("button", { name: "サンドボックスモード" }),
-		);
 		await expect(
-			page.getByRole("slider", { name: "サンドボックスモード" }),
-		).toHaveAttribute("aria-valuetext", "読み取り専用");
-		await expect(
-			page.queryByRole("combobox", { name: "承認者" }),
+			canvas.queryByRole("button", { name: "サンドボックスモード" }),
 		).not.toBeInTheDocument();
-		await userEvent.click(
-			page.getByRole("button", { name: "サンドボックスモード: 2" }),
-		);
-		const reviewer = await page.findByRole("combobox", { name: "承認者" });
-		await userEvent.click(reviewer);
 		await expect(
-			page.getByRole("option", { name: /代わりに承認/ }),
-		).toHaveAttribute("aria-selected", "true");
-		await userEvent.keyboard("{Escape}");
-		await userEvent.keyboard("{Escape}");
+			canvas.getByText("権限と承認設定は親セッションから引き継ぎます。"),
+		).toBeVisible();
+		await userEvent.type(
+			canvas.getByRole("textbox", { name: "説明" }),
+			" draft",
+		);
 		await userEvent.click(
 			canvas.getByRole("button", { name: "変更を保存" }),
 		);
@@ -190,68 +196,14 @@ export const CodexDefaults: Story = {
 			([request]) => request.type === "agent",
 		)?.[0];
 		if (saved?.type !== "agent") {
-			throw new Error("エージェント設定の保存要求がありません。");
+			throw new Error("保存要求がありません。");
 		}
-		await expect(saved.edit).toMatchObject({
-			sandboxMode: "workspace-write",
-			approvalsReviewer: "auto_review",
-		});
+		await expect(saved.edit).not.toHaveProperty("sandboxMode");
+		await expect(saved.edit).not.toHaveProperty("approvalsReviewer");
+		await expect(saved.edit).not.toHaveProperty("approvalPolicy");
 	},
 };
-export const CodexPermissions: Story = {
-	args: { mode: "codex" },
-	play: async ({ canvasElement, args }) => {
-		const canvas = within(canvasElement);
-		const page = within(canvasElement.ownerDocument.body);
-		await expect(
-			await canvas.findByRole("button", { name: "モデルと推論レベル" }),
-		).toHaveTextContent("GPT-6 Sol High");
-		await userEvent.click(canvas.getByText("高度な設定", { exact: true }));
-		await userEvent.click(
-			canvas.getByRole("button", { name: "サンドボックスモード" }),
-		);
-		await expect(
-			page.queryByRole("combobox", { name: "承認者" }),
-		).not.toBeInTheDocument();
-		await userEvent.click(
-			page.getByRole("button", { name: "サンドボックスモード: 2" }),
-		);
-		await userEvent.click(
-			await page.findByRole("combobox", { name: "承認者" }),
-		);
-		await userEvent.click(
-			await page.findByRole("option", { name: /代わりに承認/ }),
-		);
-		const slider = page.getByRole("slider", {
-			name: "サンドボックスモード",
-		});
-		await expect(slider).toHaveAttribute(
-			"aria-valuetext",
-			"ワークスペース内に書き込み",
-		);
-		await userEvent.keyboard("{Escape}");
-		await userEvent.click(
-			canvas.getByRole("button", { name: "変更を保存" }),
-		);
-		await expect(args.onRequest).toHaveBeenCalledWith(
-			expect.objectContaining({
-				type: "agent",
-				edit: {
-					model: "gpt-6-sol",
-					reasoningEffort: "high",
-					sandboxMode: "workspace-write",
-					approvalsReviewer: "auto_review",
-					approvalPolicy: "on-request",
-					definition: {
-						name: "codex-reviewer",
-						description: "Codex の標準定義",
-						prompt: "変更内容と関連テストを確認してください。",
-					},
-				},
-			}),
-		);
-	},
-};
+
 export const CodexEditing: Story = {
 	args: { mode: "codex" },
 	play: async ({ canvasElement }) => {
@@ -267,18 +219,6 @@ export const CodexEditing: Story = {
 		await expect(
 			canvasElement.querySelector("footer .lucide-badge-alert"),
 		).toBeInTheDocument();
-		await userEvent.click(canvas.getByText("高度な設定", { exact: true }));
-		await userEvent.click(
-			canvas.getByRole("combobox", { name: "承認ポリシー" }),
-		);
-		await userEvent.click(
-			within(canvasElement.ownerDocument.body).getByRole("option", {
-				name: "granular",
-			}),
-		);
-		await userEvent.click(
-			canvas.getByRole("checkbox", { name: "サンドボックス外での実行" }),
-		);
 		await userEvent.click(
 			canvas.getByRole("button", { name: "変更を保存" }),
 		);
@@ -290,12 +230,6 @@ export const CodexEditing: Story = {
 		await expect(canvas.getByRole("textbox", { name: "名前" })).toHaveValue(
 			"updated-reviewer",
 		);
-		await expect(
-			canvas.getByRole("button", { name: "高度な設定" }),
-		).toHaveAttribute("aria-expanded", "true");
-		await expect(
-			canvas.getByRole("combobox", { name: "承認ポリシー" }),
-		).toBeVisible();
 		await expect(
 			canvasElement.querySelector("footer .lucide-circle-check"),
 		).toBeInTheDocument();
@@ -311,95 +245,6 @@ export const CodexEditing: Story = {
 		await expect(
 			canvas.queryByRole("region", { name: "pi ハンドオフ" }),
 		).not.toBeInTheDocument();
-	},
-};
-export const ApprovalInteractions: Story = {
-	args: { mode: "codex" },
-	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		const page = within(canvasElement.ownerDocument.body);
-		const advanced = await canvas.findByRole("button", {
-			name: "高度な設定",
-		});
-		await expect(advanced).toHaveAttribute("aria-expanded", "false");
-		await userEvent.click(advanced);
-		const policy = canvas.getByRole("combobox", { name: "承認ポリシー" });
-		for (const [value, description] of [
-			["on-request", "サンドボックス外の実行操作で承認を求める"],
-			["never", "承認なし"],
-			["granular", "承認の種類ごとに決める"],
-		] as const) {
-			await userEvent.click(policy);
-			await userEvent.click(page.getByRole("option", { name: value }));
-			await userEvent.unhover(policy);
-			await userEvent.hover(policy);
-			await expect(await page.findByRole("tooltip")).toHaveTextContent(
-				description,
-			);
-			await userEvent.unhover(policy);
-			await userEvent.keyboard("{Escape}");
-		}
-		const checkbox = canvas.getByRole("checkbox", {
-			name: "サンドボックス外での実行",
-		});
-		await expect(checkbox).toBeChecked();
-		await userEvent.click(checkbox);
-		await expect(checkbox).not.toBeChecked();
-		await userEvent.keyboard(" ");
-		await expect(checkbox).toBeChecked();
-		await userEvent.click(advanced);
-		await expect(canvas.queryByRole("checkbox")).not.toBeInTheDocument();
-		await userEvent.click(advanced);
-		await expect(checkbox).toBeChecked();
-	},
-};
-export const SliderCards: Story = {
-	args: { mode: "codex" },
-	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		const screen = within(canvasElement.ownerDocument.body);
-		await userEvent.click(
-			await canvas.findByRole("button", { name: "高度な設定" }),
-		);
-		const model = canvas.getByRole("button", {
-			name: "モデルと推論レベル",
-		});
-		const permissions = canvas.getByRole("button", {
-			name: "サンドボックスモード",
-		});
-		await Promise.all(
-			canvasElement
-				.getAnimations({ subtree: true })
-				.map((animation) => animation.finished),
-		);
-		model.scrollIntoView({ block: "start" });
-		const document = canvasElement.ownerDocument;
-		const scrollTop = document.documentElement.scrollTop;
-		await expect(scrollTop).toBeGreaterThan(0);
-
-		await userEvent.click(model);
-		await expect(
-			screen.getByRole("slider", { name: "推論" }),
-		).toHaveFocus();
-		await expect(document.documentElement.scrollTop).toBe(scrollTop);
-		await userEvent.click(permissions);
-		await expect(model).toHaveAttribute("aria-expanded", "false");
-		await expect(permissions).toHaveAttribute("aria-expanded", "true");
-		await expect(
-			screen.getByRole("slider", { name: "サンドボックスモード" }),
-		).toHaveFocus();
-		await expect(document.documentElement.scrollTop).toBe(scrollTop);
-
-		await userEvent.click(model);
-		await expect(permissions).toHaveAttribute("aria-expanded", "false");
-		await expect(model).toHaveAttribute("aria-expanded", "true");
-		await expect(
-			screen.getByRole("slider", { name: "推論" }),
-		).toHaveFocus();
-		await expect(document.documentElement.scrollTop).toBe(scrollTop);
-		await userEvent.keyboard("{Escape}");
-		await waitFor(() => expect(model).toHaveFocus());
-		await expect(document.documentElement.scrollTop).toBe(scrollTop);
 	},
 };
 
@@ -454,9 +299,9 @@ export const Invalid: Story = {
 		);
 		await expect(timeout).toBeEnabled();
 		await userEvent.clear(timeout);
-		await userEvent.type(timeout, "1.5");
+		await userEvent.type(timeout, "15");
 		await userEvent.click(
-			canvas.getByRole("button", { name: "ハンドオフ設定を保存" }),
+			canvas.getByRole("button", { name: "変更を保存" }),
 		);
 
 		await waitFor(() =>
@@ -476,7 +321,7 @@ export const Invalid: Story = {
 		if (handoff?.type !== "handoff") {
 			throw new Error("ハンドオフ設定の保存要求がありません。");
 		}
-		await expect(handoff.config.defaults).toEqual({ timeoutMs: 1500 });
+		await expect(handoff.config.defaults).toEqual({ timeoutMs: 15000 });
 	},
 };
 export const Empty: Story = { args: { mode: "empty" } };
@@ -516,9 +361,6 @@ export const NewCodex: Story = {
 				edit: {
 					model: "gpt-6.1-sol",
 					reasoningEffort: "medium",
-					sandboxMode: "read-only",
-					approvalsReviewer: "auto_review",
-					approvalPolicy: "on-request",
 					definition: {
 						name: "new-agent",
 						description: "新しい説明",
@@ -542,9 +384,6 @@ export const UnsavedChanges: Story = {
 		await expect(
 			canvas.getByRole("region", { name: "未保存の変更" }),
 		).toBeInTheDocument();
-		await userEvent.click(
-			canvas.getByRole("button", { name: "編集を続ける" }),
-		);
 		await expect(name).toHaveValue("codex-reviewer-draft");
 		await userEvent.click(
 			canvas.getByRole("button", { name: "再読み込み" }),

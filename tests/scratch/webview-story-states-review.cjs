@@ -6,6 +6,8 @@ const { chromium } = require("playwright");
 
 const groups = {
 	"agent-manager-states": [
+		"many-pi-agents",
+		"many-codex-agents",
 		"invalid-name",
 		"read-only-agent",
 		"unsupported-agent",
@@ -19,7 +21,23 @@ const groups = {
 		"unsaved-navigation",
 	],
 	"agent-manager-save-footer": ["hidden", "unsaved", "disabled"],
-	"agent-manager": ["invalid-handoff", "load-errors", "save-error"],
+	"agent-manager-handoff-models": [
+		"model-update-while-editing",
+		"pi-unspecified-model",
+		"codex-current",
+		"pi-current",
+		"codex-fixed",
+		"pi-fixed",
+		"pi-without-preferred-model",
+		"no-models",
+		"current-unavailable",
+	],
+	"agent-manager": [
+		"backend-switch",
+		"invalid-handoff",
+		"load-errors",
+		"save-error",
+	],
 	"pi-credentials": [
 		"existing-binding",
 		"environment-injection",

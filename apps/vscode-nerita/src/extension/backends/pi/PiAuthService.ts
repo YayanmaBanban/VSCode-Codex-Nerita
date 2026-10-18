@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { webviewHtml } from "../../webview/webviewHtml";
 import type { PiAuthService } from "./PiAccountAuthFlow";
+import { piAuthFailure } from "./PiAuthFailure";
 
 /** 認証パネルを閉じると、進行中の認証を中断して入力待ちを解除するサービス。 */
 export function createPiAuthService(extensionUri: vscode.Uri): PiAuthService {
@@ -153,12 +154,9 @@ class PiAuthPanel implements PiAuthService {
 				this.state.items = await run.items();
 				this.state.notice = "認証情報を更新しました。";
 			})
-			.catch(() => {
-				this.state.error = combined.aborted
-					? "認証をキャンセルしました。"
-					: "認証できませんでした。入力内容を確認して再試行してください。";
-				this.state.notice = "";
-			})
+			.catch((error: unknown) =>
+				this.reportFailure(error, value.id, run, combined),
+			)
 			.finally(() => {
 				// 完了した認証のブラウザ応答が次の認証先へ混入するのを防ぐ。
 				run.operation?.abort();
@@ -168,6 +166,32 @@ class PiAuthPanel implements PiAuthService {
 				run.running = undefined;
 				this.publish();
 			});
+	}
+
+	/** 操作対象を案内に含め、失敗した選択でも実際の保存状態と再ログインの操作を表示する。 */
+	private async reportFailure(
+		error: unknown,
+		id: string,
+		run: AuthPanelRun,
+		signal: AbortSignal,
+	) {
+		const method = this.state.items
+			.flatMap((item) => item.methods)
+			.find((method) => method.id === id);
+		const reason: unknown = signal.aborted ? signal.reason : error;
+		const timeout =
+			reason instanceof Error && reason.name === "TimeoutError";
+		const name = method?.name ?? "認証操作";
+		this.state.error =
+			signal.aborted && !timeout
+				? "認証をキャンセルしました。"
+				: `${name}: ${piAuthFailure(reason).message}`;
+		this.state.notice = "";
+		try {
+			this.state.items = await run.items();
+		} catch {
+			// 保存先も読めない場合は、直前の一覧と安全なエラー案内を保持する。
+		}
 	}
 
 	/** SDK の対話がサービスの共有状態を参照するように接続する。 */

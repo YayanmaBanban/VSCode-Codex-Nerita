@@ -4,6 +4,7 @@ import type {
 	ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
 import type { ConfigOption } from "@nerita/shared/composer";
+import { reasoningLabel } from "@nerita/shared/settingsCards";
 import type { PiProviderControls } from "./PiProviderControls";
 import type { PiModelCatalogService } from "./PiModelCatalogService";
 
@@ -39,7 +40,7 @@ export function piModelOptions(
 			id: "reasoning_effort",
 			name: "Reasoning effort",
 			currentValue: state.effectiveReasoning,
-			currentLabel: state.effectiveReasoning,
+			currentLabel: reasoningLabel(state.effectiveReasoning),
 			options: controls.reasoningOptions,
 		},
 		{

@@ -69,10 +69,10 @@ async function openEditor(page, theme, story) {
 }
 
 /** 保存応答を待ち、フッターに保存済み状態が現れたところから計測する。 */
-async function save(page, story) {
+async function save(page) {
 	await page
 		.getByRole("button", {
-			name: story === "handoff" ? "ハンドオフ設定を保存" : "変更を保存",
+			name: "変更を保存",
 			exact: true,
 		})
 		.evaluate((element) => element.click());
@@ -121,7 +121,7 @@ async function reviewTheme(page, theme, story, directory) {
 	);
 	assert.equal(entrance[0].opacity, 0);
 	assert.equal(entrance.at(-1).opacity, 1);
-	await save(page, story);
+	await save(page);
 	assert.equal(await page.getByRole("status").count(), 1);
 	await page.clock.runFor(1999);
 	assert.equal(await footer.getAttribute("data-phase"), "shown");
@@ -135,14 +135,14 @@ async function reviewTheme(page, theme, story, directory) {
 
 	await description.fill(story === "handoff" ? "122" : "再表示の編集");
 	await sampleTransition(page, directory, `${label}-reenter`, 300);
-	await save(page, story);
+	await save(page);
 	await page.clock.runFor(1000);
 	await description.fill(story === "handoff" ? "123" : "待機中の再編集");
 	await page.clock.runFor(2000);
 	assert.equal(await footer.getAttribute("data-phase"), "shown");
 	assert.equal(await footer.locator(".lucide-badge-alert").count(), 1);
 
-	await save(page, story);
+	await save(page);
 	await page.clock.runFor(2000);
 	assert.equal(await footer.getAttribute("data-phase"), "leaving");
 	await footer.evaluate((element) => {

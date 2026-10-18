@@ -5,8 +5,13 @@ import { join } from "node:path";
 import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 import { CodexClient } from "../backends/codex/CodexClient";
 import { parseModels } from "../backends/codex/protocol/account";
-import { piAgentModel } from "../backends/pi/PiAgentModels";
-import { piProviders } from "../backends/pi/PiProviders";
+import { readPiAgentModels } from "../backends/pi/PiAgentModels";
+import type { BackendId } from "@nerita/shared/backend";
+import type { ChatState } from "@nerita/shared/chatState";
+import {
+	piEffortSchema,
+	codexReasoningSchema,
+} from "@nerita/shared/agentManager/config";
 import {
 	PiCredentialVault,
 	PiCredentialStore,
@@ -32,6 +37,24 @@ export function agentModelReader(
 		backend === "pi"
 			? readPi(extensionPath, signal, credentials)
 			: readCodex(extensionPath, cwd, signal);
+}
+
+/** セッション自身の候補を使い、カタログにないモデル ID や別名でも現在の推論候補を保持する。 */
+export function currentAgentModel(state: ChatState, backend: BackendId) {
+	const model = state.configOptions.find(
+		(option) => option.id === "model",
+	)?.currentValue;
+	const reasoning = state.configOptions.find(
+		(option) => option.id === "reasoning_effort",
+	);
+	const schema = backend === "pi" ? piEffortSchema : codexReasoningSchema;
+	const efforts = reasoning?.options
+		.map((option) => option.value)
+		.filter((value) => schema.safeParse(value).success);
+	return {
+		currentModels: { [backend]: model },
+		currentEfforts: { [backend]: efforts },
+	};
 }
 
 /** 管理画面専用の短命接続では thread/start を呼ばない。 */
@@ -105,32 +128,9 @@ async function readPi(
 		modelRefreshTimeoutMs: 15000,
 		signal,
 	});
-	const models = await runtime.getAvailable(undefined, { signal });
-	const providers = [...new Set(models.map((model) => model.provider))];
-	const catalogs = new Map(
-		await Promise.all(
-			providers.map(async (provider) => {
-				const reader = piProviders[provider]?.createCatalog?.(
-					runtime,
-					fetch,
-				);
-				return [provider, await reader?.read(signal)] as const;
-			}),
-		),
+	return readPiAgentModels(
+		runtime,
+		(model) => sdk.getSupportedThinkingLevels(model),
+		signal,
 	);
-	signal.throwIfAborted();
-	return models.flatMap((model) => {
-		const catalog = catalogs.get(model.provider);
-		const metadata = catalog?.find((item) => item.slug === model.id);
-		if (catalog && metadata?.visibility !== "list") {
-			return [];
-		}
-		return [
-			piAgentModel(
-				model,
-				sdk.getSupportedThinkingLevels(model),
-				metadata,
-			),
-		];
-	});
 }

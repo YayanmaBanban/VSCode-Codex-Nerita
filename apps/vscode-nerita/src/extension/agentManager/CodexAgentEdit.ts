@@ -70,31 +70,14 @@ export function editCodexAgent(text: string, edit: AgentEdit): string {
 		values.set("description", edit.definition.description);
 		values.set("developer_instructions", edit.definition.prompt);
 	}
-	values.set("sandbox_mode", edit.sandboxMode);
-	values.set("approvals_reviewer", edit.approvalsReviewer);
-	values.set("approval_policy", edit.approvalPolicy);
 	const eol = text.includes("\r\n") ? "\r\n" : "\n";
 	let root = true;
-	let approvalTable = false;
-	const policy = values.get("approval_policy");
-	// テーブル形式は末尾へ置き、後続のルート設定を取り込まない。
-	if (typeof policy === "object") {
-		values.set("approval_policy", undefined);
-	}
-	/** テーブルの境界と対象キーを追跡し、承認設定を除いて指定したルート項目だけを書き換える。 */
+	/** テーブルの境界と対象キーを追跡し、指定したルート項目だけを書き換える。 */
 	const rewriteAgentStatement = (statement: string) => {
 		if (/^\s*\[/.test(statement)) {
 			root = false;
-			const table = parse(statement);
-			approvalTable = "approval_policy" in table;
-		}
-		if (approvalTable) {
-			return "";
 		}
 		const name = Object.keys(parse(statement))[0] ?? "";
-		if (root && name === "approval_policy" && !values.has(name)) {
-			return "";
-		}
 		if (!root || !values.has(name)) {
 			return statement;
 		}
@@ -107,12 +90,7 @@ export function editCodexAgent(text: string, edit: AgentEdit): string {
 		.filter(([, value]) => value !== undefined)
 		.map(([key, value]) => `${stringify({ [key]: value }).trimEnd()}${eol}`)
 		.join("");
-	const result =
-		additions +
-		output +
-		(typeof policy === "object"
-			? `${eol}${stringify({ approval_policy: policy })}`
-			: "");
+	const result = additions + output;
 	parse(result);
 	return result;
 }

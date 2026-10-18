@@ -16,6 +16,19 @@ export type ManagerSave = (
 			: never
 		: never,
 ) => void;
+/** 候補だけの更新では編集フォームを作り直さず、定義や接続先の変更だけを区別する。 */
+function managerStateChanged(
+	previous: ManagerState | undefined,
+	next: ManagerState,
+) {
+	if (previous === undefined) {
+		return true;
+	}
+	return (
+		previous.activeBackend !== next.activeBackend ||
+		previous.generation !== next.generation
+	);
+}
 /** Host の状態は変更しないスナップショットとして保持し、編集用の下書きと分ける。 */
 export function useAgentManager(
 	bridge: ManagerBridge,
@@ -31,10 +44,21 @@ export function useAgentManager(
 		/** 設定を受信した場合や、初期化または現在の保存要求への応答を受けた場合に待機状態を解除する。 */
 		const receive = (message: ManagerReply) => {
 			if (message.type === "state") {
+				const backendChanged =
+					state !== undefined &&
+					state.activeBackend !== message.activeBackend;
+				const replaceEditor =
+					busy || managerStateChanged(state, message);
 				state = message;
-				revision += 1;
-				busy = false;
-				onState?.(message);
+				if (backendChanged) {
+					error = null;
+					saved = false;
+				}
+				if (replaceEditor) {
+					revision += 1;
+					busy = false;
+					onState?.(message);
+				}
 			} else if (message.id === 0 || message.id === sequence) {
 				error = message.error;
 				saved = message.id !== 0 && message.error === null;

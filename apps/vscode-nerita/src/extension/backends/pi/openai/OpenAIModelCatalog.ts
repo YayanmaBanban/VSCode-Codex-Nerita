@@ -3,12 +3,15 @@ import { isRecord } from "@nerita/shared/validation";
 import { piThinkingLevels } from "@nerita/shared/piProviderControls";
 import type { PiCatalogModel } from "../PiModelCatalog";
 
-/** 通常の API キー用一覧や旧カタログの推論・サービス情報を混用しない。 */
+/** 公開 API の ID 一覧と、能力情報を含むカタログをそれぞれ検証する。 */
 export function normalizeOpenAIModels(
 	payload: unknown,
 ): PiCatalogModel[] | null {
 	if (!isRecord(payload)) {
 		return null;
+	}
+	if (Array.isArray(payload.data)) {
+		return normalizeModelIds(payload.data);
 	}
 	if (!Array.isArray(payload.models)) {
 		return null;
@@ -32,6 +35,23 @@ export function normalizeOpenAIModels(
 			...(ultraEffort !== undefined ? { ultraEffort } : {}),
 			...(supportsPriority(item.service_tiers) ? { fastMode: true } : {}),
 		});
+	}
+	return result;
+}
+
+/** ID だけの応答から推論能力を推測せず、表示名と通常推論は SDK に任せる。 */
+function normalizeModelIds(entries: unknown[]): PiCatalogModel[] | null {
+	if (entries.length > 1000) {
+		return null;
+	}
+	const result: PiCatalogModel[] = [];
+	const seen = new Set<string>();
+	for (const [priority, entry] of entries.entries()) {
+		if (!isRecord(entry) || !isShortText(entry.id) || seen.has(entry.id)) {
+			return null;
+		}
+		seen.add(entry.id);
+		result.push({ slug: entry.id, priority, visibility: "list" });
 	}
 	return result;
 }

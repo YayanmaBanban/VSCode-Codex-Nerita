@@ -3,10 +3,7 @@
 	import { untrack } from "svelte";
 	import ChevronDown from "@lucide/svelte/icons/chevron-down";
 	import { cn } from "cnfast";
-	import {
-		isNonEmptyString,
-		nonZeroNumber,
-	} from "@nerita/shared/valuePredicates";
+	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import {
 		handoffSchema,
 		type HandoffConfig,
@@ -14,9 +11,9 @@
 	import { handoffEffortError } from "@nerita/shared/agentManager/effort";
 	import type { ManagerState } from "@nerita/shared/agentManager/messages";
 	import type { ManagerSave } from "./useAgentManager.svelte";
-	import Field from "./Field.svelte";
 	import HandoffBackendSettings from "./HandoffBackendSettings.svelte";
-	import { buttonStyle, inputStyle } from "./managerFields";
+	import { buttonStyle } from "./managerFields";
+	import NumericField from "../ui/NumericField.svelte";
 	import HelpHeader from "../ui/HelpHeader.svelte";
 	import SaveFooter from "./SaveFooter.svelte";
 
@@ -27,6 +24,7 @@
 		saved,
 		save,
 		onDirty,
+		onDiscard,
 	}: {
 		state: ManagerState;
 		busy: boolean;
@@ -34,11 +32,19 @@
 		saved: boolean;
 		save: ManagerSave;
 		onDirty?: () => void;
+		onDiscard?: (() => void) | undefined;
 	} = $props();
 	let config = $state.raw<HandoffConfig>(untrack(() => hostState.handoff));
 	let repair = $state(false);
 	let error = $state<string>();
-	const timeoutHelpId = $props.id();
+	let timeoutSeconds = $derived(
+		Number.isFinite(config.defaults.timeoutMs)
+			? config.defaults.timeoutMs / 1000
+			: undefined,
+	);
+	let timeoutInvalid = $derived(
+		!handoffSchema.shape.defaults.safeParse(config.defaults).success,
+	);
 	let locked = $derived(
 		busy || (isNonEmptyString(hostState.handoffError) && !repair),
 	);
@@ -58,7 +64,7 @@
 	/** 引き継ぎ設定と推論候補を検証して保存を要求し、変更できない状態では送信しない。 */
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (locked || isNonEmptyString(effortError)) {
+		if (locked || timeoutInvalid || isNonEmptyString(effortError)) {
 			return;
 		}
 		const parsed = handoffSchema.safeParse(config);
@@ -127,46 +133,35 @@
 				/>
 			</summary>
 			<div class="grid gap-2 pt-3">
-				<Field label="タイムアウト">
-					<span class="flex items-center gap-2">
-						<input
-							class={inputStyle}
-							type="number"
-							aria-label="タイムアウト（秒）"
-							aria-describedby={timeoutHelpId}
-							required
-							min={0.001}
-							max={2147483.647}
-							step={0.001}
-							value={nonZeroNumber(
-								config.defaults.timeoutMs / 1000,
-							) ?? ""}
-							oninput={(event) =>
-								change({
-									...config,
-									defaults: {
-										timeoutMs: Math.round(
-											Number(event.currentTarget.value) *
-												1000,
-										),
-									},
-								})}
-						/>
-						<span class="shrink-0 text-sm" aria-hidden="true"
-							>秒</span
-						>
-					</span>
-				</Field>
-				<p id={timeoutHelpId} class="m-0 text-xs text-muted">
-					ハンドオフの完了を待つ最大時間です。
-				</p>
+				<NumericField
+					label="タイムアウト"
+					unit="秒"
+					min={1}
+					max={600}
+					step={1}
+					value={timeoutSeconds}
+					disabled={locked}
+					description="ハンドオフの完了を待つ最大時間です。"
+					onChange={(seconds) =>
+						change({
+							...config,
+							defaults: {
+								timeoutMs:
+									seconds === undefined
+										? Number.NaN
+										: seconds * 1000,
+							},
+						})}
+				/>
 			</div>
 		</details>
 	</fieldset>
 	<SaveFooter
+		{onDiscard}
+		discardDisabled={busy}
 		{dirty}
 		{saved}
-		disabled={locked || isNonEmptyString(effortError)}
-		label="ハンドオフ設定を保存"
+		disabled={locked || timeoutInvalid || isNonEmptyString(effortError)}
+		label="変更を保存"
 	/>
 </form>

@@ -37,6 +37,9 @@
 					models={props.state.models.pi}
 					busy={props.busy}
 					save={props.save}
+					dirty={props.dirty}
+					saved={props.saved}
+					onDiscard={props.onDiscard}
 				/>
 			{/key}
 		</div>

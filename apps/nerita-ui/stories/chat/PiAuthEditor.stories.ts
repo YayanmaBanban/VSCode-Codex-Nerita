@@ -229,3 +229,65 @@ export const ProviderError: Story = {
 		).toBeEnabled();
 	},
 };
+
+export const RevokedOAuth: Story = oauthFailureStory(
+	"使用: 仕事用 OAuth: この認証は無効化されています。OAuthでログインし直してください。",
+);
+export const OAuthReauthenticationRequired: Story = oauthFailureStory(
+	"使用: 仕事用 OAuth: この認証は現在使用できません。OAuthでログインし直してください。",
+);
+export const OAuthNetworkFailure: Story = oauthFailureStory(
+	"使用: 仕事用 OAuth: 認証サービスとの通信に失敗し、認証状態を確認できませんでした。再試行してください。",
+);
+export const OAuthPermissionDenied: Story = oauthFailureStory(
+	"使用: 仕事用 OAuth: この認証にはアクセス権限がありません。アカウントの権限を確認してください。",
+);
+
+/** 操作後もエラーを残し、対象のアカウントと再ログイン・再試行のボタンを目視確認できるようにする。 */
+function oauthFailureStory(error: string): Story {
+	return {
+		args: {
+			state: {
+				...authInitialState,
+				items: [
+					{
+						id: "openai",
+						name: "OpenAI",
+						configured: true,
+						accounts: [
+							{
+								id: "work",
+								name: "仕事用 OAuth",
+								mode: "secret-storage",
+								active: true,
+							},
+						],
+						methods: [
+							{ id: "openai-work", name: "使用: 仕事用 OAuth" },
+							{ id: "openai-oauth", name: "OAuthでログイン" },
+							{ id: "openai-delete", name: "削除: 仕事用 OAuth" },
+						],
+					},
+				],
+				feedback: { openai: { notice: "", error } },
+			},
+		},
+		play: async ({ canvasElement, args }) => {
+			const canvas = within(canvasElement);
+			await userEvent.click(
+				canvas.getByRole("button", { name: /^OpenAI/ }),
+			);
+			await expect(canvas.getByRole("alert")).toBeVisible();
+			await expect(
+				canvas.getByRole("button", { name: "使用: 仕事用 OAuth" }),
+			).toBeEnabled();
+			await userEvent.click(
+				canvas.getByRole("button", { name: "OAuthでログイン" }),
+			);
+			await expect(args.send).toHaveBeenLastCalledWith({
+				type: "start",
+				id: "openai-oauth",
+			});
+		},
+	};
+}

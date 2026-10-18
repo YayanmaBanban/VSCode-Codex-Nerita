@@ -9,15 +9,13 @@
 
 	import { effortOptions } from "@nerita/shared/agentManager/effort";
 
-	import { cn } from "cnfast";
-
 	import EffortField from "../agentManager/EffortField.svelte";
 
 	import Field from "../agentManager/Field.svelte";
 
 	import ModelField from "../agentManager/ModelField.svelte";
 
-	import { buttonStyle, inputStyle } from "../agentManager/managerFields";
+	import { inputStyle } from "../agentManager/managerFields";
 
 	import { type PiDefaultsFieldsProps } from "./PiDefaultsSettingsParts";
 
@@ -73,12 +71,7 @@
 							: Number(event.currentTarget.value),
 				})}
 		/></Field
-	><button
-		disabled={isNonEmptyString(error)}
-		class={cn(buttonStyle, "justify-self-start")}
-		type="submit"
-		>既定値を保存
-	</button>{#if isNonEmptyString(error)}
+	>{#if isNonEmptyString(error)}
 		<p role="alert" class="text-sm">{error}</p>
 	{/if}
 </fieldset>

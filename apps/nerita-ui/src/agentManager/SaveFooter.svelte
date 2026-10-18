@@ -14,17 +14,41 @@
 		saved,
 		disabled,
 		label = "変更を保存",
+		onDiscard,
+		discardDisabled = false,
 	}: {
 		dirty: boolean;
 		saved: boolean;
 		disabled: boolean;
 		label?: string;
+		onDiscard?: (() => void) | undefined;
+		discardDisabled?: boolean;
 	} = $props();
 	const reducedMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 	let footerPhase = $state<"hidden" | "shown" | "leaving">(
 		untrack(() => (saved ? "shown" : "hidden")),
 	);
 	let instantFooter = $state(false);
+	/** 表示中の実寸を管理画面へ渡し、一覧が固定フッターの下に隠れるのを防ぐ。 */
+	function reserveHeight(node: HTMLElement) {
+		const container = node.closest("main");
+		const visible = footerPhase !== "hidden";
+		/** 折り返しや画面幅の変化にも合わせて予約する高さを更新する。 */
+		const update = () => {
+			const height = visible ? node.getBoundingClientRect().height : 0;
+			container?.style.setProperty(
+				"--settings-footer-height",
+				`${height}px`,
+			);
+		};
+		const observer = new ResizeObserver(update);
+		observer.observe(node);
+		update();
+		return () => {
+			observer.disconnect();
+			container?.style.removeProperty("--settings-footer-height");
+		};
+	}
 	/** 退場中の再操作では入場を再生せず、直ちに表示状態へ戻す。 */
 	function showFooter() {
 		instantFooter = footerPhase === "leaving";
@@ -75,6 +99,9 @@
 />
 
 <footer
+	role={onDiscard ? "region" : undefined}
+	aria-label={onDiscard ? "未保存の変更" : undefined}
+	{@attach reserveHeight}
 	data-phase={footerPhase}
 	data-instant={instantFooter}
 	aria-hidden={footerPhase === "hidden"}
@@ -86,7 +113,7 @@
 	)}
 >
 	<div
-		class="mx-auto flex w-full max-w-5xl items-center justify-between gap-3"
+		class="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3"
 	>
 		<div role="status" aria-atomic="true" class="min-w-0 text-xs">
 			{#if dirty}
@@ -96,7 +123,9 @@
 						class="shrink-0 text-warning"
 						aria-hidden="true"
 					/>
-					未保存の変更があります
+					{onDiscard
+						? "未保存の変更を破棄して移動しますか？"
+						: "未保存の変更があります"}
 				</span>
 			{:else if saved}
 				<span
@@ -114,19 +143,38 @@
 				</span>
 			{/if}
 		</div>
-		<button
-			type="submit"
-			class={cn(
-				buttonStyle,
-				"group relative isolate shrink-0 overflow-hidden",
-			)}
-			{disabled}
-		>
-			{label}
-			{#if !disabled}
-				<ButtonCurtain name={label} className="bg-sky-300" />
+		<div class="ml-auto flex shrink-0 items-center gap-2">
+			<button
+				type="submit"
+				class={cn(
+					buttonStyle,
+					"group relative isolate shrink-0 overflow-hidden",
+				)}
+				{disabled}
+			>
+				{label}
+				{#if !disabled}
+					<ButtonCurtain name={label} className="bg-sky-300" />
+				{/if}
+			</button>
+			{#if onDiscard}
+				<button
+					type="button"
+					onclick={onDiscard}
+					disabled={discardDisabled}
+					class={cn(
+						buttonStyle,
+						"group relative isolate shrink-0 overflow-hidden",
+					)}
+				>
+					変更を破棄
+					{#if !discardDisabled}<ButtonCurtain
+							name="変更を破棄"
+							className="bg-yellow-300"
+						/>{/if}
+				</button>
 			{/if}
-		</button>
+		</div>
 	</div>
 </footer>
 

@@ -111,7 +111,9 @@
 	><Popover.Trigger
 		>{#snippet child({ props: triggerProps })}<SettingsTooltip
 				content={tooltip}
-				disabled={popup.open}
+				disabled={popup.open ||
+					(model !== undefined &&
+						descriptions[option.currentValue] === undefined)}
 				>{#snippet children({ props: tooltipProps })}<button
 						bind:this={trigger}
 						{...mergeProps(

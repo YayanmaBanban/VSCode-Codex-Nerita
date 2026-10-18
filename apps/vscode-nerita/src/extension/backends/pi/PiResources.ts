@@ -13,6 +13,8 @@ import { neritaMcpExtension } from "./mcp/PiMcpExtension";
 import type { PiMcpSdk } from "./mcp/PiMcpSdk";
 import { privatePiMessage } from "./PiMessageSafety";
 import type { PiReferenceHistory } from "./PiReferenceHistory";
+import type { PiSubagentDefinition } from "./PiSubagentDefinitions";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 /** 本文をファイルパスと解釈させず、定義の指定どおり基底プロンプトへ反映する。 */
 function agentPromptOverride(
@@ -46,6 +48,7 @@ export async function loadPiResources(
 	webTrust: PiWebTrust[] = [],
 	features: PiToolFeatures = {},
 	referenceHistory?: PiReferenceHistory,
+	agentDefinitions?: () => Promise<PiSubagentDefinition[]>,
 ): Promise<PiSdk.DefaultResourceLoader> {
 	const mcpSdk = sdk as typeof PiSdk & {
 		loadPiMcp?: () => Promise<PiMcpSdk>;
@@ -75,6 +78,7 @@ export async function loadPiResources(
 			settingsManager,
 			trustedExtensionPaths,
 			referenceHistory,
+			agentDefinitions,
 		),
 		// ターミナル用のテーマは VS Code Webview には適用しない。
 		noThemes: true,
@@ -124,8 +128,10 @@ function resourceExtensionFactories(
 	settingsManager: PiSdk.SettingsManager,
 	trustedExtensionPaths: string[],
 	referenceHistory: PiReferenceHistory | undefined,
+	agentDefinitions: (() => Promise<PiSubagentDefinition[]>) | undefined,
 ): PiSdk.InlineExtension[] {
 	return [
+		...(agentDefinitions ? [agentSettingsExtension(agentDefinitions)] : []),
 		...neritaExtensionFactories(controls, {
 			sdk,
 			features,
@@ -174,4 +180,32 @@ function extensionTailOrder(path: string): number {
 		"<inline:nerita-secret-protection>",
 		"<inline:nerita-reference-history>",
 	].indexOf(path);
+}
+
+/** 各ターンの指示へ最新の利用可能な定義を追加する。コードの再読込みは行わない。 */
+function agentSettingsExtension(
+	read: () => Promise<PiSubagentDefinition[]>,
+): PiSdk.InlineExtension {
+	return {
+		name: "nerita-agent-settings",
+		hidden: true,
+		factory(api) {
+			api.on("before_agent_start", async (event) => {
+				const definitions = await read();
+				const agents = definitions
+					.filter(
+						(definition) =>
+							!isNonEmptyString(definition.unavailableReason),
+					)
+					.map((definition) => ({
+						name: definition.name,
+						description: definition.description,
+						aliases: definition.aliases ?? [],
+					}));
+				return {
+					systemPrompt: `${event.systemPrompt}\nAvailable Nerita subagents (latest saved settings): ${JSON.stringify(agents)}`,
+				};
+			});
+		},
+	};
 }

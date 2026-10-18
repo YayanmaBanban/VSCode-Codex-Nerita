@@ -1,4 +1,4 @@
-<!-- 固定モデルの再選択では全モデルを表示し、推論値は変更しない。 -->
+<!-- 利用可能な固定モデルを表示し、一覧にない保存済みの値も変更するまで保持する。 -->
 <script lang="ts">
 	import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 	import Field from "./Field.svelte";
@@ -25,9 +25,6 @@
 		required
 		{value}
 		onchange={(event) => onChange(event.currentTarget.value)}
-		><option value="">モデルを選択</option><ModelOptions
-			{value}
-			{models}
-		/></select
+		><ModelOptions {value} {models} /></select
 	></Field
 >

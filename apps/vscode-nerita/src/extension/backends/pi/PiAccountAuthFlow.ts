@@ -5,6 +5,7 @@ import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { PiAuthItem } from "@nerita/shared/piAuth";
 import type { PiCredentialStore } from "../../credentials/PiCredentialStore";
 import { credentialStorageModeSchema } from "@nerita/shared/credentials";
+import { piAuthFailure } from "./PiAuthFailure";
 
 /** SDK の認証対話を VS Code とテストで差し替える。 */
 export type PiAuthService = {
@@ -70,6 +71,11 @@ export class PiAccountAuthFlow {
 			}
 			if (type === "select") {
 				await this.credentials.vault.select(provider, accountId);
+				try {
+					await this.models.getAuth(provider, { signal });
+				} catch (error) {
+					throw piAuthFailure(error);
+				}
 			} else {
 				await this.credentials.vault.remove(
 					this.credentials.vault

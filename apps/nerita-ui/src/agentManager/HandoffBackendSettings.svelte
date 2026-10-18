@@ -4,6 +4,7 @@
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import type { HandoffConfig } from "@nerita/shared/agentManager/config";
 	import { effortOptions } from "@nerita/shared/agentManager/effort";
+	import { defaultHandoffModel } from "@nerita/shared/agentManager/handoffModels";
 	import type { ManagerState } from "@nerita/shared/agentManager/messages";
 	import Field from "./Field.svelte";
 	import EffortField from "./EffortField.svelte";
@@ -25,10 +26,18 @@
 	} = $props();
 	let item = $derived(config.backends[backend]);
 	let currentOptions = $derived(
-		effortOptions(state.models[backend], state.currentModels?.[backend]),
+		state.currentEfforts?.[backend] ??
+			effortOptions(
+				state.models[backend],
+				state.currentModels?.[backend],
+			),
 	);
-	/** 引き継ぎのモデル選択方式を切り替え、固定モデルの指定を現在モデルへ持ち越さない。 */
+	/** 現在のセッションのモデルを使う方式へ切り替えた場合は、固定モデルの指定を残さない。 */
 	function strategy(value: string) {
+		const model = defaultHandoffModel(backend, state.models[backend]);
+		if (value === "fixed" && model === undefined) {
+			return;
+		}
 		const { model: _model, ...rest } = {
 			...item,
 			model: "model" in item ? item.model : undefined,
@@ -40,7 +49,7 @@
 				[backend]:
 					value === "current"
 						? { ...rest, strategy: "current" }
-						: { ...rest, strategy: "fixed", model: "" },
+						: { ...rest, strategy: "fixed", model },
 			},
 		});
 	}
@@ -71,35 +80,42 @@
 	aria-label={`${backend} ハンドオフ`}
 >
 	<h3 class="m-0 font-semibold">{backend === "pi" ? "Pi" : "Codex"}</h3>
-	<Field label={`${backend} Strategy`}
+	<Field label="モデル選択のモード"
 		><select
 			class={inputStyle}
 			value={item.strategy}
 			onchange={(event) => strategy(event.currentTarget.value)}
 			><option value="current">現在のセッションのモデルを使用</option
-			><option value="fixed">モデルを固定する</option></select
+			><option value="fixed" disabled={state.models[backend].length === 0}
+				>モデルを固定する</option
+			></select
 		></Field
 	>
 	{#if item.strategy === "fixed"}<HandoffModelField
-			label={`${backend} Model`}
+			label="モデル"
 			value={item.model}
 			models={state.models[backend]}
 			onChange={setModel}
 		/>{/if}
 	<EffortField
-		label={backend === "pi" ? "Thinking" : "Reasoning effort"}
+		label="推論レベル"
 		value={backend === "pi"
 			? config.backends.pi.thinking
 			: config.backends.codex.reasoningEffort}
 		options={item.strategy === "fixed"
 			? effortOptions(state.models[backend], item.model)
 			: currentOptions}
+		emptyMessage={item.strategy === "current"
+			? "現在のセッションの推論レベルを取得できません。セッションに接続して再読み込みしてください。"
+			: undefined}
 		onChange={setEffort}
 	/>
 	{#if isNonEmptyString(effortError)}
-		<p role="alert" class="m-0 text-sm">{effortError}</p>
+		<p role="alert" class="m-0 text-sm leading-relaxed text-warning">
+			{effortError}
+		</p>
 	{/if}
-	{#if item.strategy === "current"}<p class="m-0 text-xs text-muted">
-			モデルは現在のセッションと同じものを使い、推論レベルは個別に設定します。
-		</p>{/if}
+	<p class="m-0 text-xs text-muted">
+		推論レベルが未指定の場合は、バックエンドの既定値に任せます
+	</p>
 </section>

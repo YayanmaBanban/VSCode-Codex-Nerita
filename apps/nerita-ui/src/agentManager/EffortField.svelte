@@ -6,17 +6,20 @@
 	} from "@nerita/shared/valuePredicates";
 	import Field from "./Field.svelte";
 	import { inputStyle } from "./managerFields";
+	import { reasoningLabel } from "@nerita/shared/settingsCards";
 
 	let {
 		label,
 		value,
 		options,
 		onChange,
+		emptyMessage = "選択できる推論レベルを確認できません。モデルの指定を確認し、一覧を再読み込みしてください。",
 	}: {
 		label: string;
 		value?: string | undefined;
 		options: readonly string[];
 		onChange: (value: string | undefined) => void;
+		emptyMessage?: string | undefined;
 	} = $props();
 </script>
 
@@ -30,12 +33,11 @@
 		><option value="">未指定</option
 		>{#if isNonEmptyString(value) && !options.includes(value)}<option
 				{value}
-				disabled>{value}（非対応・未確認）</option
+				disabled>{reasoningLabel(value)}（非対応・未確認）</option
 			>{/if}{#each options as option (option)}<option value={option}
-				>{option}</option
+				>{reasoningLabel(option)}</option
 			>{/each}</select
 	>{#if options.length === 0}<span
-			class="text-xs leading-relaxed text-warning"
-			>選択できる推論レベルを確認できません。モデルの指定を確認し、一覧を再読み込みしてください。</span
+			class="text-xs leading-relaxed text-warning">{emptyMessage}</span
 		>{/if}</Field
 >

@@ -24,18 +24,6 @@ export const codexReasoningSchema = z.enum([
 /** Pi の管理画面とハンドオフ設定には、SDK の通常推論レベルだけを保存する。 */
 export const piEffortSchema = piThinkingSchema;
 
-/** Codex の承認要求を種類ごとに許可する保存形式。 */
-export const granularApprovalSchema = z.strictObject({
-	sandbox_approval: z.boolean(),
-	rules: z.boolean(),
-	skill_approval: z.boolean(),
-	request_permissions: z.boolean(),
-	mcp_elicitations: z.boolean(),
-});
-export const approvalPolicySchema = z.union([
-	z.enum(["on-request", "never", "untrusted"]),
-	z.strictObject({ granular: granularApprovalSchema }),
-]);
 /** 名前は定義内の識別子で、ファイル名とは独立して変更できる。 */
 export const agentIdentitySchema = z.strictObject({
 	name: z.string().trim().min(1).max(80),
@@ -50,11 +38,6 @@ export const agentEditSchema = z.strictObject({
 	thinking: piEffortSchema.optional(),
 	reasoningEffort: codexReasoningSchema.optional(),
 	disabled: z.boolean().optional(),
-	sandboxMode: z
-		.enum(["read-only", "workspace-write", "danger-full-access"])
-		.optional(),
-	approvalsReviewer: z.enum(["user", "auto_review"]).optional(),
-	approvalPolicy: approvalPolicySchema.optional(),
 });
 /** 保存前に編集するエージェント定義。外部入力は `agentEditSchema` で検証してから扱う。 */
 export type AgentEdit = z.infer<typeof agentEditSchema>;
@@ -66,6 +49,22 @@ export const piDefaultsSchema = z.strictObject({
 });
 /** Pi のワークスペース既定設定。外部入力は `piDefaultsSchema` で検証してから扱う。 */
 export type PiDefaults = z.infer<typeof piDefaultsSchema>;
+
+/** 管理画面と実行アダプターで同じ保存形式を読み、未知の拡張設定は保存側で保持する。 */
+export const piSubagentSettingsSchema = z.object({
+	...piDefaultsSchema.shape,
+	agentOverrides: z
+		.record(
+			z.string(),
+			z.object({
+				model: agentEditSchema.shape.model,
+				thinking: agentEditSchema.shape.thinking,
+				disabled: agentEditSchema.shape.disabled,
+			}),
+		)
+		.optional(),
+	modelScope: z.unknown().optional(),
+});
 
 /** `current` に固定モデルが残らないよう、保存形式を別々に検証する。 */
 const piHandoffSchema = z.discriminatedUnion("strategy", [
@@ -93,7 +92,7 @@ const codexHandoffSchema = z.discriminatedUnion("strategy", [
 export const handoffSchema = z.strictObject({
 	version: z.literal(1),
 	defaults: z.strictObject({
-		timeoutMs: z.number().int().positive().max(2147483647),
+		timeoutMs: z.number().int().min(1000).max(600000).multipleOf(1000),
 	}),
 	backends: z.strictObject({
 		pi: piHandoffSchema,

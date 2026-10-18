@@ -6,6 +6,7 @@ import type { PiModelControls } from "../PiProvider";
 import type { PiCatalogSnapshot } from "../PiModelCatalog";
 import { isOpenAIEndpoint } from "./OpenAIOAuth";
 import { isRecord } from "@nerita/shared/validation";
+import { reasoningLabel } from "@nerita/shared/settingsCards";
 
 /** ライブカタログの能力を設定へ反映し、Ultra の委譲と Fast の優先処理要求を管理する。 */
 export class OpenAIProviderControls implements PiModelControls {
@@ -79,7 +80,7 @@ export class OpenAIProviderControls implements PiModelControls {
 		this.snapshot();
 		return [
 			...(this.session?.getAvailableThinkingLevels() ?? []).map(
-				(value) => ({ value, name: value }),
+				(value) => ({ value, name: reasoningLabel(value) }),
 			),
 			...(this.ultraLevel !== undefined
 				? [{ value: "ultra", name: "Ultra" }]

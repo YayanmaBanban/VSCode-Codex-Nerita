@@ -14,6 +14,7 @@ import { forkContext } from "./PiForkContext";
 import { PiAgentViews } from "./PiAgentViews";
 import { guardrailRegistry } from "../../security/GuardrailRegistry";
 import { subagentAuthorizer } from "./PiChildSettings";
+import { modelThinking } from "./PiSubagentSettings";
 import type {
 	ToolDefinition,
 	SessionManager,
@@ -70,7 +71,7 @@ export function createPiSubagentTools(
 	const jobs = args[7] ?? new PiJobs(views);
 	args[6] = views;
 	args[7] = jobs;
-	return args[0].length > 0
+	return args[0].length > 0 || args[9] !== undefined
 		? [createPiSubagentTool(...args), createPiJobTool(jobs)]
 		: [];
 }
@@ -86,6 +87,7 @@ export function createPiSubagentTool(
 	views = new PiAgentViews(),
 	jobs = new PiJobs(views),
 	contextSource?: Pick<SessionManager, "buildSessionContext">,
+	readDefinitions?: () => Promise<PiSubagentDefinition[]>,
 ): ToolDefinition {
 	const agents = freezeToolCall(definitions);
 	return {
@@ -104,7 +106,7 @@ export function createPiSubagentTool(
 			combined.throwIfAborted();
 			const targetCwd = resolve(cwd, input.cwd ?? ".");
 			const definition = selectAgent(
-				agents,
+				readDefinitions ? await readDefinitions() : agents,
 				input.agent,
 				input.agentScope,
 			);
@@ -339,7 +341,7 @@ function withModel(
 	definition: PiSubagentDefinition,
 	model: string | undefined,
 ) {
-	return isNonEmptyString(model) ? { ...definition, model } : definition;
+	return isNonEmptyString(model) ? { ...definition, model, thinking: modelThinking(model) ?? definition.thinking } : definition;
 }
 
 /** プロンプトの置換指定を子の起動契約へ渡す。 */

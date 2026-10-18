@@ -43,6 +43,7 @@ export function useAgentEditor(
 				busy: current.busy,
 				dirty: current.dirty,
 				saved: current.saved,
+				onDiscard: current.onDiscard,
 				error: effortError(
 					models,
 					edit.model,

@@ -54,6 +54,12 @@ export const managerStateSchema = z.strictObject({
 			codex: z.string().optional(),
 		})
 		.optional(),
+	currentEfforts: z
+		.strictObject({
+			pi: z.array(z.string()).optional(),
+			codex: z.array(z.string()).optional(),
+		})
+		.optional(),
 	running: z.number().int(),
 	spawned: z.number().int(),
 	errors: z.array(z.string()),
