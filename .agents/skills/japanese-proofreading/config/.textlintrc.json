@@ -1,4 +1,10 @@
 {
+	"spec": {
+		"sentenceMax": 100,
+		"paragraphMax": 200,
+		"listItemMax": 160,
+		"tableMin": 3
+	},
 	"filters": {
 		"comments": true
 	},
