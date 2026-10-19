@@ -8,7 +8,8 @@ description: まとまった変更や指定範囲の日本語を後から校正�
 - [校正ルール](references/Proofreading.md)を読み、静的検査だけでなく説明と実装の一致を確認する。
 - TypeScript / JavaScript の文字列・テンプレートの固定部分・JSX 本文も対象にする。これらの用語・AI スロップを検査し、文章用の textlint プリセットは適用しない。`textlint:review*` の実行時には、意味を確認するためのレビュー用データも出力する。修正前に周辺コードと利用箇所を読み、人が読む文言か機械が読む値かを確認する。
 - Svelte は HTML コメント、`script` 内とテンプレート式内のコメント・文字列、要素の本文と属性値を対象にする。文字列・本文・属性値には TypeScript / JavaScript の文字列と同じ検査を適用する。`style` 内は抽出しない。
-- README・設計文書などの校正では[Markdown 文書のルール](references/Markdown.md)も読む。
+- README・利用ガイド・SKILL.md・設計文書などの校正では[Markdown 文書のルール](references/Markdown.md)も読む。
+- README・利用ガイド・SKILL.md・仕様書など、章立てのある文書の文章と構成を校正するときは[文章の校正](references/Prose.md)も読む。コードコメント・UI 文言には一律適用しない。
 - 仕様書を校正する場合は、通常の校正ルールに加えて[仕様書の校正](references/Spec.md)を読む。
 - 変更分の校正には[変更ファイルのコマンド](references/Cmd-Changed.md)を読む。
 - 全体や指定範囲を変更状態に関係なく校正する場合は[全体・指定範囲のコマンド](references/Cmd-All.md)を読む。
