@@ -10,7 +10,7 @@
 	"mode": "mild",
 	"gitignore": true,
 	"reporters": ["console", "html"],
-	"output": "report/jscpd",
+	"output": "dist/jscpd",
 	"ignore": [
 		"**/*.stories.tsx",
 		"**/*.test.ts",
