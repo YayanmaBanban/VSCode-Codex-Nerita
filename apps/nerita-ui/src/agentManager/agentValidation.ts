@@ -1,5 +1,15 @@
 // 保存スキーマの検証エラーを入力欄ごとに分け、修正が必要な理由を利用者向けの文章で示す。
 import type { z } from "zod";
+import type { BackendId } from "@nerita/shared/backend";
+import type {
+	ManagedAgent,
+	ManagerState,
+} from "@nerita/shared/agentManager/messages";
+import {
+	agentNameError,
+	agentModelError,
+} from "@nerita/shared/agentManager/validation";
+import { effortError } from "@nerita/shared/agentManager/effort";
 import {
 	agentEditSchema,
 	type AgentEdit,
@@ -87,4 +97,56 @@ export function agentFilenameError(filename: string) {
 		return "ファイル名は半角英数字で始め、半角英数字・ハイフン・アンダースコアだけで入力してください（拡張子は不要です）。";
 	}
 	return undefined;
+}
+
+/** Windows の保存先として大文字小文字を区別せず、取得済みの定義と新規ファイル名を照合する。 */
+export function agentFileCollisionError(
+	agents: readonly ManagedAgent[],
+	backend: BackendId,
+	filename: string,
+) {
+	const extension = backend === "codex" ? "toml" : "md";
+	const target = `.${backend}/agents/${filename}.${extension}`.toLowerCase();
+	const exists = agents.some(
+		(agent) =>
+			agent.backend === backend &&
+			(agent.definitionPath ?? agent.id).toLowerCase() === target,
+	);
+	return exists
+		? "同じ保存先の Agent 定義が存在します。別のファイル名を指定してください。"
+		: undefined;
+}
+
+/** 取得済みの設定を使い、各入力欄に対応する保存前の検証結果をまとめる。 */
+export function agentInputErrors(
+	state: ManagerState,
+	backend: BackendId,
+	edit: AgentEdit,
+	agent?: ManagedAgent,
+	filename?: string,
+) {
+	const models = state.models[backend];
+	const effortKey = backend === "pi" ? "thinking" : "reasoningEffort";
+	return {
+		nameError: edit.definition
+			? agentNameError(
+					state.agents,
+					backend,
+					edit.definition.name,
+					agent?.id,
+				)
+			: undefined,
+		fileError:
+			filename === undefined
+				? undefined
+				: agentFileCollisionError(state.agents, backend, filename),
+		error:
+			effortError(
+				models,
+				edit.model,
+				edit[effortKey],
+				agent?.edit.model,
+				agent?.edit[effortKey],
+			) ?? agentModelError(models, edit.model, agent?.edit.model),
+	};
 }

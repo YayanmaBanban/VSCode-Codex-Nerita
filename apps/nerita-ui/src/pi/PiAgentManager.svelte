@@ -49,7 +49,7 @@
 		{/key}
 	{/if}
 	<details class="mt-6">
-		<summary class="cursor-pointer text-sm"
+		<summary inert={props.busy} class="cursor-pointer text-sm"
 			>User 設定・Model scope（閲覧のみ）
 		</summary>
 		<pre class="overflow-auto text-xs">{props.state.piUserSettings}</pre>

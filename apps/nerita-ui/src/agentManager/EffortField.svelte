@@ -5,7 +5,7 @@
 		nonEmptyString,
 	} from "@nerita/shared/valuePredicates";
 	import Field from "./Field.svelte";
-	import { inputStyle } from "./managerFields";
+	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 	import { reasoningLabel } from "@nerita/shared/settingsCards";
 
 	let {
@@ -21,23 +21,35 @@
 		onChange: (value: string | undefined) => void;
 		emptyMessage?: string | undefined;
 	} = $props();
+	let unsupported = $derived(
+		isNonEmptyString(value) && !options.includes(value),
+	);
+	let choices = $derived([
+		{ value: "", name: "未指定" },
+		...(unsupported && value !== undefined
+			? [{ value, name: `${reasoningLabel(value)}（非対応・未確認）` }]
+			: []),
+		...options.map((option) => ({
+			value: option,
+			name: reasoningLabel(option),
+		})),
+	]);
 </script>
 
 <Field {label}
-	><select
-		aria-label={label}
-		class={inputStyle}
-		value={value ?? ""}
-		onchange={(event) =>
-			onChange(nonEmptyString(event.currentTarget.value) ?? undefined)}
-		><option value="">未指定</option
-		>{#if isNonEmptyString(value) && !options.includes(value)}<option
-				{value}
-				disabled>{reasoningLabel(value)}（非対応・未確認）</option
-			>{/if}{#each options as option (option)}<option value={option}
-				>{reasoningLabel(option)}</option
-			>{/each}</select
-	>{#if options.length === 0}<span
+	><ConfigControl
+		appearance="field"
+		option={{
+			id: "handoff-effort",
+			name: label,
+			currentValue: value ?? "",
+			options: choices,
+		}}
+		disabled={false}
+		disabledValues={unsupported && value !== undefined ? [value] : []}
+		onChange={(selected: string) =>
+			onChange(nonEmptyString(selected) ?? undefined)}
+	/>{#if options.length === 0}<span
 			class="text-xs leading-relaxed text-warning">{emptyMessage}</span
 		>{/if}</Field
 >

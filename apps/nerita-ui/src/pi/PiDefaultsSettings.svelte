@@ -6,6 +6,7 @@
 		type PiDefaults,
 	} from "@nerita/shared/agentManager/config";
 	import { effortError } from "@nerita/shared/agentManager/effort";
+	import { agentModelError } from "@nerita/shared/agentManager/validation";
 
 	import { untrack } from "svelte";
 
@@ -27,12 +28,15 @@
 			edit.defaultThinking,
 			defaults.defaultModel,
 			defaults.defaultThinking,
-		),
+		) ?? agentModelError(models, edit.defaultModel, defaults.defaultModel),
+	);
+	let invalid = $derived(
+		!piDefaultsSchema.safeParse(edit).success || isNonEmptyString(error),
 	);
 
 	import { type PiDefaultsSettingsProps } from "./PiDefaultsSettingsParts";
 	import PiDefaultsFields from "./PiDefaultsFields.svelte";
-	import SaveFooter from "../agentManager/SaveFooter.svelte";
+	import AgentManagerFooter from "../agentManager/AgentManagerFooter.svelte";
 	/** 入力欄から受け取った Pi の既定設定を、保存前の下書きとして保持する。 */
 	const setEdit = (value: PiDefaults) => {
 		edit = value;
@@ -43,7 +47,7 @@
 	class="grid gap-4 pb-24"
 	onsubmit={(event) => {
 		event.preventDefault();
-		if (isNonEmptyString(error)) {
+		if (invalid) {
 			return;
 		}
 		save({
@@ -58,12 +62,12 @@
 		保存先:
 		.pi/settings.json。既定値は個別設定やエージェント定義で未指定の場合に使います。上限はすべての子エージェントに適用します。
 	</p>
-	<SaveFooter
+	<AgentManagerFooter
 		{dirty}
 		{saved}
 		{onDiscard}
 		discardDisabled={busy}
-		disabled={busy || isNonEmptyString(error)}
+		disabled={busy || invalid}
 		label="変更を保存"
 	/>
 </form>

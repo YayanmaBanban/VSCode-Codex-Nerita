@@ -1,16 +1,35 @@
 <!-- 実フッターへ編集・保存応答を渡し、一時表示を繰り返し確認するための操作を用意する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
-	import SaveFooter from "../../src/agentManager/SaveFooter.svelte";
+	import AgentManagerFooter from "../../src/agentManager/AgentManagerFooter.svelte";
+	import { provideManagerFeedback } from "../../src/agentManager/agentManagerFeedback";
 
 	let {
 		initial = "hidden",
 		disabled = false,
-	}: { initial?: "hidden" | "dirty" | "saved"; disabled?: boolean } =
-		$props();
+		error = null,
+		onReload,
+	}: {
+		initial?: "hidden" | "dirty" | "saved";
+		disabled?: boolean;
+		error?: string | null;
+		onReload?: () => void;
+	} = $props();
 	let dirty = $state(untrack(() => initial === "dirty"));
 	let saved = $state(untrack(() => initial === "saved"));
 	let generation = $state(0);
+	provideManagerFeedback({
+		get errors() {
+			return error === null ? [] : [error];
+		},
+		get busy() {
+			return disabled;
+		},
+		get reloadRequired() {
+			return error?.includes("再読み込み") === true;
+		},
+		reload: () => onReload?.(),
+	});
 	/** 保存応答の到着を再現し、終了した演出も確認用操作で再生できるようにする。 */
 	function receiveSave() {
 		dirty = false;
@@ -36,5 +55,5 @@
 		/></label
 	>
 	<button type="button" onclick={receiveSave}>保存成功を通知（再生）</button>
-	{#key generation}<SaveFooter {dirty} {saved} {disabled} />{/key}
+	{#key generation}<AgentManagerFooter {dirty} {saved} {disabled} />{/key}
 </form>

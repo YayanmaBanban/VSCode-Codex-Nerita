@@ -11,7 +11,7 @@
 	import Field from "./Field.svelte";
 	import DefinitionField from "./DefinitionField.svelte";
 	import { inputStyle } from "./managerFields";
-	import SaveFooter from "./SaveFooter.svelte";
+	import AgentManagerFooter from "./AgentManagerFooter.svelte";
 	import FieldErrorTooltip from "../ui/FieldErrorTooltip.svelte";
 	import { agentFieldErrors, agentFilenameError } from "./agentValidation";
 
@@ -29,6 +29,8 @@
 		filename,
 		onFilenameChange,
 		onDiscard,
+		nameError,
+		fileError,
 	}: {
 		agent?: ManagedAgent | undefined;
 		models: ManagerModel[];
@@ -43,14 +45,18 @@
 		filename?: string | undefined;
 		onFilenameChange?: ((name: string) => void) | undefined;
 		onDiscard?: (() => void) | undefined;
+		nameError?: string | undefined;
+		fileError?: string | undefined;
 	} = $props();
-	let errors = $derived(agentFieldErrors(edit));
+	let errors = $derived({ name: nameError, ...agentFieldErrors(edit) });
 	let filenameError = $derived(
-		onFilenameChange ? agentFilenameError(filename ?? "") : undefined,
+		onFilenameChange
+			? (agentFilenameError(filename ?? "") ?? fileError)
+			: undefined,
 	);
 	let settingsError = $derived(inputError ?? errors.settings);
 	let invalid = $derived(
-		Object.keys(errors).length > 0 ||
+		Object.values(errors).some(isNonEmptyString) ||
 			isNonEmptyString(inputError) ||
 			isNonEmptyString(filenameError),
 	);
@@ -150,7 +156,7 @@
 			limit={60000}
 		/>
 	</fieldset>
-	<SaveFooter
+	<AgentManagerFooter
 		{onDiscard}
 		discardDisabled={busy}
 		{dirty}

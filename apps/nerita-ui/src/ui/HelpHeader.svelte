@@ -9,12 +9,14 @@
 		title,
 		heading = "h2",
 		helpLabel,
+		disabled = false,
 		actions,
 		children,
 	}: {
 		title: string;
 		heading?: "h1" | "h2";
 		helpLabel: string;
+		disabled?: boolean;
 		actions?: Snippet;
 		children: Snippet;
 	} = $props();
@@ -33,6 +35,7 @@
 					<button
 						{...props}
 						type="button"
+						{disabled}
 						class={cn(
 							"inline-flex size-7 items-center justify-center rounded border-0 bg-transparent p-0 text-muted",
 							"hover:text-foreground focus-visible:outline-2 focus-visible:outline-focus enabled:hover:bg-settings-hover",

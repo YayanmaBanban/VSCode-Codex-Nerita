@@ -132,8 +132,17 @@ export const CodexCurrent: Story = {
 		const effort = canvas.getByRole("combobox", {
 			name: "推論レベル",
 		});
-		await expect(within(effort).getAllByRole("option")).toHaveLength(4);
-		await userEvent.selectOptions(effort, "high");
+		const page = within(context.canvasElement.ownerDocument.body);
+		await userEvent.click(effort);
+		await expect(page.getAllByRole("option")).toHaveLength(4);
+		await userEvent.click(page.getByRole("option", { name: "High" }));
+		await userEvent.click(effort);
+		await userEvent.click(page.getByRole("option", { name: "未指定" }));
+		await userEvent.click(effort);
+		await expect(
+			page.getByRole("option", { selected: true }),
+		).toHaveAttribute("data-value", "");
+		await userEvent.click(page.getByRole("option", { name: "High" }));
 		await userEvent.click(
 			canvas.getByRole("button", { name: "変更を保存" }),
 		);
@@ -159,8 +168,10 @@ export const PiCurrent: Story = {
 	play: async (context) => {
 		const canvas = await openHandoff(context);
 		const effort = canvas.getByRole("combobox", { name: "推論レベル" });
-		await expect(within(effort).getAllByRole("option")).toHaveLength(4);
-		await userEvent.selectOptions(effort, "high");
+		const page = within(context.canvasElement.ownerDocument.body);
+		await userEvent.click(effort);
+		await expect(page.getAllByRole("option")).toHaveLength(4);
+		await userEvent.click(page.getByRole("option", { name: "High" }));
 		await userEvent.click(
 			canvas.getByRole("button", { name: "変更を保存" }),
 		);
@@ -219,12 +230,18 @@ export const NoModels: Story = {
 	args: { initialState: { models: { pi: [], codex: [] } } },
 	play: async (context) => {
 		const canvas = await openHandoff(context);
+		const mode = canvas.getByRole("combobox", {
+			name: "モデル選択のモード",
+		});
+		await userEvent.click(mode);
 		await expect(
-			canvas.getByRole("option", { name: "モデルを固定する" }),
-		).toBeDisabled();
-		await expect(
-			canvas.getByRole("combobox", { name: "モデル選択のモード" }),
-		).toHaveValue("current");
+			within(context.canvasElement.ownerDocument.body).getByRole(
+				"option",
+				{ name: "モデルを固定する" },
+			),
+		).toHaveAttribute("aria-disabled", "true");
+		await userEvent.keyboard("{Escape}");
+		await expect(mode).toHaveTextContent("現在のセッションのモデルを使用");
 	},
 };
 export const CurrentUnavailable: Story = {
@@ -256,15 +273,25 @@ async function verifyFixed(
 	const section = within(
 		canvas.getByRole("region", { name: `${backend} ハンドオフ` }),
 	);
-	await userEvent.selectOptions(
+	await userEvent.click(
 		section.getByRole("combobox", { name: "モデル選択のモード" }),
-		"fixed",
+	);
+	await userEvent.click(
+		within(context.canvasElement.ownerDocument.body).getByRole("option", {
+			name: "モデルを固定する",
+		}),
 	);
 	const model = section.getByRole("combobox", { name: "モデル" });
-	await expect(model).toHaveValue(expected);
+	await userEvent.click(model);
+	const page = within(context.canvasElement.ownerDocument.body);
+	await expect(page.getByRole("option", { selected: true })).toHaveAttribute(
+		"data-value",
+		expected,
+	);
 	await expect(
-		within(model).queryByRole("option", { name: "モデルを選択" }),
+		page.queryByRole("option", { name: "モデルを選択" }),
 	).not.toBeInTheDocument();
+	await userEvent.keyboard("{Escape}");
 	await expect(
 		canvas.queryByText(/確認できません|取得できません/),
 	).not.toBeInTheDocument();

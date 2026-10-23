@@ -45,6 +45,7 @@
 		"relative flex w-full min-w-0 items-center gap-2 rounded-sm border-0 bg-transparent py-2 text-left break-words",
 		"focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus enabled:hover:bg-settings-hover",
 		"aria-[current=page]:bg-settings-hover aria-[current=page]:font-semibold",
+		"disabled:cursor-not-allowed disabled:opacity-50",
 	);
 	/** サイドバーの上端位置を高さの計算に使い、画面下部に余分な隙間ができるのを防ぐ。 */
 	function fillHeight(node: HTMLElement) {
@@ -80,6 +81,7 @@
 	>
 		<input
 			type="search"
+			disabled={busy}
 			aria-label="エージェントを検索"
 			placeholder="エージェントを検索"
 			bind:value={query}

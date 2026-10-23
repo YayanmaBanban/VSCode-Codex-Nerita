@@ -3,6 +3,7 @@
 	import type { AgentManagerProps } from "../agentManager/managerProps";
 	import AgentBrowser from "../agentManager/AgentBrowser.svelte";
 	import CodexAgentEditor from "./CodexAgentEditor.svelte";
+	import AgentManagerFooter from "../agentManager/AgentManagerFooter.svelte";
 
 	let props: AgentManagerProps = $props();
 	let agents = $derived(
@@ -25,5 +26,11 @@
 				agent={creating ? undefined : agent}
 			/>{/key}{:else}<p class="text-sm text-muted">
 			「新しい Agent」から定義を作成できます。
-		</p>{/if}</AgentBrowser
+		</p>
+		<AgentManagerFooter
+			dirty={false}
+			saved={false}
+			disabled
+			showSave={false}
+		/>{/if}</AgentBrowser
 >

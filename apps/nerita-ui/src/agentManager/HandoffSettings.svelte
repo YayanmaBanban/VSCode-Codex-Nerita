@@ -15,7 +15,7 @@
 	import { buttonStyle } from "./managerFields";
 	import NumericField from "../ui/NumericField.svelte";
 	import HelpHeader from "../ui/HelpHeader.svelte";
-	import SaveFooter from "./SaveFooter.svelte";
+	import AgentManagerFooter from "./AgentManagerFooter.svelte";
 
 	let {
 		state: hostState,
@@ -36,7 +36,6 @@
 	} = $props();
 	let config = $state.raw<HandoffConfig>(untrack(() => hostState.handoff));
 	let repair = $state(false);
-	let error = $state<string>();
 	let timeoutSeconds = $derived(
 		Number.isFinite(config.defaults.timeoutMs)
 			? config.defaults.timeoutMs / 1000
@@ -69,10 +68,8 @@
 		}
 		const parsed = handoffSchema.safeParse(config);
 		if (!parsed.success) {
-			error = "モデルとタイムアウトの設定を確認してください。";
 			return;
 		}
-		error = undefined;
 		save({
 			type: "handoff",
 			backend: hostState.activeBackend,
@@ -82,7 +79,11 @@
 </script>
 
 <form class="grid gap-5 pb-24" onsubmit={submit}>
-	<HelpHeader title="ハンドオフ設定" helpLabel="ハンドオフ設定のヘルプ">
+	<HelpHeader
+		title="ハンドオフ設定"
+		helpLabel="ハンドオフ設定のヘルプ"
+		disabled={busy}
+	>
 		<p class="m-0">
 			セッションの内容を要約し、引き継ぎ文を生成するモデルを設定します。
 		</p>
@@ -102,9 +103,6 @@
 				}}>初期値から設定を作り直す</button
 			>
 		</div>{/if}
-	{#if isNonEmptyString(error)}<p role="alert" class="text-sm">
-			{error}
-		</p>{/if}
 	<fieldset disabled={locked} class="m-0 grid min-w-0 gap-5 border-0 p-0">
 		<div class="grid gap-5">
 			<HandoffBackendSettings
@@ -120,6 +118,7 @@
 			class="group min-w-0 rounded-lg border border-input-border p-4"
 		>
 			<summary
+				inert={busy}
 				class={cn(
 					"flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold",
 					"focus-visible:outline-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden",
@@ -156,7 +155,7 @@
 			</div>
 		</details>
 	</fieldset>
-	<SaveFooter
+	<AgentManagerFooter
 		{onDiscard}
 		discardDisabled={busy}
 		{dirty}

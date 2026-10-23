@@ -9,7 +9,7 @@
 	import Field from "./Field.svelte";
 	import EffortField from "./EffortField.svelte";
 	import HandoffModelField from "./HandoffModelField.svelte";
-	import { inputStyle } from "./managerFields";
+	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 
 	let {
 		backend,
@@ -81,15 +81,24 @@
 >
 	<h3 class="m-0 font-semibold">{backend === "pi" ? "Pi" : "Codex"}</h3>
 	<Field label="モデル選択のモード"
-		><select
-			class={inputStyle}
-			value={item.strategy}
-			onchange={(event) => strategy(event.currentTarget.value)}
-			><option value="current">現在のセッションのモデルを使用</option
-			><option value="fixed" disabled={state.models[backend].length === 0}
-				>モデルを固定する</option
-			></select
-		></Field
+		><ConfigControl
+			appearance="field"
+			option={{
+				id: `${backend}-handoff-strategy`,
+				name: "モデル選択のモード",
+				currentValue: item.strategy,
+				options: [
+					{
+						value: "current",
+						name: "現在のセッションのモデルを使用",
+					},
+					{ value: "fixed", name: "モデルを固定する" },
+				],
+			}}
+			disabled={false}
+			disabledValues={state.models[backend].length === 0 ? ["fixed"] : []}
+			onChange={strategy}
+		/></Field
 	>
 	{#if item.strategy === "fixed"}<HandoffModelField
 			label="モデル"

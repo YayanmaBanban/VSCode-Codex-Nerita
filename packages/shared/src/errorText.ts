@@ -1,16 +1,17 @@
 // エラーを通信・表示用の文字列へ変換し、任意のオブジェクト全体を公開しない。
 import { isRecord } from "./validation";
 
-/** Error の名前と本文を保ち、未知のオブジェクトは message だけを取り出す。 */
+/** エラー種別の接頭詞を付けず、未知のオブジェクトも message だけを取り出す。 */
 export function errorText(error: unknown): string {
 	if (typeof error === "string") {
-		return error;
+		return withoutErrorPrefix(error);
 	}
 	if (error instanceof Error) {
-		return error.toString();
+		const message = withoutErrorPrefix(error.message);
+		return message.length > 0 ? message : "不明なエラー";
 	}
 	if (isRecord(error) && typeof error.message === "string") {
-		return error.message;
+		return withoutErrorPrefix(error.message);
 	}
 
 	if (typeof error === "number") {
@@ -26,4 +27,9 @@ export function errorText(error: unknown): string {
 		return String(error);
 	}
 	return "不明なエラー";
+}
+
+/** 外部から文字列で渡された場合も、先頭に付いた汎用の Error 接頭詞を除く。 */
+function withoutErrorPrefix(message: string): string {
+	return message.replace(/^(?:Error:\s*)+/, "");
 }

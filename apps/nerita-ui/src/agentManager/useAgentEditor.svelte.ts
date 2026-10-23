@@ -4,7 +4,7 @@ import {
 	agentEditSchema,
 	type AgentEdit,
 } from "@nerita/shared/agentManager/config";
-import { effortError } from "@nerita/shared/agentManager/effort";
+import { agentInputErrors } from "./agentValidation";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import type { AgentManagerProps } from "./managerProps";
 /** `{#key}` 内の編集フォームが生成されたときだけ初期値を読み込み、保存失敗時は下書きを維持する。 */
@@ -18,7 +18,6 @@ export function useAgentEditor(
 	const props = () => (typeof input === "function" ? input() : input);
 	let edit = $state.raw<AgentEdit>(initialEdit());
 	let filename = $state("");
-	const effortKey = backend === "pi" ? "thinking" : "reasoningEffort";
 	/** エージェントの下書きを更新し、未保存の変更があることを親へ伝える。 */
 	const change = (next: AgentEdit) => {
 		edit = next;
@@ -39,18 +38,18 @@ export function useAgentEditor(
 				agent,
 				edit,
 				models,
+				...agentInputErrors(
+					current.state,
+					backend,
+					edit,
+					agent,
+					agent ? undefined : filename,
+				),
 				onChange: change,
 				busy: current.busy,
 				dirty: current.dirty,
 				saved: current.saved,
 				onDiscard: current.onDiscard,
-				error: effortError(
-					models,
-					edit.model,
-					edit[effortKey],
-					agent?.edit.model,
-					agent?.edit[effortKey],
-				),
 				filename,
 				onFilenameChange: agent
 					? undefined

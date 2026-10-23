@@ -264,10 +264,14 @@ void test("通信の状態と操作種別は文字列だけを受理し、同じ
 	assert.equal(isAsyncTask({ ...task, state: ["running"] }), false);
 });
 
-void test("エラー表示は名前と本文を保持し、未知のオブジェクト全体や任意の文字列化処理を使わない", () => {
+void test("エラー表示は本文だけを使い、未知のオブジェクト全体や任意の文字列化処理を使わない", () => {
+	assert.equal(errorText(new TypeError("invalid input")), "invalid input");
+	assert.equal(errorText(new Error("fixture failure")), "fixture failure");
+	assert.ok(isNonEmptyString(errorText(new Error())));
+	assert.equal(errorText("Error: Error: fixture failure"), "fixture failure");
 	assert.equal(
-		errorText(new TypeError("invalid input")),
-		"TypeError: invalid input",
+		errorText({ message: "Error: remote failure" }),
+		"remote failure",
 	);
 	assert.equal(errorText("cancelled"), "cancelled");
 	assert.equal(

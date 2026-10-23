@@ -27,6 +27,7 @@ export const storybookDependencies = [
 	"@lucide/svelte/icons/chevron-left",
 	"@lucide/svelte/icons/chevron-right",
 	"@lucide/svelte/icons/chevron-up",
+	"@lucide/svelte/icons/circle-alert",
 	"@lucide/svelte/icons/columns-2",
 	"@lucide/svelte/icons/component",
 	"@lucide/svelte/icons/copy",

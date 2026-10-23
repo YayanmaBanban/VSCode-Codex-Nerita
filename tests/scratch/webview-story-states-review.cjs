@@ -20,7 +20,7 @@ const groups = {
 		"handoff-save-error",
 		"unsaved-navigation",
 	],
-	"agent-manager-save-footer": ["hidden", "unsaved", "disabled"],
+	"agent-manager-footer": ["hidden", "unsaved", "disabled"],
 	"agent-manager-handoff-models": [
 		"model-update-while-editing",
 		"pi-unspecified-model",

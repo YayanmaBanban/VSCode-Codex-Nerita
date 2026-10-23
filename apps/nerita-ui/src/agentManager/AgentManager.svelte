@@ -1,8 +1,8 @@
 <!-- バックエンドに応じて管理画面を選び、選択と未保存入力の破棄を確認する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
-	import { mergeProps } from "bits-ui";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+	import { mergeProps } from "bits-ui";
 	import RotateCw from "@lucide/svelte/icons/rotate-cw";
 	import UserPlus from "@lucide/svelte/icons/user-plus";
 	import { cn } from "cnfast";
@@ -15,6 +15,8 @@
 		type ManagerSave,
 	} from "./useAgentManager.svelte";
 	import HandoffSettings from "./HandoffSettings.svelte";
+	import AgentManagerFooter from "./AgentManagerFooter.svelte";
+	import { provideManagerFeedback } from "./agentManagerFeedback";
 	import CodexAgentManager from "../codex/CodexAgentManager.svelte";
 	import PiAgentManager from "../pi/PiAgentManager.svelte";
 	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
@@ -41,6 +43,21 @@
 			savedSelection = undefined;
 		},
 	);
+	provideManagerFeedback({
+		get errors() {
+			return isNonEmptyString(editor.error)
+				? [editor.error]
+				: (editor.state?.errors ?? []);
+		},
+		get busy() {
+			return editor.busy;
+		},
+		get reloadRequired() {
+			return editor.reloadRequired;
+		},
+		reload,
+	});
+	let locked = $derived(editor.busy || editor.reloadRequired);
 	const BackendManager = $derived(
 		editor.state?.activeBackend === "pi"
 			? PiAgentManager
@@ -60,6 +77,9 @@
 	);
 	/** 未保存の変更がある場合は画面移動を保留し、変更がなければその場で移動する。 */
 	function navigate(action: () => void) {
+		if (locked) {
+			return;
+		}
 		if (dirty) {
 			pending = action;
 		} else {
@@ -67,15 +87,34 @@
 			action();
 		}
 	}
+	/** 再読み込みを要求するエラーからは直接復旧し、通常の再読み込みでは未保存の変更を確認する。 */
+	function reload() {
+		if (editor.reloadRequired) {
+			editor.reload();
+			return;
+		}
+		navigate(() => editor.reload());
+	}
 	/** 未保存の変更を破棄し、保留していた操作で画面を切り替える。 */
 	function discard() {
+		if (locked) {
+			return;
+		}
 		dirty = false;
 		savedTarget = undefined;
 		pending?.();
 		pending = null;
 	}
+	/** 修正可能な保存失敗の表示を外し、現在の入力に対する検証へ切り替える。 */
+	function markDirty() {
+		editor.clearError();
+		dirty = true;
+	}
 	/** 保存後に選び直すエージェントを記録し、保存要求を共通の管理処理へ渡す。 */
 	const save: ManagerSave = (change) => {
+		if (locked) {
+			return;
+		}
 		if (change.type === "createAgent") {
 			savedSelection =
 				change.backend === "codex"
@@ -92,6 +131,22 @@
 		savedTarget = targetFor(change);
 		editor.save(change);
 	};
+	const formProps = $derived.by(() => {
+		if (!editor.state) {
+			return undefined;
+		}
+		return {
+			state: editor.state,
+			busy: locked,
+			dirty,
+			saved:
+				editor.saved &&
+				savedTarget === (tab === "handoff" ? "handoff" : selected),
+			save,
+			onDirty: markDirty,
+			onDiscard: pending ? discard : undefined,
+		};
+	});
 	/** 保存完了を表示する対象を、保存要求と名前変更後の選択先から決める。 */
 	function targetFor(change: Parameters<ManagerSave>[0]) {
 		if (change.type === "createAgent") {
@@ -135,7 +190,7 @@
 				{#each [["agents", "Agents"], ["handoff", "ハンドオフ"]] as [id, label] (id)}<button
 						class={tabStyle}
 						aria-pressed={tab === id}
-						disabled={editor.busy}
+						disabled={locked}
 						onclick={() => {
 							if (id !== tab) {
 								navigate(
@@ -155,8 +210,7 @@
 							{...mergeProps(
 								{ ...props },
 								{
-									onclick: () =>
-										navigate(() => editor.reload()),
+									onclick: reload,
 								},
 							)}
 							class={headerAction}
@@ -176,7 +230,7 @@
 								)}
 								class={headerAction}
 								aria-label="新しいエージェントを追加"
-								disabled={editor.busy ||
+								disabled={locked ||
 									!editor.state ||
 									selected === "new"}
 								><UserPlus
@@ -188,41 +242,23 @@
 			</div>
 		</div>
 	</header>
-	{#if isNonEmptyString(editor.error)}<p
-			role="alert"
-			class="m-0 text-sm break-words"
-		>
-			{editor.error}
-		</p>{/if}
-	{#if editor.state}{#each editor.state.errors as error, index (index)}<p
-				role="alert"
-				class="m-0 text-sm break-words"
-			>
-				{error}
-			</p>{/each}{#key `${editor.state.activeBackend}:${editor.revision}`}{#if tab === "handoff"}<HandoffSettings
-					state={editor.state}
-					busy={editor.busy}
-					{dirty}
-					saved={editor.saved && savedTarget === "handoff"}
-					{save}
-					onDirty={() => (dirty = true)}
-					onDiscard={pending ? discard : undefined}
+	{#if formProps}{#key `${formProps.state.activeBackend}:${editor.revision}`}{#if tab === "handoff"}<HandoffSettings
+					{...formProps}
 				/>{:else}<BackendManager
-					state={editor.state}
-					busy={editor.busy}
-					{dirty}
+					{...formProps}
 					{advancedSettings}
-					saved={editor.saved && savedTarget === selected}
-					{save}
 					{selected}
 					onSelect={(id: string) => {
 						if (id !== selected) {
 							navigate(() => (selected = id));
 						}
 					}}
-					onDirty={() => (dirty = true)}
-					onDiscard={pending ? discard : undefined}
-				/>{/if}{/key}{/if}
+				/>{/if}{/key}{:else}<AgentManagerFooter
+			dirty={false}
+			saved={false}
+			disabled
+			showSave={false}
+		/>{/if}
 </main>
 
 <style>

@@ -21,6 +21,7 @@
 		icon,
 		chevron = "down",
 		appearance = "compact",
+		disabledValues = [],
 	}: {
 		option: ConfigOption;
 		disabled: boolean;
@@ -29,6 +30,7 @@
 		icon?: "user" | "bot" | undefined;
 		chevron?: "down" | "right";
 		appearance?: "compact" | "field";
+		disabledValues?: readonly string[];
 	} = $props();
 	let current = $derived(
 		option.options.find((choice) => choice.value === option.currentValue),
@@ -113,7 +115,13 @@
 								<Select.Item
 									{...tooltipProps}
 									value={choice.value}
+									disabled={disabledValues.includes(
+										choice.value,
+									)}
 									label={choice.name}
+									aria-disabled={disabledValues.includes(
+										choice.value,
+									)}
 									class={cn(
 										"config-item flex min-h-[36px] cursor-pointer items-center justify-between gap-[12px] rounded-[5px]",
 										"px-[10px] py-[8px] text-[12px] leading-[1.5]",
@@ -121,6 +129,7 @@
 										"[outline:none]",
 										"hover:bg-menu-hover",
 										"data-highlighted:bg-menu-hover",
+										"data-disabled:cursor-not-allowed data-disabled:opacity-50",
 									)}
 								>
 									{#snippet children({ selected })}

@@ -336,7 +336,7 @@ export const ValidationRecovered: Story = {
 		await expect(
 			canvas.getByRole("button", { name: "変更を保存" }),
 		).toBeDisabled();
-		await userEvent.type(filename, "reviewer");
+		await userEvent.type(filename, "new-reviewer");
 		await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
 		await expect(filename).not.toHaveAttribute("aria-invalid");
 		await expect(filename).not.toHaveAttribute("aria-describedby");
@@ -441,9 +441,14 @@ export const HandoffUnsupportedEffort: Story = {
 			canvas.getByRole("region", { name: "codex ハンドオフ" }),
 		);
 		await expect(backend.getByRole("alert")).toBeVisible();
-		await expect(
+		await userEvent.click(
 			backend.getByRole("combobox", { name: "推論レベル" }),
-		).toHaveValue("high");
+		);
+		const page = within(context.canvasElement.ownerDocument.body);
+		const selected = page.getByRole("option", { selected: true });
+		await expect(selected).toHaveAttribute("data-value", "high");
+		await expect(selected).toHaveAttribute("aria-disabled", "true");
+		await userEvent.keyboard("{Escape}");
 	},
 };
 export const HandoffUnknownModel: Story = {
@@ -481,7 +486,18 @@ export const HandoffSaveError: Story = {
 		await userEvent.click(
 			canvas.getByRole("button", { name: "変更を保存" }),
 		);
-		await expect(await canvas.findByRole("alert")).toBeVisible();
+		const alert = await canvas.findByRole("alert");
+		await waitFor(() => expect(alert).toBeVisible());
+		await expect(timeout).toBeDisabled();
+		await expect(
+			canvas.getByRole("combobox", { name: "モデル選択のモード" }),
+		).toBeDisabled();
+		await expect(
+			canvas.getByRole("combobox", { name: "推論レベル" }),
+		).toBeDisabled();
+		await expect(
+			canvas.getByRole("button", { name: "ハンドオフ設定のヘルプ" }),
+		).toBeDisabled();
 	},
 };
 

@@ -1,5 +1,9 @@
 // 読み取った世代を照合し、設定ごとの保存先へ必要なキーだけを書き込む。
 import { errorText } from "@nerita/shared/errorText";
+import {
+	agentNameError,
+	agentModelError,
+} from "@nerita/shared/agentManager/validation";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import {
 	applyEdits,
@@ -346,14 +350,9 @@ export class AgentManagerStore {
 		name: string,
 		id?: string,
 	) {
-		const matchesSome = agents.some(
-			(agent) =>
-				agent.backend === backend &&
-				agent.name === name &&
-				agent.id !== id,
-		);
-		if (matchesSome) {
-			throw new Error("同名の Agent が存在します。");
+		const error = agentNameError(agents, backend, name, id);
+		if (isNonEmptyString(error)) {
+			throw new Error(error);
 		}
 	}
 
@@ -383,14 +382,9 @@ export class AgentManagerStore {
 		model: string | undefined,
 		previous?: string,
 	) {
-		const matchesIsNonEmptyString =
-			isNonEmptyString(model) &&
-			model !== previous &&
-			!this.models(backend).some((item) => item.value === model);
-		if (matchesIsNonEmptyString) {
-			throw new Error(
-				"モデル一覧を再読み込みし、利用可能なモデルから選択してください。",
-			);
+		const error = agentModelError(this.models(backend), model, previous);
+		if (isNonEmptyString(error)) {
+			throw new Error(error);
 		}
 	}
 }

@@ -73,11 +73,14 @@ export function mockBridge(
 		if (mode === "saving") {
 			return;
 		}
-		if (mode === "conflict") {
+		if (["conflict", "validation-error", "reload-failure"].includes(mode)) {
 			publish({
 				type: "reply",
 				id: message.id,
-				error: "設定が変更されています。再読み込みしてから保存してください。",
+				error:
+					mode === "validation-error"
+						? "同名の Agent が存在します。"
+						: "設定が変更されています。再読み込みしてから保存してください。",
 				notice: "",
 			});
 			return;
@@ -118,28 +121,44 @@ export function mockBridge(
 			onRequest(message);
 			queueMicrotask(() => {
 				if (message.type === "ready" || message.type === "reload") {
-					if (
-						mode === "backend-switch" &&
-						message.type === "reload"
-					) {
-						state.activeBackend =
-							state.activeBackend === "pi" ? "codex" : "pi";
-					}
-					publish(state);
-					if (mode === "initialization-error") {
-						publish({
-							type: "reply",
-							id: 0,
-							error: "管理画面の初期化に失敗しました。再読み込みしてください。",
-							notice: "",
-						});
-					}
+					publishInitialState(mode, message.type, state, publish);
 				} else if ("generation" in message) {
 					save(message);
 				}
 			});
 		},
 	};
+}
+
+/** 初回だけの取得失敗と、再読み込みによる復旧・接続先変更を通信境界で再現する。 */
+function publishInitialState(
+	mode: string,
+	type: "ready" | "reload",
+	state: ManagerState,
+	publish: (message: ManagerReply) => void,
+) {
+	if (mode === "reload-failure" && type === "reload") {
+		publish({
+			type: "reply",
+			id: 0,
+			error: "設定を読み込めませんでした。",
+			notice: "",
+		});
+		return;
+	}
+	if (mode === "initialization-error" && type === "ready") {
+		publish({
+			type: "reply",
+			id: 0,
+			error: "管理画面の初期化に失敗しました。再読み込みしてください。",
+			notice: "",
+		});
+		return;
+	}
+	if (mode === "backend-switch" && type === "reload") {
+		state.activeBackend = state.activeBackend === "pi" ? "codex" : "pi";
+	}
+	publish(state);
 }
 
 /** 名前変更後の ID も含め、保存後の表示用スナップショットへ編集値を反映する。 */
