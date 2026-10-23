@@ -31,7 +31,8 @@
 	</p>
 	{#if snapshot.resources.length === 0}
 		<p class="m-0 text-sm">実行後に検出結果を表示します。</p>
-	{/if}{#each snapshot.resources as resource (resource.id)}
+	{/if}
+	{#each snapshot.resources as resource (resource.id)}
 		<details class="rounded border border-input-border p-3 text-sm">
 			<summary
 				>{`${resource.kind} · ${resource.tool ?? "共通"} · ${resource.access}`}</summary

@@ -95,8 +95,7 @@
 	})();
 </script>
 
-<ChatApp {bridge} /><output hidden aria-label="照合完了数">{resolved}</output
-><output hidden aria-label="開いたコード">{opened}</output><output
-	hidden
-	aria-label="送信した参照">{sent}</output
->
+<ChatApp {bridge} />
+<output hidden aria-label="照合完了数">{resolved}</output>
+<output hidden aria-label="開いたコード">{opened}</output>
+<output hidden aria-label="送信した参照">{sent}</output>

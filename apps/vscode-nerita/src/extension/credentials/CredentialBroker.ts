@@ -121,7 +121,9 @@ export class CredentialBroker {
 		const provider = this.providers.get(binding.provider.type);
 		const candidates = await provider.inspect(requirement, binding, signal);
 		if (candidates.length !== 1) {
-			throw new Error("対象に一致する資格情報の候補がないか、複数あります。");
+			throw new Error(
+				"対象に一致する資格情報の候補がないか、複数あります。",
+			);
 		}
 		const permission = credentialPermission(requirement, route, binding);
 		const approved = await authorize(

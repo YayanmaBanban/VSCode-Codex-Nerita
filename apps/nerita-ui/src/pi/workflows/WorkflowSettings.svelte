@@ -41,7 +41,8 @@
 							},
 						})}
 				/></label
-			><label
+			>
+			<label
 				>制限時間（秒）
 				<input
 					type="number"

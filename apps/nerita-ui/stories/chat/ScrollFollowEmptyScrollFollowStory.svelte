@@ -19,6 +19,7 @@
 		}}
 	>
 		カードをまとめて受信
-	</button> <button onclick={() => control.answer()}>回答を受信</button>
+	</button>
+	<button onclick={() => control.answer()}>回答を受信</button>
 </div>
 <ChatApp bridge={control.bridge}></ChatApp>

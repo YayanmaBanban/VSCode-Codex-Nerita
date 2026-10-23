@@ -24,23 +24,31 @@
 	} = $props();
 </script>
 
-{#if entry.kind === "agent"}{@render renderAgent?.(entry.agent)}
-{:else if entry.kind === "tool"}
-	{#if entry.tool.parentToolCallId}<div
-			class="nested-tool my-[8px] border-0 border-l border-solid border-panel-border pl-[12px]"
-		>
-			<div class="text-[12px] [overflow-wrap:anywhere] text-muted">
-				{entry.parent
-					? `親ツール: ${entry.parent.title}`
-					: "入れ子のツール"}
+{#if entry.kind === "agent"}
+	{@render renderAgent?.(entry.agent)}
+{:else}
+	{#if entry.kind === "tool"}
+		{#if entry.tool.parentToolCallId}
+			<div
+				class="nested-tool my-[8px] border-0 border-l border-solid border-panel-border pl-[12px]"
+			>
+				<div class="text-[12px] [overflow-wrap:anywhere] text-muted">
+					{entry.parent
+						? `親ツール: ${entry.parent.title}`
+						: "入れ子のツール"}
+				</div>
+				{@render renderTool?.(entry.tool)}
 			</div>
+		{:else}
 			{@render renderTool?.(entry.tool)}
-		</div>
-	{:else}{@render renderTool?.(entry.tool)}{/if}
-{:else}<MessageEntry
-		message={entry.message}
-		{send}
-		target={entry.previousUser}
-		{jump}
-		{register}
-	/>{/if}
+		{/if}
+	{:else}
+		<MessageEntry
+			message={entry.message}
+			{send}
+			target={entry.previousUser}
+			{jump}
+			{register}
+		/>
+	{/if}
+{/if}

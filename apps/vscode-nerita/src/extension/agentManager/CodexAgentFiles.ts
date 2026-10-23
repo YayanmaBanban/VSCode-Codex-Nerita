@@ -4,9 +4,7 @@ import { fsErrorCode } from "../runtime/FsError";
 import { readdir } from "node:fs/promises";
 import { parse } from "smol-toml";
 import { z } from "zod";
-import {
-	codexReasoningSchema,
-} from "@nerita/shared/agentManager/config";
+import { codexReasoningSchema } from "@nerita/shared/agentManager/config";
 import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 import { readWorkspaceFile, workspaceFile } from "./WorkspaceFiles";
 
@@ -42,7 +40,9 @@ export async function codexAgentFiles(root: string) {
 		try {
 			const text = await readWorkspaceFile(root, file);
 			if (text === undefined) {
-				throw new Error("Codex エージェントの定義ファイルが見つかりません。");
+				throw new Error(
+					"Codex エージェントの定義ファイルが見つかりません。",
+				);
 			}
 			files[file] = text;
 			const data = definitionSchema.parse(parse(text));

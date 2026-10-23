@@ -89,11 +89,13 @@
 		</p>
 		<p class="m-0 mt-1">保存先: <code>.nerita/handoff.json</code></p>
 	</HelpHeader>
-	{#if isNonEmptyString(hostState.handoffError)}<div
+	{#if isNonEmptyString(hostState.handoffError)}
+		<div
 			role="alert"
 			class="grid gap-3 rounded-md border border-input-border p-3 text-sm break-words"
 		>
-			<span>{hostState.handoffError}</span><button
+			<span>{hostState.handoffError}</span>
+			<button
 				class={buttonStyle}
 				type="button"
 				disabled={busy || repair}
@@ -102,7 +104,8 @@
 					onDirty?.();
 				}}>初期値から設定を作り直す</button
 			>
-		</div>{/if}
+		</div>
+	{/if}
 	<fieldset disabled={locked} class="m-0 grid min-w-0 gap-5 border-0 p-0">
 		<div class="grid gap-5">
 			<HandoffBackendSettings

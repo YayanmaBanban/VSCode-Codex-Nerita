@@ -24,8 +24,9 @@
 	)}
 >
 	<div class="flex items-center gap-1">
-		<SettingsTooltip content="Intentの作成"
-			>{#snippet children({ props })}<button
+		<SettingsTooltip content="Intentの作成">
+			{#snippet children({ props })}
+				<button
 					{...props}
 					type="button"
 					aria-label="Intentの作成"
@@ -36,10 +37,12 @@
 					disabled={ui.creation.pending}
 					onclick={() => ui.creation.setCreating(true)}
 					><Plus size={16} aria-hidden="true" /></button
-				>{/snippet}</SettingsTooltip
-		>
-		<SettingsTooltip content="再読み込み"
-			>{#snippet children({ props })}<button
+				>
+			{/snippet}
+		</SettingsTooltip>
+		<SettingsTooltip content="再読み込み">
+			{#snippet children({ props })}
+				<button
 					{...props}
 					type="button"
 					aria-label="再読み込み"
@@ -52,13 +55,14 @@
 							type: "dlc/read",
 							requestId: crypto.randomUUID(),
 						})}><RotateCw size={16} aria-hidden="true" /></button
-				>{/snippet}</SettingsTooltip
-		>
+				>
+			{/snippet}
+		</SettingsTooltip>
 	</div>
 	<nav aria-label="Intent の選択" class="flex flex-col gap-2">
-		{#if ui.view.intents.length === 0}<p class="text-muted">
-				Intentがありません
-			</p>{/if}
+		{#if ui.view.intents.length === 0}
+			<p class="text-muted">Intentがありません</p>
+		{/if}
 		{#each ui.view.intents as intent (intent.intentId)}
 			{@const selected = intent.intentId === ui.selected?.intentId}
 			<div

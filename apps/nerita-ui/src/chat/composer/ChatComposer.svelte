@@ -46,11 +46,15 @@
 </script>
 
 {#if props.visible}
-	{#if submission.notice}{#key submission.notice.id}<NotificationCard
+	{#if submission.notice}
+		{#key submission.notice.id}
+			<NotificationCard
 				onClose={submission.dismissNotice}
 				backgroundColor="var(--nerita-input-validation-error-background)"
 				children={submission.notice.text}
-			/>{/key}{/if}
+			/>
+		{/key}
+	{/if}
 	<Composer
 		bridge={props.bridge}
 		state={props.state}

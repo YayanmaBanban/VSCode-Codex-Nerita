@@ -23,8 +23,7 @@
 
 {#each segments as segment, index (index)}
 	{@const target = targets.get(segment)}
-	{#if target}<MessageReferenceChip
-			path={target}
-			{send}
-		/>{:else}{segment}{/if}
+	{#if target}
+		<MessageReferenceChip path={target} {send} />
+	{:else}{segment}{/if}
 {/each}

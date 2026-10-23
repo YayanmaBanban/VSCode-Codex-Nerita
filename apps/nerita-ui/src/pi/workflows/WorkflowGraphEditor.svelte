@@ -74,10 +74,12 @@
 	};
 </script>
 
-{#if externalInvalid}<p role="alert" class="p-4">
+{#if externalInvalid}
+	<p role="alert" class="p-4">
 		文書がグラフで扱えない内容に更新されました。TOML
 		編集に切り替えて修正してください。
-	</p>{:else}
+	</p>
+{:else}
 	<div class="workflow-graph-layout grid min-h-0 flex-1">
 		<WorkflowGraphPane
 			{...{
@@ -87,7 +89,8 @@
 				step,
 				attempt,
 			}}
-		/><WorkflowInspector
+		/>
+		<WorkflowInspector
 			{...{
 				workflow,
 				update,

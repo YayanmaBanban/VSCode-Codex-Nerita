@@ -16,11 +16,11 @@
 </script>
 
 <section class="tool-diff min-w-0" aria-label={`${location.path} の差分`}>
-	{#if !hunks || hunks.length === 0}<div
-			class="my-[8px] flex min-w-0 items-center text-[12px]"
-		>
+	{#if !hunks || hunks.length === 0}
+		<div class="my-[8px] flex min-w-0 items-center text-[12px]">
 			<DiffFileButton {...location} />
-		</div>{/if}
+		</div>
+	{/if}
 	{#each hunks ?? [] as hunk, index (index)}
 		<DiffHunkView {hunk} {...location} />
 	{/each}

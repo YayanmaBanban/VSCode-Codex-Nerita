@@ -3,10 +3,6 @@
 	"compilerOptions": {
 		"rootDir": "../../.."
 	},
-	"include": [
-		"**/*.ts",
-		"**/*.tsx",
-		"**/*.svelte"
-	],
+	"include": ["**/*.ts", "**/*.tsx", "**/*.svelte"],
 	"exclude": []
 }

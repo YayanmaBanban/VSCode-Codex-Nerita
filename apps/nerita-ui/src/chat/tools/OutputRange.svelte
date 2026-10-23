@@ -101,36 +101,46 @@
 </script>
 
 <section {id} aria-label="詳細出力" aria-busy={loading}>
-	{#if isNonEmptyString(error)}<p role="alert">
+	{#if isNonEmptyString(error)}
+		<p role="alert">
 			{error}
-		</p>{:else}<CommandOutput
+		</p>
+	{:else}
+		<CommandOutput
 			text={loading ? "読み込み中…" : (range?.text ?? "")}
 			copyDisabled={loading || !range}
-		/>{/if}
+		/>
+	{/if}
 	<div class="flex items-center gap-[8px] text-[12px] text-muted">
-		<SettingsTooltip content="前の範囲を表示"
-			>{#snippet children({ props })}<button
+		<SettingsTooltip content="前の範囲を表示">
+			{#snippet children({ props })}
+				<button
 					{...mergeProps(props, { onclick: showPrevious })}
 					type="button"
 					class={buttonClass}
 					aria-label="前の範囲を表示"
 					disabled={loading || previous.length === 0}
 					><ChevronLeft size={16} aria-hidden="true" /></button
-				>{/snippet}</SettingsTooltip
-		>
-		<SettingsTooltip content="次の範囲を表示"
-			>{#snippet children({ props })}<button
+				>
+			{/snippet}
+		</SettingsTooltip>
+		<SettingsTooltip content="次の範囲を表示">
+			{#snippet children({ props })}
+				<button
 					{...mergeProps(props, { onclick: showNext })}
 					type="button"
 					class={buttonClass}
 					aria-label="次の範囲を表示"
 					disabled={unavailableRange || range?.eof === true}
 					><ChevronRight size={16} aria-hidden="true" /></button
-				>{/snippet}</SettingsTooltip
-		>
-		{#if range && rangeReady}<span
+				>
+			{/snippet}
+		</SettingsTooltip>
+		{#if range && rangeReady}
+			<span
 				>{range.offset.toLocaleString()}–{range.nextOffset.toLocaleString()}
 				バイト</span
-			>{/if}
+			>
+		{/if}
 	</div>
 </section>

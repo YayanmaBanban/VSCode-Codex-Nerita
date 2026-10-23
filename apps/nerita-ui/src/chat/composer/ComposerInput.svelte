@@ -99,12 +99,14 @@
 						: "max-h-[min(360px,45vh)]",
 				)}
 			/>
-			{#if empty}<span
+			{#if empty}
+				<span
 					class="pointer-events-none absolute top-1 left-1 text-input-placeholder"
 					>{props.followUp === true
 						? "フォローアップを送信"
 						: "チャットを送信"}</span
-				>{/if}
+				>
+			{/if}
 			<span
 				id={helpId}
 				role="tooltip"
@@ -157,7 +159,9 @@
 		}}
 		onSubmit={submit}
 	/>
-	{#if error !== ""}<p role="alert" class="text-[12px] text-tool-error">
+	{#if error !== ""}
+		<p role="alert" class="text-[12px] text-tool-error">
 			{error}
-		</p>{/if}
+		</p>
+	{/if}
 </LexicalComposer>

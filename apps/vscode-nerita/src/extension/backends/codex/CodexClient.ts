@@ -193,9 +193,7 @@ export class CodexClient {
 		});
 
 		if (!isNonEmptyString(fork.thread.id)) {
-			throw new Error(
-				"Codex が返した分岐先の会話 ID が空です。",
-			);
+			throw new Error("Codex が返した分岐先の会話 ID が空です。");
 		}
 		if (fork.thread.id === threadId) {
 			throw new Error(

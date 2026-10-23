@@ -115,7 +115,9 @@ export class TrustedDocuments {
 			`${audit}/${record.operationId}.pending.json`,
 		);
 		if (pendingText === undefined) {
-			throw new Error(`DLC の復旧に必要な保存処理中の監査記録がありません: ${path}`);
+			throw new Error(
+				`DLC の復旧に必要な保存処理中の監査記録がありません: ${path}`,
+			);
 		}
 		const pending = journalSchema.parse(JSON.parse(pendingText));
 		const matchesOperationId =
@@ -123,19 +125,25 @@ export class TrustedDocuments {
 			pending.stateRevision !== record.revision ||
 			pending.metadataDigest !== metadataDigest;
 		if (matchesOperationId) {
-			throw new Error(`DLC の復旧用記録が、保存処理または本文の識別情報と一致しません: ${path}`);
+			throw new Error(
+				`DLC の復旧用記録が、保存処理または本文の識別情報と一致しません: ${path}`,
+			);
 		}
 		const matchesNextDigest =
 			pending.nextDigest !== record.digest ||
 			jsonDigest(pending.next) !== record.digest;
 		if (matchesNextDigest) {
-			throw new Error(`DLC の復旧用データのハッシュが、Host 側の保存記録と一致しません: ${path}`);
+			throw new Error(
+				`DLC の復旧用データのハッシュが、Host 側の保存記録と一致しません: ${path}`,
+			);
 		}
 		const matchesCurrent =
 			current !== undefined &&
 			jsonDigest(current) !== pending.previousDigest;
 		if (matchesCurrent) {
-			throw new Error(`DLC の現在の保存内容が、復旧用記録にある変更前の内容と一致しません: ${path}`);
+			throw new Error(
+				`DLC の現在の保存内容が、復旧用記録にある変更前の内容と一致しません: ${path}`,
+			);
 		}
 		const recovered = schema.parse(pending.next);
 		await this.files.write(path, recovered);
@@ -161,7 +169,9 @@ export class TrustedDocuments {
 			const auditChanged =
 				jsonDigest(JSON.parse(committedText)) !== jsonDigest(event);
 			if (auditChanged) {
-				throw new Error("DLC の確定済み監査記録が、確定する保存処理の内容と一致しません。");
+				throw new Error(
+					"DLC の確定済み監査記録が、確定する保存処理の内容と一致しません。",
+				);
 			}
 		}
 	}

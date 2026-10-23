@@ -34,14 +34,17 @@
 				class="ml-2 font-normal text-muted">省略可</span
 			>{/if}
 	</legend>
-	{#if field.description !== undefined}<p
+	{#if field.description !== undefined}
+		<p
 			class="mt-0 mb-3 text-[12px] [overflow-wrap:anywhere] whitespace-pre-wrap text-muted"
 		>
 			{field.description}
-		</p>{/if}
+		</p>
+	{/if}
 	{#if field.options && field.secret !== true}
 		<div class="flex flex-col gap-2">
-			{#if !field.required}<label
+			{#if !field.required}
+				<label
 					class="flex cursor-pointer items-center gap-2 text-[13px] text-muted"
 					><input
 						type="radio"
@@ -50,7 +53,8 @@
 						onchange={() => select("")}
 						class="question-radio"
 					/>省略</label
-				>{/if}
+				>
+			{/if}
 			{#each field.options as option (option.label)}
 				<label
 					class={cn(
@@ -113,22 +117,24 @@
 				</div>
 			{/if}
 		</div>
-	{:else if field.multiline === true && field.secret !== true}
-		<textarea
-			aria-label={field.title}
-			bind:value
-			placeholder={field.placeholder}
-			class={`${inputClass} min-h-24 resize-y`}
-			rows="4"></textarea>
 	{:else}
-		<input
-			type={field.secret === true ? "password" : "text"}
-			aria-label={field.title}
-			bind:value
-			placeholder={field.placeholder}
-			autocomplete="off"
-			class={inputClass}
-		/>
+		{#if field.multiline === true && field.secret !== true}
+			<textarea
+				aria-label={field.title}
+				bind:value
+				placeholder={field.placeholder}
+				class={`${inputClass} min-h-24 resize-y`}
+				rows="4"></textarea>
+		{:else}
+			<input
+				type={field.secret === true ? "password" : "text"}
+				aria-label={field.title}
+				bind:value
+				placeholder={field.placeholder}
+				autocomplete="off"
+				class={inputClass}
+			/>
+		{/if}
 	{/if}
 </fieldset>
 

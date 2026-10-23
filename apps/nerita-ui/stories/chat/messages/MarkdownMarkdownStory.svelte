@@ -62,7 +62,9 @@
 				order: 2,
 			},
 		]}
-		>{#snippet renderTool(tool)}<ToolCard {tool}
-			></ToolCard>{/snippet}</Messages
 	>
+		{#snippet renderTool(tool)}
+			<ToolCard {tool}></ToolCard>
+		{/snippet}
+	</Messages>
 </main>

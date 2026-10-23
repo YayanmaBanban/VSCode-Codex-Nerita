@@ -204,11 +204,15 @@ export class WorktreeManager {
 		const target = await this.target(id, signal);
 
 		if (!target.removable) {
-			throw new Error("この Worktree はメイン作業ディレクトリ、Nerita の管理領域外、またはロック中のため削除できません。");
+			throw new Error(
+				"この Worktree はメイン作業ディレクトリ、Nerita の管理領域外、またはロック中のため削除できません。",
+			);
 		}
 		const targetInfo = await lstat(target.root);
 		if (targetInfo.isSymbolicLink()) {
-			throw new Error("Worktree の保存先がシンボリックリンクのため、削除できません。");
+			throw new Error(
+				"Worktree の保存先がシンボリックリンクのため、削除できません。",
+			);
 		}
 		const status = await execute(
 			"git",

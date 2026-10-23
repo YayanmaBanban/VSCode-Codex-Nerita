@@ -135,9 +135,11 @@
 					onResumeFollowing={resumeFollowing}
 				/>
 				{#if chat.state.connection === "auth-required" && isNonEmptyString(chat.state.error)}
-					{#key chat.state.error}<AuthenticationFailureNotification
+					{#key chat.state.error}
+						<AuthenticationFailureNotification
 							message={chat.state.error}
-						/>{/key}
+						/>
+					{/key}
 				{/if}
 				<ChatComposer
 					{bridge}

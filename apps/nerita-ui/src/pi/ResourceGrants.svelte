@@ -24,15 +24,18 @@
 	<h2 class="m-0 text-lg font-semibold">リソースの許可</h2>
 	{#if snapshot.resourceGrants.length === 0}
 		<p class="m-0 text-sm">追加したリソース権限はありません。</p>
-	{/if}{#each snapshot.resourceGrants as grant (grant.id)}
+	{/if}
+	{#each snapshot.resourceGrants as grant (grant.id)}
 		<article
 			class="grid gap-2 rounded border border-input-border p-3 text-sm"
 		>
 			<strong
 				>{`${grant.resource.kind} · ${grant.resource.tool} · ${grant.access}`}</strong
-			><span>{scopeLabels[grant.scope]}</span><span class="break-all"
-				>{grant.resource.target}</span
-			><span class="break-all text-muted">{grant.workspace}</span><button
+			>
+			<span>{scopeLabels[grant.scope]}</span>
+			<span class="break-all">{grant.resource.target}</span>
+			<span class="break-all text-muted">{grant.workspace}</span>
+			<button
 				type="button"
 				class={buttonStyle}
 				disabled={busy}
@@ -41,13 +44,14 @@
 				>リソース権限を取り消す
 			</button>
 		</article>
-	{/each}{#each snapshot.cacheSwitches as cache (cache.id)}
+	{/each}
+	{#each snapshot.cacheSwitches as cache (cache.id)}
 		<article
 			class="grid gap-2 rounded border border-input-border p-3 text-sm"
 		>
-			<strong>{`${cache.tool} · Sandbox キャッシュ`}</strong><span
-				class="break-all text-muted">{cache.workspace}</span
-			><button
+			<strong>{`${cache.tool} · Sandbox キャッシュ`}</strong>
+			<span class="break-all text-muted">{cache.workspace}</span>
+			<button
 				type="button"
 				class={buttonStyle}
 				disabled={busy}

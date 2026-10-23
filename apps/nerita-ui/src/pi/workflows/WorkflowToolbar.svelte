@@ -38,7 +38,8 @@
 				disabled={mode === "toml" && !valid}
 				onclick={switchMode}
 				>{mode === "graph" ? "グラフ → TOML" : "TOML → グラフ"}</button
-			><WorkflowActions
+			>
+			<WorkflowActions
 				{...{
 					editor,
 					bridge,

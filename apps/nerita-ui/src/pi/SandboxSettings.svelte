@@ -58,26 +58,31 @@
 	</header>
 	{#if error !== ""}
 		<p role="alert" class="text-sm">{error}</p>
-	{/if}{#if snapshot}
+	{/if}
+	{#if snapshot}
 		<SandboxBackend
 			{...{
 				snapshot,
 				busy,
 				probe,
 			}}
-		/><SandboxLimitations /><CommandGrants
+		/>
+		<SandboxLimitations />
+		<CommandGrants
 			{...{
 				snapshot,
 				busy,
 				revoke,
 			}}
-		/><ResourceGrants
+		/>
+		<ResourceGrants
 			{...{
 				snapshot,
 				busy,
 				request,
 			}}
-		/><SandboxResources
+		/>
+		<SandboxResources
 			{...{
 				snapshot,
 				busy,

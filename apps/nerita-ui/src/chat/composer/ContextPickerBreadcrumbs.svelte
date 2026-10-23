@@ -41,18 +41,23 @@
 
 <nav aria-label="コンテキストの階層" class="mb-1 min-w-0">
 	<ol class="m-0 flex list-none flex-wrap items-center gap-1 p-0 text-[12px]">
-		{#each crumbs as crumb, index (crumb.key)}<li
-				class="flex max-w-full min-w-0 items-center gap-1"
-			>
-				{#if index > 0}<ChevronRight
+		{#each crumbs as crumb, index (crumb.key)}
+			<li class="flex max-w-full min-w-0 items-center gap-1">
+				{#if index > 0}
+					<ChevronRight
 						size={12}
 						class="shrink-0 text-muted"
 						aria-hidden="true"
-					/>{/if}{#if index === crumbs.length - 1}<span
+					/>
+				{/if}
+				{#if index === crumbs.length - 1}
+					<span
 						aria-current="location"
 						class="min-w-0 px-1 py-2 break-all text-input-text"
 						>{crumb.label}</span
-					>{:else}<button
+					>
+				{:else}
+					<button
 						type="button"
 						onmousedown={(event) => event.preventDefault()}
 						onclick={crumb.onClick}
@@ -61,7 +66,9 @@
 							"hover:bg-settings-hover hover:text-input-text",
 							"focus-visible:outline-2 focus-visible:outline-focus",
 						)}>{crumb.label}</button
-					>{/if}
-			</li>{/each}
+					>
+				{/if}
+			</li>
+		{/each}
 	</ol>
 </nav>

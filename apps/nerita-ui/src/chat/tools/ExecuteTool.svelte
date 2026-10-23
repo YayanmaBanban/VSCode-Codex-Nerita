@@ -14,6 +14,8 @@
 	});
 </script>
 
-{#if typeof tool.commandOutput === "string"}<CommandOutput
-		text={tool.commandOutput}
-	/>{:else}<ToolContent tool={visibleTool} scrollable />{/if}
+{#if typeof tool.commandOutput === "string"}
+	<CommandOutput text={tool.commandOutput} />
+{:else}
+	<ToolContent tool={visibleTool} scrollable />
+{/if}

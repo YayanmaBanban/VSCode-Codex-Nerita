@@ -90,12 +90,16 @@
 			class="w-full min-w-0 rounded border border-input-border bg-input p-2 text-input-text focus:outline-2 focus:outline-focus"
 		/>
 	</div>
-	{#if location}<p class="mb-2 text-[12px] break-all text-muted">
+	{#if location}
+		<p class="mb-2 text-[12px] break-all text-muted">
 			{location}
-		</p>{/if}
-	{#if notice}<p role="status" class="mb-2 text-[12px] text-muted">
+		</p>
+	{/if}
+	{#if notice}
+		<p role="status" class="mb-2 text-[12px] text-muted">
 			{notice}
-		</p>{/if}
+		</p>
+	{/if}
 	<div
 		bind:this={list}
 		{id}
@@ -103,18 +107,19 @@
 		aria-label={title}
 		class="max-h-[min(240px,35vh)] overflow-y-auto"
 	>
-		{#each items as item, index (item.id)}<CompletionOption
+		{#each items as item, index (item.id)}
+			<CompletionOption
 				id={`${id}-${index}`}
 				{item}
 				selected={index === selected}
 				{context}
 				{onPick}
-			/>{/each}
-		{#if items.length === 0}<p
-				class="p-2 text-[12px] text-muted"
-				role="status"
-			>
+			/>
+		{/each}
+		{#if items.length === 0}
+			<p class="p-2 text-[12px] text-muted" role="status">
 				{empty}
-			</p>{/if}
+			</p>
+		{/if}
 	</div>
 </div>

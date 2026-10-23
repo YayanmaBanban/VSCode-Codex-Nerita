@@ -157,9 +157,10 @@
 					"sm:max-h-none sm:min-h-0 sm:flex-1",
 				)}
 			>
-				{#each filtered as item (item.id)}<SettingsTooltip
-						content={item.description}
-						>{#snippet children({ props })}<button
+				{#each filtered as item (item.id)}
+					<SettingsTooltip content={item.description}>
+						{#snippet children({ props })}
+							<button
 								{...mergeProps(
 									{ ...props },
 									{
@@ -181,17 +182,21 @@
 								></span><span class="min-w-0 break-words"
 									>{item.name}</span
 								></button
-							>{/snippet}</SettingsTooltip
-					>{/each}
-				{#if filtered.length === 0}<p
-						class="m-0 px-2 py-2 text-sm text-muted"
-					>
+							>
+						{/snippet}
+					</SettingsTooltip>
+				{/each}
+				{#if filtered.length === 0}
+					<p class="m-0 px-2 py-2 text-sm text-muted">
 						{items.length === 0
 							? "Agent 定義がありません。"
 							: "一致するエージェントがありません。"}
-					</p>{/if}
+					</p>
+				{/if}
 			</div>
 		</nav>
 	</aside>
-	<section class="min-w-0">{@render children()}</section>
+	<section class="min-w-0">
+		{@render children()}
+	</section>
 </div>

@@ -82,11 +82,9 @@
 					: "hover:bg-settings-hover",
 			)}
 		>
-			{#if Icon}<Icon
-					size={16}
-					class="shrink-0"
-					aria-hidden="true"
-				/>{/if}
+			{#if Icon}
+				<Icon size={16} class="shrink-0" aria-hidden="true" />
+			{/if}
 			<span
 				class={cn(
 					context && "min-w-0 text-[12px]",
@@ -95,12 +93,14 @@
 						: "truncate",
 				)}>{item.label}</span
 			>
-			{#if item.description}<span
+			{#if item.description}
+				<span
 					class={cn(
 						"text-[12px] text-muted",
 						context ? "min-w-0 truncate" : "line-clamp-2 block",
 					)}>{item.description}</span
-				>{/if}
+				>
+			{/if}
 		</div>
 	{/snippet}
 </SettingsTooltip>

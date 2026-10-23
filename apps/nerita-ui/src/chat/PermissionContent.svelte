@@ -18,7 +18,8 @@
 	>
 		{permission.title}
 	</h2>
-	{#if permission.cwd !== undefined}<PermissionFields
+	{#if permission.cwd !== undefined}
+		<PermissionFields
 			fields={[
 				{
 					id: "cwd",
@@ -27,7 +28,8 @@
 					display: "text",
 				},
 			]}
-		/>{/if}
+		/>
+	{/if}
 	<PermissionFields fields={permission.fields ?? []} />
 	{#if permission.details && permission.details.length > 0}
 		<div
@@ -65,8 +67,10 @@
 			</div>
 		</div>
 	{/if}
-	{#if permission.command !== undefined}<div class="my-[12px] min-w-0">
+	{#if permission.command !== undefined}
+		<div class="my-[12px] min-w-0">
 			<div class="mb-[6px] text-muted">コマンド</div>
 			<PermissionCode label="コマンド" value={permission.command} />
-		</div>{/if}
+		</div>
+	{/if}
 </div>

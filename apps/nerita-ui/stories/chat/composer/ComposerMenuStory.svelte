@@ -51,4 +51,5 @@
 	})();
 </script>
 
-<ChatApp {bridge} /><output hidden aria-label="送信した本文">{sent}</output>
+<ChatApp {bridge} />
+<output hidden aria-label="送信した本文">{sent}</output>

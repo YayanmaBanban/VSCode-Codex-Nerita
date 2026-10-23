@@ -118,7 +118,9 @@ async function sourceFile(root: string, path: string): Promise<Buffer | null> {
 		throw new Error(`収集対象が通常のファイルではありません: ${path}`);
 	}
 	if (stat.isSymbolicLink()) {
-		throw new Error(`シンボリックリンクはソースの収集対象にできません: ${path}`);
+		throw new Error(
+			`シンボリックリンクはソースの収集対象にできません: ${path}`,
+		);
 	}
 	const resolvedTarget = await realpath(target);
 	if (!containsPath(root, resolvedTarget)) {

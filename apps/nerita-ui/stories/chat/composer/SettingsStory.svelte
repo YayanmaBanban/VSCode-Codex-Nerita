@@ -53,6 +53,6 @@
 	}));
 </script>
 
-<SettingsStoryControls {mock} /><ChatApp {bridge} /><output
-	aria-label="最後の要求">{last && JSON.stringify(last)}</output
->
+<SettingsStoryControls {mock} />
+<ChatApp {bridge} />
+<output aria-label="最後の要求">{last && JSON.stringify(last)}</output>

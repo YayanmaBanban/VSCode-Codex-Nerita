@@ -145,7 +145,9 @@
 		<p class="m-0">
 			{snapshot ? `${records.length} 件のフォルダ` : "読み込み中…"}
 		</p>
-		{#if snapshot}<p class="m-0">信頼済み {trustedCount} 件</p>{/if}
+		{#if snapshot}
+			<p class="m-0">信頼済み {trustedCount} 件</p>
+		{/if}
 	</div>
 	<div
 		class="overflow-hidden rounded-lg border border-input-border"
@@ -153,7 +155,8 @@
 	>
 		{#each records as record (record.root)}
 			<TrustRecord {...{ record, busy, send }} />
-		{/each}{#if snapshot && records.length === 0}
+		{/each}
+		{#if snapshot && records.length === 0}
 			<p class="m-0 p-4 text-sm text-muted">
 				{query !== ""
 					? "一致するフォルダがありません。"

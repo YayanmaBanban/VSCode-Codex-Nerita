@@ -203,7 +203,9 @@ export class BitwardenSecretsProvider extends BoundProvider {
 	): Promise<CredentialMaterial> {
 		const provider = candidate.binding.provider;
 		if (provider.type !== this.id) {
-			throw new Error("指定された資格情報のプロバイダーが Bitwarden ではありません。");
+			throw new Error(
+				"指定された資格情報のプロバイダーが Bitwarden ではありません。",
+			);
 		}
 		const token = await this.auth.get(`bws.auth.${provider.accountId}`);
 		if (!token) {
@@ -246,9 +248,7 @@ export class BitwardenSecretsProvider extends BoundProvider {
 				);
 			}
 			if (secret.value === "") {
-				throw new Error(
-					"Bitwarden の秘密情報の値が空です。",
-				);
+				throw new Error("Bitwarden の秘密情報の値が空です。");
 			}
 			signal.throwIfAborted();
 			return { type: "token", secret: new SecretValue(secret.value) };

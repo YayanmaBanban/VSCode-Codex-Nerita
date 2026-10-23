@@ -9,8 +9,9 @@
 	}: { disabled: boolean; onOpen?: (() => void) | undefined } = $props();
 </script>
 
-<SettingsTooltip content="コンテキストを追加"
-	>{#snippet children({ props })}<button
+<SettingsTooltip content="コンテキストを追加">
+	{#snippet children({ props })}
+		<button
 			{...props}
 			type="button"
 			class="attach-button flex rounded-[5px] border-0 bg-transparent p-[5px] enabled:hover:bg-settings-hover"
@@ -19,5 +20,6 @@
 			disabled={disabled || !onOpen}
 			onmousedown={(event) => event.preventDefault()}
 			onclick={onOpen}><Plus size={16} aria-hidden="true" /></button
-		>{/snippet}</SettingsTooltip
->
+		>
+	{/snippet}
+</SettingsTooltip>

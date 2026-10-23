@@ -15,14 +15,22 @@
 
 {#if windows && windows.length > 0}
 	<SettingsTooltip>
-		{#snippet content()}<span>利用枠の残量</span>
+		{#snippet content()}
+			<span>利用枠の残量</span>
 			<hr />
-			{#each windows as window, index (`${window.label}-${index}`)}<div>
+			{#each windows as window, index (`${window.label}-${index}`)}
+				<div>
 					<div>{window.label}: {window.remaining}%</div>
-					{#if window.detail !== ""}<div>{window.detail}</div>{/if}
-				</div>{/each}{#if windows.some((window) => window.source === "codex-login")}<hr
-				/>
-				<div>Codexのログイン情報から取得中</div>{/if}{/snippet}
+					{#if window.detail !== ""}
+						<div>{window.detail}</div>
+					{/if}
+				</div>
+			{/each}
+			{#if windows.some((window) => window.source === "codex-login")}
+				<hr />
+				<div>Codexのログイン情報から取得中</div>
+			{/if}
+		{/snippet}
 		{#snippet children({ props })}
 			<button
 				{...props}

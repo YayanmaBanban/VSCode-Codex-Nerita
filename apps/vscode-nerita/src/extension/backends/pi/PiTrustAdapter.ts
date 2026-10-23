@@ -34,7 +34,9 @@ export async function piWorkspaceTrusted(
 ): Promise<boolean> {
 	const trustEnabled =
 		options.trustEnabled?.() ?? options.workspaceTrusted === true;
-	if (!trustEnabled || !options.trustStore) {return false;}
+	if (!trustEnabled || !options.trustStore) {
+		return false;
+	}
 	return options.trustStore.trusted(options.cwd);
 }
 

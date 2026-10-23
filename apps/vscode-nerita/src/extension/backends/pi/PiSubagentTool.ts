@@ -341,7 +341,13 @@ function withModel(
 	definition: PiSubagentDefinition,
 	model: string | undefined,
 ) {
-	return isNonEmptyString(model) ? { ...definition, model, thinking: modelThinking(model) ?? definition.thinking } : definition;
+	return isNonEmptyString(model)
+		? {
+				...definition,
+				model,
+				thinking: modelThinking(model) ?? definition.thinking,
+			}
+		: definition;
 }
 
 /** プロンプトの置換指定を子の起動契約へ渡す。 */

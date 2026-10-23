@@ -19,8 +19,9 @@
 	} = $props();
 </script>
 
-<SettingsTooltip content="ファストモード&#10;速度1.5倍、使用量が増えます"
-	>{#snippet children({ props })}<button
+<SettingsTooltip content="ファストモード&#10;速度1.5倍、使用量が増えます">
+	{#snippet children({ props })}
+		<button
 			{...mergeProps(
 				{ ...props },
 				{
@@ -52,5 +53,6 @@
 					fill={control.checked ? "#FACC15" : "none"}
 				/></span
 			></button
-		>{/snippet}</SettingsTooltip
->
+		>
+	{/snippet}
+</SettingsTooltip>

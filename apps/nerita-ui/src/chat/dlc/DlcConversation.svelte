@@ -14,19 +14,13 @@
 	class="mt-4 h-[70vh] min-h-[360px] overflow-hidden rounded-lg border border-solid border-panel-border"
 >
 	<ChatWorkspace {bridge} managed>
-		{#snippet header({
-			chat,
-		}: {
-			chat: ReturnType<typeof useChat>;
-		})}<DlcRunInfo
-				{view}
-				state={chat.state}
-				send={chat.send}
-			/>{#if chat.requestError !== null && chat.requestError !== view.error}<p
-					role="alert"
-					class="m-0 px-3 py-2 text-tool-error"
-				>
+		{#snippet header({ chat }: { chat: ReturnType<typeof useChat> })}
+			<DlcRunInfo {view} state={chat.state} send={chat.send} />
+			{#if chat.requestError !== null && chat.requestError !== view.error}
+				<p role="alert" class="m-0 px-3 py-2 text-tool-error">
 					{chat.requestError}
-				</p>{/if}{/snippet}
+				</p>
+			{/if}
+		{/snippet}
 	</ChatWorkspace>
 </section>

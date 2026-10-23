@@ -62,14 +62,14 @@
 			aria-hidden="true"
 		/>
 	</button>
-	<ToolCardCollapse id={bodyId} className="combo-list-collapse" {open}
-		><div
+	<ToolCardCollapse id={bodyId} className="combo-list-collapse" {open}>
+		<div
 			class={cn(
 				"tool-body ml-[7px] flex flex-col gap-[12px] border-0 border-l border-solid border-panel-border",
 				"py-[6px] pr-[4px] pl-[18px] text-[12px] leading-[1.65]",
 			)}
 		>
 			{@render children()}
-		</div></ToolCardCollapse
-	>
+		</div>
+	</ToolCardCollapse>
 </div>

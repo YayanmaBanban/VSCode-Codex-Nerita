@@ -6,8 +6,8 @@
 </script>
 
 <fieldset class="flex flex-col gap-2">
-	<legend>先に完了するステップ</legend
-	>{#each workflow.steps.filter((item) => item.id !== step.id) as item (item.id)}
+	<legend>先に完了するステップ</legend>
+	{#each workflow.steps.filter((item) => item.id !== step.id) as item (item.id)}
 		<label class="workflow-check"
 			><input
 				type="checkbox"

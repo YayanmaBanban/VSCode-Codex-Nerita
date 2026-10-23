@@ -149,7 +149,8 @@
 <div class="connection-control relative shrink-0">
 	<SettingsTooltip
 		content={reconnectable ? action : labels[chatState.connection]}
-		>{#snippet children({ props })}
+	>
+		{#snippet children({ props })}
 			<button
 				{...mergeProps(props, {
 					onclick: () =>
@@ -211,13 +212,15 @@
 						/></span
 					>{/if}
 			</button>
-		{/snippet}</SettingsTooltip
-	>
-	{#if celebrating}<span
+		{/snippet}
+	</SettingsTooltip>
+	{#if celebrating}
+		<span
 			class="connection-confetti pointer-events-none absolute inset-0 z-20"
 			aria-hidden="true"
 			>{#each confetti as index (index)}<i
 					class={cn("confetti-piece", `confetti-${index}`)}
 				></i>{/each}</span
-		>{/if}
+		>
+	{/if}
 </div>

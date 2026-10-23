@@ -21,7 +21,6 @@
 	);
 </script>
 
-{#each items as item (item.id)}<ContributionRenderer
-		control={item.control}
-		{...props}
-	/>{/each}
+{#each items as item (item.id)}
+	<ContributionRenderer control={item.control} {...props} />
+{/each}

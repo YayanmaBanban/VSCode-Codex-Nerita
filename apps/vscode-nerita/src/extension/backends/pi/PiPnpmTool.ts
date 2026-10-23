@@ -168,7 +168,9 @@ async function resolvePnpmCommand(args: string[], paths: WorkspacePathPolicy) {
 		throw new Error("pnpm の実行に必要な Node.js が見つかりません。");
 	}
 	if (paths.policy.workspaceRoots.some((root) => containsPath(root, node))) {
-		throw new Error("ワークスペース内の Node.js は pnpm の実行に使用できません。");
+		throw new Error(
+			"ワークスペース内の Node.js は pnpm の実行に使用できません。",
+		);
 	}
 	return { entrypoint: executable, argv: [node, executable, ...args] };
 }

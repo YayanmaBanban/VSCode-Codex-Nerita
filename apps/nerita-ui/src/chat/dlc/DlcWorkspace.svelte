@@ -37,13 +37,12 @@
 		<DlcIntentList {ui} />
 		<div class="min-h-0 min-w-0 overflow-auto p-5 @max-[600px]:p-3">
 			<DlcWorkspaceHeader {ui} />
-			{#if ui.view.active && ui.view.active.intentId !== ui.selected?.intentId}<p
-					role="status"
-					class="mb-3 text-muted"
-				>
+			{#if ui.view.active && ui.view.active.intentId !== ui.selected?.intentId}
+				<p role="status" class="mb-3 text-muted">
 					別の Intent を実行しています。異なる Worktree
 					では並行して実行できます。
-				</p>{/if}
+				</p>
+			{/if}
 			{#if ui.newIntent || ui.selected}
 				{#key ui.selected?.intentId ?? "new"}
 					<DlcPhases
@@ -54,23 +53,32 @@
 						action={ui.action}
 						send={ui.send}
 					>
-						{#snippet initialization()}{#if ui.newIntent}<IntentForm
+						{#snippet initialization()}
+							{#if ui.newIntent}
+								<IntentForm
 									send={ui.send}
 									pending={ui.creation.pending}
 									onSubmitted={ui.creation.submit}
-								/>{:else if ui.selected}<IntentOverview
-									selected={ui.selected}
-									action={ui.action}
-								/>{/if}{/snippet}
-						{#snippet conversation()}<DlcConversation
-								{bridge}
-								view={ui.view}
-							/>{/snippet}
+								/>
+							{:else}
+								{#if ui.selected}
+									<IntentOverview
+										selected={ui.selected}
+										action={ui.action}
+									/>
+								{/if}
+							{/if}
+						{/snippet}
+						{#snippet conversation()}
+							<DlcConversation {bridge} view={ui.view} />
+						{/snippet}
 					</DlcPhases>
 				{/key}
-			{:else}<p class="text-muted">
+			{:else}
+				<p class="text-muted">
 					左の一覧から Intent を選択してください。
-				</p>{/if}
+				</p>
+			{/if}
 		</div>
 	</div>
 </main>

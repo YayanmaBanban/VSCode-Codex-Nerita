@@ -42,10 +42,9 @@
 >
 	{#snippet connectionControl()}
 		<div class="flex shrink-0 items-center gap-1">
-			{#if chat.state.connection !== "ready"}<ConnectionButton
-					state={chat.state}
-					send={chat.send}
-				/>{/if}
+			{#if chat.state.connection !== "ready"}
+				<ConnectionButton state={chat.state} send={chat.send} />
+			{/if}
 			<div
 				role="group"
 				aria-label="作業モード"
@@ -53,19 +52,24 @@
 				data-mode={mode}
 			>
 				<span aria-hidden="true" class="chat-mode-indicator"></span>
-				{#each modes as target (target)}<SettingsTooltip
+				{#each modes as target (target)}
+					<SettingsTooltip
 						content={target === "chat"
 							? "チャットモード"
 							: "ライフサイクルモード"}
-						>{#snippet children({ props })}<button
+					>
+						{#snippet children({ props })}
+							<button
 								{...mergeProps(props, {
 									onclick: () => selectMode(target),
 								})}
 								type="button"
 								aria-pressed={mode === target}
 								>{target === "chat" ? "Chat" : "DLC"}</button
-							>{/snippet}</SettingsTooltip
-					>{/each}
+							>
+						{/snippet}
+					</SettingsTooltip>
+				{/each}
 			</div>
 		</div>
 	{/snippet}

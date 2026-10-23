@@ -153,7 +153,9 @@ async function readDefinitions(
 	}
 	const matchesContainsPath = !containsPath(await realpath(base), root);
 	if (matchesContainsPath) {
-		throw new Error("サブエージェント定義の保存フォルダが、指定された基準フォルダの外を参照しています。");
+		throw new Error(
+			"サブエージェント定義の保存フォルダが、指定された基準フォルダの外を参照しています。",
+		);
 	}
 	const definitions: PiSubagentDefinition[] = [];
 	for (const file of await subagentFiles(root)) {

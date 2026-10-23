@@ -19,9 +19,11 @@
 		disabled={busy || Boolean(binding)}
 		class="w-full rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
 	/></label
->{#if binding}
+>
+{#if binding}
 	<input type="hidden" name="id" value={binding.id} />
-{/if}<label
+{/if}
+<label
 	>対象 <input
 		name="target"
 		required

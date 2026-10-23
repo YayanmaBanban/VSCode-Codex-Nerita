@@ -158,7 +158,9 @@ export class SafeDlcFiles {
 					JSON.parse(await readFile(temporaryPath, "utf8")),
 				) !== JSON.stringify(value);
 			if (matchesStringify) {
-				throw new Error("DLC の一時ファイルの内容が、保存するデータと一致しません。");
+				throw new Error(
+					"DLC の一時ファイルの内容が、保存するデータと一致しません。",
+				);
 			}
 			await this.path(relativePath);
 			await this.path(temporary);
@@ -182,10 +184,14 @@ function assertReadable(
 	path: string,
 ): void {
 	if (!stat.isFile() || stat.size > limit || before.dev !== stat.dev) {
-		throw new Error(`DLC のファイルが通常のファイルではないか、読み取り上限を超えているか、検査時から保存先が変わっています: ${path}`);
+		throw new Error(
+			`DLC のファイルが通常のファイルではないか、読み取り上限を超えているか、検査時から保存先が変わっています: ${path}`,
+		);
 	}
 	if (before.ino !== stat.ino || stat.nlink !== 1) {
-		throw new Error(`DLC のファイルが検査時から差し替えられているか、ハードリンク数が1ではありません: ${path}`);
+		throw new Error(
+			`DLC のファイルが検査時から差し替えられているか、ハードリンク数が1ではありません: ${path}`,
+		);
 	}
 }
 /** 読み取り前後のファイル識別情報・容量・更新時刻を比べ、途中の変更を拒否する。 */

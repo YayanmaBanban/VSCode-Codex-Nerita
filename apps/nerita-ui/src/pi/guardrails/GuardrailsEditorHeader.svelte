@@ -31,7 +31,8 @@
 			dirty={status === "未保存"}
 			busy={editor.busy}
 			onSave={() => editor.request("save", probe)}
-		/><button
+		/>
+		<button
 			class={cn(buttonStyle, "border-focus")}
 			disabled={editor.busy || state.dirty}
 			onclick={() => editor.request("apply", probe)}

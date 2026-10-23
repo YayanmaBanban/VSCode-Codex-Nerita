@@ -144,8 +144,9 @@
 		open={expansion.open}
 		{bodyId}
 		onToggle={() => expansion.setOpen(!expansion.open)}
-		><Body {tool} {send} cwd={workspaceCwd} /></ComboListCard
 	>
+		<Body {tool} {send} cwd={workspaceCwd} />
+	</ComboListCard>
 {:else}
 	<div
 		class="tool-card my-[8px] overflow-hidden rounded-[6px] border border-solid border-panel-border"
@@ -156,7 +157,8 @@
 		<div class="tool-header relative flex items-center">
 			<SettingsTooltip content={tool.title}>
 				{#snippet children({ props })}
-					{#if Body}<button
+					{#if Body}
+						<button
 							{...mergeProps(props, {
 								onclick: () =>
 									expansion.setOpen(!expansion.open),
@@ -182,7 +184,8 @@
 								{reserveStatusSpace}
 							/></button
 						>
-					{:else}<div
+					{:else}
+						<div
 							{...props}
 							class={cn(
 								"tool-heading group flex w-full min-w-0 items-center gap-[8px] rounded-none border-0 bg-transparent",
@@ -200,16 +203,21 @@
 								expandable={false}
 								{reserveStatusSpace}
 							/>
-						</div>{/if}
+						</div>
+					{/if}
 				{/snippet}
 			</SettingsTooltip>
-			{#if status === "failed"}<span
+			{#if status === "failed"}
+				<span
 					class="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
 					role="img"
 					aria-label="失敗"><X size={16} aria-hidden="true" /></span
-				>{/if}
-			{#if executing && active}<SettingsTooltip content={stopTitle()}
-					>{#snippet children({ props })}<button
+				>
+			{/if}
+			{#if executing && active}
+				<SettingsTooltip content={stopTitle()}>
+					{#snippet children({ props })}
+						<button
 							{...mergeProps(props, { onclick: onStop })}
 							type="button"
 							class={cn(
@@ -224,43 +232,57 @@
 								fill="currentColor"
 								aria-hidden="true"
 							/></button
-						>{/snippet}</SettingsTooltip
-				>{/if}
+						>
+					{/snippet}
+				</SettingsTooltip>
+			{/if}
 		</div>
-		{#if Body}<ToolCardCollapse
+		{#if Body}
+			<ToolCardCollapse
 				id={bodyId}
 				className="tool-card-collapse"
 				open={expansion.open}
 			>
-				{#if tool.summaryOnly === true || tool.nestedCallsIncomplete === true}<div
+				{#if tool.summaryOnly === true || tool.nestedCallsIncomplete === true}
+					<div
 						class="px-[10px] pb-[8px] text-[12px] [overflow-wrap:anywhere] text-muted"
 					>
-						{#if tool.summaryOnly === true}<p class="m-0">
+						{#if tool.summaryOnly === true}
+							<p class="m-0">
 								保存された要約です。結果本文は保存されていません。
-							</p>{/if}
-						{#if tool.omittedArgumentBytes !== undefined}<p
-								class="m-0"
-							>
+							</p>
+						{/if}
+						{#if tool.omittedArgumentBytes !== undefined}
+							<p class="m-0">
 								入力はサイズ制限により省略されています（{tool.omittedArgumentBytes}
 								バイト）。
-							</p>{/if}
-						{#if tool.nestedCallsIncomplete === true}<p class="m-0">
+							</p>
+						{/if}
+						{#if tool.nestedCallsIncomplete === true}
+							<p class="m-0">
 								入れ子のツール履歴は一部省略されています。
-							</p>{/if}
-					</div>{/if}
+							</p>
+						{/if}
+					</div>
+				{/if}
 				<div
 					class="tool-body border-0 border-t border-solid border-panel-border p-[12px] [&_section+section]:mt-[14px]"
 				>
-					{#if details.cwd}<div
+					{#if details.cwd}
+						<div
 							class="tool-cwd mb-[8px] text-[12px] [overflow-wrap:anywhere] text-muted"
 						>
 							<span class={toolLabelClass}>CWD</span>
 							<div>{details.cwd}</div>
-						</div>{/if}
-					{#if tool.kind === "execute"}<pre
-							class="tool-command m-0 mb-[12px] font-mono text-[12px] [overflow-wrap:anywhere] whitespace-pre-wrap">{details.command}</pre>{/if}
+						</div>
+					{/if}
+					{#if tool.kind === "execute"}
+						<pre
+							class="tool-command m-0 mb-[12px] font-mono text-[12px] [overflow-wrap:anywhere] whitespace-pre-wrap">{details.command}</pre>
+					{/if}
 					<Body {tool} {send} cwd={workspaceCwd} />
 				</div>
-			</ToolCardCollapse>{/if}
+			</ToolCardCollapse>
+		{/if}
 	</div>
 {/if}

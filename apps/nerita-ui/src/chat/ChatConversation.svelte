@@ -96,9 +96,8 @@
 		aria-label="会話"
 		tabindex="-1"
 	>
-		{#if chatState.messages.length === 0 && chatState.questions.length === 0}<div
-				class="empty-state px-0 pt-[10vh] pb-[30px] text-center"
-			>
+		{#if chatState.messages.length === 0 && chatState.questions.length === 0}
+			<div class="empty-state px-0 pt-[10vh] pb-[30px] text-center">
 				<p class="text-[12px] text-muted">
 					このワークスペースで作業します
 				</p>
@@ -107,7 +106,8 @@
 				>
 					{chatState.cwd}
 				</p>
-			</div>{/if}
+			</div>
+		{/if}
 		<div
 			role="log"
 			aria-label="メッセージ"
@@ -125,14 +125,15 @@
 					(agent) => agent.parentThreadId === chatState.sessionId,
 				)}
 			>
-				{#snippet renderAgent(agent)}<AgentCard
-						{agent}
-						onOpen={onOpenAgent}
-					/>{/snippet}
-				{#snippet renderTool(tool)}<Activity
+				{#snippet renderAgent(agent)}
+					<AgentCard {agent} onOpen={onOpenAgent} />
+				{/snippet}
+				{#snippet renderTool(tool)}
+					<Activity
 						state={{ ...chatState, tools: [tool], permissions: [] }}
 						{send}
-					/>{/snippet}
+					/>
+				{/snippet}
 			</Messages>
 		</div>
 		<Activity state={{ ...chatState, tools: [] }} {send} />
@@ -140,24 +141,27 @@
 			<QuestionCard {question} {send} />
 		{/each}
 		<PlanDecisionCard state={chatState} {send} />
-		{#if chatState.run === "running" && chatState.questions.length === 0}<ThinkingIndicator
-			/>{/if}
-		{#if runLabels[chatState.run] !== ""}<p
+		{#if chatState.run === "running" && chatState.questions.length === 0}
+			<ThinkingIndicator />
+		{/if}
+		{#if runLabels[chatState.run] !== ""}
+			<p
 				class="run-status my-2 flex items-center gap-1 text-[12px] text-muted"
 				role="status"
 			>
 				{runLabels[chatState.run]}<RunStatusIcon
 					kind={chatState.run === "failed" ? "startled" : "loaf"}
 				/>
-			</p>{/if}
+			</p>
+		{/if}
 		<div bind:this={bottom}></div>
 	</section>
 	<!-- 高さの再計測から次フレームの追従までのずれでは、末尾ボタンを表示しない。 -->
-	{#if awayFromBottom && !following.current}<div
-			class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2"
-		>
-			<SettingsTooltip content="メッセージの末尾へ移動"
-				>{#snippet children({ props })}<button
+	{#if awayFromBottom && !following.current}
+		<div class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2">
+			<SettingsTooltip content="メッセージの末尾へ移動">
+				{#snippet children({ props })}
+					<button
 						{...mergeProps(props, { onclick: toBottom })}
 						type="button"
 						aria-label="メッセージの末尾へ移動"
@@ -172,7 +176,9 @@
 							class="text-white"
 							aria-hidden="true"
 						/></button
-					>{/snippet}</SettingsTooltip
-			>
-		</div>{/if}
+					>
+				{/snippet}
+			</SettingsTooltip>
+		</div>
+	{/if}
 </div>

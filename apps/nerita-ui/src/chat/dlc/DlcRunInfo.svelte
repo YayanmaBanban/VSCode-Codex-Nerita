@@ -52,13 +52,16 @@
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<span class="text-muted"
 			>{view.selected?.title ?? "Intent を選択してください"}</span
-		><span class="text-muted">{view.backend === "pi" ? "Pi" : "Codex"}</span
-		>{#if canStop}<button
+		>
+		<span class="text-muted">{view.backend === "pi" ? "Pi" : "Codex"}</span>
+		{#if canStop}
+			<button
 				type="button"
 				aria-label="DLC の会話を停止"
 				disabled={state.run === "cancelling"}
 				onclick={stop}>停止</button
-			>{/if}
+			>
+		{/if}
 	</div>
 	<p class="my-1 break-all text-muted">
 		実行先: {state.cwd ??
@@ -66,7 +69,8 @@
 				?.directory ??
 			"未選択"}
 	</p>
-	{#if other}<p role="status">
+	{#if other}
+		<p role="status">
 			別の Intent を実行しています。 <button
 				type="button"
 				onclick={() => {
@@ -79,7 +83,8 @@
 					}
 				}}>実行中の Intent を表示</button
 			>
-		</p>{/if}
+		</p>
+	{/if}
 	{#if view.execution !== null}
 		<details class="mt-2">
 			<summary>送信した実行内容（全文）</summary>

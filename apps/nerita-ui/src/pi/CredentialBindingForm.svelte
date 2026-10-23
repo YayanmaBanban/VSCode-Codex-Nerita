@@ -58,7 +58,8 @@
 		save(parsed.data);
 	}}
 >
-	<BindingIdentity {...{ binding, busy }} /><BindingSelectors
+	<BindingIdentity {...{ binding, busy }} />
+	<BindingSelectors
 		{...{
 			busy,
 			provider,
@@ -66,11 +67,15 @@
 			kind,
 			setKind,
 		}}
-	/>{#if provider === "bitwarden-secrets-manager"}
+	/>
+	{#if provider === "bitwarden-secrets-manager"}
 		<BitwardenFields {...{ binding, busy }} />
-	{/if}{#if kind.endsWith("token") || kind === "username-password"}
+	{/if}
+	{#if kind.endsWith("token") || kind === "username-password"}
 		<EnvironmentField {...{ binding, busy }} />
-	{/if}{#if error !== ""}
+	{/if}
+	{#if error !== ""}
 		<p role="alert">{error}</p>
-	{/if}<button type="submit" disabled={busy}>Binding を保存 </button>
+	{/if}
+	<button type="submit" disabled={busy}>Binding を保存 </button>
 </form>

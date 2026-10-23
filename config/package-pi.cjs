@@ -7,6 +7,7 @@ const { build } = require("esbuild");
 const { piBundlePlugin } = require("./pi-bundle-plugin.cjs");
 const { copyBundleLicenses } = require("./pi-bundle-licenses.cjs");
 const { verifyPiSources } = require("./pi-sdk-contract.cjs");
+const { dependencies } = require("../apps/vscode-nerita/package.json");
 
 const { version: SUPPORTED_PI_VERSION } = require("./pi-version.json");
 
@@ -82,11 +83,11 @@ async function bundlePi(projectRoot, target) {
 	if (
 		manifest.version !== SUPPORTED_PI_VERSION ||
 		aiManifest.version !== SUPPORTED_PI_VERSION ||
-		require("../apps/vscode-nerita/package.json").dependencies[
-			manifest.name
-		] !== manifest.version
+		dependencies[manifest.name] !== manifest.version
 	) {
-		throw new Error("Pi SDK と pi-ai を対応バージョンに揃え、Pi SDK の依存バージョンを固定してください。");
+		throw new Error(
+			"Pi SDK と pi-ai を対応バージョンに揃え、Pi SDK の依存バージョンを固定してください。",
+		);
 	}
 	await verifyPiSources({ sdk: source, ai: aiRoot, codemode: codemodeRoot });
 	const destination = path.join(target, "pi");

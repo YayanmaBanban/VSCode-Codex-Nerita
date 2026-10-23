@@ -51,7 +51,9 @@ async function resetRuntime(projectRoot) {
 	try {
 		const linkedTarget = (await fs.lstat(target)).isSymbolicLink();
 		if (linkedTarget) {
-			throw new Error("ランタイムの出力先にシンボリックリンクは使用できません。");
+			throw new Error(
+				"ランタイムの出力先にシンボリックリンクは使用できません。",
+			);
 		}
 	} catch (error) {
 		if (error.code !== "ENOENT") {

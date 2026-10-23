@@ -40,7 +40,8 @@
 				oninput={(event) => setAccountId(event.currentTarget.value)}
 				disabled={hostState.busy}
 			/></label
-		><label class="mr-[8px]"
+		>
+		<label class="mr-[8px]"
 			>保存方法 <select
 				class="w-full rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
 				value={mode}
@@ -67,15 +68,18 @@
 					mode,
 				})}
 			>Bitwarden の認証を設定
-		</button><button
+		</button>
+		<button
 			disabled={hostState.busy}
 			onclick={() => send({ type: "bws-logout", accountId })}
 			>Bitwarden の認証を削除
-		</button><button
+		</button>
+		<button
 			disabled={hostState.busy}
 			onclick={() => send({ type: "migrate-pi" })}
 			>既存 Pi 認証を移行
-		</button><button
+		</button>
+		<button
 			disabled={hostState.busy}
 			onclick={() => send({ type: "migrate-mcp" })}
 			>既存 MCP 認証を移行

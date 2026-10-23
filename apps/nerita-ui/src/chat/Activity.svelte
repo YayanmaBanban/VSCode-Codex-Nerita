@@ -85,7 +85,8 @@
 		class="permission-card relative my-[16px] rounded-[8px] border border-solid border-alert-border p-[16px]"
 		aria-label="承認要求"
 	>
-		{#if !prefersReducedMotion.current}<span
+		{#if !prefersReducedMotion.current}
+			<span
 				aria-hidden="true"
 				class="pointer-events-none absolute inset-0 rounded-[inherit]"
 				><BorderBeam
@@ -95,7 +96,8 @@
 					colorTo="var(--nerita-editor-warning-foreground)"
 					beamBorderRadius={8}
 				/></span
-			>{/if}
+			>
+		{/if}
 		<PermissionContent {permission} />
 		<div class="permission-actions flex flex-wrap gap-[8px]">
 			{#each permission.options as option (option.id)}

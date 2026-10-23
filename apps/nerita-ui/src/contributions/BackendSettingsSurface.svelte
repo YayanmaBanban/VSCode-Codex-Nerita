@@ -7,8 +7,6 @@
 </script>
 
 <div class="contents" data-settings-surface={props.contributions.surface}>
-	<ContributionSlot name="settings.main" {...props} /><ContributionSlot
-		name="settings.advanced"
-		{...props}
-	/>
+	<ContributionSlot name="settings.main" {...props} />
+	<ContributionSlot name="settings.advanced" {...props} />
 </div>

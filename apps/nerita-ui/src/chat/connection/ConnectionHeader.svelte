@@ -92,14 +92,16 @@
 	>
 		{headerTitle}
 	</h1>
-	{#if connectionControl}{@render connectionControl()}{:else}<ConnectionButton
-			{state}
-			{send}
-		/>{/if}
+	{#if connectionControl}
+		{@render connectionControl()}
+	{:else}
+		<ConnectionButton {state} {send} />
+	{/if}
 	<div class="flex shrink-0 items-center gap-[2px]">
 		{#if dlc !== true}
-			<SettingsTooltip content="新しいチャット"
-				>{#snippet children({ props })}<button
+			<SettingsTooltip content="新しいチャット">
+				{#snippet children({ props })}
+					<button
 						{...mergeProps(props, {
 							onclick: () =>
 								send({
@@ -115,10 +117,12 @@
 							size={16}
 							aria-hidden="true"
 						/></button
-					>{/snippet}</SettingsTooltip
-			>
-			<SettingsTooltip content="セッション一覧"
-				>{#snippet children({ props })}<button
+					>
+				{/snippet}
+			</SettingsTooltip>
+			<SettingsTooltip content="セッション一覧">
+				{#snippet children({ props })}
+					<button
 						{...mergeProps(props, { onclick: onToggleSessions })}
 						type="button"
 						id="session-list-toggle"
@@ -128,11 +132,13 @@
 						aria-expanded={sessionsOpen}
 						aria-controls="session-panel"
 						><List size={16} aria-hidden="true" /></button
-					>{/snippet}</SettingsTooltip
-			>
+					>
+				{/snippet}
+			</SettingsTooltip>
 		{/if}
-		<SettingsTooltip content={viewLabel}
-			>{#snippet children({ props })}<button
+		<SettingsTooltip content={viewLabel}>
+			{#snippet children({ props })}
+				<button
 					{...mergeProps(props, { onclick: onToggleEditor })}
 					type="button"
 					class={iconClass}
@@ -144,26 +150,31 @@
 							size={16}
 							aria-hidden="true"
 						/>{/if}</button
-				>{/snippet}</SettingsTooltip
-		>
-		{#if dlc !== true}<PersonalityOptions
+				>
+			{/snippet}
+		</SettingsTooltip>
+		{#if dlc !== true}
+			<PersonalityOptions
 				{send}
 				{state}
 				{backend}
 				{sidebarLocation}
 				{onSelectSidebar}
 				error={requestError}
-			/>{/if}
+			/>
+		{/if}
 	</div>
 </header>
-{#if visibleError}<div role="alert" class={`error-banner ${noticeClass}`}>
+{#if visibleError}
+	<div role="alert" class={`error-banner ${noticeClass}`}>
 		{nonEmptyString(requestError) ?? state.error}
-	</div>{/if}
-{#if state.connection === "auth-required" || state.connection === "authenticating"}<AuthenticationNotice
-		{state}
-		{send}
-	/>{/if}
-{#if backend === "pi" && untrusted === true}<ActionNotice
+	</div>
+{/if}
+{#if state.connection === "auth-required" || state.connection === "authenticating"}
+	<AuthenticationNotice {state} {send} />
+{/if}
+{#if backend === "pi" && untrusted === true}
+	<ActionNotice
 		label="ワークスペースの信頼"
 		title="ワークスペースが未信頼"
 		description="セッションは、グローバル領域（.pi\agent\sessions）に保存されます"
@@ -178,4 +189,5 @@
 					}),
 			},
 		]}
-	/>{/if}
+	/>
+{/if}

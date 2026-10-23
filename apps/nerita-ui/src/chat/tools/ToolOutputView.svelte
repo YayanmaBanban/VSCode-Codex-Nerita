@@ -42,13 +42,19 @@
 						aria-hidden="true"
 					/>{:else}<ChevronRight size={14} aria-hidden="true" />{/if}
 			</button>
-			{#if expanded}{#key output.outputRef}<OutputRange
+			{#if expanded}
+				{#key output.outputRef}
+					<OutputRange
 						id={rangeId}
 						outputRef={output.outputRef}
 						{bridge}
-					/>{/key}{/if}
-		{:else}<p class="text-[12px] text-muted">
+					/>
+				{/key}
+			{/if}
+		{:else}
+			<p class="text-[12px] text-muted">
 				省略部分の出力を取得できません。
-			</p>{/if}
+			</p>
+		{/if}
 	{/if}
 </section>

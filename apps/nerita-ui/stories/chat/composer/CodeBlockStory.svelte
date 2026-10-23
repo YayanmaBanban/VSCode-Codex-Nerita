@@ -55,7 +55,8 @@
 		onChange={setParts}
 		onSubmit={() => {}}
 		{locked}
-	/><button
+	/>
+	<button
 		type="button"
 		onclick={() => {
 			if (typeof requestId === "string") {
@@ -63,9 +64,11 @@
 			}
 		}}
 		>Hostのコードブロック化を通知
-	</button><button type="button" onclick={() => setLocked(!locked)}
+	</button>
+	<button type="button" onclick={() => setLocked(!locked)}
 		>入力ロック切替
-	</button><button
+	</button>
+	<button
 		type="button"
 		onclick={() =>
 			setParts([
@@ -87,5 +90,6 @@
 				},
 			])}
 		>参照を含む下書き
-	</button><output aria-label="下書き">{JSON.stringify(parts)}</output>
+	</button>
+	<output aria-label="下書き">{JSON.stringify(parts)}</output>
 </div>

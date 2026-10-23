@@ -43,13 +43,15 @@
 		aria-label="Planの実装"
 		class="relative my-4 overflow-hidden rounded-lg border border-solid border-[var(--nerita-testing-icon-passed)] p-4"
 	>
-		{#if !prefersReducedMotion.current}<BorderBeam
+		{#if !prefersReducedMotion.current}
+			<BorderBeam
 				size={80}
 				duration={6}
 				colorFrom="#45d483"
 				colorTo="#a2f2ae"
 				beamBorderRadius={8}
-			/>{/if}
+			/>
+		{/if}
 		<h2 class="mb-3 text-[13px] font-semibold">
 			このプランを実装しますか？
 		</h2>

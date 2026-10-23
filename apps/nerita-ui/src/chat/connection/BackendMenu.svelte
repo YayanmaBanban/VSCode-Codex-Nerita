@@ -22,8 +22,8 @@
 	]}
 	{onSelect}
 	disabled={backend === undefined}
-	>{#snippet icon()}<Cpu
-			size={16}
-			aria-hidden="true"
-		/>{/snippet}</SelectionSubmenu
 >
+	{#snippet icon()}
+		<Cpu size={16} aria-hidden="true" />
+	{/snippet}
+</SelectionSubmenu>

@@ -69,7 +69,10 @@
 					editor,
 					parsed,
 				}}
-			/><GuardrailsProbePane {...{ editor, probe, setProbe }} />
+			/>
+			<GuardrailsProbePane {...{ editor, probe, setProbe }} />
 		</div>
 	</main>
-{:else}<p class="p-5">ガードレール設定を読み込み中…</p>{/if}
+{:else}
+	<p class="p-5">ガードレール設定を読み込み中…</p>
+{/if}

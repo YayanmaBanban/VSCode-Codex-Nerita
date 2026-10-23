@@ -81,8 +81,8 @@
 	})();
 </script>
 
-<ChatApp {bridge} /><output hidden aria-label="送信した本文">{sent}</output
-><output hidden aria-label="開いた参照">{opened}</output><output
-	hidden
-	aria-label="検索したシンボル">{JSON.stringify(queries)}</output
-><output hidden aria-label="検索完了">{JSON.stringify(completed)}</output>
+<ChatApp {bridge} />
+<output hidden aria-label="送信した本文">{sent}</output>
+<output hidden aria-label="開いた参照">{opened}</output>
+<output hidden aria-label="検索したシンボル">{JSON.stringify(queries)}</output>
+<output hidden aria-label="検索完了">{JSON.stringify(completed)}</output>

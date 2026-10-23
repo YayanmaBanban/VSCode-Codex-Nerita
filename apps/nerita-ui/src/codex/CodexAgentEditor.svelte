@@ -35,8 +35,9 @@
 	}
 </script>
 
-<AgentSettings {...editor.settings}
-	>{#snippet children({ error })}<AgentModelControl
+<AgentSettings {...editor.settings}>
+	{#snippet children({ error })}
+		<AgentModelControl
 			{error}
 			allowUnspecified={false}
 			models={editor.models}

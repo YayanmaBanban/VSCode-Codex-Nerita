@@ -55,5 +55,7 @@
 		/></label
 	>
 	<button type="button" onclick={receiveSave}>保存成功を通知（再生）</button>
-	{#key generation}<AgentManagerFooter {dirty} {saved} {disabled} />{/key}
+	{#key generation}
+		<AgentManagerFooter {dirty} {saved} {disabled} />
+	{/key}
 </form>

@@ -40,18 +40,22 @@
 							id: event.currentTarget.value,
 						})}
 				/></label
-			><Action
+			>
+			<Action
 				{...{
 					label: "判定",
 					value: rule.action,
 					onChange: (action: "allow" | "ask" | "deny") =>
 						updatePath(index, { action }),
 				}}
-			/><PathRuleBase {...{ ...props }} /><PathRuleMatch
+			/>
+			<PathRuleBase {...{ ...props }} />
+			<PathRuleMatch
 				{...{
 					...props,
 				}}
-			/><label class="sm:col-span-2"
+			/>
+			<label class="sm:col-span-2"
 				>相対パス / パターン
 				<input
 					class={inputStyle}
@@ -61,12 +65,14 @@
 							pattern: event.currentTarget.value,
 						})}
 				/></label
-			><PathRuleExceptions
+			>
+			<PathRuleExceptions
 				{...{
 					...props,
 				}}
-			/><PathRuleOperations {...{ ...props }} /><label
-				class="sm:col-span-2"
+			/>
+			<PathRuleOperations {...{ ...props }} />
+			<label class="sm:col-span-2"
 				>理由
 				<input
 					class={inputStyle}

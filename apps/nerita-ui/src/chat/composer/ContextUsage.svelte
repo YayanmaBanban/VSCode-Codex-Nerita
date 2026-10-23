@@ -37,9 +37,11 @@
 </script>
 
 <SettingsTooltip>
-	{#snippet content()}<span>コンテキスト</span>
+	{#snippet content()}
+		<span>コンテキスト</span>
 		<hr />
-		<span>{label}</span>{/snippet}
+		<span>{label}</span>
+	{/snippet}
 	{#snippet children({ props })}
 		<button
 			{...props}

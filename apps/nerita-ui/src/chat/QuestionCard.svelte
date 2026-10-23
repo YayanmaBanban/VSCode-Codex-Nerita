@@ -85,19 +85,22 @@
 				}
 			/>
 		{/each}
-		{#if error ?? question.error}<p
+		{#if error ?? question.error}
+			<p
 				role="alert"
 				class="m-0 text-[12px] [overflow-wrap:anywhere] text-tool-error"
 			>
 				{error ?? question.error}
-			</p>{/if}
+			</p>
+		{/if}
 		<div class="flex flex-wrap gap-2">
 			<button
 				type="submit"
 				class="primary border-transparent bg-primary text-primary-text"
 				>回答を送信</button
 			>
-			{#if question.allowDecline === true}<button
+			{#if question.allowDecline === true}
+				<button
 					type="button"
 					class="quiet group relative isolate overflow-hidden"
 					onclick={() => respond("decline")}
@@ -105,7 +108,8 @@
 						name="拒否"
 						className="bg-yellow-300"
 					/></button
-				>{/if}
+				>
+			{/if}
 			<button
 				type="button"
 				class="quiet group relative isolate overflow-hidden"

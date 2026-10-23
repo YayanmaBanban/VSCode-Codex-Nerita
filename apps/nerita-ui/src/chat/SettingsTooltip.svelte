@@ -146,16 +146,18 @@
 			disabled={disabled || scrollSuppressed}
 		>
 			<Tooltip.Trigger bind:ref={trigger}>
-				{#snippet child({
-					props,
-				}: {
-					props: Record<string, unknown>;
-				})}{#if externalTrigger}<SettingsTooltipDomAnchor
+				{#snippet child({ props }: { props: Record<string, unknown> })}
+					{#if externalTrigger}
+						<SettingsTooltipDomAnchor
 							element={externalTrigger}
 							props={triggerProps(props)}
-						/>{:else}{@render children?.({
+						/>
+					{:else}
+						{@render children?.({
 							props: triggerProps(props),
-						})}{/if}{/snippet}
+						})}
+					{/if}
+				{/snippet}
 			</Tooltip.Trigger>
 			<Tooltip.Portal>
 				<Tooltip.Content
@@ -171,24 +173,32 @@
 						aboveMenu ? "z-[60]" : "z-30",
 					)}
 				>
-					{#snippet child({ wrapperProps, props, open: visible })}<div
+					{#snippet child({ wrapperProps, props, open: visible })}
+						<div
 							{...wrapperProps}
 							style:visibility={scrollSuppressed
 								? "hidden"
 								: undefined}
 						>
-							{#if visible}<div
-									{...props}
-									transition:tooltipTransition
-								>
-									{#if typeof limited === "string"}<span
-											class="whitespace-pre-wrap"
+							{#if visible}
+								<div {...props} transition:tooltipTransition>
+									{#if typeof limited === "string"}
+										<span class="whitespace-pre-wrap"
 											>{limited}</span
-										>{:else if limited}{@render limited()}{/if}
-								</div>{/if}
-						</div>{/snippet}
+										>
+									{:else}
+										{#if limited}
+											{@render limited()}
+										{/if}
+									{/if}
+								</div>
+							{/if}
+						</div>
+					{/snippet}
 				</Tooltip.Content>
 			</Tooltip.Portal>
 		</Tooltip.Root>
 	</Tooltip.Provider>
-{:else}{@render children?.({ props: {} })}{/if}
+{:else}
+	{@render children?.({ props: {} })}
+{/if}

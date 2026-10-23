@@ -28,9 +28,11 @@
 			</p>
 		{:else}
 			<p class="m-0 text-[13px]">{reply.notice}</p>
-		{/if}{#each reply.warnings as warning (warning)}
+		{/if}
+		{#each reply.warnings as warning (warning)}
 			<p class="m-0 text-warning">{warning}</p>
-		{/each}{#if result}
+		{/each}
+		{#if result}
 			<GuardrailsDecision {...{ result }} />
 		{/if}
 	</section>

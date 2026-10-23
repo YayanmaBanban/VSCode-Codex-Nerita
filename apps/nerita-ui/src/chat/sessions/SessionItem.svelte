@@ -56,8 +56,9 @@
 		selected ? "border-focus bg-menu-hover" : "border-transparent bg-menu",
 	)}
 >
-	<SettingsTooltip content={title}
-		>{#snippet children({ props })}<button
+	<SettingsTooltip content={title}>
+		{#snippet children({ props })}
+			<button
 				{...mergeProps(props, {
 					onclick: () =>
 						send({
@@ -79,9 +80,11 @@
 				><span class="mt-[4px] block text-[12px] text-muted"
 					>{relativeTime(session.updatedAt, now)}</span
 				></button
-			>{/snippet}</SettingsTooltip
-	>
-	{#if renaming}<SessionRename
+			>
+		{/snippet}
+	</SettingsTooltip>
+	{#if renaming}
+		<SessionRename
 			sessionId={session.sessionId}
 			{title}
 			{disabled}
@@ -89,15 +92,17 @@
 			close={() => {
 				renaming = false;
 			}}
-		/>{/if}
+		/>
+	{/if}
 	<div class="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
 		<SessionDelete
 			{session}
 			disabled={disabled || !capabilities.delete}
 			{send}
 		/>
-		<SettingsTooltip content="名前を変更"
-			>{#snippet children({ props })}<button
+		<SettingsTooltip content="名前を変更">
+			{#snippet children({ props })}
+				<button
 					{...mergeProps(props, {
 						onclick: () => {
 							renaming = true;
@@ -110,10 +115,12 @@
 						capabilities.rename !== true ||
 						session.archived}
 					><Pencil size={14} aria-hidden="true" /></button
-				>{/snippet}</SettingsTooltip
-		>
-		<SettingsTooltip content={archiveLabel}
-			>{#snippet children({ props })}<button
+				>
+			{/snippet}
+		</SettingsTooltip>
+		<SettingsTooltip content={archiveLabel}>
+			{#snippet children({ props })}
+				<button
 					{...mergeProps(props, {
 						onclick: () =>
 							send({
@@ -135,10 +142,12 @@
 							size={14}
 							aria-hidden="true"
 						/>{/if}</button
-				>{/snippet}</SettingsTooltip
-		>
-		<SettingsTooltip content="フォーク"
-			>{#snippet children({ props })}<button
+				>
+			{/snippet}
+		</SettingsTooltip>
+		<SettingsTooltip content="フォーク">
+			{#snippet children({ props })}
+				<button
 					{...mergeProps(props, {
 						onclick: () =>
 							send({
@@ -152,7 +161,8 @@
 					disabled={forkDisabled}
 					aria-label={`${title}をフォーク`}
 					><GitFork size={14} aria-hidden="true" /></button
-				>{/snippet}</SettingsTooltip
-		>
+				>
+			{/snippet}
+		</SettingsTooltip>
 	</div>
 </li>

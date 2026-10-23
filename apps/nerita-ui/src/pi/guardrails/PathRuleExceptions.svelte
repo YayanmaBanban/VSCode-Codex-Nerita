@@ -17,7 +17,8 @@
 		{#key entry}
 			<PathRuleException {...{ entry, exception, ...props }} />
 		{/key}
-	{/each}<button
+	{/each}
+	<button
 		class={cn(buttonStyle, "self-start")}
 		onclick={() =>
 			updatePath(index, {

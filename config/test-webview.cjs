@@ -60,7 +60,10 @@ async function launch(extension, root, environment) {
 	if (!report.passed) {
 		throw new Error(report.error);
 	}
-	console.log("VS Code 上の Webview の受け入れ検証: 成功", environment.NERITA_UI_ARTIFACTS);
+	console.log(
+		"VS Code 上の Webview の受け入れ検証: 成功",
+		environment.NERITA_UI_ARTIFACTS,
+	);
 }
 
 /** 期限切れでも起動したウィンドウと Host のプロセスツリーを回収する。 */
@@ -79,7 +82,9 @@ async function runEditor(executable, args, options) {
 	try {
 		const [code] = await once(child, "exit");
 		if (timedOut || code !== 0) {
-			throw new Error("VS Code 上の Webview の起動・終了に失敗しました。");
+			throw new Error(
+				"VS Code 上の Webview の起動・終了に失敗しました。",
+			);
 		}
 	} finally {
 		clearTimeout(timer);

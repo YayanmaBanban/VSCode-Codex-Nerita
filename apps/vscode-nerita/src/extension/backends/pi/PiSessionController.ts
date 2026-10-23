@@ -369,7 +369,9 @@ export class PiSessionController extends PiHistory implements BackendSession {
 					(option) => option.id === message.configId,
 				));
 		if (matchesType7) {
-			throw new Error("操作対象の会話または設定項目が、現在の表示と一致しません。");
+			throw new Error(
+				"操作対象の会話または設定項目が、現在の表示と一致しません。",
+			);
 		}
 	}
 }

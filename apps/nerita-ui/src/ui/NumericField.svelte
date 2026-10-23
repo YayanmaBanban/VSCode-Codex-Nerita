@@ -212,12 +212,15 @@
 						)}
 					/>
 				</div>
-				{#if unit}<span aria-hidden="true" class="shrink-0">{unit}</span
-					>{/if}
+				{#if unit}
+					<span aria-hidden="true" class="shrink-0">{unit}</span>
+				{/if}
 			</div>
 		</div>
 	{/snippet}
 </FieldErrorTooltip>
-{#if description}<p id={helpId} class="m-0 mt-2 text-xs text-muted">
+{#if description}
+	<p id={helpId} class="m-0 mt-2 text-xs text-muted">
 		{description}
-	</p>{/if}
+	</p>
+{/if}

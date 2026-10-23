@@ -30,17 +30,21 @@
 		<p class="m-0 text-sm">
 			保持中の承認はありません。必要な実行時に確認します。
 		</p>
-	{/if}{#each snapshot.grants as grant (JSON.stringify(grant.permission))}
+	{/if}
+	{#each snapshot.grants as grant (JSON.stringify(grant.permission))}
 		<article
 			class="grid gap-2 rounded border border-input-border p-3 text-sm"
 		>
 			<strong
 				>{`${commandPermissionLabel(grant.permission)} · ${grant.permission.commandClass}`}</strong
-			><span
+			>
+			<span
 				>{`${grant.permission.route} · ${grant.scope === "workspace" ? "このワークスペース" : "セッション中"}`}</span
-			><span class="break-all text-muted"
+			>
+			<span class="break-all text-muted"
 				>{grant.permission.workspace}</span
-			><button
+			>
+			<button
 				type="button"
 				class={buttonStyle}
 				disabled={busy}

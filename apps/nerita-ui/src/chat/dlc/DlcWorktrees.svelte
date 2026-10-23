@@ -95,15 +95,19 @@
 				"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus enabled:hover:bg-settings-hover",
 			)}
 		>
-			{#if target?.main !== false}<Folder
+			{#if target?.main !== false}
+				<Folder
 					size={16}
 					class="shrink-0 text-muted"
 					aria-hidden="true"
-				/>{:else}<GitBranch
+				/>
+			{:else}
+				<GitBranch
 					size={16}
 					class="shrink-0 text-muted"
 					aria-hidden="true"
-				/>{/if}
+				/>
+			{/if}
 			<span class="min-w-0 flex-1 truncate font-semibold"
 				>{targetName}{#if target && !target.trusted}<span
 						class="text-tool-error">（未信頼）</span
@@ -194,12 +198,14 @@
 										aria-hidden="true"
 									/>{/if}
 							</button>
-							{#if item.removable}<DlcWorktreeDelete
+							{#if item.removable}
+								<DlcWorktreeDelete
 									name={item.name}
 									pending={ui.removals.pending(item.id)}
 									disabled={removalDisabled(item.id)}
 									onDelete={() => removeWorktree(item.id)}
-								/>{/if}
+								/>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -277,28 +283,26 @@
 					Intentの作成・選択を待っています
 				</p>
 			{/if}
-			{#if targetBlocked}<p
-					role="status"
-					class="m-0 flex items-start gap-1 text-[12px]"
-				>
+			{#if targetBlocked}
+				<p role="status" class="m-0 flex items-start gap-1 text-[12px]">
 					<TriangleAlert
 						size={16}
 						class="mt-0.5 shrink-0 text-warning"
 						aria-hidden="true"
 					/>
 					<span>このワークスペースでは別の実行が進行中です。</span>
-				</p>{/if}
-			{#if ui.view.assignmentPending}<p
-					role="status"
-					class="m-0 flex items-start gap-1 text-[12px]"
-				>
+				</p>
+			{/if}
+			{#if ui.view.assignmentPending}
+				<p role="status" class="m-0 flex items-start gap-1 text-[12px]">
 					<LoaderCircle
 						size={16}
 						class="mt-0.5 shrink-0 motion-safe:animate-spin"
 						aria-hidden="true"
 					/>
 					<span>実行先・バックエンドの変更を保存中…</span>
-				</p>{/if}
+				</p>
+			{/if}
 		</div>
 	{/if}
 </div>

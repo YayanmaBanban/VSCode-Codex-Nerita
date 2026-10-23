@@ -29,17 +29,19 @@
 	}
 </script>
 
-{#if typeof input.offset === "number" || typeof input.limit === "number"}<p
-		class={toolLabelClass}
-	>
+{#if typeof input.offset === "number" || typeof input.limit === "number"}
+	<p class={toolLabelClass}>
 		{typeof input.offset === "number"
 			? `開始行: ${input.offset} `
 			: ""}{typeof input.limit === "number"
 			? `上限: ${input.limit}${limitUnit}`
 			: ""}
-	</p>{/if}
-{#if texts.length > 0}<Value value={texts.join("\n\n")} />{:else}<p
-		class={`${toolLabelClass} text-muted`}
-	>
+	</p>
+{/if}
+{#if texts.length > 0}
+	<Value value={texts.join("\n\n")} />
+{:else}
+	<p class={`${toolLabelClass} text-muted`}>
 		{emptyOutputMessage(tool.status)}
-	</p>{/if}
+	</p>
+{/if}

@@ -57,5 +57,6 @@
 			nextId,
 			updatePath,
 		}}
-	/><CommandRuleGroup {...{ onChange, config, nextId }} />
+	/>
+	<CommandRuleGroup {...{ onChange, config, nextId }} />
 </div>

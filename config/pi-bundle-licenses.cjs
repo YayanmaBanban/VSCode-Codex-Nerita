@@ -20,7 +20,9 @@ async function packageRoot(file) {
 		}
 		directory = path.dirname(directory);
 	}
-	throw new Error(`所属する依存パッケージの名前を package.json から確認できません: ${file}`);
+	throw new Error(
+		`所属する依存パッケージの名前を package.json から確認できません: ${file}`,
+	);
 }
 
 /** esbuild が実際に出力した入力だけを対象にする。 */

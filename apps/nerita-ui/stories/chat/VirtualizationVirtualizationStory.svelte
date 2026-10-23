@@ -18,5 +18,7 @@
 	})();
 </script>
 
-{#if updates}<UpdateControls {bridge}></UpdateControls>{/if}
+{#if updates}
+	<UpdateControls {bridge}></UpdateControls>
+{/if}
 <StoryChat {bridge}></StoryChat>

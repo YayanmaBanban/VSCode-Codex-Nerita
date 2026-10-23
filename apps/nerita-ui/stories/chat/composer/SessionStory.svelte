@@ -55,13 +55,14 @@
 	})();
 </script>
 
-<ChatApp {bridge} /><button
+<ChatApp {bridge} />
+<button
 	type="button"
 	onclick={() => {
 		fail.current = true;
 	}}
 	>次の送信を失敗
-</button><output hidden aria-label="送信した参照">{sent}</output><output
-	hidden
-	aria-label="表示したセッション">{opened}</output
-><output hidden aria-label="表示した差分">{changes}</output>
+</button>
+<output hidden aria-label="送信した参照">{sent}</output>
+<output hidden aria-label="表示したセッション">{opened}</output>
+<output hidden aria-label="表示した差分">{changes}</output>

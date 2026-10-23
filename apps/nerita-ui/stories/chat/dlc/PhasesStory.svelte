@@ -35,19 +35,18 @@
 		send={ui.send}
 	>
 		{#snippet initialization()}
-			{#if ui.selected}<IntentOverview
-					selected={ui.selected}
-					action={ui.action}
-				/>
-			{:else}<IntentForm
+			{#if ui.selected}
+				<IntentOverview selected={ui.selected} action={ui.action} />
+			{:else}
+				<IntentForm
 					send={ui.send}
 					pending={ui.creation.pending}
 					onSubmitted={ui.creation.submit}
-				/>{/if}
+				/>
+			{/if}
 		{/snippet}
-		{#snippet conversation()}<DlcConversation
-				{bridge}
-				view={ui.view}
-			/>{/snippet}
+		{#snippet conversation()}
+			<DlcConversation {bridge} view={ui.view} />
+		{/snippet}
 	</DlcPhases>
 </main>

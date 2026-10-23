@@ -32,8 +32,9 @@
 					{@const Icon = item.reference
 						? referenceIcon(item.reference)
 						: undefined}
-					<SettingsTooltip content={item.description} aboveMenu
-						>{#snippet children({ props: triggerProps })}<button
+					<SettingsTooltip content={item.description} aboveMenu>
+						{#snippet children({ props: triggerProps })}
+							<button
 								{...triggerProps}
 								type="button"
 								onmousedown={(event) => event.preventDefault()}
@@ -51,12 +52,13 @@
 									/>{/if}<span class="truncate"
 									>{item.label}</span
 								></button
-							>{/snippet}</SettingsTooltip
-					>
+							>
+						{/snippet}
+					</SettingsTooltip>
 				{/each}
-				{#if recent.length === 0}<span class="text-[12px] text-muted"
-						>まだありません</span
-					>{/if}
+				{#if recent.length === 0}
+					<span class="text-[12px] text-muted">まだありません</span>
+				{/if}
 			</div>
 		</div>
 		<hr

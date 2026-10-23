@@ -31,8 +31,8 @@
 </script>
 
 <AlertDialog.Root bind:open>
-	<SettingsTooltip content="セッションを削除"
-		>{#snippet children({ props })}
+	<SettingsTooltip content="セッションを削除">
+		{#snippet children({ props })}
 			<AlertDialog.Trigger
 				{...props}
 				{disabled}
@@ -42,10 +42,12 @@
 					"p-0 text-red-500",
 					"hover:bg-red-500/10",
 					"focus-visible:outline-offset-[-2px]",
-				)}><Trash size={14} aria-hidden="true" /></AlertDialog.Trigger
+				)}
 			>
-		{/snippet}</SettingsTooltip
-	>
+				<Trash size={14} aria-hidden="true" />
+			</AlertDialog.Trigger>
+		{/snippet}
+	</SettingsTooltip>
 	<AlertDialog.Portal>
 		<AlertDialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
 		<AlertDialog.Content

@@ -25,4 +25,6 @@
 	});
 </script>
 
-{#key bridge}<AgentManager {bridge} />{/key}
+{#key bridge}
+	<AgentManager {bridge} />
+{/key}

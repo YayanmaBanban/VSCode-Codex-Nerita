@@ -31,7 +31,8 @@
 		</button>
 	</div>
 	<div class="guardrails-scroll flex flex-col gap-3">
-		<GuardrailsProbeTarget {...{ probe, setProbe }} /><label
+		<GuardrailsProbeTarget {...{ probe, setProbe }} />
+		<label
 			>対象パス / コマンド
 			<textarea
 				class={cn(inputStyle, "min-h-20 resize-y font-editor")}

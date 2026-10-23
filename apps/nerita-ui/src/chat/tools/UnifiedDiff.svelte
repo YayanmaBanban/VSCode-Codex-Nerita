@@ -10,7 +10,8 @@
 	);
 </script>
 
-<DiffView {...location} hunks={hunks.length > 0 ? hunks : undefined}
-	>{#if hunks.length === 0}<pre
-			class={toolOutputClass}>{diff}</pre>{/if}</DiffView
->
+<DiffView {...location} hunks={hunks.length > 0 ? hunks : undefined}>
+	{#if hunks.length === 0}
+		<pre class={toolOutputClass}>{diff}</pre>
+	{/if}
+</DiffView>

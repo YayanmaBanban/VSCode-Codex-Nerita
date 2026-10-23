@@ -43,21 +43,22 @@
 	{@attach (element: HTMLElement) => register?.(message.id, element)}
 >
 	<div class="message-text leading-[1.85] [overflow-wrap:anywhere]">
-		{#if message.mcp}<McpMessage
-				content={message.mcp}
-				text={message.text}
-			/>
-		{:else}<MessageText
+		{#if message.mcp}
+			<McpMessage content={message.mcp} text={message.text} />
+		{:else}
+			<MessageText
 				text={message.text}
 				{send}
 				references={user ? message.references : undefined}
 				streaming={!user && message.streaming === true}
 				streamId={message.id}
-			/>{/if}
+			/>
+		{/if}
 	</div>
 	{#if user && message.attachments?.length}
 		<div class="mt-2 flex flex-wrap gap-1.5" aria-label="添付ファイル">
-			{#each message.attachments as file (file.id)}<MessageReferenceChip
+			{#each message.attachments as file (file.id)}
+				<MessageReferenceChip
 					path={{
 						kind: "file",
 						name: file.name,
@@ -65,7 +66,8 @@
 						uri: file.uri,
 					}}
 					{send}
-				/>{/each}
+				/>
+			{/each}
 		</div>
 	{/if}
 	{#if !user}
@@ -79,14 +81,17 @@
 			<div
 				class="ml-auto flex items-center gap-2 rounded-lg border border-menu-border bg-message-user p-0.5"
 			>
-				{#if message.mcp?.status !== "loading"}<CopyButton
+				{#if message.mcp?.status !== "loading"}
+					<CopyButton
 						text={message.text}
 						label="回答をコピー"
 						className="size-7 rounded-md"
 						iconSize={16}
-					/>{/if}
+					/>
+				{/if}
 				<SettingsTooltip content="送信メッセージへ移動">
-					{#snippet children({ props })}<button
+					{#snippet children({ props })}
+						<button
 							{...mergeProps(props, {
 								onclick: () => {
 									if (target) {
@@ -105,7 +110,8 @@
 								size={16}
 								aria-hidden="true"
 							/></button
-						>{/snippet}
+						>
+					{/snippet}
 				</SettingsTooltip>
 			</div>
 		</div>

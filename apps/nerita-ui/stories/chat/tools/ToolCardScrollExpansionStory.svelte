@@ -16,7 +16,8 @@
 
 <div bind:this={container} class="h-[400px] overflow-y-auto px-5 py-4">
 	<div class="h-[480px]">過去の会話</div>
-	{#each Array.from({ length: 6 }) as _, index (index)}<ToolCard
+	{#each Array.from({ length: 6 }) as _, index (index)}
+		<ToolCard
 			tool={{
 				id: `scroll-${index}`,
 				title: `スクロール確認 ${index + 1}`,
@@ -42,5 +43,6 @@
 							},
 						}),
 			}}
-		></ToolCard>{/each}
+		></ToolCard>
+	{/each}
 </div>

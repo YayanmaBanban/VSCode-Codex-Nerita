@@ -119,7 +119,8 @@
 		}
 	}}
 >
-	{#if drop.active}<div
+	{#if drop.active}
+		<div
 			class={cn(
 				"pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[10px] bg-input",
 				"p-3 text-center text-input-text",
@@ -127,10 +128,13 @@
 			role="status"
 		>
 			ドロップしてファイルを添付
-		</div>{/if}
-	{#if drop.error !== ""}<p role="alert" class="text-[12px] text-tool-error">
+		</div>
+	{/if}
+	{#if drop.error !== ""}
+		<p role="alert" class="text-[12px] text-tool-error">
 			{drop.error}
-		</p>{/if}
+		</p>
+	{/if}
 	<div inert={inputLocked} aria-busy={inputLocked}>
 		<ComposerInput
 			{contextRequest}
@@ -162,8 +166,10 @@
 			/>
 		</div>
 		<div class="flex shrink-0 items-center gap-2">
-			{#if props.busy}<SettingsTooltip content="停止"
-					>{#snippet children({ props: triggerProps })}<button
+			{#if props.busy}
+				<SettingsTooltip content="停止">
+					{#snippet children({ props: triggerProps })}
+						<button
 							{...triggerProps}
 							type="button"
 							class={cn(
@@ -177,18 +183,22 @@
 								class="size-[14px] rounded-[2px] bg-white"
 								aria-hidden="true"
 							></span></button
-						>{/snippet}</SettingsTooltip
-				>{/if}
-			<SettingsTooltip content={sendLabel}
-				>{#snippet children({ props: triggerProps })}<button
+						>
+					{/snippet}
+				</SettingsTooltip>
+			{/if}
+			<SettingsTooltip content={sendLabel}>
+				{#snippet children({ props: triggerProps })}
+					<button
 						{...triggerProps}
 						type="submit"
 						class={cn(iconButtonClass, "send-button bg-[#2563b8]")}
 						aria-label={sendLabel}
 						disabled={sendDisabled()}
 						><ArrowUp size={18} aria-hidden="true" /></button
-					>{/snippet}</SettingsTooltip
-			>
+					>
+				{/snippet}
+			</SettingsTooltip>
 		</div>
 	</div>
 </form>

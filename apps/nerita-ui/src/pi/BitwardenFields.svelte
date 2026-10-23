@@ -24,14 +24,16 @@
 		disabled={busy}
 		class="w-full rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
 	/></label
-><label
+>
+<label
 	>プロジェクト ID（任意） <input
 		name="projectId"
 		value={reference?.projectId}
 		disabled={busy}
 		class="w-full rounded-[4px] border border-menu-border bg-menu p-[10px] text-menu-text outline-settings-focus"
 	/></label
-><label
+>
+<label
 	>マシンアカウント ID <input
 		name="accountId"
 		required

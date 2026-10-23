@@ -17,13 +17,13 @@
 </script>
 
 {#if tool.output}
-	{#if tool.kind !== "execute" && tool.rawInput !== undefined}<ToolContent
-			{tool}
-			{send}
-			{cwd}
-		/>{/if}
+	{#if tool.kind !== "execute" && tool.rawInput !== undefined}
+		<ToolContent {tool} {send} {cwd} />
+	{/if}
 	<ToolOutputView output={tool.output} />
-	{#if tool.exitCode !== undefined}<p class="text-[12px] text-muted">
+	{#if tool.exitCode !== undefined}
+		<p class="text-[12px] text-muted">
 			終了コード: {tool.exitCode}
-		</p>{/if}
+		</p>
+	{/if}
 {/if}

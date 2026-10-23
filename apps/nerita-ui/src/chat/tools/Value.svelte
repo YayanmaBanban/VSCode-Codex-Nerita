@@ -12,6 +12,8 @@
 	);
 </script>
 
-{#if scrollable}<CommandOutput
-		text={typeof formatted === "string" ? formatted : ""}
-	/>{:else}<pre class={toolOutputClass}>{formatted ?? ""}</pre>{/if}
+{#if scrollable}
+	<CommandOutput text={typeof formatted === "string" ? formatted : ""} />
+{:else}
+	<pre class={toolOutputClass}>{formatted ?? ""}</pre>
+{/if}

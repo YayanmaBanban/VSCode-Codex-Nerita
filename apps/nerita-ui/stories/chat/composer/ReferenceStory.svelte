@@ -64,4 +64,5 @@
 	})();
 </script>
 
-<ChatApp {bridge} /><output aria-label="開いた参照">{opened}</output>
+<ChatApp {bridge} />
+<output aria-label="開いた参照">{opened}</output>

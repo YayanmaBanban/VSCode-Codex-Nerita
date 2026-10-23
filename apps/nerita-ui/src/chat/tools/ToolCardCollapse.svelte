@@ -50,6 +50,8 @@
 	aria-hidden={!open}
 >
 	<div class="min-h-0 overflow-hidden">
-		{#if open || present}{@render children()}{/if}
+		{#if open || present}
+			{@render children()}
+		{/if}
 	</div>
 </div>

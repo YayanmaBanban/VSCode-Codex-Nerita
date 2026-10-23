@@ -75,5 +75,7 @@
 	<button type="button" onclick={switchSource}>接続を切り替え</button>
 	<p>Intent: {dlc.view.selected?.title ?? "未選択"}</p>
 	<p>閲覧: {viewer.agent?.threadId ?? "親"}</p>
-	{#if viewer.view}<p>{viewer.view.messages[0]?.text}</p>{/if}
+	{#if viewer.view}
+		<p>{viewer.view.messages[0]?.text}</p>
+	{/if}
 </main>

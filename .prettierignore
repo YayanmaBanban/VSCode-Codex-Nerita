@@ -1,4 +1,7 @@
 .agents/
+.vscode-test/
+.gitnexus/
+pnpm-lock.yaml
 dist/
 out/
 node_modules/

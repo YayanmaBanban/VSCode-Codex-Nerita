@@ -16,7 +16,8 @@
 		<p class="text-muted">
 			{`${(account.active ? "使用中 · " : "") + account.name} · ${account.mode === "session" ? "このセッションのみ" : "VS Code に保存"}`}
 		</p>
-	{/each}<ProviderFeedback {item} {feedback} />
+	{/each}
+	<ProviderFeedback {item} {feedback} />
 	<div class="flex flex-wrap gap-[8px]">
 		{#if !active}
 			{#each item.methods as method (method.id)}

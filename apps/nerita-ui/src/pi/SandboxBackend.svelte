@@ -31,7 +31,8 @@
 				>Docker（準備中）
 			</option></select
 		></label
-	>{#each snapshot.availability.filter((backend) => backend.id === "mxc") as backend (backend.id)}
+	>
+	{#each snapshot.availability.filter((backend) => backend.id === "mxc") as backend (backend.id)}
 		<div class="grid gap-2 text-sm">
 			<p class="m-0">
 				{backend.available
@@ -54,10 +55,8 @@
 				</ul>
 			</details>
 		</div>
-	{/each}<button
-		type="button"
-		class={buttonStyle}
-		disabled={busy}
-		onclick={probe}>{busy ? "処理中…" : "起動を確認"}</button
+	{/each}
+	<button type="button" class={buttonStyle} disabled={busy} onclick={probe}
+		>{busy ? "処理中…" : "起動を確認"}</button
 	>
 </section>

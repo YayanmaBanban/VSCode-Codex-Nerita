@@ -19,7 +19,8 @@
 </script>
 
 <main class="p-[14px]">
-	{#each [100, 1000] as length (length)}<button
+	{#each [100, 1000] as length (length)}
+		<button
 			type="button"
 			onclick={() =>
 				setMessage({
@@ -30,7 +31,8 @@
 				})}
 		>
 			{length}文字を受信
-		</button>{/each}
+		</button>
+	{/each}
 	<button
 		type="button"
 		onclick={() =>

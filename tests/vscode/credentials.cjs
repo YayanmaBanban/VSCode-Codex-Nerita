@@ -34,7 +34,9 @@ async function verifyCredentials(page, cwd, findFrame) {
 		"/bindings.json\n",
 	);
 	await frame.getByRole("button", { name: "編集", exact: true }).click();
-	await expect(frame.getByLabel("Binding ID", { exact: true })).toBeDisabled();
+	await expect(
+		frame.getByLabel("Binding ID", { exact: true }),
+	).toBeDisabled();
 	await expect(frame.getByLabel("対象", { exact: true })).toHaveValue(
 		"npm.example.test",
 	);

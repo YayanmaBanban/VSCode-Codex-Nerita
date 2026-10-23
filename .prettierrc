@@ -3,7 +3,7 @@
 	"bracketSpacing": true,
 	"tabWidth": 4,
 	"tailwindStylesheet": "./apps/nerita-ui/src/chat/tailwind.css",
-	"plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
+	"plugins": ["./config/prettier-svelte.mjs"],
 	"overrides": [
 		{
 			"files": "*.svelte",

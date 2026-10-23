@@ -35,7 +35,8 @@
 			>ユーザー名・パスワード
 		</option></select
 	></label
-><label
+>
+<label
 	>Provider <select
 		value={provider}
 		disabled={busy}

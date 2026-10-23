@@ -18,7 +18,8 @@
 <section class="guardrails-pane" aria-label="ルール設定">
 	<div class="guardrails-pane-heading">
 		<div class="flex items-center gap-3">
-			<span>ルール編集</span><button
+			<span>ルール編集</span>
+			<button
 				type="button"
 				role="switch"
 				aria-label="JSONで編集"
@@ -26,7 +27,8 @@
 				class="guardrails-mode-switch"
 				onclick={() => setTab(tab === "form" ? "json" : "form")}
 				><span></span></button
-			><span>JSON</span>
+			>
+			<span>JSON</span>
 		</div>
 	</div>
 	<div class="guardrails-scroll">
@@ -43,7 +45,9 @@
 						<p role="alert" class="m-0 text-warning">
 							設定形式を確認してください。JSONを修正するとルール編集に戻れます。
 						</p>
-					{/if}<label for="guardrails-json">設定JSON</label><textarea
+					{/if}
+					<label for="guardrails-json">設定JSON</label>
+					<textarea
 						id="guardrails-json"
 						maxlength={131072}
 						spellcheck={false}

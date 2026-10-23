@@ -23,8 +23,8 @@
 	]);
 </script>
 
-<Field {label}
-	><ConfigControl
+<Field {label}>
+	<ConfigControl
 		appearance="field"
 		option={{
 			id: "handoff-model",
@@ -34,5 +34,5 @@
 		}}
 		disabled={false}
 		{onChange}
-	/></Field
->
+	/>
+</Field>

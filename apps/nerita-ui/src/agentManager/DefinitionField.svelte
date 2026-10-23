@@ -37,9 +37,12 @@
 	}
 </script>
 
-{#if definition}<FieldErrorTooltip message={error}>
-		{#snippet children({ props })}<Field {label}
-				>{#if rows}<textarea
+{#if definition}
+	<FieldErrorTooltip message={error}>
+		{#snippet children({ props })}
+			<Field {label}>
+				{#if rows}
+					<textarea
 						class={cn(inputStyle, "resize-none")}
 						{...props}
 						{rows}
@@ -47,7 +50,9 @@
 						maxlength={limit}
 						value={definition[field]}
 						oninput={(event) => update(event.currentTarget.value)}
-					></textarea>{:else}<input
+					></textarea>
+				{:else}
+					<input
 						class={inputStyle}
 						{...props}
 						required
@@ -55,6 +60,9 @@
 						maxlength={limit}
 						value={definition[field]}
 						oninput={(event) => update(event.currentTarget.value)}
-					/>{/if}</Field
-			>{/snippet}</FieldErrorTooltip
-	>{/if}
+					/>
+				{/if}
+			</Field>
+		{/snippet}
+	</FieldErrorTooltip>
+{/if}

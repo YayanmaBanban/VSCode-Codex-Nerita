@@ -40,7 +40,9 @@
 
 <form class="dlc-form" onsubmit={submit}>
 	<h3>手動タスクの登録</h3>
-	{#if tasks.length > 0}<p>{tasks.length} 件を追加済み</p>{/if}
+	{#if tasks.length > 0}
+		<p>{tasks.length} 件を追加済み</p>
+	{/if}
 	<label>タスク名<input required maxlength={256} bind:value={title} /></label>
 	<label
 		>実装する内容<textarea
@@ -59,6 +61,7 @@
 			type="button"
 			disabled={!valid || tasks.length >= 49}
 			onclick={add}>次のタスクを追加</button
-		><button type="submit" disabled={!valid}>プランを登録</button>
+		>
+		<button type="submit" disabled={!valid}>プランを登録</button>
 	</div>
 </form>

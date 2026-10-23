@@ -36,16 +36,19 @@
 			<input
 				value={id}
 				oninput={(event) => setId(event.currentTarget.value)}
-			/><button onclick={() => rename(id)}>変更</button>
+			/>
+			<button onclick={() => rename(id)}>変更</button>
 		</div></label
-	><WorkflowContextMode
+	>
+	<WorkflowContextMode
 		{...{
 			mode,
 			switchMode,
 			workflow,
 			step,
 		}}
-	/>{#if mode !== "fresh"}
+	/>
+	{#if mode !== "fresh"}
 		<WorkflowContextSource
 			{...{
 				source,
@@ -55,7 +58,8 @@
 				step,
 			}}
 		/>
-	{/if}{#if mode !== "resume"}
+	{/if}
+	{#if mode !== "resume"}
 		<label
 			>Agent
 			<input
@@ -66,7 +70,8 @@
 				placeholder="worker / reviewer"
 			/></label
 		>
-	{/if}<label
+	{/if}
+	<label
 		>タスク
 		<textarea
 			rows={7}
@@ -76,9 +81,10 @@
 				change({ ...step, task: event.currentTarget.value })}
 			placeholder={"{{ step.output }} で依存先の結果を参照"}
 		></textarea></label
-	><WorkflowStepGroup {...{ step, change }} /><WorkflowDependencies
-		{...{ ...props }}
-	/><label class="workflow-check"
+	>
+	<WorkflowStepGroup {...{ step, change }} />
+	<WorkflowDependencies {...{ ...props }} />
+	<label class="workflow-check"
 		><input
 			type="checkbox"
 			checked={workflow.outputs.includes(step.id)}

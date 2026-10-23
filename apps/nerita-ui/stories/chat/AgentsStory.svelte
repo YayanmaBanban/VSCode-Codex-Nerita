@@ -116,8 +116,10 @@
 	] as const;
 </script>
 
-{#if display === "states"}<main class="p-5">
-		{#each statuses as status (status)}<AgentCard
+{#if display === "states"}
+	<main class="p-5">
+		{#each statuses as status (status)}
+			<AgentCard
 				agent={{
 					...child,
 					status,
@@ -127,13 +129,29 @@
 							: status,
 				}}
 				onOpen={() => {}}
-			/>{/each}
+			/>
+		{/each}
 	</main>
-{:else if display === "icons"}<main class="grid grid-cols-2 gap-3 p-5">
-		{#each agentIconKeys as iconKey (iconKey)}<AgentCard
-				agent={{ ...child, iconKey, nickname: iconKey, status: "idle" }}
-				onOpen={() => {}}
-			/>{/each}
-	</main>
-{:else if display === "sources"}<AgentSourceStory />
-{:else}<StoryChat {bridge} />{/if}
+{:else}
+	{#if display === "icons"}
+		<main class="grid grid-cols-2 gap-3 p-5">
+			{#each agentIconKeys as iconKey (iconKey)}
+				<AgentCard
+					agent={{
+						...child,
+						iconKey,
+						nickname: iconKey,
+						status: "idle",
+					}}
+					onOpen={() => {}}
+				/>
+			{/each}
+		</main>
+	{:else}
+		{#if display === "sources"}
+			<AgentSourceStory />
+		{:else}
+			<StoryChat {bridge} />
+		{/if}
+	{/if}
+{/if}

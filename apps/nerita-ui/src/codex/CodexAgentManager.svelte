@@ -21,10 +21,13 @@
 	selected={creating ? "new" : (agent?.id ?? "")}
 	onSelect={props.onSelect}
 	busy={props.busy}
-	>{#if creating || agent}{#key `${editorId}:${props.state.generation}`}<CodexAgentEditor
-				{...props}
-				agent={creating ? undefined : agent}
-			/>{/key}{:else}<p class="text-sm text-muted">
+>
+	{#if creating || agent}
+		{#key `${editorId}:${props.state.generation}`}
+			<CodexAgentEditor {...props} agent={creating ? undefined : agent} />
+		{/key}
+	{:else}
+		<p class="text-sm text-muted">
 			「新しい Agent」から定義を作成できます。
 		</p>
 		<AgentManagerFooter
@@ -32,5 +35,6 @@
 			saved={false}
 			disabled
 			showSave={false}
-		/>{/if}</AgentBrowser
->
+		/>
+	{/if}
+</AgentBrowser>

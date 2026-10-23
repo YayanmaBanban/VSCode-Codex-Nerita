@@ -43,8 +43,8 @@
 			aria-hidden="true"
 		/></DropdownMenu.SubTrigger
 	>
-	<DropdownMenu.Portal
-		><DropdownMenu.SubContent
+	<DropdownMenu.Portal>
+		<DropdownMenu.SubContent
 			side="left"
 			align="start"
 			sideOffset={4}
@@ -58,7 +58,8 @@
 				value={value ?? ""}
 				onValueChange={selectKnownOption}
 			>
-				{#each options as [option, name] (option)}<DropdownMenu.RadioItem
+				{#each options as [option, name] (option)}
+					<DropdownMenu.RadioItem
 						value={option}
 						{disabled}
 						closeOnSelect
@@ -67,16 +68,18 @@
 							"data-disabled:cursor-default data-disabled:opacity-50",
 							"data-highlighted:bg-menu-hover",
 						)}
-						>{#snippet children({ checked })}<span
+					>
+						{#snippet children({ checked })}<span
 								class="size-[16px] shrink-0"
 								>{#if checked}<Check
 										size={16}
 										class="text-menu-check"
 										aria-hidden="true"
 									/>{/if}</span
-							>{name}{/snippet}</DropdownMenu.RadioItem
-					>{/each}
+							>{name}{/snippet}
+					</DropdownMenu.RadioItem>
+				{/each}
 			</DropdownMenu.RadioGroup>
-		</DropdownMenu.SubContent></DropdownMenu.Portal
-	>
+		</DropdownMenu.SubContent>
+	</DropdownMenu.Portal>
 </DropdownMenu.Sub>

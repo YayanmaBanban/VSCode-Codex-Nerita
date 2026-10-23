@@ -187,7 +187,8 @@
 
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<nav aria-label="管理対象" class="flex gap-1">
-				{#each [["agents", "Agents"], ["handoff", "ハンドオフ"]] as [id, label] (id)}<button
+				{#each [["agents", "Agents"], ["handoff", "ハンドオフ"]] as [id, label] (id)}
+					<button
 						class={tabStyle}
 						aria-pressed={tab === id}
 						disabled={locked}
@@ -202,11 +203,13 @@
 								);
 							}
 						}}>{label}</button
-					>{/each}
+					>
+				{/each}
 			</nav>
 			<div class="flex items-center gap-2">
-				<SettingsTooltip content="再読み込み"
-					>{#snippet children({ props })}<button
+				<SettingsTooltip content="再読み込み">
+					{#snippet children({ props })}
+						<button
 							{...mergeProps(
 								{ ...props },
 								{
@@ -216,11 +219,15 @@
 							class={headerAction}
 							aria-label="再読み込み"
 							disabled={editor.busy}
-							><RotateCw size={16} aria-hidden="true" /></button
-						>{/snippet}</SettingsTooltip
-				>{#if tab === "agents"}<SettingsTooltip
-						content="新しいエージェントを追加"
-						>{#snippet children({ props })}<button
+						>
+							<RotateCw size={16} aria-hidden="true" /></button
+						>
+					{/snippet}
+				</SettingsTooltip>
+				{#if tab === "agents"}
+					<SettingsTooltip content="新しいエージェントを追加">
+						{#snippet children({ props })}
+							<button
 								{...mergeProps(
 									{ ...props },
 									{
@@ -233,18 +240,21 @@
 								disabled={locked ||
 									!editor.state ||
 									selected === "new"}
-								><UserPlus
-									size={16}
-									aria-hidden="true"
-								/></button
-							>{/snippet}</SettingsTooltip
-					>{/if}
+							>
+								<UserPlus size={16} aria-hidden="true" />
+							</button>
+						{/snippet}
+					</SettingsTooltip>
+				{/if}
 			</div>
 		</div>
 	</header>
-	{#if formProps}{#key `${formProps.state.activeBackend}:${editor.revision}`}{#if tab === "handoff"}<HandoffSettings
-					{...formProps}
-				/>{:else}<BackendManager
+	{#if formProps}
+		{#key `${formProps.state.activeBackend}:${editor.revision}`}
+			{#if tab === "handoff"}
+				<HandoffSettings {...formProps} />
+			{:else}
+				<BackendManager
 					{...formProps}
 					{advancedSettings}
 					{selected}
@@ -253,12 +263,17 @@
 							navigate(() => (selected = id));
 						}
 					}}
-				/>{/if}{/key}{:else}<AgentManagerFooter
+				/>
+			{/if}
+		{/key}
+	{:else}
+		<AgentManagerFooter
 			dirty={false}
 			saved={false}
 			disabled
 			showSave={false}
-		/>{/if}
+		/>
+	{/if}
 </main>
 
 <style>

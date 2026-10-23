@@ -41,7 +41,8 @@
 {#each tool.paths as path, index (index)}
 	{@const uri = fileUri(path)}
 	<div>
-		{#if isNonEmptyString(uri) && send}<a
+		{#if isNonEmptyString(uri) && send}
+			<a
 				class="[overflow-wrap:anywhere] text-link underline underline-offset-2"
 				href={uri}
 				onclick={(event) => {
@@ -52,6 +53,9 @@
 						uri,
 					});
 				}}>{path}</a
-			>{:else}<span class="[overflow-wrap:anywhere]">{path}</span>{/if}
+			>
+		{:else}
+			<span class="[overflow-wrap:anywhere]">{path}</span>
+		{/if}
 	</div>
 {/each}

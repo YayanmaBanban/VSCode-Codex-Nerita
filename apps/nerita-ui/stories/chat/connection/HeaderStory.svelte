@@ -70,10 +70,12 @@
 	];
 </script>
 
-{#if transitions}<div style="padding:24px">
+{#if transitions}
+	<div style="padding:24px">
 		<ConnectionButton state={chatState} send={() => {}} />
 		<div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:8px">
-			{#each connections as connection (connection)}<button
+			{#each connections as connection (connection)}
+				<button
 					type="button"
 					onclick={() => {
 						chatState = {
@@ -82,6 +84,10 @@
 							sessionPending: true,
 						};
 					}}>{connection}</button
-				>{/each}
+				>
+			{/each}
 		</div>
-	</div>{:else}<StoryChat {bridge} />{/if}
+	</div>
+{:else}
+	<StoryChat {bridge} />
+{/if}

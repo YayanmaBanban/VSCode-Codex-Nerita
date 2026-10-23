@@ -101,7 +101,8 @@
 		</SettingsTooltip>
 	{/if}
 	<div class="mb-[16px] flex flex-wrap items-baseline gap-[8px]">
-		<button type="submit" disabled={!hasValue}>送信 </button><button
+		<button type="submit" disabled={!hasValue}>送信 </button>
+		<button
 			type="button"
 			onclick={() => {
 				const field = inputRef ?? selectRef;

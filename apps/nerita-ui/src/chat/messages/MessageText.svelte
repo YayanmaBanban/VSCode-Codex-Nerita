@@ -111,24 +111,24 @@
 		sanitizeUrl={markdownUrl}
 	>
 		{#snippet text({ text: value = "", children }: TextSnippetProps)}
-			{#if children}{@render children()}{:else}<ReferenceText
-					{value}
-					targets={content.targets}
-					{send}
-				/>{/if}
+			{#if children}
+				{@render children()}
+			{:else}
+				<ReferenceText {value} targets={content.targets} {send} />
+			{/if}
 		{/snippet}
-		{#snippet rawtext({ text: value }: RawTextSnippetProps)}<ReferenceText
-				{value}
-				targets={content.targets}
-				{send}
-			/>{/snippet}
-		{#snippet codespan({ text: value = "" }: CodespanSnippetProps)}<code
+		{#snippet rawtext({ text: value }: RawTextSnippetProps)}
+			<ReferenceText {value} targets={content.targets} {send} />
+		{/snippet}
+		{#snippet codespan({ text: value = "" }: CodespanSnippetProps)}
+			<code
 				><ReferenceText
 					{value}
 					targets={content.targets}
 					{send}
 				/></code
-			>{/snippet}
+			>
+		{/snippet}
 		{#snippet code({ text: value, lang }: CodeSnippetProps)}
 			<pre
 				class="my-[12px] overflow-x-auto rounded-[6px] bg-message-code p-[12px] text-[12px] whitespace-pre"><code
@@ -151,18 +151,22 @@
 		{/snippet}
 		{#snippet listitem({ task, checked, children }: ListItemSnippetProps)}
 			<li class={task === true ? "task-list-item" : undefined}>
-				{#if task === true}<input
+				{#if task === true}
+					<input
 						type="checkbox"
 						disabled
 						checked={checked === true}
 						aria-label="タスクの完了状態"
-					/>{/if}
+					/>
+				{/if}
 				{@render children?.()}
 			</li>
 		{/snippet}
-		{#snippet image({ text: alt }: ImageSnippetProps)}<span
+		{#snippet image({ text: alt }: ImageSnippetProps)}
+			<span
 				>{restoreReferences(isNonEmptyString(alt) ? alt : "画像")}</span
-			>{/snippet}
+			>
+		{/snippet}
 		{#snippet link({
 			href = "",
 			title,

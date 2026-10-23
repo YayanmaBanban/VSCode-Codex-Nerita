@@ -53,10 +53,8 @@
 </script>
 
 {#if !virtual}
-	{#each data.entries as entry (entry.key)}<div
-			data-entry-key={entry.key}
-			class="flow-root"
-		>
+	{#each data.entries as entry (entry.key)}
+		<div data-entry-key={entry.key} class="flow-root">
 			<TimelineEntryView
 				{entry}
 				{renderTool}
@@ -65,7 +63,8 @@
 				{jump}
 				{register}
 			/>
-		</div>{/each}
+		</div>
+	{/each}
 {:else}
 	<div
 		bind:this={virtual.list}
@@ -75,7 +74,8 @@
 	>
 		{#each virtual.virtualizer.getVirtualItems() as item (item.key)}
 			{@const entry = data.entries[item.index]}
-			{#if entry}<div
+			{#if entry}
+				<div
 					data-index={item.index}
 					data-entry-key={entry.key}
 					class="absolute top-0 left-0 flow-root w-full"
@@ -93,7 +93,8 @@
 						{jump}
 						{register}
 					/>
-				</div>{/if}
+				</div>
+			{/if}
 		{/each}
 	</div>
 {/if}

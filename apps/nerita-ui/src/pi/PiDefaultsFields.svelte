@@ -29,7 +29,8 @@
 		{models}
 		onChange={(defaultModel: string | undefined) =>
 			setEdit({ ...edit, defaultModel })}
-	/>{#each ["defaultThinking", "maxThinking"] as const as key (key)}
+	/>
+	{#each ["defaultThinking", "maxThinking"] as const as key (key)}
 		{#key key}
 			<EffortField
 				label={key === "defaultThinking"
@@ -53,8 +54,8 @@
 		Max thinking
 		はモデル共通の上限です。選択モデルに対応する推論候補とは異なります。
 	</p>
-	<Field label="セッション内の起動上限"
-		><input
+	<Field label="セッション内の起動上限">
+		<input
 			class={inputStyle}
 			type="number"
 			min={0}
@@ -70,8 +71,9 @@
 							? undefined
 							: Number(event.currentTarget.value),
 				})}
-		/></Field
-	>{#if isNonEmptyString(error)}
+		/>
+	</Field>
+	{#if isNonEmptyString(error)}
 		<p role="alert" class="text-sm">{error}</p>
 	{/if}
 </fieldset>

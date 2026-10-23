@@ -78,14 +78,16 @@
 					aria-label={option.name}
 					role="combobox"
 				>
-					{#if icon !== undefined}<Icon
-							size={16}
-							aria-hidden="true"
-						/>{:else}<span class="truncate"
+					{#if icon !== undefined}
+						<Icon size={16} aria-hidden="true" />
+					{:else}
+						<span class="truncate"
 							>{current?.name ??
 								option.currentLabel ??
 								option.name}</span
-						><Chevron size={12} aria-hidden="true" />{/if}
+						>
+						<Chevron size={12} aria-hidden="true" />
+					{/if}
 				</Select.Trigger>
 			{/snippet}
 		</SettingsTooltip>
@@ -153,7 +155,9 @@
 													></span
 												></span
 											>
-										{:else}<span>{choice.name}</span>{/if}
+										{:else}
+											<span>{choice.name}</span>
+										{/if}
 										<span
 											class="config-check inline-flex flex-[0_0_15px] text-menu-check"
 											>{#if selected}<Check

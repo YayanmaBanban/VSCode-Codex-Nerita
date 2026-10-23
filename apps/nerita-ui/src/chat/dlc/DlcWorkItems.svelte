@@ -36,22 +36,28 @@
 	<p class="text-muted">
 		手動タスクの実装は、工程の完了や検証の通過とは別に記録されます。
 	</p>
-	{#if selected.stage === "planning" && selected.workflowStatus === "in-flight"}{#key selected.intentId}<TaskForm
+	{#if selected.stage === "planning" && selected.workflowStatus === "in-flight"}
+		{#key selected.intentId}
+			<TaskForm
 				onPlan={(tasks: DlcTask[]) => action({ type: "plan", tasks })}
-			/>{/key}{/if}
+			/>
+		{/key}
+	{/if}
 	<div class="dlc-toolbar">
 		<button
 			type="button"
 			disabled={!selected.canRun || active}
 			onclick={() => action({ type: "run" })}>手動タスクを実行</button
-		><button
+		>
+		<button
 			type="button"
 			disabled={!selected.canCancel}
 			onclick={() => action({ type: "cancel" })}>実行を停止</button
 		>
 	</div>
 	<ul class="dlc-work-items">
-		{#each selected.workItems as item (item.id)}<li>
+		{#each selected.workItems as item (item.id)}
+			<li>
 				<strong>{item.title}</strong> · {statusLabels[item.status]}
 				{#if item.detail !== null}<p>{item.detail}</p>{/if}
 				{#if ["failed", "cancelled", "interrupted"].includes(item.status)}<button
@@ -74,6 +80,7 @@
 							attempt.status
 						]}</button
 					>{/each}
-			</li>{/each}
+			</li>
+		{/each}
 	</ul>
 </section>

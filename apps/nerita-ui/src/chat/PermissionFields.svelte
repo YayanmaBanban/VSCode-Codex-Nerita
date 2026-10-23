@@ -22,10 +22,12 @@
 				<dd
 					class="m-0 min-w-0 [overflow-wrap:anywhere] whitespace-pre-wrap"
 				>
-					{#if field.display === "code"}<PermissionCode
+					{#if field.display === "code"}
+						<PermissionCode
 							label={field.label}
 							value={field.value}
-						/>{:else}{field.value}{/if}
+						/>
+					{:else}{field.value}{/if}
 				</dd>
 			</div>
 		{/each}

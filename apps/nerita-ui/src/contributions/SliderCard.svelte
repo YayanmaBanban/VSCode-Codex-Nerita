@@ -97,24 +97,33 @@
 	}
 </script>
 
-{#snippet tooltip()}{#if model}<span class="whitespace-pre-line"
+{#snippet tooltip()}
+	{#if model}
+		<span class="whitespace-pre-line"
 			>{descriptions[option.currentValue]}</span
-		>{:else}<span class="inline-flex items-center gap-[6px]"
+		>
+	{:else}
+		<span class="inline-flex items-center gap-[6px]"
 			>{#if control.secondary}{#if control.secondary.icon === "user"}<User
 						size={16}
 						aria-hidden="true"
 					/>{:else}<Bot size={16} aria-hidden="true" />{/if}{/if}<span
 				>{label}</span
 			></span
-		>{/if}{/snippet}
-<Popover.Root bind:open={popup.open} onOpenChange={() => (preview = null)}
-	><Popover.Trigger
-		>{#snippet child({ props: triggerProps })}<SettingsTooltip
+		>
+	{/if}
+{/snippet}
+<Popover.Root bind:open={popup.open} onOpenChange={() => (preview = null)}>
+	<Popover.Trigger>
+		{#snippet child({ props: triggerProps })}
+			<SettingsTooltip
 				content={tooltip}
 				disabled={popup.open ||
 					(model !== undefined &&
 						descriptions[option.currentValue] === undefined)}
-				>{#snippet children({ props: tooltipProps })}<button
+			>
+				{#snippet children({ props: tooltipProps })}
+					<button
 						bind:this={trigger}
 						{...mergeProps(
 							{ ...triggerProps },
@@ -167,10 +176,13 @@
 								size={16}
 								aria-hidden="true"
 							/>{/if}</button
-					>{/snippet}</SettingsTooltip
-			>{/snippet}</Popover.Trigger
-	><Popover.Portal
-		><Popover.Content
+					>
+				{/snippet}
+			</SettingsTooltip>
+		{/snippet}
+	</Popover.Trigger>
+	<Popover.Portal>
+		<Popover.Content
 			bind:ref={card}
 			onOpenAutoFocus={focusSlider}
 			onCloseAutoFocus={restoreFocus}
@@ -188,15 +200,17 @@
 			<div
 				class="relative flex min-h-[36px] items-center justify-center pb-[8px]"
 			>
-				{#if displayed.fastMode}<div class="absolute top-0 left-0">
+				{#if displayed.fastMode}
+					<div class="absolute top-0 left-0">
 						<FastModeButton
 							control={displayed.fastMode}
 							{disabled}
 							{onChange}
 						/>
-					</div>{/if}{#if displayed.secondary}<div
-						class="absolute top-0 left-0"
-					>
+					</div>
+				{/if}
+				{#if displayed.secondary}
+					<div class="absolute top-0 left-0">
 						<ConfigControl
 							option={displayed.secondary.option}
 							icon={displayed.secondary.icon}
@@ -210,7 +224,8 @@
 								}
 							}}
 						/>
-					</div>{/if}
+					</div>
+				{/if}
 				<div class="flex min-w-0 flex-col items-center px-[28px]">
 					<h2
 						class={cn(
@@ -221,7 +236,8 @@
 					>
 						{optionLabel(displayed.option)}
 					</h2>
-					{#if displayed.model}<ConfigControl
+					{#if displayed.model}
+						<ConfigControl
 							option={displayed.model}
 							chevron="right"
 							{disabled}
@@ -230,7 +246,8 @@
 									onChange(displayed.model.id, value);
 								}
 							}}
-						/>{/if}
+						/>
+					{/if}
 				</div>
 			</div>
 			<StepSlider
@@ -247,6 +264,6 @@
 					}
 				}}
 			/>
-		</Popover.Content></Popover.Portal
-	></Popover.Root
->
+		</Popover.Content>
+	</Popover.Portal>
+</Popover.Root>

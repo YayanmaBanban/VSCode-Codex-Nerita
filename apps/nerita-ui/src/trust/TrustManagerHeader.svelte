@@ -46,9 +46,7 @@
 			Codex: グローバル <code>config.toml</code> に保存
 		</p>
 	{:else}
-		<p class="m-0">
-			Pi: Nerita の信頼設定を VS Code のストレージに保存
-		</p>
+		<p class="m-0">Pi: Nerita の信頼設定を VS Code のストレージに保存</p>
 		{#if piStoragePath}
 			<p class="m-0 mt-1 [overflow-wrap:anywhere]">
 				<code>{piStoragePath}</code>

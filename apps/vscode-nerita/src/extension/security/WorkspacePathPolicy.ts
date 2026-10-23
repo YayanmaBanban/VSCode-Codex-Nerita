@@ -40,7 +40,9 @@ export async function canonicalPath(
 		}
 		const parent = dirname(ancestor);
 		if (parent === ancestor) {
-			throw new Error("指定パス、またはその上位フォルダの実際の場所を確認できません。");
+			throw new Error(
+				"指定パス、またはその上位フォルダの実際の場所を確認できません。",
+			);
 		}
 		missing.unshift(basename(ancestor));
 		ancestor = parent;
@@ -52,18 +54,24 @@ export async function createWorkspaceAccessPolicy(
 	roots: readonly string[],
 ): Promise<AgentAccessPolicy> {
 	if (roots.length === 0) {
-		throw new Error("アクセスを許可するワークスペースのルートフォルダが指定されていません。");
+		throw new Error(
+			"アクセスを許可するワークスペースのルートフォルダが指定されていません。",
+		);
 	}
 	const canonical = await Promise.all(
 		roots.map(async (root) => {
 			validatePath(root);
 
 			if (!isAbsolute(root)) {
-				throw new Error("ワークスペースのルートフォルダは絶対パスで指定してください。");
+				throw new Error(
+					"ワークスペースのルートフォルダは絶対パスで指定してください。",
+				);
 			}
 			const rootInfo = await stat(root);
 			if (!rootInfo.isDirectory()) {
-				throw new Error("ワークスペースのルートにはフォルダを指定してください。");
+				throw new Error(
+					"ワークスペースのルートにはフォルダを指定してください。",
+				);
 			}
 			return realpath(root);
 		}),

@@ -300,7 +300,8 @@ function configureLeastPrivilege(config) {
 		JSON.stringify(
 			{
 				containment: config.containment,
-				leastPrivilege: config.processContainer?.leastPrivilege ?? false,
+				leastPrivilege:
+					config.processContainer?.leastPrivilege ?? false,
 				fallback: config.fallback,
 				cwd: config.process.cwd,
 				filesystem: config.filesystem,
@@ -455,7 +456,13 @@ SDK に渡した設定と、MXC・ProcessContainer・Windows による
 }
 
 async function runMatrixCases({ sdk, rw, ro, control, nodeExe }) {
-	const withoutRoot = await runWithoutVolumeRoot({ sdk, rw, ro, control, nodeExe });
+	const withoutRoot = await runWithoutVolumeRoot({
+		sdk,
+		rw,
+		ro,
+		control,
+		nodeExe,
+	});
 
 	/*
 	 * 条件 B はドライブのルートに読み取りを許可し、Nerita のパス解決用の互換設定に近い条件を再現する。

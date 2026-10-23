@@ -64,16 +64,16 @@ async function capture(
 			name: "DLC の Worktree",
 		});
 		await expect(worktree).toBeVisible({ timeout: 30000 });
-	await expect(worktree).toHaveText("work-new（未信頼）");
+		await expect(worktree).toHaveText("work-new（未信頼）");
 		const trust = page.getByRole("button", {
 			name: "ワークスペースを信頼する",
 			exact: true,
 		});
-	await expect(trust).toHaveCount(1);
+		await expect(trust).toHaveCount(1);
 		await worktree.click();
 		await expect(
 			page.getByRole("button", {
-			name: "work-new（未信頼）",
+				name: "work-new（未信頼）",
 				exact: true,
 			}),
 		).toHaveCount(1);

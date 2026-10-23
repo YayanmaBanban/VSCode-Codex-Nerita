@@ -28,15 +28,15 @@
 		"last:border-b-0 sm:px-4",
 	)}
 >
-	{#if record.trust === "trusted"}<ShieldCheck
+	{#if record.trust === "trusted"}
+		<ShieldCheck
 			size={18}
 			class="shrink-0 text-menu-check"
 			aria-hidden="true"
-		/>{:else}<ShieldAlert
-			size={18}
-			class="shrink-0 text-muted"
-			aria-hidden="true"
-		/>{/if}
+		/>
+	{:else}
+		<ShieldAlert size={18} class="shrink-0 text-muted" aria-hidden="true" />
+	{/if}
 	<div class="min-w-0 flex-1">
 		<h2
 			class="m-0 text-[13px] leading-5 font-semibold [overflow-wrap:anywhere]"

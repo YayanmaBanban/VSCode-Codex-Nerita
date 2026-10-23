@@ -23,16 +23,18 @@
 >
 	<div class="flex items-center justify-between gap-[8px]">
 		<h2 class="m-0 text-[13px] font-semibold">セッション一覧</h2>
-		<SettingsTooltip content="閉じる"
-			>{#snippet children({ props })}<button
+		<SettingsTooltip content="閉じる">
+			{#snippet children({ props })}
+				<button
 					{...mergeProps(props, { onclick: onClose })}
 					bind:this={close}
 					type="button"
 					class={sessionActionClass}
 					aria-label="セッション一覧を閉じる"
 					><X size={16} aria-hidden="true" /></button
-				>{/snippet}</SettingsTooltip
-		>
+				>
+			{/snippet}
+		</SettingsTooltip>
 	</div>
 	<div class="mt-[8px] flex items-start gap-[8px]">
 		<SettingsTooltip content={state.cwd ?? undefined}>
@@ -45,7 +47,8 @@
 				>
 			{/snippet}
 		</SettingsTooltip>
-		{#if state.sessionsLoading}<span
+		{#if state.sessionsLoading}
+			<span
 				role="progressbar"
 				aria-label="セッション一覧を取得中"
 				class="mt-[1px] inline-flex shrink-0 text-link"
@@ -54,6 +57,7 @@
 					class="motion-safe:animate-spin"
 					aria-hidden="true"
 				/></span
-			>{/if}
+			>
+		{/if}
 	</div>
 </header>

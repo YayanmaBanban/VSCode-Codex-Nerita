@@ -1,6 +1,7 @@
 <!-- Pi のエージェント定義とモデル・推論設定を編集し、共通の保存処理へ渡す。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
+	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import { agentEditSchema } from "@nerita/shared/agentManager/config";
 	import { type ManagedAgent } from "@nerita/shared/agentManager/messages";
 
@@ -47,19 +48,33 @@
 	}
 </script>
 
-<AgentSettings {...settings}
-	>{#snippet children({ error })}<AgentModelControl
+<AgentSettings {...settings}>
+	{#snippet children({ error })}
+		<AgentModelControl
 			{error}
 			{models}
 			model={edit.model}
 			effort={edit.thinking}
 			disabled={props.busy || agent?.editable === false}
 			onChange={changeOption}
-		/>{#if agent}
+		/>
+		{#if !isNonEmptyString(edit.model)}
+			<p class="m-0 text-xs text-muted">
+				未指定の場合、モデルは親のモデルを使用し、推論レベルはバックエンドの既定値に任せます。
+			</p>
+		{:else}
+			{#if edit.thinking === undefined}
+				<p class="m-0 text-xs text-muted">
+					推論レベルが未指定の場合、バックエンドの既定値に任せます。
+				</p>
+			{/if}
+		{/if}
+		{#if agent}
 			<EnabledField
 				value={edit.disabled}
 				onChange={(disabled: boolean | undefined) =>
 					change({ ...edit, disabled })}
 			/>
-		{/if}{/snippet}</AgentSettings
->
+		{/if}
+	{/snippet}
+</AgentSettings>

@@ -16,8 +16,9 @@
 	} = $props();
 </script>
 
-<SettingsTooltip content={control.description}
-	>{#snippet children({ props })}<label
+<SettingsTooltip content={control.description}>
+	{#snippet children({ props })}
+		<label
 			class={cn(
 				"toggle-switch inline-flex items-center gap-[5px] px-[5px] text-[12px]",
 				"text-muted",
@@ -44,5 +45,6 @@
 					class="block size-[11px] rounded-full bg-foreground group-aria-checked:translate-x-[11px]"
 				></span></button
 			></label
-		>{/snippet}</SettingsTooltip
->
+		>
+	{/snippet}
+</SettingsTooltip>

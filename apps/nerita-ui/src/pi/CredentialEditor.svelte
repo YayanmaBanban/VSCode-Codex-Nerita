@@ -44,9 +44,11 @@
 		>
 			{error}
 		</p>
-	{/if}{#if notice !== ""}
+	{/if}
+	{#if notice !== ""}
 		<p role="status">{notice}</p>
-	{/if}<CredentialProviderSettings state={hostState} {send} />
+	{/if}
+	<CredentialProviderSettings state={hostState} {send} />
 	<section aria-label="Binding">
 		<h2 class="text-[16px] font-semibold">Binding</h2>
 		{#each hostState.bindings as binding (binding.id)}
@@ -55,22 +57,24 @@
 			>
 				<span class="min-w-0 flex-1 break-words"
 					>{`${binding.id} · ${binding.match.target} · ${binding.provider.type}`}</span
-				><button
+				>
+				<button
 					disabled={hostState.busy}
 					onclick={() => setEditing(binding)}
 					>編集
-				</button><button
+				</button>
+				<button
 					disabled={hostState.busy}
 					onclick={() =>
 						send({ type: "delete-binding", id: binding.id })}
 					>削除
 				</button>
 			</div>
-		{/each}<button
-			disabled={hostState.busy}
-			onclick={() => setEditing(undefined)}
+		{/each}
+		<button disabled={hostState.busy} onclick={() => setEditing(undefined)}
 			>新しい Binding
-		</button>{#key editing?.id ?? "new"}
+		</button>
+		{#key editing?.id ?? "new"}
 			<BindingForm
 				binding={editing}
 				busy={hostState.busy}

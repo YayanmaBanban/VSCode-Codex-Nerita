@@ -21,8 +21,8 @@
 		["secondary", "セカンダリ"],
 	]}
 	{onSelect}
-	>{#snippet icon()}<Columns2
-			size={16}
-			aria-hidden="true"
-		/>{/snippet}</SelectionSubmenu
 >
+	{#snippet icon()}
+		<Columns2 size={16} aria-hidden="true" />
+	{/snippet}
+</SelectionSubmenu>

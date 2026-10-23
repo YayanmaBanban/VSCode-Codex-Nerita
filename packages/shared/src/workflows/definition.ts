@@ -105,7 +105,9 @@ function validateStep(step: WorkflowStep, steps: Map<string, WorkflowStep>) {
 		[...steps.values()].filter((other) => other.resume === step.resume)
 			.length > 1;
 	if (matchesIsNonEmptyString) {
-		throw new Error(`同じステップの会話を複数のステップで再開することはできません: ${step.resume}`);
+		throw new Error(
+			`同じステップの会話を複数のステップで再開することはできません: ${step.resume}`,
+		);
 	}
 }
 
@@ -118,7 +120,9 @@ function validateMode(step: WorkflowStep) {
 		throw new Error("resume は agent・fork と併用できません。");
 	}
 	if (!isNonEmptyString(step.resume) && !isNonEmptyString(step.agent)) {
-		throw new Error(`再開する会話を指定しない場合は、実行するエージェントを指定してください: ${step.id}`);
+		throw new Error(
+			`再開する会話を指定しない場合は、実行するエージェントを指定してください: ${step.id}`,
+		);
 	}
 }
 

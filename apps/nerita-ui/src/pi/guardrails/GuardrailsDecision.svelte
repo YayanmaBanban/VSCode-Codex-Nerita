@@ -20,6 +20,7 @@
 </ul>
 {#each result.paths as path (path)}
 	<p class="m-0 font-editor text-[12px] break-all">正規化後: {path}</p>
-{/each}{#each result.uncertainties as text (text)}
+{/each}
+{#each result.uncertainties as text (text)}
 	<p class="m-0 text-[13px] text-warning">{text}</p>
 {/each}

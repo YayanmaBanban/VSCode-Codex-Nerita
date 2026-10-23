@@ -50,13 +50,15 @@
 		)}
 	>
 		<div class="min-h-0 overflow-hidden">
-			{#key JSON.stringify(settings)}<PersonalityPaneEditor
+			{#key JSON.stringify(settings)}
+				<PersonalityPaneEditor
 					{scope}
 					{settings}
 					{pending}
 					{send}
 					{title}
-				/>{/key}
+				/>
+			{/key}
 		</div>
 	</div>
 </section>

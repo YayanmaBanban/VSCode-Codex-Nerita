@@ -7,4 +7,6 @@
 	import "../../../src/chat/chat.css";
 </script>
 
-<main class="p-4"><ToolCard tool={longCommandTool}></ToolCard></main>
+<main class="p-4">
+	<ToolCard tool={longCommandTool}></ToolCard>
+</main>

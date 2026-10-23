@@ -84,17 +84,20 @@
 </script>
 
 <DropdownMenu.Root>
-	<SettingsTooltip content="オプション"
-		>{#snippet children({ props })}<DropdownMenu.Trigger
+	<SettingsTooltip content="オプション">
+		{#snippet children({ props })}
+			<DropdownMenu.Trigger
 				{...props}
 				bind:ref={trigger}
 				aria-label="オプション"
 				class="inline-flex size-[28px] shrink-0 items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover"
-				><Ellipsis size={16} aria-hidden="true" /></DropdownMenu.Trigger
-			>{/snippet}</SettingsTooltip
-	>
-	<DropdownMenu.Portal
-		><DropdownMenu.Content
+			>
+				<Ellipsis size={16} aria-hidden="true" />
+			</DropdownMenu.Trigger>
+		{/snippet}
+	</SettingsTooltip>
+	<DropdownMenu.Portal>
+		<DropdownMenu.Content
 			side="bottom"
 			align="end"
 			sideOffset={6}
@@ -106,7 +109,8 @@
 		>
 			<SidebarMenu location={sidebarLocation} onSelect={selectSidebar} />
 			<BackendMenu {backend} onSelect={selectBackend} />
-			{#if chatState.piAccount !== null}<DropdownMenu.Item
+			{#if chatState.piAccount !== null}
+				<DropdownMenu.Item
 					disabled={blockedRun}
 					onSelect={() =>
 						send({
@@ -119,7 +123,8 @@
 						size={16}
 						aria-hidden="true"
 					/>認証情報を管理</DropdownMenu.Item
-				>{/if}
+				>
+			{/if}
 			<DropdownMenu.Item
 				onSelect={() => {
 					open = true;
@@ -147,11 +152,11 @@
 					aria-hidden="true"
 				/>ログアウト</DropdownMenu.Item
 			>
-		</DropdownMenu.Content></DropdownMenu.Portal
-	>
+		</DropdownMenu.Content>
+	</DropdownMenu.Portal>
 </DropdownMenu.Root>
-<Dialog.Root bind:open
-	><Dialog.Portal>
+<Dialog.Root bind:open>
+	<Dialog.Portal>
 		<Dialog.Overlay class="fixed inset-0 z-40 bg-black/30" />
 		<Dialog.Content
 			onCloseAutoFocus={(event) => {
@@ -166,34 +171,40 @@
 			<div class="flex items-center justify-between px-[16px] py-[12px]">
 				<Dialog.Title class="m-0 text-[14px] font-medium"
 					>性格設定</Dialog.Title
-				><Dialog.Close
+				>
+				<Dialog.Close
 					aria-label="性格設定を閉じる"
 					class="inline-flex size-[28px] items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover"
-					><X size={16} /></Dialog.Close
 				>
+					<X size={16} />
+				</Dialog.Close>
 			</div>
 			<div class="min-h-0 flex-1 overflow-y-auto px-[16px] pb-[16px]">
 				<Dialog.Description
 					class="mt-0 text-[12px] leading-[1.7] text-muted"
 					>グローバルとワークスペースの指示を、この順で結合します。変更は会話の開始・分岐・再開時に反映されます。</Dialog.Description
 				>
-				{#if error !== null && error !== ""}<p
-						role="alert"
-						class="text-[12px]"
-					>
+				{#if error !== null && error !== ""}
+					<p role="alert" class="text-[12px]">
 						{error}
-					</p>{/if}{#if pending}<p role="status" class="text-[12px]">
-						読み込み・保存中…
-					</p>{/if}
-				{#if chatState.personality}{#each ["global", "workspace"] as scope (scope)}<PersonalityPane
+					</p>
+				{/if}
+				{#if pending}
+					<p role="status" class="text-[12px]">読み込み・保存中…</p>
+				{/if}
+				{#if chatState.personality}
+					{#each ["global", "workspace"] as scope (scope)}
+						<PersonalityPane
 							scope={scope === "global" ? "global" : "workspace"}
 							settings={chatState.personality[
 								scope === "global" ? "global" : "workspace"
 							]}
 							{pending}
 							send={request}
-						/>{/each}{/if}
+						/>
+					{/each}
+				{/if}
 			</div>
 		</Dialog.Content>
-	</Dialog.Portal></Dialog.Root
->
+	</Dialog.Portal>
+</Dialog.Root>

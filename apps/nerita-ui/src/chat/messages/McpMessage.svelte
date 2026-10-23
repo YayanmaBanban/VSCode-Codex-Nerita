@@ -33,44 +33,47 @@
 			disabled={reduced.current}
 			color="var(--nerita-description-foreground)"
 			shineColor="var(--nerita-foreground)"
-		/><RunStatusIcon kind="loaf" />
+		/>
+		<RunStatusIcon kind="loaf" />
 	</div>
-{:else if content.status === "error"}<p
-		role="alert"
-		class="m-0 text-tool-error"
-	>
-		{text}
-	</p>
 {:else}
-	<div>
-		<p class="mt-0 mb-2">設定済みMCPサーバー:</p>
-		{#if servers.length === 0}<p class="m-0 text-muted">
-				MCPサーバーはありません。
-			</p>
-		{:else}<ul
-				aria-label="MCPサーバー"
-				class="m-0 flex list-none flex-col gap-2 p-0"
-			>
-				{#each servers as server, index (`${server.name}:${index}`)}<li
-						class="flex items-start gap-2"
-					>
-						<SettingsTooltip
-							content={server.runtimeStatus ?? "不明"}
-						>
-							{#snippet children({ props: tooltipProps })}
-								<span
-									{...tooltipProps}
-									tabindex="-1"
-									role="img"
-									aria-label={server.runtimeStatus ?? "不明"}
-									class={`mt-[0.6em] size-2 shrink-0 rounded-full ${serverStatusColor(server.runtimeStatus)}`}
-								></span>
-							{/snippet}
-						</SettingsTooltip><span
-							class="min-w-0 [overflow-wrap:anywhere]"
-							>{server.name}</span
-						>
-					</li>{/each}
-			</ul>{/if}
-	</div>
+	{#if content.status === "error"}
+		<p role="alert" class="m-0 text-tool-error">
+			{text}
+		</p>
+	{:else}
+		<div>
+			<p class="mt-0 mb-2">設定済みMCPサーバー:</p>
+			{#if servers.length === 0}
+				<p class="m-0 text-muted">MCPサーバーはありません。</p>
+			{:else}
+				<ul
+					aria-label="MCPサーバー"
+					class="m-0 flex list-none flex-col gap-2 p-0"
+				>
+					{#each servers as server, index (`${server.name}:${index}`)}
+						<li class="flex items-start gap-2">
+							<SettingsTooltip
+								content={server.runtimeStatus ?? "不明"}
+							>
+								{#snippet children({ props: tooltipProps })}
+									<span
+										{...tooltipProps}
+										tabindex="-1"
+										role="img"
+										aria-label={server.runtimeStatus ??
+											"不明"}
+										class={`mt-[0.6em] size-2 shrink-0 rounded-full ${serverStatusColor(server.runtimeStatus)}`}
+									></span>
+								{/snippet}
+							</SettingsTooltip>
+							<span class="min-w-0 [overflow-wrap:anywhere]"
+								>{server.name}</span
+							>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+	{/if}
 {/if}

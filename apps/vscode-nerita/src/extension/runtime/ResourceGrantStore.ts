@@ -315,10 +315,14 @@ async function safeGrantTarget(target: string): Promise<string> {
 		throw new Error("正規化されたファイルパスだけを許可できます。");
 	}
 	if (target === parse(target).root) {
-		throw new Error("ドライブや共有フォルダのルート全体へのアクセスは許可できません。");
+		throw new Error(
+			"ドライブや共有フォルダのルート全体へのアクセスは許可できません。",
+		);
 	}
 	if (target.includes("\0")) {
-		throw new Error("許可するファイルパスにヌル文字を含めることはできません。");
+		throw new Error(
+			"許可するファイルパスにヌル文字を含めることはできません。",
+		);
 	}
 	const matchesValue = (await realpath(target)) !== target;
 	if (matchesValue) {

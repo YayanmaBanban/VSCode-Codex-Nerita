@@ -17,8 +17,8 @@
 	} = $props();
 </script>
 
-<Field label="モデル"
-	><select
+<Field label="モデル">
+	<select
 		aria-label="モデル"
 		class={inputStyle}
 		value={value ?? ""}
@@ -28,5 +28,5 @@
 			value={value ?? ""}
 			{models}
 		/></select
-	></Field
->
+	>
+</Field>

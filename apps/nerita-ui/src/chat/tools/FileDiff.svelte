@@ -16,14 +16,19 @@
 </script>
 
 <DiffView {...location} {hunks}>
-	{#if !hunks}<p class="text-[12px] text-muted">
+	{#if !hunks}
+		<p class="text-[12px] text-muted">
 			差分の計算が制限時間を超えたため、本文を表示します。
 		</p>
 		<h3 class={toolLabelClass}>変更前</h3>
 		<pre class={toolOutputClass}>{oldText ?? ""}</pre>
 		<h3 class={toolLabelClass}>変更後</h3>
 		<pre class={toolOutputClass}>{newText}</pre>
-	{:else if hunks.length === 0}<p class="text-[12px] text-muted">
-			{oldText === null ? "空のファイルを作成" : "変更はありません。"}
-		</p>{/if}
+	{:else}
+		{#if hunks.length === 0}
+			<p class="text-[12px] text-muted">
+				{oldText === null ? "空のファイルを作成" : "変更はありません。"}
+			</p>
+		{/if}
+	{/if}
 </DiffView>

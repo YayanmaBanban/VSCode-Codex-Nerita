@@ -29,7 +29,8 @@
 	onSelect={props.onSelect}
 	busy={props.busy}
 	defaults
-	>{#if defaults}
+>
+	{#if defaults}
 		<div oninputcapture={props.onDirty}>
 			{#key props.state.generation}
 				<PiDefaultsSettings
@@ -48,11 +49,4 @@
 			<PiAgentEditor {...props} agent={editorAgent} />
 		{/key}
 	{/if}
-	<details class="mt-6">
-		<summary inert={props.busy} class="cursor-pointer text-sm"
-			>User 設定・Model scope（閲覧のみ）
-		</summary>
-		<pre class="overflow-auto text-xs">{props.state.piUserSettings}</pre>
-		<pre class="overflow-auto text-xs">{props.state.modelScope}</pre>
-	</details></AgentBrowser
->
+</AgentBrowser>

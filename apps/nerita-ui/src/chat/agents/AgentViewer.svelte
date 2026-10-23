@@ -77,8 +77,9 @@
 		<header
 			class="flex min-w-0 items-center gap-3 border-b border-solid border-message-border p-3"
 		>
-			<SettingsTooltip content="親へ戻る"
-				>{#snippet children({ props })}<button
+			<SettingsTooltip content="親へ戻る">
+				{#snippet children({ props })}
+					<button
 						{...props}
 						{@attach (element: HTMLButtonElement) => {
 							element.focus({ preventScroll: true });
@@ -88,16 +89,19 @@
 						aria-label="親へ戻る"
 						class="flex shrink-0 rounded p-2 hover:bg-message-user focus-visible:outline-2 focus-visible:outline-focus"
 						><ArrowLeft size={18} /></button
-					>{/snippet}</SettingsTooltip
-			>
+					>
+				{/snippet}
+			</SettingsTooltip>
 			<AgentIcon iconKey={current.iconKey} />
 			<div class="min-w-0 flex-1">
 				<span class="block [overflow-wrap:anywhere]"
 					>{agentName(current)}</span
-				><span class="text-[12px] text-muted">閲覧のみ</span>
+				>
+				<span class="text-[12px] text-muted">閲覧のみ</span>
 			</div>
-			<SettingsTooltip content="表示を更新"
-				>{#snippet children({ props })}<button
+			<SettingsTooltip content="表示を更新">
+				{#snippet children({ props })}
+					<button
 						{...props}
 						type="button"
 						onclick={viewer.retry}
@@ -105,26 +109,26 @@
 						aria-label="会話を更新"
 						class="flex shrink-0 rounded p-2 disabled:opacity-40"
 						><RefreshCw size={16} /></button
-					>{/snippet}</SettingsTooltip
-			>
+					>
+				{/snippet}
+			</SettingsTooltip>
 		</header>
 		<div
 			bind:this={conversation}
 			class="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-5 [overflow-anchor:none]"
 		>
-			{#if isNonEmptyString(viewer.error)}<div
-					role="alert"
-					class="mb-3 text-[12px]"
-				>
+			{#if isNonEmptyString(viewer.error)}
+				<div role="alert" class="mb-3 text-[12px]">
 					{viewer.error}<button
 						type="button"
 						onclick={viewer.retry}
 						class="ml-2 underline">再試行</button
 					>
-				</div>{/if}
-			{#if !viewer.view && viewer.loading}<p role="status">
-					会話を読み込んでいます…
-				</p>{/if}
+				</div>
+			{/if}
+			{#if !viewer.view && viewer.loading}
+				<p role="status">会話を読み込んでいます…</p>
+			{/if}
 			{#if viewer.view}
 				<Messages
 					{timeline}
@@ -134,26 +138,27 @@
 					messages={viewer.view.messages}
 					tools={viewer.view.tools}
 				>
-					{#snippet renderTool(tool)}<ToolCard {tool} />{/snippet}
-					{#snippet renderAgent(child)}<AgentCard
-							agent={child}
-							onOpen={viewer.open}
-						/>{/snippet}
+					{#snippet renderTool(tool)}
+						<ToolCard {tool} />
+					{/snippet}
+					{#snippet renderAgent(child)}
+						<AgentCard agent={child} onOpen={viewer.open} />
+					{/snippet}
 				</Messages>
-				{#if viewer.view.messages.length === 0 && viewer.view.tools.length === 0 && viewer.view.agents.length === 0}<p
-						class="text-[12px] text-muted"
-					>
-						まだ会話はありません。
-					</p>{/if}
+				{#if viewer.view.messages.length === 0 && viewer.view.tools.length === 0 && viewer.view.agents.length === 0}
+					<p class="text-[12px] text-muted">まだ会話はありません。</p>
+				{/if}
 			{/if}
 		</div>
-		{#if send}<AgentRunControls
+		{#if send}
+			<AgentRunControls
 				state={chatState}
 				{send}
 				agent={current}
 				onStop={viewer.stop}
 				stopping={viewer.stopping}
 				stopError={viewer.stopError}
-			/>{/if}
+			/>
+		{/if}
 	</section>
 {/if}

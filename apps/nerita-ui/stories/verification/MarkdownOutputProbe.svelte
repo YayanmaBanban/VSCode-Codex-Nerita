@@ -24,7 +24,9 @@
 </script>
 
 {#if mode === "security"}
-	<div data-testid="output"><MessageText text={unsafeMarkdown} /></div>
+	<div data-testid="output">
+		<MessageText text={unsafeMarkdown} />
+	</div>
 {:else}
 	<div data-testid="output">
 		<MessageText {text} {streaming} {streamId} />

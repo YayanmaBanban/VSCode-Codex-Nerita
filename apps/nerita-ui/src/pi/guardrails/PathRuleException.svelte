@@ -22,7 +22,8 @@
 					),
 				})}
 		/></label
-	><button
+	>
+	<button
 		class={buttonStyle}
 		onclick={() =>
 			updatePath(index, {

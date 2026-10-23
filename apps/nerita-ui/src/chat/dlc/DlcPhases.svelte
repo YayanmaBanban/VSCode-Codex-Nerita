@@ -76,10 +76,13 @@
 				hidden={!open}
 				class="border-0 border-t border-solid border-panel-border px-4 py-3"
 			>
-				{#if phase === 0}{@render initialization()}{/if}
+				{#if phase === 0}
+					{@render initialization()}
+				{/if}
 				{#if selected !== null}
 					<ul aria-label="工程の適用と進行" class="m-0 list-none p-0">
-						{#each stages as stage (stage.id)}<li
+						{#each stages as stage (stage.id)}
+							<li
 								class="border-0 border-b border-solid border-panel-border py-2 last:border-b-0"
 							>
 								<div
@@ -87,7 +90,8 @@
 								>
 									<strong class="text-[12px]"
 										>{stage.id} {stage.name}</strong
-									><span class="text-muted"
+									>
+									<span class="text-muted"
 										>{selectionLabels[stage.selection]} · {statusLabels[
 											stage.status
 										]}</span
@@ -98,18 +102,24 @@
 								>
 									{stage.reason}
 								</p>
-							</li>{/each}
+							</li>
+						{/each}
 					</ul>
-					{#if phase === 3}<DlcWorkItems
+					{#if phase === 3}
+						<DlcWorkItems
 							{selected}
 							active={executionBusy(view, selected)}
 							{action}
 							{send}
-						/>{@render conversation()}{/if}
+						/>
+						{@render conversation()}
+					{/if}
 				{/if}
-				{#if phase > 0 && pending}<p class="text-muted">
+				{#if phase > 0 && pending}
+					<p class="text-muted">
 						この Phase の工程実行は後続フェーズで対応します。
-					</p>{/if}
+					</p>
+				{/if}
 			</div>
 		</section>
 	{/each}

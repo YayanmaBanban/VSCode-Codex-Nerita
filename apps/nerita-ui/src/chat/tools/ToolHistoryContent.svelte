@@ -6,8 +6,6 @@
 	let { tool, send, cwd }: ToolContentProps = $props();
 </script>
 
-{#if tool.rawInput !== undefined || tool.content?.length}<ToolContent
-		{tool}
-		{send}
-		{cwd}
-	/>{/if}
+{#if tool.rawInput !== undefined || tool.content?.length}
+	<ToolContent {tool} {send} {cwd} />
+{/if}

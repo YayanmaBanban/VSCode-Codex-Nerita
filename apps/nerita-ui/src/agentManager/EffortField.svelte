@@ -36,8 +36,8 @@
 	]);
 </script>
 
-<Field {label}
-	><ConfigControl
+<Field {label}>
+	<ConfigControl
 		appearance="field"
 		option={{
 			id: "handoff-effort",
@@ -49,7 +49,8 @@
 		disabledValues={unsupported && value !== undefined ? [value] : []}
 		onChange={(selected: string) =>
 			onChange(nonEmptyString(selected) ?? undefined)}
-	/>{#if options.length === 0}<span
-			class="text-xs leading-relaxed text-warning">{emptyMessage}</span
-		>{/if}</Field
->
+	/>
+	{#if options.length === 0}
+		<span class="text-xs leading-relaxed text-warning">{emptyMessage}</span>
+	{/if}
+</Field>

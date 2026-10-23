@@ -112,9 +112,11 @@
 			class="min-w-0 rounded-[4px] border border-solid border-input-border bg-input px-[8px] py-[7px] text-input-text"
 		/></label
 	>
-	{#if locked}<p class="m-0 text-[12px] text-muted">
+	{#if locked}
+		<p class="m-0 text-[12px] text-muted">
 			config.toml の <code>developer_instructions</code> を使用しています（変更不可）。
-		</p>{/if}
+		</p>
+	{/if}
 	<InstructionEditor
 		text={initialText}
 		label={`${title}の指示`}
@@ -123,12 +125,14 @@
 			text = value;
 		}}
 	/>
-	{#if collision}<p role="alert" class="m-0 text-[12px]">
+	{#if collision}
+		<p role="alert" class="m-0 text-[12px]">
 			同名のプリセットが存在します。
-		</p>{/if}
-	{#if text.length > 100000}<p role="alert">
-			指示は100,000文字以内にしてください。
-		</p>{/if}
+		</p>
+	{/if}
+	{#if text.length > 100000}
+		<p role="alert">指示は100,000文字以内にしてください。</p>
+	{/if}
 	<div class="flex justify-end">
 		<button type="button" disabled={saveDisabled} onclick={save}
 			>{changedName ? "保存" : "更新"}</button

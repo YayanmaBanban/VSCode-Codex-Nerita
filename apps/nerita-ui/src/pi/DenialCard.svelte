@@ -42,7 +42,8 @@
 					})}>{allowLabels[scope]}</button
 			>
 		{/each}
-	{/if}{#if event.actions.includes("use-sandbox-cache")}
+	{/if}
+	{#if event.actions.includes("use-sandbox-cache")}
 		<button
 			type="button"
 			class={buttonStyle}
@@ -54,7 +55,8 @@
 				})}
 			>Sandbox キャッシュを使用して再実行
 		</button>
-	{/if}{#if event.actions.includes("deny")}
+	{/if}
+	{#if event.actions.includes("deny")}
 		<button
 			type="button"
 			class={buttonStyle}

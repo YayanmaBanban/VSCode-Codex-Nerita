@@ -5,9 +5,9 @@
 	let { value, models }: { value: string; models: ManagerModel[] } = $props();
 </script>
 
-{#if value !== "" && !models.some((model) => model.value === value)}<option
-		{value}>{value}（保存済み・未確認）</option
-	>{/if}
-{#each models as model (model.value)}<option value={model.value}
-		>{model.name}</option
-	>{/each}
+{#if value !== "" && !models.some((model) => model.value === value)}
+	<option {value}>{value}（保存済み・未確認）</option>
+{/if}
+{#each models as model (model.value)}
+	<option value={model.value}>{model.name}</option>
+{/each}

@@ -32,7 +32,8 @@
 				<option>{tool}</option>
 			{/each}</select
 		></label
-	><label
+	>
+	<label
 		>cwd（ワークスペース基準）
 		<input
 			class={inputStyle}

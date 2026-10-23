@@ -33,13 +33,21 @@
 
 {#if isRecord(review)}
 	<dl class="guardian-fields m-0">
-		{#each fields as [label, value] (label)}<div>
+		{#each fields as [label, value] (label)}
+			<div>
 				<dt class="text-[12px] text-muted">{label}</dt>
-				<dd class="m-0 mb-[10px]"><Value {value} /></dd>
-			</div>{/each}
+				<dd class="m-0 mb-[10px]">
+					<Value {value} />
+				</dd>
+			</div>
+		{/each}
 	</dl>
-	{#if action !== undefined}<section>
+	{#if action !== undefined}
+		<section>
 			<h3 class={toolLabelClass}>対象操作</h3>
 			<Value value={action} />
-		</section>{/if}
-{:else}<ToolContent {tool} />{/if}
+		</section>
+	{/if}
+{:else}
+	<ToolContent {tool} />
+{/if}

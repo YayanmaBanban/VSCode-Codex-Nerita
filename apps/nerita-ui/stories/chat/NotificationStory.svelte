@@ -17,11 +17,14 @@
 		}}>通知を再生</button
 	>
 	{#key generation}
-		{#if open}<NotificationCard
+		{#if open}
+			<NotificationCard
 				{backgroundColor}
 				onClose={() => {
 					open = false;
 				}}
 				children="フォローアップを送信しました。"
-			/>{/if}{/key}
+			/>
+		{/if}
+	{/key}
 </div>

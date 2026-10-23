@@ -162,20 +162,22 @@
 								? "未保存の変更を破棄して移動しますか？"
 								: "未保存の変更があります"}
 						</span>
-					{:else if saved}
-						<span
-							class="flex items-center gap-2"
-							in:fade|global={{
-								duration: reducedMotion.current ? 0 : 200,
-							}}
-						>
-							<CircleCheck
-								size={16}
-								class="shrink-0 text-menu-check"
-								aria-hidden="true"
-							/>
-							保存しました
-						</span>
+					{:else}
+						{#if saved}
+							<span
+								class="flex items-center gap-2"
+								in:fade|global={{
+									duration: reducedMotion.current ? 0 : 200,
+								}}
+							>
+								<CircleCheck
+									size={16}
+									class="shrink-0 text-menu-check"
+									aria-hidden="true"
+								/>
+								保存しました
+							</span>
+						{/if}
 					{/if}
 				</div>
 			{/if}
@@ -205,7 +207,8 @@
 					{/if}
 				</button>
 			{:else}
-				{#if showSave}<button
+				{#if showSave}
+					<button
 						type="submit"
 						class={cn(
 							buttonStyle,
@@ -220,7 +223,8 @@
 								className="bg-sky-300"
 							/>
 						{/if}
-					</button>{/if}
+					</button>
+				{/if}
 				{#if onDiscard}
 					<button
 						type="button"

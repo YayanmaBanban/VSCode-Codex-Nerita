@@ -34,7 +34,8 @@
 		"border-[var(--workflow-border)] p-4",
 	)}
 >
-	<WorkflowSettings {...{ workflow, update }} />{#key step.id}
+	<WorkflowSettings {...{ workflow, update }} />
+	{#key step.id}
 		<WorkflowStepForm
 			{step}
 			{workflow}
@@ -59,7 +60,8 @@
 						: workflow.outputs.filter((id) => id !== step.id),
 				})}
 		/>
-	{/key}{#if isNonEmptyString(error) || isNonEmptyString(validation)}
+	{/key}
+	{#if isNonEmptyString(error) || isNonEmptyString(validation)}
 		<p
 			role="alert"
 			class="mt-4 break-words whitespace-pre-wrap text-tool-error"

@@ -54,7 +54,9 @@
 				{/snippet}
 			</SettingsTooltip>
 		</div>
-		{#if actions}{@render actions()}{/if}
+		{#if actions}
+			{@render actions()}
+		{/if}
 	</div>
 	<div
 		id={helpId}

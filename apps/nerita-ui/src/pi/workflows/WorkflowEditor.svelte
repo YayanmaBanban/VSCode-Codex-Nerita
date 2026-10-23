@@ -50,20 +50,16 @@
 </script>
 
 <main class="workflow-editor flex h-screen min-h-0 flex-col text-[13px]">
-	<WorkflowToolbar
-		{editor}
-		{bridge}
-		{mode}
-		valid={!!parsed}
-		{switchMode}
-	/><WorkflowError
+	<WorkflowToolbar {editor} {bridge} {mode} valid={!!parsed} {switchMode} />
+	<WorkflowError
 		error={editor.reply?.error}
 		reload={() => {
 			editor.reload();
 			setInitial(readGraph(editor.state?.text ?? ""));
 			setGeneration((value) => value + 1);
 		}}
-	/>{#if editor.state}
+	/>
+	{#if editor.state}
 		<fieldset
 			disabled={locked}
 			inert={locked}
@@ -86,7 +82,8 @@
 						<p role="status">
 							TOML を修正するとグラフ編集を利用できます。
 						</p>
-					{/if}<label class="flex min-h-0 flex-1 flex-col gap-2"
+					{/if}
+					<label class="flex min-h-0 flex-1 flex-col gap-2"
 						>Workflow TOML
 						<textarea
 							class="min-h-60 flex-1 font-mono"
@@ -100,5 +97,6 @@
 				</div>
 			{/if}
 		</fieldset>
-	{/if}<WorkflowFeedback {editor} />
+	{/if}
+	<WorkflowFeedback {editor} />
 </main>

@@ -84,7 +84,8 @@
 		disabled={busy || agent?.editable === false}
 		class="m-0 grid min-w-0 gap-5 border-0 p-0"
 	>
-		{#if edit.definition}<DefinitionField
+		{#if edit.definition}
+			<DefinitionField
 				{edit}
 				{onChange}
 				field="name"
@@ -92,12 +93,17 @@
 				label="名前"
 				placeholder="エージェント名"
 				limit={80}
-			/>{:else}<h2 class="m-0 text-lg font-semibold">
+			/>
+		{:else}
+			<h2 class="m-0 text-lg font-semibold">
 				{agent?.name}
-			</h2>{/if}
-		{#if onFilenameChange}<FieldErrorTooltip message={filenameError}
-				>{#snippet children({ props })}<Field label="ファイル名"
-						><input
+			</h2>
+		{/if}
+		{#if onFilenameChange}
+			<FieldErrorTooltip message={filenameError}>
+				{#snippet children({ props })}
+					<Field label="ファイル名">
+						<input
 							class={inputStyle}
 							{...props}
 							required
@@ -106,21 +112,25 @@
 							value={filename ?? ""}
 							oninput={(event) =>
 								onFilenameChange(event.currentTarget.value)}
-						/></Field
-					>{/snippet}</FieldErrorTooltip
-			>{/if}
-		{#if isNonEmptyString(agent?.definitionPath)}<p
-				class="m-0 text-xs break-all text-muted"
-			>
+						/>
+					</Field>
+				{/snippet}
+			</FieldErrorTooltip>
+		{/if}
+		{#if isNonEmptyString(agent?.definitionPath)}
+			<p class="m-0 text-xs break-all text-muted">
 				{agent.definitionPath}
-			</p>{/if}
+			</p>
+		{/if}
 		<div class="flex flex-wrap gap-2 text-xs text-muted">
-			{#each badges as badge, index (index)}<span
-					class="rounded border border-input-border px-2 py-1"
+			{#each badges as badge, index (index)}
+				<span class="rounded border border-input-border px-2 py-1"
 					>{badge}</span
-				>{/each}
+				>
+			{/each}
 		</div>
-		{#if edit.definition}<DefinitionField
+		{#if edit.definition}
+			<DefinitionField
 				{edit}
 				{onChange}
 				field="description"
@@ -129,21 +139,20 @@
 				placeholder="ユーザー向けの説明"
 				rows={3}
 				limit={2000}
-			/>{:else}<p class="m-0 text-sm text-muted">
+			/>
+		{:else}
+			<p class="m-0 text-sm text-muted">
 				{agent?.description}
-			</p>{/if}
-		{#if isNonEmptyString(agent?.unavailableReason)}<p
-				role="status"
-				class="text-sm text-muted"
-			>
+			</p>
+		{/if}
+		{#if isNonEmptyString(agent?.unavailableReason)}
+			<p role="status" class="text-sm text-muted">
 				{agent.unavailableReason}
-			</p>{/if}
+			</p>
+		{/if}
 		<section class="grid gap-4 border-t border-input-border pt-4">
 			<h3 class="m-0 text-sm font-semibold">Agent 設定</h3>
 			{@render settingsFields({ error: settingsError })}
-			<p class="m-0 text-xs text-muted">
-				未指定の場合、モデルは親のモデルを使用し、推論レベルはバックエンドの既定値に任せます。
-			</p>
 		</section>
 		<DefinitionField
 			{edit}

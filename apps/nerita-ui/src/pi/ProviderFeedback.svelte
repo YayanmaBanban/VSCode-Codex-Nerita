@@ -31,7 +31,8 @@
 		>
 			{feedback.error}
 		</p>
-	{/if}{#if isNonEmptyString(feedback?.notice)}
+	{/if}
+	{#if isNonEmptyString(feedback?.notice)}
 		<p
 			role="status"
 			class={cn(
@@ -41,7 +42,8 @@
 		>
 			{feedback.notice}
 		</p>
-	{/if}{#if !isNonEmptyString(feedback?.error) && !isNonEmptyString(feedback?.notice)}
+	{/if}
+	{#if !isNonEmptyString(feedback?.error) && !isNonEmptyString(feedback?.notice)}
 		<p
 			role="status"
 			class={cn(

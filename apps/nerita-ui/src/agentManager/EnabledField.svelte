@@ -18,8 +18,8 @@
 	});
 </script>
 
-<Field label="有効／無効"
-	><select
+<Field label="有効／無効">
+	<select
 		class={inputStyle}
 		value={selected}
 		onchange={(event) =>
@@ -31,5 +31,5 @@
 		><option value="inherit">未指定（バックエンドに任せる）</option><option
 			value="enabled">Enabled</option
 		><option value="disabled">Disabled</option></select
-	></Field
->
+	>
+</Field>

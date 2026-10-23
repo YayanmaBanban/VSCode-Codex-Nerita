@@ -45,7 +45,9 @@ export async function loadWorkflowEngine(
 		join(root, "src/workflows/scripted-workflow.js"),
 	);
 	if (!containsPath(root, path)) {
-		throw new Error("ワークフロー実行エンジンの参照先が、pi-subagents のインストール先の外にあります。");
+		throw new Error(
+			"ワークフロー実行エンジンの参照先が、pi-subagents のインストール先の外にあります。",
+		);
 	}
 	const engine: unknown = await import(pathToFileURL(path).href);
 	if (!isEngine(engine)) {

@@ -107,7 +107,8 @@
 				role="group"
 				aria-label="履歴の表示範囲"
 			>
-				{#each [false, true] as archived (archived)}<button
+				{#each [false, true] as archived (archived)}
+					<button
 						type="button"
 						class={cn(
 							"inline-flex items-center gap-[6px] text-[12px]",
@@ -130,13 +131,15 @@
 								size={14}
 								aria-hidden="true"
 							/>{/if}{archived ? "アーカイブ" : "履歴"}</button
-					>{/each}
+					>
+				{/each}
 			</div>
 		{/if}
 		<div
 			class="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto p-[8px]"
 		>
-			{#if isNonEmptyString(chatState.sessionsError)}<div
+			{#if isNonEmptyString(chatState.sessionsError)}
+				<div
 					role="alert"
 					class="m-[4px] rounded-[6px] border border-solid border-alert-border bg-alert p-[10px] text-[12px] leading-[1.7]"
 				>
@@ -151,29 +154,34 @@
 									requestId: crypto.randomUUID(),
 								})}>再試行</button
 						>{/if}
-				</div>{/if}
-			{#if chatState.sessionPending}<p
-					role="status"
-					class="mx-[8px] text-[12px] text-muted"
-				>
+				</div>
+			{/if}
+			{#if chatState.sessionPending}
+				<p role="status" class="mx-[8px] text-[12px] text-muted">
 					セッションを更新しています…
-				</p>{/if}
-			{#if chatState.sessions.length === 0 && !chatState.sessionsLoading && !isNonEmptyString(chatState.sessionsError)}<p
+				</p>
+			{/if}
+			{#if chatState.sessions.length === 0 && !chatState.sessionsLoading && !isNonEmptyString(chatState.sessionsError)}
+				<p
 					class="px-[12px] py-[24px] text-center text-[12px] text-muted"
 				>
 					このフォルダのセッションはありません
-				</p>{/if}
+				</p>
+			{/if}
 			<ul class="m-0 list-none p-0" aria-label="セッション履歴">
-				{#each chatState.sessions as session (session.sessionId)}<SessionItem
+				{#each chatState.sessions as session (session.sessionId)}
+					<SessionItem
 						{session}
 						selected={session.sessionId === chatState.sessionId}
 						{capabilities}
 						{send}
 						{now}
 						{disabled}
-					/>{/each}
+					/>
+				{/each}
 			</ul>
-			{#if chatState.sessionsNextCursor !== null}<button
+			{#if chatState.sessionsNextCursor !== null}
+				<button
 					type="button"
 					class="mx-[12px] my-[8px] text-[12px]"
 					disabled={chatState.sessionsLoading ||
@@ -184,7 +192,8 @@
 							more: true,
 							requestId: crypto.randomUUID(),
 						})}>さらに読み込む</button
-				>{/if}
+				>
+			{/if}
 		</div>
 	</div>
 </aside>

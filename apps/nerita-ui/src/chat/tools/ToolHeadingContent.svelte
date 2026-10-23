@@ -34,36 +34,40 @@
 	const changes = $derived(toolChangeCount(tool.content));
 </script>
 
-<Icon size={16} aria-hidden="true" /><span
-	class="tool-title flex min-w-0 flex-1 items-center gap-[8px]"
+<Icon size={16} aria-hidden="true" />
+<span class="tool-title flex min-w-0 flex-1 items-center gap-[8px]"
 	><span class="truncate">{tool.title}</span>{#if changes}<ChangeCount
 			{...changes}
 		/>{/if}</span
 >
-{#if progress && active}<LoaderCircle
+{#if progress && active}
+	<LoaderCircle
 		size={16}
 		class="status-indicator-running"
 		role="img"
 		aria-label="実行中"
-	/>{/if}
-{#if !progress && active}<span
-		class="tool-status text-[12px] whitespace-nowrap text-muted"
+	/>
+{/if}
+{#if !progress && active}
+	<span class="tool-status text-[12px] whitespace-nowrap text-muted"
 		>{tool.status === "pending" ? "待機中" : "実行中"}</span
-	>{/if}
-{#if inactiveLabel !== ""}<span
-		class="tool-status text-[12px] whitespace-nowrap text-muted"
+	>
+{/if}
+{#if inactiveLabel !== ""}
+	<span class="tool-status text-[12px] whitespace-nowrap text-muted"
 		>{inactiveLabel}</span
-	>{/if}
-{#if status === "completed"}<Check
-		size={16}
-		role="img"
-		aria-label="完了"
-	/>{/if}
-{#if expandable}<ChevronDown
+	>
+{/if}
+{#if status === "completed"}
+	<Check size={16} role="img" aria-label="完了" />
+{/if}
+{#if expandable}
+	<ChevronDown
 		size={14}
 		class={cn(
 			"tool-chevron group-aria-[expanded=false]:-rotate-90",
 			reserveStatusSpace ? "ml-[26px]" : "",
 		)}
 		aria-hidden="true"
-	/>{/if}
+	/>
+{/if}

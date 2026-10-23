@@ -39,20 +39,23 @@
 							id: event.currentTarget.value,
 						})}
 				/></label
-			><Action
+			>
+			<Action
 				{...{
 					label: "判定",
 					value: rule.action,
 					onChange: (action: "allow" | "ask" | "deny") =>
 						update({ action }),
 				}}
-			/><CommandRuleShell
+			/>
+			<CommandRuleShell
 				{...{
 					rule,
 					update,
 				}}
-			/><CommandRulePattern {...{ rule, update }} /><label
-				class="sm:col-span-2"
+			/>
+			<CommandRulePattern {...{ rule, update }} />
+			<label class="sm:col-span-2"
 				>理由
 				<input
 					class={inputStyle}

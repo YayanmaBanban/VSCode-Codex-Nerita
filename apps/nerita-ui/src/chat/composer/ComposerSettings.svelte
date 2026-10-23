@@ -67,16 +67,16 @@
 </script>
 
 <div class="composer-settings min-w-0">
-	{#if state.uiContributions}<div
-			class="flex flex-wrap items-center gap-[6px]"
-		>
+	{#if state.uiContributions}
+		<div class="flex flex-wrap items-center gap-[6px]">
 			<ContributionSlot
 				name="model.header"
 				contributions={state.uiContributions}
 				{disabled}
 				onChange={change}
 			/>
-		</div>{/if}
+		</div>
+	{/if}
 	<Attachments
 		files={state.attachments}
 		{disabled}
@@ -88,23 +88,27 @@
 		aria-label="モデル設定"
 	>
 		<ContextPickerTrigger disabled={!connected} onOpen={onOpenContext} />
-		{#key state.sessionId ?? "disconnected"}<ContextUsage
-				usage={state.usage}
-			/>{/key}
-		{#if state.uiContributions}<ContributionSlot
+		{#key state.sessionId ?? "disconnected"}
+			<ContextUsage usage={state.usage} />
+		{/key}
+		{#if state.uiContributions}
+			<ContributionSlot
 				name="composer.toolbar"
 				contributions={state.uiContributions}
 				{disabled}
 				onChange={change}
-			/><BackendSettingsSurface
+			/>
+			<BackendSettingsSurface
 				contributions={state.uiContributions}
 				{disabled}
 				onChange={change}
-			/><ContributionSlot
+			/>
+			<ContributionSlot
 				name="status"
 				contributions={state.uiContributions}
 				{disabled}
 				onChange={change}
-			/>{/if}
+			/>
+		{/if}
 	</div>
 </div>

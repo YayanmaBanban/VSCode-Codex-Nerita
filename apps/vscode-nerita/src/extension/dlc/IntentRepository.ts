@@ -209,7 +209,9 @@ export class IntentRepository {
 				context.request.intentId !== intentId ||
 				context.request.attemptId !== attemptId;
 			if (matchesIntentId) {
-				throw new Error("実行入力に記録された Intent ID または実行 ID が、要求された対象と一致しません。");
+				throw new Error(
+					"実行入力に記録された Intent ID または実行 ID が、要求された対象と一致しません。",
+				);
 			}
 			return context;
 		});

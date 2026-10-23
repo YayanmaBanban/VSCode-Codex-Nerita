@@ -23,7 +23,9 @@ export async function prepareMcpAuthMigration(
 		await store.set(key, value);
 		readback = await store.get(key);
 		if (readback?.use((stored) => stored !== text) !== false) {
-			throw new Error("移行先に保存した MCP 認証情報を、同じ内容で読み出せません。");
+			throw new Error(
+				"移行先に保存した MCP 認証情報を、同じ内容で読み出せません。",
+			);
 		}
 	} catch (error) {
 		await store.delete(key);

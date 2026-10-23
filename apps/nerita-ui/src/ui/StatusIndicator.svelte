@@ -16,20 +16,24 @@
 		aria-hidden="true"
 		class="status-indicator-running shrink-0"
 	/>
-{:else if status === "completed"}
-	<Check size={16} aria-hidden="true" class="shrink-0 text-menu-check" />
-{:else if status === "error"}
-	<X size={16} aria-hidden="true" class="shrink-0 text-tool-error" />
 {:else}
-	<span
-		aria-hidden="true"
-		class={cn(
-			"status-indicator-dots flex h-4 w-4 shrink-0 items-center justify-between",
-			status === "warning" ? "text-warning" : "text-foreground",
-		)}
-	>
-		<span class="size-1 rounded-full bg-current"></span>
-		<span class="size-1 rounded-full bg-current"></span>
-		<span class="size-1 rounded-full bg-current"></span>
-	</span>
+	{#if status === "completed"}
+		<Check size={16} aria-hidden="true" class="shrink-0 text-menu-check" />
+	{:else}
+		{#if status === "error"}
+			<X size={16} aria-hidden="true" class="shrink-0 text-tool-error" />
+		{:else}
+			<span
+				aria-hidden="true"
+				class={cn(
+					"status-indicator-dots flex h-4 w-4 shrink-0 items-center justify-between",
+					status === "warning" ? "text-warning" : "text-foreground",
+				)}
+			>
+				<span class="size-1 rounded-full bg-current"></span>
+				<span class="size-1 rounded-full bg-current"></span>
+				<span class="size-1 rounded-full bg-current"></span>
+			</span>
+		{/if}
+	{/if}
 {/if}

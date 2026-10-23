@@ -43,8 +43,8 @@
 	);
 </script>
 
-<FieldErrorTooltip message={error}
-	>{#snippet children({ props })}
+<FieldErrorTooltip message={error}>
+	{#snippet children({ props })}
 		<div role="group" aria-label="モデルと推論の設定" {...props}>
 			<SliderCard
 				control={modelControl(option, [reasoning])}
@@ -56,5 +56,5 @@
 					)}
 			/>
 		</div>
-	{/snippet}</FieldErrorTooltip
->
+	{/snippet}
+</FieldErrorTooltip>

@@ -80,8 +80,8 @@
 	aria-label={`${backend} ハンドオフ`}
 >
 	<h3 class="m-0 font-semibold">{backend === "pi" ? "Pi" : "Codex"}</h3>
-	<Field label="モデル選択のモード"
-		><ConfigControl
+	<Field label="モデル選択のモード">
+		<ConfigControl
 			appearance="field"
 			option={{
 				id: `${backend}-handoff-strategy`,
@@ -98,14 +98,16 @@
 			disabled={false}
 			disabledValues={state.models[backend].length === 0 ? ["fixed"] : []}
 			onChange={strategy}
-		/></Field
-	>
-	{#if item.strategy === "fixed"}<HandoffModelField
+		/>
+	</Field>
+	{#if item.strategy === "fixed"}
+		<HandoffModelField
 			label="モデル"
 			value={item.model}
 			models={state.models[backend]}
 			onChange={setModel}
-		/>{/if}
+		/>
+	{/if}
 	<EffortField
 		label="推論レベル"
 		value={backend === "pi"

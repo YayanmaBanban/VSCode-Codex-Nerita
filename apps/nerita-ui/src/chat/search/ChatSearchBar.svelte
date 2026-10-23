@@ -95,9 +95,10 @@
 							/>
 						{/snippet}
 					</SettingsTooltip>
-					{#each optionButtons as [key, label, icon] (key)}<SettingsTooltip
-							content={label}
-							>{#snippet children({ props })}<button
+					{#each optionButtons as [key, label, icon] (key)}
+						<SettingsTooltip content={label}>
+							{#snippet children({ props })}
+								<button
 									{...mergeProps(props, {
 										onclick: () =>
 											search.setOptions({
@@ -111,11 +112,14 @@
 									aria-label={label}
 									aria-pressed={search.options[key]}
 									>{icon}</button
-								>{/snippet}</SettingsTooltip
-						>{/each}
+								>
+							{/snippet}
+						</SettingsTooltip>
+					{/each}
 				</div>
-				<SettingsTooltip content="前の一致 (Shift+Enter)"
-					>{#snippet children({ props })}<button
+				<SettingsTooltip content="前の一致 (Shift+Enter)">
+					{#snippet children({ props })}
+						<button
 							{...mergeProps(props, {
 								onclick: () => search.move(-1),
 								onkeydown: handleSearchKey,
@@ -125,10 +129,12 @@
 							aria-label="前の一致"
 							disabled={search.result.count === 0}
 							><ChevronLeft size={14} /></button
-						>{/snippet}</SettingsTooltip
-				>
-				<SettingsTooltip content="次の一致 (Enter)"
-					>{#snippet children({ props })}<button
+						>
+					{/snippet}
+				</SettingsTooltip>
+				<SettingsTooltip content="次の一致 (Enter)">
+					{#snippet children({ props })}
+						<button
 							{...mergeProps(props, {
 								onclick: () => search.move(1),
 								onkeydown: handleSearchKey,
@@ -138,16 +144,18 @@
 							aria-label="次の一致"
 							disabled={search.result.count === 0}
 							><ChevronRight size={14} /></button
-						>{/snippet}</SettingsTooltip
-				>
+						>
+					{/snippet}
+				</SettingsTooltip>
 				<output
 					aria-label="検索結果"
 					aria-live="polite"
 					class="shrink-0 text-[12px] whitespace-nowrap tabular-nums"
 					>{counter}</output
 				>
-				<SettingsTooltip content="閉じる (Escape)"
-					>{#snippet children({ props })}<button
+				<SettingsTooltip content="閉じる (Escape)">
+					{#snippet children({ props })}
+						<button
 							{...mergeProps(props, {
 								onclick: search.close,
 								onkeydown: handleSearchKey,
@@ -155,15 +163,15 @@
 							type="button"
 							class={buttonClass}
 							aria-label="検索を閉じる"><X size={14} /></button
-						>{/snippet}</SettingsTooltip
-				>
+						>
+					{/snippet}
+				</SettingsTooltip>
 			</form>
-			{#if search.result.error}<p
-					role="alert"
-					class="my-1 text-[12px] text-tool-error"
-				>
+			{#if search.result.error}
+				<p role="alert" class="my-1 text-[12px] text-tool-error">
 					{search.result.error}
-				</p>{/if}
+				</p>
+			{/if}
 		</div>
 	</div>
 {/if}

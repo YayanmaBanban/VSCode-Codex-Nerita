@@ -6,6 +6,8 @@
 	let { tool }: { tool: ToolSummary } = $props();
 </script>
 
-{#each tool.content ?? [] as value, index (index)}{#if value.type === "content" && value.content.text !== ""}<MessageText
-			text={value.content.text}
-		/>{/if}{/each}
+{#each tool.content ?? [] as value, index (index)}
+	{#if value.type === "content" && value.content.text !== ""}
+		<MessageText text={value.content.text} />
+	{/if}
+{/each}
