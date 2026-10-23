@@ -179,7 +179,7 @@ export async function clearTextlintCacheForScope({ root, scope }) {
 }
 
 /**
- * 検査結果・レビュー用データ・取得済みの技術辞書を含むキャッシュをすべて削除する。
+ * プロジェクト側の検査結果とレビュー用データを削除し、スキル側の技術辞書は保持する。
  */
 export async function cleanTextlintCache(root) {
 	await fs.rm(path.join(root, ".textlint-cache"), {

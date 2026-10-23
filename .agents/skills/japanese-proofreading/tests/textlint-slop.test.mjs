@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { findSlopIssues } from "../scripts/textlint-slop.mjs";
-import { loadSourceTextPolicy } from "../scripts/textlint-policy.mjs";
+import { loadTextlintProject } from "../scripts/textlint-project.mjs";
 import { findEnglishTermIssues } from "../scripts/textlint-terms.mjs";
 import {
 	extractDocumentAuditItems,
@@ -398,19 +398,45 @@ test(
 	checkIssueSchema,
 );
 
-/** 外部辞書を取得せずに CLI を検証できるよう、一時ディレクトリと辞書キャッシュを用意する。 */
+/** スキルとプロジェクトを一時配置し、実際の辞書キャッシュとネットワークを使わずに CLI を検証する。 */
 async function createCliWorkspace(t) {
-	const root = await fs.mkdtemp(path.join(os.tmpdir(), "nerita-slop-cli-"));
-	t.after(() => fs.rm(root, { recursive: true, force: true }));
+	const directory = await fs.mkdtemp(
+		path.join(os.tmpdir(), "nerita-slop-cli-"),
+	);
+	t.after(() => fs.rm(directory, { recursive: true, force: true }));
+	const root = path.join(directory, "project");
+	const skill = path.join(directory, "skill");
+	await fs.mkdir(root);
+	await fs.cp(
+		new URL("../scripts", import.meta.url),
+		path.join(skill, "scripts"),
+		{ recursive: true },
+	);
+	await fs.mkdir(path.join(skill, "config"));
+	for (const file of [".textlintrc.json", "textlint-slop.json"]) {
+		await fs.copyFile(
+			new URL(`../config/${file}`, import.meta.url),
+			path.join(skill, "config", file),
+		);
+	}
+	await fs.symlink(
+		fileURLToPath(new URL("../node_modules", import.meta.url)),
+		path.join(skill, "node_modules"),
+		"junction",
+	);
 	await fs.mkdir(path.join(root, ".textlint-cache"));
 	const dictionaryConfig = JSON.parse(
 		await fs.readFile(
-			new URL("../config/textlint-terms.json", import.meta.url),
+			new URL("../config/.textlintrc.json", import.meta.url),
 			"utf8",
 		),
 	);
 	await fs.writeFile(
-		path.join(root, ".textlint-cache", "technical-terms.json"),
+		path.join(root, ".textlint-project.json"),
+		JSON.stringify({ preferredJapanese: { workspace: "ワークスペース" } }),
+	);
+	await fs.writeFile(
+		path.join(skill, "config", "technical-terms.json"),
 		JSON.stringify({
 			version: 1,
 			revision: dictionaryConfig.technicalDictionary.revision,
@@ -423,9 +449,7 @@ async function createCliWorkspace(t) {
 
 /** 指定モードを別プロセスで実行し、終了コードと診断出力を返す。 */
 function runCli(root, mode, file) {
-	const cli = fileURLToPath(
-		new URL("../scripts/textlint.mjs", import.meta.url),
-	);
+	const cli = path.join(root, "..", "skill", "scripts", "textlint.mjs");
 	return spawnSync(
 		process.execPath,
 		[cli, "--root", root, `--${mode}`, ...(file ? [file] : [])],
@@ -435,6 +459,28 @@ function runCli(root, mode, file) {
 		},
 	);
 }
+
+test("clean removes project review data while retaining the skill dictionary cache", async (t) => {
+	const root = await createCliWorkspace(t);
+	const dictionary = path.join(
+		root,
+		"..",
+		"skill",
+		"config",
+		"technical-terms.json",
+	);
+	const before = await fs.readFile(dictionary, "utf8");
+	await fs.writeFile(
+		path.join(root, ".textlint-cache", "review-all.jsonl"),
+		"review data",
+	);
+	const result = runCli(root, "clean");
+	assert.equal(result.status, 0, result.stdout + result.stderr);
+	await assert.rejects(fs.stat(path.join(root, ".textlint-cache")), {
+		code: "ENOENT",
+	});
+	assert.equal(await fs.readFile(dictionary, "utf8"), before);
+});
 
 test("all CLI modes save review candidates without failing and fail for deterministic patterns", async (t) => {
 	const root = await createCliWorkspace(t);
@@ -640,21 +686,43 @@ test(
 	checkCliSourceStrings,
 );
 
-test("source-text policy defaults to static inspection and rejects invalid configuration", async (t) => {
+test("project settings default to static inspection with no extra terms and reject invalid configuration", async (t) => {
 	const root = await createCliWorkspace(t);
-	const file = path.join(root, ".textlint-policy.json");
-	const defaultPolicy = await loadSourceTextPolicy(root);
-	assert.equal(defaultPolicy("stories/sample.ts"), false);
+	const file = path.join(root, ".textlint-project.json");
+	await fs.rm(file);
+	const defaults = await loadTextlintProject(root);
+	assert.equal(defaults.reviewOnlySourceTexts("stories/sample.ts"), false);
+	assert.deepEqual(defaults.terms, {
+		allowedEnglish: [],
+		preferredJapanese: {},
+	});
 
 	await fs.writeFile(
 		file,
-		JSON.stringify({ reviewOnlySourceTexts: ["stories/"] }),
+		JSON.stringify({
+			allowedEnglish: ["Projectword"],
+			preferredJapanese: { workspace: "ワークスペース" },
+			reviewOnlySourceTexts: ["stories/"],
+		}),
 	);
-	const configured = await loadSourceTextPolicy(root);
-	assert.equal(configured("stories/nested/sample.svelte"), true);
-	assert.equal(configured("stories\\nested\\sample.tsx"), true);
-	assert.equal(configured("stories-copy/sample.ts"), false);
-	assert.equal(configured("src/sample.ts"), false);
+	const configured = await loadTextlintProject(root);
+	assert.deepEqual(configured.terms, {
+		allowedEnglish: ["Projectword"],
+		preferredJapanese: { workspace: "ワークスペース" },
+	});
+	assert.equal(
+		configured.reviewOnlySourceTexts("stories/nested/sample.svelte"),
+		true,
+	);
+	assert.equal(
+		configured.reviewOnlySourceTexts("stories\\nested\\sample.tsx"),
+		true,
+	);
+	assert.equal(
+		configured.reviewOnlySourceTexts("stories-copy/sample.ts"),
+		false,
+	);
+	assert.equal(configured.reviewOnlySourceTexts("src/sample.ts"), false);
 
 	for (const invalid of [
 		null,
@@ -665,12 +733,70 @@ test("source-text policy defaults to static inspection and rejects invalid confi
 		{ reviewOnlySourceTexts: [false] },
 		{ reviewOnlySourceTexts: [""] },
 		{ reviewOnlySourceTexts: ["stories/\nsrc/"] },
+		{ allowedEnglish: null },
+		{ allowedEnglish: "Projectword" },
+		{ allowedEnglish: [false] },
+		{ allowedEnglish: [""] },
+		{ allowedEnglish: ["Projectword\nOtherword"] },
+		{ preferredJapanese: null },
+		{ preferredJapanese: [] },
+		{ preferredJapanese: { workspace: false } },
+		{ preferredJapanese: { workspace: "" } },
+		{ preferredJapanese: { "": "ワークスペース" } },
+		{ technicalDictionary: {} },
 	]) {
 		await fs.writeFile(file, JSON.stringify(invalid));
-		await assert.rejects(loadSourceTextPolicy(root), Error);
+		await assert.rejects(loadTextlintProject(root), Error);
 	}
 	await fs.writeFile(file, "{");
-	await assert.rejects(loadSourceTextPolicy(root), SyntaxError);
+	await assert.rejects(loadTextlintProject(root), SyntaxError);
+});
+
+test("CLI term diagnostics use only the target project's allowed words and preferred Japanese", async (t) => {
+	for (const allowedEnglish of [["Projectword"], []]) {
+		const root = await createCliWorkspace(t);
+		await fs.writeFile(
+			path.join(root, ".textlint-project.json"),
+			JSON.stringify({
+				allowedEnglish,
+				preferredJapanese: { workspace: "作業領域" },
+			}),
+		);
+		await fs.writeFile(
+			path.join(root, "sample.md"),
+			"Projectword の workspace を確認する。\n",
+		);
+		const result = runCli(root, "all", "sample.md");
+		assert.equal(result.status, 1, result.stdout + result.stderr);
+		const saved = JSON.parse(
+			await fs.readFile(
+				path.join(root, ".textlint-cache/issues-all.json"),
+				"utf8",
+			),
+		);
+		const preferred = saved.issues.find(
+			(issue) => issue.term === "workspace",
+		);
+		assert.equal(preferred.type, "preferred-japanese");
+		assert.equal(preferred.suggestion, "作業領域");
+		assert.equal(
+			saved.issues.some((issue) => issue.term === "Projectword"),
+			allowedEnglish.length === 0,
+		);
+	}
+});
+
+test("project settings reject directories and directory links", async (t) => {
+	const root = await createCliWorkspace(t);
+	const file = path.join(root, ".textlint-project.json");
+	await fs.rm(file);
+	await fs.mkdir(file);
+	await assert.rejects(loadTextlintProject(root), Error);
+	await fs.rmdir(file);
+	const directory = path.join(root, "linked-settings");
+	await fs.mkdir(directory);
+	await fs.symlink(directory, file, "junction");
+	await assert.rejects(loadTextlintProject(root), Error);
 });
 
 /** 全モードで文言を検査から外し、レビューでは元の位置と値を保持することを確認する。 */
@@ -752,8 +878,11 @@ async function checkStoryComment(root, fixture) {
 test("review-only source texts retain review data while comments and other sources still fail", async (t) => {
 	const root = await createCliWorkspace(t);
 	await fs.writeFile(
-		path.join(root, ".textlint-policy.json"),
-		JSON.stringify({ reviewOnlySourceTexts: ["stories/"] }),
+		path.join(root, ".textlint-project.json"),
+		JSON.stringify({
+			preferredJapanese: { workspace: "ワークスペース" },
+			reviewOnlySourceTexts: ["stories/"],
+		}),
 	);
 	await fs.mkdir(path.join(root, "stories"));
 	await fs.mkdir(path.join(root, "src"));

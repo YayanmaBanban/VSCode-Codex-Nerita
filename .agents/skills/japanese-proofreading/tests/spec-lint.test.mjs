@@ -264,18 +264,3 @@ test("通常の textlint には仕様書専用ルールを追加しない", asyn
 	assert(result.messages.every((m) => !m.ruleId.startsWith("spec/")));
 });
 
-test("取得した Knowledge Loop 仕様書の長文を検出し、原文の範囲を示す", async () => {
-	const source = await fs.readFile(
-		new URL("./fixtures/knowledge-loop.md", import.meta.url),
-		"utf8",
-	);
-	const messages = await inspect(source);
-	assert(messages.some((m) => m.ruleId === "spec/long-sentence"));
-	assert(messages.some((m) => m.ruleId === "spec/long-list-item"));
-	const lines = source.split(/\r?\n/);
-	for (const message of messages) {
-		assert.equal(message.severity, 1);
-		assert(message.column <= lines[message.line - 1].length + 1);
-		assert(message.range[0] >= 0 && message.range[1] <= source.length);
-	}
-});

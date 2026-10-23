@@ -1,3 +1,4 @@
+// 技術辞書をスキル側に保存し、プロジェクト由来の語彙と実行時に結合する。
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -206,12 +207,12 @@ function isDictionaryConfigured(dictionaryConfig) {
 }
 
 /**
- * リビジョンを固定した CSpell の技術辞書を読み込み、取得結果をキャッシュに保存する。
+ * リビジョンを固定した CSpell の技術辞書を読み込み、スキルの設定ディレクトリに保存する。
  *
  * 取得できない場合は検査を止めず、空の語彙を返す。
  */
 export async function loadExternalTechnicalTerms({
-	root,
+	cacheDirectory,
 	dictionaryConfig,
 	fetchImpl = globalThis.fetch,
 }) {
@@ -219,7 +220,6 @@ export async function loadExternalTechnicalTerms({
 		return { terms: new Set(), source: "disabled", warning: null };
 	}
 
-	const cacheDirectory = path.join(root, ".textlint-cache");
 	const cachePath = path.join(cacheDirectory, CACHE_FILE);
 	const cached = await readDictionaryCache(cachePath, dictionaryConfig);
 
@@ -265,6 +265,7 @@ export async function loadExternalTechnicalTerms({
  */
 export async function loadAutomaticEnglishTerms({
 	root,
+	cacheDirectory,
 	dictionaryConfig,
 	fetchImpl = globalThis.fetch,
 }) {
@@ -281,7 +282,7 @@ export async function loadAutomaticEnglishTerms({
 	}
 	const projectTerms = extractProjectTerms(packageJson);
 	const external = await loadExternalTechnicalTerms({
-		root,
+		cacheDirectory,
 		dictionaryConfig,
 		fetchImpl,
 	});

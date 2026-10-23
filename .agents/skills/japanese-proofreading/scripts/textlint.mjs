@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { createTextlintIgnore } from "./textlint-ignore.mjs";
-import { loadSourceTextPolicy } from "./textlint-policy.mjs";
+import { loadTextlintProject } from "./textlint-project.mjs";
 import {
 	extractSourceComments,
 	extractSourceIdentifiers,
@@ -109,11 +109,12 @@ function normalizePath(filePath) {
 	return filePath.split(path.sep).join("/");
 }
 
-async function loadTextlintTerms() {
-	const configPath = path.join(SKILL_ROOT, "config", "textlint-terms.json");
+/** 技術辞書の取得元は、プロジェクトの用語設定と分けてスキル側で管理する。 */
+async function loadTechnicalDictionaryConfig() {
+	const configPath = path.join(SKILL_ROOT, "config", ".textlintrc.json");
 	const content = await fs.readFile(configPath, "utf8");
 
-	return JSON.parse(content);
+	return JSON.parse(content).technicalDictionary;
 }
 
 /**
@@ -277,7 +278,8 @@ function printTermIssues(issues) {
 
 const targetSpecs = await resolveTextlintTargets(ROOT, positionals);
 const ignoreMatcher = createTextlintIgnore(ROOT);
-const reviewOnlySourceTexts = await loadSourceTextPolicy(ROOT);
+const { terms: termsConfig, reviewOnlySourceTexts } =
+	await loadTextlintProject(ROOT);
 
 await clearTextlintCacheForScope({
 	root: ROOT,
@@ -393,10 +395,10 @@ for (const file of files) {
 	}
 }
 
-const termsConfig = await loadTextlintTerms();
 const automaticTerms = await loadAutomaticEnglishTerms({
 	root: ROOT,
-	dictionaryConfig: termsConfig.technicalDictionary,
+	cacheDirectory: path.join(SKILL_ROOT, "config"),
+	dictionaryConfig: await loadTechnicalDictionaryConfig(),
 });
 
 if (automaticTerms.warning) {
