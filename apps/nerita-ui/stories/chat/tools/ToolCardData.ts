@@ -1,5 +1,36 @@
 // 個人の環境に依存しない表示データと、Host 通知を注入する操作。
 import type { ToolSummary } from "@nerita/shared/chatState";
+import type { StoryBridge } from "../mocks/storyBridge";
+
+/** 要求された範囲への Host 応答を注入し、ダイアログ表示中も成功・失敗を検証する。 */
+export function respondToolOutput(bridge: StoryBridge, failed = false) {
+	const request = [...bridge.sent]
+		.reverse()
+		.find((message) => message.type === "tool/output");
+	if (request?.type !== "tool/output") {
+		return;
+	}
+	if (failed) {
+		bridge.emit({
+			type: "request/failed",
+			requestId: request.requestId,
+			error: "詳細出力を取得できませんでした。閉じて開き直すと再取得できます。",
+		});
+		return;
+	}
+	bridge.emit({
+		type: "tool/outputResult",
+		requestId: request.requestId,
+		outputRef: request.outputRef,
+		text:
+			request.offset === 0
+				? "先頭の詳細出力\n日本語と絵文字 🐈\n".repeat(1000)
+				: "次の詳細出力\nFAIL: 末尾エラー",
+		offset: request.offset,
+		nextOffset: request.offset === 0 ? 65535 : 65600,
+		eof: request.offset !== 0,
+	});
+}
 
 export const initialTools: ToolSummary[] = [
 	{

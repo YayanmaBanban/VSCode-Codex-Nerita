@@ -36,9 +36,9 @@
 
 <Icon size={16} aria-hidden="true" />
 <span class="tool-title flex min-w-0 flex-1 items-center gap-[8px]"
-	><span class="truncate">{tool.title}</span>{#if changes}<ChangeCount
-			{...changes}
-		/>{/if}</span
+	><span class="min-w-0 [overflow-wrap:anywhere] whitespace-pre-wrap"
+		>{tool.title}</span
+	>{#if changes}<ChangeCount {...changes} />{/if}</span
 >
 {#if progress && active}
 	<LoaderCircle

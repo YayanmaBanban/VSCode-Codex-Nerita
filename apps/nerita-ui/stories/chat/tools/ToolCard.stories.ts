@@ -1,6 +1,8 @@
 // 元の表示状態と操作アサーションを Svelte UI へ移行する。
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, spyOn, userEvent, within, waitFor } from "storybook/test";
+import { storyBridge } from "../storyBridgeElement";
+import { respondToolOutput } from "./ToolCardData";
 import ToolCardToolCardsStory from "./ToolCardToolCardsStory.svelte";
 import ToolCardExample1 from "./ToolCardExample1.svelte";
 import ToolCardExample2 from "./ToolCardExample2.svelte";
@@ -12,6 +14,18 @@ import ToolCardExample7 from "./ToolCardExample7.svelte";
 
 const meta = {
 	title: "Chat/Tool Cards",
+	/** 開いた状態の見本も残しつつ、次の検証へモーダルの操作制限を持ち越さない。 */
+	beforeEach: () => async () => {
+		const close = within(document.body).queryByRole("button", {
+			name: "詳細出力を閉じる",
+		});
+		if (close) {
+			await userEvent.click(close);
+		}
+		await waitFor(() =>
+			expect(document.body.style.pointerEvents).not.toBe("none"),
+		);
+	},
 	component: ToolCardToolCardsStory,
 	argTypes: { background: { control: "boolean" } },
 	parameters: {
@@ -116,13 +130,17 @@ export const OutputError: StoryObj<typeof ToolCardExample5> = {
 	render: () => ({ Component: ToolCardExample5 }),
 	play: async (context) => {
 		await openOutput(context);
-		const canvas = within(context.canvasElement);
-		await userEvent.click(
-			canvas.getByRole("button", { name: "出力取得を失敗" }),
+		const { canvasElement } = context;
+		respondToolOutput(storyBridge(canvasElement), true);
+		await waitFor(() =>
+			expect(
+				within(canvasElement.ownerDocument.body).getByRole("alert"),
+			).toBeVisible(),
 		);
-		await waitFor(() => expect(canvas.getByRole("alert")).toBeVisible());
 		await expect(
-			canvas.getByRole("button", { name: "次の範囲を表示" }),
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "次の範囲を表示",
+			}),
 		).toBeDisabled();
 	},
 };
@@ -135,7 +153,9 @@ async function openOutput({ canvasElement }: { canvasElement: HTMLElement }) {
 	);
 	await userEvent.click(canvas.getByRole("button", { name: "詳細出力" }));
 	await expect(
-		canvas.getByRole("region", { name: "詳細出力" }),
+		within(canvasElement.ownerDocument.body).getByRole("region", {
+			name: "詳細出力",
+		}),
 	).toHaveAttribute("aria-busy", "true");
 }
 export const OutputControls: StoryObj<typeof ToolCardExample5> = {
@@ -160,9 +180,9 @@ export const OutputControls: StoryObj<typeof ToolCardExample5> = {
 			);
 			const disclosure = canvas.getByRole("button", { name: "詳細出力" });
 			await userEvent.click(disclosure);
-			const detail = await canvas.findByRole("region", {
-				name: "詳細出力",
-			});
+			const detail = await within(
+				canvasElement.ownerDocument.body,
+			).findByRole("region", { name: "詳細出力" });
 			const range = within(detail);
 			const copyButton = range.getByRole("button", {
 				name: "出力をコピー",
@@ -173,26 +193,20 @@ export const OutputControls: StoryObj<typeof ToolCardExample5> = {
 			const next = range.getByRole("button", { name: "次の範囲を表示" });
 			await expect(copyButton).toBeDisabled();
 			await expect(previous).toBeDisabled();
-			await userEvent.click(
-				canvas.getByRole("button", { name: "出力応答を受信" }),
-			);
+			respondToolOutput(storyBridge(canvasElement));
 			await userEvent.click(copyButton);
 			await expect(copy).toHaveBeenLastCalledWith(
 				"先頭の詳細出力\n日本語と絵文字 🐈\n".repeat(1000),
 			);
 			await userEvent.click(next);
-			await userEvent.click(
-				canvas.getByRole("button", { name: "出力応答を受信" }),
-			);
+			respondToolOutput(storyBridge(canvasElement));
 			await expect(next).toBeDisabled();
 			await userEvent.click(copyButton);
 			await expect(copy).toHaveBeenLastCalledWith(
 				"次の詳細出力\nFAIL: 末尾エラー",
 			);
 			await userEvent.click(previous);
-			await userEvent.click(
-				canvas.getByRole("button", { name: "出力応答を受信" }),
-			);
+			respondToolOutput(storyBridge(canvasElement));
 			await expect(previous).toBeDisabled();
 			copy.mockRejectedValueOnce(new Error("clipboard unavailable"));
 			await userEvent.click(copyButton);
@@ -205,11 +219,21 @@ export const OutputControls: StoryObj<typeof ToolCardExample5> = {
 				"data-copy-result",
 				"success",
 			);
-			await userEvent.click(disclosure);
+			await userEvent.click(
+				within(canvasElement.ownerDocument.body).getByRole("button", {
+					name: "詳細出力を閉じる",
+				}),
+			);
 			await expect(
-				canvas.queryByRole("region", { name: "詳細出力" }),
+				within(canvasElement.ownerDocument.body).queryByRole("region", {
+					name: "詳細出力",
+				}),
 			).not.toBeInTheDocument();
 			await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+			await expect(disclosure).toHaveFocus();
+			await waitFor(() =>
+				expect(document.body.style.pointerEvents).not.toBe("none"),
+			);
 			await verifyClosedOutputReset(canvasElement);
 		} finally {
 			copy.mockRestore();
@@ -251,13 +275,21 @@ async function verifyClosedOutputReset(canvasElement: HTMLElement) {
 		expanded: true,
 	});
 	await userEvent.click(canvas.getByRole("button", { name: "詳細出力" }));
+	respondToolOutput(storyBridge(canvasElement));
 	await userEvent.click(
-		canvas.getByRole("button", { name: "出力応答を受信" }),
+		within(canvasElement.ownerDocument.body).getByRole("button", {
+			name: "詳細出力を閉じる",
+		}),
+	);
+	await waitFor(() =>
+		expect(document.body.style.pointerEvents).not.toBe("none"),
 	);
 	await userEvent.click(heading);
 	await waitFor(() =>
 		expect(
-			canvas.queryByRole("region", { name: "詳細出力", hidden: true }),
+			within(canvasElement.ownerDocument.body).queryByRole("region", {
+				name: "詳細出力",
+			}),
 		).not.toBeInTheDocument(),
 	);
 	await userEvent.click(heading);

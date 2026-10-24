@@ -14,6 +14,29 @@ export default meta;
 /** チャット画面のストーリー定義。 */
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+
+/** 補完候補のない文章では本文を変えず、Tab と Shift+Tab で入力欄の前後へ移動する。 */
+export const KeyboardNavigation: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const input = await canvas.findByRole("textbox", {
+			name: "Codexへのメッセージ",
+		});
+		const text = "通常の文章を入力します。";
+		await userEvent.click(input);
+		await userEvent.type(input, text);
+		await userEvent.tab();
+		await expect(
+			canvas.getByRole("button", { name: "入力エリアを拡張" }),
+		).toHaveFocus();
+		await expect(input.textContent).toBe(text);
+		await userEvent.tab({ shift: true });
+		await expect(input).toHaveFocus();
+		await userEvent.tab({ shift: true });
+		await expect(input).not.toHaveFocus();
+		await expect(input.textContent).toBe(text);
+	},
+};
 export const AttachmentDropActive: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);

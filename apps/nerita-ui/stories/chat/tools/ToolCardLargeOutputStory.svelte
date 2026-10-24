@@ -6,6 +6,7 @@
 	import ToolCard from "../../../src/chat/tools/ToolCard.svelte";
 	import ToolOutputBridge from "../../../src/chat/tools/ToolOutputProvider.svelte";
 	import { createStoryBridge } from "../mocks/storyBridge";
+	import { respondToolOutput } from "./ToolCardData";
 	import "../../../src/chat/chat.css";
 
 	let completed = $state.raw(false);
@@ -17,48 +18,21 @@
 		completed = typeof value === "function" ? value(completed) : value;
 	}
 	const bridge = createStoryBridge(initialState());
+	/** ストーリーの描画要素に応答注入用の通信窓口を公開する。 */
+	function attachBridge(element: HTMLElement) {
+		Object.assign(element, { storyBridge: bridge });
+		return () => {
+			Reflect.deleteProperty(element, "storyBridge");
+		};
+	}
 </script>
 
-<main style:padding="16px">
-	<button
-		onclick={() => {
-			const request = [...bridge.sent]
-				.reverse()
-				.find((message) => message.type === "tool/output");
-			if (request?.type === "tool/output") {
-				bridge.emit({
-					type: "request/failed",
-					requestId: request.requestId,
-					error: "詳細出力を取得できませんでした。閉じて開き直すと再取得できます。",
-				});
-			}
-		}}>出力取得を失敗</button
+<main style:padding="16px" data-story-chat {@attach attachBridge}>
+	<button onclick={() => respondToolOutput(bridge, true)}
+		>出力取得を失敗</button
 	>
 	<button onclick={() => setCompleted(true)}>完了通知を受信</button>
-	<button
-		onclick={() => {
-			const request = [...bridge.sent]
-				.reverse()
-				.find((message) => message.type === "tool/output");
-			if (request?.type !== "tool/output") {
-				return;
-			}
-			bridge.emit({
-				type: "tool/outputResult",
-				requestId: request.requestId,
-				outputRef: request.outputRef,
-				text:
-					request.offset === 0
-						? "先頭の詳細出力\n日本語と絵文字 🐈\n".repeat(1000)
-						: "次の詳細出力\nFAIL: 末尾エラー",
-				offset: request.offset,
-				nextOffset: request.offset === 0 ? 65535 : 65600,
-				eof: request.offset !== 0,
-			});
-		}}
-	>
-		出力応答を受信
-	</button>
+	<button onclick={() => respondToolOutput(bridge)}>出力応答を受信</button>
 	<ToolOutputBridge value={bridge}>
 		<ToolCard
 			tool={{

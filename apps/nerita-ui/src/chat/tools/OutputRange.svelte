@@ -9,7 +9,9 @@
 	import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import { mergeProps } from "bits-ui";
-	import CommandOutput from "./CommandOutput.svelte";
+	import CopyButton from "../CopyButton.svelte";
+	import { toolOutputClass } from "./toolStyles";
+	import { cn } from "cnfast";
 	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
@@ -62,7 +64,7 @@
 			unsubscribe();
 		};
 	}
-	// 描画対象の交換や出力の更新に合わせて DOM のサイズを監視し、旧監視を解除する。
+	// 出力参照と範囲の変更に合わせて応答を購読し、旧要求の購読を解除する。
 	$effect(observeOutputRange);
 	const unavailableRange = $derived(
 		loading || isNonEmptyString(error) || !range,
@@ -100,18 +102,15 @@
 	}
 </script>
 
-<section {id} aria-label="詳細出力" aria-busy={loading}>
-	{#if isNonEmptyString(error)}
-		<p role="alert">
-			{error}
-		</p>
-	{:else}
-		<CommandOutput
-			text={loading ? "読み込み中…" : (range?.text ?? "")}
-			copyDisabled={loading || !range}
-		/>
-	{/if}
-	<div class="flex items-center gap-[8px] text-[12px] text-muted">
+<section
+	{id}
+	aria-label="詳細出力"
+	aria-busy={loading}
+	class="flex min-h-0 flex-1 flex-col gap-[8px]"
+>
+	<div
+		class="flex shrink-0 flex-wrap items-center gap-[8px] text-[12px] text-muted"
+	>
 		<Tooltip content="前の範囲を表示">
 			{#snippet children({ props })}
 				<button
@@ -142,5 +141,32 @@
 				バイト</span
 			>
 		{/if}
+		<CopyButton
+			text={range?.text ?? ""}
+			label="出力をコピー"
+			disabled={unavailableRange}
+			className="ml-auto size-[28px] shrink-0"
+		/>
 	</div>
+	{#if isNonEmptyString(error)}
+		<p
+			role="alert"
+			class="m-0 min-h-0 overflow-auto text-[12px] [overflow-wrap:anywhere]"
+		>
+			{error}
+		</p>
+	{:else}
+		<div
+			role="region"
+			aria-label="出力"
+			class={cn(
+				"min-h-0 flex-1 overflow-auto overscroll-contain rounded-[4px] border border-solid border-panel-border p-[8px]",
+				"focus-visible:outline-1 focus-visible:outline-settings-focus",
+			)}
+		>
+			<pre class={cn(toolOutputClass, "m-0")}>{loading
+					? "読み込み中…"
+					: (range?.text ?? "")}</pre>
+		</div>
+	{/if}
 </section>

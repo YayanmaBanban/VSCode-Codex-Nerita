@@ -1,70 +1,14 @@
-// 候補表示の検出と Tab 操作を Lexical へ登録し、解除時に購読も解除する。
-import { composingCompletion } from "./completionKeyboard";
+// 候補表示の検出と候補のキー操作を Lexical へ登録し、解除時に購読も解除する。
 /** 外部へ登録したコールバックから最新値を参照するための可変の参照先。 */
 type Reference<T> = { current: T };
-import { isNonZeroNumber } from "@nerita/shared/valuePredicates";
-
 import {
 	$getNodeByKey as getNodeByKey,
-	$getSelection as getSelection,
-	$isRangeSelection as isRangeSelection,
 	COMMAND_PRIORITY_CRITICAL,
 	KEY_DOWN_COMMAND,
 	mergeRegister,
 	type LexicalEditor,
 } from "lexical";
-import {
-	$completion as completion,
-	$insertCompletion as insertCompletion,
-	type Completion,
-} from "./completions";
-import { $pointOffset as pointOffset } from "./content";
-
-/** 本文のカーソル直前に2スペースを挿入、または最大2スペースを削除する。 */
-function indent(event: KeyboardEvent, editor: LexicalEditor): boolean {
-	if (ignoreIndentKey(event, editor)) {
-		return false;
-	}
-	const selection = getSelection();
-	if (!isRangeSelection(selection)) {
-		return false;
-	}
-	event.preventDefault();
-	if (!event.shiftKey) {
-		selection.insertText("  ");
-	} else if (selection.isCollapsed()) {
-		const block = selection.anchor.getNode().getTopLevelElement();
-		if (block) {
-			const end = pointOffset(selection.anchor, block);
-			const spaces =
-				/ {1,2}$/.exec(block.getTextContent().slice(0, end))?.[0]
-					.length ?? 0;
-			if (isNonZeroNumber(spaces)) {
-				insertCompletion(
-					{
-						key: block.getKey(),
-						start: end - spaces,
-						end,
-						marker: "",
-						query: "",
-					},
-					"",
-				);
-			}
-		}
-	}
-	return true;
-}
-
-/** 通常の Tab 入力だけを字下げ操作として受け付ける。 */
-function ignoreIndentKey(event: KeyboardEvent, editor: LexicalEditor) {
-	const ignoredTab =
-		event.key !== "Tab" || composingCompletion(event, editor);
-	if (ignoredTab || event.ctrlKey) {
-		return true;
-	}
-	return event.metaKey || event.altKey;
-}
+import { $completion as completion, type Completion } from "./completions";
 
 /** Svelte の getter から最新状態を参照し、検索欄への移動でも本文の置換範囲を保つ。 */
 export function useCompletionEditor(
@@ -182,7 +126,7 @@ function registerCompletionCommands(
 		editor.registerUpdateListener(updateCompletionMatch),
 		editor.registerCommand(
 			KEY_DOWN_COMMAND,
-			(event) => latest.current.handleKey(event) || indent(event, editor),
+			(event) => latest.current.handleKey(event),
 			COMMAND_PRIORITY_CRITICAL,
 		),
 	);
