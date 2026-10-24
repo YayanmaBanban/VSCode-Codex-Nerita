@@ -202,7 +202,7 @@
 					{#if !feedback.busy}
 						<ButtonCurtain
 							name="再読み込み"
-							className="bg-green-300"
+							className="bg-sky-300"
 						/>
 					{/if}
 				</button>
@@ -238,7 +238,7 @@
 						変更を破棄
 						{#if !discardDisabled}<ButtonCurtain
 								name="変更を破棄"
-								className="bg-yellow-300"
+								className="bg-red-300"
 							/>{/if}
 					</button>
 				{/if}

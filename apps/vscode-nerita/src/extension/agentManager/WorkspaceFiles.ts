@@ -51,13 +51,14 @@ export async function workspaceFile(root: string, relative: string) {
 export async function readWorkspaceFile(
 	root: string,
 	relative: string,
+	maxBytes = 262144,
 ): Promise<string | undefined> {
 	const file = await workspaceFile(root, relative);
 	try {
 		const info = await stat(file);
-		if (!info.isFile() || info.size > 262144) {
+		if (!info.isFile() || info.size > maxBytes) {
 			throw new Error(
-				`設定ファイルが通常のファイルではないか、256 KiB の上限を超えています: ${relative}`,
+				`設定ファイルが通常のファイルではないか、${maxBytes / 1024} KiB の上限を超えています: ${relative}`,
 			);
 		}
 		return await readFile(file, "utf8");
@@ -75,8 +76,10 @@ export async function writeWorkspaceFile(
 	relative: string,
 	expected: string | undefined,
 	text: string,
+	maxBytes = 262144,
 ) {
-	const matchesValue = (await readWorkspaceFile(root, relative)) !== expected;
+	const matchesValue =
+		(await readWorkspaceFile(root, relative, maxBytes)) !== expected;
 	if (matchesValue) {
 		throw new Error("別の編集が保存されています。再読み込みしてください。");
 	}
@@ -87,7 +90,7 @@ export async function writeWorkspaceFile(
 	try {
 		await writeFile(temp, text, { flag: "wx" });
 		const matchesValue2 =
-			(await readWorkspaceFile(root, relative)) !== expected;
+			(await readWorkspaceFile(root, relative, maxBytes)) !== expected;
 		if (matchesValue2) {
 			throw new Error(
 				"保存中に設定が変更されました。再読み込みしてください。",

@@ -8,6 +8,13 @@ const meta = {
 	title: "Agent Manager",
 	component: Preview,
 	parameters: { layout: "fullscreen" },
+	beforeEach: async () => {
+		await waitFor(() =>
+			expect(getComputedStyle(document.body).pointerEvents).not.toBe(
+				"none",
+			),
+		);
+	},
 	args: {
 		mode: "normal",
 		onRequest: fn<(message: ManagerRequest) => void>(),
@@ -144,6 +151,11 @@ export const ReloadAfterConflict: Story = {
 		await userEvent.click(
 			footer.getByRole("button", { name: "再読み込み" }),
 		);
+		await userEvent.click(
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "下書きを保存",
+			}),
+		);
 		await waitFor(() =>
 			expect(
 				args.onRequest.mock.calls.filter(
@@ -152,7 +164,7 @@ export const ReloadAfterConflict: Story = {
 			).toHaveLength(1),
 		);
 		await expect(canvas.getByRole("textbox", { name: "名前" })).toHaveValue(
-			"writer",
+			"writer-draft",
 		);
 		await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
 		await expect(
@@ -181,6 +193,11 @@ export const HeaderReloadAfterConflict: Story = {
 				name: "再読み込み",
 			}),
 		);
+		await userEvent.click(
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "破棄",
+			}),
+		);
 		await waitFor(() =>
 			expect(
 				args.onRequest.mock.calls.filter(
@@ -207,6 +224,11 @@ export const ReloadFailureKeepsLocked: Story = {
 		await waitFor(() => expect(footer.getByRole("alert")).toBeVisible());
 		await userEvent.click(
 			footer.getByRole("button", { name: "再読み込み" }),
+		);
+		await userEvent.click(
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "下書きを保存",
+			}),
 		);
 		await waitFor(() =>
 			expect(
@@ -488,16 +510,29 @@ export const Conflict: Story = {
 		await userEvent.type(name, "writer-draft");
 		await userEvent.click(canvas.getByRole("button", { name: "reviewer" }));
 		await userEvent.click(
-			canvas.getByRole("button", { name: "変更を保存" }),
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "保存して移動",
+			}),
 		);
 
-		await expect(await canvas.findByRole("alert")).toHaveTextContent(
+		await expect(
+			await within(
+				within(canvasElement.ownerDocument.body).getByRole(
+					"alertdialog",
+				),
+			).findByRole("alert"),
+		).toHaveTextContent(
 			"設定が変更されています。再読み込みしてから保存してください。",
 		);
 		await expect(name).toHaveValue("writer-draft");
 		await expect(
-			canvas.getByRole("region", { name: "未保存の変更" }),
+			within(canvasElement.ownerDocument.body).getByRole("alertdialog"),
 		).toBeInTheDocument();
+		await userEvent.click(
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "編集を続ける",
+			}),
+		);
 		await expect(
 			canvasElement.querySelector("footer .lucide-badge-alert"),
 		).not.toBeInTheDocument();
@@ -616,19 +651,38 @@ export const UnsavedChanges: Story = {
 			canvas.getByRole("button", { name: "ハンドオフ" }),
 		);
 		await expect(
-			canvas.getByRole("region", { name: "未保存の変更" }),
+			within(canvasElement.ownerDocument.body).getByRole("alertdialog"),
 		).toBeInTheDocument();
 		await expect(name).toHaveValue("codex-reviewer-draft");
+		await userEvent.click(
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "編集を続ける",
+			}),
+		);
+		await waitFor(() =>
+			expect(
+				getComputedStyle(canvasElement.ownerDocument.body)
+					.pointerEvents,
+			).not.toBe("none"),
+		);
 		await userEvent.click(
 			canvas.getByRole("button", { name: "再読み込み" }),
 		);
 		await userEvent.click(
-			canvas.getByRole("button", { name: "変更を破棄" }),
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "破棄",
+			}),
 		);
 		await waitFor(() =>
 			expect(canvas.getByRole("textbox", { name: "名前" })).toHaveValue(
 				"codex-reviewer",
 			),
+		);
+		await waitFor(() =>
+			expect(
+				getComputedStyle(canvasElement.ownerDocument.body)
+					.pointerEvents,
+			).not.toBe("none"),
 		);
 		await userEvent.type(
 			canvas.getByRole("textbox", { name: "名前" }),
@@ -638,7 +692,9 @@ export const UnsavedChanges: Story = {
 			canvas.getByRole("button", { name: "ハンドオフ" }),
 		);
 		await userEvent.click(
-			canvas.getByRole("button", { name: "変更を破棄" }),
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "破棄して移動",
+			}),
 		);
 		await expect(
 			canvas.getByRole("region", { name: "codex ハンドオフ" }),
@@ -658,10 +714,12 @@ export const PiEditing: Story = {
 		);
 		await userEvent.click(canvas.getByRole("button", { name: "reviewer" }));
 		await expect(
-			canvas.getByRole("region", { name: "未保存の変更" }),
+			within(canvasElement.ownerDocument.body).getByRole("alertdialog"),
 		).toBeInTheDocument();
 		await userEvent.click(
-			canvas.getByRole("button", { name: "変更を保存" }),
+			within(canvasElement.ownerDocument.body).getByRole("button", {
+				name: "保存して移動",
+			}),
 		);
 		await expect(args.onRequest).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -677,19 +735,16 @@ export const PiEditing: Story = {
 			}),
 		);
 		await expect(
-			canvas.getByRole("button", { name: "updated-writer" }),
+			canvas.getByRole("button", { name: "reviewer" }),
 		).toHaveAttribute("aria-current", "page");
-		await expect(
-			canvasElement.querySelector("footer .lucide-circle-check"),
-		).toBeInTheDocument();
-		await expect(canvasElement.querySelector("footer")).toHaveAttribute(
-			"data-phase",
-			"shown",
-		);
 		await waitFor(() =>
 			expect(
-				canvas.queryByRole("region", { name: "未保存の変更" }),
-			).not.toBeInTheDocument(),
+				getComputedStyle(canvasElement.ownerDocument.body)
+					.pointerEvents,
+			).not.toBe("none"),
+		);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "updated-writer" }),
 		);
 
 		const description = canvas.getByRole("textbox", { name: "説明" });

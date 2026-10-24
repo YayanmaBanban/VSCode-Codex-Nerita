@@ -1,5 +1,6 @@
 // Host の管理状態を購読し、保存要求の世代・応答 ID と失敗時の入力保持を管理する。
 import { onMount } from "svelte";
+import { createManagerDraftRequests } from "./managerDraftRequests";
 import type {
 	ManagerBridge,
 	ManagerRequest,
@@ -13,10 +14,18 @@ type Mutation = Extract<ManagerRequest, { generation: string }>;
 function connectManager(
 	bridge: ManagerBridge,
 	receive: (message: ManagerReply) => void,
+	drafts: ReturnType<typeof createManagerDraftRequests>,
 ) {
-	const unsubscribe = bridge.subscribe(receive);
+	const unsubscribe = bridge.subscribe((message) => {
+		if (!drafts.receive(message)) {
+			receive(message);
+		}
+	});
 	bridge.postMessage({ type: "ready" });
-	return unsubscribe;
+	return () => {
+		unsubscribe();
+		drafts.dispose();
+	};
 }
 /** 保存する内容のみを受け取り、要求 ID と世代は管理画面側で付加する。 */
 export type ManagerSave = (
@@ -73,8 +82,8 @@ export function useAgentManager(
 	let error = $state<string | null>(null);
 	let saved = $state(false);
 	let reloadRequired = $state(false);
-	const reloadNeeded = $derived(managerReloadRequired(state, reloadRequired));
 	let sequence = 0;
+	const drafts = createManagerDraftRequests(bridge, () => state);
 	onMount(() => {
 		/** 設定を受信した場合や、初期化または現在の保存要求への応答を受けた場合に待機状態を解除する。 */
 		const receive = (message: ManagerReply) => {
@@ -92,17 +101,16 @@ export function useAgentManager(
 				}
 			} else if (message.id === 0 || message.id === sequence) {
 				error = message.error;
-				reloadRequired ||=
-					message.error?.includes("再読み込み") === true;
+				reloadRequired ||= needsReload(message.error);
 				saved = message.id !== 0 && message.error === null;
 				busy = false;
 			}
 		};
-		return connectManager(bridge, receive);
+		return connectManager(bridge, receive, drafts);
 	});
 	/** 現在の設定世代と要求番号を付けて保存を送り、未取得・要求中の状態では送信しない。 */
 	const save: ManagerSave = (change) => {
-		if (!state || busy || reloadNeeded) {
+		if (!state || busy || managerReloadRequired(state, reloadRequired)) {
 			return;
 		}
 		busy = true;
@@ -127,11 +135,12 @@ export function useAgentManager(
 			return saved;
 		},
 		get reloadRequired() {
-			return reloadNeeded;
+			return managerReloadRequired(state, reloadRequired);
 		},
 		save,
+		writeDraft: drafts.write,
 		clearError() {
-			if (!reloadNeeded) {
+			if (!managerReloadRequired(state, reloadRequired)) {
 				error = null;
 			}
 		},
@@ -144,4 +153,8 @@ export function useAgentManager(
 			bridge.postMessage({ type: "reload" });
 		},
 	};
+}
+/** Host が再取得を必要とする失敗を返した場合は、再保存を防ぐ。 */
+function needsReload(error: string | null) {
+	return error?.includes("再読み込み") === true;
 }

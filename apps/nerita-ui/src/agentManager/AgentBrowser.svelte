@@ -10,6 +10,7 @@
 	import { mergeProps } from "bits-ui";
 	import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
 	import Tooltip from "../ui/Tooltip.svelte";
+	import ResponsiveSidebar from "../ui/ResponsiveSidebar.svelte";
 
 	let {
 		agents,
@@ -17,7 +18,7 @@
 		onSelect,
 		busy,
 		defaults = false,
-		children,
+		children: content,
 	}: {
 		agents: ManagedAgent[];
 		selected: string;
@@ -47,38 +48,10 @@
 		"aria-[current=page]:bg-settings-hover aria-[current=page]:font-semibold",
 		"disabled:cursor-not-allowed disabled:opacity-50",
 	);
-	/** サイドバーの上端位置を高さの計算に使い、画面下部に余分な隙間ができるのを防ぐ。 */
-	function fillHeight(node: HTMLElement) {
-		/** スクロールや見出しの折り返しで位置が変わっても、利用できる高さを計算し直せるようにする。 */
-		const update = () => {
-			const top = `${Math.max(0, node.getBoundingClientRect().top)}px`;
-			if (node.style.getPropertyValue("--agent-browser-top") !== top) {
-				node.style.setProperty("--agent-browser-top", top);
-			}
-		};
-		const observer = new ResizeObserver(update);
-		observer.observe(node);
-		observer.observe(document.body);
-		window.addEventListener("resize", update);
-		document.addEventListener("scroll", update, true);
-		update();
-		return () => {
-			observer.disconnect();
-			window.removeEventListener("resize", update);
-			document.removeEventListener("scroll", update, true);
-			node.style.removeProperty("--agent-browser-top");
-		};
-	}
 </script>
 
-<div class="grid min-w-0 items-start gap-6 sm:grid-cols-[210px_minmax(0,1fr)]">
-	<aside
-		{@attach fillHeight}
-		class={cn(
-			"grid min-w-0 gap-4 border-b border-input-border pb-4",
-			"sm:sticky sm:top-6 sm:h-[calc(100dvh-var(--agent-browser-top)-var(--settings-footer-height,0px)-16px)] sm:grid-rows-[auto_minmax(0,1fr)] sm:border-r sm:border-b-0 sm:pr-4 sm:pb-0",
-		)}
-	>
+<ResponsiveSidebar label="エージェントのサイドバー">
+	{#snippet header()}
 		<input
 			type="search"
 			disabled={busy}
@@ -90,14 +63,22 @@
 				"outline-none focus-visible:ring-2 focus-visible:ring-focus",
 			)}
 		/>
-		<nav aria-label="Agents" class="flex min-h-0 min-w-0 flex-col gap-4">
+	{/snippet}
+	{#snippet expanded(close: () => void)}
+		<nav
+			aria-label="Agents"
+			class="flex min-h-0 min-w-0 flex-1 flex-col gap-4"
+		>
 			{#if defaults}
 				<div class="shrink-0 border-b border-input-border pb-4">
 					<Tooltip content="プロジェクト共通の設定">
 						{#snippet children({ props })}
 							<button
 								{...mergeProps(props, {
-									onclick: () => onSelect("defaults"),
+									onclick: () => {
+										onSelect("defaults");
+										close();
+									},
 								})}
 								type="button"
 								disabled={busy}
@@ -153,8 +134,7 @@
 				role="region"
 				aria-label="エージェント一覧"
 				class={cn(
-					"grid max-h-[min(45dvh,360px)] min-w-0 content-start gap-[5px] overflow-y-auto overscroll-contain py-1",
-					"sm:max-h-none sm:min-h-0 sm:flex-1",
+					"grid min-h-0 min-w-0 flex-1 content-start gap-[5px] overflow-y-auto overscroll-contain py-1",
 				)}
 			>
 				{#each filtered as item (item.id)}
@@ -164,7 +144,10 @@
 								{...mergeProps(
 									{ ...props },
 									{
-										onclick: () => onSelect(item.id),
+										onclick: () => {
+											onSelect(item.id);
+											close();
+										},
 									},
 								)}
 								type="button"
@@ -195,8 +178,6 @@
 				{/if}
 			</div>
 		</nav>
-	</aside>
-	<section class="min-w-0">
-		{@render children()}
-	</section>
-</div>
+	{/snippet}
+	{@render content()}
+</ResponsiveSidebar>

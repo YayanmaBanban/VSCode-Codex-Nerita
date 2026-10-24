@@ -18,6 +18,14 @@ import { readPiAgents } from "../../apps/vscode-nerita/src/extension/agentManage
 import { readWorkspaceFile } from "../../apps/vscode-nerita/src/extension/agentManager/WorkspaceFiles";
 import { editCodexAgent } from "../../apps/vscode-nerita/src/extension/agentManager/CodexAgentEdit";
 import { currentAgentModel } from "../../apps/vscode-nerita/src/extension/agentManager/AgentModelCatalog";
+import {
+	readManagerDraft,
+	writeManagerDraft,
+} from "../../apps/vscode-nerita/src/extension/agentManager/AgentManagerDraft";
+import {
+	managerDraftSchema,
+	type ManagerDraft,
+} from "@nerita/shared/agentManager/draft";
 import { initialState } from "@nerita/shared/chatState";
 import { defaultHandoffModel } from "@nerita/shared/agentManager/handoffModels";
 import {
@@ -26,6 +34,87 @@ import {
 	agentEditSchema,
 	type AgentEdit,
 } from "@nerita/shared/agentManager/config";
+
+void test("下書きは元の値と編集値を設定と分離して保存し、再読込・破棄できる", async () => {
+	const root = await mkdtemp(
+		join(process.env.NERITA_TEST_ROOT!, "manager-draft-"),
+	);
+	const definition = {
+		name: "writer",
+		description: "元の説明",
+		prompt: "指示".repeat(30000),
+	};
+	const draft: ManagerDraft = {
+		version: 1,
+		backend: "pi",
+		base: { type: "agent", agentId: "pi:writer", edit: { definition } },
+		change: {
+			type: "agent",
+			agentId: "pi:writer",
+			edit: {
+				definition: { ...definition, description: "編集した説明" },
+			},
+		},
+	};
+	assert.equal(await readManagerDraft(root, "pi"), null);
+	await writeManagerDraft(root, "pi", draft, () => {});
+	assert.deepEqual(await readManagerDraft(root, "pi"), draft);
+	const persisted: unknown = JSON.parse(
+		await readFile(
+			join(root, ".nerita/agent-manager-draft-pi.json"),
+			"utf8",
+		),
+	);
+	assert.deepEqual(managerDraftSchema.parse(persisted), draft);
+	assert.equal(await readWorkspaceFile(root, ".pi/settings.json"), undefined);
+	await assert.rejects(
+		writeManagerDraft(root, "codex", draft, () => {}),
+		/バックエンドが一致しません/,
+	);
+	await assert.rejects(
+		writeManagerDraft(root, "pi", null, () => {
+			throw new Error("untrusted");
+		}),
+		/untrusted/,
+	);
+	assert.deepEqual(await readManagerDraft(root, "pi"), draft);
+	await writeManagerDraft(root, "pi", null, () => {});
+	assert.equal(await readManagerDraft(root, "pi"), null);
+});
+
+void test("空欄・不正な数値を含む下書きを退避し、ワークスペース外のリンクには保存しない", async () => {
+	const root = await mkdtemp(
+		join(process.env.NERITA_TEST_ROOT!, "manager-draft-invalid-"),
+	);
+	const config = defaultHandoff();
+	const draft: ManagerDraft = {
+		version: 1,
+		backend: "codex",
+		base: { type: "handoff", backend: "codex", config },
+		change: {
+			type: "handoff",
+			backend: "codex",
+			config: { ...config, defaults: { timeoutMs: Number.NaN } },
+		},
+	};
+	await writeManagerDraft(root, "codex", draft, () => {});
+	assert.deepEqual(await readManagerDraft(root, "codex"), draft);
+	const other = await mkdtemp(
+		join(process.env.NERITA_TEST_ROOT!, "manager-draft-outside-"),
+	);
+	const linked = await mkdtemp(
+		join(process.env.NERITA_TEST_ROOT!, "manager-draft-linked-"),
+	);
+	await symlink(other, join(linked, ".nerita"), "junction");
+	await assert.rejects(
+		writeManagerDraft(linked, "codex", draft, () => {}),
+		/リンク先または保存先が不正/,
+	);
+	assert.equal(
+		await readWorkspaceFile(other, "agent-manager-draft-codex.json"),
+		undefined,
+	);
+});
 
 /** SDK のプロジェクト読込みと Host の保存を同じ一時ワークスペースへ接続する。 */
 async function fixture() {

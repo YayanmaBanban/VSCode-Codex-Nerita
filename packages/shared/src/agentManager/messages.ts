@@ -1,5 +1,6 @@
-// パネルに固定したワークスペースと世代を、すべての保存要求で照合する。
+// 保存要求はパネルに固定したワークスペースで照合し、設定を保存する要求には世代も含める。
 import { z } from "zod";
+import { managerDraftSchema } from "./draft";
 import {
 	agentEditSchema,
 	backendSchema,
@@ -63,6 +64,8 @@ export const managerStateSchema = z.strictObject({
 	running: z.number().int(),
 	spawned: z.number().int(),
 	errors: z.array(z.string()),
+	draft: managerDraftSchema.nullable().optional(),
+	draftError: z.string().nullable().optional(),
 });
 /** エージェント管理画面に渡す設定と世代。外部入力は `managerStateSchema` で検証してから扱う。 */
 export type ManagerState = z.infer<typeof managerStateSchema>;
@@ -72,6 +75,12 @@ const mutation = {
 	generation: z.string(),
 };
 export const managerRequestSchema = z.discriminatedUnion("type", [
+	z.strictObject({
+		type: z.literal("draft"),
+		id: z.number().int(),
+		workspace: z.string(),
+		draft: managerDraftSchema.nullable(),
+	}),
 	z.strictObject({
 		type: z.literal("createAgent"),
 		...mutation,
@@ -100,7 +109,7 @@ export const managerRequestSchema = z.discriminatedUnion("type", [
 		config: handoffSchema,
 	}),
 ]);
-/** エージェント設定の取得・保存・削除要求。外部入力は `managerRequestSchema` で検証してから扱う。 */
+/** 設定の取得・保存、下書きの保存・破棄、チャット表示の要求。外部入力は `managerRequestSchema` で検証してから扱う。 */
 export type ManagerRequest = z.infer<typeof managerRequestSchema>;
 export const managerReplySchema = z.union([
 	managerStateSchema,

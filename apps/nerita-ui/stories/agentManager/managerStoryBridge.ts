@@ -120,7 +120,12 @@ export function mockBridge(
 		postMessage(message) {
 			onRequest(message);
 			queueMicrotask(() => {
-				if (message.type === "ready" || message.type === "reload") {
+				if (message.type === "draft") {
+					publishDraftReply(mode, message, state, publish);
+				} else if (
+					message.type === "ready" ||
+					message.type === "reload"
+				) {
 					publishInitialState(mode, message.type, state, publish);
 				} else if ("generation" in message) {
 					save(message);
@@ -128,6 +133,31 @@ export function mockBridge(
 			});
 		},
 	};
+}
+/** 退避の失敗は設定保存とは独立して再現し、再読み込みを続けないことを検証できるようにする。 */
+function publishDraftReply(
+	mode: string,
+	message: Extract<ManagerRequest, { type: "draft" }>,
+	state: ManagerState,
+	publish: (message: ManagerReply) => void,
+) {
+	if (mode === "draft-write-error") {
+		publish({
+			type: "reply",
+			id: message.id,
+			error: "下書きファイルを保存できません。",
+			notice: "",
+		});
+		return;
+	}
+	state.draft = message.draft;
+	state.draftError = null;
+	publish({
+		type: "reply",
+		id: message.id,
+		error: null,
+		notice: "下書きを保存しました。",
+	});
 }
 
 /** 初回だけの取得失敗と、再読み込みによる復旧・接続先変更を通信境界で再現する。 */

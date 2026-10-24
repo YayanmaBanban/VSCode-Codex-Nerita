@@ -9,6 +9,7 @@
 	import { agentModelError } from "@nerita/shared/agentManager/validation";
 
 	import { untrack } from "svelte";
+	import { registerDraftEditor } from "../agentManager/managerDraftContext";
 
 	let {
 		defaults,
@@ -20,6 +21,22 @@
 		onDiscard,
 	}: PiDefaultsSettingsProps = $props();
 	let edit = $state.raw(untrack(() => defaults));
+	const context = registerDraftEditor({
+		canSave: () => !invalid,
+		capture: () => ({
+			version: 1,
+			backend: "pi",
+			base: { type: "defaults", defaults },
+			change: { type: "defaults", defaults: edit },
+		}),
+		submit: () =>
+			document
+				.querySelector<HTMLFormElement>("main form")
+				?.requestSubmit(),
+	});
+	if (context?.restored?.change.type === "defaults") {
+		edit = context.restored.change.defaults;
+	}
 
 	let error = $derived(
 		effortError(

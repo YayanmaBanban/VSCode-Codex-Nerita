@@ -55,6 +55,7 @@
 			: undefined,
 	);
 	let settingsError = $derived(inputError ?? errors.settings);
+	let filenameTouched = $state(false);
 	let invalid = $derived(
 		Object.values(errors).some(isNonEmptyString) ||
 			isNonEmptyString(inputError) ||
@@ -62,13 +63,24 @@
 	);
 	let badges = $derived([
 		agent?.source ?? "project",
-		models.find((item) => item.value === agent?.definitionModel)?.name ??
-			agent?.definitionModel ??
+		models.find((item) => item.value === edit.model)?.name ??
+			edit.model ??
 			"モデル未指定",
-		isNonEmptyString(agent?.definitionThinking)
-			? reasoningLabel(agent.definitionThinking)
+		isNonEmptyString(edit.thinking ?? edit.reasoningEffort)
+			? reasoningLabel((edit.thinking ?? edit.reasoningEffort)!)
 			: "推論未指定",
 	]);
+	const definitionSummary = $derived(
+		[
+			models.find((item) => item.value === agent?.definitionModel)
+				?.name ?? agent?.definitionModel,
+			isNonEmptyString(agent?.definitionThinking)
+				? reasoningLabel(agent.definitionThinking)
+				: undefined,
+		]
+			.filter(isNonEmptyString)
+			.join(" / "),
+	);
 </script>
 
 <form
@@ -100,7 +112,9 @@
 			</h2>
 		{/if}
 		{#if onFilenameChange}
-			<FieldErrorTooltip message={filenameError}>
+			<FieldErrorTooltip
+				message={filenameTouched ? filenameError : undefined}
+			>
 				{#snippet children({ props })}
 					<Field label="ファイル名">
 						<input
@@ -110,8 +124,13 @@
 							placeholder="拡張子を含まない名前"
 							pattern={"[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}"}
 							value={filename ?? ""}
-							oninput={(event) =>
-								onFilenameChange(event.currentTarget.value)}
+							onblur={() => {
+								filenameTouched = true;
+							}}
+							oninput={(event) => {
+								filenameTouched = true;
+								onFilenameChange(event.currentTarget.value);
+							}}
 						/>
 					</Field>
 				{/snippet}
@@ -122,13 +141,22 @@
 				{agent.definitionPath}
 			</p>
 		{/if}
-		<div class="flex flex-wrap gap-2 text-xs text-muted">
+		<div
+			role="group"
+			aria-label="編集中の設定"
+			class="flex flex-wrap gap-2 text-xs text-muted"
+		>
 			{#each badges as badge, index (index)}
 				<span class="rounded border border-input-border px-2 py-1"
 					>{badge}</span
 				>
 			{/each}
 		</div>
+		{#if agent?.backend === "pi" && isNonEmptyString(definitionSummary)}
+			<p class="m-0 text-xs text-muted">
+				Agent 定義: {definitionSummary}
+			</p>
+		{/if}
 		{#if edit.definition}
 			<DefinitionField
 				{edit}

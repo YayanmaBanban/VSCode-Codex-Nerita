@@ -14,6 +14,7 @@ import { configuredBackend } from "../webview/backendSettings";
 import { selectLocalWorkspace } from "../webview/selectLocalWorkspace";
 import { webviewHtml } from "../webview/webviewHtml";
 import { AgentManagerStore } from "./AgentManagerStore";
+import { readManagerDraft, writeManagerDraft } from "./AgentManagerDraft";
 import { readPiAgents } from "./PiAgentSettings";
 import { generation, readWorkspaceFile } from "./WorkspaceFiles";
 import {
@@ -182,6 +183,13 @@ export class AgentManagerPanel {
 			await this.refreshModels();
 		}
 		const { files: _files, ...data } = await this.store.read();
+		let draft = null;
+		let draftError: string | null = null;
+		try {
+			draft = await readManagerDraft(this.store.root, activeBackend);
+		} catch (error) {
+			draftError = `下書きを読み込めません: ${errorText(error)}`;
+		}
 		const state = this.backend.snapshot();
 		const sameWorkspace =
 			state.cwd !== null &&
@@ -191,6 +199,8 @@ export class AgentManagerPanel {
 		}
 		this.post({
 			...data,
+			draft,
+			draftError,
 			errors: [...data.errors, ...this.modelErrors],
 			type: "state",
 			workspace: this.workspace,
@@ -215,12 +225,32 @@ export class AgentManagerPanel {
 			return;
 		}
 		const request = parsed.data;
-		/** 要求を待機列の順に処理し、保存前のルートと世代を確認して結果を返信する。 */
+		/** 要求を待機列の順に処理し、保存先と、設定保存の場合は世代も確認して結果を返信する。 */
 		const handleManagerRequest = async () => {
 			if (this.closed) {
 				return;
 			}
 			try {
+				if (request.type === "draft") {
+					if (request.workspace !== this.workspace) {
+						throw new Error(
+							"保存先のワークスペースが一致しません。",
+						);
+					}
+					await writeManagerDraft(
+						this.store.root,
+						configuredBackend(),
+						request.draft,
+						() => this.assertDraftWritable(),
+					);
+					this.post({
+						type: "reply",
+						id: request.id,
+						error: null,
+						notice: "下書きを保存しました。",
+					});
+					return;
+				}
 				if (request.type === "viewer") {
 					await vscode.commands.executeCommand(
 						"nerita.codex.chat.focus",
@@ -298,6 +328,34 @@ export class AgentManagerPanel {
 					"設定ファイルに未保存の編集があります。エディタで保存してから再読み込みしてください。",
 				);
 			}
+		}
+	}
+	/** 設定の未保存バッファがあっても退避できるよう、下書き自身の書き込み条件だけを確認する。 */
+	private assertDraftWritable() {
+		const present =
+			vscode.workspace.workspaceFolders?.some(
+				(item) => item.uri.toString() === this.folder.uri.toString(),
+			) === true;
+		const unavailable =
+			this.closed || !vscode.workspace.isTrusted || !present;
+		if (unavailable) {
+			throw new Error("信頼済みのワークスペースを開いてください。");
+		}
+		const relative = `.nerita/agent-manager-draft-${configuredBackend()}.json`;
+		const dirtyDraft = vscode.workspace.textDocuments.some(
+			(document) =>
+				document.isDirty &&
+				vscode.workspace
+					.getWorkspaceFolder(document.uri)
+					?.uri.toString() === this.folder.uri.toString() &&
+				vscode.workspace
+					.asRelativePath(document.uri, false)
+					.replaceAll("\\", "/") === relative,
+		);
+		if (dirtyDraft) {
+			throw new Error(
+				"下書きファイルに未保存の編集があります。エディタで保存してください。",
+			);
 		}
 	}
 }

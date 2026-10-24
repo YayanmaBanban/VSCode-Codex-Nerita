@@ -16,6 +16,7 @@
 	import NumericField from "../ui/NumericField.svelte";
 	import HelpButton from "../ui/HelpButton.svelte";
 	import AgentManagerFooter from "./AgentManagerFooter.svelte";
+	import { registerDraftEditor } from "./managerDraftContext";
 
 	let {
 		state: hostState,
@@ -35,6 +36,31 @@
 		onDiscard?: (() => void) | undefined;
 	} = $props();
 	let config = $state.raw<HandoffConfig>(untrack(() => hostState.handoff));
+	const context = registerDraftEditor({
+		canSave: () =>
+			!locked && !timeoutInvalid && !isNonEmptyString(effortError),
+		capture: () => ({
+			version: 1,
+			backend: hostState.activeBackend,
+			base: {
+				type: "handoff",
+				backend: hostState.activeBackend,
+				config: hostState.handoff,
+			},
+			change: {
+				type: "handoff",
+				backend: hostState.activeBackend,
+				config,
+			},
+		}),
+		submit: () =>
+			document
+				.querySelector<HTMLFormElement>("main form")
+				?.requestSubmit(),
+	});
+	if (context?.restored?.change.type === "handoff") {
+		config = context.restored.change.config;
+	}
 	let repair = $state(false);
 	let timeoutSeconds = $derived(
 		Number.isFinite(config.defaults.timeoutMs)

@@ -119,16 +119,25 @@ export const DefaultsUnsavedNavigation: Story = {
 		await userEvent.clear(limit);
 		await userEvent.type(limit, "3");
 		await userEvent.click(canvas.getByRole("button", { name: "writer" }));
-		const footer = canvas.getByRole("region", { name: "未保存の変更" });
-		await expect(footer).toHaveTextContent(
-			"未保存の変更を破棄して移動しますか？",
+		const footer = within(canvasElement.ownerDocument.body).getByRole(
+			"alertdialog",
 		);
+		await expect(footer).toHaveTextContent("変更を保存して移動しますか？");
 		await expect(
-			within(footer).getByRole("button", { name: "変更を保存" }),
+			within(footer).getByRole("button", { name: "保存して移動" }),
 		).toBeEnabled();
 		await expect(
-			within(footer).getByRole("button", { name: "変更を破棄" }),
+			within(footer).getByRole("button", { name: "破棄して移動" }),
 		).toBeEnabled();
+		await userEvent.click(
+			within(footer).getByRole("button", { name: "編集を続ける" }),
+		);
+		await waitFor(() =>
+			expect(
+				getComputedStyle(canvasElement.ownerDocument.body)
+					.pointerEvents,
+			).not.toBe("none"),
+		);
 	},
 };
 
@@ -139,13 +148,24 @@ export const InvalidUnsavedNavigation: Story = {
 			await canvas.findByRole("textbox", { name: "名前" }),
 		);
 		await userEvent.click(canvas.getByRole("button", { name: "reviewer" }));
-		const footer = canvas.getByRole("region", { name: "未保存の変更" });
+		const footer = within(canvasElement.ownerDocument.body).getByRole(
+			"alertdialog",
+		);
 		await expect(
-			within(footer).getByRole("button", { name: "変更を保存" }),
+			within(footer).getByRole("button", { name: "保存して移動" }),
 		).toBeDisabled();
 		await expect(
-			within(footer).getByRole("button", { name: "変更を破棄" }),
+			within(footer).getByRole("button", { name: "破棄して移動" }),
 		).toBeEnabled();
+		await userEvent.click(
+			within(footer).getByRole("button", { name: "編集を続ける" }),
+		);
+		await waitFor(() =>
+			expect(
+				getComputedStyle(canvasElement.ownerDocument.body)
+					.pointerEvents,
+			).not.toBe("none"),
+		);
 	},
 };
 
@@ -325,11 +345,13 @@ export const ValidationRecovered: Story = {
 				name: "新しいエージェントを追加",
 			}),
 		);
-		await expect(canvas.getAllByRole("alert")).toHaveLength(2);
+		await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
 		const name = canvas.getByRole("textbox", { name: "名前" });
 		const filename = canvas.getByRole("textbox", { name: "ファイル名" });
 		await userEvent.type(name, "reviewer");
 		await expect(name).not.toHaveAttribute("aria-invalid");
+		await userEvent.click(filename);
+		await userEvent.tab();
 		await expect(canvas.getByRole("alert")).toHaveTextContent(
 			"ファイル名が空欄です。",
 		);
@@ -549,7 +571,9 @@ export const UnsavedNavigation: Story = {
 		);
 		await waitFor(() =>
 			expect(
-				canvas.getByRole("region", { name: "未保存の変更" }),
+				within(canvasElement.ownerDocument.body).getByRole(
+					"alertdialog",
+				),
 			).toBeVisible(),
 		);
 	},
