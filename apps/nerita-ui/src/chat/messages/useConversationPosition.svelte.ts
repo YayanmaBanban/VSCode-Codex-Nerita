@@ -161,6 +161,7 @@ export function useConversationWidth(
 			return;
 		}
 		let width = root.clientWidth;
+		let frame = 0;
 		let dispose: (() => void) | undefined;
 		/** 幅の変化で仮想リストを再計測し、表示中の行を基準にスクロール位置を維持する。 */
 		const updateWidth = () => {
@@ -181,10 +182,15 @@ export function useConversationWidth(
 			dispose?.();
 			dispose = restorePosition(root, virtual, anchor, following);
 		};
-		const observer = new ResizeObserver(updateWidth);
+		// 再計測でスクロールバーの有無も変わるため、サイズ通知中にはレイアウトを更新しない。
+		const observer = new ResizeObserver(() => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(updateWidth);
+		});
 		observer.observe(root);
 		return () => {
 			observer.disconnect();
+			cancelAnimationFrame(frame);
 			dispose?.();
 		};
 	}
