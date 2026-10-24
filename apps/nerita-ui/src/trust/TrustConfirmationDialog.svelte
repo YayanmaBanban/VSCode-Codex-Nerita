@@ -1,7 +1,7 @@
 <!-- Host が確認したパスと権限の変更を示し、確定操作だけを保存要求として返す。 -->
 <script lang="ts">
 	import ConfirmationDialog from "../ui/ConfirmationDialog.svelte";
-	import { cn } from "cnfast";
+	import ButtonCurtain from "../ui/ButtonCurtain.svelte";
 	import ShieldCheck from "@lucide/svelte/icons/shield-check";
 	import type { TrustConfirmation } from "@nerita/shared/workspaceTrust";
 
@@ -58,34 +58,13 @@
 			<button
 				type="button"
 				disabled={busy}
-				class={cn(
-					"cancel-button relative overflow-hidden rounded px-3 py-2 text-[12px] transition-colors duration-200",
-					"enabled:hover:text-white enabled:focus-visible:text-white",
-				)}
+				class="group relative overflow-hidden rounded px-3 py-2 text-[12px] text-primary-text disabled:opacity-40"
 				onclick={onCancel}
-				><span
-					class="cancel-curtain pointer-events-none absolute inset-0 bg-red-400"
-					aria-hidden="true"
-				></span>
-				<span class="relative">キャンセル</span></button
+				>キャンセル<ButtonCurtain
+					name="キャンセル"
+					className="bg-red-300"
+				/></button
 			>
 		</div>
 	{/if}
 </ConfirmationDialog>
-
-<style>
-	/* 対角線を保った三角形を広げ、左上から右下へボタン全体を覆う。 */
-	.cancel-curtain {
-		clip-path: polygon(0 0, 0 0, 0 0);
-		transition: clip-path 240ms cubic-bezier(0.22, 1, 0.36, 1);
-	}
-	.cancel-button:enabled:is(:hover, :focus-visible) .cancel-curtain {
-		clip-path: polygon(0 0, 200% 0, 0 200%);
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.cancel-curtain,
-		.cancel-button {
-			transition: none;
-		}
-	}
-</style>

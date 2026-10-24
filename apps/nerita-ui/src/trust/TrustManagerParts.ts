@@ -11,7 +11,7 @@ import "../chat/chat.css";
 
 /** 操作ボタンの枠と、フォーカス・無効状態の表示を揃える。 */
 export const buttonStyle =
-	"rounded-full border border-input-border bg-transparent px-3 py-1 text-xs font-medium whitespace-nowrap enabled:hover:bg-settings-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+	"rounded-full border border-input-border bg-transparent px-3 py-1 text-[12px] text-primary-text font-medium whitespace-nowrap enabled:hover:bg-settings-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 /** 検索欄と高さを揃え、操作をツールチップで説明する四角いボタン。 */
 export const iconButtonStyle =
 	"inline-flex size-9 shrink-0 items-center justify-center rounded border border-input-border bg-transparent p-0 text-foreground enabled:hover:bg-settings-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
