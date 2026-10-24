@@ -20,7 +20,7 @@
 	import { cn } from "cnfast";
 	import { messageReferences } from "./messageReferences";
 	import ReferenceText from "./ReferenceText.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 	let {
@@ -173,7 +173,7 @@
 			children: linkChildren,
 		}: LinkSnippetProps)}
 			{@const local = /^file:\/\//i.test(href)}
-			<SettingsTooltip
+			<Tooltip
 				content={isNonEmptyString(title)
 					? restoreReferences(title)
 					: undefined}
@@ -199,7 +199,7 @@
 						{@render linkChildren?.()}
 					</a>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 		{/snippet}
 	</SvelteMarkdown>
 </div>

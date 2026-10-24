@@ -7,7 +7,7 @@
 	import { referenceIcon } from "./referencePresentation";
 	import CompletionMenu from "./CompletionMenu.svelte";
 	import ContextPickerBreadcrumbs from "./ContextPickerBreadcrumbs.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
 		recent,
@@ -32,7 +32,7 @@
 					{@const Icon = item.reference
 						? referenceIcon(item.reference)
 						: undefined}
-					<SettingsTooltip content={item.description} aboveMenu>
+					<Tooltip content={item.description} aboveMenu>
 						{#snippet children({ props: triggerProps })}
 							<button
 								{...triggerProps}
@@ -54,7 +54,7 @@
 								></button
 							>
 						{/snippet}
-					</SettingsTooltip>
+					</Tooltip>
 				{/each}
 				{#if recent.length === 0}
 					<span class="text-[12px] text-muted">まだありません</span>

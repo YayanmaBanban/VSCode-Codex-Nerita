@@ -12,7 +12,8 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import type { PersonalityMessage } from "@nerita/shared/personality";
 	import type { SidebarLocation } from "@nerita/shared/sidebar";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
+	import HelpButton from "../../ui/HelpButton.svelte";
 	import BackendMenu from "../connection/BackendMenu.svelte";
 	import SidebarMenu from "../connection/SidebarMenu.svelte";
 	import PersonalityPane from "./PersonalityPane.svelte";
@@ -35,6 +36,8 @@
 	let open = $state(false);
 	let pending = $state(false);
 	let trigger: HTMLButtonElement | null = $state(null);
+	// 初期フォーカスでヘルプが開かないよう、閉じるボタンを操作の起点にする。
+	let closeButton = $state<HTMLButtonElement | null>(null);
 	let blockedRun = $derived(
 		chatState.sessionPending ||
 			chatState.run === "running" ||
@@ -84,7 +87,7 @@
 </script>
 
 <DropdownMenu.Root>
-	<SettingsTooltip content="オプション">
+	<Tooltip content="オプション">
 		{#snippet children({ props })}
 			<DropdownMenu.Trigger
 				{...props}
@@ -95,7 +98,7 @@
 				<Ellipsis size={16} aria-hidden="true" />
 			</DropdownMenu.Trigger>
 		{/snippet}
-	</SettingsTooltip>
+	</Tooltip>
 	<DropdownMenu.Portal>
 		<DropdownMenu.Content
 			side="bottom"
@@ -159,6 +162,10 @@
 	<Dialog.Portal>
 		<Dialog.Overlay class="fixed inset-0 z-40 bg-black/30" />
 		<Dialog.Content
+			onOpenAutoFocus={(event) => {
+				event.preventDefault();
+				closeButton?.focus({ preventScroll: true });
+			}}
 			onCloseAutoFocus={(event) => {
 				event.preventDefault();
 				trigger?.focus();
@@ -169,10 +176,18 @@
 			)}
 		>
 			<div class="flex items-center justify-between px-[16px] py-[12px]">
-				<Dialog.Title class="m-0 text-[14px] font-medium"
-					>性格設定</Dialog.Title
-				>
+				<div class="flex items-center gap-1">
+					<Dialog.Title class="m-0 text-[14px] font-medium"
+						>性格設定</Dialog.Title
+					>
+					<HelpButton
+						label="指示の使い分け"
+						aboveMenu
+						content="使用させたいコマンドなどは、AGENTS.md に記載してください。"
+					/>
+				</div>
 				<Dialog.Close
+					bind:ref={closeButton}
 					aria-label="性格設定を閉じる"
 					class="inline-flex size-[28px] items-center justify-center border-0 bg-transparent p-0 hover:bg-settings-hover"
 				>

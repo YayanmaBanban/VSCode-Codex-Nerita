@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { cn } from "cnfast";
 	import type { QuotaWindow } from "@nerita/shared/composer";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import "./quotaBar.css";
 
 	let { windows }: { windows: QuotaWindow[] | null } = $props();
@@ -14,7 +14,7 @@
 </script>
 
 {#if windows && windows.length > 0}
-	<SettingsTooltip>
+	<Tooltip>
 		{#snippet content()}
 			<span>利用枠の残量</span>
 			<hr />
@@ -67,5 +67,5 @@
 				>
 			</button>
 		{/snippet}
-	</SettingsTooltip>
+	</Tooltip>
 {/if}

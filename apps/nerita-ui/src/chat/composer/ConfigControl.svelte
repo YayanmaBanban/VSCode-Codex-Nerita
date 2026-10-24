@@ -8,7 +8,7 @@
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import User from "@lucide/svelte/icons/user";
 	import { cn } from "cnfast";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import { useSettingsPopup } from "../../ui/settingsPopup.svelte";
 
 	const popup = useSettingsPopup();
@@ -60,7 +60,7 @@
 		disabled={disabled || option.options.length === 0}
 		onValueChange={onChange}
 	>
-		<SettingsTooltip content={tooltip} disabled={popup.open}>
+		<Tooltip content={tooltip} disabled={popup.open}>
 			{#snippet children({ props: triggerProps })}
 				<Select.Trigger
 					{...triggerProps}
@@ -90,7 +90,7 @@
 					{/if}
 				</Select.Trigger>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 		<Select.Portal>
 			<Select.Content
 				side="top"
@@ -107,7 +107,7 @@
 					class="config-list max-h-[inherit] scroll-p-[5px] overflow-y-auto p-[5px]"
 				>
 					{#each option.options as choice (choice.value)}
-						<SettingsTooltip
+						<Tooltip
 							content={choice.icon !== undefined
 								? undefined
 								: choice.description}
@@ -168,7 +168,7 @@
 									{/snippet}
 								</Select.Item>
 							{/snippet}
-						</SettingsTooltip>
+						</Tooltip>
 					{/each}
 				</Select.Viewport>
 			</Select.Content>

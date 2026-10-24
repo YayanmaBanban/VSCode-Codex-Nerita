@@ -25,7 +25,7 @@
 		isNonEmptyString(value) && !options.includes(value),
 	);
 	let choices = $derived([
-		{ value: "", name: "未指定" },
+		{ value: "", name: "未指定（バックエンドの既定値）" },
 		...(unsupported && value !== undefined
 			? [{ value, name: `${reasoningLabel(value)}（非対応・未確認）` }]
 			: []),

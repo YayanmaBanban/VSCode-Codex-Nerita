@@ -8,7 +8,7 @@
 	import { cn } from "cnfast";
 	import Maximize2 from "@lucide/svelte/icons/maximize-2";
 	import Minimize2 from "@lucide/svelte/icons/minimize-2";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import LexicalComposer from "./LexicalComposer.svelte";
 	import LexicalEditable from "./LexicalEditable.svelte";
 	import CodeBlockMenuPlugin from "./CodeBlockMenuPlugin.svelte";
@@ -120,7 +120,7 @@
 				ドロップでファイル添付</span
 			>
 		</div>
-		<SettingsTooltip
+		<Tooltip
 			content={expanded
 				? "入力エリアを元のサイズに戻す"
 				: "入力エリアを拡張"}
@@ -146,7 +146,7 @@
 						/>{:else}<Maximize2 size={16} aria-hidden="true" />{/if}
 				</button>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 	</div>
 	<ComposerLinksPlugin />
 	<ComposerTooltipsPlugin />

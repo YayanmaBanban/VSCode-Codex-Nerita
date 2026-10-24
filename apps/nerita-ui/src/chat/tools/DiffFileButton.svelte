@@ -6,7 +6,7 @@
 		nonEmptyString,
 	} from "@nerita/shared/valuePredicates";
 	import { mergeProps } from "bits-ui";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import { diffPath, type DiffLocationProps } from "./diffPresentation";
 
 	let { path, cwd, send, range }: DiffLocationProps & { range?: string } =
@@ -20,7 +20,7 @@
 	);
 </script>
 
-<SettingsTooltip content={fullPath}>
+<Tooltip content={fullPath}>
 	{#snippet children({ props })}
 		<button
 			{...mergeProps(props, {
@@ -48,4 +48,4 @@
 				>{/if}</button
 		>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

@@ -4,7 +4,7 @@
 	import ToggleSwitch from "./ToggleSwitch.svelte";
 	import SliderCard from "./SliderCard.svelte";
 	import ConfigControl from "../chat/composer/ConfigControl.svelte";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 	import QuotaBar from "../chat/composer/QuotaBar.svelte";
 
 	let {
@@ -49,7 +49,7 @@
 					}}
 				/>
 			{:else}
-				<SettingsTooltip content={control.description}>
+				<Tooltip content={control.description}>
 					{#snippet children({ props })}
 						<div
 							{...props}
@@ -65,7 +65,7 @@
 							<span>{Math.round(progressValue)}%</span>
 						</div>
 					{/snippet}
-				</SettingsTooltip>
+				</Tooltip>
 			{/if}
 		{/if}
 	{/if}

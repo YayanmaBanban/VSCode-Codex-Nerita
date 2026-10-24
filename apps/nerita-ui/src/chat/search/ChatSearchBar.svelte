@@ -8,7 +8,7 @@
 	import { cubicBezier } from "motion";
 	import { prefersReducedMotion } from "svelte/motion";
 	import type { TransitionConfig } from "svelte/transition";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import type { ChatSearch } from "./useChatSearch.svelte";
 	import "./chatSearch.css";
 
@@ -73,7 +73,7 @@
 				<div
 					class="flex min-w-0 flex-1 items-center rounded border border-solid border-input-border bg-input focus-within:border-focus"
 				>
-					<SettingsTooltip content="会話を検索 (Ctrl+F)">
+					<Tooltip content="会話を検索 (Ctrl+F)">
 						{#snippet children({ props: tooltipProps })}
 							<input
 								{...tooltipProps}
@@ -94,9 +94,9 @@
 								onkeydown={handleSearchKey}
 							/>
 						{/snippet}
-					</SettingsTooltip>
+					</Tooltip>
 					{#each optionButtons as [key, label, icon] (key)}
-						<SettingsTooltip content={label}>
+						<Tooltip content={label}>
 							{#snippet children({ props })}
 								<button
 									{...mergeProps(props, {
@@ -114,10 +114,10 @@
 									>{icon}</button
 								>
 							{/snippet}
-						</SettingsTooltip>
+						</Tooltip>
 					{/each}
 				</div>
-				<SettingsTooltip content="前の一致 (Shift+Enter)">
+				<Tooltip content="前の一致 (Shift+Enter)">
 					{#snippet children({ props })}
 						<button
 							{...mergeProps(props, {
@@ -131,8 +131,8 @@
 							><ChevronLeft size={14} /></button
 						>
 					{/snippet}
-				</SettingsTooltip>
-				<SettingsTooltip content="次の一致 (Enter)">
+				</Tooltip>
+				<Tooltip content="次の一致 (Enter)">
 					{#snippet children({ props })}
 						<button
 							{...mergeProps(props, {
@@ -146,14 +146,14 @@
 							><ChevronRight size={14} /></button
 						>
 					{/snippet}
-				</SettingsTooltip>
+				</Tooltip>
 				<output
 					aria-label="検索結果"
 					aria-live="polite"
 					class="shrink-0 text-[12px] whitespace-nowrap tabular-nums"
 					>{counter}</output
 				>
-				<SettingsTooltip content="閉じる (Escape)">
+				<Tooltip content="閉じる (Escape)">
 					{#snippet children({ props })}
 						<button
 							{...mergeProps(props, {
@@ -165,7 +165,7 @@
 							aria-label="検索を閉じる"><X size={14} /></button
 						>
 					{/snippet}
-				</SettingsTooltip>
+				</Tooltip>
 			</form>
 			{#if search.result.error}
 				<p role="alert" class="my-1 text-[12px] text-tool-error">

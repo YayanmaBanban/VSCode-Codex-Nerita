@@ -5,7 +5,7 @@
 	import { mergeProps } from "bits-ui";
 	import { onDestroy } from "svelte";
 	import { prefersReducedMotion } from "svelte/motion";
-	import SettingsTooltip from "./SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 	import "./copyButton.css";
 
 	let {
@@ -84,7 +84,7 @@
 	}
 </script>
 
-<SettingsTooltip content={label}>
+<Tooltip content={label}>
 	{#snippet children({ props })}
 		<button
 			{...mergeProps(props, { onclick: () => void copy() })}
@@ -114,4 +114,4 @@
 				>{/if}
 		</button>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

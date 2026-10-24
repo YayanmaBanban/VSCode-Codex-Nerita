@@ -14,7 +14,7 @@
 	import type { DlcView } from "@nerita/shared/dlc/contracts";
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 	import DlcWorktreeDelete from "./DlcWorktreeDelete.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let { ui }: { ui: ReturnType<typeof useDlcWorkspace> } = $props();
 	let open = $state(false);
@@ -132,7 +132,6 @@
 					"shadow-[0_6px_24px_#0003]",
 				)}
 			>
-				<p class="m-0 px-1 py-1 text-[12px] text-muted">実行先を選択</p>
 				<button
 					type="button"
 					class={rowClass}
@@ -212,7 +211,7 @@
 				<div
 					class="mt-2 border-0 border-t border-solid border-panel-border pt-2"
 				>
-					<SettingsTooltip
+					<Tooltip
 						content="main の HEAD から作成します。未コミットの変更は含みません。"
 					>
 						{#snippet children({ props: tooltipProps })}
@@ -229,7 +228,7 @@
 								/>新しいWorktreeを作成</button
 							>
 						{/snippet}
-					</SettingsTooltip>
+					</Tooltip>
 				</div>
 			</Popover.Content>
 		</Popover.Portal>
@@ -246,7 +245,7 @@
 			>
 		</p>
 		{#if target && !target.trusted}
-			<SettingsTooltip content="ワークスペースを信頼する">
+			<Tooltip content="ワークスペースを信頼する">
 				{#snippet children({ props: tooltipProps })}
 					<button
 						{...tooltipProps}
@@ -271,7 +270,7 @@
 						/>
 					</button>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 		{/if}
 	</div>
 	{#if !selected || targetBlocked || ui.view.assignmentPending}

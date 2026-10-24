@@ -17,11 +17,6 @@ async function main() {
 		[320, 900].map((width) => ({ theme, width })),
 	);
 	try {
-		if (process.argv[2] === "frames") {
-			await verifyDisclosureFrames(browser, directory, errors);
-			console.log(directory);
-			return;
-		}
 		for (const condition of conditions) {
 			for (const backend of backends) {
 				await capture(
@@ -33,7 +28,6 @@ async function main() {
 		}
 		if (process.argv[2] !== "before") {
 			await verifyHold(browser, directory, errors);
-			await verifyDisclosureFrames(browser, directory, errors);
 		}
 		await writeFile(join(directory, "errors.json"), JSON.stringify(errors));
 		expect(errors).toEqual([]);
@@ -182,107 +176,20 @@ async function verifyHighlight(page, button) {
 	expect(hovered).not.toBe("rgba(0, 0, 0, 0)");
 }
 
-async function verifyDisclosureFrames(browser, directory, errors) {
-	const page = await browser.newPage({
-		viewport: { width: 720, height: 800 },
-	});
-	page.on("pageerror", (error) => errors.push(error.message));
-	try {
-		await page.goto(
-			"http://localhost:6007/iframe.html?id=trust-manager--default&viewMode=story&globals=theme:dark2026",
-		);
-		const button = page.getByRole("button", { name: "信頼設定の保存先" });
-		const help = page.locator(".header-help");
-		await expect(button).toBeVisible();
-		for (const direction of ["open", "close"]) {
-			await button.evaluate((element) => element.click());
-			await help.evaluate(async (element) => {
-				await new Promise((resolve) =>
-					globalThis.requestAnimationFrame(resolve),
-				);
-				await new Promise((resolve) =>
-					globalThis.requestAnimationFrame(resolve),
-				);
-				for (const animation of element.getAnimations()) {
-					animation.pause();
-				}
-			});
-			const heights = [];
-			for (const time of [0, 48, 120, 220, 240]) {
-				const height = await help.evaluate((element, currentTime) => {
-					for (const animation of element.getAnimations()) {
-						animation.currentTime = currentTime;
-					}
-					return element.getBoundingClientRect().height;
-				}, time);
-				heights.push(height);
-				await page.screenshot({
-					path: join(directory, `help-${direction}-${time}.png`),
-				});
-			}
-			verifyHeightProgress(heights, direction);
-			await help.evaluate(async (element) => {
-				const animations = element.getAnimations();
-				for (const animation of animations) {
-					animation.currentTime = 0;
-					animation.play();
-				}
-				await Promise.all(
-					animations.map((animation) => animation.finished),
-				);
-			});
-			await expect
-				.poll(() =>
-					help.evaluate((element) => element.getAnimations().length),
-				)
-				.toBe(0);
-		}
-		await page.emulateMedia({ reducedMotion: "reduce" });
-		await button.click();
-		await expect(button).toHaveAttribute("aria-expanded", "true");
-		expect(
-			await help.evaluate((element) => element.getAnimations().length),
-		).toBe(0);
-		await page.getByRole("combobox", { name: "バックエンド" }).focus();
-		await page.keyboard.press("ArrowDown");
-		await page.keyboard.press("Home");
-		await page.keyboard.press("Enter");
-		await expect(help).toContainText("config.toml");
-		await expect(help).not.toContainText("state.vscdb");
-	} finally {
-		await page.close();
-	}
-}
-
-function verifyHeightProgress(heights, direction) {
-	// ease-out の終端ではサブピクセルが丸められるため、停滞は許容して逆行を拒否する。
-	expect(heights[2]).toBeGreaterThan(0);
-	expect(heights[2]).toBeLessThan(Math.max(heights[0], heights.at(-1)));
-	for (let index = 1; index < heights.length; index++) {
-		if (direction === "open") {
-			expect(heights[index]).toBeGreaterThanOrEqual(heights[index - 1]);
-		} else {
-			expect(heights[index]).toBeLessThanOrEqual(heights[index - 1]);
-		}
-	}
-}
-
 async function verifyHelp(page, directory, name, backend) {
 	const button = page.getByRole("button", { name: "信頼設定の保存先" });
-	const help = page.locator(".header-help");
-	await expect(button).toHaveAttribute("aria-expanded", "false");
-	await button.click();
-	await expect(button).toHaveAttribute("aria-expanded", "true");
+	await button.focus();
+	const help = page.getByRole("tooltip");
+	await expect(help).toBeVisible();
 	await expect(help).toContainText(
 		backend === "codex" ? "config.toml" : "User/globalStorage/state.vscdb",
 	);
-	await expect
-		.poll(() => help.evaluate((element) => element.getAnimations().length))
-		.toBe(0);
 	await page.screenshot({
 		path: join(directory, `${name}-help.png`),
 		fullPage: true,
 	});
+	await page.keyboard.press("Escape");
+	await expect(help).not.toBeVisible();
 	await page.getByRole("combobox", { name: "バックエンド" }).click();
 	await expect(
 		page.getByRole("option", { name: "Codex", exact: true }),
@@ -300,13 +207,6 @@ async function verifyHelp(page, directory, name, backend) {
 		.and(page.locator("button:enabled"))
 		.first();
 	await verifyHighlight(page, trust);
-	await button.click();
-	await expect(button).toHaveAttribute("aria-expanded", "false");
-	await expect
-		.poll(() =>
-			help.evaluate((element) => element.getBoundingClientRect().height),
-		)
-		.toBe(0);
 }
 
 async function verifyHold(browser, directory, errors) {

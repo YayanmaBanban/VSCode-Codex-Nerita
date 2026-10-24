@@ -51,10 +51,7 @@
 
 <main class="mx-auto grid max-w-4xl gap-6 p-6 font-sans text-foreground">
 	<header>
-		<h1 class="m-0 text-xl font-semibold">Sandbox</h1>
-		<p class="text-sm text-muted">
-			Pi の実行環境と、ホスト実行の承認を管理します。
-		</p>
+		<h1 class="m-0 text-xl font-semibold">Pi Sandbox</h1>
 	</header>
 	{#if error !== ""}
 		<p role="alert" class="text-sm">{error}</p>

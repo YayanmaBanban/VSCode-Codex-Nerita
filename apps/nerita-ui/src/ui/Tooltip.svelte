@@ -5,7 +5,7 @@
 	import type { Snippet } from "svelte";
 	import { prefersReducedMotion } from "svelte/motion";
 	import type { TransitionConfig } from "svelte/transition";
-	import SettingsTooltipDomAnchor from "./SettingsTooltipDomAnchor.svelte";
+	import TooltipDomAnchor from "./TooltipDomAnchor.svelte";
 	/** ツールチップとトリガーの表示契約。トリガーには受け取った属性を適用する。 */
 	type Props = {
 		children?: Snippet<[{ props: Record<string, unknown> }]>;
@@ -148,7 +148,7 @@
 			<Tooltip.Trigger bind:ref={trigger}>
 				{#snippet child({ props }: { props: Record<string, unknown> })}
 					{#if externalTrigger}
-						<SettingsTooltipDomAnchor
+						<TooltipDomAnchor
 							element={externalTrigger}
 							props={triggerProps(props)}
 						/>
@@ -169,7 +169,7 @@
 					customAnchor={anchor ?? null}
 					escapeKeydownBehavior="defer-otherwise-close"
 					class={cn(
-						"settings-tooltip-positioner settings-tooltip max-w-[min(280px,calc(100vw-24px))] rounded-[6px] border border-solid border-tooltip-border bg-tooltip px-[12px] py-[9px] text-[12px] leading-[1.5] [overflow-wrap:anywhere] text-tooltip-text shadow-[0_4px_16px_#0003] [&_hr]:mx-0 [&_hr]:my-[6px] [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-solid [&_hr]:border-tooltip-divider",
+						"tooltip-positioner tooltip-content max-w-[min(280px,calc(100vw-24px))] rounded-[6px] border border-solid border-tooltip-border bg-tooltip px-[12px] py-[9px] text-[12px] leading-[1.5] [overflow-wrap:anywhere] text-tooltip-text shadow-[0_4px_16px_#0003] [&_hr]:mx-0 [&_hr]:my-[6px] [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-solid [&_hr]:border-tooltip-divider",
 						aboveMenu ? "z-[60]" : "z-30",
 					)}
 				>

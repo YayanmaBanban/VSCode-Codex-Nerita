@@ -7,7 +7,7 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import Messages from "../messages/Messages.svelte";
 	import ToolCard from "../tools/ToolCard.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import AgentCard from "./AgentCard.svelte";
 	import AgentIcon from "./AgentIcon.svelte";
 	import AgentRunControls from "./AgentRunControls.svelte";
@@ -77,7 +77,7 @@
 		<header
 			class="flex min-w-0 items-center gap-3 border-b border-solid border-message-border p-3"
 		>
-			<SettingsTooltip content="親へ戻る">
+			<Tooltip content="親へ戻る">
 				{#snippet children({ props })}
 					<button
 						{...props}
@@ -91,7 +91,7 @@
 						><ArrowLeft size={18} /></button
 					>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 			<AgentIcon iconKey={current.iconKey} />
 			<div class="min-w-0 flex-1">
 				<span class="block [overflow-wrap:anywhere]"
@@ -99,7 +99,7 @@
 				>
 				<span class="text-[12px] text-muted">閲覧のみ</span>
 			</div>
-			<SettingsTooltip content="表示を更新">
+			<Tooltip content="表示を更新">
 				{#snippet children({ props })}
 					<button
 						{...props}
@@ -111,7 +111,7 @@
 						><RefreshCw size={16} /></button
 					>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 		</header>
 		<div
 			bind:this={conversation}

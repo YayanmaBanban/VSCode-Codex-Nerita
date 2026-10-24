@@ -10,7 +10,7 @@
 	import { cn } from "cnfast";
 	import type { NeritaUiControl } from "@nerita/shared/uiContributions";
 	import type { ConfigOption } from "@nerita/shared/composer";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 	import StepSlider from "../ui/StepSlider.svelte";
 	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 	import FastModeButton from "./FastModeButton.svelte";
@@ -116,7 +116,7 @@
 <Popover.Root bind:open={popup.open} onOpenChange={() => (preview = null)}>
 	<Popover.Trigger>
 		{#snippet child({ props: triggerProps })}
-			<SettingsTooltip
+			<Tooltip
 				content={tooltip}
 				disabled={popup.open ||
 					(model !== undefined &&
@@ -178,7 +178,7 @@
 							/>{/if}</button
 					>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Portal>

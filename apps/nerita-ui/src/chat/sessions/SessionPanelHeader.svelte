@@ -4,7 +4,7 @@
 	import X from "@lucide/svelte/icons/x";
 	import { mergeProps } from "bits-ui";
 	import type { ChatState } from "@nerita/shared/chatState";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import { sessionActionClass } from "./sessionStyles";
 
 	let {
@@ -23,7 +23,7 @@
 >
 	<div class="flex items-center justify-between gap-[8px]">
 		<h2 class="m-0 text-[13px] font-semibold">セッション一覧</h2>
-		<SettingsTooltip content="閉じる">
+		<Tooltip content="閉じる">
 			{#snippet children({ props })}
 				<button
 					{...mergeProps(props, { onclick: onClose })}
@@ -34,10 +34,10 @@
 					><X size={16} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 	</div>
 	<div class="mt-[8px] flex items-start gap-[8px]">
-		<SettingsTooltip content={state.cwd ?? undefined}>
+		<Tooltip content={state.cwd ?? undefined}>
 			{#snippet children({ props: tooltipProps })}
 				<span
 					{...tooltipProps}
@@ -46,7 +46,7 @@
 					>{state.cwd ?? "ワークスペース未接続"}</span
 				>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 		{#if state.sessionsLoading}
 			<span
 				role="progressbar"

@@ -4,7 +4,7 @@
 	import type { McpMessageContent } from "@nerita/shared/mcp";
 	import ShinyText from "../../ui/ShinyText.svelte";
 	import RunStatusIcon from "../RunStatusIcon.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let { content, text }: { content: McpMessageContent; text: string } =
 		$props();
@@ -43,19 +43,17 @@
 		</p>
 	{:else}
 		<div>
-			<p class="mt-0 mb-2">設定済みMCPサーバー:</p>
 			{#if servers.length === 0}
 				<p class="m-0 text-muted">MCPサーバーはありません。</p>
 			{:else}
+				<p class="mt-0 mb-2">設定済みMCPサーバー:</p>
 				<ul
 					aria-label="MCPサーバー"
 					class="m-0 flex list-none flex-col gap-2 p-0"
 				>
 					{#each servers as server, index (`${server.name}:${index}`)}
 						<li class="flex items-start gap-2">
-							<SettingsTooltip
-								content={server.runtimeStatus ?? "不明"}
-							>
+							<Tooltip content={server.runtimeStatus ?? "不明"}>
 								{#snippet children({ props: tooltipProps })}
 									<span
 										{...tooltipProps}
@@ -66,7 +64,7 @@
 										class={`mt-[0.6em] size-2 shrink-0 rounded-full ${serverStatusColor(server.runtimeStatus)}`}
 									></span>
 								{/snippet}
-							</SettingsTooltip>
+							</Tooltip>
 							<span class="min-w-0 [overflow-wrap:anywhere]"
 								>{server.name}</span
 							>

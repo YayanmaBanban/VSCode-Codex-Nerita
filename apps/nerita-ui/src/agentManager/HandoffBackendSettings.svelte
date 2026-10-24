@@ -126,7 +126,4 @@
 			{effortError}
 		</p>
 	{/if}
-	<p class="m-0 text-xs text-muted">
-		推論レベルが未指定の場合は、バックエンドの既定値に任せます
-	</p>
 </section>

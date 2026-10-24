@@ -36,6 +36,21 @@ export const NoSearchResults: Story = {
 	},
 };
 export const Codex: Story = { args: { backend: "codex" } };
+export const Help: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const page = within(canvasElement.ownerDocument.body);
+		const help = canvas.getByRole("button", { name: "信頼設定の保存先" });
+		help.focus();
+		await waitFor(() => expect(page.getByRole("tooltip")).toBeVisible());
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() =>
+			expect(page.queryByRole("tooltip")).not.toBeInTheDocument(),
+		);
+		await userEvent.hover(help);
+		await waitFor(() => expect(page.getByRole("tooltip")).toBeVisible());
+	},
+};
 
 export const Confirmation: Story = {
 	args: { backend: "codex" },

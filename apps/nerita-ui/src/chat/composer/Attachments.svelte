@@ -3,7 +3,7 @@
 	import X from "@lucide/svelte/icons/x";
 	import type { Attachment } from "@nerita/shared/composer";
 	import { fileIcon } from "./fileIcon";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
 		files,
@@ -28,7 +28,7 @@
 			<span
 				class="attachment inline-flex max-w-full rounded-[5px] border border-solid border-panel-border [&_svg]:shrink-0"
 			>
-				<SettingsTooltip content={file.uri}
+				<Tooltip content={file.uri}
 					>{#snippet children({ props })}<button
 							{...props}
 							type="button"
@@ -39,7 +39,7 @@
 							><Icon size={14} aria-hidden="true" /><span
 								class="truncate">{file.name}</span
 							></button
-						>{/snippet}</SettingsTooltip
+						>{/snippet}</Tooltip
 				>
 				<button
 					type="button"

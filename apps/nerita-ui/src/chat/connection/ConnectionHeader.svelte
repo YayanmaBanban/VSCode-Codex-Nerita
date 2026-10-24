@@ -14,7 +14,7 @@
 	import Maximize2 from "@lucide/svelte/icons/maximize-2";
 	import MessageSquareText from "@lucide/svelte/icons/message-square-text";
 	import Minimize2 from "@lucide/svelte/icons/minimize-2";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import PersonalityOptions from "../personality/PersonalityOptions.svelte";
 	import AuthenticationNotice from "./AuthenticationNotice.svelte";
 	import ConnectionButton from "./ConnectionButton.svelte";
@@ -99,7 +99,7 @@
 	{/if}
 	<div class="flex shrink-0 items-center gap-[2px]">
 		{#if dlc !== true}
-			<SettingsTooltip content="新しいチャット">
+			<Tooltip content="新しいチャット">
 				{#snippet children({ props })}
 					<button
 						{...mergeProps(props, {
@@ -119,8 +119,8 @@
 						/></button
 					>
 				{/snippet}
-			</SettingsTooltip>
-			<SettingsTooltip content="セッション一覧">
+			</Tooltip>
+			<Tooltip content="セッション一覧">
 				{#snippet children({ props })}
 					<button
 						{...mergeProps(props, { onclick: onToggleSessions })}
@@ -134,9 +134,9 @@
 						><List size={16} aria-hidden="true" /></button
 					>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 		{/if}
-		<SettingsTooltip content={viewLabel}>
+		<Tooltip content={viewLabel}>
 			{#snippet children({ props })}
 				<button
 					{...mergeProps(props, { onclick: onToggleEditor })}
@@ -152,7 +152,7 @@
 						/>{/if}</button
 				>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 		{#if dlc !== true}
 			<PersonalityOptions
 				{send}

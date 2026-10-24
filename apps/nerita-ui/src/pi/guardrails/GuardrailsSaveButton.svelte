@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { cn } from "cnfast";
 	import { MediaQuery } from "svelte/reactivity";
-	import SettingsTooltip from "../../chat/SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import BorderBeam from "../../ui/BorderBeam.svelte";
 	import { buttonStyle } from "./fields";
 
@@ -14,7 +14,7 @@
 	const reducedMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 </script>
 
-<SettingsTooltip content={dirty ? "未保存の変更があります" : "設定を保存"}>
+<Tooltip content={dirty ? "未保存の変更があります" : "設定を保存"}>
 	{#snippet children({ props })}
 		<button
 			{...props}
@@ -36,4 +36,4 @@
 				>{/if}
 		</button>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

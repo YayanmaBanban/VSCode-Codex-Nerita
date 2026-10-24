@@ -1,7 +1,7 @@
 <!-- 有効・無効・未指定の三値を区別し、設定キーの削除を可能にする。 -->
 <script lang="ts">
 	import Field from "./Field.svelte";
-	import { inputStyle } from "./managerFields";
+	import ConfigControl from "../chat/composer/ConfigControl.svelte";
 
 	let {
 		value,
@@ -19,17 +19,22 @@
 </script>
 
 <Field label="有効／無効">
-	<select
-		class={inputStyle}
-		value={selected}
-		onchange={(event) =>
+	<ConfigControl
+		appearance="field"
+		option={{
+			id: "agent-enabled",
+			name: "有効／無効",
+			currentValue: selected,
+			options: [
+				{ value: "inherit", name: "未指定（バックエンドに任せる）" },
+				{ value: "enabled", name: "Enabled" },
+				{ value: "disabled", name: "Disabled" },
+			],
+		}}
+		disabled={false}
+		onChange={(selected: string) =>
 			onChange(
-				event.currentTarget.value === "inherit"
-					? undefined
-					: event.currentTarget.value === "disabled",
+				selected === "inherit" ? undefined : selected === "disabled",
 			)}
-		><option value="inherit">未指定（バックエンドに任せる）</option><option
-			value="enabled">Enabled</option
-		><option value="disabled">Disabled</option></select
-	>
+	/>
 </Field>

@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { getAllContexts, mount, onMount, unmount } from "svelte";
 	import { SvelteMap } from "svelte/reactivity";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import { getLexicalEditor } from "./lexicalContext";
 
 	const editor = getLexicalEditor();
@@ -36,7 +36,7 @@
 					: "コードブロックを削除";
 				tooltips.set(
 					element,
-					mount(SettingsTooltip, {
+					mount(Tooltip, {
 						target,
 						context,
 						props: { externalTrigger: element, content },

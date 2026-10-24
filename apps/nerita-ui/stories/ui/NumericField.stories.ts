@@ -1,6 +1,6 @@
 // 共通数値入力の範囲・刻み・空欄・キーボード操作を確認し、エラーの状態は画面に残す。
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, within, waitFor } from "storybook/test";
 import Preview from "./NumericFieldPreview.svelte";
 
 const meta = {
@@ -18,7 +18,44 @@ const meta = {
 } satisfies Meta<typeof Preview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+const tooltip = "数値入力の補足説明です。";
+export const Default: Story = {
+	play: async ({ canvasElement }) => {
+		await expect(
+			within(canvasElement).queryByRole("button"),
+		).not.toBeInTheDocument();
+	},
+};
+export const WithTooltip: Story = {
+	args: { tooltip },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const page = within(canvasElement.ownerDocument.body);
+		const input = canvas.getByRole("spinbutton");
+		const help = canvas.getByRole("button");
+		await expect(input).toHaveAccessibleDescription(tooltip);
+		await expect(page.queryByRole("tooltip")).not.toBeInTheDocument();
+		await userEvent.tab();
+		await expect(help).toHaveFocus();
+		await expect(await page.findByRole("tooltip")).toHaveTextContent(
+			tooltip,
+		);
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() =>
+			expect(page.queryByRole("tooltip")).not.toBeInTheDocument(),
+		);
+		await userEvent.tab();
+		await expect(input).toHaveFocus();
+		await userEvent.hover(help);
+		await expect(await page.findByRole("tooltip")).toHaveTextContent(
+			tooltip,
+		);
+		await expect(input).toHaveValue(meta.args.initial);
+	},
+};
+export const DisabledWithTooltip: Story = {
+	args: { disabled: true, tooltip },
+};
 export const OutOfRange: Story = {
 	args: { initial: 601 },
 	play: async ({ canvasElement }) => {

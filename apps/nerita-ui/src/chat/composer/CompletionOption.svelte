@@ -5,7 +5,7 @@
 	import type { CompletionItem } from "./completionItems";
 	import { contextCategories } from "./contextCategories";
 	import { referenceIcon } from "./referencePresentation";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
 		id,
@@ -55,7 +55,7 @@
 	}
 </script>
 
-<SettingsTooltip
+<Tooltip
 	aboveMenu
 	content={[item.label, item.description].filter(Boolean).join("\n")}
 >
@@ -103,4 +103,4 @@
 			{/if}
 		</div>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

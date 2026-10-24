@@ -137,7 +137,7 @@ export const CodexCurrent: Story = {
 		await expect(page.getAllByRole("option")).toHaveLength(4);
 		await userEvent.click(page.getByRole("option", { name: "High" }));
 		await userEvent.click(effort);
-		await userEvent.click(page.getByRole("option", { name: "未指定" }));
+		await userEvent.click(page.getByRole("option", { name: /^未指定/ }));
 		await userEvent.click(effort);
 		await expect(
 			page.getByRole("option", { selected: true }),

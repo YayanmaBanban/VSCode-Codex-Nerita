@@ -45,8 +45,7 @@
 		aria-label="エージェントの停止・承認"
 		class="max-h-[45%] shrink-0 overflow-y-auto border-t border-solid border-message-border p-3 text-[12px]"
 	>
-		<div class="mb-2 flex items-center justify-between gap-3">
-			<span>自身と子の停止</span>
+		<div class="mb-2 flex justify-end">
 			<button
 				type="button"
 				disabled={!active || stopping}

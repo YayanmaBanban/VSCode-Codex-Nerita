@@ -6,7 +6,7 @@
 	import { cubicOut } from "svelte/easing";
 	import { MediaQuery } from "svelte/reactivity";
 	import type { ContextUsage as Usage } from "@nerita/shared/composer";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let { usage }: { usage: Usage | null } = $props();
 	const progress = new Tween(0);
@@ -36,7 +36,7 @@
 	});
 </script>
 
-<SettingsTooltip>
+<Tooltip>
 	{#snippet content()}
 		<span>コンテキスト</span>
 		<hr />
@@ -78,4 +78,4 @@
 			>
 		</button>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

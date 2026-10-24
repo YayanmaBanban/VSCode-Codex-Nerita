@@ -14,7 +14,7 @@
 	import HandoffBackendSettings from "./HandoffBackendSettings.svelte";
 	import { buttonStyle } from "./managerFields";
 	import NumericField from "../ui/NumericField.svelte";
-	import HelpHeader from "../ui/HelpHeader.svelte";
+	import HelpButton from "../ui/HelpButton.svelte";
 	import AgentManagerFooter from "./AgentManagerFooter.svelte";
 
 	let {
@@ -79,16 +79,19 @@
 </script>
 
 <form class="grid gap-5 pb-24" onsubmit={submit}>
-	<HelpHeader
-		title="ハンドオフ設定"
-		helpLabel="ハンドオフ設定のヘルプ"
-		disabled={busy}
-	>
-		<p class="m-0">
-			セッションの内容を要約し、引き継ぎ文を生成するモデルを設定します。
-		</p>
-		<p class="m-0 mt-1">保存先: <code>.nerita/handoff.json</code></p>
-	</HelpHeader>
+	<header class="flex items-center gap-1">
+		<h2 class="m-0 text-lg font-semibold">ハンドオフ設定</h2>
+		<HelpButton label="ハンドオフ設定のヘルプ" disabled={busy}>
+			{#snippet content()}
+				<p class="m-0">
+					セッションの内容を要約し、引き継ぎ文を生成するモデルを設定します。
+				</p>
+				<p class="m-0 mt-1">
+					保存先: <code>.nerita/handoff.json</code>
+				</p>
+			{/snippet}
+		</HelpButton>
+	</header>
 	{#if isNonEmptyString(hostState.handoffError)}
 		<div
 			role="alert"
@@ -143,7 +146,7 @@
 					step={1}
 					value={timeoutSeconds}
 					disabled={locked}
-					description="ハンドオフの完了を待つ最大時間です。"
+					tooltip="ハンドオフの完了を待つ最大時間です。"
 					onChange={(seconds) =>
 						change({
 							...config,

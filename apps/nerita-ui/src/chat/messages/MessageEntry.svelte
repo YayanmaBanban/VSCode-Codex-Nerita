@@ -9,7 +9,7 @@
 	import McpMessage from "./McpMessage.svelte";
 	import MessageReferenceChip from "./MessageReferenceChip.svelte";
 	import CopyButton from "../CopyButton.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import { messageIconButtonClass, messageFocusClass } from "./messageStyles";
 
 	let {
@@ -89,7 +89,7 @@
 						iconSize={16}
 					/>
 				{/if}
-				<SettingsTooltip content="送信メッセージへ移動">
+				<Tooltip content="送信メッセージへ移動">
 					{#snippet children({ props })}
 						<button
 							{...mergeProps(props, {
@@ -112,7 +112,7 @@
 							/></button
 						>
 					{/snippet}
-				</SettingsTooltip>
+				</Tooltip>
 			</div>
 		</div>
 	{/if}

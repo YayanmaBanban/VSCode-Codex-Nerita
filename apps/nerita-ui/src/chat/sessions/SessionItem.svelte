@@ -12,7 +12,7 @@
 		SessionSummary,
 		SessionCapabilities,
 	} from "@nerita/shared/sessionHistory";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import SessionDelete from "./SessionDelete.svelte";
 	import SessionRename from "./SessionRename.svelte";
 	import { relativeTime } from "./relativeTime";
@@ -56,7 +56,7 @@
 		selected ? "border-focus bg-menu-hover" : "border-transparent bg-menu",
 	)}
 >
-	<SettingsTooltip content={title}>
+	<Tooltip content={title}>
 		{#snippet children({ props })}
 			<button
 				{...mergeProps(props, {
@@ -82,7 +82,7 @@
 				></button
 			>
 		{/snippet}
-	</SettingsTooltip>
+	</Tooltip>
 	{#if renaming}
 		<SessionRename
 			sessionId={session.sessionId}
@@ -100,7 +100,7 @@
 			disabled={disabled || !capabilities.delete}
 			{send}
 		/>
-		<SettingsTooltip content="名前を変更">
+		<Tooltip content="名前を変更">
 			{#snippet children({ props })}
 				<button
 					{...mergeProps(props, {
@@ -117,8 +117,8 @@
 					><Pencil size={14} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
-		<SettingsTooltip content={archiveLabel}>
+		</Tooltip>
+		<Tooltip content={archiveLabel}>
 			{#snippet children({ props })}
 				<button
 					{...mergeProps(props, {
@@ -144,8 +144,8 @@
 						/>{/if}</button
 				>
 			{/snippet}
-		</SettingsTooltip>
-		<SettingsTooltip content="フォーク">
+		</Tooltip>
+		<Tooltip content="フォーク">
 			{#snippet children({ props })}
 				<button
 					{...mergeProps(props, {
@@ -163,6 +163,6 @@
 					><GitFork size={14} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 	</div>
 </li>

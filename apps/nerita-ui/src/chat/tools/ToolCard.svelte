@@ -9,7 +9,7 @@
 	import type { ToolSummary } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import { isRecord } from "@nerita/shared/validation";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import { useCardExpansion } from "./ToolExpansion.svelte";
 	import { toolRenderer } from "./toolRenderers.svelte";
 	import ToolContent from "./ToolContent.svelte";
@@ -155,7 +155,7 @@
 		data-open={expansion.open}
 	>
 		<div class="tool-header relative flex items-center">
-			<SettingsTooltip content={tool.title}>
+			<Tooltip content={tool.title}>
 				{#snippet children({ props })}
 					{#if Body}
 						<button
@@ -206,7 +206,7 @@
 						</div>
 					{/if}
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 			{#if status === "failed"}
 				<span
 					class="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
@@ -215,7 +215,7 @@
 				>
 			{/if}
 			{#if executing && active}
-				<SettingsTooltip content={stopTitle()}>
+				<Tooltip content={stopTitle()}>
 					{#snippet children({ props })}
 						<button
 							{...mergeProps(props, { onclick: onStop })}
@@ -234,7 +234,7 @@
 							/></button
 						>
 					{/snippet}
-				</SettingsTooltip>
+				</Tooltip>
 			{/if}
 		</div>
 		{#if Body}

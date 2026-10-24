@@ -1,6 +1,6 @@
 <!-- Worktree の削除要求を、共通の長押しボタンとツールチップへ接続する。 -->
 <script lang="ts">
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import HoldToDeleteButton from "../../ui/HoldToDeleteButton.svelte";
 	import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 
@@ -30,7 +30,7 @@
 		/>削除中
 	</span>
 {:else}
-	<SettingsTooltip content="ワークツリーの削除" disabled={holding}>
+	<Tooltip content="ワークツリーの削除" disabled={holding}>
 		{#snippet children({ props })}
 			<HoldToDeleteButton
 				label={`${name}を削除`}
@@ -40,5 +40,5 @@
 				triggerProps={props}
 			/>
 		{/snippet}
-	</SettingsTooltip>
+	</Tooltip>
 {/if}

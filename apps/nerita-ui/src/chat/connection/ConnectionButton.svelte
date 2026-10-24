@@ -8,7 +8,7 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import BorderBeam from "../../ui/BorderBeam.svelte";
 	import ShinyText from "../../ui/ShinyText.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import "./connectionButton.css";
 
 	let {
@@ -147,9 +147,7 @@
 </script>
 
 <div class="connection-control relative shrink-0">
-	<SettingsTooltip
-		content={reconnectable ? action : labels[chatState.connection]}
-	>
+	<Tooltip content={reconnectable ? action : labels[chatState.connection]}>
 		{#snippet children({ props })}
 			<button
 				{...mergeProps(props, {
@@ -213,7 +211,7 @@
 					>{/if}
 			</button>
 		{/snippet}
-	</SettingsTooltip>
+	</Tooltip>
 	{#if celebrating}
 		<span
 			class="connection-confetti pointer-events-none absolute inset-0 z-20"

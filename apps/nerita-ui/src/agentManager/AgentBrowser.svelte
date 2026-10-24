@@ -9,7 +9,7 @@
 	import { cn } from "cnfast";
 	import { mergeProps } from "bits-ui";
 	import type { ManagedAgent } from "@nerita/shared/agentManager/messages";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 
 	let {
 		agents,
@@ -93,7 +93,7 @@
 		<nav aria-label="Agents" class="flex min-h-0 min-w-0 flex-col gap-4">
 			{#if defaults}
 				<div class="shrink-0 border-b border-input-border pb-4">
-					<SettingsTooltip content="プロジェクト共通の設定">
+					<Tooltip content="プロジェクト共通の設定">
 						{#snippet children({ props })}
 							<button
 								{...mergeProps(props, {
@@ -117,7 +117,7 @@
 								<span>Workspace defaults</span>
 							</button>
 						{/snippet}
-					</SettingsTooltip>
+					</Tooltip>
 				</div>
 			{/if}
 			{#if selectedAgent}
@@ -158,7 +158,7 @@
 				)}
 			>
 				{#each filtered as item (item.id)}
-					<SettingsTooltip content={item.description}>
+					<Tooltip content={item.description}>
 						{#snippet children({ props })}
 							<button
 								{...mergeProps(
@@ -184,7 +184,7 @@
 								></button
 							>
 						{/snippet}
-					</SettingsTooltip>
+					</Tooltip>
 				{/each}
 				{#if filtered.length === 0}
 					<p class="m-0 px-2 py-2 text-sm text-muted">

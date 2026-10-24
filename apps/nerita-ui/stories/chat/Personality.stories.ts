@@ -54,7 +54,27 @@ export const Editable: Story = {
 
 export const Configured: Story = {
 	args: { configured: true },
-	play: openPersonality,
+	play: async (context) => {
+		await openPersonality(context);
+		const page = within(context.canvasElement.ownerDocument.body);
+		await expect(
+			page.getByRole("button", { name: "性格設定を閉じる" }),
+		).toHaveFocus();
+		await waitFor(() =>
+			expect(page.queryByRole("tooltip")).not.toBeInTheDocument(),
+		);
+	},
+};
+export const Help: Story = {
+	args: { configured: true },
+	play: async (context) => {
+		await openPersonality(context);
+		const page = within(context.canvasElement.ownerDocument.body);
+		await userEvent.hover(
+			page.getByRole("button", { name: "指示の使い分け" }),
+		);
+		await waitFor(() => expect(page.getByRole("tooltip")).toBeVisible());
+	},
 };
 export const Loading: Story = {
 	args: { pending: true },

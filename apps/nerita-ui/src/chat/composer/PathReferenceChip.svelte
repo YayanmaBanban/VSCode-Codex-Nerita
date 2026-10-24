@@ -17,7 +17,7 @@
 	} from "./referencePresentation";
 	import { OPEN_REFERENCE_COMMAND } from "./ReferenceActionsPlugin.svelte";
 	import ReferenceChipContent from "../ReferenceChipContent.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
 		nodeKey,
@@ -60,7 +60,7 @@
 	const keepSelection = (event: MouseEvent) => event.preventDefault();
 </script>
 
-<SettingsTooltip content={pathText(path)}>
+<Tooltip content={pathText(path)}>
 	{#snippet children({ props: tooltipProps })}
 		<span
 			{...tooltipProps}
@@ -100,4 +100,4 @@
 			>
 		</span>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

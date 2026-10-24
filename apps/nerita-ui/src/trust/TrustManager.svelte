@@ -4,7 +4,7 @@
 	import { cn } from "cnfast";
 	import Plus from "@lucide/svelte/icons/plus";
 	import RotateCw from "@lucide/svelte/icons/rotate-cw";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 	import TrustConfirmationDialog from "./TrustConfirmationDialog.svelte";
 
 	import "../chat/chat.css";
@@ -108,7 +108,7 @@
 				placeholder="フォルダを検索"
 			/>
 		</label>
-		<SettingsTooltip content="ワークスペースの追加">
+		<Tooltip content="ワークスペースの追加">
 			{#snippet children({ props })}
 				<button
 					{...props}
@@ -120,8 +120,8 @@
 					><Plus size={16} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
-		<SettingsTooltip content="再読み込み">
+		</Tooltip>
+		<Tooltip content="再読み込み">
 			{#snippet children({ props })}
 				<button
 					{...props}
@@ -133,7 +133,7 @@
 					><RotateCw size={15} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 	</div>
 	{#if isNonEmptyString(snapshot?.error)}
 		<p role="alert" class="m-0 text-sm break-words">{snapshot.error}</p>

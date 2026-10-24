@@ -4,7 +4,7 @@
 	import { mergeProps } from "bits-ui";
 	import Zap from "@lucide/svelte/icons/zap";
 	import type { NeritaUiControl } from "@nerita/shared/uiContributions";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 
 	let {
 		control,
@@ -19,7 +19,7 @@
 	} = $props();
 </script>
 
-<SettingsTooltip content="ファストモード&#10;速度1.5倍、使用量が増えます">
+<Tooltip content="ファストモード&#10;速度1.5倍、使用量が増えます">
 	{#snippet children({ props })}
 		<button
 			{...mergeProps(
@@ -55,4 +55,4 @@
 			></button
 		>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

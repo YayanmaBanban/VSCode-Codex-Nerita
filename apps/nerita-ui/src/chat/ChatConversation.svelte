@@ -6,7 +6,7 @@
 	import ArrowDown from "@lucide/svelte/icons/arrow-down";
 	import { mergeProps } from "bits-ui";
 	import { cn } from "cnfast";
-	import SettingsTooltip from "./SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 	import Activity from "./Activity.svelte";
 	import AgentCard from "./agents/AgentCard.svelte";
 	import Messages from "./messages/Messages.svelte";
@@ -159,7 +159,7 @@
 	<!-- 高さの再計測から次フレームの追従までのずれでは、末尾ボタンを表示しない。 -->
 	{#if awayFromBottom && !following.current}
 		<div class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2">
-			<SettingsTooltip content="メッセージの末尾へ移動">
+			<Tooltip content="メッセージの末尾へ移動">
 				{#snippet children({ props })}
 					<button
 						{...mergeProps(props, { onclick: toBottom })}
@@ -178,7 +178,7 @@
 						/></button
 					>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 		</div>
 	{/if}
 </div>

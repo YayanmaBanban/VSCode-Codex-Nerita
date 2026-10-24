@@ -19,7 +19,7 @@
 	import { provideManagerFeedback } from "./agentManagerFeedback";
 	import CodexAgentManager from "../codex/CodexAgentManager.svelte";
 	import PiAgentManager from "../pi/PiAgentManager.svelte";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 	import { provideSettingsPopupGroup } from "../ui/settingsPopup.svelte";
 	import "../chat/chat.css";
 
@@ -207,7 +207,7 @@
 				{/each}
 			</nav>
 			<div class="flex items-center gap-2">
-				<SettingsTooltip content="再読み込み">
+				<Tooltip content="再読み込み">
 					{#snippet children({ props })}
 						<button
 							{...mergeProps(
@@ -223,9 +223,9 @@
 							<RotateCw size={16} aria-hidden="true" /></button
 						>
 					{/snippet}
-				</SettingsTooltip>
+				</Tooltip>
 				{#if tab === "agents"}
-					<SettingsTooltip content="新しいエージェントを追加">
+					<Tooltip content="新しいエージェントを追加">
 						{#snippet children({ props })}
 							<button
 								{...mergeProps(
@@ -244,7 +244,7 @@
 								<UserPlus size={16} aria-hidden="true" />
 							</button>
 						{/snippet}
-					</SettingsTooltip>
+					</Tooltip>
 				{/if}
 			</div>
 		</div>

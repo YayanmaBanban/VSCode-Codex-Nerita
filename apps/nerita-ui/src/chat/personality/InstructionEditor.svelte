@@ -21,7 +21,6 @@
 		label: string;
 		onChange: (text: string) => void;
 	} = $props();
-	const helpId = $props.id();
 	const config = {
 		namespace: "personality",
 		theme: {
@@ -46,7 +45,6 @@
 		<LexicalEditable
 			{disabled}
 			aria-label={label}
-			aria-describedby={helpId}
 			aria-readonly={disabled}
 			class={cn(
 				"max-h-[240px] min-h-[120px] overflow-y-auto rounded-[6px] border border-solid border-input-border",
@@ -56,8 +54,4 @@
 		/>
 		<InstructionChanges {onChange} />
 	</LexicalComposer>
-	<p id={helpId} class="mt-[6px] mb-0 text-[12px] leading-[1.7] text-muted">
-		ルールや性格を記載する場所です。使用させたいコマンドなどは、AGENTS.md
-		に記載してください。
-	</p>
 </div>

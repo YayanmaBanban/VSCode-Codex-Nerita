@@ -6,7 +6,7 @@
 	import { nonEmptyString } from "@nerita/shared/valuePredicates";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import type { SessionSummary } from "@nerita/shared/sessionHistory";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
 		session,
@@ -31,7 +31,7 @@
 </script>
 
 <AlertDialog.Root bind:open>
-	<SettingsTooltip content="セッションを削除">
+	<Tooltip content="セッションを削除">
 		{#snippet children({ props })}
 			<AlertDialog.Trigger
 				{...props}
@@ -47,7 +47,7 @@
 				<Trash size={14} aria-hidden="true" />
 			</AlertDialog.Trigger>
 		{/snippet}
-	</SettingsTooltip>
+	</Tooltip>
 	<AlertDialog.Portal>
 		<AlertDialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
 		<AlertDialog.Content

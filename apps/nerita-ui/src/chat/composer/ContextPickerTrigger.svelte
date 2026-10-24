@@ -1,7 +1,7 @@
 <!-- 入力欄の選択位置を保ったまま、コンテキストを追加するメニューを開く。 -->
 <script lang="ts">
 	import Plus from "@lucide/svelte/icons/plus";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
 		disabled,
@@ -9,7 +9,7 @@
 	}: { disabled: boolean; onOpen?: (() => void) | undefined } = $props();
 </script>
 
-<SettingsTooltip content="コンテキストを追加">
+<Tooltip content="コンテキストを追加">
 	{#snippet children({ props })}
 		<button
 			{...props}
@@ -22,4 +22,4 @@
 			onclick={onOpen}><Plus size={16} aria-hidden="true" /></button
 		>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

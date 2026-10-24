@@ -6,7 +6,7 @@
 	import type { UiMessage } from "@nerita/shared/messages";
 	import { mergeProps } from "bits-ui";
 	import { referenceActionLabel } from "../composer/referencePresentation";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import ReferenceChipContent from "../ReferenceChipContent.svelte";
 
 	let {
@@ -40,7 +40,7 @@
 	}
 </script>
 
-<SettingsTooltip content={pathText(path)}>
+<Tooltip content={pathText(path)}>
 	{#snippet children({ props })}
 		<button
 			{...mergeProps(props, { onclick: openReference })}
@@ -58,4 +58,4 @@
 			<ReferenceChipContent {path} />
 		</button>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

@@ -4,7 +4,7 @@
 	import type { IntentSummary } from "@nerita/shared/dlc/contracts";
 	import StatusIndicator from "../../ui/StatusIndicator.svelte";
 	import type { StatusIndicatorState } from "../../ui/statusIndicatorModel";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 
 	let {
@@ -57,7 +57,7 @@
 	});
 </script>
 
-<SettingsTooltip content={statusLabel}>
+<Tooltip content={statusLabel}>
 	{#snippet children({ props })}
 		<button
 			{...props}
@@ -84,4 +84,4 @@
 			<span class="text-[12px] text-muted">{executionLabel}</span>
 		</button>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

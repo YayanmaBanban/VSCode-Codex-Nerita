@@ -8,7 +8,7 @@
 	import ArrowUp from "@lucide/svelte/icons/arrow-up";
 	import { cn } from "cnfast";
 	import { iconButtonClass } from "../messages/messageStyles";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import ComposerInput from "./ComposerInput.svelte";
 	import ComposerSettings from "./ComposerSettings.svelte";
 	import { useAttachmentDrop } from "./useAttachmentDrop.svelte";
@@ -167,7 +167,7 @@
 		</div>
 		<div class="flex shrink-0 items-center gap-2">
 			{#if props.busy}
-				<SettingsTooltip content="停止">
+				<Tooltip content="停止">
 					{#snippet children({ props: triggerProps })}
 						<button
 							{...triggerProps}
@@ -185,9 +185,9 @@
 							></span></button
 						>
 					{/snippet}
-				</SettingsTooltip>
+				</Tooltip>
 			{/if}
-			<SettingsTooltip content={sendLabel}>
+			<Tooltip content={sendLabel}>
 				{#snippet children({ props: triggerProps })}
 					<button
 						{...triggerProps}
@@ -198,7 +198,7 @@
 						><ArrowUp size={18} aria-hidden="true" /></button
 					>
 				{/snippet}
-			</SettingsTooltip>
+			</Tooltip>
 		</div>
 	</div>
 </form>

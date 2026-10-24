@@ -7,7 +7,7 @@
 	import { cubicBezier } from "motion";
 	import { prefersReducedMotion } from "svelte/motion";
 	import { slide } from "svelte/transition";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 	import DlcIntentButton from "./DlcIntentButton.svelte";
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 
@@ -24,7 +24,7 @@
 	)}
 >
 	<div class="flex items-center gap-1">
-		<SettingsTooltip content="Intentの作成">
+		<Tooltip content="Intentの作成">
 			{#snippet children({ props })}
 				<button
 					{...props}
@@ -39,8 +39,8 @@
 					><Plus size={16} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
-		<SettingsTooltip content="再読み込み">
+		</Tooltip>
+		<Tooltip content="再読み込み">
 			{#snippet children({ props })}
 				<button
 					{...props}
@@ -57,7 +57,7 @@
 						})}><RotateCw size={16} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 	</div>
 	<nav aria-label="Intent の選択" class="flex flex-col gap-2">
 		{#if ui.view.intents.length === 0}

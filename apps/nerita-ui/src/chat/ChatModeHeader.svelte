@@ -4,7 +4,7 @@
 	import type { ChatWorkspaceHeader } from "./chatWorkspaceModel";
 	import ConnectionHeader from "./connection/ConnectionHeader.svelte";
 	import ConnectionButton from "./connection/ConnectionButton.svelte";
-	import SettingsTooltip from "./SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 
 	let {
 		view,
@@ -53,7 +53,7 @@
 			>
 				<span aria-hidden="true" class="chat-mode-indicator"></span>
 				{#each modes as target (target)}
-					<SettingsTooltip
+					<Tooltip
 						content={target === "chat"
 							? "チャットモード"
 							: "ライフサイクルモード"}
@@ -68,7 +68,7 @@
 								>{target === "chat" ? "Chat" : "DLC"}</button
 							>
 						{/snippet}
-					</SettingsTooltip>
+					</Tooltip>
 				{/each}
 			</div>
 		</div>

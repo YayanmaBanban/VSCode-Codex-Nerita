@@ -7,10 +7,6 @@
 	aria-label="現在のMXCの制約"
 >
 	<h2 class="m-0 text-lg font-semibold">現在のMXCの制約</h2>
-	<p class="m-0 text-muted">
-		Windows側の対応待ちにより、現行のMXC
-		BaseContainerには次の制約があります。
-	</p>
 	<ul class="m-0 grid gap-2 pl-5">
 		<li>ワークスペース外の読み取りを防ぐことは保証できません。</li>
 		<li>ホストからSandbox内へのループバック接続は許可できません。</li>

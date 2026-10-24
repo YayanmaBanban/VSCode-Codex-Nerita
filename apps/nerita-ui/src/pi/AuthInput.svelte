@@ -5,7 +5,7 @@
 		type PiAuthRequest,
 	} from "@nerita/shared/piAuth";
 	import { cn } from "cnfast";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 
 	import "../chat/chat.css";
 
@@ -80,7 +80,7 @@
 			{/each}</select
 		>
 	{:else}
-		<SettingsTooltip content={prompt.message}>
+		<Tooltip content={prompt.message}>
 			{#snippet children({ props: tooltipProps })}
 				<input
 					{...tooltipProps}
@@ -98,7 +98,7 @@
 					)}
 				/>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 	{/if}
 	<div class="mb-[16px] flex flex-wrap items-baseline gap-[8px]">
 		<button type="submit" disabled={!hasValue}>送信 </button>

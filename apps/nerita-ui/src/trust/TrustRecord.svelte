@@ -4,7 +4,7 @@
 	import { cn } from "cnfast";
 	import ShieldCheck from "@lucide/svelte/icons/shield-check";
 	import ShieldAlert from "@lucide/svelte/icons/shield-alert";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 	import HoldToDeleteButton from "../ui/HoldToDeleteButton.svelte";
 
 	import {
@@ -62,7 +62,7 @@
 				? "信頼を取り消す"
 				: "信頼する"}</button
 		>
-		<SettingsTooltip content="設定ファイルから削除" disabled={holding}>
+		<Tooltip content="設定ファイルから削除" disabled={holding}>
 			{#snippet children({ props })}
 				<HoldToDeleteButton
 					label={`${record.root}を設定ファイルから削除`}
@@ -73,6 +73,6 @@
 					onDelete={() => send({ type: "remove", root: record.root })}
 				/>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 	</div>
 </article>

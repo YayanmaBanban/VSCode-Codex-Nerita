@@ -10,7 +10,7 @@
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import { mergeProps } from "bits-ui";
 	import CommandOutput from "./CommandOutput.svelte";
-	import SettingsTooltip from "../SettingsTooltip.svelte";
+	import Tooltip from "../../ui/Tooltip.svelte";
 
 	let {
 		id,
@@ -112,7 +112,7 @@
 		/>
 	{/if}
 	<div class="flex items-center gap-[8px] text-[12px] text-muted">
-		<SettingsTooltip content="前の範囲を表示">
+		<Tooltip content="前の範囲を表示">
 			{#snippet children({ props })}
 				<button
 					{...mergeProps(props, { onclick: showPrevious })}
@@ -123,8 +123,8 @@
 					><ChevronLeft size={16} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
-		<SettingsTooltip content="次の範囲を表示">
+		</Tooltip>
+		<Tooltip content="次の範囲を表示">
 			{#snippet children({ props })}
 				<button
 					{...mergeProps(props, { onclick: showNext })}
@@ -135,7 +135,7 @@
 					><ChevronRight size={16} aria-hidden="true" /></button
 				>
 			{/snippet}
-		</SettingsTooltip>
+		</Tooltip>
 		{#if range && rangeReady}
 			<span
 				>{range.offset.toLocaleString()}–{range.nextOffset.toLocaleString()}

@@ -1,6 +1,7 @@
 <!-- 数値の直接入力・上下キー・左右ドラッグに対応し、範囲内での値の位置を背景色で示す。入力エラーも表示する。 -->
 <script lang="ts">
 	import { cn } from "cnfast";
+	import HelpButton from "./HelpButton.svelte";
 	import FieldErrorTooltip from "./FieldErrorTooltip.svelte";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
@@ -12,6 +13,7 @@
 		step = 1,
 		unit,
 		description,
+		tooltip,
 		disabled = false,
 		required = true,
 		onChange,
@@ -23,21 +25,29 @@
 		step?: number;
 		unit?: string;
 		description?: string;
+		tooltip?: string;
 		disabled?: boolean;
 		required?: boolean;
 		onChange: (value: number | undefined) => void;
 	} = $props();
 	const id = $props.id();
 	const helpId = `${id}-help`;
+	const tooltipId = `${id}-tooltip`;
 	let accessibleLabel = $derived(
 		isNonEmptyString(unit) ? `${label}（${unit}）` : label,
 	);
 	let descriptionId = $derived(
 		isNonEmptyString(description) ? helpId : undefined,
 	);
-	/** 入力説明とエラーの両方を読み上げ対象にし、正常時は不要な属性を残さない。 */
+	/** 入力説明・ヘルプ・エラーを読み上げ対象にし、案内がない場合は属性を残さない。 */
 	function describedBy(errorId: string | undefined) {
-		const ids = [descriptionId, errorId].filter(isNonEmptyString).join(" ");
+		const ids = [
+			descriptionId,
+			isNonEmptyString(tooltip) ? tooltipId : undefined,
+			errorId,
+		]
+			.filter(isNonEmptyString)
+			.join(" ");
 		return isNonEmptyString(ids) ? ids : undefined;
 	}
 	let dragging = $state(false);
@@ -167,7 +177,12 @@
 		};
 	})}
 		<div class="grid min-w-0 gap-2 text-sm">
-			<label for={id} class="font-medium">{label}</label>
+			<div class="flex items-center gap-1">
+				<label for={id} class="font-medium">{label}</label>
+				{#if isNonEmptyString(tooltip)}
+					<HelpButton label={`${label}のヘルプ`} content={tooltip} />
+				{/if}
+			</div>
 			<div class="flex min-w-0 items-center gap-2">
 				<div
 					class={cn(
@@ -219,6 +234,9 @@
 		</div>
 	{/snippet}
 </FieldErrorTooltip>
+{#if isNonEmptyString(tooltip)}
+	<span id={tooltipId} class="sr-only">{tooltip}</span>
+{/if}
 {#if description}
 	<p id={helpId} class="m-0 mt-2 text-xs text-muted">
 		{description}

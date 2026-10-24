@@ -381,20 +381,13 @@ export const HandoffHelp: Story = {
 		const help = canvas.getByRole("button", {
 			name: "ハンドオフ設定のヘルプ",
 		});
-		const panel = canvasElement.ownerDocument.getElementById(
-			help.getAttribute("aria-controls") ?? "",
-		);
-		await expect(help).toHaveAttribute("aria-expanded", "false");
-		await expect(panel).toHaveAttribute("aria-hidden", "true");
-		await expect(panel).toHaveAttribute("inert");
-		await userEvent.click(help);
-		await expect(help).toHaveAttribute("aria-expanded", "true");
-		await expect(panel).toHaveAttribute("aria-hidden", "false");
-		await expect(panel).not.toHaveAttribute("inert");
+		const page = within(canvasElement.ownerDocument.body);
 		help.focus();
-		await userEvent.keyboard(" ");
-		await expect(help).toHaveAttribute("aria-expanded", "false");
-		await expect(panel).toHaveAttribute("inert");
+		await waitFor(() => expect(page.getByRole("tooltip")).toBeVisible());
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() =>
+			expect(page.queryByRole("tooltip")).not.toBeInTheDocument(),
+		);
 		const timeout = canvas.getByRole("spinbutton", {
 			name: "タイムアウト（秒）",
 		});
@@ -403,6 +396,8 @@ export const HandoffHelp: Story = {
 		await expect(timeout).not.toBeVisible();
 		await userEvent.click(canvas.getByText("実行設定", { exact: true }));
 		await expect(timeout).toBeVisible();
+		await userEvent.hover(help);
+		await waitFor(() => expect(page.getByRole("tooltip")).toBeVisible());
 	},
 };
 export const CodexDefaults: Story = {

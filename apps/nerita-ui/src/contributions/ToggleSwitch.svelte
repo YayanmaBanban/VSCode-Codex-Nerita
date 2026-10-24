@@ -3,7 +3,7 @@
 	import { cn } from "cnfast";
 	import { mergeProps } from "bits-ui";
 	import type { NeritaUiControl } from "@nerita/shared/uiContributions";
-	import SettingsTooltip from "../chat/SettingsTooltip.svelte";
+	import Tooltip from "../ui/Tooltip.svelte";
 
 	let {
 		control,
@@ -16,7 +16,7 @@
 	} = $props();
 </script>
 
-<SettingsTooltip content={control.description}>
+<Tooltip content={control.description}>
 	{#snippet children({ props })}
 		<label
 			class={cn(
@@ -47,4 +47,4 @@
 			></label
 		>
 	{/snippet}
-</SettingsTooltip>
+</Tooltip>

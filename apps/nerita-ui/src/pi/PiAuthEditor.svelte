@@ -31,10 +31,7 @@
 </script>
 
 <main class="mx-auto w-full max-w-[960px] p-[20px] text-[13px]">
-	<h1 class="mb-[8px] text-[22px] font-semibold">認証情報を管理</h1>
-	<p class="mb-[24px] text-muted">
-		認証先を選択して、APIキーやOAuthログインを設定します。
-	</p>
+	<h1 class="mb-[24px] text-[22px] font-semibold">認証情報を管理</h1>
 	<label
 		class={cn(
 			"mb-[20px] flex items-center gap-[10px] rounded-[6px] border",
