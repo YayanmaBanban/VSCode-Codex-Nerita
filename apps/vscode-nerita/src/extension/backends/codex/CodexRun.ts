@@ -119,6 +119,7 @@ export class CodexRun {
 			const result = await client.startTurn({
 				...(context ? { additionalContext: context } : {}),
 				...this.options.turnSettings(),
+				summary: "detailed",
 				threadId: run.threadId,
 				clientUserMessageId: userId,
 				input: [

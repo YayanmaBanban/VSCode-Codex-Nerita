@@ -62,6 +62,7 @@ export async function generateCodexHandoff(
 		request.signal.throwIfAborted();
 		await client.startTurn({
 			threadId,
+			summary: "detailed",
 			model: request.model,
 			...(isNonEmptyString(request.effort)
 				? { effort: request.effort }
