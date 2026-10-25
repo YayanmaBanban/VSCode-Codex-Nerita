@@ -129,6 +129,9 @@
 					{timeline}
 					{virtual}
 					{following}
+					{available}
+					onOpenSessions={managed ? undefined : sessionPanel.show}
+					sessionsOpen={sessionsVisible}
 					bind:conversation={view.conversation}
 					bind:bottom={view.bottom}
 					onOpenAgent={agentViewer.open}

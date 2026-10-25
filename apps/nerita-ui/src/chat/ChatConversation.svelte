@@ -14,6 +14,7 @@
 	import QuestionCard from "./QuestionCard.svelte";
 	import RunStatusIcon from "./RunStatusIcon.svelte";
 	import ThinkingIndicator from "./ThinkingIndicator.svelte";
+	import RecentSessions from "./sessions/RecentSessions.svelte";
 	import type { MessageTimeline } from "./messages/messageTimeline";
 	import type { ConversationVirtualizer } from "./messages/useConversationVirtualizer.svelte";
 	import { messageIconButtonClass } from "./messages/messageStyles";
@@ -29,6 +30,9 @@
 		timeline,
 		virtual,
 		following,
+		onOpenSessions,
+		sessionsOpen = false,
+		available,
 	}: {
 		state: ChatState;
 		busy: boolean;
@@ -40,6 +44,9 @@
 		timeline: MessageTimeline;
 		virtual: ConversationVirtualizer;
 		following: { current: boolean };
+		onOpenSessions?: (() => void) | undefined;
+		sessionsOpen?: boolean;
+		available: boolean;
 	} = $props();
 	let awayFromBottom = $state(false);
 	const runLabels = {
@@ -107,6 +114,15 @@
 					{chatState.cwd}
 				</p>
 			</div>
+			{#if onOpenSessions && chatState.sessionCapabilities.list}
+				<RecentSessions
+					state={chatState}
+					{send}
+					{available}
+					{sessionsOpen}
+					onOpen={onOpenSessions}
+				/>
+			{/if}
 		{/if}
 		<div
 			role="log"

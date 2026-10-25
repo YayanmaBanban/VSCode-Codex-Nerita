@@ -15,6 +15,68 @@ const meta = {
 export default meta;
 /** 履歴ペインのストーリー定義。 */
 type Story = StoryObj<typeof meta>;
+/** 履歴取得済みの空の会話で、最近の3件を観察する。 */
+export const Recent: Story = { args: { scenario: "recent" } };
+/** 更新順の3件だけを表示し、選択した履歴の復元要求を送る。 */
+export const RestoreRecent: Story = {
+	args: { scenario: "recent" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		const recent = await canvas.findByRole("region", {
+			name: "最近のスレッド",
+		});
+		const rows = within(within(recent).getByRole("list")).getAllByRole(
+			"button",
+		);
+		await expect(rows).toHaveLength(3);
+		await expect(rows[0]).toHaveAccessibleName(
+			"「セッション一覧と履歴の読み込みを実装」を開く",
+		);
+		await userEvent.click(rows[0]!);
+		const requests = bridge.sent.filter(
+			(message) => message.type === "session/load",
+		);
+		await expect(requests).toHaveLength(1);
+		await expect(requests[0]?.sessionId).toBe("recent");
+		bridge.patchState({ sessionPending: true });
+		await waitFor(() => expect(rows[0]).toBeDisabled());
+		bridge.patchState({
+			sessionPending: false,
+			sessionId: "recent",
+			messages: [
+				{ id: "restored", role: "user", text: "復元された会話" },
+			],
+		});
+		await waitFor(() => expect(recent).not.toBeInTheDocument());
+		await expect(canvas.getByText("復元された会話")).toBeVisible();
+	},
+};
+/** 空の会話の一覧ボタンから既存の履歴ペインを開く。 */
+export const OpenRecentHistory: Story = {
+	args: { scenario: "recent" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const recent = await canvas.findByRole("region", {
+			name: "最近のスレッド",
+		});
+		await userEvent.click(
+			within(recent).getByRole("button", {
+				name: "セッション一覧を開く",
+			}),
+		);
+		await expect(
+			await canvas.findByRole("complementary", {
+				name: "セッション一覧",
+			}),
+		).toBeVisible();
+		await expect(
+			storyBridge(canvasElement).sent.some(
+				(message) => message.type === "session/list",
+			),
+		).toBe(true);
+	},
+};
 /** 削除確認の取消は履歴を閉じず、確定操作だけを Host へ送る。 */
 export const History: Story = {
 	play: async ({ canvasElement }) => {
@@ -129,7 +191,9 @@ export const ClosingWithTooltip: Story = {
 	play: async (context) => {
 		const canvas = within(context.canvasElement);
 		const page = within(context.canvasElement.ownerDocument.body);
-		const toggle = canvas.getByRole("button", { name: "セッション一覧" });
+		const toggle = canvas.getByRole("button", {
+			name: "セッション一覧",
+		});
 		for (const method of ["keyboard", "pointer"]) {
 			await openSessions(context);
 			const panel = await canvas.findByRole("complementary", {
@@ -236,7 +300,9 @@ export const Archived: Story = {
 /** 一覧を閉じずに、対象状態の表示と操作を確認できるようにする。 */
 async function openSessions({ canvasElement }: { canvasElement: HTMLElement }) {
 	const canvas = within(canvasElement);
-	const trigger = canvas.getByRole("button", { name: "セッション一覧" });
+	const trigger = canvas.getByRole("button", {
+		name: "セッション一覧",
+	});
 	await waitFor(() =>
 		expect(globalThis.getComputedStyle(trigger).pointerEvents).not.toBe(
 			"none",

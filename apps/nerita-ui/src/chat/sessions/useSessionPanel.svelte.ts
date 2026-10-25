@@ -14,14 +14,21 @@ export function useSessionPanel(send: (message: UiMessage) => void) {
 			.getElementById("session-list-toggle")
 			?.focus({ preventScroll: true });
 	}
-	/** 開くたびに Host の正規の履歴を再取得する。 */
+	/** すでに開いている場合は維持し、開くときに Host から履歴を再取得する。 */
+	function show() {
+		if (open) {
+			return;
+		}
+		open = true;
+		send({ type: "session/list", requestId: crypto.randomUUID() });
+	}
+	/** ヘッダーの操作では同じボタンで開閉する。 */
 	async function toggle() {
 		if (open) {
 			await close();
 			return;
 		}
-		open = true;
-		send({ type: "session/list", requestId: crypto.randomUUID() });
+		show();
 	}
 	return {
 		get open() {
@@ -31,6 +38,7 @@ export function useSessionPanel(send: (message: UiMessage) => void) {
 			return compact.current;
 		},
 		close,
+		show,
 		toggle,
 	};
 }

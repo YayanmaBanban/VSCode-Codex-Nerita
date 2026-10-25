@@ -1,9 +1,15 @@
 // 履歴一覧の固定応答を提供する。作成・削除・分岐の結果は計算しない。
-import { sessionRows } from "../fixtures/sessions";
+import { recentSessionRows, sessionRows } from "../fixtures/sessions";
 import { createChatStoryBridge } from "./mockBridge";
 /** 履歴ペインの表示条件。 */
 export type SessionScenario =
-	"history" | "empty" | "error" | "unsupported" | "paginated" | "loading";
+	| "history"
+	| "empty"
+	| "error"
+	| "unsupported"
+	| "paginated"
+	| "loading"
+	| "recent";
 /** 読み取り境界の応答だけを返す。 */
 export function createSessionBridge(scenario: SessionScenario) {
 	const bridge = createChatStoryBridge();
@@ -20,6 +26,9 @@ export function createSessionBridge(scenario: SessionScenario) {
 	};
 
 	bridge.patchState({ cwd, sessionCapabilities: capabilities });
+	if (scenario === "recent") {
+		bridge.patchState({ sessions: recentSessionRows() });
+	}
 	const timers = new Set<ReturnType<typeof setTimeout>>();
 	return {
 		...bridge,

@@ -60,10 +60,7 @@
 					? "信頼を取り消す"
 					: "信頼する"}</button
 			>
-			<Tooltip
-				content="2秒長押しで設定から削除（Enter・Spaceも長押し）"
-				disabled={holding}
-			>
+			<Tooltip content="2秒長押しで設定から削除" disabled={holding}>
 				{#snippet children({ props })}
 					<HoldToDeleteButton
 						label={`${record.root}を設定ファイルから削除`}
