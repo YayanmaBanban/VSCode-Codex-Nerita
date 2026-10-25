@@ -103,7 +103,9 @@ function otherActivity(
 		return {
 			title: "画像生成",
 			kind: "other",
-			rawOutput: value.result ?? value.revisedPrompt,
+			paths: typeof value.savedPath === "string" ? [value.savedPath] : [],
+			// fileId 形式でも結果への参照・入力画像・失敗理由を出力に残す。
+			rawOutput: value,
 		};
 	}
 	if (type === "contextCompaction") {

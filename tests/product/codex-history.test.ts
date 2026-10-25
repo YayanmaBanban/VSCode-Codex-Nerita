@@ -10,6 +10,7 @@ import type { HostMessage } from "@nerita/shared/messages";
 import type { ToolOutputResponse } from "@nerita/shared/toolOutput";
 import { codexFixture, codexResponseGate } from "../support/codex";
 import { until } from "../support/pi";
+import type { ThreadItem } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ThreadItem";
 
 type Controller = ReturnType<
 	Awaited<ReturnType<typeof codexFixture>>["controller"]
@@ -289,6 +290,117 @@ function assertPermissionDisplay(
 	assert.equal(control?.type, "slider-card");
 	assert.equal(control.option.currentValue, mode);
 	assert.equal(control.warning, warning);
+}
+
+void test("Codex の画像生成は通知と履歴復元でファイル参照・結果本文・失敗理由を保持する", async (t) => {
+	const f = await historyFixture(t);
+	const savedPath = join(f.cwd, "generated.png");
+	const items = [
+		{
+			type: "imageGeneration",
+			id: "file-image",
+			status: "completed",
+			revisedPrompt: null,
+			failure: null,
+			fileId: "file-example",
+			savedPath,
+			transparentBackground: true,
+			inputImages: [
+				{ path: join(f.cwd, "input.png"), sha256: "a".repeat(64) },
+			],
+		},
+		{
+			type: "imageGeneration",
+			id: "inline-image",
+			status: "completed",
+			revisedPrompt: "生成に使ったプロンプト",
+			failure: null,
+			result: "aGVsbG8=".repeat(500),
+		},
+		{
+			type: "imageGeneration",
+			id: "failed-image",
+			status: "failed",
+			revisedPrompt: null,
+			failure: {
+				type: "usageLimitExceeded",
+				limitId: "image-limit",
+				resetsAt: 1234,
+			},
+			result: "",
+		},
+	] satisfies ThreadItem[];
+	f.responses.set("thread/turns/list", () => ({
+		data: [{ id: "turn-1", status: "completed", itemsView: "full", items }],
+		nextCursor: null,
+	}));
+	await f.controller.receive({
+		type: "prompt/send",
+		requestId: randomUUID(),
+		sessionId: f.controller.snapshot().sessionId,
+		text: "画像を生成",
+	});
+	const threadId = f.controller.snapshot().sessionId!;
+	for (const item of items) {
+		f.notify("item/started", {
+			threadId,
+			turnId: "turn-1",
+			item: { ...item, status: "inProgress" },
+		});
+		f.notify("item/completed", { threadId, turnId: "turn-1", item });
+	}
+	f.notify("turn/completed", {
+		threadId,
+		turn: { id: "turn-1", status: "completed", items },
+	});
+	await until(() => f.controller.snapshot().run === "completed");
+
+	for (const phase of ["notifications", "history"]) {
+		if (phase === "history") {
+			await historyAction(f.controller, "saved");
+			assert.equal(f.controller.snapshot().sessionsError, null);
+			assert.equal(f.controller.snapshot().sessionId, "saved");
+		}
+		await assertImageOutputs(f, items, savedPath, phase);
+	}
+});
+
+/** 表示用の出力参照から全文を取得し、通知と復元の情報保持を同じ契約で確認する。 */
+async function assertImageOutputs(
+	f: Awaited<ReturnType<typeof historyFixture>>,
+	items: Array<Extract<ThreadItem, { type: "imageGeneration" }>>,
+	savedPath: string,
+	phase: string,
+) {
+	const tools = f.controller.snapshot().tools;
+	assert.equal(tools.length, 3, phase);
+	for (const item of items) {
+		const tool = tools.find((entry) => entry.id === item.id)!;
+		assert.equal(tool.status, item.status, `${phase}: ${item.id}`);
+		assert.deepEqual(
+			tool.paths,
+			item.id === "file-image" ? [savedPath] : [],
+		);
+		assert.ok(isNonEmptyString(tool.output?.outputRef));
+		await f.controller.receive({
+			type: "tool/output",
+			requestId: randomUUID(),
+			outputRef: tool.output.outputRef,
+			offset: 0,
+			limit: 65536,
+		});
+		const output = f.events
+			.filter((event) => event.type === "tool/outputResult")
+			.at(-1);
+		assert.ok(output?.type === "tool/outputResult");
+		assert.equal(output.error, undefined);
+		assert.equal(output.eof, true);
+		assert.deepEqual(
+			z.unknown().parse(JSON.parse(output.text)),
+			item,
+			`${phase}: ${item.id}`,
+		);
+	}
 }
 
 void test("Codex の複数ページの履歴を復元・フォークし、ツールを再実行せず出力の末尾を取得する", async (t) => {
