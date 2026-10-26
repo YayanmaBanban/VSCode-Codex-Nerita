@@ -41,11 +41,6 @@ export const guardRequestSchema = z.discriminatedUnion("type", [
 		version: z.number().int(),
 	}),
 	z.strictObject({
-		type: z.literal("apply"),
-		id: z.number().int(),
-		version: z.number().int(),
-	}),
-	z.strictObject({
 		type: z.literal("check"),
 		id: z.number().int(),
 		version: z.number().int(),

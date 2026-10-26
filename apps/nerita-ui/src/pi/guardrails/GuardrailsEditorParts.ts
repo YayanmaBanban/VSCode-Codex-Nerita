@@ -6,6 +6,7 @@ import {
 } from "@nerita/shared/guardrails/messages";
 
 import { type ZodSafeParseResult } from "zod";
+import type { GuardrailsConfig } from "@nerita/shared/guardrails/config";
 
 import "../../chat/chat.css";
 
@@ -21,7 +22,7 @@ export type GuardrailsEditorHeaderProps = {
 	status: string;
 	probe: GuardProbe;
 };
-/** 検査対象の入力と、文書を実行せず判定結果を取得する操作を渡す。 */
+/** 検査対象の入力と、ファイル操作やコマンドを実行せず判定結果を取得する操作を渡す。 */
 export type GuardrailsProbePaneProps = {
 	editor: ReturnType<typeof useGuardrails>;
 	probe: GuardProbe;
@@ -29,36 +30,10 @@ export type GuardrailsProbePaneProps = {
 };
 /** 文書の編集状態と解析結果を渡し、フォームと JSON の編集を切り替える。 */
 export type GuardrailsRulePaneProps = {
-	tab: "form" | "json";
-	setTab: (value: "form" | "json") => void;
+	tab: "overview" | "builtins" | "path" | "command" | "exceptions" | "json";
+	setTab: (value: GuardrailsRulePaneProps["tab"]) => void;
 	editor: ReturnType<typeof useGuardrails>;
-	parsed:
-		| ZodSafeParseResult<{
-				version: 1;
-				pathAccess: {
-					outsideRead: "allow" | "ask" | "deny";
-					outsideWrite: "deny";
-				};
-				pathRules: {
-					base: "workspace" | "home";
-					match: "glob" | "file" | "directory";
-					action: "allow" | "ask" | "deny";
-					id: string;
-					reason: string;
-					pattern: string;
-					exceptions: string[];
-					operations: ("read" | "write")[];
-				}[];
-				commandRules: {
-					shell: "powershell" | "pwsh" | "bash" | "any";
-					match: "contains";
-					action: "allow" | "ask" | "deny";
-					id: string;
-					reason: string;
-					pattern: string;
-				}[];
-		  }>
-		| undefined;
+	parsed: ZodSafeParseResult<GuardrailsConfig> | undefined;
 };
 /** 検査に使うツールと作業ディレクトリを、親が保持する入力へ反映する。 */
 export type GuardrailsProbeTargetProps = {

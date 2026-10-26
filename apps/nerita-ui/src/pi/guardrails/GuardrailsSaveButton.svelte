@@ -1,9 +1,7 @@
-<!-- 未保存の文書を枠で示し、動きを減らす設定では静止させる。 -->
+<!-- 文書の保存と実行への適用を1つのボタンで要求し、処理中は操作を無効にする。 -->
 <script lang="ts">
 	import { cn } from "cnfast";
-	import { MediaQuery } from "svelte/reactivity";
 	import Tooltip from "../../ui/Tooltip.svelte";
-	import BorderBeam from "../../ui/BorderBeam.svelte";
 	import { buttonStyle } from "./fields";
 
 	let {
@@ -11,29 +9,25 @@
 		busy,
 		onSave,
 	}: { dirty: boolean; busy: boolean; onSave: () => void } = $props();
-	const reducedMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 </script>
 
-<Tooltip content={dirty ? "未保存の変更があります" : "設定を保存"}>
+<Tooltip
+	content={dirty
+		? "未保存の変更を保存して適用します"
+		: "設定を保存して実行に適用します"}
+>
 	{#snippet children({ props })}
 		<button
 			{...props}
-			class={cn(buttonStyle, "relative overflow-hidden")}
-			aria-label="保存"
+			class={cn(
+				buttonStyle,
+				"relative overflow-hidden border-focus bg-primary text-primary-text",
+			)}
+			aria-label="保存して適用"
 			disabled={busy}
 			onclick={onSave}
 		>
-			保存
-			{#if dirty}<span aria-hidden="true" data-testid="unsaved-beam"
-					><BorderBeam
-						size={32}
-						duration={4}
-						borderThickness={2}
-						transition={reducedMotion.current
-							? { duration: 0, repeat: 0 }
-							: {}}
-					/></span
-				>{/if}
+			保存して適用
 		</button>
 	{/snippet}
 </Tooltip>

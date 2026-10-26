@@ -31,7 +31,7 @@ class GuardrailsEditorState {
 	get busy() {
 		return this.active || this.text !== this.state?.text;
 	}
-	/** 編集要求の待機中は入力を許し、保存や実行の待機中は固定する。 */
+	/** 編集要求の応答待ちでは入力を許し、保存や検査の応答待ちでは固定する。 */
 	get locked() {
 		return this.active && this.pending?.edit === false;
 	}
@@ -41,14 +41,13 @@ class GuardrailsEditorState {
 	}
 	/** 購読を ready より先に登録し、再描画では再初期化しない。 */
 	connect = () => this.connection.connect();
-	/** 編集応答の待機中にも新しい入力を保持し、次の版へ順に送る。 */
-	/** 上限内の下書きを保持し、確定応答の後に最新版を送る。 */
+	/** 編集応答の待機中も上限内の入力を保持し、応答後に最新版を送る。 */
 	change = (value: string) => {
 		if (value.length > 131072) {
 			this.reply = {
 				type: "reply",
 				id: 0,
-				error: "設定は128 Ki文字以内にしてください。",
+				error: "設定は131072文字以内にしてください。",
 				notice: "",
 				result: null,
 				warnings: [],
@@ -61,7 +60,7 @@ class GuardrailsEditorState {
 		this.scheduleEdit();
 	};
 	/** 同期した文書の版を添え、結果は Host の応答まで待つ。 */
-	request = (type: "save" | "apply" | "check", probe: GuardProbe) => {
+	request = (type: "save" | "check", probe: GuardProbe) => {
 		if (!this.state || this.busy) {
 			return;
 		}

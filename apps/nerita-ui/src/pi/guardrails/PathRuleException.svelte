@@ -2,9 +2,9 @@
 <script lang="ts">
 	import {
 		inputStyle,
-		buttonStyle,
 		type PathRuleExceptionProps,
 	} from "./GuardrailsRulesParts";
+	import SimpleDeleteButton from "../../ui/SimpleDeleteButton.svelte";
 
 	let { entry, exception, updatePath, index, rule }: PathRuleExceptionProps =
 		$props();
@@ -12,7 +12,8 @@
 
 <div class="flex items-end gap-2">
 	<label class="min-w-0 flex-1"
-		>例外 {entry + 1}<input
+		><input
+			aria-label={`例外 ${entry + 1}`}
 			class={inputStyle}
 			value={exception}
 			oninput={(event) =>
@@ -23,12 +24,12 @@
 				})}
 		/></label
 	>
-	<button
-		class={buttonStyle}
-		onclick={() =>
+	<SimpleDeleteButton
+		label="例外を削除"
+		ariaLabel={`例外 ${entry + 1}を削除`}
+		onDelete={() =>
 			updatePath(index, {
 				exceptions: rule.exceptions.filter((_, i) => i !== entry),
 			})}
-		>例外 {entry + 1}を削除
-	</button>
+	/>
 </div>

@@ -38,6 +38,7 @@
 	let Icon = $derived(icon === "user" ? User : Bot);
 	let Chevron = $derived(chevron === "right" ? ChevronRight : ChevronDown);
 	let tooltip = $derived(controlTooltip());
+	let hasTooltip = $derived(tooltip !== undefined && tooltip !== "");
 	/** アイコンだけの操作には現在値を示し、通常の選択欄には候補の説明を表示する。 */
 	function controlTooltip() {
 		if (icon !== undefined) {
@@ -60,7 +61,8 @@
 		disabled={disabled || option.options.length === 0}
 		onValueChange={onChange}
 	>
-		<Tooltip content={tooltip} disabled={popup.open}>
+		<!-- 説明の有無が変わっても `Select.Trigger` を維持し、Select 内部の参照を失効させない。 -->
+		<Tooltip content={tooltip ?? ""} disabled={popup.open || !hasTooltip}>
 			{#snippet children({ props: triggerProps })}
 				<Select.Trigger
 					{...triggerProps}

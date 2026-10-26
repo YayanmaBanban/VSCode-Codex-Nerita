@@ -1,39 +1,31 @@
-<!-- パスルールの条件・判定・理由を編集し、更新と削除を親へ伝える。 -->
+<!-- パスルールの条件・判定・理由を編集し、項目の更新と例外の編集画面への移動を親へ伝える。 -->
 <script lang="ts">
-	import { cn } from "cnfast";
 	import {
 		inputStyle,
 		buttonStyle,
-		ruleBackground,
 		type PathRuleCardProps,
 		pathRuleCardStyle,
 		pathRuleFieldsStyle,
 	} from "./GuardrailsRulesParts";
 	import Action from "./Action.svelte";
 
-	import PathRuleBase from "./PathRuleBase.svelte";
 	import PathRuleMatch from "./PathRuleMatch.svelte";
 	import PathRuleOperations from "./PathRuleOperations.svelte";
-	import PathRuleExceptions from "./PathRuleExceptions.svelte";
+	import ArrowRight from "@lucide/svelte/icons/arrow-right";
+	import { cn } from "cnfast";
 
 	let props: PathRuleCardProps = $props();
-	let { index, rule, updatePath, onChange, config } = $derived(props);
+	let { index, rule, updatePath, onEditExceptions } = $derived(props);
+	const fieldStyle = cn(inputStyle, "h-[38px]");
 </script>
 
-<details
-	open
-	style:background-color={ruleBackground(index)}
-	class={pathRuleCardStyle}
->
-	<summary class="cursor-pointer p-3 text-[13px]"
-		>パスルール {index + 1}</summary
-	>
-	<div class="p-3 pt-0">
+<section class={pathRuleCardStyle} aria-label="ルールの編集">
+	<div class="p-3">
 		<div class={pathRuleFieldsStyle}>
-			<label
+			<label class="flex min-w-0 flex-col gap-1"
 				>ID
 				<input
-					class={inputStyle}
+					class={fieldStyle}
 					value={rule.id}
 					oninput={(event) =>
 						updatePath(index, {
@@ -49,16 +41,17 @@
 						updatePath(index, { action }),
 				}}
 			/>
-			<PathRuleBase {...{ ...props }} />
-			<PathRuleMatch
-				{...{
-					...props,
-				}}
-			/>
-			<label class="sm:col-span-2"
+			<div class="col-span-2">
+				<PathRuleMatch
+					{...{
+						...props,
+					}}
+				/>
+			</div>
+			<label class="col-span-2 flex flex-col gap-1"
 				>相対パス / パターン
 				<input
-					class={inputStyle}
+					class={fieldStyle}
 					value={rule.pattern}
 					oninput={(event) =>
 						updatePath(index, {
@@ -66,32 +59,48 @@
 						})}
 				/></label
 			>
-			<PathRuleExceptions
-				{...{
-					...props,
-				}}
-			/>
-			<PathRuleOperations {...{ ...props }} />
-			<label class="sm:col-span-2"
+			<div class="col-span-2">
+				<PathRuleOperations {...{ ...props }} />
+			</div>
+			<label class="col-span-2 flex flex-col gap-1"
 				>理由
-				<input
-					class={inputStyle}
+				<textarea
+					rows={4}
+					maxlength={500}
+					class={cn(inputStyle, "h-[96px] resize-none")}
 					value={rule.reason}
 					oninput={(event) =>
 						updatePath(index, {
 							reason: event.currentTarget.value,
-						})}
-				/></label
+						})}></textarea></label
 			>
+			<section
+				class="col-span-2 flex min-w-0 flex-col gap-2 border-t border-panel-border pt-3"
+				aria-label="例外一覧"
+			>
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<h3 class="m-0 text-[14px] font-semibold">
+						例外 ({rule.exceptions.length})
+					</h3>
+					<button
+						type="button"
+						class={cn(
+							buttonStyle,
+							"inline-flex items-center gap-1.5",
+						)}
+						onclick={onEditExceptions}
+						><ArrowRight
+							size={16}
+							aria-hidden="true"
+						/>例外の編集</button
+					>
+				</div>
+				<ul class="m-0 flex list-none flex-col gap-1 p-0">
+					{#each rule.exceptions as exception, entry (entry)}
+						<li class="break-all">{exception}</li>
+					{/each}
+				</ul>
+			</section>
 		</div>
-		<button
-			class={cn(buttonStyle, "mt-3")}
-			onclick={() =>
-				onChange({
-					...config,
-					pathRules: config.pathRules.filter((_, i) => i !== index),
-				})}
-			>パスルール {index + 1}を削除
-		</button>
 	</div>
-</details>
+</section>

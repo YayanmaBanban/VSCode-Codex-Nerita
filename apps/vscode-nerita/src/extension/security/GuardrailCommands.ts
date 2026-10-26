@@ -4,6 +4,7 @@ import type { GuardResult } from "@nerita/shared/guardrails/messages";
 import { addFinding, inspectGuardPath } from "./GuardrailPaths";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { inspectBuiltinCommands } from "./GuardrailBuiltinCommands";
 
 /** Shell 本文は実行せず検査し、解析の限界も承認画面へ伝える。 */
 export async function inspectGuardCommand(
@@ -21,18 +22,7 @@ export async function inspectGuardCommand(
 		"builtin:shell",
 		"Shellの実行には1回限りの承認が必要です。",
 	);
-	const matchesTest =
-		/remove-item|\brm\b|\brmdir\b|\bdel\b|\bgit\s+(?:clean\b|reset\b[^\r\n;|]*--hard)/i.test(
-			command,
-		);
-	if (matchesTest) {
-		addFinding(
-			result,
-			"ask",
-			"builtin:destructive",
-			"削除または変更の破棄を含むコマンドです。",
-		);
-	}
+	inspectBuiltinCommands(config, command, result);
 	for (const rule of config.commandRules) {
 		const matchesShell =
 			(rule.shell === "any" || rule.shell === shell) &&

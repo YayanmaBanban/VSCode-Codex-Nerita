@@ -2,27 +2,19 @@
 <script lang="ts">
 	import { commandRuleSchema } from "@nerita/shared/guardrails/config";
 
-	import {
-		inputStyle,
-		type CommandRuleShellProps,
-	} from "./GuardrailsRulesParts";
+	import { type CommandRuleShellProps } from "./GuardrailsRulesParts";
+	import GuardrailsSelect from "./GuardrailsSelect.svelte";
 
 	let { rule, update }: CommandRuleShellProps = $props();
 </script>
 
-<label
-	>Shell
-	<select
-		class={inputStyle}
-		value={rule.shell}
-		onchange={(event) =>
-			update({
-				shell: commandRuleSchema.shape.shell.parse(
-					event.currentTarget.value,
-				),
-			})}
-		>{#each ["any", "powershell", "pwsh", "bash"] as value (value)}
-			<option>{value}</option>
-		{/each}</select
-	></label
->
+<GuardrailsSelect
+	label="Shell"
+	value={rule.shell}
+	options={["any", "powershell", "pwsh", "bash"].map((value) => ({
+		value,
+		name: value,
+	}))}
+	onChange={(value) =>
+		update({ shell: commandRuleSchema.shape.shell.parse(value) })}
+/>

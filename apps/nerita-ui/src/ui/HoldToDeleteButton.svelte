@@ -11,6 +11,7 @@
 		holding?: boolean;
 		triggerProps?: Record<string, unknown>;
 		tone?: "danger" | "neutral";
+		size?: "compact" | "field";
 	};
 	let {
 		label,
@@ -19,6 +20,7 @@
 		holding = $bindable(false),
 		triggerProps = {},
 		tone = "danger",
+		size = "compact",
 	}: Props = $props();
 	const descriptionId = $props.id();
 	let timer: ReturnType<typeof setTimeout> | undefined;
@@ -108,7 +110,8 @@
 	aria-describedby={descriptionId}
 	data-holding={holding || undefined}
 	class={cn(
-		"hold-delete relative inline-flex size-8 shrink-0 touch-none items-center justify-center overflow-hidden rounded-[5px] border-0 p-0",
+		"hold-delete relative inline-flex shrink-0 touch-none items-center justify-center overflow-hidden rounded-[5px] border-0 p-0",
+		size === "field" ? "size-[38px]" : "size-8",
 		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-40",
 		tone === "danger"
 			? "bg-red-500/10 text-red-500 enabled:hover:bg-red-500/20"

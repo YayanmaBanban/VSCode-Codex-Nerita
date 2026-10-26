@@ -6,6 +6,71 @@
 			"type": "number",
 			"const": 1
 		},
+		"builtins": {
+			"type": "object",
+			"properties": {
+				"paths": {
+					"type": "object",
+					"propertyNames": {
+						"type": "string",
+						"enum": [
+							"ssh",
+							"aws",
+							"gnupg",
+							"gitCredentials",
+							"environment",
+							"authConfig",
+							"cloudConfig",
+							"keyFiles"
+						]
+					},
+					"additionalProperties": {
+						"type": "string",
+						"enum": ["deny", "ask"]
+					},
+					"required": [
+						"ssh",
+						"aws",
+						"gnupg",
+						"gitCredentials",
+						"environment",
+						"authConfig",
+						"cloudConfig",
+						"keyFiles"
+					]
+				},
+				"commands": {
+					"type": "object",
+					"propertyNames": {
+						"type": "string",
+						"enum": [
+							"git",
+							"filesystem",
+							"containers",
+							"packages",
+							"system",
+							"database",
+							"secrets"
+						]
+					},
+					"additionalProperties": {
+						"type": "string",
+						"enum": ["deny", "ask"]
+					},
+					"required": [
+						"git",
+						"filesystem",
+						"containers",
+						"packages",
+						"system",
+						"database",
+						"secrets"
+					]
+				}
+			},
+			"required": ["paths", "commands"],
+			"additionalProperties": false
+		},
 		"pathAccess": {
 			"type": "object",
 			"properties": {
@@ -31,7 +96,7 @@
 						"type": "string",
 						"minLength": 1,
 						"maxLength": 80,
-						"pattern": "^[a-zA-Z0-9_-]+$"
+						"pattern": "^[\\w-]+$"
 					},
 					"reason": {
 						"type": "string",
@@ -42,19 +107,15 @@
 						"type": "string",
 						"enum": ["allow", "ask", "deny"]
 					},
-					"base": {
-						"type": "string",
-						"enum": ["workspace", "home"]
-					},
 					"match": {
 						"type": "string",
-						"enum": ["glob", "file", "directory"]
+						"enum": ["glob", "directory"]
 					},
 					"pattern": {
 						"type": "string",
 						"minLength": 1,
 						"maxLength": 256,
-						"pattern": "^(?![\\\\/])(?!.*:)(?!.*\\\\)(?!.*(?:^|\\/)\\.\\.(?:\\/|$))[\\u0020-\\uffff]+$"
+						"pattern": "^(?![\\\\/])(?!.*:)(?!.+\\\\)(?!.*(?:^|\\/)\\.\\.(?:\\/|$))[\\u0020-\\uffff]+$"
 					},
 					"exceptions": {
 						"maxItems": 30,
@@ -63,7 +124,7 @@
 							"type": "string",
 							"minLength": 1,
 							"maxLength": 256,
-							"pattern": "^(?![\\\\/])(?!.*:)(?!.*\\\\)(?!.*(?:^|\\/)\\.\\.(?:\\/|$))[\\u0020-\\uffff]+$"
+							"pattern": "^(?![\\\\/])(?!.*:)(?!.+\\\\)(?!.*(?:^|\\/)\\.\\.(?:\\/|$))[\\u0020-\\uffff]+$"
 						}
 					},
 					"operations": {
@@ -80,7 +141,6 @@
 					"id",
 					"reason",
 					"action",
-					"base",
 					"match",
 					"pattern",
 					"exceptions",
@@ -99,7 +159,7 @@
 						"type": "string",
 						"minLength": 1,
 						"maxLength": 80,
-						"pattern": "^[a-zA-Z0-9_-]+$"
+						"pattern": "^[\\w-]+$"
 					},
 					"reason": {
 						"type": "string",
@@ -136,6 +196,12 @@
 			}
 		}
 	},
-	"required": ["version", "pathAccess", "pathRules", "commandRules"],
+	"required": [
+		"version",
+		"builtins",
+		"pathAccess",
+		"pathRules",
+		"commandRules"
+	],
 	"additionalProperties": false
 }

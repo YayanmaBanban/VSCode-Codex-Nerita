@@ -22,9 +22,22 @@
 
 	/** プレビューごとに初期文書を独立して作る。 */
 	function initialGuardState(): GuardState {
+		const config = defaultGuardrails();
+		// ユーザー追加ルールの表示例。既定の機密保護は組み込み側で管理する。
+		config.pathRules = [
+			{
+				id: "env-files",
+				reason: "秘密値を含む可能性があるファイルです。",
+				action: "deny",
+				match: "glob",
+				pattern: ".env*",
+				exceptions: [".env.example", ".env.sample"],
+				operations: ["read", "write"],
+			},
+		];
 		const text = invalid
 			? "{ invalid JSON"
-			: JSON.stringify(defaultGuardrails(), null, 2);
+			: JSON.stringify(config, null, 2);
 		return {
 			type: "state",
 			text,
@@ -70,12 +83,9 @@
 				};
 			} else {
 				if (message.type === "save") {
-					state = { ...state, dirty: false };
+					state = { ...state, dirty: false, activeText: state.text };
 					reply.notice =
-						"保存しました。実行に反映するには適用してください。";
-				} else if (message.type === "apply") {
-					state = { ...state, activeText: state.text };
-					reply.notice = "適用しました。変更前の承認は失効しました。";
+						"保存して適用しました。変更前の承認は失効しました。";
 				} else {
 					reply.notice =
 						"設定と入力例を検査しました。操作は実行していません。";

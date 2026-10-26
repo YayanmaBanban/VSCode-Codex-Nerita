@@ -1,6 +1,5 @@
 // パスの表記と実体を両方検査し、リンク経由の保護対象へのアクセスも判定する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-import { homedir } from "node:os";
 import { relative, resolve } from "node:path";
 import type {
 	GuardrailsConfig,
@@ -12,6 +11,7 @@ import { canonicalPath } from "./WorkspacePathPolicy";
 import { containsPath } from "./AgentAccessPolicy";
 import { matchPath } from "./GuardrailGlob";
 import { isManagedDlcPath } from "@nerita/shared/dlc/managedPaths";
+import { builtinPathDefinitions } from "@nerita/shared/guardrails/builtins";
 
 export { matchPath } from "./GuardrailGlob";
 
@@ -30,9 +30,9 @@ export function addFinding(
 	result.reasons.push(reason);
 }
 
-/** ファイルは完全一致、ディレクトリは境界付きで比較する。例外は同じルール内だけ。 */
+/** 追加ルールはワークスペースを固定基準とし、例外は同じルール内だけで扱う。 */
 function matchesRule(rule: PathRule, path: string, root: string): boolean {
-	const base = rule.base === "home" ? homedir() : root;
+	const base = root;
 	if (!containsPath(base, path)) {
 		return false;
 	}
@@ -44,18 +44,15 @@ function matchesRule(rule: PathRule, path: string, root: string): boolean {
 		return matchPath(rule.pattern, name);
 	}
 	const target = resolve(base, rule.pattern);
-	return rule.match === "directory"
-		? containsPath(target, path)
-		: relative(target, path) === "";
+	return containsPath(target, path);
 }
 
-/** 設定自体の書換えと秘密鍵のアクセスは、ワークスペースの追加ルールでは緩和しない。 */
+/** 設定自身と DLC 管理領域への書き込みは、追加ルールでは緩和しない。 */
 function builtinProtection(
 	path: string,
 	roots: string[],
 	operation: "read" | "write",
 ): string | undefined {
-	const parts = path.replaceAll("\\", "/").toLowerCase().split("/");
 	/** 検査対象が、指定ルート内の DLC 管理領域に属するかを判定する。 */
 	const isManagedDlcTarget = (root: string) =>
 		isManagedDlcPath(relative(root, path).replaceAll("\\", "/"));
@@ -63,12 +60,6 @@ function builtinProtection(
 		operation === "write" && roots.some(isManagedDlcTarget);
 	if (protectedDlcWrite) {
 		return "DLC の管理ファイルは Host が更新します。";
-	}
-	const matchesSome =
-		parts.some((part) => [".ssh", ".aws", ".gnupg"].includes(part)) ||
-		parts.at(-1) === ".git-credentials";
-	if (matchesSome) {
-		return "認証情報の保護対象です。";
 	}
 	const matchesOperation2 =
 		operation === "write" &&
@@ -96,6 +87,27 @@ export async function inspectGuardPath(
 	const canonical = await canonicalPath(input, cwd);
 	result.paths.push(canonical);
 	const paths = [...new Set([lexical, canonical])];
+	for (const definition of builtinPathDefinitions) {
+		const matches = paths.some((path) => {
+			const name = path.replaceAll("\\", "/");
+			return (
+				definition.patterns.some((pattern) =>
+					matchPath(pattern, name),
+				) &&
+				!definition.exceptions.some((pattern) =>
+					matchPath(pattern, name),
+				)
+			);
+		});
+		if (matches) {
+			addFinding(
+				result,
+				config.builtins.paths[definition.id],
+				`builtin:path:${definition.id}`,
+				definition.name,
+			);
+		}
+	}
 	for (const path of paths) {
 		const protectedReason = builtinProtection(path, roots, operation);
 		if (isNonEmptyString(protectedReason)) {
@@ -111,12 +123,7 @@ export async function inspectGuardPath(
 		(path) => !roots.some((workspace) => containsPath(workspace, path)),
 	);
 	if (outside) {
-		// 明示したパス単位の例外だけが外部 read の既定を置き換える。write の上限は変えない。
-		const canonicalRules = matching.filter((rule) =>
-			matchesRule(rule, canonical, root),
-		);
-		let action: GuardAction =
-			canonicalRules.length > 0 ? "allow" : config.pathAccess.outsideRead;
+		let action: GuardAction = config.pathAccess.outsideRead;
 		if (operation === "write") {
 			action = "deny";
 		}

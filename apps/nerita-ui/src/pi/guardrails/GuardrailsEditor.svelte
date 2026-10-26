@@ -1,6 +1,7 @@
 <!-- ガードレールのフォーム・JSON 編集と判定シミュレーションを組み立て、文書の保存状態を共有する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
+	import TabBar from "../../ui/TabBar.svelte";
 	import { type GuardProbe } from "@nerita/shared/guardrails/messages";
 
 	import "../../chat/chat.css";
@@ -11,7 +12,10 @@
 
 	let { bridge }: GuardrailsEditorProps = $props();
 	const editor = useGuardrails(untrack(() => bridge));
-	let tab = $state<"form" | "json">("form");
+	let tab = $state<
+		"overview" | "builtins" | "path" | "command" | "exceptions" | "json"
+	>("path");
+	let pane = $state<"edit" | "simulation">("edit");
 	let probe = $state.raw<GuardProbe>({
 		tool: "read",
 		input: ".env",
@@ -37,8 +41,9 @@
 	import GuardrailsProbePane from "./GuardrailsProbePane.svelte";
 
 	import GuardrailsRulePane from "./GuardrailsRulePane.svelte";
+	import GuardrailsFeedback from "./GuardrailsFeedback.svelte";
 	/** ルール編集の表示をフォームと JSON の間で切り替える。 */
-	const setTab = (value: "form" | "json") => {
+	const setTab = (value: typeof tab) => {
 		tab = value;
 	};
 
@@ -61,7 +66,21 @@
 				probe,
 			}}
 		/>
-		<div class="guardrails-panes">
+		{#if editor.reply && editor.reply.result === null}
+			<GuardrailsFeedback reply={editor.reply} />
+		{/if}
+		<div class="guardrails-mobile-tabs">
+			<TabBar
+				label="表示切替"
+				value={pane}
+				items={[
+					{ value: "edit", label: "編集" },
+					{ value: "simulation", label: "シミュレーション" },
+				] as const}
+				onChange={(value: "edit" | "simulation") => (pane = value)}
+			/>
+		</div>
+		<div class="guardrails-panes" data-pane={pane}>
 			<GuardrailsRulePane
 				{...{
 					tab,

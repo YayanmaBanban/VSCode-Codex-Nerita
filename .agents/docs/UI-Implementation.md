@@ -13,6 +13,10 @@ Webview UI の作成・変更時に参照する。
 - 実装は `apps/nerita-ui/src/chat/composer/ConfigControl.svelte` にある。
 - 枠を付ける場合は `appearance="field"` を指定する。
 
+## タブ
+
+タブを実装する場合は、`apps/nerita-ui/src/ui/TabBar.svelte` の `TabBar` コンポーネントを使用する。
+
 ## ツールチップとヘルプ
 
 - ツールチップの表示には、標準の `title` 属性の代わりに `apps/nerita-ui/src/ui/Tooltip.svelte` の `Tooltip` コンポーネントを使用する。
@@ -20,9 +24,9 @@ Webview UI の作成・変更時に参照する。
 
 ## 確認ダイアログ
 
-`ConfirmationDialog` では、推奨する操作のボタンを一番左に配置し、背景色に `bg-primary` を指定する。
+`apps/nerita-ui/src/ui/ConfirmationDialog` では、推奨する操作のボタンを一番左に配置し、背景色に `bg-primary` を指定する。
 
-それ以外のボタンには `ButtonCurtain` を使用し、操作に応じてカーテンの背景色を指定する。
+それ以外のボタンには `apps/nerita-ui/src/ui/ButtonCurtain` を使用し、操作に応じてカーテンの背景色を指定する。
 
 | 操作 | カーテンの背景色 |
 | --- | --- |

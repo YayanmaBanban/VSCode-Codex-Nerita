@@ -2,19 +2,21 @@
 <script lang="ts">
 	import { guardActionSchema } from "@nerita/shared/guardrails/config";
 
-	import { inputStyle, type ActionProps } from "./GuardrailsRulesParts";
+	import { type ActionProps } from "./GuardrailsRulesParts";
+	import GuardrailsSelect from "./GuardrailsSelect.svelte";
 
 	let { label, className, value, onChange }: ActionProps = $props();
 </script>
 
-<label class={className}
-	>{label}<select
-		class={inputStyle}
+<div class={className}>
+	<GuardrailsSelect
+		{label}
 		{value}
-		onchange={(event) =>
-			onChange(guardActionSchema.parse(event.currentTarget.value))}
-		><option value="deny">deny · 拒否</option><option value="ask"
-			>ask · 承認</option
-		><option value="allow">allow · 許可候補</option></select
-	></label
->
+		options={[
+			{ value: "deny", name: "deny · 拒否" },
+			{ value: "ask", name: "ask · 承認" },
+			{ value: "allow", name: "allow · 許可候補" },
+		]}
+		onChange={(value) => onChange(guardActionSchema.parse(value))}
+	/>
+</div>

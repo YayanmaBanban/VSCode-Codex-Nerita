@@ -11,28 +11,31 @@
 	import { inputStyle } from "./fields";
 
 	import { type GuardrailsProbeTargetProps } from "./GuardrailsEditorParts";
+	import GuardrailsSelect from "./GuardrailsSelect.svelte";
 
 	let { probe, setProbe }: GuardrailsProbeTargetProps = $props();
 </script>
 
-<div class={cn("grid grid-cols-1 gap-3", "sm:grid-cols-2")}>
-	<label
-		>Tool
-		<select
-			class={inputStyle}
-			value={probe.tool}
-			onchange={(event) =>
-				setProbe({
-					...probe,
-					tool: guardProbeSchema.shape.tool.parse(
-						event.currentTarget.value,
-					),
-				})}
-			>{#each ["read", "ls", "write", "edit", "powershell", "pwsh", "bash", "extension"] as tool (tool)}
-				<option>{tool}</option>
-			{/each}</select
-		></label
-	>
+<div class={cn("grid grid-cols-1 gap-3")}>
+	<GuardrailsSelect
+		label="Tool"
+		value={probe.tool}
+		options={[
+			"read",
+			"ls",
+			"write",
+			"edit",
+			"powershell",
+			"pwsh",
+			"bash",
+			"extension",
+		].map((value) => ({ value, name: value }))}
+		onChange={(value) =>
+			setProbe({
+				...probe,
+				tool: guardProbeSchema.shape.tool.parse(value),
+			})}
+	/>
 	<label
 		>cwd（ワークスペース基準）
 		<input

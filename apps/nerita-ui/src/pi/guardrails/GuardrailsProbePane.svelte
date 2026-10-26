@@ -23,14 +23,11 @@
 >
 	<div class="guardrails-pane-heading">
 		<h2 class="m-0 text-[14px]">判定シミュレーション</h2>
-		<button
-			class={buttonStyle}
-			disabled={editor.busy}
-			onclick={() => editor.request("check", probe)}
-			>検査
-		</button>
 	</div>
 	<div class="guardrails-scroll flex flex-col gap-3">
+		<p class="m-0 text-muted">
+			指定したパスやコマンドがルールに一致するかを検査します。
+		</p>
 		<GuardrailsProbeTarget {...{ probe, setProbe }} />
 		<label
 			>対象パス / コマンド
@@ -44,9 +41,17 @@
 						input: event.currentTarget.value,
 					})}></textarea></label
 		>
+		<button
+			class={cn(buttonStyle, "self-start bg-primary text-primary-text")}
+			disabled={editor.busy}
+			onclick={() => editor.request("check", probe)}
+			>検査
+		</button>
 		<p class="m-0 text-[12px] text-muted">
 			シェルの動的なパスやスクリプト内部は完全には解析できません。判定不能な範囲は承認時にも表示します。
 		</p>
-		<GuardrailsFeedback reply={editor.reply} />
+		{#if editor.reply?.result}
+			<GuardrailsFeedback reply={editor.reply} />
+		{/if}
 	</div>
 </section>

@@ -1,4 +1,4 @@
-// Custom Text Editor を通常のエディタグループへ登録し、検査・保存・適用を分離する。
+// Custom Text Editor を登録し、明示的な保存操作で検証済み文書を保存して実行へ適用する。
 import { errorText } from "@nerita/shared/errorText";
 
 import * as vscode from "vscode";
@@ -19,6 +19,7 @@ import {
 import { guardrailRegistry } from "../../../security/GuardrailRegistry";
 import { webviewHtml } from "../../../webview/webviewHtml";
 import { GuardrailsSettings } from "./GuardrailsSettings";
+import { saveGuardrails } from "./saveGuardrails";
 
 export const guardrailsViewType = "nerita.pi.guardrails";
 
@@ -100,7 +101,7 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 			}),
 		);
 	}
-	/** 検査には現在の文書を使い、適用には保存済みの同じ世代を要求する。 */
+	/** 検査には現在の文書を使い、保存成功後も同じ世代の内容だけを実行へ適用する。 */
 	private async handle(
 		message: Exclude<GuardRequest, { type: "ready" }>,
 		document: vscode.TextDocument,
@@ -123,28 +124,20 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 			}
 		} else {
 			const text = document.getText();
-			const config = parseGuardrails(text);
-			warnings = guardrailWarnings(config);
 			if (message.type === "save") {
-				const matchesValue2 = !(await document.save());
-				if (matchesValue2) {
-					throw new Error("保存できませんでした。");
-				}
-				notice = "保存しました。実行に反映するには適用してください。";
-			} else if (message.type === "apply") {
-				if (document.isDirty) {
-					throw new Error("適用前に保存してください。");
-				}
-				await this.settings.apply(
-					root,
-					text,
-					() =>
-						!document.isDirty &&
-						document.version === message.version &&
-						document.getText() === text,
+				const config = await saveGuardrails(
+					document,
+					message.version,
+					async (savedText, isCurrent) => {
+						await this.settings.rootFor(document.uri);
+						await this.settings.apply(root, savedText, isCurrent);
+					},
 				);
-				notice = "適用しました。変更前の承認は失効しました。";
+				warnings = guardrailWarnings(config);
+				notice = "保存して適用しました。変更前の承認は失効しました。";
 			} else {
+				const config = parseGuardrails(text);
+				warnings = guardrailWarnings(config);
 				const roots = await Promise.all(
 					(vscode.workspace.workspaceFolders ?? [])
 						.filter((folder) => folder.uri.scheme === "file")

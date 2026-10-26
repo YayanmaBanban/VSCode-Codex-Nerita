@@ -9,7 +9,18 @@
 	} = $props();
 </script>
 
-<strong class="text-lg">判定: {result.action}</strong>
+<h3 class="m-0 text-[14px]">判定結果</h3>
+<strong
+	class={[
+		"rounded border border-panel-border bg-input p-3 text-lg",
+		{
+			"text-tool-error": result.action === "deny",
+			"text-warning": result.action === "ask",
+		},
+	]}
+	>{{ deny: "拒否", ask: "承認が必要", allow: "許可" }[result.action]}
+	<span class="text-[12px]">{result.action}</span></strong
+>
 <ul class="my-0 pl-5">
 	{#each result.reasons as reason, i (i)}
 		<li class="break-words">

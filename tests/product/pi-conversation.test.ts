@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { credentialFixture } from "../support/credentials";
+import { loadPiSdk } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSdk";
 import { setImmediate } from "node:timers/promises";
 import {
 	piFixture,
@@ -16,6 +17,91 @@ import {
 	until,
 	sessionFiles,
 } from "../support/pi";
+
+for (const auth of [
+	{ name: "API キー", apiKey: "sk-fixture", additionalTools: false },
+	{ name: "ChatGPT OAuth", apiKey: "fixture-oauth", additionalTools: true },
+]) {
+	void test(`Pi は${auth.name}で OpenAI API を呼び出し、認証方式に応じたツール宣言で応答を完了する`, async (t) => {
+		const f = await piFixture(t);
+		const sdk = await loadPiSdk(process.env.NERITA_TEST_EXTENSION!);
+		const models = await sdk.ModelRuntime.create({
+			modelsPath: null,
+			modelsStorePath: join(f.agentDir, "models-store.json"),
+			refreshOnCreate: false,
+		});
+		const model = models
+			.getModels("openai")
+			.find((entry) => entry.api === "openai-responses");
+		assert.ok(model);
+		const requests: unknown[] = [];
+		const result = await models.completeSimple(
+			{
+				...model,
+				compat: {
+					...model.compat,
+					supportsMidConvoSystemMessages: true,
+					supportsAdditionalTools: true,
+					supportsToolSearch: true,
+				},
+			},
+			{
+				messages: [{ role: "user", content: "hello", timestamp: 1 }],
+				tools: [
+					{
+						name: "fixture_tool",
+						description: "Fixture",
+						parameters: { type: "object", properties: {} },
+					},
+				],
+			},
+			{
+				apiKey: auth.apiKey,
+				fetch: (_input, init) => {
+					assert.ok(typeof init?.body === "string");
+					requests.push(JSON.parse(init.body));
+					const event = {
+						type: "response.completed",
+						response: {
+							id: "fixture-response",
+							status: "completed",
+							output: [],
+						},
+					};
+					return Promise.resolve(
+						new Response(`data: ${JSON.stringify(event)}\n\n`, {
+							headers: { "content-type": "text/event-stream" },
+						}),
+					);
+				},
+			},
+		);
+
+		assert.equal(result.stopReason, "stop", result.errorMessage);
+		assert.equal(result.responseId, "fixture-response");
+		assert.equal(requests.length, 1);
+		const payload = z
+			.object({
+				input: z.array(z.looseObject({ type: z.string().optional() })),
+				tools: z.array(z.looseObject({ type: z.string() })).optional(),
+			})
+			.parse(requests[0]);
+		assert.equal(
+			payload.input.some((item) => item.type === "additional_tools"),
+			auth.additionalTools,
+		);
+		assert.equal(
+			payload.tools?.some((tool) => tool.type === "function") ?? false,
+			!auth.additionalTools,
+		);
+		assert.ok(
+			!(
+				payload.tools?.some((tool) => tool.type === "tool_search") ??
+				false
+			),
+		);
+	});
+}
 
 void test(
 	"利用枠の取得応答をローカルで再現し、プロバイダー変更と接続破棄後の遅い応答を公開しない",

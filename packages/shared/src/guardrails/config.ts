@@ -1,5 +1,6 @@
 // 設定ファイルとエディターが共有する形式。JSON Schema はこの定義から生成する。
 import { z } from "zod";
+import { builtinRulesSchema, defaultBuiltinRules } from "./builtins";
 
 export const guardActionSchema = z.enum(["allow", "ask", "deny"]);
 export const operationSchema = z.enum(["read", "write"]);
@@ -22,8 +23,7 @@ const ruleFields = {
 };
 export const pathRuleSchema = z.strictObject({
 	...ruleFields,
-	base: z.enum(["workspace", "home"]),
-	match: z.enum(["glob", "file", "directory"]),
+	match: z.enum(["glob", "directory"]),
 	pattern: relativePattern,
 	exceptions: z.array(relativePattern).max(30),
 	operations: z.array(operationSchema).min(1).max(2),
@@ -36,6 +36,7 @@ export const commandRuleSchema = z.strictObject({
 });
 export const guardrailsConfigSchema = z.strictObject({
 	version: z.literal(1),
+	builtins: builtinRulesSchema,
 	pathAccess: z.strictObject({
 		outsideRead: guardActionSchema,
 		outsideWrite: z.literal("deny"),
@@ -54,19 +55,9 @@ export type GuardAction = z.infer<typeof guardActionSchema>;
 export function defaultGuardrails(): GuardrailsConfig {
 	return {
 		version: 1,
+		builtins: defaultBuiltinRules(),
 		pathAccess: { outsideRead: "deny", outsideWrite: "deny" },
-		pathRules: [
-			{
-				id: "env-files",
-				reason: "秘密値を含む可能性があるファイルです。",
-				action: "deny",
-				base: "workspace",
-				match: "glob",
-				pattern: ".env*",
-				exceptions: [".env.example", ".env.sample"],
-				operations: ["read", "write"],
-			},
-		],
+		pathRules: [],
 		commandRules: [],
 	};
 }
@@ -86,7 +77,7 @@ export function parseGuardrails(text: string): GuardrailsConfig {
 	for (const rule of config.pathRules) {
 		if (rule.match !== "glob" && /[*?]/.test(rule.pattern)) {
 			throw new Error(
-				`${rule.id}: file / directory ではワイルドカードを使用できません。`,
+				`${rule.id}: ディレクトリ配下の指定にはワイルドカードを使用できません。`,
 			);
 		}
 	}

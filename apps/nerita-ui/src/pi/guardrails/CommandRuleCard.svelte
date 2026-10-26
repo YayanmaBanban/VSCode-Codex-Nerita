@@ -1,10 +1,8 @@
-<!-- コマンドルールの条件・判定・理由を編集し、更新と削除を親へ伝える。 -->
+<!-- コマンドルールの条件・判定・理由を編集し、項目の更新を親へ伝える。 -->
 <script lang="ts">
 	import { cn } from "cnfast";
 	import {
 		inputStyle,
-		buttonStyle,
-		ruleBackground,
 		type CommandRuleCardProps,
 	} from "./GuardrailsRulesParts";
 	import Action from "./Action.svelte";
@@ -12,22 +10,16 @@
 	import CommandRulePattern from "./CommandRulePattern.svelte";
 	import CommandRuleShell from "./CommandRuleShell.svelte";
 
-	let { index, rule, update, onChange, config }: CommandRuleCardProps =
-		$props();
+	let { rule, update }: CommandRuleCardProps = $props();
 </script>
 
-<details
-	open
-	style:background-color={ruleBackground(index + 3)}
+<section
 	class={cn(
 		"guardrails-rule-card m-0 min-w-0 shrink-0 rounded border",
 		"border-panel-border",
 	)}
 >
-	<summary class="cursor-pointer p-3 text-[13px]"
-		>コマンドルール {index + 1}</summary
-	>
-	<div class="p-3 pt-0">
+	<div class="p-3">
 		<div class={cn("grid grid-cols-1 gap-3", "sm:grid-cols-2")}>
 			<label
 				>ID
@@ -67,16 +59,5 @@
 				/></label
 			>
 		</div>
-		<button
-			class={cn(buttonStyle, "mt-3")}
-			onclick={() =>
-				onChange({
-					...config,
-					commandRules: config.commandRules.filter(
-						(_, i) => i !== index,
-					),
-				})}
-			>コマンドルール {index + 1}を削除
-		</button>
 	</div>
-</details>
+</section>

@@ -133,14 +133,16 @@ async function codemodeContents(file, sdkFile, aiFile) {
 
 /** 定義の追加通知は ChatGPT OAuth に限定し、API Key では通常の function 宣言を使う。 */
 function localSearchProtocol(source) {
+	// stream の互換設定は try 内の `apiKey` 宣言より前に評価されるため、引数から認証情報を読む。
 	return replaceRequired(
 		source,
-		"const compat = getCompat(model);",
+		"const compat = getCompat(model);\n        const configurationUpdateEffort",
 		`const compat = {
                 ...getCompat(model),
-                supportsAdditionalTools: isChatGPTSignIn(model, apiKey) && getCompat(model).supportsAdditionalTools,
+                supportsAdditionalTools: isChatGPTSignIn(model, options?.apiKey) && getCompat(model).supportsAdditionalTools,
                 supportsToolSearch: false,
-            };`,
+            };
+        const configurationUpdateEffort`,
 	);
 }
 

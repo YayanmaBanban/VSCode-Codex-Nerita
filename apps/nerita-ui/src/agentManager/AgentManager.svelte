@@ -20,6 +20,7 @@
 	import CodexAgentManager from "../codex/CodexAgentManager.svelte";
 	import PiAgentManager from "../pi/PiAgentManager.svelte";
 	import Tooltip from "../ui/Tooltip.svelte";
+	import TabBar from "../ui/TabBar.svelte";
 	import { provideSettingsPopupGroup } from "../ui/settingsPopup.svelte";
 	import "../chat/chat.css";
 	import ConfirmationDialog from "../ui/ConfirmationDialog.svelte";
@@ -169,13 +170,6 @@
 		editor.state?.activeBackend === "pi"
 			? PiAgentManager
 			: CodexAgentManager,
-	);
-	const tabStyle = cn(
-		"manager-tab relative rounded-t-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-primary-text",
-		"transition-colors duration-200 ease-out motion-reduce:transition-none",
-		"enabled:hover:bg-settings-hover",
-		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-		"disabled:cursor-not-allowed disabled:opacity-50",
 	);
 	const headerAction = cn(
 		"inline-flex size-8 items-center justify-center rounded-md border-0 bg-transparent p-0",
@@ -425,27 +419,20 @@
 		</h1>
 
 		<div class="flex flex-wrap items-center justify-between gap-3">
-			<nav aria-label="管理対象" class="flex gap-1">
-				{#each [["agents", "Agents"], ["handoff", "ハンドオフ"]] as [id, label] (id)}
-					<button
-						class={tabStyle}
-						aria-pressed={tab === id}
-						disabled={locked}
-						onclick={() => {
-							if (id !== tab) {
-								navigate(
-									() =>
-										(tab =
-											id === "agents"
-												? "agents"
-												: "handoff"),
-									label,
-								);
-							}
-						}}>{label}</button
-					>
-				{/each}
-			</nav>
+			<TabBar
+				label="管理対象"
+				value={tab}
+				disabled={locked}
+				items={[
+					{ value: "agents", label: "Agents" },
+					{ value: "handoff", label: "ハンドオフ" },
+				] as const}
+				onChange={(value: "agents" | "handoff") =>
+					navigate(
+						() => (tab = value),
+						value === "agents" ? "Agents" : "ハンドオフ",
+					)}
+			/>
 			<div class="flex items-center gap-2">
 				<Tooltip content="再読み込み">
 					{#snippet children({ props })}
@@ -774,37 +761,3 @@
 		>
 	</div>
 </ConfirmationDialog>
-
-<style>
-	.manager-tab::after {
-		position: absolute;
-		inset: auto 1rem 0;
-		height: 2px;
-		border-radius: 999px;
-		background: currentColor;
-		content: "";
-		opacity: 0;
-		transform: scaleX(0.5);
-		transition:
-			transform 200ms ease-out,
-			opacity 200ms ease-out;
-	}
-
-	.manager-tab[aria-pressed="true"]::after {
-		background: var(--nerita-text-link-foreground);
-		opacity: 1;
-		transform: scaleX(1);
-	}
-
-	.manager-tab:enabled:hover::after,
-	.manager-tab:focus-visible::after {
-		opacity: 1;
-		transform: scaleX(1);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.manager-tab::after {
-			transition: none;
-		}
-	}
-</style>
