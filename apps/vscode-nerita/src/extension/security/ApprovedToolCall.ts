@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import type { AgentAccessPolicy } from "./AgentAccessPolicy";
 import type { FileSnapshot } from "./FileSnapshot";
-import type { JevReviewResult } from "./JevGuard";
+import type { AutoReviewResult } from "./AutoReviewGuard";
 import type { SandboxCompatibilityEvent } from "@nerita/shared/commandPermission";
 
 /** 選択された実行基盤が提供する表示情報。承認内容と一緒に固定する。 */
@@ -28,7 +28,9 @@ export type ToolCall = {
 	file?: FileSnapshot;
 	guardrailsDigest?: string;
 	guardrailsPaths?: string[];
-	jevReview?: JevReviewResult;
+	autoReview?: AutoReviewResult | undefined;
+	/** モデル審査を省略した場合に、実行直前の再照合に使うスクリプトの記録。 */
+	reviewFiles?: FileSnapshot[] | undefined;
 };
 /** 承認されたツール入力と照合用の指紋。利用側は承認後の入力を変更せず、対応する中断シグナルを使う。 */
 export type ApprovedToolCall = Readonly<{

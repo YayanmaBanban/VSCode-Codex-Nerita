@@ -1,5 +1,6 @@
 // 元の設定・最新の設定・下書きの3つを比較し、同じ項目に異なる変更がある場合だけ選択を求める。
 import type { ManagerState } from "@nerita/shared/agentManager/messages";
+import { defaultAutoReview } from "@nerita/shared/agentManager/autoReview";
 import {
 	draftChangeSchema,
 	type DraftChange,
@@ -11,6 +12,13 @@ export function currentDraftChange(
 	state: ManagerState,
 	change: DraftChange,
 ): DraftChange | null {
+	if (change.type === "autoReview") {
+		return {
+			type: "autoReview",
+			backend: "pi",
+			config: state.autoReview ?? defaultAutoReview(),
+		};
+	}
 	if (change.type === "agent") {
 		const agent = state.agents.find((item) => item.id === change.agentId);
 		return agent

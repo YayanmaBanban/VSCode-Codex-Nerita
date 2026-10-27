@@ -26,6 +26,71 @@ type Story = StoryObj<{
 	onRequest: ReturnType<typeof fn<(message: ManagerRequest) => void>>;
 }>;
 export const Settings: Story = {};
+export const AutoReview: Story = {
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const menu = within(canvasElement.ownerDocument.body);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "自動レビュー" }),
+		);
+		await userEvent.click(
+			canvas.getByRole("combobox", { name: "承認方法" }),
+		);
+		await userEvent.click(
+			await menu.findByRole("option", { name: "自動レビュー" }),
+		);
+		await expect(
+			canvas.getByRole("button", { name: "保存して適用" }),
+		).toBeDisabled();
+		await userEvent.click(
+			canvas.getByRole("combobox", { name: "レビューモデル" }),
+		);
+		await userEvent.click(
+			await menu.findByRole("option", { name: "GPT-6 Luna" }),
+		);
+		await userEvent.type(
+			canvas.getByRole("textbox", { name: "追加の判断方針" }),
+			"共有ブランチの変更は確認する",
+		);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "保存して適用" }),
+		);
+		const request = args.onRequest.mock.calls.find(
+			([message]) => message.type === "autoReview",
+		)?.[0];
+		if (request?.type !== "autoReview") {
+			throw new Error("保存要求がありません。");
+		}
+		await expect(request.config.mode).toBe("auto");
+		await expect(request.config.model).toBe("openai/gpt-6-luna");
+		await expect(request.config.instructions).toBe(
+			"共有ブランチの変更は確認する",
+		);
+		await expect(
+			canvas.getByRole("textbox", { name: "追加の判断方針" }),
+		).toHaveValue("共有ブランチの変更は確認する");
+	},
+};
+export const AutoReviewSaveFailure: Story = {
+	args: { mode: "validation-error" },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "自動レビュー" }),
+		);
+		await userEvent.type(
+			canvas.getByRole("textbox", { name: "追加の判断方針" }),
+			"保持する入力",
+		);
+		await userEvent.click(
+			canvas.getByRole("button", { name: "保存して適用" }),
+		);
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+		await expect(
+			canvas.getByRole("textbox", { name: "追加の判断方針" }),
+		).toHaveValue("保持する入力");
+	},
+};
 export const BackendSwitch: Story = {
 	args: { mode: "backend-switch" },
 	play: async ({ canvasElement }) => {

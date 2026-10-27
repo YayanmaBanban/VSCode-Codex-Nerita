@@ -1,5 +1,6 @@
 // 設定には適用しない編集途中の値を、復元前の比較値とともに保持する。
 import { z } from "zod";
+import { autoReviewConfigSchema } from "./autoReview";
 import {
 	agentEditSchema,
 	backendSchema,
@@ -28,6 +29,11 @@ const handoffDraftSchema = handoffSchema.extend({
 	defaults: z.strictObject({ timeoutMs: draftNumber }),
 });
 export const draftChangeSchema = z.discriminatedUnion("type", [
+	z.strictObject({
+		type: z.literal("autoReview"),
+		backend: z.literal("pi"),
+		config: autoReviewConfigSchema,
+	}),
 	z.strictObject({
 		type: z.literal("agent"),
 		agentId: z.string().max(1024),

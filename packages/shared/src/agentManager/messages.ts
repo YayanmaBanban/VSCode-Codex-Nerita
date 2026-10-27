@@ -1,6 +1,7 @@
 // 保存要求はパネルに固定したワークスペースで照合し、設定を保存する要求には世代も含める。
 import { z } from "zod";
 import { managerDraftSchema } from "./draft";
+import { autoReviewConfigSchema } from "./autoReview";
 import {
 	agentEditSchema,
 	backendSchema,
@@ -44,6 +45,7 @@ export const managerStateSchema = z.strictObject({
 	handoff: handoffSchema,
 	handoffExists: z.boolean(),
 	handoffError: z.string().nullable(),
+	autoReview: autoReviewConfigSchema.optional(),
 	models: z.strictObject({
 		pi: z.array(managerModelSchema),
 		codex: z.array(managerModelSchema),
@@ -75,6 +77,12 @@ const mutation = {
 	generation: z.string(),
 };
 export const managerRequestSchema = z.discriminatedUnion("type", [
+	z.strictObject({
+		type: z.literal("autoReview"),
+		...mutation,
+		backend: z.literal("pi"),
+		config: autoReviewConfigSchema,
+	}),
 	z.strictObject({
 		type: z.literal("draft"),
 		id: z.number().int(),

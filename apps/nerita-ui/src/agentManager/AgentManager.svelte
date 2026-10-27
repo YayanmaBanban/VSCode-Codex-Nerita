@@ -15,6 +15,7 @@
 		type ManagerSave,
 	} from "./useAgentManager.svelte";
 	import HandoffSettings from "./HandoffSettings.svelte";
+	import AutoReviewSettings from "./AutoReviewSettings.svelte";
 	import AgentManagerFooter from "./AgentManagerFooter.svelte";
 	import { provideManagerFeedback } from "./agentManagerFeedback";
 	import CodexAgentManager from "../codex/CodexAgentManager.svelte";
@@ -40,7 +41,7 @@
 	provideSettingsPopupGroup();
 
 	let { bridge }: { bridge: ManagerBridge } = $props();
-	let tab = $state<"agents" | "handoff">("agents");
+	let tab = $state<"agents" | "handoff" | "autoReview">("agents");
 	let selected = $state("");
 	let dirty = $state(false);
 	const advancedSettings = $state({ open: false });
@@ -80,6 +81,9 @@
 	);
 	/** 保存後の移動と、読み込んだ下書きの復元を更新内容に合わせて行う。 */
 	function loadState(state: ManagerState) {
+		if (state.activeBackend !== "pi" && tab === "autoReview") {
+			tab = "agents";
+		}
 		const destination = saving && saveNavigation ? pending : null;
 		dirty = false;
 		pending = null;
@@ -281,7 +285,11 @@
 			base: currentDraftChange(editor.state, draft.change),
 			change: result.change,
 		};
-		tab = draft.change.type === "handoff" ? "handoff" : "agents";
+		if (draft.change.type === "autoReview") {
+			tab = "autoReview";
+		} else {
+			tab = draft.change.type === "handoff" ? "handoff" : "agents";
+		}
 		if (draft.change.type === "agent") {
 			selected = draft.change.agentId;
 		} else if (draft.change.type === "createAgent") {
@@ -344,13 +352,16 @@
 			dirty,
 			saved:
 				editor.saved &&
-				savedTarget === (tab === "handoff" ? "handoff" : selected),
+				savedTarget === (tab === "agents" ? selected : tab),
 			save,
 			onDirty: markDirty,
 		};
 	});
 	/** 保存完了を表示する対象を、保存要求と名前変更後の選択先から決める。 */
 	function targetFor(change: Parameters<ManagerSave>[0]) {
+		if (change.type === "autoReview") {
+			return "autoReview";
+		}
 		if (change.type === "createAgent") {
 			return savedSelection;
 		}
@@ -426,11 +437,23 @@
 				items={[
 					{ value: "agents", label: "Agents" },
 					{ value: "handoff", label: "ハンドオフ" },
+					...(editor.state?.activeBackend === "pi"
+						? [
+								{
+									value: "autoReview",
+									label: "自動レビュー",
+								} as const,
+							]
+						: []),
 				] as const}
-				onChange={(value: "agents" | "handoff") =>
+				onChange={(value: "agents" | "handoff" | "autoReview") =>
 					navigate(
 						() => (tab = value),
-						value === "agents" ? "Agents" : "ハンドオフ",
+						{
+							agents: "Agents",
+							handoff: "ハンドオフ",
+							autoReview: "自動レビュー",
+						}[value],
 					)}
 			/>
 			<div class="flex items-center gap-2">
@@ -481,24 +504,28 @@
 	</header>
 	{#if formProps}
 		{#key `${formProps.state.activeBackend}:${editor.revision}:${restoreRevision}`}
-			{#if tab === "handoff"}
-				<HandoffSettings {...formProps} />
+			{#if tab === "autoReview" && formProps.state.activeBackend === "pi"}
+				<AutoReviewSettings {...formProps} />
 			{:else}
-				<BackendManager
-					{...formProps}
-					{advancedSettings}
-					{selected}
-					onSelect={(id: string) => {
-						if (id !== selected) {
-							navigate(
-								() => (selected = id),
-								editor.state?.agents.find(
-									(agent) => agent.id === id,
-								)?.name ?? "Workspace defaults",
-							);
-						}
-					}}
-				/>
+				{#if tab === "handoff"}
+					<HandoffSettings {...formProps} />
+				{:else}
+					<BackendManager
+						{...formProps}
+						{advancedSettings}
+						{selected}
+						onSelect={(id: string) => {
+							if (id !== selected) {
+								navigate(
+									() => (selected = id),
+									editor.state?.agents.find(
+										(agent) => agent.id === id,
+									)?.name ?? "Workspace defaults",
+								);
+							}
+						}}
+					/>
+				{/if}
 			{/if}
 		{/key}
 	{:else}

@@ -1,5 +1,6 @@
 // 管理画面のストーリーで、通信境界と固定の保存応答を用意する。
 import { defaultHandoff } from "@nerita/shared/agentManager/config";
+import { defaultAutoReview } from "@nerita/shared/agentManager/autoReview";
 import type {
 	ManagerBridge,
 	ManagerReply,
@@ -20,6 +21,7 @@ export function sampleState(): ManagerState {
 		handoff: defaultHandoff(),
 		handoffExists: false,
 		handoffError: null,
+		autoReview: defaultAutoReview(),
 		models: structuredClone(sampleModels),
 		activeBackend: "pi",
 		currentModels: { pi: "openai/gpt-6-sol", codex: "gpt-6-sol" },
@@ -36,6 +38,7 @@ export function sampleState(): ManagerState {
 /** 各エラーやバックエンドの初期状態を、ストーリーごとに独立して用意する。 */
 function storyState(mode: string): ManagerState {
 	const state = sampleState();
+
 	if (mode === "codex" || mode === "codex-defaults") {
 		state.activeBackend = "codex";
 	}
@@ -89,6 +92,9 @@ export function mockBridge(
 			state.handoff = message.config;
 			state.handoffError = null;
 			state.handoffExists = true;
+		}
+		if (message.type === "autoReview") {
+			state.autoReview = message.config;
 		}
 		if (message.type === "defaults") {
 			state.piDefaults = message.defaults;

@@ -16,6 +16,7 @@ import {
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { PiLifecycle } from "./PiLifecycle";
 import { PiEventMapper } from "./PiEventMapper";
+import { mapPiReview } from "./PiReviewHistory";
 import { finishPiTools } from "./PiToolMapper";
 import { PiPermissions } from "./PiPermissions";
 import type { PiAuthorize } from "./PiApprovedTools";
@@ -191,8 +192,10 @@ export abstract class PiRun extends PiLifecycle {
 		const unsubscribeEvents = runtime.subscribe(
 			this.createRunEventListener(current, mapper),
 		);
+		const unsubscribeReviews = this.subscribeReviews(runtime, current);
 		submission.unsubscribe = () => {
 			unsubscribeEvents();
+			unsubscribeReviews();
 		};
 		this.patch({ run: "running", runId: submission.id, error: null });
 		const start = this.createPromptStarter(
@@ -221,6 +224,17 @@ export abstract class PiRun extends PiLifecycle {
 				: start(message.text);
 
 		this.trackSubmission(input, submission, mapper, current, message);
+	}
+
+	/** 実行世代の異なる審査は表示せず、購読の回収を送信要求へ結び付ける。 */
+	private subscribeReviews(runtime: PiSession, current: () => boolean) {
+		return (
+			runtime.reviews?.subscribe((record) => {
+				if (current()) {
+					this.patch(mapPiReview(record, this.state));
+				}
+			}) ?? (() => {})
+		);
 	}
 
 	/** 現在の親へ子のカードを追加し、以後は表示順を固定する。 */

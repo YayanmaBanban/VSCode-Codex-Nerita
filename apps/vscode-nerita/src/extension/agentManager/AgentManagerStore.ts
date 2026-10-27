@@ -1,5 +1,7 @@
 // 読み取った世代を照合し、設定ごとの保存先へ必要なキーだけを書き込む。
 import { errorText } from "@nerita/shared/errorText";
+import { autoReviewStore } from "../security/AutoReviewStore";
+import { autoReviewConfigSchema } from "@nerita/shared/agentManager/autoReview";
 import {
 	agentNameError,
 	agentModelError,
@@ -109,9 +111,10 @@ export class AgentManagerStore {
 		} catch (error) {
 			handoffError = `handoff.json の形式が不正です: ${errorText(error)}`;
 		}
-		const agents: ManagedAgent[] = [...pi.agents, ...codex.agents];
+		const review = autoReviewStore.snapshot(this.root);
 		return {
-			agents,
+			agents: [...pi.agents, ...codex.agents],
+			autoReview: review.config,
 			piDefaults: pi.defaults,
 			piUserSettings: pi.userSettings,
 			modelScope: pi.modelScope,
@@ -120,6 +123,7 @@ export class AgentManagerStore {
 			handoffError,
 			errors: [...errors, ...codex.errors],
 			generation: generation({
+				autoReview: review.config,
 				piText,
 				handoffText,
 				codex: codex.files,
@@ -173,6 +177,10 @@ export class AgentManagerStore {
 				);
 			}
 			assertWritable();
+			if (request.type === "autoReview") {
+				await this.saveAutoReview(request.config);
+				return;
+			}
 			if (request.type === "createAgent") {
 				await this.createAgent(request, state);
 				return;
@@ -234,6 +242,29 @@ export class AgentManagerStore {
 			await this.saveAgent(request, state);
 		};
 		return serialized(this.root, saveCurrentManagerSettings);
+	}
+
+	/** セキュリティ設定は利用可能な Pi モデルで検証し、Host の保存領域へだけ反映する。 */
+	private async saveAutoReview(value: unknown) {
+		if (this.activeBackend?.() === "codex") {
+			throw new Error("Pi の自動レビュー設定を開いてください。");
+		}
+		const config = autoReviewConfigSchema.parse(value);
+		if (config.mode === "auto") {
+			const model = this.models("pi").find(
+				(item) => item.value === config.model,
+			);
+			if (!model) {
+				throw new Error("利用できるレビューモデルを選択してください。");
+			}
+			const valid =
+				config.thinking === "off" ||
+				model.efforts?.includes(config.thinking) === true;
+			if (!valid) {
+				throw new Error("対応する推論レベルを選択してください。");
+			}
+		}
+		await autoReviewStore.save(this.root, config);
 	}
 
 	/** 新規作成は既存ファイルと同名の定義を上書きしない。 */

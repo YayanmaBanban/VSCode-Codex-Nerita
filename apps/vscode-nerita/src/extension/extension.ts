@@ -21,6 +21,7 @@ import { userTrustedExtensionPaths } from "./backends/pi/PiExtensionTrust";
 import { registerDlcCommands } from "./dlc/DlcCommands";
 import { directoryRunStorage } from "./dlc/DirectoryRunStorage";
 import { hostStorageRoot } from "./session/HostStorage";
+import { autoReviewStore } from "./security/AutoReviewStore";
 
 let controller: BackendSession | undefined;
 let dlc: { dispose(): Promise<void> } | undefined;
@@ -28,6 +29,7 @@ let dlc: { dispose(): Promise<void> } | undefined;
 export async function activate(
 	context: vscode.ExtensionContext,
 ): Promise<void> {
+	autoReviewStore.connect(context.workspaceState);
 	registerSandboxSetup(context);
 	registerMxcDiagnostics(context);
 	registerSandboxPanel(context);

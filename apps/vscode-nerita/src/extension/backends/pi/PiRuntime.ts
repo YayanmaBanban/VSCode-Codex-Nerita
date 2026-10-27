@@ -10,6 +10,8 @@ import { randomUUID } from "node:crypto";
 import { bindPiOutputArchive } from "./results/PiOutputArchive";
 import type { HandoffGenerator } from "../../session/HandoffContext";
 import { generatePiHandoff } from "./PiHandoffGeneration";
+import { bindPiAutoReview } from "./PiAutoReview";
+import type { PiReviewHistory } from "./PiReviewHistory";
 import type { WorkspaceTrustStore } from "../../security/trust/WorkspaceTrustStore";
 import {
 	preparePiTrust,
@@ -109,6 +111,7 @@ export type PiSession = Pick<
 	jobs?: PiJobs;
 	history?: PiHistoryAccess;
 	referenceHistory?: PiReferenceHistory;
+	reviews?: PiReviewHistory;
 	generateHandoff?: HandoffGenerator;
 	account?: PiAccount;
 	quota?: PiQuotaService;
@@ -197,7 +200,7 @@ export type PiModelSelection = {
 	reasoning?: string;
 };
 
-/** Pi 標準形式で履歴を保存し、副作用ツールには必ず Host の承認を挟む。 */
+/** Pi 標準形式で履歴を保存し、副作用ツールには必ず Host のガード判定を挟む。 */
 export async function createPiRuntime(
 	options: PiRuntimeOptions,
 ): Promise<PiRuntimeSession> {
@@ -291,6 +294,7 @@ async function openPiRuntime(
 		session,
 		modelRuntime,
 		sdk,
+		manager,
 	);
 	const stopJobs = session.abort.bind(session);
 	session.abort = async () => {
@@ -477,6 +481,7 @@ async function bindRuntimeAccount(
 	session: AgentSession,
 	modelRuntime: PiSdk.ModelRuntime,
 	sdk: Awaited<ReturnType<typeof loadPiSdk>>,
+	manager: PiSdk.SessionManager,
 ) {
 	const { controls, options, subagents, agentDir } = resources;
 
@@ -530,6 +535,14 @@ async function bindRuntimeAccount(
 		options.signal.throwIfAborted();
 		throw new Error("Pi の初期化が取り消されました。");
 	}
+	bindPiAutoReview(
+		session,
+		modelRuntime,
+		resources.runtimeTools.paths.policy,
+		(value) => options.credentials!.vault.stores.redactor.text(value),
+		options.signal,
+		manager,
+	);
 	return account;
 }
 

@@ -24,6 +24,8 @@
 			["リスク", review.riskLevel],
 			["ユーザーの承認", review.userAuthorization],
 			["理由", review.rationale],
+			["モデル", review.model],
+			["所要時間（ms）", review.durationMs],
 		];
 		return values.filter(
 			([, value]) => value !== null && value !== undefined,

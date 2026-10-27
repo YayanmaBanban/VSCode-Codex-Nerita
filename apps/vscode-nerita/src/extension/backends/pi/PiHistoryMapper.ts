@@ -9,6 +9,7 @@ import { nextTimelineOrder } from "../../session/timelineOrder";
 import { mapPiTool, finishPiTools } from "./PiToolMapper";
 import { restorePiNestedTools } from "./PiNestedHistory";
 import { restorePiReferences } from "./PiReferenceHistory";
+import { restorePiReview } from "./PiReviewHistory";
 
 /** 保存履歴の本文とツール結果を表す。 */
 type HistoryMessage = Extract<SessionEntry, { type: "message" }>["message"];
@@ -32,6 +33,7 @@ export function restorePiHistory(
 			continue;
 		}
 		if (entry.type !== "message") {
+			restorePiReview(entry, state);
 			continue;
 		}
 		const message = entry.message;

@@ -38,6 +38,7 @@ import { readMxcDenials, type DenialReport } from "./MxcDenials";
 import { MxcStderr } from "./MxcStderr";
 import type { ResourcePolicy } from "@nerita/shared/sandboxPolicy";
 import { randomUUID } from "node:crypto";
+import { verifyReviewFiles } from "../security/AutoReviewPolicy";
 import type { SandboxManagement } from "./SandboxManagement";
 import { workspaceFor } from "./ResourceGrantStore";
 import {
@@ -89,6 +90,7 @@ export class MxcExecutor implements SandboxCommandExecutor {
 		try {
 			for (let attempt = 0; ; attempt++) {
 				await validateMxcCall(call);
+				await verifyReviewFiles(call);
 				await evaluateTrust(call);
 				signal.throwIfAborted();
 				if (toolCallFingerprint(call) !== fingerprint) {

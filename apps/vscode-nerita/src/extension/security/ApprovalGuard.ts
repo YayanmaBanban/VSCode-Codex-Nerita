@@ -1,4 +1,4 @@
-// 承認前に要求全体を固定し、既存 `Permission` UI から1回限りの `permit` を発行する。
+// 実行前に要求全体を固定し、ガード判定と必要な承認を経て1回限りの許可を発行する。
 import {
 	isNonEmptyString,
 	nonEmptyString,
@@ -13,7 +13,8 @@ import { toolApprovalPresentation } from "./toolApprovalPresentation";
 import { evaluateTrust } from "./trust/TrustGate";
 import { guardrailRegistry } from "./GuardrailRegistry";
 import { evaluateGuardrails } from "./GuardrailEvaluator";
-import { jevGuard, reviewJevIfNeeded, type JevGuard } from "./JevGuard";
+import { reviewSnapshot, reviewToolCall } from "./AutoReviewGuard";
+import { autoReviewStore, type AutoReviewStore } from "./AutoReviewStore";
 import {
 	guardProbeSchema,
 	type GuardResult,
@@ -25,7 +26,7 @@ export type ToolAuthorizer = (
 	signal?: AbortSignal,
 ) => Promise<AbortSignal>;
 
-/** シェル実行の可否を確認し、Host の読取り・一覧操作以外は承認を求める。 */
+/** シェル実行の可否を確認し、Host の読み取り・一覧操作以外は承認判定の対象にする。 */
 export function assessToolCall(call: ToolCall): "allow" | "ask" {
 	if ((call.command || call.hostShell === true) && !call.policy.shell) {
 		throw new Error("この役割ではシェルの実行が禁止されています。");
@@ -46,23 +47,22 @@ export async function approveToolCall(
 	input: ToolCall,
 	authorize: ToolAuthorizer,
 	signal?: AbortSignal,
-	semanticGuard: JevGuard = jevGuard,
+	reviews: AutoReviewStore = autoReviewStore,
 ) {
 	signal?.throwIfAborted();
 	input = freezeToolCall(input);
 	const trustSignal = await evaluateTrust(input);
-	const semantic = semanticGuard.snapshot();
+	const semantic = reviewSnapshot(input, reviews);
 	const snapshot = isNonEmptyString(input.policy.guardrailsRoot)
 		? guardrailRegistry.snapshot(input.policy.guardrailsRoot, [
 				input.policy.guardrailsRoot,
 			])
 		: guardrailRegistry.snapshot(input.cwd, input.policy.workspaceRoots);
-	const combined = AbortSignal.any([
-		...(trustSignal ? [trustSignal] : []),
-		snapshot.signal,
-		semantic.signal,
-		...(signal ? [signal] : []),
-	]);
+	const combined = AbortSignal.any(
+		[trustSignal, snapshot.signal, semantic?.signal, signal].filter(
+			(item): item is AbortSignal => item !== undefined,
+		),
+	);
 	const call = freezeToolCall({
 		...input,
 		guardrailsDigest: snapshot.digest,
@@ -81,20 +81,18 @@ export async function approveToolCall(
 		);
 	}
 	const needsApproval = decision === "ask" || result.action === "ask";
-	const semanticResult = await reviewJevIfNeeded(
-		semantic.reviewer,
-		needsApproval,
-		call,
-		combined,
-	);
+	const semanticResult = needsApproval
+		? await reviewToolCall(call, result, semantic, combined)
+		: { manual: false };
 	combined.throwIfAborted();
+	const { manual, ...reviewed } = semanticResult;
 	const checkedCall = freezeToolCall({
 		...call,
 		guardrailsPaths: result.paths,
-		...semanticResult,
+		...reviewed,
 	});
 	const presentation = guardPresentation(checkedCall, result);
-	const approvalSignal = needsApproval
+	const approvalSignal = manual
 		? await authorize(presentation, combined)
 		: combined;
 	return issueApprovedToolCall(
@@ -129,11 +127,11 @@ function probeFor(call: ToolCall) {
 /** 判定理由と解析できない範囲を既存の承認表示へ加える。 */
 function guardPresentation(call: ToolCall, result: GuardResult) {
 	const presentation = toolApprovalPresentation(call);
-	if (call.jevReview) {
+	if (call.autoReview) {
 		presentation.fields?.push({
-			id: "jev-review",
-			label: "Jev補足判定",
-			value: `${call.jevReview.decision}: ${call.jevReview.guidance}`,
+			id: "auto-review",
+			label: "自動レビュー",
+			value: `${call.autoReview.outcome}: ${call.autoReview.reason}`,
 			display: "text",
 		});
 	}
