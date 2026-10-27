@@ -106,11 +106,9 @@
 							)}
 							aria-label="送信メッセージへ移動"
 							disabled={!target}
-							><ArrowUpToLine
-								size={16}
-								aria-hidden="true"
-							/></button
 						>
+							<ArrowUpToLine size={16} aria-hidden="true" />
+						</button>
 					{/snippet}
 				</Tooltip>
 			</div>

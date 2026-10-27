@@ -174,7 +174,8 @@
 							)}
 							aria-expanded={expansion.open}
 							aria-controls={bodyId}
-							><ToolHeadingContent
+						>
+							<ToolHeadingContent
 								{tool}
 								{status}
 								icon={Icon}
@@ -182,8 +183,8 @@
 								{progress}
 								expandable={true}
 								{reserveStatusSpace}
-							/></button
-						>
+							/>
+						</button>
 					{:else}
 						<div
 							{...props}
@@ -227,12 +228,13 @@
 							)}
 							aria-label={`${tool.title} を停止`}
 							disabled={!onStop}
-							><Square
+						>
+							<Square
 								size={13}
 								fill="currentColor"
 								aria-hidden="true"
-							/></button
-						>
+							/>
+						</button>
 					{/snippet}
 				</Tooltip>
 			{/if}

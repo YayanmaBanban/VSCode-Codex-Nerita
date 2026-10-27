@@ -9,6 +9,7 @@ const blockElements = new Set([
 	"aside",
 	"blockquote",
 	"body",
+	"button",
 	"caption",
 	"dd",
 	"details",
@@ -103,6 +104,19 @@ function separateNodes(fragment) {
 // 明示的なインライン要素に入ったら、内部の条件分岐もインラインのまま扱う。
 function childLayout(node, layout) {
 	if (node.type === "RegularElement") {
+		// button はインラインの並びにも使うため、単一の子要素だけを改行する。
+		// 複数の子要素間へ空白を足すと、表示や textContent が変わってしまう。
+		if (node.name === "button") {
+			const children = node.fragment.nodes.filter(
+				(child) => child.type !== "Text",
+			);
+			const singleElement =
+				children.length === 1 &&
+				["Component", "RegularElement"].includes(children[0].type);
+			if (!singleElement) {
+				return false;
+			}
+		}
 		return blockElements.has(node.name);
 	}
 	return layout;

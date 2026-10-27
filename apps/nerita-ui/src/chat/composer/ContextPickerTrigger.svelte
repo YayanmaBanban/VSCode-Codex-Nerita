@@ -19,7 +19,9 @@
 			aria-haspopup="listbox"
 			disabled={disabled || !onOpen}
 			onmousedown={(event) => event.preventDefault()}
-			onclick={onOpen}><Plus size={16} aria-hidden="true" /></button
+			onclick={onOpen}
 		>
+			<Plus size={16} aria-hidden="true" />
+		</button>
 	{/snippet}
 </Tooltip>

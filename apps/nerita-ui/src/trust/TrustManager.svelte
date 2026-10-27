@@ -182,8 +182,9 @@
 					disabled={busy}
 					aria-label="ワークスペースの追加"
 					onclick={() => send({ type: "add" })}
-					><Plus size={16} aria-hidden="true" /></button
 				>
+					<Plus size={16} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 		<Tooltip content="再読み込み">
@@ -195,8 +196,9 @@
 					disabled={busy}
 					aria-label="再読み込み"
 					onclick={() => send({ type: "refresh" })}
-					><RotateCw size={15} aria-hidden="true" /></button
 				>
+					<RotateCw size={15} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 	</div>

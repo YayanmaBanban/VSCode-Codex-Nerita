@@ -111,8 +111,9 @@
 			aria-label="左のタブを表示"
 			disabled={atStart}
 			onclick={() => scroll(-1)}
-			><ChevronsLeft size={16} aria-hidden="true" /></button
 		>
+			<ChevronsLeft size={16} aria-hidden="true" />
+		</button>
 	{/if}
 	<div
 		class="tab-viewport min-h-0 min-w-0 flex-1 overflow-auto"
@@ -155,8 +156,9 @@
 			aria-label="右のタブを表示"
 			disabled={atEnd}
 			onclick={() => scroll(1)}
-			><ChevronsRight size={16} aria-hidden="true" /></button
 		>
+			<ChevronsRight size={16} aria-hidden="true" />
+		</button>
 	{/if}
 </nav>
 

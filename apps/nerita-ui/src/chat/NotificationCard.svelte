@@ -57,8 +57,10 @@
 				"flex h-5 w-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0 text-muted",
 				"hover:text-input-text",
 				"focus-visible:outline-2 focus-visible:outline-focus",
-			)}><X size={14} aria-hidden="true" /></button
+			)}
 		>
+			<X size={14} aria-hidden="true" />
+		</button>
 	</div>
 	<div
 		bind:this={progress}

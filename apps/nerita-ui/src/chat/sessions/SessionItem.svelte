@@ -114,8 +114,9 @@
 					disabled={disabled ||
 						capabilities.rename !== true ||
 						session.archived}
-					><Pencil size={14} aria-hidden="true" /></button
 				>
+					<Pencil size={14} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 		<Tooltip content={archiveLabel}>
@@ -160,8 +161,9 @@
 					class={sessionActionClass}
 					disabled={forkDisabled}
 					aria-label={`${title}をフォーク`}
-					><GitFork size={14} aria-hidden="true" /></button
 				>
+					<GitFork size={14} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 	</div>

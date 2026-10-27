@@ -179,11 +179,12 @@
 							aria-label="停止"
 							disabled={props.state.run === "cancelling"}
 							onclick={cancel}
-							><span
+						>
+							<span
 								class="size-[14px] rounded-[2px] bg-white"
 								aria-hidden="true"
-							></span></button
-						>
+							></span>
+						</button>
 					{/snippet}
 				</Tooltip>
 			{/if}
@@ -195,8 +196,9 @@
 						class={cn(iconButtonClass, "send-button bg-[#2563b8]")}
 						aria-label={sendLabel}
 						disabled={sendDisabled()}
-						><ArrowUp size={18} aria-hidden="true" /></button
 					>
+						<ArrowUp size={18} aria-hidden="true" />
+					</button>
 				{/snippet}
 			</Tooltip>
 		</div>

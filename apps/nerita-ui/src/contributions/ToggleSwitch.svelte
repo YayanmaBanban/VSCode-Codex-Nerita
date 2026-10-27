@@ -41,10 +41,11 @@
 				aria-label={control.label}
 				aria-checked={control.checked}
 				disabled={disabled || control.disabled === true}
-				><span
+			>
+				<span
 					class="block size-[11px] rounded-full bg-foreground group-aria-checked:translate-x-[11px]"
-				></span></button
-			></label
+				></span>
+			</button></label
 		>
 	{/snippet}
 </Tooltip>

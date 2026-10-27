@@ -30,6 +30,14 @@ test("ループ・await・snippet の境界を改行する", async () => {
 	assert.equal(await format(result), result);
 });
 
+test("アイコンだけのボタンは開始タグ・子要素・終了タグを別行にする", async () => {
+	const result = await format(
+		'<button {...props} type="button" class={iconButtonStyle} disabled={busy} aria-label="再読み込み" onclick={() => send({ type: "refresh" })}><RotateCw size={15} aria-hidden="true" /></button>',
+	);
+	assert.match(result, /\n>\n\t<RotateCw[^\n]+\/>\n<\/button>/);
+	assert.equal(await format(result), result);
+});
+
 test("文章中の分岐・隣接するインライン要素・属性・空白保持要素は変更しない", async () => {
 	const source =
 		'<p>before{#if ok}<Icon />{:else}<Other />{/if}after<span>A</span><span>B</span></p>\n<pre>{#if ok}<Icon />{/if}  x\n y</pre>\n<textarea>  hello\nworld</textarea>\n<div title="a{value}b"></div>';
@@ -42,6 +50,20 @@ test("文章中の分岐・隣接するインライン要素・属性・空白�
 	assert.match(result, /<pre>\{#if ok\}<Icon \/>\{\/if\} {2}x\n y<\/pre>/);
 	assert.match(result, /<textarea> {2}hello\nworld<\/textarea\s*>/);
 	assert.match(result, /title="a\{value\}b"/);
+	assert.equal(await format(result), result);
+});
+
+test("ボタン内の文言・式・隣接要素の間には改行を補わない", async () => {
+	const result = await format(
+		"<button><Icon />保存</button>\n<button><Icon />{label}</button>\n<button>before{#if ok}<Icon />{:else}<Other />{/if}after</button>\n<button><Icon /><span>{label}</span></button>",
+	);
+	assert.match(result, /<button><Icon \/>保存<\/button>/);
+	assert.match(result, /<button><Icon \/>\{label\}<\/button>/);
+	assert.match(result, /<Icon \/><span>\{label\}<\/span>/);
+	assert.match(
+		result,
+		/before\{#if ok\}<Icon \/>\{:else\}<Other \/>\{\/if\}after/,
+	);
 	assert.equal(await format(result), result);
 });
 

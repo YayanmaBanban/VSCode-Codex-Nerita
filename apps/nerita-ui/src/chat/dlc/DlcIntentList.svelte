@@ -36,8 +36,9 @@
 					)}
 					disabled={ui.creation.pending}
 					onclick={() => ui.creation.setCreating(true)}
-					><Plus size={16} aria-hidden="true" /></button
 				>
+					<Plus size={16} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 		<Tooltip content="再読み込み">
@@ -54,8 +55,10 @@
 						ui.send({
 							type: "dlc/read",
 							requestId: crypto.randomUUID(),
-						})}><RotateCw size={16} aria-hidden="true" /></button
+						})}
 				>
+					<RotateCw size={16} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 	</div>

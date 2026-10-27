@@ -128,8 +128,9 @@
 							class={buttonClass}
 							aria-label="前の一致"
 							disabled={search.result.count === 0}
-							><ChevronLeft size={14} /></button
 						>
+							<ChevronLeft size={14} />
+						</button>
 					{/snippet}
 				</Tooltip>
 				<Tooltip content="次の一致 (Enter)">
@@ -143,8 +144,9 @@
 							class={buttonClass}
 							aria-label="次の一致"
 							disabled={search.result.count === 0}
-							><ChevronRight size={14} /></button
 						>
+							<ChevronRight size={14} />
+						</button>
 					{/snippet}
 				</Tooltip>
 				<output
@@ -162,8 +164,10 @@
 							})}
 							type="button"
 							class={buttonClass}
-							aria-label="検索を閉じる"><X size={14} /></button
+							aria-label="検索を閉じる"
 						>
+							<X size={14} />
+						</button>
 					{/snippet}
 				</Tooltip>
 			</form>

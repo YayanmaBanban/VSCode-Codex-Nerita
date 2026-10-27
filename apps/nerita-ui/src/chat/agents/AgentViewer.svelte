@@ -88,8 +88,9 @@
 						onclick={viewer.back}
 						aria-label="親へ戻る"
 						class="flex shrink-0 rounded p-2 hover:bg-message-user focus-visible:outline-2 focus-visible:outline-focus"
-						><ArrowLeft size={18} /></button
 					>
+						<ArrowLeft size={18} />
+					</button>
 				{/snippet}
 			</Tooltip>
 			<AgentIcon iconKey={current.iconKey} />
@@ -108,8 +109,9 @@
 						disabled={viewer.loading}
 						aria-label="会話を更新"
 						class="flex shrink-0 rounded p-2 disabled:opacity-40"
-						><RefreshCw size={16} /></button
 					>
+						<RefreshCw size={16} />
+					</button>
 				{/snippet}
 			</Tooltip>
 		</header>

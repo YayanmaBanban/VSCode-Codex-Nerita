@@ -187,12 +187,13 @@
 							"hover:bg-blue-600 hover:brightness-100 focus-visible:bg-blue-600",
 							"focus-visible:outline-blue-500 active:bg-blue-700",
 						)}
-						><ArrowDown
+					>
+						<ArrowDown
 							size={18}
 							class="text-white"
 							aria-hidden="true"
-						/></button
-					>
+						/>
+					</button>
 				{/snippet}
 			</Tooltip>
 		</div>

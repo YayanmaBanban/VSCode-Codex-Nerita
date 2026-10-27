@@ -119,8 +119,9 @@
 					class={buttonClass}
 					aria-label="前の範囲を表示"
 					disabled={loading || previous.length === 0}
-					><ChevronLeft size={16} aria-hidden="true" /></button
 				>
+					<ChevronLeft size={16} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 		<Tooltip content="次の範囲を表示">
@@ -131,8 +132,9 @@
 					class={buttonClass}
 					aria-label="次の範囲を表示"
 					disabled={unavailableRange || range?.eof === true}
-					><ChevronRight size={16} aria-hidden="true" /></button
 				>
+					<ChevronRight size={16} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 		{#if range && rangeReady}

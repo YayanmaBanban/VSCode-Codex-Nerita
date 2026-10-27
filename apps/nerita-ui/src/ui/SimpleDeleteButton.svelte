@@ -29,7 +29,9 @@
 				"inline-flex size-8 shrink-0 items-center justify-center rounded-[5px] border-0 bg-transparent p-0 text-muted",
 				"enabled:hover:bg-red-500/20 enabled:hover:text-red-500",
 				"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-40",
-			)}><Trash size={15} aria-hidden="true" /></button
+			)}
 		>
+			<Trash size={15} aria-hidden="true" />
+		</button>
 	{/snippet}
 </Tooltip>

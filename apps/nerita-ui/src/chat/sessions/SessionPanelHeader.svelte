@@ -31,8 +31,9 @@
 					type="button"
 					class={sessionActionClass}
 					aria-label="セッション一覧を閉じる"
-					><X size={16} aria-hidden="true" /></button
 				>
+					<X size={16} aria-hidden="true" />
+				</button>
 			{/snippet}
 		</Tooltip>
 	</div>

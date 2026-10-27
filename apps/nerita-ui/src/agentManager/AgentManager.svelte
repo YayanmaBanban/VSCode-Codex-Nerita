@@ -470,8 +470,8 @@
 							aria-label="再読み込み"
 							disabled={editor.busy}
 						>
-							<RotateCw size={16} aria-hidden="true" /></button
-						>
+							<RotateCw size={16} aria-hidden="true" />
+						</button>
 					{/snippet}
 				</Tooltip>
 				{#if tab === "agents"}

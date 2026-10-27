@@ -113,11 +113,9 @@
 						class={iconClass}
 						aria-label="新しいチャット"
 						disabled={!available}
-						><MessageSquareText
-							size={16}
-							aria-hidden="true"
-						/></button
 					>
+						<MessageSquareText size={16} aria-hidden="true" />
+					</button>
 				{/snippet}
 			</Tooltip>
 			<Tooltip content="セッション一覧">
@@ -131,8 +129,9 @@
 						disabled={!state.sessionCapabilities.list}
 						aria-expanded={sessionsOpen}
 						aria-controls="session-panel"
-						><List size={16} aria-hidden="true" /></button
 					>
+						<List size={16} aria-hidden="true" />
+					</button>
 				{/snippet}
 			</Tooltip>
 		{/if}

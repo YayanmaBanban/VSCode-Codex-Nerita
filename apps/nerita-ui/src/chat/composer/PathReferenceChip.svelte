@@ -82,8 +82,10 @@
 				onmousedown={keepSelection}
 				onkeydown={stopKey}
 				onkeyup={stopKey}
-				onclick={open}><ReferenceChipContent {path} /></button
+				onclick={open}
 			>
+				<ReferenceChipContent {path} />
+			</button>
 			<button
 				type="button"
 				disabled={!editable}
@@ -96,8 +98,10 @@
 				onmousedown={keepSelection}
 				onkeydown={stopKey}
 				onkeyup={stopKey}
-				onclick={remove}><X size={12} aria-hidden="true" /></button
+				onclick={remove}
 			>
+				<X size={12} aria-hidden="true" />
+			</button>
 		</span>
 	{/snippet}
 </Tooltip>

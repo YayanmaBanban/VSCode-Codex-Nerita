@@ -47,8 +47,9 @@
 					aria-label={`${file.name} を取り外す`}
 					class="inline-flex min-w-0 items-center gap-[5px] border-0 bg-transparent px-[5px] py-[4px] text-[12px]"
 					onclick={() => onRemove(file.id)}
-					><X size={12} aria-hidden="true" /></button
 				>
+					<X size={12} aria-hidden="true" />
+				</button>
 			</span>
 		{/each}
 	</div>
