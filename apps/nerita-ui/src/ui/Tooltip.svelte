@@ -183,9 +183,9 @@
 							{#if visible}
 								<div {...props} transition:tooltipTransition>
 									{#if typeof limited === "string"}
-										<span class="whitespace-pre-wrap"
-											>{limited}</span
-										>
+										<span class="whitespace-pre-wrap">
+											{limited}
+										</span>
 									{:else}
 										{#if limited}
 											{@render limited()}

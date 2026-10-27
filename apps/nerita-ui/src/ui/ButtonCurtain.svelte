@@ -15,5 +15,7 @@
 		"group-hover:[clip-path:polygon(0_0,200%_0,0_200%)]",
 		"group-focus-visible:[clip-path:polygon(0_0,200%_0,0_200%)]",
 		className,
-	)}>{name}</span
+	)}
 >
+	{name}
+</span>

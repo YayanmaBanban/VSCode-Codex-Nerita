@@ -60,8 +60,10 @@
 		<button
 			type="button"
 			disabled={!valid || tasks.length >= 49}
-			onclick={add}>次のタスクを追加</button
+			onclick={add}
 		>
+			次のタスクを追加
+		</button>
 		<button type="submit" disabled={!valid}>プランを登録</button>
 	</div>
 </form>

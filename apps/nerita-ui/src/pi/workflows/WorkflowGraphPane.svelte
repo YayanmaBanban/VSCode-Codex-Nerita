@@ -39,7 +39,8 @@
 				});
 				setSelected(next.id);
 			}}
-			>＋ ステップを追加
+		>
+			＋ ステップを追加
 		</button>
 		<label class="workflow-inline"
 			>選択
@@ -51,8 +52,8 @@
 				{/each}</select
 			></label
 		>
-		<span class="text-xs opacity-70"
-			>右の端子から次のステップの左端子へ接続
+		<span class="text-xs opacity-70">
+			右の端子から次のステップの左端子へ接続
 		</span>
 	</div>
 	<div class="min-h-72 flex-1">

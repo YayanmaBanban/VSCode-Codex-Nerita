@@ -109,9 +109,9 @@
 			)}
 		>
 			<Dialog.Title class="sr-only">{label}</Dialog.Title>
-			<Dialog.Description class="sr-only"
-				>検索して編集するエージェントを選択してください。</Dialog.Description
-			>
+			<Dialog.Description class="sr-only">
+				検索して編集するエージェントを選択してください。
+			</Dialog.Description>
 			<SidebarContents
 				{header}
 				{expanded}

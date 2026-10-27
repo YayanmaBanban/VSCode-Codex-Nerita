@@ -56,7 +56,7 @@
 			</details>
 		</div>
 	{/each}
-	<button type="button" class={buttonStyle} disabled={busy} onclick={probe}
-		>{busy ? "処理中…" : "起動を確認"}</button
-	>
+	<button type="button" class={buttonStyle} disabled={busy} onclick={probe}>
+		{busy ? "処理中…" : "起動を確認"}
+	</button>
 </section>

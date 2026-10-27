@@ -42,7 +42,9 @@
 					aria-hidden="true"
 					class="hidden group-hover:block group-focus-visible:block"
 				/>
-			{:else}<PanelLeftOpen size={16} aria-hidden="true" />{/if}
+			{:else}
+				<PanelLeftOpen size={16} aria-hidden="true" />
+			{/if}
 		</button>
 	{/snippet}
 </Tooltip>

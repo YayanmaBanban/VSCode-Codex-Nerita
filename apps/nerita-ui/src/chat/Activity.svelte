@@ -89,14 +89,15 @@
 			<span
 				aria-hidden="true"
 				class="pointer-events-none absolute inset-0 rounded-[inherit]"
-				><BorderBeam
+			>
+				<BorderBeam
 					size={80}
 					duration={6}
 					colorFrom="var(--nerita-focus-border)"
 					colorTo="var(--nerita-editor-warning-foreground)"
 					beamBorderRadius={8}
-				/></span
-			>
+				/>
+			</span>
 		{/if}
 		<PermissionContent {permission} />
 		<div class="permission-actions flex flex-wrap gap-[8px]">

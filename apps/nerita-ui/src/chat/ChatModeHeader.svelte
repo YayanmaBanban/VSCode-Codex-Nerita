@@ -65,8 +65,9 @@
 								})}
 								type="button"
 								aria-pressed={mode === target}
-								>{target === "chat" ? "Chat" : "DLC"}</button
 							>
+								{target === "chat" ? "Chat" : "DLC"}
+							</button>
 						{/snippet}
 					</Tooltip>
 				{/each}

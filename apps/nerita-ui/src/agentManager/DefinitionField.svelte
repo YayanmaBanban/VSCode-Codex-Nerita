@@ -62,8 +62,8 @@
 							touched = true;
 						}}
 						value={definition[field]}
-						oninput={(event) => update(event.currentTarget.value)}
-					></textarea>
+						oninput={(event) =>
+							update(event.currentTarget.value)}></textarea>
 				{:else}
 					<input
 						{@attach focusNewName}

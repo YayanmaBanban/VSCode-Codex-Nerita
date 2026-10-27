@@ -31,8 +31,10 @@
 <fieldset class="m-0 min-w-0 border-0 p-0">
 	<legend class="mb-2 text-[13px] font-medium [overflow-wrap:anywhere]">
 		{field.title}{#if !field.required}<span
-				class="ml-2 font-normal text-muted">省略可</span
-			>{/if}
+				class="ml-2 font-normal text-muted"
+			>
+				省略可
+			</span>{/if}
 	</legend>
 	{#if field.description !== undefined}
 		<p
@@ -73,8 +75,9 @@
 						>{option.label}
 						{#if option.description !== undefined}<span
 								class="mt-1 block text-[12px] whitespace-pre-wrap text-muted"
-								>{option.description}</span
-							>{/if}
+							>
+								{option.description}
+							</span>{/if}
 					</span>
 				</label>
 			{/each}

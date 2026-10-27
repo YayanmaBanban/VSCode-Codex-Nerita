@@ -45,14 +45,12 @@
 						line.startsWith("+") && "file-diff-added bg-diff-added",
 						line.startsWith("-") &&
 							"file-diff-removed bg-diff-removed",
-					)}
-					><span class="text-muted select-none"
-						>{String(number ?? "").padStart(
+					)}><span class="text-muted select-none">{String(
+							number ?? "",
+						).padStart(
 							presentation.digits,
-						)}{numberGap}</span
-					>{line[0]}{line[0] === "\\" ? "" : " "}{line.slice(
-						1,
-					)}{lineBreak}</span
-				>{/each}</pre>
+						)}{numberGap}</span>{line[0]}{line[0] === "\\"
+						? ""
+						: " "}{line.slice(1)}{lineBreak}</span>{/each}</pre>
 	</div>
 </div>

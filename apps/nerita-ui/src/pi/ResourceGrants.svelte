@@ -29,9 +29,9 @@
 		<article
 			class="grid gap-2 rounded border border-input-border p-3 text-sm"
 		>
-			<strong
-				>{`${grant.resource.kind} · ${grant.resource.tool} · ${grant.access}`}</strong
-			>
+			<strong>
+				{`${grant.resource.kind} · ${grant.resource.tool} · ${grant.access}`}
+			</strong>
 			<span>{scopeLabels[grant.scope]}</span>
 			<span class="break-all">{grant.resource.target}</span>
 			<span class="break-all text-muted">{grant.workspace}</span>
@@ -41,7 +41,8 @@
 				disabled={busy}
 				onclick={() =>
 					request({ type: "revoke-resource", id: grant.id })}
-				>リソース権限を取り消す
+			>
+				リソース権限を取り消す
 			</button>
 		</article>
 	{/each}
@@ -56,7 +57,8 @@
 				class={buttonStyle}
 				disabled={busy}
 				onclick={() => request({ type: "revoke-cache", id: cache.id })}
-				>キャッシュ切替を取り消す
+			>
+				キャッシュ切替を取り消す
 			</button>
 		</article>
 	{/each}

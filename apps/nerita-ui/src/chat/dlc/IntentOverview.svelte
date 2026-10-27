@@ -24,13 +24,16 @@
 			type="button"
 			disabled={selected.workflowStatus !== "in-flight"}
 			onclick={() => action({ type: "advance" })}
-			>工程の実行条件を確認</button
 		>
+			工程の実行条件を確認
+		</button>
 		<button
 			type="button"
 			disabled={selected.canCancel ||
 				selected.workflowStatus === "archived"}
-			onclick={() => action({ type: "archive" })}>アーカイブ</button
+			onclick={() => action({ type: "archive" })}
 		>
+			アーカイブ
+		</button>
 	</div>
 </div>

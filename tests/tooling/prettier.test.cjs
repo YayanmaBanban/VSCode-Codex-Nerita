@@ -2,6 +2,12 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const prettier = require("prettier");
+const { createRequire } = require("node:module");
+const { resolve } = require("node:path");
+
+const { compile } = createRequire(
+	resolve(__dirname, "../../apps/nerita-ui/package.json"),
+)("svelte/compiler");
 
 async function format(source) {
 	const filepath = "apps/nerita-ui/src/Example.svelte";
@@ -36,6 +42,41 @@ test("アイコンだけのボタンは開始タグ・子要素・終了タグ�
 	);
 	assert.match(result, /\n>\n\t<RotateCw[^\n]+\/>\n<\/button>/);
 	assert.equal(await format(result), result);
+});
+
+test("span などの要素を列挙せず、長い開始タグと本文・終了タグを別行にする", async () => {
+	for (const tag of ["span", "a", "mark", "custom-label"]) {
+		const source = `<${tag} class="min-w-0 break-words" aria-label="選択した項目を表示するための十分に長い属性値">{selectedAgent.name}</${tag}>`;
+		const result = await format(source);
+		assert.ok(result.includes(`>\n\t{selectedAgent.name}\n</${tag}>`), tag);
+		assert.equal(await format(result), result, tag);
+	}
+});
+
+test("文章・隣接要素・式の間隔と option の値を整形前後で保持する", async () => {
+	const cases = [
+		"<p>before<span>middle</span>after</p>",
+		"<div><span>A</span><span>B</span></div>",
+		"<button><Icon /><span>{label}</span></button>",
+		"<span>{stage.id} {stage.name}</span>",
+		"<span>{count} 件</span>",
+		"<select>{#each values as value (value)}<option>{value}</option>{/each}</select>",
+		'<span>{#if kind === "first"}<First />{:else if kind === "second"}<Second />{:else}<Other />{/if}</span>',
+	];
+	for (const source of cases) {
+		const result = await format(source);
+		const options = {
+			filename: "Example.svelte",
+			dev: false,
+			css: "external",
+		};
+		assert.equal(
+			compile(result, options).js.code,
+			compile(source, options).js.code,
+			source,
+		);
+		assert.equal(await format(result), result, source);
+	}
 });
 
 test("文章中の分岐・隣接するインライン要素・属性・空白保持要素は変更しない", async () => {

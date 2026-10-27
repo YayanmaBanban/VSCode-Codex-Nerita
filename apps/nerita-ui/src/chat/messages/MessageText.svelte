@@ -121,26 +121,20 @@
 			<ReferenceText {value} targets={content.targets} {send} />
 		{/snippet}
 		{#snippet codespan({ text: value = "" }: CodespanSnippetProps)}
-			<code
-				><ReferenceText
-					{value}
-					targets={content.targets}
-					{send}
-				/></code
-			>
+			<code>
+				<ReferenceText {value} targets={content.targets} {send} />
+			</code>
 		{/snippet}
 		{#snippet code({ text: value, lang }: CodeSnippetProps)}
 			<pre
 				class="my-[12px] overflow-x-auto rounded-[6px] bg-message-code p-[12px] text-[12px] whitespace-pre"><code
 					class={isNonEmptyString(lang)
 						? `language-${lang}`
-						: undefined}
-					><ReferenceText
+						: undefined}><ReferenceText
 						{value}
 						targets={content.targets}
 						{send}
-					/></code
-				></pre>
+					/></code></pre>
 		{/snippet}
 		{#snippet table({ children }: TableSnippetProps)}
 			<div class="my-[12px] max-w-full overflow-x-auto">
@@ -163,9 +157,9 @@
 			</li>
 		{/snippet}
 		{#snippet image({ text: alt }: ImageSnippetProps)}
-			<span
-				>{restoreReferences(isNonEmptyString(alt) ? alt : "画像")}</span
-			>
+			<span>
+				{restoreReferences(isNonEmptyString(alt) ? alt : "画像")}
+			</span>
 		{/snippet}
 		{#snippet link({
 			href = "",

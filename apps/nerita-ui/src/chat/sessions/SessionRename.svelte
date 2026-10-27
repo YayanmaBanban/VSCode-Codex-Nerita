@@ -64,12 +64,16 @@
 		type="submit"
 		onkeydown={handleKey}
 		class="text-[12px]"
-		disabled={disabled || name.trim() === ""}>保存</button
+		disabled={disabled || name.trim() === ""}
 	>
+		保存
+	</button>
 	<button
 		type="button"
 		class="text-[12px]"
 		onclick={close}
-		onkeydown={handleKey}>キャンセル</button
+		onkeydown={handleKey}
 	>
+		キャンセル
+	</button>
 </form>

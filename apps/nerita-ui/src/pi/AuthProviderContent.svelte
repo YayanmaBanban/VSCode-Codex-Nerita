@@ -28,8 +28,10 @@
 						send({
 							type: "start",
 							id: method.id,
-						})}>{method.name}</button
+						})}
 				>
+					{method.name}
+				</button>
 			{/each}
 		{/if}
 	</div>

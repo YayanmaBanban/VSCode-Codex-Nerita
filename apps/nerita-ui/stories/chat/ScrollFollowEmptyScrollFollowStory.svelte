@@ -9,7 +9,7 @@
 </script>
 
 <div class="fixed top-0 right-0 z-50">
-	<button onclick={() => control.accept()}> 送信を受け付ける </button>
+	<button onclick={() => control.accept()}>送信を受け付ける</button>
 	<button onclick={() => control.tool()}>カードを受信</button>
 	<button
 		onclick={() => {

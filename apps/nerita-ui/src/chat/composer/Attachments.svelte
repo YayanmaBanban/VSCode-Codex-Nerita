@@ -28,8 +28,9 @@
 			<span
 				class="attachment inline-flex max-w-full rounded-[5px] border border-solid border-panel-border [&_svg]:shrink-0"
 			>
-				<Tooltip content={file.uri}
-					>{#snippet children({ props })}<button
+				<Tooltip content={file.uri}>
+					{#snippet children({ props })}
+						<button
 							{...props}
 							type="button"
 							{disabled}
@@ -39,8 +40,9 @@
 							><Icon size={14} aria-hidden="true" /><span
 								class="truncate">{file.name}</span
 							></button
-						>{/snippet}</Tooltip
-				>
+						>
+					{/snippet}
+				</Tooltip>
 				<button
 					type="button"
 					{disabled}

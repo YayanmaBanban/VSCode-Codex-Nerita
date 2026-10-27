@@ -117,8 +117,9 @@
 						easing: cubicOut,
 					}}
 				>
-					<span class="min-w-0 break-words">{selectedAgent.name}</span
-					>
+					<span class="min-w-0 break-words">
+						{selectedAgent.name}
+					</span>
 					<ArrowRight size={16} class="shrink-0" aria-hidden="true" />
 				</div>
 			{/if}

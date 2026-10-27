@@ -110,8 +110,10 @@
 			{/if}
 			<span class="min-w-0 flex-1 truncate font-semibold"
 				>{targetName}{#if target && !target.trusted}<span
-						class="text-tool-error">（未信頼）</span
-					>{/if}</span
+						class="text-tool-error"
+					>
+						（未信頼）
+					</span>{/if}</span
 			>
 			<ChevronDown
 				size={14}
@@ -149,8 +151,10 @@
 							>{main
 								? displayName(main)
 								: "現在のワークスペース"}{#if main && !main.trusted}<span
-									class="text-tool-error">（未信頼）</span
-								>{/if}</span
+									class="text-tool-error"
+								>
+									（未信頼）
+								</span>{/if}</span
 						><span
 							class="block text-[12px] [overflow-wrap:anywhere] text-muted"
 							>{main?.branch ??
@@ -158,11 +162,13 @@
 								""}</span
 						></span
 					>
-					{#if target?.main === true}<Check
+					{#if target?.main === true}
+						<Check
 							size={14}
 							class="shrink-0 text-menu-check"
 							aria-hidden="true"
-						/>{/if}
+						/>
+					{/if}
 				</button>
 				<div
 					class="mt-2 border-0 border-t border-solid border-panel-border pt-3"
@@ -188,8 +194,9 @@
 									class="min-w-0 flex-1 truncate font-semibold"
 									>{displayName(item)}{#if !item.trusted}<span
 											class="text-tool-error"
-											>（未信頼）</span
-										>{/if}</span
+										>
+											（未信頼）
+										</span>{/if}</span
 								>
 								{#if target?.id === item.id}<Check
 										size={14}
@@ -238,11 +245,11 @@
 			class="m-0 flex min-w-0 flex-1 items-start gap-2 text-[12px] text-muted"
 		>
 			<Folder size={12} class="mt-1 shrink-0" aria-hidden="true" />
-			<span class="min-w-0 [overflow-wrap:anywhere]"
-				>{target?.directory ??
+			<span class="min-w-0 [overflow-wrap:anywhere]">
+				{target?.directory ??
 					ui.view.environment?.workspace ??
-					"ワークスペースの確認中"}</span
-			>
+					"ワークスペースの確認中"}
+			</span>
 		</p>
 		{#if target && !target.trusted}
 			<Tooltip content="ワークスペースを信頼する">

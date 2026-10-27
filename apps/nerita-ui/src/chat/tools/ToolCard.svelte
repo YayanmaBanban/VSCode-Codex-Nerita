@@ -212,8 +212,10 @@
 				<span
 					class="tool-result absolute right-[30px] inline-flex size-[26px] items-center justify-center text-tool-error"
 					role="img"
-					aria-label="失敗"><X size={16} aria-hidden="true" /></span
+					aria-label="失敗"
 				>
+					<X size={16} aria-hidden="true" />
+				</span>
 			{/if}
 			{#if executing && active}
 				<Tooltip content={stopTitle()}>

@@ -28,9 +28,9 @@
 </script>
 
 <main style:padding="16px" data-story-chat {@attach attachBridge}>
-	<button onclick={() => respondToolOutput(bridge, true)}
-		>出力取得を失敗</button
-	>
+	<button onclick={() => respondToolOutput(bridge, true)}>
+		出力取得を失敗
+	</button>
 	<button onclick={() => setCompleted(true)}>完了通知を受信</button>
 	<button onclick={() => respondToolOutput(bridge)}>出力応答を受信</button>
 	<ToolOutputBridge value={bridge}>

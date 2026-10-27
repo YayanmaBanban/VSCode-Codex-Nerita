@@ -131,8 +131,10 @@
 				onclick={() => {
 					repair = true;
 					onDirty?.();
-				}}>初期値から設定を作り直す</button
+				}}
 			>
+				初期値から設定を作り直す
+			</button>
 		</div>
 	{/if}
 	<fieldset disabled={locked} class="m-0 grid min-w-0 gap-5 border-0 p-0">

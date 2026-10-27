@@ -47,13 +47,13 @@
 				"disabled:opacity-50",
 			)}
 		>
-			<span aria-hidden="true" class="inline-flex [&_svg]:size-[16px]"
-				><Zap
+			<span aria-hidden="true" class="inline-flex [&_svg]:size-[16px]">
+				<Zap
 					size={16}
 					color={control.checked ? "#FACC15" : "currentColor"}
 					fill={control.checked ? "#FACC15" : "none"}
-				/></span
-			>
+				/>
+			</span>
 		</button>
 	{/snippet}
 </Tooltip>

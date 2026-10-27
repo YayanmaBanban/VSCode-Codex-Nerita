@@ -101,7 +101,7 @@
 		</Tooltip>
 	{/if}
 	<div class="mb-[16px] flex flex-wrap items-baseline gap-[8px]">
-		<button type="submit" disabled={!hasValue}>送信 </button>
+		<button type="submit" disabled={!hasValue}>送信</button>
 		<button
 			type="button"
 			onclick={() => {
@@ -111,7 +111,8 @@
 				send({ type: "cancel" });
 			}}
 			class="border-alert-border bg-alert"
-			>キャンセル
+		>
+			キャンセル
 		</button>
 	</div>
 </form>

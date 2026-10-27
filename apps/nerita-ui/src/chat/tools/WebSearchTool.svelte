@@ -16,6 +16,8 @@
 		class="[overflow-wrap:anywhere] text-link underline underline-offset-2"
 		{href}
 		target="_blank"
-		rel="noreferrer noopener">{label}</a
+		rel="noreferrer noopener"
 	>
+		{label}
+	</a>
 {/if}

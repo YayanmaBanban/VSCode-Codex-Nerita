@@ -49,14 +49,14 @@
 	/>
 {/if}
 {#if !progress && active}
-	<span class="tool-status text-[12px] whitespace-nowrap text-muted"
-		>{tool.status === "pending" ? "待機中" : "実行中"}</span
-	>
+	<span class="tool-status text-[12px] whitespace-nowrap text-muted">
+		{tool.status === "pending" ? "待機中" : "実行中"}
+	</span>
 {/if}
 {#if inactiveLabel !== ""}
-	<span class="tool-status text-[12px] whitespace-nowrap text-muted"
-		>{inactiveLabel}</span
-	>
+	<span class="tool-status text-[12px] whitespace-nowrap text-muted">
+		{inactiveLabel}
+	</span>
 {/if}
 {#if status === "completed"}
 	<Check size={16} role="img" aria-label="完了" />

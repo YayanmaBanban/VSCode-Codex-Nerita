@@ -147,9 +147,9 @@
 			class="flex flex-wrap gap-2 text-xs text-muted"
 		>
 			{#each badges as badge, index (index)}
-				<span class="rounded border border-input-border px-2 py-1"
-					>{badge}</span
-				>
+				<span class="rounded border border-input-border px-2 py-1">
+					{badge}
+				</span>
 			{/each}
 		</div>
 		{#if agent?.backend === "pi" && isNonEmptyString(definitionSummary)}

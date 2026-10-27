@@ -68,8 +68,9 @@
 		><span class="mt-1 flex flex-wrap gap-2 text-[12px]"
 			>{#each chips as chip, index (index)}<span
 					class="agent-chip max-w-full rounded-[5px] bg-message-code px-2 py-[6px] leading-none [overflow-wrap:anywhere] text-foreground"
-					>{chip}</span
-				>{/each}</span
+				>
+					{chip}
+				</span>{/each}</span
 		></span
 	>
 </button>

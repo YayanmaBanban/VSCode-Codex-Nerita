@@ -69,9 +69,9 @@
 	{@attach attachSources}
 	class="flex flex-col gap-3 p-5"
 >
-	<button type="button" onclick={() => viewer.open(child)}
-		>子の会話を開く</button
-	>
+	<button type="button" onclick={() => viewer.open(child)}>
+		子の会話を開く
+	</button>
 	<button type="button" onclick={switchSource}>接続を切り替え</button>
 	<p>Intent: {dlc.view.selected?.title ?? "未選択"}</p>
 	<p>閲覧: {viewer.agent?.threadId ?? "親"}</p>

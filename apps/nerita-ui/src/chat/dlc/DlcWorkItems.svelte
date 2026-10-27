@@ -47,13 +47,17 @@
 		<button
 			type="button"
 			disabled={!selected.canRun || active}
-			onclick={() => action({ type: "run" })}>手動タスクを実行</button
+			onclick={() => action({ type: "run" })}
 		>
+			手動タスクを実行
+		</button>
 		<button
 			type="button"
 			disabled={!selected.canCancel}
-			onclick={() => action({ type: "cancel" })}>実行を停止</button
+			onclick={() => action({ type: "cancel" })}
 		>
+			実行を停止
+		</button>
 	</div>
 	<ul class="dlc-work-items">
 		{#each selected.workItems as item (item.id)}
@@ -65,8 +69,9 @@
 						disabled={selected.canCancel}
 						onclick={() =>
 							action({ type: "retry", workItemId: item.id })}
-						>変更を確認して再試行を準備</button
-					>{/if}
+					>
+						変更を確認して再試行を準備
+					</button>{/if}
 				{#each item.attempts as attempt, index (attempt.id)}<button
 						type="button"
 						onclick={() =>

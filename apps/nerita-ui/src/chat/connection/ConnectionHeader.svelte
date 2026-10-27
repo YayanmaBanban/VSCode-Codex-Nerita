@@ -142,14 +142,13 @@
 					type="button"
 					class={iconClass}
 					aria-label={viewLabel}
-					>{#if editor}<Minimize2
-							size={16}
-							aria-hidden="true"
-						/>{:else}<Maximize2
-							size={16}
-							aria-hidden="true"
-						/>{/if}</button
 				>
+					{#if editor}
+						<Minimize2 size={16} aria-hidden="true" />
+					{:else}
+						<Maximize2 size={16} aria-hidden="true" />
+					{/if}
+				</button>
 			{/snippet}
 		</Tooltip>
 		{#if dlc !== true}

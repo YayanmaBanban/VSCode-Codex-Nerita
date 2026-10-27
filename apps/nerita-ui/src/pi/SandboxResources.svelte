@@ -34,9 +34,9 @@
 	{/if}
 	{#each snapshot.resources as resource (resource.id)}
 		<details class="rounded border border-input-border p-3 text-sm">
-			<summary
-				>{`${resource.kind} · ${resource.tool ?? "共通"} · ${resource.access}`}</summary
-			>
+			<summary>
+				{`${resource.kind} · ${resource.tool ?? "共通"} · ${resource.access}`}
+			</summary>
 			<p class="break-all">{resource.target}</p>
 			<p class="text-muted">{`${resource.scope} · ${resource.source}`}</p>
 		</details>

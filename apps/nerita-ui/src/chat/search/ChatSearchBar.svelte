@@ -111,8 +111,9 @@
 									class={`${buttonClass} ${key === "wholeWord" ? "underline underline-offset-2" : ""}`}
 									aria-label={label}
 									aria-pressed={search.options[key]}
-									>{icon}</button
 								>
+									{icon}
+								</button>
 							{/snippet}
 						</Tooltip>
 					{/each}
@@ -153,8 +154,9 @@
 					aria-label="検索結果"
 					aria-live="polite"
 					class="shrink-0 text-[12px] whitespace-nowrap tabular-nums"
-					>{counter}</output
 				>
+					{counter}
+				</output>
 				<Tooltip content="閉じる (Escape)">
 					{#snippet children({ props })}
 						<button

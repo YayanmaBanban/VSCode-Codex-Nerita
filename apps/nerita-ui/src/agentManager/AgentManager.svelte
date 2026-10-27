@@ -556,8 +556,10 @@
 			type="button"
 			class={primaryDialogAction}
 			disabled={navigationSaveDisabled}
-			onclick={saveAndNavigate}>保存して移動</button
+			onclick={saveAndNavigate}
 		>
+			保存して移動
+		</button>
 		<button
 			type="button"
 			class={secondaryDialogAction}
@@ -616,8 +618,10 @@
 			type="button"
 			class={primaryDialogAction}
 			disabled={draftBusy}
-			onclick={() => reloadWithDraft(true)}>下書きを保存</button
+			onclick={() => reloadWithDraft(true)}
 		>
+			下書きを保存
+		</button>
 		<button
 			type="button"
 			class={secondaryDialogAction}
@@ -664,9 +668,9 @@
 					<fieldset
 						class="grid min-w-0 gap-2 rounded border border-input-border p-3 text-xs"
 					>
-						<legend class="break-all"
-							>{conflictLabel(conflict.path)}</legend
-						>
+						<legend class="break-all">
+							{conflictLabel(conflict.path)}
+						</legend>
 						{#each ["current", "draft"] as source (source)}
 							<label
 								class={cn(
@@ -693,19 +697,21 @@
 								</span>
 								<span
 									class="grid min-w-0 grid-rows-[auto_minmax(0,1fr)]"
-									><span
+								>
+									<span
 										class="border-b border-input-border px-3 py-2 font-medium"
-										>{source === "draft"
-											? "下書き"
-											: "最新の設定"}</span
 									>
+										{source === "draft"
+											? "下書き"
+											: "最新の設定"}
+									</span>
 									<pre
 										class="m-0 max-h-40 min-w-0 overflow-auto px-3 py-2 break-words whitespace-pre-wrap">{conflictValue(
 											source === "draft"
 												? conflict.draft
 												: conflict.current,
-										)}</pre></span
-								>
+										)}</pre>
+								</span>
 							</label>
 						{/each}
 					</fieldset>
@@ -725,8 +731,10 @@
 				if (restoreCandidate) {
 					applyRestored(restoreCandidate);
 				}
-			}}>選択した値を復元</button
+			}}
 		>
+			選択した値を復元
+		</button>
 		<button
 			type="button"
 			class={secondaryDialogAction}
@@ -771,8 +779,10 @@
 			type="button"
 			class={primaryDialogAction}
 			disabled={draftBusy}
-			onclick={discardStoredDraft}>下書きを破棄</button
+			onclick={discardStoredDraft}
 		>
+			下書きを破棄
+		</button>
 		<button
 			type="button"
 			class={secondaryDialogAction}

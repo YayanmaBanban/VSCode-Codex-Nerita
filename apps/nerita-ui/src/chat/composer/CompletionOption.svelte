@@ -91,15 +91,19 @@
 					item.category !== undefined && item.category !== ""
 						? "shrink-0"
 						: "truncate",
-				)}>{item.label}</span
+				)}
 			>
+				{item.label}
+			</span>
 			{#if item.description}
 				<span
 					class={cn(
 						"text-[12px] text-muted",
 						context ? "min-w-0 truncate" : "line-clamp-2 block",
-					)}>{item.description}</span
+					)}
 				>
+					{item.description}
+				</span>
 			{/if}
 		</div>
 	{/snippet}

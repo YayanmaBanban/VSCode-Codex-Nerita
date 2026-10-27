@@ -132,5 +132,7 @@
 	style:-webkit-background-clip="text"
 	style:background-clip="text"
 	style:-webkit-text-fill-color="transparent"
-	{@attach attachShine}>{text}</span
+	{@attach attachShine}
 >
+	{text}
+</span>

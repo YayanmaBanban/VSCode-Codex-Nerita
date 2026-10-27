@@ -27,12 +27,15 @@
 				class={cn(
 					"rounded border border-panel-border px-2 py-1 text-[12px]",
 					status === "未保存" ? "text-warning" : "text-muted",
-				)}>{status === "未保存" ? "● 未保存" : "保存済み"}</span
+				)}
 			>
+				{status === "未保存" ? "● 未保存" : "保存済み"}
+			</span>
 			<span
 				class="rounded border border-panel-border px-2 py-1 text-[12px] text-muted"
-				>{status === "適用済み" ? "● 適用済み" : "● 未適用"}</span
 			>
+				{status === "適用済み" ? "● 適用済み" : "● 未適用"}
+			</span>
 		</div>
 	</div>
 	<div class="flex shrink-0 flex-wrap gap-2">

@@ -97,8 +97,9 @@
 			<button
 				type="submit"
 				class="primary border-transparent bg-primary text-primary-text"
-				>回答を送信</button
 			>
+				回答を送信
+			</button>
 			{#if question.allowDecline === true}
 				<button
 					type="button"

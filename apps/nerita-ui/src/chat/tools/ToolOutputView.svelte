@@ -48,9 +48,9 @@
 						<div
 							class="mb-[8px] flex shrink-0 items-center justify-between gap-[8px]"
 						>
-							<Dialog.Title class="m-0 text-[14px] font-medium"
-								>詳細出力</Dialog.Title
-							>
+							<Dialog.Title class="m-0 text-[14px] font-medium">
+								詳細出力
+							</Dialog.Title>
 							<Dialog.Close
 								aria-label="詳細出力を閉じる"
 								class={cn(
@@ -61,9 +61,9 @@
 								<X size={16} aria-hidden="true" />
 							</Dialog.Close>
 						</div>
-						<Dialog.Description class="sr-only"
-							>コマンドの出力を範囲ごとに確認できます。</Dialog.Description
-						>
+						<Dialog.Description class="sr-only">
+							コマンドの出力を範囲ごとに確認できます。
+						</Dialog.Description>
 						{#if expanded}
 							{#key output.outputRef}
 								<OutputRange

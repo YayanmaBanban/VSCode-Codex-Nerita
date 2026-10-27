@@ -83,8 +83,10 @@
 							connection,
 							sessionPending: true,
 						};
-					}}>{connection}</button
+					}}
 				>
+					{connection}
+				</button>
 			{/each}
 		</div>
 	</div>

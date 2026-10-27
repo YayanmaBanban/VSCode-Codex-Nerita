@@ -25,9 +25,9 @@
 		<p class="mt-1 mb-0 break-words text-muted">{description}</p>
 	</div>
 	<div class="flex shrink-0 items-center gap-2">
-		<span class={action === "deny" ? "text-tool-error" : "text-muted"}
-			>拒否</span
-		>
+		<span class={action === "deny" ? "text-tool-error" : "text-muted"}>
+			拒否
+		</span>
 		<button
 			type="button"
 			role="switch"
@@ -45,8 +45,8 @@
 				aria-hidden="true"
 			></span>
 		</button>
-		<span class={action === "ask" ? "text-foreground" : "text-muted"}
-			>承認</span
-		>
+		<span class={action === "ask" ? "text-foreground" : "text-muted"}>
+			承認
+		</span>
 	</div>
 </div>

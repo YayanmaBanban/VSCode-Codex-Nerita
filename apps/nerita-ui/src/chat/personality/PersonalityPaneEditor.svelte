@@ -134,8 +134,8 @@
 		<p role="alert">指示は100,000文字以内にしてください。</p>
 	{/if}
 	<div class="flex justify-end">
-		<button type="button" disabled={saveDisabled} onclick={save}
-			>{changedName ? "保存" : "更新"}</button
-		>
+		<button type="button" disabled={saveDisabled} onclick={save}>
+			{changedName ? "保存" : "更新"}
+		</button>
 	</div>
 </div>

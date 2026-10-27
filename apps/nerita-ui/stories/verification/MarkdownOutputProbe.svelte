@@ -38,6 +38,8 @@
 		type="button"
 		onclick={() => {
 			streaming = false;
-		}}>確定</button
+		}}
 	>
+		確定
+	</button>
 {/if}

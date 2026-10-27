@@ -136,14 +136,13 @@
 					class={sessionActionClass}
 					disabled={disabled || !canArchive}
 					aria-label={`${title}を${archiveLabel}`}
-					>{#if archived}<ArchiveRestore
-							size={14}
-							aria-hidden="true"
-						/>{:else}<Archive
-							size={14}
-							aria-hidden="true"
-						/>{/if}</button
 				>
+					{#if archived}
+						<ArchiveRestore size={14} aria-hidden="true" />
+					{:else}
+						<Archive size={14} aria-hidden="true" />
+					{/if}
+				</button>
 			{/snippet}
 		</Tooltip>
 		<Tooltip content="フォーク">

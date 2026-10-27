@@ -55,24 +55,26 @@
 			<div
 				class="my-[12px] flex flex-wrap items-center gap-[8px] border-b border-message-border pb-[12px]"
 			>
-				<span class="min-w-0 flex-1 break-words"
-					>{`${binding.id} · ${binding.match.target} · ${binding.provider.type}`}</span
-				>
+				<span class="min-w-0 flex-1 break-words">
+					{`${binding.id} · ${binding.match.target} · ${binding.provider.type}`}
+				</span>
 				<button
 					disabled={hostState.busy}
 					onclick={() => setEditing(binding)}
-					>編集
+				>
+					編集
 				</button>
 				<button
 					disabled={hostState.busy}
 					onclick={() =>
 						send({ type: "delete-binding", id: binding.id })}
-					>削除
+				>
+					削除
 				</button>
 			</div>
 		{/each}
-		<button disabled={hostState.busy} onclick={() => setEditing(undefined)}
-			>新しい Binding
+		<button disabled={hostState.busy} onclick={() => setEditing(undefined)}>
+			新しい Binding
 		</button>
 		{#key editing?.id ?? "new"}
 			<BindingForm

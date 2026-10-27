@@ -53,8 +53,10 @@
 				class="rounded border-0 bg-primary px-3 py-2 text-[12px] text-primary-text"
 				onclick={() => {
 					onConfirm(confirmation);
-				}}>{busy ? "保存中…" : "このフォルダを信頼する"}</button
+				}}
 			>
+				{busy ? "保存中…" : "このフォルダを信頼する"}
+			</button>
 			<button
 				type="button"
 				disabled={busy}

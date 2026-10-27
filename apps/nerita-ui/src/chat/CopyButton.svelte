@@ -100,18 +100,23 @@
 			disabled={disabled || text === ""}
 		>
 			<Copy size={iconSize} aria-hidden="true" />
-			{#if current}<span
+			{#if current}
+				<span
 					class="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
 					aria-hidden="true"
-					>{#key current.id}<span
+				>
+					{#key current.id}
+						<span
 							class={cn(
 								"copy-curtain absolute inset-0",
 								current.result === "success"
 									? "bg-menu-check"
 									: "bg-tool-error",
 							)}
-						></span>{/key}</span
-				>{/if}
+						></span>
+					{/key}
+				</span>
+			{/if}
 		</button>
 	{/snippet}
 </Tooltip>

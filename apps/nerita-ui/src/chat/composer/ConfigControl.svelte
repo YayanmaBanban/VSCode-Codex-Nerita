@@ -83,11 +83,11 @@
 					{#if icon !== undefined}
 						<Icon size={16} aria-hidden="true" />
 					{:else}
-						<span class="truncate"
-							>{current?.name ??
+						<span class="truncate">
+							{current?.name ??
 								option.currentLabel ??
-								option.name}</span
-						>
+								option.name}
+						</span>
 						<Chevron size={12} aria-hidden="true" />
 					{/if}
 				</Select.Trigger>
@@ -162,11 +162,14 @@
 										{/if}
 										<span
 											class="config-check inline-flex flex-[0_0_15px] text-menu-check"
-											>{#if selected}<Check
+										>
+											{#if selected}
+												<Check
 													size={15}
 													aria-hidden="true"
-												/>{/if}</span
-										>
+												/>
+											{/if}
+										</span>
 									{/snippet}
 								</Select.Item>
 							{/snippet}

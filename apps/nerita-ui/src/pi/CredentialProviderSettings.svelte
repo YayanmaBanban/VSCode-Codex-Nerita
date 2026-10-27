@@ -67,22 +67,26 @@
 					accountId,
 					mode,
 				})}
-			>Bitwarden の認証を設定
+		>
+			Bitwarden の認証を設定
 		</button>
 		<button
 			disabled={hostState.busy}
 			onclick={() => send({ type: "bws-logout", accountId })}
-			>Bitwarden の認証を削除
+		>
+			Bitwarden の認証を削除
 		</button>
 		<button
 			disabled={hostState.busy}
 			onclick={() => send({ type: "migrate-pi" })}
-			>既存 Pi 認証を移行
+		>
+			既存 Pi 認証を移行
 		</button>
 		<button
 			disabled={hostState.busy}
 			onclick={() => send({ type: "migrate-mcp" })}
-			>既存 MCP 認証を移行
+		>
+			既存 MCP 認証を移行
 		</button>
 	</div>
 </section>

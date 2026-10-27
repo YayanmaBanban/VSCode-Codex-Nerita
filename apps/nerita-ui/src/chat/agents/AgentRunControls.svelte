@@ -51,8 +51,9 @@
 				disabled={!active || stopping}
 				class="rounded border border-solid border-message-border px-3 py-2 hover:bg-message-user disabled:opacity-40"
 				onclick={onStop}
-				>{stopping ? "停止要求中…" : "自身と子を停止"}</button
 			>
+				{stopping ? "停止要求中…" : "自身と子を停止"}
+			</button>
 		</div>
 		{#if isNonEmptyString(stopError)}
 			<p role="alert" class="text-tool-error">

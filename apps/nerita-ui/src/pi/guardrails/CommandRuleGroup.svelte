@@ -40,7 +40,8 @@
 					],
 				});
 			}}
-			>＋ ルールを追加
+		>
+			＋ ルールを追加
 		</button>
 	</div>
 	{#if currentRule}

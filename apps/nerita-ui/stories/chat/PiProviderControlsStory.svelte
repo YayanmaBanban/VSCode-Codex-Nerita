@@ -74,20 +74,26 @@
 					...chatState,
 					run: chatState.run === "running" ? "idle" : "running",
 				};
-			}}>実行状態を切替</button
+			}}
 		>
+			実行状態を切替
+		</button>
 		<button
 			type="button"
 			onclick={() => {
 				chatState = { ...chatState, connection: "disconnected" };
-			}}>切断</button
+			}}
 		>
+			切断
+		</button>
 		<button
 			type="button"
 			onclick={() => {
 				chatState = { ...chatState, quota: null };
-			}}>利用枠取得失敗</button
+			}}
 		>
+			利用枠取得失敗
+		</button>
 	</div>
 	<ComposerSettings
 		state={{ ...chatState, uiContributions: contributions }}
@@ -96,6 +102,7 @@
 	<output
 		aria-label="送信した要求"
 		class="mt-[12px] block text-[12px] [overflow-wrap:anywhere]"
-		>{JSON.stringify(requests)}</output
 	>
+		{JSON.stringify(requests)}
+	</output>
 </div>

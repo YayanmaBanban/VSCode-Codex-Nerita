@@ -54,8 +54,9 @@
 					<span
 						aria-current="location"
 						class="min-w-0 px-1 py-2 break-all text-input-text"
-						>{crumb.label}</span
 					>
+						{crumb.label}
+					</span>
 				{:else}
 					<button
 						type="button"
@@ -65,8 +66,10 @@
 							"min-w-0 rounded border-0 bg-transparent px-1 py-2 text-left break-all text-muted",
 							"hover:bg-settings-hover hover:text-input-text",
 							"focus-visible:outline-2 focus-visible:outline-focus",
-						)}>{crumb.label}</button
+						)}
 					>
+						{crumb.label}
+					</button>
 				{/if}
 			</li>
 		{/each}

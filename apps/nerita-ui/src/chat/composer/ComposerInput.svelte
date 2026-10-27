@@ -102,10 +102,11 @@
 			{#if empty}
 				<span
 					class="pointer-events-none absolute top-1 left-1 text-input-placeholder"
-					>{props.followUp === true
-						? "フォローアップを送信"
-						: "チャットを送信"}</span
 				>
+					{props.followUp === true
+						? "フォローアップを送信"
+						: "チャットを送信"}
+				</span>
 			{/if}
 			<span
 				id={helpId}
@@ -116,9 +117,10 @@
 					"border-tooltip-border bg-tooltip px-3 py-2 text-[12px] leading-[1.5] text-tooltip-text",
 					"shadow-[0_4px_16px_#0003]",
 				)}
-				>Ctrl+Enter で送信・Enter / Shift+Enter で改行・Shift +
-				ドロップでファイル添付</span
 			>
+				Ctrl+Enter で送信・Enter / Shift+Enter で改行・Shift +
+				ドロップでファイル添付
+			</span>
 		</div>
 		<Tooltip
 			content={expanded
@@ -140,10 +142,11 @@
 						expanded = !expanded;
 					}}
 				>
-					{#if expanded}<Minimize2
-							size={16}
-							aria-hidden="true"
-						/>{:else}<Maximize2 size={16} aria-hidden="true" />{/if}
+					{#if expanded}
+						<Minimize2 size={16} aria-hidden="true" />
+					{:else}
+						<Maximize2 size={16} aria-hidden="true" />
+					{/if}
 				</button>
 			{/snippet}
 		</Tooltip>

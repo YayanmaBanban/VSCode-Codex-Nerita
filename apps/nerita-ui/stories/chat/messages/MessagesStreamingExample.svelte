@@ -58,7 +58,9 @@
 				...current,
 				text: "訂正 **保存済み**",
 				streaming: true,
-			}))}>本文を訂正</button
+			}))}
 	>
+		本文を訂正
+	</button>
 	<Messages busy={message.streaming} messages={[message]}></Messages>
 </main>

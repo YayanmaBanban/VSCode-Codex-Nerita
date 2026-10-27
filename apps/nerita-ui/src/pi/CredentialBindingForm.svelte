@@ -77,5 +77,5 @@
 	{#if error !== ""}
 		<p role="alert">{error}</p>
 	{/if}
-	<button type="submit" disabled={busy}>Binding を保存 </button>
+	<button type="submit" disabled={busy}>Binding を保存</button>
 </form>

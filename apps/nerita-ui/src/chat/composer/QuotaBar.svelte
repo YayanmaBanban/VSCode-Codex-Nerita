@@ -52,19 +52,22 @@
 				<span
 					class="quota-track h-[9px] w-full overflow-hidden rounded-[5px] bg-quota-track"
 					aria-hidden="true"
-					><span
+				>
+					<span
 						class="quota-fill relative block h-full overflow-hidden rounded-[inherit] bg-[#58bafa]"
 						style:width={`${remaining}%`}
-						><svg
+					>
+						<svg
 							class="quota-wave"
 							viewBox="0 0 160 12"
 							preserveAspectRatio="none"
-							><path
+						>
+							<path
 								d="M0 6 Q20 0 40 6 T80 6 T120 6 T160 6 V12 H0Z"
-							/></svg
-						></span
-					></span
-				>
+							/>
+						</svg>
+					</span>
+				</span>
 			</button>
 		{/snippet}
 	</Tooltip>

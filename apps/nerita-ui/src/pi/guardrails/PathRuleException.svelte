@@ -11,8 +11,8 @@
 </script>
 
 <div class="flex items-end gap-2">
-	<label class="min-w-0 flex-1"
-		><input
+	<label class="min-w-0 flex-1">
+		<input
 			aria-label={`例外 ${entry + 1}`}
 			class={inputStyle}
 			value={exception}
@@ -22,8 +22,8 @@
 						i === entry ? event.currentTarget.value : value,
 					),
 				})}
-		/></label
-	>
+		/>
+	</label>
 	<SimpleDeleteButton
 		label="例外を削除"
 		ariaLabel={`例外 ${entry + 1}を削除`}

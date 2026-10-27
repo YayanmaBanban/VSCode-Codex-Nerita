@@ -54,8 +54,10 @@
 					descriptionTone === "warning"
 						? "text-warning"
 						: "text-muted",
-				)}>{description}</AlertDialog.Description
+				)}
 			>
+				{description}
+			</AlertDialog.Description>
 			{@render children()}
 		</AlertDialog.Content>
 	</AlertDialog.Portal>

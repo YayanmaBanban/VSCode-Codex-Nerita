@@ -177,9 +177,9 @@
 		>
 			<div class="flex items-center justify-between px-[16px] py-[12px]">
 				<div class="flex items-center gap-1">
-					<Dialog.Title class="m-0 text-[14px] font-medium"
-						>性格設定</Dialog.Title
-					>
+					<Dialog.Title class="m-0 text-[14px] font-medium">
+						性格設定
+					</Dialog.Title>
 					<HelpButton
 						label="指示の使い分け"
 						aboveMenu
@@ -197,8 +197,9 @@
 			<div class="min-h-0 flex-1 overflow-y-auto px-[16px] pb-[16px]">
 				<Dialog.Description
 					class="mt-0 text-[12px] leading-[1.7] text-muted"
-					>グローバルとワークスペースの指示を、この順で結合します。変更は会話の開始・分岐・再開時に反映されます。</Dialog.Description
 				>
+					グローバルとワークスペースの指示を、この順で結合します。変更は会話の開始・分岐・再開時に反映されます。
+				</Dialog.Description>
 				{#if error !== null && error !== ""}
 					<p role="alert" class="text-[12px]">
 						{error}

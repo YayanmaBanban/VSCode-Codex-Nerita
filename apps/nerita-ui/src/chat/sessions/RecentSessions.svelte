@@ -87,15 +87,12 @@
 								{disabled}
 								aria-label={`「${title}」を開く`}
 							>
-								<span class="min-w-0 flex-1 truncate"
-									>{title}</span
-								>
-								<span class="shrink-0 text-[12px] text-muted"
-									>{relativeTime(
-										session.updatedAt,
-										now,
-									)}</span
-								>
+								<span class="min-w-0 flex-1 truncate">
+									{title}
+								</span>
+								<span class="shrink-0 text-[12px] text-muted">
+									{relativeTime(session.updatedAt, now)}
+								</span>
 							</button>
 						{/snippet}
 					</Tooltip>

@@ -16,24 +16,29 @@
 					},
 					{ label: "codex Weekly limit", remaining: 85, detail: "" },
 				],
-			})}>利用枠取得</button
+			})}
 	>
-	<button onclick={() => mock.patchState({ quota: null })}
-		>利用枠取得失敗</button
-	>
+		利用枠取得
+	</button>
+	<button onclick={() => mock.patchState({ quota: null })}>
+		利用枠取得失敗
+	</button>
 	<button
 		onclick={() => mock.patchState({ usage: { used: 400, size: 1000 } })}
-		>使用量40%</button
 	>
+		使用量40%
+	</button>
 	<button
 		onclick={() => mock.patchState({ usage: { used: 600, size: 1000 } })}
-		>使用量60%</button
 	>
+		使用量60%
+	</button>
 	<button
 		onclick={() => mock.patchState({ usage: { used: 200, size: 1000 } })}
-		>使用量20%</button
 	>
-	<button onclick={() => mock.patchState({ connection: "disconnected" })}
-		>切断通知</button
-	>
+		使用量20%
+	</button>
+	<button onclick={() => mock.patchState({ connection: "disconnected" })}>
+		切断通知
+	</button>
 </div>

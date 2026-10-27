@@ -145,14 +145,14 @@
 					<rect width="48" height="48" fill="white" stroke="none" />
 					<g class="csf48-motion csf48-travel">
 						<g class="csf48-motion csf48-wrist">
-							<g class="csf48-motion csf48-recoil"
-								><path
+							<g class="csf48-motion csf48-recoil">
+								<path
 									d="M12 26c-4-1-6 4-2 6s8 0 7-3c-.5-1.5-2.5-2.5-5-3Z"
 									fill="black"
 									stroke="black"
 									stroke-width="3.6"
-								/></g
-							>
+								/>
+							</g>
 						</g>
 					</g>
 				</mask>
@@ -239,15 +239,15 @@
 			<!-- 放す瞬間までの前足とペン。 -->
 			<g class="csf48-motion csf48-travel">
 				<g class="csf48-motion csf48-wrist">
-					<g class="csf48-motion csf48-recoil"
-						><path
+					<g class="csf48-motion csf48-recoil">
+						<path
 							class="csf48-motion csf48-held-pen"
 							d="m8 22.4 3 2.9m5.5 6.1L18 33"
 						/>
 						<path
 							d="M12 26c-4-1-6 4-2 6s8 0 7-3c-.5-1.5-2.5-2.5-5-3Z"
-						/></g
-					>
+						/>
+					</g>
 				</g>
 			</g>
 

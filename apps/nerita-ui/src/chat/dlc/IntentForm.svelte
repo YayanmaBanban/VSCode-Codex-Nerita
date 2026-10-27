@@ -90,6 +90,7 @@
 	<button
 		type="submit"
 		disabled={pending || title.trim() === "" || request.trim() === ""}
-		>{pending ? "作成中…" : "Intent を作成"}</button
 	>
+		{pending ? "作成中…" : "Intent を作成"}
+	</button>
 </form>

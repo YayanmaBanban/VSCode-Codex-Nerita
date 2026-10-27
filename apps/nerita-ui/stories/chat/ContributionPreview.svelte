@@ -72,13 +72,16 @@
 			(chatState = {
 				...chatState,
 				run: chatState.run === "running" ? "idle" : "running",
-			})}>実行状態を切替</button
+			})}
 	>
+		実行状態を切替
+	</button>
 	<button
 		onclick={() =>
 			(chatState = { ...chatState, connection: "disconnected" })}
-		>切断</button
 	>
+		切断
+	</button>
 	<ComposerSettings
 		state={{ ...chatState, uiContributions: contributions }}
 		{send}
@@ -86,6 +89,7 @@
 	<output
 		aria-label="最後の要求"
 		class="mt-[12px] block text-[12px] [overflow-wrap:anywhere]"
-		>{last ? JSON.stringify(last) : "未操作"}</output
 	>
+		{last ? JSON.stringify(last) : "未操作"}
+	</output>
 </div>

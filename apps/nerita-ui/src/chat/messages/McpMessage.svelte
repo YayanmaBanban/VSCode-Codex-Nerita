@@ -65,9 +65,9 @@
 									></span>
 								{/snippet}
 							</Tooltip>
-							<span class="min-w-0 [overflow-wrap:anywhere]"
-								>{server.name}</span
-							>
+							<span class="min-w-0 [overflow-wrap:anywhere]">
+								{server.name}
+							</span>
 						</li>
 					{/each}
 				</ul>

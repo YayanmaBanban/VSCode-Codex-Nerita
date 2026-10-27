@@ -29,12 +29,14 @@
 	<div class="flex flex-wrap gap-2 text-[12px]">
 		<span
 			class="max-w-full rounded-[5px] bg-message-code px-2 py-[6px] leading-none [overflow-wrap:anywhere] text-foreground"
-			>{ui.view.environment?.workspace ?? "ワークスペースの確認中"}</span
 		>
+			{ui.view.environment?.workspace ?? "ワークスペースの確認中"}
+		</span>
 		<span
 			class="max-w-full rounded-[5px] bg-message-code px-2 py-[6px] leading-none [overflow-wrap:anywhere] text-foreground"
-			>{ui.view.environment?.branch ?? "ブランチの確認中"}</span
 		>
+			{ui.view.environment?.branch ?? "ブランチの確認中"}
+		</span>
 	</div>
 	<section
 		class="mt-4 rounded-[8px] border border-solid border-input-border p-3"

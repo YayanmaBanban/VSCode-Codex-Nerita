@@ -50,17 +50,19 @@
 	class="border-0 border-b border-solid border-panel-border px-3 py-2 text-[12px]"
 >
 	<div class="flex flex-wrap items-center justify-between gap-2">
-		<span class="text-muted"
-			>{view.selected?.title ?? "Intent を選択してください"}</span
-		>
+		<span class="text-muted">
+			{view.selected?.title ?? "Intent を選択してください"}
+		</span>
 		<span class="text-muted">{view.backend === "pi" ? "Pi" : "Codex"}</span>
 		{#if canStop}
 			<button
 				type="button"
 				aria-label="DLC の会話を停止"
 				disabled={state.run === "cancelling"}
-				onclick={stop}>停止</button
+				onclick={stop}
 			>
+				停止
+			</button>
 		{/if}
 	</div>
 	<p class="my-1 break-all text-muted">

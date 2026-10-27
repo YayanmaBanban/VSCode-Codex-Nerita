@@ -95,9 +95,9 @@
 			</Tooltip>
 			<AgentIcon iconKey={current.iconKey} />
 			<div class="min-w-0 flex-1">
-				<span class="block [overflow-wrap:anywhere]"
-					>{agentName(current)}</span
-				>
+				<span class="block [overflow-wrap:anywhere]">
+					{agentName(current)}
+				</span>
 				<span class="text-[12px] text-muted">閲覧のみ</span>
 			</div>
 			<Tooltip content="表示を更新">

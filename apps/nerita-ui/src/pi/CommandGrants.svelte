@@ -35,21 +35,22 @@
 		<article
 			class="grid gap-2 rounded border border-input-border p-3 text-sm"
 		>
-			<strong
-				>{`${commandPermissionLabel(grant.permission)} · ${grant.permission.commandClass}`}</strong
-			>
-			<span
-				>{`${grant.permission.route} · ${grant.scope === "workspace" ? "このワークスペース" : "セッション中"}`}</span
-			>
-			<span class="break-all text-muted"
-				>{grant.permission.workspace}</span
-			>
+			<strong>
+				{`${commandPermissionLabel(grant.permission)} · ${grant.permission.commandClass}`}
+			</strong>
+			<span>
+				{`${grant.permission.route} · ${grant.scope === "workspace" ? "このワークスペース" : "セッション中"}`}
+			</span>
+			<span class="break-all text-muted">
+				{grant.permission.workspace}
+			</span>
 			<button
 				type="button"
 				class={buttonStyle}
 				disabled={busy}
 				onclick={() => revoke(grant.permission)}
-				>承認を取り消す
+			>
+				承認を取り消す
 			</button>
 		</article>
 	{/each}

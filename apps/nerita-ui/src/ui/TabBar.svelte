@@ -143,8 +143,10 @@
 					}}
 				>
 					<span>{item.label}</span>{#if item.count !== undefined}<span
-							class="text-[12px] text-muted">{item.count}</span
-						>{/if}
+							class="text-[12px] text-muted"
+						>
+							{item.count}
+						</span>{/if}
 				</button>
 			{/each}
 		</div>

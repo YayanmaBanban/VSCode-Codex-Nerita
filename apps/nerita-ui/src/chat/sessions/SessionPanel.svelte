@@ -152,8 +152,10 @@
 								send({
 									type: "session/list",
 									requestId: crypto.randomUUID(),
-								})}>再試行</button
-						>{/if}
+								})}
+						>
+							再試行
+						</button>{/if}
 				</div>
 			{/if}
 			{#if chatState.sessionPending}
@@ -191,8 +193,10 @@
 							type: "session/list",
 							more: true,
 							requestId: crypto.randomUUID(),
-						})}>さらに読み込む</button
+						})}
 				>
+					さらに読み込む
+				</button>
 			{/if}
 		</div>
 	</div>

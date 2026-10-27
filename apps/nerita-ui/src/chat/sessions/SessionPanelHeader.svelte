@@ -44,8 +44,9 @@
 					{...tooltipProps}
 					tabindex="-1"
 					class="min-w-0 flex-1 font-editor text-[12px] leading-[1.6] break-all text-muted"
-					>{state.cwd ?? "ワークスペース未接続"}</span
 				>
+					{state.cwd ?? "ワークスペース未接続"}
+				</span>
 			{/snippet}
 		</Tooltip>
 		{#if state.sessionsLoading}
@@ -53,12 +54,13 @@
 				role="progressbar"
 				aria-label="セッション一覧を取得中"
 				class="mt-[1px] inline-flex shrink-0 text-link"
-				><LoaderCircle
+			>
+				<LoaderCircle
 					size={15}
 					class="motion-safe:animate-spin"
 					aria-hidden="true"
-				/></span
-			>
+				/>
+			</span>
 		{/if}
 	</div>
 </header>

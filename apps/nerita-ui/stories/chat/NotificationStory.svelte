@@ -14,8 +14,10 @@
 		onclick={() => {
 			open = true;
 			generation++;
-		}}>通知を再生</button
+		}}
 	>
+		通知を再生
+	</button>
 	{#key generation}
 		{#if open}
 			<NotificationCard

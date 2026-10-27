@@ -56,10 +56,9 @@
 						type: record.trust === "trusted" ? "revoke" : "trust",
 						root: record.root,
 					})}
-				>{record.trust === "trusted"
-					? "信頼を取り消す"
-					: "信頼する"}</button
 			>
+				{record.trust === "trusted" ? "信頼を取り消す" : "信頼する"}
+			</button>
 			<Tooltip content="2秒長押しで設定から削除" disabled={holding}>
 				{#snippet children({ props })}
 					<HoldToDeleteButton

@@ -99,9 +99,9 @@
 
 {#snippet tooltip()}
 	{#if model}
-		<span class="whitespace-pre-line"
-			>{descriptions[option.currentValue]}</span
-		>
+		<span class="whitespace-pre-line">
+			{descriptions[option.currentValue]}
+		</span>
 	{:else}
 		<span class="inline-flex items-center gap-[6px]"
 			>{#if control.secondary}{#if control.secondary.icon === "user"}<User
@@ -160,12 +160,13 @@
 							>{#if control.fastMode?.checked === true}<span
 									aria-hidden="true"
 									class="inline-flex shrink-0 [&_svg]:size-[14px]"
-									><Zap
+								>
+									<Zap
 										size={14}
 										color="#FACC15"
 										fill="#FACC15"
-									/></span
-								>{/if}<ChevronDown
+									/>
+								</span>{/if}<ChevronDown
 								size={12}
 								class="shrink-0"
 								aria-hidden="true"
@@ -175,8 +176,8 @@
 							/>{:else}<Shield
 								size={16}
 								aria-hidden="true"
-							/>{/if}</button
-					>
+							/>{/if}
+					</button>
 				{/snippet}
 			</Tooltip>
 		{/snippet}

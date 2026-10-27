@@ -52,8 +52,10 @@
 						requestId: crypto.randomUUID(),
 						uri,
 					});
-				}}>{path}</a
+				}}
 			>
+				{path}
+			</a>
 		{:else}
 			<span class="[overflow-wrap:anywhere]">{path}</span>
 		{/if}

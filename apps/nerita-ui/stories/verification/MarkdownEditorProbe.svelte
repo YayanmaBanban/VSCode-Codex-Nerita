@@ -25,5 +25,7 @@
 	type="button"
 	onclick={() => {
 		markdownSource = "外部から復元した下書き";
-	}}>source を変更</button
+	}}
 >
+	source を変更
+</button>

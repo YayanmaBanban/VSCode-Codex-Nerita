@@ -135,8 +135,9 @@
 							)}
 							value={editor.text}
 							oninput={(event) =>
-								editor.change(event.currentTarget.value)}
-						></textarea>
+								editor.change(
+									event.currentTarget.value,
+								)}></textarea>
 					</div>
 				{/if}
 			</fieldset>
@@ -144,7 +145,8 @@
 				<button
 					class={cn(buttonStyle, "self-start")}
 					onclick={editor.reload}
-					>編集を破棄して再読込
+				>
+					編集を破棄して再読込
 				</button>
 			{/if}
 		</div>

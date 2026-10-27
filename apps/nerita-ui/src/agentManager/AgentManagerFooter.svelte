@@ -143,8 +143,9 @@
 							<div role="alert">
 								<span
 									class="min-w-0 break-words whitespace-pre-wrap"
-									>{error}</span
 								>
+									{error}
+								</span>
 							</div>
 						{/each}
 					</div>

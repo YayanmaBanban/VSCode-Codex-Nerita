@@ -61,8 +61,9 @@
 				{disabled}
 				onclick={() => choose("current")}
 				class="primary border-transparent bg-primary text-primary-text"
-				>このセッションで実装する</button
 			>
+				このセッションで実装する
+			</button>
 			<button
 				type="button"
 				{disabled}

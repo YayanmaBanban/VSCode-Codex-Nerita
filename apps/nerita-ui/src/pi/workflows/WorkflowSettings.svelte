@@ -6,8 +6,8 @@
 </script>
 
 <details class="mb-5">
-	<summary class="mb-3 cursor-pointer font-semibold"
-		>ワークフロー設定
+	<summary class="mb-3 cursor-pointer font-semibold">
+		ワークフロー設定
 	</summary>
 	<div class="flex flex-col gap-3">
 		<label

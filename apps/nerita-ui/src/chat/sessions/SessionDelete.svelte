@@ -58,9 +58,9 @@
 			)}
 			onkeydown={dialogKeydown}
 		>
-			<AlertDialog.Title class="m-0 text-[14px] font-semibold"
-				>セッションを削除しますか？</AlertDialog.Title
-			>
+			<AlertDialog.Title class="m-0 text-[14px] font-semibold">
+				セッションを削除しますか？
+			</AlertDialog.Title>
 			<AlertDialog.Description
 				class="my-[14px] text-[12px] leading-[1.7] [overflow-wrap:anywhere]"
 				>「{title}」を削除します。この操作は取り消せません。</AlertDialog.Description
@@ -68,8 +68,9 @@
 			<div class="flex flex-wrap justify-end gap-[8px]">
 				<AlertDialog.Cancel
 					class="rounded-[6px] px-[12px] py-[8px] text-[12px]"
-					>キャンセル</AlertDialog.Cancel
 				>
+					キャンセル
+				</AlertDialog.Cancel>
 				<AlertDialog.Action
 					{disabled}
 					class="rounded-[6px] border-0 bg-red-500/10 px-[12px] py-[8px] text-[12px] font-semibold text-red-500 hover:bg-red-500/20"
@@ -78,8 +79,10 @@
 							type: "session/delete",
 							requestId: crypto.randomUUID(),
 							sessionId: session.sessionId,
-						})}>セッションを削除</AlertDialog.Action
+						})}
 				>
+					セッションを削除
+				</AlertDialog.Action>
 			</div>
 		</AlertDialog.Content>
 	</AlertDialog.Portal>

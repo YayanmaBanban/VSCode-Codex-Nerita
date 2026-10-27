@@ -219,8 +219,9 @@
 				maxlength={8000}
 				value={config.instructions}
 				oninput={(event) =>
-					change({ instructions: event.currentTarget.value })}
-			></textarea>
+					change({
+						instructions: event.currentTarget.value,
+					})}></textarea>
 		</label>
 		<div
 			class="grid gap-2 rounded-lg border border-input-border p-4 text-sm text-muted"

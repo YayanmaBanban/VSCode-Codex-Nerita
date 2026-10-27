@@ -39,8 +39,10 @@
 						denialEventId: event.id,
 						action: "allow",
 						scope,
-					})}>{allowLabels[scope]}</button
+					})}
 			>
+				{allowLabels[scope]}
+			</button>
 		{/each}
 	{/if}
 	{#if event.actions.includes("use-sandbox-cache")}
@@ -53,7 +55,8 @@
 					denialEventId: event.id,
 					action: "use-sandbox-cache",
 				})}
-			>Sandbox キャッシュを使用して再実行
+		>
+			Sandbox キャッシュを使用して再実行
 		</button>
 	{/if}
 	{#if event.actions.includes("deny")}
@@ -62,7 +65,8 @@
 			class={buttonStyle}
 			disabled={busy}
 			onclick={() => decide({ denialEventId: event.id, action: "deny" })}
-			>拒否して終了
+		>
+			拒否して終了
 		</button>
 	{/if}
 </article>

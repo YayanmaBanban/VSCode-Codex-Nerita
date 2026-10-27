@@ -78,13 +78,17 @@
 	type="button"
 	onclick={() => {
 		bridge = second;
-	}}>接続を変更</button
+	}}
 >
+	接続を変更
+</button>
 <button
 	type="button"
 	onclick={() =>
 		delayed?.({
 			type: "state/snapshot",
 			state: { ...initialState(), sessionId: "delayed", revision: 100 },
-		})}>前の接続の遅延応答</button
+		})}
 >
+	前の接続の遅延応答
+</button>

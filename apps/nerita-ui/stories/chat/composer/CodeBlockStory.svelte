@@ -63,10 +63,11 @@
 				bridge.emit({ type: "ui/codeBlock", requestId });
 			}
 		}}
-		>Hostのコードブロック化を通知
+	>
+		Hostのコードブロック化を通知
 	</button>
-	<button type="button" onclick={() => setLocked(!locked)}
-		>入力ロック切替
+	<button type="button" onclick={() => setLocked(!locked)}>
+		入力ロック切替
 	</button>
 	<button
 		type="button"
@@ -89,7 +90,8 @@
 					],
 				},
 			])}
-		>参照を含む下書き
+	>
+		参照を含む下書き
 	</button>
 	<output aria-label="下書き">{JSON.stringify(parts)}</output>
 </div>

@@ -37,8 +37,9 @@
 				aria-label="TOML 編集"
 				disabled={mode === "toml" && !valid}
 				onclick={switchMode}
-				>{mode === "graph" ? "グラフ → TOML" : "TOML → グラフ"}</button
 			>
+				{mode === "graph" ? "グラフ → TOML" : "TOML → グラフ"}
+			</button>
 			<WorkflowActions
 				{...{
 					editor,

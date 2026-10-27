@@ -27,7 +27,7 @@
 <main class="p-[14px]">
 	<button onclick={() => setStreaming(true)}>途中の本文</button>
 	<button onclick={() => setStreaming(false)}>本文完了</button>
-	<output hidden aria-label="開いたファイル"> {opened} </output>
+	<output hidden aria-label="開いたファイル">{opened}</output>
 	<Messages
 		send={(message: UiMessage) => {
 			if (message.type === "reference/open") {

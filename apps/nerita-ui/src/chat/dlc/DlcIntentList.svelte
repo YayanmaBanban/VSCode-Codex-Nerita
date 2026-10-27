@@ -96,9 +96,9 @@
 									class="mt-0.5 shrink-0 text-warning"
 									aria-hidden="true"
 								/>
-								<span class="min-w-0 break-words text-muted"
-									>{intent.startHold.message}</span
-								>
+								<span class="min-w-0 break-words text-muted">
+									{intent.startHold.message}
+								</span>
 							</p>
 						</div>
 					</div>

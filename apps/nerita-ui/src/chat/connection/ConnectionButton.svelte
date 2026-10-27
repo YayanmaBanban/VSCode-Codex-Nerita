@@ -176,14 +176,16 @@
 						connectionColor(displayed),
 					)}
 				></span>
-				<span role="status" class="font-medium"
-					>{#if displayed === "connecting"}<ShinyText
+				<span role="status" class="font-medium">
+					{#if displayed === "connecting"}
+						<ShinyText
 							text={labels[displayed]}
 							disabled={prefersReducedMotion.current}
 							color="var(--nerita-text-link-foreground)"
 							shineColor="var(--nerita-foreground)"
-						/>{:else}{labels[displayed]}{/if}</span
-				>
+						/>
+					{:else}{labels[displayed]}{/if}
+				</span>
 				{#if curtain}{@const target = curtain.target}{@const phase =
 						curtain.phase}<span
 						aria-hidden="true"
@@ -199,16 +201,19 @@
 									finishCurtain(target, phase)}
 							></span>{/key}</span
 					>{/if}
-				{#if !prefersReducedMotion.current && showBeam}<span
+				{#if !prefersReducedMotion.current && showBeam}
+					<span
 						aria-hidden="true"
 						class="connection-beam pointer-events-none absolute inset-0 rounded-[inherit]"
-						><BorderBeam
+					>
+						<BorderBeam
 							size={22}
 							duration={3}
 							colorFrom="var(--nerita-focus-border)"
 							colorTo="var(--nerita-editor-warning-foreground)"
-						/></span
-					>{/if}
+						/>
+					</span>
+				{/if}
 			</button>
 		{/snippet}
 	</Tooltip>
@@ -216,9 +221,10 @@
 		<span
 			class="connection-confetti pointer-events-none absolute inset-0 z-20"
 			aria-hidden="true"
-			>{#each confetti as index (index)}<i
-					class={cn("confetti-piece", `confetti-${index}`)}
-				></i>{/each}</span
 		>
+			{#each confetti as index (index)}
+				<i class={cn("confetti-piece", `confetti-${index}`)}></i>
+			{/each}
+		</span>
 	{/if}
 </div>
