@@ -8,7 +8,7 @@ import { initialState, type ChatState } from "@nerita/shared/chatState";
 import { nextTimelineOrder } from "../../session/timelineOrder";
 import { mapPiTool, finishPiTools } from "./PiToolMapper";
 import { restorePiNestedTools } from "./PiNestedHistory";
-import { restorePiReferences } from "./PiReferenceHistory";
+import { restorePiPrompt } from "./PiReferenceHistory";
 import { restorePiReview } from "./PiReviewHistory";
 
 /** 保存履歴の本文とツール結果を表す。 */
@@ -115,15 +115,12 @@ function restoreChatMessage(
 					.map((part) => part.text)
 					.join("");
 	if (text !== "") {
-		const references =
-			message.role === "user"
-				? restorePiReferences(parent, text)
-				: undefined;
+		const prompt =
+			message.role === "user" ? restorePiPrompt(parent, text) : { text };
 		state.messages.push({
 			id: entry.id,
 			role: message.role,
-			text,
-			...(references ? { references } : {}),
+			...prompt,
 			order: nextTimelineOrder(state),
 			streaming: false,
 		});

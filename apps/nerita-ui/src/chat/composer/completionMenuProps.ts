@@ -9,6 +9,7 @@ export type CompletionMenuProps = {
 	items: CompletionItem[];
 	selected: number;
 	empty: string;
+	loading?: boolean;
 	onQuery: (text: string) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	onPick: (item: CompletionItem) => void;

@@ -4,6 +4,7 @@ import type { ComposerReference } from "@nerita/shared/composerReferences";
 import type { SessionContextReference } from "@nerita/shared/sessionReferences";
 import type { ChangeScope } from "@nerita/shared/changeReferences";
 import type { CodeReference } from "@nerita/shared/codeReferences";
+import type { Attachment } from "@nerita/shared/composer";
 
 /** 通常入力と内部実行が共用する送信データ。UI メッセージの種類や受信経路は持たない。 */
 export type BackendPrompt = {
@@ -13,6 +14,7 @@ export type BackendPrompt = {
 	sessionReferences?: SessionContextReference[];
 	changeScopes?: ChangeScope[];
 	codeReferences?: CodeReference[];
+	attachments?: Attachment[];
 };
 /** バックエンドの終了結果。正常完了・失敗・中断を区別し、応答の存在だけで成功と判断しない。 */
 export type BackendExecutionResult = {

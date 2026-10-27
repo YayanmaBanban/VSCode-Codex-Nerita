@@ -46,6 +46,7 @@ export class ChatViewProvider
 	private runtime: BackendRuntime | undefined;
 	private copiedCode = new CopiedCode();
 	private workingTreeDiff = new WorkingTreeDiff();
+	private symbolSearches = new Map<vscode.Webview, AbortController>();
 	private trustState: ChatTrustState;
 	/** 拡張機能資産と Host の状態サービスを受け取る。 */
 	constructor(
@@ -137,6 +138,8 @@ export class ChatViewProvider
 		this.views.set(webview, {
 			editor,
 			dispose: () => {
+				this.symbolSearches.get(webview)?.abort();
+				this.symbolSearches.delete(webview);
 				dispose();
 				this.views.delete(webview);
 			},
@@ -176,6 +179,10 @@ export class ChatViewProvider
 	}
 	/** 表示に使うサービス・購読・Webview の登録を解放し、チャットのエディターパネルを閉じる。 */
 	dispose(): void {
+		for (const search of this.symbolSearches.values()) {
+			search.abort();
+		}
+		this.symbolSearches.clear();
 		this.trustState.dispose();
 		this.copiedCode.dispose();
 		this.workingTreeDiff.dispose();
@@ -230,10 +237,34 @@ export class ChatViewProvider
 			return;
 		}
 		if (value.type === "workspace/searchSymbols") {
-			await webview.postMessage(await searchWorkspaceSymbols(value));
+			await this.searchSymbols(webview, value);
 			return;
 		}
 		await this.dispatchDisplayAction(webview, value);
+	}
+
+	/** 検索語の変更と画面の破棄で古い待機を止め、最新の要求へだけ候補を返す。 */
+	private async searchSymbols(
+		webview: vscode.Webview,
+		request: Extract<UiMessage, { type: "workspace/searchSymbols" }>,
+	) {
+		this.symbolSearches.get(webview)?.abort();
+		const search = new AbortController();
+		this.symbolSearches.set(webview, search);
+		try {
+			const result = await searchWorkspaceSymbols(request, search.signal);
+			if (!search.signal.aborted) {
+				await webview.postMessage(result);
+			}
+		} catch (error) {
+			if (!search.signal.aborted) {
+				throw error;
+			}
+		} finally {
+			if (this.symbolSearches.get(webview) === search) {
+				this.symbolSearches.delete(webview);
+			}
+		}
 	}
 
 	/** 実行中の会話を守り、保存と再生成を直列に行う。 */

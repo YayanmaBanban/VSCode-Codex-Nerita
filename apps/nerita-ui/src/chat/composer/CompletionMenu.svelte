@@ -4,6 +4,7 @@
 	import { cn } from "cnfast";
 	import type { CompletionMenuProps } from "./completionMenuProps";
 	import CompletionOption from "./CompletionOption.svelte";
+	import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 
 	let {
 		id,
@@ -12,6 +13,7 @@
 		items,
 		selected,
 		empty,
+		loading = false,
 		onQuery,
 		onKeyDown,
 		onPick,
@@ -104,6 +106,7 @@
 		bind:this={list}
 		{id}
 		role="listbox"
+		aria-busy={loading}
 		aria-label={title}
 		class="max-h-[min(240px,35vh)] overflow-y-auto"
 	>
@@ -117,9 +120,19 @@
 			/>
 		{/each}
 		{#if items.length === 0}
-			<p class="p-2 text-[12px] text-muted" role="status">
-				{empty}
-			</p>
+			<div
+				class="flex items-center gap-2 p-2 text-[12px] text-muted"
+				role="status"
+			>
+				{#if loading}
+					<LoaderCircle
+						size={16}
+						class="shrink-0 motion-safe:animate-spin"
+						aria-hidden="true"
+					/>
+				{/if}
+				<span>{empty}</span>
+			</div>
 		{/if}
 	</div>
 </div>

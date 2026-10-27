@@ -261,6 +261,43 @@ export const SettingsPopups: Story = {
 	},
 };
 export const Pi: Story = { args: { pi: true } };
+
+/** Pi の添付入口と Git チップが、共通 UI から Host 要求へ接続されることを確認する。 */
+export const PiContext: Story = {
+	args: { pi: true },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		const context = canvas.getByRole("button", {
+			name: "コンテキストを追加",
+		});
+		await userEvent.click(context);
+		await userEvent.click(
+			await canvas.findByRole("option", {
+				name: "添付ファイル",
+			}),
+		);
+		await expect(bridge.sent).toContainEqual(
+			expect.objectContaining({ type: "attachment/add" }),
+		);
+		await userEvent.click(context);
+		await userEvent.click(
+			await canvas.findByRole("option", {
+				name: "Git の変更",
+			}),
+		);
+		await userEvent.click(
+			await canvas.findByRole("option", { name: /Uncommitted/ }),
+		);
+		await userEvent.click(canvas.getByRole("button", { name: "送信" }));
+		await expect(bridge.sent).toContainEqual(
+			expect.objectContaining({
+				type: "prompt/send",
+				changeScopes: ["uncommitted"],
+			}),
+		);
+	},
+};
 export const PiTools: Story = { args: { piTools: true, piRun: "completed" } };
 export const PiNestedTools: Story = {
 	args: { piNestedTools: true, piRun: "running" },

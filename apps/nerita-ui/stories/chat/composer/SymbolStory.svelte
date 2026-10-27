@@ -1,4 +1,5 @@
 <script lang="ts">
+	let { pending = false }: { pending?: boolean } = $props();
 	type Setter<T> = (value: T | ((previous: T) => T)) => void;
 	import type { Bridge } from "@nerita/shared/bridge";
 	import ChatApp from "../StoryChat.svelte";
@@ -23,7 +24,15 @@
 		setCompleted: Setter<string[]>,
 	): () => void {
 		return () => {
-			mock.emit(mockWorkspaceSymbols(message));
+			if (message.query === "failed-request") {
+				mock.emit({
+					type: "request/failed",
+					requestId: message.requestId,
+					error: "Host search failed",
+				});
+			} else {
+				mock.emit(mockWorkspaceSymbols(message));
+			}
 			setCompleted((previous) => [...previous, message.query]);
 		};
 	}
@@ -68,6 +77,9 @@
 				}
 				if (message.type === "workspace/searchSymbols") {
 					setQueries((previous) => [...previous, message.query]);
+					if (pending) {
+						return;
+					}
 					// 遅延はストーリー専用。実装の待機条件は UI の状態で検証する。
 					setTimeout(
 						createSymbolReply(mock, message, setCompleted),

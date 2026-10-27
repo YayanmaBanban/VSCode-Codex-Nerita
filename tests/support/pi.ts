@@ -17,6 +17,7 @@ import {
 } from "../../apps/vscode-nerita/src/extension/backends/pi/PiRuntime";
 import { WorkspaceTrustStore } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 import type { PiSessionStorage } from "../../apps/vscode-nerita/src/extension/backends/pi/PiSessionStore";
+import type { AttachmentService } from "../../apps/vscode-nerita/src/extension/session/attachmentService";
 
 /** 条件を満たすまで待ち、期限切れでは診断情報を付けてアサーションを失敗させる。 */
 export async function until(
@@ -97,9 +98,11 @@ export async function piFixture(t: TestContext) {
 		controller: (
 			afterCreate?: (session: PiSession) => Promise<void> | void,
 			executionRoot = cwd,
+			files?: AttachmentService,
 		) => {
 			const controller = new PiSessionController(
 				factory(afterCreate, executionRoot),
+				files,
 			);
 			controllers.push(controller);
 			return controller;

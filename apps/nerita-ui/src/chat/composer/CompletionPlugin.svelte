@@ -278,6 +278,7 @@
 					: undefined}
 				notice={candidates.notice}
 				empty={candidates.empty}
+				loading={candidates.loading}
 				{recent}
 				ancestors={candidates.paths.ancestors}
 				onAncestor={ancestor}
@@ -299,6 +300,7 @@
 					: undefined}
 				notice={candidates.notice}
 				empty={candidates.empty}
+				loading={candidates.loading}
 				onQuery={setSearch}
 				onKeyDown={searchKey}
 				onPick={pick}

@@ -19,6 +19,7 @@ import { piSessionContext } from "./PiSessionContext";
 import { isPiSessionRunning } from "./PiSessionActivity";
 import { PiOutputArchive } from "./results/PiOutputArchive";
 import { readPiSessionHeader } from "./PiSessionHeader";
+import { fsErrorCode } from "../../runtime/FsError";
 
 /** 保存先の設定値。任意パスは Webview から受け取らない。 */
 export type PiSessionStorage = "global" | "workspace";
@@ -105,6 +106,7 @@ export async function openPiSessionStore(
 	const root = await realpath(directory);
 	/** ディレクトリ移動に追従しつつ、外部ファイルへのリンクは履歴に含めない。 */
 	const list = createPiHistoryListing(directory, storage, sdk, cwd, root);
+	const references = createPiReferenceListing(sdk, cwd, agentDir);
 	let manager: PiSdk.SessionManager;
 	if (resume) {
 		const matches = (await list(signal)).filter(
@@ -129,11 +131,11 @@ export async function openPiSessionStore(
 	}
 	const history: PiHistoryAccess = {
 		outputs: new PiOutputArchive(manager, root),
-		readContext: createPiContextReader(list, cwd, manager, sdk, directory),
+		readContext: createPiContextReader(references, cwd, manager, sdk),
 		entries: manager.getBranch(),
 		target: (id) => ({ id, directory, storage }),
 		list: async (listSignal, referencesOnly = false) =>
-			(await list(listSignal))
+			(await (referencesOnly ? references : list)(listSignal))
 				.filter((row) => !referencesOnly || sameCwd(row.cwd, cwd))
 				.map((row) => ({
 					sessionId: row.id,
@@ -154,7 +156,6 @@ function createPiContextReader(
 	cwd: string,
 	manager: PiSdk.SessionManager,
 	sdk: typeof PiSdk,
-	directory: string,
 ): (
 	id: string,
 	mode: "transcript" | "handoff",
@@ -182,7 +183,7 @@ function createPiContextReader(
 			throw new Error("参照セッションが変更されています。");
 		}
 		readSignal.throwIfAborted();
-		const source = sdk.SessionManager.open(file, directory);
+		const source = sdk.SessionManager.open(file, dirname(file));
 		const context = piSessionContext(sdk, source.getBranch(), mode);
 		const matchesValue = (await readFile(file, "utf8")) !== before;
 		if (matchesValue) {
@@ -191,6 +192,39 @@ function createPiContextReader(
 		readSignal.throwIfAborted();
 		assertPiReferenceIdle(id);
 		return context;
+	};
+}
+
+/** 保存先設定を切り替えても、同じ作業フォルダの既存会話を参照できるようにする。 */
+function createPiReferenceListing(
+	sdk: typeof PiSdk,
+	cwd: string,
+	agentDir: string,
+) {
+	return async (signal: AbortSignal) => {
+		const rows: PiSdk.SessionInfo[] = [];
+		for (const storage of ["workspace", "global"] as const) {
+			const directory = piSessionDirectory(cwd, agentDir, storage);
+			let root: string;
+			try {
+				root = await realpath(directory);
+			} catch (error) {
+				if (fsErrorCode(error) === "ENOENT") {
+					continue;
+				}
+				throw error;
+			}
+			rows.push(
+				...(await createPiHistoryListing(
+					directory,
+					storage,
+					sdk,
+					cwd,
+					root,
+				)(signal)),
+			);
+		}
+		return rows.sort((a, b) => b.modified.getTime() - a.modified.getTime());
 	};
 }
 

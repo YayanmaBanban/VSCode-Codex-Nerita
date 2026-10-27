@@ -1,6 +1,7 @@
 // 追加の設定・使用量・ファイル参照を通信境界で検証する。
 import { isRecord } from "./validation";
 import { validSkills } from "./skills";
+import type { Attachment } from "./composer";
 import {
 	ComposerConfigOptionsSchema,
 	ComposerQuotaSchema,
@@ -22,27 +23,31 @@ export function validComposerField(key: string, value: unknown): boolean {
 		return value === null || validUsage(value);
 	}
 	if (key === "attachments") {
-		const matchesIsArray =
-			Array.isArray(value) &&
-			value.every((file: unknown) => {
-				if (!isRecord(file)) {
-					return false;
-				}
-				if (typeof file.id !== "string") {
-					return false;
-				}
-				if (typeof file.name !== "string") {
-					return false;
-				}
-				return typeof file.uri === "string";
-			});
-		return matchesIsArray;
+		return validAttachments(value);
 	}
 	if (key === "configOptions") {
 		return ComposerConfigOptionsSchema.safeParse(value).success;
 	}
 
 	return false;
+}
+
+/** 添付の表示用参照を、スナップショットと保存履歴の両方で検証する。 */
+export function validAttachments(value: unknown): value is Attachment[] {
+	if (!Array.isArray(value)) {
+		return false;
+	}
+	const valid = value.every((file: unknown) => {
+		if (!isRecord(file)) {
+			return false;
+		}
+		return (
+			typeof file.id === "string" &&
+			typeof file.name === "string" &&
+			typeof file.uri === "string"
+		);
+	});
+	return valid;
 }
 
 /** 使用量と上限が有効な有限数であることを確認する。 */

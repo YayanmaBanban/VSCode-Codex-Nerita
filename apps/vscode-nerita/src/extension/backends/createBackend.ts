@@ -57,6 +57,7 @@ export function createBackend(
 	if (matchesBackend) {
 		return new PiSessionController(
 			createPiFactory(context, trustStore, executionRoot),
+			attachmentService,
 		);
 	}
 	return new CodexSessionController(

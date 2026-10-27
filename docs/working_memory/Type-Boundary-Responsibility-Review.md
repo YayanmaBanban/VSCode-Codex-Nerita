@@ -198,7 +198,7 @@ R8 の機能別の継承は解消した。各機能は、必要な状態の取�
 
 | 担当する機能 | 実装 |
 | --- | --- |
-| 添付 | [CodexAttachments.ts](../../apps/vscode-nerita/src/extension/backends/codex/CodexAttachments.ts) |
+| 添付 | [SessionAttachments.ts](../../apps/vscode-nerita/src/extension/session/SessionAttachments.ts) |
 | 一覧 | [CodexCatalog.ts](../../apps/vscode-nerita/src/extension/backends/codex/CodexCatalog.ts) |
 | 子の管理 | [CodexAgents.ts](../../apps/vscode-nerita/src/extension/backends/codex/CodexAgents.ts) |
 | 設定 | [CodexOptions.ts](../../apps/vscode-nerita/src/extension/backends/codex/CodexOptions.ts) |

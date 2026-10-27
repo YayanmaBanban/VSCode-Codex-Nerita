@@ -18,7 +18,7 @@ import { CodexHistory, type RestoredHistory } from "./CodexHistory";
 import { CodexRequests } from "./CodexRequests";
 import { CodexAgents } from "./CodexAgents";
 import { CodexOptions } from "./CodexOptions";
-import { CodexAttachments } from "./CodexAttachments";
+import { SessionAttachments } from "../../session/SessionAttachments";
 import type { CodexFactory } from "./runtime/connection";
 import type { AttachmentService } from "../../session/attachmentService";
 import type { AuthService } from "./interaction/AuthFlow";
@@ -32,8 +32,8 @@ import {
 	openSessionReference,
 } from "./context/sessionReferenceActions";
 import { SessionContextError } from "./context/sessionContext";
-import { ChangeContextError } from "./context/changeContext";
-import { openChanges } from "./context/openChanges";
+import { ChangeContextError } from "../../session/changeContext";
+import { openChanges } from "../../session/openChanges";
 import { CodeReferenceError } from "../../session/codeReferenceContext";
 import { HandoffContextError } from "../../session/HandoffContext";
 import {
@@ -46,7 +46,7 @@ export class CodexSessionController extends SessionState {
 	private requests = new RequestDeduplicator();
 	private readonly options: CodexOptions;
 	private readonly serverRequests: CodexRequests;
-	private readonly attachments: CodexAttachments;
+	private readonly attachments: SessionAttachments;
 	private readonly submission: CodexSubmission;
 	private readonly run: CodexRun;
 	private readonly lifecycle: CodexLifecycle;
@@ -91,7 +91,7 @@ export class CodexSessionController extends SessionState {
 			chatInteractionService(this.questions.ask, interactions?.open),
 		);
 		this.options = new CodexOptions(session, selectionStore);
-		this.attachments = new CodexAttachments(session, files);
+		this.attachments = new SessionAttachments(session, files);
 		this.run = new CodexRun(
 			{
 				...session,

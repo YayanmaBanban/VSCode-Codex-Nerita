@@ -7,6 +7,8 @@ import type { PiResumeTarget } from "./PiSessionStore";
 import { restorePiHistory } from "./PiHistoryMapper";
 import type { ContributionContext } from "../../ui-contributions/contributionConditions";
 import { BackendShutdown } from "../../session/BackendShutdown";
+import { SessionAttachments } from "../../session/SessionAttachments";
+import type { AttachmentService } from "../../session/attachmentService";
 
 /** 本番の Runtime はシェルと子の Runtime も回収し、テスト接続は従来の SDK 契約を使う。 */
 async function closePiSession(session: PiSession): Promise<void> {
@@ -82,10 +84,26 @@ export abstract class PiLifecycle extends SessionState {
 	}
 
 	/** SDK 生成を注入し、実接続とテストで同じ状態遷移を使う。 */
-	constructor(private readonly factory: PiFactory) {
+	constructor(
+		private readonly factory: PiFactory,
+		files?: AttachmentService,
+	) {
 		super();
-		this.state.attachmentsSupported = false;
+		this.attachments = new SessionAttachments(
+			{
+				snapshot: () => this.snapshot(),
+				epoch: () => this.epoch,
+				busy: () =>
+					this.busy() ||
+					this.state.sessionPending ||
+					this.state.configPending,
+				patch: (change) => this.patch(change),
+			},
+			files,
+		);
+		this.state.attachmentsSupported = this.attachments.supportsAttachments;
 	}
+	protected readonly attachments: SessionAttachments;
 
 	/** 古い実行の購読・送信待機を無効化する。 */
 	protected abstract resetRun(): void;
@@ -280,7 +298,7 @@ export abstract class PiLifecycle extends SessionState {
 				archive: false,
 				unarchive: false,
 			},
-			attachmentsSupported: false,
+			attachmentsSupported: this.attachments.supportsAttachments,
 			configOptions: session.model
 				? [
 						{
@@ -345,7 +363,10 @@ export abstract class PiLifecycle extends SessionState {
 	invalidate(): void {
 		this.disconnect();
 		const { revision: _revision, ...empty } = initialState();
-		this.patch({ ...empty, attachmentsSupported: false });
+		this.patch({
+			...empty,
+			attachmentsSupported: this.attachments.supportsAttachments,
+		});
 	}
 
 	/** 起動・送信・停止の待機も含めて終了する。 */

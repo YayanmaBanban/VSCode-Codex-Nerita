@@ -1,5 +1,5 @@
 // 固定の Git 引数で差分を読み、巨大な差分は要約に切り替えて参照資料にする。
-import { fsErrorCode } from "../../../runtime/FsError";
+import { fsErrorCode } from "../runtime/FsError";
 import { nonEmptyString } from "@nerita/shared/valuePredicates";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -8,7 +8,6 @@ import {
 	changeScopes,
 	type ChangeScope,
 } from "@nerita/shared/changeReferences";
-import type { AdditionalContext } from "./additionalContext";
 
 const exec = promisify(execFile);
 const limit = 60_000;
@@ -18,7 +17,7 @@ export class ChangeContextError extends Error {
 	/** 対象範囲と復旧方法を表示する。 */
 	constructor(scope: ChangeScope) {
 		super(
-			`${changeScopes[scope].name}を読み込めませんでした。Gitリポジトリ・コミット${scope === "branch" ? "・mainブランチ" : ""}・nerita.codex.changes.exclude設定を確認するか、参照を外して再送してください。`,
+			`${changeScopes[scope].name}を読み込めませんでした。Git リポジトリ・コミット${scope === "branch" ? "・main ブランチ" : ""}・nerita.codex.changes.exclude 設定を確認するか、参照を外して再送してください。`,
 		);
 	}
 }
@@ -118,11 +117,8 @@ function isExcludePattern(pattern: unknown): pattern is string {
 }
 
 /** 重複する範囲は一度だけ取得し、差分を信頼しない参照資料として渡す。 */
-export async function changeContext(
-	cwd: string,
-	scopes: ChangeScope[],
-): Promise<AdditionalContext> {
-	const context: AdditionalContext = {};
+export async function changeContext(cwd: string, scopes: ChangeScope[]) {
+	const context: Record<string, { kind: "untrusted"; value: string }> = {};
 	for (const scope of new Set(scopes)) {
 		context[`git:${scope}`] = {
 			kind: "untrusted",

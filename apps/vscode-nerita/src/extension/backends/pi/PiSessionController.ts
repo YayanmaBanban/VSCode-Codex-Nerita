@@ -6,6 +6,7 @@ import { RequestDeduplicator } from "../../session/RequestDeduplicator";
 import type { UiMessage } from "@nerita/shared/messages";
 import { PiHistory } from "./PiHistory";
 import { piReferenceAction } from "./PiReferenceActions";
+import { openChanges } from "../../session/openChanges";
 
 /** Codex と同じ通信境界で送信・停止・再接続・新規会話を公開する。 */
 export class PiSessionController extends PiHistory implements BackendSession {
@@ -98,6 +99,15 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	private async dispatchReferenceAction(
 		message: UiMessage,
 	): Promise<boolean> {
+		if (message.type === "changes/open") {
+			const epoch = this.epoch;
+			await openChanges(
+				this.state.cwd!,
+				message.scope,
+				() => epoch === this.epoch,
+			);
+			return true;
+		}
 		const matchesType3 =
 			message.type === "session/searchReferences" ||
 			message.type === "session/openReference";
@@ -162,6 +172,14 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			await this.submitCurrentPrompt(message);
 			return;
 		}
+		const attachmentAction =
+			message.type === "attachment/add" ||
+			message.type === "attachment/open" ||
+			message.type === "attachment/remove";
+		if (attachmentAction) {
+			await this.attachments.attachment(message);
+			return;
+		}
 		this.dispatchRunAction(message);
 	}
 
@@ -169,14 +187,23 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	private async submitCurrentPrompt(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
 	): Promise<void> {
+		const attachments = [...this.state.attachments];
 		const matchesBusy =
 			!this.busy() &&
 			!this.state.sessionPending &&
 			this.runtime?.storageChanged?.() === true;
 		if (matchesBusy) {
 			await this.refreshStorage();
+			this.patch({ attachments });
 		}
-		this.submit(message);
+		const pending =
+			this.state.attachmentPending ||
+			this.state.configPending ||
+			this.state.sessionPending;
+		if (pending) {
+			throw new Error("添付と設定の準備が終わってから送信してください。");
+		}
+		this.submit({ ...message, attachments: [...this.state.attachments] });
 	}
 
 	/** 親の SDK は中断せず、対象のジョブ回収後に要求元へ応答する。 */

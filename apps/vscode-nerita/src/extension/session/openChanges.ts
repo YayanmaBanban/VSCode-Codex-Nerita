@@ -1,4 +1,4 @@
-// チップから差分をプレビューし、取得中に切り替わった会話には表示しない。
+// 両バックエンドのチップから差分をプレビューし、会話の切り替え後は表示しない。
 import * as vscode from "vscode";
 import type { ChangeScope } from "@nerita/shared/changeReferences";
 import { readChangeContext } from "./changeContext";

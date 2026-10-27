@@ -254,11 +254,13 @@ function promptCodeReferences(parts: ComposerPart[]) {
 			parts
 				.flatMap(
 					(part) =>
-						part.references?.flatMap(({ path }) =>
-							path.kind === "file" && path.range
-								? [{ uri: path.uri, range: path.range }]
-								: [],
-						) ?? [],
+						part.references?.flatMap(({ path }) => {
+							if (path.kind !== "file") {
+								return [];
+							}
+							const range = path.range ?? path.symbol?.range;
+							return range ? [{ uri: path.uri, range }] : [];
+						}) ?? [],
 				)
 				.map((reference) => [JSON.stringify(reference), reference]),
 		).values(),

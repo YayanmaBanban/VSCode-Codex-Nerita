@@ -14,7 +14,7 @@ export function piState(
 		sessionId: "pi-story",
 		sessionTitle: "Pi",
 		cwd: "workspace/project",
-		attachmentsSupported: false,
+		attachmentsSupported: true,
 		run,
 		configOptions: [
 			{

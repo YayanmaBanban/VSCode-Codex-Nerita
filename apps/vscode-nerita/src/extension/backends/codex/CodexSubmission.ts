@@ -16,7 +16,7 @@ import { type ActiveTurn } from "./ActiveTurn";
 import { type UserInput } from "./codex-app-server/v2/UserInput";
 import type { CodexOptions } from "./CodexOptions";
 import { type AdditionalContext } from "./context/additionalContext";
-import { changeContext } from "./context/changeContext";
+import { changeContext } from "../../session/changeContext";
 import { generateCodexHandoff } from "./context/handoffGeneration";
 import { readSessionContext } from "./context/sessionContext";
 import { skillInput } from "./context/skillInput";

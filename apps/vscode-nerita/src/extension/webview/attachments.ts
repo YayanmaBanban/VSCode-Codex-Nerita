@@ -15,7 +15,7 @@ export const attachmentService: AttachmentService = {
 			canSelectFiles: true,
 			canSelectFolders: false,
 			openLabel: "添付",
-			title: "Codex に添付するファイル",
+			title: "添付する画像またはテキストファイル",
 		});
 		return (uris ?? [])
 			.filter((uri) => uri.scheme === "file")

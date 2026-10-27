@@ -70,6 +70,11 @@ export function useCompletionCandidates(input: CandidateInput) {
 		get browsing() {
 			return browsing;
 		},
+		get loading() {
+			const searchingSymbols =
+				input.marker === "#" && input.category === "シンボル";
+			return searchingSymbols && symbols.loading;
+		},
 		get items() {
 			return current.items;
 		},

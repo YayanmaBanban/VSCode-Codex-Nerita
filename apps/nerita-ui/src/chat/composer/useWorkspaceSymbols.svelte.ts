@@ -34,7 +34,16 @@ export function useWorkspaceSymbols(input: {
 	$effect(() => searchWorkspaceSymbols(bridge, active, term, setResult));
 	const data = $derived(result?.query === term ? result.data : null);
 	const items = $derived(symbolCompletionItems(data?.entries ?? []));
+	const loading = $derived.by(() => {
+		if (!active || !bridge || term === "") {
+			return false;
+		}
+		return isSymbolQuery(term) && data === null;
+	});
 	return {
+		get loading() {
+			return loading;
+		},
 		get items() {
 			return items;
 		},
@@ -101,6 +110,19 @@ function searchWorkspaceSymbols(
 		setResult({ query: requestedTerm, data });
 	};
 	const unsubscribe = bridge.subscribe((message) => {
+		const failed =
+			message.type === "request/failed" &&
+			message.requestId === requestId;
+		if (failed) {
+			complete({
+				type: "workspace/symbols",
+				requestId,
+				entries: [],
+				truncated: false,
+				error: message.error,
+			});
+			return;
+		}
 		const matchesType =
 			message.type === "workspace/symbols" &&
 			message.requestId === requestId;
@@ -126,7 +148,7 @@ function searchWorkspaceSymbols(
 				truncated: false,
 				error: "検索がタイムアウトしました。検索語を変更して再試行してください。",
 			}),
-		10_000,
+		30_000,
 	);
 	return () => {
 		finished = true;

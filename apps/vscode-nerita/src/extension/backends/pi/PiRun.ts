@@ -1,8 +1,5 @@
 // `prompt` の受付と実行を分け、開始直前の停止や旧接続の完了が現在の実行に反映されるのを防ぐ。
-import {
-	isNonEmptyString,
-	isNonZeroNumber,
-} from "@nerita/shared/valuePredicates";
+import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 
 import type { ChatState } from "@nerita/shared/chatState";
 
@@ -20,8 +17,9 @@ import { mapPiReview } from "./PiReviewHistory";
 import { finishPiTools } from "./PiToolMapper";
 import { PiPermissions } from "./PiPermissions";
 import type { PiAuthorize } from "./PiApprovedTools";
-import { piPromptContext } from "./PiPromptContext";
+import { hasPiPromptContext, piPromptContext } from "./PiPromptContext";
 import { setPiSessionRunning } from "./PiSessionActivity";
+import type { PiPromptContent } from "./PiAttachments";
 
 import { type PiSession } from "./PiRuntime";
 
@@ -167,9 +165,6 @@ export abstract class PiRun extends PiLifecycle {
 		if (!runtime || this.state.sessionPending) {
 			throw new Error("Piへ接続してから送信してください。");
 		}
-		if (isNonZeroNumber(message.changeScopes?.length)) {
-			throw new Error("Pi は変更点の添付に対応していません。");
-		}
 		if (this.submission) {
 			this.steer(message, this.submission);
 			return;
@@ -211,17 +206,15 @@ export abstract class PiRun extends PiLifecycle {
 			}
 		};
 
-		const input =
-			isNonZeroNumber(message.codeReferences?.length) ||
-			isNonZeroNumber(message.sessionReferences?.length)
-				? piPromptContext(
-						runtime,
-						this.state.cwd!,
-						message,
-						submission.abort.signal,
-						check,
-					).then(start)
-				: start(message.text);
+		const input = hasPiPromptContext(message)
+			? piPromptContext(
+					runtime,
+					this.state.cwd!,
+					message,
+					submission.abort.signal,
+					check,
+				).then(start)
+			: start({ text: message.text, images: [] });
 
 		this.trackSubmission(input, submission, mapper, current, message);
 	}
@@ -275,7 +268,7 @@ export abstract class PiRun extends PiLifecycle {
 					);
 				}
 
-				const text = await piPromptContext(
+				const content = await piPromptContext(
 					runtime,
 					this.state.cwd!,
 					message,
@@ -290,7 +283,7 @@ export abstract class PiRun extends PiLifecycle {
 				);
 				const disposition = await this.steerWithReferences(
 					runtime,
-					text,
+					content,
 					message,
 				);
 				if (disposition === "handled") {
@@ -347,10 +340,16 @@ export abstract class PiRun extends PiLifecycle {
 					id: randomUUID(),
 					role: "user",
 					text: message.text,
+					attachments: message.attachments ?? [],
 					references: message.references ?? [],
 					order: nextTimelineOrder(this.state),
 				},
 			],
+			attachments: this.state.attachments.filter(
+				(file) =>
+					message.attachments?.some((sent) => sent.id === file.id) !==
+					true,
+			),
 		});
 	}
 
@@ -484,14 +483,12 @@ export abstract class PiRun extends PiLifecycle {
 		submission: Submission,
 		message: BackendPrompt,
 	) {
-		return (text: string) => {
-			const release = runtime.referenceHistory?.prepare(
-				runtime.protect?.(text) ?? text,
-				message.references ?? [],
-			);
+		return ({ text, images }: PiPromptContent) => {
+			const release = prepareReferenceHistory(runtime, text, message);
 			let queued = false;
 			return runtime
 				.prompt(text, {
+					images,
 					expandPromptTemplates: false,
 					preflightResult: (disposition) => {
 						this.acceptPrompt(
@@ -537,15 +534,12 @@ export abstract class PiRun extends PiLifecycle {
 	/** 拡張が処理した入力や失敗した追加指示は、後の履歴の参照に流用しない。 */
 	private async steerWithReferences(
 		runtime: PiSession,
-		text: string,
+		{ text, images }: PiPromptContent,
 		message: BackendPrompt,
 	) {
-		const release = runtime.referenceHistory?.prepare(
-			runtime.protect?.(text) ?? text,
-			message.references ?? [],
-		);
+		const release = prepareReferenceHistory(runtime, text, message);
 		try {
-			const disposition = await runtime.steer(text);
+			const disposition = await runtime.steer(text, images);
 			if (disposition === "handled") {
 				release?.();
 			}
@@ -647,4 +641,18 @@ function finishedRunStatus(
 		return "failed";
 	}
 	return "completed";
+}
+
+/** 資料を付けた送信本文と元の入力を分けて記録し、履歴表示へ資料本文を混ぜない。 */
+function prepareReferenceHistory(
+	runtime: PiSession,
+	text: string,
+	message: BackendPrompt,
+) {
+	return runtime.referenceHistory?.prepare(
+		runtime.protect?.(text) ?? text,
+		message.references ?? [],
+		runtime.protect?.(message.text) ?? message.text,
+		message.attachments ?? [],
+	);
 }
