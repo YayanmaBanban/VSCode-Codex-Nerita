@@ -4,13 +4,14 @@ import type {
 	ModelRuntime,
 	SessionManager,
 } from "@earendil-works/pi-coding-agent";
-import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
+import type { WorkspacePathPolicy } from "../../security/WorkspacePathPolicy";
 import {
 	bindAutoReviewContext,
 	type ReviewEvidence,
 } from "../../security/AutoReviewContext";
 import { isRecord } from "@nerita/shared/validation";
 import { PiReviewHistory } from "./PiReviewHistory";
+import { bindPiReviewPrefetch } from "./PiReviewPrefetch";
 
 const policyPrompt = `あなたは実行前の独立したセキュリティ審査役です。操作を実行せず、次の形式の JSON だけを返してください。
 形式: {"outcome":"allow|deny|ask","risk":"low|medium|high|critical","authorization":"unknown|low|medium|high","reason":"短い日本語の理由"}
@@ -24,18 +25,19 @@ const policyPrompt = `あなたは実行前の独立したセキュリティ審�
 export function bindPiAutoReview(
 	session: AgentSession,
 	models: ModelRuntime,
-	access: AgentAccessPolicy,
+	paths: WorkspacePathPolicy,
 	protect: (text: string) => string,
 	signal: AbortSignal,
 	manager: Pick<SessionManager, "appendCustomEntry">,
 ) {
+	const access = paths.policy;
 	const id = access.trustContextId;
 	if (id === undefined || id === "") {
 		return;
 	}
 	const reviews = new PiReviewHistory(manager);
 	Object.assign(session, { reviews });
-	const dispose = bindAutoReviewContext(id, {
+	const binding = bindAutoReviewContext(id, {
 		root:
 			access.guardrailsRoot ?? access.workspaceRoots[0] ?? process.cwd(),
 		protect,
@@ -77,6 +79,14 @@ export function bindPiAutoReview(
 				.join("\n");
 		},
 	});
+	const stopPrefetch = binding.attached
+		? bindPiReviewPrefetch(session, paths, signal, binding.invalidate)
+		: () => {};
+	/** 接続終了後は非同期推論を残さず、親だけがキャッシュを破棄する。 */
+	const dispose = () => {
+		stopPrefetch();
+		binding.dispose();
+	};
 	signal.addEventListener("abort", dispose, { once: true });
 	const original = session.dispose.bind(session);
 	session.dispose = () => {

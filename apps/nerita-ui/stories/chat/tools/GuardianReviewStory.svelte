@@ -33,6 +33,7 @@
 						path: "package.json",
 					},
 					review: {
+						id: `example-${status}`,
 						status,
 						riskLevel: "low",
 						userAuthorization: "high",
@@ -40,6 +41,9 @@
 							"ユーザーが依頼したプロジェクト設定の更新です。",
 						model: "local/test-model",
 						durationMs: 1250,
+						source: "prefetch",
+						reusedFrom: "previous-review",
+						reviewDurationMs: 1800,
 					},
 				},
 			}}

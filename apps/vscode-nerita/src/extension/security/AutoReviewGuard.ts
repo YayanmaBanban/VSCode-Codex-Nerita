@@ -1,13 +1,18 @@
 // 設定した判定器へ必要な操作だけを送り、障害時には人の承認へ戻す。
 import { z } from "zod";
 import type { AutoReviewRecord } from "@nerita/shared/guardrails/review";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { GuardResult } from "@nerita/shared/guardrails/messages";
 import type { ToolCall } from "./ApprovedToolCall";
 import { autoReviewContext } from "./AutoReviewContext";
 import { autoReviewStore, type AutoReviewStore } from "./AutoReviewStore";
 import { directReviewFiles } from "./AutoReviewPolicy";
 import type { FileSnapshot } from "./FileSnapshot";
+import {
+	reviewGeneration,
+	waitForReview,
+	type ReviewUse,
+} from "./AutoReviewCache";
 
 export const autoReviewDecisionSchema = z.strictObject({
 	outcome: z.enum(["allow", "deny", "ask"]),
@@ -35,7 +40,12 @@ export function reviewSnapshot(
 	if (!context) {
 		return undefined;
 	}
-	return { context, ...store.snapshot(context.root) };
+	return {
+		context,
+		contextSignal: context.signal,
+		...store.snapshot(context.root),
+		scope: "",
+	};
 }
 /** 審査中は最新設定に差し替えず、取得した世代だけを使う。 */
 type ReviewSnapshot = NonNullable<ReturnType<typeof reviewSnapshot>>;
@@ -46,6 +56,7 @@ export async function reviewToolCall(
 	result: GuardResult,
 	snapshot: ReturnType<typeof reviewSnapshot>,
 	signal: AbortSignal,
+	prefetched = false,
 ): Promise<ReviewResolution> {
 	if (!snapshot || snapshot.config.mode === "manual") {
 		return { manual: true };
@@ -55,7 +66,7 @@ export async function reviewToolCall(
 	if (files) {
 		return { manual: false, reviewFiles: files };
 	}
-	return runReview(call, result, snapshot, signal);
+	return runReview(call, result, snapshot, signal, prefetched);
 }
 
 /** 判定と履歴を同じ要求へ結び付け、期限切れと拒否を区別する。 */
@@ -64,23 +75,44 @@ async function runReview(
 	result: GuardResult,
 	snapshot: ReviewSnapshot,
 	signal: AbortSignal,
+	prefetched: boolean,
 ): Promise<ReviewResolution> {
 	const { config } = snapshot;
-	const record = reviewReporter(call, snapshot);
+	const id = randomUUID();
+	const record = reviewReporter(call, snapshot, id, prefetched);
 	record("reviewing", "審査中");
 	const deadline = AbortSignal.any([
 		signal,
 		AbortSignal.timeout(config.timeoutMs),
 	]);
 	try {
-		const review = await requestReview(call, result, snapshot, deadline);
+		const input = reviewInput(call, result, snapshot);
+		const key = reviewKey(call, input, snapshot);
+		const use = await snapshot.context.cache.run(
+			key,
+			id,
+			deadline,
+			(sharedSignal) =>
+				requestReview(
+					input,
+					snapshot,
+					AbortSignal.any([
+						sharedSignal,
+						snapshot.signal,
+						snapshot.contextSignal,
+						AbortSignal.timeout(config.timeoutMs),
+					]),
+				),
+			prefetched,
+		);
+		const { review } = use;
 		signal.throwIfAborted();
 		const status = {
 			allow: "approved",
 			deny: "denied",
 			ask: "manual",
 		} as const;
-		record(status[review.outcome], review.reason, review);
+		record(status[review.outcome], review.reason, use);
 		if (review.outcome === "deny") {
 			throw new AutoReviewDenied(review.reason);
 		}
@@ -90,7 +122,7 @@ async function runReview(
 			throw error;
 		}
 		record(
-			failureStatus(signal, deadline),
+			failureStatus(signal, deadline, error),
 			"自動レビューを完了できませんでした。",
 		);
 		signal.throwIfAborted();
@@ -99,8 +131,12 @@ async function runReview(
 }
 
 /** 表示用の操作概要だけをセッションへ渡し、ファイル本文や環境変数の値は永続化しない。 */
-function reviewReporter(call: ToolCall, snapshot: ReviewSnapshot) {
-	const id = randomUUID();
+function reviewReporter(
+	call: ToolCall,
+	snapshot: ReviewSnapshot,
+	id: string,
+	prefetched: boolean,
+) {
 	const time = Date.now();
 	const { context, config } = snapshot;
 	const command = call.params.command;
@@ -118,7 +154,7 @@ function reviewReporter(call: ToolCall, snapshot: ReviewSnapshot) {
 	return (
 		status: AutoReviewRecord["status"],
 		reason: string,
-		review?: AutoReviewResult,
+		use?: ReviewUse,
 	) => {
 		context.publish?.({
 			id,
@@ -129,20 +165,27 @@ function reviewReporter(call: ToolCall, snapshot: ReviewSnapshot) {
 			reason: context.protect(reason),
 			model: config.model,
 			durationMs: Date.now() - time,
-			...(review
-				? { risk: review.risk, authorization: review.authorization }
+			prefetched,
+			metrics: context.cache.metrics(),
+			...(use
+				? {
+						risk: use.review.risk,
+						authorization: use.review.authorization,
+						source: use.source,
+						reusedFrom: use.reusedFrom,
+						reviewDurationMs: use.reviewDurationMs,
+					}
 				: {}),
 		});
 	};
 }
 
 /** 正確な操作と出所を保った証拠だけを送り、不完全な入力を推測で自動承認しない。 */
-async function requestReview(
+function reviewInput(
 	call: ToolCall,
 	result: GuardResult,
 	snapshot: ReviewSnapshot,
-	signal: AbortSignal,
-): Promise<AutoReviewResult> {
+) {
 	const { context, config } = snapshot;
 	const evidence = context.evidence();
 	if (!evidence.some((item) => item.role === "user")) {
@@ -171,7 +214,35 @@ async function requestReview(
 			"レビューの入力が65536文字を超えているか、モデルが未指定です。",
 		);
 	}
-	const response = await abortableReview(
+	return input;
+}
+
+/** 外部状態に依存するシェルや拡張は対象外とし、秘匿前の正確な引数も指紋へ含める。 */
+function reviewKey(call: ToolCall, input: string, snapshot: ReviewSnapshot) {
+	if (!call.file || !["write", "edit"].includes(call.tool)) {
+		return undefined;
+	}
+	return createHash("sha256")
+		.update(
+			JSON.stringify({
+				call,
+				input,
+				config: snapshot.config,
+				scope: snapshot.scope,
+				generation: reviewGeneration(snapshot.signal),
+			}),
+		)
+		.digest("hex");
+}
+
+/** 共有する推論には呼出し元ごとの Stop を直接渡さず、最後の待機者の取消しを使う。 */
+async function requestReview(
+	input: string,
+	snapshot: ReviewSnapshot,
+	signal: AbortSignal,
+): Promise<AutoReviewResult> {
+	const { context, config } = snapshot;
+	const response = await waitForReview(
 		context.review(config, input, signal),
 		signal,
 	);
@@ -206,30 +277,13 @@ export class AutoReviewDenied extends Error {
 function failureStatus(
 	signal: AbortSignal,
 	deadline: AbortSignal,
+	error: unknown,
 ): AutoReviewRecord["status"] {
 	if (signal.aborted) {
 		return "cancelled";
 	}
-	return deadline.aborted ? "timedOut" : "unavailable";
-}
-
-/** SDK が中断を無視した場合も、期限切れや Stop の後に許可を発行しない。 */
-async function abortableReview(review: Promise<unknown>, signal: AbortSignal) {
-	/** 登録したイベントを、結果の成否によらず finally で解除する。 */
-	let abort = () => {};
-	try {
-		return await Promise.race([
-			review,
-			new Promise<never>((_resolve, reject) => {
-				abort = () =>
-					reject(new Error("自動レビューが中断されました。"));
-				signal.addEventListener("abort", abort, { once: true });
-				if (signal.aborted) {
-					abort();
-				}
-			}),
-		]);
-	} finally {
-		signal.removeEventListener("abort", abort);
-	}
+	const timedOut =
+		deadline.aborted ||
+		(error instanceof Error && error.name === "TimeoutError");
+	return timedOut ? "timedOut" : "unavailable";
 }

@@ -17,6 +17,20 @@ export const autoReviewRecordSchema = z.strictObject({
 	reason: z.string().max(2000),
 	model: z.string().max(300),
 	durationMs: z.number().nonnegative(),
+	prefetched: z.boolean().optional(),
+	source: z.enum(["model", "shared", "cache", "prefetch"]).optional(),
+	reusedFrom: z.string().max(100).optional(),
+	reviewDurationMs: z.number().nonnegative().optional(),
+	metrics: z
+		.strictObject({
+			requests: z.number().int().nonnegative(),
+			modelCalls: z.number().int().nonnegative(),
+			shared: z.number().int().nonnegative(),
+			hits: z.number().int().nonnegative(),
+			prefetches: z.number().int().nonnegative(),
+			unusedPrefetches: z.number().int().nonnegative(),
+		})
+		.optional(),
 	risk: z.enum(["low", "medium", "high", "critical"]).optional(),
 	authorization: z.enum(["unknown", "low", "medium", "high"]).optional(),
 	action: z.strictObject({

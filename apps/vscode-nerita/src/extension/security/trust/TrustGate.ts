@@ -14,6 +14,20 @@ type Context = {
 	roots: string[];
 };
 const contexts = new Map<string, Context>();
+const generations = new WeakMap<AbortSignal, string>();
+
+/** 合成シグナルを作り直しても、元の信頼世代が同じなら同じ照合値を返す。 */
+export function trustGeneration(signal: AbortSignal | undefined): string {
+	if (!signal) {
+		return "readonly";
+	}
+	let generation = generations.get(signal);
+	if (generation === undefined) {
+		generation = randomUUID();
+		generations.set(signal, generation);
+	}
+	return generation;
+}
 
 /** ID は Host 内のポリシーにだけ格納し、セッション終了時に回収する。 */
 export function bindTrustContext(
@@ -51,9 +65,9 @@ export async function evaluateTrust(
 		paths.push(resolve(call.cwd, call.params.path));
 	}
 	// ルート内の信頼取消しにも追随し、独立した Worktree の追加では承認待ちの許可を取り消さない。
-	const signal = AbortSignal.any(
-		paths.map((path) => context.store.signalFor(path)),
-	);
+	const signals = paths.map((path) => context.store.signalFor(path));
+	const signal = AbortSignal.any(signals);
+	generations.set(signal, signals.map(trustGeneration).join(":"));
 	let trusted = false;
 	if (context.enabled()) {
 		const decisions = await Promise.all(

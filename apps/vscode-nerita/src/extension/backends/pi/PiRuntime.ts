@@ -538,7 +538,7 @@ async function bindRuntimeAccount(
 	bindPiAutoReview(
 		session,
 		modelRuntime,
-		resources.runtimeTools.paths.policy,
+		resources.runtimeTools.paths,
 		(value) => options.credentials!.vault.stores.redactor.text(value),
 		options.signal,
 		manager,

@@ -7,6 +7,12 @@
 	import { toolLabelClass } from "./toolStyles";
 
 	let { tool }: { tool: ToolSummary } = $props();
+	const sourceLabels: Record<string, string> = {
+		model: "モデル審査",
+		shared: "進行中の審査を共有",
+		cache: "以前の判定を使用",
+		prefetch: "先読みした判定を使用",
+	};
 	const input = $derived(isRecord(tool.rawInput) ? tool.rawInput : {});
 	const output = $derived(isRecord(tool.rawOutput) ? tool.rawOutput : {});
 	const review = $derived(
@@ -20,12 +26,22 @@
 			return [];
 		}
 		const values: [string, unknown][] = [
+			["審査 ID", review.id],
 			["判断", review.status],
 			["リスク", review.riskLevel],
 			["ユーザーの承認", review.userAuthorization],
 			["理由", review.rationale],
 			["モデル", review.model],
-			["所要時間（ms）", review.durationMs],
+			["判定取得時間（ms）", review.durationMs],
+			["モデル審査時間（ms）", review.reviewDurationMs],
+			[
+				"判定の取得方法",
+				typeof review.source === "string"
+					? (sourceLabels[review.source] ?? review.source)
+					: undefined,
+			],
+			["開始方法", review.prefetched === true ? "先読み" : undefined],
+			["参照元の審査 ID", review.reusedFrom],
 		];
 		return values.filter(
 			([, value]) => value !== null && value !== undefined,

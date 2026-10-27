@@ -10,11 +10,12 @@ import {
 } from "./ApprovedToolCall";
 import type { PermissionPresentation } from "@nerita/shared/permission";
 import { toolApprovalPresentation } from "./toolApprovalPresentation";
-import { evaluateTrust } from "./trust/TrustGate";
+import { evaluateTrust, trustGeneration } from "./trust/TrustGate";
 import { guardrailRegistry } from "./GuardrailRegistry";
 import { evaluateGuardrails } from "./GuardrailEvaluator";
 import { reviewSnapshot, reviewToolCall } from "./AutoReviewGuard";
 import { autoReviewStore, type AutoReviewStore } from "./AutoReviewStore";
+import { reviewGeneration } from "./AutoReviewCache";
 import {
 	guardProbeSchema,
 	type GuardResult,
@@ -49,38 +50,8 @@ export async function approveToolCall(
 	signal?: AbortSignal,
 	reviews: AutoReviewStore = autoReviewStore,
 ) {
-	signal?.throwIfAborted();
-	input = freezeToolCall(input);
-	const trustSignal = await evaluateTrust(input);
-	const semantic = reviewSnapshot(input, reviews);
-	const snapshot = isNonEmptyString(input.policy.guardrailsRoot)
-		? guardrailRegistry.snapshot(input.policy.guardrailsRoot, [
-				input.policy.guardrailsRoot,
-			])
-		: guardrailRegistry.snapshot(input.cwd, input.policy.workspaceRoots);
-	const combined = AbortSignal.any(
-		[trustSignal, snapshot.signal, semantic?.signal, signal].filter(
-			(item): item is AbortSignal => item !== undefined,
-		),
-	);
-	const call = freezeToolCall({
-		...input,
-		guardrailsDigest: snapshot.digest,
-	});
-	const decision = assessToolCall(call);
-	const result = await evaluateGuardrails(
-		snapshot.config,
-		snapshot.root,
-		call.policy.workspaceRoots,
-		probeFor(call),
-	);
-	combined.throwIfAborted();
-	if (result.action === "deny") {
-		throw new Error(
-			`ガードレールが実行を拒否しました: ${result.reasons.join(" / ")}`,
-		);
-	}
-	const needsApproval = decision === "ask" || result.action === "ask";
+	const { call, result, semantic, combined, needsApproval } =
+		await prepareToolReview(input, signal, reviews);
 	const semanticResult = needsApproval
 		? await reviewToolCall(call, result, semantic, combined)
 		: { manual: false };
@@ -99,6 +70,73 @@ export async function approveToolCall(
 		checkedCall,
 		AbortSignal.any([combined, approvalSignal]),
 	);
+}
+
+/** 先読みも通常実行と同じ検査へ通し、手動承認や実行許可の発行は行わない。 */
+export async function prefetchToolReview(
+	input: ToolCall,
+	signal: AbortSignal,
+	reviews: AutoReviewStore = autoReviewStore,
+) {
+	const prepared = await prepareToolReview(input, signal, reviews);
+	if (!prepared.needsApproval || prepared.semantic?.config.mode !== "auto") {
+		return;
+	}
+	await reviewToolCall(
+		prepared.call,
+		prepared.result,
+		prepared.semantic,
+		prepared.combined,
+		true,
+	);
+}
+
+/** 確定した要求の信頼・権限・ルールを検査し、先読みと実行で同じ審査条件を作る。 */
+async function prepareToolReview(
+	input: ToolCall,
+	signal: AbortSignal | undefined,
+	reviews: AutoReviewStore,
+) {
+	signal?.throwIfAborted();
+	input = freezeToolCall(input);
+	const trustSignal = await evaluateTrust(input);
+	const semantic = reviewSnapshot(input, reviews);
+	const snapshot = isNonEmptyString(input.policy.guardrailsRoot)
+		? guardrailRegistry.snapshot(input.policy.guardrailsRoot, [
+				input.policy.guardrailsRoot,
+			])
+		: guardrailRegistry.snapshot(input.cwd, input.policy.workspaceRoots);
+	const combined = AbortSignal.any(
+		[
+			trustSignal,
+			snapshot.signal,
+			semantic?.signal,
+			semantic?.contextSignal,
+			signal,
+		].filter((item): item is AbortSignal => item !== undefined),
+	);
+	if (semantic) {
+		semantic.scope = `${trustGeneration(trustSignal)}:${reviewGeneration(snapshot.signal)}`;
+	}
+	const call = freezeToolCall({
+		...input,
+		guardrailsDigest: snapshot.digest,
+	});
+	const decision = assessToolCall(call);
+	const result = await evaluateGuardrails(
+		snapshot.config,
+		snapshot.root,
+		call.policy.workspaceRoots,
+		probeFor(call),
+	);
+	combined.throwIfAborted();
+	if (result.action === "deny") {
+		throw new Error(
+			`ガードレールが実行を拒否しました: ${result.reasons.join(" / ")}`,
+		);
+	}
+	const needsApproval = decision === "ask" || result.action === "ask";
+	return { call, result, semantic, combined, needsApproval };
 }
 
 /** 実行用の入力を検査専用の形式へ移し、未知のツールを暗黙に許可しない。 */

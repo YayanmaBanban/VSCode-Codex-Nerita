@@ -150,18 +150,44 @@ async function verifyGuardianHistory(
 	const reviews = state.tools.filter(
 		(tool) => tool.title === "Guardian Review",
 	);
-	assert.equal(reviews.length, 1);
-	const review = reviews[0];
-	assert.ok(review);
-	assert.equal(review.status, status);
-	const output = z
-		.object({
-			review: z.object({ model: z.string(), rationale: z.string() }),
-			action: z.object({ path: z.string() }),
-		})
-		.parse(review.rawOutput);
+	assert.equal(reviews.length, 2);
+	const schema = z.object({
+		review: z.object({
+			model: z.string(),
+			rationale: z.string(),
+			source: z.enum(["model", "shared", "prefetch"]),
+			reusedFrom: z.string().nullable(),
+			prefetched: z.boolean(),
+			metrics: z.object({
+				modelCalls: z.number(),
+				prefetches: z.number(),
+				requests: z.number(),
+			}),
+		}),
+		action: z.object({ path: z.string() }),
+	});
+	const parsed = reviews.map((tool) => ({
+		tool,
+		output: schema.parse(tool.rawOutput),
+	}));
+	const model = parsed.find((item) => item.output.review.source === "model");
+	const reused = parsed.find((item) => item.output.review.source !== "model");
+	assert.ok(model);
+	assert.ok(reused);
+	assert.equal(
+		parsed.filter((item) => item.output.review.prefetched).length,
+		1,
+	);
+	assert.equal(
+		model.tool.id,
+		`autoApprovalReview:${reused.output.review.reusedFrom}`,
+	);
+	const { output } = reused;
 	assert.equal(output.review.model, "local/test-model");
 	assert.equal(output.review.rationale, "検証用判定");
+	assert.equal(output.review.metrics.modelCalls, 1);
+	assert.equal(output.review.metrics.prefetches, 1);
+	assert.equal(output.review.metrics.requests, 1);
 	assert.equal(output.action.path, join(f.cwd, "package.json"));
 	const requests = f.model.requests.length;
 	await controller.dispose();
@@ -169,12 +195,13 @@ async function verifyGuardianHistory(
 	const history = restored.tools.filter(
 		(tool) => tool.title === "Guardian Review",
 	);
-	assert.equal(history.length, 1);
-	const restoredReview = history[0];
-	assert.ok(restoredReview);
-	assert.equal(restoredReview.id, review.id);
-	assert.equal(restoredReview.status, status);
-	assert.deepEqual(restoredReview.rawOutput, review.rawOutput);
+	assert.equal(history.length, 2);
+	for (const review of reviews) {
+		const restoredReview = history.find((tool) => tool.id === review.id);
+		assert.ok(restoredReview);
+		assert.equal(restoredReview.status, status);
+		assert.deepEqual(restoredReview.rawOutput, review.rawOutput);
+	}
 	assert.equal(f.model.requests.length, requests);
 }
 

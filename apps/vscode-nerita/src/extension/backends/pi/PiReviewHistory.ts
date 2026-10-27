@@ -88,6 +88,7 @@ function reviewOutput(
 	return {
 		action: record.action,
 		review: {
+			id: record.id,
 			status: {
 				reviewing: "inProgress",
 				approved: "approved",
@@ -104,6 +105,11 @@ function reviewOutput(
 				: record.reason,
 			model: record.model,
 			durationMs: record.durationMs,
+			reviewDurationMs: record.reviewDurationMs ?? null,
+			source: record.source ?? null,
+			reusedFrom: record.reusedFrom ?? null,
+			prefetched: record.prefetched ?? false,
+			metrics: record.metrics ?? null,
 		},
 	};
 }

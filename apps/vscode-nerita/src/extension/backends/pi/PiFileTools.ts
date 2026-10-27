@@ -30,6 +30,25 @@ const editSchema = z.object({
 		.min(1),
 });
 
+/** 先読みと実行で同じ入力検証・パス解決・内容のスナップショットを使う。 */
+export async function preparePiFileCall(
+	kind: "write" | "edit",
+	params: unknown,
+	paths: WorkspacePathPolicy,
+): Promise<ToolCall & { file: FileSnapshot }> {
+	const input = freezeToolCall(
+		(kind === "write" ? writeSchema : editSchema).parse(params),
+	);
+	const snapshot = await snapshotFile(paths, input.path);
+	return {
+		tool: kind,
+		params: { ...input, path: snapshot.path },
+		file: snapshot,
+		cwd: paths.cwd,
+		policy: paths.policy,
+	};
+}
+
 /** 各呼出しに専用 `operations` を作り、別の承認の対象を共有しない。 */
 export function createPiFileTool(
 	sdk: typeof PiSdk,
@@ -67,7 +86,7 @@ export function createPiFileTool(
 	};
 }
 
-/** 呼び出しごとに承認を求め、実際に入出力する直前にも検査する。 */
+/** 呼び出しごとにガード判定と必要な承認を経て、実際に入出力する直前にも検査する。 */
 async function executePiFileTool(
 	kind: "write" | "edit",
 	params: Parameters<ToolDefinition["execute"]>[1],
@@ -80,23 +99,11 @@ async function executePiFileTool(
 	update: Parameters<ToolDefinition["execute"]>[3],
 	context: PiSdk.ExtensionToolContext,
 ) {
-	const input = freezeToolCall(
-		(kind === "write" ? writeSchema : editSchema).parse(params),
-	);
 	const combined = signal ? AbortSignal.any([signal, lifetime]) : lifetime;
 	combined.throwIfAborted();
-	const snapshot = await snapshotFile(paths, input.path);
-	const approved = await approveToolCall(
-		{
-			tool: kind,
-			params: { ...input, path: snapshot.path },
-			file: snapshot,
-			cwd: paths.cwd,
-			policy: paths.policy,
-		},
-		authorize,
-		combined,
-	);
+	const input = await preparePiFileCall(kind, params, paths);
+	const snapshot = input.file;
+	const approved = await approveToolCall(input, authorize, combined);
 	const call = consumeApprovedToolCall(approved);
 	/** 入出力の直前にも検査し、SDK の変更処理のキューで待つ間にファイルが差し替えられていないか確認する。 */
 	const check = async () => {
