@@ -351,8 +351,8 @@ async function validateRoots(call: ToolCall) {
 		...call.policy.writableRoots,
 		call.cwd,
 	]) {
-		const matchesValue2 = (await realpath(path)) !== path;
-		if (matchesValue2) {
+		const matchesValue = (await realpath(path)) !== path;
+		if (matchesValue) {
 			throw new Error("パスが変更されました。再承認が必要です。");
 		}
 	}

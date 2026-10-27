@@ -121,10 +121,10 @@ function validateHostLimits(call: ToolCall) {
 		throw new Error("Host 実行の引数または時間制限が不正です。");
 	}
 	// Host では readOnly role を隔離できないため、子の書込み上限を解除して起動しない。
-	const matchesSome2 = call.policy.workspaceRoots.some(
+	const matchesSome = call.policy.workspaceRoots.some(
 		(root) => !call.policy.writableRoots.includes(root),
 	);
-	if (matchesSome2) {
+	if (matchesSome) {
 		throw new Error(
 			"書き込み範囲を制限した役割では、Host での実行を利用できません。",
 		);

@@ -117,12 +117,12 @@ function containsUntrustedCode(
 	context: Context,
 	paths: string[],
 ): boolean {
-	const matchesCommand2 = !(
+	const matchesCommand = !(
 		call.command !== undefined ||
 		call.hostShell === true ||
 		call.tool.startsWith("extension:")
 	);
-	if (matchesCommand2) {
+	if (matchesCommand) {
 		return false;
 	}
 	const matchesSome = context.store

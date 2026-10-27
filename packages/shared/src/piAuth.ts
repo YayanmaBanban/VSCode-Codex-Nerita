@@ -106,7 +106,7 @@ function isAuthItem(value: unknown): boolean {
 	if (matchesAccounts) {
 		return false;
 	}
-	const matchesIsArray2 =
+	const matchesIsArray =
 		Array.isArray(value.methods) &&
 		value.methods.every(
 			(method: unknown) =>
@@ -114,7 +114,7 @@ function isAuthItem(value: unknown): boolean {
 				typeof method.id === "string" &&
 				typeof method.name === "string",
 		);
-	return matchesIsArray2;
+	return matchesIsArray;
 }
 
 /** アカウントの保存方式は公開契約の2種類に限定する。 */

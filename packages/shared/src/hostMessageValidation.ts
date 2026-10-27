@@ -56,16 +56,16 @@ const hostMessageValidators = new Map<
 			return value.error === undefined || typeof value.error === "string";
 		},
 		"workspace/resolvedPath": (value) => {
-			const matchesIsId5 =
+			const matchesIsId =
 				isId(value.requestId) &&
 				(value.entry === null || isWorkspacePath(value.entry));
-			return matchesIsId5;
+			return matchesIsId;
 		},
 		"prompt/accepted": (value) => {
-			const matchesIsId6 =
+			const matchesIsId =
 				isId(value.requestId) &&
 				(value.mode === "start" || value.mode === "steer");
-			return matchesIsId6;
+			return matchesIsId;
 		},
 		"ui/sidebarState": (value) => {
 			return isSidebarLocation(value.location);

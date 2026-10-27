@@ -104,11 +104,11 @@ function resolveUltraEffort(
 
 /** 不正・巨大な能力欄を使わず、基本のモデル一覧は利用できるようにする。 */
 function validReasoningEntries(value: unknown): value is { effort: string }[] {
-	const matchesIsArray2 =
+	const matchesIsArray =
 		Array.isArray(value) &&
 		value.length <= 32 &&
 		value.every((entry) => isRecord(entry) && isShortText(entry.effort));
-	return matchesIsArray2;
+	return matchesIsArray;
 }
 
 /** 識別子と名前を短い文字列に限定し、未知の公開状態を拒否する。 */

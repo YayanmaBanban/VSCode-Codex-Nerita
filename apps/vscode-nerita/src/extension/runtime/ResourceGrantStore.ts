@@ -227,12 +227,12 @@ export class ResourceGrantStore {
 				continue;
 			}
 			const profile = policy.resources.find((item) => {
-				const matchesKind2 = !(
+				const matchesKind = !(
 					item.kind === grant.resource.kind &&
 					item.tool === grant.resource.tool &&
 					item.target === grant.resource.profileTarget
 				);
-				if (matchesKind2) {
+				if (matchesKind) {
 					return false;
 				}
 				return containsPath(item.target, grant.resource.target);

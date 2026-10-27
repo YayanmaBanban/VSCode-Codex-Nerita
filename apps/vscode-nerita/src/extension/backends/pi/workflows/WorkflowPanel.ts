@@ -106,8 +106,8 @@ export class WorkflowPanel {
 				throw new Error("文書を更新できませんでした。");
 			}
 		} else if (message.type === "save") {
-			const matchesValue2 = !(await this.document.save());
-			if (matchesValue2) {
+			const matchesValueResult = !(await this.document.save());
+			if (matchesValueResult) {
 				throw new Error("保存できませんでした。");
 			}
 			notice = "保存しました。";

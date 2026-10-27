@@ -15,6 +15,7 @@ const rules = [
 	"nerita/require-member-function-comment",
 	"nerita/require-file-comment",
 	"nerita/require-declaration-comment",
+	"nerita/no-skipped-variable-number",
 ];
 const eslint = new ESLint({ cwd: repoRoot });
 const examples = [

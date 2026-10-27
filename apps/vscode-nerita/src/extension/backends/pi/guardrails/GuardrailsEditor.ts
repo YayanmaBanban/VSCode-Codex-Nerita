@@ -245,8 +245,8 @@ export async function registerGuardrailsEditor(
 						`${JSON.stringify(defaultGuardrails(), null, 2)}\n`,
 					),
 				});
-				const matchesValue3 = !(await vscode.workspace.applyEdit(edit));
-				if (matchesValue3) {
+				const matchesValue = !(await vscode.workspace.applyEdit(edit));
+				if (matchesValue) {
 					throw new Error("設定ファイルを作成できませんでした。", {
 						cause: error,
 					});

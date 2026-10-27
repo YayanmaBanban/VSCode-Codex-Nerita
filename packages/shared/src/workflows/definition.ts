@@ -113,10 +113,10 @@ function validateStep(step: WorkflowStep, steps: Map<string, WorkflowStep>) {
 
 /** 新規・複製・継続の指定を相互に矛盾させない。 */
 function validateMode(step: WorkflowStep) {
-	const matchesIsNonEmptyString2 =
+	const matchesIsNonEmptyString =
 		isNonEmptyString(step.resume) &&
 		(isNonEmptyString(step.fork) || isNonEmptyString(step.agent));
-	if (matchesIsNonEmptyString2) {
+	if (matchesIsNonEmptyString) {
 		throw new Error("resume は agent・fork と併用できません。");
 	}
 	if (!isNonEmptyString(step.resume) && !isNonEmptyString(step.agent)) {

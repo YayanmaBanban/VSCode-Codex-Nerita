@@ -103,11 +103,11 @@ function pathOperation(
 	if (/^[;|&\n]$/.test(token)) {
 		return "read";
 	}
-	const matchesTest2 =
+	const matchesTest =
 		/^(?:set-content|add-content|out-file|remove-item|rm|rmdir|del|move-item|copy-item|mv|cp|new-item|mkdir)$/i.test(
 			token,
 		);
-	if (matchesTest2) {
+	if (matchesTest) {
 		return "write";
 	}
 	return previous;

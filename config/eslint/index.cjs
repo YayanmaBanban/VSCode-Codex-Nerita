@@ -6,6 +6,7 @@ module.exports = {
 		version: "0.0.1",
 	},
 	rules: {
+		"no-skipped-variable-number": require("./no-skipped-variable-number.cjs"),
 		"no-complex-boolean-expression": require("./no-complex-boolean-expression.cjs"),
 		"no-nested-ternary-expression": require("./no-nested-ternary-expression.cjs"),
 		"no-complex-inline-callback": require("./no-complex-inline-callback.cjs"),

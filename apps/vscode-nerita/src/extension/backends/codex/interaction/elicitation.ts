@@ -342,13 +342,13 @@ async function elicitUrl(
 	if (ui.ask) {
 		return elicitChatUrl(url, ui, signal, title, empty);
 	}
-	const matchesValue2 =
+	const matchesValue =
 		(await ui.choose(
 			`${title}\n${url.href}`,
 			["ブラウザで開く", "拒否"],
 			signal,
 		)) !== "ブラウザで開く" || signal.aborted;
-	if (matchesValue2) {
+	if (matchesValue) {
 		return empty;
 	}
 	await ui.open(url.href);

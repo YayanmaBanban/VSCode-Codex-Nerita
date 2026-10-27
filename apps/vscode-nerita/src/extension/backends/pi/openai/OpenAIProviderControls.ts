@@ -206,12 +206,12 @@ export class OpenAIProviderControls implements PiModelControls {
 		if (!(!!current && !!model && !(this.session?.isCompacting === true))) {
 			return false;
 		}
-		const matchesProvider2 = !(
+		const matchesProvider = !(
 			model.provider === current.provider &&
 			model.id === current.id &&
 			model.api === current.api
 		);
-		if (matchesProvider2) {
+		if (matchesProvider) {
 			return false;
 		}
 		return (

@@ -273,10 +273,10 @@ function evidenceProblem(
 	if (paths.length === 0 || claims.length === 0) {
 		return "実際のソース変更を確認できません。";
 	}
-	const matchesSome3 =
+	const matchesSome =
 		paths.some((path) => !item.paths.includes(path)) ||
 		claims.some((path) => !paths.includes(path));
-	if (matchesSome3) {
+	if (matchesSome) {
 		return "実測した差分が作業の対象、または申告された変更と一致しません。";
 	}
 	const writes = evidence.tools
@@ -286,18 +286,18 @@ function evidenceProblem(
 				["edit", "write"].includes(tool.kind),
 		)
 		.flatMap((tool) => tool.paths);
-	const matchesSome4 = paths.some(
+	const matchesSome2 = paths.some(
 		(path) => !claims.includes(path) || !writes.includes(path),
 	);
-	if (matchesSome4) {
+	if (matchesSome2) {
 		return "差分に対応する成功した書込み通知を確認できません。";
 	}
-	const matchesSome5 = evidence.tools.some(
+	const matchesSome3 = evidence.tools.some(
 		(tool) =>
 			tool.status !== "completed" ||
 			(tool.exitCode !== undefined && tool.exitCode !== 0),
 	);
-	if (matchesSome5) {
+	if (matchesSome3) {
 		return "失敗または未完了のツール実行があります。";
 	}
 	return null;
@@ -305,10 +305,10 @@ function evidenceProblem(
 
 /** 他の作業が実行中でないことを確認し、失敗・中断した作業だけを再試行可能に戻す。 */
 function retryWork(state: IntentState, workItemId: string): IntentState {
-	const matchesSome6 = state.workItems.some((item) =>
+	const matchesSome = state.workItems.some((item) =>
 		["running", "stopping"].includes(item.status),
 	);
-	if (matchesSome6) {
+	if (matchesSome) {
 		throw new Error("実行中は再試行できません。");
 	}
 	const item = state.workItems.find((work) => work.id === workItemId);
@@ -321,10 +321,10 @@ function retryWork(state: IntentState, workItemId: string): IntentState {
 }
 /** 実行中の作業がない依頼だけをアーカイブし、既にアーカイブ済みなら状態を維持する。 */
 function archiveIntent(state: IntentState): IntentState {
-	const matchesSome7 = state.workItems.some((item) =>
+	const matchesSome = state.workItems.some((item) =>
 		["running", "stopping"].includes(item.status),
 	);
-	if (matchesSome7) {
+	if (matchesSome) {
 		throw new Error("実行中はアーカイブできません。");
 	}
 	if (state.workflow.status === "archived") {

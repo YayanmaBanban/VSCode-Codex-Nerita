@@ -119,10 +119,10 @@ export class WorktreeManager {
 		}
 		const backlink = await readFile(join(gitDir, "gitdir"), "utf8");
 		const gitFile = await realpath(resolve(gitDir, backlink.trim()));
-		const matchesTrustKey2 =
+		const matchesTrustKeyResult =
 			trustKey(gitFile) !== trustKey(join(root, ".git")) ||
 			trustKey(await realpath(dirname(gitFile))) !== trustKey(root);
-		if (matchesTrustKey2) {
+		if (matchesTrustKeyResult) {
 			throw new Error(
 				"Worktree の個別 Git 登録が別の作業ディレクトリを指しています。",
 			);
@@ -176,10 +176,10 @@ export class WorktreeManager {
 		}
 		const parent = join(this.storageRoot, "worktrees", project.id);
 		await mkdir(parent, { recursive: true });
-		const matchesTrustKey3 =
+		const matchesTrustKey =
 			trustKey(await realpath(parent)) !== trustKey(parent) ||
 			containsPath(project.root, parent);
-		if (matchesTrustKey3) {
+		if (matchesTrustKey) {
 			throw new Error(
 				"Worktree の作成先が作業ディレクトリ内にあるか、リンクを経由しています。",
 			);

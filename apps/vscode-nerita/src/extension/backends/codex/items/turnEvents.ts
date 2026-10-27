@@ -102,10 +102,10 @@ export function parseTurnEvent(
 			update: parseActivityUpdate(message.method, params),
 		};
 	}
-	const matchesMethod2 =
+	const matchesMethodResult =
 		message.method === "item/agentMessage/delta" ||
 		message.method === "item/plan/delta";
-	if (matchesMethod2) {
+	if (matchesMethodResult) {
 		return {
 			kind: "delta",
 			threadId,

@@ -112,11 +112,11 @@ export class WorkspacePathPolicy {
 			throw new Error(`読取り許可の範囲外です: ${input}`);
 		}
 		if (operation === "write") {
-			const matchesSome2 =
+			const matchesSome =
 				!this.policy.writableRoots.some((root) =>
 					containsPath(root, target),
 				) || this.policy.workspaceRoots.includes(target);
-			if (matchesSome2) {
+			if (matchesSome) {
 				throw new Error(
 					`書き込みが許可された範囲の外、またはワークスペースのルート自体には書き込めません: ${input}`,
 				);

@@ -309,10 +309,10 @@ export class IntentRepository {
 			throw new Error("Intent の本文がありません。");
 		}
 		const intent = IntentMetadataSchema.parse(JSON.parse(text));
-		const matchesIntentId2 =
+		const matchesIntentId =
 			intent.intentId !== entry.intentId ||
 			intent.createdAt !== entry.createdAt;
-		if (matchesIntentId2) {
+		if (matchesIntentId) {
 			throw new Error("Intent レジストリと本文の参照が一致しません。");
 		}
 		const disk = await this.documents.load(
@@ -407,11 +407,11 @@ export class IntentRepository {
 				throw new Error("出力する Intent が登録されていません。");
 			}
 			const state = await this.loadEntry(entry);
-			const matchesSome2 = state.workItems.some(
+			const matchesSome = state.workItems.some(
 				(item) =>
 					item.status === "running" || item.status === "stopping",
 			);
-			if (matchesSome2) {
+			if (matchesSome) {
 				throw new Error("実行中の状態は Git の履歴へ出力できません。");
 			}
 			const directory = `${intentsDirectory}/${entry.dirName}`;
@@ -499,11 +499,11 @@ export class IntentRepository {
 				throw new Error("保存する Intent が登録されていません。");
 			}
 			const previous = await this.loadEntry(entry);
-			const matchesRevision2 =
+			const matchesRevision =
 				previous.revision !== expectedRevision ||
 				jsonDigest(previous.intent) !== jsonDigest(state.intent) ||
 				jsonDigest(previous.routing) !== jsonDigest(state.routing);
-			if (matchesRevision2) {
+			if (matchesRevision) {
 				throw new Error("Intent の状態または版が競合しています。");
 			}
 			const matchesJsonDigest =

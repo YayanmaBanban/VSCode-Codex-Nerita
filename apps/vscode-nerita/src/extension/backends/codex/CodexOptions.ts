@@ -372,10 +372,10 @@ export class CodexOptions {
 					throw new Error("Thread changed");
 				}
 			} finally {
-				const matchesEpoch2 =
+				const matchesEpochResult =
 					epoch === this.session.epoch() &&
 					sessionId === this.session.snapshot().sessionId;
-				if (matchesEpoch2) {
+				if (matchesEpochResult) {
 					this.session.patch({ configPending: false });
 				}
 			}

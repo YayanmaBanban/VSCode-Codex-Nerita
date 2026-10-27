@@ -54,8 +54,8 @@ export class BindingStore {
 	async read(): Promise<CredentialBinding[]> {
 		try {
 			const path = join(await this.directory(), "bindings.json");
-			const matchesIsSymbolicLink2 = (await lstat(path)).isSymbolicLink();
-			if (matchesIsSymbolicLink2) {
+			const matchesIsSymbolicLink = (await lstat(path)).isSymbolicLink();
+			if (matchesIsSymbolicLink) {
 				throw new Error("Binding へのリンクは使用できません。");
 			}
 			const file = await open(path, "r");
@@ -98,10 +98,10 @@ export class BindingStore {
 				if (fsErrorCode(error) !== "EEXIST") {
 					throw error;
 				}
-				const matchesIsSymbolicLink3 = (
+				const matchesIsSymbolicLink = (
 					await lstat(ignore)
 				).isSymbolicLink();
-				if (matchesIsSymbolicLink3) {
+				if (matchesIsSymbolicLink) {
 					throwCredentialError(
 						"除外設定へのリンクは使用できません。",
 						error,

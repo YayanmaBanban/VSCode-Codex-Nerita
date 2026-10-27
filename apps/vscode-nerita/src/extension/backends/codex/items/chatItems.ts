@@ -74,11 +74,11 @@ function toolPatch(
 	completed: boolean,
 ): Partial<ChatState> {
 	const activity = activityItem(value);
-	const matchesType2 =
+	const matchesType =
 		value.type !== "commandExecution" &&
 		value.type !== "fileChange" &&
 		!activity;
-	if (matchesType2) {
+	if (matchesType) {
 		return {};
 	}
 	const previous = state.tools.find(

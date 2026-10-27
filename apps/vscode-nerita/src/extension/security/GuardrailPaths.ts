@@ -61,13 +61,13 @@ function builtinProtection(
 	if (protectedDlcWrite) {
 		return "DLC の管理ファイルは Host が更新します。";
 	}
-	const matchesOperation2 =
+	const matchesOperation =
 		operation === "write" &&
 		roots.some(
 			(root) =>
 				relative(resolve(root, ".pi/guardrails.json"), path) === "",
 		);
-	if (matchesOperation2) {
+	if (matchesOperation) {
 		return "ガードレール設定は専用エディターから変更してください。";
 	}
 	return undefined;

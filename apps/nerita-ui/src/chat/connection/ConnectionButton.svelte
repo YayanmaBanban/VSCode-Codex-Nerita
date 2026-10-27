@@ -134,12 +134,12 @@
 
 	/** 接続済み・接続中・認証中以外では、マウスカーソルを操作可能な形にする。 */
 	function connectionMouseCursor(connection: ChatState["connection"]) {
-		const matchesConnection2 = !(
+		const matchesConnection = !(
 			connection === "ready" ||
 			connection === "connecting" ||
 			connection === "authenticating"
 		);
-		if (matchesConnection2) {
+		if (matchesConnection) {
 			return "cursor-pointer";
 		}
 		return "";

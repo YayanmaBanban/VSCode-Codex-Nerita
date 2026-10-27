@@ -247,13 +247,13 @@ export class BackendRuntime implements BackendSession {
 			return;
 		}
 		if (!isUiMessage(value) || value.type !== "prompt/send") {
-			const matchesIsUiMessage2 =
+			const matchesIsUiMessage =
 				isUiMessage(value) &&
 				["session/new", "session/load", "session/fork"].includes(
 					value.type,
 				) &&
 				sessionWriting(current.snapshot());
-			if (matchesIsUiMessage2) {
+			if (matchesIsUiMessage) {
 				throw new Error("実行が終わってから会話を切り替えてください。");
 			}
 			await current.receive(value);
@@ -367,7 +367,7 @@ export class BackendRuntime implements BackendSession {
 		if (matchesValue) {
 			return true;
 		}
-		const matchesMode3 =
+		const matchesMode =
 			mode === "dlc" &&
 			[
 				"prompt/send",
@@ -379,7 +379,7 @@ export class BackendRuntime implements BackendSession {
 				"permission/respond",
 				"prompt/cancel",
 			].includes(value.type);
-		if (matchesMode3) {
+		if (matchesMode) {
 			throw new Error("現在の Intent と実行を選択して操作してください。");
 		}
 		if (mode === "dlc") {
@@ -416,11 +416,11 @@ export class BackendRuntime implements BackendSession {
 			return true;
 		}
 		// 表示モードを戻しても、終了・復元済みの DLC 会話へ手動ターンを追加させない。
-		const matchesValue2 =
+		const matchesValue =
 			"sessionId" in value &&
 			(this.managedSessionIds.has(value.sessionId) ||
 				this.ownership?.has(value.sessionId) === true);
-		if (matchesValue2) {
+		if (matchesValue) {
 			throw new Error(
 				"この DLC セッションへの操作は、対象の実行が終了したため受け付けられません。",
 			);
@@ -500,10 +500,10 @@ export class BackendRuntime implements BackendSession {
 			throw new Error("この承認要求は現在の実行に属していません。");
 		}
 		await active.session.receive(value);
-		const matchesSome2 = !active.session
+		const matchesSome = !active.session
 			.snapshot()
 			.permissions.some((item) => item.id === value.permissionId);
-		if (matchesSome2) {
+		if (matchesSome) {
 			active.approvals.push({
 				requestId: permission.id,
 				optionId: option.id,

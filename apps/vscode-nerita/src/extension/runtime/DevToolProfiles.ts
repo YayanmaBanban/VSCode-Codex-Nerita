@@ -76,8 +76,8 @@ async function pnpmResources(executable: string) {
 	const candidate = match
 		? resolve(dirname(executable), `.${match[1]}`)
 		: join(dirname(executable), "node_modules/pnpm/bin/pnpm.cjs");
-	const matchesValue2 = !(await exists(candidate));
-	if (matchesValue2) {
+	const matchesValue = !(await exists(candidate));
+	if (matchesValue) {
 		return [];
 	}
 	const target = await realpath(candidate);

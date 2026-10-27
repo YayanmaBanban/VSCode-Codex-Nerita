@@ -486,11 +486,11 @@ export class CodexSessionController extends SessionState {
 			await this.options.rememberSelection(message.configId);
 			return;
 		}
-		const matchesType3 =
+		const matchesType =
 			message.type === "attachment/add" ||
 			message.type === "attachment/open" ||
 			message.type === "attachment/remove";
-		if (matchesType3) {
+		if (matchesType) {
 			await this.attachments.attachment(message);
 			return;
 		}
@@ -679,11 +679,11 @@ export class CodexSessionController extends SessionState {
 			this.cancel();
 			return;
 		}
-		const matchesType4 =
+		const matchesType =
 			message.type === "permission/respond" &&
 			this.state.run === "running" &&
 			this.serverRequests.respond(message.permissionId, message.optionId);
-		if (matchesType4) {
+		if (matchesType) {
 			if (message.optionId === "cancel") {
 				this.cancel();
 			}

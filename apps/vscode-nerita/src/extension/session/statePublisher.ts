@@ -162,11 +162,11 @@ function isOutputUpdate(
 	if (next.length !== previous.length) {
 		return false;
 	}
-	const matchesEvery2 = next.every(
+	const matchesEvery = next.every(
 		(tool, index) =>
 			toolKey(tool) === toolKey(previous[index]!) &&
 			tool.status === previous[index]!.status &&
 			tool.backgrounded === previous[index]!.backgrounded,
 	);
-	return matchesEvery2;
+	return matchesEvery;
 }

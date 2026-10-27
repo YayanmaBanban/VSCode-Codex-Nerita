@@ -260,13 +260,13 @@ export class WorkspaceTrustStore {
 				return;
 			}
 			// 拒否の記録を削除して、親の信頼が復活することを防ぐ。
-			const matchesSome2 = this.list().some(
+			const matchesSome = this.list().some(
 				(parent) =>
 					parent.root !== record.root &&
 					parent.trust === "trusted" &&
 					containsPath(parent.root, record.root),
 			);
-			if (matchesSome2) {
+			if (matchesSome) {
 				throw new Error(
 					"親フォルダの信頼を取り消してから、この記録を削除してください。",
 				);

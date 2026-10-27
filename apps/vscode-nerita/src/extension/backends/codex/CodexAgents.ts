@@ -114,11 +114,11 @@ export class CodexAgents {
 				.readThread(agent.threadId)
 				.then(({ thread }) => {
 					const latest = this.session.snapshot();
-					const matchesEpoch2 =
+					const matchesEpoch =
 						this.session.epoch() !== epoch ||
 						latest.sessionId !== sessionId ||
 						thread.id !== agent.threadId;
-					if (matchesEpoch2) {
+					if (matchesEpoch) {
 						return;
 					}
 					this.session.patch({
@@ -333,11 +333,11 @@ async function readAgentThread(
 	current: () => boolean,
 ) {
 	const result = await client.readThread(threadId);
-	const matchesCurrent2 =
+	const matchesCurrent =
 		current() &&
 		result.thread.id === threadId &&
 		result.thread.historyMode === "legacy";
-	if (matchesCurrent2) {
+	if (matchesCurrent) {
 		return client.readThread(threadId, true);
 	}
 	return result;

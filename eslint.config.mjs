@@ -115,6 +115,7 @@ export default defineConfig([
 			"nerita/no-complex-inline-callback": "error",
 			"nerita/no-await-in-condition": "error",
 			"nerita/no-multiline-if-condition": "error",
+			"nerita/no-skipped-variable-number": "error",
 			"nerita/require-member-function-comment": "error",
 			// 各ファイルの役割を、コードや要素より前のコメントで説明する。
 			"nerita/require-file-comment": "error",

@@ -73,11 +73,11 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			this.authAbort.abort();
 			return;
 		}
-		const matchesType2 =
+		const matchesType =
 			message.type === "auth/start" ||
 			message.type === "auth/logout" ||
 			message.type === "config/set";
-		if (matchesType2) {
+		if (matchesType) {
 			await this.configure(message);
 			return;
 		}
@@ -108,10 +108,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			);
 			return true;
 		}
-		const matchesType3 =
+		const matchesType =
 			message.type === "session/searchReferences" ||
 			message.type === "session/openReference";
-		if (matchesType3) {
+		if (matchesType) {
 			const runtime = this.runtime!;
 			const result = await piReferenceAction(
 				runtime,
@@ -140,9 +140,9 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			await this.refreshSessions();
 			return;
 		}
-		const matchesType4 =
+		const matchesType =
 			message.type === "session/load" || message.type === "session/fork";
-		if (matchesType4) {
+		if (matchesType) {
 			await this.loadSession(
 				message.sessionId,
 				message.type === "session/fork",
@@ -268,18 +268,18 @@ export class PiSessionController extends PiHistory implements BackendSession {
 
 	/** 現在の実行に属する承認と停止だけを受け付ける。 */
 	private dispatchRunAction(message: UiMessage): void {
-		const matchesType5 =
+		const matchesType =
 			message.type === "permission/respond" &&
 			message.runId === this.state.runId &&
 			this.approvals.respond(message.permissionId, message.optionId);
-		if (matchesType5) {
+		if (matchesType) {
 			return;
 		}
-		const matchesType6 =
+		const matchesType2 =
 			message.type === "prompt/cancel" &&
 			message.runId === this.state.runId &&
 			this.canCancelJobs() === true;
-		if (matchesType6) {
+		if (matchesType2) {
 			this.cancel();
 			return;
 		}
@@ -389,13 +389,13 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (message.type === "auth/start" && message.methodId !== "pi") {
 			throw new Error("未対応の認証方法です。");
 		}
-		const matchesType7 =
+		const matchesType =
 			message.type === "config/set" &&
 			(message.sessionId !== this.state.sessionId ||
 				!this.state.configOptions.some(
 					(option) => option.id === message.configId,
 				));
-		if (matchesType7) {
+		if (matchesType) {
 			throw new Error(
 				"操作対象の会話または設定項目が、現在の表示と一致しません。",
 			);

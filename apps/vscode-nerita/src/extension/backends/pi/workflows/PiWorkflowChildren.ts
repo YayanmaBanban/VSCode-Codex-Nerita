@@ -196,10 +196,10 @@ export class PiWorkflowChildren {
 		signal: AbortSignal,
 	) {
 		const source = this.source(plan.step);
-		const matchesIsNonEmptyString2 =
+		const matchesIsNonEmptyString =
 			isNonEmptyString(plan.step.resume) &&
 			source!.retained.latest !== plan.step.resume;
-		if (matchesIsNonEmptyString2) {
+		if (matchesIsNonEmptyString) {
 			throw new Error("古い完了時点からは再開できません。");
 		}
 		const permit = await approveToolCall(
