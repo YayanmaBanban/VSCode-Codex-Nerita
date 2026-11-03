@@ -3,7 +3,7 @@
 	import "../chat/chat.css";
 	import type { TrustManagerHeaderProps } from "./TrustManagerParts";
 	import HelpButton from "../ui/HelpButton.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 	import type { ConfigOption } from "@nerita/shared/composer";
 
 	let { busy, send, backend, piStoragePath }: TrustManagerHeaderProps =
@@ -48,7 +48,7 @@
 		class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-3 text-[12px]"
 	>
 		<span>バックエンド</span>
-		<ConfigControl
+		<ComboList
 			appearance="field"
 			option={backendOption}
 			disabled={busy}

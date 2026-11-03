@@ -11,7 +11,7 @@
 	import type { ManagerSave } from "./useAgentManager.svelte";
 	import { registerDraftEditor } from "./managerDraftContext";
 	import AgentManagerFooter from "./AgentManagerFooter.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 	import Field from "./Field.svelte";
 	import HelpButton from "../ui/HelpButton.svelte";
 	import { inputStyle } from "./managerFields";
@@ -116,7 +116,7 @@
 	<fieldset disabled={busy} class="m-0 grid min-w-0 gap-5 border-0 p-0">
 		<div class="grid min-w-0 gap-4 sm:grid-cols-2">
 			<Field label="承認方法">
-				<ConfigControl
+				<ComboList
 					appearance="field"
 					disabled={busy}
 					option={{
@@ -141,7 +141,7 @@
 				/>
 			</Field>
 			<Field label="レビューモデル">
-				<ConfigControl
+				<ComboList
 					appearance="field"
 					disabled={busy}
 					option={{
@@ -160,7 +160,7 @@
 				/>
 			</Field>
 			<Field label="推論レベル">
-				<ConfigControl
+				<ComboList
 					appearance="field"
 					disabled={busy || model === undefined}
 					option={{
@@ -183,7 +183,7 @@
 				/>
 			</Field>
 			<Field label="審査の待ち時間">
-				<ConfigControl
+				<ComboList
 					appearance="field"
 					disabled={busy}
 					option={{

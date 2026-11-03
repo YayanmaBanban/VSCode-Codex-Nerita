@@ -86,6 +86,63 @@ export const AgentSearch: Story = {
 	},
 };
 
+export const CollapsedSearchPanel: Story = {
+	args: {
+		initialState: {
+			agents: [...state.agents, ...manyAgents("pi").slice(0, 2)],
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const page = within(canvasElement.ownerDocument.body);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "サイドバーを閉じる" }),
+		);
+		const trigger = canvas.getByRole("button", { name: "検索" });
+		await userEvent.hover(trigger);
+		const tooltip = await page.findByRole("tooltip");
+		await waitFor(() => expect(tooltip).toBeVisible());
+		await userEvent.click(trigger);
+		const panel = within(
+			await page.findByRole("dialog", { name: "エージェントを検索" }),
+		);
+		const search = panel.getByRole("searchbox", {
+			name: "エージェントを検索",
+		});
+		await waitFor(() => expect(search).toHaveFocus());
+		await userEvent.type(search, "REVIEWER");
+		await expect(
+			panel.queryByRole("button", { name: "writer" }),
+		).not.toBeInTheDocument();
+		await userEvent.click(panel.getByRole("button", { name: "reviewer" }));
+		await expect(
+			await canvas.findByRole("heading", { name: "reviewer" }),
+		).toBeVisible();
+		await waitFor(() =>
+			expect(
+				page.queryByRole("dialog", { name: "エージェントを検索" }),
+			).not.toBeInTheDocument(),
+		);
+		await expect(trigger).toBeVisible();
+		await userEvent.click(trigger);
+		await userEvent.keyboard("{Escape}");
+		await expect(trigger).toHaveFocus();
+		await userEvent.click(
+			canvas.getByRole("button", { name: "サイドバーを開く" }),
+		);
+		await expect(
+			canvas.getByRole("searchbox", { name: "エージェントを検索" }),
+		).toHaveValue("REVIEWER");
+		await userEvent.click(
+			canvas.getByRole("button", { name: "サイドバーを閉じる" }),
+		);
+		await userEvent.click(canvas.getByRole("button", { name: "検索" }));
+		await expect(
+			await page.findByRole("dialog", { name: "エージェントを検索" }),
+		).toBeVisible();
+	},
+};
+
 export const SelectedAgent: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);

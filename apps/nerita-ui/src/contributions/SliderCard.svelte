@@ -12,7 +12,7 @@
 	import type { ConfigOption } from "@nerita/shared/composer";
 	import Tooltip from "../ui/Tooltip.svelte";
 	import StepSlider from "../ui/StepSlider.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 	import FastModeButton from "./FastModeButton.svelte";
 	import { useSettingsPopup } from "../ui/settingsPopup.svelte";
 
@@ -212,7 +212,7 @@
 				{/if}
 				{#if displayed.secondary}
 					<div class="absolute top-0 left-0">
-						<ConfigControl
+						<ComboList
 							option={displayed.secondary.option}
 							icon={displayed.secondary.icon}
 							{disabled}
@@ -238,7 +238,7 @@
 						{optionLabel(displayed.option)}
 					</h2>
 					{#if displayed.model}
-						<ConfigControl
+						<ComboList
 							option={displayed.model}
 							chevron="right"
 							{disabled}

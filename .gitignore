@@ -4,7 +4,6 @@ dist/
 node_modules/
 .eslintcache
 vsc-extension-quickstart.md
-tests/cases/
 
 *storybook.log
 storybook-static

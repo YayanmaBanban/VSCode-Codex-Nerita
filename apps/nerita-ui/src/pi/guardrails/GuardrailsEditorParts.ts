@@ -17,6 +17,11 @@ import { type useGuardrails } from "./useGuardrails.svelte";
 export type GuardrailsEditorProps = { bridge: GuardBridge };
 /** 保存状態の表示と、現在の文書に対する保存・適用操作を渡す。 */
 export type GuardrailsEditorHeaderProps = {
+	state: NonNullable<ReturnType<typeof useGuardrails>["state"]>;
+};
+/** 保存状態と操作結果をフッターへ渡す。 */
+export type GuardrailsEditorFooterProps = {
+	formAvailable: boolean;
 	editor: ReturnType<typeof useGuardrails>;
 	state: NonNullable<ReturnType<typeof useGuardrails>["state"]>;
 	status: string;
@@ -28,9 +33,9 @@ export type GuardrailsProbePaneProps = {
 	probe: GuardProbe;
 	setProbe: (value: GuardProbe) => void;
 };
-/** 文書の編集状態と解析結果を渡し、フォームと JSON の編集を切り替える。 */
+/** 文書の編集状態と解析結果を渡し、ルールの種類に応じたフォームを表示する。 */
 export type GuardrailsRulePaneProps = {
-	tab: "overview" | "builtins" | "path" | "command" | "exceptions" | "json";
+	tab: "overview" | "builtins" | "path" | "command" | "exceptions";
 	setTab: (value: GuardrailsRulePaneProps["tab"]) => void;
 	editor: ReturnType<typeof useGuardrails>;
 	parsed: ZodSafeParseResult<GuardrailsConfig> | undefined;

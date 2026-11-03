@@ -15,8 +15,6 @@
 		{
 			value: "glob",
 			name: "Glob",
-			description:
-				"* は同じ階層、** は複数階層、? は区切り以外の1文字に一致します。",
 		},
 		{ value: "directory", name: "ディレクトリ配下" },
 	]}

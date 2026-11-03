@@ -2,7 +2,7 @@
 <script lang="ts">
 	import type { ManagerModel } from "@nerita/shared/agentManager/messages";
 	import Field from "./Field.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 
 	let {
 		label,
@@ -24,7 +24,7 @@
 </script>
 
 <Field {label}>
-	<ConfigControl
+	<ComboList
 		appearance="field"
 		option={{
 			id: "handoff-model",

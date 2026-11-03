@@ -1,6 +1,5 @@
-<!-- ルールのフォーム編集と JSON 編集を切り替え、未送信入力が競合した場合は破棄操作を表示する。 -->
+<!-- ルールの種類に応じてフォームを表示し、設定を読み込めない場合は修正方法を案内する。 -->
 <script lang="ts">
-	import { cn } from "cnfast";
 	import { MediaQuery } from "svelte/reactivity";
 	import TabBar from "../../ui/TabBar.svelte";
 	import HelpButton from "../../ui/HelpButton.svelte";
@@ -11,15 +10,12 @@
 
 	import GuardrailsRules from "./GuardrailsRules.svelte";
 
-	import { buttonStyle, inputStyle } from "./fields";
-
 	import { type GuardrailsRulePaneProps } from "./GuardrailsEditorParts";
 
 	let { tab, setTab, editor, parsed }: GuardrailsRulePaneProps = $props();
 	const wide = new MediaQuery("(min-width: 1000px)");
 	const selection = $state({ path: 0, command: 0 });
 	const descriptions = {
-		json: undefined,
 		overview: undefined,
 		builtins: undefined,
 		path: "ファイルパスに対する読み取り・書き込みの判定ルールを設定します。",
@@ -73,7 +69,6 @@
 						)
 					: undefined,
 		},
-		{ value: "json", label: "JSON", count: undefined },
 	] as const);
 </script>
 
@@ -103,11 +98,21 @@
 				</div>
 			</div>
 		{/if}
-		<div class="guardrails-scroll">
+		<div
+			class="guardrails-scroll"
+			data-sidebar-layout={(wide.current &&
+				["path", "exceptions", "command"].includes(tab)) ||
+				undefined}
+		>
 			<fieldset disabled={editor.locked} class="m-0 min-w-0 border-0 p-0">
-				{#if tab !== "json" && parsed?.success === true}
+				{#if parsed?.success === true}
 					<GuardrailsRules
+						onSelectCommand={(index: number) => {
+							selection.command = index;
+						}}
 						onEditExceptions={() => setTab("exceptions")}
+						onSelectDirectory={editor.selectDirectory}
+						directoryBusy={editor.busy}
 						{selection}
 						locked={editor.locked}
 						section={tab}
@@ -118,37 +123,11 @@
 							)}
 					/>
 				{:else}
-					<div class="flex flex-col gap-2">
-						{#if tab !== "json"}
-							<p role="alert" class="m-0 text-warning">
-								設定形式を確認してください。JSONを修正するとルール編集に戻れます。
-							</p>
-						{/if}
-						<label for="guardrails-json">設定JSON</label>
-						<textarea
-							id="guardrails-json"
-							maxlength={131072}
-							spellcheck={false}
-							class={cn(
-								inputStyle,
-								"min-h-80 resize-y font-editor text-[12px]",
-							)}
-							value={editor.text}
-							oninput={(event) =>
-								editor.change(
-									event.currentTarget.value,
-								)}></textarea>
-					</div>
+					<p class="m-0 text-muted">
+						設定ファイルを修正すると、ルール編集に戻れます。
+					</p>
 				{/if}
 			</fieldset>
-			{#if editor.conflict}
-				<button
-					class={cn(buttonStyle, "self-start")}
-					onclick={editor.reload}
-				>
-					編集を破棄して再読込
-				</button>
-			{/if}
 		</div>
 	</div>
 </section>

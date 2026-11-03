@@ -5,7 +5,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	padding: 12px;
+	padding: 12px 12px calc(12px + var(--settings-footer-height, 0px));
+	--settings-footer-max-width: none;
 	overflow: hidden;
 	font-size: max(12px, var(--vscode-font-size, 13px));
 }
@@ -60,6 +61,17 @@
 		var(--nerita-editor-background)
 	);
 }
+.guardrails-scroll[data-sidebar-layout] {
+	display: flex;
+	flex: 1;
+	overflow: hidden;
+	padding: 0;
+}
+.guardrails-scroll[data-sidebar-layout] > fieldset {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+}
 .guardrails-navigation {
 	display: flex;
 	flex-direction: column;
@@ -72,53 +84,6 @@
 .guardrails-navigation > h2 {
 	display: none;
 }
-.guardrails-rule-list > button {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	padding: 12px;
-	border: 0;
-	background: transparent;
-	text-align: left;
-	cursor: pointer;
-}
-.guardrails-rule-list > button[aria-pressed="true"] {
-	background: color-mix(
-		in srgb,
-		var(--nerita-button-background) 20%,
-		transparent
-	);
-	box-shadow: inset 3px 0 var(--nerita-focus-border);
-}
-.guardrails-rule-list > button:hover {
-	background: var(--nerita-input-background);
-}
-.guardrails-rule-list > button:focus-visible {
-	outline: 2px solid var(--nerita-focus-border);
-	outline-offset: -2px;
-}
-.guardrails-rule-selection {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: 12px;
-	align-items: start;
-}
-.guardrails-rule-list {
-	display: none;
-	overflow: auto;
-	border: 1px solid var(--nerita-panel-border);
-	border-radius: 4px;
-}
-.guardrails-rule-list:empty {
-	display: none;
-}
-.guardrails-rule-list > button {
-	flex-shrink: 0;
-	flex-direction: column;
-	align-items: start;
-	max-width: 200px;
-}
 .guardrails-mobile-tabs {
 	flex-shrink: 0;
 	border-bottom: 1px solid var(--nerita-panel-border);
@@ -128,9 +93,6 @@
 	display: none;
 }
 @media (min-width: 1000px) {
-	.guardrails-rule-picker {
-		display: none;
-	}
 	.guardrails-mobile-tabs {
 		display: none;
 	}
@@ -151,16 +113,5 @@
 	}
 	.guardrails-navigation > h2 {
 		display: flex;
-	}
-	.guardrails-rule-selection {
-		grid-template-columns: minmax(120px, 0.45fr) minmax(0, 1fr);
-	}
-	.guardrails-rule-list {
-		display: flex;
-		flex-direction: column;
-		max-height: 65dvh;
-	}
-	.guardrails-rule-list > button {
-		max-width: none;
 	}
 }

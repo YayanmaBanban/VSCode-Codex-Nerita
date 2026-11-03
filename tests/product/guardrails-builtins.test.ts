@@ -51,6 +51,7 @@ void test("機密ファイルは拒否から承認へ変更でき、追加の許
 	config.pathRules.push({
 		id: "allow-all",
 		pattern: "**",
+		directory: ".",
 		match: "glob",
 		action: "allow",
 		operations: ["read", "write"],
@@ -171,6 +172,7 @@ void test("組み込みの許可と旧基準・旧完全一致形式をJSON境�
 	const rule = {
 		id: "file",
 		pattern: "safe.txt",
+		directory: ".",
 		operations: ["read"],
 		action: "deny",
 		reason: "個別ファイルの保護",

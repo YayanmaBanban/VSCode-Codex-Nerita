@@ -10,6 +10,9 @@
 		selection,
 		locked,
 		onEditExceptions,
+		onSelectCommand,
+		onSelectDirectory,
+		directoryBusy,
 	}: GuardrailsRulesProps = $props();
 
 	/** パスとコマンドの両ルールに重複しない ID を採番する。 */
@@ -42,7 +45,7 @@
 		});
 </script>
 
-<div class="flex flex-col gap-5">
+<div class="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
 	{#if section === "overview"}
 		<Action
 			{...{
@@ -71,6 +74,8 @@
 			{#if section === "path" || section === "exceptions"}
 				<PathRuleGroup
 					{onEditExceptions}
+					{onSelectDirectory}
+					{directoryBusy}
 					{selection}
 					{locked}
 					exceptionsOnly={section === "exceptions"}
@@ -83,6 +88,7 @@
 				/>
 			{:else}
 				<CommandRuleGroup
+					onSelect={onSelectCommand}
 					{...{ onChange, config, nextId, selection, locked }}
 				/>
 			{/if}

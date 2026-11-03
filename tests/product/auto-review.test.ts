@@ -485,6 +485,7 @@ void test("会話の失効は発行済みの許可にも伝わり、新しい拒
 		id: "deny-config",
 		pattern: "package.json",
 		match: "glob",
+		directory: ".",
 		action: "deny",
 		operations: ["write"],
 		exceptions: [],

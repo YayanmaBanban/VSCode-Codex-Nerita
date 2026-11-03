@@ -25,6 +25,10 @@ export const pathRuleSchema = z.strictObject({
 	...ruleFields,
 	match: z.enum(["glob", "directory"]),
 	pattern: relativePattern,
+	directory: relativePattern.regex(
+		/^[^*?]+$/,
+		"ディレクトリにワイルドカードは使用できません。",
+	),
 	exceptions: z.array(relativePattern).max(30),
 	operations: z.array(operationSchema).min(1).max(2),
 });
@@ -73,13 +77,6 @@ export function parseGuardrails(text: string): GuardrailsConfig {
 	);
 	if (new Set(ids).size !== ids.length) {
 		throw new Error("ルールIDが重複しています。");
-	}
-	for (const rule of config.pathRules) {
-		if (rule.match !== "glob" && /[*?]/.test(rule.pattern)) {
-			throw new Error(
-				`${rule.id}: ディレクトリ配下の指定にはワイルドカードを使用できません。`,
-			);
-		}
 	}
 	return config;
 }

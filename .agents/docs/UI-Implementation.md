@@ -8,10 +8,11 @@ Webview UI の作成・変更時に参照する。
 
 ## 選択コントロール
 
-標準の `<select>` コントロールの代わりに、`ConfigControl` コンポーネントを使用する。
+標準の `<select>` コントロールの代わりに、`ComboList` コンポーネントを使用する。
 
-- 実装は `apps/nerita-ui/src/chat/composer/ConfigControl.svelte` にある。
+- 実装は `apps/nerita-ui/src/ui/ComboList.svelte` にある。
 - 枠を付ける場合は `appearance="field"` を指定する。
+- 候補を検索する選択欄には、`apps/nerita-ui/src/ui/SearchableComboList.svelte` を使用する。
 
 ## タブ
 

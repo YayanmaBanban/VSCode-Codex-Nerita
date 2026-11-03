@@ -9,7 +9,7 @@
 	import Field from "./Field.svelte";
 	import EffortField from "./EffortField.svelte";
 	import HandoffModelField from "./HandoffModelField.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 
 	let {
 		backend,
@@ -81,7 +81,7 @@
 >
 	<h3 class="m-0 font-semibold">{backend === "pi" ? "Pi" : "Codex"}</h3>
 	<Field label="モデル選択のモード">
-		<ConfigControl
+		<ComboList
 			appearance="field"
 			option={{
 				id: `${backend}-handoff-strategy`,

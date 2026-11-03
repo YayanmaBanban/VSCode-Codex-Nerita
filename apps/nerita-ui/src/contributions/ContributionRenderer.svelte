@@ -3,7 +3,7 @@
 	import type { NeritaUiControl } from "@nerita/shared/uiContributions";
 	import ToggleSwitch from "./ToggleSwitch.svelte";
 	import SliderCard from "./SliderCard.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 	import Tooltip from "../ui/Tooltip.svelte";
 	import QuotaBar from "../chat/composer/QuotaBar.svelte";
 
@@ -32,7 +32,7 @@
 		<QuotaBar windows={control.windows} />
 	{:else}
 		{#if control.type === "select"}
-			<ConfigControl
+			<ComboList
 				option={control.option}
 				disabled={disabled || control.disabled === true}
 				onChange={(value: string) => {

@@ -2,7 +2,7 @@
 <script lang="ts">
 	import type { useDlcWorkspace } from "./useDlcWorkspace.svelte";
 	import WorktreeControls from "./DlcWorktrees.svelte";
-	import ConfigControl from "../composer/ConfigControl.svelte";
+	import ComboList from "../../ui/ComboList.svelte";
 
 	let { ui }: { ui: ReturnType<typeof useDlcWorkspace> } = $props();
 	/** 選択したバックエンドを検証し、現在の依頼とリビジョンを付けて変更を要求する。 */
@@ -47,7 +47,7 @@
 			class="grid min-w-0 grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] items-center gap-3 text-[13px]"
 		>
 			<span>バックエンド</span>
-			<ConfigControl
+			<ComboList
 				appearance="field"
 				option={{
 					id: "dlc-backend",

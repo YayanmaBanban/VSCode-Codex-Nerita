@@ -20,6 +20,9 @@ export type ActionProps = {
 };
 /** ルール編集の設定全体を渡し、変更は親の文書へ反映する。 */
 export type GuardrailsRulesProps = {
+	onSelectCommand: (index: number) => void;
+	onSelectDirectory: (index: number) => void;
+	directoryBusy: boolean;
 	onEditExceptions: () => void;
 	selection: { path: number; command: number };
 	locked: boolean;
@@ -29,6 +32,7 @@ export type GuardrailsRulesProps = {
 };
 /** コマンドルールの一覧と、追加時に重複しない ID を作る操作を渡す。 */
 export type CommandRuleGroupProps = {
+	onSelect: (index: number) => void;
 	locked: boolean;
 	selection: GuardrailsRulesProps["selection"];
 	onChange: (config: GuardrailsConfig) => void;
@@ -37,6 +41,8 @@ export type CommandRuleGroupProps = {
 };
 /** パスルールの一覧と、追加・個別更新を親へ伝える操作を渡す。 */
 export type PathRuleGroupProps = {
+	onSelectDirectory: (index: number) => void;
+	directoryBusy: boolean;
 	onEditExceptions: () => void;
 	selection: GuardrailsRulesProps["selection"];
 	locked: boolean;
@@ -58,6 +64,8 @@ export type CommandRuleShellProps = {
 };
 /** 対象のパスルールと、項目の更新・例外の編集画面への移動に使う操作を渡す。 */
 export type PathRuleCardProps = {
+	onSelectDirectory: (index: number) => void;
+	directoryBusy: boolean;
 	onEditExceptions: () => void;
 	index: number;
 	rule: PathRule;

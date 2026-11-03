@@ -1,7 +1,8 @@
-<!-- ガードレールの選択項目を共通の設定メニューに渡し、見出しと選択値を揃える。 -->
+<!-- ガードレールの選択項目を検索付きコンボボックスに渡し、候補が増えても絞り込めるようにする。 -->
 <script lang="ts">
-	import type { ConfigChoice } from "@nerita/shared/composer";
-	import ConfigControl from "../../chat/composer/ConfigControl.svelte";
+	import SearchableComboList, {
+		type SearchableComboOption,
+	} from "../../ui/SearchableComboList.svelte";
 
 	let {
 		label,
@@ -12,7 +13,7 @@
 	}: {
 		label: string;
 		value: string;
-		options: ConfigChoice[];
+		options: SearchableComboOption[];
 		onChange: (value: string) => void;
 		disabled?: boolean;
 	} = $props();
@@ -20,10 +21,5 @@
 
 <div class="flex min-w-0 flex-col gap-1">
 	<span>{label}</span>
-	<ConfigControl
-		appearance="field"
-		{disabled}
-		{onChange}
-		option={{ id: label, name: label, currentValue: value, options }}
-	/>
+	<SearchableComboList {label} {value} {options} {disabled} {onChange} />
 </div>

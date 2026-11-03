@@ -56,36 +56,41 @@
 
 <div
 	{@attach attachRoot}
-	class="sidebar-layout grid min-w-0 items-start gap-4"
+	class="sidebar-layout grid min-h-0 min-w-0 flex-1"
 	data-expanded={!compact.current && wideOpen}
 >
-	<aside aria-label={label} class="sticky top-6 min-w-0">
-		{#if compact.current || !wideOpen}
-			<SidebarToggle
-				open={false}
-				onToggle={toggle}
-				bind:button={trigger}
-			/>
-			{#if collapsed}
-				{@render collapsed()}
-			{/if}
-		{:else}
-			<div
-				class={cn(
-					"sidebar-panel flex h-[calc(100dvh-190px-var(--settings-footer-height,0px))] min-h-48 flex-col",
-					"border-r border-input-border pr-4",
-				)}
-			>
-				<SidebarContents
-					{header}
-					{expanded}
+	<aside
+		aria-label={label}
+		class={cn(
+			"min-h-0 min-w-0 self-stretch",
+			!compact.current && wideOpen && "border-r border-input-border",
+		)}
+	>
+		<div
+			class="sidebar-sticky sticky top-6 flex min-h-0 min-w-0 flex-col gap-2"
+		>
+			{#if compact.current || !wideOpen}
+				<SidebarToggle
+					open={false}
 					onToggle={toggle}
-					onSelect={closeFloating}
+					bind:button={trigger}
 				/>
-			</div>
-		{/if}
+				{#if collapsed}
+					{@render collapsed()}
+				{/if}
+			{:else}
+				<div class="sidebar-panel box-border flex min-h-0 flex-col">
+					<SidebarContents
+						{header}
+						{expanded}
+						onToggle={toggle}
+						onSelect={closeFloating}
+					/>
+				</div>
+			{/if}
+		</div>
 	</aside>
-	<section class="min-w-0">
+	<section class="sidebar-content min-h-0 min-w-0">
 		{@render children()}
 	</section>
 </div>
@@ -110,7 +115,7 @@
 		>
 			<Dialog.Title class="sr-only">{label}</Dialog.Title>
 			<Dialog.Description class="sr-only">
-				検索して編集するエージェントを選択してください。
+				検索して編集する項目を選択してください。
 			</Dialog.Description>
 			<SidebarContents
 				{header}
@@ -124,15 +129,33 @@
 
 <style>
 	.sidebar-layout {
+		/* 項目数が増えても行を親の高さに収め、スクロールを一覧へ委ねる。 */
+		grid-template-rows: minmax(0, 1fr);
+		gap: var(--sidebar-gap, 16px);
 		grid-template-columns: 32px minmax(0, 1fr);
 		transition: grid-template-columns 220ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 	.sidebar-layout[data-expanded="true"] {
-		grid-template-columns: 240px minmax(0, 1fr);
+		grid-template-columns: var(--sidebar-expanded-width, 240px) minmax(
+				0,
+				1fr
+			);
 	}
 	.sidebar-panel {
+		padding: var(--sidebar-panel-padding, 0 16px 0 0);
+		height: var(
+			--sidebar-panel-height,
+			calc(100dvh - 190px - var(--settings-footer-height, 0px))
+		);
 		overflow: hidden;
 		animation: sidebar-appear 180ms ease-out;
+	}
+	.sidebar-sticky {
+		height: var(--sidebar-panel-height, auto);
+	}
+	.sidebar-content {
+		overflow: var(--sidebar-content-overflow, visible);
+		padding: var(--sidebar-content-padding, 0);
 	}
 	:global(.sidebar-floating[data-state="open"]) {
 		animation: sidebar-slide 220ms cubic-bezier(0.22, 1, 0.36, 1);

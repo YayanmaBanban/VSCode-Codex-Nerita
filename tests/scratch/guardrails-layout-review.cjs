@@ -11,12 +11,16 @@ async function reviewTabs(page, root, label) {
 	const right = nav.getByRole("button", { name: "右のタブを表示" });
 	await expect(left).toBeDisabled();
 	await right.click();
+	await settleTabs(nav);
 	if (await right.isEnabled()) {
 		await right.click();
+		await settleTabs(nav);
 	}
 	await expect(right).toBeDisabled();
-	await nav.getByRole("button", { name: "JSON", exact: true }).click();
-	await expect(page.getByRole("textbox", { name: "設定JSON" })).toBeVisible();
+	await nav.getByRole("button", { name: /パス例外/ }).click();
+	await expect(
+		page.getByRole("heading", { name: "例外 (2)", exact: true }),
+	).toBeVisible();
 	await page.mouse.move(0, 0);
 	await settleTabs(nav);
 	await page.screenshot({ path: `${root}/${label}-tabs-end.png` });
@@ -88,6 +92,9 @@ async function reviewDeletionControls(page, root, label) {
 		page.getByRole("textbox", { name: "ID", exact: true }),
 	).toBeVisible();
 	await page.screenshot({ path: `${root}/${label}-delete-command.png` });
+	await expect(
+		page.getByRole("button", { name: "保存して適用", exact: true }),
+	).toBeEnabled();
 	await hold.focus();
 	await page.keyboard.down("Enter");
 	await expect(
@@ -141,6 +148,91 @@ async function reviewBuiltins(page, root, label) {
 	);
 	await page.screenshot({ path: `${root}/${label}-builtins.png` });
 	await nav.getByRole("button", { name: /^パスルール/ }).click();
+	if (label.endsWith("-1200")) {
+		await reviewPathList(page, root, label);
+	}
+}
+
+/** 他の項目の削除で選択を失わず、例外タブではルールの削除操作が提供されないことを確認する。 */
+async function reviewPathList(page, root, label) {
+	const id = page.getByRole("textbox", { name: "ID", exact: true });
+	for (const name of ["selected-rule", "long-rule-name-".repeat(4)]) {
+		await page.getByRole("button", { name: /ルールを追加/ }).click();
+		await id.fill(name);
+	}
+	const list = page.getByRole("region", { name: "パスルール一覧" });
+	await list
+		.getByRole("button", { name: "selected-rule", exact: true })
+		.focus();
+	await page.keyboard.press("Enter");
+	await expect(id).toHaveValue("selected-rule");
+	const deletion = list.getByRole("button", {
+		name: "パスルール 1を削除",
+		exact: true,
+	});
+	await deletion.click();
+	await expect(id).toHaveValue("selected-rule");
+	await page.screenshot({ path: `${root}/${label}-path-list.png` });
+	await deletion.focus();
+	await page.keyboard.down("Enter");
+	await expect(
+		list.getByRole("button", { name: "review-env", exact: true }),
+	).toHaveCount(0);
+	await page.keyboard.up("Enter");
+	await expect(id).toHaveValue("selected-rule");
+	await expect(
+		list.getByRole("button", { name: "selected-rule", exact: true }),
+	).toHaveAttribute("aria-current", "page");
+	const nav = page.getByRole("navigation", { name: "ルールのカテゴリ" });
+	await nav.getByRole("button", { name: /^パス例外/ }).click();
+	await expect(list.getByRole("button", { name: /を削除/ })).toHaveCount(0);
+	await expect(
+		page.getByRole("combobox", { name: "パスルールを選択" }),
+	).toHaveCount(0);
+	await list
+		.getByRole("button", { name: "long-rule-name-".repeat(4), exact: true })
+		.click();
+	await page.screenshot({ path: `${root}/${label}-path-exceptions.png` });
+	await nav.getByRole("button", { name: /^パスルール/ }).click();
+	await expect(id).toHaveValue("long-rule-name-".repeat(4));
+	await list
+		.getByRole("button", { name: "selected-rule", exact: true })
+		.click();
+	const selectedDeletion = list.getByRole("button", {
+		name: "パスルール 1を削除",
+		exact: true,
+	});
+	await selectedDeletion.focus();
+	await page.keyboard.down("Enter");
+	await expect(
+		list.getByRole("button", { name: "selected-rule", exact: true }),
+	).toHaveCount(0);
+	await page.keyboard.up("Enter");
+	await expect(id).toHaveValue("long-rule-name-".repeat(4));
+	await page.screenshot({ path: `${root}/${label}-path-deleted.png` });
+}
+
+/** 広い画面では検索サイドバー、狭い画面では従来の選択欄と削除ボタンを表示する。 */
+async function reviewPathPicker(page, width) {
+	const picker = page.getByRole("combobox", {
+		name: "パスルールを選択",
+		exact: true,
+	});
+	if (width >= 1000) {
+		await expect(picker).toHaveCount(0);
+		await expect(
+			page.getByRole("region", { name: "パスルール一覧" }),
+		).toBeVisible();
+	} else {
+		const field = await picker.boundingBox();
+		const deletion = await page
+			.getByRole("button", { name: "パスルール 1を削除", exact: true })
+			.boundingBox();
+		assert.ok(Math.abs(field.height - deletion.height) < 1);
+		await expect(
+			page.getByRole("searchbox", { name: "パスルールを検索" }),
+		).toHaveCount(0);
+	}
 }
 
 /** 狭い画面の切替を経ても入力が残り、検査結果を確認できることを検証する。 */
@@ -148,19 +240,13 @@ async function reviewEditing(page, root, label, width) {
 	await page
 		.getByRole("textbox", { name: "ID", exact: true })
 		.fill("review-env");
-	const picker = await page
-		.getByRole("combobox", { name: "パスルールを選択", exact: true })
-		.boundingBox();
-	const deletion = await page
-		.getByRole("button", { name: "パスルール 1を削除", exact: true })
-		.boundingBox();
+	await reviewPathPicker(page, width);
 	const id = await page
 		.getByRole("textbox", { name: "ID", exact: true })
 		.boundingBox();
 	const action = await page
 		.getByRole("combobox", { name: "判定", exact: true })
 		.boundingBox();
-	assert.ok(Math.abs(picker.height - deletion.height) < 1);
 	assert.ok(Math.abs(id.height - action.height) < 1);
 	const reason = await page
 		.getByRole("textbox", { name: "理由", exact: true })

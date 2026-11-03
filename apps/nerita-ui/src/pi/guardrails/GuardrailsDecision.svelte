@@ -4,8 +4,10 @@
 
 	let {
 		result,
+		warnings = [],
 	}: {
 		result: NonNullable<Extract<GuardReply, { type: "reply" }>["result"]>;
+		warnings?: string[];
 	} = $props();
 </script>
 
@@ -32,6 +34,18 @@
 {#each result.paths as path (path)}
 	<p class="m-0 font-editor text-[12px] break-all">正規化後: {path}</p>
 {/each}
+{#if warnings.length > 0}
+	<div class="flex min-w-0 flex-col gap-2 border-t border-panel-border pt-3">
+		<h4 class="m-0 text-[13px]">警告</h4>
+		<ul class="m-0 space-y-2 pl-5 text-[13px] text-warning">
+			{#each warnings as warning, index (index)}
+				<li class="[overflow-wrap:anywhere] whitespace-pre-wrap">
+					{warning}
+				</li>
+			{/each}
+		</ul>
+	</div>
+{/if}
 {#each result.uncertainties as text (text)}
 	<p class="m-0 text-[13px] text-warning">{text}</p>
 {/each}

@@ -95,9 +95,13 @@ export function guardrailWarnings(config: GuardrailsConfig): string[] {
 	const rules = [...config.pathRules, ...config.commandRules];
 	for (let i = 0; i < rules.length; i++) {
 		const rule = rules[i]!;
+		const pattern =
+			rule.match === "directory" ? rule.directory : rule.pattern;
 		for (const other of rules.slice(i + 1)) {
+			const otherPattern =
+				other.match === "directory" ? other.directory : other.pattern;
 			const matchesPattern =
-				rule.pattern === other.pattern &&
+				pattern === otherPattern &&
 				rule.action !== other.action &&
 				rule.match === other.match;
 			if (matchesPattern) {

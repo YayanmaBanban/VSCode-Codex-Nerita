@@ -5,7 +5,7 @@
 		PersonalityMessage,
 		PersonalityScope,
 	} from "@nerita/shared/personality";
-	import ConfigControl from "../composer/ConfigControl.svelte";
+	import ComboList from "../../ui/ComboList.svelte";
 	import InstructionEditor from "./InstructionEditor.svelte";
 
 	let {
@@ -86,7 +86,7 @@
 </script>
 
 <div class="flex min-w-0 flex-col gap-[10px] pt-[8px]">
-	<ConfigControl
+	<ComboList
 		inDialog
 		option={{
 			id: scope,

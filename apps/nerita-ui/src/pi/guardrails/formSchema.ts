@@ -13,6 +13,7 @@ export const guardrailsFormSchema = guardrailsConfigSchema.extend({
 			id: z.string(),
 			reason: z.string(),
 			pattern: z.string(),
+			directory: z.string(),
 			exceptions: z.array(z.string()),
 			operations: z.array(operationSchema),
 		}),

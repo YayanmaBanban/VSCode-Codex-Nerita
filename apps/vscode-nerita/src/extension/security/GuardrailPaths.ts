@@ -43,7 +43,7 @@ function matchesRule(rule: PathRule, path: string, root: string): boolean {
 	if (rule.match === "glob") {
 		return matchPath(rule.pattern, name);
 	}
-	const target = resolve(base, rule.pattern);
+	const target = resolve(base, rule.directory);
 	return containsPath(target, path);
 }
 

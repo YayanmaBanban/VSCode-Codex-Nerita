@@ -1,6 +1,7 @@
 // 入力中の下書きを保持し、Host の文書版と要求番号で編集・保存を直列化する。
 import { onMount } from "svelte";
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+import { guardrailsFormSchema } from "./formSchema";
 import {
 	DocumentEditorBridge,
 	applyDocumentSnapshot,
@@ -17,7 +18,13 @@ class GuardrailsEditorState {
 	text = $state("");
 	reply = $state.raw<Extract<GuardReply, { type: "reply" }> | null>(null);
 	private active = $state(false);
-	private pending: { id: number; edit: boolean } | null = null;
+	private probeVersion = 0;
+	private pending: {
+		id: number;
+		edit: boolean;
+		probeVersion?: number;
+		directory?: { index: number; version: number; text: string };
+	} | null = null;
 	private sequence = 0;
 	private readonly connection: DocumentEditorBridge<GuardReply>;
 	/** 画面で使う通信境界を固定し、再描画による再購読を避ける。 */
@@ -41,6 +48,13 @@ class GuardrailsEditorState {
 	}
 	/** 購読を ready より先に登録し、再描画では再初期化しない。 */
 	connect = () => this.connection.connect();
+	/** 入力変更前の結果を消し、検査中ならその応答も現在の入力へ流用しない。 */
+	invalidateProbe = () => {
+		this.probeVersion++;
+		if (this.reply?.result) {
+			this.reply = null;
+		}
+	};
 	/** 編集応答の待機中も上限内の入力を保持し、応答後に最新版を送る。 */
 	change = (value: string) => {
 		if (value.length > 131072) {
@@ -60,12 +74,16 @@ class GuardrailsEditorState {
 		this.scheduleEdit();
 	};
 	/** 同期した文書の版を添え、結果は Host の応答まで待つ。 */
-	request = (type: "save" | "check", probe: GuardProbe) => {
+	request = (type: "save" | "check" | "discard", probe: GuardProbe) => {
 		if (!this.state || this.busy) {
 			return;
 		}
 		const id = ++this.sequence;
-		this.pending = { id, edit: false };
+		this.pending = {
+			id,
+			edit: false,
+			...(type === "check" ? { probeVersion: this.probeVersion } : {}),
+		};
 		this.active = true;
 		this.reply = null;
 		this.bridge.postMessage(
@@ -73,6 +91,25 @@ class GuardrailsEditorState {
 				? { type, id, version: this.state.version, probe }
 				: { type, id, version: this.state.version },
 		);
+	};
+	/** 同期済みの文書を固定して選択し、ダイアログ中はルールの移動や編集を止める。 */
+	selectDirectory = (index: number) => {
+		if (!this.state || this.busy) {
+			return;
+		}
+		const id = ++this.sequence;
+		this.pending = {
+			id,
+			edit: false,
+			directory: { index, version: this.state.version, text: this.text },
+		};
+		this.active = true;
+		this.reply = null;
+		this.bridge.postMessage({
+			type: "select-directory",
+			id,
+			version: this.state.version,
+		});
 	};
 	/** 明示した破棄操作でだけ未送信の下書きを Host の文書へ戻す。 */
 	reload = () => {
@@ -87,15 +124,52 @@ class GuardrailsEditorState {
 	private receive = (message: GuardReply) => {
 		if (message.type === "state") {
 			this.receiveState(message);
-		} else if (this.pending?.id === message.id) {
-			if (!this.pending.edit || isNonEmptyString(message.error)) {
-				this.reply = message;
-			}
-			this.pending = null;
-			this.active = false;
+		} else {
+			this.receiveReply(message);
 		}
 		this.scheduleEdit();
 	};
+	/** 対応する要求の待機だけを解除し、条件変更前の検査応答を表示から除く。 */
+	private receiveReply(message: Extract<GuardReply, { type: "reply" }>) {
+		const pending = this.pending;
+		if (pending?.id !== message.id) {
+			return;
+		}
+		let showReply = !pending.edit || isNonEmptyString(message.error);
+		if (pending.probeVersion !== undefined) {
+			showReply = showReply && pending.probeVersion === this.probeVersion;
+		}
+		if (showReply) {
+			this.reply = message;
+		}
+		this.pending = null;
+		this.active = false;
+		const directory = pending.directory;
+		const selected = directory !== undefined && message.error === null;
+		if (selected && typeof message.directory === "string") {
+			this.applyDirectory(directory, message.directory);
+		}
+	}
+	/** 選択中に外部更新があった場合は破棄し、選択開始時のルールだけへ相対パスを反映する。 */
+	private applyDirectory(
+		target: { index: number; version: number; text: string },
+		directory: string,
+	) {
+		const changed =
+			this.state?.version !== target.version || this.text !== target.text;
+		if (changed) {
+			return;
+		}
+		const parsed = guardrailsFormSchema.safeParse(JSON.parse(target.text));
+		const rule = parsed.success
+			? parsed.data.pathRules[target.index]
+			: undefined;
+		if (!parsed.success || rule?.match !== "directory") {
+			return;
+		}
+		rule.directory = directory;
+		this.change(`${JSON.stringify(parsed.data, null, 2)}\n`);
+	}
 	/** 入力の有無を更新前の文書と照合し、外部更新で下書きを消さない。 */
 	private receiveState(message: GuardState) {
 		if (applyDocumentSnapshot(this, message, this.pending)) {

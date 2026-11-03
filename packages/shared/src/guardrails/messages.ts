@@ -30,6 +30,16 @@ export type GuardResult = z.infer<typeof guardResultSchema>;
 export const guardRequestSchema = z.discriminatedUnion("type", [
 	z.strictObject({ type: z.literal("ready") }),
 	z.strictObject({
+		type: z.literal("discard"),
+		id: z.number().int(),
+		version: z.number().int(),
+	}),
+	z.strictObject({
+		type: z.literal("select-directory"),
+		id: z.number().int(),
+		version: z.number().int(),
+	}),
+	z.strictObject({
 		type: z.literal("edit"),
 		id: z.number().int(),
 		version: z.number().int(),
@@ -66,6 +76,7 @@ export const guardReplySchema = z.union([
 		notice: z.string(),
 		result: guardResultSchema.nullable(),
 		warnings: z.array(z.string()),
+		directory: z.string().nullable().optional(),
 	}),
 ]);
 /** ガードレールの操作結果。外部入力は `guardReplySchema` で検証してから扱う。 */

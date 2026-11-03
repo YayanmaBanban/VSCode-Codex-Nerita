@@ -1,7 +1,7 @@
 <!-- 有効・無効・未指定の三値を区別し、設定キーの削除を可能にする。 -->
 <script lang="ts">
 	import Field from "./Field.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 
 	let {
 		value,
@@ -19,7 +19,7 @@
 </script>
 
 <Field label="有効／無効">
-	<ConfigControl
+	<ComboList
 		appearance="field"
 		option={{
 			id: "agent-enabled",

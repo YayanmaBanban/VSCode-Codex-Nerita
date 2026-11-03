@@ -8,8 +8,8 @@
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import User from "@lucide/svelte/icons/user";
 	import { cn } from "cnfast";
-	import Tooltip from "../../ui/Tooltip.svelte";
-	import { useSettingsPopup } from "../../ui/settingsPopup.svelte";
+	import Tooltip from "./Tooltip.svelte";
+	import { useSettingsPopup } from "./settingsPopup.svelte";
 
 	const popup = useSettingsPopup();
 

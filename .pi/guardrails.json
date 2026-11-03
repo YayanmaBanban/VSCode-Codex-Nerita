@@ -1,20 +1,30 @@
 {
 	"version": 1,
+	"builtins": {
+		"paths": {
+			"ssh": "deny",
+			"aws": "deny",
+			"gnupg": "deny",
+			"gitCredentials": "deny",
+			"environment": "deny",
+			"authConfig": "ask",
+			"cloudConfig": "ask",
+			"keyFiles": "ask"
+		},
+		"commands": {
+			"git": "ask",
+			"filesystem": "ask",
+			"containers": "ask",
+			"packages": "ask",
+			"system": "ask",
+			"database": "ask",
+			"secrets": "ask"
+		}
+	},
 	"pathAccess": {
 		"outsideRead": "deny",
 		"outsideWrite": "deny"
 	},
-	"pathRules": [
-		{
-			"id": "env-files",
-			"reason": "秘密値を含む可能性があるファイルです。",
-			"action": "deny",
-			"base": "workspace",
-			"match": "glob",
-			"pattern": ".env*",
-			"exceptions": [".env.example", ".env.sample"],
-			"operations": ["read", "write"]
-		}
-	],
+	"pathRules": [],
 	"commandRules": []
 }

@@ -1,4 +1,4 @@
-<!-- ガードレールのフォーム・JSON 編集と判定シミュレーションを組み立て、文書の保存状態を共有する。 -->
+<!-- ガードレールのフォームと判定シミュレーションを組み立て、文書の保存状態を共有する。 -->
 <script lang="ts">
 	import { untrack } from "svelte";
 	import TabBar from "../../ui/TabBar.svelte";
@@ -13,7 +13,7 @@
 	let { bridge }: GuardrailsEditorProps = $props();
 	const editor = useGuardrails(untrack(() => bridge));
 	let tab = $state<
-		"overview" | "builtins" | "path" | "command" | "exceptions" | "json"
+		"overview" | "builtins" | "path" | "command" | "exceptions"
 	>("path");
 	let pane = $state<"edit" | "simulation">("edit");
 	let probe = $state.raw<GuardProbe>({
@@ -41,14 +41,21 @@
 	import GuardrailsProbePane from "./GuardrailsProbePane.svelte";
 
 	import GuardrailsRulePane from "./GuardrailsRulePane.svelte";
-	import GuardrailsFeedback from "./GuardrailsFeedback.svelte";
-	/** ルール編集の表示をフォームと JSON の間で切り替える。 */
+	import GuardrailsEditorFooter from "./GuardrailsEditorFooter.svelte";
+	/** 編集するルールの種類を切り替える。 */
 	const setTab = (value: typeof tab) => {
 		tab = value;
 	};
 
 	/** 判定シミュレーションに使うツール・作業ディレクトリ・入力を保持する。 */
 	const setProbe = (value: GuardProbe) => {
+		const changed =
+			value.tool !== probe.tool ||
+			value.cwd !== probe.cwd ||
+			value.input !== probe.input;
+		if (changed) {
+			editor.invalidateProbe();
+		}
 		probe = value;
 	};
 </script>
@@ -58,17 +65,7 @@
 		class="guardrails-editor text-foreground"
 		data-document-status={status}
 	>
-		<GuardrailsEditorHeader
-			{...{
-				editor,
-				state: editor.state,
-				status,
-				probe,
-			}}
-		/>
-		{#if editor.reply && editor.reply.result === null}
-			<GuardrailsFeedback reply={editor.reply} />
-		{/if}
+		<GuardrailsEditorHeader state={editor.state} />
 		<div class="guardrails-mobile-tabs">
 			<TabBar
 				label="表示切替"
@@ -91,6 +88,13 @@
 			/>
 			<GuardrailsProbePane {...{ editor, probe, setProbe }} />
 		</div>
+		<GuardrailsEditorFooter
+			{editor}
+			state={editor.state}
+			{status}
+			{probe}
+			formAvailable={parsed?.success === true}
+		/>
 	</main>
 {:else}
 	<p class="p-5">ガードレール設定を読み込み中…</p>

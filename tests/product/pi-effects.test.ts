@@ -116,6 +116,7 @@ for (const action of ["deny", "stop", "revoke", "settings"] as const) {
 				reason: "承認待ちの対象を禁止する",
 				action: "deny",
 				match: "glob",
+				directory: ".",
 				pattern: "forbidden.txt",
 				exceptions: [],
 				operations: ["write"],

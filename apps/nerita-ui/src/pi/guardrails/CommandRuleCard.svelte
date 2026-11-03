@@ -21,10 +21,10 @@
 >
 	<div class="p-3">
 		<div class={cn("grid grid-cols-1 gap-3", "sm:grid-cols-2")}>
-			<label
+			<label class="flex min-w-0 flex-col gap-1"
 				>ID
 				<input
-					class={inputStyle}
+					class={cn(inputStyle, "h-[38px]")}
 					value={rule.id}
 					oninput={(event) =>
 						update({
@@ -49,14 +49,15 @@
 			<CommandRulePattern {...{ rule, update }} />
 			<label class="sm:col-span-2"
 				>理由
-				<input
-					class={inputStyle}
+				<textarea
+					rows={4}
+					maxlength={500}
+					class={cn(inputStyle, "h-[96px] resize-none")}
 					value={rule.reason}
 					oninput={(event) =>
 						update({
 							reason: event.currentTarget.value,
-						})}
-				/></label
+						})}></textarea></label
 			>
 		</div>
 	</div>

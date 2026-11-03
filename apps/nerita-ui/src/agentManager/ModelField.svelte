@@ -6,7 +6,7 @@
 		nonEmptyString,
 	} from "@nerita/shared/valuePredicates";
 	import Field from "./Field.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 
 	let {
 		value,
@@ -28,7 +28,7 @@
 </script>
 
 <Field label="モデル">
-	<ConfigControl
+	<ComboList
 		appearance="field"
 		disabled={false}
 		option={{

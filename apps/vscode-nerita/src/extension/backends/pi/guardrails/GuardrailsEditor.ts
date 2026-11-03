@@ -20,6 +20,8 @@ import { guardrailRegistry } from "../../../security/GuardrailRegistry";
 import { webviewHtml } from "../../../webview/webviewHtml";
 import { GuardrailsSettings } from "./GuardrailsSettings";
 import { saveGuardrails } from "./saveGuardrails";
+import { discardGuardrails } from "./discardGuardrails";
+import { selectedDirectory } from "./selectedDirectory";
 
 export const guardrailsViewType = "nerita.pi.guardrails";
 
@@ -111,7 +113,16 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 		let notice = "";
 		let result: Extract<GuardReply, { type: "reply" }>["result"] = null;
 		let warnings: string[] = [];
-		if (message.type === "edit") {
+		let directory: string | null | undefined;
+		if (message.type === "select-directory") {
+			directory = await this.pickDirectory(
+				document,
+				message.version,
+				root,
+			);
+		} else if (message.type === "discard") {
+			await this.discard(document, message.version, root);
+		} else if (message.type === "edit") {
 			const edit = new vscode.WorkspaceEdit();
 			edit.replace(
 				document.uri,
@@ -134,7 +145,8 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 					},
 				);
 				warnings = guardrailWarnings(config);
-				notice = "保存して適用しました。変更前の承認は失効しました。";
+				notice =
+					"保存して適用しました。以前に承認した操作は、新しい設定でもう一度承認する必要があります。";
 			} else {
 				const config = parseGuardrails(text);
 				warnings = guardrailWarnings(config);
@@ -149,7 +161,6 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 					roots,
 					message.probe,
 				);
-				notice = "設定と入力例を検査しました。操作は実行していません。";
 			}
 		}
 		post({
@@ -159,7 +170,69 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 			notice,
 			result,
 			warnings,
+			...(directory !== undefined ? { directory } : {}),
 		});
+	}
+
+	/** 復元元は実行側から取得し、Webview が指定した本文で上書きさせない。 */
+	private async discard(
+		document: vscode.TextDocument,
+		version: number,
+		root: string,
+	) {
+		const active = guardrailRegistry.snapshot(root, [root]);
+		await discardGuardrails(
+			document,
+			version,
+			JSON.stringify(active.config),
+			() => !active.signal.aborted,
+			async (text) => {
+				await this.settings.rootFor(document.uri);
+				const changed =
+					document.version !== version ||
+					document.isDirty ||
+					active.signal.aborted;
+				if (changed) {
+					return false;
+				}
+				const edit = new vscode.WorkspaceEdit();
+				edit.replace(
+					document.uri,
+					new vscode.Range(0, 0, document.lineCount, 0),
+					text,
+				);
+				return vscode.workspace.applyEdit(edit);
+			},
+		);
+	}
+
+	/** 標準ダイアログでフォルダのみを選び、選択中の外部更新や境界変更を再検査する。 */
+	private async pickDirectory(
+		document: vscode.TextDocument,
+		version: number,
+		root: string,
+	) {
+		const selected = await vscode.window.showOpenDialog({
+			title: "ディレクトリの選択",
+			defaultUri: vscode.Uri.file(root),
+			canSelectFiles: false,
+			canSelectFolders: true,
+			canSelectMany: false,
+		});
+		const uri = selected?.[0];
+		if (uri && uri.scheme !== "file") {
+			throw new Error("ローカルのディレクトリを選択してください。");
+		}
+		const directory = uri
+			? await selectedDirectory(root, uri.fsPath)
+			: null;
+		await this.settings.rootFor(document.uri);
+		if (version !== document.version) {
+			throw new Error(
+				"選択中に文書が更新されました。もう一度選択してください。",
+			);
+		}
+		return directory;
 	}
 
 	/** 文書の版を検査し、直列化した操作の結果を通知する。 */

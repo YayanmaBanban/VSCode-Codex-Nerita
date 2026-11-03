@@ -5,7 +5,7 @@
 		nonEmptyString,
 	} from "@nerita/shared/valuePredicates";
 	import Field from "./Field.svelte";
-	import ConfigControl from "../chat/composer/ConfigControl.svelte";
+	import ComboList from "../ui/ComboList.svelte";
 	import { reasoningLabel } from "@nerita/shared/settingsCards";
 
 	let {
@@ -37,7 +37,7 @@
 </script>
 
 <Field {label}>
-	<ConfigControl
+	<ComboList
 		appearance="field"
 		option={{
 			id: "handoff-effort",
