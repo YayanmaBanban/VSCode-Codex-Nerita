@@ -1,5 +1,5 @@
-// 実行: pnpm test:scratch markdown-stream-performance.spec.cjs --grep "累積 Markdown"
-// SCRATCH_PHASE=before / after を同じ条件で実行し、実コンポーネントの更新時間を比較する。
+// 実行: `pnpm test:scratch markdown-stream-performance.spec.cjs --grep "累積 Markdown"`。
+// `SCRATCH_PHASE` を `before` と `after` に設定して同じ条件で実行し、製品コンポーネントの更新時間を比較する。
 const { test, expect, waitForStory } = require("../support/scratch-test.cjs");
 const { writeFile } = require("node:fs/promises");
 

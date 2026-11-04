@@ -14,7 +14,9 @@ import type { BackendId } from "@nerita/shared/backend";
 void test("DLC から指定したバックエンドで開き、既存パネルも指定に合わせる", async (t) => {
 	const codex = await codexFixture(t);
 	const f = await fixture(
-		new CodexWorkspaceTrust(codex.extensionPath, () => {}),
+		new CodexWorkspaceTrust(codex.extensionPath, () => {}, {
+			executable: codex.executable,
+		}),
 		"codex",
 	);
 	const initial = await f.request({ type: "refresh" });

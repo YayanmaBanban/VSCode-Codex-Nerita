@@ -107,7 +107,7 @@ async function saveCodexSettings(root: string, home: string, url: string) {
 	);
 }
 
-/** 対話入力を閉じ、実際の同梱バイナリーの終了を待つ。 */
+/** 対話入力を閉じ、開発依存または配布検証で取得した対応版の終了を待つ。 */
 function executeCodex(root: string, home: string) {
 	const require = createRequire(
 		join(
@@ -115,11 +115,13 @@ function executeCodex(root: string, home: string) {
 			"apps/vscode-nerita/package.json",
 		),
 	);
-	const binary = join(
-		dirname(require.resolve("@openai/codex/package.json")),
-		"..",
-		"codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
-	);
+	const binary =
+		process.env.NERITA_DISTRIBUTION_CODEX_EXECUTABLE ??
+		join(
+			dirname(require.resolve("@openai/codex/package.json")),
+			"..",
+			"codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
+		);
 	return new Promise<{ stdout: string; stderr: string }>(
 		(resolve, reject) => {
 			const child = execFile(

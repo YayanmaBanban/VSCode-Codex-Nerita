@@ -26,7 +26,9 @@ for (const explicitRoot of [false, true]) {
 				write: async () => {},
 			},
 			undefined,
-			new CodexWorkspaceTrust(f.extensionPath, () => {}),
+			new CodexWorkspaceTrust(f.extensionPath, () => {}, {
+				executable: f.executable,
+			}),
 		);
 		assert.equal(await trust.trusted(f.cwd), false);
 		Object.assign(vscode.workspace, {
@@ -44,6 +46,7 @@ for (const explicitRoot of [false, true]) {
 			trust,
 			"codex",
 			explicitRoot ? f.cwd : undefined,
+			{ executable: f.executable },
 		);
 		t.after(() => controller.dispose());
 

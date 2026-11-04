@@ -85,7 +85,7 @@
 		}, 2000);
 		return () => clearTimeout(timeout);
 	}
-	// Host 応答による props 更新にも反応し、退場タイマーを解除・再設定するため effect を使う。
+	// Host の応答によるプロパティの更新にも反応し、退場タイマーを解除・再設定するため `$effect` を使う。
 	$effect(syncVisibility);
 </script>
 

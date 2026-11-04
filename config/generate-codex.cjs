@@ -2,6 +2,7 @@
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const { z } = require("zod");
 const { extensionRequire } = require("./workspace-paths.cjs");
 const { cleanupLicenses } = require("./cleanup-licenses.cjs");
 const { runPnpm } = require("./run-pnpm.cjs");
@@ -27,6 +28,38 @@ async function downloadLicenses(version) {
 		files.push({ name, content });
 	}
 	return files;
+}
+
+/** Windows x64 の公式 npm 資産を固定し、実行時にレジストリの最新版を参照しない。 */
+async function downloadRuntime(version) {
+	const packageVersion = `${version}-win32-x64`;
+	const response = await fetch(
+		`https://registry.npmjs.org/@openai%2Fcodex/${packageVersion}`,
+		{ signal: AbortSignal.timeout(30_000) },
+	);
+	if (!response.ok) {
+		throw new Error(
+			`Codex 配布情報の取得に失敗しました: HTTP ${response.status}`,
+		);
+	}
+	const { dist } = z
+		.object({
+			name: z.literal("@openai/codex"),
+			version: z.literal(packageVersion),
+			dist: z.object({
+				tarball: z
+					.url()
+					.startsWith("https://registry.npmjs.org/@openai/codex/-/"),
+				integrity: z.string().regex(/^sha512-[A-Za-z0-9+/]{86}==$/),
+				unpackedSize: z.number().int().positive(),
+			}),
+		})
+		.parse(await response.json());
+	return {
+		url: dist.tarball,
+		integrity: dist.integrity,
+		unpackedSize: dist.unpackedSize,
+	};
 }
 
 /** 固定バージョンの通信型・ライセンス・生成元情報を更新する。 */
@@ -62,6 +95,7 @@ async function main() {
 		);
 	}
 	const licenses = await downloadLicenses(version);
+	const runtime = await downloadRuntime(version);
 	const out = path.join(
 		root,
 		"apps/vscode-nerita/src/extension/backends/codex/codex-app-server",
@@ -94,7 +128,7 @@ async function main() {
 	}
 	fs.writeFileSync(
 		path.join(out, "version.json"),
-		`${JSON.stringify({ version, experimental: false }, null, 2)}\n`,
+		`${JSON.stringify({ version, experimental: false, runtime }, null, 2)}\n`,
 	);
 	await cleanupLicenses(path.join(__dirname, "licenses"), "codex", version);
 }

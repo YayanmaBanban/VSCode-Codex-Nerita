@@ -192,10 +192,6 @@ async function copyPiDistribution(
 		path.join(target, "pi.mjs"),
 		'export * from "./pi/core.mjs";\n',
 	);
-	await fs.writeFile(
-		path.join(destination, "bundle-meta.json"),
-		JSON.stringify(result.metafile),
-	);
 }
 
 /** SDK 内部の実装参照を配布バンドルの入口へ固定する。 */

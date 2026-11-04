@@ -4,6 +4,7 @@ import { realpath, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 import { CodexClient } from "../CodexClient";
+import type { CodexExecutableOptions } from "../runtime/executable";
 import type { TrustReply } from "@nerita/shared/workspaceTrust";
 import {
 	trustKey,
@@ -31,6 +32,7 @@ export class CodexWorkspaceTrust {
 	constructor(
 		private readonly extensionPath: string,
 		private readonly changed: (root?: string) => void,
+		private readonly runtime: CodexExecutableOptions = { extensionPath },
 	) {}
 
 	/** 保存待ちの取消しや取得失敗を実行許可へ変換しない。 */
@@ -221,7 +223,7 @@ export class CodexWorkspaceTrust {
 		action: (client: CodexClient) => Promise<T>,
 	): Promise<T> {
 		const client = await CodexClient.connect({
-			extensionPath: this.extensionPath,
+			...this.runtime,
 			cwd: this.extensionPath,
 			clientInfo: {
 				name: "nerita_codex_trust",

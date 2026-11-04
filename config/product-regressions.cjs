@@ -2,6 +2,30 @@
 const fs = require("node:fs/promises");
 
 const regressions = {
+	"codex-runtime-consent-skipped": {
+		selection: "codex-installation",
+		file: "executable.ts",
+		before: "if (!accepted) {",
+		after: "if (false) {",
+		expected: [
+			{
+				test: "新しい Codex の取得同意を断ると通信せず、再接続時に再び選べる",
+				messages: ["同意を得る前に通信しない"],
+			},
+		],
+	},
+	"codex-runtime-integrity-skipped": {
+		selection: "codex-installation",
+		file: "downloadCodex.ts",
+		before: 'if (`sha512-${digest.digest("base64")}` !== release.runtime.integrity) {',
+		after: "if (false) {",
+		expected: [
+			{
+				test: "ハッシュ不一致の取得物は実行せず破棄し、再試行を妨げない",
+				messages: ["ハッシュ不一致の資産を実行しない"],
+			},
+		],
+	},
 	"message-notification-clones-history": {
 		selection: "message-publication",
 		file: "BackendRuntime.ts",

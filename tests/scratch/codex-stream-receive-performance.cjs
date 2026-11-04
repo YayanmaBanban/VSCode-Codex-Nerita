@@ -1,4 +1,4 @@
-// 実行: node --test tests/scratch/codex-stream-receive-performance.cjs
+// 実行: `node --test tests/scratch/codex-stream-receive-performance.cjs`。
 // 合成した JSONL だけを使い、パイプ投入から Worker・状態更新・通知までの遅延を測る。
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
@@ -71,7 +71,7 @@ async function measure(api, historyCount, paced, consumeState = true) {
 			}
 			if (consumeState) {
 				let started = performance.now();
-				// CodexSessionController が注入する stateAccess と同じ経路。公開snapshotは使わない。
+				// `CodexSessionController` が注入する `stateAccess` と同じ経路で状態を読む。公開用のスナップショットは使わない。
 				const state = session.state;
 				snapshotMs += performance.now() - started;
 				started = performance.now();

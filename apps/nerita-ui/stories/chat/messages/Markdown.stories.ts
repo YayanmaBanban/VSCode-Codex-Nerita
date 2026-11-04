@@ -62,7 +62,7 @@ export const LinkDestination: Story = {
 	},
 };
 
-/** Ctrl+クリックは Host に外部起動を1回要求し、ファイルリンクの既存動作を保つ。 */
+/** Ctrl キーを押しながらクリックすると Host に外部ブラウザーで開くよう1回要求し、ファイルリンクの既存動作を保つ。 */
 export const OpenExternalLink: Story = {
 	play: async ({ canvasElement }) => {
 		const user = userEvent.setup();

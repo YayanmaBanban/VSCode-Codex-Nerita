@@ -8,7 +8,7 @@ import {
 import { discardGuardrails } from "../../apps/vscode-nerita/src/extension/backends/pi/guardrails/discardGuardrails";
 import { GuardrailRegistry } from "../../apps/vscode-nerita/src/extension/security/GuardrailRegistry";
 
-/** 文書編集・保存の境界だけを代替し、実行設定は製品のRegistryを使用する。 */
+/** 文書編集・保存の境界だけを代替し、実行設定は製品の `GuardrailRegistry` を使用する。 */
 function fixture() {
 	const root = process.cwd();
 	const registry = new GuardrailRegistry();

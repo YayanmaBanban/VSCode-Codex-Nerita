@@ -123,12 +123,16 @@ async function prepare(t: TestContext, savedBackend: BackendId = "codex") {
 					: Promise.resolve(),
 		},
 		undefined,
-		new CodexWorkspaceTrust(main.extensionPath, () =>
-			trust.invalidate(undefined, "codex"),
+		new CodexWorkspaceTrust(
+			main.extensionPath,
+			() => trust.invalidate(undefined, "codex"),
+			{ executable: main.executable },
 		),
 	);
 	const runtime = new BackendRuntime((backend, root) =>
-		createBackend(context, trust, backend ?? "codex", root),
+		createBackend(context, trust, backend ?? "codex", root, {
+			executable: main.executable,
+		}),
 	);
 	const unsubscribe = trust.onChange((root, backend) =>
 		runtime.invalidateTrust(root, backend),

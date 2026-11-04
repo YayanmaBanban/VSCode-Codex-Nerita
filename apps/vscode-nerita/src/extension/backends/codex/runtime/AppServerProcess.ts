@@ -5,7 +5,7 @@ import type { WindowsSandboxSetupMode } from "../codex-app-server/v2/WindowsSand
 import { sandboxServerEnvironment } from "../../../runtime/CommandEnvironment";
 import { BackendShutdownError } from "../../../session/BackendShutdown";
 
-/** 認証・`CODEX_HOME`・設定を継承し、同梱ネイティブ実行ファイルを起動する。 */
+/** 認証・`CODEX_HOME`・設定を継承し、対応版と確認した実行ファイルを起動する。 */
 export function startAppServerProcess(
 	executable: string,
 	cwd: string,

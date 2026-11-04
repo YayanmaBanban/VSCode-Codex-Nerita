@@ -1,4 +1,4 @@
-<!-- Markdown と累積ストリームを描画し、検証済み参照と安全なリンクだけを操作にする。 -->
+<!-- Markdown と累積ストリームを描画し、検証済みの参照と安全なリンクだけを開けるようにする。 -->
 <script lang="ts">
 	import SvelteMarkdown, {
 		buildUnsupportedHTML,
@@ -121,7 +121,7 @@
 			: url;
 	}
 
-	/** ファイルは VS Code へ渡し、Web リンクの Ctrl+クリックは既定ブラウザーを明示して開く。 */
+	/** ファイルは VS Code へ渡し、Ctrl キーを押しながらクリックした Web リンクは既定ブラウザーで開く。 */
 	function openLink(event: MouseEvent, href: string) {
 		if (/^file:\/\//i.test(href)) {
 			event.preventDefault();
@@ -147,7 +147,7 @@
 </script>
 
 <div class={markdownStyle}>
-	<!-- spread にすると source 更新でライブラリの rest props も無効化され、全トークンが更新される。 -->
+	<!-- スプレッド構文で渡すと、`source` の更新でライブラリが残余のプロパティを再評価し、全トークンが更新される。 -->
 	<SvelteMarkdown
 		source={content.text}
 		{streaming}

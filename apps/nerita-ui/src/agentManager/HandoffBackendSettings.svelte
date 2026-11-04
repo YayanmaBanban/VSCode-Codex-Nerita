@@ -1,4 +1,4 @@
-<!-- バックエンドごとの引継ぎモデルの方式と、推論の設定を編集する。 -->
+<!-- バックエンドごとに引き継ぎ時のモデルの選択方式と推論の設定を編集する。 -->
 <script lang="ts">
 	import type { BackendId } from "@nerita/shared/backend";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";

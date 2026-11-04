@@ -32,6 +32,7 @@ async function run() {
 	);
 	assert.equal(typeof sdk.createAgentSession, "function");
 	await verifyMxcRuntime(root);
+	await verifyPtyRuntime(root);
 	for (const asset of ["dist/webview/index.js", "dist/webview/index.css"]) {
 		assert.ok((await fs.stat(path.join(root, asset))).size > 0);
 	}
@@ -42,6 +43,52 @@ async function run() {
 }
 
 module.exports = { run };
+
+/** 削減後の prebuild だけで、Extension Host から Windows の PTY を実際に起動する。 */
+async function verifyPtyRuntime(root) {
+	const pty = require(path.join(root, "dist/runtime/node_modules/node-pty"));
+	const terminal = pty.spawn(
+		path.join(process.env.SystemRoot, "System32/cmd.exe"),
+		["/d", "/c", "echo nerita-pty-distribution"],
+		{ cols: 80, rows: 24, env: process.env },
+	);
+	let output = "";
+	let exited = false;
+	const data = terminal.onData((value) => {
+		output += value;
+	});
+	let exit;
+	let timer;
+	try {
+		await new Promise((resolve, reject) => {
+			timer = setTimeout(
+				() => reject(new Error("配布 PTY の終了を確認できません。")),
+				10000,
+			);
+			exit = terminal.onExit((event) => {
+				exited = true;
+				if (event.exitCode === 0) {
+					resolve();
+				} else {
+					reject(
+						new Error(
+							`配布 PTY の起動に失敗しました: ${event.exitCode}`,
+						),
+					);
+				}
+			});
+		});
+		assert.ok(output.includes("nerita-pty-distribution"));
+		console.log("配布 node-pty の prebuild による実コマンド起動: 成功");
+	} finally {
+		clearTimeout(timer);
+		data.dispose();
+		exit?.dispose();
+		if (!exited) {
+			terminal.kill();
+		}
+	}
+}
 
 /** 開発端末の Node ではなく、配布先の Extension Host とネイティブ依存の互換性を確認する。 */
 async function verifyMxcRuntime(root) {

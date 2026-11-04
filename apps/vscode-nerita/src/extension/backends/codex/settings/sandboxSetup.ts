@@ -6,6 +6,7 @@ import type { AppServerNotification } from "../protocol/rpcMessage";
 import * as vscode from "vscode";
 import { z } from "zod";
 import { CodexClient } from "../CodexClient";
+import type { CodexExecutableOptions } from "../runtime/executable";
 import { requireLocalWorkspace } from "../../../workspace";
 import type { WindowsSandboxSetupMode } from "../codex-app-server/v2/WindowsSandboxSetupMode";
 
@@ -16,7 +17,14 @@ const completionSchema = z.object({
 });
 
 /** セットアップ受付と完了を区別し、完了通知まで接続を保持する。 */
-export function registerSandboxSetup(context: vscode.ExtensionContext): void {
+export function registerSandboxSetup(
+	context: Pick<vscode.ExtensionContext, "subscriptions"> & {
+		extensionUri: Pick<vscode.Uri, "fsPath">;
+	},
+	runtime: CodexExecutableOptions = {
+		extensionPath: context.extensionUri.fsPath,
+	},
+): void {
 	if (process.platform !== "win32") {
 		return;
 	}
@@ -35,7 +43,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 				vscode.env.remoteName,
 			);
 			const mode = await resolveWindowsSandbox(
-				context.extensionUri.fsPath,
+				runtime,
 				cwd,
 				lifetime.signal,
 			);
@@ -44,7 +52,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 					location: vscode.ProgressLocation.Notification,
 					title: `Windows Sandbox (${mode}) セットアップ`,
 				},
-				createSandboxSetupTask(lifetime, context, cwd, mode),
+				createSandboxSetupTask(lifetime, runtime, cwd, mode),
 			);
 			void vscode.window.showInformationMessage(
 				"Windows Sandbox のセットアップが完了しました。Codexへ再接続してください。",
@@ -69,7 +77,7 @@ export function registerSandboxSetup(context: vscode.ExtensionContext): void {
 /** 完了通知・接続終了・中断を待ち、終了時にタイマーを取り消して接続を閉じる。 */
 function createSandboxSetupTask(
 	lifetime: AbortController,
-	context: vscode.ExtensionContext,
+	runtime: CodexExecutableOptions,
 	cwd: string,
 	mode: WindowsSandboxSetupMode,
 ): (
@@ -103,7 +111,7 @@ function createSandboxSetupTask(
 		let client: CodexClient | undefined;
 		try {
 			client = await CodexClient.connect({
-				extensionPath: context.extensionUri.fsPath,
+				...runtime,
 				cwd,
 				signal: lifetime.signal,
 				windowsSandbox: mode,
@@ -175,12 +183,12 @@ function canSetupCodexSandbox(): boolean {
 
 /** Codex の既存設定を読み、Windows Sandbox のモードが未指定の場合だけ `elevated` を使う。 */
 async function resolveWindowsSandbox(
-	extensionPath: string,
+	runtime: CodexExecutableOptions,
 	cwd: string,
 	signal: AbortSignal,
 ): Promise<WindowsSandboxSetupMode> {
 	const client = await CodexClient.connect({
-		extensionPath,
+		...runtime,
 		cwd,
 		signal,
 		clientInfo: {

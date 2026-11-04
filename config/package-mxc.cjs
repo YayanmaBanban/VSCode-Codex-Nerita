@@ -102,6 +102,15 @@ function runtimeAsset(name, relative) {
 	if (parts.includes("node_modules")) {
 		return false;
 	}
+	if (/\.(?:pdb|map)$/.test(relative)) {
+		return false;
+	}
+	if (
+		name === "node-pty" &&
+		["build", "third_party", "src"].includes(parts[0])
+	) {
+		return false;
+	}
 	if (name === "@microsoft/mxc-sdk" && parts[0] === "bin") {
 		return windowsMxcAsset(parts);
 	}

@@ -2,7 +2,7 @@
 import { CodexClient } from "../../codex/CodexClient";
 import type { PiQuotaReader } from "../PiProvider";
 
-/** 認証値を取り出さず、同梱 CLI の検証済み RPC とプロセス寿命を利用する。 */
+/** 認証値を取り出さず、対応版 CLI の検証済み RPC とプロセス寿命を利用する。 */
 export function openAICodexQuota(
 	extensionPath: string,
 	cwd: string,

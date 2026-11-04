@@ -106,25 +106,12 @@ export async function codexFixture(t: TestContext, executionRoot?: string) {
 	const address = server.address();
 	assert.ok(address !== null && typeof address !== "string");
 	await writeCodexRelay(root, cwd, address.port);
-	const executableRoot = join(root, "dist/runtime/node_modules/@openai");
-	const bin = join(
-		executableRoot,
-		"codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin",
-	);
+	const bin = join(root, "runtime");
 	await mkdir(bin, { recursive: true });
-	await mkdir(join(executableRoot, "codex"));
 	await copyFile(process.execPath, join(bin, "codex.exe"));
-	await writeFile(
-		join(root, "package.json"),
-		JSON.stringify({ dependencies: { "@openai/codex": "fixture" } }),
-	);
-	await writeFile(
-		join(executableRoot, "codex/package.json"),
-		JSON.stringify({ version: "fixture" }),
-	);
 	const selectionPath = join(root, "selection.json");
 	const controllers: CodexSessionController[] = [];
-	const factory = createCodexFactory(cwd, root, streams);
+	const factory = createCodexFactory(cwd, join(bin, "codex.exe"), streams);
 	t.after(async () => {
 		for (const controller of controllers) {
 			await controller.dispose();
@@ -137,6 +124,7 @@ export async function codexFixture(t: TestContext, executionRoot?: string) {
 		responses,
 		cwd,
 		extensionPath: root,
+		executable: join(bin, "codex.exe"),
 		factory,
 		disconnect: () => {
 			streams.at(-1)!.destroy();
@@ -181,13 +169,13 @@ function createCodexServerMessages(streams: ServerResponse[]) {
 /** 起動・取り消しの時点を制御するときも、接続と JSONL 通信は本番の実装を使う。 */
 function createCodexFactory(
 	cwd: string,
-	root: string,
+	executable: string,
 	streams: ServerResponse[],
 ): CodexFactory {
 	return async (callbacks, signal) => {
 		const previous = streams.length;
 		const client = await CodexClient.connect({
-			extensionPath: root,
+			executable,
 			cwd,
 			clientInfo: { title: null, name: "fixture", version: "1" },
 			callbacks,

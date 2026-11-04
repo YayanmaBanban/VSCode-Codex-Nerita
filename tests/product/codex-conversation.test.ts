@@ -944,11 +944,13 @@ function prepareSandboxSetupUi(
 		}
 	});
 	// VS Code の登録境界で利用するパスと購読管理だけを代替する。
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-	registerSandboxSetup({
-		extensionUri: { fsPath: f.extensionPath },
-		subscriptions,
-	} as unknown as vscode.ExtensionContext);
+	registerSandboxSetup(
+		{
+			extensionUri: { fsPath: f.extensionPath },
+			subscriptions,
+		},
+		{ executable: f.executable },
+	);
 	return {
 		command,
 		info,

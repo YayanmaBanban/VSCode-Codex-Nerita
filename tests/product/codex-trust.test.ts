@@ -45,7 +45,9 @@ void test("Codex の信頼は設定 API で保存・再取得し、Pi の記録�
 			filePath: "config.toml",
 		};
 	});
-	const codex = new CodexWorkspaceTrust(f.extensionPath, () => {});
+	const codex = new CodexWorkspaceTrust(f.extensionPath, () => {}, {
+		executable: f.executable,
+	});
 	const store = new WorkspaceTrustStore(
 		{ read: () => undefined, write: async () => {} },
 		undefined,
@@ -58,8 +60,11 @@ void test("Codex の信頼は設定 API で保存・再取得し、Pi の記録�
 	assert.equal(await store.trusted(f.cwd, "codex"), true);
 	assert.equal(await store.trusted(f.cwd, "pi"), false);
 	assert.equal(
-		(await new CodexWorkspaceTrust(f.extensionPath, () => {}).list())[0]
-			?.trust,
+		(
+			await new CodexWorkspaceTrust(f.extensionPath, () => {}, {
+				executable: f.executable,
+			}).list()
+		)[0]?.trust,
 		"trusted",
 	);
 	await store.setBackendTrust(f.cwd, "untrusted", "codex");
@@ -105,7 +110,9 @@ void test("Windows の表記違いを隠さず取得し、変更は小文字キ�
 		}
 		return { status: "ok", version: "1", filePath: "config.toml" };
 	});
-	const codex = new CodexWorkspaceTrust(f.extensionPath, () => {});
+	const codex = new CodexWorkspaceTrust(f.extensionPath, () => {}, {
+		executable: f.executable,
+	});
 	assert.equal((await codex.list()).length, 3);
 	assert.equal(await codex.trusted(f.cwd), false);
 	await codex.change(upper, "trusted");
@@ -121,7 +128,9 @@ void test("Windows の表記違いを隠さず取得し、変更は小文字キ�
 
 void test("Codex の取消し保存待ちと不正な設定応答では信頼を許可しない", async (t) => {
 	const f = await codexFixture(t);
-	const codex = new CodexWorkspaceTrust(f.extensionPath, () => {});
+	const codex = new CodexWorkspaceTrust(f.extensionPath, () => {}, {
+		executable: f.executable,
+	});
 	assert.equal(await codex.trusted(f.cwd), true);
 	const gate = codexResponseGate();
 	f.responses.set("config/batchWrite", () => gate.response);

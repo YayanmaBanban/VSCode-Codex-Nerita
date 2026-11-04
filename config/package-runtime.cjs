@@ -1,38 +1,9 @@
 // pnpm のリンク構造に依存しない実行資産を dist/runtime に配置する。
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { createRequire } = require("node:module");
 const { extensionRoot, extensionRequire } = require("./workspace-paths.cjs");
 const { bundlePi } = require("./package-pi.cjs");
 const { packageMxc } = require("./package-mxc.cjs");
-
-/** 指定した Codex とネイティブ資産を、pnpm のリンクから独立して同梱する。 */
-async function copyCodex(codexJson, target) {
-	const codexRequire = createRequire(codexJson);
-	const platformName = "@openai/codex-win32-x64";
-	const platformJson = codexRequire.resolve(`${platformName}/package.json`);
-	// 動的 require.resolve が参照する npm パッケージ構造を維持する。
-	for (const [name, json] of [
-		["@openai/codex", codexJson],
-		[platformName, platformJson],
-	]) {
-		const root = path.dirname(json);
-		const destination = path.join(target, "node_modules", name);
-		await fs.mkdir(destination, { recursive: true });
-		await fs.copyFile(json, path.join(destination, "package.json"));
-		for (const entry of await fs.readdir(root, { withFileTypes: true })) {
-			if (
-				["bin", "vendor", "LICENSE", "README.md"].includes(entry.name)
-			) {
-				await fs.cp(
-					path.join(root, entry.name),
-					path.join(destination, entry.name),
-					{ recursive: true, dereference: true },
-				);
-			}
-		}
-	}
-}
 
 /** このプロジェクトの生成物だけを消し、旧バイナリの混入を防ぐ。 */
 async function resetRuntime(projectRoot) {
@@ -65,7 +36,7 @@ async function resetRuntime(projectRoot) {
 	return target;
 }
 
-/** 直接依存と生成型のバージョンを揃え、App Server 用の資産だけを同梱する。 */
+/** 対応版を照合し、Codex の取得情報・ライセンスと Pi・MXC の実行資産を収集する。 */
 async function packageRuntime() {
 	if (process.platform !== "win32" || process.arch !== "x64") {
 		throw new Error("VSIX のビルドには Windows x64 が必要です。");
@@ -73,34 +44,38 @@ async function packageRuntime() {
 	const codexJson = extensionRequire.resolve("@openai/codex/package.json");
 	const { version } = require(codexJson);
 	const generated = require("../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/version.json");
+	const matchesMetadata =
+		generated.experimental === false &&
+		Boolean(generated.runtime?.integrity);
 	if (
 		require("../apps/vscode-nerita/package.json").dependencies[
 			"@openai/codex"
 		] !== version ||
 		generated.version !== version ||
-		generated.experimental !== false
+		!matchesMetadata
 	) {
 		throw new Error(
 			"Codex の依存バージョンを固定し、pnpm codex:generate でバージョン情報と配布設定を再生成してください。",
 		);
 	}
 	// 入力パッケージを解決してから生成先を更新する。
-	createRequire(codexJson).resolve("@openai/codex-win32-x64/package.json");
 	const notices = path.join(__dirname, "licenses", `codex-${version}`);
 	for (const name of ["LICENSE", "NOTICE"]) {
 		await fs.access(path.join(notices, name));
 	}
 	const projectRoot = await fs.realpath(extensionRoot);
 	const target = await resetRuntime(projectRoot);
-	await copyCodex(codexJson, target);
+	const codex = path.join(target, "codex");
+	await fs.mkdir(codex);
+	await fs.writeFile(
+		path.join(codex, "version.json"),
+		JSON.stringify(generated),
+	);
 	await bundlePi(projectRoot, target);
 	await packageMxc(target);
 	// npm 配布に含まれない上流のライセンス表記を、固定バージョンの資産と一緒に残す。
 	for (const name of ["LICENSE", "NOTICE"]) {
-		await fs.copyFile(
-			path.join(notices, name),
-			path.join(target, "node_modules/@openai/codex", name),
-		);
+		await fs.copyFile(path.join(notices, name), path.join(codex, name));
 	}
 }
 module.exports = { packageRuntime };

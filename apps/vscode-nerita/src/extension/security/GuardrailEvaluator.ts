@@ -31,7 +31,7 @@ export async function evaluateGuardrails(
 				result,
 				"deny",
 				"builtin:cwd",
-				"cwdがworkspace境界外です。",
+				"作業ディレクトリがワークスペース外にあります。",
 			);
 			return result;
 		}
@@ -50,7 +50,7 @@ export async function evaluateGuardrails(
 				result,
 				"ask",
 				"builtin:extension",
-				"拡張ToolはHost権限で動作するため承認が必要です。",
+				"拡張ツールは Host の権限で動作するため、承認が必要です。",
 			);
 			result.uncertainties.push(
 				"任意の拡張コード内部のアクセスは検査できません。",

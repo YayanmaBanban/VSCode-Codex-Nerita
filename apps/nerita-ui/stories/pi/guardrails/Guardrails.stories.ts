@@ -23,7 +23,7 @@ const meta = {
 } satisfies Meta<typeof GuardrailsPreview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-/** JSONの直接編集欄を使わず、Hostへ送信した最新の編集内容を検証する。 */
+/** JSON の直接編集欄を使わず、Host へ送信した最新の編集内容を検証する。 */
 function editedConfig(onRequest: unknown) {
 	if (!isMockFunction(onRequest)) {
 		throw new Error("送信内容を検証するモックがありません。");

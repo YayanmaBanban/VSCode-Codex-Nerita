@@ -1,7 +1,7 @@
 {
 	"name": "nerita",
 	"displayName": "Nerita",
-	"description": "codex-app-serverを利用した、Codex用のVSCode拡張機能",
+	"description": "codex-app-server を利用した、Codex 用の VS Code 拡張機能",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/YayanmaBanban/VSCode-Codex-Nerita"
@@ -25,7 +25,7 @@
 	"capabilities": {
 		"untrustedWorkspaces": {
 			"supported": "limited",
-			"description": "未信頼のWorkspaceではPiの読取りだけを利用できます。コード実行には明示的なTrustが必要です。"
+			"description": "未信頼のワークスペースでは Pi の読み取りだけを利用できます。コード実行には明示的な信頼が必要です。"
 		},
 		"virtualWorkspaces": false
 	},
@@ -74,7 +74,7 @@
 					],
 					"default": "codex",
 					"scope": "window",
-					"description": "チャットに使用するエージェント。オプションから変更するとバックエンドだけを再起動し、新しい会話を開始します。設定ファイルで変更した場合はウィンドウを再読み込みしてください。Piの書き込み・PowerShell実行には毎回の承認が必要です。"
+					"description": "チャットに使用するエージェント。オプションから変更するとバックエンドだけを再起動し、新しい会話を開始します。設定ファイルで変更した場合はウィンドウを再読み込みしてください。Pi の書き込み・PowerShell 実行には毎回の承認が必要です。"
 				},
 				"nerita.pi.sessionStorage": {
 					"type": "string",
@@ -85,22 +85,22 @@
 					"default": "global",
 					"scope": "window",
 					"enumDescriptions": [
-						"Pi標準の ~/.pi/agent/sessions/ に保存",
+						"Pi 標準の ~/.pi/agent/sessions/ に保存",
 						"ワークスペース内の Pi 会話保存領域に保存"
 					],
-					"markdownDescription": "Piの新規会話の保存先。未送信の新規会話では初回送信時にも設定変更を反映します。送信済み・復元済みの会話は元の保存先を維持します。workspaceでは会話の保存領域に `.gitignore` を内容 `*` で初回生成します。既存ファイルは上書きしません。"
+					"markdownDescription": "Pi の新規会話の保存先。未送信の新規会話では初回送信時にも設定変更を反映します。送信済み・復元済みの会話は元の保存先を維持します。`workspace` では会話の保存領域に、内容が `*` の `.gitignore` を初回生成します。既存ファイルは上書きしません。"
 				},
 				"nerita.pi.codemode": {
 					"type": "boolean",
 					"default": false,
 					"scope": "application",
-					"markdownDescription": "Piのcodemodeを有効にします。許可されたツールをJavaScriptで組み合わせて実行します。子ツールには個別の承認と権限制限が適用されます。承認待ちを含めて60秒で停止します。変更はPiへの再接続後に反映されます。"
+					"markdownDescription": "Pi の `codemode` を有効にします。許可されたツールを JavaScript で組み合わせて実行します。子ツールには個別の承認と権限制限が適用されます。承認待ちを含めて60秒で停止します。変更は Pi への再接続後に反映されます。"
 				},
 				"nerita.pi.toolSearch": {
 					"type": "boolean",
 					"default": false,
 					"scope": "application",
-					"markdownDescription": "Piのtool_searchを有効にします。許可されたツールをローカルで検索し、必要な定義を会話へ追加します。MCP未接続でもHostのツールに使用できます。変更はPiへの再接続後に反映されます。"
+					"markdownDescription": "Pi の `tool_search` を有効にします。許可されたツールをローカルで検索し、必要な定義を会話へ追加します。MCP 未接続でも Host のツールに使用できます。変更は Pi への再接続後に反映されます。"
 				},
 				"nerita.pi.trustedExtensionPaths": {
 					"type": "array",
@@ -110,7 +110,7 @@
 					},
 					"default": [],
 					"scope": "application",
-					"markdownDescription": "Pi拡張のロードを許可するcanonicalな絶対ファイルパス。ユーザー設定だけを使用し、ディレクトリや未指定のentryはロードしません。依存コードを含むHost権限の実行を信頼する設定です。Toolは毎回承認しますが、任意JavaScriptやHTTP通信をShell Sandboxで隔離する保証ではありません。変更はPiへの再接続後に反映されます。"
+					"markdownDescription": "読み込みを許可する Pi 拡張の正規化済み絶対ファイルパス。ユーザー設定だけを使用し、ディレクトリや未指定の拡張は読み込みません。依存コードを含め、Host の権限での実行を信頼する設定です。ツールは毎回承認しますが、任意の JavaScript や HTTP 通信を Shell Sandbox で隔離する保証はありません。変更は Pi への再接続後に反映されます。"
 				},
 				"nerita.codex.changes.exclude": {
 					"type": "array",
@@ -129,7 +129,7 @@
 						"**/*.generated.*"
 					],
 					"scope": "resource",
-					"markdownDescription": "変更点のプレビュー・送信から除外するGit globパターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダ単位で設定でき、次回の差分取得から反映されます。"
+					"markdownDescription": "変更点のプレビュー・送信から除外する Git の glob パターン。リポジトリルートからの相対パスを `/` 区切りで指定します（例: `**/coverage/**`）。設定した配列で既定値全体を置き換えます。`[]` で除外を無効にできます。ユーザー・ワークスペース・フォルダ単位で設定でき、次回の差分取得から反映されます。"
 				},
 				"nerita.codex.sidebarLocation": {
 					"type": "string",
@@ -143,7 +143,7 @@
 					],
 					"default": "secondary",
 					"scope": "application",
-					"description": "Codexチャットを表示するサイドバー。"
+					"description": "Codex チャットを表示するサイドバー。"
 				}
 			}
 		},
@@ -174,7 +174,7 @@
 			},
 			{
 				"command": "nerita.trust.manage",
-				"title": "Nerita: Workspace Trustを管理",
+				"title": "Nerita: Workspace Trust を管理",
 				"icon": "dist/media/nerita.svg"
 			},
 			{
@@ -184,7 +184,7 @@
 			},
 			{
 				"command": "nerita.codex.setupWindowsSandbox",
-				"title": "Nerita: Codex Windows Sandboxをセットアップ",
+				"title": "Nerita: Codex Windows Sandbox をセットアップ",
 				"enablement": "isWindows && config.nerita.backend == codex"
 			},
 			{

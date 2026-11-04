@@ -22,7 +22,10 @@ import {
 	startAppServerProcess,
 	stopAppServerProcess,
 } from "./runtime/AppServerProcess";
-import { resolveCodexExecutable } from "./runtime/executable";
+import {
+	resolveCodexExecutable,
+	type CodexExecutableOptions,
+} from "./runtime/executable";
 import { PersonalityStore } from "./settings/PersonalityStore";
 import {
 	composeDeveloperInstructions,
@@ -30,8 +33,7 @@ import {
 } from "@nerita/shared/personality";
 
 /** Extension Host が確定したローカル起動条件。 */
-export type CodexClientOptions = {
-	extensionPath: string;
+export type CodexClientOptions = CodexExecutableOptions & {
 	cwd: string;
 	clientInfo: ClientInfo;
 	callbacks?: AppServerCallbacks;
@@ -53,7 +55,11 @@ export class CodexClient {
 
 	/** `initialize` の成功後に `initialized` を送り、失敗時は起動したプロセスを回収する。 */
 	static async connect(options: CodexClientOptions): Promise<CodexClient> {
-		const executable = await resolveCodexExecutable(options.extensionPath);
+		options.signal?.throwIfAborted();
+		const executable =
+			"executable" in options
+				? options.executable
+				: await resolveCodexExecutable(options.extensionPath);
 		options.signal?.throwIfAborted();
 		const child = startAppServerProcess(
 			executable,

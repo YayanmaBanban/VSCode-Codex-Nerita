@@ -16,6 +16,7 @@ import { ModelConfig } from "../settings/ModelConfig";
 import { attachmentService } from "../webview/attachments";
 import { requireLocalWorkspace } from "../workspace";
 import { CodexClient } from "./codex/CodexClient";
+import type { CodexExecutableOptions } from "./codex/runtime/executable";
 import { CodexSessionController } from "./codex/CodexSessionController";
 import {
 	authService,
@@ -48,6 +49,9 @@ export function createBackend(
 	trustStore?: WorkspaceTrustStore,
 	backend?: BackendId,
 	executionRoot?: string,
+	codexRuntime: CodexExecutableOptions = {
+		extensionPath: context.extensionUri.fsPath,
+	},
 ): BackendSession {
 	const matchesBackend =
 		(backend ??
@@ -68,7 +72,7 @@ export function createBackend(
 				"codex",
 			);
 			const client = await CodexClient.connect({
-				extensionPath: context.extensionUri.fsPath,
+				...codexRuntime,
 				cwd,
 				callbacks,
 				signal,

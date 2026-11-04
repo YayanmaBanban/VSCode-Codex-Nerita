@@ -28,7 +28,7 @@ async function main() {
 	) => {
 		const script = join(cwd, "command.cjs");
 		await writeFile(script, source);
-		return executeSandboxCommand(extension, cwd, script, signal);
+		return executeSandboxCommand(cwd, script, signal);
 	};
 	const allowed = await execute(
 		"require('node:fs').writeFileSync('inside.txt', 'allowed')",
@@ -54,20 +54,21 @@ async function main() {
 	await assert.rejects(access(created), { code: "ENOENT" });
 	await verifyStopped(cwd, execute);
 	console.log(
-		"実 Windows Sandbox: 許可領域の書込み成功、領域外の書込み拒否、停止時に子孫を回収",
+		"Windows Sandbox 本体での検証: 許可領域への書き込み成功、領域外への書き込み拒否、停止時の子孫プロセス終了を確認",
 	);
 }
 
-/** 配布物に含まれる Codex の RPC を直接呼び出し、OS によるアクセス制限を検証する。 */
+/** 配布物の情報から取得した Codex の RPC を呼び出し、OS のアクセス制限を検証する。 */
 async function executeSandboxCommand(
-	extensionPath: string,
 	cwd: string,
 	script: string,
 	signal: AbortSignal,
 ) {
 	signal.throwIfAborted();
+	const executable = process.env.NERITA_DISTRIBUTION_CODEX_EXECUTABLE;
+	assert.ok(isNonEmptyString(executable));
 	const client = await CodexClient.connect({
-		extensionPath,
+		executable,
 		cwd,
 		windowsSandbox: "elevated",
 		clientInfo: {

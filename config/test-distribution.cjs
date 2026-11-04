@@ -43,15 +43,20 @@ async function main() {
 	);
 	try {
 		const { extension } = await extractDistribution(root);
+		const runtimeEnvironment = await prepareCodexRuntime(
+			extension,
+			root,
+			selection,
+		);
 		if (process.argv.includes("--sandbox")) {
-			await verifySandbox(extension, root);
+			await verifySandbox(extension, root, runtimeEnvironment);
 			return;
 		}
 		run(
 			process.execPath,
 			[path.join(repoRoot, "config/test-products.cjs"), ...productArgs],
 			{
-				...process.env,
+				...runtimeEnvironment,
 				NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
 			},
 		);
@@ -60,17 +65,12 @@ async function main() {
 		const uiEnv = process.argv.includes("--ui")
 			? await prepareWebview(root)
 			: {};
-		const user = path.join(root, "profile/User");
-		await fs.mkdir(user, { recursive: true });
-		await fs.writeFile(
-			path.join(user, "settings.json"),
-			JSON.stringify({
-				"nerita.backend": "pi",
-				"window.dialogStyle": "custom",
-			}),
-		);
+		await prepareProfile(root);
 		if (process.argv.includes("--ui")) {
-			await require("./test-webview.cjs").launch(extension, root, uiEnv);
+			await require("./test-webview.cjs").launch(extension, root, {
+				...runtimeEnvironment,
+				...uiEnv,
+			});
 			return;
 		}
 		const exitCode = await runTests({
@@ -90,6 +90,7 @@ async function main() {
 				"--disable-workspace-trust",
 			],
 			extensionTestsEnv: {
+				...runtimeEnvironment,
 				NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
 				...uiEnv,
 			},
@@ -102,6 +103,19 @@ async function main() {
 	} finally {
 		await removeRun(root);
 	}
+}
+
+/** 受入テストの起動設定を専用プロファイルだけに保存する。 */
+async function prepareProfile(root) {
+	const user = path.join(root, "profile/User");
+	await fs.mkdir(user, { recursive: true });
+	await fs.writeFile(
+		path.join(user, "settings.json"),
+		JSON.stringify({
+			"nerita.backend": "pi",
+			"window.dialogStyle": "custom",
+		}),
+	);
 }
 
 /** VS Code 上の Webview でもモデルとの通信だけを代替し、設定と画像を実行ごとに分離する。 */
@@ -118,6 +132,19 @@ async function prepareWebview(root) {
 		platform: "node",
 		format: "cjs",
 	});
+	const resolver = path.join(root, "codex-resolver.cjs");
+	await build({
+		absWorkingDir: repoRoot,
+		entryPoints: [
+			"apps/vscode-nerita/src/extension/backends/codex/runtime/executable.ts",
+		],
+		outfile: resolver,
+		bundle: true,
+		platform: "node",
+		format: "cjs",
+		conditions: ["nerita-source"],
+		external: ["vscode"],
+	});
 	const artifacts = path.join(
 		repoRoot,
 		"dist/ui-review",
@@ -133,13 +160,14 @@ async function prepareWebview(root) {
 		PI_CODING_AGENT_DIR: path.join(home, ".pi/agent"),
 		CODEX_HOME: path.join(home, ".codex"),
 		NERITA_UI_MODEL: model,
+		NERITA_CODEX_RESOLVER_MODULE: resolver,
 		NERITA_UI_PROFILE: path.join(root, "profile"),
 		NERITA_UI_ARTIFACTS: artifacts,
 	};
 }
 
 /** 準備済みの Windows Sandbox を実際に使用し、未準備を成功やスキップへ変換しない。 */
-async function verifySandbox(extension, root) {
+async function verifySandbox(extension, root, environment) {
 	const script = path.join(root, "sandbox.cjs");
 	const fixture = path.join(root, "sandbox");
 	await fs.mkdir(fixture);
@@ -151,12 +179,45 @@ async function verifySandbox(extension, root) {
 		platform: "node",
 		format: "cjs",
 		conditions: ["nerita-source"],
+		alias: {
+			vscode: path.join(repoRoot, "tests/support/vscode-boundary.cjs"),
+		},
 	});
 	run(process.execPath, [script], {
-		...process.env,
+		...environment,
 		NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
 		NERITA_WINDOWS_TEST_ROOT: fixture,
 	});
+}
+
+/** 同梱版の代わりに、製品の取得経路で一時領域に用意した対応版を利用する。 */
+async function prepareCodexRuntime(extension, root, selection) {
+	const needsCodex =
+		selection.files.some((name) => name.includes("codex")) ||
+		process.argv.includes("--sandbox") ||
+		process.argv.includes("--ui");
+	if (!needsCodex) {
+		return process.env;
+	}
+	const script = path.join(root, "prepare-codex.cjs");
+	await build({
+		absWorkingDir: repoRoot,
+		entryPoints: ["tests/support/distributionCodex.ts"],
+		outfile: script,
+		bundle: true,
+		platform: "node",
+		format: "cjs",
+		conditions: ["nerita-source"],
+	});
+	const executable = await require(script).prepareCodex(
+		extension,
+		path.join(root, "codex"),
+	);
+	return {
+		...process.env,
+		PATH: `${path.dirname(executable)}${path.delimiter}${process.env.PATH ?? ""}`,
+		NERITA_DISTRIBUTION_CODEX_EXECUTABLE: executable,
+	};
 }
 
 main().catch((error) => {
