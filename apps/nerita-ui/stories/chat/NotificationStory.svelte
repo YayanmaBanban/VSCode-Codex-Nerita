@@ -3,14 +3,21 @@
 	import NotificationCard from "../../src/chat/NotificationCard.svelte";
 	import "../../src/chat/chat.css";
 
-	let { backgroundColor }: { backgroundColor?: string | undefined } =
-		$props();
+	let {
+		backgroundColor,
+		duration = 2000,
+	}: {
+		backgroundColor?: string | undefined;
+		duration?: number;
+	} = $props();
 	let open = $state(true);
 	let generation = $state(0);
 </script>
 
 <div class="pt-4">
 	<button
+		type="button"
+		class="text-primary-text"
 		onclick={() => {
 			open = true;
 			generation++;
@@ -22,6 +29,7 @@
 		{#if open}
 			<NotificationCard
 				{backgroundColor}
+				{duration}
 				onClose={() => {
 					open = false;
 				}}

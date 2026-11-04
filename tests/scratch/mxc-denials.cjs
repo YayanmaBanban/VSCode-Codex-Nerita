@@ -1,4 +1,5 @@
 // SDK の拒否記録を権限を緩和せず検証する。`node tests/scratch/mxc-denials.cjs` で実行する。
+const { test } = require("node:test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -136,7 +137,4 @@ async function verifyDenials(temporary, deniedFile) {
 	);
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+test("MXC: 拒否対象をレポートへ記録する", main);

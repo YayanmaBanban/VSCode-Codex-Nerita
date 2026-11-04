@@ -12,6 +12,9 @@ const config: StorybookConfig = {
 		"@storybook/addon-vitest",
 		"@storybook/addon-mcp",
 	],
+	features: {
+		componentsManifest: true,
+	},
 	framework: "@storybook/svelte-vite",
 	/** 本体と同じ CSS 入口を Storybook でもコンパイルする。 */
 	viteFinal(config) {

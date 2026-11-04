@@ -1,5 +1,6 @@
 // 承認待ち・ランチャー・MXC・固定コマンドを分けて測る。node tests/scratch/mxc-measurement.cjs で実行する。
 // 成果物だけを dist/measurements/ に残し、SDK・Worktree・キャッシュは検証専用領域で回収する。
+const { test } = require("node:test");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
@@ -168,8 +169,11 @@ async function sourceVersions() {
 	return { head: commit.stdout.trim(), hashes };
 }
 
-const run = process.argv[2] === "--child" ? child : main;
-run().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+if (process.argv[2] === "--child") {
+	child().catch((error) => {
+		console.error(error);
+		process.exitCode = 1;
+	});
+} else {
+	test("MXC: キャッシュとランチャーの初回・再実行・並列を比較する", main);
+}

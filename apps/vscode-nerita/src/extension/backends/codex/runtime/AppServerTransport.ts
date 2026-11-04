@@ -87,12 +87,7 @@ export class AppServerTransport {
 		const id = this.nextId++;
 		return new Promise<unknown>((resolve, reject) => {
 			const timer = setTimeout(
-				() =>
-					this.fail(
-						new Error(
-							"Codex App Server の応答がタイムアウトしました。",
-						),
-					),
+				() => this.requestTimedOut(id, method),
 				timeoutMs,
 			);
 			this.pending.set(id, { resolve, reject, timer });
@@ -102,6 +97,23 @@ export class AppServerTransport {
 				this.fail(new Error("Codex App Server へ送信できません。"));
 			}
 		}).then(responseParsers[method]);
+	}
+
+	/** MCP の起動待ちによる一覧取得の遅延だけでは、会話や他の RPC を切断しない。 */
+	private requestTimedOut(
+		id: RequestId,
+		method: keyof AppServerResponses,
+	): void {
+		const error = new Error(
+			"Codex App Server の応答がタイムアウトしました。",
+		);
+		if (method === "mcpServerStatus/list") {
+			const pending = this.pending.get(id);
+			this.pending.delete(id);
+			pending?.reject(error);
+			return;
+		}
+		this.fail(error);
 	}
 
 	/** 初期化の完了通知など、応答を伴わないメッセージを送る。 */

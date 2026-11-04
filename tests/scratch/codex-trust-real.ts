@@ -1,5 +1,6 @@
 // 同梱 App Server の設定 API を一時的な `CODEX_HOME` で検証する。esbuild で CJS 化して実行する。
 import assert from "node:assert/strict";
+import test from "node:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -8,7 +9,7 @@ import { execFileSync } from "node:child_process";
 import { CodexClient } from "../../apps/vscode-nerita/src/extension/backends/codex/CodexClient";
 import { trustKey } from "../../apps/vscode-nerita/src/extension/security/trust/WorkspaceTrustStore";
 
-async function main() {
+async function main(scenario: "aliases" | "multiple" | "worktree") {
 	const root = await mkdtemp(join(tmpdir(), "nerita-codex-trust-"));
 	const home = join(root, "home");
 	const workspace = join(root, "project.with.dots");
@@ -45,8 +46,16 @@ async function main() {
 	const extensionPath = resolve("apps/vscode-nerita");
 	const trust = new CodexWorkspaceTrust(extensionPath, () => {});
 	await trust.registerWorkspace(workspace);
-	await verifyAliases(trust, extensionPath, workspace);
-	await verifyMultiple(trust, root, workspace);
+	if (scenario === "aliases") {
+		await verifyAliases(trust, extensionPath, workspace);
+		assert.equal(await trust.trusted(workspace), false);
+		return;
+	}
+	if (scenario === "multiple") {
+		await verifyMultiple(trust, root, workspace);
+		assert.equal(await trust.trusted(workspace), false);
+		return;
+	}
 	assert.equal(await trust.trusted(workspace), false);
 	await trust.change(workspace, "trusted");
 	assert.equal(await trust.trusted(workspace), true);
@@ -158,7 +167,17 @@ async function verifyMultiple(
 	await trust.change(workspace, "unset");
 	await trust.change(second, "unset");
 }
-main().catch((error: unknown) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+for (const scenario of ["aliases", "multiple", "worktree"] as const) {
+	void test(`Codex 信頼設定: ${scenario}`, async () => {
+		const previous = process.env.CODEX_HOME;
+		try {
+			await main(scenario);
+		} finally {
+			if (previous === undefined) {
+				delete process.env.CODEX_HOME;
+			} else {
+				process.env.CODEX_HOME = previous;
+			}
+		}
+	});
+}

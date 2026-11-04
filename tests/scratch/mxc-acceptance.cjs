@@ -1,4 +1,5 @@
 // MXC 本体の通信・書込み境界・停止を検証する。`node tests/scratch/mxc-acceptance.cjs` で実行する。
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
@@ -98,52 +99,6 @@ function createRun(sdk, executeMxcCommand, workspace, shell, env) {
 		});
 		return result;
 	};
-}
-
-async function main() {
-	const { run, root, workspace, shell } = await prepare();
-	try {
-		const write = await run(
-			"[IO.File]::WriteAllText([IO.Path]::Combine([Environment]::CurrentDirectory, 'allowed.txt'), 'inside'); try { [IO.File]::WriteAllText([IO.Path]::Combine([Environment]::CurrentDirectory, '../denied.txt'), 'outside'); Write-Output 'ESCAPED' } catch { Write-Output 'DENIED' }",
-		);
-		assert.equal(write.exitCode, 0);
-		assert.match(write.stdout, /DENIED/);
-		assert.equal(
-			await fs.readFile(path.join(workspace, "allowed.txt"), "utf8"),
-			"inside",
-		);
-		await assert.rejects(fs.access(path.join(root, "denied.txt")));
-		await observeOutsideRead(run, root);
-		const tcp =
-			"$client = New-Object Net.Sockets.TcpClient; try { $pending = $client.ConnectAsync('1.1.1.1', 443); if ($pending.Wait(4000) -and $client.Connected) { Write-Output 'CONNECTED' } else { Write-Output 'BLOCKED' } } catch { Write-Output 'BLOCKED' } finally { $client.Dispose() }";
-		assert.match((await run(tcp)).stdout, /BLOCKED/);
-		assert.match((await run(tcp, true)).stdout, /CONNECTED/);
-		const networkComplete = await verifyNetwork(run);
-		const failure = await run(
-			"[Console]::Out.Write('stdout'); [Console]::Error.Write('stderr'); exit 7",
-		);
-		assert.equal(failure.exitCode, 7);
-		assert.equal(failure.stdout, "stdout");
-		assert.equal(failure.stderr, "stderr");
-		await verifyStop(run, workspace, shell);
-		await verifyLargeOutput(run);
-		console.log("MXC filesystem / raw TCP / output / Stop probes passed");
-		const cwd = await run(
-			"if ((Get-Location).Path -ne [Environment]::CurrentDirectory) { [Console]::Error.Write('PowerShell cwd mismatch'); exit 1 }; Write-Output 'CWD_OK'",
-		);
-		assert.equal(
-			cwd.exitCode,
-			0,
-			"PowerShell が指定した cwd で実行できる必要があります",
-		);
-		assert.equal(
-			networkComplete,
-			true,
-			"Host loopback allow の受け入れ条件が未達です。native ProcessContainer 対応 Windows が必要です。",
-		);
-	} finally {
-		await cleanup(root);
-	}
 }
 
 /** 書込み拒否とは別に、下位 isolation tier でのワークスペース外読取りを観測する。 */
@@ -289,7 +244,96 @@ async function cleanup(root) {
 	await fs.rm(root, { recursive: true, force: true });
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
+test("MXC: 書き込みの許可と拒否", async () => {
+	const { run, root, workspace } = await prepare();
+	try {
+		const write = await run(
+			"[IO.File]::WriteAllText([IO.Path]::Combine([Environment]::CurrentDirectory, 'allowed.txt'), 'inside'); try { [IO.File]::WriteAllText([IO.Path]::Combine([Environment]::CurrentDirectory, '../denied.txt'), 'outside'); Write-Output 'ESCAPED' } catch { Write-Output 'DENIED' }",
+		);
+		assert.equal(write.exitCode, 0);
+		assert.match(write.stdout, /DENIED/);
+		assert.equal(
+			await fs.readFile(path.join(workspace, "allowed.txt"), "utf8"),
+			"inside",
+		);
+		await assert.rejects(fs.access(path.join(root, "denied.txt")));
+	} finally {
+		await cleanup(root);
+	}
+});
+test("MXC: ワークスペース外の読み取り", async () => {
+	const { run, root } = await prepare();
+	try {
+		await observeOutsideRead(run, root);
+	} finally {
+		await cleanup(root);
+	}
+});
+test("MXC: TCP の拒否と許可", async () => {
+	const { run, root } = await prepare();
+	try {
+		const tcp =
+			"$client = New-Object Net.Sockets.TcpClient; try { $pending = $client.ConnectAsync('1.1.1.1', 443); if ($pending.Wait(4000) -and $client.Connected) { Write-Output 'CONNECTED' } else { Write-Output 'BLOCKED' } } catch { Write-Output 'BLOCKED' } finally { $client.Dispose() }";
+		assert.match((await run(tcp)).stdout, /BLOCKED/);
+		assert.match((await run(tcp, true)).stdout, /CONNECTED/);
+	} finally {
+		await cleanup(root);
+	}
+});
+test("MXC: Host loopback の許可", async () => {
+	const { run, root } = await prepare();
+	try {
+		const networkComplete = await verifyNetwork(run);
+		assert.equal(
+			networkComplete,
+			true,
+			"Host loopback allow の受け入れ条件が未達です。native ProcessContainer 対応 Windows が必要です。",
+		);
+	} finally {
+		await cleanup(root);
+	}
+});
+test("MXC: 終了コードと標準出力", async () => {
+	const { run, root } = await prepare();
+	try {
+		const failure = await run(
+			"[Console]::Out.Write('stdout'); [Console]::Error.Write('stderr'); exit 7",
+		);
+		assert.equal(failure.exitCode, 7);
+		assert.equal(failure.stdout, "stdout");
+		assert.equal(failure.stderr, "stderr");
+	} finally {
+		await cleanup(root);
+	}
+});
+test("MXC: 停止時の子孫終了", async () => {
+	const { run, workspace, shell, root } = await prepare();
+	try {
+		await verifyStop(run, workspace, shell);
+	} finally {
+		await cleanup(root);
+	}
+});
+test("MXC: 大量出力", async () => {
+	const { run, root } = await prepare();
+	try {
+		await verifyLargeOutput(run);
+	} finally {
+		await cleanup(root);
+	}
+});
+test("MXC: PowerShell の作業ディレクトリ", async () => {
+	const { run, root } = await prepare();
+	try {
+		const cwd = await run(
+			"if ((Get-Location).Path -ne [Environment]::CurrentDirectory) { [Console]::Error.Write('PowerShell cwd mismatch'); exit 1 }; Write-Output 'CWD_OK'",
+		);
+		assert.equal(
+			cwd.exitCode,
+			0,
+			"PowerShell が指定した cwd で実行できる必要があります",
+		);
+	} finally {
+		await cleanup(root);
+	}
 });

@@ -1,5 +1,6 @@
 // Codex 本体を専用の保存領域で再起動し、参照メタデータの永続化と、モデルへの送信内容に参照メタデータが含まれないことを確認する。
 // 実行: node tests/scratch/codex-reference-history.cjs。認証は使わず、モデル応答だけをローカルで返す。
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -283,7 +284,4 @@ async function verify() {
 	}
 }
 
-verify().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+test("Codex: 再起動後に本文と参照を復元する", verify);

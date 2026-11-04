@@ -34,6 +34,7 @@
 		"storybook": "pnpm --filter @nerita/ui storybook",
 		"build-storybook": "pnpm --filter @nerita/ui build-storybook",
 		"test:storybook": "pnpm --filter @nerita/ui test:storybook",
+		"test:scratch": "node config/test-scratch.cjs",
 		"build:shared": "pnpm --filter @nerita/shared build",
 		"build:ui": "pnpm --filter @nerita/ui build",
 		"build:vscode": "pnpm --filter nerita build",

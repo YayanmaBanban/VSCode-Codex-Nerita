@@ -1,5 +1,6 @@
 // 一時計測は `node tests/scratch/phase19-performance.cjs <結果ラベル>` で実行する。
 // 出力ストアの処理と SDK 本体による履歴読み込みを別プロセスで測り、結果を `dist/` に残す。
+const { test } = require("node:test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -233,7 +234,7 @@ async function retained(root) {
 }
 
 /** 製品コードを同じバンドルにまとめ、`WeakMap` の共有を本番と一致させる。 */
-async function main() {
+async function main(scenario) {
 	if (process.argv[2] === "--worker") {
 		const root = process.argv[4];
 		if (process.argv[3] === "prepare") {
@@ -275,13 +276,17 @@ async function main() {
 		path.join(root, "runtime"),
 	);
 	const reports = [];
-	for (const scenario of [
-		"prepare",
-		"delta",
-		"cumulative",
-		"history",
-		"retained",
-	]) {
+	if (scenario === "history") {
+		const prepared = spawnSync(
+			process.execPath,
+			["--expose-gc", __filename, "--worker", "prepare", root],
+			{ encoding: "utf8", windowsHide: true },
+		);
+		if (prepared.status !== 0) {
+			throw new Error(prepared.stderr || prepared.stdout);
+		}
+	}
+	{
 		const result = spawnSync(
 			process.execPath,
 			["--expose-gc", __filename, "--worker", scenario, root],
@@ -306,7 +311,19 @@ async function main() {
 	console.log(path.relative(repo, root));
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+if (process.argv[2] === "--worker") {
+	main().catch((error) => {
+		console.error(error);
+		process.exitCode = 1;
+	});
+} else {
+	for (const scenario of [
+		"prepare",
+		"delta",
+		"cumulative",
+		"history",
+		"retained",
+	]) {
+		test(`出力ストア計測: ${scenario}`, () => main(scenario));
+	}
+}

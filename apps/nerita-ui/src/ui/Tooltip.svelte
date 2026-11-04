@@ -36,6 +36,10 @@
 			? (trigger?.closest<HTMLElement>(".config-popup") ?? trigger)
 			: undefined,
 	);
+	// body へ Portal する説明も、起点が属するダイアログより前面へ出す。
+	const aboveDialog = $derived(
+		Boolean((externalTrigger ?? trigger)?.closest("[data-dialog-content]")),
+	);
 	/** 説明の拡大と不透明度を同時に変え、動きを減らす設定では即時表示する。 */
 	function tooltipTransition(_node: HTMLElement): TransitionConfig {
 		return {
@@ -49,8 +53,16 @@
 			open = false;
 		}
 	}
-	/** 内側のスクロールも捕捉し、移動前の位置に説明が残らないよう即座に閉じる。 */
-	function handleScroll() {
+	/** トリガーを含む領域が動いた場合だけ閉じ、別の領域のスクロールでは抑止しない。 */
+	function handleScroll(event: Event) {
+		const node = externalTrigger ?? trigger;
+		const target = event.target;
+		if (node && target instanceof Node && target.contains(node)) {
+			suppressTooltip();
+		}
+	}
+	/** ホイール操作や起点の移動で、保留中の説明も含めて即座に閉じる。 */
+	function suppressTooltip() {
 		closedByScroll = true;
 		scrollSuppressed = true;
 		suppressUntil = performance.now() + 150;
@@ -63,8 +75,12 @@
 		}
 	}
 	/** ブラウザーからスクロール終了の通知が来た場合は、次の操作を待機なしで受け付ける。 */
-	function finishScroll() {
-		suppressUntil = 0;
+	function finishScroll(event: Event) {
+		const node = externalTrigger ?? trigger;
+		const target = event.target;
+		if (node && target instanceof Node && target.contains(node)) {
+			suppressUntil = 0;
+		}
 	}
 	/** Bits UI が開く前に再操作を判定し、外部 DOM のトリガーにも同じ抑止を適用する。 */
 	function triggerProps(props: Record<string, unknown>) {
@@ -117,7 +133,7 @@
 <svelte:window onkeydowncapture={handleKeydown} />
 <svelte:document
 	onscrollcapture={handleScroll}
-	onwheelcapture={handleScroll}
+	onwheelcapture={suppressTooltip}
 	onscrollendcapture={finishScroll}
 />
 {#if content !== undefined && content !== null && content !== false}
@@ -170,7 +186,7 @@
 					escapeKeydownBehavior="defer-otherwise-close"
 					class={cn(
 						"tooltip-positioner tooltip-content max-w-[min(280px,calc(100vw-24px))] rounded-[6px] border border-solid border-tooltip-border bg-tooltip px-[12px] py-[9px] text-[12px] leading-[1.5] [overflow-wrap:anywhere] text-tooltip-text shadow-[0_4px_16px_#0003] [&_hr]:mx-0 [&_hr]:my-[6px] [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-solid [&_hr]:border-tooltip-divider",
-						aboveMenu ? "z-[60]" : "z-30",
+						aboveMenu || aboveDialog ? "z-[60]" : "z-30",
 					)}
 				>
 					{#snippet child({ wrapperProps, props, open: visible })}

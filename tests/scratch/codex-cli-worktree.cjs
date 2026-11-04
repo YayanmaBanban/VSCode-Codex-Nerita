@@ -1,5 +1,6 @@
 // node tests/scratch/codex-cli-worktree.cjs で CLI 本体の --worktree とターン内のシェル実行を検証する。
 // 既存 Sandbox のまま一時 Git リポジトリを使用し、CLI の終了と作業領域を回収する。
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
@@ -19,7 +20,7 @@ const binary = path.join(
 );
 
 /** 一時領域と CLI の所有記録を保持し、成功・失敗の両方で回収する。 */
-async function main() {
+async function main(isolatedLocalData, target) {
 	assert.equal(process.platform, "win32");
 	if (process.argv.includes("--recover")) {
 		await recover();
@@ -49,7 +50,13 @@ async function main() {
 			destination,
 			saved: Promise.resolve(),
 		};
-		const samples = await sampleCases(source, config.args, tracking);
+		const samples = await sampleCases(
+			source,
+			config.args,
+			tracking,
+			isolatedLocalData,
+			target,
+		);
 		assert.deepEqual(model.failures, []);
 		assert.ok(
 			samples.every((sample) => sample.category !== "unexpectedFailure"),
@@ -87,37 +94,55 @@ async function recover() {
 }
 
 /** 既定環境は単独と A/B を1組、検証用 LOCALAPPDATA では A/B を5組観測する。 */
-async function sampleCases(source, config, tracking) {
+async function sampleCases(
+	source,
+	config,
+	tracking,
+	isolatedLocalData,
+	target,
+) {
 	const samples = [];
 	const smoke = process.argv.includes("--smoke");
-	for (const isolatedLocalData of smoke ? [false] : [false, true]) {
+	{
 		const local = path.join(path.dirname(source), "local");
 		await fs.mkdir(local, { recursive: true });
 		const environment = { ...process.env };
 		if (isolatedLocalData) {
 			environment.LOCALAPPDATA = local;
 		}
-		const single = await run(source, config, environment, tracking);
-		samples.push({
-			isolatedLocalData,
-			target: "single",
-			trial: 0,
-			...single,
-		});
-		console.log(JSON.stringify(samples.at(-1)));
-		const repetitions = smoke || !isolatedLocalData ? 1 : 5;
-		for (let trial = 1; trial <= repetitions; trial++) {
-			await sampleParallel(
-				{
-					source,
-					config,
-					environment,
-					tracking,
-					isolatedLocalData,
-					trial,
-				},
-				samples,
-			);
+		if (target === "single") {
+			const single = await run(source, config, environment, tracking);
+			samples.push({
+				isolatedLocalData,
+				target: "single",
+				trial: 0,
+				...single,
+			});
+			console.log(JSON.stringify(samples.at(-1)));
+		}
+		if (target === "parallel") {
+			// 単独ケースの実行に依存せず、元の比較と同じウォームアップを用意する。
+			const warmup = await run(source, config, environment, tracking);
+			samples.push({
+				isolatedLocalData,
+				target: "warmup",
+				trial: 0,
+				...warmup,
+			});
+			const repetitions = smoke || !isolatedLocalData ? 1 : 5;
+			for (let trial = 1; trial <= repetitions; trial++) {
+				await sampleParallel(
+					{
+						source,
+						config,
+						environment,
+						tracking,
+						isolatedLocalData,
+						trial,
+					},
+					samples,
+				);
+			}
 		}
 	}
 	return samples;
@@ -496,7 +521,18 @@ async function exists(file) {
 	}
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+if (process.argv.includes("--recover")) {
+	recover().catch((error) => {
+		console.error(error);
+		process.exitCode = 1;
+	});
+} else {
+	for (const isolated of process.argv.includes("--smoke")
+		? [false]
+		: [false, true]) {
+		for (const target of ["single", "parallel"]) {
+			test(`Codex CLI: ${isolated ? "隔離環境" : "標準環境"} ${target}`, () =>
+				main(isolated, target));
+		}
+	}
+}

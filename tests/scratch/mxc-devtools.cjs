@@ -1,6 +1,7 @@
 // Git / pnpm の cwd 依存を、PowerShell / PSDrive を介さず MXC 上で比較する。
 // `pnpm exec node tests/scratch/mxc-devtools.cjs` で実行する。
 // pnpm 単体実行ファイルを明示する場合は環境変数 `PNPM_EXE` を使う。
+const { test } = require("node:test");
 
 const fs = require("node:fs/promises");
 const os = require("node:os");
@@ -158,7 +159,7 @@ async function probe(name, action) {
 }
 
 /** 一時 cwd を用意し、比較結果を出力してから後片付けする。 */
-async function main() {
+async function main(kind) {
 	if (process.platform !== "win32") {
 		throw new Error("このテストは Windows MXC 専用です。");
 	}
@@ -191,9 +192,15 @@ async function main() {
 	const results = [];
 
 	try {
-		results.push(...(await probeGit(context, safeCwd)));
-		results.push(...(await probePnpm(context, safeCwd)));
-		results.push(...(await probeNode(context, safeCwd)));
+		if (kind === "git") {
+			results.push(...(await probeGit(context, safeCwd)));
+		}
+		if (kind === "pnpm") {
+			results.push(...(await probePnpm(context, safeCwd)));
+		}
+		if (kind === "node") {
+			results.push(...(await probeNode(context, safeCwd)));
+		}
 
 		console.log("");
 		console.log("# Summary");
@@ -383,7 +390,6 @@ async function probeNode(context, safeCwd) {
 	return results;
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+for (const kind of ["git", "pnpm", "node"]) {
+	test(`MXC 開発ツール: ${kind}`, () => main(kind));
+}

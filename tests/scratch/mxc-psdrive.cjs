@@ -1,4 +1,5 @@
 // 一時 PSDrive の回避策を現行ポリシーで確認する。`node tests/scratch/mxc-psdrive.cjs` で実行する。
+const { test } = require("node:test");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { build } = require("esbuild");
@@ -73,7 +74,4 @@ async function main() {
 	process.exitCode = result.exitCode;
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+test("MXC: PowerShell のドライブと作業ディレクトリ", main);

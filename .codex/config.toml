@@ -9,12 +9,14 @@ command = "pnpm"
 args = [
   "dlx",
   "@playwright/mcp@latest",
+  "--browser",
+  "chrome",
   "--output-dir",
   "dist/ui-review/playwright-mcp"
 ]
 default_tools_approval_mode = "approve"
 
-[mcp_servers.remotion_storybook]
+[mcp_servers.storybook]
 url = "http://localhost:6006/mcp"
 default_tools_approval_mode = "approve"
 

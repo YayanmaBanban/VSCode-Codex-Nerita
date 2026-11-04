@@ -1,16 +1,13 @@
 // Extension Host の watch 起動後に実行し、ブランド資産だけの変更と復元が配布先に反映されることを確認する。
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { setTimeout } = require("node:timers/promises");
 
 /** 3資産を個別に更新し、元のバイト列へ戻すまでを検証する。 */
-async function main() {
-	for (const name of [
-		"nerita_store_icon.png",
-		"nerita.svg",
-		"nerita-24.svg",
-	]) {
+async function main(name) {
+	{
 		const source = path.resolve("apps/nerita-ui/media", name);
 		const target = path.resolve("apps/vscode-nerita/dist/media", name);
 		const original = await fs.readFile(source);
@@ -42,7 +39,6 @@ async function propagated(target, expected) {
 	}
 	assert.fail(`watch のコピーが完了しません: ${path.basename(target)}`);
 }
-void main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+for (const name of ["nerita_store_icon.png", "nerita.svg", "nerita-24.svg"]) {
+	test(`ブランド watch: ${name}`, () => main(name));
+}

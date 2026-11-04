@@ -1,4 +1,4 @@
-// Storybook の描画と操作を Chromium で検証する。
+// Storybook の描画と操作を、インストール済み Chrome で検証する。
 import path from "node:path";
 import { storybookDependencies } from "./storybookDependencies.mts";
 
@@ -35,7 +35,9 @@ export default defineConfig({
 					browser: {
 						enabled: true,
 						headless: true,
-						provider: playwright({}),
+						provider: playwright({
+							launchOptions: { channel: "chrome" },
+						}),
 						instances: [{ browser: "chromium" }],
 					},
 				},

@@ -1,6 +1,5 @@
 <script lang="ts">
 	// 既存の固定応答を各プレビューで独立して保持する。
-	import { untrack } from "svelte";
 	import { SvelteSet } from "svelte/reactivity";
 	import WorkflowEditor from "../../../src/pi/workflows/WorkflowEditor.svelte";
 	import { errorText } from "@nerita/shared/errorText";
@@ -12,6 +11,13 @@
 		WorkflowRequest,
 	} from "@nerita/shared/workflows/messages";
 	import { parseWorkflow } from "@nerita/shared/workflows/definition";
+
+	/** 引数変更で作り直す通信シナリオの初期条件。 */
+	type Scenario = {
+		running: boolean;
+		loading: boolean;
+		failure: "save" | "check" | "run" | "edit" | undefined;
+	};
 
 	const sample = stringify({
 		version: 1,
@@ -54,14 +60,14 @@
 		'const results = Object.create(null);\nconst p0 = Promise.all([]).then(() => runs.run("implement", {task: "実装を進めてください",agent: "worker"})).then(result => { if (!result.ok) throw new Error(result.error || "Step failed"); results["implement"] = result; return result; });\nconst p1 = Promise.all([p0]).then(() => runs.run("review", {task: "実装の経緯を踏まえて確認してください。\\n" + results["implement"].output + "",agent: "reviewer",neritaFork: results["implement"].runId})).then(result => { if (!result.ok) throw new Error(result.error || "Step failed"); results["review"] = result; return result; });\nconst p2 = Promise.all([p0]).then(() => runs.run("tests", {task: "テストを確認してください。\\n" + results["implement"].output + "",agent: "reviewer"})).then(result => { if (!result.ok) throw new Error(result.error || "Step failed"); results["tests"] = result; return result; });\nconst p3 = Promise.all([p1,p2]).then(() => runs.run("fix", {task: "" + results["review"].output + "\\n" + results["tests"].output + "",resume: results["implement"].runId})).then(result => { if (!result.ok) throw new Error(result.error || "Step failed"); results["fix"] = result; return result; });\nconst settled = await Promise.allSettled([p0,p1,p2,p3]);\nconst failed = settled.find(item => item.status === "rejected"); if (failed) throw failed.reason;\nreturn {"fix": await p3};';
 
 	/** 編集バッファと表示用の実行フラグだけを保持する。 */
-	function mockBridge(text: string): WorkflowBridge {
+	function mockBridge(text: string, options: Scenario): WorkflowBridge {
 		let state: WorkflowState = {
 			type: "state",
 			text,
 			version: 1,
 			dirty: false,
 			file: ".pi/workflows/implementation-review.toml",
-			running,
+			running: options.running,
 		};
 		const listeners = new SvelteSet<(message: WorkflowReply) => void>();
 		const post = (message: WorkflowReply) => {
@@ -75,7 +81,7 @@
 				notice: "",
 			};
 			try {
-				if (message.type === failure) {
+				if (message.type === options.failure) {
 					throw new Error(
 						"ワークフローの処理に失敗しました。定義を確認して再試行してください。",
 					);
@@ -115,7 +121,7 @@
 			},
 			postMessage(message) {
 				if (message.type === "ready") {
-					if (!loading) {
+					if (!options.loading) {
 						post(state);
 					}
 				} else if (message.type === "stop") {
@@ -146,9 +152,16 @@
 		loading?: boolean;
 		running?: boolean;
 	} = $props();
-	const bridge = untrack<WorkflowBridge>(() =>
-		mockBridge(text ?? (invalid ? "version = [" : sample)),
+	const bridge = $derived(
+		mockBridge(text ?? (invalid ? "version = [" : sample), {
+			running,
+			loading,
+			failure,
+		}),
 	);
 </script>
 
-<WorkflowEditor {bridge} />
+<!-- 引数によるシナリオの変更だけで通信先と編集画面を作り直し、通常の編集では下書きを保持する。 -->
+{#key bridge}
+	<WorkflowEditor {bridge} />
+{/key}

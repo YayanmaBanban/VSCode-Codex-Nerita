@@ -12,9 +12,68 @@
 
 ## UI の検証環境
 
+### ブラウザーの選択
+
+単独のブラウザーを起動する検証では、`tests/support/browser.cjs` の `launchBrowser()` を使う。インストール済み Google Chrome を起動し、同梱 Chromium にはフォールバックしない。`headless` や追加の起動引数は関数の引数で渡し、呼び出し側の `finally` で `browser.close()` を待つ。
+
+Playwright Test のフィクスチャでブラウザーを管理する場合は、対象の設定に `channel: "chrome"` を指定する。これは `playwright.config.cjs` と同じ設定であり、テスト内ではブラウザーを別途起動しない。
+
+### 検証目的と条件の選択
+
+既存の操作テストは Storybook の Vitest 連携から選択して実行する。撮影や幅ごとの検証など、既存のストーリーでは足りない一時検証を Playwright Test で追加する場合は、`tests/scratch/*.spec.cjs` に置く。ケース名またはタグで選択できるようにする。
+
+| 検証目的 | 条件の目安 | 検証が必要な変更 |
+| --- | --- | --- |
+| 照合・削除・保存などの振る舞い | 標準幅・代表テーマ | 対象の動作変更時 |
+| レスポンシブの境界 | 360 / 520 / 1200px を目安に、実際の切り替えの前後も選ぶ | 対象のレイアウト変更時 |
+| 明暗テーマの外観 | `dark2026` / `light` と、変更に関係する幅・状態 | 対象の見た目変更時 |
+| 実際の保存・信頼・権限・通信 | 専用プロファイルで起動した VS Code | 対象の Host 処理・通信境界・保存や権限の経路を変えたとき |
+
+幅によって選択欄がサイドバーへ変わるなど操作経路が異なる場合は、各経路の振る舞いも確認する。表の条件を直積にして全操作を繰り返さない。共通 UI やテーマ全体の変更では、影響する画面・状態を追加する。
+
+### ケースを指定するコマンド
+
+次は既存の Guardrails ストーリーのうち、例外削除だけを実行する例。Vitest のファイル指定は UI パッケージからの相対パスで渡す。
+
+```powershell
+pnpm.cmd test:storybook stories/pi/guardrails/Guardrails.stories.ts -t "Delete Exception"
+```
+
+UI のスクラッチは `tests/scratch/playwright.config.cjs` で収集し、ファイルに加えてケース名やタグを指定する。
+
+```powershell
+pnpm.cmd test:scratch guardrails-layout-review.spec.cjs --grep "照合のメニュー"
+pnpm.cmd test:scratch guardrails-layout-review.spec.cjs --grep "@layout"
+pnpm.cmd test:scratch --list
+```
+
+Storybook の URL を開くケースは、まず Storybook MCP の接続を確認し、接続済みなら既存サーバーを使う。未接続の場合も対象 URL の応答を確認し、Storybook が未起動の場合だけ別プロセスで `pnpm storybook` を起動する。
+
+ケースを追加・分離したら、対象ファイルと `--grep` に `--list` を付けて選択対象を確認し、そのケースだけを実行する。`pnpm test:scratch` は対象ファイルの指定を必須とし、`--list` の場合だけ全ファイルの一覧を許可する。一覧の収集ではブラウザーや Storybook を起動しない。
+
+Node.js・VS Code 本体・MXC を使うスクラッチは、`node:test` のケース名で選択する。たとえば次はファイル書き込みの許可・拒否だけを実行する。
+
+```powershell
+node --test --test-name-pattern "書き込みの許可と拒否" tests/scratch/mxc-acceptance.cjs
+```
+
+### 一時検証の設定と成果物
+
+専用設定の `testDir` は `tests/scratch/` に限定し、ルートの Playwright 設定ではこのフォルダを除外している。通常のテスト・CI・Storybook からは実行しない。`config/test-scratch.cjs` はテスト定義と同じ `@playwright/test` の CLI を使う。ルートの `playwright` とはバージョンが異なる場合もあるため、スクラッチは `pnpm test:scratch` で実行する。
+
+`tests/support/scratch-test.cjs` は、ケースごとに作成した `context` を終了時に閉じ、実行時エラーと失敗時の画面を記録する。画像・JSON は `testInfo.outputPath()` を基準に、実行ごとの `dist/ui-review/scratch-*/` 配下へ保存する。Storybook が配信しない favicon への自動要求には検証用の空応答を返し、その他のコンソールエラー・ページエラーはテストを失敗させる。
+
+### 比較条件と実行順序
+
+比較用の `before` / `after` を切り替えるケースでは、`SCRATCH_PHASE` で比較の段階を指定する。チャットの履歴を入力にする性能計測では、`SCRATCH_HISTORY` で入力を指定する。テストから製品ソースを過去の版へ書き換えず、比較したいチェックアウトを先に用意する。
+
+初回・再実行・ウォームアップの性能比較、保存後の再起動、会話操作の反復によるメモリ計測は、順序自体が検証条件なので1つのケース内にまとめる。別のケースが準備した履歴・ファイル・プロセスには依存させない。補助モジュールや子プロセス内の計測処理は、対応するケースから呼び出す。
+
 ### Storybook の通信境界
 
 テスト設定は `apps/nerita-ui/vitest.config.mts`、ストーリーは `apps/nerita-ui/stories/**/*.stories.ts` に置く。必要な状態や操作ラッパーは、ストーリーと同じ領域の `.svelte` ファイルに置く。
+
+Playwright からストーリーを開いた後に独自の操作を始める場合は、まず `play` の完了を待つ。待機には `tests/support/scratch-test.cjs` の `waitForStory(page)` を使う。描画された要素が見えたことだけで、ストーリー側の操作も終わったと判断しない。
 
 ストーリーは製品のソースと同じ機能別の構成にし、製品コンポーネントに検証開始時の状態を与える。表示用データは `apps/nerita-ui/stories/chat/fixtures/` に置く。
 
@@ -58,6 +117,7 @@ rtk proxy pnpm.cmd run test:webview vscode-bridge webview-backend
 | `pnpm test:webview` | VS Code 上の Webview の信頼操作・再接続・承認・停止・認証の取り消し・設定の切り替え・履歴の復元を検証する。 |
 | `pnpm test:external` | 導入済み Pi 拡張の受け入れ検証を行う。 |
 | `pnpm test:storybook` | Storybook の表示・操作を検証する。 |
+| `pnpm test:scratch <ファイル.spec.cjs> --grep <ケース名・タグ>` | 指定した UI スクラッチケースだけを実行する。`--list` で対象を確認できる。 |
 
 `pnpm test:windows` は、準備済みの `elevated` モードのサンドボックスと既存の `CODEX_HOME` を使う。準備不足で実行できない場合は成功扱いにせず、書き込み先は新規作業領域に限定する。
 

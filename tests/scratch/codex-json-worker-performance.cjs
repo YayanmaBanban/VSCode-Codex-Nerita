@@ -1,5 +1,6 @@
 // 一時計測は `node tests/scratch/codex-json-worker-performance.cjs` で実行する。
 // 同じ巨大 JSONL を従来の `readline` と `JSON.parse`、製品の Worker でそれぞれ読み、受け渡しを含めて計測する。
+const { test } = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
@@ -55,7 +56,7 @@ async function measure(mode, root) {
 }
 
 /** 圧縮した製品コードを使い、関数の Worker 化が本番ビルドでも成立することを確認する。 */
-async function main() {
+async function main(mode) {
 	const repo = path.resolve(__dirname, "../..");
 	const root = fs.mkdtempSync(path.join(repo, "dist/codex-json-worker-"));
 	fs.writeFileSync(
@@ -78,7 +79,7 @@ async function main() {
 		conditions: ["nerita-source"],
 	});
 	const results = [];
-	for (const mode of ["baseline", "worker"]) {
+	{
 		const child = spawnSync(
 			process.execPath,
 			["--expose-gc", __filename, mode, root],
@@ -97,9 +98,13 @@ async function main() {
 	console.log(path.relative(repo, root));
 }
 
-(process.argv[2] ? measure(process.argv[2], process.argv[3]) : main()).catch(
-	(error) => {
+if (["baseline", "worker"].includes(process.argv[2])) {
+	measure(process.argv[2], process.argv[3]).catch((error) => {
 		console.error(error);
 		process.exitCode = 1;
-	},
-);
+	});
+} else {
+	for (const mode of ["baseline", "worker"]) {
+		test(`JSON 復元: ${mode}`, () => main(mode));
+	}
+}

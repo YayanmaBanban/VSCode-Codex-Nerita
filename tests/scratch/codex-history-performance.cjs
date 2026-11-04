@@ -1,5 +1,6 @@
 // 一時計測は `node --expose-gc tests/scratch/codex-history-performance.cjs <ラベル>` で実行する。
 // App Server のページ応答だけを合成し、JSON 解析から出力退避までの Host 側の処理を比較する。
+const { test } = require("node:test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { performance } = require("node:perf_hooks");
@@ -128,7 +129,4 @@ async function main() {
 	console.log(path.relative(repo, root));
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+test("Codex: ページ単位の履歴復元を計測する", main);

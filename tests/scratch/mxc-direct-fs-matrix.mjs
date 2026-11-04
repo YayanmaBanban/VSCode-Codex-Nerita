@@ -10,6 +10,8 @@
  */
 
 import fs from "node:fs/promises";
+import test from "node:test";
+import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -455,33 +457,13 @@ SDK に渡した設定と、MXC・ProcessContainer・Windows による
 	}
 }
 
-async function runMatrixCases({ sdk, rw, ro, control, nodeExe }) {
-	const withoutRoot = await runWithoutVolumeRoot({
-		sdk,
-		rw,
-		ro,
-		control,
-		nodeExe,
-	});
-
-	/*
-	 * 条件 B はドライブのルートに読み取りを許可し、Nerita のパス解決用の互換設定に近い条件を再現する。
-	 */
-	const withRoot = await runCase({
-		sdk,
-		name: "WITH volume-root RO",
-		rw,
-		ro,
-		control,
-		nodeExe,
-		withVolumeRoot: true,
-	});
-
-	console.log("");
-	console.log("=".repeat(72));
-	console.log("Expected WITH volume-root RO");
-	console.log("=".repeat(72));
-
+async function runMatrixCases({ sdk, rw, ro, control, nodeExe }, scenario) {
+	const fixture = { sdk, rw, ro, control, nodeExe };
+	if (scenario === "without-root") {
+		const result = await runWithoutVolumeRoot(fixture);
+		console.log("WITHOUT volume-root RO exit:", result?.exitCode);
+		return;
+	}
 	const expected = {
 		RW_WRITE: "PASS",
 		RW_READ: "PASS",
@@ -490,55 +472,25 @@ async function runMatrixCases({ sdk, rw, ro, control, nodeExe }) {
 		CONTROL_READ: "FAIL",
 		CONTROL_WRITE: "FAIL",
 	};
-
-	let mismatch = compareMatrix(withRoot.matrix, expected);
-
-	console.log("");
-	console.log("=".repeat(72));
-	console.log(
-		"C: AppContainer fallback / leastPrivilege / NO volume-root RO",
-	);
-	console.log("=".repeat(72));
-
-	const appContainer = await runCase({
-		sdk,
-		name: "C: AppContainer fallback / leastPrivilege / NO volume-root RO",
-		rw,
-		ro,
-		control,
-		nodeExe,
-
-		// 条件 C ではドライブのルートに読み取りを許可しない。
-		withVolumeRoot: false,
-
-		// BaseContainer の代わりに AppContainer での実行を要求する。
-		leastPrivilege: true,
-
-		// Node.js と Winsock の互換性の影響を避け、ファイルアクセスの制限を検証する。
-		useCmd: true,
+	const withVolumeRoot = scenario === "volume-root";
+	const result = await runCase({
+		...fixture,
+		name: scenario,
+		withVolumeRoot,
+		leastPrivilege: !withVolumeRoot,
+		useCmd: !withVolumeRoot,
 	});
-
-	if (compareMatrix(appContainer.matrix, expected)) {
-		mismatch = true;
+	if (withVolumeRoot) {
+		reportOutsideRead(result);
 	}
-
-	console.log("");
-
-	reportOutsideRead(withRoot);
-
-	if (mismatch) {
-		process.exitCode = 1;
-		return;
-	}
-
-	console.log("MXC direct filesystem matrix PASSED.");
-
-	if (withoutRoot) {
-		console.log("WITHOUT volume-root RO exit:", withoutRoot.exitCode);
-	}
+	assert.equal(
+		compareMatrix(result.matrix, expected),
+		false,
+		"MXC の許可・拒否の結果が期待値と異なります",
+	);
 }
 
-async function main() {
+async function main(scenario) {
 	if (process.platform !== "win32") {
 		throw new Error("このテストは Windows MXC 専用です。");
 	}
@@ -589,7 +541,7 @@ async function main() {
 	});
 
 	try {
-		await runMatrixCases({ sdk, rw, ro, control, nodeExe });
+		await runMatrixCases({ sdk, rw, ro, control, nodeExe }, scenario);
 	} finally {
 		if (process.env.MXC_KEEP_ARTIFACTS === "1") {
 			console.log("");
@@ -604,7 +556,6 @@ async function main() {
 	}
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+for (const scenario of ["without-root", "volume-root", "app-container"]) {
+	test(`MXC 直接 FS: ${scenario}`, () => main(scenario));
+}

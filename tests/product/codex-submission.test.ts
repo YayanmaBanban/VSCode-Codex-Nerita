@@ -297,6 +297,50 @@ void test("Codex の MCP 一覧の後続ページが壊れても会話を保持�
 	);
 });
 
+void test("Codex の MCP 一覧がタイムアウトしても接続と会話を保持し、遅い応答を無視して再取得と送信を受け付ける", async (t) => {
+	const f = await codexFixture(t);
+	const gate = codexResponseGate();
+	const latePage = {
+		data: [{ name: "late", runtimeStatus: "ready" }],
+		nextCursor: null,
+	};
+	t.after(() => gate.release(latePage));
+	let waiting = false;
+	f.responses.set("mcpServerStatus/list", () => {
+		waiting = true;
+		return gate.response;
+	});
+	const controller = f.controller();
+	await controller.connect();
+	const sessionId = controller.snapshot().sessionId;
+	const listing = action(controller, "prompt/send", { text: "/mcp" });
+	await until(() => waiting);
+	await listing;
+	assert.equal(controller.snapshot().connection, "ready");
+	assert.equal(controller.snapshot().sessionId, sessionId);
+	assert.equal(controller.snapshot().run, "idle");
+	assert.deepEqual(controller.snapshot().messages.at(-1)!.mcp, {
+		status: "error",
+	});
+
+	gate.release(latePage);
+	f.responses.set("mcpServerStatus/list", () => ({
+		data: [{ name: "recovered", runtimeStatus: "ready" }],
+		nextCursor: null,
+	}));
+	await action(controller, "prompt/send", { text: "/mcp" });
+	assert.deepEqual(controller.snapshot().messages.at(-1)!.mcp, {
+		status: "ready",
+		servers: [{ name: "recovered", runtimeStatus: "ready" }],
+	});
+	await action(controller, "prompt/send", {
+		text: "取得タイムアウト後の送信",
+	});
+	assert.equal(controller.snapshot().connection, "ready");
+	assert.equal(controller.snapshot().sessionId, sessionId);
+	assert.equal(controller.snapshot().run, "running");
+});
+
 void test("Codex は接続変更前のコード読取りが遅く失敗しても、新しい準備の待機を解除せず次の送信を二重実行しない", async (t) => {
 	const f = await codexFixture(t);
 	const gates = [codexResponseGate(), codexResponseGate()];

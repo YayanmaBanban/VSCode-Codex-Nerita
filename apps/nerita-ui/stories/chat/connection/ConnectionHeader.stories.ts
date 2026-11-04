@@ -21,6 +21,32 @@ export const LongTitle: Story = {
 export const Reconnect: Story = {
 	args: { error: true, title: "接続の復旧を確認する" },
 };
+/** 接続エラーの見本を残し、操作による復旧は別のストーリーで確認する。 */
+export const ReconnectRecovery: Story = {
+	args: { error: true },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		const retry = await canvas.findByRole("button", {
+			name: /^接続エラー/,
+		});
+		await userEvent.click(retry);
+		await expect(
+			bridge.sent.filter(
+				(message) => message.type === "connection/retry",
+			),
+		).toHaveLength(1);
+		await expect(retry).toHaveAttribute("data-connection", "connecting");
+		await expect(retry).toBeDisabled();
+		await waitFor(() => expect(retry).not.toBeInTheDocument());
+		await expect(
+			canvas.getByRole("button", { name: "モデルと推論レベル" }),
+		).toBeEnabled();
+		await expect(
+			canvas.getByRole("textbox", { name: "Codexへのメッセージ" }),
+		).toHaveAttribute("contenteditable", "true");
+	},
+};
 export const PiBackend: Story = {
 	args: { backend: "pi" },
 };

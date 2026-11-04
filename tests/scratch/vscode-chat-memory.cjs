@@ -1,4 +1,5 @@
 // 本番 VSIX と独立した VS Code プロファイルで履歴表示のメモリを測る。
+const { test } = require("node:test");
 const fs = require("node:fs/promises");
 const { createReadStream, createWriteStream } = require("node:fs");
 const path = require("node:path");
@@ -259,7 +260,4 @@ async function removeTemporaryRoot(root) {
 	});
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+test("VS Code: 会話操作の反復でメモリを計測する", main);

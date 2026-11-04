@@ -1,5 +1,6 @@
 // node tests/scratch/codex-measurement.cjs で同梱 Codex を実測する。--smoke は各構成1組。
 // 製品コードの計測用コピーへ時刻だけを挿入し、専用の Worktree を終了時に回収する。
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const { createReadStream } = require("node:fs");
@@ -195,7 +196,4 @@ async function sourceVersions() {
 	};
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+test("Codex: 境界検証と初回・再実行・並列の比較", main);
