@@ -9,6 +9,7 @@ const { bundlePi } = require("./package-pi.cjs");
 const { packageMxc } = require("./package-mxc.cjs");
 const { repoRoot } = require("./workspace-paths.cjs");
 const { regressions, regressionPlugin } = require("./product-regressions.cjs");
+const { selectProductTests } = require("./product-test-selection.cjs");
 
 const externalAgentDir =
 	process.env.NERITA_EXTERNAL_AGENT_DIR ??
@@ -152,23 +153,16 @@ async function removeRun(root) {
 	await fs.rm(root, { recursive: true, force: true });
 }
 
-/** ファイル名による選択を許可し、対象なしや準備失敗も終了コードへ反映する。 */
+/** 選択対象を準備前に確定し、一覧表示では SDK やテストを起動しない。 */
 async function main() {
-	const checkRegressions = process.argv.includes("--regressions");
-	const external = process.argv.includes("--external");
-	const selections = process.argv
-		.slice(2)
-		.filter((arg) => arg !== "--regressions" && arg !== "--external");
-	const files = (await fs.readdir(path.join(repoRoot, "tests/product")))
-		.filter((name) => name.endsWith(".test.ts"))
-		.filter((name) => name.endsWith(".external.test.ts") === external)
-		.filter(
-			(name) =>
-				selections.length === 0 ||
-				selections.some((selection) => name.includes(selection)),
-		);
-	if (!files.length) {
-		throw new Error("該当する製品検証がありません。");
+	const {
+		files,
+		list,
+		regressions: checkRegressions,
+	} = await selectProductTests(process.argv.slice(2));
+	if (list) {
+		console.log(files.join("\n"));
+		return;
 	}
 	const root = await fs.mkdtemp(path.join(os.tmpdir(), "nerita-products-"));
 	const started = Date.now();

@@ -10,6 +10,31 @@
 
 継続して製品の回帰を検出するテストは `tests/product/`、`tests/vscode/`、`apps/nerita-ui/stories/` などに置く。共通の補助コードは `tests/support/` に置く。
 
+## バックエンド別の検証
+
+バックエンドを更新する場合は、更新対象の専用テストを選択する。
+
+| コマンド | 対象 |
+| --- | --- |
+| `pnpm test:pi` / `pnpm test:codex` | 各バックエンド専用の製品検証 |
+| `pnpm test:distribution --backend pi` / `pnpm test:distribution --backend codex` | 新規 VSIX を使った各バックエンド専用の製品検証と Extension Host の起動確認 |
+| `pnpm pi:verify` / `pnpm codex:verify` | `pnpm check` と更新対象のバックエンドの配布検証 |
+| `pnpm test` / `pnpm test:distribution` | 共通機能や両バックエンドをまたぐテストを含む全体検証 |
+
+バックエンドの選択にはテストファイル名を使う。`mxc-pi.test.ts` と `dlc-codex-trust.test.ts` も、それぞれ Pi と Codex の専用テストに含む。
+
+`agent-manager.test.ts` や `reference-history.test.ts` など、共通機能や両バックエンドをまたぐテストは専用テストに含めない。共通機能や通信境界を変更した場合は、その機能を検証するファイルを別途選択するか、全体検証を使う。静的検査と VSIX のビルドはプロジェクト全体を対象とする。
+
+ファイル名の一部を引数に加えると、選択したバックエンドのテストをさらに絞り込める。対象がない場合や不明なオプションを指定した場合は、コマンドが失敗する。
+
+製品検証や配布検証のコマンドに `--list` を付けると、実行対象の一覧を表示する。このとき、ビルドやテストは実行せず、VS Code も起動しない。
+
+```powershell
+pnpm.cmd test:pi lifecycle --list
+pnpm.cmd test:pi lifecycle
+pnpm.cmd test:distribution --backend pi --list
+```
+
 ## UI の検証環境
 
 ### ブラウザーの選択

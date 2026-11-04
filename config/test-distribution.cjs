@@ -8,6 +8,7 @@ const { runTests } = require("@vscode/test-electron");
 const { build } = require("esbuild");
 const { runPnpm } = require("./run-pnpm.cjs");
 const { repoRoot, extensionRoot } = require("./workspace-paths.cjs");
+const { selectProductTests } = require("./product-test-selection.cjs");
 
 /** 外部コマンドの失敗を受入失敗へ反映する。 */
 function run(executable, args, env) {
@@ -25,6 +26,14 @@ function run(executable, args, env) {
 
 /** 新規プロファイルと展開物だけを使用し、利用者の拡張機能へインストールしない。 */
 async function main() {
+	const productArgs = process.argv
+		.slice(2)
+		.filter((arg) => arg !== "--ui" && arg !== "--sandbox");
+	const selection = await selectProductTests(productArgs);
+	if (selection.list) {
+		console.log(selection.files.join("\n"));
+		return;
+	}
 	if (process.platform !== "win32" || process.arch !== "x64") {
 		throw new Error("Windows x64 で実行してください。");
 	}
@@ -40,12 +49,7 @@ async function main() {
 		}
 		run(
 			process.execPath,
-			[
-				path.join(repoRoot, "config/test-products.cjs"),
-				...process.argv
-					.slice(2)
-					.filter((arg) => arg !== "--ui" && arg !== "--sandbox"),
-			],
+			[path.join(repoRoot, "config/test-products.cjs"), ...productArgs],
 			{
 				...process.env,
 				NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
