@@ -13,6 +13,7 @@ import { listWorkspacePaths } from "./workspacePaths";
 import { resolvePath } from "./resolvePath";
 import { CopiedCode } from "./copiedCode";
 import { openResource } from "./openResource";
+import { openBrowserLink } from "./browserLinks";
 import { WorkingTreeDiff } from "./workingTreeDiff";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";
 import { configuredBackend, saveBackend } from "./backendSettings";
@@ -223,6 +224,10 @@ export class ChatViewProvider
 		}
 		if (value.type === "reference/open") {
 			await openResource(value.uri, value.range);
+			return;
+		}
+		if (value.type === "link/openExternal") {
+			await openBrowserLink(value.url);
 			return;
 		}
 		if (value.type === "diff/open") {
@@ -465,6 +470,9 @@ export class ChatViewProvider
 
 /** 表示操作の失敗に対応した復旧方法を返す。 */
 function viewRequestError(type: string) {
+	if (type === "link/openExternal") {
+		return "外部ブラウザーでリンクを開けませんでした。再試行してください。";
+	}
 	if (type === "workspace/manageTrust") {
 		return "ワークスペースの Trust 管理画面を開けませんでした。再試行してください。";
 	}

@@ -17,6 +17,7 @@
 		streaming = typeof value === "function" ? value(streaming) : value;
 	}
 	let opened = $state.raw("");
+	let externalUrl = $state("");
 	function setOpened(
 		value: typeof opened | ((current: typeof opened) => typeof opened),
 	) {
@@ -28,10 +29,16 @@
 	<button onclick={() => setStreaming(true)}>途中の本文</button>
 	<button onclick={() => setStreaming(false)}>本文完了</button>
 	<output hidden aria-label="開いたファイル">{opened}</output>
+	<output hidden aria-label="外部ブラウザーで開いたリンク">
+		{externalUrl}
+	</output>
 	<Messages
 		send={(message: UiMessage) => {
 			if (message.type === "reference/open") {
 				setOpened(message.uri);
+			}
+			if (message.type === "link/openExternal") {
+				externalUrl = message.url;
 			}
 		}}
 		busy={streaming}

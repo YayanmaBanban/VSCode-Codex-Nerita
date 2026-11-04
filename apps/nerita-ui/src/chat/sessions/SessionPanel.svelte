@@ -7,6 +7,7 @@
 	import type { TransitionConfig } from "svelte/transition";
 	import Archive from "@lucide/svelte/icons/archive";
 	import List from "@lucide/svelte/icons/list";
+	import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 	import { taskActive } from "@nerita/shared/asyncTask";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import type { ChatState } from "@nerita/shared/chatState";
@@ -28,6 +29,7 @@
 	let now = $state(Date.now());
 	let close = $state<HTMLButtonElement>();
 	let exiting = $state(false);
+	let restoringSessionId = $state<string | null>(null);
 	const panelEasing = cubicBezier(0.22, 1, 0.36, 1);
 	const capabilities = $derived(chatState.sessionCapabilities);
 	const connectionPending = $derived(
@@ -45,6 +47,31 @@
 			runPending ||
 			chatState.asyncTasks.some(taskActive),
 	);
+	/** Host が対象の会話を確定し、履歴の更新も終えてからペインを閉じる。 */
+	function closeRestoredSession() {
+		if (restoringSessionId === null || chatState.sessionPending) {
+			return;
+		}
+		const restored = chatState.sessionId === restoringSessionId;
+		if (!restored || chatState.connection !== "ready") {
+			return;
+		}
+		const failed =
+			isNonEmptyString(chatState.sessionsError) ||
+			isNonEmptyString(chatState.error);
+		if (failed) {
+			return;
+		}
+		onClose();
+	}
+	// Host から非同期に届く復元完了を監視し、一覧の表示を終了する。
+	$effect(closeRestoredSession);
+	/** 復元操作だけを追跡し、削除や名前変更ではペインを閉じない。 */
+	function sendSessionAction(message: UiMessage) {
+		restoringSessionId =
+			message.type === "session/load" ? message.sessionId : null;
+		send(message);
+	}
 	onMount(() => {
 		const timer = setInterval(() => {
 			now = Date.now();
@@ -159,7 +186,15 @@
 				</div>
 			{/if}
 			{#if chatState.sessionPending}
-				<p role="status" class="mx-[8px] text-[12px] text-muted">
+				<p
+					role="status"
+					class="mx-[8px] flex items-center gap-[8px] text-[12px] text-muted"
+				>
+					<LoaderCircle
+						size={15}
+						class="shrink-0 motion-safe:animate-spin"
+						aria-hidden="true"
+					/>
 					セッションを更新しています…
 				</p>
 			{/if}
@@ -176,7 +211,7 @@
 						{session}
 						selected={session.sessionId === chatState.sessionId}
 						{capabilities}
-						{send}
+						send={sendSessionAction}
 						{now}
 						{disabled}
 					/>

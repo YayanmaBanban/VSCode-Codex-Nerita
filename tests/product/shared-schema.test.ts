@@ -19,6 +19,36 @@ import {
 	nonZeroNumber,
 } from "@nerita/shared/valuePredicates";
 
+void test("本文差分は正しいメッセージだけを受け入れ、配列置換との重複を拒否する", () => {
+	const message = {
+		type: "state/patch",
+		revision: 1,
+		patch: {},
+		messageUpdates: [
+			{
+				id: "reply",
+				role: "assistant",
+				text: "受信本文",
+				streaming: false,
+			},
+		],
+	};
+	assert.ok(isHostMessage(message));
+	for (const messageUpdates of [
+		null,
+		{},
+		[{ id: "reply", role: "assistant", text: 42 }],
+		[{ id: "reply", role: "assistant", text: "本文", streaming: "false" }],
+	]) {
+		assert.equal(
+			isHostMessage({ ...message, messageUpdates }),
+			false,
+			"不正な本文差分を拒否する",
+		);
+	}
+	assert.equal(isHostMessage({ ...message, patch: { messages: [] } }), false);
+});
+
 void test("承認表示の検証は任意項目を拒否し、不正な fields の後に details を評価しない", () => {
 	const field = {
 		id: "command",

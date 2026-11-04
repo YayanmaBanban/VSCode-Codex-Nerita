@@ -13,6 +13,7 @@
 		type ListItemSnippetProps,
 	} from "@humanspeak/svelte-markdown";
 	import type { UiMessage } from "@nerita/shared/messages";
+	import type { ComposerTarget } from "@nerita/shared/composerTargets";
 	import {
 		pathText,
 		type ComposerReference,
@@ -22,6 +23,7 @@
 	import ReferenceText from "./ReferenceText.svelte";
 	import Tooltip from "../../ui/Tooltip.svelte";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
+	import { isBrowserUrl } from "@nerita/shared/browserLinks";
 
 	let {
 		text,
@@ -40,7 +42,24 @@
 	const options = { gfm: true, breaks: true, headerIds: false };
 	// 生 HTML は旧描画と同じく文字として扱い、外部画像の取得を認めない。
 	const content = $derived(messageReferences(text, references));
-	const renderers = $derived({ html: escapedHtmlRenderers(content.text) });
+	// 本文だけの追記で、確定済みトークンのレンダラーと参照先を無効化しない。
+	const emptyTargets: ReadonlyMap<string, ComposerTarget> = new Map();
+	const targets = $derived(
+		references.length === 0 ? emptyTargets : content.targets,
+	);
+	const htmlTags = $derived(
+		[
+			...new Set(
+				Array.from(
+					content.text.matchAll(/<\/?([a-z][a-z0-9:-]*)\b/gi),
+					(match) => match[1]!.toLowerCase(),
+				),
+			),
+		]
+			.sort()
+			.join(","),
+	);
+	const renderers = $derived({ html: escapedHtmlRenderers(htmlTags) });
 	const markdownStyle = cn(
 		"message-markdown min-w-0 [overflow-wrap:anywhere] whitespace-normal [&>:first-child]:mt-0 [&>:last-child]:mb-0",
 		"[&_h1]:my-[16px] [&_h1]:text-[20px] [&_h2]:my-[14px] [&_h2]:text-[17px] [&_h3]:my-[12px] [&_h3]:text-[15px]",
@@ -53,10 +72,12 @@
 	);
 
 	/** ライブラリの既知タグ以外も、出力に現れる全タグを文字列として描画する。 */
-	function escapedHtmlRenderers(source: string) {
+	function escapedHtmlRenderers(tags: string) {
 		const html = buildUnsupportedHTML();
-		for (const match of source.matchAll(/<\/?([a-z][a-z0-9:-]*)\b/gi)) {
-			html[match[1]!.toLowerCase()] = UnsupportedHTML;
+		for (const tag of tags.split(",")) {
+			if (tag !== "") {
+				html[tag] = UnsupportedHTML;
+			}
 		}
 		return html;
 	}
@@ -64,7 +85,7 @@
 	/** URL の中の参照識別子はチップ化せず、元の表示文字を戻す。 */
 	function restoreReferences(value: string) {
 		let restored = value;
-		for (const [token, target] of content.targets) {
+		for (const [token, target] of targets) {
 			restored = restored.replaceAll(token, pathText(target));
 		}
 		return restored;
@@ -99,13 +120,38 @@
 			? ""
 			: url;
 	}
+
+	/** ファイルは VS Code へ渡し、Web リンクの Ctrl+クリックは既定ブラウザーを明示して開く。 */
+	function openLink(event: MouseEvent, href: string) {
+		if (/^file:\/\//i.test(href)) {
+			event.preventDefault();
+			send?.({
+				type: "reference/open",
+				requestId: crypto.randomUUID(),
+				uri: href,
+			});
+			return;
+		}
+		if (!event.ctrlKey || !send) {
+			return;
+		}
+		if (isBrowserUrl(href)) {
+			event.preventDefault();
+			send({
+				type: "link/openExternal",
+				requestId: crypto.randomUUID(),
+				url: href,
+			});
+		}
+	}
 </script>
 
 <div class={markdownStyle}>
+	<!-- spread にすると source 更新でライブラリの rest props も無効化され、全トークンが更新される。 -->
 	<SvelteMarkdown
 		source={content.text}
 		{streaming}
-		{...streamId === undefined ? {} : { streamId }}
+		streamId={streamId ?? ""}
 		{options}
 		{renderers}
 		sanitizeUrl={markdownUrl}
@@ -114,15 +160,15 @@
 			{#if children}
 				{@render children()}
 			{:else}
-				<ReferenceText {value} targets={content.targets} {send} />
+				<ReferenceText {value} {targets} {send} />
 			{/if}
 		{/snippet}
 		{#snippet rawtext({ text: value }: RawTextSnippetProps)}
-			<ReferenceText {value} targets={content.targets} {send} />
+			<ReferenceText {value} {targets} {send} />
 		{/snippet}
 		{#snippet codespan({ text: value = "" }: CodespanSnippetProps)}
 			<code>
-				<ReferenceText {value} targets={content.targets} {send} />
+				<ReferenceText {value} {targets} {send} />
 			</code>
 		{/snippet}
 		{#snippet code({ text: value, lang }: CodeSnippetProps)}
@@ -132,7 +178,7 @@
 						? `language-${lang}`
 						: undefined}><ReferenceText
 						{value}
-						targets={content.targets}
+						{targets}
 						{send}
 					/></code></pre>
 		{/snippet}
@@ -169,8 +215,8 @@
 			{@const local = /^file:\/\//i.test(href)}
 			<Tooltip
 				content={isNonEmptyString(title)
-					? restoreReferences(title)
-					: undefined}
+					? `${restoreReferences(title)}\n${href}`
+					: href}
 			>
 				{#snippet children({ props: tooltipProps })}
 					<a
@@ -178,17 +224,14 @@
 						href={isNonEmptyString(href) ? href : undefined}
 						target={local ? undefined : "_blank"}
 						rel="noreferrer noopener"
+						data-vscode-context={isBrowserUrl(href)
+							? JSON.stringify({
+									webviewSection: "message-link",
+									neritaLinkUrl: href,
+								})
+							: undefined}
 						class="text-link underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
-						onclick={(event) => {
-							if (local && isNonEmptyString(href)) {
-								event.preventDefault();
-								send?.({
-									type: "reference/open",
-									requestId: crypto.randomUUID(),
-									uri: href,
-								});
-							}
-						}}
+						onclick={(event) => openLink(event, href)}
 					>
 						{@render linkChildren?.()}
 					</a>

@@ -317,6 +317,62 @@ export const AppServerPermission: Story = {
 export const Connecting: Story = { args: { scenario: "connecting" } };
 export const Authentication: Story = { args: { scenario: "auth" } };
 export const Streaming: Story = { args: { scenario: "streaming" } };
+export const MessageUpdates: Story = {
+	/** 本文だけの通知で履歴を保ち、確定後のスナップショットでも全文を維持する。 */
+	async play({ canvasElement }) {
+		const canvas = within(canvasElement);
+		const bridge = storyBridge(canvasElement);
+		let revision = 0;
+		const unsubscribe = bridge.subscribe((message) => {
+			if (message.type === "state/patch") {
+				revision = message.revision;
+			}
+		});
+		try {
+			bridge.patchState({
+				messages: [
+					{
+						id: "history",
+						role: "assistant",
+						text: "以前の回答",
+						order: 0,
+					},
+				],
+			});
+			const reply = {
+				id: "live",
+				role: "assistant" as const,
+				text: "受信中の本文",
+				streaming: true,
+				order: 1,
+			};
+			bridge.emit({
+				type: "state/patch",
+				baseRevision: revision,
+				revision: revision + 1,
+				messageUpdates: [reply],
+				patch: { run: "running" },
+			});
+			await waitFor(() =>
+				expect(canvas.getByText(reply.text)).toBeVisible(),
+			);
+			const text = "確定時に受信した本文。".repeat(200);
+			bridge.emit({
+				type: "state/patch",
+				baseRevision: revision,
+				revision: revision + 1,
+				messageUpdates: [{ ...reply, text, streaming: false }],
+				patch: { run: "completed" },
+			});
+			await waitFor(() => expect(canvas.getByText(text)).toBeVisible());
+			await expect(canvas.getByText("以前の回答")).toBeInTheDocument();
+			bridge.postMessage({ type: "ui/ready" });
+			await waitFor(() => expect(canvas.getByText(text)).toBeVisible());
+		} finally {
+			unsubscribe();
+		}
+	},
+};
 export const Completed: Story = { args: { scenario: "completed" } };
 export const Permission: Story = { args: { scenario: "permission" } };
 export const Cancelled: Story = { args: { scenario: "cancelled" } };

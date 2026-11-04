@@ -13,8 +13,30 @@ export function applyStatePatch(
 		...(message.toolUpdates
 			? { tools: applyToolUpdates(current.tools, message.toolUpdates) }
 			: {}),
+		...(message.messageUpdates
+			? {
+					messages: applyMessageUpdates(
+						current.messages,
+						message.messageUpdates,
+					),
+				}
+			: {}),
 		revision: message.revision,
 	};
+}
+
+/** 未変更の履歴を保ち、追加・確定した本文だけを ID で置き換える。削除・並べ替えには配列置換を使う。 */
+function applyMessageUpdates(
+	messages: ChatState["messages"],
+	updates: ChatState["messages"],
+): ChatState["messages"] {
+	const pending = new Map(updates.map((message) => [message.id, message]));
+	const result = messages.map((message) => {
+		const updated = pending.get(message.id);
+		pending.delete(message.id);
+		return updated ?? message;
+	});
+	return [...result, ...pending.values()];
 }
 
 /** 別ターンで再利用されたツール ID を区別する。 */

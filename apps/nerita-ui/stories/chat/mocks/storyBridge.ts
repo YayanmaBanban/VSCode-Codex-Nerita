@@ -2,6 +2,7 @@
 import type { ChatState } from "@nerita/shared/chatState";
 import type { HostMessage, UiMessage } from "@nerita/shared/messages";
 import type { Bridge } from "@nerita/shared/bridge";
+import { applyStatePatch } from "@nerita/shared/toolUpdates";
 
 /** 表示検証から通信境界を操作するための窓口。 */
 export type StoryBridge = Bridge & {
@@ -20,11 +21,7 @@ export function createStoryBridge(initial: ChatState): StoryBridge {
 			state = structuredClone(message.state);
 		}
 		if (message.type === "state/patch") {
-			state = {
-				...state,
-				...structuredClone(message.patch),
-				revision: message.revision,
-			};
+			state = applyStatePatch(state, structuredClone(message));
 		}
 		for (const listener of listeners) {
 			listener(structuredClone(message));

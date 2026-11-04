@@ -67,10 +67,35 @@ export class StatePublisher {
 			this.appendToolUpdates(message, next);
 			this.tools = next;
 		}
-		this.send(message);
-		if (message.patch.messages) {
-			this.messages = message.patch.messages;
+		const messages = message.patch.messages;
+		if (messages) {
+			this.appendMessageUpdates(message, messages);
+			this.messages = messages;
 		}
+		this.send(message);
+	}
+
+	/** 既存の順序を保つ更新では、過去の本文を通信・検証し直さず変更したメッセージだけを送る。 */
+	private appendMessageUpdates(
+		message: PatchMessage,
+		next: ChatMessage[],
+	): void {
+		const replacesConversation =
+			message.patch.sessionId !== undefined ||
+			next.length < this.messages.length;
+		if (replacesConversation) {
+			return;
+		}
+		const preservesOrder = this.messages.every(
+			(item, index) => item.id === next[index]!.id,
+		);
+		if (!preservesOrder) {
+			return;
+		}
+		message.messageUpdates = next.filter(
+			(item, index) => item !== this.messages[index],
+		);
+		delete message.patch.messages;
 	}
 
 	/** 同じ会話で既存カードの順序が維持されるときだけ、本文差分へ変換する。 */

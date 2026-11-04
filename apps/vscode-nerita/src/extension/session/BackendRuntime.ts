@@ -987,7 +987,10 @@ export class BackendRuntime implements BackendSession {
 		this.current = session;
 		this.unsubscribe = session.subscribe((event) => {
 			if (this.current === session && !this.disposed) {
-				this.updateChatLease();
+				// 本文だけの通知では実行状態は変わらないため、予約確認用の全体複製を省く。
+				if (changesWritingState(event)) {
+					this.updateChatLease();
+				}
 				this.emitConversation(event, "chat");
 			}
 		});
@@ -1026,4 +1029,17 @@ export class BackendRuntime implements BackendSession {
 		});
 		this.emit({ type: "state/snapshot", state: this.snapshotState() });
 	}
+}
+
+/** 予約の解放条件に関係する通知だけで、会話全体のスナップショットを取得する。 */
+function changesWritingState(event: HostMessage): boolean {
+	if (event.type !== "state/patch") {
+		return true;
+	}
+	return (
+		event.toolUpdates !== undefined ||
+		["run", "tools", "agents", "asyncTasks"].some(
+			(key) => key in event.patch,
+		)
+	);
 }

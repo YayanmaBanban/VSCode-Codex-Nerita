@@ -2,6 +2,42 @@
 const fs = require("node:fs/promises");
 
 const regressions = {
+	"message-notification-clones-history": {
+		selection: "message-publication",
+		file: "BackendRuntime.ts",
+		before: "if (changesWritingState(event)) {",
+		after: "if (true) {",
+		expected: [
+			{
+				test: "Runtime の本文通知は全体複製を起こさず、完了通知では予約を解放する",
+				messages: ["本文通知で履歴全体を複製しない"],
+			},
+		],
+	},
+	"message-history-resent": {
+		selection: "message-publication",
+		file: "statePublisher.ts",
+		before: "message.messageUpdates = next.filter(\n\t\t\t(item, index) => item !== this.messages[index],\n\t\t);",
+		after: "message.messageUpdates = next;",
+		expected: [
+			{
+				test: "長い履歴の受信では変更本文だけを集約し、確定した全文を直ちに復元する",
+				messages: ["変更のない履歴を再送しない"],
+			},
+		],
+	},
+	"message-update-validation-skipped": {
+		selection: "shared-schema",
+		file: "hostMessageValidation.ts",
+		before: "!validStateField(field, value[key])",
+		after: '(field !== "messages" && !validStateField(field, value[key]))',
+		expected: [
+			{
+				test: "本文差分は正しいメッセージだけを受け入れ、配列置換との重複を拒否する",
+				messages: ["不正な本文差分を拒否する"],
+			},
+		],
+	},
 	"file-content-changed": {
 		selection: "pi-effects",
 		file: "FileSnapshot.ts",

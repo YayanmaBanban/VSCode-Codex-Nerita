@@ -252,6 +252,52 @@ export const Loading: Story = {
 	args: { scenario: "loading" },
 	play: openSessions,
 };
+/** 復元応答を待つ間はローダーを表示し、他の履歴操作を無効にする。 */
+export const Restoring: Story = {
+	play: beginRestore,
+};
+/** 会話 ID の反映だけでは閉じず、復元処理が完了したら一覧を閉じる。 */
+export const RestoreHistory: Story = {
+	play: async (context) => {
+		await beginRestore(context);
+		const canvas = within(context.canvasElement);
+		const bridge = storyBridge(context.canvasElement);
+		const panel = canvas.getByRole("complementary");
+		bridge.patchState({ sessionId: "recent" });
+		await waitFor(() => expect(panel).toBeVisible());
+		bridge.patchState({
+			sessionPending: false,
+			messages: [
+				{ id: "restored", role: "user", text: "復元された会話" },
+			],
+		});
+		await waitFor(() => expect(panel).not.toBeInTheDocument());
+		await expect(canvas.getByText("復元された会話")).toBeVisible();
+		await expect(
+			canvas.getByRole("button", { name: "セッション一覧" }),
+		).toHaveFocus();
+	},
+};
+/** 復元失敗時は一覧を残し、再び履歴を選べる。 */
+export const RestoreFailed: Story = {
+	play: async (context) => {
+		await beginRestore(context);
+		const canvas = within(context.canvasElement);
+		storyBridge(context.canvasElement).patchState({
+			sessionPending: false,
+			sessionsError: "復元テストのエラー",
+		});
+		const panel = canvas.getByRole("complementary");
+		await expect(panel).toBeVisible();
+		await expect(await within(panel).findByRole("alert")).toBeVisible();
+		await waitFor(() =>
+			expect(within(panel).queryByRole("status")).not.toBeInTheDocument(),
+		);
+		await expect(
+			within(panel).getAllByRole("button", { name: /を開く$/ })[0],
+		).toBeEnabled();
+	},
+};
 export const Rename: Story = {
 	play: async (context) => {
 		await openSessions(context);
@@ -312,4 +358,22 @@ async function openSessions({ canvasElement }: { canvasElement: HTMLElement }) {
 	await expect(
 		await canvas.findByRole("complementary", { name: "セッション一覧" }),
 	).toBeVisible();
+}
+
+/** 実際の一覧操作を経由し、Host の復元待ち状態だけを注入する。 */
+async function beginRestore(context: { canvasElement: HTMLElement }) {
+	await openSessions(context);
+	const canvas = within(context.canvasElement);
+	const panel = canvas.getByRole("complementary");
+	const open = (
+		await within(panel).findAllByRole("button", { name: /を開く$/ })
+	)[0]!;
+	await userEvent.click(open);
+	const bridge = storyBridge(context.canvasElement);
+	await expect(
+		bridge.sent.filter((message) => message.type === "session/load"),
+	).toHaveLength(1);
+	bridge.patchState({ sessionPending: true });
+	await expect(await within(panel).findByRole("status")).toBeVisible();
+	await waitFor(() => expect(open).toBeDisabled());
 }

@@ -39,6 +39,7 @@ export type UiMessage =
 	| { type: "workspace/manageTrust"; requestId: string }
 	| ToolOutputRequest
 	| { type: "diff/open"; requestId: string; path: string }
+	| { type: "link/openExternal"; requestId: string; url: string }
 	| { type: "ui/setBackend"; requestId: string; backend: BackendId }
 	| {
 			type: "agent/read";
@@ -161,6 +162,7 @@ export type HostMessage =
 			revision: number;
 			baseRevision?: number;
 			toolUpdates?: ChatState["tools"];
+			messageUpdates?: ChatState["messages"];
 			patch: Partial<Omit<ChatState, "revision">>;
 	  }
 	| { type: "request/failed"; requestId: string; error: string };

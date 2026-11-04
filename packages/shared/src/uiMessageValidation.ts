@@ -17,6 +17,7 @@ import { isChangeScope, validChangeScopes } from "./changeReferences";
 import { validCodeReferences } from "./codeReferences";
 import { DlcUiMessageSchema } from "./dlc/contracts";
 import { isQuestionResponse } from "./questions";
+import { isBrowserUrl } from "./browserLinks";
 
 /** UI からの要求は実行前に検証する。 */
 export function isUiMessage(value: unknown): value is UiMessage {
@@ -48,6 +49,7 @@ const uiMessageValidators = new Map<
 	Object.entries({
 		"question/respond": isQuestionResponse,
 		"tool/output": validToolOutputRequest,
+		"link/openExternal": (value) => isBrowserUrl(value.url),
 		"diff/open": (value) =>
 			isPathString(value.path) &&
 			![...value.path].some((character) => character.charCodeAt(0) < 32),

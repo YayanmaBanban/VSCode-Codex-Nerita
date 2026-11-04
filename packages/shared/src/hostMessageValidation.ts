@@ -192,23 +192,34 @@ function validStatePatchReply(value: Record<string, unknown>): boolean {
 		return false;
 	}
 
-	const validToolUpdates =
-		value.toolUpdates === undefined ||
-		validStateField("tools", value.toolUpdates);
-	if (!validToolUpdates) {
-		return false;
-	}
 	if (!isRecord(value.patch)) {
 		return false;
 	}
-	const overlappingToolUpdates =
-		value.toolUpdates !== undefined && value.patch.tools !== undefined;
-	if (overlappingToolUpdates) {
+	if (!validCollectionUpdates(value, value.patch)) {
 		return false;
 	}
 	return Object.entries(value.patch).every(([key, item]) =>
 		validStateField(key, item),
 	);
+}
+
+/** 要素差分にも配列置換と同じ検証を適用し、同じ配列への二重更新を拒否する。 */
+function validCollectionUpdates(
+	value: Record<string, unknown>,
+	patch: Record<string, unknown>,
+): boolean {
+	for (const [field, key] of [
+		["tools", "toolUpdates"],
+		["messages", "messageUpdates"],
+	] as const) {
+		if (value[key] === undefined) {
+			continue;
+		}
+		if (!validStateField(field, value[key]) || patch[field] !== undefined) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /** 通常パスではなくシンボルの座標を持つ候補だけをシンボル一覧へ渡す。 */

@@ -10,7 +10,7 @@
 	/** 累積本文にコード・GFM 表・改行を追加する。 */
 	function append() {
 		text +=
-			" 42;\n```\n\n| 項目 | 値 |\n| --- | --- |\n| 結果 | ✅ |\n\n一行\n二行";
+			" 42;\n```\n\n| 項目 | 値 |\n| --- | --- |\n| 結果 | ✅ |\n\n一行\n二行\n\n<nerita-output>未登録タグ</nerita-output>";
 	}
 	/** 同じ ID でも累積本文が書き換わった場合を再現する。 */
 	function rewrite() {
@@ -37,6 +37,7 @@
 	<button
 		type="button"
 		onclick={() => {
+			text += `\n\n${"確定時に受信した本文。".repeat(200)}完了 🧑‍🔧`;
 			streaming = false;
 		}}
 	>

@@ -22,6 +22,7 @@ import { registerDlcCommands } from "./dlc/DlcCommands";
 import { directoryRunStorage } from "./dlc/DirectoryRunStorage";
 import { hostStorageRoot } from "./session/HostStorage";
 import { autoReviewStore } from "./security/AutoReviewStore";
+import { registerBrowserLinkCommand } from "./webview/browserLinks";
 
 let controller: BackendSession | undefined;
 let dlc: { dispose(): Promise<void> } | undefined;
@@ -31,6 +32,7 @@ export async function activate(
 ): Promise<void> {
 	autoReviewStore.connect(context.workspaceState);
 	registerSandboxSetup(context);
+	registerBrowserLinkCommand(context);
 	registerMxcDiagnostics(context);
 	registerSandboxPanel(context);
 	registerCredentialPanel(context);

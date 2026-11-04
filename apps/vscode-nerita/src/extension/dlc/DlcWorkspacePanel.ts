@@ -9,6 +9,7 @@ import type { BackendRuntime } from "../session/BackendRuntime";
 import { bindWebview } from "../webview/webviewBinding";
 import { webviewHtml } from "../webview/webviewHtml";
 import { openResource } from "../webview/openResource";
+import { openBrowserLink } from "../webview/browserLinks";
 import type { DlcHost } from "./DlcHost";
 
 /** DLC の表示パネルと通信を保持する。利用側は VS Code の破棄処理へ登録し、再表示で実行を生成し直さない。 */
@@ -100,6 +101,8 @@ export class DlcWorkspacePanel implements vscode.Disposable {
 			await this.context.workspaceState.update(key, value.state);
 		} else if (value.type === "reference/open") {
 			await openResource(value.uri, value.range);
+		} else if (value.type === "link/openExternal") {
+			await openBrowserLink(value.url);
 		} else if (value.type === "workspace/manageTrust") {
 			await vscode.commands.executeCommand("nerita.trust.manage");
 		} else {

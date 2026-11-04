@@ -149,6 +149,10 @@
 		},
 		"commands": [
 			{
+				"command": "nerita.links.openExternal",
+				"title": "外部ブラウザーで開く"
+			},
+			{
 				"command": "nerita.dlc.openWorkspace",
 				"title": "Nerita DLC: 作業画面を開く",
 				"icon": "dist/media/nerita.svg"
@@ -200,12 +204,21 @@
 		"menus": {
 			"webview/context": [
 				{
+					"command": "nerita.links.openExternal",
+					"when": "(webviewId == 'nerita.codex.chat' || webviewId == 'nerita.codex.editor' || webviewId == 'nerita.dlc.workspace') && webviewSection == 'message-link'",
+					"group": "navigation@10"
+				},
+				{
 					"command": "nerita.codex.codeBlock",
 					"when": "(webviewId == 'nerita.codex.chat' || webviewId == 'nerita.codex.editor') && webviewSection == 'composer' && composerCanCodeBlock",
 					"group": "edit@10"
 				}
 			],
 			"commandPalette": [
+				{
+					"command": "nerita.links.openExternal",
+					"when": "false"
+				},
 				{
 					"command": "nerita.codex.setupWindowsSandbox",
 					"when": "false"

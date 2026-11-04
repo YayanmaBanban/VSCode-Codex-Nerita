@@ -11,6 +11,7 @@ export const markdown = [
 	"- [x] 完了\n- [ ] 未完了",
 	"| 項目 | 状態 |\n| --- | --- |\n| Markdown | 対応済み |",
 	"[ドキュメント](https://example.com/docs)",
+	'[タイトル付きリンク](https://example.com/help "ヘルプの説明")',
 	`[Code-Implementation.md](${sampleFile(".agents/docs/Code-Implementation.md").pathname})`,
 	`[AGENTS.md](${sampleFile("AGENTS.md").href})`,
 	`[日本語](<${decodeURI(sampleFile("日本語 sample.md").pathname)}>)`,

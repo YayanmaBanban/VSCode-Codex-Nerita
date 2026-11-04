@@ -62,6 +62,10 @@ export const StreamChanges: Story = {
 			within(output).getByRole("cell", { name: "✅" }),
 		).toBeVisible();
 		await expect(output.querySelector("br")).not.toBeNull();
+		await expect(output).toHaveTextContent(
+			"<nerita-output>未登録タグ</nerita-output>",
+		);
+		await expect(output.querySelector("nerita-output")).toBeNull();
 		await userEvent.click(
 			canvas.getByRole("button", { name: "本文を修正" }),
 		);
@@ -74,6 +78,9 @@ export const StreamChanges: Story = {
 		);
 		await userEvent.click(canvas.getByRole("button", { name: "確定" }));
 		await expect(output).toHaveTextContent("次のメッセージ 👨‍👩‍👧‍👦");
+		await expect(output).toHaveTextContent(
+			`${"確定時に受信した本文。".repeat(200)}完了 🧑‍🔧`,
+		);
 		await expect(output).not.toHaveTextContent("本文を修正した");
 	},
 };
