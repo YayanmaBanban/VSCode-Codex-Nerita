@@ -2,6 +2,7 @@
 import * as vscode from "vscode";
 import type { BackendSession } from "../../../session/chatSession";
 import { webviewHtml } from "../../../webview/webviewHtml";
+import { replyHostPresentation } from "../../../webview/hostPresentation";
 import { WorkflowPanel } from "./WorkflowPanel";
 import { workflowDocument } from "./WorkflowDocument";
 
@@ -44,6 +45,9 @@ class WorkflowEditor implements vscode.CustomTextEditorProvider {
 				}
 			}),
 			panel.webview.onDidReceiveMessage((value: unknown) => {
+				if (replyHostPresentation(panel.webview, value)) {
+					return;
+				}
 				host.receive(value);
 			}),
 		];

@@ -1,6 +1,7 @@
 // Webview ごとの通信購読をまとめ、表示先の破棄と同時に解放する。
 import * as vscode from "vscode";
 import type { ChatSession } from "../session/chatSession";
+import { replyHostPresentation } from "./hostPresentation";
 
 /** 購読の登録後に CSP 付きの HTML を設定してから、スクリプト実行を有効にする。 */
 export function bindWebview(
@@ -16,6 +17,9 @@ export function bindWebview(
 		void webview.postMessage(event);
 	});
 	const received = webview.onDidReceiveMessage((message: unknown) => {
+		if (replyHostPresentation(webview, message)) {
+			return;
+		}
 		void receive(message);
 	});
 	const disposed = view.onDidDispose(onDispose);

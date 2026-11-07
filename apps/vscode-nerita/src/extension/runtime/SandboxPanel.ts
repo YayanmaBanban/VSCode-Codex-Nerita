@@ -7,6 +7,7 @@ import {
 	type SandboxReply,
 } from "@nerita/shared/sandboxManagement";
 import { webviewHtml } from "../webview/webviewHtml";
+import { replyHostPresentation } from "../webview/hostPresentation";
 import { SandboxManagement } from "./SandboxManagement";
 import { probeMxc } from "./MxcAvailability";
 
@@ -193,6 +194,9 @@ function openSandboxPanel(
 	const unsubscribe = manager.subscribe(publish);
 	/** 要求を検証して同時操作を拒否し、結果にかかわらず待機状態を解除して最新状態を公開する。 */
 	const receiveSandboxRequest = (value: unknown) => {
+		if (replyHostPresentation(panel.webview, value)) {
+			return;
+		}
 		const parsed = sandboxRequestSchema.safeParse(value);
 		if (!parsed.success) {
 			return;

@@ -6,17 +6,31 @@ import {
 	createTrustBridge,
 	createVsCodeBridge,
 	subscribePiAuth,
+	requestHostPresentation,
 } from "../../apps/nerita-ui/src/bridge/vscodeBridge";
+import {
+	replyHostPresentation,
+	vscodeHostPresentation,
+} from "../../apps/vscode-nerita/src/extension/webview/hostPresentation";
 
-void test("ブリッジは API を共有し、チャットの元参照とパネルの解析値を届け、解除後は通知しない", (t) => {
-	const window = new EventTarget();
+void test("ブリッジは API を共有し、チャットの元参照とパネルの解析値を届け、解除後は通知しない", async (t) => {
+	const window = Object.assign(new EventTarget(), {
+		setTimeout,
+		clearTimeout,
+	});
 	const sent: unknown[] = [];
 	let acquired = 0;
+	const respond = (reply: unknown) => presentationReply(window, reply);
 	for (const [key, value] of Object.entries({
 		window,
 		acquireVsCodeApi: () => {
 			acquired++;
-			return { postMessage: (message: unknown) => sent.push(message) };
+			return {
+				postMessage: (message: unknown) => {
+					sent.push(message);
+					replyHostPresentation({ postMessage: respond }, message);
+				},
+			};
 		},
 	})) {
 		const original = Object.getOwnPropertyDescriptor(globalThis, key);
@@ -74,7 +88,34 @@ void test("ブリッジは API を共有し、チャットの元参照とパネ�
 	trust.postMessage({ type: "refresh" });
 	assert.deepEqual(sent, [{ type: "ui/ready" }, { type: "refresh" }]);
 	assert.equal(acquired, 1);
+	await verifyHostStartup(sent);
+	assert.equal(acquired, 1);
 });
+
+/** 通常のパネル通信と同じ API を通し、検証した Host の表示情報で起動できることを確認する。 */
+async function verifyHostStartup(sent: unknown[]) {
+	const presentation = await requestHostPresentation();
+	assert.deepEqual(sent.at(-1), { type: "host/presentation" });
+	assert.deepEqual(
+		presentation,
+		vscodeHostPresentation,
+		"起動用の表示情報を Host から受け取る",
+	);
+}
+
+/** 不正な初期応答を混ぜても、Host が発行した正しい表示情報だけが返ることを確認する。 */
+function presentationReply(window: EventTarget, reply: unknown) {
+	window.dispatchEvent(
+		new MessageEvent("message", {
+			data: {
+				type: "host/presentation",
+				presentation: { credentialStorageLabels: null },
+			},
+		}),
+	);
+	window.dispatchEvent(new MessageEvent("message", { data: reply }));
+	return Promise.resolve(true);
+}
 
 /** 認証状態も元参照を届け、不正な通知と解除後の応答を表示側へ渡さない。 */
 function verifyAuthSubscription(window: EventTarget) {

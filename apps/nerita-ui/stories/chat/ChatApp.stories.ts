@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, userEvent, within, waitFor } from "storybook/test";
 import ChatStory from "./ChatStory.svelte";
 import { storyBridge } from "./storyBridgeElement";
+import { storyHostPresentation } from "../hostPresentation";
 
 const meta = {
 	title: "Chat/App",
@@ -315,7 +316,18 @@ export const AppServerPermission: Story = {
 	args: { scenario: "permission", appServer: true },
 };
 export const Connecting: Story = { args: { scenario: "connecting" } };
-export const Authentication: Story = { args: { scenario: "auth" } };
+export const Authentication: Story = {
+	args: { scenario: "auth" },
+	play: async ({ canvas }) => {
+		await waitFor(() =>
+			expect(
+				canvas.getByText(
+					storyHostPresentation.authentication.codex.required,
+				),
+			).toBeVisible(),
+		);
+	},
+};
 export const Streaming: Story = { args: { scenario: "streaming" } };
 export const MessageUpdates: Story = {
 	/** 本文だけの通知で履歴を保ち、確定後のスナップショットでも全文を維持する。 */

@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within, waitFor } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import type { ManagerRequest } from "@nerita/shared/agentManager/messages";
 import Preview from "./AgentManagerPreview.svelte";
+import { storyHostPresentation } from "../hostPresentation";
 
 const meta = {
 	title: "Agent Manager",
@@ -26,6 +27,22 @@ type Story = StoryObj<{
 	onRequest: ReturnType<typeof fn<(message: ManagerRequest) => void>>;
 }>;
 export const Settings: Story = {};
+export const AutoReviewHelp: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "自動レビュー" }),
+		);
+		canvas.getByRole("button", { name: "自動レビューのヘルプ" }).focus();
+		const tooltip = await within(
+			canvasElement.ownerDocument.body,
+		).findByRole("tooltip");
+		await waitFor(() => expect(tooltip).toBeVisible());
+		await expect(tooltip).toHaveTextContent(
+			storyHostPresentation.autoReviewStorageDescription,
+		);
+	},
+};
 export const AutoReview: Story = {
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);

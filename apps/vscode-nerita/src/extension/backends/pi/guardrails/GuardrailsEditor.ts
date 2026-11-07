@@ -18,6 +18,7 @@ import {
 } from "../../../security/GuardrailEvaluator";
 import { guardrailRegistry } from "../../../security/GuardrailRegistry";
 import { webviewHtml } from "../../../webview/webviewHtml";
+import { replyHostPresentation } from "../../../webview/hostPresentation";
 import { GuardrailsSettings } from "./GuardrailsSettings";
 import { saveGuardrails } from "./saveGuardrails";
 import { discardGuardrails } from "./discardGuardrails";
@@ -80,6 +81,9 @@ class GuardrailsEditor implements vscode.CustomTextEditorProvider {
 				}
 			}),
 			panel.webview.onDidReceiveMessage((value: unknown) => {
+				if (replyHostPresentation(panel.webview, value)) {
+					return;
+				}
 				const parsed = guardRequestSchema.safeParse(value);
 				if (!parsed.success) {
 					return;

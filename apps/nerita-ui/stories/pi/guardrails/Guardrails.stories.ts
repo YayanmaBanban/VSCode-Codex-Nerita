@@ -1,6 +1,7 @@
 // 既存の画面状態を Svelte コンポーネントで検証する。
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import GuardrailsPreview from "./GuardrailsPreview.svelte";
+import { storyHostPresentation } from "../../hostPresentation";
 import {
 	expect,
 	fn,
@@ -46,6 +47,130 @@ export const Editor: Story = {
 		await expect(
 			canvas.queryByRole("textbox", { name: "設定JSON" }),
 		).not.toBeInTheDocument();
+	},
+};
+
+export const PrivacySettings: Story = {
+	play: async ({ canvas, args, canvasElement }) => {
+		await userEvent.click(
+			canvas.getByRole("button", { name: "個人情報の送信" }),
+		);
+		const enabled = canvas.getByRole("checkbox", {
+			name: "送信前の個人情報検査",
+		});
+		await expect(enabled).toBeChecked();
+		const model = canvas.getByRole("checkbox", {
+			name: "PII 検出モデルの利用",
+		});
+		await expect(model).toBeDisabled();
+		await expect(model).not.toBeChecked();
+		await expect(
+			canvas.queryByRole("button", { name: "保護対象を登録" }),
+		).not.toBeInTheDocument();
+
+		await userEvent.click(enabled);
+		await waitFor(() =>
+			expect(editedConfig(args.onRequest).privacy.enabled).toBe(false),
+		);
+		await expect(editedConfig(args.onRequest).privacy.usePiiModel).toBe(
+			false,
+		);
+		await expect(canvasElement.querySelector("main")).toHaveAttribute(
+			"data-document-status",
+			"未保存",
+		);
+		const save = canvas.getByRole("button", { name: "保存して適用" });
+		await waitFor(() => expect(save).toBeEnabled());
+		await userEvent.click(save);
+		await expect(canvasElement.querySelector("main")).toHaveAttribute(
+			"data-document-status",
+			"適用済み",
+		);
+		await userEvent.click(enabled);
+		await waitFor(() =>
+			expect(editedConfig(args.onRequest).privacy.enabled).toBe(true),
+		);
+		const enableSave = await canvas.findByRole("button", {
+			name: "保存して適用",
+		});
+		await waitFor(() => expect(enableSave).toBeEnabled());
+		await userEvent.click(enableSave);
+		await expect(enabled).toBeChecked();
+		await expect(canvasElement.querySelector("main")).toHaveAttribute(
+			"data-document-status",
+			"適用済み",
+		);
+	},
+};
+
+export const PrivacyDisabled: Story = {
+	args: { privacyEnabled: false },
+	play: async ({ canvas }) => {
+		await userEvent.click(
+			canvas.getByRole("button", { name: "個人情報の送信" }),
+		);
+		await expect(
+			canvas.getByRole("checkbox", { name: "送信前の個人情報検査" }),
+		).not.toBeChecked();
+		await expect(
+			canvas.getByRole("checkbox", { name: "PII 検出モデルの利用" }),
+		).toBeDisabled();
+	},
+};
+
+export const PrivacySavePending: Story = {
+	args: { pendingType: "save" },
+	play: async ({ canvas }) => {
+		await userEvent.click(
+			canvas.getByRole("button", { name: "個人情報の送信" }),
+		);
+		const enabled = canvas.getByRole("checkbox", {
+			name: "送信前の個人情報検査",
+		});
+		await userEvent.click(enabled);
+		const save = canvas.getByRole("button", { name: "保存して適用" });
+		await waitFor(() => expect(save).toBeEnabled());
+		await userEvent.click(save);
+		await expect(enabled).toBeDisabled();
+		await expect(save).toBeDisabled();
+	},
+};
+
+export const PrivacySaveFailure: Story = {
+	args: { failure: "save" },
+	play: async ({ canvas, canvasElement }) => {
+		await userEvent.click(
+			canvas.getByRole("button", { name: "個人情報の送信" }),
+		);
+		const enabled = canvas.getByRole("checkbox", {
+			name: "送信前の個人情報検査",
+		});
+		await userEvent.click(enabled);
+		const save = canvas.getByRole("button", { name: "保存して適用" });
+		await waitFor(() => expect(save).toBeEnabled());
+		await userEvent.click(save);
+		await expect(await canvas.findByRole("alert")).toBeVisible();
+		await expect(enabled).not.toBeChecked();
+		await expect(enabled).toBeEnabled();
+		await expect(canvasElement.querySelector("main")).toHaveAttribute(
+			"data-document-status",
+			"未保存",
+		);
+	},
+};
+
+export const PrivacyInvalidJson: Story = {
+	args: { invalid: true },
+	play: async ({ canvas }) => {
+		await userEvent.click(
+			canvas.getByRole("button", { name: "個人情報の送信" }),
+		);
+		await expect(
+			canvas.queryByRole("checkbox", { name: "送信前の個人情報検査" }),
+		).not.toBeInTheDocument();
+		await expect(
+			canvas.getByRole("button", { name: "保存して適用" }),
+		).toBeDisabled();
 	},
 };
 export const UnsavedChanges: Story = { args: { initialStatus: "dirty" } };
@@ -111,11 +236,16 @@ export const DiscardSavedChanges: Story = {
 			"適用済み",
 		);
 		await userEvent.click(canvas.getByRole("button", { name: "概要" }));
-		await expect(
+		await userEvent.click(
 			canvas.getByRole("combobox", {
 				name: "ワークスペース外の読み取り",
 			}),
-		).toHaveTextContent("deny");
+		);
+		const menu = within(canvasElement.ownerDocument.body);
+		await expect(
+			menu.getByRole("option", { name: "Deny · 拒否" }),
+		).toHaveAttribute("aria-selected", "true");
+		await userEvent.keyboard("{Escape}");
 	},
 };
 export const DiscardError: Story = {
@@ -355,6 +485,9 @@ export const InvalidJson: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const alert = await canvas.findByRole("alert");
+		await expect(alert).toHaveTextContent(
+			storyHostPresentation.guardrailsRepairDescription,
+		);
 		await waitFor(() => expect(alert).toBeVisible());
 		alert.scrollIntoView({ block: "nearest" });
 		await expect(

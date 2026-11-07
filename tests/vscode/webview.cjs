@@ -175,7 +175,7 @@ async function run() {
 	}
 }
 
-module.exports = { run };
+module.exports = { run, findFrame, collectWebviewErrors };
 
 /** VS Code 自体の診断と区別し、Webview の例外とコンソールエラーを収集する。 */
 function collectWebviewErrors(page, errors) {

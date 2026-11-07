@@ -17,6 +17,9 @@
 
 	import { type State } from "./CredentialProviderSettingsParts";
 	import ProviderStates from "./ProviderStates.svelte";
+	import { useHostPresentation } from "../ui/hostPresentation";
+
+	const host = useHostPresentation();
 	/** Bitwarden の認証設定に使う保存方法を保持する。 */
 	const setMode = (value: CredentialStorageMode) => {
 		mode = value;
@@ -30,7 +33,10 @@
 
 <section aria-label="Provider" class="mb-[24px]">
 	<h2 class="text-[16px] font-semibold">Provider</h2>
-	<ProviderStates {...{ providers: hostState.providers }} />
+	<ProviderStates
+		providers={hostState.providers}
+		storageLabels={host.credentialStorageLabels}
+	/>
 	<div class="mt-[12px] grid gap-[12px] sm:grid-cols-2">
 		<label
 			>マシンアカウント ID <input
@@ -52,8 +58,10 @@
 							event.currentTarget.value,
 						),
 					)}
-				><option value="session">このセッションのみ</option><option
-					value="secret-storage">VS Code に保存</option
+				><option value="session"
+					>{host.credentialStorageLabels.session}</option
+				><option value="secret-storage"
+					>{host.credentialStorageLabels["secret-storage"]}</option
 				></select
 			></label
 		>

@@ -13,7 +13,7 @@
 	let { bridge }: GuardrailsEditorProps = $props();
 	const editor = useGuardrails(untrack(() => bridge));
 	let tab = $state<
-		"overview" | "builtins" | "path" | "command" | "exceptions"
+		"overview" | "builtins" | "path" | "command" | "exceptions" | "privacy"
 	>("path");
 	let pane = $state<"edit" | "simulation">("edit");
 	let probe = $state.raw<GuardProbe>({

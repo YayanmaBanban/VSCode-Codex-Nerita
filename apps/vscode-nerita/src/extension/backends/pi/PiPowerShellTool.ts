@@ -13,6 +13,7 @@ import {
 } from "../../security/ApprovalGuard";
 import { type WorkspacePathPolicy } from "../../security/WorkspacePathPolicy";
 import { streamPiCommand } from "./PiCommandOutput";
+import { preparePiShellWebCommand } from "./PiShellWebPolicy";
 
 const powerShellInput = z.object({
 	command: z.string().refine((value) => value.trim().length > 0),
@@ -55,13 +56,19 @@ export function createPiSandboxPowerShellTool(
 					"ワークスペース内の PowerShell 実行ファイルは使用できません。",
 				);
 			}
+			const web = await preparePiShellWebCommand(
+				shell,
+				command,
+				paths.policy,
+			);
+			executionSignal.throwIfAborted();
 			const approved = await approveToolCall(
 				{
 					tool: shell.name,
 					params: { command, timeout },
 					cwd,
 					policy: paths.policy,
-					command: powerShellCommand(shell, command),
+					command: powerShellCommand(shell, web.body),
 					env: commandEnvironment(),
 					timeoutMs: Math.ceil(timeout * 1000),
 					...(executor.describe
@@ -71,6 +78,7 @@ export function createPiSandboxPowerShellTool(
 				authorize,
 				executionSignal,
 			);
+			await web.check();
 			const result = await streamPiCommand(executor, approved, update);
 			const text = [
 				result.stdout,

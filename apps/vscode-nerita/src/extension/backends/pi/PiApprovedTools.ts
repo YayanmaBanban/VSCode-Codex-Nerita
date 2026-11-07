@@ -8,6 +8,7 @@ import { consumeApprovedToolCall } from "../../security/ApprovedToolCall";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
 import { z } from "zod";
 import { evaluateTrust } from "../../security/trust/TrustGate";
+import type { PiEgressGuard } from "./guardrails/PiEgressGuard";
 
 /** 実行ごとの入力に対する Host の承認結果を返す。 */
 export type PiAuthorize = ToolAuthorizer;
@@ -25,6 +26,7 @@ export function approvePiTool(
 	},
 	lifetime?: AbortSignal,
 	checkOrigin?: () => Promise<void>,
+	egress?: PiEgressGuard,
 ): ToolDefinition {
 	return {
 		...tool,
@@ -52,6 +54,27 @@ export function approvePiTool(
 			await evaluateTrust(call);
 			await checkOrigin?.();
 			approved.signal.throwIfAborted();
+			if (egress) {
+				return egress.run(
+					call.params,
+					tool.name === "fetch_content" ? "Web ツール" : "Web 検索",
+					authorize,
+					approved.signal,
+					async (snapshot, allowed) => {
+						// 個人情報の追加承認中にも出所や信頼が変わり得るため、最終送信の直前に再検査する。
+						await evaluateTrust(call);
+						await checkOrigin?.();
+						allowed.throwIfAborted();
+						return tool.execute(
+							id,
+							z.record(z.string(), z.unknown()).parse(snapshot),
+							allowed,
+							update,
+							context,
+						);
+					},
+				);
+			}
 			return tool.execute(
 				id,
 				call.params,

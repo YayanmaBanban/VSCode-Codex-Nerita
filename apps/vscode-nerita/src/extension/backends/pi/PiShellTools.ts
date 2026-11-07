@@ -102,7 +102,7 @@ function shellDefinition(
 		...definition,
 		name,
 		label: shell,
-		description: `Execute a command body in ${shell} through the configured sandbox executor. The tool starts this shell for you; pass the command body directly, for example node --version. Do not add a powershell -Command or pwsh -Command wrapper just to run the body. This tool does not switch to another shell. Every call requires user approval. Returns stdout, stderr and exit code when execution ends.`,
+		description: `Execute a command body in ${shell} through the configured sandbox executor. The tool starts this shell for you; pass the command body directly, for example node --version. Do not add a powershell -Command or pwsh -Command wrapper just to run the body. This tool does not switch to another shell. For HTTP, use normal curl.exe, Invoke-WebRequest or Invoke-RestMethod calls: Nerita applies the configured User-Agent. Curl config files, header files and abbreviated long options are unsupported. Do not bypass these wrappers with executable paths, module-qualified commands or child shells. Every call requires user approval. Returns stdout, stderr and exit code when execution ends.`,
 		parameters: {
 			...definition.parameters,
 			properties: {

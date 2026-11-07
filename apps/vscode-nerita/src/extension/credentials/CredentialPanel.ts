@@ -15,6 +15,7 @@ import { prepareMcpAuthMigration } from "./McpAuthMigration";
 import { preparePiAuthMigration } from "./PiAuthMigration";
 import { selectLocalWorkspace } from "../webview/selectLocalWorkspace";
 import { webviewHtml } from "../webview/webviewHtml";
+import { replyHostPresentation } from "../webview/hostPresentation";
 
 /** フォルダを開き直した後やパネル破棄後の保存は拒否する。 */
 async function assertWorkspace(root: string, signal: AbortSignal) {
@@ -216,6 +217,9 @@ function bindCredentialPanel(
 	};
 	/** 要求の形式を検証し、同時操作を拒否してから管理状態の世代を進める。 */
 	const receiveCredentialRequest = (value: unknown) => {
+		if (replyHostPresentation(panel.webview, value)) {
+			return;
+		}
 		const parsed = credentialRequestSchema.safeParse(value);
 		if (!parsed.success) {
 			post({ type: "error", message: "資格情報の設定形式が不正です。" });

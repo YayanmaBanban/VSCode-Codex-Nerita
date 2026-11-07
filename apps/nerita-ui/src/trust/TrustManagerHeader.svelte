@@ -5,6 +5,9 @@
 	import HelpButton from "../ui/HelpButton.svelte";
 	import ComboList from "../ui/ComboList.svelte";
 	import type { ConfigOption } from "@nerita/shared/composer";
+	import { useHostPresentation } from "../ui/hostPresentation";
+
+	const host = useHostPresentation();
 
 	let { busy, send, backend, piStoragePath }: TrustManagerHeaderProps =
 		$props();
@@ -26,20 +29,22 @@
 			{#snippet content()}
 				{#if backend === "codex"}
 					<p class="m-0">
-						Codex: グローバル <code>config.toml</code> に保存
+						{host.trust.codexStorageDescription}
 					</p>
 				{:else}
 					<p class="m-0">
-						Pi: Nerita の信頼設定を VS Code のストレージに保存
+						{host.trust.piStorageDescription}
 					</p>
 					{#if piStoragePath}
 						<p class="m-0 mt-1 [overflow-wrap:anywhere]">
 							<code>{piStoragePath}</code>
 						</p>
 					{/if}
-					<p class="m-0 mt-1">
-						保存キー: <code>nerita.workspaceTrust.v1</code>
-					</p>
+					{#if host.trust.piStorageKey !== ""}
+						<p class="m-0 mt-1">
+							保存キー: <code>{host.trust.piStorageKey}</code>
+						</p>
+					{/if}
 				{/if}
 			{/snippet}
 		</HelpButton>

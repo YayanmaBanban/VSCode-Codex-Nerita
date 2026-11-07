@@ -3,6 +3,10 @@ import type { ZodType } from "zod";
 import type { UiMessage } from "@nerita/shared/messages";
 import type { Bridge } from "@nerita/shared/bridge";
 import {
+	hostPresentationReplySchema,
+	type HostPresentation,
+} from "@nerita/shared/hostPresentation";
+import {
 	sandboxReplySchema,
 	type SandboxBridge,
 	type SandboxRequest,
@@ -45,7 +49,8 @@ type VsCodeApi = {
 			| PiAuthRequest
 			| GuardRequest
 			| WorkflowRequest
-			| ManagerRequest,
+			| ManagerRequest
+			| { type: "host/presentation" },
 	) => void;
 };
 /** VS Code が Webview に注入する API の宣言。取得したインスタンスは通信境界内で共有する。 */
@@ -57,6 +62,23 @@ import {
 } from "@nerita/shared/credentials";
 
 let api: VsCodeApi | undefined;
+
+/** 画面をマウントする前に表示情報を検証し、タイムアウトと正常終了のどちらでも購読を解除する。 */
+export function requestHostPresentation(): Promise<HostPresentation> {
+	const bridge = createBridge(schemaReader(hostPresentationReplySchema));
+	return new Promise((resolve, reject) => {
+		const timer = window.setTimeout(() => {
+			unsubscribe();
+			reject(new Error("Host の表示情報を取得できませんでした。"));
+		}, 10000);
+		const unsubscribe = bridge.subscribe((reply) => {
+			window.clearTimeout(timer);
+			unsubscribe();
+			resolve(reply.presentation);
+		});
+		bridge.postMessage({ type: "host/presentation" });
+	});
+}
 
 /** 資格情報管理では秘密値を含まない専用契約で通信する。 */
 export function createCredentialBridge(): CredentialBridge {

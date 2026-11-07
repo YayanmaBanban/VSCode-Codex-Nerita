@@ -13,6 +13,7 @@ import type { ChatState } from "@nerita/shared/chatState";
 import { configuredBackend } from "../webview/backendSettings";
 import { selectLocalWorkspace } from "../webview/selectLocalWorkspace";
 import { webviewHtml } from "../webview/webviewHtml";
+import { replyHostPresentation } from "../webview/hostPresentation";
 import { AgentManagerStore } from "./AgentManagerStore";
 import { readManagerDraft, writeManagerDraft } from "./AgentManagerDraft";
 import { readPiAgents } from "./PiAgentSettings";
@@ -407,7 +408,12 @@ export function registerAgentManager(
 				),
 			);
 			const receive = panel.webview.onDidReceiveMessage(
-				(value: unknown) => host.receive(value),
+				(value: unknown) => {
+					if (replyHostPresentation(panel.webview, value)) {
+						return;
+					}
+					host.receive(value);
+				},
 			);
 			panel.onDidDispose(() => {
 				host.close();

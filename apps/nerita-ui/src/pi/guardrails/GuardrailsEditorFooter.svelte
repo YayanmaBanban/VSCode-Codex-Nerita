@@ -9,6 +9,7 @@
 	import { buttonStyle } from "./fields";
 	import GuardrailsSaveButton from "./GuardrailsSaveButton.svelte";
 	import type { GuardrailsEditorFooterProps } from "./GuardrailsEditorParts";
+	import { useHostPresentation } from "../../ui/hostPresentation";
 
 	let {
 		editor,
@@ -17,10 +18,9 @@
 		probe,
 		formAvailable,
 	}: GuardrailsEditorFooterProps = $props();
+	const host = useHostPresentation();
 	let configError = $derived(
-		formAvailable
-			? null
-			: "設定ファイルを読み込めません。.pi/guardrails.json を VS Code のテキストエディターで開き、エラーを修正してください。",
+		formAvailable ? null : host.guardrailsRepairDescription,
 	);
 	let error = $derived(editor.reply?.error ?? configError);
 	let notice = $derived(editor.reply?.notice);

@@ -6,6 +6,9 @@
 	import { type AuthProviderContentProps } from "./PiAuthEditorParts";
 
 	import ProviderFeedback from "./ProviderFeedback.svelte";
+	import { useHostPresentation } from "../ui/hostPresentation";
+
+	const host = useHostPresentation();
 
 	let { item, feedback, active, hostState, send }: AuthProviderContentProps =
 		$props();
@@ -14,7 +17,7 @@
 <div class="pr-[8px] pb-[20px] pl-[38px]">
 	{#each item.accounts as account (account.id)}
 		<p class="text-muted">
-			{`${(account.active ? "使用中 · " : "") + account.name} · ${account.mode === "session" ? "このセッションのみ" : "VS Code に保存"}`}
+			{`${(account.active ? "使用中 · " : "") + account.name} · ${host.credentialStorageLabels[account.mode]}`}
 		</p>
 	{/each}
 	<ProviderFeedback {item} {feedback} />

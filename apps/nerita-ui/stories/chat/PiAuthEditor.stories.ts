@@ -3,6 +3,7 @@ import type { PiAuthState } from "@nerita/shared/piAuth";
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { fn, expect, userEvent, within } from "storybook/test";
 import PiAuthEditor from "../../src/pi/PiAuthEditor.svelte";
+import { storyHostPresentation } from "../hostPresentation";
 
 const authInitialState: PiAuthState = {
 	items: [
@@ -106,7 +107,9 @@ export const Accounts: Story = {
 		const canvas = within(canvasElement);
 		await userEvent.click(canvas.getByRole("button", { name: /^Google/ }));
 		await expect(
-			canvas.getByText("使用中 · 仕事用 · VS Code に保存"),
+			canvas.getByText(
+				`使用中 · 仕事用 · ${storyHostPresentation.credentialStorageLabels["secret-storage"]}`,
+			),
 		).toBeVisible();
 		await userEvent.click(
 			canvas.getByRole("button", { name: "使用: 個人用" }),

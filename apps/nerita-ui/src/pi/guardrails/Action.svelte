@@ -13,9 +13,9 @@
 		{label}
 		{value}
 		options={[
-			{ value: "deny", name: "deny · 拒否" },
-			{ value: "ask", name: "ask · 承認" },
-			{ value: "allow", name: "allow · 許可候補" },
+			{ value: "deny", name: "Deny · 拒否" },
+			{ value: "ask", name: "Ask · 承認" },
+			{ value: "allow", name: "Allow · 許可候補" },
 		]}
 		onChange={(value) => onChange(guardActionSchema.parse(value))}
 	/>

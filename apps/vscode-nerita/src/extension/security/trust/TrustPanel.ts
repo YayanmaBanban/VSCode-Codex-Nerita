@@ -8,6 +8,7 @@ import {
 	type TrustRequest,
 } from "@nerita/shared/workspaceTrust";
 import { webviewHtml } from "../../webview/webviewHtml";
+import { withHostPresentation } from "../../webview/hostPresentation";
 import type { WorkspaceTrustStore } from "./WorkspaceTrustStore";
 import type { BackendId } from "@nerita/shared/backend";
 import { configuredBackend } from "../../webview/backendSettings";
@@ -80,7 +81,9 @@ export function trustPanel(
 		);
 		selectBackend = (backend) =>
 			handleRequest({ type: "refresh", backend });
-		const receive = current.webview.onDidReceiveMessage(handleRequest);
+		const receive = current.webview.onDidReceiveMessage(
+			withHostPresentation(current.webview, handleRequest),
+		);
 		current.onDidDispose(() => {
 			panelState.closed = true;
 			confirmation.clear();

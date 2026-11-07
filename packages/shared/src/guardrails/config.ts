@@ -1,6 +1,7 @@
 // 設定ファイルとエディターが共有する形式。JSON Schema はこの定義から生成する。
 import { z } from "zod";
 import { builtinRulesSchema, defaultBuiltinRules } from "./builtins";
+import { privacyConfigSchema } from "./privacy";
 
 export const guardActionSchema = z.enum(["allow", "ask", "deny"]);
 export const operationSchema = z.enum(["read", "write"]);
@@ -41,6 +42,7 @@ export const commandRuleSchema = z.strictObject({
 export const guardrailsConfigSchema = z.strictObject({
 	version: z.literal(1),
 	builtins: builtinRulesSchema,
+	privacy: privacyConfigSchema.default({ enabled: true, usePiiModel: false }),
 	pathAccess: z.strictObject({
 		outsideRead: guardActionSchema,
 		outsideWrite: z.literal("deny"),
@@ -60,6 +62,7 @@ export function defaultGuardrails(): GuardrailsConfig {
 	return {
 		version: 1,
 		builtins: defaultBuiltinRules(),
+		privacy: { enabled: true, usePiiModel: false },
 		pathAccess: { outsideRead: "deny", outsideWrite: "deny" },
 		pathRules: [],
 		commandRules: [],

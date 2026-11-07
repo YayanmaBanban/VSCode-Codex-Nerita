@@ -18,6 +18,7 @@ function fixture() {
 	config.pathAccess.outsideRead = "ask";
 	config.builtins.paths.ssh = "ask";
 	config.builtins.commands.git = "deny";
+	config.privacy.enabled = false;
 	let text = JSON.stringify(config);
 	let savedText: string | undefined;
 	let applied = false;
@@ -62,6 +63,8 @@ void test("保存した内容を一操作で適用し、旧設定の承認を失
 	assert.equal(f.current().config.pathAccess.outsideRead, "ask");
 	assert.equal(f.current().config.builtins.paths.ssh, "ask");
 	assert.equal(f.current().config.builtins.commands.git, "deny");
+	assert.equal(f.current().config.privacy.enabled, false);
+	assert.equal(parseGuardrails(f.savedText!).privacy.usePiiModel, false);
 	assert.equal(f.original.signal.aborted, true);
 });
 
@@ -80,6 +83,7 @@ for (const failure of ["false", "throw", "invalid"] as const) {
 		assert.equal(f.savedText, undefined);
 		assert.equal(f.applied, false);
 		assert.equal(f.current().digest, f.original.digest);
+		assert.equal(f.current().config.privacy.enabled, true);
 		assert.equal(f.original.signal.aborted, false);
 	});
 }

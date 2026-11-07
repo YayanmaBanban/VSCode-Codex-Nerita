@@ -19,6 +19,7 @@ import {
 	privateFeatureResult,
 } from "../PiFeatureSafety";
 import type { AgentAccessPolicy } from "../../../security/AgentAccessPolicy";
+import { PiPrivacyError } from "../guardrails/PiEgressGuard";
 
 /** 1接続の出所と権限は生成後に変更せず、設定変更では接続ごと交換する。 */
 export type PiMcpServerOptions = {
@@ -327,8 +328,11 @@ export class PiMcpServer {
 				[],
 				this.options.features.protect,
 			);
-		} catch {
+		} catch (error) {
 			// 要求開始後の切断・期限・取消しでは、遠隔側の副作用を取り消せたとは判断できない。
+			if (error instanceof PiPrivacyError) {
+				throw error;
+			}
 			const result = safeMcpResult(
 				{
 					content: [{ type: "text", text: MCP_RESULT_UNKNOWN_TEXT }],

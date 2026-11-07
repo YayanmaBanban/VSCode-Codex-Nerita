@@ -85,6 +85,7 @@ export function guardPiExtensionTools(
 					signal,
 					webTrust.find((item) => item.entry === extension.path)
 						?.check,
+					webEgress(extension.path, webTrust, features),
 				);
 		return register(name, {
 			...registration,
@@ -97,6 +98,17 @@ export function guardPiExtensionTools(
 	for (const [name, tool] of entries) {
 		tools.set(name, tool);
 	}
+}
+
+/** HTTP を所有する Web 拡張に限定し、ローカル専用の拡張引数は送信として扱わない。 */
+function webEgress(
+	path: string,
+	trust: PiWebTrust[],
+	features: PiToolFeatures,
+) {
+	return trust.some((item) => item.entry === path)
+		? features.egress
+		: undefined;
 }
 
 /** 外部拡張が組み込みの名前を騙って登録することを防ぐ。 */

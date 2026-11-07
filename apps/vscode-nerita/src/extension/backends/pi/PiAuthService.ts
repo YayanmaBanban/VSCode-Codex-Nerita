@@ -5,6 +5,7 @@ import { isPiAuthRequest, type PiAuthState } from "@nerita/shared/piAuth";
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { webviewHtml } from "../../webview/webviewHtml";
+import { replyHostPresentation } from "../../webview/hostPresentation";
 import type { PiAuthService } from "./PiAccountAuthFlow";
 import { piAuthFailure } from "./PiAuthFailure";
 
@@ -113,6 +114,9 @@ class PiAuthPanel implements PiAuthService {
 
 	/** Webview の要求を検証してから認証操作へ接続する。 */
 	private handleRequest(value: unknown, run: AuthPanelRun) {
+		if (replyHostPresentation(run.panel.webview, value)) {
+			return;
+		}
 		if (!isPiAuthRequest(value)) {
 			return;
 		}

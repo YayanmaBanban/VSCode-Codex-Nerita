@@ -1,6 +1,10 @@
 // ビルドが用意した ESM 入口を遅延読込し、Pi の認証・設定で単一セッションを生成する。
 import { loadPiSdk } from "./PiSdk";
 import type { QuestionAsk } from "../../session/ChatQuestions";
+import {
+	createPiEgressGuard,
+	type PiEgressGuard,
+} from "./guardrails/PiEgressGuard";
 import { createPiQuestionTool, piQuestionUI } from "./PiQuestionUI";
 import {
 	isNonEmptyString,
@@ -71,7 +75,7 @@ import {
 } from "../../credentials/CredentialStore";
 import { SecretAuthBackend } from "../../credentials/SecretAuthBackend";
 import type { CredentialBroker } from "../../credentials/CredentialBroker";
-import { piToolExposure } from "./PiToolFeatures";
+import { piToolExposure, type PiToolFeatures } from "./PiToolFeatures";
 import type { CommandPermissions } from "../../runtime/CommandPermissions";
 import type { SandboxManagement } from "../../runtime/SandboxManagement";
 import { abortableFeatureApproval } from "./PiFeatureSafety";
@@ -138,6 +142,7 @@ export type PiFactory = (
 
 /** 通常実行と隔離した疎通テストで使う起動条件。 */
 export type PiRuntimeOptions = {
+	egress?: PiEgressGuard;
 	askQuestion?: QuestionAsk;
 	credentials?: PiCredentialStore;
 	credentialBroker?: CredentialBroker;
@@ -685,7 +690,16 @@ async function prepareRuntimeResources(
 		authorize,
 		settingsManager,
 	);
-	options = { ...options, cwd: runtimeTools.paths.cwd };
+	options = {
+		...options,
+		cwd: runtimeTools.paths.cwd,
+		egress:
+			options.egress ??
+			createPiEgressGuard(
+				runtimeTools.paths.cwd,
+				runtimeTools.paths.policy,
+			),
+	};
 	const trustedExtensions = await runtimeExtensions(
 		options,
 		settingsManager,
@@ -714,16 +728,7 @@ async function prepareRuntimeResources(
 		options.subagentPrompt,
 		options.subagentPromptMode,
 		options.webTrust,
-		{
-			registry: toolRegistry,
-			...(options.mcpBackend ? { mcpBackend: options.mcpBackend } : {}),
-			codemode: options.codemode,
-			toolSearch: options.toolSearch,
-			allowedTools: options.allowedTools,
-			secrets: () => piFeatureSecrets(),
-			protect: (value: string) =>
-				options.credentials!.vault.stores.redactor.text(value),
-		},
+		runtimeToolFeatures(options, toolRegistry),
 		referenceHistory,
 		subagents.readDefinitions,
 	);
@@ -738,6 +743,24 @@ async function prepareRuntimeResources(
 		settingsManager,
 		controls,
 		options,
+	};
+}
+
+/** ツールの公開範囲と送信・出力の保護を、拡張資源の読み込み前に同じ条件へ固定する。 */
+function runtimeToolFeatures(
+	options: PiRuntimeOptions,
+	registry: Set<string>,
+): PiToolFeatures {
+	return {
+		registry,
+		egress: options.egress,
+		...(options.mcpBackend ? { mcpBackend: options.mcpBackend } : {}),
+		codemode: options.codemode,
+		toolSearch: options.toolSearch,
+		allowedTools: options.allowedTools,
+		secrets: () => piFeatureSecrets(),
+		protect: (value: string) =>
+			options.credentials!.vault.stores.redactor.text(value),
 	};
 }
 

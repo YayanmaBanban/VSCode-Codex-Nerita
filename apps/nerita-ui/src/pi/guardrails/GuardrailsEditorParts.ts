@@ -35,7 +35,8 @@ export type GuardrailsProbePaneProps = {
 };
 /** 文書の編集状態と解析結果を渡し、ルールの種類に応じたフォームを表示する。 */
 export type GuardrailsRulePaneProps = {
-	tab: "overview" | "builtins" | "path" | "command" | "exceptions";
+	tab:
+		"overview" | "builtins" | "path" | "command" | "exceptions" | "privacy";
 	setTab: (value: GuardrailsRulePaneProps["tab"]) => void;
 	editor: ReturnType<typeof useGuardrails>;
 	parsed: ZodSafeParseResult<GuardrailsConfig> | undefined;

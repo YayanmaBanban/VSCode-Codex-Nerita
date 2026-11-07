@@ -20,6 +20,7 @@
 		initialStatus = "applied",
 		warnings = [],
 		pendingType,
+		privacyEnabled = true,
 		onRequest,
 	}: {
 		invalid?: boolean;
@@ -30,12 +31,14 @@
 		initialStatus?: "applied" | "dirty" | "unapplied" | "unavailable";
 		warnings?: string[];
 		pendingType?: "save" | "check" | "discard";
+		privacyEnabled?: boolean;
 		onRequest?: (message: GuardRequest) => void;
 	} = $props();
 
 	/** プレビューごとに初期文書を独立して作る。 */
 	function initialGuardState(): GuardState {
 		const config = defaultGuardrails();
+		config.privacy.enabled = privacyEnabled;
 		// ユーザー追加ルールの表示例。既定の機密保護は組み込み側で管理する。
 		config.pathRules = Array.from(
 			{ length: pathRuleCount },

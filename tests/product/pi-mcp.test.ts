@@ -11,6 +11,7 @@ import {
 	send,
 	finished,
 	permission,
+	until,
 	sessionFiles,
 } from "../support/pi";
 
@@ -48,6 +49,83 @@ async function fixture(t: TestContext, codemode = false) {
 	);
 	return { ...f, mcp, controller };
 }
+
+for (const decision of ["accept", "decline"]) {
+	void test(`MCP の接続とツールを承認済みでも個人情報の ${decision} を別に確認する`, async (t) => {
+		const f = await fixture(t);
+		const email = "person@example.invalid";
+		f.model.replies.push(
+			{ name: "mcp__fixture__change", arguments: { contact: email } },
+			"確認完了",
+		);
+		await send(f.controller, "MCP を実行");
+		await permission(f.controller, "accept");
+		await permission(f.controller, "accept");
+		await until(() => {
+			const state = f.controller.snapshot();
+			return state.permissions.length > 0 || state.run !== "running";
+		});
+		assert.equal(
+			f.mcp.calls.length,
+			0,
+			"個人情報の確認前に MCP 呼出しを送信しない",
+		);
+		const pending = f.controller.snapshot().permissions[0]!;
+		assert.ok(!JSON.stringify(pending).includes(email));
+		await permission(f.controller, decision);
+		const state = await finished(f.controller);
+		assert.equal(f.mcp.calls.length, decision === "accept" ? 1 : 0);
+		assert.equal(state.permissions.length, 0);
+		assert.equal(
+			state.tools[0]?.status,
+			decision === "accept" ? "completed" : "failed",
+		);
+	});
+}
+
+void test("個人情報の追加承認中に MCP 接続設定を変更すると送信しない", async (t) => {
+	const f = await fixture(t);
+	f.model.replies.push(
+		{
+			name: "mcp__fixture__change",
+			arguments: { contact: "person@example.invalid" },
+		},
+		"変更を確認",
+	);
+	await send(f.controller, "MCP を実行");
+	await permission(f.controller, "accept");
+	await permission(f.controller, "accept");
+	await until(() => {
+		const state = f.controller.snapshot();
+		return state.permissions.length > 0 || state.run !== "running";
+	});
+	assert.equal(
+		f.mcp.calls.length,
+		0,
+		"追加承認中の MCP 設定変更では送信しない",
+	);
+	await writeFile(
+		join(f.agentDir, "mcp.json"),
+		JSON.stringify({
+			mcpServers: {
+				fixture: {
+					url: f.mcp.url,
+					enabled: true,
+					exposure: "direct",
+					headers: { Authorization: "Bearer changed" },
+				},
+			},
+		}),
+	);
+	await permission(f.controller, "accept");
+	const state = await finished(f.controller);
+	assert.equal(
+		f.mcp.calls.length,
+		0,
+		"追加承認中の MCP 設定変更では送信しない",
+	);
+	assert.equal(state.tools[0]?.status, "failed");
+});
 
 for (const source of ["structuredContent", "content"] as const) {
 	void test(`MCP の ${source} と秘密除去・省略情報を保存後も保持する`, async (t) => {

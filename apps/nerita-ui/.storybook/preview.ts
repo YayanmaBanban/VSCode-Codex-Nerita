@@ -3,6 +3,9 @@ import type { Preview } from "@storybook/svelte-vite";
 import "./tailwind.css";
 import "./theme.css";
 import "./dark2026.css";
+import { hostPresentationSchema } from "@nerita/shared/hostPresentation";
+import HostPresentationDecorator from "../stories/HostPresentationDecorator.svelte";
+import { storyHostPresentation } from "../stories/hostPresentation";
 
 const preview: Preview = {
 	initialGlobals: { theme: "dark2026" },
@@ -30,6 +33,15 @@ const preview: Preview = {
 	},
 
 	decorators: [
+		(_renderStory, context) => ({
+			Component: HostPresentationDecorator,
+			props: {
+				presentation: hostPresentationSchema.parse(
+					context.parameters.hostPresentation ??
+						storyHostPresentation,
+				),
+			},
+		}),
 		(renderStory, context) => {
 			applyTheme(context.globals.theme);
 			return renderStory();

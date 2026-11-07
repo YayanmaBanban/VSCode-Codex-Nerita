@@ -71,6 +71,24 @@
 			"required": ["paths", "commands"],
 			"additionalProperties": false
 		},
+		"privacy": {
+			"default": {
+				"enabled": true,
+				"usePiiModel": false
+			},
+			"type": "object",
+			"properties": {
+				"enabled": {
+					"type": "boolean"
+				},
+				"usePiiModel": {
+					"type": "boolean",
+					"const": false
+				}
+			},
+			"required": ["enabled", "usePiiModel"],
+			"additionalProperties": false
+		},
 		"pathAccess": {
 			"type": "object",
 			"properties": {
@@ -213,6 +231,7 @@
 	"required": [
 		"version",
 		"builtins",
+		"privacy",
 		"pathAccess",
 		"pathRules",
 		"commandRules"

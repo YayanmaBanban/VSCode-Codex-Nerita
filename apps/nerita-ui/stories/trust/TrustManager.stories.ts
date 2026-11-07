@@ -1,6 +1,7 @@
 // 既存の画面状態を Svelte コンポーネントで検証する。
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import TrustPreview from "./TrustPreview.svelte";
+import { storyHostPresentation } from "../hostPresentation";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { TrustRequest, TrustReply } from "@nerita/shared/workspaceTrust";
 import { tick } from "svelte";
@@ -37,12 +38,17 @@ export const NoSearchResults: Story = {
 };
 export const Codex: Story = { args: { backend: "codex" } };
 export const Help: Story = {
-	play: async ({ canvasElement }) => {
+	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
 		const page = within(canvasElement.ownerDocument.body);
 		const help = canvas.getByRole("button", { name: "信頼設定の保存先" });
 		help.focus();
 		await waitFor(() => expect(page.getByRole("tooltip")).toBeVisible());
+		await expect(page.getByRole("tooltip")).toHaveTextContent(
+			args.backend === "codex"
+				? storyHostPresentation.trust.codexStorageDescription
+				: storyHostPresentation.trust.piStorageDescription,
+		);
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() =>
 			expect(page.queryByRole("tooltip")).not.toBeInTheDocument(),
@@ -51,6 +57,8 @@ export const Help: Story = {
 		await waitFor(() => expect(page.getByRole("tooltip")).toBeVisible());
 	},
 };
+
+export const CodexStorageHelp: Story = { ...Help, args: { backend: "codex" } };
 
 export const Confirmation: Story = {
 	args: { backend: "codex" },

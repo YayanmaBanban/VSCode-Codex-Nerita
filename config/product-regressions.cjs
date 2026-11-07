@@ -2,6 +2,266 @@
 const fs = require("node:fs/promises");
 
 const regressions = {
+	"pi-privacy-phone-skipped": {
+		selection: "pi-egress",
+		file: "PiPrivacyPatterns.ts",
+		before: 'kinds.push("phone");',
+		after: "void 0;",
+		expected: [
+			{
+				test: "正規表現で検出した携帯電話は拒否すると送信しない",
+				messages: ["Missing expected rejection"],
+			},
+			{
+				test: "正規表現で検出した固定電話は拒否すると送信しない",
+				messages: ["Missing expected rejection"],
+			},
+			{
+				test: "正規表現で検出した国際電話は拒否すると送信しない",
+				messages: ["Missing expected rejection"],
+			},
+		],
+	},
+	"pi-privacy-model-accepted": {
+		selection: "pi-egress",
+		file: "privacy.ts",
+		before: "usePiiModel: z.literal(false)",
+		after: "usePiiModel: z.boolean()",
+		expected: [
+			{
+				test: "未接続の PII モデルと個人情報の登録値は設定ファイルから有効にできない",
+				messages: ["Missing expected exception"],
+			},
+		],
+	},
+	"host-presentation-validation-skipped": {
+		selection: "vscode-bridge",
+		file: "vscodeBridge.ts",
+		before: "createBridge(schemaReader(hostPresentationReplySchema));",
+		after: "createBridge((value) => value);",
+		expected: [
+			{
+				test: "ブリッジは API を共有し、チャットの元参照とパネルの解析値を届け、解除後は通知しない",
+				messages: ["起動用の表示情報を Host から受け取る"],
+			},
+		],
+	},
+	"pi-egress-web-recheck-skipped": {
+		selection: "pi-web.external",
+		file: "PiApprovedTools.ts",
+		before: "await evaluateTrust(call);\n\t\t\t\t\t\tawait checkOrigin?.();",
+		after: "await evaluateTrust(call);\n\t\t\t\t\t\tvoid checkOrigin;",
+		expected: [
+			{
+				test: "個人情報の追加承認中に Web 設定を変更すると送信しない",
+				messages: ["追加承認中の出所変更では古い許可を再利用しない"],
+			},
+		],
+	},
+	"pi-egress-mcp-recheck-skipped": {
+		selection: "pi-mcp",
+		file: "PiEgressHttp.ts",
+		before: "await verify?.();",
+		after: "void verify;",
+		expected: [
+			{
+				test: "個人情報の追加承認中に MCP 接続設定を変更すると送信しない",
+				messages: ["追加承認中の MCP 設定変更では送信しない"],
+			},
+		],
+	},
+	"pi-egress-approval-skipped": {
+		selection: "pi-egress",
+		file: "PiEgressGuard.ts",
+		before: "if (detections.length > 0) {",
+		after: "if (false) {",
+		expected: [
+			...[
+				"メール",
+				"携帯電話",
+				"固定電話",
+				"国際電話",
+				"カード番号",
+				"マイナンバー",
+				"免許証番号",
+				"旅券番号",
+				"口座番号",
+				"構造化した社員番号",
+				"数値型の学籍番号",
+			].map((label) => ({
+				test: `正規表現で検出した${label}は拒否すると送信しない`,
+				messages: ["Missing expected rejection"],
+			})),
+			{
+				test: "停止後に遅れて許可されても送信しない",
+				messages: ["Missing expected rejection"],
+			},
+			{
+				test: "符号化された個人情報の送信を止め、今回の許可を次の呼出しに再利用しない",
+				messages: ["Missing expected rejection"],
+			},
+			{
+				test: "個人情報の承認待ちに設定を変更すると送信しない",
+				messages: ["Missing expected rejection"],
+			},
+			{
+				test: "HTTP の header の個人情報を拒否するとサーバーへ届かない",
+				messages: ["Missing expected rejection"],
+			},
+			{
+				test: "HTTP の body の個人情報を拒否するとサーバーへ届かない",
+				messages: ["Missing expected rejection"],
+			},
+			{
+				test: "HTTP の url の個人情報を拒否するとサーバーへ届かない",
+				messages: ["Missing expected rejection"],
+			},
+		],
+	},
+	"pi-egress-mcp-disconnected": {
+		selection: "pi-mcp",
+		file: "PiMcpGate.ts",
+		before: "this.options.features.egress,",
+		after: "undefined,",
+		expected: [
+			{
+				test: "個人情報の追加承認中に MCP 接続設定を変更すると送信しない",
+				messages: ["追加承認中の MCP 設定変更では送信しない"],
+			},
+			{
+				test: "MCP の接続とツールを承認済みでも個人情報の accept を別に確認する",
+				messages: ["個人情報の確認前に MCP 呼出しを送信しない"],
+			},
+			{
+				test: "MCP の接続とツールを承認済みでも個人情報の decline を別に確認する",
+				messages: ["個人情報の確認前に MCP 呼出しを送信しない"],
+			},
+		],
+	},
+	"pi-egress-web-disconnected": {
+		selection: "pi-web.external",
+		file: "PiExtensionTools.ts",
+		before: "webEgress(extension.path, webTrust, features),",
+		after: "undefined,",
+		expected: [
+			{
+				test: "個人情報の追加承認中に Web 設定を変更すると送信しない",
+				messages: ["追加承認の検査を待つ間は送信しない"],
+			},
+			{
+				test: "Web 拡張の URL の個人情報を accept するまで送信しない",
+				messages: ["個人情報の許可前に Web 拡張を実行しない"],
+			},
+			{
+				test: "Web 拡張の URL の個人情報を decline するまで送信しない",
+				messages: ["個人情報の許可前に Web 拡張を実行しない"],
+			},
+		],
+	},
+	"pi-shell-curl-not-wrapped": {
+		selection: "mxc-pi-shell-web",
+		file: "PiShellCurl.ts",
+		before: "function curl.exe { Invoke-NeritaCurl @args }",
+		after: "# curl wrapper removed for regression verification",
+		expected: [
+			{
+				test: "Pi の Web cmdlet と curl は実行時の UA を設定値へ置き換え、本文と他のヘッダーを保持する",
+				messages: ["動的な UA を置換して各リクエストを保持する"],
+			},
+			{
+				test: "Pi の curl は検査できない外部ヘッダー指定を送信前に拒否する（--config 'curl.conf'）",
+				messages: ["検査できない外部ヘッダー指定は拒否する"],
+			},
+			{
+				test: "Pi の curl は検査できない外部ヘッダー指定を送信前に拒否する（--header '@headers.txt'）",
+				messages: ["検査できない外部ヘッダー指定は拒否する"],
+			},
+		],
+	},
+	"pi-shell-web-cmdlets-not-wrapped": {
+		selection: "mxc-pi-shell-web",
+		file: "PiShellWebPolicy.ts",
+		before: "...commands.map(webCommandProxy),",
+		after: "...[],",
+		expected: [
+			{
+				test: "Pi の Web cmdlet と curl は実行時の UA を設定値へ置き換え、本文と他のヘッダーを保持する",
+				messages: ["動的な UA を置換して各リクエストを保持する"],
+			},
+			{
+				test: "Pi の curl は検査できない外部ヘッダー指定を送信前に拒否する（--config 'curl.conf'）",
+				messages: [
+					"実行経路が動作しても検査できないヘッダーは送信しない",
+				],
+			},
+			{
+				test: "Pi の curl は検査できない外部ヘッダー指定を送信前に拒否する（--header '@headers.txt'）",
+				messages: [
+					"実行経路が動作しても検査できないヘッダーは送信しない",
+				],
+			},
+		],
+	},
+	"pi-shell-web-user-agent-changed": {
+		selection: "mxc-pi-shell-web",
+		file: "PiShellWebPolicy.ts",
+		before: "if (current !== userAgent) {",
+		after: "if (false) {",
+		expected: [
+			{
+				test: "Pi のシェル承認待ち中に UA 設定を変更すると送信しない",
+				messages: ["UA 設定が変わった承認は再利用しない"],
+			},
+		],
+	},
+	"pi-web-config-not-created": {
+		selection: "pi-web.external",
+		file: "PiWebTrust.ts",
+		before: "await ensureWebConfig(configPath);",
+		after: "void configPath;",
+		expected: [
+			{
+				test: "グローバルの Web 設定がない場合は固定 User-Agent の設定を自動生成する",
+				messages: ["Web 設定がなければグローバルに自動生成する"],
+			},
+			{
+				test: "既存設定の`fetchContent` 未指定なら既定 UA を補って送信する",
+				messages: ["未指定の UA だけを補って既存設定を保持する"],
+			},
+			{
+				test: "既存設定のUA 未指定なら既定 UA を補って送信する",
+				messages: ["未指定の UA だけを補って既存設定を保持する"],
+			},
+		],
+	},
+	"pi-web-user-agent-default-missing": {
+		selection: "pi-web.external",
+		file: "PiWebTrust.ts",
+		before: "fetchContent.userAgent = webUserAgent;",
+		after: "void fetchContent;",
+		expected: [
+			{
+				test: "既存設定の`fetchContent` 未指定なら既定 UA を補って送信する",
+				messages: ["未指定の UA だけを補って既存設定を保持する"],
+			},
+			{
+				test: "既存設定のUA 未指定なら既定 UA を補って送信する",
+				messages: ["未指定の UA だけを補って既存設定を保持する"],
+			},
+		],
+	},
+	"pi-web-explicit-user-agent-rejected": {
+		selection: "pi-web.external",
+		file: "PiWebTrust.ts",
+		before: "if (!isNonEmptyString(current.userAgent)) {",
+		after: "if (current.userAgent !== webUserAgent) {",
+		expected: [
+			{
+				test: "明示された User-Agent は設定ファイルを変更せずそのまま送信する",
+				messages: ["明示された UA で取得を承認できる"],
+			},
+		],
+	},
 	"codex-runtime-consent-skipped": {
 		selection: "codex-installation",
 		file: "executable.ts",

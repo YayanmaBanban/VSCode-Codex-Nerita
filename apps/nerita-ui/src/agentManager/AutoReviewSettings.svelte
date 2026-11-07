@@ -15,6 +15,7 @@
 	import Field from "./Field.svelte";
 	import HelpButton from "../ui/HelpButton.svelte";
 	import { inputStyle } from "./managerFields";
+	import { useHostPresentation } from "../ui/hostPresentation";
 
 	let {
 		state: hostState,
@@ -33,6 +34,7 @@
 		onDirty: () => void;
 		onDiscard?: (() => void) | undefined;
 	} = $props();
+	const host = useHostPresentation();
 	let config = $state.raw<AutoReviewConfig>(
 		untrack(() => hostState.autoReview ?? defaultAutoReview()),
 	);
@@ -108,8 +110,7 @@
 		<HelpButton label="自動レビューのヘルプ" disabled={busy}>
 			{#snippet content()}
 				自動レビューでは一部の通常操作の審査を省略し、危険操作や確認が必要な操作を選択したモデルへ送ります。ガードレールの拒否や
-				Sandbox の上限は変更しません。設定はこのワークスペースの VS Code
-				保存領域で管理します。
+				Sandbox の上限は変更しません。{host.autoReviewStorageDescription}
 			{/snippet}
 		</HelpButton>
 	</header>

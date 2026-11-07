@@ -87,5 +87,5 @@ export const WorkspaceWriteAutoReview: Story = {
 export const FullAccess: Story = { args: { mode: "danger-full-access" } };
 
 export const ProposedPlan: Story = {
-	render: () => ({ Component: ProposedPlanStory }),
+	render: () => ({ Component: ProposedPlanStory, props: {} }),
 };

@@ -10,6 +10,7 @@ import type {
 import { approvePiTool, type PiAuthorize } from "./PiApprovedTools";
 import type { SecretAuthBackend } from "../../credentials/SecretAuthBackend";
 import type { AgentAccessPolicy } from "../../security/AgentAccessPolicy";
+import type { PiEgressGuard } from "./guardrails/PiEgressGuard";
 import {
 	privateFeatureValue,
 	privateFeatureResult,
@@ -18,6 +19,7 @@ import {
 
 /** MCP の接続状態と独立した、ユーザーによる機能の選択。 */
 export type PiToolFeatures = {
+	egress?: PiEgressGuard | undefined;
 	codemode?: boolean | undefined;
 	toolSearch?: boolean | undefined;
 	allowedTools?: string[] | undefined;

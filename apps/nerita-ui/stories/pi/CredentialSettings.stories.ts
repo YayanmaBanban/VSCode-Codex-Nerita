@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/svelte-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import CredentialEditor from "../../src/pi/CredentialEditor.svelte";
+import { storyHostPresentation } from "../hostPresentation";
 
 const meta = {
 	title: "Pi/Credentials",
@@ -38,7 +39,20 @@ const meta = {
 } satisfies Meta<typeof CredentialEditor>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+	play: async ({ canvas }) => {
+		const labels = storyHostPresentation.credentialStorageLabels;
+		await expect(
+			canvas.getByRole("option", { name: labels["secret-storage"] }),
+		).toBeInTheDocument();
+		await expect(
+			canvas.getByRole("option", { name: labels.session }),
+		).toBeInTheDocument();
+		await expect(
+			canvas.getByText(/Bitwarden Secrets Manager ·/),
+		).toHaveTextContent(labels["secret-storage"]);
+	},
+};
 export const ExistingBinding: Story = {
 	args: {
 		state: {

@@ -8,6 +8,8 @@ import { approveToolCall } from "../../../security/ApprovalGuard";
 import { consumeApprovedToolCall } from "../../../security/ApprovedToolCall";
 import { evaluateTrust } from "../../../security/trust/TrustGate";
 import { abortableFeatureApproval } from "../PiFeatureSafety";
+import type { PiToolFeatures } from "../PiToolFeatures";
+import { fetchPiMcpRequest } from "../guardrails/PiEgressHttp";
 
 /** 環境変数を展開した値を固定し、承認後の値変更を識別する。 */
 export function resolvedMcpHeaders(entry: PiMcpEntry): Record<string, string> {
@@ -82,6 +84,7 @@ export class PiMcpGate {
 			authorize: PiAuthorize;
 			signal: AbortSignal;
 			current: () => Promise<PiMcpEntry | undefined>;
+			features: PiToolFeatures;
 		},
 	) {
 		this.identity = mcpIdentity(options.entry);
@@ -133,7 +136,21 @@ export class PiMcpGate {
 		await this.check();
 		await evaluateTrust(approved.call);
 		combined.throwIfAborted();
-		return fetch(input, { ...init, redirect: "error", signal: combined });
+		const request = new Request(input, {
+			...init,
+			redirect: "error",
+			signal: combined,
+		});
+		return fetchPiMcpRequest(
+			request,
+			this.options.authorize,
+			combined,
+			this.options.features.egress,
+			async () => {
+				await this.check();
+				await evaluateTrust(approved.call);
+			},
+		);
 	}
 
 	/** 同時に来た通知が同じ接続の承認 UI を重複して開かないようにする。 */

@@ -3,6 +3,9 @@
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import ActionNotice from "../../ui/ActionNotice.svelte";
+	import { useHostPresentation } from "../../ui/hostPresentation";
+
+	const host = useHostPresentation();
 
 	let {
 		state,
@@ -33,14 +36,11 @@
 	}
 	/** 認証方式と待機状態に対応する次の操作を説明する。 */
 	function authenticationDescription() {
-		if (!authenticating) {
-			return state.piAccount !== null
-				? "Piの認証情報を設定してください。"
-				: "ChatGPTにログインするか、VSCodeの起動環境に設定したAPIキーを使用します。";
-		}
-		return state.piAccount !== null
-			? "エディターの「Pi 認証情報」で設定してください。画面を閉じるとチャットへ戻れます。"
-			: "ブラウザでログインを完了してください。最大3分間待機します。";
+		const descriptions =
+			state.piAccount !== null
+				? host.authentication.pi
+				: host.authentication.codex;
+		return authenticating ? descriptions.pending : descriptions.required;
 	}
 </script>
 

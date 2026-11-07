@@ -9,6 +9,8 @@
 	import "./guardrails.css";
 
 	import GuardrailsRules from "./GuardrailsRules.svelte";
+	import PiPrivacySettings from "./PiPrivacySettings.svelte";
+	import type { PrivacyConfig } from "@nerita/shared/guardrails/privacy";
 
 	import { type GuardrailsRulePaneProps } from "./GuardrailsEditorParts";
 
@@ -16,6 +18,7 @@
 	const wide = new MediaQuery("(min-width: 1000px)");
 	const selection = $state({ path: 0, command: 0 });
 	const descriptions = {
+		privacy: undefined,
 		overview: undefined,
 		builtins: undefined,
 		path: "ファイルパスに対する読み取り・書き込みの判定ルールを設定します。",
@@ -40,6 +43,7 @@
 		return undefined;
 	});
 	let categories = $derived([
+		{ value: "privacy", label: "個人情報の送信", count: undefined },
 		{ value: "overview", label: "概要", count: undefined },
 		{ value: "builtins", label: "組み込み", count: undefined },
 		{
@@ -104,30 +108,51 @@
 				["path", "exceptions", "command"].includes(tab)) ||
 				undefined}
 		>
-			<fieldset disabled={editor.locked} class="m-0 min-w-0 border-0 p-0">
+			{#if tab === "privacy"}
 				{#if parsed?.success === true}
-					<GuardrailsRules
-						onSelectCommand={(index: number) => {
-							selection.command = index;
-						}}
-						onEditExceptions={() => setTab("exceptions")}
-						onSelectDirectory={editor.selectDirectory}
-						directoryBusy={editor.busy}
-						{selection}
+					{@const config = parsed.data}
+					<PiPrivacySettings
+						config={config.privacy}
 						locked={editor.locked}
-						section={tab}
-						config={parsed.data}
-						onChange={(config) =>
+						onChange={(privacy: PrivacyConfig) =>
 							editor.change(
-								`${JSON.stringify(config, null, 2)}\n`,
+								`${JSON.stringify({ ...config, privacy }, null, 2)}\n`,
 							)}
 					/>
 				{:else}
 					<p class="m-0 text-muted">
-						設定ファイルを修正すると、ルール編集に戻れます。
+						設定ファイルを修正すると、個人情報の検査設定に戻れます。
 					</p>
 				{/if}
-			</fieldset>
+			{:else}
+				<fieldset
+					disabled={editor.locked}
+					class="m-0 min-w-0 border-0 p-0"
+				>
+					{#if parsed?.success === true}
+						<GuardrailsRules
+							onSelectCommand={(index: number) => {
+								selection.command = index;
+							}}
+							onEditExceptions={() => setTab("exceptions")}
+							onSelectDirectory={editor.selectDirectory}
+							directoryBusy={editor.busy}
+							{selection}
+							locked={editor.locked}
+							section={tab}
+							config={parsed.data}
+							onChange={(config) =>
+								editor.change(
+									`${JSON.stringify(config, null, 2)}\n`,
+								)}
+						/>
+					{:else}
+						<p class="m-0 text-muted">
+							設定ファイルを修正すると、ルール編集に戻れます。
+						</p>
+					{/if}
+				</fieldset>
+			{/if}
 		</div>
 	</div>
 </section>
