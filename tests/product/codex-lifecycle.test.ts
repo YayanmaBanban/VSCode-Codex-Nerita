@@ -16,6 +16,23 @@ type Controller = ReturnType<Fixture["controller"]>;
 type Connection = Awaited<ReturnType<CodexFactory>>;
 type Callbacks = Parameters<CodexFactory>[0];
 
+for (const accountType of ["gcp", "unknown-provider"]) {
+	void test(`Codex のアカウント種別 ${accountType} は既知の認証だけを接続済みとして扱う`, async (t) => {
+		const f = await codexFixture(t);
+		f.responses.set("account/read", () => ({
+			account: { type: accountType },
+			requiresOpenaiAuth: false,
+		}));
+		const controller = f.controller();
+		await controller.connect();
+		assert.equal(
+			controller.snapshot().connection,
+			accountType === "gcp" ? "ready" : "error",
+		);
+		assert.equal(f.state.thread, accountType === "gcp" ? 1 : 0);
+	});
+}
+
 for (const explicitRoot of [false, true]) {
 	void test(`Codex の${explicitRoot ? "明示した実行先" : "通常チャット"}は Nerita Trust 未設定でも認証と再接続へ進む`, async (t) => {
 		const f = await codexFixture(t);

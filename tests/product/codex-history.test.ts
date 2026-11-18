@@ -299,6 +299,7 @@ void test("Codex の画像生成は通知と履歴復元でファイル参照・
 		{
 			type: "imageGeneration",
 			id: "file-image",
+			generationId: null,
 			status: "completed",
 			revisedPrompt: null,
 			failure: null,
@@ -312,6 +313,7 @@ void test("Codex の画像生成は通知と履歴復元でファイル参照・
 		{
 			type: "imageGeneration",
 			id: "inline-image",
+			generationId: null,
 			status: "completed",
 			revisedPrompt: "生成に使ったプロンプト",
 			failure: null,
@@ -320,6 +322,7 @@ void test("Codex の画像生成は通知と履歴復元でファイル参照・
 		{
 			type: "imageGeneration",
 			id: "failed-image",
+			generationId: null,
 			status: "failed",
 			revisedPrompt: null,
 			failure: {

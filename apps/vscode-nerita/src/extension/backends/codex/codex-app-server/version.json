@@ -1,9 +1,9 @@
 {
-  "version": "0.164.0",
+  "version": "0.169.1",
   "experimental": false,
   "runtime": {
-    "url": "https://registry.npmjs.org/@openai/codex/-/codex-0.164.0-win32-x64.tgz",
-    "integrity": "sha512-urWPhwh9YavuoAPIkmVYKBTtd5OtGVL4Ki0Fb28dhK/Mz6Pt4LSy+gbRrZFz5+RXrw9ubvXuXDCcd8beYcWhDg==",
-    "unpackedSize": 483692160
+    "url": "https://registry.npmjs.org/@openai/codex/-/codex-0.169.1-win32-x64.tgz",
+    "integrity": "sha512-fImXWqxwxqHh9+FhJWsRRFiBzgBrSeN1bYTvtGZtUKGTPzHefYAL1agmlf5XScfwY5i5pHsExfdhFekzRBbqIw==",
+    "unpackedSize": 515292799
   }
 }

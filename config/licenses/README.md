@@ -6,7 +6,7 @@ Codex 本体は VSIX に含めません。対応版が導入済みなら再利�
 
 | 製品 | 保存先 | 取得元 |
 | --- | --- | --- |
-| Codex 0.164.0 | `codex-0.164.0/LICENSE`、`codex-0.164.0/NOTICE` | [LICENSE](https://raw.githubusercontent.com/openai/codex/rust-v0.164.0/LICENSE)、[NOTICE](https://raw.githubusercontent.com/openai/codex/rust-v0.164.0/NOTICE) |
+| Codex 0.169.1 | `codex-0.169.1/LICENSE`、`codex-0.169.1/NOTICE` | [LICENSE](https://raw.githubusercontent.com/openai/codex/rust-v0.169.1/LICENSE)、[NOTICE](https://raw.githubusercontent.com/openai/codex/rust-v0.169.1/NOTICE) |
 | Pi 1.5.0 | `pi-1.5.0/LICENSE` | [LICENSE](https://raw.githubusercontent.com/earendil-works/pi/v1.5.0/LICENSE) |
 
 更新コマンドはプロジェクトのルートで実行します。以下の例では、Codex の現在の対応版と Pi の同梱版を指定しています。別の版へ更新する場合は、変数の値を更新先のバージョンに置き換えてください。
@@ -14,7 +14,7 @@ Codex 本体は VSIX に含めません。対応版が導入済みなら再利�
 ## Codex を更新する
 
 ```powershell
-$codexVersion = "0.164.0"
+$codexVersion = "0.169.1"
 pnpm codex:generate $codexVersion
 pnpm check
 pnpm package:vsix

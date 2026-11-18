@@ -134,7 +134,9 @@ export function parseAccount(value: unknown): {
 	const configuredAccount =
 		isRecord(value.account) &&
 		typeof value.account.type === "string" &&
-		["apiKey", "chatgpt", "amazonBedrock"].includes(value.account.type);
+		["apiKey", "chatgpt", "amazonBedrock", "gcp"].includes(
+			value.account.type,
+		);
 	if (!(value.account === null || configuredAccount)) {
 		throw new Error("Invalid account response");
 	}
