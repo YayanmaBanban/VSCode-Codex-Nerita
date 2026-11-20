@@ -95,7 +95,10 @@ export class CodexSessionController extends SessionState {
 		this.run = new CodexRun(
 			{
 				...session,
-				finished: (status) => this.execution.finish(status),
+				finished: (status) => {
+					this.execution.finish(status);
+					void this.agents.synchronize(true);
+				},
 				failConnection: (message) =>
 					this.lifecycle.failConnection(message),
 			},
@@ -231,7 +234,7 @@ export class CodexSessionController extends SessionState {
 		);
 		await this.options.initialize(result, false);
 		if (current() && this.state.sessionId === result.thread.id) {
-			this.agents.synchronize();
+			await this.agents.synchronize();
 		}
 	}
 

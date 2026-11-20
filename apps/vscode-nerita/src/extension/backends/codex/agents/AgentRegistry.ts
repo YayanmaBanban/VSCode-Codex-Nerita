@@ -122,7 +122,7 @@ export class AgentRegistry {
 			this.seen.add(key);
 
 			this.clearInteractedStatus(item);
-			const patch = agentItemPatch(current, item, p.threadId);
+			const patch = agentItemPatch(current, item, p.threadId, true);
 			if (!patch.agents) {
 				continue;
 			}

@@ -95,7 +95,12 @@ export class PiAgentViews {
 				order: this.entries.size,
 			},
 		});
-		this.persist(id);
+		try {
+			this.persist(id);
+		} catch (error) {
+			this.entries.delete(id);
+			throw error;
+		}
 		this.changed();
 		return id;
 	}

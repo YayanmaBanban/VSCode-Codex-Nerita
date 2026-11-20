@@ -15,7 +15,7 @@ export function threadAgentStatus(value: unknown): AgentStatus | undefined {
 	if (type === "active") {
 		return "running";
 	}
-	if (type === "idle") {
+	if (type === "idle" || type === "notLoaded") {
 		return "idle";
 	}
 	if (type === "systemError") {
@@ -41,12 +41,13 @@ export function agentItemPatch(
 	state: ChatState,
 	item: Record<string, unknown>,
 	parentThreadId = state.sessionId ?? "history",
+	live = false,
 ): Partial<ChatState> {
 	const agents = new Map(
 		state.agents.map((agent) => [agent.threadId, agent]),
 	);
 	if (item.type === "subAgentActivity") {
-		return activityAgentPatch(state, item, parentThreadId, agents);
+		return activityAgentPatch(state, item, parentThreadId, agents, live);
 	} else if (item.type === "collabAgentToolCall") {
 		updateCollaboratingAgents(item, agents);
 	} else {
@@ -101,8 +102,17 @@ function agentSnapshotPatch(item: Record<string, unknown>, id: string) {
 	return patch;
 }
 
-/** 活動の完了・中断通知をエージェントの表示状態へ変換する。 */
-function activityStatus(kind: unknown): AgentStatus {
+/** 送信履歴から実行状態を推定せず、ライブの再開候補は App Server の照合を待つ。 */
+function activityStatus(
+	kind: unknown,
+	previous: SubAgentSummary | undefined,
+	live: boolean,
+): AgentStatus {
+	if (kind === "interacted" && previous) {
+		return live && previous.status !== "running"
+			? "pendingInit"
+			: previous.status;
+	}
 	if (kind === "completed") {
 		return "completed";
 	}
@@ -118,6 +128,7 @@ function activityAgentPatch(
 	item: Record<string, unknown>,
 	parentThreadId: string,
 	agents: Map<string, SubAgentSummary>,
+	live: boolean,
 ): Partial<ChatState> {
 	if (!isActivityIdentity(item)) {
 		throw new Error("Invalid agent activity");
@@ -130,7 +141,7 @@ function activityAgentPatch(
 	if (previous?.activityItemId === item.id) {
 		return {};
 	}
-	const status = activityStatus(item.kind);
+	const status = activityStatus(item.kind, previous, live);
 	agents.set(item.agentThreadId, {
 		...previous,
 		threadId: item.agentThreadId,

@@ -209,7 +209,7 @@ function subagentInitialMessages(
 		: [];
 }
 
-/** 承認した設定だけを子に渡し、失敗時に表示を更新する。 */
+/** 承認した設定だけを子に渡し、ジョブの完了判定より先に子を回収する。 */
 function createSubagentExecution(
 	jobs: PiJobs,
 	viewId: string,
@@ -228,65 +228,60 @@ function createSubagentExecution(
 		combined: AbortSignal,
 	): ReturnType<ToolDefinition["execute"]> => {
 		const jobAuthorize = jobs.authorizer(viewId, authorize);
-		try {
-			const tools = (definition.tools ?? supportedTools).filter((tool) =>
-				supportedTools.includes(tool),
-			);
-			const permit = await approveToolCall(
-				{
-					tool: "extension:subagent",
-					cwd: targetCwd,
-					policy,
-					params: {
-						...input,
-						definition,
-						tools,
-						preferredModel,
-					},
-				},
-				subagentAuthorizer(jobAuthorize, {
-					agent: definition.name,
-					task: input.task,
-				}),
-				combined,
-			);
-			consumeApprovedToolCall(permit);
-			const child = await children.open({
-				initialMessages,
-				jobId: viewId,
+		const tools = (definition.tools ?? supportedTools).filter((tool) =>
+			supportedTools.includes(tool),
+		);
+		const permit = await approveToolCall(
+			{
+				tool: "extension:subagent",
 				cwd: targetCwd,
-				signal: permit.signal,
-				role: {
-					...(!tools.some((tool) => ["write", "edit"].includes(tool))
-						? { writableRoots: [] }
-						: {}),
-					shell: tools.some((tool) =>
-						["powershell", "pwsh", "bash", "pnpm"].includes(tool),
-					),
+				policy,
+				params: {
+					...input,
+					definition,
+					tools,
+					preferredModel,
 				},
-				allowedTools: tools,
-				systemPrompt: definition.prompt,
-				...promptMode(definition),
-				preferredModel,
-				approvalContext: {
-					agent: definition.name,
-					task: input.task,
-				},
-			});
-			return await runChildPrompt(
-				views,
-				viewId,
-				child,
-				input,
-				definition,
-				tools,
-				permit,
-				update,
-			);
-		} catch (error) {
-			views.status(viewId, combined.aborted ? "interrupted" : "errored");
-			throw error;
-		}
+			},
+			subagentAuthorizer(jobAuthorize, {
+				agent: definition.name,
+				task: input.task,
+			}),
+			combined,
+		);
+		consumeApprovedToolCall(permit);
+		const child = await children.open({
+			initialMessages,
+			jobId: viewId,
+			cwd: targetCwd,
+			signal: permit.signal,
+			role: {
+				...(!tools.some((tool) => ["write", "edit"].includes(tool))
+					? { writableRoots: [] }
+					: {}),
+				shell: tools.some((tool) =>
+					["powershell", "pwsh", "bash", "pnpm"].includes(tool),
+				),
+			},
+			allowedTools: tools,
+			systemPrompt: definition.prompt,
+			...promptMode(definition),
+			preferredModel,
+			approvalContext: {
+				agent: definition.name,
+				task: input.task,
+			},
+		});
+		return await runChildPrompt(
+			views,
+			viewId,
+			child,
+			input,
+			definition,
+			tools,
+			permit,
+			update,
+		);
 	};
 }
 
@@ -389,7 +384,6 @@ async function runChildPrompt(
 	permit: Awaited<ReturnType<typeof approveToolCall>>,
 	update: Parameters<ToolDefinition["execute"]>[3],
 ): ReturnType<ToolDefinition["execute"]> {
-	views.status(viewId, "running");
 	const outcome = new PiChildOutput(views, viewId);
 	const unsubscribe = child.subscribe((event) => outcome.receive(event));
 	try {
@@ -410,7 +404,6 @@ async function runChildPrompt(
 					"サブエージェントの実行に失敗しました。",
 			);
 		}
-		views.status(viewId, "completed");
 		return {
 			content: [
 				{

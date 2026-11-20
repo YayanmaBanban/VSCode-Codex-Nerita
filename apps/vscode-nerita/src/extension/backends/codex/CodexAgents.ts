@@ -30,7 +30,11 @@ type AgentSession = {
 /** 子の通知・メタデータ・閲覧を管理し、親ターンの通知の振り分けはコントローラーへ委ねる。 */
 export class CodexAgents {
 	private readonly agentRegistry = new AgentRegistry();
-	private metadataRequests = new Map<string, Promise<void>>();
+	private metadataScope = "";
+	private metadataRequests = new Map<
+		string,
+		{ activityItemId: string; operation: Promise<void> }
+	>();
 	/** 子の通知と履歴取得の対象を、この接続のセッションに固定する。 */
 	constructor(private readonly session: AgentSession) {}
 
@@ -93,11 +97,11 @@ export class CodexAgents {
 		const patch = this.agentRegistry.notification(state, message);
 		if (patch.agents) {
 			this.session.patch(patch);
+			void this.synchronize();
 		}
-		this.synchronize();
 	}
-	/** 開始直後と履歴復元後に名前を補完し、遅い `read` で新しい状態を上書きしない。 */
-	synchronize(): void {
+	/** 開始・再開候補・復元後の状態を読み、遅い応答で新しい活動を上書きしない。 */
+	async synchronize(recheckActive = false): Promise<void> {
 		const state = this.session.snapshot();
 		const client = this.session.connection();
 		const sessionId = state.sessionId;
@@ -105,48 +109,70 @@ export class CodexAgents {
 		if (!client || !isNonEmptyString(sessionId)) {
 			return;
 		}
-		for (const agent of state.agents) {
-			const key = `${epoch}:${sessionId}:${agent.threadId}`;
-			if (this.metadataRequests.has(key)) {
-				continue;
-			}
-			const operation = client
-				.readThread(agent.threadId)
-				.then(({ thread }) => {
-					const latest = this.session.snapshot();
-					const matchesEpoch =
-						this.session.epoch() !== epoch ||
-						latest.sessionId !== sessionId ||
-						thread.id !== agent.threadId;
-					if (matchesEpoch) {
-						return;
-					}
-					this.session.patch({
-						agents: latest.agents.map((current) => {
-							if (current.threadId !== agent.threadId) {
-								return current;
-							}
-							const enriched = {
-								...current,
-								...agentMetadata(thread),
-							};
-							const status = threadAgentStatus(thread.status);
-							return current === agent && status !== undefined
-								? withThreadStatus(enriched, status)
-								: enriched;
-						}),
-					});
-				})
-				.catch(() => {
-					/* 未保存のスレッドはパス名で表示し、閲覧操作で再取得する。 */
+		const scope = `${epoch}:${sessionId}`;
+		if (this.metadataScope !== scope) {
+			this.metadataScope = scope;
+			this.metadataRequests.clear();
+		}
+		await Promise.all(
+			state.agents.map((agent) =>
+				this.synchronizeAgent(client, agent, scope, recheckActive),
+			),
+		);
+	}
+
+	/** 再取得時は古い応答を無効にし、取得中の活動・状態通知を優先する。 */
+	private synchronizeAgent(
+		client: CodexConnection,
+		agent: SubAgentSummary,
+		scope: string,
+		recheckActive: boolean,
+	): Promise<void> {
+		const key = agent.threadId;
+		const existing = this.metadataRequests.get(key);
+		const active =
+			agent.status === "running" || agent.status === "pendingInit";
+		const activityChanged =
+			existing?.activityItemId !== agent.activityItemId;
+		const recheck = active && (recheckActive || activityChanged);
+		if (existing && !recheck) {
+			return existing.operation;
+		}
+		const operation = client
+			.readThread(agent.threadId)
+			.then(({ thread }) => {
+				const latest = this.session.snapshot();
+				const currentScope = `${this.session.epoch()}:${latest.sessionId}`;
+				const superseded =
+					currentScope !== scope ||
+					this.metadataRequests.get(key)?.operation !== operation;
+				if (superseded || thread.id !== agent.threadId) {
+					return;
+				}
+				this.session.patch({
+					agents: latest.agents.map((current) => {
+						if (current.threadId !== agent.threadId) {
+							return current;
+						}
+						const enriched = {
+							...current,
+							...agentMetadata(thread),
+						};
+						const status = threadAgentStatus(thread.status);
+						return current === agent && status !== undefined
+							? withThreadStatus(enriched, status)
+							: enriched;
+					}),
 				});
-			this.metadataRequests.set(key, operation);
-		}
-		for (const key of this.metadataRequests.keys()) {
-			if (!key.startsWith(`${epoch}:${sessionId}:`)) {
-				this.metadataRequests.delete(key);
-			}
-		}
+			})
+			.catch(() => {
+				// 未保存のスレッドはパス名で表示し、親ターンの終了時や閲覧操作で再取得する。
+			});
+		this.metadataRequests.set(key, {
+			activityItemId: agent.activityItemId,
+			operation,
+		});
+		return operation;
 	}
 	/** 既知の子スレッドだけを読み、会話の再開や現在のセッションの切り替えは行わない。 */
 	async read(
@@ -245,7 +271,7 @@ export class CodexAgents {
 
 		this.session.patch({ agents: [...agents.values()] });
 
-		this.synchronize();
+		void this.synchronize();
 
 		this.session.publishView(
 			{

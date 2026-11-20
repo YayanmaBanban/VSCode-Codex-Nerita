@@ -76,19 +76,31 @@ export class PiJobs {
 		run: (signal: AbortSignal) => Promise<T>,
 		useSlot = true,
 	): Promise<T> {
-		const matchesStopping =
-			this.stopping ||
-			this.records.has(record.id) ||
-			this.records.size >= 128;
-		if (matchesStopping) {
+		if (this.records.has(record.id)) {
 			throw new Error("ジョブを受け付けられません。");
 		}
-		signal.throwIfAborted();
+		try {
+			if (this.stopping || this.records.size >= 128) {
+				throw new Error("ジョブを受け付けられません。");
+			}
+			signal.throwIfAborted();
+			this.records.set(record.id, { ...record });
+			this.views.setParent(record.id, record.parentId);
+			this.update(record.id, "queued");
+		} catch (error) {
+			this.records.delete(record.id);
+			try {
+				this.views.status(
+					record.id,
+					signal.aborted ? "interrupted" : "errored",
+				);
+			} catch {
+				// カードの終了は通知済み。呼び出し元へは受付に失敗した原因を返す。
+			}
+			throw error;
+		}
 		const abort = new AbortController();
 		const combined = AbortSignal.any([signal, abort.signal]);
-		this.records.set(record.id, { ...record });
-		this.views.setParent(record.id, record.parentId);
-		this.update(record.id, "queued");
 		const done = this.execute(record.id, combined, run, useSlot).finally(
 			() => this.active.delete(record.id),
 		);

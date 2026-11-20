@@ -17,6 +17,7 @@ import { parseTurnEvent } from "../../apps/vscode-nerita/src/extension/backends/
 import { fileChanges } from "../../apps/vscode-nerita/src/extension/backends/codex/items/activityItems";
 import type { ItemGuardianApprovalReviewStartedNotification } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ItemGuardianApprovalReviewStartedNotification";
 import type { ItemGuardianApprovalReviewCompletedNotification } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ItemGuardianApprovalReviewCompletedNotification";
+import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
 
 void test("Codex のファイル追加・削除は本文を保持して変更前後へ振り分け、更新は差分を保持する", () => {
 	const text = "first\r\n+literal\r\n@@ literal\r\n";
@@ -413,6 +414,70 @@ void test("Codex は開始応答前の子の活動と完了を待機し、対象
 	assert.equal(controller.snapshot().run, "completed");
 	assert.equal(controller.snapshot().agents.length, 1);
 	assert.equal(controller.snapshot().agents[0]!.threadId, "child");
+});
+
+void test("Codex の子への送信後は最新の稼働状態を照合し、子の終了まで切替を待つ", async (t) => {
+	const f = await codexFixture(t);
+	const controller = f.controller();
+	await controller.connect();
+	const threadId = controller.snapshot().sessionId!;
+	const child = {
+		type: "subAgentActivity",
+		agentThreadId: "child",
+		agentPath: "child",
+	};
+	let status = "idle";
+	f.responses.set("thread/read", () => ({
+		thread: {
+			id: "child",
+			parentThreadId: threadId,
+			cwd: f.cwd,
+			preview: "子",
+			name: null,
+			historyMode: "paginated",
+			updatedAt: 1,
+			status: { type: status },
+			turns: [],
+		},
+	}));
+	const runtime = new BackendRuntime(() => controller);
+	t.after(() => runtime.dispose());
+	const chat = runtime.scope("chat");
+	f.notify("item/completed", {
+		threadId,
+		turnId: "parent-turn",
+		item: { ...child, id: "start", kind: "started" },
+	});
+	await until(() => chat.snapshot().agents[0]?.status === "idle");
+	f.notify("item/completed", {
+		threadId,
+		turnId: "parent-turn",
+		item: { ...child, id: "finish", kind: "completed" },
+	});
+	await until(() => chat.snapshot().agents[0]?.status === "completed");
+
+	status = "active";
+	f.notify("item/completed", {
+		threadId,
+		turnId: "parent-turn",
+		item: { ...child, id: "followup", kind: "interacted" },
+	});
+	await until(() => chat.snapshot().agents[0]?.status === "running");
+	assert.equal(runtime.busy(), true);
+	await assert.rejects(
+		chat.receive({ type: "session/new", requestId: "busy" }),
+	);
+
+	await action(controller, "prompt/send", { text: "親の作業を続ける" });
+	status = "notLoaded";
+	f.notify("turn/completed", {
+		threadId,
+		turn: { id: "turn-1", status: "completed", items: [] },
+	});
+	await until(() => chat.snapshot().agents[0]?.status === "idle");
+	assert.equal(runtime.busy(), false);
+	await chat.receive({ type: "session/new", requestId: "ready" });
+	assert.notEqual(chat.snapshot().sessionId, threadId);
 });
 
 void test(

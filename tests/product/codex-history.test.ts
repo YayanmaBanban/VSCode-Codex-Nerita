@@ -11,6 +11,7 @@ import type { ToolOutputResponse } from "@nerita/shared/toolOutput";
 import { codexFixture, codexResponseGate } from "../support/codex";
 import { until } from "../support/pi";
 import type { ThreadItem } from "../../apps/vscode-nerita/src/extension/backends/codex/codex-app-server/v2/ThreadItem";
+import { BackendRuntime } from "../../apps/vscode-nerita/src/extension/session/BackendRuntime";
 
 type Controller = ReturnType<
 	Awaited<ReturnType<typeof codexFixture>>["controller"]
@@ -116,6 +117,61 @@ async function historyAction(
 ) {
 	await controller.receive({ type, requestId: randomUUID(), sessionId });
 }
+
+void test("完了した Codex の子にメッセージを送った履歴を復元しても、新規チャットへ切り替えられる", async (t) => {
+	const f = await historyFixture(t);
+	const child = {
+		type: "subAgentActivity",
+		agentThreadId: "child",
+		agentPath: "child",
+	};
+	const turnId = "saved-turn";
+	const events = ["started", "completed", "interacted"].map((kind) => ({
+		turnId,
+		item: { ...child, kind, id: kind },
+	}));
+	f.responses.set("thread/turns/list", () => ({
+		data: [
+			{
+				id: turnId,
+				status: "completed",
+				itemsView: "summary",
+				items: [],
+			},
+		],
+		nextCursor: null,
+	}));
+	f.responses.set("thread/items/list", () => ({
+		data: events,
+		nextCursor: null,
+	}));
+	f.responses.set("thread/read", ({ params }) => {
+		const id = z.string().parse(params!.threadId);
+		const thread = f.thread(id);
+		return {
+			thread:
+				id === "child"
+					? { ...thread, status: { type: "notLoaded" } }
+					: thread,
+		};
+	});
+	const runtime = new BackendRuntime(() => f.controller);
+	t.after(() => runtime.dispose());
+	const chat = runtime.scope("chat");
+
+	await chat.receive({
+		type: "session/load",
+		requestId: "load",
+		sessionId: "saved",
+	});
+	assert.equal(chat.snapshot().sessionId, "saved");
+	assert.equal(chat.snapshot().agents[0]?.status, "completed");
+	assert.equal(runtime.busy(), false);
+
+	await chat.receive({ type: "session/new", requestId: "new" });
+	assert.notEqual(chat.snapshot().sessionId, "saved");
+	assert.deepEqual(chat.snapshot().agents, []);
+});
 
 void test("Codex の履歴再開応答に含まれるフルアクセス権限を設定表示へ反映する", async (t) => {
 	const f = await historyFixture(t);
