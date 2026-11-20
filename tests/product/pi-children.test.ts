@@ -9,6 +9,10 @@ import { join } from "node:path";
 import { piFixture, send, finished, permission, until } from "../support/pi";
 import { restoredState } from "../support/restoredState";
 import { PiChildRuntimes } from "../../apps/vscode-nerita/src/extension/backends/pi/PiChildRuntimes";
+import { PiAgentViews } from "../../apps/vscode-nerita/src/extension/backends/pi/PiAgentViews";
+import { PiJobs } from "../../apps/vscode-nerita/src/extension/backends/pi/PiJobs";
+import { sessionWriting } from "../../apps/vscode-nerita/src/extension/session/DirectoryRuns";
+import { initialState } from "@nerita/shared/chatState";
 import {
 	createPiRuntime,
 	type PiRuntimeOptions,
@@ -17,6 +21,49 @@ import {
 for (const outcome of ["accept", "stop", "child-stop", "restricted"]) {
 	void test(`子の起動と書込みを個別承認し、親の制限と停止を継承する（${outcome}）`, (t) =>
 		verifyPiChildApproval(t, outcome));
+}
+
+for (const failure of ["中断", "保存失敗"] as const) {
+	void test(`Pi の子のジョブ登録が${failure}で失敗しても会話を切り替えられる`, () => {
+		const views = new PiAgentViews();
+		views.parentId = "parent";
+		const id = views.start("tool", "worker", "子の作業", ".");
+		const abort = new AbortController();
+		const error = new Error(failure);
+		const jobs = new PiJobs(views, {
+			appendCustomEntry: () => {
+				throw error;
+			},
+		});
+		if (failure === "中断") {
+			abort.abort(error);
+		}
+		const state = initialState();
+		assert.equal(sessionWriting({ ...state, agents: views.list() }), true);
+		const run = () => assert.fail("受付に失敗した子を実行した");
+
+		assert.throws(
+			() =>
+				jobs.submit(
+					{
+						id,
+						parentId: "parent",
+						status: "queued",
+						background: true,
+						context: "fresh",
+					},
+					abort.signal,
+					run,
+				),
+			(errorReceived: unknown) => errorReceived === error,
+		);
+		assert.equal(
+			views.list()[0]?.status,
+			failure === "中断" ? "interrupted" : "errored",
+		);
+		assert.deepEqual(jobs.list(), []);
+		assert.equal(sessionWriting({ ...state, agents: views.list() }), false);
+	});
 }
 
 void test("子 Pi のネイティブ終了が失敗したら親の Stop へ伝え、後続の子起動でも失敗を保持する", async (t) => {
