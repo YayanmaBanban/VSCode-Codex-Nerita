@@ -10,6 +10,7 @@
 	import { iconButtonClass } from "../messages/messageStyles";
 	import Tooltip from "../../ui/Tooltip.svelte";
 	import ComposerInput from "./ComposerInput.svelte";
+	import type { RemoteWorkspaceState } from "@nerita/shared/remote/workspaceControls";
 	import ComposerSettings from "./ComposerSettings.svelte";
 	import { useAttachmentDrop } from "./useAttachmentDrop.svelte";
 
@@ -23,6 +24,7 @@
 		locked?: boolean;
 		state: ChatState;
 		send: (message: UiMessage) => void;
+		remote?: RemoteWorkspaceState | undefined;
 	} = $props();
 	const drop = useAttachmentDrop({
 		get state() {
@@ -156,8 +158,10 @@
 	<div
 		class="composer-footer mt-[12px] flex items-center justify-between gap-[10px]"
 	>
-		<div class="min-w-0 flex-1" inert={inputLocked}>
+		<div class="min-w-0 flex-1">
 			<ComposerSettings
+				remote={props.remote}
+				locked={inputLocked}
 				state={props.state}
 				send={props.send}
 				onOpenContext={() => {

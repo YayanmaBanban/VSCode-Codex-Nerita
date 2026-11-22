@@ -1,5 +1,7 @@
 <!-- モデル設定・添付・コンテキスト・利用枠を表示し、接続状態に応じて設定変更を Host へ要求する。 -->
 <script lang="ts">
+	import type { RemoteWorkspaceState } from "@nerita/shared/remote/workspaceControls";
+	import RemoteAccessSettings from "./RemoteAccessSettings.svelte";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
@@ -16,9 +18,13 @@
 		state,
 		send,
 		onOpenContext,
+		remote,
+		locked = false,
 	}: {
 		state: ChatState;
 		send: (message: UiMessage) => void;
+		remote?: RemoteWorkspaceState | undefined;
+		locked?: boolean;
 		onOpenContext?: (() => void) | undefined;
 	} = $props();
 	let connected = $derived(settingsConnected(state));
@@ -68,7 +74,7 @@
 
 <div class="composer-settings min-w-0">
 	{#if state.uiContributions}
-		<div class="flex flex-wrap items-center gap-[6px]">
+		<div class="flex flex-wrap items-center gap-[6px]" inert={locked}>
 			<ContributionSlot
 				name="model.header"
 				contributions={state.uiContributions}
@@ -77,38 +83,48 @@
 			/>
 		</div>
 	{/if}
-	<Attachments
-		files={state.attachments}
-		{disabled}
-		onOpen={(id: string) => attachment("attachment/open", id)}
-		onRemove={(id: string) => attachment("attachment/remove", id)}
-	/>
+	<div class="contents" inert={locked}>
+		<Attachments
+			files={state.attachments}
+			{disabled}
+			onOpen={(id: string) => attachment("attachment/open", id)}
+			onRemove={(id: string) => attachment("attachment/remove", id)}
+		/>
+	</div>
 	<div
 		class="settings-toolbar flex flex-wrap items-center gap-x-[6px] gap-y-[4px]"
 		aria-label="モデル設定"
 	>
-		<ContextPickerTrigger disabled={!connected} onOpen={onOpenContext} />
-		{#key state.sessionId ?? "disconnected"}
-			<ContextUsage usage={state.usage} />
-		{/key}
-		{#if state.uiContributions}
-			<ContributionSlot
-				name="composer.toolbar"
-				contributions={state.uiContributions}
-				{disabled}
-				onChange={change}
+		<div class="contents" inert={locked}>
+			<ContextPickerTrigger
+				disabled={!connected}
+				onOpen={onOpenContext}
 			/>
-			<BackendSettingsSurface
-				contributions={state.uiContributions}
-				{disabled}
-				onChange={change}
-			/>
-			<ContributionSlot
-				name="status"
-				contributions={state.uiContributions}
-				{disabled}
-				onChange={change}
-			/>
+			{#key state.sessionId ?? "disconnected"}
+				<ContextUsage usage={state.usage} />
+			{/key}
+			{#if state.uiContributions}
+				<ContributionSlot
+					name="composer.toolbar"
+					contributions={state.uiContributions}
+					{disabled}
+					onChange={change}
+				/>
+				<BackendSettingsSurface
+					contributions={state.uiContributions}
+					{disabled}
+					onChange={change}
+				/>
+				<ContributionSlot
+					name="status"
+					contributions={state.uiContributions}
+					{disabled}
+					onChange={change}
+				/>
+			{/if}
+		</div>
+		{#if remote}
+			<RemoteAccessSettings state={remote} {send} />
 		{/if}
 	</div>
 </div>

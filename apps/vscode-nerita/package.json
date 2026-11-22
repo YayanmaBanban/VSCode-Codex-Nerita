@@ -66,6 +66,14 @@
 		"configuration": {
 			"title": "Nerita",
 			"properties": {
+				"nerita.remote.port": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 65535,
+					"default": 43927,
+					"scope": "machine",
+					"description": "リモートアクセスのループバックポート。Tailscale Serve がこのポートに転送します。"
+				},
 				"nerita.backend": {
 					"type": "string",
 					"enum": [
@@ -149,6 +157,22 @@
 		},
 		"commands": [
 			{
+				"command": "nerita.remote.start",
+				"title": "Nerita: リモートアクセスを開始"
+			},
+			{
+				"command": "nerita.remote.pair",
+				"title": "Nerita: ペアリングコードを表示"
+			},
+			{
+				"command": "nerita.remote.revoke",
+				"title": "Nerita: 接続端末を解除"
+			},
+			{
+				"command": "nerita.remote.stop",
+				"title": "Nerita: リモートアクセスを停止"
+			},
+			{
 				"command": "nerita.links.openExternal",
 				"title": "外部ブラウザーで開く"
 			},
@@ -215,6 +239,22 @@
 				}
 			],
 			"commandPalette": [
+				{
+					"command": "nerita.remote.start",
+					"when": "false"
+				},
+				{
+					"command": "nerita.remote.stop",
+					"when": "false"
+				},
+				{
+					"command": "nerita.remote.pair",
+					"when": "false"
+				},
+				{
+					"command": "nerita.remote.revoke",
+					"when": "false"
+				},
 				{
 					"command": "nerita.links.openExternal",
 					"when": "false"

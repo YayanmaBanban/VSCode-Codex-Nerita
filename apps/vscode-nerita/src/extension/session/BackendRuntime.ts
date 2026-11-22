@@ -48,6 +48,10 @@ type DlcSession = DlcInput & {
 /** 旧接続の終了を待ち、購読を新しいセッションへ引き継ぐ。 */
 export class BackendRuntime implements BackendSession {
 	private current: BackendSession | undefined;
+	private generation = 0;
+	private backend: BackendId | undefined;
+	private replacingChat = false;
+	private chatOperations = 0;
 	private retiredChat: BackendSession | undefined;
 	private unsubscribe: (() => void) | undefined;
 	private display = new RuntimeView(
@@ -56,7 +60,7 @@ export class BackendRuntime implements BackendSession {
 	);
 	private chatView = new RuntimeView(
 		() => this.snapshotState("chat"),
-		(value) => this.receiveScoped(value, "chat"),
+		(value, authorize) => this.receiveScoped(value, "chat", authorize),
 	);
 	private dlcView = new RuntimeView(
 		() => this.snapshotState("dlc"),
@@ -94,8 +98,31 @@ export class BackendRuntime implements BackendSession {
 		) => BackendSession,
 		private readonly ownership?: DlcSessionOwnership,
 		private readonly directories = new DirectoryRuns(),
+		private readonly selectedBackend?: () => BackendId,
 	) {
-		this.attach(factory());
+		this.createChat();
+	}
+
+	/** 再生成前の操作を識別するため、通常チャットの世代を返す。 */
+	chatGeneration(): number {
+		return this.generation;
+	}
+
+	/** 現在の Runtime を生成する際に選んだバックエンドを返す。 */
+	chatBackend(): BackendId | undefined {
+		return (
+			this.backend ?? this.current?.snapshot().uiContributions?.surface
+		);
+	}
+
+	/** 設定保存が終わるまで、新しい操作が旧接続に入るのを防ぐ。 */
+	async withChatReplacement<T>(replace: () => Promise<T>): Promise<T> {
+		this.replacingChat = true;
+		try {
+			return await replace();
+		} finally {
+			this.replacingChat = false;
+		}
 	}
 
 	/** 表示先で継続する更新番号を付けて状態を取得する。 */
@@ -132,6 +159,7 @@ export class BackendRuntime implements BackendSession {
 	private async receiveScoped(
 		value: unknown,
 		mode: "chat" | "dlc",
+		authorize?: () => void,
 	): Promise<void> {
 		if (isUiMessage(value)) {
 			this.assertViewSession(value, mode);
@@ -143,7 +171,7 @@ export class BackendRuntime implements BackendSession {
 			});
 			return;
 		}
-		await this.receive(value, mode);
+		await this.receiveMode(value, mode, authorize);
 	}
 	/** 表示中の会話と受信した操作の対象を照合し、通常画面から DLC 会話を操作させない。 */
 	private assertViewSession(value: UiMessage, mode: "chat" | "dlc"): void {
@@ -169,7 +197,16 @@ export class BackendRuntime implements BackendSession {
 	}
 
 	/** 切替中の要求を拒否し、生成失敗後は再接続で復旧できるようにする。 */
-	async receive(value: unknown, mode = this.mode): Promise<void> {
+	receive(value: unknown, authorize?: () => void): Promise<void> {
+		return this.receiveMode(value, this.mode, authorize);
+	}
+
+	/** 表示モードを保ち、非同期の受付処理後にも操作を照合する。 */
+	private async receiveMode(
+		value: unknown,
+		mode: "chat" | "dlc",
+		authorize?: () => void,
+	): Promise<void> {
 		if (this.disposed) {
 			return;
 		}
@@ -179,12 +216,13 @@ export class BackendRuntime implements BackendSession {
 			() => {},
 		);
 		await admission;
+		authorize?.();
 		const matchesIsUiMessage =
 			isUiMessage(value) && (await this.routeDlc(value, mode));
 		if (matchesIsUiMessage) {
 			return;
 		}
-		if (this.restarting) {
+		if (this.restarting || this.replacingChat) {
 			this.rejectSwitching(value, mode);
 			return;
 		}
@@ -197,7 +235,7 @@ export class BackendRuntime implements BackendSession {
 			return;
 		}
 		this.error = null;
-		await this.receiveChat(value);
+		await this.receiveChat(value, authorize);
 	}
 
 	/** 選択中の Intent の実行を取得する。表示の切替によって他の実行を停止しない。 */
@@ -241,7 +279,10 @@ export class BackendRuntime implements BackendSession {
 		}
 	}
 	/** 通常会話の操作を現在の接続へ渡し、書き込み中の会話切替と未予約の送信を防ぐ。 */
-	private async receiveChat(value: unknown): Promise<void> {
+	private async receiveChat(
+		value: unknown,
+		authorize?: () => void,
+	): Promise<void> {
 		const current = this.current;
 		if (!current) {
 			return;
@@ -256,15 +297,21 @@ export class BackendRuntime implements BackendSession {
 			if (matchesIsUiMessage) {
 				throw new Error("実行が終わってから会話を切り替えてください。");
 			}
-			await current.receive(value);
+			this.chatOperations++;
+			try {
+				await current.receive(value, authorize);
+			} finally {
+				this.chatOperations--;
+			}
 			return;
 		}
-		await this.submitChat(current, value);
+		await this.submitChat(current, value, authorize);
 	}
 	/** 送信前に実行先を予約し、接続変更を再確認する。失敗しても終了確認に従って予約を回収する。 */
 	private async submitChat(
 		current: BackendSession,
 		value: Extract<UiMessage, { type: "prompt/send" }>,
+		authorize?: () => void,
 	): Promise<void> {
 		if (this.chatStarting) {
 			throw new Error(
@@ -284,7 +331,8 @@ export class BackendRuntime implements BackendSession {
 			if (this.current !== current || this.disposed) {
 				throw new Error("会話の接続先が変更されています。");
 			}
-			await current.receive(value);
+			authorize?.();
+			await current.receive(value, authorize);
 		} finally {
 			this.chatStarting = false;
 			this.updateChatLease();
@@ -629,10 +677,17 @@ export class BackendRuntime implements BackendSession {
 	/** 通常会話の書込みと DLC の実行をまとめ、実行中の設定変更を防ぐ判定に使う。 */
 	busy(): boolean {
 		const state = this.current?.snapshot();
-		const matchesSize =
-			this.dlcSessions.size > 0 ||
-			(state !== undefined && sessionWriting(state));
-		return matchesSize;
+		const writing = state !== undefined && sessionWriting(state);
+		return this.dlcSessions.size > 0 || writing;
+	}
+
+	/** 受付済みの通常チャット操作や接続の再生成と、選択の確定が重ならないようにする。 */
+	chatChanging(): boolean {
+		const preparing =
+			this.restarting !== undefined ||
+			this.chatStarting ||
+			this.chatOperations > 0;
+		return preparing;
 	}
 	/** 表示要求の受付時に世代を確定し、遅い履歴取得が新しい選択を上書きしないようにする。 */
 	beginAttemptSelection(intentId: string): number {
@@ -954,6 +1009,7 @@ export class BackendRuntime implements BackendSession {
 
 	/** 旧接続の通知を遮断し、終了後に新しい会話を開始する。 */
 	private async replace(): Promise<void> {
+		this.generation++;
 		const previous = this.current ?? this.retiredChat;
 		this.unsubscribe?.();
 		this.current = undefined;
@@ -968,8 +1024,7 @@ export class BackendRuntime implements BackendSession {
 			if (this.disposed) {
 				return;
 			}
-			const next = this.factory();
-			this.attach(next);
+			const next = this.createChat();
 			this.publishChatSnapshot();
 			await next.receive({
 				type: "connection/retry",
@@ -980,6 +1035,14 @@ export class BackendRuntime implements BackendSession {
 				"バックエンドを開始できませんでした。再接続してください。";
 			this.publishChatSnapshot();
 		}
+	}
+
+	/** 生成するバックエンドの選択を、今回の接続に固定する。 */
+	private createChat(): BackendSession {
+		this.backend = this.selectedBackend?.();
+		const next = this.factory(this.backend);
+		this.attach(next);
+		return next;
 	}
 
 	/** 古い接続から遅れて届いた通知を破棄する。 */

@@ -5,6 +5,7 @@
 	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import NotificationCard from "../NotificationCard.svelte";
+	import type { RemoteWorkspaceState } from "@nerita/shared/remote/workspaceControls";
 	import Composer from "./Composer.svelte";
 	import { useComposerDraft } from "./useComposerDraft.svelte";
 	import { usePromptSubmission } from "./usePromptSubmission.svelte";
@@ -13,6 +14,7 @@
 		bridge: Bridge;
 		state: ChatState;
 		send: (message: UiMessage) => void;
+		remote?: RemoteWorkspaceState | undefined;
 		busy: boolean;
 		visible: boolean;
 		onLockChange: (locked: boolean) => void;
@@ -56,6 +58,7 @@
 		{/key}
 	{/if}
 	<Composer
+		remote={props.remote}
 		bridge={props.bridge}
 		state={props.state}
 		send={props.send}

@@ -73,35 +73,57 @@ async function main() {
 			});
 			return;
 		}
-		const exitCode = await runTests({
-			extensionDevelopmentPath: extension,
-			extensionTestsPath: path.join(
-				repoRoot,
-				"tests/vscode/activation.cjs",
-			),
-			launchArgs: [
-				workspace,
-				"--user-data-dir",
-				path.join(root, "profile"),
-				"--extensions-dir",
-				path.join(root, "extensions"),
-				"--skip-welcome",
-				"--skip-release-notes",
-				"--disable-workspace-trust",
-			],
-			extensionTestsEnv: {
-				...runtimeEnvironment,
-				NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
-				...uiEnv,
-			},
-		});
-		if (exitCode !== 0) {
-			throw new Error(
-				"実際の Extension Host での配布検証が失敗しました。",
-			);
-		}
+		await verifyPackagedHost(
+			extension,
+			workspace,
+			root,
+			runtimeEnvironment,
+		);
 	} finally {
 		await removeRun(root);
+	}
+}
+
+/** 展開した拡張を隔離プロファイルで起動し、旧設定の移行も検証する。 */
+async function verifyPackagedHost(
+	extension,
+	workspace,
+	root,
+	runtimeEnvironment,
+) {
+	const settings = path.join(workspace, ".vscode");
+	await fs.mkdir(settings);
+	await fs.writeFile(
+		path.join(settings, "settings.json"),
+		JSON.stringify({
+			"nerita.remote.fqdn": "desktop.example.ts.net",
+			"editor.wordWrap": "on",
+		}),
+	);
+	const exitCode = await runTests({
+		extensionDevelopmentPath: extension,
+		extensionTestsPath: path.join(repoRoot, "tests/vscode/activation.cjs"),
+		launchArgs: [
+			workspace,
+			"--user-data-dir",
+			path.join(root, "profile"),
+			"--extensions-dir",
+			path.join(root, "extensions"),
+			"--skip-welcome",
+			"--skip-release-notes",
+			"--disable-workspace-trust",
+		],
+		extensionTestsEnv: {
+			...runtimeEnvironment,
+			NERITA_DISTRIBUTION_TEST_EXTENSION: extension,
+			NERITA_REMOTE_MIGRATION_SETTINGS: path.join(
+				settings,
+				"settings.json",
+			),
+		},
+	});
+	if (exitCode !== 0) {
+		throw new Error("実際の Extension Host での配布検証が失敗しました。");
 	}
 }
 
@@ -239,23 +261,11 @@ async function removeRun(root) {
 
 /** 今回生成した VSIX を検証用の一時領域へ展開する。 */
 async function extractDistribution(root) {
-	const archive = path.join(root, "extension.zip");
+	const archive = path.join(extensionRoot, "dist/nerita.vsix");
 	const extracted = path.join(root, "package");
-	await fs.copyFile(path.join(extensionRoot, "dist/nerita.vsix"), archive);
-	run(
-		"powershell.exe",
-		[
-			"-NoProfile",
-			"-NonInteractive",
-			"-Command",
-			"Expand-Archive -LiteralPath $env:NERITA_TEST_ARCHIVE -DestinationPath $env:NERITA_TEST_EXTRACTED",
-		],
-		{
-			...process.env,
-			NERITA_TEST_ARCHIVE: archive,
-			NERITA_TEST_EXTRACTED: extracted,
-		},
-	);
+	await fs.mkdir(extracted);
+	// Windows の tar は VSIX の ZIP 形式を展開でき、PowerShell 間のモジュール差にも依存しない。
+	run("tar.exe", ["-xf", archive, "-C", extracted], process.env);
 	const extension = path.join(extracted, "extension");
 	return { extension };
 }

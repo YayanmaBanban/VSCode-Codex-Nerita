@@ -25,6 +25,7 @@
 		disabled,
 		capabilities,
 		send,
+		showActions = true,
 	}: {
 		session: SessionSummary;
 		selected: boolean;
@@ -32,6 +33,7 @@
 		disabled: boolean;
 		capabilities: SessionCapabilities;
 		send: (message: UiMessage) => void;
+		showActions?: boolean;
 	} = $props();
 	let renaming = $state(false);
 	const title = $derived(
@@ -94,76 +96,78 @@
 			}}
 		/>
 	{/if}
-	<div class="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
-		<SessionDelete
-			{session}
-			disabled={disabled || !capabilities.delete}
-			{send}
-		/>
-		<Tooltip content="名前を変更">
-			{#snippet children({ props })}
-				<button
-					{...mergeProps(props, {
-						onclick: () => {
-							renaming = true;
-						},
-					})}
-					type="button"
-					class={sessionActionClass}
-					aria-label={`${title}の名前を変更`}
-					disabled={disabled ||
-						capabilities.rename !== true ||
-						session.archived}
-				>
-					<Pencil size={14} aria-hidden="true" />
-				</button>
-			{/snippet}
-		</Tooltip>
-		<Tooltip content={archiveLabel}>
-			{#snippet children({ props })}
-				<button
-					{...mergeProps(props, {
-						onclick: () =>
-							send({
-								type: archived
-									? "session/unarchive"
-									: "session/archive",
-								requestId: crypto.randomUUID(),
-								sessionId: session.sessionId,
-							}),
-					})}
-					type="button"
-					class={sessionActionClass}
-					disabled={disabled || !canArchive}
-					aria-label={`${title}を${archiveLabel}`}
-				>
-					{#if archived}
-						<ArchiveRestore size={14} aria-hidden="true" />
-					{:else}
-						<Archive size={14} aria-hidden="true" />
-					{/if}
-				</button>
-			{/snippet}
-		</Tooltip>
-		<Tooltip content="フォーク">
-			{#snippet children({ props })}
-				<button
-					{...mergeProps(props, {
-						onclick: () =>
-							send({
-								type: "session/fork",
-								requestId: crypto.randomUUID(),
-								sessionId: session.sessionId,
-							}),
-					})}
-					type="button"
-					class={sessionActionClass}
-					disabled={forkDisabled}
-					aria-label={`${title}をフォーク`}
-				>
-					<GitFork size={14} aria-hidden="true" />
-				</button>
-			{/snippet}
-		</Tooltip>
-	</div>
+	{#if showActions}
+		<div class="flex items-center justify-end gap-[2px] px-[8px] pb-[6px]">
+			<SessionDelete
+				{session}
+				disabled={disabled || !capabilities.delete}
+				{send}
+			/>
+			<Tooltip content="名前を変更">
+				{#snippet children({ props })}
+					<button
+						{...mergeProps(props, {
+							onclick: () => {
+								renaming = true;
+							},
+						})}
+						type="button"
+						class={sessionActionClass}
+						aria-label={`${title}の名前を変更`}
+						disabled={disabled ||
+							capabilities.rename !== true ||
+							session.archived}
+					>
+						<Pencil size={14} aria-hidden="true" />
+					</button>
+				{/snippet}
+			</Tooltip>
+			<Tooltip content={archiveLabel}>
+				{#snippet children({ props })}
+					<button
+						{...mergeProps(props, {
+							onclick: () =>
+								send({
+									type: archived
+										? "session/unarchive"
+										: "session/archive",
+									requestId: crypto.randomUUID(),
+									sessionId: session.sessionId,
+								}),
+						})}
+						type="button"
+						class={sessionActionClass}
+						disabled={disabled || !canArchive}
+						aria-label={`${title}を${archiveLabel}`}
+					>
+						{#if archived}
+							<ArchiveRestore size={14} aria-hidden="true" />
+						{:else}
+							<Archive size={14} aria-hidden="true" />
+						{/if}
+					</button>
+				{/snippet}
+			</Tooltip>
+			<Tooltip content="フォーク">
+				{#snippet children({ props })}
+					<button
+						{...mergeProps(props, {
+							onclick: () =>
+								send({
+									type: "session/fork",
+									requestId: crypto.randomUUID(),
+									sessionId: session.sessionId,
+								}),
+						})}
+						type="button"
+						class={sessionActionClass}
+						disabled={forkDisabled}
+						aria-label={`${title}をフォーク`}
+					>
+						<GitFork size={14} aria-hidden="true" />
+					</button>
+				{/snippet}
+			</Tooltip>
+		</div>
+	{/if}
 </li>

@@ -12,3 +12,6 @@
 !dist/webview/chunks/**
 !dist/webview/assets/**
 !dist/runtime/**
+!dist/remote/index.html
+!dist/remote/index.js
+!dist/remote/index.css

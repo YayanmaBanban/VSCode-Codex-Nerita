@@ -16,7 +16,8 @@ import { openResource } from "./openResource";
 import { openBrowserLink } from "./browserLinks";
 import { WorkingTreeDiff } from "./workingTreeDiff";
 import { searchWorkspaceSymbols } from "./workspaceSymbols";
-import { configuredBackend, saveBackend } from "./backendSettings";
+import { remoteWorkspaceActionSchema } from "@nerita/shared/remote/workspaceControls";
+import type { RemoteAccessController } from "../remote/RemoteAccessController";
 import {
 	SidebarPlacement,
 	saveSidebar,
@@ -25,7 +26,7 @@ import {
 import { type SidebarLocation } from "@nerita/shared/sidebar";
 import type { WorkspaceTrustStore } from "../security/trust/WorkspaceTrustStore";
 import { ChatTrustState } from "./ChatTrustState";
-import { BackendRuntime } from "../session/BackendRuntime";
+import type { BackendSelection } from "../backends/BackendSelection";
 
 /** UI を閉じても会話を保持し、再表示時の ready で状態を復元する。 */
 export class ChatViewProvider
@@ -42,9 +43,8 @@ export class ChatViewProvider
 	private scrollTop = 0;
 	private scrollAnchor: ConversationScrollAnchor | undefined;
 	private placement: SidebarPlacement;
-	private backendSubscription: vscode.Disposable;
-	private backendPending = false;
-	private runtime: BackendRuntime | undefined;
+	private readonly backendSubscription: () => void;
+	private readonly remoteSubscription: (() => void) | undefined;
 	private copiedCode = new CopiedCode();
 	private workingTreeDiff = new WorkingTreeDiff();
 	private symbolSearches = new Map<vscode.Webview, AbortController>();
@@ -53,13 +53,10 @@ export class ChatViewProvider
 	constructor(
 		private extensionUri: vscode.Uri,
 		private session: ChatSession,
-		private restartBackend: () => Promise<void>,
+		private backendSelection: BackendSelection,
 		trustStore?: WorkspaceTrustStore,
+		private readonly remoteAccess?: RemoteAccessController,
 	) {
-		if (session instanceof BackendRuntime) {
-			this.runtime = session;
-			this.session = session.scope("chat");
-		}
 		this.trustState = new ChatTrustState(
 			this.session,
 			trustStore,
@@ -69,13 +66,17 @@ export class ChatViewProvider
 				}
 			},
 		);
-		this.backendSubscription = vscode.workspace.onDidChangeConfiguration(
-			(event) => {
-				if (event.affectsConfiguration("nerita.backend")) {
-					this.broadcastBackend();
-				}
-			},
+		this.backendSubscription = this.backendSelection.subscribe(() =>
+			this.broadcastBackend(),
 		);
+		this.remoteSubscription = this.remoteAccess?.subscribe((state) => {
+			for (const webview of this.views.keys()) {
+				void webview.postMessage({
+					type: "ui/remoteState",
+					state,
+				} satisfies HostMessage);
+			}
+		});
 		this.placement = new SidebarPlacement((location) => {
 			for (const target of this.views.keys()) {
 				void target.postMessage({
@@ -85,12 +86,12 @@ export class ChatViewProvider
 			}
 		});
 	}
-	/** 設定ファイルの変更をすべての表示先へ反映する。 */
+	/** 実行中のバックエンドをすべての表示先へ反映する。 */
 	private broadcastBackend(): void {
 		for (const webview of this.views.keys()) {
 			void webview.postMessage({
 				type: "ui/backendState",
-				backend: configuredBackend(),
+				backend: this.backendSelection.current().backend,
 			} satisfies HostMessage);
 		}
 	}
@@ -167,6 +168,11 @@ export class ChatViewProvider
 			return;
 		}
 		try {
+			const remote = remoteWorkspaceActionSchema.safeParse(value);
+			if (remote.success) {
+				await this.remoteAccess?.receive(remote.data);
+				return;
+			}
 			await this.dispatchViewRequest(webview, value);
 		} catch {
 			if ("requestId" in value) {
@@ -187,7 +193,8 @@ export class ChatViewProvider
 		this.trustState.dispose();
 		this.copiedCode.dispose();
 		this.workingTreeDiff.dispose();
-		this.backendSubscription.dispose();
+		this.backendSubscription();
+		this.remoteSubscription?.();
 		this.placement.dispose();
 		for (const view of [...this.views.values()]) {
 			view.dispose();
@@ -277,47 +284,17 @@ export class ChatViewProvider
 		webview: vscode.Webview,
 		value: Extract<UiMessage, { type: "ui/setBackend" }>,
 	): Promise<void> {
-		if (this.backendPending) {
-			return;
+		const result = await this.backendSelection.select(value.backend);
+		if (result === "unavailable") {
+			throw new Error("バックエンドを開始できませんでした。");
 		}
-		if (this.runtimeBusy()) {
+		if (result === "busy") {
 			await webview.postMessage({
 				type: "request/failed",
 				requestId: value.requestId,
 				error: "実行・接続処理が終わってからバックエンドを変更してください。",
 			} satisfies HostMessage);
-			return;
 		}
-		this.backendPending = true;
-		try {
-			const changed = await saveBackend(value.backend);
-			this.broadcastBackend();
-			if (changed) {
-				await this.restartBackend();
-			}
-		} finally {
-			this.backendPending = false;
-		}
-	}
-
-	/** 実行・接続・設定変更の完了前はセッションを交換しない。 */
-	private runtimeBusy(): boolean {
-		if (this.runtime?.busy() === true) {
-			return true;
-		}
-		const state = this.session.snapshot();
-		const pendingSession =
-			state.run === "running" ||
-			state.run === "cancelling" ||
-			state.connection === "connecting";
-		const matchesPendingSession =
-			pendingSession ||
-			state.connection === "authenticating" ||
-			state.sessionPending;
-		if (matchesPendingSession) {
-			return true;
-		}
-		return state.configPending;
 	}
 
 	/** 下書きと表示位置を同期して会話操作をバックエンドへ渡す。 */
@@ -350,7 +327,8 @@ export class ChatViewProvider
 			await this.initializeView(webview);
 			return;
 		}
-		if (this.backendPending && value.type !== "prompt/cancel") {
+		const switching = this.backendSelection.current().switching;
+		if (switching && value.type !== "prompt/cancel") {
 			if ("requestId" in value) {
 				await webview.postMessage({
 					type: "request/failed",
@@ -385,9 +363,16 @@ export class ChatViewProvider
 			requestId: crypto.randomUUID(),
 		});
 		await this.trustState.refresh();
+		const remote = this.remoteAccess?.snapshot();
+		if (remote !== undefined) {
+			void webview.postMessage({
+				type: "ui/remoteState",
+				state: remote,
+			} satisfies HostMessage);
+		}
 		void webview.postMessage({
 			type: "ui/backendState",
-			backend: configuredBackend(),
+			backend: this.backendSelection.current().backend,
 		} satisfies HostMessage);
 		void webview.postMessage({
 			type: "ui/sidebarState",

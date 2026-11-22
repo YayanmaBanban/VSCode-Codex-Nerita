@@ -1,4 +1,5 @@
 // Webview から届く操作要求を、副作用を実行する前に検証する。
+import { remoteWorkspaceActionSchema } from "./remote/workspaceControls";
 import type { UiMessage } from "./messages";
 import { validConversationScrollAnchor } from "./conversationScroll";
 import { validToolOutputRequest } from "./toolOutput";
@@ -41,6 +42,11 @@ export function isUiMessage(value: unknown): value is UiMessage {
 	return validator ? validator(value) : false;
 }
 
+/** PC のリモート操作を共通の契約で検証する。 */
+function validRemoteWorkspaceAction(value: unknown): boolean {
+	return remoteWorkspaceActionSchema.safeParse(value).success;
+}
+
 /** 要求の種類ごとに検証処理を定義し、未知の要求は受け付けない。 */
 const uiMessageValidators = new Map<
 	unknown,
@@ -53,6 +59,11 @@ const uiMessageValidators = new Map<
 		"diff/open": (value) =>
 			isPathString(value.path) &&
 			![...value.path].some((character) => character.charCodeAt(0) < 32),
+		"ui/remoteStart": validRemoteWorkspaceAction,
+		"ui/remoteStop": validRemoteWorkspaceAction,
+		"ui/remotePair": validRemoteWorkspaceAction,
+		"ui/remoteDismissPairing": validRemoteWorkspaceAction,
+		"ui/remoteRevoke": validRemoteWorkspaceAction,
 		"ui/setBackend": (value) => isBackendId(value.backend),
 		"agent/read": (value) => isId(value.sessionId) && isId(value.threadId),
 		"agent/stop": (value) => isId(value.sessionId) && isId(value.threadId),

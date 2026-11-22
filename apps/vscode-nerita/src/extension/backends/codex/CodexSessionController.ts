@@ -292,7 +292,7 @@ export class CodexSessionController extends SessionState {
 	}
 
 	/** 二重要求と古い UI の操作を排除して、失敗は要求元へ通知する。 */
-	async receive(value: unknown): Promise<void> {
+	async receive(value: unknown, authorize?: () => void): Promise<void> {
 		if (!isUiMessage(value)) {
 			return;
 		}
@@ -304,7 +304,7 @@ export class CodexSessionController extends SessionState {
 			return;
 		}
 		try {
-			await this.dispatch(value);
+			await this.dispatch(value, authorize);
 		} catch (error) {
 			this.emit({
 				type: "request/failed",
@@ -316,6 +316,7 @@ export class CodexSessionController extends SessionState {
 	/** 操作範囲と実行状態を照合してから、対象の処理へ渡す。 */
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
+		authorize?: () => void,
 	): Promise<void> {
 		if (message.type === "question/respond") {
 			this.questions.respond(message);
@@ -344,6 +345,7 @@ export class CodexSessionController extends SessionState {
 			await this.personalityAction(message);
 			return;
 		}
+		authorize?.();
 		await this.dispatchMutableAction(message);
 	}
 

@@ -7,9 +7,11 @@
 	let {
 		backend,
 		onSelect,
+		disabled = false,
 	}: {
 		backend: BackendId | undefined;
 		onSelect: (value: BackendId) => void;
+		disabled?: boolean;
 	} = $props();
 </script>
 
@@ -21,7 +23,7 @@
 		["pi", "Pi"],
 	]}
 	{onSelect}
-	disabled={backend === undefined}
+	disabled={disabled || backend === undefined}
 >
 	{#snippet icon()}
 		<Cpu size={16} aria-hidden="true" />

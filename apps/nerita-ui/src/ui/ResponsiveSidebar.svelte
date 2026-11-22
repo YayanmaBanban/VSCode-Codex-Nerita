@@ -5,6 +5,7 @@
 	import { Dialog } from "bits-ui";
 	import { cn } from "cnfast";
 	import SidebarToggle from "./SidebarToggle.svelte";
+	import { compactSidebarQuery } from "./responsiveSidebarModel";
 	import SidebarContents from "./SidebarContents.svelte";
 
 	let {
@@ -12,17 +13,28 @@
 		header,
 		expanded,
 		collapsed,
+		persistent = false,
+		description = "検索して編集する項目を選択してください。",
+		portalTarget,
+		onOpen,
+		onFloatingClose,
+		floatingOpen = $bindable(false),
 		children,
 	}: {
 		label: string;
 		header: Snippet;
 		expanded: Snippet<[() => void]>;
 		collapsed?: Snippet;
+		persistent?: boolean;
+		description?: string;
+		portalTarget?: string;
+		onOpen?: () => void;
+		onFloatingClose?: () => void;
+		floatingOpen?: boolean;
 		children: Snippet;
 	} = $props();
-	const compact = new MediaQuery("(max-width: 759px)");
+	const compact = new MediaQuery(compactSidebarQuery);
 	let wideOpen = $state(true);
-	let floatingOpen = $state(false);
 	let trigger = $state<HTMLButtonElement>();
 	let root: HTMLElement | undefined;
 	/** 組み込み表示の切替後も、開閉操作からフォーカスを失わないようにする。 */
@@ -40,13 +52,21 @@
 	}
 	/** 一覧選択後は狭い画面のパネルだけを閉じ、開くボタンへフォーカスを戻す。 */
 	function closeFloating() {
-		floatingOpen = false;
-		trigger?.focus({ preventScroll: true });
+		if (floatingOpen) {
+			floatingOpen = false;
+			onFloatingClose?.();
+			trigger?.focus({ preventScroll: true });
+		}
 	}
 	/** 表示方式に対応する開閉状態を切り替える。 */
 	function toggle() {
 		if (compact.current) {
-			floatingOpen = !floatingOpen;
+			if (floatingOpen) {
+				closeFloating();
+			} else {
+				floatingOpen = true;
+				onOpen?.();
+			}
 		} else {
 			wideOpen = !wideOpen;
 			void tick().then(focusToggle);
@@ -83,7 +103,7 @@
 					<SidebarContents
 						{header}
 						{expanded}
-						onToggle={toggle}
+						onToggle={persistent ? undefined : toggle}
 						onSelect={closeFloating}
 					/>
 				</div>
@@ -98,14 +118,15 @@
 	bind:open={
 		() => compact.current && floatingOpen,
 		(value: boolean) => {
-			floatingOpen = value;
-			if (!value) {
-				trigger?.focus({ preventScroll: true });
+			if (value) {
+				floatingOpen = true;
+			} else {
+				closeFloating();
 			}
 		}
 	}
 >
-	<Dialog.Portal>
+	<Dialog.Portal {...portalTarget === undefined ? {} : { to: portalTarget }}>
 		<Dialog.Overlay class="fixed inset-0 z-30 bg-black/30" />
 		<Dialog.Content
 			class={cn(
@@ -115,7 +136,7 @@
 		>
 			<Dialog.Title class="sr-only">{label}</Dialog.Title>
 			<Dialog.Description class="sr-only">
-				検索して編集する項目を選択してください。
+				{description}
 			</Dialog.Description>
 			<SidebarContents
 				{header}
@@ -132,7 +153,10 @@
 		/* 項目数が増えても行を親の高さに収め、スクロールを一覧へ委ねる。 */
 		grid-template-rows: minmax(0, 1fr);
 		gap: var(--sidebar-gap, 16px);
-		grid-template-columns: 32px minmax(0, 1fr);
+		grid-template-columns: var(--sidebar-collapsed-width, 32px) minmax(
+				0,
+				1fr
+			);
 		transition: grid-template-columns 220ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 	.sidebar-layout[data-expanded="true"] {

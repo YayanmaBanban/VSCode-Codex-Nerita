@@ -1,6 +1,7 @@
 // Webview の公開通信経路で、設定保存待ちの送信拒否と下書き保持を検証する。
 import { isNonEmptyString } from "@nerita/shared/valuePredicates";
 import assert from "node:assert/strict";
+import { BackendSelection } from "../../apps/vscode-nerita/src/extension/backends/BackendSelection";
 import { test, type TestContext } from "node:test";
 import { join } from "node:path";
 import * as vscode from "vscode";
@@ -167,8 +168,8 @@ async function openView(
 	const extensionUri = vscode.Uri.file(f.root);
 	const provider = new ChatViewProvider(
 		extensionUri,
-		runtime,
-		() => runtime.restart(),
+		runtime.scope("chat"),
+		new BackendSelection(runtime),
 		f.trust,
 	);
 	t.after(() => provider.dispose());

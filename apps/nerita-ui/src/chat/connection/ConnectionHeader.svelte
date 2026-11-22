@@ -10,13 +10,12 @@
 	import type { SidebarLocation } from "@nerita/shared/sidebar";
 	import type { Snippet } from "svelte";
 	import { mergeProps } from "bits-ui";
-	import List from "@lucide/svelte/icons/list";
 	import Maximize2 from "@lucide/svelte/icons/maximize-2";
-	import MessageSquareText from "@lucide/svelte/icons/message-square-text";
 	import Minimize2 from "@lucide/svelte/icons/minimize-2";
 	import Tooltip from "../../ui/Tooltip.svelte";
 	import PersonalityOptions from "../personality/PersonalityOptions.svelte";
 	import AuthenticationNotice from "./AuthenticationNotice.svelte";
+	import SessionHeaderActions from "./SessionHeaderActions.svelte";
 	import ConnectionButton from "./ConnectionButton.svelte";
 	import ActionNotice from "../../ui/ActionNotice.svelte";
 	import { noticeClass } from "../../ui/actionNoticeModel";
@@ -99,41 +98,17 @@
 	{/if}
 	<div class="flex shrink-0 items-center gap-[2px]">
 		{#if dlc !== true}
-			<Tooltip content="新しいチャット">
-				{#snippet children({ props })}
-					<button
-						{...mergeProps(props, {
-							onclick: () =>
-								send({
-									type: "session/new",
-									requestId: crypto.randomUUID(),
-								}),
-						})}
-						type="button"
-						class={iconClass}
-						aria-label="新しいチャット"
-						disabled={!available}
-					>
-						<MessageSquareText size={16} aria-hidden="true" />
-					</button>
-				{/snippet}
-			</Tooltip>
-			<Tooltip content="セッション一覧">
-				{#snippet children({ props })}
-					<button
-						{...mergeProps(props, { onclick: onToggleSessions })}
-						type="button"
-						id="session-list-toggle"
-						class={iconClass}
-						aria-label="セッション一覧"
-						disabled={!state.sessionCapabilities.list}
-						aria-expanded={sessionsOpen}
-						aria-controls="session-panel"
-					>
-						<List size={16} aria-hidden="true" />
-					</button>
-				{/snippet}
-			</Tooltip>
+			<SessionHeaderActions
+				{available}
+				canList={state.sessionCapabilities.list}
+				{sessionsOpen}
+				onNewChat={() =>
+					send({
+						type: "session/new",
+						requestId: crypto.randomUUID(),
+					})}
+				{onToggleSessions}
+			/>
 		{/if}
 		<Tooltip content={viewLabel}>
 			{#snippet children({ props })}

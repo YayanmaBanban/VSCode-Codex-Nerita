@@ -145,6 +145,7 @@
 					{/key}
 				{/if}
 				<ChatComposer
+					remote={view.remote}
 					{bridge}
 					state={chat.state}
 					send={chat.send}

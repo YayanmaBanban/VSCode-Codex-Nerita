@@ -1,4 +1,5 @@
 // Host から届く通知を検証してから、Webview の状態や描画に反映する。
+import { remoteWorkspaceStateSchema } from "./remote/workspaceControls";
 import type { HostMessage } from "./messages";
 import { validConversationScrollAnchor } from "./conversationScroll";
 import { validToolOutputResponse } from "./toolOutput";
@@ -35,6 +36,8 @@ const hostMessageValidators = new Map<
 		"ui/codeBlock": (value) => {
 			return isId(value.requestId);
 		},
+		"ui/remoteState": (value) =>
+			remoteWorkspaceStateSchema.safeParse(value.state).success,
 		"ui/backendState": (value) => {
 			return isBackendId(value.backend);
 		},

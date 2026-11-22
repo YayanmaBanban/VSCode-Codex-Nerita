@@ -30,7 +30,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	}
 
 	/** 重複・不正要求を無視し、未対応操作は要求元に明示する。 */
-	async receive(value: unknown): Promise<void> {
+	async receive(value: unknown, authorize?: () => void): Promise<void> {
 		if (this.disposed || !isUiMessage(value)) {
 			return;
 		}
@@ -50,7 +50,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 				this.questions.respond(value);
 				return;
 			}
-			await this.dispatch(value);
+			await this.dispatch(value, authorize);
 		} catch (error) {
 			this.emit({
 				type: "request/failed",
@@ -66,6 +66,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	/** 会話 ID と実行 ID を確認し、古い画面からの `Stop` を拒否する。 */
 	private async dispatch(
 		message: Exclude<UiMessage, { type: "ui/ready" }>,
+		authorize?: () => void,
 	): Promise<void> {
 		const cancelAuthentication =
 			message.type === "auth/start" && message.methodId === "pi-cancel";
@@ -92,7 +93,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 		if (matchesValue) {
 			return;
 		}
-		await this.dispatchReadyAction(message);
+		await this.dispatchReadyAction(message, authorize);
 	}
 
 	/** 接続中の会話を維持して参照の検索と表示を処理する。 */
@@ -128,7 +129,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	}
 
 	/** 接続後の履歴操作を処理して会話単位の操作へ渡す。 */
-	private async dispatchReadyAction(message: UiMessage): Promise<void> {
+	private async dispatchReadyAction(
+		message: UiMessage,
+		authorize?: () => void,
+	): Promise<void> {
 		if (message.type === "session/new") {
 			await this.connect();
 			return;
@@ -149,11 +153,15 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			);
 			return;
 		}
-		await this.dispatchThreadAction(message);
+		await this.dispatchThreadAction(message, authorize);
 	}
 
 	/** 現在の会話に対する送信と実行操作を処理する。 */
-	private async dispatchThreadAction(message: UiMessage): Promise<void> {
+	private async dispatchThreadAction(
+		message: UiMessage,
+		authorize?: () => void,
+	): Promise<void> {
+		authorize?.();
 		if (!("sessionId" in message)) {
 			throw new Error("現在のPi会話では実行できない操作です。");
 		}
@@ -169,7 +177,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			return;
 		}
 		if (message.type === "prompt/send") {
-			await this.submitCurrentPrompt(message);
+			await this.submitCurrentPrompt(message, authorize);
 			return;
 		}
 		const attachmentAction =
@@ -186,6 +194,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	/** 初回送信に限り、未使用の会話の保存先を設定へ追従させる。 */
 	private async submitCurrentPrompt(
 		message: Extract<UiMessage, { type: "prompt/send" }>,
+		authorize?: () => void,
 	): Promise<void> {
 		const attachments = [...this.state.attachments];
 		const matchesBusy =
@@ -193,7 +202,7 @@ export class PiSessionController extends PiHistory implements BackendSession {
 			!this.state.sessionPending &&
 			this.runtime?.storageChanged?.() === true;
 		if (matchesBusy) {
-			await this.refreshStorage();
+			await this.refreshStorage(authorize);
 			this.patch({ attachments });
 		}
 		const pending =
@@ -238,7 +247,10 @@ export class PiSessionController extends PiHistory implements BackendSession {
 	}
 
 	/** 初回送信前に保存先を更新し、接続が変わった場合は中止する。 */
-	private async refreshStorage() {
+	private async refreshStorage(authorize?: () => void) {
+		if (authorize) {
+			throw new Error("PCで再接続してから送信してください。");
+		}
 		const previous = this.runtime;
 		const nextEpoch = this.epoch + 1;
 		await this.connect(undefined, true);

@@ -10,6 +10,7 @@
 		title,
 		description,
 		onCancel,
+		onCloseAutoFocus,
 		children,
 		heading,
 		descriptionTone = "muted",
@@ -19,6 +20,7 @@
 		title: string;
 		description: string;
 		onCancel: () => void;
+		onCloseAutoFocus?: ((event: Event) => void) | undefined;
 		children: Snippet;
 		heading?: Snippet;
 		descriptionTone?: "muted" | "warning";
@@ -38,6 +40,7 @@
 	<AlertDialog.Portal>
 		<AlertDialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
 		<AlertDialog.Content
+			onCloseAutoFocus={(event) => onCloseAutoFocus?.(event)}
 			class={cn(
 				"fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-32px)] w-[min(480px,calc(100vw-32px))]",
 				"-translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-menu-border bg-menu p-5 text-menu-text shadow-lg",

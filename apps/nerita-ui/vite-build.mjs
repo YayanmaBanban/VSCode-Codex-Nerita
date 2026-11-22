@@ -6,23 +6,23 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 
 const uiRoot = path.dirname(fileURLToPath(import.meta.url));
+const remoteRoot = path.join(uiRoot, "src", "remote");
+export const remoteOutDir = path.resolve(uiRoot, "../../dist/remote-ui");
 
 /** 固定の入口・CSS と相対アセットを生成し、配布先への同期は呼び出し側に任せる。 */
-export function createViteUiBuild({ production, onBuild, entryPoint }) {
+export function createViteUiBuild({ production, onBuild, entryPoint, remote }) {
 	let watcher;
+	const [root, outDir] = remote
+		? [remoteRoot, remoteOutDir]
+		: [uiRoot, path.join(uiRoot, "dist")];
 	const config = {
-		root: uiRoot,
+		root,
 		mode: production ? "production" : "development",
 		configFile: false,
 		base: "./",
 		publicDir: false,
 		resolve: {
-			conditions: [
-				"nerita-source",
-				"module",
-				"browser",
-				production ? "production" : "development",
-			],
+			conditions: resolutionConditions(production),
 			dedupe: ["svelte"],
 		},
 		plugins: [
@@ -31,12 +31,12 @@ export function createViteUiBuild({ production, onBuild, entryPoint }) {
 			{
 				name: "nerita-ui-artifacts",
 				async writeBundle() {
-					await onBuild?.(path.join(uiRoot, "dist"));
+					await onBuild?.(outDir);
 				},
 			},
 		],
 		build: {
-			outDir: "dist",
+			outDir,
 			emptyOutDir: true,
 			assetsInlineLimit: 0,
 			cssCodeSplit: false,
@@ -45,7 +45,7 @@ export function createViteUiBuild({ production, onBuild, entryPoint }) {
 			target: "es2022",
 			modulePreload: false,
 			rolldownOptions: {
-				input: path.resolve(uiRoot, entryPoint),
+				input: path.resolve(root, remote ? "index.html" : entryPoint),
 				output: {
 					// 入力エディターを共通画面のチャンクから分ける。
 					codeSplitting: {
@@ -89,6 +89,16 @@ export function createViteUiBuild({ production, onBuild, entryPoint }) {
 			await watcher?.close();
 		},
 	};
+}
+
+/** Webview とモバイルの双方で同じ共有パッケージのソースを解決する。 */
+function resolutionConditions(production) {
+	return [
+		"nerita-source",
+		"module",
+		"browser",
+		production ? "production" : "development",
+	];
 }
 
 /** CSS は Host の固定 URI に合わせ、その他の資産はビルド先からの相対参照にする。 */

@@ -1,4 +1,8 @@
 // Host と Webview の要求・通知の通信契約を定義し、実行環境の API に依存させない。
+import type {
+	RemoteWorkspaceAction,
+	RemoteWorkspaceState,
+} from "./remote/workspaceControls";
 import type { ChatState } from "./chatState";
 import type { QuestionResponse } from "./questions";
 import type { ConversationScrollAnchor } from "./conversationScroll";
@@ -34,6 +38,7 @@ import type { DlcEditorState, DlcUiMessage, DlcView } from "./dlc/contracts";
 
 /** UI が送れる操作を限定する判別共用体。 */
 export type UiMessage =
+	| RemoteWorkspaceAction
 	| QuestionResponse
 	| DlcUiMessage
 	| { type: "workspace/manageTrust"; requestId: string }
@@ -138,6 +143,7 @@ export type HostMessage =
 	| { type: "workspace/trustState"; untrusted: boolean }
 	| ToolOutputResponse
 	| { type: "ui/backendState"; backend: BackendId }
+	| { type: "ui/remoteState"; state: RemoteWorkspaceState }
 	| { type: "ui/codeBlock"; requestId: string }
 	| { type: "agent/view"; requestId: string; view: AgentThreadView }
 	| { type: "agent/stopped"; requestId: string; threadId: string }

@@ -10,7 +10,7 @@ export class RuntimeView implements ChatSession {
 	/** 状態の取得とメッセージ処理を利用側へ委ね、表示用の状態を別に所有しない。 */
 	constructor(
 		private readonly state: () => ChatState,
-		readonly receive: (value: unknown) => Promise<void>,
+		readonly receive: ChatSession["receive"],
 	) {}
 	/** 状態の内容は利用側から取得し、配信の順序番号だけをこの表示の世代へ置き換える。 */
 	snapshot(): ChatState {

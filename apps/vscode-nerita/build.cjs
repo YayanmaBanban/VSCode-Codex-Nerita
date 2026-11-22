@@ -38,6 +38,17 @@ async function collectUiArtifacts() {
 	await collectBrandAssets();
 }
 
+/** 配信するモバイル UI を Webview と別の出力先に集約する。 */
+async function collectRemoteArtifacts(source) {
+	const target = path.join(dist, "remote");
+	await mkdir(target, { recursive: true });
+	await Promise.all(
+		["index.html", "index.js", "index.css"].map((name) =>
+			copyFile(path.join(source, name), path.join(target, name)),
+		),
+	);
+}
+
 /** ソース内のスキーマとルートの配布文書を、拡張機能の配布先へコピーする。 */
 async function collectPackageFiles() {
 	await mkdir(dist, { recursive: true });
@@ -98,10 +109,17 @@ async function main() {
 		}).on("error", (error) => console.error(error));
 		const { createUiBuild } = require("../nerita-ui/build.cjs");
 		const webview = await createUiBuild({ onBuild: collectUiArtifacts });
-		await Promise.all([host.watch(), webview.watch()]);
+		const remote = await createUiBuild({
+			remote: true,
+			onBuild: collectRemoteArtifacts,
+		});
+		await Promise.all([host.watch(), webview.watch(), remote.watch()]);
 	} else {
 		try {
 			await collectUiArtifacts();
+			const { remoteOutDir } =
+				await import("../nerita-ui/vite-build.mjs");
+			await collectRemoteArtifacts(remoteOutDir);
 			await host.rebuild();
 		} finally {
 			await host.dispose();

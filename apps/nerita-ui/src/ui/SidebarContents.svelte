@@ -11,7 +11,7 @@
 	}: {
 		header: Snippet;
 		expanded: Snippet<[() => void]>;
-		onToggle: () => void;
+		onToggle?: (() => void) | undefined;
 		onSelect: () => void;
 	} = $props();
 </script>
@@ -21,7 +21,9 @@
 		<div class="min-w-0 flex-1">
 			{@render header()}
 		</div>
-		<SidebarToggle open {onToggle} />
+		{#if onToggle}
+			<SidebarToggle open {onToggle} />
+		{/if}
 	</div>
 	{@render expanded(onSelect)}
 </div>

@@ -1,4 +1,5 @@
 // 表示先ごとの DOM と、Host が保存する配置・復元位置を接続する。
+import type { RemoteWorkspaceState } from "@nerita/shared/remote/workspaceControls";
 import type { BackendId } from "@nerita/shared/backend";
 import type { Bridge } from "@nerita/shared/bridge";
 import type { HostMessage } from "@nerita/shared/messages";
@@ -20,6 +21,7 @@ export function useChatView(getBridge: () => Bridge) {
 class ChatViewController {
 	untrusted = $state(false);
 	backend = $state<BackendId | undefined>();
+	remote = $state.raw<RemoteWorkspaceState | undefined>();
 	editor = $state(false);
 	sidebarLocation = $state<SidebarLocation>("secondary");
 	restore = $state.raw<ConversationRestore | null>(null);
@@ -57,6 +59,8 @@ class ChatViewController {
 			this.untrusted = message.untrusted;
 		} else if (message.type === "ui/backendState") {
 			this.backend = message.backend;
+		} else if (message.type === "ui/remoteState") {
+			this.remote = message.state;
 		} else if (message.type === "ui/sidebarState") {
 			this.sidebarLocation = message.location;
 		} else if (message.type === "ui/viewState") {

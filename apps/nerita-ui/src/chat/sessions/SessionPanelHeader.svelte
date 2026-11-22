@@ -11,10 +11,12 @@
 		state,
 		close = $bindable(),
 		onClose,
+		showWorkspace = true,
 	}: {
 		state: Pick<ChatState, "cwd" | "sessionsLoading">;
 		close?: HTMLButtonElement | undefined;
 		onClose: () => void;
+		showWorkspace?: boolean;
 	} = $props();
 </script>
 
@@ -37,30 +39,34 @@
 			{/snippet}
 		</Tooltip>
 	</div>
-	<div class="mt-[8px] flex items-start gap-[8px]">
-		<Tooltip content={state.cwd ?? undefined}>
-			{#snippet children({ props: tooltipProps })}
+	{#if showWorkspace || state.sessionsLoading}
+		<div class="mt-[8px] flex items-start gap-[8px]">
+			{#if showWorkspace}
+				<Tooltip content={state.cwd ?? undefined}>
+					{#snippet children({ props: tooltipProps })}
+						<span
+							{...tooltipProps}
+							tabindex="-1"
+							class="min-w-0 flex-1 font-editor text-[12px] leading-[1.6] break-all text-muted"
+						>
+							{state.cwd ?? "ワークスペース未接続"}
+						</span>
+					{/snippet}
+				</Tooltip>
+			{/if}
+			{#if state.sessionsLoading}
 				<span
-					{...tooltipProps}
-					tabindex="-1"
-					class="min-w-0 flex-1 font-editor text-[12px] leading-[1.6] break-all text-muted"
+					role="progressbar"
+					aria-label="セッション一覧を取得中"
+					class="mt-[1px] inline-flex shrink-0 text-link"
 				>
-					{state.cwd ?? "ワークスペース未接続"}
+					<LoaderCircle
+						size={15}
+						class="motion-safe:animate-spin"
+						aria-hidden="true"
+					/>
 				</span>
-			{/snippet}
-		</Tooltip>
-		{#if state.sessionsLoading}
-			<span
-				role="progressbar"
-				aria-label="セッション一覧を取得中"
-				class="mt-[1px] inline-flex shrink-0 text-link"
-			>
-				<LoaderCircle
-					size={15}
-					class="motion-safe:animate-spin"
-					aria-hidden="true"
-				/>
-			</span>
-		{/if}
-	</div>
+			{/if}
+		</div>
+	{/if}
 </header>

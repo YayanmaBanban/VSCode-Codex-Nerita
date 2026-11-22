@@ -2,12 +2,21 @@
 
 # Nerita
 
+[![Svelte](https://img.shields.io/badge/Svelte-FF3E00?style=flat&logo=svelte&logoColor=white)](https://svelte.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Codex](https://img.shields.io/badge/Codex-111111?style=flat)](https://github.com/openai/codex)
+[![Pi](https://img.shields.io/badge/Pi-F2C94C?style=flat)](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)
+[![Storybook](https://img.shields.io/badge/Storybook-FF4785?style=flat&logo=storybook&logoColor=white)](https://storybook.js.org/)
+[![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=flat)](https://playwright.dev/)
+[![Node.js >=22.19.0](https://img.shields.io/badge/Node.js-%3E%3D22.19.0-5FA04E?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-F69220?style=flat&logo=pnpm&logoColor=white)](https://pnpm.io/)
+
 VS Code 上で Codex と Pi を利用する拡張機能です。開発には Windows x64 と Node.js 22.19.0 以降、pnpm を使用します。
 
 ## 構成
 
 - `apps/vscode-nerita/`: 拡張機能のマニフェスト、Extension Host、VSIX のビルドと配布。
-- `apps/nerita-ui/`: React Webview、Storybook、画像・SVG の編集元。
+- `apps/nerita-ui/`: Svelte Webview、Storybook、画像・SVG の編集元。
 - `packages/shared/`: Webview と Extension Host の実装に依存しない、共通の通信型・検証処理。
 - `tests/`・`config/`・`scripts/`: 全体の検証と開発ツール。
 

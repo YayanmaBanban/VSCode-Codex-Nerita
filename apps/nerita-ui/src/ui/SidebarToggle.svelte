@@ -26,6 +26,7 @@
 			type="button"
 			aria-label={open ? "サイドバーを閉じる" : "サイドバーを開く"}
 			aria-expanded={open}
+			data-sidebar-toggle
 			class={cn(
 				"group inline-flex size-8 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",
 				"hover:bg-settings-hover focus-visible:outline-2 focus-visible:outline-focus",

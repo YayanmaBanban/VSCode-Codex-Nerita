@@ -8,7 +8,7 @@ import type { BackendExecutionResult } from "./BackendExecution";
 export type ChatSession = {
 	snapshot(): ChatState;
 	subscribe(listener: (event: HostMessage) => void): () => void;
-	receive(value: unknown): Promise<void>;
+	receive(value: unknown, authorize?: () => void): Promise<void>;
 };
 
 /** ワークスペース変更と拡張終了も扱う Host 側のセッション。 */

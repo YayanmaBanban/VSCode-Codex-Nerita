@@ -4,24 +4,25 @@
 async function createUiBuild({
 	production = false,
 	onBuild,
+	remote = false,
 	entryPoint = process.env.NERITA_UI_ENTRY ?? "src/index.ts",
 } = {}) {
 	const { createViteUiBuild } = await import("./vite-build.mjs");
-	return createViteUiBuild({ production, onBuild, entryPoint });
+	return createViteUiBuild({ production, onBuild, entryPoint, remote });
 }
 
 /** UI パッケージ単独でビルドし、指定に応じて変更を監視する。 */
 async function main() {
-	const context = await createUiBuild({
-		production: process.argv.includes("--production"),
-	});
+	const production = process.argv.includes("--production");
+	const webview = await createUiBuild({ production });
+	const remote = await createUiBuild({ production, remote: true });
 	if (process.argv.includes("--watch")) {
-		await context.watch();
+		await Promise.all([webview.watch(), remote.watch()]);
 	} else {
 		try {
-			await context.rebuild();
+			await Promise.all([webview.rebuild(), remote.rebuild()]);
 		} finally {
-			await context.dispose();
+			await Promise.all([webview.dispose(), remote.dispose()]);
 		}
 	}
 }

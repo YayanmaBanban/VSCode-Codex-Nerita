@@ -22,6 +22,7 @@ async function run() {
 	);
 	await extension.activate();
 	assert.equal(extension.isActive, true);
+	await verifyRemoteSettingsMigration(manifest);
 	const commands = await vscode.commands.getCommands(true);
 	assert.ok(!commands.includes("nerita.pi.setupCodexWindowsSandbox"));
 	for (const command of manifest.contributes.commands) {
@@ -33,7 +34,13 @@ async function run() {
 	assert.equal(typeof sdk.createAgentSession, "function");
 	await verifyMxcRuntime(root);
 	await verifyPtyRuntime(root);
-	for (const asset of ["dist/webview/index.js", "dist/webview/index.css"]) {
+	for (const asset of [
+		"dist/webview/index.js",
+		"dist/webview/index.css",
+		"dist/remote/index.html",
+		"dist/remote/index.js",
+		"dist/remote/index.css",
+	]) {
 		assert.ok((await fs.stat(path.join(root, asset))).size > 0);
 	}
 	console.log("展開 VSIX の有効化・公開コマンド・SDK 読込み: 成功");
@@ -43,6 +50,23 @@ async function run() {
 }
 
 module.exports = { run };
+
+/** 移行対象の設定だけを実際のワークスペースファイルから取り除く。 */
+async function verifyRemoteSettingsMigration(manifest) {
+	const settingsPath = process.env.NERITA_REMOTE_MIGRATION_SETTINGS;
+	if (!settingsPath) {
+		return;
+	}
+	assert.ok(
+		!Object.hasOwn(
+			manifest.contributes.configuration.properties,
+			"nerita.remote.fqdn",
+		),
+	);
+	const settings = JSON.parse(await fs.readFile(settingsPath, "utf8"));
+	assert.ok(!Object.hasOwn(settings, "nerita.remote.fqdn"));
+	assert.equal(settings["editor.wordWrap"], "on");
+}
 
 /** 削減後の prebuild だけで、Extension Host から Windows の PTY を実際に起動する。 */
 async function verifyPtyRuntime(root) {

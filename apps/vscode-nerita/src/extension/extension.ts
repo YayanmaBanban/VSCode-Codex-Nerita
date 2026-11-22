@@ -23,9 +23,13 @@ import { directoryRunStorage } from "./dlc/DirectoryRunStorage";
 import { hostStorageRoot } from "./session/HostStorage";
 import { autoReviewStore } from "./security/AutoReviewStore";
 import { registerBrowserLinkCommand } from "./webview/browserLinks";
+import { BackendSelection } from "./backends/BackendSelection";
+import { configuredBackend } from "./webview/backendSettings";
+import { RemoteAccessController } from "./remote/RemoteAccessController";
 
 let controller: BackendSession | undefined;
 let dlc: { dispose(): Promise<void> } | undefined;
+let remoteAccess: RemoteAccessController | undefined;
 /** サイドバー・コマンド・接続サービスを登録する。 */
 export async function activate(
 	context: vscode.ExtensionContext,
@@ -67,11 +71,20 @@ export async function activate(
 	dlc = registerDlcCommands(context, trust, session);
 	registerWorkflowEditor(context, session);
 	registerAgentManager(context, session);
+	const selection = new BackendSelection(session);
+	remoteAccess = new RemoteAccessController(
+		context,
+		session,
+		selection,
+		trust,
+	);
+	await remoteAccess.loadHostname();
 	const provider = new ChatViewProvider(
 		context.extensionUri,
-		session,
-		() => session.restart(),
+		session.scope("chat"),
+		selection,
 		trust,
+		remoteAccess,
 	);
 	context.subscriptions.push(
 		provider,
@@ -102,6 +115,9 @@ export async function activate(
 }
 /** Extension Host の終了までに App Server のプロセスツリーを終了する。 */
 export async function deactivate(): Promise<void> {
+	await remoteAccess?.stop();
+	remoteAccess?.dispose();
+	remoteAccess = undefined;
 	await dlc?.dispose();
 	dlc = undefined;
 	await controller?.dispose();
@@ -118,5 +134,6 @@ async function createRuntime(
 		(backend, root) => createBackend(context, trust, backend, root),
 		await sessionOwnershipStorage(hostStorageRoot()),
 		await directoryRunStorage(hostStorageRoot()),
+		configuredBackend,
 	);
 }

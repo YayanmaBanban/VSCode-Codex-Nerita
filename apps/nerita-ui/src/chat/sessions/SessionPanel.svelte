@@ -1,4 +1,5 @@
 <!-- 作業フォルダと履歴を右ペインに表示し、閉じる途中の操作を防ぐ。 -->
+
 <script lang="ts">
 	import { cn } from "cnfast";
 	import { onMount } from "svelte";
@@ -10,21 +11,23 @@
 	import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 	import { taskActive } from "@nerita/shared/asyncTask";
 	import { isNonEmptyString } from "@nerita/shared/valuePredicates";
-	import type { ChatState } from "@nerita/shared/chatState";
 	import type { UiMessage } from "@nerita/shared/messages";
 	import SessionItem from "./SessionItem.svelte";
 	import SessionPanelHeader from "./SessionPanelHeader.svelte";
+	import type { SessionPanelState } from "./sessionPanelModel";
 
 	let {
 		state: chatState,
 		send,
 		onClose,
 		compact,
+		restoreOnly = false,
 	}: {
-		state: ChatState;
+		state: SessionPanelState;
 		send: (message: UiMessage) => void;
 		onClose: () => void;
 		compact: boolean;
+		restoreOnly?: boolean;
 	} = $props();
 	let now = $state(Date.now());
 	let close = $state<HTMLButtonElement>();
@@ -127,7 +130,12 @@
 			"flex-col border-0 border-l border-solid border-panel-border bg-menu",
 		)}
 	>
-		<SessionPanelHeader state={chatState} bind:close {onClose} />
+		<SessionPanelHeader
+			state={chatState}
+			bind:close
+			{onClose}
+			showWorkspace={!restoreOnly}
+		/>
 		{#if capabilities.unarchive === true}
 			<div
 				class="flex gap-[8px] px-[12px] py-[8px]"
@@ -213,7 +221,10 @@
 						{capabilities}
 						send={sendSessionAction}
 						{now}
-						{disabled}
+						disabled={disabled ||
+							(restoreOnly &&
+								session.sessionId === chatState.sessionId)}
+						showActions={!restoreOnly}
 					/>
 				{/each}
 			</ul>

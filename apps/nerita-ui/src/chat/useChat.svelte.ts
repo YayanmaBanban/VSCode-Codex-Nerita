@@ -162,5 +162,6 @@ function isAuxiliaryMessage(
 		"session/references",
 		"ui/sidebarState",
 		"ui/backendState",
+		"ui/remoteState",
 	].includes(message.type);
 }
