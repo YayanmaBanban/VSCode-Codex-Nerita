@@ -1,10 +1,9 @@
+# 型システムを厳密に使う（Type System Discipline）
 
-# Type System Discipline
+不可能な状態、意味が異なるプリミティブ値の取り違え、未処理のバリアントをコンパイラーに拒否させる。
 
-Make the compiler reject impossible states, mismatched primitives, and unhandled variants.
+- **意味の異なるプリミティブを区別する型（Brand）。** 2つの引数のプリミティブ型が同じでも意味が異なる場合は、それぞれ別の型を与える。作成時に一度だけ検証する。
+- **外部データは解析前には型が付いていないものとして扱う。** JSON、RPCペイロード、CLI引数、設定、環境変数、DB行は、システム境界で型付きモデルを返すparse関数に通す。
+- **正本となるスキーマから型を導く。** スキーマファイルが構造の正本なら、並行した型定義を手書きせず、スキーマから導出する。
 
-- **Brand semantic primitives.** If two arguments share a primitive type but mean different things, give each its own type. Validate once at creation.
-- **External data is untyped until parsed.** JSON, RPC payloads, CLI args, config, environment variables, and database rows go through a parse function at the boundary that returns the typed model.
-- **Derive types from authoritative schemas.** When a schema file owns a shape, derive the type from it instead of hand-rolling a parallel one.
-
-For TypeScript syntax, see the **typescript-best-practices** skill.
+TypeScriptの具体的な構文は**typescript-best-practices** Skillを参照する。

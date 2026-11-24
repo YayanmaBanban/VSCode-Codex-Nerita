@@ -1,9 +1,10 @@
+# 呼び出し元を移行して旧APIを削除する（Migrate Callers Then Delete Legacy APIs）
 
-# Migrate Callers Then Delete Legacy APIs
+旧APIの呼び出し元がまだ存在する状態で新しい内部APIを導入する場合は、互換性を保つための層を残すのではなく、呼び出し元の移行と旧APIの削除を同じ作業単位で行う。
 
-- Update tests to assert the new contract, and delete tests that only protect pre-refactor implementation details
+- 新しい契約を検証するようテストを更新し、リファクタリング前の内部実装だけを守るテストは削除する。
 
-**When this applies:**
-- No external users depend on backward compatibility
-- The project can absorb coordinated breaking changes
-- The new API is part of a simplification or refactor initiative
+**適用条件：**
+- 後方互換性に依存する外部利用者がいない。
+- プロジェクトが連携した破壊的変更を受け入れられる。
+- 新しいAPIが単純化またはリファクタリングの一環である。

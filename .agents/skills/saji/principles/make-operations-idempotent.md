@@ -1,10 +1,9 @@
+# 状態変更を冪等にする（Make Operations Idempotent）
 
-# Make Operations Idempotent
+状態を変えるすべての操作は、何度実行されても、前回どこで止まっていても、正しい同じ最終状態に収束するよう設計する。
 
-Design every state-changing operation to converge to the correct state however many times it runs and wherever the previous run stopped.
+各工程の内容は「前回の実行で何を意図したか」ではなく、現在存在する状態から導く。現在の状態を読み、目標と比較し、差分だけを適用する。
 
-Derive each step from the state that exists, not from what the previous run meant to do. Read the current state, compare it to the goal, and apply only the difference.
+実行によって残るもの（ロック、一時ファイル、書きかけのレコード、取得済みのジョブなど）は、前回がどの時点で停止しても成立する証拠により、次回の実行が古いものだと認識できるようにする。一時パスへ書き込み、完成後に所定の場所へrenameする。
 
-Anything a run leaves behind (a lock, a temporary file, a half-written record, a claimed job) must be recognizable as stale by the next run, by evidence that holds wherever the previous run could have stopped. Write to a temporary path and rename it into place.
-
-The test: what happens if this runs twice? What if the previous run crashed at every possible point? If the answer depends on what was left behind, add a reconciliation step.
+検証の問い：同じ操作を2回実行したらどうなるか。前回があらゆる箇所でクラッシュしたらどうなるか。結果が残存物によって変わるなら、整合させる工程を追加する。

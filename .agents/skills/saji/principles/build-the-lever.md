@@ -1,9 +1,8 @@
+# 繰り返し使える道具を作る（Build the Lever）
 
-# Build the Lever
+単純でない作業では、手作業よりも作業を実施するツール（codemod、スクリプト、ジェネレーター、再実行可能な検査）を作る。判断基準は繰り返し回数ではなく単純さである。明白な編集が数件だけならツールを省略してよい。
 
-When the work isn't trivial, build the tool that does it (a codemod, script, generator, or rerunnable check) instead of doing it by hand. The bar is triviality, not repetition. Skip the tool only for a couple of obvious edits.
-
-- Do the first unit by hand, then build the tool and prove it by rerunning it on that unit. Make it safe to rerun.
-- A deterministic tool beats fan-out. When you do fan out, write the recipe, the verification contract, and the fences as one skill the delegates read and cannot edit.
-- Applying this produces a file. No script, codemod, generator, or delegate skill in the diff means you didn't apply it. Commit it when the work outlives the session.
-- Build the smallest script that does or proves the job, never a framework.
+- 最初の1件を手作業で実行してからツールを作り、その1件を再実行して正しさを示す。再実行しても安全なものにする。
+- 決定的な結果が得られるツールは並列作業より優先する。並列委譲する場合は、手順、検証契約、変更禁止境界を委譲先が読む一つのSkillにまとめ、委譲先には編集させない。
+- このPrincipleを適用するとファイルが成果物として残る。スクリプト・codemod・ジェネレーター・委譲用Skillが差分に含まれていなければ適用したことにならない。作業がセッションを越えるならコミットする。
+- 作業を実行または証明する最小のスクリプトを作る。フレームワークは作らない。

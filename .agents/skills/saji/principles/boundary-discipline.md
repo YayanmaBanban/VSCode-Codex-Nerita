@@ -1,6 +1,5 @@
+# システム境界で検証する（Boundary Discipline）
 
-# Boundary Discipline
+システムの境界をデータが通過する箇所（CLI引数、設定ファイル、外部API、ネットワークなど）で値を検証し、型を絞り、エラーを処理する。内部では型を信用し、再検証や重複したnullチェックをしない。生データは境界でドメインの型へ解析し、通信形式やフレームワーク固有の型を公開インターフェースへ漏らさない。業務ロジックはフレームワークへの依存がない純粋関数へ置き、その呼び出し側は薄く保つ。
 
-Validate, narrow types, and handle errors where data crosses a system boundary (CLI args, config files, external APIs, network). Inside, trust the types: no re-validation and no redundant nil checks. Parse raw data into domain types at the boundary, and keep transport and framework types out of the public surface. Business logic lives in pure functions with no framework dependencies. The shell that calls them is thin.
-
-Two tests. Is this data crossing a boundary right now? If not, the validation is redundant. Can this be a pure function the shell just calls? If yes, extract it.
+2つの確認：今まさにこのデータが境界を越えるか。そうでなければ、その検証は重複している。呼び出し側が単に呼び出す純粋関数にできるか。可能なら切り出す。

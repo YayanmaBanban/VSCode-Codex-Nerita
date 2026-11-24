@@ -1,6 +1,5 @@
+# 共有状態は直列化する前に分離する（Separate Before Serializing Shared State）
 
-# Separate Before Serializing Shared State
+複数の主体が同じファイル、ブランチ、キー、オブジェクトへ書き込み得る場合、最初に本当に一つの共有オブジェクトが必要なのか、独立した事実を公開しているだけなのかを問う。既定では各主体に独立したファイル・キー・ブランチ・状態ディレクトリを割り当て、状態を読む場所だけで統合する。2人のワーカーが一つの`state.json`に別々のフィールドを書いていても、それは共有状態の変更である。
 
-When concurrent actors might write the same file, branch, key, or object, first ask whether they need one shared object or are publishing independent facts. Default to giving each actor its own file, key, branch, or state directory, and merge only where the state is read. Two workers writing their own field into one `state.json` is still shared mutation.
-
-Only when one shared write target is a real invariant, serialize access structurally (a lockfile, a single writer, sequential phases, compare-and-swap). Instructions are not concurrency control, and "we need a lock" is a smell to check first.
+一つの書き込み先を共有することが本当の不変条件である場合だけ、ロックファイル、単一書き込み担当、逐次フェーズ、compare-and-swapなどでアクセスを構造的に直列化する。指示文は並行性の制御にならない。「ロックが必要だ」という発想が出たら、最初に前提を疑う。
