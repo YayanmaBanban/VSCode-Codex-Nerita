@@ -1,7 +1,5 @@
 # Playbookの選択
 
-出典：pstack `poteto-mode`のPlaybooksセクション、コミット`005d8f6e8ec057b738adcd08a08b30db0478402d`。
-
 タスクに適したPlaybookを選び、`../playbooks/<title>.md`を開く。タイトルは小文字のケバブケースを使う。Playbookの工程を先にToDoツールへ転記する。広範囲の作業、複数領域にまたがる作業、無人の長時間作業、または一致するPlaybookがないタスクは**figure-it-out** Skillへ振り分ける。
 
 対象Playbook（対応するファイル名を保持する）：
@@ -33,4 +31,4 @@
 
 ## ToDoへの展開
 
-複数工程のタスクでは、**最初のToDoを`references/principles.md`の全一覧の確認**とする。次に、選択したPlaybookの**全工程を個別のToDo**として、タスク固有の項目より先に転記する。番号付きの工程と入れ子の確認項目（FeatureのThroughput Checkpointにある4項目など）を維持する。Pi/Codexで実行できない工程があってもToDoには残し、その障害を報告する。続行可能かどうかは権限と互換性の規則に従って判断する。
+複数工程のタスクでは、**最初のToDoを`principles.md`の全一覧の確認**とする。次に、選択したPlaybookの**全工程を個別のToDo**として、タスク固有の項目より先に転記する。番号付きの工程と入れ子の確認項目（FeatureのThroughput Checkpointにある4項目など）を維持する。実行手段のない工程もToDoから消さない。存在しないコマンドを仮に実行したことにせず、その工程で止めて必要な手段を具体的に報告する。

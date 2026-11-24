@@ -1,6 +1,6 @@
 # Principleの適用条件
 
-適用するPrincipleについては、`../principles/<name>.md`にある本文を最後まで読む。以下の各項目は、pstack原文の**適用条件と判断基準**に対応する。ファイル名は原則としてPrincipleの英語名をケバブケースにしたものを使う。ただし**Sequence Work into Verifiable Units**は`sequence-verifiable-units.md`を使用する。
+適用するPrincipleについては、`../principles/<name>.md`にある本文を最後まで読む。以下の各項目は適用条件と判断基準を定義する。ファイル名は原則としてPrincipleの英語名をケバブケースにしたものを使う。ただし**Sequence Work into Verifiable Units**は`sequence-verifiable-units.md`を使用する。
 
 ## 基本原則（Core）
 
@@ -35,7 +35,7 @@
 ## 委譲（Delegation）
 
 - **Guard the Context Window（文脈の保護）。** 大きな出力、長いファイル、繰り返しの読み込み、並列化の計画などでコンテキストが埋まりそうなとき。大量の情報はサブエージェントへ委譲し、親には生データではなく要約を残す。
-- **Never Block on the Human（人間を待たずに進める）。** 元に戻せる作業で「Xをしてよいか？」と尋ねたくなったとき。まず進めて結果を示し、人間が後から方向を修正できるようにする。書き込みの権限は`references/autonomy.md`を優先する。
+- **Never Block on the Human（人間を待たずに進める）。** 元に戻せる作業で「Xをしてよいか？」と尋ねたくなったとき。まず進めて結果を示し、人間が後から方向を修正できるようにする。コミット・Push・PR作成・マージなど未承認の操作は行わない。
 
 ## 継続改善（Meta）
 
