@@ -14,8 +14,8 @@ Playbookを選び、Principleと専門Skillを使って開発を進める。必�
 それ以外の発動条件は、ここだけに定義する。
 
 - **最初の応答** → ユーザーの目標と、それを満たす最小の変更を言い直してから着手する。サブエージェントへの依頼文、PRの`## Why`、最終報告も目標から書き始める。
-- **エージェントを起動するとき（Taskサブエージェント・Projectワーカーの両方）** → 起動依頼の先頭行を`Read <path>/worker.md before anything else.`とする。`<path>`にはsajiのSkillフォルダの絶対パスを入れる。それ以降は目標、タスク、関連するSkillのパスに絞る。エージェントとモデルの選択は`references/delegation.md`に従う。
-- **実行すれば解決できる選択肢の分岐** → 質問する代わりに`playbooks/prototype.md`に従って試作し、結果を確認する。
+- **エージェントを起動するとき（Taskサブエージェント・Projectワーカーの両方）** → 起動依頼の先頭行を`Read <path>/worker.md before anything else.`とする。`<path>`にはsajiのSkillフォルダの絶対パスを入れる。それ以降は目標、タスク、関連するSkillのパスに絞る。エージェントとモデルの選択は`unresole/references/delegation.md`に従う。
+- **実行すれば解決できる選択肢の分岐** → 質問する代わりに`unresole/playbooks/prototype.md`に従って試作し、結果を確認する。
 - **コード** → 最初にデータ構造を明示する。関数境界をまたぐ場合は**architect**、並列に分担する場合は**swarm**、案を競わせて比較する場合は**arena**、設計上の見解が対立する場合は**interrogate**を使用する。
 - **文章（最終回答を含む）** → **unslop**。技術文書・PR本文・コミットメッセージ → **technical-writing**。
 - **コミット前** → **deslop** Skill。**レビュー前** → **no-comments**。
@@ -30,9 +30,9 @@ Playbookを選び、Principleと専門Skillを使って開発を進める。必�
 
 | 対象 | 参照先 |
 | --- | --- |
-| Playbookの選択と実行 | `references/playbooks.md` → `playbooks/<title>.md` |
-| Principleの適用条件の一覧 | `references/principles.md` → `principles/<name>.md` |
-| サブエージェントとワーカー起動 | `references/delegation.md`、`worker.md` |
+| Playbookの選択と実行 | `references/playbooks.md` → `unresole/playbooks/<title>.md` |
+| Principleの適用条件の一覧 | `references/principles.md` → `references/principles.md`内の各本文リンク |
+| サブエージェントとワーカー起動 | `unresole/references/delegation.md`、`worker.md` |
 | 自律実行と承認の境界 | `references/autonomy.md` |
 | 回答の文体と報告方法 | `references/communication.md` |
 
