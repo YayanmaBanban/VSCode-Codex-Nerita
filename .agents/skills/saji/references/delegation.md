@@ -2,7 +2,7 @@
 
 **Parent ownership.** The chat receiving `saji` executes the Playbook itself, owns the ToDo and reviews every delegate. A delegated worker must read `worker.md` before working.
 
-**Named-agent routing.** When a fixed-name agent that matches the task exists in the host (for example `saji-worker`), use it. Otherwise use another available agent with the same task scope; if no agent interface exists, the parent handles the step and retains independent review where the Playbook requires it. Never invent an agent, tool argument or model slug.
+**Named-agent routing.** When a fixed-name agent defined by the current host matches the task, use it. Otherwise use another available agent with the same task scope; if no agent interface exists, the parent handles the step and retains independent review where the Playbook requires it. Never invent an agent, tool argument or model slug.
 
 **Model selection.** Use the host-supported model configuration or inherit the parent model. Do not embed a particular provider, model version, reasoning level or background-execution flag. Use multiple vendors for a second opinion only where available. Missing models are not an excuse to skip required evidence.
 

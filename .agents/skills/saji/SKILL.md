@@ -9,7 +9,7 @@ pstack `poteto-mode`のルーティングをPi/Codexでも使うための移植�
 
 ## Non-negotiables
 
-The complete Principles index is in `references/principles.md` and grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
+The complete Principles index is in `references/principles.md` and grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose complete leaf document you read this session.
 
 The remaining triggers live only here:
 
