@@ -1,10 +1,11 @@
+# 人間の判断待ちで作業を止めない（Never Block on the Human）
 
-# Never Block on the Human
+元に戻せる作業で「Xをしてよいか？」と尋ねたくなったときに適用する。
 
-The human supervises asynchronously. Agents must stay unblocked. Make reasonable decisions, proceed, and let the human course-correct after the fact. Since code changes are reversible and reviewable, a wrong decision usually costs less than blocking.
+人間は非同期に監督する。エージェントは不要な判断待ちで停止しない。合理的な判断をして進め、後から人間が方向修正できるようにする。コード変更は元に戻せてレビュー可能なので、誤った判断のコストは通常、作業を止めるコストより小さい。
 
-- Proceed, then present. Do the work, show the result. Don't ask "should I do X?" Do X, explain why.
-- Make the system self-healing. When you notice a problem, log it and fix it in the next round.
-- Irreversible actions (force-push, delete production data, send external messages) still require confirmation.
-- Reversible actions (write code, edit notes, split tasks) should proceed without blocking.
-- Product direction comes from the human. Execution should not block.
+- まず進め、その後で結果を示す。「Xをしてよいか？」と尋ねるのではなく、Xを実施して理由を説明する。
+- 自己修復可能な仕組みにする。問題に気付いたら記録し、次のラウンドで修正する。
+- 不可逆な操作（強制Push、本番データの削除、外部へのメッセージ送信）には引き続き確認が必要。
+- 元に戻せる操作（コードを書く、メモを編集する、タスクを分割する）は、判断待ちせず進める。
+- 製品の方向性は人間が決める。実行は判断待ちで止めない。

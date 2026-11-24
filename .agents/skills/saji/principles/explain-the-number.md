@@ -1,9 +1,8 @@
+# 計測値の意味を説明する（Explain the Number）
 
-# Explain the Number
+- **実行前に判断を書く。** どの結果なら判断を変更するかと、ノイズの下限を明示する。実行ごとのばらつきが効果より大きければ停止する。
+- **「なぜ2倍にならないのか？」を問う。** 実行中に得たプロファイルやカウンターから、結果を制約している資源・コード経路を特定する。ソースを読んだだけの推測は制約要因の根拠にならない。
+- **数値が別の何を測っている可能性があるか列挙**する（エラー、省略された処理やキャッシュされた処理、実行されなかったコード、未調整の一方の条件、ノイズ、影響が小さすぎる部分など）。各可能性を証拠で否定する。
+- **計測値とともに、実行回数、ばらつき、制約要因を残す。**
 
-- **Write the decision before you run.** Name the result that would change it, and the noise floor. Stop when the run-to-run spread is larger than the effect.
-- **Ask "why not double?"** Name the resource or code path that bounds the result, from a profile or counters taken during a run. A guess from reading the code is not a limiter.
-- **List what else the number could be measuring** (errors, skipped or cached work, code that never ran, an untuned side, noise, a piece too small to matter) and rule out each one with evidence.
-- **Keep the run count, the spread, and the limiter with the number.**
-
-For a performance number, run the [benchmark-checklist](../benchmark-checklist/SKILL.md) skill. For an eval result, ask whether every run did the task, whether the gap holds across trials and models, and whether the scenario matters.
+性能の数値には**benchmark-checklist** Skill（原文：`../benchmark-checklist/SKILL.md`）を実行する。評価結果なら、すべての実行が本来のタスクを実施したか、差が複数回の試行や複数モデルでも成り立つか、そのシナリオに意味があるかを確かめる。

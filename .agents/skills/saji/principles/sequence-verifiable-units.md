@@ -1,8 +1,7 @@
+# 検証可能な単位に順序付ける（Sequence Work into Verifiable Units）
 
-# Sequence work into verifiable units
+各単位の終わりに確認できる状態が残るよう、小さな順序付き作業に分ける。現在の単位が正常になるまで次へ進まない。
 
-Order work as small units that each end in a state you can check, and do not advance until the current one is green.
+一括修正、移行、類似した編集の連続では、各単位を「正常と分かっている状態 → 一つの変更 → 検査の実行 → 次へ進む」という区切りとする。ツールが編集を実行する場合も、単位ごとのチェックを行う。
 
-In a sweep, migration, or run of similar edits, each unit is a bracket: known-good state, one change, run the check, proceed. Run the per-unit check even when a tool does the edits.
-
-Deliver in the order that proves the work: the failing test first, then the fix. The subtraction before the reshape. The baseline before the treatment. Each commit lands on its own.
+作業を証明できる順序で提供する。失敗するテストを先に、その後に修正を置く。構造変更の前に削除を置く。処置の前にベースラインを置く。各コミットは独立した単位として積む。

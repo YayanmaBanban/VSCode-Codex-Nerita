@@ -1,11 +1,10 @@
+# 実装ではなく振る舞いをテストする（Test Behavior, Not Implementation）
 
-# Test Behavior, Not Implementation
+テストは、コードの利用者が公開インターフェースを通じて観測できるものについての主張である。戻り値、エラー、後から読み直せる状態、外部システムへの影響などを確認する。非公開の補助関数、内部の呼び出し順、途中のデータは実装詳細である。
 
-A test is a claim about what users of the code can observe through its interface: return values, errors, state they can read back, and effects on outside systems. Private helpers, internal call order, and intermediate data are implementation.
+各テストを、仮想的な2つの編集に照らして評価する。
 
-Judge each test against two imagined edits:
+- **振る舞いを壊す。** 誤った値を返す、外部への影響を一回省略・二重実行するなど。この状態でもテストが通るなら何も証明していない。主な原因は緩いアサーション、期待値をテスト対象コードで計算すること、テスト自身が組み立てたデータを確認すること。
+- **内部実装だけを変える。** 観測できる結果をすべて維持しているのにテストが失敗するなら、実装に過度に結び付いている。
 
-- **Break the behavior** (a wrong value, a skipped or doubled effect). If the test still passes, it proves nothing. The usual causes are a loose assertion, an expected value computed by the code under test, and an assertion on data the test built itself.
-- **Change the internals** and keep every observable result. If the test fails, it is pinned to the implementation.
-
-Keep a test that catches the first edit and survives the second. Rewrite or delete the rest. Drive the code through its public interface with a concrete input, and derive the expected value from the requirement. What an external service receives is behavior. A call to an internal helper is not. Pair "this never happens" with a case where it does happen. Assert the error type that callers branch on, not the message.
+1つ目の変更を検出し、2つ目の変更では通り続けるテストを残す。それ以外は書き直すか削除する。具体的な入力で公開インターフェースからコードを実行し、期待値を要件から導く。外部サービスが受け取る内容は振る舞いだが、内部の補助関数呼び出しは振る舞いではない。「これは絶対に起きない」を確認する場合は、実際に起きるケースと対にする。エラーメッセージではなく、呼び出し元が分岐に使うエラーの型を検証する。

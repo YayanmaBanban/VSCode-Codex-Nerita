@@ -1,6 +1,5 @@
+# 実物で動作を証明する（Prove It Works）
 
-# Prove It Works
+すべての成果を、実物に直接触れて確認する。機能を動かし、実際の値を読み、差分を確認する。ファイルの更新日時、自己申告、キャッシュされた出力、「コンパイルできた」といった代用の指標は証拠にならない。チェックが失敗した場合は、システムを疑う前に観測方法を疑う。
 
-Verify every output by checking the real thing directly: run the feature, read the actual value, inspect the diff. Proxies (file mtimes, self-reports, cached output, "it compiles") do not count. When a check fails, suspect the observation method before the system.
-
-Script the check when you can. A deterministic script that reruns the comparison beats a one-time look. Keep its output where the human can see it, and commit it only when the trail must be auditable later.
+可能なら検査をスクリプト化する。比較を再実行できる決定的なスクリプトは、一度だけの目視確認より優れている。出力は人間が確認できる場所に置き、後から監査可能な記録が必要な場合に限りコミットする。

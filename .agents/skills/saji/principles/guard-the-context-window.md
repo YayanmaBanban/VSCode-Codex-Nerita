@@ -1,7 +1,8 @@
+# コンテキストウィンドウを守る（Guard the Context Window）
 
-# Guard the Context Window
+大量の出力、長いファイル、繰り返しの読み込み、並列分担の計画などでコンテキストが埋まりそうになったときに適用する。大量の情報はサブエージェントへ渡し、親のスレッドには生データではなく要約を残す。
 
-**Why:** Context overflow degrades reasoning quality, creates compression artifacts, and halts progress.
+**理由：** コンテキストの溢れは推論の品質を落とし、圧縮による情報の欠落や変質を招き、進行を停止させる。
 
-**Pattern:**
-- **Size phases and cap scope.** Limit files per phase, set turn budgets, account for mechanism costs.
+**方法：**
+- **フェーズの規模と作業範囲を制限する。** 各フェーズで扱うファイル数を制限し、ターン数の予算を設け、手法にかかるコストを考慮する。

@@ -1,6 +1,7 @@
+# 教訓を構造へ組み込む（Encode Lessons in Structure）
 
-# Encode Lessons in Structure
+同じ指示を二度書いている、または同じ指摘を繰り返していることに気付いたら、文章を増やす代わりにLint、メタデータのフラグ、実行時チェック、スクリプトなどで規則を実装する。
 
-If the lesson needs judgment and cannot be encoded, make the instruction more prominent and add an example of the failure mode.
+教訓に人間の判断が必要で機械化できない場合は、指示をより目立つ場所に置き、失敗例を追加する。
 
-**Corollary:** If the fix is structural, only use the structural fix. The instruction is the symptom.
+**帰結：** 修正が構造的なものであるなら、構造の修正だけを採用する。文章による指示は問題の症状である。
