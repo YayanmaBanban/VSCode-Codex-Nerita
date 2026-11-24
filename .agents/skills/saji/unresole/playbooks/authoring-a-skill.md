@@ -1,8 +1,10 @@
+> **未解決のため実行できません。** このPlaybookにはユーザー判断が必要な事項があります。実行を開始せず、未解決のため実行できないことをユーザーに伝えて停止してください。以下は変更せず保持した原文の日本語訳です。
+
 ### Skillの作成・変更（Authoring a skill）
 
 **Skillの文体に責任を持つ。**
 
-1. 実行環境に**create-skill** Skillが存在するなら使用する。存在しなければ、Agent Skills形式に従って`SKILL.md`のfrontmatterと本文を作成し、参照先を用意する。続く工程2・3の検証は同じように実行する。
+1. **create-skill** Skillを使う（Cursor組み込みのSKILL.md作成用Skill）。
 2. Skillを検証する。frontmatterに`name`と`description`があり、参照ファイルが存在し、Skill間リンクが解決できること。
 3. 構造的な内容ならテストケースを用意する。主観的な内容なら省略する。
 4. **Opening a PR**を実行する。
