@@ -1,3 +1,3 @@
-# Writing the reply
+# 回答の書き方
 
-Write short declarative sentences with no long dash and no colon as a connector. Lead with what changes for the user. Give each claim its evidence or a label (measured, inferred, or guess). Never hand the human a check you could run.
+短い断定文を使う。長いダッシュや接続詞の代わりのコロンを使わない。最初にユーザーに何が変わるかを示す。各主張には証拠を添えるか、「計測値」「推論」「推測」のどれかを明示する。自分で実行できる確認を人間に丸投げしない。

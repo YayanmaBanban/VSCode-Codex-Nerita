@@ -1,41 +1,40 @@
 ---
 name: saji
-description: pstackベースの開発統括Skill。作業に適したPlaybookを選び、Principleと専門Skillを適用しながら調査・設計・実装・検証を進める。
+description: pstackを基にした開発統括Skill。タスクに合うPlaybookを選び、Principleと専門Skillを適用して調査・設計・実装・検証を進める。
 ---
 
 # saji
 
-pstack `poteto-mode`のルーティングをPi/Codexでも使うための移植。原文との対応と変更点は `UPSTREAM.md` を参照する。作業開始時に `references/compatibility.md` を読み、実行環境と利用権限を確認する。
+pstackの`poteto-mode`をPi/Codexで利用するために移植したSkill。原文との対応と変更点は`UPSTREAM.md`を参照する。作業開始時に`references/compatibility.md`を読み、実行環境と操作権限を確認する。
 
-## Non-negotiables
+## 絶対条件（Non-negotiables）
 
-The complete Principles index is in `references/principles.md` and grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose complete leaf document you read this session.
+すべての適用条件の根拠となるPrinciple一覧は`references/principles.md`にある。最終報告では、判断に影響したPrincipleの名称と、そのPrincipleによって変更した具体的な選択を示す。このセッションで詳細本文を読んだPrincipleだけを挙げる。
 
-The remaining triggers live only here:
+それ以外の発動条件は、ここだけに定義する。
 
-- First message → restate the user's goal and the smallest change that meets it, then proceed. Open each subagent brief, PR `## Why`, and final report with the goal.
-- Starting any agent, whether a Task subagent or a Project worker → the first line of its kickoff is `Read <path>/worker.md before anything else.`, with `<path>` the absolute path of the `saji` skill folder. Keep the remainder to the goal, the task and relevant skill path. Agent selection and model availability follow `references/delegation.md`.
-- A fork you could settle by running something → prototype it per `playbooks/prototype.md` instead of asking.
-- Code → name the data shape first. Across a function boundary → **architect**. Fan-out → **swarm**. Bakeoff → **arena**. Contested design → **interrogate**.
-- Prose, your reply included → **unslop**. Docs, PR descriptions, commit messages → **technical-writing**.
-- Before commit → `/deslop` from the `cursor-team-kit` plugin. Before review → **no-comments**.
-- Shipping UI / IDE / CLI → `control-ui` or `control-cli` from `cursor-team-kit`.
-- A number you measured → **benchmark-checklist**.
-- PR status → the **Babysit** playbook, not Cursor's built-in babysit skill. Landing a green stack → the **Shipping** playbook.
-- Bot review comments → judge each on its merits.
-- Long or unattended work → **show-me-your-work**.
+- **最初の応答** → ユーザーの目標と、それを満たす最小の変更を言い直してから着手する。サブエージェントへの依頼文、PRの`## Why`、最終報告も目標から書き始める。
+- **エージェントを起動するとき（Taskサブエージェント・Projectワーカーの両方）** → 起動依頼の先頭行を`Read <path>/worker.md before anything else.`とする。`<path>`にはsajiのSkillフォルダの絶対パスを入れる。それ以降は目標、タスク、関連するSkillのパスに絞る。エージェントとモデルの選択は`references/delegation.md`に従う。
+- **実行すれば解決できる選択肢の分岐** → 質問する代わりに`playbooks/prototype.md`に従って試作し、結果を確認する。
+- **コード** → 最初にデータ構造を明示する。関数境界をまたぐ場合は**architect**、並列に分担する場合は**swarm**、案を競わせて比較する場合は**arena**、設計上の見解が対立する場合は**interrogate**を使用する。
+- **文章（最終回答を含む）** → **unslop**。技術文書・PR本文・コミットメッセージ → **technical-writing**。
+- **コミット前** → `cursor-team-kit`の`/deslop`。**レビュー前** → **no-comments**。
+- **UI・IDE・CLIを出荷するとき** → `cursor-team-kit`の`control-ui`または`control-cli`。
+- **計測した数値** → **benchmark-checklist**。
+- **PRの状況確認** → Cursor組み込みのbabysit Skillではなく、**Babysit** Playbook。検証済みのPR群を統合する場合 → **Shipping** Playbook。
+- **Botによるレビュー指摘** → 指摘ごとに妥当性を判断する。
+- **長時間または無人での作業** → **show-me-your-work**。
+- **複数工程の作業** → 最初のToDoでPrincipleの全一覧を確認する。該当するPlaybookを選択し、**すべての番号付き工程を元の順序と具体的な内容のままToDoへ展開した後**、タスク固有のToDoを追加する。Playbookを「調査・実装・検証」などの大まかな工程へ圧縮しない。この規則はpstack Guideと原文のPlaybooksセクションに基づく。
 
-- Multi-step work → For multi-step tasks, start the ToDo by checking the complete Principles index. Match the Playbook, copy every numbered step into the ToDo in its original order and detail, and only then add task-specific items. Do not collapse the Playbook into generic phases. This routing requirement comes from the pstack Guide and the upstream Playbooks section.
+## 参照先（Routing）
 
-## Routing
-
-| Scope | Reference |
+| 対象 | 参照先 |
 | --- | --- |
-| Choose and execute a Playbook | `references/playbooks.md` → `playbooks/<title>.md` |
-| Apply Principles (full trigger index) | `references/principles.md` → `principles/<name>.md` |
-| Subagents and worker kickoff | `references/delegation.md`, `worker.md` |
-| Autonomy and approval boundaries | `references/autonomy.md` |
-| Response style and reporting | `references/communication.md` |
-| Tool and host compatibility | `references/compatibility.md` |
+| Playbookの選択と実行 | `references/playbooks.md` → `playbooks/<title>.md` |
+| Principleの適用条件の一覧 | `references/principles.md` → `principles/<name>.md` |
+| サブエージェントとワーカー起動 | `references/delegation.md`、`worker.md` |
+| 自律実行と承認の境界 | `references/autonomy.md` |
+| 回答の文体と報告方法 | `references/communication.md` |
+| ツールと実行環境の互換性 | `references/compatibility.md` |
 
-The routed document owns its detailed rules. Read it before taking the action. In a conflict involving tools or permissions, the explicit compatibility and authorization rules govern; do not silently omit any Playbook step.
+詳細な規則は参照先が管理する。該当する操作の前に読む。ツールの仕様や権限が衝突する場合は、明示された互換性と承認の規則を優先する。Playbookの工程を黙って省略しない。

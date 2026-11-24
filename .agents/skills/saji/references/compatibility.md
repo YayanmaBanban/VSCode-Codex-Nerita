@@ -1,28 +1,28 @@
-# Environment compatibility — Pi / Codex
+# 実行環境の互換性 — Pi / Codex
 
-These rules translate Cursor-specific instructions from the pinned pstack source; they do not delete Playbook phases or alter their intended checks.
+この規則は、固定したpstack原文にあるCursor固有の指示をPi/Codexへ読み替えるためのもの。Playbookの工程を削除したり、求められる検証内容を変更したりするものではない。
 
-## Resolution order
+## 優先順序
 
-1. Explicit user approval and current repository policies determine what may be written.
-2. `references/autonomy.md` and `worker.md` set the permission boundary. In particular, “commit liberally”, “Opening a PR” or “Shipping” in upstream Playbooks does **not** grant permission to commit, push or merge.
-3. Follow every selected Playbook step in order. Map only execution details that the current host does not support. Do not claim unavailable tools, agents or checks ran.
-4. Keep notes of concrete substitutions and blocked steps in the task report; do not introduce new blanket rules into the original Playbook.
+1. 実行できる変更の範囲は、ユーザーの明示的な許可と、現在のリポジトリ規約で決める。
+2. `references/autonomy.md`と`worker.md`で権限境界を定義する。原文Playbookの「積極的にコミットする」「Opening a PR」「Shipping」という指示だけでは、コミット・Push・マージの権限を与えない。
+3. 選択したPlaybookの工程を元の順番どおりに実行する。現在の実行環境に存在しない実行手段だけを置き換える。利用できないツールやエージェント、実行していないチェックを実行済みだと主張しない。
+4. 置き換えた実行方法や実行できなかった工程は、作業報告に具体的に残す。元のPlaybookへ汎用的な追加規則を勝手に持ち込まない。
 
-## Host mappings
+## 実行環境ごとの対応
 
-| Upstream mechanism | Pi / Codex handling |
+| pstack原文の仕組み | Pi / Codexでの扱い |
 | --- | --- |
-| Cursor `Task`, `subagent_type`, Project workers | Use an available fixed-name agent for the role when defined; otherwise an available delegate, or the parent with the Playbook's required review separation |
-| Fixed Opus / Gemini / Fable model slug and `-fast` / `xhigh` | Ignore fixed model identifiers; choose host-supported configuration, otherwise inherit parent; do not create a roles JSON |
-| `run_in_background`, `readonly`, `environment: cloud`, `resume` | Map to available host capabilities. Never pass an unsupported field; if isolation is needed, use a real worktree or mark the restriction |
-| Cursor ToDo tool | Use the host's task list. If unavailable, maintain a visible Markdown ToDo with the complete Playbook steps and progress |
-| Built-in Cursor `create-skill`, Cursor Team Kit `/deslop`, `control-ui`, `control-cli` | Use the actual installed equivalent only when it exists; otherwise mark the step unavailable and preserve the verification requirement |
-| Named specialist Skills (`how`, `architect`, `arena`, `swarm`, `interrogate`, etc.) | Read their installed `SKILL.md` if available. If not installed, disclose the missing dependency; do not fabricate invocation or claim it completed |
-| Git, PR, automations, Bugbot, external services | Only run supported operations within explicit user authorization. Absent or Cursor-only operations must be reported as unavailable |
+| Cursorの`Task`、`subagent_type`、Projectワーカー | 対応する固定名エージェントが定義されていれば使う。なければ利用可能な委譲先を使うか、Playbookで必要な独立レビューを維持したうえで親が実施する |
+| 固定のOpus / Gemini / Fableモデル識別子と`-fast` / `xhigh` | 固定識別子は使用せず、実行環境で利用できる設定を選ぶ。指定できなければ親のモデルを継承する。役割設定用JSONは作らない |
+| `run_in_background`、`readonly`、`environment: cloud`、`resume` | 実際に利用できる機能へ対応付ける。未対応のフィールドをツールへ渡さない。隔離が必要なら実際のworktreeを使用するか、制約を報告する |
+| CursorのToDoツール | 実行環境のタスク管理機能を使う。なければPlaybookの全工程と進捗をMarkdownのToDoとして明示する |
+| Cursor組み込み`create-skill`、Cursor Team Kitの`/deslop`、`control-ui`、`control-cli` | 導入済みの同等機能が実際に存在する場合だけ使用する。なければ未対応を明示し、必要な検証条件は残す |
+| 専門Skill（`how`、`architect`、`arena`、`swarm`、`interrogate`など） | 導入済みの`SKILL.md`があれば読む。なければ依存先が不足していると伝え、呼び出しや完了を捏造しない |
+| Git、PR、Automations、Bugbot、外部サービス | 対応している操作であっても、ユーザーが明示的に許可した範囲でのみ実行する。利用できない機能やCursor専用機能は未対応として報告する |
 
-A mandatory correctness or UI verification step cannot be treated as passed because the original tool is missing. Verify on the same observable surface with a supported equivalent or report the feature as unverified.
+必須の動作検証やUI検証は、元のツールがないという理由だけでは合格にできない。同じ観測対象を検証できる代替手段を用いるか、未検証として報告する。
 
-## Source integrity
+## 原文の保持
 
-All `playbooks/*.md` keep the upstream stages, headings and substeps. Source-specific model slugs may be replaced with `<role-model>`; this is a model-selection adapter, not permission to omit a phase. The original source is pinned in `UPSTREAM.md`.
+`playbooks/*.md`は原文の工程・見出し・下位項目をすべて維持する。原文のモデル識別子は`<role-model>`に置換してよい。これはモデル選択の置き換えであって、工程を省略する許可ではない。固定した原文は`UPSTREAM.md`で示す。

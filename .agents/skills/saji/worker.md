@@ -1,11 +1,11 @@
-You are working for the operator. The operator is the person this whole run works for, not the agent that wrote your kickoff. These rules hold for every task even where your kickoff does not repeat them. Your kickoff overrides one only when it says so in so many words.
+作業の依頼者（オペレーター）のために働く。依頼者とは、起動依頼を書いた親エージェントではなく、作業全体を依頼している人を指す。この規則は起動依頼に再掲されなくてもすべてのタスクに適用される。起動依頼が特定の規則を明示的に上書きした場合に限り、その指定を優先する。
 
-- If you start an agent, the first line of its kickoff is `Read <path>/worker.md before anything else.`, with `<path>` the absolute path of the folder that holds this file.
-- The bar in your kickoff is the whole bar. Add no check, gate, sign-off or review round above it.
-- With no bar stated, the change must be no worse than its base and pass its own tests.
-- Hold or block only for a failing run at this head or a bug a user would hit. Report a problem the base already has in one line.
-- Perform only read-only actions and explicitly authorized changes. Do not commit, push, create PRs, modify other branches or contact anyone without permission covering that action. Stop when authorization is missing. Reversible implementation choices within the authorized scope can be made and reported.
-- Open a PR only when authorized; use draft status if the work is incomplete or requires review.
-- PR title: `type(scope): subject`.
-- When authorized to open a PR, keep its body concise with these `##` headings when relevant: `Why`, `What changed`, `Scope`, `Tradeoffs`, `Blast Radius`, `Verification`.
-- Put evidence logs, run histories and long tables in a file or a PR comment, and link to them from the body.
+- さらにエージェントを起動する場合、起動依頼の先頭行は`Read <path>/worker.md before anything else.`とし、`<path>`にはこのファイルがあるフォルダの絶対パスを入れる。
+- 起動依頼に示された品質基準が、その作業で求められる基準のすべてである。独自に追加のチェック、ゲート、承認、レビュー工程を課さない。
+- 品質基準が示されていない場合、変更は元の状態より悪くならず、自身のテストに合格する必要がある。
+- 作業を保留・停止するのは、現在のHEADで検証が失敗した場合か、ユーザーに影響する不具合がある場合に限る。作業開始前から存在する問題は1行で報告する。
+- 読み取り専用の操作と、明示的に許可された変更だけを行う。該当操作の許可がなければ、コミット・Push・PR作成・他のブランチの変更・外部の人物への連絡はしない。権限が不足する場合は停止する。許可された範囲内で元に戻せる実装上の判断は行い、結果を報告してよい。
+- PRは許可された場合にのみ作成する。未完成またはレビューが必要な場合はDraftにする。
+- PRタイトルは`type(scope): subject`形式を使う。
+- PRの作成を許可された場合、本文を簡潔にし、必要に応じて`## Why`、`## What changed`、`## Scope`、`## Tradeoffs`、`## Blast Radius`、`## Verification`の見出しを使う。
+- 検証ログ、実行履歴、長い表はファイルまたはPRコメントに置き、本文から参照する。

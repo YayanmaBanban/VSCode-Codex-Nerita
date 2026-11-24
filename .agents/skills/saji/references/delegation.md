@@ -1,13 +1,13 @@
-# Subagents
+# サブエージェント
 
-**Parent ownership.** The chat receiving `saji` executes the Playbook itself, owns the ToDo and reviews every delegate. A delegated worker must read `worker.md` before working.
+**親エージェントの責任。** `saji`を受け取ったチャットがPlaybookを実行し、ToDoを管理し、委譲先の成果をレビューする。ワーカーは作業前に`worker.md`を読む。
 
-**Named-agent routing.** When a fixed-name agent defined by the current host matches the task, use it. Otherwise use another available agent with the same task scope; if no agent interface exists, the parent handles the step and retains independent review where the Playbook requires it. Never invent an agent, tool argument or model slug.
+**固定名エージェントの選択。** 現在の実行環境で対象タスクに合う固定名エージェントが定義されていれば利用する。なければ同じ作業範囲を扱える別のエージェントを利用する。委譲手段がない場合は親エージェントが担当し、Playbookで求められる独立したレビューを維持する。存在しないエージェント名、ツール引数、モデル識別子を捏造しない。
 
-**Model selection.** Use the host-supported model configuration or inherit the parent model. Do not embed a particular provider, model version, reasoning level or background-execution flag. Use multiple vendors for a second opinion only where available. Missing models are not an excuse to skip required evidence.
+**モデルの選択。** 実行環境が対応するモデル設定を使うか、親エージェントのモデルを継承する。特定の提供元・モデルバージョン・推論強度・バックグラウンド実行フラグは埋め込まない。別の提供元のモデルによるセカンドオピニオンは、利用できる場合に限る。モデルが不足していることを、必要な証拠を省略する理由にしない。
 
-**Worker kickoff.** The first line is `Read <path>/worker.md before anything else.` where `<path>` is this skill folder's absolute path. Give the goal, scope, files/data shape, verification criteria, and relative source pointers. Do not embed huge file contents when the worker can read the files.
+**ワーカー起動文。** 先頭行は`Read <path>/worker.md before anything else.`とし、`<path>`はこのSkillフォルダの絶対パスとする。目標、担当範囲、対象ファイルとデータ構造、検証条件、参照するファイルのパスを伝える。ワーカー自身が読める大きなファイル内容は、依頼文へ大量に埋め込まない。
 
-You own every subagent's work. Review the diff and write your own summary. A second opinion is the same prompt on another vendor's model.
+**最終的な責任は親にある。** サブエージェントの差分を確認し、自身の言葉で結果を報告する。別の提供元のモデルによるセカンドオピニオンは、同じ依頼文を渡して得る。
 
-**Fresh subagents by default.** Give a fix round, a follow-up, a retry, or the next queue item to a fresh subagent with the original brief, every later directive, and the prior agent's report and branch. Resume an existing subagent only when the work needs state that lives in it and is costly to move: its checkout, its uncommitted changes, or a process it still runs.
+**原則、新しいサブエージェントを起動する。** 修正ラウンド、追加指示、再試行、次の待ち行列の項目には、元の依頼文、その後の全指示、前のエージェントの報告とブランチを渡して新しいエージェントを起動する。既存のエージェントを再開するのは、そのエージェントのチェックアウト、未コミットの変更、実行中のプロセスなど、移動コストの高い状態がその中にある場合だけとする。
