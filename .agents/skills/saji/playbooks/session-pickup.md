@@ -1,11 +1,11 @@
-### Session pickup
+### セッション再開（Session pickup）
 
-**You own the resume point. Read the prior trail, don't redo it.**
+**再開地点に責任を持つ。過去の記録を読み、同じ作業を繰り返さない。**
 
-1. Locate the prior trail. A local transcript under the active workspace's `agent-transcripts/` directory (the system prompt names the path. Do not glob across `~/.cursor/projects/*/`, that crosses workspace boundaries and reads private chats from unrelated projects), a cloud-agent URL, or a pushed branch. Read the metadata overview and last messages first, then scan back for the decision points. Parse a long transcript in a subagent and keep the reduced timeline in the main thread (the **principle-guard-the-context-window** skill). Pick each subagent's reasoning level for the job, per the Subagents section.
-2. Reconstruct operational state. The branch and worktree, what already landed (`git log`, `git diff` against the base), the open todos, the decisions made. The prior trail is authoritative input. Resist the bias to re-derive it.
-3. Diff done vs pending. Compare what shipped against what was planned, name the resume point, do not re-run the prior repro or redo completed work. A "let me verify from scratch" pass means you're treating the trail as untrustworthy when it's authoritative.
-4. Route the remaining work to the matching playbook and pick the verdict: continue the execution, ship a finished recommendation, ratify or override a prior conclusion, or postmortem a failed run. The pickup playbook ends here. The routed playbook owns the rest.
-5. Verify the inherited claims against the original goal on the real artifact (the **principle-prove-it-works** skill). A passing prior self-report is not the proof.
+1. 前回の記録を探す。現在のワークスペースの`agent-transcripts/`にあるローカルトランスクリプト（システムプロンプトにパスが示される）、クラウドエージェントのURL、またはPush済みブランチが対象。`~/.cursor/projects/*/`を横断検索してはならない。ワークスペース境界を越え、無関係なプロジェクトの私的なチャットを読むためである。メタデータの概要と最後のメッセージを先に読み、次に意思決定地点を遡って調べる。長いトランスクリプトはサブエージェントで解析し、要約した経緯だけを親スレッドへ残す（**principle-guard-the-context-window** Skill）。Subagentsセクションに従い、推論レベルを選ぶ。
+2. 作業状態を再構成する。ブランチとworktree、すでに反映された変更（`git log`、ベースとの差分`git diff`）、残るToDo、これまでの判断を確認する。前回の記録を権威ある入力として扱い、最初から推測し直そうとしない。
+3. 完了済みと残件を比較する。出荷済みと計画を照合し、再開地点を特定する。以前の再現手順や終わった作業を再実行しない。「最初から全部検証し直そう」という進め方は、根拠ある過去の記録を不当に信用していないことになる。
+4. 残作業を適切なPlaybookへ振り分け、進め方を決める。実行を続ける、完成した推奨案を出荷する、以前の結論を承認または変更する、失敗した実行の事後分析を行う、のいずれか。Session pickup Playbookはここで終わり、残りは振り分けたPlaybookが担当する。
+5. 引き継いだ主張を、元の目標に照らして実物で検証する（**principle-prove-it-works** Skill）。以前の自己報告が合格だっただけでは証拠にならない。
 
-**Reply:** where the prior agent stopped, what you inherited vs redid (ideally nothing redone), the resume point, and the outcome.
+**回答：** 前のエージェントの停止地点、引き継いだものとやり直したもの（理想的にはやり直しなし）、再開地点、結果を示す。

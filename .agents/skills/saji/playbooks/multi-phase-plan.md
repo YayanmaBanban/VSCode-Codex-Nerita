@@ -1,11 +1,11 @@
-### Multi-phase or multi-PR plan
+### 複数フェーズ・複数PRの計画（Multi-phase or multi-PR plan）
 
-**You own the plan, not the code. The plan is a checklist an owner runs box by box and the operator audits from the evidence.** The plan is the deliverable. Do not implement.
+**責任を持つのは計画であり、コードではない。計画は実装担当が一項目ずつ実行でき、依頼者が証拠から監査できるチェックリストである。** 成果物は計画そのもの。実装しない。
 
-1. When the change is one or two files with an obvious approach, skip the plan. Say so and stop.
-2. Settle open questions by prototype before you write, per `playbooks/prototype.md`. Ask the operator only about a product or preference call that no run can settle.
-3. Write the plan file. Open with what changes, the PR ids in landing order, and the dependency graph, which says which PRs are independent and branch from trunk, which wait for which, and the files each may touch. Then one section per PR. One PR is one change with its own evidence (the **sequence-verifiable-units** principle skill). Each section has checkboxes for what it depends on, the files it edits, the one change it builds, the result you see, and its verification.
-4. Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Each live box drives the real surface with a concrete scenario and a pass predicate. The perf box names the metric, the probe, the trunk baseline measured first, and the number that fails. A PR that changes an interaction waits for the operator's review before merge.
-5. Hand back the plan path and stop. Execution starts on the operator's explicit go.
+1. 明白な方法で1～2ファイルを変更するだけなら計画を省略し、その旨を伝えて停止する。
+2. 計画を書く前に、`playbooks/prototype.md`に従い、試作で解決できる未決事項を決着させる。試行では決められない製品・好みの判断だけを依頼者に確認する。
+3. 計画ファイルを作成する。冒頭には変更内容、マージ順のPR ID、依存関係グラフを記載する。グラフには、trunkから独立して分岐できるPR、他のPRの完了待ちとなるPR、各PRが変更してよいファイルを示す。その後、PRごとに1節を設ける。1PRは独立した検証結果を持つ一つの変更（**sequence-verifiable-units** Principle）。各節にはチェックボックスとして、依存条件、編集ファイル、実装する一つの変更、観測できる結果、検証方法を列挙する。
+4. テストだけでは検証として不十分。単体（unit）・実動作（live）・性能（perf）のすべてのチェックボックスが埋まった場合だけ、そのPRを検証済みとする。実動作の項目では具体的な操作シナリオで実物を動かし、合格条件を明示する。性能項目には指標、計測手段、最初に計測したtrunk上のベースライン、不合格とする数値を記載する。操作方法を変更するPRは、マージ前に依頼者のレビューを待つ。
+5. 計画ファイルのパスを渡して停止する。実行を開始するのは依頼者による明示的な開始許可の後とする。
 
-**Reply:** the plan path, the PR ids with their dependencies and the review-gated set, and what stays unproven.
+**回答：** 計画のパス、依存関係付きのPR ID、レビューを必要とするPR群、未実証事項を示す。
