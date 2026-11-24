@@ -1,8 +1,8 @@
-### Autopilot-stack
+### PRスタックの自動進行（Autopilot-stack）
 
-Run the Autopilot-full playbook, but do not merge.
+Autopilot-full Playbookを実行する。ただし、マージしない。
 
-1. **In place of step 5, stop at verified.** Stop when each PR is verified and green at its current head, then hand the PRs to the operator. After the handoff, nobody pushes without the operator's go. Every loop tick prompt names this file, so each tick sees the no-merge rule.
-2. **Stack a PR only when it builds on another PR.** This is the one exception to step 3. Base the PR on the other PR's branch in place of trunk, per `playbooks/opening-a-pr.md`. In place of step 2's rebase onto trunk, each PR rebases onto its parent PR's branch, and the stack root rebases onto trunk. A new head on the lower PR restacks the PRs above it, and a PR whose `git patch-id` the restack leaves unchanged keeps its verdict.
+1. **手順5の代わりに、検証完了で停止する。** 各PRの現在のheadで検証が完了し、チェックが正常になるまで進め、PR群を依頼者へ引き渡す。引き渡し後は、依頼者が許可するまで誰もPushしない。ループの各周期で使うプロンプトにはこのファイル名を含め、毎回マージ禁止規則を確認できるようにする。
+2. **別のPRを土台とするPRだけをスタックする。** これは手順3に対する唯一の例外。trunkではなく下位PRのブランチをベースとし、`playbooks/opening-a-pr.md`に従う。手順2のtrunkへのリベースに代わり、各PRは親PRのブランチへリベースし、スタックの根元だけをtrunkへリベースする。下位PRが新しいheadになった場合は、上位PRを再スタックする。再スタック後も`git patch-id`が変わらないPRは既存の判定を維持する。
 
-**Reply:** list each PR with its verdict, in place of what merged.
+**回答：** マージ済みのPRを挙げる代わりに、各PRと判定を列挙する。

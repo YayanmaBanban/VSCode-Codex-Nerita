@@ -1,13 +1,13 @@
-### Autonomous run
+### 自律実行（Autonomous run）
 
-**You own the exit condition. Define done, then drive to it without stopping.**
+**終了条件に責任を持つ。完了を定義し、そこへ向かって停止せず実行する。**
 
-1. State the exit condition as a checkable predicate before the first iteration (tests green, repro fixed, all N PRs merged, pixel-diff zero).
-2. Pick the wake mechanism using Cursor's `/loop` command (a built-in, not a pstack skill). An event to watch (CI, a merge, a ref advancing) gets a watcher subagent that wakes you on the event, with a long time-based heartbeat as fallback. No event gets a fixed-interval heartbeat sized to when the result is worth re-checking. Pick each subagent's reasoning level for the job, per the Subagents section.
-3. Each iteration makes the smallest change the evidence justifies, verifies it against the predicate, commits if it advanced, discards changes that didn't help. Belt-and-suspenders that "might help" gets reverted, not left to ride.
-   Sequence the work via the **sequence-verifiable-units** principle skill, verifying each unit before the next instead of batching checks at the end.
-4. Mid-run discoveries that support the goal are yours. Address broken skills, related bugs, flaky verifiers, review noise, tooling failures, orphaned follow-ups, and fixable drift yourself via poteto-mode. Put out-of-band fixes in their own PR. Do not park reversible work for the human or use `AskQuestion`. Surface only irreversible actions, genuine product or preference calls no experiment can settle, or a real dead end. Keep the predicate as the main drive, and return to it after each side fix.
-5. Checkpoint every iteration via the **show-me-your-work** skill, a row for what changed and whether the predicate moved.
-6. Stop when the predicate is met. A plateau is not a stop, so keep going and pivot your approach to push past it. Surface a genuine dead end rather than spinning, and never relax the predicate to declare victory.
+1. 最初の反復より前に、検証可能な述語として終了条件を定義する（テスト成功、再現手順で不具合解消、N件すべてのPRがmerged、ピクセル差分ゼロなど）。
+2. Cursor組み込みの`/loop`コマンド（pstackのSkillではない）を使って再起動の仕組みを選ぶ。CI、マージ、参照先の更新など監視すべきイベントがあれば、そのイベントで起こす監視サブエージェントを用意し、長い時間間隔のハートビートを代替手段とする。イベントがなければ、結果を再確認する価値がある時間間隔に合わせた定期ハートビートを設定する。Subagentsセクションに従って各サブエージェントの推論レベルを選ぶ。
+3. 各反復では証拠で正当化できる最小限の変更を行い、終了条件に照らして検証し、進展したらコミットし、効果がなかった変更は破棄する。「役立つかもしれない」追加の予防策は残さず、取り消す。
+   **sequence-verifiable-units** Principleに従い、検証を最後にまとめるのではなく、単位ごとに次へ進む前に検証する。
+4. 目標に関係する実行途中の発見事項も自分の責務とする。壊れたSkill、関連するバグ、不安定な検証器、レビューのノイズ、ツール障害、孤立した後続対応、修正可能な設計のずれを、poteto-modeを通じて自分で対応する。主目標から外れる修正は独立したPRにする。元に戻せる作業を人間の判断待ちで保留したり、`AskQuestion`を使ったりしない。表に出すのは不可逆な操作、実験では決められない本当の製品・好みの判断、または実際に行き詰まった場合だけ。副次的な修正を終えるたびに、主要な終了条件へ戻る。
+5. 各反復で**show-me-your-work** Skillによるチェックポイントを作る。変更内容と終了条件が進んだかを1行に記録する。
+6. 終了条件を満たしたら停止する。停滞は停止条件ではないので、手法を変えて改善を続ける。実際の行き詰まりは無意味な反復を続けずに報告し、成功宣言のために終了条件を緩めない。
 
-**Reply:** the exit condition, iterations run, what landed, what was discarded, final predicate state.
+**回答：** 終了条件、反復回数、適用した変更、破棄した変更、終了条件の最終状態を示す。
