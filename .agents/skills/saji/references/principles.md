@@ -1,44 +1,44 @@
-# Principles and routing
+# Principleの適用条件
 
-Read the corresponding leaf document in `../principles/<name>.md` in full whenever a principle applies. Each entry below retains the upstream trigger text. The filename is the principle title in kebab case, except **Sequence Work into Verifiable Units** → `sequence-verifiable-units.md`.
+適用するPrincipleについては、`../principles/<name>.md`にある本文を最後まで読む。以下の各項目は、pstack原文の**適用条件と判断基準**に対応する。ファイル名は原則としてPrincipleの英語名をケバブケースにしたものを使う。ただし**Sequence Work into Verifiable Units**は`sequence-verifiable-units.md`を使用する。
 
-**Core**
+## 基本原則（Core）
 
-- **Laziness Protocol.** Refactoring, sizing a diff, or tempted to add abstractions, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
-- **Foundational Thinking.** Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
-- **Redesign from First Principles.** Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
-- **Attack the Premise.** Two or more fixes that share one premise have failed the same gate. Write the premise down and test it directly before you write another fix that assumes it.
-- **Subtract Before You Add.** Sequencing an addition, refactor, or rewrite. Remove dead weight first, then build on the simpler base.
-- **Minimize Reader Load.** Reviewing or shaping code that's hard to trace. Count layers and hidden state, collapse one-caller wrappers, shrink mutable scope.
-- **Outcome-Oriented Execution.** Planned rewrites and migrations with explicit phase boundaries. Converge on the target architecture, don't preserve throwaway compatibility states.
-- **Experience First.** Product, UX, or feature-scope tradeoffs. Choose user delight over implementation convenience.
-- **Exhaust the Design Space.** A novel interaction or architectural decision with no precedent. Build 2-3 competing prototypes and compare before committing.
-- **Build the Lever.** Any non-trivial work. Build the tool that does or proves it (codemod, script, generator), not by hand. The tool is the artifact a reviewer reruns.
+- **Laziness Protocol（最小限の実装）。** リファクタリング、差分の大きさの判断、抽象化・層・シグナルの中継を追加したくなったとき。削除と問題を解決する最小の変更を優先する。
+- **Foundational Thinking（基礎構造から考える）。** ロジックを書く前。中心となる型とデータ構造、基盤構築と機能実装の順序、並行する主体が共有するものを検討する。
+- **Redesign from First Principles（基本前提から再設計）。** 既存の設計へ新しい要件を取り込むとき。その要件が初日から基本前提だったと考えて再設計する。
+- **Attack the Premise（前提を疑う）。** 同じ前提に基づく2回以上の修正が、同じ検証ゲートで失敗したとき。次の修正より先に前提を書き出し、直接検証する。
+- **Subtract Before You Add（追加前に削除）。** 機能追加、リファクタリング、再実装の順序を決めるとき。不要部分を先に除去し、より単純な基盤の上に構築する。
+- **Minimize Reader Load（読み手の負担削減）。** 追跡しにくいコードのレビューや設計時。層と隠れた状態を数え、一つの呼び出し元しかないラッパーを畳み、可変状態のスコープを狭くする。
+- **Outcome-Oriented Execution（最終状態を重視）。** フェーズ境界を明示した再実装や移行を計画するとき。一時的な互換実装を温存せず、目標アーキテクチャへ収束させる。
+- **Experience First（利用体験の優先）。** 製品・UX・機能範囲のトレードオフがあるとき。実装の都合より利用者の満足を優先する。
+- **Exhaust the Design Space（設計案の比較）。** 前例のない新しいUI操作やアーキテクチャ判断があるとき。競合する2～3案を試作し、採用前に比較する。
+- **Build the Lever（再実行可能な道具）。** 単純でない作業全般。手作業ではなく作業を実施・証明するツール（codemod、スクリプト、ジェネレーター）を作る。レビュー担当が再実行できる成果物を残す。
 
-**Architecture**
+## アーキテクチャ（Architecture）
 
-- **Model the Domain.** Writing stateful logic, or code that branches a lot or repeats a shape assumption across files. Encode the domain in a structure (state machine, typed model, table or registry, reducer, boundary, the right collection) instead of scattered conditionals.
-- **Boundary Discipline.** Wiring validation, error handling, or framework adapters. Guards at system boundaries, trust internal types, keep business logic pure.
-- **Type System Discipline.** Designing types or a signature in any typed language. Make illegal states unrepresentable, brand primitives, parse external data at boundaries.
-- **Make Operations Idempotent.** Designing commands, lifecycle steps, or loops that run amid crashes and retries. Converge to the same end state.
-- **Migrate Callers Then Delete Legacy APIs.** Introducing a new internal API while old callers exist. Migrate and delete in one wave.
-- **Separate Before Serializing Shared State.** Concurrent actors might write the same file, branch, key, or object. Eliminate the sharing first.
+- **Model the Domain（ドメインのモデル化）。** 状態を持つロジックを書く場合、分岐が多い場合、ファイル間でデータ形状の同じ前提を繰り返す場合。散在する条件分岐を、状態機械・型付きモデル・表・レジストリ・reducer・境界・適切なコレクションなどの構造に置き換える。
+- **Boundary Discipline（境界の規律）。** バリデーション、エラー処理、フレームワークアダプターを接続するとき。システム境界にガードを集め、内部の型を信用し、業務ロジックを純粋に保つ。
+- **Type System Discipline（型の規律）。** 型・関数シグネチャを設計する場合、静的型付き言語でコードを書く場合。不正状態を表現できない型を作り、意味の異なるプリミティブを区別し、外部データを境界で解析する。
+- **Make Operations Idempotent（操作の冪等性）。** クラッシュや再試行のある環境でコマンド、ライフサイクル工程、処理ループを設計するとき。途中まで実行された過去の状態にかかわらず、同じ最終状態へ収束させる。
+- **Migrate Callers Then Delete Legacy APIs（移行と旧API削除）。** 古い呼び出し元が存在する間に新しい内部APIを導入するとき。互換層を残さず、呼び出し元の移行と旧APIの削除を同じ作業単位で行う。
+- **Separate Before Serializing Shared State（共有状態の分離）。** 並行する主体が同じファイル、ブランチ、キー、状態オブジェクトへ書き込む可能性があるとき。まず共有をなくし、一つの共有書き込みが本当の不変条件である場合だけ構造的に直列化する。
 
-**Verification**
+## 検証（Verification）
 
-- **Prove It Works.** After a task, before declaring done. Verify against the real artifact, not a proxy or "it compiles".
-- **Fix Root Causes.** Debugging. Trace each symptom back to the first place the system went wrong and fix it there. A guard is a fix only when the state it handles is legitimate.
-- **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into small units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
-- **Test Behavior, Not Implementation.** Writing, changing, or keeping a test. Assert what the code's users can observe, so the test fails when that behavior breaks and keeps passing when only the internals change.
-- **Explain the Number.** Apply before you measure, and before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, a latency, or an eval result). Find what limits it, and rule out that it measured something other than the work you think.
+- **Prove It Works（実物で証明）。** タスク完了後、完了を宣言する前。代用指標・自己申告・「コンパイル成功」ではなく、実際の成果物を操作・確認する。
+- **Fix Root Causes（根本原因の修正）。** デバッグ時。症状を最初の誤動作まで追い、そこで修正する。ガードが修正になるのは、そのガードが扱う状態が正当な場合だけ。
+- **Sequence Work into Verifiable Units（検証可能な単位）。** 複数工程（一括修正、移行、類似編集の連続）や、コミット・PRの積み方を決めるとき。小さな単位ごとに検証可能な状態で終え、次へ進む前に確認し、順序自体が証拠になるようにする。
+- **Test Behavior, Not Implementation（振る舞いのテスト）。** テストの作成・変更・維持時。利用者が観測できる振る舞いを検証し、振る舞いが壊れたら失敗し、内部構造だけ変わったら成功し続けるようにする。
+- **Explain the Number（計測値の意味）。** 計測前、または測定した値を信用・報告・判断に使う前。改善率、回帰、処理量、遅延、評価結果などについて、制約要因を特定し、意図と異なるものを測っていないと証明する。
 
-**Delegation**
+## 委譲（Delegation）
 
-- **Guard the Context Window.** Context fills up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents, keep summaries in the main thread.
-- **Never Block on the Human.** Tempted to ask "should I do X?" on reversible work. Proceed, present the result, let the human course-correct.
+- **Guard the Context Window（文脈の保護）。** 大きな出力、長いファイル、繰り返しの読み込み、並列化の計画などでコンテキストが埋まりそうなとき。大量の情報はサブエージェントへ委譲し、親には生データではなく要約を残す。
+- **Never Block on the Human（人間を待たずに進める）。** 元に戻せる作業で「Xをしてよいか？」と尋ねたくなったとき。まず進めて結果を示し、人間が後から方向を修正できるようにする。書き込みの権限は`references/autonomy.md`を優先する。
 
-**Meta**
+## 継続改善（Meta）
 
-- **Encode Lessons in Structure.** You catch yourself writing the same instruction a second time. Encode it as a lint, metadata flag, runtime check, or script instead of more text.
+- **Encode Lessons in Structure（教訓の構造化）。** 同じ指示を再び書こうとしているとき。文章を増やす代わりにLint、メタデータ、実行時チェック、スクリプトへ規則を実装する。
 
-Principle names refer to the original pstack leaf bodies copied in `../principles/`. Read the full leaf before applying it.
+各Principleを適用する前に該当する`../principles/`の本文を必ず読み、判断に影響したPrincipleとその具体的な効果だけを報告する。
