@@ -46,6 +46,47 @@
 | [`guard-the-context-window.md`](principles/guard-the-context-window.md) | 大量の読込結果を渡すサブエージェントと、読み取り専用委譲・返答の受け渡し方法 |
 | [`never-block-on-the-human.md`](principles/never-block-on-the-human.md) | 原文の『元に戻せるコード変更は確認なく進める』と、現行のユーザー承認ルールの衝突をどう解消するか |
 
+## 専門Skill（27件）
+
+| 対象Markdown | 未解決の内容・判断が必要な事項 |
+| --- | --- |
+| [`architect/SKILL.md`](skills/architect/SKILL.md) | Arenaへの委譲と設計比較の実行手段が未決 |
+| [`arena/SKILL.md`](skills/arena/SKILL.md) | CursorのTask、候補モデル、審査担当の独立性、分離したworktree、役割別設定が未決 |
+| [`swarm/SKILL.md`](skills/swarm/SKILL.md) | Taskサブエージェント、クラウド/ローカル環境、並列起動、役割モデル、ブランチ選択が未決 |
+| [`interrogate/SKILL.md`](skills/interrogate/SKILL.md) | Arena依存、異なるレビュー用モデル、並列worktree、未コミット差分の隔離が未決 |
+| [`figure-it-out/SKILL.md`](skills/figure-it-out/SKILL.md) | 未解決の委譲・Arena・監査Skillと、長期自律実行・PRの権限が未決 |
+| [`benchmark-checklist/SKILL.md`](skills/benchmark-checklist/SKILL.md) | Unix系`uptime`・`nproc`・`pidstat`・`perf`・`strace`等の計測ツールをWindows/Pi/Codexでどう実行するか未決 |
+| [`no-comments/SKILL.md`](skills/no-comments/SKILL.md) | 固定名`comment-sicko`サブエージェント、Task呼び出し、レビュー反映と承認範囲が未決 |
+| [`typescript-best-practices/SKILL.md`](skills/typescript-best-practices/SKILL.md) | frontmatterの`paths`による自動適用と、未解決のtype-system-discipline Principleの適用関係が未決。コード例は収録済み |
+| [`correct/SKILL.md`](skills/correct/SKILL.md) | 履歴の調査手段、Lint/CIへの書き込み、各修正の自動コミットと承認範囲が未決 |
+| [`reflect/SKILL.md`](skills/reflect/SKILL.md) | Cursor会話履歴の取得、CursorのSkillディレクトリと承認後の編集方法が未決 |
+| [`blast-radius/SKILL.md`](skills/blast-radius/SKILL.md) | 大規模変更で必須となるArenaの分担実行・モデル指定が未決 |
+| [`reframe/SKILL.md`](skills/reframe/SKILL.md) | 出典のリンクを実際に開き検証するための外部検索・ブラウザーの利用方法が未決 |
+| [`how/SKILL.md`](skills/how/SKILL.md) | 読み取り専用の`Task`・`generalPurpose`エージェントの起動方法が未決 |
+| [`recall/SKILL.md`](skills/recall/SKILL.md) | Cursorのトランスクリプト保存先、履歴のスコープ、並列調査・MCPアクセスの方式が未決 |
+| [`ketchup/SKILL.md`](skills/ketchup/SKILL.md) | チャット全履歴の取得・スクリーンショット埋め込み・図表生成/`/visualize`の利用方式が未決 |
+| [`ketchup-video/SKILL.md`](skills/ketchup-video/SKILL.md) | スライド動画の描画、字幕とフレーム検証、チャットへの動画埋め込み方法が未決 |
+| [`setup-pstack/SKILL.md`](skills/setup-pstack/SKILL.md) | `.cursor/rules/pstack-models.mdc`とCursorモデル識別子・`Task`の代わりとなる設定方法が未決 |
+| [`automate-me/SKILL.md`](skills/automate-me/SKILL.md) | Cursorトランスクリプトの発掘、`AskQuestion`、組み込み`create-skill`、Skill配置先、コミット/PR権限が未決 |
+| [`make-bot-ui/SKILL.md`](skills/make-bot-ui/SKILL.md) | Cursorの`update_state`・`SendToUser`秘密情報要求・Grok Bot Webhook・Tailscaleと安全な利用方法が未決 |
+| [`teach/SKILL.md`](skills/teach/SKILL.md) | 未解決の`how`や、実装の図を段階的に生成する画像生成手段と呼び出し方式が未決 |
+| [`show-me-your-work/SKILL.md`](skills/show-me-your-work/SKILL.md) | 補助スクリプト・Cursor会話履歴・別ベンダーモデルによる監査・コミット承認が未決 |
+| [`create-verification-skill/SKILL.md`](skills/create-verification-skill/SKILL.md) | `.cursor/skills/verify-*`配置先、実際のアプリ操作機構、生成Skillを通し検証する環境が未決。機能マップの例は収録済み |
+| [`maintain-verification-skill/SKILL.md`](skills/maintain-verification-skill/SKILL.md) | 独立サブエージェントでの全機能調査、実際の操作環境、書き込みとPR作成の権限が未決 |
+| [`create-formal-verification-skill/SKILL.md`](skills/create-formal-verification-skill/SKILL.md) | TLA+・TLCなどの正式検証器、生成Skillの配置、statechart依存、製品コードの一時的変更への権限が未決 |
+| [`maintain-formal-verification-skill/SKILL.md`](skills/maintain-formal-verification-skill/SKILL.md) | モデルチェッカー、コードへの反例の再現、同期コミット管理と検証Skillの書き込み権限が未決 |
+| [`statechart/SKILL.md`](skills/statechart/SKILL.md) | TLA+・TLC・Java・mise・Pele・statechartスクリプトと依存モジュールの配備、OS差が未決 |
+| [`poteto-help/SKILL.md`](skills/poteto-help/SKILL.md) | Cursor固有のCustom Mode、`/setup-pstack`、`/poteto-mode`とGuideの参照先をsajiでどう扱うか未決 |
+
+### 同梱した補助資料と未導入の実行資産
+
+- `typescript-best-practices/references/patterns.md`：日本語訳とTypeScriptコード例を収録。コード例の非コメント部分は原文と一致。
+- `create-verification-skill/references/feature-map-example/`：3件の日本語訳を収録。機能ID・コマンド・UIラベルを保持。
+- `poteto-help/references/`：依頼文の書き方と例を日本語訳で収録。
+- `statechart/references/render.md`：日本語訳を収録。CSSは原文どおり。
+- `show-me-your-work/references/decision-log-template.tsv`：列名とTSV形式を原文どおり保持。
+- **未導入：** pstackの`statechart/scripts/`の実行プログラムと依存モジュール、`show-me-your-work/scripts/log.sh`など。存在しないスクリプトを実行済みとは扱わない。
+
 ## 解決・復帰の条件
 
 実際のカスタムPi/Codexのツール定義・設定・インストール済みSkillを確認し、未決の判断はユーザーと合意する。その後、必要な実行環境を整え、原文の工程や例外を保ったまま動作を確認する。解決したMarkdownだけを通常の`playbooks/`・`references/`・`principles/`へ戻し、参照元のリンクを更新する。

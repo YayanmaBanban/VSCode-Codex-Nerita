@@ -31,9 +31,10 @@ Playbookを選び、Principleと専門Skillを使って開発を進める。必�
 | 対象 | 参照先 |
 | --- | --- |
 | Playbookの選択と実行 | `references/playbooks.md` → `unresole/playbooks/<title>.md` |
+| 専門Skillの選択と利用可否 | `references/skills.md` |
 | Principleの適用条件の一覧 | `references/principles.md` → `references/principles.md`内の各本文リンク |
 | サブエージェントとワーカー起動 | `unresole/references/delegation.md`、`worker.md` |
 | 自律実行と承認の境界 | `references/autonomy.md` |
 | 回答の文体と報告方法 | `references/communication.md` |
 
-詳細な規則は参照先が管理する。該当する操作の前に読む。実行する機能やSkillが存在しない場合は、作業が成功したことにせず、その工程で停止し、不足する機能と未実施の検証を報告する。コミット・Push・PR操作などは明示的なユーザーの許可の範囲内でのみ行う。
+詳細な規則は参照先が管理する。該当する操作の前に読む。専門Skillを使う前には`references/skills.md`で本文の参照先を確認する。未解決のSkillは実行しない。実行する機能やSkillが存在しない場合は、作業が成功したことにせず、その工程で停止し、不足する機能と未実施の検証を報告する。コミット・Push・PR操作などは明示的なユーザーの許可の範囲内でのみ行う。
