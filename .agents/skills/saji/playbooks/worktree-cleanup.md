@@ -5,7 +5,7 @@
 3. **削除前に利用状況を確かめる。** `verify-recent-chat`と分類された行、または疑わしい項目では、サブエージェントを並列に起動しトランスクリプトを読ませる。チャットがピン留め済みか進行中か、どのworktreeに触れたかを報告させる（トランスクリプトは大量なので**principle-guard-the-context-window**を適用）。ピン留めされたチャットから`arena`や再現用のworktreeが兄弟ディレクトリにサブエージェント経由で生成される場合があり、サイドバーに名前が出なくても使用中として扱う。Subagentsセクションに従って推論レベルを選ぶ。
 4. **不可逆な消失を防ぐため停止する。** `wip:N`は追跡済みで未コミットの変更N件を表す。クリーンなworktreeはブランチから復元できるが、未コミット作業は失われるので、削除前に差分を示して判断を得る。`scratch:N`は未追跡の使い捨てファイルN件で、削除してもよい候補だがファイル名は示す。Autonomyに従い、クリーンかつマージ済み、かつ未使用なら進める。`wip`または使用中の場合は停止する。
 5. **確認済みの対象を掃除する。** パスごとに`git worktree remove --force <path>`を実行する。無視対象のビルド生成物などでディレクトリが残る場合は`rm -rf`で削除し、その後`git worktree prune`を実行する。ブランチ参照は残るため、コミットは失われない。`df -h /`とworktree一覧を再取得して確認する。
-6. **シミュレーターなどの容量回収。** 次に大きな削減が期待できるのは通常シミュレーター。`xcrun simctl --set testing delete all`（XCTestDevicesの複製）、`xcrun simctl delete unavailable`、`xcrun simctl runtime list`で古いランタイムを調べたうえで`runtime delete <id>`を実行する。さらに必要ならXcodeの`DerivedData`と`iOS DeviceSupport`、`~/Library/Application Support/Cursor`（`state.vscdb.backup`と、ワークスペースとして開いたフォルダに対応する`snapshots/roots/<root>`の肥大化した部分）、パッケージキャッシュ（pnpm、uv、brew、yarn）などを対象にする。ユーザーから保持を指定されていないキャッシュだけを消去する。
+6. **シミュレーターなどの容量回収。** 次に大きな削減が期待できるのは通常シミュレーター。`xcrun simctl --set testing delete all`（XCTestDevicesの複製）、`xcrun simctl delete unavailable`、`xcrun simctl runtime list`で古いランタイムを調べたうえで`runtime delete <id>`を実行する。さらに必要ならXcodeの`DerivedData`と`iOS DeviceSupport`、`~/Library/Application Support/Cursor`（`state.vscdb.backup`と、ワークスペースとして開いたフォルダに対応する`snapshots/roots/<root>`（`<root>`はそのフォルダ名に対応）の肥大化した部分）、パッケージキャッシュ（pnpm、uv、brew、yarn）などを対象にする。ユーザーから保持を指定されていないキャッシュだけを消去する。
 
 このPlaybookだけは、コードレビューで誤りが検出されないままユーザーデータを削除しうる。したがって上記のゲート自体がレビューに当たる。
 
