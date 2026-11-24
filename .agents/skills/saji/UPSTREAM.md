@@ -17,5 +17,6 @@
 6. 24個のPrincipleの本文全体を`principles/*.md`へ収録し、Cursor専用のfrontmatterを除去した。適用条件は`references/principles.md`で管理する。
 7. `architect`、`swarm`、`arena`、`how`、`interrogate`などの専門Skillや外部`cursor-team-kit`の実装は、**ここには同梱していない**。導入・移植されるまでは、関連工程は未解決の依存条件であり、実行済みとは扱わない。
 8. 原文の自然言語を日本語化した。Skill名、ファイルパス、コマンド、固定の機械的識別子は保持する。原文の工程・判定条件・制約を省略しない。
+9. Babysit Playbookから参照される原文の`references/bugbot-triage.md`も日本語化して追加した。ライセンス原文を維持し、別途`LICENSE.pstack.ja.md`に参考訳を加えた。
 
 pstack由来の文書が存在することを、製品のビルド成功や実行時テストの合格と混同しない。

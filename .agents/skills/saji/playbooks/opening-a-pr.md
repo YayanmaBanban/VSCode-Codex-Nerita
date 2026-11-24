@@ -1,6 +1,6 @@
 ### PRの作成（Opening a PR）
 
-ほかの各Playbookの終盤で呼び出される。
+ほかの各Playbookの終了時に呼び出される。
 
 trunkから分岐したGit worktreeで作業し、無関係な変更を含めない。リベースして、小さくマージ可能なコミットに整理する。コミット前に`cursor-team-kit`の`/deslop`を差分へ適用する。
 
