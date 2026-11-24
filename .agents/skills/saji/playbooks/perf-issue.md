@@ -1,25 +1,25 @@
-### Perf issue
+### 性能問題（Perf issue）
 
-**You own the measurement story. Plan, review, verify the numbers.** Tie every fix to a measurement, don't read source instead of measuring.
+**計測結果の説明責任を持つ。計画・レビューし、数値を検証する。** すべての修正を計測結果と結び付ける。計測の代わりにソースを読むだけで済ませない。
 
-1. Capture a baseline trace via the matching control skill. Vet the baseline, and each later number, with the **benchmark-checklist** skill.
-2. Trace the code to ground hypotheses. Don't claim a perf ceiling without running it first.
-   Try the performance mantras in order, cheapest first:
-   1. Don't do it. Stop work whose result nothing uses rather than cheapening it.
-   2. Do it, but don't do it again.
-   3. Do it less.
-   4. Do it later.
-   5. Do it when they're not looking.
-   6. Do it concurrently.
-   7. Do it cheaper.
+1. 対象と一致するcontrol Skillでベースラインのトレースを取得する。ベースラインと以降の数値を、毎回**benchmark-checklist** Skillで精査する。
+2. コードを追跡し、仮説に根拠を与える。実際に測定せず性能の上限を断定しない。
+   以下の性能改善の考え方を、安価な順に試す。
+   1. そもそも処理しない。結果を誰も使わない処理は、安くするのではなく停止する。
+   2. 処理はするが、繰り返さない。
+   3. 処理量を減らす。
+   4. 後で処理する。
+   5. ユーザーが見ていない間に処理する。
+   6. 並行して処理する。
+   7. より安く処理する。
 
-   When an earlier mantra meets the target, stop.
-3. Plan the fix from the trace. If it crosses a function boundary, `architect` first. Delegate implementation to a subagent using your configured perf-issue model (default `<role-model>`). Pick each subagent's reasoning level for the job, per the Subagents section. Review the diff. Capture a post-fix trace.
-   Apply the **sequence-verifiable-units** principle skill, verifying each attempt before trying the next.
-4. Parse and compare the artifacts (JSON to sqlite, diff). "Inconclusive" or wrong-surface is not a pass. Flag it.
-5. Cite the measurement in the PR.
-6. Run **Opening a PR**.
+   先の項目だけで目標に達したら、そこで止める。
+3. トレースから修正を計画する。関数境界をまたぐ場合は先に`architect`。設定されたperf-issue担当モデル（既定は`<role-model>`）のサブエージェントに実装を委譲する。Subagentsセクションに従い、作業に適切な推論レベルを選ぶ。差分をレビューし、修正後のトレースを取得する。
+   **sequence-verifiable-units** Principleを適用し、次の試行前に各試行を検証する。
+4. 成果物を解析・比較する（例：JSONをSQLiteへ変換し、差分を取る）。「結論が出ない」または「異なる実行環境」での結果は合格にせず、その旨を示す。
+5. PRに計測結果を根拠として記載する。
+6. **Opening a PR**を実行する。
 
-For sustained improvement against a metric rather than a one-off fix, use the Hillclimb playbook (`playbooks/hillclimb.md`).
+単発の修正ではなく、一つの指標を継続的に改善する場合はHillclimb Playbook（`playbooks/hillclimb.md`）を使う。
 
-**Reply:** baseline number, post-fix number, delta, artifact path.
+**回答：** ベースライン値、修正後の値、差分、成果物のパス。

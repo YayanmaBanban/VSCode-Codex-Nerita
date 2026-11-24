@@ -1,11 +1,11 @@
-### Runtime forensics
+### 実行時の原因調査（Runtime forensics）
 
-**You own the diagnosis. Instrument the live process, don't theorize from source.** The deliverable is a cited diagnosis, not a fix.
+**診断の責任を持つ。ソースから推論するのではなく、動作中のプロセスを計測する。** 成果物は根拠付きの診断であり、修正ではない。
 
-1. Capture the live signal on the matching surface via the control skill: a CPU profile for a spinning process, a heap snapshot for a leak, a CDP trace for a visual glitch. A real artifact, not a guess.
-2. Reduce the artifact to the smoking gun: the function on the hot path, the retainer chain from the leaked object to a GC root, the loop firing without input. Parse large artifacts in a subagent (the **guard-the-context-window** principle skill), keep the reduced finding in the main thread. Pick each subagent's reasoning level for the job, per the Subagents section.
-3. Prove the mechanism before believing it. Inject instrumentation via CDP eval on the running process, or hotfix the live code without reloading, to confirm the hypothesis cheaply.
-4. Map the finding back to source: file, symbol, the line that allocates or schedules.
-5. Throughput checkpoint stays one line: `throughput checkpoint: n/a, read-only forensics`.
+1. control Skillで、対象と一致する実行環境から生のシグナルを取得する。CPUを使い続けるプロセスならCPUプロファイル、メモリリークならヒープスナップショット、画面の不具合ならCDPトレース。推測ではなく実物の成果物を得る。
+2. 成果物から決定的な証拠へ絞り込む。高負荷経路の関数、リークしたオブジェクトからGCルートまでの保持参照チェーン、入力なしで繰り返すループなど。大きな成果物はサブエージェントに解析させ（**guard-the-context-window** Principle）、親のスレッドには要点だけを残す。Subagentsセクションに従って適切な推論レベルを選ぶ。
+3. 結論にする前に仕組みを実証する。動作中のプロセスにCDP eval経由で計測を挿入するか、リロードせず実行コードをホットフィックスして、低コストに仮説を確認する。
+4. 発見内容をソースへ対応付ける。該当ファイル、シンボル、割り当てやスケジュール処理を行う行を特定する。
+5. Throughput Checkpointは1行のままにする：`throughput checkpoint: n/a, read-only forensics`。
 
-**Reply:** the signal captured, the reduced finding, how you proved the mechanism, the source location, artifact paths. No fix unless asked. Hand back to Bug fix or Perf once the cause is known.
+**回答：** 取得したシグナル、絞り込んだ発見内容、仕組みを実証した方法、ソース位置、成果物パスを示す。依頼がなければ修正しない。原因が判明したらBug fixまたはPerfへ引き継ぐ。
