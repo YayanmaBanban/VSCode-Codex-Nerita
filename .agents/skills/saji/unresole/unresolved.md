@@ -85,7 +85,8 @@
 - `poteto-help/references/`：依頼文の書き方と例を日本語訳で収録。
 - `statechart/references/render.md`：日本語訳を収録。CSSは原文どおり。
 - `show-me-your-work/references/decision-log-template.tsv`：列名とTSV形式を原文どおり保持。
-- **未導入：** pstackの`statechart/scripts/`の実行プログラムと依存モジュール、`show-me-your-work/scripts/log.sh`など。存在しないスクリプトを実行済みとは扱わない。
+- `show-me-your-work/scripts/log.sh`：実行スクリプトを原文のまま同梱。実行環境での確認は未完了。
+- **未導入：** pstackの`statechart/scripts/`の実行プログラムと依存モジュール、存在しないスクリプトを実行済みとは扱わない。
 
 ## 解決・復帰の条件
 
