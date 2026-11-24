@@ -1,8 +1,7 @@
+# 基礎構造から考える（Foundational Thinking）
 
-# Foundational Thinking
+ロジックを書く前にデータの形を適切に決める。中心となる型を早期に定義し、すべてのアクセスパターンを追跡し、主要な利用経路に適したデータ構造を選ぶ。DRYにするのは構造であり、すべてのコード行ではない。
 
-Get the data shape right before writing logic. Define core types early, trace every access pattern, and choose structures that match the dominant paths. DRY the structure, not every line.
+複数の実行主体（actor）で状態を共有する前に、ほかの主体が同時に変更したら何が起きるか確認する。答えが「何も起きない」でなければ分離する。
 
-Before sharing state between actors, ask what happens if another actor modifies it concurrently. If the answer is not "nothing", isolate.
-
-Scaffold first. Whatever helps every later phase (CI, tests, shared types) goes first, after removing dead code. Keep commits small and single-purpose.
+最初に基盤を作る。その後のすべてのフェーズを助けるもの（CI、テスト、共有型など）は、不要コードの削除後に先行して整える。コミットは小さく、目的を一つにする。

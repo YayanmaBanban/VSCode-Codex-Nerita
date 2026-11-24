@@ -1,11 +1,10 @@
+# 最初から必要だった前提として再設計する（Redesign From First Principles）
 
-# Redesign From First Principles
+既存設計に変更を統合するとき、後付けで継ぎ足さない。その要件が初日から基本的な前提だったと仮定して設計し直す。
 
-When integrating a change, don't bolt it onto the existing design. Redesign as if the requirement had been a foundational assumption from the start.
+- 影響するファイルをすべて読み、現在の設計を理解する。
+- 「この新要件を持った状態でゼロから書くなら、何を作るか？」と問い直す。
+- 型、文書、例、設計理由の節など、関連するすべての参照へ変更を反映する。
+- 再設計の全体像を考え、その後で段階的に提供する。
 
-- Read all affected files and understand the current design
-- Ask: "if we were writing this from scratch with this new requirement, what would we build?"
-- Propagate the change through every reference: types, docs, examples, rationale sections
-- Think about the whole redesign, then deliver it incrementally
-
-This is the method for preserving option value when integrating changes into an existing design.
+これは、新しい要件を既存の設計に統合する際に、将来の選択肢を維持するための方法である。

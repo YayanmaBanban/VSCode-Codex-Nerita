@@ -1,14 +1,13 @@
+# 利用者体験を優先する（Experience First）
 
-# Experience First
+実装の都合と利用者の満足が衝突した場合、利用者の満足を優先する。
 
-When implementation convenience conflicts with user delight, choose delight.
+- すべての機能・操作部品・選択肢に採用理由が必要。
+- 出荷する機能を減らしても品質を高める（粗い10機能より完成度の高い3機能）。
+- 採用前に試作する（設計判断は製品コードより使い捨てのHTMLで試した方が安い）。
+- 細部を正しく仕上げる（遷移、整列、余白、フィードバック、エラー状態）。
+- 中核となる操作の流れを磨く（各機能は主要な作業フローに貢献するか、妨げないようにする）。
 
-- Every feature, control, and option must be justified
-- Ship less, ship better (polished experience with three features beats rough one with ten)
-- Prototype before committing (design decisions are cheaper in throwaway HTML than production code)
-- Get the details right (transitions, alignment, spacing, feedback, error states)
-- Tighten the core loop (every feature should serve the central workflow or get out of the way)
+ここでいう利用者とは成果物を使うすべての人。UIならエンドユーザー、ライブラリや内部APIならインポートする同僚であり、次にコードを保守するエンジニアも利用者である。それぞれの体験を同等に重視し、その視点から影響を説明する。
 
-The user is whoever consumes the work. For a UI that is the end user. For a library or an internal API it is the colleague who imports it. The engineer who maintains the code next is a user too. Weigh their experience the same way, and explain impact from their perspective.
-
-Foundations should serve the experience. Foundational thinking governs the *sequence* of work. This principle governs the *target*.
+基盤は体験に奉仕するもの。Foundational Thinkingは作業の**順序**を規定し、このPrincipleは目指す**結果**を規定する。

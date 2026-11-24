@@ -1,10 +1,9 @@
+# 読み手の負担を減らす（Minimize Reader Load）
 
-# Minimize Reader Load
+読み手の負担とは、コードを理解するために必要な作業である。独立した2つの軸がある。質問から答えへたどるまでに追跡する層の数と、頭の中で保持する隠れた状態・可変状態の量である。両方を抑える。
 
-Reader load is the work a reader must do to understand code. It has two independent axes: layers to trace between the question and the answer, and hidden or mutable state to hold in their head. Guard both.
+- 値を通すだけの層を畳む。呼び出し元が1つだけのラッパー、2つ目の実装がないアダプター、素通しするメソッドはインライン化する。
+- 状態のスコープを狭くする。変更より戻り値、フィールドよりローカル変数、モジュール状態よりフィールド、グローバル変数よりモジュール状態を優先する。同期するのではなく導出する。
+- 不変条件は各利用側に繰り返すのではなく、境界で一度だけ名前を付ける。
 
-- Collapse layers that only forward: wrappers with one caller, adapters with no second implementation, pass-through methods. Inline them.
-- Shrink state scope: returns over mutations, locals over fields, fields over module state, module state over globals. Derive instead of sync.
-- Name an invariant once at the boundary, not in every consumer.
-
-The test: can a new reader answer "where does X come from?" and "what can change X?" in under 30 seconds? If not, cut layers or cut state.
+判断基準：初めて読む人が「Xはどこから来るか」「Xを変更できるのは何か」に30秒以内で答えられるか。答えられなければ層か状態を減らす。

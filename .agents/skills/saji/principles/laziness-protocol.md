@@ -1,5 +1,4 @@
+# 最小限の実装を優先する（Laziness Protocol）
 
-# Laziness Protocol
-
-- **Consolidate decisions.** Do not repeat the same choice in several places. Put it behind one source of truth and pass the result as a simple flag.
-- **Minimize the diff.** Make the smallest change that solves the problem. Fewer lines beat "elegant" boilerplate.
+- **判断を一箇所にまとめる。** 同じ選択を複数箇所に繰り返し書かない。単一の正本で判断し、結果を単純なフラグで渡す。
+- **差分を最小にする。** 問題を解決する最小の変更にする。「洗練された」定型コードを増やすより、行数を減らすことを優先する。

@@ -1,13 +1,12 @@
+# 追加する前に減らす（Subtract Before You Add）
 
-# Subtract Before You Add
+システムを進化させるときは、まず複雑さを減らし、その後で構築する。削除を既定の選択とする。
 
-When evolving a system, remove complexity first, then build. Default to subtraction.
+単純化へ継続的に投資する。変更前と同等以下の表面積を維持しながら、設計を少しでも単純で、より多くのことができる状態にする。
 
-Make simplification a continual investment. Leave the design slightly simpler and more capable behind the same or smaller surface than you found it.
-
-- Sequence removal before construction
-- Cut before you polish (get to the minimum before investing in quality)
-- Design for observed usage, not speculative edge cases
-- No speculative validators, parsers, or guards beyond what the spec demands
-- Simplify prompts (remove redundant instructions, excessive templates)
-- When a reference has no novel content, delete it rather than leaving a stub
+- 構築より削除を先に行う。
+- 磨く前に削る（品質向上へ投資する前に最小限へ絞る）。
+- 推測した例外ケースではなく、観測された使い方に合わせて設計する。
+- 仕様で求められていない予防的なバリデーター、パーサー、ガードを追加しない。
+- プロンプトを単純化する（重複指示や過度なテンプレートを削る）。
+- 参照ファイルに新しい情報がないなら、空のひな形として残さず削除する。

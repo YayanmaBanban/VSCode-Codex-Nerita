@@ -1,16 +1,15 @@
+# 最終状態を優先して進める（Outcome-Oriented Execution）
 
-# Outcome-Oriented Execution
+途中段階を滑らかに保つことより、意図した検証可能な最終状態へ最適化する。
 
-Optimize for the intended, verifiable end state rather than preserving smooth intermediate states.
+**理由：** すべての中間段階を完全に安定させると、一時的な互換コードが長期的な負債として残りやすい。目標のアーキテクチャへ収束させ、明示した検証境界で正しさを証明する。
 
-**Why:** Keeping every intermediate step fully stable often creates temporary compatibility code that becomes long-lived debt. Converge on the target architecture and prove correctness at explicit verification boundaries.
+**中核の規則：**
+- 移行中の安定より、最終状態の整合性を優先する。
+- 計画され、範囲が限定され、元へ戻せるなら中間段階の一時的な破損を許容する。
 
-**Core rule:**
-- Prioritize end-state integrity over transitional stability
-- Intermediate breakage is acceptable when it is planned, scoped, and reversible
-
-**Guardrails:**
-- Use this for planned rewrites and migrations with explicit phase boundaries
-- Declare where temporary breakage is acceptable
-- Keep high-signal checks for actively touched areas while migrating
-- Require full static and runtime verification at plan completion
+**ガードレール：**
+- 明示的なフェーズ境界を持つ、計画された再実装・移行に適用する。
+- 一時的な破損を許容する箇所を宣言する。
+- 移行中、実際に変更している領域では問題検出力の高いチェックを維持する。
+- 計画の完了時には静的検査と実行時検証を全面的に行う。

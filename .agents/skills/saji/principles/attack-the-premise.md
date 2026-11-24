@@ -1,10 +1,9 @@
+# 失敗した前提を疑う（Attack the Premise）
 
-# Attack the Premise
+同じ前提に基づく2件以上の修正が同じ検証ゲートで失敗したら、個々の修正ではなく、その共通前提を疑う。
 
-When two or more fixes that share one premise have failed the same gate, suspect the premise, not the fixes.
+- 前提を書き出す。失敗したすべての修正が暗黙に仮定した一文を特定する。
+- 次の修正より先に前提を検証する。前提が誤りなら異なる結果になるはずの観測を設計し、実施する。失敗の大きさだけでなく、どこで発生しているかという分布も見る。
+- 証拠が前提に反する場合、予測できていなかった失敗の共通点を探す。ある部分が毎回失敗側に入るなら、後から片付ける仕組みを追加するのではなく、その部分を失敗側へ置いている原因を変える。
 
-- Write the premise down: the one sentence every failed fix assumed.
-- Test it before the next fix. Find an observation that would come out differently if the premise were false, and make it. Look at how the failures are distributed, not only at how large they are.
-- If the evidence contradicts the premise, look for what the failures share that it did not predict. If one part always lands on the losing side, change what puts it there instead of adding a mechanism that cleans up after it.
-
-Do not start the next fix before the premise is written down and tested.
+前提を明文化して検証するまで、次の修正に取りかからない。
