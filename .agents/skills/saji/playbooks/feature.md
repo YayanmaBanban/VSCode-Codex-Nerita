@@ -1,21 +1,21 @@
-### Feature
+### 機能追加（Feature）
 
-**You own the design. Plan, review, verify.** Delegate implementation. Stay in the lead.
+**設計の責任を持つ。計画し、レビューし、検証する。** 実装は委譲し、統括する立場にとどまる。
 
-1. Trace the affected subsystem.
-2. `architect` for the shape.
-3. Write the throughput checkpoint as four todo items. A dimension that genuinely does not apply (single file, no fan-out) keeps its item with `n/a: <reason>` rather than being dropped:
-   - **Blocking first steps.** Gates run before fan-out.
-   - **Independent workstreams.** Disjoint files, services, or layers parallelize. Shared writes serialize.
-   - **Shared mutable state.** Default to splitting the target (the **separate-before-serializing-shared-state** principle skill). Serialize only for real invariants.
-   - **Smallest safe decomposition.** If one worker is best, name why.
-4. Delegate code-writing to a subagent using your configured feature model (default `<role-model>`) with a specific scope (file paths, named data shape and its organizing structure per **principle-model-the-domain**, a state machine over scattered booleans, a table/registry over branching, a typed model over repeated shape assumptions, chosen before the delegate writes logic, and success criteria). Pick each subagent's reasoning level for the job, per the Subagents section. When the implementation admits multiple valid shapes (error handling, abstraction layer, test structure), delegate via the **arena** skill instead so the runners surface the alternatives and the cross-judge guards the pick. Mandatory: no skip-with-reason escape, and Laziness Protocol does not override it (the gain is review separation, not lines saved). A subagent forbidden to spawn satisfies this by owning the diff directly with the same review separation. No "standing by" reply that waits on a nested agent. Surgical edits, re-ground against the source for upstream-derived files. Port shared-primitive improvements to all consumers and verify each. Commit liberally.
-5. Verify on the matching surface. "Inconclusive" or wrong-surface is not a pass. Flag it.
-6. Rebase into small, ordered commits. Stack follow-ups.
-   Use the **sequence-verifiable-units** principle skill, building, verifying, and committing each small unit before the next.
-7. If the design is contested, `interrogate` before shipping.
-8. Run **Opening a PR**.
+1. 影響するサブシステムを追跡する。
+2. `architect`で実装の構造を決める。
+3. Throughput Checkpointを**4つのToDo項目**として記述する。該当しない次元（単一ファイルで分担不可など）も削除せず、`n/a: <reason>`と理由を残す。
+   - **最初に終えるべき前提作業（Blocking first steps）。** 並列化の前に必須ゲートを通す。
+   - **独立した作業系列（Independent workstreams）。** ファイル・サービス・層が互いに独立していれば並列化し、共有書き込みは直列化する。
+   - **共有される可変状態（Shared mutable state）。** 既定では対象を分離する（**separate-before-serializing-shared-state** Principle）。本当に共有を維持すべき不変条件がある場合だけ直列化する。
+   - **安全な最小の分割（Smallest safe decomposition）。** 1人のワーカーが最適なら、その理由を述べる。
+4. 設定済みのFeature担当モデル（既定は`<role-model>`）を使い、コード実装を具体的な担当範囲とともにサブエージェントへ委譲する。担当範囲にはファイルパス、**principle-model-the-domain**に従って名前を付けたデータ形状と構造（散在する真偽値に代わる状態機械、分岐に代わる表／レジストリ、繰り返す形状の仮定に代わる型付きモデルなど。委譲先がロジックを書く前に選ぶ）、成功条件を含める。Subagentsセクションに従い、作業に応じた推論レベルを選ぶ。複数の妥当な実装形状（エラー処理、抽象化の層、テスト構造など）があるときは、代案が提示され相互審査で選択を守れるよう、代わりに**arena** Skillを使って委譲する。**必須工程であり、理由付きの省略は認めない。Laziness Protocolでも上書きできない。** 効果はコード行数の削減ではなく、実装とレビューの分離にある。サブエージェントの起動を禁じられたエージェントは、同等のレビュー分離を保ちながら自ら差分を担当すれば条件を満たす。下位エージェントを待つだけの「待機しています」という返答はしない。上流由来のファイルに対する局所修正では、元のソースを再確認する。共通プリミティブの改善は利用するすべての箇所へ反映し、それぞれ検証する。積極的にコミットする。
+5. 対象と一致する実行環境で検証する。「結論が出ない」または対象と異なる環境での結果は合格にせず、明示する。
+6. 小さく順序立ったコミットへリベースし、後続の修正を積み重ねる。
+   **sequence-verifiable-units** Principleに従い、小さい単位ごとに構築・検証・コミットしてから次へ進む。
+7. 設計に異論がある場合、出荷前に`interrogate`を使う。
+8. **Opening a PR**を実行する。
 
-Code-coupled work (one feature, one migration) goes to a single owner with the checkpoint inline. That owner fans out internally after the blocking phase. Parent-level fan-out is for slices that produce independent artifacts (audits, cross-subsystem investigations, competing experiments). Rewrite the checkpoint at phase boundaries. Spawn a fresh owner rather than chaining interrupts.
+一つの機能・一つの移行など、コードが密接に結び付く作業は単独の責任者が担当し、Checkpointをその内部で実施する。その責任者が前提作業の完了後に内部で分担する。親レベルの並列化は、独立した成果物（監査、複数サブシステムの調査、競合する実験など）を作る単位に限定する。フェーズの境目ではCheckpointを書き直す。中断・再開を連鎖させるより、新しい責任者を起動する。
 
-**Reply:** what you built, what you chose and why, the throughput checkpoint, open decisions. Tables for design alternatives.
+**回答：** 作ったもの、選んだ方法と理由、Throughput Checkpoint、未決の判断を示す。設計案の比較には表を使う。

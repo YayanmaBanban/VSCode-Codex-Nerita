@@ -1,16 +1,16 @@
-### Refactoring
+### リファクタリング（Refactoring）
 
-**You own the contract. The structure changes. The behavior does not.** Distinct from Feature, which adds behavior, and Bug fix, which corrects it.
+**振る舞いの契約に責任を持つ。構造は変更するが、振る舞いは変更しない。** 振る舞いを追加するFeature、誤った振る舞いを修正するBug fixとは区別する。
 
-If the cleanup reveals a missing feature or a real bug, split it out and ship the structural change first against the pinned contract. A redesign is allowed, but name it and route to Feature. Large or cross-cutting structural work belongs to the **figure-it-out** skill. This playbook is the focused-to-medium change.
+整理の途中で不足機能や実際のバグが見つかった場合は別作業に切り出し、固定した振る舞いの契約に対する構造変更を先に出荷する。再設計自体は可能だが、その旨を明示してFeatureへ振り分ける。大規模・横断的な構造変更は**figure-it-out** Skillへ。このPlaybookは小規模～中規模の集中した変更を対象とする。
 
-1. Pin the behavior contract first. Trace the affected subsystem to learn the contract, then write a characterization test, snapshot, or equivalence harness that captures current behavior before any structure moves. If the area has no coverage, write the pin before touching structure. Type check and lint are not a pin.
-2. Name the structure the code is missing per **principle-model-the-domain**. Boring code stays when the shape is already clear and local. The reshape must delete branches or invalid states, not add indirection.
-3. Name the target shape. State what the module layout, types, and call graph should be if built today (**principle-foundational-thinking**, **principle-redesign-from-first-principles**). If the target crosses a function boundary, run the **architect** skill for the shape before the move.
-4. Subtract before you add. Delete dead code, collapse one-caller wrappers, drop redundant validators, and remove orphan references before introducing the new shape (**principle-subtract-before-you-add**). The smallest change that reaches the target shape ships (**principle-laziness-protocol**). A speculative cleanup that "might help" gets reverted.
-5. Move in small behavior-preserving steps, each keeping the pin green. For API reshapes, migrate every caller and delete the old API in the same wave (**principle-migrate-callers-then-delete-legacy-apis**). No compatibility shims, no parallel old-and-new paths. Spot-check every rename against the actual files. Renames silently miss usages in strings, prose, and back-references. Delegate the mechanical edits to a subagent using your configured refactoring model (default `<role-model>`) with a specific scope (file paths, the names being moved, the behavior to hold). Pick each subagent's reasoning level for the job, per the Subagents section.
-6. Prove behavior is unchanged on the real artifact, not "it compiles" (**principle-prove-it-works**). For larger reshapes, run an equivalence check: a script that diffs old-vs-new outputs, a recorded baseline replayed against the new code, or a smoke run on the matching surface via the relevant control skill.
-7. Confirm the change is worth keeping. The success measure is reduced reader load (**principle-minimize-reader-load**). If the diff does not lower reader load somewhere, revert it.
-8. Rebase into small ordered commits. A subtraction commit, then the reshape, then any follow-on cleanup. Shape them with the **sequence-verifiable-units** principle skill, so each behavior-preserving slice stays green before the next. Run **Opening a PR**.
+1. 最初に振る舞いの契約を固定する。影響するサブシステムを追跡して契約を理解し、構造を動かす前に現在の振る舞いを表す特性テスト、スナップショット、同等性検証ハーネスのいずれかを作る。対象に検証がなければ、構造に触れる前に固定する。型チェックとLintだけではこの固定にならない。
+2. **principle-model-the-domain**に従い、コードに欠けている構造を特定する。すでに形が明確で局所的な平凡なコードは残す。再構成は分岐や不正状態を減らすものであり、間接層を増やすものではない。
+3. 目標となる形を定義する。現在新規に作るなら、モジュール配置・型・呼び出しグラフをどうするか明示する（**principle-foundational-thinking**、**principle-redesign-from-first-principles**）。関数境界をまたぐなら、構造変更前に**architect** Skillを使う。
+4. 追加する前に減らす。新しい構造を導入する前に、不要コードを削除し、呼び出し元が1つだけのラッパーを畳み、重複した検証をなくし、孤立した参照を除去する（**principle-subtract-before-you-add**）。目標構造に到達する最小限の変更だけを出荷する（**principle-laziness-protocol**）。「役立つかもしれない」推測に基づく整理は取り消す。
+5. 小さな、振る舞いを維持する段階で移行し、各段階で固定した検証を通す。APIを変更する場合は、すべての呼び出し元を移行し、同じ作業段階で旧APIを削除する（**principle-migrate-callers-then-delete-legacy-apis**）。互換アダプターや新旧併存経路は残さない。名前変更は対象ファイルに照らして一件ずつ確認する。文字列・文章・逆参照内の使用箇所は静かに取りこぼされることがある。機械的な編集は、設定済みのRefactoring担当モデル（既定は`<role-model>`）を使い、パス・移動する名称・保持する振る舞いを明示してサブエージェントに委譲する。Subagentsセクションに従って推論レベルを選ぶ。
+6. 「コンパイルできた」ではなく、実際の成果物で振る舞いが変わっていないことを証明する（**principle-prove-it-works**）。大きな再構成では、旧版と新版の出力を比較するスクリプト、記録済みのベースラインを新しいコードで再生する方法、適切なcontrol Skillで同じ環境のスモークテストを行う方法などで同等性を確認する。
+7. 変更を維持する価値があるか確認する。成功指標は読み手の負担の減少（**principle-minimize-reader-load**）。差分がどこでも読み手の負担を下げないなら取り消す。
+8. 小さい順序付きコミットへリベースする。まず削除、その後に再構成、必要な場合に後続の整理を積む。各振る舞い維持の単位が次へ進む前に正常な状態になるよう、**sequence-verifiable-units** Principleに従って構成する。**Opening a PR**を実行する。
 
-**Reply:** the structure that changed, the pin you held it against, the equivalence proof, the reader-load delta, what shipped and what got reverted. No new behavior.
+**回答：** 変更した構造、維持した振る舞いの固定条件、同等性の証拠、読み手の負担の変化、採用した変更と取り消した変更を示す。新しい振る舞いは含めない。

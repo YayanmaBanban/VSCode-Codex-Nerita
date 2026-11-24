@@ -1,11 +1,11 @@
-### Visual parity
+### 外観の一致（Visual parity）
 
-**You own pixel-exact equivalence. The baseline is the spec. You do not touch it.** Equivalence is verified by image diff, not by eye.
+**ピクセル単位の厳密な一致に責任を持つ。ベースラインが仕様であり、これには手を加えない。** 一致は目視ではなく画像差分で検証する。
 
-1. Establish the baseline first, before any migration: a visual regression harness that screenshots the current component across its states, plus the target when matching two implementations. No baseline, no parity claim. A blocking prerequisite, not a follow-up.
-2. Anti-shortcut clauses, stated and held: no harness modifications, no baseline tampering, no component restructuring to make a diff pass. If the baseline looks wrong, stop and ask, don't edit it.
-3. Migrate one component at a time. Parallelize across worktrees, one owner per component (the **separate-before-serializing-shared-state** principle skill). Shared primitives migrate first as a blocking phase.
-4. Verify each component against its baseline via image diff on the matching surface via the control skill. A nonzero diff is a fail. Investigate the pixel delta. `/loop` per component until the diff is zero.
-5. Run **Opening a PR** per component or per safe batch.
+1. 移行作業に入る前にベースラインを確立する。現在のコンポーネントを各表示状態で撮影するビジュアル回帰検証ハーネスを作り、2つの実装を一致させる場合は目標側も取得する。ベースラインがなければ一致を主張しない。後回しにできない前提条件である。
+2. 近道をしない条件を明示して守る。検証ハーネスを改変しない、ベースラインを書き換えない、差分を合格させるためにコンポーネントの構造を変更しない。ベースラインに問題が見えたら停止して質問し、勝手に編集しない。
+3. 一度に移行するコンポーネントは一つとする。worktreeごとに並列化し、1コンポーネントにつき責任者を一人にする（**separate-before-serializing-shared-state** Principle）。共有プリミティブは先行する必須工程で移行する。
+4. 各コンポーネントを対象と同じ環境でcontrol Skillを使って撮影し、ベースラインと画像差分で照合する。差分がゼロ以外なら失敗。ピクセル差分を調査する。コンポーネントごとに`/loop`を使い、差分がゼロになるまで繰り返す。
+5. コンポーネント単位または安全なまとまり単位で**Opening a PR**を実行する。
 
-**Reply:** components migrated, the diff result for each, the baseline harness location, what's left.
+**回答：** 移行したコンポーネント、それぞれの差分結果、ベースライン検証ハーネスの場所、残件を示す。

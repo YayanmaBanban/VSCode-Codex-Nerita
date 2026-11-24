@@ -1,25 +1,25 @@
-### Eval
+### 評価（Eval）
 
-**You own the experiment design. Plan, blind, run, synthesize.**
+**実験設計に責任を持つ。計画・ブラインド化・実行・統合を行う。**
 
-**Non-negotiables for blinding:**
+**ブラインド化に関する絶対条件：**
 
-- No `eval`, `test`, `judge`, `experiment`, `rubric`, `score`, `compare`, `benchmark`, `candidate`, or `arena` in any directory, file, or prompt the candidate sees.
-- The candidate prompt looks like an organic user request. State the goal, not the meta.
-- No chain-eliciting cues. Don't ask the candidate to list which skills, principles, or files they applied. Ask for design notes generally and grade chain-following from code shape, not self-report.
-- Sanitize directory and slug names. Use project-shaped names a user might pick.
-- Don't tell the candidate other candidates exist.
-- The judge can know it's judging but sees outputs by sanitized label only, never by model name.
-- Comparing two variants: one judge scores both sets in a single pass on one scale, blind to which set each came from.
+- 候補エージェントが参照するディレクトリ、ファイル、プロンプトには、`eval`、`test`、`judge`、`experiment`、`rubric`、`score`、`compare`、`benchmark`、`candidate`、`arena`という文字列を含めない。
+- 候補エージェントへの依頼文は、通常のユーザー依頼に見えるものとする。目標だけを書き、評価のメタ情報は含めない。
+- 推論過程やSkill適用順序を語らせる手掛かりを与えない。どのSkill・Principle・ファイルを使ったか候補に列挙させない。設計メモは一般的な依頼として求め、自己申告ではなくコードの構造から工程の遵守を採点する。
+- ディレクトリ名とslugは無害化する。ユーザーが付けそうなプロジェクト名らしい名前を使用する。
+- ほかの候補がいることを候補エージェントへ伝えない。
+- 判定担当（Judge）は評価業務であることを知っていてよいが、出力は匿名化したラベルだけで受け取り、モデル名は知らせない。
+- 2つの案を比較する場合、一人のJudgeが、両方の成果物を**同一の実行回・同一基準**で採点し、どちらに属するかは知らせない。
 
-**Steps:**
+**工程：**
 
-1. **Frame.** State what variant is under test and what behavior counts as success. Write the rubric (3-6 concrete criteria) for the judge only. Hold it back from candidates.
-2. **Set up sanitized environments.** Per-candidate working dir with the variant in place. Plant any context an organic task would have: a project skeleton, the skills the candidate would naturally read.
-3. **Author one organic prompt.** What a user would type. No leakage of what's being measured.
-4. **Spawn N parallel candidates** on different models per the **arena** skill's Phase B. Each works in its own sanitized dir. Same prompt to each. Pick each subagent's reasoning level for the job, per the Subagents section. An agent that only dispatches, polls, or packs results runs on `claude-opus-5-5-medium-fast`.
-5. **Spawn one blinded judge** on a different model family per the **arena** skill's Phase C. Judge sees outputs by sanitized label and the rubric, never a model name.
-6. **Verify the chain from transcripts, not self-report.** Read each candidate's local transcript under the active workspace's `agent-transcripts/` directory (the system prompt names this path). Do not glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects. Look at which files each candidate actually opened. Grade chain-following from the files it really read plus the shape of the code, never from the candidate's own claims.
-7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize.
+1. **対象の定義（Frame）。** 評価する案と、どの振る舞いを成功とするかを明示する。Judge専用の採点基準（具体的な3～6条件）を作り、候補エージェントには渡さない。
+2. **匿名化した環境の準備。** 候補ごとに作業ディレクトリを用意し、対象の案を配置する。通常の依頼であれば存在するはずの文脈（プロジェクトのひな形、候補が自然に読むSkillなど）を配置する。
+3. **通常の依頼文を一つ作成。** 本物のユーザーが入力しそうな依頼とし、計測対象が漏れないようにする。
+4. **N個の候補エージェントを並列起動。** **arena** SkillのPhase Bに従い、異なるモデルを使用する。候補はそれぞれ独立した匿名化済みディレクトリで作業する。依頼文は全候補で同一とする。Subagentsセクションに従って各エージェントの推論レベルを選ぶ。作業が振り分け・状態確認・結果の梱包だけのエージェントには`<role-model>`（軽い事務的処理に適した設定）を使う。
+5. **ブラインド化したJudgeを一人起動。** **arena** SkillのPhase Cに従い、候補とは異なるモデル系列を使う。Judgeには匿名ラベル付き出力と採点基準のみを渡し、モデル名は渡さない。
+6. **自己報告ではなく実際のトランスクリプトから実行経路を確認。** 現在のワークスペースの`agent-transcripts/`配下にある各候補のローカルトランスクリプトを読む（元の環境ではシステムプロンプトがこのパスを示す）。`~/.cursor/projects/*/`を横断検索しない。ワークスペースの境界を超え、無関係なプロジェクトの私的な会話を読んでしまうためである。各候補が実際に開いたファイルを確認する。工程の遵守は実際に読んだファイルとコードの構造から採点し、候補の主張を根拠にしない。
+7. **候補の成果物をすべて自分で最初から最後まで読む。** Judgeの判定と比較する。食い違う場合はモデルが偏っているか採点基準が曖昧である。結果を統合する。
 
-**Reply:** variant under test, rubric, per-candidate notes, judge's verdict, your synthesis, and a recommendation for whether to promote the variant.
+**回答：** 評価した案、採点基準、候補ごとの所見、Judgeの判定、自身の総合評価、案を採用・昇格すべきかの推奨を示す。
