@@ -35,7 +35,7 @@
 
 | Markdown | 未解決の内容・確認すべき判断 |
 | --- | --- |
-| [`delegation.md`](references/delegation.md) | 原文の`poteto-agent`・`Task`・`run_in_background`・`setup-pstack`・固定モデル設定に対して、カスタムPiとCodexで実在するエージェント・ツール・モデル・推論設定を特定する |
+| [`delegation.md`](references/delegation.md) | Agent定義の生成は`saji-setup`で対応。原文の`poteto-agent`・`Task`・`setup-pstack`との対応、モデル独立性と隔離環境は未決 |
 
 ## Principle（4件）
 
@@ -51,12 +51,12 @@
 | 対象Markdown | 未解決の内容・判断が必要な事項 |
 | --- | --- |
 | [`architect/SKILL.md`](skills/architect/SKILL.md) | Arenaへの委譲と設計比較の実行手段が未決 |
-| [`arena/SKILL.md`](skills/arena/SKILL.md) | CursorのTask、候補モデル、審査担当の独立性、分離したworktree、役割別設定が未決 |
-| [`swarm/SKILL.md`](skills/swarm/SKILL.md) | Taskサブエージェント、クラウド/ローカル環境、並列起動、役割モデル、ブランチ選択が未決 |
-| [`interrogate/SKILL.md`](skills/interrogate/SKILL.md) | Arena依存、異なるレビュー用モデル、並列worktree、未コミット差分の隔離が未決 |
+| [`arena/SKILL.md`](skills/arena/SKILL.md) | Agent定義の生成は`saji-setup`で対応。候補ごとに独立した使い捨てWorkspace、別モデルによる審査の成立条件が未決 |
+| [`swarm/SKILL.md`](skills/swarm/SKILL.md) | Agent定義の生成は`saji-setup`で対応。候補ごとの隔離された作業領域と並列実行の境界が未決 |
+| [`interrogate/SKILL.md`](skills/interrogate/SKILL.md) | Agent定義の生成は`saji-setup`で対応。Arenaとの連携と未コミット差分の隔離、独立レビューの成立条件が未決 |
 | [`figure-it-out/SKILL.md`](skills/figure-it-out/SKILL.md) | 未解決の委譲・Arena・監査Skillと、長期自律実行・PRの権限が未決 |
 | [`benchmark-checklist/SKILL.md`](skills/benchmark-checklist/SKILL.md) | Unix系`uptime`・`nproc`・`pidstat`・`perf`・`strace`等の計測ツールをWindows/Pi/Codexでどう実行するか未決 |
-| [`no-comments/SKILL.md`](skills/no-comments/SKILL.md) | 固定名`comment-sicko`サブエージェント、Task呼び出し、レビュー反映と承認範囲が未決 |
+| [`no-comments/SKILL.md`](skills/no-comments/SKILL.md) | `comment-sicko`の定義生成は`saji-setup`で対応。レビュー反映の権限・親と子の責務分担が未決 |
 | [`typescript-best-practices/SKILL.md`](skills/typescript-best-practices/SKILL.md) | frontmatterの`paths`による自動適用と、未解決のtype-system-discipline Principleの適用関係が未決。コード例は収録済み |
 | [`correct/SKILL.md`](skills/correct/SKILL.md) | 履歴の調査手段、Lint/CIへの書き込み、各修正の自動コミットと承認範囲が未決 |
 | [`reflect/SKILL.md`](skills/reflect/SKILL.md) | Cursor会話履歴の取得、CursorのSkillディレクトリと承認後の編集方法が未決 |
@@ -87,6 +87,10 @@
 - `show-me-your-work/references/decision-log-template.tsv`：列名とTSV形式を原文どおり保持。
 - `show-me-your-work/scripts/log.sh`：実行スクリプトを原文のまま同梱。実行環境での確認は未完了。
 - **未導入：** pstackの`statechart/scripts/`の実行プログラムと依存モジュール、存在しないスクリプトを実行済みとは扱わない。
+
+## 確定した初期設定と残る未決事項
+
+`saji-setup`はPiの`.pi/agents/`とCodexの`.codex/agents/`へ6種類の定義を生成する。モデルを固定せず、既存の定義を上書きしない。**各Agentのファイル生成が可能になっただけで、候補間の書き込み隔離やSandboxが実装されたわけではない。** Arenaなどの本文は原文の日本語訳を維持して隔離したままとする。
 
 ## 解決・復帰の条件
 

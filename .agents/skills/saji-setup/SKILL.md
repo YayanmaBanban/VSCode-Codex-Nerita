@@ -28,7 +28,7 @@ node .agents/skills/saji-setup/scripts/generate.mjs --workspace . --target both
 | `interrogate-reviewer` | 実証付きレビュー |
 | `comment-sicko` | コメントレビュー |
 
-`arena-runner`がなければ親継承で起動する。実際の呼び出しには、生成済みの`saji-worker`を使う。
+`arena-runner`がなければ`saji-worker`を親継承で起動する。
 
 このSkillはサブエージェントの**定義だけ**を生成する。Docker、worktree、使い捨てWorkspaceの提供や書き込み隔離は行わない。安全な候補別実行環境が必要なPlaybookは、引き続き`saji/unresole/`で実行停止とする。
 

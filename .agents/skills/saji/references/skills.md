@@ -39,6 +39,10 @@
 | `statechart` | TLA+とTLCによる状態図と反例 | [未解決・実行禁止](../unresole/skills/statechart/SKILL.md) |
 | `poteto-help` | pstackの使い方案内 | [未解決・実行禁止](../unresole/skills/poteto-help/SKILL.md) |
 
+## 初期設定
+
+サブエージェント定義の生成は[saji-setup](../../saji-setup/SKILL.md)で行う。pstack由来の34件とは別のSkillであり、Sandboxの作成や未解決Playbookの実行許可は行わない。
+
 ## 利用時
 
 1. `saji/SKILL.md`またはPlaybookで要求される名前から、この一覧の本文ファイルを特定する。

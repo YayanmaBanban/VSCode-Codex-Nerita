@@ -32,6 +32,7 @@ Playbookを選び、Principleと専門Skillを使って開発を進める。必�
 | --- | --- |
 | Playbookの選択と実行 | `references/playbooks.md` → `unresole/playbooks/<title>.md` |
 | 専門Skillの選択と利用可否 | `references/skills.md` |
+| サブエージェントの初期設定 | `../saji-setup/SKILL.md` |
 | Principleの適用条件の一覧 | `references/principles.md` → `references/principles.md`内の各本文リンク |
 | サブエージェントとワーカー起動 | `unresole/references/delegation.md`、`worker.md` |
 | 自律実行と承認の境界 | `references/autonomy.md` |
