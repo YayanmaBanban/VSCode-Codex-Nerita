@@ -16,9 +16,9 @@
 | `swarm` | 複数の作業範囲の並列実行と集約 | [未解決・実行禁止](../unresole/skills/swarm/SKILL.md) |
 | `interrogate` | 異なるモデルによる実証付き批判的レビュー | [未解決・実行禁止](../unresole/skills/interrogate/SKILL.md) |
 | `figure-it-out` | 既存Playbookにない大規模作業の工程設計 | [未解決・実行禁止](../unresole/skills/figure-it-out/SKILL.md) |
-| `benchmark-checklist` | 性能数値の実測・健全性確認 | [導入保留・実行しない](../unresole/skills/benchmark-checklist/SKILL.md) |
+| `benchmark-checklist` | 性能数値の実測・健全性確認 | [未解決・実行禁止](../unresole/skills/benchmark-checklist/SKILL.md) |
 | `no-comments` | Comment Sickoによるコメントレビュー | [未解決・実行禁止](../unresole/skills/no-comments/SKILL.md) |
-| `typescript-best-practices` | TypeScriptの型・構造規律 | [導入保留・実行しない](../unresole/skills/typescript-best-practices/SKILL.md) |
+| `typescript-best-practices` | TypeScriptの型・構造規律 | [未解決・実行禁止](../unresole/skills/typescript-best-practices/SKILL.md) |
 | `correct` | 繰り返すエージェントの失敗を構造で抑止 | [未解決・実行禁止](../unresole/skills/correct/SKILL.md) |
 | `reflect` | 実行履歴からSkillの改善案を作成 | [未解決・実行禁止](../unresole/skills/reflect/SKILL.md) |
 | `blast-radius` | 差分外の影響範囲を実証 | [未解決・実行禁止](../unresole/skills/blast-radius/SKILL.md) |
@@ -38,8 +38,6 @@
 | `maintain-formal-verification-skill` | 形式検証を実コードに同期 | [未解決・実行禁止](../unresole/skills/maintain-formal-verification-skill/SKILL.md) |
 | `statechart` | TLA+とTLCによる状態図と反例 | [未解決・実行禁止](../unresole/skills/statechart/SKILL.md) |
 | `poteto-help` | pstackの使い方案内 | [未解決・実行禁止](../unresole/skills/poteto-help/SKILL.md) |
-
-`typescript-best-practices`と`benchmark-checklist`は今は導入しない。対応するType System DisciplineとExplain the NumberのPrincipleは適用する。両Skillの原文資料は保留したまま、通常の実行対象にはしない。
 
 ## 初期設定
 

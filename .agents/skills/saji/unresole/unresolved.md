@@ -37,6 +37,15 @@
 | --- | --- |
 | [`delegation.md`](references/delegation.md) | Agent定義の生成は`saji-setup`で対応。原文の`poteto-agent`・`Task`・`setup-pstack`との対応、モデル独立性と隔離環境は未決 |
 
+## Principle（4件）
+
+| Markdown | 未解決の内容・確認すべき判断 |
+| --- | --- |
+| [`type-system-discipline.md`](principles/type-system-discipline.md) | TypeScript用`typescript-best-practices` Skillの導入先と、構文に関する具体ルールの参照方法 |
+| [`explain-the-number.md`](principles/explain-the-number.md) | `benchmark-checklist` Skillの導入・実行方法（性能数値の精査が必要） |
+| [`guard-the-context-window.md`](principles/guard-the-context-window.md) | 大量の読込結果を渡すサブエージェントと、読み取り専用委譲・返答の受け渡し方法 |
+| [`never-block-on-the-human.md`](principles/never-block-on-the-human.md) | 原文の『元に戻せるコード変更は確認なく進める』と、現行のユーザー承認ルールの衝突をどう解消するか |
+
 ## 専門Skill（27件）
 
 | 対象Markdown | 未解決の内容・判断が必要な事項 |
@@ -46,9 +55,9 @@
 | [`swarm/SKILL.md`](skills/swarm/SKILL.md) | Agent定義の生成は`saji-setup`で対応。候補ごとの隔離された作業領域と並列実行の境界が未決 |
 | [`interrogate/SKILL.md`](skills/interrogate/SKILL.md) | Agent定義の生成は`saji-setup`で対応。Arenaとの連携と未コミット差分の隔離、独立レビューの成立条件が未決 |
 | [`figure-it-out/SKILL.md`](skills/figure-it-out/SKILL.md) | 未解決の委譲・Arena・監査Skillと、長期自律実行・PRの権限が未決 |
-| [`benchmark-checklist/SKILL.md`](skills/benchmark-checklist/SKILL.md) | 現段階では専門Skillの導入を保留。将来導入する場合はUnix系計測ツールの環境差と実装方針を判断する |
+| [`benchmark-checklist/SKILL.md`](skills/benchmark-checklist/SKILL.md) | Unix系`uptime`・`nproc`・`pidstat`・`perf`・`strace`等の計測ツールをWindows/Pi/Codexでどう実行するか未決 |
 | [`no-comments/SKILL.md`](skills/no-comments/SKILL.md) | `comment-sicko`の定義生成は`saji-setup`で対応。レビュー反映の権限・親と子の責務分担が未決 |
-| [`typescript-best-practices/SKILL.md`](skills/typescript-best-practices/SKILL.md) | Type System Discipline Principleは採用済み。TypeScript専用Skillは今は導入しない。将来の自動適用方法は保留。コード例は原文資料として収録済み |
+| [`typescript-best-practices/SKILL.md`](skills/typescript-best-practices/SKILL.md) | frontmatterの`paths`による自動適用と、未解決のtype-system-discipline Principleの適用関係が未決。コード例は収録済み |
 | [`correct/SKILL.md`](skills/correct/SKILL.md) | 履歴の調査手段、Lint/CIへの書き込み、各修正の自動コミットと承認範囲が未決 |
 | [`reflect/SKILL.md`](skills/reflect/SKILL.md) | Cursor会話履歴の取得、CursorのSkillディレクトリと承認後の編集方法が未決 |
 | [`blast-radius/SKILL.md`](skills/blast-radius/SKILL.md) | 大規模変更で必須となるArenaの分担実行・モデル指定が未決 |
@@ -85,6 +94,6 @@
 
 ## 解決・復帰の条件
 
-実際のカスタムPi/Codexのツール定義・設定・インストール済みSkillを確認し、未決の判断はユーザーと合意する。その後、必要な実行環境を整え、原文の工程や例外を保ったまま動作を確認する。解決したMarkdownだけを通常の`playbooks/`・`references/`・`skills/`へ戻し、参照元のリンクを更新する。
+実際のカスタムPi/Codexのツール定義・設定・インストール済みSkillを確認し、未決の判断はユーザーと合意する。その後、必要な実行環境を整え、原文の工程や例外を保ったまま動作を確認する。解決したMarkdownだけを通常の`playbooks/`・`references/`・`principles/`へ戻し、参照元のリンクを更新する。
 
 単に実行できないコマンドを読み飛ばした、同等の検証がないまま別の手順へ変更した、という状態は**解決に含めない**。
