@@ -20,7 +20,7 @@ Playbookを選び、Principleと専門Skillを使って開発を進める。必�
 - **文章（最終回答を含む）** → **unslop**。技術文書・PR本文・コミットメッセージ → **technical-writing**。
 - **コミット前** → **deslop** Skill。**レビュー前** → **no-comments**。
 - **UI・IDE・CLIを出荷するとき** → **control-ui**または**control-cli**（実際の画面・CLIを操作し証拠を保存するSkill）。
-- **計測した数値** → **benchmark-checklist**。
+- **計測した数値** → **Explain the Number** Principle。
 - **PRの状況確認** → **Babysit** Playbook。検証済みのPR群を統合する場合 → **Shipping** Playbook。
 - **Botによるレビュー指摘** → 指摘ごとに妥当性を判断する。
 - **長時間または無人での作業** → **show-me-your-work**。
@@ -33,7 +33,7 @@ Playbookを選び、Principleと専門Skillを使って開発を進める。必�
 | Playbookの選択と実行 | `references/playbooks.md` → `unresole/playbooks/<title>.md` |
 | 専門Skillの選択と利用可否 | `references/skills.md` |
 | サブエージェントの初期設定 | `../saji-setup/SKILL.md` |
-| Principleの適用条件の一覧 | `references/principles.md` → `references/principles.md`内の各本文リンク |
+| Principleの適用条件の一覧 | `references/principles.md` → `principles/<name>.md` |
 | サブエージェントとワーカー起動 | `unresole/references/delegation.md`、`worker.md` |
 | 自律実行と承認の境界 | `references/autonomy.md` |
 | 回答の文体と報告方法 | `references/communication.md` |
