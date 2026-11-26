@@ -13,10 +13,18 @@
 - pstack由来の**24個のPrincipleをすべて採用**する。必要な適用条件で選び、本文を読む。
 - **Guard the Context Window と Never Block on the Human は訳文の本文を変更しない。** Pi/Codexの運用・権限の決定を原則へ追記しない。
 - `typescript-best-practices` と `benchmark-checklist` の**専門Skillは現段階で導入しない**。Type System DisciplineとExplain the NumberのPrincipleそのものは採用する。
-- 専門Skillを導入しない判断に対応し、**新ブランチでのみ**Type System Disciplineの末尾の専門Skill参照文と、Explain the Numberの性能計測時の専門Skill必須実行文を外した。これは原文に対する**意図的な2箇所の差分**であり、翻訳の誤差ではない。
 - `unresole/`の4件から原則本文を取り出す際には、翻訳の一部でない実行禁止の警告だけを除いた。
 - 24件の日本語本文に**新しい規則や注記は追加しない**。
 - Worktree、使い捨てSandbox、サブエージェント起動方法などは今後のPlaybook・実行環境の棚卸しで判断する。Principleへ解決策を埋め込まない。
+
+### Principle本文から削除した文言
+
+専門Skillを導入しない判断に伴う、新ブランチでの意図的な2箇所の差分。削除した文言は凍結版の日本語訳をそのまま記載する。
+
+| ファイル名 | 削除した文言 | 理由 |
+| --- | --- | --- |
+| [`type-system-discipline.md`](../principles/architecture/type-system-discipline.md) | TypeScriptの具体的な構文は**typescript-best-practices** Skillを参照する。 | `typescript-best-practices` は現段階で導入しないため。Type System Disciplineは採用する。 |
+| [`explain-the-number.md`](../principles/verification/explain-the-number.md) | 性能の数値には**benchmark-checklist** Skill（原文：`../benchmark-checklist/SKILL.md`）を実行する。 | `benchmark-checklist` は現段階で導入しないため。Explain the Numberは採用する。 |
 
 ## この段階で未実装のもの
 
