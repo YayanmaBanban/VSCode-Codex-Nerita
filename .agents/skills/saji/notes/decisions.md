@@ -10,12 +10,8 @@
 
 ## 確定した判断
 
-- pstack由来の**24個のPrincipleをすべて採用**する。必要な適用条件で選び、本文を読む。
-- **Guard the Context Window と Never Block on the Human は訳文の本文を変更しない。** Pi/Codexの運用・権限の決定を原則へ追記しない。
-- `typescript-best-practices` と `benchmark-checklist` の**専門Skillは現段階で導入しない**。Type System DisciplineとExplain the NumberのPrincipleそのものは採用する。
-- `unresole/`の4件から原則本文を取り出す際には、翻訳の一部でない実行禁止の警告だけを除いた。
-- 24件の日本語本文に**新しい規則や注記は追加しない**。
-- Worktree、使い捨てSandbox、サブエージェント起動方法などは今後のPlaybook・実行環境の棚卸しで判断する。Principleへ解決策を埋め込まない。
+- pstack由来の24個のPrincipleをすべて採用する。
+- 原則として日本語訳の本文を維持し、新しい規則や注記を追加しない。変更箇所は以下の表に記録する。
 
 ### Principle本文から削除した文言
 
@@ -29,6 +25,8 @@
 ## この段階で未実装のもの
 
 Playbook、Arenaなどの専門Skill、`saji-setup`の統合、実行環境との接続は未着手。凍結版に存在しても新ブランチへ自動的に移植しない。
+
+Worktree、使い捨てSandbox、サブエージェント起動方法などは今後のPlaybook・実行環境の棚卸しで判断する。
 
 ## 再検討する場合
 
